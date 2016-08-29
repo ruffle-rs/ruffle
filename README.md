@@ -1,14 +1,6 @@
 # swf
 
-A Rust library for reading and writing the Adobe Flash SWF file format. The underlying
-implementation by default uses [`miniz`](https://code.google.com/p/miniz/) but
-can optionally be configured to use the system zlib, if available.
-
-Supported formats:
-
-* deflate
-* zlib
-* gzip
+A Rust library for reading and writing the Adobe Flash SWF file format.
 
 ```toml
 # Cargo.toml
