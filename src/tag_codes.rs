@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 #[derive(Debug,PartialEq,Clone)]
 pub enum TagCode {
     End = 0,
