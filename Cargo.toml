@@ -5,7 +5,5 @@ authors = ["Mike Welsh"]
 
 [dependencies]
 byteorder = "*"
-#clippy = "*"
 flate2 = "*"
-#xz2 = "*"
-xz2 = { git = "c:/projects/xz2-rs" }
+xz2 = "*"
