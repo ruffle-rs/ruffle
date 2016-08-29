@@ -1,5 +1,3 @@
-
-
 #[derive(Debug,PartialEq)]
 pub struct Swf {
     pub version: u8,
