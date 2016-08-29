@@ -34,7 +34,7 @@ pub fn read_swf<R: Read>(mut input: R) -> Result<Swf> {
         }
     };
 
-    let mut reader = Reader::new( decompressed_input, version );
+    let mut reader = Reader::new(decompressed_input, version);
 
     let stage_size = try!(reader.read_rectangle());
     let frame_rate = try!(reader.read_fixed88());
@@ -66,7 +66,14 @@ pub struct Reader<R: Read> {
 
 impl<R: Read> Reader<R> {
     fn new(input: R, version: u8) -> Reader<R> {
-        Reader { input: input, version: version, byte: 0, bit_index: 0, num_fill_bits: 0, num_line_bits: 0 }
+        Reader {
+            input: input,
+            version: version,
+            byte: 0,
+            bit_index: 0,
+            num_fill_bits: 0,
+            num_line_bits: 0,
+        }
     }
 
     fn read_compression_type(mut input: R) -> Result<Compression> {
@@ -138,9 +145,7 @@ impl<R: Read> Reader<R> {
     fn read_sbits(&mut self, num_bits: usize) -> Result<i32> {
         if num_bits > 0 {
             self.read_ubits(num_bits).map(|n| (n as i32) << (32 - num_bits) >> (32 - num_bits))
-        }
-        else
-        {
+        } else {
             Ok(0)
         }
     }
@@ -157,9 +162,8 @@ impl<R: Read> Reader<R> {
         let mut val = 0u32;
         for i in 0..5 {
             let byte = try!(self.read_u8());
-            val |= ((byte & 0b01111111) as u32) << (i*7);
-            if byte & 0b10000000 == 0
-            {
+            val |= ((byte & 0b01111111) as u32) << (i * 7);
+            if byte & 0b10000000 == 0 {
                 break;
             }
         }
@@ -177,14 +181,20 @@ impl<R: Read> Reader<R> {
         }
         // TODO: There is probably a better way to do this.
         // TODO: Verify ANSI for SWF 5 and earlier.
-        String::from_utf8(bytes).map_err(|_| Error::new(ErrorKind::InvalidData, "Invalid string data"))
+        String::from_utf8(bytes)
+            .map_err(|_| Error::new(ErrorKind::InvalidData, "Invalid string data"))
     }
 
     fn read_rgb(&mut self) -> Result<Color> {
         let r = try!(self.read_u8());
         let g = try!(self.read_u8());
         let b = try!(self.read_u8());
-        Ok(Color { r: r, g: g, b: b, a: 255 })
+        Ok(Color {
+            r: r,
+            g: g,
+            b: b,
+            a: 255,
+        })
     }
 
     fn read_rgba(&mut self) -> Result<Color> {
@@ -192,7 +202,12 @@ impl<R: Read> Reader<R> {
         let g = try!(self.read_u8());
         let b = try!(self.read_u8());
         let a = try!(self.read_u8());
-        Ok(Color { r: r, g: g, b: b, a: a })
+        Ok(Color {
+            r: r,
+            g: g,
+            b: b,
+            a: a,
+        })
     }
 
     fn read_matrix(&mut self) -> Result<Matrix> {
@@ -236,17 +251,18 @@ impl<R: Read> Reader<R> {
             length = try!(self.read_u32());
         }
 
-        let mut tag_reader = Reader::new( self.input.by_ref().take(length as u64), self.version );
+        let mut tag_reader = Reader::new(self.input.by_ref().take(length as u64), self.version);
         use tag_codes::TagCode;
         let tag = match tag_code {
             x if x == TagCode::End as u16 => return Ok(None),
             x if x == TagCode::ShowFrame as u16 => Tag::ShowFrame,
             x if x == TagCode::DefineShape as u16 => try!(tag_reader.read_define_shape(1)),
 
-            x if x == TagCode::SetBackgroundColor as u16 => Tag::SetBackgroundColor(try!(tag_reader.read_rgb())),
+            x if x == TagCode::SetBackgroundColor as u16 => {
+                Tag::SetBackgroundColor(try!(tag_reader.read_rgb()))
+            }
 
-//            PLACE_OBJECT_2 => unimplemented!(),
-
+            //            PLACE_OBJECT_2 => unimplemented!(),
             x if x == TagCode::FileAttributes as u16 => {
                 let flags = try!(tag_reader.read_u32());
                 Tag::FileAttributes(FileAttributes {
@@ -256,16 +272,21 @@ impl<R: Read> Reader<R> {
                     is_action_script_3: (flags & 0b00001000) != 0,
                     use_network_sandbox: (flags & 0b00000001) != 0,
                 })
-            },
+            }
 
-            x if x == TagCode::DefineSceneAndFrameLabelData as u16 => try!(tag_reader.read_define_scene_and_frame_label_data()),
+            x if x == TagCode::DefineSceneAndFrameLabelData as u16 => {
+                try!(tag_reader.read_define_scene_and_frame_label_data())
+            }
 
             _ => {
                 let mut data = Vec::new();
                 data.resize(length as usize, 0);
                 try!(tag_reader.input.read_exact(data.as_mut_slice()));
-                Tag::Unknown { tag_code: tag_code, data: data }
-            },
+                Tag::Unknown {
+                    tag_code: tag_code,
+                    data: data,
+                }
+            }
         };
 
         Ok(Some(tag))
@@ -290,7 +311,10 @@ impl<R: Read> Reader<R> {
             });
         }
 
-        Ok(Tag::DefineSceneAndFrameLabelData { scenes: scenes, frame_labels: frame_labels })
+        Ok(Tag::DefineSceneAndFrameLabelData {
+            scenes: scenes,
+            frame_labels: frame_labels,
+        })
     }
 
     fn read_define_shape(&mut self, version: u8) -> Result<Tag> {
@@ -345,27 +369,29 @@ impl<R: Read> Reader<R> {
         let fill_style_type = try!(self.read_u8());
         let fill_style = match fill_style_type {
             0x00 => {
-                let color = if shape_version >= 3 { try!(self.read_rgba()) } else { try!(self.read_rgb()) };
+                let color = if shape_version >= 3 {
+                    try!(self.read_rgba())
+                } else {
+                    try!(self.read_rgb())
+                };
                 FillStyle::Color(color)
-            },
+            }
 
-            0x10 => {
-                FillStyle::LinearGradient(try!(self.read_gradient(shape_version)))
-            },
+            0x10 => FillStyle::LinearGradient(try!(self.read_gradient(shape_version))),
 
-            0x12 => {
-                FillStyle::RadialGradient(try!(self.read_gradient(shape_version)))
-            },
+            0x12 => FillStyle::RadialGradient(try!(self.read_gradient(shape_version))),
 
             0x13 => {
                 if self.version < 8 {
-                    return Err(Error::new(ErrorKind::InvalidData, "Focal gradients are only supported in SWF version 8 or higher."));
+                    return Err(Error::new(ErrorKind::InvalidData,
+                                          "Focal gradients are only supported in SWF version 8 \
+                                           or higher."));
                 }
                 FillStyle::FocalGradient {
                     gradient: try!(self.read_gradient(shape_version)),
-                    focal_point: try!(self.read_fixed88())
+                    focal_point: try!(self.read_fixed88()),
                 }
-            },
+            }
 
             0x40 => {
                 FillStyle::Bitmap {
@@ -374,7 +400,7 @@ impl<R: Read> Reader<R> {
                     is_smoothed: (fill_style_type & 0b10) == 0,
                     is_repeating: (fill_style_type & 0b01) == 0,
                 }
-            },
+            }
 
             _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid fill style.")),
         };
@@ -384,7 +410,11 @@ impl<R: Read> Reader<R> {
     fn read_line_style(&mut self, shape_version: u8) -> Result<LineStyle> {
         Ok(LineStyle {
             width: try!(self.read_u16()), // TODO: Twips
-            color: if shape_version >= 3 { try!(self.read_rgba()) } else { try!(self.read_rgb()) },
+            color: if shape_version >= 3 {
+                try!(self.read_rgba())
+            } else {
+                try!(self.read_rgb())
+            },
         })
     }
 
@@ -398,16 +428,23 @@ impl<R: Read> Reader<R> {
         let interpolation = match try!(self.read_ubits(2)) {
             0 => GradientInterpolation::RGB,
             1 => GradientInterpolation::LinearRGB,
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid gradient interpolation mode.")),
+            _ => {
+                return Err(Error::new(ErrorKind::InvalidData,
+                                      "Invalid gradient interpolation mode."))
+            }
         };
         let num_records = try!(self.read_ubits(4)) as usize;
         let mut records = Vec::with_capacity(num_records);
         for _ in 0..num_records {
             records.push(GradientRecord {
                 ratio: try!(self.read_u8()),
-                color: if shape_version >= 3 { try!(self.read_rgba()) } else { try!(self.read_rgb()) },
+                color: if shape_version >= 3 {
+                    try!(self.read_rgba())
+                } else {
+                    try!(self.read_rgb())
+                },
             });
-        };
+        }
         Ok(Gradient {
             spread: spread,
             interpolation: interpolation,
@@ -425,12 +462,21 @@ impl<R: Read> Reader<R> {
                 let num_bits = try!(self.read_ubits(4)) as usize + 2;
                 let is_axis_aligned = !try!(self.read_bit());
                 let is_vertical = is_axis_aligned && try!(self.read_bit());
-                let delta_x = if !is_axis_aligned || !is_vertical { try!(self.read_sbits(num_bits)) } else { 0 };
-                let delta_y = if !is_axis_aligned || is_vertical { try!(self.read_sbits(num_bits)) } else { 0 };
-                Some(ShapeRecord::StraightEdge { delta_x: (delta_x as f32) / 20f32, delta_y: (delta_y as f32) / 20f32 })
-            }
-            else
-            {
+                let delta_x = if !is_axis_aligned || !is_vertical {
+                    try!(self.read_sbits(num_bits))
+                } else {
+                    0
+                };
+                let delta_y = if !is_axis_aligned || is_vertical {
+                    try!(self.read_sbits(num_bits))
+                } else {
+                    0
+                };
+                Some(ShapeRecord::StraightEdge {
+                    delta_x: (delta_x as f32) / 20f32,
+                    delta_y: (delta_y as f32) / 20f32,
+                })
+            } else {
                 // CurvedEdge
                 let num_bits = try!(self.read_ubits(4)) as usize + 2;
                 Some(ShapeRecord::CurvedEdge {
@@ -483,7 +529,6 @@ impl<R: Read> Reader<R> {
         };
         Ok(shape_record)
     }
-
 }
 
 #[cfg(test)]
@@ -526,9 +571,12 @@ mod tests {
 
     #[test]
     fn read_swfs() {
-        assert_eq!(read_from_file("test/swfs/uncompressed.swf").compression, Compression::None);
-        assert_eq!(read_from_file("test/swfs/zlib.swf").compression, Compression::Zlib);
-        assert_eq!(read_from_file("test/swfs/lzma.swf").compression, Compression::Lzma);
+        assert_eq!(read_from_file("test/swfs/uncompressed.swf").compression,
+                   Compression::None);
+        assert_eq!(read_from_file("test/swfs/zlib.swf").compression,
+                   Compression::Zlib);
+        assert_eq!(read_from_file("test/swfs/lzma.swf").compression,
+                   Compression::Lzma);
     }
 
     #[test]
@@ -541,9 +589,12 @@ mod tests {
 
     #[test]
     fn read_compression_type() {
-        assert_eq!(Reader::read_compression_type(&b"FWS"[..]).unwrap(), Compression::None);
-        assert_eq!(Reader::read_compression_type(&b"CWS"[..]).unwrap(), Compression::Zlib);
-        assert_eq!(Reader::read_compression_type(&b"ZWS"[..]).unwrap(), Compression::Lzma);
+        assert_eq!(Reader::read_compression_type(&b"FWS"[..]).unwrap(),
+                   Compression::None);
+        assert_eq!(Reader::read_compression_type(&b"CWS"[..]).unwrap(),
+                   Compression::Zlib);
+        assert_eq!(Reader::read_compression_type(&b"ZWS"[..]).unwrap(),
+                   Compression::Lzma);
         assert!(Reader::read_compression_type(&b"ABC"[..]).is_err());
     }
 
@@ -551,49 +602,43 @@ mod tests {
     fn read_bit() {
         let mut buf: &[u8] = &[0b01010101, 0b00100101];
         let mut reader = Reader::new(&mut buf, 1);
-        assert_eq!(
-            (0..16).map(|_| reader.read_bit().unwrap()).collect::<Vec<_>>(),
-            [false, true, false, true, false, true, false, true,
-             false, false, true, false, false, true, false, true]
-        );
+        assert_eq!((0..16).map(|_| reader.read_bit().unwrap()).collect::<Vec<_>>(),
+                   [false, true, false, true, false, true, false, true, false, false, true,
+                    false, false, true, false, true]);
     }
 
     #[test]
     fn read_ubits() {
         let mut buf: &[u8] = &[0b01010101, 0b00100101];
         let mut reader = Reader::new(&mut buf, 1);
-        assert_eq!(
-            (0..8).map(|_| reader.read_ubits(2).unwrap()).collect::<Vec<_>>(),
-            [1, 1, 1, 1, 0, 2, 1, 1]
-        );
+        assert_eq!((0..8).map(|_| reader.read_ubits(2).unwrap()).collect::<Vec<_>>(),
+                   [1, 1, 1, 1, 0, 2, 1, 1]);
     }
 
     #[test]
     fn read_sbits() {
         let mut buf: &[u8] = &[0b01010101, 0b00100101];
         let mut reader = Reader::new(&mut buf, 1);
-        assert_eq!(
-            (0..8).map(|_| reader.read_sbits(2).unwrap()).collect::<Vec<_>>(),
-            [1, 1, 1, 1, 0, -2, 1, 1]
-        );
+        assert_eq!((0..8).map(|_| reader.read_sbits(2).unwrap()).collect::<Vec<_>>(),
+                   [1, 1, 1, 1, 0, -2, 1, 1]);
     }
 
     #[test]
     fn read_fbits() {
         assert_eq!(Reader::new(&[0][..], 1).read_fbits(5).unwrap(), 0f32);
-        assert_eq!(Reader::new(&[0b01000000, 0b00000000, 0b0_0000000][..], 1).read_fbits(17).unwrap(), 0.5f32);
-        assert_eq!(Reader::new(&[0b10000000, 0b00000000][..], 1).read_fbits(16).unwrap(), -0.5f32);
+        assert_eq!(Reader::new(&[0b01000000, 0b00000000, 0b0_0000000][..], 1)
+                       .read_fbits(17)
+                       .unwrap(),
+                   0.5f32);
+        assert_eq!(Reader::new(&[0b10000000, 0b00000000][..], 1).read_fbits(16).unwrap(),
+                   -0.5f32);
     }
 
     #[test]
     fn read_fixed88() {
-        let buf = [
-            0b00000000, 0b00000000,
-            0b00000000, 0b00000001,
-            0b10000000, 0b00000110,
-            0b01000000, 0b11101011,
-        ];
-        let mut reader = Reader::new( &buf[..], 1 );
+        let buf = [0b00000000, 0b00000000, 0b00000000, 0b00000001, 0b10000000, 0b00000110,
+                   0b01000000, 0b11101011];
+        let mut reader = Reader::new(&buf[..], 1);
         assert_eq!(reader.read_fixed88().unwrap(), 0f32);
         assert_eq!(reader.read_fixed88().unwrap(), 1f32);
         assert_eq!(reader.read_fixed88().unwrap(), 6.5f32);
@@ -602,38 +647,61 @@ mod tests {
 
     #[test]
     fn read_encoded_u32() {
-        let read = |data: &[u8]| { reader(data).read_encoded_u32().unwrap() };
+        let read = |data: &[u8]| reader(data).read_encoded_u32().unwrap();
         assert_eq!(read(&[0]), 0);
         assert_eq!(read(&[2]), 2);
         assert_eq!(read(&[0b1_0000001, 0b0_0000001]), 129);
-        assert_eq!(read(&[0b1_0000001, 0b1_0000001, 0b0_1100111]), 0b1100111_0000001_0000001);
-        assert_eq!(read(&[0b1_0000000, 0b1_0000000, 0b1_0000000, 0b1_0000000, 0b0000_1111]), 0b1111_0000000_0000000_0000000_0000000);
-        assert_eq!(read(&[0b1_0000000, 0b1_0000000, 0b1_0000000, 0b1_0000000, 0b1111_1111]), 0b1111_0000000_0000000_0000000_0000000);
+        assert_eq!(read(&[0b1_0000001, 0b1_0000001, 0b0_1100111]),
+                   0b1100111_0000001_0000001);
+        assert_eq!(read(&[0b1_0000000, 0b1_0000000, 0b1_0000000, 0b1_0000000, 0b0000_1111]),
+                   0b1111_0000000_0000000_0000000_0000000);
+        assert_eq!(read(&[0b1_0000000, 0b1_0000000, 0b1_0000000, 0b1_0000000, 0b1111_1111]),
+                   0b1111_0000000_0000000_0000000_0000000);
     }
 
     #[test]
     fn read_rectangle_zero() {
         let buf = [0b00000_000];
-        let mut reader = Reader::new( &buf[..], 1 );
+        let mut reader = Reader::new(&buf[..], 1);
         let rectangle = reader.read_rectangle().unwrap();
-        assert_eq!(rectangle, Rectangle { x_min: 0f32, x_max: 0f32, y_min: 0f32, y_max: 0f32 });
+        assert_eq!(rectangle,
+                   Rectangle {
+                       x_min: 0f32,
+                       x_max: 0f32,
+                       y_min: 0f32,
+                       y_max: 0f32,
+                   });
     }
 
     #[test]
     fn read_rectangle_signed() {
         let buf = [0b00110_101, 0b100_01010, 0b0_101100_0, 0b10100_000];
-        let mut reader = Reader::new( &buf[..], 1 );
+        let mut reader = Reader::new(&buf[..], 1);
         let rectangle = reader.read_rectangle().unwrap();
-        assert_eq!(rectangle, Rectangle { x_min: -1f32, x_max: 1f32, y_min: -1f32, y_max: 1f32 });
+        assert_eq!(rectangle,
+                   Rectangle {
+                       x_min: -1f32,
+                       x_max: 1f32,
+                       y_min: -1f32,
+                       y_max: 1f32,
+                   });
     }
 
     #[test]
     fn read_matrix() {
         {
             let buf = [0b0_0_00001_0, 0b0_0000000];
-            let mut reader = Reader::new( &buf[..], 1 );
+            let mut reader = Reader::new(&buf[..], 1);
             let matrix = reader.read_matrix().unwrap();
-            assert_eq!(matrix, Matrix { translate_x: 0f32, translate_y: 0f32, scale_x: 1f32, scale_y: 1f32, rotate_skew_0: 0f32, rotate_skew_1: 0f32 });
+            assert_eq!(matrix,
+                       Matrix {
+                           translate_x: 0f32,
+                           translate_y: 0f32,
+                           scale_x: 1f32,
+                           scale_y: 1f32,
+                           rotate_skew_0: 0f32,
+                           rotate_skew_1: 0f32,
+                       });
         }
     }
 
@@ -641,13 +709,25 @@ mod tests {
     fn read_color() {
         {
             let buf = [1, 128, 255];
-            let mut reader = Reader::new( &buf[..], 1 );
-            assert_eq!(reader.read_rgb().unwrap(), Color { r: 1, g: 128, b: 255, a: 255 });
+            let mut reader = Reader::new(&buf[..], 1);
+            assert_eq!(reader.read_rgb().unwrap(),
+                       Color {
+                           r: 1,
+                           g: 128,
+                           b: 255,
+                           a: 255,
+                       });
         }
         {
             let buf = [1, 128, 235, 44];
-            let mut reader = Reader::new( &buf[..], 1 );
-            assert_eq!(reader.read_rgba().unwrap(), Color { r: 1, g: 128, b: 235, a: 44 });
+            let mut reader = Reader::new(&buf[..], 1);
+            assert_eq!(reader.read_rgba().unwrap(),
+                       Color {
+                           r: 1,
+                           g: 128,
+                           b: 235,
+                           a: 44,
+                       });
         }
     }
 
@@ -655,12 +735,12 @@ mod tests {
     fn read_c_string() {
         {
             let buf = "Testing\0".as_bytes();
-            let mut reader = Reader::new( &buf[..], 1 );
+            let mut reader = Reader::new(&buf[..], 1);
             assert_eq!(reader.read_c_string().unwrap(), "Testing");
         }
         {
             let buf = "12🤖12\0".as_bytes();
-            let mut reader = Reader::new( &buf[..], 1 );
+            let mut reader = Reader::new(&buf[..], 1);
             assert_eq!(reader.read_c_string().unwrap(), "12🤖12");
         }
     }
@@ -671,19 +751,31 @@ mod tests {
         {
             let buf = &[0b00_000000, 0b10000000];
             let mut reader = Reader::new(&buf[..], 1);
-            assert_eq!(reader.read_tag().unwrap().unwrap(), Tag::Unknown { tag_code: 512, data: [].to_vec() });
+            assert_eq!(reader.read_tag().unwrap().unwrap(),
+                       Tag::Unknown {
+                           tag_code: 512,
+                           data: [].to_vec(),
+                       });
         }
 
         {
             let buf = &[0b01_000010, 0b10000000, 1, 2];
             let mut reader = Reader::new(&buf[..], 1);
-            assert_eq!(reader.read_tag().unwrap().unwrap(), Tag::Unknown { tag_code: 513, data: [1, 2].to_vec() });
+            assert_eq!(reader.read_tag().unwrap().unwrap(),
+                       Tag::Unknown {
+                           tag_code: 513,
+                           data: [1, 2].to_vec(),
+                       });
         }
 
         {
             let buf = &[0b01_111111, 0b10000000, 3, 0, 0, 0, 1, 2, 3];
             let mut reader = Reader::new(&buf[..], 1);
-            assert_eq!(reader.read_tag().unwrap().unwrap(), Tag::Unknown { tag_code: 513, data: [1, 2, 3].to_vec() });
+            assert_eq!(reader.read_tag().unwrap().unwrap(),
+                       Tag::Unknown {
+                           tag_code: 513,
+                           data: [1, 2, 3].to_vec(),
+                       });
         }
     }
 
@@ -733,7 +825,7 @@ mod tests {
 
     #[test]
     fn read_file_attributes() {
-        let file_attributes = FileAttributes { 
+        let file_attributes = FileAttributes {
             use_direct_blit: false,
             use_gpu: true,
             has_metadata: false,
@@ -742,34 +834,42 @@ mod tests {
         };
         let buf = [0b01_000100, 0b00010001, 0b00101000, 0, 0, 0];
         let mut reader = Reader::new(&buf[..], 1);
-        assert_eq!(reader.read_tag().unwrap().unwrap(), Tag::FileAttributes(file_attributes));
+        assert_eq!(reader.read_tag().unwrap().unwrap(),
+                   Tag::FileAttributes(file_attributes));
     }
 
     #[test]
     fn read_set_background_color() {
         let buf = [0b01_000011, 0b00000010, 64, 150, 255];
         let mut reader = Reader::new(&buf[..], 1);
-        assert_eq!(reader.read_tag().unwrap().unwrap(), Tag::SetBackgroundColor(Color { r: 64, g: 150, b: 255, a: 255 }));
+        assert_eq!(reader.read_tag().unwrap().unwrap(),
+                   Tag::SetBackgroundColor(Color {
+                       r: 64,
+                       g: 150,
+                       b: 255,
+                       a: 255,
+                   }));
     }
 
     #[test]
     fn read_define_scene_and_frame_label_data() {
-        assert_eq!(
-            read_tag_from_file("test/swfs/define_scene_and_frame_label_data.bin", 8),
-            Tag::DefineSceneAndFrameLabelData {
-                scenes: vec![
+        assert_eq!(read_tag_from_file("test/swfs/define_scene_and_frame_label_data.bin", 8),
+                   Tag::DefineSceneAndFrameLabelData {
+                       scenes: vec![
                     FrameLabel { frame_num: 0, label: "Scene 1".to_string() },
-                    FrameLabel { frame_num: 25, label: "Scene2Scene2Scene2Scene2Scene2".to_string() },
+                    FrameLabel {
+                        frame_num: 25,
+                        label: "Scene2Scene2Scene2Scene2Scene2".to_string()
+                    },
                     FrameLabel { frame_num: 26, label: "test日本語test".to_string() },
                 ],
-                frame_labels: vec![
+                       frame_labels: vec![
                     FrameLabel { frame_num: 0, label: "a".to_string() },
                     FrameLabel { frame_num: 9, label: "b".to_string() },
                     FrameLabel { frame_num: 17, label: "❤😁aaa".to_string() },
                     FrameLabel { frame_num: 25, label: "frameInScene2".to_string() },
                 ],
-            }
-        );
+                   });
     }
 
     #[test]

@@ -58,7 +58,14 @@ pub struct Matrix {
 
 impl Matrix {
     pub fn new() -> Matrix {
-        Matrix { translate_x: 0f32, translate_y: 0f32, scale_x: 1f32, scale_y: 1f32, rotate_skew_0: 1f32, rotate_skew_1: 1f32 }
+        Matrix {
+            translate_x: 0f32,
+            translate_y: 0f32,
+            scale_x: 1f32,
+            scale_y: 1f32,
+            rotate_skew_0: 1f32,
+            rotate_skew_1: 1f32,
+        }
     }
 }
 
@@ -87,11 +94,10 @@ pub struct PlaceObject {
     pub depth: Depth,
     pub id: Option<CharacterId>,
     pub matrix: Option<Matrix>,
-    //pub color_transform: CxformA,
+    // pub color_transform: CxformA,
     pub ratio: Option<Ratio>,
     pub name: Option<String>,
-    pub clip_depth: Option<Depth>,
-    //pub clip_actions
+    pub clip_depth: Option<Depth>, // pub clip_actions
 }
 
 #[derive(Debug,PartialEq)]
@@ -106,7 +112,10 @@ pub enum Tag {
 
     FileAttributes(FileAttributes),
 
-    DefineSceneAndFrameLabelData { scenes: Vec<FrameLabel>, frame_labels: Vec<FrameLabel> },
+    DefineSceneAndFrameLabelData {
+        scenes: Vec<FrameLabel>,
+        frame_labels: Vec<FrameLabel>,
+    },
 
     Unknown { tag_code: u16, data: Vec<u8> },
 }
@@ -134,7 +143,12 @@ pub enum ShapeRecord {
     // TODO: Twips
     StyleChange(StyleChangeData),
     StraightEdge { delta_x: f32, delta_y: f32 },
-    CurvedEdge { control_delta_x: f32, control_delta_y: f32, anchor_delta_x: f32, anchor_delta_y: f32 },
+    CurvedEdge {
+        control_delta_x: f32,
+        control_delta_y: f32,
+        anchor_delta_x: f32,
+        anchor_delta_y: f32,
+    },
 }
 
 #[derive(Debug,PartialEq)]
@@ -152,8 +166,16 @@ pub enum FillStyle {
     Color(Color),
     LinearGradient(Gradient),
     RadialGradient(Gradient),
-    FocalGradient{ gradient: Gradient, focal_point: f32 },
-    Bitmap { id: CharacterId, matrix: Matrix, is_smoothed: bool, is_repeating: bool },
+    FocalGradient {
+        gradient: Gradient,
+        focal_point: f32,
+    },
+    Bitmap {
+        id: CharacterId,
+        matrix: Matrix,
+        is_smoothed: bool,
+        is_repeating: bool,
+    },
 }
 
 #[derive(Debug,PartialEq)]
