@@ -205,11 +205,6 @@ pub struct GradientRecord {
 }
 
 #[derive(Debug,PartialEq)]
-pub struct BitmapFill {
-
-}
-
-#[derive(Debug,PartialEq)]
 pub struct LineStyle {
     pub width: u16, // Twips
     pub color: Color,
