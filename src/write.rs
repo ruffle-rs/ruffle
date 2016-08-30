@@ -833,7 +833,18 @@ mod tests {
 
     #[test]
     fn write_matrix() {
-        unimplemented!()
+        fn write_to_buf(m: &Matrix) -> Vec<u8> {
+            let mut buf = Vec::new();
+            {
+                let mut writer = Writer::new(&mut buf, 1);
+                writer.write_matrix(m).unwrap();
+                writer.flush_bits().unwrap();
+            }
+            buf
+        }
+
+        let m = Matrix::new();
+        assert_eq!(write_to_buf(&m), [0b00_00001_0, 0b0_0000000]);
     }
 
     // TAGS
