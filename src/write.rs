@@ -1,7 +1,7 @@
 use byteorder::{LittleEndian, WriteBytesExt};
 use flate2::Compression as ZlibCompression;
 use flate2::write::ZlibEncoder;
-use std::cmp::{min, max};
+use std::cmp::max;
 use std::io::{Error, ErrorKind, Result, Write};
 use tag_codes::TagCode;
 use types::*;
