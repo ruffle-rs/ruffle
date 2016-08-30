@@ -1,5 +1,7 @@
 # swf
 
+[![Build Status](https://travis-ci.org/Herschel/swf-rs.svg?branch=master)](https://travis-ci.org/Herschel/swf-rs)
+
 A Rust library for reading and writing the Adobe Flash SWF file format.
 
 ```toml
