@@ -16,107 +16,52 @@ pub fn write_swf<W: Write>(swf: &Swf, mut output: W) -> Result<()> {
     try!(output.write_all(&signature[..]));
     try!(output.write_u8(swf.version));
 
-    let uncompressed_length;
-    let mut buf = Vec::new();
+    // Write SWF body.
+    let mut swf_body = Vec::new();
     {
-        let mut compressed_output: Box<CountWrite> = match swf.compression {
-            Compression::None => Box::new(&mut buf),
+        let mut writer = Writer::new(&mut swf_body, swf.version);
 
-            Compression::Zlib => {
-                Box::new(CountWriter::new(ZlibEncoder::new(&mut buf, ZlibCompression::Best)))
-            }
-
-            Compression::Lzma => {
-                // SWF uses an LZMA1 stream, not XZ2.
-                use xz2::stream::{LzmaOptions, Stream};
-                let stream = try!(Stream::new_lzma_encoder(&try!(LzmaOptions::new_preset(9))));
-                Box::new(XzEncoder::new_stream(&mut buf, stream))
-            }
-        };
-
-        let mut writer = Writer::new(compressed_output, swf.version);
         try!(writer.write_rectangle(&swf.stage_size));
         try!(writer.write_fixed88(swf.frame_rate));
         try!(writer.write_u16(swf.num_frames));
 
         // Write main timeline tag list.
         try!(writer.write_tag_list(&swf.tags));
-
-        uncompressed_length = writer.into_inner().total_in();
     }
 
-    // TODO: This is the uncompressed length.
-    // I'm writing the compressed length.
-    try!(output.write_u32::<LittleEndian>((uncompressed_length + 8) as u32));
+    // Write SWF header.
+    // Uncompressed SWF length.
+    try!(output.write_u32::<LittleEndian>(swf_body.len() as u32 + 8));
 
-    if let Compression::Lzma = swf.compression {
-        // LZMA header.
-        // SWF format has a mangled LZMA header.
-        // https://helpx.adobe.com/flash-player/kb/exception-thrown-you-decompress-lzma-compressed.html
-        let lzma_properties = &buf[0..5];
-        try!(output.write_u32::<LittleEndian>(buf.len() as u32));
-        try!(output.write_all(lzma_properties));
-        try!(output.write_all(&buf[13..]));
-    }
+    // Compress SWF body.
+    match swf.compression {
+        Compression::None => {
+            try!(output.write_all(&swf_body));
+        },
 
-    try!(output.write_all(&buf));
+        Compression::Zlib => {
+            let mut encoder = ZlibEncoder::new(&mut output, ZlibCompression::Best);
+            try!(encoder.write_all(&swf_body));
+        }
+
+        Compression::Lzma => {
+            // LZMA header.
+            // SWF format has a mangled LZMA header, so we have to do some magic to conver the
+            // standard LZMA header to SWF format.
+            // https://helpx.adobe.com/flash-player/kb/exception-thrown-you-decompress-lzma-compressed.html
+            use xz2::stream::{Action, LzmaOptions, Stream};
+            let mut stream = try!(Stream::new_lzma_encoder(&try!(LzmaOptions::new_preset(9))));
+            let mut lzma_header = [0; 13];
+            try!(stream.process(&[], &mut lzma_header, Action::Run));
+            // Compressed length. We just write out a dummy value.
+            try!(output.write_u32::<LittleEndian>(0xffffffff));
+            try!(output.write_all(&lzma_header[0..5])); // LZMA property bytes.
+            let mut encoder = XzEncoder::new_stream(&mut output, stream);
+            try!(encoder.write_all(&swf_body));
+        }
+    };
 
     Ok(())
-}
-
-// TODO: We need to keep track of the uncompressed size of the SWF stream.
-// This is placed in the SWF header.
-// Unfortunately, flate2 ZlibEncoder does not provide a total_in method.
-// There's probably a better way to do this, and/or contribute total_in
-// to ZlibEncoder.
-trait CountWrite: Write {
-    fn total_in(&self) -> usize;
-}
-
-impl<'a> CountWrite for &'a mut Vec<u8> {
-    fn total_in(&self) -> usize {
-        self.len()
-    }
-}
-
-impl<W: Write> CountWrite for XzEncoder<W> {
-    fn total_in(&self) -> usize {
-        self.total_in() as usize
-    }
-}
-
-struct CountWriter<W: Write> {
-    inner: W,
-    total_in: usize,
-}
-
-impl<W: Write> CountWriter<W> {
-    pub fn new(inner: W) -> CountWriter<W> {
-        CountWriter {
-            inner: inner,
-            total_in: 0,
-        }
-    }
-}
-
-impl<W: Write> Write for CountWriter<W> {
-    fn write(&mut self, buf: &[u8]) -> Result<usize> {
-        let result = self.inner.write(buf);
-        if let Ok(n) = result {
-            self.total_in += n;
-        }
-        result
-    }
-
-    fn flush(&mut self) -> Result<()> {
-        self.inner.flush()
-    }
-}
-
-impl<W: Write> CountWrite for CountWriter<W> {
-    fn total_in(&self) -> usize {
-        self.total_in
-    }
 }
 
 struct Writer<W: Write> {
