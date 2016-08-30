@@ -393,7 +393,7 @@ impl<R: Read> Reader<R> {
                 }
             }
 
-            0x40 => {
+            0x40...0x43 => {
                 FillStyle::Bitmap {
                     id: try!(self.read_u16()),
                     matrix: try!(self.read_matrix()),
@@ -833,7 +833,7 @@ mod tests {
         let fill_style = FillStyle::Bitmap {
             id: 20, matrix: Matrix::new(), is_smoothed: false, is_repeating: true
         };
-        //assert_eq!(read(&[0x42, 20, 0, 0b00100000, 50], 3), fill_style);
+        assert_eq!(read(&[0x42, 20, 0, 0b00100000, 50], 3), fill_style);
     }
 
     #[test]
