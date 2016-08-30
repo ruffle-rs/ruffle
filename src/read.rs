@@ -534,10 +534,11 @@ impl<R: Read> Reader<R> {
 #[cfg(test)]
 mod tests {
     use std::fs::File;
-    use types::*;
-    use super::*;
     use std::io::{Cursor, Read};
     use std::vec::Vec;
+    use super::*;
+    use types::*;
+    use tag_codes::TagCode;
 
     fn reader(data: &[u8]) -> Reader<&[u8]> {
         let default_version = 13;
@@ -795,7 +796,48 @@ mod tests {
 
     #[test]
     fn read_define_shape() {
-        unimplemented!()
+        let tag_bytes = read_tag_from_file("test/swfs/define_shape.bin", 1);
+        let expected_tag = Tag::DefineShape(Shape {
+            version: 1,
+            id: 1,
+            shape_bounds: Rectangle { x_min: 0f32, x_max: 20f32, y_min: 0f32, y_max: 20f32 },
+            edge_bounds: Rectangle { x_min: 0f32, x_max: 20f32, y_min: 0f32, y_max: 20f32 },
+            styles: ShapeStyles {
+                fill_styles: vec![
+                    FillStyle::Color(Color { r: 0, g: 0, b: 0, a: 255 })
+                ],
+                line_styles: vec![],
+                num_fill_bits: 4,
+                num_line_bits: 0,
+            },
+            shape: vec![
+                ShapeRecord::StyleChange(StyleChangeData {
+                    move_delta_x: 0f32,
+                    move_delta_y: 0f32,
+                    fill_style_0: None,
+                    fill_style_1: Some(1),
+                    line_style: None,
+                    new_styles: None,
+                }),
+                ShapeRecord::StraightEdge {
+                    delta_x: 20f32,
+                    delta_y: 0f32,
+                },
+                ShapeRecord::StraightEdge {
+                    delta_x: 0f32,
+                    delta_y: 20f32,
+                },
+                ShapeRecord::StraightEdge {
+                    delta_x: -20f32,
+                    delta_y: 0f32,
+                },
+                ShapeRecord::StraightEdge {
+                    delta_x: 0f32,
+                    delta_y: -20f32,
+                },
+            ]
+        });
+        assert_eq!(read_tag_from_file("test/swfs/define_shape.bin", 8), expected_tag);
     }
 
     #[test]
