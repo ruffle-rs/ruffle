@@ -2,6 +2,11 @@
 name = "swf"
 version = "0.1.0"
 authors = ["Mike Welsh"]
+repository = "https://github.com/Herschel/swf-rs.git"
+homepage = "https://github.com/Herschel/swf-rs.git"
+license = "GPLv3"
+readme = "README.md"
+description = "Read and write the Adobe Flash SWF file format."
 
 [dependencies]
 byteorder = "*"
