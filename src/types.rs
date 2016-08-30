@@ -61,8 +61,8 @@ impl Matrix {
             translate_y: 0f32,
             scale_x: 1f32,
             scale_y: 1f32,
-            rotate_skew_0: 1f32,
-            rotate_skew_1: 1f32,
+            rotate_skew_0: 0f32,
+            rotate_skew_1: 0f32,
         }
     }
 }

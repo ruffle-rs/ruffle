@@ -800,27 +800,87 @@ mod tests {
 
     #[test]
     fn read_shape_styles() {
-        unimplemented!()
+        let shape_styles = ShapeStyles {
+            fill_styles: vec![],
+            line_styles: vec![],
+            num_fill_bits: 0,
+            num_line_bits: 0,
+        };
+        assert_eq!(reader(&[0, 0, 0]).read_shape_styles(1).unwrap(), shape_styles);
+
+        let shape_styles = ShapeStyles {
+            fill_styles: vec![
+                FillStyle::Color(Color { r: 255, g: 0, b: 0, a: 255 })
+            ],
+            line_styles: vec![],
+            num_fill_bits: 1,
+            num_line_bits: 0,
+        };
+        //assert_eq!(reader(&[1, , 00, 0]).read_shape_styles(1).unwrap(), shape_styles);
     }
 
     #[test]
     fn read_fill_style() {
-        unimplemented!()
+        let read = |buf: &[u8], shape_version| reader(buf).read_fill_style(shape_version).unwrap();
+
+        let fill_style = FillStyle::Color(Color { r: 255, g: 0, b: 0, a: 255 });
+        assert_eq!(read(&[0, 255, 0, 0], 1), fill_style);
+
+        // DefineShape3 and 4 read RGBA colors.
+        let fill_style = FillStyle::Color(Color { r: 255, g: 0, b: 0, a: 50 });
+        assert_eq!(read(&[0, 255, 0, 0, 50], 3), fill_style);
+
+        let fill_style = FillStyle::Bitmap {
+            id: 20, matrix: Matrix::new(), is_smoothed: false, is_repeating: true
+        };
+        //assert_eq!(read(&[0x42, 20, 0, 0b00100000, 50], 3), fill_style);
     }
 
     #[test]
     fn read_line_style() {
-        unimplemented!()
+        // DefineShape1 and 2 read RGB colors.
+        let line_style = LineStyle { width: 0, color: Color { r: 255, g: 0, b: 0, a: 255 } };
+        assert_eq!(reader(&[0, 0, 255, 0, 0]).read_line_style(2).unwrap(), line_style);
+
+        // DefineShape3 and 4 read RGBA colors.
+        let line_style = LineStyle { width: 3, color: Color { r: 1, g: 2, b: 3, a: 10 } };
+        assert_eq!(reader(&[3, 0, 1, 2, 3, 10]).read_line_style(3).unwrap(), line_style);
+
+        // TODO: Read LineStyle2 from DefineShape4.
     }
 
     #[test]
     fn read_gradient() {
-        unimplemented!()
+        let gradient = Gradient {
+            spread: GradientSpread::Reflect,
+            interpolation: GradientInterpolation::RGB,
+            records: vec![
+                //GradientRecord { ratio: 0, color: }
+            ]
+        };
     }
 
     #[test]
     fn read_shape_record() {
-        unimplemented!()
+        let read = |buf: &[u8]| reader(buf).read_shape_record(2).unwrap().unwrap();
+
+        let shape_record = ShapeRecord::StraightEdge {
+            delta_x: 1f32,
+            delta_y: 1f32,
+        };
+        assert_eq!(read(&[0b11_0100_1_0, 0b1010_0010, 0b100_00000]), shape_record);
+
+        let shape_record = ShapeRecord::StraightEdge {
+            delta_x: 0f32,
+            delta_y: -1f32,
+        };
+        assert_eq!(read(&[0b11_0100_0_1, 0b101100_00]), shape_record);
+
+        let shape_record = ShapeRecord::StraightEdge {
+            delta_x: -1.5f32,
+            delta_y: 0f32,
+        };
+        assert_eq!(read(&[0b11_0100_0_0, 0b100010_00]), shape_record);
     }
 
     #[test]
