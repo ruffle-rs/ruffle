@@ -6,4 +6,4 @@ authors = ["Mike Welsh"]
 [dependencies]
 byteorder = "*"
 flate2 = "*"
-xz2 = "*"
+xz2 = { git = "https://github.com/alexcrichton/xz2-rs", rev = "09ce8db2" }
