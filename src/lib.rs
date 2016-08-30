@@ -8,7 +8,9 @@
 //! writing SWF data.
 
 extern crate byteorder;
+#[macro_use] extern crate enum_primitive;
 extern crate flate2;
+extern crate num;
 extern crate xz2;
 
 mod read;

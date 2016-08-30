@@ -64,6 +64,9 @@ pub fn write_swf<W: Write>(swf: &Swf, mut output: W) -> Result<()> {
     Ok(())
 }
 
+#[cfg(test)]
+static write_raw_tags: bool = false;
+
 struct Writer<W: Write> {
     pub output: W,
     pub version: u8,

@@ -1,6 +1,6 @@
-// SWF decoding from streams
 use byteorder::{LittleEndian, ReadBytesExt};
 use flate2::read::ZlibDecoder;
+use num::FromPrimitive;
 use std::io::{Error, ErrorKind, Read, Result};
 use types::*;
 use xz2::read::XzDecoder;
@@ -253,17 +253,16 @@ impl<R: Read> Reader<R> {
 
         let mut tag_reader = Reader::new(self.input.by_ref().take(length as u64), self.version);
         use tag_codes::TagCode;
-        let tag = match tag_code {
-            x if x == TagCode::End as u16 => return Ok(None),
-            x if x == TagCode::ShowFrame as u16 => Tag::ShowFrame,
-            x if x == TagCode::DefineShape as u16 => try!(tag_reader.read_define_shape(1)),
+        let tag = match TagCode::from_u16(tag_code) {
+            Some(TagCode::End) => return Ok(None),
+            Some(TagCode::ShowFrame) => Tag::ShowFrame,
+            Some(TagCode::DefineShape) => try!(tag_reader.read_define_shape(1)),
 
-            x if x == TagCode::SetBackgroundColor as u16 => {
+            Some(TagCode::SetBackgroundColor) => {
                 Tag::SetBackgroundColor(try!(tag_reader.read_rgb()))
             }
 
-            //            PLACE_OBJECT_2 => unimplemented!(),
-            x if x == TagCode::FileAttributes as u16 => {
+            Some(TagCode::FileAttributes) => {
                 let flags = try!(tag_reader.read_u32());
                 Tag::FileAttributes(FileAttributes {
                     use_direct_blit: (flags & 0b01000000) != 0,
@@ -274,7 +273,7 @@ impl<R: Read> Reader<R> {
                 })
             }
 
-            x if x == TagCode::DefineSceneAndFrameLabelData as u16 => {
+            Some(TagCode::DefineSceneAndFrameLabelData) => {
                 try!(tag_reader.read_define_scene_and_frame_label_data())
             }
 

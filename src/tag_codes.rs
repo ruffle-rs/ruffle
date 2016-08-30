@@ -1,3 +1,4 @@
+enum_from_primitive! {
 #[allow(dead_code)]
 #[derive(Debug,PartialEq,Clone)]
 pub enum TagCode {
@@ -83,4 +84,5 @@ pub enum TagCode {
     DefineFont4 = 91,
 
     EnableTelemetry = 93,
+}
 }

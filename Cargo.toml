@@ -10,5 +10,7 @@ description = "Read and write the Adobe Flash SWF file format."
 
 [dependencies]
 byteorder = "*"
+enum_primitive = "*"
 flate2 = "*"
+num = "*"
 xz2 = { git = "https://github.com/alexcrichton/xz2-rs", rev = "09ce8db2" }
