@@ -607,11 +607,11 @@ pub mod tests {
 
     #[test]
     fn read_swfs() {
-        assert_eq!(read_from_file("test/swfs/uncompressed.swf").compression,
+        assert_eq!(read_from_file("tests/swfs/uncompressed.swf").compression,
                    Compression::None);
-        assert_eq!(read_from_file("test/swfs/zlib.swf").compression,
+        assert_eq!(read_from_file("tests/swfs/zlib.swf").compression,
                    Compression::Zlib);
-        assert_eq!(read_from_file("test/swfs/lzma.swf").compression,
+        assert_eq!(read_from_file("tests/swfs/lzma.swf").compression,
                    Compression::Lzma);
     }
 
@@ -957,23 +957,8 @@ pub mod tests {
 
     #[test]
     fn read_define_scene_and_frame_label_data() {
-        assert_eq!(read_tag_from_file("test/swfs/define_scene_and_frame_label_data.bin", 8),
-                   Tag::DefineSceneAndFrameLabelData {
-                       scenes: vec![
-                    FrameLabel { frame_num: 0, label: "Scene 1".to_string() },
-                    FrameLabel {
-                        frame_num: 25,
-                        label: "Scene2Scene2Scene2Scene2Scene2".to_string()
-                    },
-                    FrameLabel { frame_num: 26, label: "test日本語test".to_string() },
-                ],
-                       frame_labels: vec![
-                    FrameLabel { frame_num: 0, label: "a".to_string() },
-                    FrameLabel { frame_num: 9, label: "b".to_string() },
-                    FrameLabel { frame_num: 17, label: "❤😁aaa".to_string() },
-                    FrameLabel { frame_num: 25, label: "frameInScene2".to_string() },
-                ],
-                   });
+        let (tag, tag_bytes) = test_data::define_scene_and_frame_label_data();
+        assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), tag);
     }
 
     #[test]

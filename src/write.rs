@@ -926,21 +926,8 @@ mod tests {
 
     #[test]
     fn write_define_scene_and_frame_label_data() {
-        let frame_labels_tag = Tag::DefineSceneAndFrameLabelData {
-            scenes: vec![
-                FrameLabel { frame_num: 0, label: "Scene 1".to_string() },
-                FrameLabel { frame_num: 25, label: "Scene2Scene2Scene2Scene2Scene2".to_string() },
-                FrameLabel { frame_num: 26, label: "test日本語test".to_string() },
-            ],
-            frame_labels: vec![
-                FrameLabel { frame_num: 0, label: "a".to_string() },
-                FrameLabel { frame_num: 9, label: "b".to_string() },
-                FrameLabel { frame_num: 17, label: "❤😁aaa".to_string() },
-                FrameLabel { frame_num: 25, label: "frameInScene2".to_string() },
-            ],
-        };
-        assert_eq!(write_tag_to_buf(&frame_labels_tag, 8),
-                   get_file_contents("test/swfs/define_scene_and_frame_label_data.bin"));
+        let (tag, tag_bytes) = test_data::define_scene_and_frame_label_data();
+        assert_eq!(write_tag_to_buf(&tag, 1), tag_bytes);
     }
 
     #[test]

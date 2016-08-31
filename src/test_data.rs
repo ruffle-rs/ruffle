@@ -16,6 +16,31 @@ pub fn echo_swf(filename: &str) {
 
 type TagTestData = (Tag, Vec<u8>);
 
+pub fn define_scene_and_frame_label_data() -> TagTestData {
+    (
+        Tag::DefineSceneAndFrameLabelData {
+            scenes: vec![
+                FrameLabel { frame_num: 0, label: "Scene 1".to_string() },
+                FrameLabel {
+                    frame_num: 25,
+                    label: "Scene2Scene2Scene2Scene2Scene2".to_string()
+                },
+                FrameLabel { frame_num: 26, label: "test日本語test".to_string() },
+            ],
+            frame_labels: vec![
+                FrameLabel { frame_num: 0, label: "a".to_string() },
+                FrameLabel { frame_num: 9, label: "b".to_string() },
+                FrameLabel { frame_num: 17, label: "❤😁aaa".to_string() },
+                FrameLabel { frame_num: 25, label: "frameInScene2".to_string() },
+            ],
+        },
+        read_tag_bytes_from_file(
+            "tests/swfs/define_scene_and_frame_label_data.swf",
+            TagCode::DefineSceneAndFrameLabelData
+        )
+    )
+}
+
 pub fn define_shape() -> TagTestData {
     (
         Tag::DefineShape(Shape {
@@ -58,6 +83,6 @@ pub fn define_shape() -> TagTestData {
                 },
             ]
         }),
-        read_tag_bytes_from_file("test/swfs/define_shape.swf", TagCode::DefineShape)
+        read_tag_bytes_from_file("tests/swfs/define_shape.swf", TagCode::DefineShape)
     )
 }
