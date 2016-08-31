@@ -577,8 +577,9 @@ fn count_fbits(n: f32) -> u8 {
 mod tests {
     use super::*;
     use super::Writer;
-    use std::io::{Read, Result, Write};
+    use std::io::{Read, Result};
     use std::fs::File;
+    use test_data;
     use types::*;
 
     fn new_swf() -> Swf {
@@ -944,51 +945,8 @@ mod tests {
 
     #[test]
     fn write_define_shape() {
-        let tag = Tag::DefineShape(Shape {
-            version: 1,
-            id: 1,
-            shape_bounds: Rectangle { x_min: 0f32, x_max: 20f32, y_min: 0f32, y_max: 20f32 },
-            edge_bounds: Rectangle { x_min: 0f32, x_max: 20f32, y_min: 0f32, y_max: 20f32 },
-            styles: ShapeStyles {
-                fill_styles: vec![
-                    FillStyle::Color(Color { r: 0, g: 0, b: 0, a: 255 })
-                ],
-                line_styles: vec![],
-                num_fill_bits: 4,
-                num_line_bits: 0,
-            },
-            shape: vec![
-                ShapeRecord::StyleChange(StyleChangeData {
-                    move_delta_x: 0f32,
-                    move_delta_y: 0f32,
-                    fill_style_0: None,
-                    fill_style_1: Some(1),
-                    line_style: None,
-                    new_styles: None,
-                }),
-                ShapeRecord::StraightEdge {
-                    delta_x: 20f32,
-                    delta_y: 0f32,
-                },
-                ShapeRecord::StraightEdge {
-                    delta_x: 0f32,
-                    delta_y: 20f32,
-                },
-                ShapeRecord::StraightEdge {
-                    delta_x: -20f32,
-                    delta_y: 0f32,
-                },
-                ShapeRecord::StraightEdge {
-                    delta_x: 0f32,
-                    delta_y: -20f32,
-                },
-            ]
-        });
-
-        //write_tag_to_file("define_shape_test., 1)
-        //TODO: Reactive this test.
-        //assert_eq!(write_tag_to_buf(&tag, 1),
-        //get_file_contents("test/swfs/define_shape.bin"));
+        let (tag, tag_bytes) = test_data::define_shape();
+        assert_eq!(write_tag_to_buf(&tag, 1), tag_bytes);
     }
 
     #[test]

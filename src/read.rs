@@ -68,7 +68,7 @@ pub struct Reader<R: Read> {
 }
 
 impl<R: Read> Reader<R> {
-    fn new(input: R, version: u8) -> Reader<R> {
+    pub fn new(input: R, version: u8) -> Reader<R> {
         Reader {
             input: input,
             version: version,
@@ -540,11 +540,12 @@ impl<R: Read> Reader<R> {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use std::fs::File;
     use std::io::{Cursor, Read};
     use std::vec::Vec;
     use super::*;
+    use test_data;
     use types::*;
     use tag_codes::TagCode;
 
@@ -564,7 +565,7 @@ mod tests {
         read_swf(&data[..]).unwrap()
     }
 
-    fn read_tag_bytes_from_file(path: &str, tag_code: TagCode) -> Vec<u8> {
+    pub fn read_tag_bytes_from_file(path: &str, tag_code: TagCode) -> Vec<u8> {
         use std::io::Cursor;
         let mut file = File::open(path).unwrap();
         let mut data = Vec::new();
@@ -830,51 +831,8 @@ mod tests {
 
     #[test]
     fn read_define_shape() {
-        let tag_bytes = read_tag_bytes_from_file(
-            "test/swfs/define_shape.swf",
-            TagCode::DefineShape
-        );
-        let expected_tag = Tag::DefineShape(Shape {
-            version: 1,
-            id: 1,
-            shape_bounds: Rectangle { x_min: 0f32, x_max: 20f32, y_min: 0f32, y_max: 20f32 },
-            edge_bounds: Rectangle { x_min: 0f32, x_max: 20f32, y_min: 0f32, y_max: 20f32 },
-            styles: ShapeStyles {
-                fill_styles: vec![
-                    FillStyle::Color(Color { r: 255, g: 0, b: 0, a: 255 })
-                ],
-                line_styles: vec![],
-                num_fill_bits: 1,
-                num_line_bits: 0,
-            },
-            shape: vec![
-                ShapeRecord::StyleChange(StyleChangeData {
-                    move_delta_x: 0f32,
-                    move_delta_y: 0f32,
-                    fill_style_0: None,
-                    fill_style_1: Some(1),
-                    line_style: None,
-                    new_styles: None,
-                }),
-                ShapeRecord::StraightEdge {
-                    delta_x: 20f32,
-                    delta_y: 0f32,
-                },
-                ShapeRecord::StraightEdge {
-                    delta_x: 0f32,
-                    delta_y: 20f32,
-                },
-                ShapeRecord::StraightEdge {
-                    delta_x: -20f32,
-                    delta_y: 0f32,
-                },
-                ShapeRecord::StraightEdge {
-                    delta_x: 0f32,
-                    delta_y: -20f32,
-                },
-            ]
-        });
-        assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), expected_tag);
+        let (tag, tag_bytes) = test_data::define_shape();
+        assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), tag);
     }
 
     #[test]

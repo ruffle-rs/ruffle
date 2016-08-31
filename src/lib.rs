@@ -13,10 +13,13 @@ extern crate flate2;
 extern crate num;
 extern crate xz2;
 
-mod read;
+pub mod read;
 mod tag_codes;
 mod types;
-mod write;
+pub mod write;
+
+#[cfg(test)]
+mod test_data;
 
 /// Parses an SWF from a `Read` stream.
 pub use read::read_swf;
