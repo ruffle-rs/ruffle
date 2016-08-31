@@ -14,7 +14,7 @@ pub fn echo_swf(filename: &str) {
     write_swf(&swf, out_file).unwrap();
 }
 
-type TagTestData = (Tag, Vec<u8>);
+pub type TagTestData = (Tag, Vec<u8>);
 
 pub fn define_scene_and_frame_label_data() -> TagTestData {
     (
