@@ -104,6 +104,7 @@ impl<W: Write> Writer<W> {
         self.output.write_u32::<LittleEndian>(n)
     }
 
+    #[allow(dead_code)]
     fn write_i16(&mut self, n: i16) -> Result<()> {
         try!(self.flush_bits());
         self.output.write_i16::<LittleEndian>(n)
@@ -577,8 +578,7 @@ fn count_fbits(n: f32) -> u8 {
 mod tests {
     use super::*;
     use super::Writer;
-    use std::io::{Read, Result};
-    use std::fs::File;
+    use std::io::Result;
     use test_data;
     use types::*;
 
@@ -601,13 +601,6 @@ mod tests {
     fn write_tag_to_buf(tag: &Tag, swf_version: u8) -> Vec<u8> {
         let mut buf = Vec::new();
         Writer::new(&mut buf, swf_version).write_tag(tag).unwrap();
-        buf
-    }
-
-    fn get_file_contents(file: &str) -> Vec<u8> {
-        let mut buf = Vec::new();
-        let mut file = File::open(file).unwrap();
-        file.read_to_end(&mut buf).unwrap();
         buf
     }
 

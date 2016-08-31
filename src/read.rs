@@ -117,6 +117,7 @@ impl<R: Read> Reader<R> {
         self.input.read_u32::<LittleEndian>()
     }
 
+    #[allow(dead_code)]
     fn read_i16(&mut self) -> Result<i16> {
         self.byte_align();
         self.input.read_i16::<LittleEndian>()
@@ -554,10 +555,6 @@ pub mod tests {
         Reader::new(data, default_version)
     }
 
-    fn reader_with_version(data: &[u8], version: u8) -> Reader<&[u8]> {
-        Reader::new(data, version)
-    }
-
     fn read_from_file(path: &str) -> Swf {
         let mut file = File::open(path).unwrap();
         let mut data = Vec::new();
@@ -566,7 +563,6 @@ pub mod tests {
     }
 
     pub fn read_tag_bytes_from_file(path: &str, tag_code: TagCode) -> Vec<u8> {
-        use std::io::Cursor;
         let mut file = File::open(path).unwrap();
         let mut data = Vec::new();
         file.read_to_end(&mut data).unwrap();
