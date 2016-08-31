@@ -1,6 +1,6 @@
 enum_from_primitive! {
 #[allow(dead_code)]
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug,PartialEq,Clone,Copy)]
 pub enum TagCode {
     End = 0,
     ShowFrame = 1,

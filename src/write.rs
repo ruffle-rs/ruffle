@@ -64,9 +64,6 @@ pub fn write_swf<W: Write>(swf: &Swf, mut output: W) -> Result<()> {
     Ok(())
 }
 
-#[cfg(test)]
-static write_raw_tags: bool = false;
-
 struct Writer<W: Write> {
     pub output: W,
     pub version: u8,
@@ -580,7 +577,7 @@ fn count_fbits(n: f32) -> u8 {
 mod tests {
     use super::*;
     use super::Writer;
-    use std::io::{Read, Result};
+    use std::io::{Read, Result, Write};
     use std::fs::File;
     use types::*;
 
@@ -988,6 +985,7 @@ mod tests {
             ]
         });
 
+        //write_tag_to_file("define_shape_test., 1)
         assert_eq!(write_tag_to_buf(&tag, 1),
                    get_file_contents("test/swfs/define_shape.bin"));
     }

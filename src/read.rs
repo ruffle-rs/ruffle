@@ -6,7 +6,14 @@ use types::*;
 use xz2::read::XzDecoder;
 
 /// Reads SWF data from a stream.
-pub fn read_swf<R: Read>(mut input: R) -> Result<Swf> {
+pub fn read_swf<R: Read>(input: R) -> Result<Swf> {
+    let (mut swf, mut reader) = try!(read_swf_header(input));
+    swf.tags = try!(reader.read_tag_list());
+    Ok(swf)
+}
+
+fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<(Swf, Reader<Box<Read + 'a>>)>
+{
     // Read SWF header.
     let compression = try!(Reader::read_compression_type(&mut input));
     let version = try!(input.read_u8());
@@ -35,23 +42,19 @@ pub fn read_swf<R: Read>(mut input: R) -> Result<Swf> {
     };
 
     let mut reader = Reader::new(decompressed_input, version);
-
     let stage_size = try!(reader.read_rectangle());
     let frame_rate = try!(reader.read_fixed88());
     let num_frames = try!(reader.read_u16());
-
-    let tags = try!(reader.read_tag_list());
-
-    Ok(Swf {
+    let swf = Swf {
         version: version,
         compression: compression,
         stage_size: stage_size,
         frame_rate: frame_rate,
         num_frames: num_frames,
-        tags: tags,
-    })
+        tags: vec![],
+    };
+    Ok((swf, reader))
 }
-
 
 pub struct Reader<R: Read> {
     input: R,
@@ -243,13 +246,7 @@ impl<R: Read> Reader<R> {
     }
 
     fn read_tag(&mut self) -> Result<Option<Tag>> {
-        let tag_code_and_length = try!(self.read_u16());
-        let tag_code = tag_code_and_length >> 6;
-        let mut length = (tag_code_and_length & 0b111111) as u32;
-        if length == 0b111111 {
-            // Extended tag.
-            length = try!(self.read_u32());
-        }
+        let (tag_code, length) = try!(self.read_tag_code_and_length());
 
         let mut tag_reader = Reader::new(self.input.by_ref().take(length as u64), self.version);
         use tag_codes::TagCode;
@@ -278,9 +275,10 @@ impl<R: Read> Reader<R> {
             }
 
             _ => {
-                let mut data = Vec::new();
-                data.resize(length as usize, 0);
-                try!(tag_reader.input.read_exact(data.as_mut_slice()));
+                let size = length as usize;
+                let mut data = Vec::with_capacity(size);
+                data.resize(size, 0);
+                try!(tag_reader.input.read_exact(&mut data[..]));
                 Tag::Unknown {
                     tag_code: tag_code,
                     data: data,
@@ -289,6 +287,17 @@ impl<R: Read> Reader<R> {
         };
 
         Ok(Some(tag))
+    }
+
+    fn read_tag_code_and_length(&mut self) -> Result<(u16, usize)> {
+        let tag_code_and_length = try!(self.read_u16());
+        let tag_code = tag_code_and_length >> 6;
+        let mut length = (tag_code_and_length & 0b111111) as usize;
+        if length == 0b111111 {
+            // Extended tag.
+            length = try!(self.read_u32()) as usize;
+        }
+        Ok((tag_code, length))
     }
 
     fn read_define_scene_and_frame_label_data(&mut self) -> Result<Tag> {
@@ -555,11 +564,37 @@ mod tests {
         read_swf(&data[..]).unwrap()
     }
 
-    fn reader_from_file(path: &str, version: u8) -> Reader<Cursor<Vec<u8>>> {
+    fn read_tag_bytes_from_file(path: &str, tag_code: TagCode) -> Vec<u8> {
+        use std::io::Cursor;
         let mut file = File::open(path).unwrap();
         let mut data = Vec::new();
         file.read_to_end(&mut data).unwrap();
-        Reader::new(Cursor::new(data), version)
+
+        // Halfway parse the SWF file until we find the tag we're searching for.
+        let (swf, mut reader) = super::read_swf_header(&data[..]).unwrap();
+
+        let mut data = Vec::new();
+        reader.input.read_to_end(&mut data).unwrap();
+        let mut cursor = Cursor::new(data);
+        loop {
+            let pos = cursor.position();
+            let (swf_tag_code, length) =  {
+                let mut tag_reader = Reader::new(&mut cursor, swf.version);
+                tag_reader.read_tag_code_and_length().unwrap()
+            };
+            let tag_header_length = cursor.position() - pos;
+            let mut data = Vec::new();
+            data.resize(length + tag_header_length as usize, 0);
+            cursor.set_position(pos);
+            cursor.read_exact(&mut data[..]).unwrap();
+            if swf_tag_code == 0 {
+                panic!("Tag not found");
+            } else {
+                if swf_tag_code == tag_code as u16 {
+                    return data;
+                }
+            }
+        }
     }
 
     fn read_tag_from_file(path: &str, version: u8) -> Tag {
@@ -795,7 +830,10 @@ mod tests {
 
     #[test]
     fn read_define_shape() {
-        let tag_bytes = read_tag_from_file("test/swfs/define_shape.bin", 1);
+        let tag_bytes = read_tag_bytes_from_file(
+            "test/swfs/define_shape.swf",
+            TagCode::DefineShape
+        );
         let expected_tag = Tag::DefineShape(Shape {
             version: 1,
             id: 1,
@@ -803,10 +841,10 @@ mod tests {
             edge_bounds: Rectangle { x_min: 0f32, x_max: 20f32, y_min: 0f32, y_max: 20f32 },
             styles: ShapeStyles {
                 fill_styles: vec![
-                    FillStyle::Color(Color { r: 0, g: 0, b: 0, a: 255 })
+                    FillStyle::Color(Color { r: 255, g: 0, b: 0, a: 255 })
                 ],
                 line_styles: vec![],
-                num_fill_bits: 4,
+                num_fill_bits: 1,
                 num_line_bits: 0,
             },
             shape: vec![
@@ -836,7 +874,7 @@ mod tests {
                 },
             ]
         });
-        assert_eq!(read_tag_from_file("test/swfs/define_shape.bin", 8), expected_tag);
+        assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), expected_tag);
     }
 
     #[test]
