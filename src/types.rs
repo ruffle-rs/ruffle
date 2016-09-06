@@ -84,18 +84,88 @@ pub struct FrameLabel {
 
 pub type Depth = i16;
 pub type CharacterId = u16;
-pub type Ratio = u16;
 pub type Twips = i32;
 
 #[derive(Debug,PartialEq)]
 pub struct PlaceObject {
+    pub version: u8,
+    pub action: PlaceObjectAction,
     pub depth: Depth,
-    pub id: Option<CharacterId>,
     pub matrix: Option<Matrix>,
-    // pub color_transform: CxformA,
-    pub ratio: Option<Ratio>,
+    pub color_transform: ColorTransform,
+    pub ratio: Option<u16>,
     pub name: Option<String>,
-    pub clip_depth: Option<Depth>, // pub clip_actions
+    pub clip_depth: Option<Depth>,
+    pub filters: Vec<Filter>,
+    pub blend_mode: Option<BlendMode>,
+    pub is_bitmap_cached: bool,
+    pub is_visible: bool,
+    pub clip_actions: Vec<ClipAction>,
+}
+
+#[derive(Debug,PartialEq,Clone,Copy)]
+pub enum PlaceObjectAction {
+    Add(CharacterId),
+    Modify,
+    Replace(CharacterId),
+}
+
+
+#[derive(Debug,PartialEq,Clone)]
+pub enum Filter {
+    DropShadowFilter,
+    BlurFilter,
+    GlowFilter,
+    BevelFilter,
+    GradientGlowFilter,
+    ConvolutionFilter,
+    ColorMatrixFilter,
+    GradientBevelFilter,
+}
+
+
+#[derive(Debug,PartialEq,Eq,Clone,Copy)]
+pub enum BlendMode {
+    Normal,
+    Layer,
+    Multiply,
+    Screen,
+    Lighten,
+    Darken,
+    Difference,
+    Add,
+    Subtract,
+    Invert,
+    Alpha,
+    Erase,
+    Overlay,
+    HardLight,
+} 
+
+#[derive(Debug,PartialEq,Eq,Clone)]
+pub struct ClipAction {
+    pub events: Vec<ClipEvent>,
+    pub key_code: Option<u8>,
+}
+
+#[derive(Debug,PartialEq,Eq,Clone,Copy)]
+pub enum ClipEvent {
+    KeyUp,
+    KeyDown,
+    MouseUp,
+    MouseDown,
+    MouseMove,
+    Unload,
+    EnterFrame,
+    Load,
+    DragOver,
+    RollOut,
+    RollOver,
+    ReleaseOutside,
+    Release,
+    Press,
+    Initialize,
+    Construct,
 }
 
 #[derive(Debug,PartialEq)]
