@@ -202,8 +202,6 @@ pub struct Shape {
 pub struct ShapeStyles {
     pub fill_styles: Vec<FillStyle>,
     pub line_styles: Vec<LineStyle>,
-    pub num_fill_bits: u8,
-    pub num_line_bits: u8,
 }
 
 #[derive(Debug,PartialEq)]

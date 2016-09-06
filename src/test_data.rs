@@ -53,8 +53,6 @@ pub fn define_shape() -> TagTestData {
                     FillStyle::Color(Color { r: 255, g: 0, b: 0, a: 255 })
                 ],
                 line_styles: vec![],
-                num_fill_bits: 1,
-                num_line_bits: 0,
             },
             shape: vec![
                 ShapeRecord::StyleChange(StyleChangeData {

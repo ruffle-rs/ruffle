@@ -308,8 +308,6 @@ impl<W: Write> Writer<W> {
             try!(writer.write_rectangle(&shape.shape_bounds));
             try!(writer.write_shape_styles(&shape.styles, shape.version));
 
-            writer.num_fill_bits = shape.styles.num_fill_bits;
-            writer.num_line_bits = shape.styles.num_line_bits;
             for shape_record in &shape.shape {
                 try!(writer.write_shape_record(shape_record, shape.version));
             }
@@ -351,8 +349,13 @@ impl<W: Write> Writer<W> {
         for line_style in &styles.line_styles {
             try!(self.write_line_style(line_style, shape_version));
         }
-        try!(self.write_ubits(4, styles.num_fill_bits as u32));
-        try!(self.write_ubits(4, styles.num_line_bits as u32));
+
+        let num_fill_bits = count_ubits(styles.fill_styles.len() as u32);
+        let num_line_bits = count_ubits(styles.line_styles.len() as u32);
+        try!(self.write_ubits(4, num_fill_bits as u32));
+        try!(self.write_ubits(4, num_line_bits as u32));
+        self.num_fill_bits = num_fill_bits;
+        self.num_line_bits = num_line_bits;
         Ok(())
     }
 
@@ -548,20 +551,16 @@ impl<W: Write> Writer<W> {
 }
 
 fn count_ubits(mut n: u32) -> u8 {
-    if n == 0 {
-        1
-    } else {
-        let mut num_bits = 0;
-        while n > 0 {
-            n >>= 1;
-            num_bits += 1;
-        }
-        num_bits
+    let mut num_bits = 0;
+    while n > 0 {
+        n >>= 1;
+        num_bits += 1;
     }
+    num_bits
 }
 
 fn count_sbits(n: i32) -> u8 {
-    if n == 0 || n == -1 {
+    if n == -1 {
         1
     } else if n < 0 {
         count_ubits((!n) as u32) + 1
@@ -717,7 +716,7 @@ mod tests {
 
     #[test]
     fn count_ubits() {
-        assert_eq!(super::count_ubits(0), 1u8);
+        assert_eq!(super::count_ubits(0), 0u8);
         assert_eq!(super::count_ubits(1u32), 1);
         assert_eq!(super::count_ubits(2u32), 2);
         assert_eq!(super::count_ubits(0b_00111101_00000000u32), 14);
