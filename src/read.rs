@@ -214,7 +214,8 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    fn read_cxform(&mut self) -> Result<ColorTransform> {
+    fn read_color_transform_no_alpha(&mut self) -> Result<ColorTransform> {
+        self.byte_align();
         let has_add = try!(self.read_bit());
         let has_mult = try!(self.read_bit());
         let num_bits = try!(self.read_ubits(4)) as usize;
@@ -241,7 +242,8 @@ impl<R: Read> Reader<R> {
         Ok(color_transform)
     }
 
-    fn read_cxforma(&mut self) -> Result<ColorTransform> {
+    fn read_color_transform(&mut self) -> Result<ColorTransform> {
+        self.byte_align();
         let has_add = try!(self.read_bit());
         let has_mult = try!(self.read_bit());
         let num_bits = try!(self.read_ubits(4)) as usize;
@@ -331,7 +333,7 @@ impl<R: Read> Reader<R> {
                 try!(tag_reader.read_define_scene_and_frame_label_data())
             }
 
-            //Some(TagCode::PlaceObject) => try!(tag_reader.read_place_object_1()),
+            Some(TagCode::PlaceObject) => try!(tag_reader.read_place_object()),
             Some(TagCode::PlaceObject2) => try!(tag_reader.read_place_object_2()),
             //Some(TagCode::PlaceObject3) => try!(tag_reader.read_place_object_3()),
 
@@ -594,6 +596,27 @@ impl<R: Read> Reader<R> {
         Ok(shape_record)
     }
 
+    fn read_place_object(&mut self) -> Result<Tag> {
+        // TODO: What's a best way to know if the tag has a color transform?
+        Ok(Tag::PlaceObject(Box::new(PlaceObject {
+            version: 1,
+            action: PlaceObjectAction::Place(try!(self.read_u16())),
+            depth: try!(self.read_i16()),
+            matrix: Some(try!(self.read_matrix())),
+            color_transform: self.read_color_transform_no_alpha().ok(),
+            ratio: None,
+            name: None,
+            clip_depth: None,
+            class_name: None,
+            filters: vec![],
+            background_color: None,
+            blend_mode: BlendMode::Normal,
+            clip_actions: vec![],
+            is_bitmap_cached: false,
+            is_visible: true,
+        })))
+    }
+
     fn read_place_object_2(&mut self) -> Result<Tag> {
         let flags = try!(self.read_u8());
         let depth = try!(self.read_i16());
@@ -609,7 +632,7 @@ impl<R: Read> Reader<R> {
             None
         };
         let color_transform = if (flags & 0b1000) != 0 {
-            Some(try!(self.read_cxforma()))
+            Some(try!(self.read_color_transform()))
         } else {
             None
         };

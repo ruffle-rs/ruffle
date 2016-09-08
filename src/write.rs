@@ -203,6 +203,7 @@ impl<W: Write> Writer<W> {
 
     fn write_color_transform_no_alpha(&mut self, color_transform: &ColorTransform) -> Result<()> {
         // TODO: Assert that alpha is 1.0?
+        try!(self.flush_bits());
         let has_mult = color_transform.r_multiply != 1f32 || color_transform.g_multiply != 1f32 ||
             color_transform.b_multiply != 1f32;
         let has_add = color_transform.r_add != 0 || color_transform.g_add != 0 ||
@@ -233,6 +234,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_color_transform(&mut self, color_transform: &ColorTransform) -> Result<()> {
+        try!(self.flush_bits());
         let has_mult = color_transform.r_multiply != 1f32 || color_transform.g_multiply != 1f32 ||
             color_transform.b_multiply != 1f32 || color_transform.a_multiply != 1f32;
         let has_add = color_transform.r_add != 0 || color_transform.g_add != 0 ||
@@ -308,7 +310,7 @@ impl<W: Write> Writer<W> {
             }
 
             &Tag::PlaceObject(ref place_object) => match (*place_object).version {
-                1 => unimplemented!(),
+                1 => try!(self.write_place_object(place_object)),
                 2 => try!(self.write_place_object_2(place_object)),
                 3 => unimplemented!(),
                 _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid PlaceObject version.")),
@@ -591,6 +593,34 @@ impl<W: Write> Writer<W> {
                 try!(self.write_rgb(&record.color));
             }
         }
+        Ok(())
+    }
+
+    fn write_place_object(&mut self, place_object: &PlaceObject) -> Result<()> {
+        // TODO: Assert that the extraneous fields are the defaults.
+        let mut buf = Vec::new();
+        {
+            let mut writer = Writer::new(&mut buf, self.version);
+            if let PlaceObjectAction::Place(character_id) = place_object.action {
+                try!(self.write_u16(character_id));
+            } else {
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    "PlaceObject version 1 can only use a Place action."
+                ));
+            }
+            try!(self.write_i16(place_object.depth));
+            if let Some(ref matrix) = place_object.matrix {
+                try!(self.write_matrix(&matrix));
+            } else {
+                try!(self.write_matrix(&Matrix::new()));
+            }
+            if let Some(ref color_transform) = place_object.color_transform {
+                try!(self.write_color_transform_no_alpha(color_transform));
+            }
+        }
+        try!(self.write_tag_header(TagCode::PlaceObject, buf.len() as u32));
+        try!(self.output.write_all(&buf));
         Ok(())
     }
 

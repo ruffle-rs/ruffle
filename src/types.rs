@@ -103,7 +103,6 @@ pub struct PlaceObject {
     pub clip_actions: Vec<ClipAction>,
     pub is_bitmap_cached: bool,
     pub is_visible: bool,
-
 }
 
 #[derive(Debug,PartialEq,Clone,Copy)]
