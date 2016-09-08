@@ -769,13 +769,6 @@ pub mod tests {
         }
     }
 
-    fn read_tag_from_file(path: &str, version: u8) -> Tag {
-        let mut file = File::open(path).unwrap();
-        let mut data = Vec::new();
-        file.read_to_end(&mut data).unwrap();
-        Reader::new(&data[..], version).read_tag().unwrap().unwrap()
-    }
-
     #[test]
     fn read_swfs() {
         assert_eq!(read_from_file("tests/swfs/uncompressed.swf").compression,
@@ -1020,21 +1013,6 @@ pub mod tests {
 
     #[test]
     fn read_shape_styles() {
-        /*
-        let shape_styles = ShapeStyles {
-            fill_styles: vec![],
-            line_styles: vec![],
-        };
-        assert_eq!(reader(&[0, 0, 0]).read_shape_styles(1).unwrap(), shape_styles);
-        */
-
-        let shape_styles = ShapeStyles {
-            fill_styles: vec![
-                FillStyle::Color(Color { r: 255, g: 0, b: 0, a: 255 })
-            ],
-            line_styles: vec![],
-        };
-        //assert_eq!(reader(&[1, , 00, 0]).read_shape_styles(1).unwrap(), shape_styles);
     }
 
     #[test]
@@ -1068,7 +1046,7 @@ pub mod tests {
         assert_eq!(reader(&[0, 0, 255, 0, 0]).read_line_style(2).unwrap(), line_style);
 
         // DefineShape3 and 4 read RGBA colors.
-        let line_style = LineStyle { width: 3, color: Color { r: 1, g: 2, b: 3, a: 10 } };
+        // let line_style = LineStyle { width: 3, color: Color { r: 1, g: 2, b: 3, a: 10 } };
         //assert_eq!(reader(&[3, 0, 1, 2, 3, 10]).read_line_style(3).unwrap(), line_style);
 
         // TODO: Read LineStyle2 from DefineShape4.
@@ -1076,13 +1054,7 @@ pub mod tests {
 
     #[test]
     fn read_gradient() {
-        let gradient = Gradient {
-            spread: GradientSpread::Reflect,
-            interpolation: GradientInterpolation::RGB,
-            records: vec![
-                //GradientRecord { ratio: 0, color: }
-            ]
-        };
+        // TODO
     }
 
     #[test]

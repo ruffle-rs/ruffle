@@ -85,6 +85,7 @@ impl<W: Write> Writer<W> {
         }
     }
 
+    #[allow(dead_code)]
     fn into_inner(self) -> W {
         self.output
     }
@@ -629,21 +630,21 @@ impl<W: Write> Writer<W> {
         {
             let mut writer = Writer::new(&mut buf, self.version);
             if let PlaceObjectAction::Place(character_id) = place_object.action {
-                try!(self.write_u16(character_id));
+                try!(writer.write_u16(character_id));
             } else {
                 return Err(Error::new(
                     ErrorKind::InvalidData,
                     "PlaceObject version 1 can only use a Place action."
                 ));
             }
-            try!(self.write_i16(place_object.depth));
+            try!(writer.write_i16(place_object.depth));
             if let Some(ref matrix) = place_object.matrix {
-                try!(self.write_matrix(&matrix));
+                try!(writer.write_matrix(&matrix));
             } else {
-                try!(self.write_matrix(&Matrix::new()));
+                try!(writer.write_matrix(&Matrix::new()));
             }
             if let Some(ref color_transform) = place_object.color_transform {
-                try!(self.write_color_transform_no_alpha(color_transform));
+                try!(writer.write_color_transform_no_alpha(color_transform));
             }
         }
         try!(self.write_tag_header(TagCode::PlaceObject, buf.len() as u32));
@@ -700,7 +701,7 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_clip_actions(&mut self, clip_actions: &Vec<ClipAction>) -> Result<()> {
+    fn write_clip_actions(&mut self, _: &Vec<ClipAction>) -> Result<()> {
         unimplemented!()
     }
 
