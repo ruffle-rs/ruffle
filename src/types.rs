@@ -180,6 +180,7 @@ pub enum Tag {
     SetBackgroundColor(Color),
 
     PlaceObject(Box<PlaceObject>),
+    RemoveObject { depth: Depth, character_id: Option<CharacterId> },
 
     FileAttributes(FileAttributes),
 

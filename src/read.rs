@@ -349,6 +349,20 @@ impl<R: Read> Reader<R> {
             Some(TagCode::PlaceObject2) => try!(tag_reader.read_place_object_2()),
             //Some(TagCode::PlaceObject3) => try!(tag_reader.read_place_object_3()),
 
+            Some(TagCode::RemoveObject) => {
+                Tag::RemoveObject {
+                    character_id: Some(try!(tag_reader.read_u16())),
+                    depth: try!(tag_reader.read_i16()),
+                }
+            },
+
+            Some(TagCode::RemoveObject2) => {
+                Tag::RemoveObject {
+                    depth: try!(tag_reader.read_i16()),
+                    character_id: None,
+                }
+            },
+
             _ => {
                 let size = length as usize;
                 let mut data = Vec::with_capacity(size);

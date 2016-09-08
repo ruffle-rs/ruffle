@@ -317,6 +317,16 @@ impl<W: Write> Writer<W> {
                 _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid PlaceObject version.")),
             },
 
+            &Tag::RemoveObject { depth, character_id } => {
+                if let Some(id) = character_id {
+                    try!(self.write_tag_header(TagCode::RemoveObject, 4));
+                    try!(self.write_u16(id));
+                } else {
+                    try!(self.write_tag_header(TagCode::RemoveObject2, 2));                    
+                }
+                try!(self.write_i16(depth));
+            },
+
             &Tag::FileAttributes(ref attributes) => {
                 try!(self.write_tag_header(TagCode::FileAttributes, 4));
                 let mut flags = 0u32;
