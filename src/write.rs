@@ -302,6 +302,7 @@ impl<W: Write> Writer<W> {
             &Tag::ShowFrame => try!(self.write_tag_header(TagCode::ShowFrame, 0)),
 
             &Tag::DefineShape(ref shape) => try!(self.write_define_shape(shape)),
+            &Tag::DefineSprite(ref sprite) => try!(self.write_define_sprite(sprite)),
 
             // TODO: Allow clone of color.
             &Tag::SetBackgroundColor(ref color) => {
@@ -397,6 +398,19 @@ impl<W: Write> Writer<W> {
             _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid DefineShape version.")),
         };
         try!(self.write_tag_header(tag_code, buf.len() as u32));
+        try!(self.output.write_all(&buf));
+        Ok(())
+    }
+
+    fn write_define_sprite(&mut self, sprite: &Sprite) -> Result<()> {
+        let mut buf = Vec::new();
+        {
+            let mut writer = Writer::new(&mut buf, self.version);
+            try!(writer.write_u16(sprite.id));
+            try!(writer.write_u16(sprite.num_frames));
+            try!(writer.write_tag_list(&sprite.tags));
+        };
+        try!(self.write_tag_header(TagCode::DefineSprite, buf.len() as u32));
         try!(self.output.write_all(&buf));
         Ok(())
     }
@@ -1081,6 +1095,12 @@ mod tests {
     #[test]
     fn write_define_shape() {
         let (tag, tag_bytes) = test_data::define_shape();
+        assert_eq!(write_tag_to_buf(&tag, 1), tag_bytes);
+    }
+
+    #[test]
+    fn write_define_sprite() {
+        let (tag, tag_bytes) = test_data::define_sprite();
         assert_eq!(write_tag_to_buf(&tag, 1), tag_bytes);
     }
 

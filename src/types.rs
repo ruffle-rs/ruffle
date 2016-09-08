@@ -175,6 +175,7 @@ pub enum Tag {
     ShowFrame,
 
     DefineShape(Shape),
+    DefineSprite(Sprite),
 
     SetBackgroundColor(Color),
 
@@ -198,6 +199,13 @@ pub struct Shape {
     pub edge_bounds: Rectangle,
     pub styles: ShapeStyles,
     pub shape: Vec<ShapeRecord>,
+}
+
+#[derive(Debug,PartialEq)]
+pub struct Sprite {
+    pub id: CharacterId,
+    pub num_frames: u16,
+    pub tags: Vec<Tag>,
 }
 
 #[derive(Debug,PartialEq)]

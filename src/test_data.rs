@@ -85,6 +85,23 @@ pub fn define_shape() -> TagTestData {
     )
 }
 
+pub fn define_sprite() -> TagTestData {
+    (
+        Tag::DefineSprite(Sprite {
+            id: 1,
+            num_frames: 5,
+            tags: vec![
+                Tag::ShowFrame,
+                Tag::ShowFrame,
+                Tag::ShowFrame,
+                Tag::ShowFrame,
+                Tag::ShowFrame,
+            ],
+        }),
+        read_tag_bytes_from_file("tests/swfs/define_sprite.swf", TagCode::DefineSprite)
+    )
+}
+
 pub fn place_object_2() -> TagTestData {
     (
         Tag::PlaceObject(Box::new(PlaceObject {

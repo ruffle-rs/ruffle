@@ -308,6 +308,7 @@ impl<R: Read> Reader<R> {
         let (tag_code, length) = try!(self.read_tag_code_and_length());
 
         let mut tag_reader = Reader::new(self.input.by_ref().take(length as u64), self.version);
+        //let mut tag_reader = Reader::new(Box::new(self.input.by_ref().take(length as u64)) as Box<Read>, self.version);
         use tag_codes::TagCode;
         let tag = match TagCode::from_u16(tag_code) {
             Some(TagCode::End) => return Ok(None),
@@ -332,6 +333,17 @@ impl<R: Read> Reader<R> {
             Some(TagCode::DefineSceneAndFrameLabelData) => {
                 try!(tag_reader.read_define_scene_and_frame_label_data())
             }
+
+            Some(TagCode::DefineSprite) => {
+                // TODO: There's probably a better way to prevent the infinite type recursion.
+                // Tags can only be nested one level deep, so perhaps I can implement
+                // read_tag_list for Reader<Take<R>> to enforce this.
+                let mut sprite_reader = Reader::new(
+                    &mut tag_reader.input as &mut Read,
+                    self.version
+                );
+                try!(sprite_reader.read_define_sprite())
+            },
 
             Some(TagCode::PlaceObject) => try!(tag_reader.read_place_object()),
             Some(TagCode::PlaceObject2) => try!(tag_reader.read_place_object_2()),
@@ -594,6 +606,14 @@ impl<R: Read> Reader<R> {
             }
         };
         Ok(shape_record)
+    }
+
+    fn read_define_sprite(&mut self) -> Result<Tag> {
+        Ok(Tag::DefineSprite(Sprite {
+            id: try!(self.read_u16()),
+            num_frames: try!(self.read_u16()),
+            tags: try!(self.read_tag_list()),
+        }))
     }
 
     fn read_place_object(&mut self) -> Result<Tag> {
@@ -969,6 +989,12 @@ pub mod tests {
     #[test]
     fn read_define_shape() {
         let (tag, tag_bytes) = test_data::define_shape();
+        assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), tag);
+    }
+
+    #[test]
+    fn read_define_sprite() {
+        let (tag, tag_bytes) = test_data::define_sprite();
         assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), tag);
     }
 
