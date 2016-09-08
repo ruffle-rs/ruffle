@@ -111,6 +111,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_fixed88(&mut self, n: f32) -> Result<()> {
+        try!(self.flush_bits());
         self.output.write_i16::<LittleEndian>((n * 256f32) as i16)
     }
 
