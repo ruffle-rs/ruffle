@@ -291,10 +291,12 @@ impl<W: Write> Writer<W> {
             try!(self.write_fbits(num_bits, m.rotate_skew_1));
         }
         // Translate (always written)
-        let num_bits = max(count_fbits(m.translate_x), count_fbits(m.translate_y));
+        let translate_x_twips = (m.translate_x * 20f32) as i32;
+        let translate_y_twips = (m.translate_y * 20f32) as i32;
+        let num_bits = max(count_sbits(translate_x_twips), count_sbits(translate_y_twips));
         try!(self.write_ubits(5, num_bits as u32));
-        try!(self.write_fbits(num_bits, m.translate_x));
-        try!(self.write_fbits(num_bits, m.translate_y));
+        try!(self.write_sbits(num_bits, translate_x_twips));
+        try!(self.write_sbits(num_bits, translate_y_twips));
         Ok(())
     }
 
