@@ -84,3 +84,26 @@ pub fn define_shape() -> TagTestData {
         read_tag_bytes_from_file("tests/swfs/define_shape.swf", TagCode::DefineShape)
     )
 }
+
+pub fn place_object_2() -> TagTestData {
+    (
+        Tag::PlaceObject(Box::new(PlaceObject {
+            version: 2,
+            action: PlaceObjectAction::Place(1),
+            depth: 1,
+            matrix: Some(Matrix::new()),
+            color_transform: None,
+            ratio: None,
+            name: None,
+            clip_depth: None,
+            class_name: None,
+            filters: vec![],
+            background_color: None,
+            blend_mode: BlendMode::Normal,
+            clip_actions: vec![],
+            is_bitmap_cached: false,
+            is_visible: true,
+        })),
+        read_tag_bytes_from_file("tests/swfs/define_shape.swf", TagCode::PlaceObject2)
+    )
+}

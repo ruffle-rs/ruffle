@@ -34,10 +34,10 @@ pub struct Color {
 
 #[derive(Debug,PartialEq)]
 pub struct ColorTransform {
-    pub r_multiply: i16,
-    pub g_multiply: i16,
-    pub b_multiply: i16,
-    pub a_multiply: i16,
+    pub r_multiply: f32,
+    pub g_multiply: f32,
+    pub b_multiply: f32,
+    pub a_multiply: f32,
     pub r_add: i16,
     pub g_add: i16,
     pub b_add: i16,
@@ -92,20 +92,23 @@ pub struct PlaceObject {
     pub action: PlaceObjectAction,
     pub depth: Depth,
     pub matrix: Option<Matrix>,
-    pub color_transform: ColorTransform,
+    pub color_transform: Option<ColorTransform>,
     pub ratio: Option<u16>,
     pub name: Option<String>,
     pub clip_depth: Option<Depth>,
+    pub class_name: Option<String>,
     pub filters: Vec<Filter>,
-    pub blend_mode: Option<BlendMode>,
+    pub background_color: Option<Color>,
+    pub blend_mode: BlendMode,
+    pub clip_actions: Vec<ClipAction>,
     pub is_bitmap_cached: bool,
     pub is_visible: bool,
-    pub clip_actions: Vec<ClipAction>,
+
 }
 
 #[derive(Debug,PartialEq,Clone,Copy)]
 pub enum PlaceObjectAction {
-    Add(CharacterId),
+    Place(CharacterId),
     Modify,
     Replace(CharacterId),
 }
@@ -176,7 +179,7 @@ pub enum Tag {
 
     SetBackgroundColor(Color),
 
-    PlaceObject(PlaceObject),
+    PlaceObject(Box<PlaceObject>),
 
     FileAttributes(FileAttributes),
 

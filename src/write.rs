@@ -201,6 +201,72 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
+    fn write_color_transform_no_alpha(&mut self, color_transform: &ColorTransform) -> Result<()> {
+        // TODO: Assert that alpha is 1.0?
+        let has_mult = color_transform.r_multiply != 1f32 || color_transform.g_multiply != 1f32 ||
+            color_transform.b_multiply != 1f32;
+        let has_add = color_transform.r_add != 0 || color_transform.g_add != 0 ||
+            color_transform.b_add != 0;
+        let multiply = [color_transform.r_multiply, color_transform.g_multiply, color_transform.b_multiply];
+        let add = [color_transform.a_add, color_transform.g_add, color_transform.b_add, color_transform.a_add];
+        try!(self.write_bit(has_mult));
+        try!(self.write_bit(has_add));
+        let mut num_bits = 0u8;
+        if has_mult {
+            num_bits = multiply.iter().map(|n| count_sbits((*n * 256f32) as i32)).max().unwrap();
+        }
+        if has_add {
+            num_bits = max(num_bits, add.iter().map(|n| count_sbits(*n as i32)).max().unwrap());
+        }
+        try!(self.write_ubits(4, num_bits as u32));
+        if has_mult {
+            try!(self.write_sbits(num_bits, (color_transform.r_multiply * 256f32) as i32));
+            try!(self.write_sbits(num_bits, (color_transform.g_multiply * 256f32) as i32));
+            try!(self.write_sbits(num_bits, (color_transform.b_multiply * 256f32) as i32));
+        }
+        if has_add {
+            try!(self.write_sbits(num_bits, color_transform.r_add as i32));
+            try!(self.write_sbits(num_bits, color_transform.g_add as i32));
+            try!(self.write_sbits(num_bits, color_transform.b_add as i32));
+        }
+        Ok(())
+    }
+
+    fn write_color_transform(&mut self, color_transform: &ColorTransform) -> Result<()> {
+        let has_mult = color_transform.r_multiply != 1f32 || color_transform.g_multiply != 1f32 ||
+            color_transform.b_multiply != 1f32 || color_transform.a_multiply != 1f32;
+        let has_add = color_transform.r_add != 0 || color_transform.g_add != 0 ||
+            color_transform.b_add != 0 || color_transform.a_add != 0;
+        let multiply = [color_transform.r_multiply, color_transform.g_multiply,
+            color_transform.b_multiply, color_transform.a_multiply];
+        let add = [color_transform.a_add, color_transform.g_add,
+            color_transform.b_add, color_transform.a_add];
+        try!(self.write_bit(has_mult));
+        try!(self.write_bit(has_add));
+        let mut num_bits = 0u8;
+        if has_mult {
+            num_bits = multiply.iter().map(|n| count_sbits((*n * 256f32) as i32)).max().unwrap();
+        }
+        if has_add {
+            num_bits = max(num_bits, add.iter().map(|n| count_sbits(*n as i32)).max().unwrap());
+        }
+        try!(self.write_ubits(4, num_bits as u32));
+        if has_mult {
+            try!(self.write_sbits(num_bits, (color_transform.r_multiply * 256f32) as i32));
+            try!(self.write_sbits(num_bits, (color_transform.g_multiply * 256f32) as i32));
+            try!(self.write_sbits(num_bits, (color_transform.b_multiply * 256f32) as i32));
+            try!(self.write_sbits(num_bits, (color_transform.a_multiply * 256f32) as i32));
+        }
+        if has_add {
+            try!(self.write_sbits(num_bits, color_transform.r_add as i32));
+            try!(self.write_sbits(num_bits, color_transform.g_add as i32));
+            try!(self.write_sbits(num_bits, color_transform.b_add as i32));
+            try!(self.write_sbits(num_bits, color_transform.a_add as i32));
+        }
+        Ok(())
+    }
+
+
     fn write_matrix(&mut self, m: &Matrix) -> Result<()> {
         try!(self.flush_bits());
         // Scale
@@ -241,7 +307,12 @@ impl<W: Write> Writer<W> {
                 try!(self.write_rgb(color));
             }
 
-            &Tag::PlaceObject(ref place_object) => unimplemented!(),
+            &Tag::PlaceObject(ref place_object) => match (*place_object).version {
+                1 => unimplemented!(),
+                2 => try!(self.write_place_object_2(place_object)),
+                3 => unimplemented!(),
+                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid PlaceObject version.")),
+            },
 
             &Tag::FileAttributes(ref attributes) => {
                 try!(self.write_tag_header(TagCode::FileAttributes, 4));
@@ -523,6 +594,59 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
+    fn write_place_object_2(&mut self, place_object: &PlaceObject) -> Result<()> {
+        let mut buf = Vec::new();
+        {
+            let mut writer = Writer::new(&mut buf, self.version);
+            let flags: u8 =
+                if !place_object.clip_actions.is_empty() { 0b1000_0000 } else { 0 } |
+                if place_object.clip_depth.is_some() { 0b0100_0000 } else { 0 } |
+                if place_object.name.is_some() { 0b0010_0000 } else { 0 } |
+                if place_object.ratio.is_some() { 0b0001_0000 } else { 0 } |
+                if place_object.color_transform.is_some() { 0b0000_1000 } else { 0 } |
+                if place_object.matrix.is_some() { 0b0000_0100 } else { 0 } |
+                match place_object.action {
+                    PlaceObjectAction::Place(_) => 0b10,
+                    PlaceObjectAction::Modify => 0b01,
+                    PlaceObjectAction::Replace(_) => 0b11,
+                };
+            try!(writer.write_u8(flags));
+            try!(writer.write_i16(place_object.depth));
+            match place_object.action {
+                PlaceObjectAction::Place(character_id) |
+                PlaceObjectAction::Replace(character_id) => 
+                    try!(writer.write_u16(character_id)),
+                PlaceObjectAction::Modify => (),
+            }
+            if let Some(ref matrix) = place_object.matrix {
+                try!(writer.write_matrix(matrix));
+            };
+            if let Some(ref color_transform) = place_object.color_transform {
+                try!(writer.write_color_transform(color_transform));
+            };
+            if let Some(ratio) = place_object.ratio { 
+                try!(writer.write_u16(ratio));
+            }
+            if let Some(ref name) = place_object.name {
+                try!(writer.write_c_string(name));
+            };
+            if let Some(clip_depth) = place_object.clip_depth {
+                try!(writer.write_i16(clip_depth));
+            }
+            if !place_object.clip_actions.is_empty() {
+                try!(writer.write_clip_actions(&place_object.clip_actions));
+            }
+            try!(writer.flush_bits());
+        }
+        try!(self.write_tag_header(TagCode::PlaceObject2, buf.len() as u32));
+        try!(self.output.write_all(&buf));
+        Ok(())
+    }
+
+    fn write_clip_actions(&mut self, clip_actions: &Vec<ClipAction>) -> Result<()> {
+        unimplemented!()
+    }
+
     fn write_tag_header(&mut self, tag_code: TagCode, length: u32) -> Result<()> {
         self.write_tag_code_and_length(tag_code as u16, length)
     }
@@ -560,7 +684,9 @@ fn count_ubits(mut n: u32) -> u8 {
 }
 
 fn count_sbits(n: i32) -> u8 {
-    if n == -1 {
+    if n == 0 {
+        0
+    } else if n == -1 {
         1
     } else if n < 0 {
         count_ubits((!n) as u32) + 1
@@ -724,7 +850,7 @@ mod tests {
 
     #[test]
     fn count_sbits() {
-        assert_eq!(super::count_sbits(0), 1u8);
+        assert_eq!(super::count_sbits(0), 0u8);
         assert_eq!(super::count_sbits(1), 2u8);
         assert_eq!(super::count_sbits(2), 3u8);
         assert_eq!(super::count_sbits(0b_00111101_00000000), 15u8);
@@ -772,7 +898,7 @@ mod tests {
             writer.write_rectangle(&rect).unwrap();
             writer.flush_bits().unwrap();
         }
-        assert_eq!(buf, [0b_00001_0_0_0, 0b0_0000000]);
+        assert_eq!(buf, [0]);
     }
 
     #[test]
@@ -837,7 +963,7 @@ mod tests {
         }
 
         let m = Matrix::new();
-        assert_eq!(write_to_buf(&m), [0b00_00001_0, 0b0_0000000]);
+        assert_eq!(write_to_buf(&m), [0]);
     }
 
     // TAGS
@@ -925,6 +1051,12 @@ mod tests {
     #[test]
     fn write_define_shape() {
         let (tag, tag_bytes) = test_data::define_shape();
+        assert_eq!(write_tag_to_buf(&tag, 1), tag_bytes);
+    }
+
+    #[test]
+    fn write_place_object_2() {
+        let (tag, tag_bytes) = test_data::place_object_2();
         assert_eq!(write_tag_to_buf(&tag, 1), tag_bytes);
     }
 

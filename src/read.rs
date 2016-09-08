@@ -214,6 +214,62 @@ impl<R: Read> Reader<R> {
         })
     }
 
+    fn read_cxform(&mut self) -> Result<ColorTransform> {
+        let has_add = try!(self.read_bit());
+        let has_mult = try!(self.read_bit());
+        let num_bits = try!(self.read_ubits(4)) as usize;
+        let mut color_transform = ColorTransform {
+            r_multiply: 1f32,
+            g_multiply: 1f32,
+            b_multiply: 1f32,
+            a_multiply: 1f32,
+            r_add: 0i16,
+            g_add: 0i16,
+            b_add: 0i16,
+            a_add: 0i16,
+        };
+        if has_mult {
+            color_transform.r_multiply = try!(self.read_sbits(num_bits)) as f32 / 256f32;
+            color_transform.g_multiply = try!(self.read_sbits(num_bits)) as f32 / 256f32;
+            color_transform.b_multiply = try!(self.read_sbits(num_bits)) as f32 / 256f32;
+        }
+        if has_add {
+            color_transform.r_add = try!(self.read_sbits(num_bits)) as i16;
+            color_transform.g_add = try!(self.read_sbits(num_bits)) as i16;
+            color_transform.b_add = try!(self.read_sbits(num_bits)) as i16;
+        }
+        Ok(color_transform)
+    }
+
+    fn read_cxforma(&mut self) -> Result<ColorTransform> {
+        let has_add = try!(self.read_bit());
+        let has_mult = try!(self.read_bit());
+        let num_bits = try!(self.read_ubits(4)) as usize;
+        let mut color_transform = ColorTransform {
+            r_multiply: 1f32,
+            g_multiply: 1f32,
+            b_multiply: 1f32,
+            a_multiply: 1f32,
+            r_add: 0i16,
+            g_add: 0i16,
+            b_add: 0i16,
+            a_add: 0i16,
+        };
+        if has_mult {
+            color_transform.r_multiply = try!(self.read_sbits(num_bits)) as f32 / 256f32;
+            color_transform.g_multiply = try!(self.read_sbits(num_bits)) as f32 / 256f32;
+            color_transform.b_multiply = try!(self.read_sbits(num_bits)) as f32 / 256f32;
+            color_transform.a_multiply = try!(self.read_sbits(num_bits)) as f32 / 256f32;
+        }
+        if has_add {
+            color_transform.r_add = try!(self.read_sbits(num_bits)) as i16;
+            color_transform.g_add = try!(self.read_sbits(num_bits)) as i16;
+            color_transform.b_add = try!(self.read_sbits(num_bits)) as i16;
+            color_transform.a_add = try!(self.read_sbits(num_bits)) as i16;
+        }
+        Ok(color_transform)
+    }
+
     fn read_matrix(&mut self) -> Result<Matrix> {
         self.byte_align();
         let mut m = Matrix::new();
@@ -274,6 +330,10 @@ impl<R: Read> Reader<R> {
             Some(TagCode::DefineSceneAndFrameLabelData) => {
                 try!(tag_reader.read_define_scene_and_frame_label_data())
             }
+
+            //Some(TagCode::PlaceObject) => try!(tag_reader.read_place_object_1()),
+            Some(TagCode::PlaceObject2) => try!(tag_reader.read_place_object_2()),
+            //Some(TagCode::PlaceObject3) => try!(tag_reader.read_place_object_3()),
 
             _ => {
                 let size = length as usize;
@@ -532,6 +592,69 @@ impl<R: Read> Reader<R> {
             }
         };
         Ok(shape_record)
+    }
+
+    fn read_place_object_2(&mut self) -> Result<Tag> {
+        let flags = try!(self.read_u8());
+        let depth = try!(self.read_i16());
+        let action = match flags & 0b11 {
+            0b01 => PlaceObjectAction::Modify,
+            0b10 => PlaceObjectAction::Place(try!(self.read_u16())),
+            0b11 => PlaceObjectAction::Replace(try!(self.read_u16())),
+            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid PlaceObject type")),
+        };
+        let matrix = if (flags & 0b100) != 0 {
+            Some(try!(self.read_matrix()))
+        } else {
+            None
+        };
+        let color_transform = if (flags & 0b1000) != 0 {
+            Some(try!(self.read_cxforma()))
+        } else {
+            None
+        };
+        let ratio = if (flags & 0b1_0000) != 0 {
+            Some(try!(self.read_u16()))
+        } else {
+            None
+        };
+        let name = if (flags & 0b10_0000) != 0 {
+            Some(try!(self.read_c_string()))
+        } else {
+            None
+        };
+        let clip_depth = if (flags & 0b100_0000) != 0 {
+            Some(try!(self.read_i16()))
+        } else {
+            None
+        };
+        let clip_actions = if (flags & 0b1000_0000) != 0 {
+            try!(self.read_clip_actions())
+        } else {
+            vec![]
+        };
+        Ok(Tag::PlaceObject(Box::new(PlaceObject {
+            version: 2,
+            action: action,
+            depth: depth,
+            matrix: matrix,
+            color_transform: color_transform,
+            ratio: ratio,
+            name: name,
+            clip_depth: clip_depth,
+            clip_actions: clip_actions,
+            is_bitmap_cached: false,
+            is_visible: true,
+            class_name: None,
+            filters: vec![],
+            background_color: None,
+            blend_mode: BlendMode::Normal,
+        })))
+    }
+
+    fn read_clip_actions(&mut self) -> Result<Vec<ClipAction>> {
+        try!(self.read_u16()); // Must be 0
+        unimplemented!()
     }
 }
 
@@ -823,6 +946,12 @@ pub mod tests {
     #[test]
     fn read_define_shape() {
         let (tag, tag_bytes) = test_data::define_shape();
+        assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), tag);
+    }
+
+    #[test]
+    fn read_place_object_2() {
+        let (tag, tag_bytes) = test_data::place_object_2();
         assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), tag);
     }
 
