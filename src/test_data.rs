@@ -118,6 +118,7 @@ pub fn place_object_2() -> TagTestData {
             background_color: None,
             blend_mode: BlendMode::Normal,
             clip_actions: vec![],
+            is_image: false,
             is_bitmap_cached: false,
             is_visible: true,
         })),

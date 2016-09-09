@@ -103,6 +103,7 @@ pub struct PlaceObject {
     pub background_color: Option<Color>,
     pub blend_mode: BlendMode,
     pub clip_actions: Vec<ClipAction>,
+    pub is_image: bool,
     pub is_bitmap_cached: bool,
     pub is_visible: bool,
 }

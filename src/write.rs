@@ -317,8 +317,8 @@ impl<W: Write> Writer<W> {
 
             &Tag::PlaceObject(ref place_object) => match (*place_object).version {
                 1 => try!(self.write_place_object(place_object)),
-                2 => try!(self.write_place_object_2(place_object)),
-                3 => unimplemented!(),
+                2 => try!(self.write_place_object_2_or_3(place_object, 2)),
+                3 => try!(self.write_place_object_2_or_3(place_object, 3)),
                 _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid PlaceObject version.")),
             },
 
@@ -653,11 +653,12 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_place_object_2(&mut self, place_object: &PlaceObject) -> Result<()> {
+    fn write_place_object_2_or_3(&mut self, place_object: &PlaceObject, place_object_version: u8) -> Result<()> {
         let mut buf = Vec::new();
         {
+            // TODO: Assert version.
             let mut writer = Writer::new(&mut buf, self.version);
-            let flags: u8 =
+            try!(writer.write_u8(
                 if !place_object.clip_actions.is_empty() { 0b1000_0000 } else { 0 } |
                 if place_object.clip_depth.is_some() { 0b0100_0000 } else { 0 } |
                 if place_object.name.is_some() { 0b0010_0000 } else { 0 } |
@@ -668,9 +669,27 @@ impl<W: Write> Writer<W> {
                     PlaceObjectAction::Place(_) => 0b10,
                     PlaceObjectAction::Modify => 0b01,
                     PlaceObjectAction::Replace(_) => 0b11,
-                };
-            try!(writer.write_u8(flags));
+                }
+            ));
+            if place_object_version >= 3 {
+                try!(writer.write_u8(
+                    if place_object.background_color.is_none() { 0b100_0000 } else { 0 } |
+                    if !place_object.is_visible { 0b10_0000 } else { 0 } |
+                    if place_object.is_image { 0b1_0000 } else { 0 } |
+                    if place_object.class_name.is_some() { 0b1000 } else { 0 } |
+                    if place_object.is_bitmap_cached { 0b100 } else { 0 } |
+                    if place_object.blend_mode != BlendMode::Normal { 0b10 } else { 0 } |
+                    if !place_object.filters.is_empty() { 0b1 } else { 0 }
+                ));
+            }
             try!(writer.write_i16(place_object.depth));
+
+            if place_object_version >= 3 {
+                if let Some(ref class_name) = place_object.class_name {
+                    try!(writer.write_c_string(class_name));
+                }
+            }
+
             match place_object.action {
                 PlaceObjectAction::Place(character_id) |
                 PlaceObjectAction::Replace(character_id) => 
@@ -692,6 +711,46 @@ impl<W: Write> Writer<W> {
             if let Some(clip_depth) = place_object.clip_depth {
                 try!(writer.write_i16(clip_depth));
             }
+
+            if place_object_version >= 3 {
+                if !place_object.filters.is_empty() {
+                    try!(writer.write_u8(place_object.filters.len() as u8));
+                    // TODO: Write filters.
+                    unimplemented!()
+                }
+
+                if place_object.blend_mode != BlendMode::Normal {
+                    try!(self.write_u8(match place_object.blend_mode {
+                        BlendMode::Normal => 0,
+                        BlendMode::Layer => 2,
+                        BlendMode::Multiply => 3,
+                        BlendMode::Screen => 4,
+                        BlendMode::Lighten => 5,
+                        BlendMode::Darken => 6,
+                        BlendMode::Difference => 7,
+                        BlendMode::Add => 8,
+                        BlendMode::Subtract => 9,
+                        BlendMode::Invert => 10,
+                        BlendMode::Alpha => 11,
+                        BlendMode::Erase => 12,
+                        BlendMode::Overlay => 13,
+                        BlendMode::HardLight => 14,
+                    }));
+                }
+
+                if place_object.is_bitmap_cached {
+                    try!(self.write_u8(1));
+                }
+
+                if !place_object.is_visible {
+                    try!(self.write_u8(0));
+                }
+
+                if let Some(ref background_color) = place_object.background_color {
+                    try!(self.write_rgba(background_color));
+                }
+            }
+
             if !place_object.clip_actions.is_empty() {
                 try!(writer.write_clip_actions(&place_object.clip_actions));
             }

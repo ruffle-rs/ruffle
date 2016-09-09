@@ -347,8 +347,8 @@ impl<R: Read> Reader<R> {
             },
 
             Some(TagCode::PlaceObject) => try!(tag_reader.read_place_object()),
-            Some(TagCode::PlaceObject2) => try!(tag_reader.read_place_object_2()),
-            //Some(TagCode::PlaceObject3) => try!(tag_reader.read_place_object_3()),
+            Some(TagCode::PlaceObject2) => try!(tag_reader.read_place_object_2_or_3(2)),
+            Some(TagCode::PlaceObject3)  => try!(tag_reader.read_place_object_2_or_3(3)),
 
             Some(TagCode::RemoveObject) => {
                 Tag::RemoveObject {
@@ -647,14 +647,26 @@ impl<R: Read> Reader<R> {
             background_color: None,
             blend_mode: BlendMode::Normal,
             clip_actions: vec![],
+            is_image: false,
             is_bitmap_cached: false,
             is_visible: true,
         })))
     }
 
-    fn read_place_object_2(&mut self) -> Result<Tag> {
-        let flags = try!(self.read_u8());
+    fn read_place_object_2_or_3(&mut self, place_object_version: u8) -> Result<Tag> {
+        let flags = if place_object_version >= 3 {
+            try!(self.read_u16())
+        } else {
+            try!(self.read_u8()) as u16
+        };
+
         let depth = try!(self.read_i16());
+
+        // PlaceObject3
+        let is_image = (flags & 0b10000_00000000) != 0;
+        let has_class_name = (flags & 0b1000_00000000) != 0 || (is_image && (flags & 0b10) != 0);
+        let class_name = if has_class_name { Some(try!(self.read_c_string())) } else { None };
+
         let action = match flags & 0b11 {
             0b01 => PlaceObjectAction::Modify,
             0b10 => PlaceObjectAction::Place(try!(self.read_u16())),
@@ -663,36 +675,57 @@ impl<R: Read> Reader<R> {
         };
         let matrix = if (flags & 0b100) != 0 {
             Some(try!(self.read_matrix()))
-        } else {
-            None
-        };
+        } else { None };
         let color_transform = if (flags & 0b1000) != 0 {
             Some(try!(self.read_color_transform()))
-        } else {
-            None
-        };
+        } else { None};
         let ratio = if (flags & 0b1_0000) != 0 {
             Some(try!(self.read_u16()))
-        } else {
-            None
-        };
+        } else { None };
         let name = if (flags & 0b10_0000) != 0 {
             Some(try!(self.read_c_string()))
-        } else {
-            None
-        };
+        } else { None };
         let clip_depth = if (flags & 0b100_0000) != 0 {
             Some(try!(self.read_i16()))
-        } else {
-            None
-        };
+        } else { None };
+
+        // PlaceObject3
+        let filters = vec![];
+        if (flags & 0b1_00000000) != 0 {
+            //let num_filters = try!(self.read_u8());
+            // TODO: Read filters
+            unimplemented!();
+        } 
+        let blend_mode = if (flags & 0b10_00000000) != 0 {
+            match try!(self.read_u8()) {
+                0 | 1 => BlendMode::Normal,
+                2 => BlendMode::Layer,
+                3 => BlendMode::Multiply,
+                4 => BlendMode::Screen,
+                5 => BlendMode::Lighten,
+                6 => BlendMode::Darken,
+                7 => BlendMode::Difference,
+                8 => BlendMode::Add,
+                9 => BlendMode::Subtract,
+                10 => BlendMode::Invert,
+                11 => BlendMode::Alpha,
+                12 => BlendMode::Erase,
+                13 => BlendMode::Overlay,
+                14 => BlendMode::HardLight,
+                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid blend mode")),
+            }
+        } else { BlendMode::Normal };
+        let is_bitmap_cached = (flags & 0b100_00000000) != 0 && try!(self.read_u8()) != 0;
+        let is_visible = (flags & 0b100000_00000000) == 0 || try!(self.read_u8()) != 0;
+        let background_color = if (flags & 0b1000000_00000000) != 0 {
+            Some(try!(self.read_rgba()))
+        } else { None };
+
         let clip_actions = if (flags & 0b1000_0000) != 0 {
             try!(self.read_clip_actions())
-        } else {
-            vec![]
-        };
+        } else { vec![] };
         Ok(Tag::PlaceObject(Box::new(PlaceObject {
-            version: 2,
+            version: place_object_version,
             action: action,
             depth: depth,
             matrix: matrix,
@@ -701,12 +734,13 @@ impl<R: Read> Reader<R> {
             name: name,
             clip_depth: clip_depth,
             clip_actions: clip_actions,
-            is_bitmap_cached: false,
-            is_visible: true,
-            class_name: None,
-            filters: vec![],
-            background_color: None,
-            blend_mode: BlendMode::Normal,
+            is_image: is_image,
+            is_bitmap_cached: is_bitmap_cached,
+            is_visible: is_visible,
+            class_name: class_name,
+            filters: filters,
+            background_color: background_color,
+            blend_mode: blend_mode,
         })))
     }
 
