@@ -711,7 +711,72 @@ impl<R: Read> Reader<R> {
 
     fn read_clip_actions(&mut self) -> Result<Vec<ClipAction>> {
         try!(self.read_u16()); // Must be 0
-        unimplemented!()
+        try!(self.read_clip_event_flags()); // All event flags
+        let mut clip_actions = vec![];
+        while let Some(clip_action) = try!(self.read_clip_action()) {
+            clip_actions.push(clip_action);
+        }
+        Ok(clip_actions)
+    }
+
+    fn read_clip_action(&mut self) -> Result<Option<ClipAction>> {
+        let events = try!(self.read_clip_event_flags());
+        if events.is_empty() {
+            Ok(None)
+        } else {
+            let length = try!(self.read_u32());
+            let key_code = if events.iter().position(|&e| e == ClipEvent::KeyPress).is_some() {
+                Some(try!(self.read_u8()))
+            } else {
+                None
+            };
+
+            let mut action_data = Vec::with_capacity(length as usize);
+            action_data.resize(length as usize, 0);
+            try!(self.input.read_exact(&mut action_data));
+
+            Ok(Some(ClipAction {
+                events: events,
+                key_code: key_code,
+                action_data: action_data,
+            }))
+        }
+    }
+
+    fn read_clip_event_flags(&mut self) -> Result<Vec<ClipEvent>> {
+        // TODO: Switch to a bitset.
+        let mut event_list = Vec::new();
+        if try!(self.read_bit()) { event_list.push(ClipEvent::KeyUp); }
+        if try!(self.read_bit()) { event_list.push(ClipEvent::KeyDown); }
+        if try!(self.read_bit()) { event_list.push(ClipEvent::MouseUp); }
+        if try!(self.read_bit()) { event_list.push(ClipEvent::MouseDown); }
+        if try!(self.read_bit()) { event_list.push(ClipEvent::MouseMove); }
+        if try!(self.read_bit()) { event_list.push(ClipEvent::Unload); }
+        if try!(self.read_bit()) { event_list.push(ClipEvent::EnterFrame); }
+        if try!(self.read_bit()) { event_list.push(ClipEvent::Load); }
+        if self.version < 6 {
+            try!(self.read_u16());
+            try!(self.read_u8());
+        } else {
+            if try!(self.read_bit()) { event_list.push(ClipEvent::DragOver); }
+            if try!(self.read_bit()) { event_list.push(ClipEvent::RollOut); }
+            if try!(self.read_bit()) { event_list.push(ClipEvent::RollOver); }
+            if try!(self.read_bit()) { event_list.push(ClipEvent::ReleaseOutside); }
+            if try!(self.read_bit()) { event_list.push(ClipEvent::Release); }
+            if try!(self.read_bit()) { event_list.push(ClipEvent::Press); }
+            if try!(self.read_bit()) { event_list.push(ClipEvent::Initialize); }
+            if try!(self.read_bit()) { event_list.push(ClipEvent::Data); }
+            if self.version < 7 {
+                try!(self.read_u16());
+            } else {
+                try!(self.read_ubits(5));
+                if try!(self.read_bit()) { event_list.push(ClipEvent::Construct); }
+                if try!(self.read_bit()) { event_list.push(ClipEvent::Press); }
+                if try!(self.read_bit()) { event_list.push(ClipEvent::DragOut); }
+                try!(self.read_u8());
+            }
+        }
+        Ok(event_list)
     }
 }
 

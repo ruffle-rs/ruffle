@@ -148,6 +148,7 @@ pub enum BlendMode {
 pub struct ClipAction {
     pub events: Vec<ClipEvent>,
     pub key_code: Option<u8>,
+    pub action_data: Vec<u8>,
 }
 
 #[derive(Debug,PartialEq,Eq,Clone,Copy)]
@@ -167,7 +168,10 @@ pub enum ClipEvent {
     Release,
     Press,
     Initialize,
+    Data,
     Construct,
+    KeyPress,
+    DragOut,
 }
 
 #[derive(Debug,PartialEq)]
