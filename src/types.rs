@@ -26,7 +26,7 @@ pub struct Rectangle {
     pub y_max: f32,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug,PartialEq,Clone)]
 pub struct Color {
     pub r: u8,
     pub g: u8,
@@ -118,16 +118,105 @@ pub enum PlaceObjectAction {
 
 #[derive(Debug,PartialEq,Clone)]
 pub enum Filter {
-    DropShadowFilter,
-    BlurFilter,
-    GlowFilter,
-    BevelFilter,
-    GradientGlowFilter,
-    ConvolutionFilter,
-    ColorMatrixFilter,
-    GradientBevelFilter,
+    DropShadowFilter(Box<DropShadowFilter>),
+    BlurFilter(Box<BlurFilter>),
+    GlowFilter(Box<GlowFilter>),
+    BevelFilter(Box<BlurFilter>),
+    GradientGlowFilter(Box<GradientGlowFilter>),
+    ConvolutionFilter(Box<ConvolutionFilter>),
+    ColorMatrixFilter(Box<ColorMatrixFilter>),
+    GradientBevelFilter(Box<GradientBevelFilter>),
 }
 
+#[derive(Debug,PartialEq,Clone)]
+pub struct DropShadowFilter {
+    pub color: Color,
+    pub blur_x: f64,
+    pub blur_y: f64,
+    pub angle: f64,
+    pub distance: f64,
+    pub strength: f32,
+    pub is_inner: bool,
+    pub is_knocked_out: bool,
+    pub num_passes: u8,
+}
+
+#[derive(Debug,PartialEq,Clone)]
+pub struct BlurFilter {
+    pub blur_x: f64,
+    pub blur_y: f64,
+    pub num_passed: u8,
+}
+
+#[derive(Debug,PartialEq,Clone)]
+pub struct GlowFilter {
+    pub color: Color,
+    pub blur_x: f64,
+    pub blur_y: f64,
+    pub strength: f32,
+    pub is_inner: bool,
+    pub is_knocked_out: bool,
+    pub num_passes: u8,
+}
+
+#[derive(Debug,PartialEq,Clone)]
+pub struct BevelFilter {
+    pub shadow_color: Color,
+    pub highlight_color: Color,
+    pub blur_x: f64,
+    pub blur_y: f64,
+    pub angle: f64,
+    pub distance: f64,
+    pub strength: f32,
+    pub is_inner: bool,
+    pub is_knocked_out: bool,
+    pub is_on_top: bool,
+    pub num_passes: u8,
+}
+
+#[derive(Debug,PartialEq,Clone)]
+pub struct GradientGlowFilter {
+    pub colors: Vec<GradientRecord>,
+    pub blur_x: f64,
+    pub blur_y: f64,
+    pub angle: f64,
+    pub distance: f64,
+    pub strength: f32,
+    pub is_inner: bool,
+    pub is_knocked_out: bool,
+    pub num_passes: u8,
+}
+
+#[derive(Debug,PartialEq,Clone)]
+pub struct ConvolutionFilter {
+    pub num_matrix_rows: u8,
+    pub num_matrix_cols: u8,
+    pub matrix: Vec<f32>,
+    pub divisor: f32,
+    pub bias: f32,
+    pub default_color: Color,
+    pub is_clamped: bool,
+    pub is_preserve_alpha: bool,
+}
+
+#[derive(Debug,PartialEq,Clone)]
+pub struct ColorMatrixFilter {
+    pub matrix: [f32; 20],
+}
+
+#[derive(Debug,PartialEq,Clone)]
+pub struct GradientBevelFilter {
+    colors: Vec<GradientRecord>,
+    blur_x: f64,
+    blur_y: f64,
+    angle: f64,
+    distance: f64,
+    strength: f32,
+    is_inner: bool,
+    is_knocked_out: bool,
+    is_on_top: bool,
+    num_passes: u8,
+}
 
 #[derive(Debug,PartialEq,Eq,Clone,Copy)]
 pub enum BlendMode {
@@ -284,7 +373,7 @@ pub enum GradientInterpolation {
     LinearRGB,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug,PartialEq,Clone)]
 pub struct GradientRecord {
     pub ratio: u8,
     pub color: Color,
