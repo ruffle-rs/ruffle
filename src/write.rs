@@ -2,6 +2,7 @@ use byteorder::{LittleEndian, WriteBytesExt};
 use flate2::Compression as ZlibCompression;
 use flate2::write::ZlibEncoder;
 use std::cmp::max;
+use std::collections::HashSet;
 use std::io::{Error, ErrorKind, Result, Write};
 use tag_codes::TagCode;
 use types::*;
@@ -701,8 +702,58 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_clip_actions(&mut self, _: &Vec<ClipAction>) -> Result<()> {
-        unimplemented!()
+    fn write_clip_actions(&mut self, clip_actions: &Vec<ClipAction>) -> Result<()> {
+        try!(self.write_u16(0)); // Reserved
+        {
+            let mut all_events = HashSet::with_capacity(32);
+            for action in clip_actions {
+                all_events = &all_events | &action.events;
+            }
+            try!(self.write_clip_event_flags(&all_events));
+        }
+        for action in clip_actions {
+            try!(self.write_clip_event_flags(&action.events));
+            try!(self.write_u32(action.action_data.len() as u32));
+            if let Some(k) = action.key_code {
+                try!(self.write_u8(k));
+            }
+            try!(self.output.write_all(&action.action_data));
+        }
+        if self.version <= 5 {
+            try!(self.write_u16(0));
+        } else {
+            try!(self.write_u32(0));
+        }
+        Ok(())
+    }
+
+    fn write_clip_event_flags(&mut self, clip_events: &HashSet<ClipEvent>) -> Result<()> {
+        // TODO: Assert proper version.
+        try!(self.write_bit(clip_events.contains(&ClipEvent::KeyUp)));
+        try!(self.write_bit(clip_events.contains(&ClipEvent::KeyDown)));
+        try!(self.write_bit(clip_events.contains(&ClipEvent::MouseUp)));
+        try!(self.write_bit(clip_events.contains(&ClipEvent::MouseDown)));
+        try!(self.write_bit(clip_events.contains(&ClipEvent::MouseMove)));
+        try!(self.write_bit(clip_events.contains(&ClipEvent::Unload)));
+        try!(self.write_bit(clip_events.contains(&ClipEvent::EnterFrame)));
+        try!(self.write_bit(clip_events.contains(&ClipEvent::Load)));
+        try!(self.write_bit(clip_events.contains(&ClipEvent::DragOver)));
+        try!(self.write_bit(clip_events.contains(&ClipEvent::RollOut)));
+        try!(self.write_bit(clip_events.contains(&ClipEvent::RollOver)));
+        try!(self.write_bit(clip_events.contains(&ClipEvent::ReleaseOutside)));
+        try!(self.write_bit(clip_events.contains(&ClipEvent::Release)));
+        try!(self.write_bit(clip_events.contains(&ClipEvent::Press)));
+        try!(self.write_bit(clip_events.contains(&ClipEvent::Initialize)));
+        try!(self.write_bit(clip_events.contains(&ClipEvent::Data)));
+        if self.version >= 6 {
+            try!(self.write_ubits(5, 0));
+            try!(self.write_bit(clip_events.contains(&ClipEvent::Construct)));
+            try!(self.write_bit(clip_events.contains(&ClipEvent::KeyPress)));
+            try!(self.write_bit(clip_events.contains(&ClipEvent::DragOut)));
+            try!(self.write_u8(0));
+        }
+        try!(self.flush_bits());
+        Ok(())
     }
 
     fn write_tag_header(&mut self, tag_code: TagCode, length: u32) -> Result<()> {
