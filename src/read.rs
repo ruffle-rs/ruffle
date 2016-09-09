@@ -1,6 +1,7 @@
 use byteorder::{LittleEndian, ReadBytesExt};
 use flate2::read::ZlibDecoder;
 use num::FromPrimitive;
+use std::collections::HashSet;
 use std::io::{Error, ErrorKind, Read, Result};
 use types::*;
 use xz2::read::XzDecoder;
@@ -725,7 +726,7 @@ impl<R: Read> Reader<R> {
             Ok(None)
         } else {
             let length = try!(self.read_u32());
-            let key_code = if events.iter().position(|&e| e == ClipEvent::KeyPress).is_some() {
+            let key_code = if events.contains(&ClipEvent::KeyPress) {
                 Some(try!(self.read_u8()))
             } else {
                 None
@@ -743,36 +744,36 @@ impl<R: Read> Reader<R> {
         }
     }
 
-    fn read_clip_event_flags(&mut self) -> Result<Vec<ClipEvent>> {
+    fn read_clip_event_flags(&mut self) -> Result<HashSet<ClipEvent>> {
         // TODO: Switch to a bitset.
-        let mut event_list = Vec::new();
-        if try!(self.read_bit()) { event_list.push(ClipEvent::KeyUp); }
-        if try!(self.read_bit()) { event_list.push(ClipEvent::KeyDown); }
-        if try!(self.read_bit()) { event_list.push(ClipEvent::MouseUp); }
-        if try!(self.read_bit()) { event_list.push(ClipEvent::MouseDown); }
-        if try!(self.read_bit()) { event_list.push(ClipEvent::MouseMove); }
-        if try!(self.read_bit()) { event_list.push(ClipEvent::Unload); }
-        if try!(self.read_bit()) { event_list.push(ClipEvent::EnterFrame); }
-        if try!(self.read_bit()) { event_list.push(ClipEvent::Load); }
+        let mut event_list = HashSet::with_capacity(32);
+        if try!(self.read_bit()) { event_list.insert(ClipEvent::KeyUp); }
+        if try!(self.read_bit()) { event_list.insert(ClipEvent::KeyDown); }
+        if try!(self.read_bit()) { event_list.insert(ClipEvent::MouseUp); }
+        if try!(self.read_bit()) { event_list.insert(ClipEvent::MouseDown); }
+        if try!(self.read_bit()) { event_list.insert(ClipEvent::MouseMove); }
+        if try!(self.read_bit()) { event_list.insert(ClipEvent::Unload); }
+        if try!(self.read_bit()) { event_list.insert(ClipEvent::EnterFrame); }
+        if try!(self.read_bit()) { event_list.insert(ClipEvent::Load); }
         if self.version < 6 {
             try!(self.read_u16());
             try!(self.read_u8());
         } else {
-            if try!(self.read_bit()) { event_list.push(ClipEvent::DragOver); }
-            if try!(self.read_bit()) { event_list.push(ClipEvent::RollOut); }
-            if try!(self.read_bit()) { event_list.push(ClipEvent::RollOver); }
-            if try!(self.read_bit()) { event_list.push(ClipEvent::ReleaseOutside); }
-            if try!(self.read_bit()) { event_list.push(ClipEvent::Release); }
-            if try!(self.read_bit()) { event_list.push(ClipEvent::Press); }
-            if try!(self.read_bit()) { event_list.push(ClipEvent::Initialize); }
-            if try!(self.read_bit()) { event_list.push(ClipEvent::Data); }
+            if try!(self.read_bit()) { event_list.insert(ClipEvent::DragOver); }
+            if try!(self.read_bit()) { event_list.insert(ClipEvent::RollOut); }
+            if try!(self.read_bit()) { event_list.insert(ClipEvent::RollOver); }
+            if try!(self.read_bit()) { event_list.insert(ClipEvent::ReleaseOutside); }
+            if try!(self.read_bit()) { event_list.insert(ClipEvent::Release); }
+            if try!(self.read_bit()) { event_list.insert(ClipEvent::Press); }
+            if try!(self.read_bit()) { event_list.insert(ClipEvent::Initialize); }
+            if try!(self.read_bit()) { event_list.insert(ClipEvent::Data); }
             if self.version < 7 {
                 try!(self.read_u16());
             } else {
                 try!(self.read_ubits(5));
-                if try!(self.read_bit()) { event_list.push(ClipEvent::Construct); }
-                if try!(self.read_bit()) { event_list.push(ClipEvent::Press); }
-                if try!(self.read_bit()) { event_list.push(ClipEvent::DragOut); }
+                if try!(self.read_bit()) { event_list.insert(ClipEvent::Construct); }
+                if try!(self.read_bit()) { event_list.insert(ClipEvent::Press); }
+                if try!(self.read_bit()) { event_list.insert(ClipEvent::DragOut); }
                 try!(self.read_u8());
             }
         }

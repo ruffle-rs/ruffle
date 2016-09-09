@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 #[derive(Debug,PartialEq)]
 pub struct Swf {
     pub version: u8,
@@ -146,12 +148,12 @@ pub enum BlendMode {
 
 #[derive(Debug,PartialEq,Eq,Clone)]
 pub struct ClipAction {
-    pub events: Vec<ClipEvent>,
+    pub events: HashSet<ClipEvent>,
     pub key_code: Option<u8>,
     pub action_data: Vec<u8>,
 }
 
-#[derive(Debug,PartialEq,Eq,Clone,Copy)]
+#[derive(Debug,PartialEq,Eq,Clone,Copy,Hash)]
 pub enum ClipEvent {
     KeyUp,
     KeyDown,
@@ -173,6 +175,8 @@ pub enum ClipEvent {
     KeyPress,
     DragOut,
 }
+
+pub type ClipEventFlags = HashSet<ClipEvent>;
 
 #[derive(Debug,PartialEq)]
 pub enum Tag {
