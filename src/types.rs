@@ -121,7 +121,7 @@ pub enum Filter {
     DropShadowFilter(Box<DropShadowFilter>),
     BlurFilter(Box<BlurFilter>),
     GlowFilter(Box<GlowFilter>),
-    BevelFilter(Box<BlurFilter>),
+    BevelFilter(Box<BevelFilter>),
     GradientGlowFilter(Box<GradientGlowFilter>),
     ConvolutionFilter(Box<ConvolutionFilter>),
     ColorMatrixFilter(Box<ColorMatrixFilter>),
@@ -137,7 +137,7 @@ pub struct DropShadowFilter {
     pub distance: f64,
     pub strength: f32,
     pub is_inner: bool,
-    pub is_knocked_out: bool,
+    pub is_knockout: bool,
     pub num_passes: u8,
 }
 
@@ -145,7 +145,7 @@ pub struct DropShadowFilter {
 pub struct BlurFilter {
     pub blur_x: f64,
     pub blur_y: f64,
-    pub num_passed: u8,
+    pub num_passes: u8,
 }
 
 #[derive(Debug,PartialEq,Clone)]
@@ -155,7 +155,7 @@ pub struct GlowFilter {
     pub blur_y: f64,
     pub strength: f32,
     pub is_inner: bool,
-    pub is_knocked_out: bool,
+    pub is_knockout: bool,
     pub num_passes: u8,
 }
 
@@ -169,7 +169,7 @@ pub struct BevelFilter {
     pub distance: f64,
     pub strength: f32,
     pub is_inner: bool,
-    pub is_knocked_out: bool,
+    pub is_knockout: bool,
     pub is_on_top: bool,
     pub num_passes: u8,
 }
@@ -183,7 +183,7 @@ pub struct GradientGlowFilter {
     pub distance: f64,
     pub strength: f32,
     pub is_inner: bool,
-    pub is_knocked_out: bool,
+    pub is_knockout: bool,
     pub num_passes: u8,
 }
 
@@ -191,9 +191,9 @@ pub struct GradientGlowFilter {
 pub struct ConvolutionFilter {
     pub num_matrix_rows: u8,
     pub num_matrix_cols: u8,
-    pub matrix: Vec<f32>,
-    pub divisor: f32,
-    pub bias: f32,
+    pub matrix: Vec<f64>,
+    pub divisor: f64,
+    pub bias: f64,
     pub default_color: Color,
     pub is_clamped: bool,
     pub is_preserve_alpha: bool,
@@ -201,21 +201,21 @@ pub struct ConvolutionFilter {
 
 #[derive(Debug,PartialEq,Clone)]
 pub struct ColorMatrixFilter {
-    pub matrix: [f32; 20],
+    pub matrix: [f64; 20],
 }
 
 #[derive(Debug,PartialEq,Clone)]
 pub struct GradientBevelFilter {
-    colors: Vec<GradientRecord>,
-    blur_x: f64,
-    blur_y: f64,
-    angle: f64,
-    distance: f64,
-    strength: f32,
-    is_inner: bool,
-    is_knocked_out: bool,
-    is_on_top: bool,
-    num_passes: u8,
+    pub colors: Vec<GradientRecord>,
+    pub blur_x: f64,
+    pub blur_y: f64,
+    pub angle: f64,
+    pub distance: f64,
+    pub strength: f32,
+    pub is_inner: bool,
+    pub is_knockout: bool,
+    pub is_on_top: bool,
+    pub num_passes: u8,
 }
 
 #[derive(Debug,PartialEq,Eq,Clone,Copy)]

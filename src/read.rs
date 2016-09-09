@@ -44,7 +44,7 @@ fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<(Swf, Reader<Box<Re
 
     let mut reader = Reader::new(decompressed_input, version);
     let stage_size = try!(reader.read_rectangle());
-    let frame_rate = try!(reader.read_fixed88());
+    let frame_rate = try!(reader.read_fixed8());
     let num_frames = try!(reader.read_u16());
     let swf = Swf {
         version: version,
@@ -159,8 +159,14 @@ impl<R: Read> Reader<R> {
         self.read_sbits(num_bits).map(|n| (n as f32) / 65536f32)
     }
 
-    fn read_fixed88(&mut self) -> Result<f32> {
+    fn read_fixed8(&mut self) -> Result<f32> {
+        self.byte_align();
         self.input.read_i16::<LittleEndian>().map(|n| n as f32 / 256f32)
+    }
+
+    fn read_fixed16(&mut self) -> Result<f64> {
+        self.byte_align();
+        self.input.read_i32::<LittleEndian>().map(|n| n as f64 / 65536f64)
     }
 
     fn read_encoded_u32(&mut self) -> Result<u32> {
@@ -485,7 +491,7 @@ impl<R: Read> Reader<R> {
                 }
                 FillStyle::FocalGradient {
                     gradient: try!(self.read_gradient(shape_version)),
-                    focal_point: try!(self.read_fixed88()),
+                    focal_point: try!(self.read_fixed8()),
                 }
             }
 
@@ -690,11 +696,12 @@ impl<R: Read> Reader<R> {
         } else { None };
 
         // PlaceObject3
-        let filters = vec![];
+        let mut filters = vec![];
         if (flags & 0b1_00000000) != 0 {
-            //let num_filters = try!(self.read_u8());
-            // TODO: Read filters
-            unimplemented!();
+            let num_filters = try!(self.read_u8());
+            for _ in 0..num_filters {
+                filters.push(try!(self.read_filter()));
+            }
         } 
         let blend_mode = if (flags & 0b10_00000000) != 0 {
             match try!(self.read_u8()) {
@@ -812,6 +819,134 @@ impl<R: Read> Reader<R> {
             }
         }
         Ok(event_list)
+    }
+
+    fn read_filter(&mut self) -> Result<Filter> {
+        self.byte_align();
+        let filter = match try!(self.read_u8()) {
+            0 => Filter::DropShadowFilter(Box::new(DropShadowFilter {
+                color: try!(self.read_rgba()),
+                blur_x: try!(self.read_fixed16()),
+                blur_y: try!(self.read_fixed16()),
+                angle: try!(self.read_fixed16()),
+                distance: try!(self.read_fixed16()),
+                strength: try!(self.read_fixed8()),
+                is_inner: try!(self.read_bit()),
+                is_knockout: try!(self.read_bit()),
+                num_passes: try!(self.read_ubits(6)) as u8 & 0b011111,
+            })),
+            1 => Filter::BlurFilter(Box::new(BlurFilter {
+                blur_x: try!(self.read_fixed16()),
+                blur_y: try!(self.read_fixed16()),
+                num_passes: try!(self.read_ubits(5)) as u8,
+            })),
+            2 => Filter::GlowFilter(Box::new(GlowFilter {
+                color: try!(self.read_rgba()),
+                blur_x: try!(self.read_fixed16()),
+                blur_y: try!(self.read_fixed16()),
+                strength: try!(self.read_fixed8()),
+                is_inner: try!(self.read_bit()),
+                is_knockout: try!(self.read_bit()),
+                num_passes: try!(self.read_ubits(6)) as u8 & 0b011111,
+            })),
+            3 => Filter::BevelFilter(Box::new(BevelFilter {
+                shadow_color: try!(self.read_rgba()),
+                highlight_color: try!(self.read_rgba()),
+                blur_x: try!(self.read_fixed16()),
+                blur_y: try!(self.read_fixed16()),
+                angle: try!(self.read_fixed16()),
+                distance: try!(self.read_fixed16()),
+                strength: try!(self.read_fixed8()),
+                is_inner: try!(self.read_bit()),
+                is_knockout: try!(self.read_bit()),
+                is_on_top: (try!(self.read_ubits(2)) & 0b1) != 0,
+                num_passes: try!(self.read_ubits(4)) as u8 & 0b011111,
+            })),
+            4 => {
+                let num_colors = try!(self.read_u8());
+                let mut colors = Vec::with_capacity(num_colors as usize);
+                for _ in 0..num_colors {
+                    colors.push(try!(self.read_rgba()));
+                }
+                let mut gradient_records = Vec::with_capacity(num_colors as usize);
+                for color in colors {
+                    gradient_records.push(
+                        GradientRecord { color: color, ratio: try!(self.read_u8()) }
+                    );
+                }
+                Filter::GradientGlowFilter(Box::new(GradientGlowFilter {
+                    colors: gradient_records,
+                    blur_x: try!(self.read_fixed16()),
+                    blur_y: try!(self.read_fixed16()),
+                    angle: try!(self.read_fixed16()),
+                    distance: try!(self.read_fixed16()),
+                    strength: try!(self.read_fixed8()),
+                    is_inner: try!(self.read_bit()),
+                    is_knockout: try!(self.read_bit()),
+                    num_passes: try!(self.read_ubits(5)) as u8 & 0b011111,
+                }))
+            },
+            5 => {
+                let num_matrix_cols = try!(self.read_u8());
+                let num_matrix_rows = try!(self.read_u8());
+                let divisor = try!(self.read_fixed16());
+                let bias = try!(self.read_fixed16());
+                let num_entries = num_matrix_cols * num_matrix_rows;
+                let mut matrix = Vec::with_capacity(num_entries as usize);
+                for _ in 0..num_entries {
+                    matrix.push(try!(self.read_fixed16()));
+                }
+                let default_color = try!(self.read_rgba());
+                let flags = try!(self.read_u8());
+                Filter::ConvolutionFilter(Box::new(ConvolutionFilter {
+                    num_matrix_cols: num_matrix_cols,
+                    num_matrix_rows: num_matrix_rows,
+                    divisor: divisor,
+                    bias: bias,
+                    matrix: matrix,
+                    default_color: default_color,
+                    is_clamped: (flags & 0b10) != 0,
+                    is_preserve_alpha: (flags & 0b1) != 0,
+                }))
+            },
+            6 => {
+                let mut matrix = [0f64; 20];
+                for i in 0..20 {
+                    matrix[i] = try!(self.read_fixed16());
+                }
+                Filter::ColorMatrixFilter(Box::new(ColorMatrixFilter {
+                    matrix: matrix
+                }))
+            },
+            7 => {
+                let num_colors = try!(self.read_u8());
+                let mut colors = Vec::with_capacity(num_colors as usize);
+                for _ in 0..num_colors {
+                    colors.push(try!(self.read_rgba()));
+                }
+                let mut gradient_records = Vec::with_capacity(num_colors as usize);
+                for color in colors {
+                    gradient_records.push(
+                        GradientRecord { color: color, ratio: try!(self.read_u8()) }
+                    );
+                }
+                Filter::GradientBevelFilter(Box::new(GradientBevelFilter {
+                    colors: gradient_records,
+                    blur_x: try!(self.read_fixed16()),
+                    blur_y: try!(self.read_fixed16()),
+                    angle: try!(self.read_fixed16()),
+                    distance: try!(self.read_fixed16()),
+                    strength: try!(self.read_fixed8()),
+                    is_inner: try!(self.read_bit()),
+                    is_knockout: try!(self.read_bit()),
+                    is_on_top: false, // TODO
+                    num_passes: try!(self.read_ubits(5)) as u8 & 0b011111,
+                }))
+            },
+            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid filter type")),
+        };
+        self.byte_align();
+        Ok(filter)
     }
 }
 
@@ -935,14 +1070,14 @@ pub mod tests {
     }
 
     #[test]
-    fn read_fixed88() {
+    fn read_fixed8() {
         let buf = [0b00000000, 0b00000000, 0b00000000, 0b00000001, 0b10000000, 0b00000110,
                    0b01000000, 0b11101011];
         let mut reader = Reader::new(&buf[..], 1);
-        assert_eq!(reader.read_fixed88().unwrap(), 0f32);
-        assert_eq!(reader.read_fixed88().unwrap(), 1f32);
-        assert_eq!(reader.read_fixed88().unwrap(), 6.5f32);
-        assert_eq!(reader.read_fixed88().unwrap(), -20.75f32);
+        assert_eq!(reader.read_fixed8().unwrap(), 0f32);
+        assert_eq!(reader.read_fixed8().unwrap(), 1f32);
+        assert_eq!(reader.read_fixed8().unwrap(), 6.5f32);
+        assert_eq!(reader.read_fixed8().unwrap(), -20.75f32);
     }
 
     #[test]
