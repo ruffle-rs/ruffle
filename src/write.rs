@@ -23,7 +23,7 @@ pub fn write_swf<W: Write>(swf: &Swf, mut output: W) -> Result<()> {
         let mut writer = Writer::new(&mut swf_body, swf.version);
 
         try!(writer.write_rectangle(&swf.stage_size));
-        try!(writer.write_fixed88(swf.frame_rate));
+        try!(writer.write_fixed8(swf.frame_rate));
         try!(writer.write_u16(swf.num_frames));
 
         // Write main timeline tag list.
@@ -112,9 +112,14 @@ impl<W: Write> Writer<W> {
         self.output.write_i16::<LittleEndian>(n)
     }
 
-    fn write_fixed88(&mut self, n: f32) -> Result<()> {
+    fn write_fixed8(&mut self, n: f32) -> Result<()> {
         try!(self.flush_bits());
         self.output.write_i16::<LittleEndian>((n * 256f32) as i16)
+    }
+
+    fn write_fixed16(&mut self, n: f64) -> Result<()> {
+        try!(self.flush_bits());
+        self.output.write_i32::<LittleEndian>((n * 65536f64) as i32)
     }
 
     fn write_bit(&mut self, set: bool) -> Result<()> {
@@ -572,7 +577,7 @@ impl<W: Write> Writer<W> {
 
                 try!(self.write_u8(0x13)); // Focal gradient.
                 try!(self.write_gradient(gradient, shape_version));
-                try!(self.write_fixed88(focal_point));
+                try!(self.write_fixed8(focal_point));
             }
 
             &FillStyle::Bitmap { id, ref matrix, is_smoothed, is_repeating } => {
@@ -715,8 +720,9 @@ impl<W: Write> Writer<W> {
             if place_object_version >= 3 {
                 if !place_object.filters.is_empty() {
                     try!(writer.write_u8(place_object.filters.len() as u8));
-                    // TODO: Write filters.
-                    unimplemented!()
+                    for filter in &place_object.filters {
+                        try!(self.write_filter(filter));
+                    }
                 }
 
                 if place_object.blend_mode != BlendMode::Normal {
@@ -758,6 +764,123 @@ impl<W: Write> Writer<W> {
         }
         try!(self.write_tag_header(TagCode::PlaceObject2, buf.len() as u32));
         try!(self.output.write_all(&buf));
+        Ok(())
+    }
+
+    fn write_filter(&mut self, filter: &Filter) -> Result<()> {
+        match filter {
+            &Filter::DropShadowFilter(ref drop_shadow) => {
+                try!(self.write_u8(0));
+                try!(self.write_rgba(&drop_shadow.color));
+                try!(self.write_fixed16(drop_shadow.blur_x));
+                try!(self.write_fixed16(drop_shadow.blur_y));
+                try!(self.write_fixed16(drop_shadow.angle));
+                try!(self.write_fixed16(drop_shadow.distance));
+                try!(self.write_fixed8(drop_shadow.strength));
+                try!(self.write_bit(drop_shadow.is_inner));
+                try!(self.write_bit(drop_shadow.is_knockout));
+                try!(self.write_bit(true));
+                try!(self.write_ubits(5, drop_shadow.num_passes as u32));
+            },
+
+            &Filter::BlurFilter(ref blur) => {
+                try!(self.write_u8(1));
+                try!(self.write_fixed16(blur.blur_x));
+                try!(self.write_fixed16(blur.blur_y));
+                try!(self.write_u8(blur.num_passes << 3));
+            },
+
+            &Filter::GlowFilter(ref glow) => {
+                try!(self.write_u8(2));
+                try!(self.write_rgba(&glow.color));
+                try!(self.write_fixed16(glow.blur_x));
+                try!(self.write_fixed16(glow.blur_y));
+                try!(self.write_fixed8(glow.strength));
+                try!(self.write_bit(glow.is_inner));
+                try!(self.write_bit(glow.is_knockout));
+                try!(self.write_bit(true));
+                try!(self.write_ubits(5, glow.num_passes as u32));
+            },
+
+            &Filter::BevelFilter(ref bevel) => {
+                try!(self.write_u8(3));
+                try!(self.write_rgba(&bevel.shadow_color));
+                try!(self.write_rgba(&bevel.highlight_color));
+                try!(self.write_fixed16(bevel.blur_x));
+                try!(self.write_fixed16(bevel.blur_y));
+                try!(self.write_fixed16(bevel.angle));
+                try!(self.write_fixed16(bevel.distance));
+                try!(self.write_fixed8(bevel.strength));
+                try!(self.write_bit(bevel.is_inner));
+                try!(self.write_bit(bevel.is_knockout));
+                try!(self.write_bit(true));
+                try!(self.write_bit(bevel.is_on_top));
+                try!(self.write_ubits(4, bevel.num_passes as u32));
+            },
+
+            &Filter::GradientGlowFilter(ref glow) => {
+                try!(self.write_u8(4));
+                try!(self.write_u8(glow.colors.len() as u8));
+                for gradient_record in &glow.colors {
+                    try!(self.write_rgba(&gradient_record.color));
+                }
+                for gradient_record in &glow.colors {
+                    try!(self.write_u8(gradient_record.ratio));
+                }
+                try!(self.write_fixed16(glow.blur_x));
+                try!(self.write_fixed16(glow.blur_y));
+                try!(self.write_fixed8(glow.strength));
+                try!(self.write_bit(glow.is_inner));
+                try!(self.write_bit(glow.is_knockout));
+                try!(self.write_bit(true));
+                try!(self.write_ubits(5, glow.num_passes as u32));
+            },
+
+            &Filter::ConvolutionFilter(ref convolve) => {
+                try!(self.write_u8(5));
+                try!(self.write_u8(convolve.num_matrix_cols));
+                try!(self.write_u8(convolve.num_matrix_rows));
+                try!(self.write_fixed16(convolve.divisor));
+                try!(self.write_fixed16(convolve.bias));
+                for val in &convolve.matrix {
+                    try!(self.write_fixed16(*val));
+                }
+                try!(self.write_rgba(&convolve.default_color));
+                try!(self.write_u8(
+                    if convolve.is_clamped { 0b10 } else { 0 } |
+                    if convolve.is_preserve_alpha { 0b1 } else { 0 }
+                ));
+            },
+
+            &Filter::ColorMatrixFilter(ref color_matrix) => {
+                try!(self.write_u8(6));
+                for i in 0..20 {
+                    try!(self.write_fixed16(color_matrix.matrix[i]));
+                }
+            },
+
+            &Filter::GradientBevelFilter(ref bevel) => {
+                try!(self.write_u8(7));
+                try!(self.write_u8(bevel.colors.len() as u8));
+                for gradient_record in &bevel.colors {
+                    try!(self.write_rgba(&gradient_record.color));
+                }
+                for gradient_record in &bevel.colors {
+                    try!(self.write_u8(gradient_record.ratio));
+                }
+                try!(self.write_fixed16(bevel.blur_x));
+                try!(self.write_fixed16(bevel.blur_y));
+                try!(self.write_fixed16(bevel.angle));
+                try!(self.write_fixed16(bevel.distance));
+                try!(self.write_fixed8(bevel.strength));
+                try!(self.write_bit(bevel.is_inner));
+                try!(self.write_bit(bevel.is_knockout));
+                try!(self.write_bit(true));
+                try!(self.write_bit(bevel.is_on_top));
+                try!(self.write_ubits(4, bevel.num_passes as u32));
+            },
+        }
+        try!(self.flush_bits());
         Ok(())
     }
 
@@ -914,14 +1037,14 @@ mod tests {
     }
 
     #[test]
-    fn write_fixed88() {
+    fn write_fixed8() {
         let mut buf = Vec::new();
         {
             let mut writer = Writer::new(&mut buf, 1);
-            writer.write_fixed88(0f32).unwrap();
-            writer.write_fixed88(1f32).unwrap();
-            writer.write_fixed88(6.5f32).unwrap();
-            writer.write_fixed88(-20.75f32).unwrap();
+            writer.write_fixed8(0f32).unwrap();
+            writer.write_fixed8(1f32).unwrap();
+            writer.write_fixed8(6.5f32).unwrap();
+            writer.write_fixed8(-20.75f32).unwrap();
         }
         assert_eq!(buf,
                    [0b00000000, 0b00000000, 0b00000000, 0b00000001, 0b10000000, 0b00000110,
