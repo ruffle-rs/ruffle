@@ -939,8 +939,8 @@ impl<R: Read> Reader<R> {
                     strength: try!(self.read_fixed8()),
                     is_inner: try!(self.read_bit()),
                     is_knockout: try!(self.read_bit()),
-                    is_on_top: false, // TODO
-                    num_passes: try!(self.read_ubits(5)) as u8 & 0b011111,
+                    is_on_top: (try!(self.read_ubits(2)) & 0b1) != 0,
+                    num_passes: try!(self.read_ubits(4)) as u8 & 0b011111,
                 }))
             },
             _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid filter type")),
