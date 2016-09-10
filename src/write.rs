@@ -311,6 +311,16 @@ impl<W: Write> Writer<W> {
         match tag {
             &Tag::ShowFrame => try!(self.write_tag_header(TagCode::ShowFrame, 0)),
 
+            &Tag::Protect(ref password) => {
+                if let &Some(ref password_md5) = password {
+                    try!(self.write_tag_header(TagCode::Protect, password_md5.len() as u32 + 3));
+                    try!(self.write_u16(0)); // Two null bytes? Not specified in SWF19.
+                    try!(self.write_c_string(password_md5));
+                } else {
+                    try!(self.write_tag_header(TagCode::Protect, 0));
+                }
+            },
+
             &Tag::DefineShape(ref shape) => try!(self.write_define_shape(shape)),
             &Tag::DefineSprite(ref sprite) => try!(self.write_define_sprite(sprite)),
 
@@ -1352,6 +1362,12 @@ mod tests {
             writer.write_tag(&Tag::FileAttributes(file_attributes)).unwrap();
         }
         assert_eq!(buf, [0b01_000100, 0b00010001, 0b00101000, 0, 0, 0]);
+    }
+
+    #[test]
+    fn write_protect() {
+        let (tag, tag_bytes) = test_data::protect();
+        assert_eq!(write_tag_to_buf(&tag, 1), tag_bytes);
     }
 
     #[test]

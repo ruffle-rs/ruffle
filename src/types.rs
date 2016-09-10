@@ -273,6 +273,8 @@ pub type ClipEventFlags = HashSet<ClipEvent>;
 pub enum Tag {
     ShowFrame,
 
+    Protect(Option<String>),
+    
     DefineShape(Shape),
     DefineSprite(Sprite),
 

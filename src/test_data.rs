@@ -16,6 +16,16 @@ pub fn echo_swf(filename: &str) {
 
 pub type TagTestData = (Tag, Vec<u8>);
 
+pub fn protect() -> TagTestData {
+    (
+        Tag::Protect(Some("$1$d/$yMscKH17OJ0paJT.e67iz0".to_string())),
+        read_tag_bytes_from_file(
+            "tests/swfs/protect.swf",
+            TagCode::Protect
+        )
+    )
+}
+
 pub fn define_scene_and_frame_label_data() -> TagTestData {
     (
         Tag::DefineSceneAndFrameLabelData {

@@ -348,6 +348,13 @@ impl<R: Read> Reader<R> {
                 })
             },
 
+            Some(TagCode::Protect) => {
+                try!(tag_reader.read_u16());  // Two null bytes? Not specified in SWF19.
+                Tag::Protect(
+                    if length > 0 { Some(try!(tag_reader.read_c_string())) } else { None }
+                )
+            },
+
             Some(TagCode::DefineSceneAndFrameLabelData) => {
                 try!(tag_reader.read_define_scene_and_frame_label_data())
             },
@@ -1258,6 +1265,12 @@ pub mod tests {
         let buf = [0, 0];
         let mut reader = Reader::new(&buf[..], 1);
         assert_eq!(reader.read_tag().unwrap(), None);
+    }
+
+    #[test]
+    fn read_protect() {
+        let (tag, tag_bytes) = test_data::protect();
+        assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), tag);
     }
 
     #[test]
