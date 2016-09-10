@@ -833,7 +833,8 @@ impl<W: Write> Writer<W> {
                 try!(self.write_bit(glow.is_inner));
                 try!(self.write_bit(glow.is_knockout));
                 try!(self.write_bit(true));
-                try!(self.write_ubits(5, glow.num_passes as u32));
+                try!(self.write_bit(glow.is_on_top));
+                try!(self.write_ubits(4, glow.num_passes as u32));
             },
 
             &Filter::ConvolutionFilter(ref convolve) => {

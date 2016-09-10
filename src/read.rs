@@ -785,8 +785,10 @@ impl<R: Read> Reader<R> {
         if events.is_empty() {
             Ok(None)
         } else {
-            let length = try!(self.read_u32());
+            let mut length = try!(self.read_u32());
             let key_code = if events.contains(&ClipEvent::KeyPress) {
+                // ActionData length includes the 1 byte key code.
+                length -= 1;
                 Some(try!(self.read_u8()))
             } else {
                 None
@@ -832,7 +834,7 @@ impl<R: Read> Reader<R> {
             } else {
                 try!(self.read_ubits(5));
                 if try!(self.read_bit()) { event_list.insert(ClipEvent::Construct); }
-                if try!(self.read_bit()) { event_list.insert(ClipEvent::Press); }
+                if try!(self.read_bit()) { event_list.insert(ClipEvent::KeyPress); }
                 if try!(self.read_bit()) { event_list.insert(ClipEvent::DragOut); }
                 try!(self.read_u8());
             }
@@ -902,7 +904,8 @@ impl<R: Read> Reader<R> {
                     strength: try!(self.read_fixed8()),
                     is_inner: try!(self.read_bit()),
                     is_knockout: try!(self.read_bit()),
-                    num_passes: try!(self.read_ubits(5)) as u8 & 0b011111,
+                    is_on_top: (try!(self.read_ubits(2)) & 0b1) != 0,
+                    num_passes: try!(self.read_ubits(4)) as u8,
                 }))
             },
             5 => {
@@ -1262,6 +1265,15 @@ pub mod tests {
     #[test]
     fn read_place_object_2() {
         let (tag, tag_bytes) = test_data::place_object_2();
+        assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), tag);
+
+        let (tag, tag_bytes) = test_data::place_object_2_clip_actions();
+        assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), tag);
+    }
+
+    #[test]
+    fn read_place_object_3() {
+        let (tag, tag_bytes) = test_data::place_object_3_the_works();
         assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), tag);
     }
 

@@ -184,6 +184,7 @@ pub struct GradientGlowFilter {
     pub strength: f32,
     pub is_inner: bool,
     pub is_knockout: bool,
+    pub is_on_top: bool,
     pub num_passes: u8,
 }
 
