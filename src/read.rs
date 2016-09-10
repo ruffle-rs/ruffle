@@ -303,11 +303,22 @@ impl<R: Read> Reader<R> {
 
     fn read_tag_list(&mut self) -> Result<Vec<Tag>> {
         let mut tags = Vec::new();
-        while let Some(tag) = try!(self.read_tag()) {
-            tags.push(tag);
+        loop {
+            match self.read_tag() {
+                Ok(Some(tag)) => tags.push(tag),
+                Ok(None) => break,
+                Err(err) => {
+                    // We screwed up reading this tag in some way.
+                    // TODO: We could recover more gracefully in some way.
+                    // Simply throw away this tag, but keep going.
+                    if cfg!(debug_assertions) {
+                        panic!("Error reading tag");
+                    }
+                    use std::convert::From;
+                    return Err(From::from(err));
+                }
+            };
         }
-        // TODO: Verify that we read at least one tag?
-        // Are zero-length tag lists allowed?
         Ok(tags)
     }
 
@@ -381,6 +392,14 @@ impl<R: Read> Reader<R> {
                 }
             }
         };
+
+        if cfg!(debug_assertions) {
+            // There should be no data remaining in the tag if we read it correctly.
+            // If there is data remaining, we probably screwed up, so panic in debug builds.
+            if let Ok(_) = tag_reader.read_u8() {
+                panic!("Error reading tag");
+            }
+        }
 
         Ok(Some(tag))
     }
