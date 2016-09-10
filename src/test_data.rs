@@ -102,6 +102,14 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
     ),
 
     (
+        6,
+        Tag::ExportAssets(vec![
+            ExportedAsset { id: 2, name: "Test💯".to_string() },
+        ]),
+        read_tag_bytes_from_file("tests/swfs/exportassets.swf", TagCode::ExportAssets)
+    ),
+
+    (
         8,
         Tag::FileAttributes(FileAttributes {
             use_direct_blit: false,

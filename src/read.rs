@@ -337,6 +337,26 @@ impl<R: Read> Reader<R> {
                 Tag::SetBackgroundColor(try!(tag_reader.read_rgb()))
             },
 
+            Some(TagCode::ExportAssets) => {
+                let num_exports = try!(tag_reader.read_u16());
+                /*
+                let exports = try!((0..num_exports)
+                    .map(|_| ExportedAsset {
+                        id: try!(self.read_u16()),
+                        name: try!(self.read_c_string()),
+                    })
+                    .collect::Result<Vec<_>>());
+                */
+                let mut exports = Vec::with_capacity(num_exports as usize);
+                for _ in 0..num_exports {
+                    exports.push(ExportedAsset {
+                        id: try!(tag_reader.read_u16()),
+                        name: try!(tag_reader.read_c_string()),
+                    });
+                }
+                Tag::ExportAssets(exports)
+            },
+
             Some(TagCode::FileAttributes) => {
                 let flags = try!(tag_reader.read_u32());
                 Tag::FileAttributes(FileAttributes {
@@ -1039,6 +1059,20 @@ pub mod tests {
             } else {
                 if swf_tag_code == tag_code as u16 {
                     if index == 0 {
+                        // Flash tends to export tags with the extended header even if the size
+                        // would fit with the standard header.
+                        // This screws up our tests, because swf-rs writes tags with the
+                        // minimum header necessary.
+                        // We want to easily write new tests by exporting SWFs from the Flash
+                        // software, so rewrite with a standard header to match swf-rs output.
+                        if length < 0b111111 && (data[0] & 0b111111) == 0b111111 {
+                            let mut tag_data = Vec::with_capacity(length + 2);
+                            tag_data.extend_from_slice(&data[0..2]);
+                            tag_data.extend_from_slice(&data[6..]);
+                            tag_data[0] = (data[0] & !0b111111) | (length as u8);
+                            println!("Length {}", length);
+                            data = tag_data;
+                        }
                         return data;
                     } else {
                         index -= 1;

@@ -311,6 +311,18 @@ impl<W: Write> Writer<W> {
         match tag {
             &Tag::ShowFrame => try!(self.write_tag_header(TagCode::ShowFrame, 0)),
 
+            &Tag::ExportAssets(ref exports) => {
+                let len = exports.iter().map(|e| e.name.len() as u32 + 1).sum::<u32>()
+                            + exports.len() as u32 * 2
+                            + 2;
+                try!(self.write_tag_header(TagCode::ExportAssets, len));
+                try!(self.write_u16(exports.len() as u16));
+                for &ExportedAsset {id, ref name} in exports {
+                    try!(self.write_u16(id));
+                    try!(self.write_c_string(name));
+                }
+            },
+
             &Tag::Protect(ref password) => {
                 if let &Some(ref password_md5) = password {
                     try!(self.write_tag_header(TagCode::Protect, password_md5.len() as u32 + 3));

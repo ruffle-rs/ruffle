@@ -271,6 +271,8 @@ pub type ClipEventFlags = HashSet<ClipEvent>;
 
 #[derive(Debug,PartialEq)]
 pub enum Tag {
+    ExportAssets(Vec<ExportedAsset>),
+
     ShowFrame,
 
     Protect(Option<String>),
@@ -292,6 +294,12 @@ pub enum Tag {
     },
 
     Unknown { tag_code: u16, data: Vec<u8> },
+}
+
+#[derive(Debug,PartialEq,Clone)]
+pub struct ExportedAsset {
+    pub id: CharacterId,
+    pub name: String,
 }
 
 #[derive(Debug,PartialEq)]
