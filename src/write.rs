@@ -689,7 +689,7 @@ impl<W: Write> Writer<W> {
             ));
             if place_object_version >= 3 {
                 try!(writer.write_u8(
-                    if place_object.background_color.is_none() { 0b100_0000 } else { 0 } |
+                    if place_object.background_color.is_some() { 0b100_0000 } else { 0 } |
                     if !place_object.is_visible { 0b10_0000 } else { 0 } |
                     if place_object.is_image { 0b1_0000 } else { 0 } |
                     if place_object.class_name.is_some() { 0b1000 } else { 0 } |
@@ -732,12 +732,12 @@ impl<W: Write> Writer<W> {
                 if !place_object.filters.is_empty() {
                     try!(writer.write_u8(place_object.filters.len() as u8));
                     for filter in &place_object.filters {
-                        try!(self.write_filter(filter));
+                        try!(writer.write_filter(filter));
                     }
                 }
 
                 if place_object.blend_mode != BlendMode::Normal {
-                    try!(self.write_u8(match place_object.blend_mode {
+                    try!(writer.write_u8(match place_object.blend_mode {
                         BlendMode::Normal => 0,
                         BlendMode::Layer => 2,
                         BlendMode::Multiply => 3,
@@ -756,15 +756,15 @@ impl<W: Write> Writer<W> {
                 }
 
                 if place_object.is_bitmap_cached {
-                    try!(self.write_u8(1));
+                    try!(writer.write_u8(1));
                 }
 
                 if !place_object.is_visible {
-                    try!(self.write_u8(0));
+                    try!(writer.write_u8(0));
                 }
 
                 if let Some(ref background_color) = place_object.background_color {
-                    try!(self.write_rgba(background_color));
+                    try!(writer.write_rgba(background_color));
                 }
             }
 
@@ -773,7 +773,12 @@ impl<W: Write> Writer<W> {
             }
             try!(writer.flush_bits());
         }
-        try!(self.write_tag_header(TagCode::PlaceObject2, buf.len() as u32));
+        let tag_code = if place_object_version == 2 {
+            TagCode::PlaceObject2
+        } else {
+            TagCode::PlaceObject3
+        };
+        try!(self.write_tag_header(tag_code, buf.len() as u32));
         try!(self.output.write_all(&buf));
         Ok(())
     }
@@ -840,6 +845,8 @@ impl<W: Write> Writer<W> {
                 }
                 try!(self.write_fixed16(glow.blur_x));
                 try!(self.write_fixed16(glow.blur_y));
+                try!(self.write_fixed16(glow.angle));
+                try!(self.write_fixed16(glow.distance));
                 try!(self.write_fixed8(glow.strength));
                 try!(self.write_bit(glow.is_inner));
                 try!(self.write_bit(glow.is_knockout));
@@ -907,7 +914,9 @@ impl<W: Write> Writer<W> {
         }
         for action in clip_actions {
             try!(self.write_clip_event_flags(&action.events));
-            try!(self.write_u32(action.action_data.len() as u32));
+            let action_length = action.action_data.len() as u32
+                                + if action.key_code.is_some() { 1 } else { 0 };
+            try!(self.write_u32(action_length));
             if let Some(k) = action.key_code {
                 try!(self.write_u8(k));
             }
@@ -1376,6 +1385,15 @@ mod tests {
     fn write_place_object_2() {
         let (tag, tag_bytes) = test_data::place_object_2();
         assert_eq!(write_tag_to_buf(&tag, 1), tag_bytes);
+
+        let (tag, tag_bytes) = test_data::place_object_2_clip_actions();
+        assert_eq!(write_tag_to_buf(&tag, 10), tag_bytes);
+    }
+
+        #[test]
+    fn write_place_object_3() {
+        let (tag, tag_bytes) = test_data::place_object_3_the_works();
+        assert_eq!(write_tag_to_buf(&tag, 10), tag_bytes);
     }
 
     #[test]
