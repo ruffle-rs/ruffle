@@ -14,20 +14,12 @@ pub fn echo_swf(filename: &str) {
     write_swf(&swf, out_file).unwrap();
 }
 
-pub type TagTestData = (Tag, Vec<u8>);
+pub type TestData<T> = (u8, T, Vec<u8>);
+pub type TagTestData = TestData<Tag>;
 
-pub fn protect() -> TagTestData {
+pub fn tag_tests() -> Vec<TagTestData> { vec![
     (
-        Tag::Protect(Some("$1$d/$yMscKH17OJ0paJT.e67iz0".to_string())),
-        read_tag_bytes_from_file(
-            "tests/swfs/protect.swf",
-            TagCode::Protect
-        )
-    )
-}
-
-pub fn define_scene_and_frame_label_data() -> TagTestData {
-    (
+        1, // Minimum version not listed in SWF19.
         Tag::DefineSceneAndFrameLabelData {
             scenes: vec![
                 FrameLabel { frame_num: 0, label: "Scene 1".to_string() },
@@ -48,11 +40,10 @@ pub fn define_scene_and_frame_label_data() -> TagTestData {
             "tests/swfs/define_scene_and_frame_label_data.swf",
             TagCode::DefineSceneAndFrameLabelData
         )
-    )
-}
+    ),
 
-pub fn define_shape() -> TagTestData {
     (
+        1,
         Tag::DefineShape(Shape {
             version: 1,
             id: 1,
@@ -92,11 +83,10 @@ pub fn define_shape() -> TagTestData {
             ]
         }),
         read_tag_bytes_from_file("tests/swfs/define_shape.swf", TagCode::DefineShape)
-    )
-}
+    ),
 
-pub fn define_sprite() -> TagTestData {
     (
+        3,
         Tag::DefineSprite(Sprite {
             id: 1,
             num_frames: 5,
@@ -109,11 +99,34 @@ pub fn define_sprite() -> TagTestData {
             ],
         }),
         read_tag_bytes_from_file("tests/swfs/define_sprite.swf", TagCode::DefineSprite)
-    )
-}
+    ),
 
-pub fn place_object_2() -> TagTestData {
     (
+        8,
+        Tag::FileAttributes(FileAttributes {
+            use_direct_blit: false,
+            use_gpu: true,
+            has_metadata: false,
+            is_action_script_3: true,
+            use_network_sandbox: false,
+        }),
+        vec![0b01_000100, 0b00010001, 0b00101000, 0, 0, 0]
+    ),
+        
+    (
+        3,
+        Tag::FrameLabel { label: "test".to_string(), is_anchor: false },
+        read_tag_bytes_from_file_with_index("tests/swfs/framelabel.swf", TagCode::FrameLabel, 0)
+    ),
+
+    (
+        6, // Anchor tags supported in SWF version 6 and later.
+        Tag::FrameLabel { label: "anchor_tag".to_string(), is_anchor: true },
+        read_tag_bytes_from_file_with_index("tests/swfs/framelabel.swf", TagCode::FrameLabel, 1)
+    ),
+
+    (
+        4,
         Tag::PlaceObject(Box::new(PlaceObject {
             version: 2,
             action: PlaceObjectAction::Place(1),
@@ -133,11 +146,10 @@ pub fn place_object_2() -> TagTestData {
             is_visible: true,
         })),
         read_tag_bytes_from_file("tests/swfs/define_shape.swf", TagCode::PlaceObject2)
-    )
-}
+    ),
 
-pub fn place_object_2_clip_actions() -> TagTestData {
     (
+        6, // ClipActions added in SWF version 5-6.
         Tag::PlaceObject(Box::new(PlaceObject {
             version: 2,
             action: PlaceObjectAction::Place(2),
@@ -173,12 +185,10 @@ pub fn place_object_2_clip_actions() -> TagTestData {
             is_visible: true,
         })),
         read_tag_bytes_from_file("tests/swfs/placeobject2-clipactions.swf", TagCode::PlaceObject2)
-    )
-}
+    ),
 
-
-pub fn place_object_3_the_works() -> TagTestData {
     (
+        8,
         Tag::PlaceObject(Box::new(PlaceObject {
             version: 3,
             action: PlaceObjectAction::Place(2),
@@ -262,19 +272,35 @@ pub fn place_object_3_the_works() -> TagTestData {
             is_visible: false,
         })),
         read_tag_bytes_from_file("tests/swfs/placeobject3-theworks.swf", TagCode::PlaceObject3)
-    )
-}
+    ),
 
-pub fn frame_label() -> TagTestData {
     (
-        Tag::FrameLabel { label: "test".to_string(), is_anchor: false },
-        read_tag_bytes_from_file_with_index("tests/swfs/framelabel.swf", TagCode::FrameLabel, 0)
-    )
-}
+        5, // Password supported in SWF version 5 or later.
+        Tag::Protect(Some("$1$d/$yMscKH17OJ0paJT.e67iz0".to_string())),
+        read_tag_bytes_from_file(
+            "tests/swfs/protect.swf",
+            TagCode::Protect
+        )
+    ),
 
-pub fn frame_label_anchor() -> TagTestData {
     (
-        Tag::FrameLabel { label: "anchor_tag".to_string(), is_anchor: true },
-        read_tag_bytes_from_file_with_index("tests/swfs/framelabel.swf", TagCode::FrameLabel, 1)
-    )
-}
+        1,
+        Tag::SetBackgroundColor(Color { r: 64, g: 150, b: 255, a: 255 }),
+        vec![0b01_000011, 0b00000010, 64, 150, 255]
+    ),
+
+    (1, Tag::ShowFrame, vec![0b01_000000, 0]),
+
+    (1, Tag::Unknown { tag_code: 512, data: vec![] }, vec![0b00_000000, 0b10000000]),
+    (1, Tag::Unknown { tag_code: 513, data: vec![1, 2] },  vec![0b01_000010, 0b10000000, 1, 2]),
+    (
+        1,
+        Tag::Unknown { tag_code: 513, data: vec![0; 64] }, 
+        vec![0b01_111111, 0b10000000, 64, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ],
+    ),
+] }

@@ -960,7 +960,8 @@ impl<W: Write> Writer<W> {
         try!(self.write_bit(clip_events.contains(&ClipEvent::Data)));
         if self.version >= 6 {
             try!(self.write_ubits(5, 0));
-            try!(self.write_bit(clip_events.contains(&ClipEvent::Construct)));
+            let has_construct = self.version >= 7 && clip_events.contains(&ClipEvent::Construct);
+            try!(self.write_bit(has_construct));
             try!(self.write_bit(clip_events.contains(&ClipEvent::KeyPress)));
             try!(self.write_bit(clip_events.contains(&ClipEvent::DragOut)));
             try!(self.write_u8(0));
@@ -1043,12 +1044,6 @@ mod tests {
             num_frames: 1,
             tags: vec![],
         }
-    }
-
-    fn write_tag_to_buf(tag: &Tag, swf_version: u8) -> Vec<u8> {
-        let mut buf = Vec::new();
-        Writer::new(&mut buf, swf_version).write_tag(tag).unwrap();
-        buf
     }
 
     #[test]
@@ -1288,128 +1283,20 @@ mod tests {
         assert_eq!(write_to_buf(&m), [0]);
     }
 
-    // TAGS
     #[test]
-    fn write_unknown_tag() {
-        {
-            let tag = Tag::Unknown {
-                tag_code: 512,
-                data: vec![0, 1, 2, 3],
-            };
-            let mut buf = Vec::new();
-            {
-                let mut writer = Writer::new(&mut buf, 1);
-                writer.write_tag(&tag).unwrap();
+    fn write_tags() {
+        for (swf_version, tag, expected_tag_bytes) in test_data::tag_tests() {
+            let mut written_tag_bytes = Vec::new();
+            Writer::new(&mut written_tag_bytes, swf_version).write_tag(&tag).unwrap();
+            if written_tag_bytes != expected_tag_bytes {
+                panic!(
+                    "Error reading tag.\nTag:\n{:?}\n\nWrote:\n{:?}\n\nExpected:\n{:?}",
+                    tag,
+                    written_tag_bytes,
+                    expected_tag_bytes
+                );
             }
-            assert_eq!(buf, [0b00_000100, 0b10000000, 0, 1, 2, 3]);
         }
-        {
-            let tag = Tag::Unknown {
-                tag_code: 513,
-                data: vec![0; 63],
-            };
-            let mut buf = Vec::new();
-            {
-                let mut writer = Writer::new(&mut buf, 1);
-                writer.write_tag(&tag).unwrap();
-            }
-            let mut expected: Vec<u8> = vec![0b01_111111, 0b10000000, 0b00111111, 0, 0, 0];
-            expected.extend_from_slice(&[0; 63]);
-            assert_eq!(buf, expected);
-        }
-    }
-
-    #[test]
-    fn write_simple_tags() {
-        {
-            let mut buf = Vec::new();
-            {
-                let mut writer = Writer::new(&mut buf, 1);
-                writer.write_tag(&Tag::ShowFrame).unwrap();
-            }
-            assert_eq!(buf, [0b01_000000, 0b00000000]);
-        }
-    }
-
-    #[test]
-    fn write_set_background_color() {
-        let mut buf = Vec::new();
-        {
-            let mut writer = Writer::new(&mut buf, 1);
-            writer.write_tag(&Tag::SetBackgroundColor(Color {
-                    r: 255,
-                    g: 128,
-                    b: 0,
-                    a: 255,
-                }))
-                .unwrap();
-        }
-        assert_eq!(buf, [0b01_000011, 0b00000010, 255, 128, 0]);
-    }
-
-    #[test]
-    fn write_file_attributes() {
-        let file_attributes = FileAttributes {
-            use_direct_blit: false,
-            use_gpu: true,
-            has_metadata: false,
-            is_action_script_3: true,
-            use_network_sandbox: false,
-        };
-        let mut buf = Vec::new();
-        {
-            let mut writer = Writer::new(&mut buf, 1);
-            writer.write_tag(&Tag::FileAttributes(file_attributes)).unwrap();
-        }
-        assert_eq!(buf, [0b01_000100, 0b00010001, 0b00101000, 0, 0, 0]);
-    }
-
-    #[test]
-    fn write_protect() {
-        let (tag, tag_bytes) = test_data::protect();
-        assert_eq!(write_tag_to_buf(&tag, 1), tag_bytes);
-    }
-
-    #[test]
-    fn write_define_scene_and_frame_label_data() {
-        let (tag, tag_bytes) = test_data::define_scene_and_frame_label_data();
-        assert_eq!(write_tag_to_buf(&tag, 1), tag_bytes);
-    }
-
-    #[test]
-    fn write_frame_label() {
-        let (tag, tag_bytes) = test_data::frame_label();
-        assert_eq!(write_tag_to_buf(&tag, 1), tag_bytes);
-
-        let (tag, tag_bytes) = test_data::frame_label();
-        assert_eq!(write_tag_to_buf(&tag, 1), tag_bytes);
-    }
-
-    #[test]
-    fn write_define_shape() {
-        let (tag, tag_bytes) = test_data::define_shape();
-        assert_eq!(write_tag_to_buf(&tag, 1), tag_bytes);
-    }
-
-    #[test]
-    fn write_define_sprite() {
-        let (tag, tag_bytes) = test_data::define_sprite();
-        assert_eq!(write_tag_to_buf(&tag, 1), tag_bytes);
-    }
-
-    #[test]
-    fn write_place_object_2() {
-        let (tag, tag_bytes) = test_data::place_object_2();
-        assert_eq!(write_tag_to_buf(&tag, 1), tag_bytes);
-
-        let (tag, tag_bytes) = test_data::place_object_2_clip_actions();
-        assert_eq!(write_tag_to_buf(&tag, 10), tag_bytes);
-    }
-
-        #[test]
-    fn write_place_object_3() {
-        let (tag, tag_bytes) = test_data::place_object_3_the_works();
-        assert_eq!(write_tag_to_buf(&tag, 10), tag_bytes);
     }
 
     #[test]

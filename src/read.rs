@@ -413,7 +413,7 @@ impl<R: Read> Reader<R> {
             // There should be no data remaining in the tag if we read it correctly.
             // If there is data remaining, we probably screwed up, so panic in debug builds.
             if let Ok(_) = tag_reader.read_u8() {
-                panic!("Error reading tag");
+                panic!("Error reading tag {:?}", tag_code);
             }
         }
 
@@ -845,11 +845,13 @@ impl<R: Read> Reader<R> {
             if try!(self.read_bit()) { event_list.insert(ClipEvent::Press); }
             if try!(self.read_bit()) { event_list.insert(ClipEvent::Initialize); }
             if try!(self.read_bit()) { event_list.insert(ClipEvent::Data); }
-            if self.version < 7 {
+            if self.version < 6 {
                 try!(self.read_u16());
             } else {
                 try!(self.read_ubits(5));
-                if try!(self.read_bit()) { event_list.insert(ClipEvent::Construct); }
+                if try!(self.read_bit()) && self.version >= 7 {
+                    event_list.insert(ClipEvent::Construct);
+                }
                 if try!(self.read_bit()) { event_list.insert(ClipEvent::KeyPress); }
                 if try!(self.read_bit()) { event_list.insert(ClipEvent::DragOut); }
                 try!(self.read_u8());
@@ -1226,94 +1228,11 @@ pub mod tests {
         }
     }
 
-    // TAGS
-    #[test]
-    fn read_unknown_tag() {
-        {
-            let buf = &[0b00_000000, 0b10000000];
-            let mut reader = Reader::new(&buf[..], 1);
-            assert_eq!(reader.read_tag().unwrap().unwrap(),
-                       Tag::Unknown {
-                           tag_code: 512,
-                           data: [].to_vec(),
-                       });
-        }
-
-        {
-            let buf = &[0b01_000010, 0b10000000, 1, 2];
-            let mut reader = Reader::new(&buf[..], 1);
-            assert_eq!(reader.read_tag().unwrap().unwrap(),
-                       Tag::Unknown {
-                           tag_code: 513,
-                           data: [1, 2].to_vec(),
-                       });
-        }
-
-        {
-            let buf = &[0b01_111111, 0b10000000, 3, 0, 0, 0, 1, 2, 3];
-            let mut reader = Reader::new(&buf[..], 1);
-            assert_eq!(reader.read_tag().unwrap().unwrap(),
-                       Tag::Unknown {
-                           tag_code: 513,
-                           data: [1, 2, 3].to_vec(),
-                       });
-        }
-    }
-
     #[test]
     fn read_end_tag() {
         let buf = [0, 0];
         let mut reader = Reader::new(&buf[..], 1);
         assert_eq!(reader.read_tag().unwrap(), None);
-    }
-
-    #[test]
-    fn read_protect() {
-        let (tag, tag_bytes) = test_data::protect();
-        assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), tag);
-    }
-
-    #[test]
-    fn read_show_frame() {
-        let buf = [0b01_000000, 0];
-        let mut reader = Reader::new(&buf[..], 1);
-        assert_eq!(reader.read_tag().unwrap().unwrap(), Tag::ShowFrame);
-    }
-
-    #[test]
-    fn read_frame_label() {
-        let (tag, tag_bytes) = test_data::frame_label();
-        assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), tag);
-
-        let (tag, tag_bytes) = test_data::frame_label_anchor();
-        assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), tag);
-    }
-
-    #[test]
-    fn read_define_shape() {
-        let (tag, tag_bytes) = test_data::define_shape();
-        assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), tag);
-    }
-
-    #[test]
-    fn read_define_sprite() {
-        let (tag, tag_bytes) = test_data::define_sprite();
-        assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), tag);
-    }
-
-    #[test]
-    fn read_place_object_2() {
-        let (tag, tag_bytes) = test_data::place_object_2();
-        assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), tag);
-
-        let (tag, tag_bytes) = test_data::place_object_2_clip_actions();
-        assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), tag);
-    }
-
-    #[test]
-    fn read_place_object_3() {
-        let (tag, tag_bytes) = test_data::place_object_3_the_works();
-        assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), tag);
     }
 
     #[test]
@@ -1386,37 +1305,19 @@ pub mod tests {
     }
 
     #[test]
-    fn read_file_attributes() {
-        let file_attributes = FileAttributes {
-            use_direct_blit: false,
-            use_gpu: true,
-            has_metadata: false,
-            is_action_script_3: true,
-            use_network_sandbox: false,
-        };
-        let buf = [0b01_000100, 0b00010001, 0b00101000, 0, 0, 0];
-        let mut reader = Reader::new(&buf[..], 1);
-        assert_eq!(reader.read_tag().unwrap().unwrap(),
-                   Tag::FileAttributes(file_attributes));
-    }
-
-    #[test]
-    fn read_set_background_color() {
-        let buf = [0b01_000011, 0b00000010, 64, 150, 255];
-        let mut reader = Reader::new(&buf[..], 1);
-        assert_eq!(reader.read_tag().unwrap().unwrap(),
-                   Tag::SetBackgroundColor(Color {
-                       r: 64,
-                       g: 150,
-                       b: 255,
-                       a: 255,
-                   }));
-    }
-
-    #[test]
-    fn read_define_scene_and_frame_label_data() {
-        let (tag, tag_bytes) = test_data::define_scene_and_frame_label_data();
-        assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), tag);
+    fn read_tags() {
+        for (swf_version, expected_tag, tag_bytes) in test_data::tag_tests() {
+            let mut reader = Reader::new(&tag_bytes[..], swf_version);
+            let parsed_tag = reader.read_tag().unwrap().unwrap();
+            if parsed_tag != expected_tag {
+                // Failed, result doesn't match.
+                panic!(
+                    "Incorrectly parsed tag.\nRead:\n{:?}\n\nExpected:\n{:?}",
+                    parsed_tag,
+                    expected_tag
+                );
+            }
+        }
     }
 
     #[test]
