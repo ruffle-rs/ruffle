@@ -335,6 +335,15 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
 
     (1, Tag::ShowFrame, vec![0b01_000000, 0]),
 
+    (
+        9,
+        Tag::SymbolClass(vec![
+            SymbolClassLink { id: 2, class_name: "foo.Test".to_string() },
+            SymbolClassLink { id: 0, class_name: "DocumentTest".to_string() },
+        ]),
+        read_tag_bytes_from_file("tests/swfs/symbolclass.swf", TagCode::SymbolClass)
+    ),
+
     (1, Tag::Unknown { tag_code: 512, data: vec![] }, vec![0b00_000000, 0b10000000]),
     (1, Tag::Unknown { tag_code: 513, data: vec![1, 2] },  vec![0b01_000010, 0b10000000, 1, 2]),
     (

@@ -405,6 +405,17 @@ impl<W: Write> Writer<W> {
                 try!(self.write_i16(depth));
             },
 
+            &Tag::SymbolClass(ref symbols) => {
+                let len = symbols.iter().map(|e| e.class_name.len() as u32 + 3).sum::<u32>()
+                            + 2;
+                try!(self.write_tag_header(TagCode::SymbolClass, len));
+                try!(self.write_u16(symbols.len() as u16));
+                for &SymbolClassLink {id, ref class_name} in symbols {
+                    try!(self.write_u16(id));
+                    try!(self.write_c_string(class_name));
+                }
+            },
+
             &Tag::FileAttributes(ref attributes) => {
                 try!(self.write_tag_header(TagCode::FileAttributes, 4));
                 let mut flags = 0u32;

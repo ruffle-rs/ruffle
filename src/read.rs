@@ -358,7 +358,7 @@ impl<R: Read> Reader<R> {
                 }
                 Tag::ImportAssets { url: url, imports: imports }
             },
-            
+
             Some(TagCode::SetBackgroundColor) => {
                 Tag::SetBackgroundColor(try!(tag_reader.read_rgb()))
             },
@@ -377,6 +377,18 @@ impl<R: Read> Reader<R> {
             Some(TagCode::SetTabIndex) => Tag::SetTabIndex {
                 depth: try!(tag_reader.read_i16()),
                 tab_index: try!(tag_reader.read_u16()),
+            },
+
+            Some(TagCode::SymbolClass) => {
+                let num_symbols = try!(tag_reader.read_u16());
+                let mut symbols = Vec::with_capacity(num_symbols as usize);
+                for _ in 0..num_symbols {
+                    symbols.push(SymbolClassLink {
+                        id: try!(tag_reader.read_u16()),
+                        class_name: try!(tag_reader.read_c_string()),
+                    });
+                }
+                Tag::SymbolClass(symbols)
             },
 
             Some(TagCode::ExportAssets) => {

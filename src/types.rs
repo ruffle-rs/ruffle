@@ -284,7 +284,7 @@ pub enum Tag {
     ImportAssets { url: String, imports: Vec<ExportedAsset> },
     SetBackgroundColor(Color),
     SetTabIndex { depth: Depth, tab_index: u16 },
-
+    SymbolClass(Vec<SymbolClassLink>),
     PlaceObject(Box<PlaceObject>),
     RemoveObject { depth: Depth, character_id: Option<CharacterId> },
 
@@ -303,6 +303,12 @@ pub enum Tag {
 pub struct ExportedAsset {
     pub id: CharacterId,
     pub name: String,
+}
+
+#[derive(Debug,PartialEq,Clone)]
+pub struct SymbolClassLink {
+    pub id: CharacterId,
+    pub class_name: String
 }
 
 #[derive(Debug,PartialEq)]
