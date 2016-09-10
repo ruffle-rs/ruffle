@@ -280,6 +280,7 @@ pub enum Tag {
     DefineShape(Shape),
     DefineSprite(Sprite),
 
+    ImportAssets { url: String, imports: Vec<ExportedAsset> },
     SetBackgroundColor(Color),
 
     PlaceObject(Box<PlaceObject>),

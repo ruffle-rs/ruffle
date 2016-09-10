@@ -332,21 +332,24 @@ impl<R: Read> Reader<R> {
             Some(TagCode::End) => return Ok(None),
             Some(TagCode::ShowFrame) => Tag::ShowFrame,
             Some(TagCode::DefineShape) => try!(tag_reader.read_define_shape(1)),
-
+            Some(TagCode::ImportAssets) => {
+                let url = try!(tag_reader.read_c_string());
+                let num_imports = try!(tag_reader.read_u16());
+                let mut imports = Vec::with_capacity(num_imports as usize);
+                for _ in 0..num_imports {
+                    imports.push(ExportedAsset {
+                        id: try!(tag_reader.read_u16()),
+                        name: try!(tag_reader.read_c_string()),
+                    });
+                }
+                Tag::ImportAssets { url: url, imports: imports }
+            },
             Some(TagCode::SetBackgroundColor) => {
                 Tag::SetBackgroundColor(try!(tag_reader.read_rgb()))
             },
 
             Some(TagCode::ExportAssets) => {
                 let num_exports = try!(tag_reader.read_u16());
-                /*
-                let exports = try!((0..num_exports)
-                    .map(|_| ExportedAsset {
-                        id: try!(self.read_u16()),
-                        name: try!(self.read_c_string()),
-                    })
-                    .collect::Result<Vec<_>>());
-                */
                 let mut exports = Vec::with_capacity(num_exports as usize);
                 for _ in 0..num_exports {
                     exports.push(ExportedAsset {
@@ -1070,7 +1073,6 @@ pub mod tests {
                             tag_data.extend_from_slice(&data[0..2]);
                             tag_data.extend_from_slice(&data[6..]);
                             tag_data[0] = (data[0] & !0b111111) | (length as u8);
-                            println!("Length {}", length);
                             data = tag_data;
                         }
                         return data;

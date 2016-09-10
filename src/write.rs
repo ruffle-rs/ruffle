@@ -336,6 +336,19 @@ impl<W: Write> Writer<W> {
             &Tag::DefineShape(ref shape) => try!(self.write_define_shape(shape)),
             &Tag::DefineSprite(ref sprite) => try!(self.write_define_sprite(sprite)),
 
+            &Tag::ImportAssets { ref url, ref imports } => {
+                let len = imports.iter().map(|e| e.name.len() as u32 + 3).sum::<u32>()
+                            + url.len() as u32 + 1
+                            + 2;
+                try!(self.write_tag_header(TagCode::ImportAssets, len));
+                try!(self.write_c_string(url));
+                try!(self.write_u16(imports.len() as u16));
+                for &ExportedAsset {id, ref name} in imports {
+                    try!(self.write_u16(id));
+                    try!(self.write_c_string(name));
+                }
+            },
+
             // TODO: Allow clone of color.
             &Tag::SetBackgroundColor(ref color) => {
                 try!(self.write_tag_header(TagCode::SetBackgroundColor, 3));
