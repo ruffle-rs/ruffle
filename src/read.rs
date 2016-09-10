@@ -344,6 +344,21 @@ impl<R: Read> Reader<R> {
                 }
                 Tag::ImportAssets { url: url, imports: imports }
             },
+            Some(TagCode::ImportAssets2) => {
+                let url = try!(tag_reader.read_c_string());
+                try!(tag_reader.read_u8()); // Reserved; must be 1
+                try!(tag_reader.read_u8()); // Reserved; must be 0
+                let num_imports = try!(tag_reader.read_u16());
+                let mut imports = Vec::with_capacity(num_imports as usize);
+                for _ in 0..num_imports {
+                    imports.push(ExportedAsset {
+                        id: try!(tag_reader.read_u16()),
+                        name: try!(tag_reader.read_c_string()),
+                    });
+                }
+                Tag::ImportAssets { url: url, imports: imports }
+            },
+            
             Some(TagCode::SetBackgroundColor) => {
                 Tag::SetBackgroundColor(try!(tag_reader.read_rgb()))
             },

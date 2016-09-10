@@ -140,12 +140,21 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
     ),
 
     (
-        7, // Anchor tags supported in SWF version 6 and later.
+        7,
         Tag::ImportAssets {
             url: "exportassets.swf".to_string(),
             imports: vec![ExportedAsset { id: 1, name: "Test💯".to_string() }],
         },
         read_tag_bytes_from_file("tests/swfs/importassets.swf", TagCode::ImportAssets)
+    ),
+
+    (
+        8,
+        Tag::ImportAssets {
+            url: "exportassets.swf".to_string(),
+            imports: vec![ExportedAsset { id: 1, name: "Test💯".to_string() }],
+        },
+        read_tag_bytes_from_file("tests/swfs/importassets2.swf", TagCode::ImportAssets2)
     ),
 
     (

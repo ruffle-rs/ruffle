@@ -353,8 +353,16 @@ impl<W: Write> Writer<W> {
                 let len = imports.iter().map(|e| e.name.len() as u32 + 3).sum::<u32>()
                             + url.len() as u32 + 1
                             + 2;
-                try!(self.write_tag_header(TagCode::ImportAssets, len));
-                try!(self.write_c_string(url));
+                // SWF v8 and later use ImportAssets2 tag.
+                if self.version >= 8 {
+                    try!(self.write_tag_header(TagCode::ImportAssets2, len + 2));
+                    try!(self.write_c_string(url));
+                    try!(self.write_u8(1));
+                    try!(self.write_u8(0));
+                } else {
+                    try!(self.write_tag_header(TagCode::ImportAssets, len));
+                    try!(self.write_c_string(url));
+                }
                 try!(self.write_u16(imports.len() as u16));
                 for &ExportedAsset {id, ref name} in imports {
                     try!(self.write_u16(id));
