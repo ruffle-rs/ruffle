@@ -272,7 +272,7 @@ pub type ClipEventFlags = HashSet<ClipEvent>;
 #[derive(Debug,PartialEq)]
 pub enum Tag {
     ExportAssets(Vec<ExportedAsset>),
-
+    ScriptLimits { max_recursion_depth: u16, timeout_in_seconds: u16 },
     ShowFrame,
 
     Protect(Option<String>),
@@ -280,7 +280,7 @@ pub enum Tag {
     DefineShape(Shape),
     DefineSprite(Sprite),
     EnableDebugger(String),
-    
+
     ImportAssets { url: String, imports: Vec<ExportedAsset> },
     SetBackgroundColor(Color),
 

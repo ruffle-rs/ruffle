@@ -354,6 +354,11 @@ impl<R: Read> Reader<R> {
                 Tag::EnableDebugger(try!(tag_reader.read_c_string()))
             },
 
+            Some(TagCode::ScriptLimits) => Tag::ScriptLimits {
+                max_recursion_depth: try!(tag_reader.read_u16()),
+                timeout_in_seconds: try!(tag_reader.read_u16()),
+            },
+
             Some(TagCode::ExportAssets) => {
                 let num_exports = try!(tag_reader.read_u16());
                 let mut exports = Vec::with_capacity(num_exports as usize);

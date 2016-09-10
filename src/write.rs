@@ -366,7 +366,13 @@ impl<W: Write> Writer<W> {
             &Tag::SetBackgroundColor(ref color) => {
                 try!(self.write_tag_header(TagCode::SetBackgroundColor, 3));
                 try!(self.write_rgb(color));
-            }
+            },
+
+            &Tag::ScriptLimits { max_recursion_depth, timeout_in_seconds } => {
+                try!(self.write_tag_header(TagCode::ScriptLimits, 4));
+                try!(self.write_u16(max_recursion_depth));
+                try!(self.write_u16(timeout_in_seconds));
+            },
 
             &Tag::PlaceObject(ref place_object) => match (*place_object).version {
                 1 => try!(self.write_place_object(place_object)),

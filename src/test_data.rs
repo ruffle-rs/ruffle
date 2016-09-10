@@ -312,6 +312,12 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
         vec![0b01_000011, 0b00000010, 64, 150, 255]
     ),
 
+    (
+        7,
+        Tag::ScriptLimits { max_recursion_depth: 256, timeout_in_seconds: 42 },
+        read_tag_bytes_from_file("tests/swfs/scriptlimits.swf", TagCode::ScriptLimits)
+    ),
+
     (1, Tag::ShowFrame, vec![0b01_000000, 0]),
 
     (1, Tag::Unknown { tag_code: 512, data: vec![] }, vec![0b00_000000, 0b10000000]),
