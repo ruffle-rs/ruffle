@@ -374,6 +374,12 @@ impl<W: Write> Writer<W> {
                 try!(self.write_u16(timeout_in_seconds));
             },
 
+            &Tag::SetTabIndex { depth, tab_index } => {
+                try!(self.write_tag_header(TagCode::SetTabIndex, 4));
+                try!(self.write_i16(depth));
+                try!(self.write_u16(tab_index));
+            },
+
             &Tag::PlaceObject(ref place_object) => match (*place_object).version {
                 1 => try!(self.write_place_object(place_object)),
                 2 => try!(self.write_place_object_2_or_3(place_object, 2)),

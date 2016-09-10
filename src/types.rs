@@ -283,6 +283,7 @@ pub enum Tag {
 
     ImportAssets { url: String, imports: Vec<ExportedAsset> },
     SetBackgroundColor(Color),
+    SetTabIndex { depth: Depth, tab_index: u16 },
 
     PlaceObject(Box<PlaceObject>),
     RemoveObject { depth: Depth, character_id: Option<CharacterId> },

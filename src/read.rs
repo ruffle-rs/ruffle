@@ -359,6 +359,11 @@ impl<R: Read> Reader<R> {
                 timeout_in_seconds: try!(tag_reader.read_u16()),
             },
 
+            Some(TagCode::SetTabIndex) => Tag::SetTabIndex {
+                depth: try!(tag_reader.read_i16()),
+                tab_index: try!(tag_reader.read_u16()),
+            },
+
             Some(TagCode::ExportAssets) => {
                 let num_exports = try!(tag_reader.read_u16());
                 let mut exports = Vec::with_capacity(num_exports as usize);

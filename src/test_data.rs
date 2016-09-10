@@ -314,6 +314,12 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
 
     (
         7,
+        Tag::SetTabIndex { depth: 2, tab_index: 1 },
+        vec![0b10_000100, 0b000_10000, 2, 0, 1, 0],
+    ),
+
+    (
+        7,
         Tag::ScriptLimits { max_recursion_depth: 256, timeout_in_seconds: 42 },
         read_tag_bytes_from_file("tests/swfs/scriptlimits.swf", TagCode::ScriptLimits)
     ),
