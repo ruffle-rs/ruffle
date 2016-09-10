@@ -103,6 +103,12 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
 
     (
         6,
+        Tag::EnableDebugger("$1$ve$EG3LE6bumvJ2pR8F5qXny/".to_string()),
+        read_tag_bytes_from_file("tests/swfs/enabledebugger2.swf", TagCode::EnableDebugger2)
+    ),
+
+    (
+        6,
         Tag::ExportAssets(vec![
             ExportedAsset { id: 2, name: "Test💯".to_string() },
         ]),

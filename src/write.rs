@@ -336,6 +336,19 @@ impl<W: Write> Writer<W> {
             &Tag::DefineShape(ref shape) => try!(self.write_define_shape(shape)),
             &Tag::DefineSprite(ref sprite) => try!(self.write_define_sprite(sprite)),
 
+            &Tag::EnableDebugger(ref password_md5) => {
+                let len = password_md5.len() as u32 + 1;
+                if self.version >= 6 {
+                    // SWF v6+ uses EnableDebugger2 tag.
+                    try!(self.write_tag_header(TagCode::EnableDebugger2, len + 2));
+                    try!(self.write_u16(0)); // Reserved
+                } else {
+                    try!(self.write_tag_header(TagCode::EnableDebugger, len));
+                }
+                
+                try!(self.write_c_string(password_md5));
+            },
+
             &Tag::ImportAssets { ref url, ref imports } => {
                 let len = imports.iter().map(|e| e.name.len() as u32 + 3).sum::<u32>()
                             + url.len() as u32 + 1

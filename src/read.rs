@@ -348,6 +348,12 @@ impl<R: Read> Reader<R> {
                 Tag::SetBackgroundColor(try!(tag_reader.read_rgb()))
             },
 
+            Some(TagCode::EnableDebugger) => Tag::EnableDebugger(try!(tag_reader.read_c_string())),
+            Some(TagCode::EnableDebugger2) => {
+                try!(tag_reader.read_u16()); // Reserved
+                Tag::EnableDebugger(try!(tag_reader.read_c_string()))
+            },
+
             Some(TagCode::ExportAssets) => {
                 let num_exports = try!(tag_reader.read_u16());
                 let mut exports = Vec::with_capacity(num_exports as usize);
