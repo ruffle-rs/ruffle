@@ -335,7 +335,7 @@ impl<R: Read> Reader<R> {
 
             Some(TagCode::SetBackgroundColor) => {
                 Tag::SetBackgroundColor(try!(tag_reader.read_rgb()))
-            }
+            },
 
             Some(TagCode::FileAttributes) => {
                 let flags = try!(tag_reader.read_u32());
@@ -346,11 +346,20 @@ impl<R: Read> Reader<R> {
                     is_action_script_3: (flags & 0b00001000) != 0,
                     use_network_sandbox: (flags & 0b00000001) != 0,
                 })
-            }
+            },
 
             Some(TagCode::DefineSceneAndFrameLabelData) => {
                 try!(tag_reader.read_define_scene_and_frame_label_data())
-            }
+            },
+
+            Some(TagCode::FrameLabel) => {
+                let label = try!(tag_reader.read_c_string());
+                Tag::FrameLabel {
+                    is_anchor: tag_reader.version >= 6 && length > label.len() + 1 &&
+                                try!(tag_reader.read_u8()) != 0,
+                    label: label,
+                }
+            },
 
             Some(TagCode::DefineSprite) => {
                 // TODO: There's probably a better way to prevent the infinite type recursion.
@@ -994,7 +1003,7 @@ pub mod tests {
         read_swf(&data[..]).unwrap()
     }
 
-    pub fn read_tag_bytes_from_file(path: &str, tag_code: TagCode) -> Vec<u8> {
+    pub fn read_tag_bytes_from_file_with_index(path: &str, tag_code: TagCode, mut index: usize) -> Vec<u8> {
         let mut file = File::open(path).unwrap();
         let mut data = Vec::new();
         file.read_to_end(&mut data).unwrap();
@@ -1020,10 +1029,18 @@ pub mod tests {
                 panic!("Tag not found");
             } else {
                 if swf_tag_code == tag_code as u16 {
-                    return data;
+                    if index == 0 {
+                        return data;
+                    } else {
+                        index -= 1;
+                    }
                 }
             }
         }
+    }
+
+    pub fn read_tag_bytes_from_file(path: &str, tag_code: TagCode) -> Vec<u8> {
+        read_tag_bytes_from_file_with_index(path, tag_code, 0)
     }
 
     #[test]
@@ -1248,6 +1265,15 @@ pub mod tests {
         let buf = [0b01_000000, 0];
         let mut reader = Reader::new(&buf[..], 1);
         assert_eq!(reader.read_tag().unwrap().unwrap(), Tag::ShowFrame);
+    }
+
+    #[test]
+    fn read_frame_label() {
+        let (tag, tag_bytes) = test_data::frame_label();
+        assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), tag);
+
+        let (tag, tag_bytes) = test_data::frame_label_anchor();
+        assert_eq!(reader(&tag_bytes).read_tag().unwrap().unwrap(), tag);
     }
 
     #[test]

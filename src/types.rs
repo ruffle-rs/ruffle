@@ -283,6 +283,7 @@ pub enum Tag {
 
     FileAttributes(FileAttributes),
 
+    FrameLabel { label: String, is_anchor: bool },
     DefineSceneAndFrameLabelData {
         scenes: Vec<FrameLabel>,
         frame_labels: Vec<FrameLabel>,

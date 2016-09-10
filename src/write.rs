@@ -332,7 +332,7 @@ impl<W: Write> Writer<W> {
                     try!(self.write_tag_header(TagCode::RemoveObject, 4));
                     try!(self.write_u16(id));
                 } else {
-                    try!(self.write_tag_header(TagCode::RemoveObject2, 2));                    
+                    try!(self.write_tag_header(TagCode::RemoveObject2, 2));
                 }
                 try!(self.write_i16(depth));
             },
@@ -357,6 +357,17 @@ impl<W: Write> Writer<W> {
                 }
                 try!(self.write_u32(flags));
             }
+
+            &Tag::FrameLabel { ref label, is_anchor } => {
+                // TODO: Assert proper version
+                let is_anchor = is_anchor && self.version >= 6;
+                let length = label.len() as u32 + if is_anchor { 2 } else { 1 };
+                try!(self.write_tag_header(TagCode::FrameLabel, length));
+                try!(self.write_c_string(label));
+                if is_anchor {
+                    try!(self.write_u8(1));
+                }
+            },
 
             &Tag::DefineSceneAndFrameLabelData { ref scenes, ref frame_labels } => {
                 try!(self.write_define_scene_and_frame_label_data(scenes, frame_labels))
@@ -1337,6 +1348,15 @@ mod tests {
     #[test]
     fn write_define_scene_and_frame_label_data() {
         let (tag, tag_bytes) = test_data::define_scene_and_frame_label_data();
+        assert_eq!(write_tag_to_buf(&tag, 1), tag_bytes);
+    }
+
+    #[test]
+    fn write_frame_label() {
+        let (tag, tag_bytes) = test_data::frame_label();
+        assert_eq!(write_tag_to_buf(&tag, 1), tag_bytes);
+
+        let (tag, tag_bytes) = test_data::frame_label();
         assert_eq!(write_tag_to_buf(&tag, 1), tag_bytes);
     }
 

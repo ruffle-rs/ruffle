@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::vec::Vec;
 use read::read_swf;
-use read::tests::read_tag_bytes_from_file;
+use read::tests::{read_tag_bytes_from_file, read_tag_bytes_from_file_with_index};
 use tag_codes::TagCode;
 use types::*;
 use write::write_swf;
@@ -252,5 +252,19 @@ pub fn place_object_3_the_works() -> TagTestData {
             is_visible: false,
         })),
         read_tag_bytes_from_file("tests/swfs/placeobject3-theworks.swf", TagCode::PlaceObject3)
+    )
+}
+
+pub fn frame_label() -> TagTestData {
+    (
+        Tag::FrameLabel { label: "test".to_string(), is_anchor: false },
+        read_tag_bytes_from_file_with_index("tests/swfs/framelabel.swf", TagCode::FrameLabel, 0)
+    )
+}
+
+pub fn frame_label_anchor() -> TagTestData {
+    (
+        Tag::FrameLabel { label: "anchor_tag".to_string(), is_anchor: true },
+        read_tag_bytes_from_file_with_index("tests/swfs/framelabel.swf", TagCode::FrameLabel, 1)
     )
 }
