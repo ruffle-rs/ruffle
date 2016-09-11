@@ -370,6 +370,11 @@ impl<W: Write> Writer<W> {
                 }
             },
 
+            &Tag::Metadata(ref metadata) => {
+                try!(self.write_tag_header(TagCode::Metadata, metadata.len() as u32 + 1));
+                try!(self.write_c_string(metadata));
+            },
+
             // TODO: Allow clone of color.
             &Tag::SetBackgroundColor(ref color) => {
                 try!(self.write_tag_header(TagCode::SetBackgroundColor, 3));

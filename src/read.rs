@@ -359,6 +359,8 @@ impl<R: Read> Reader<R> {
                 Tag::ImportAssets { url: url, imports: imports }
             },
 
+            Some(TagCode::Metadata) => Tag::Metadata(try!(tag_reader.read_c_string())),
+
             Some(TagCode::SetBackgroundColor) => {
                 Tag::SetBackgroundColor(try!(tag_reader.read_rgb()))
             },
