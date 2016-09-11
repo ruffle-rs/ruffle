@@ -352,6 +352,7 @@ impl<W: Write> Writer<W> {
             },
 
             &Tag::DefineShape(ref shape) => try!(self.write_define_shape(shape)),
+            &Tag::DefineSound(ref sound) => try!(self.write_define_sound(sound)),
             &Tag::DefineSprite(ref sprite) => try!(self.write_define_sprite(sprite)),
 
             &Tag::DoAbc(ref action_data) => {
@@ -556,6 +557,36 @@ impl<W: Write> Writer<W> {
         };
         try!(self.write_tag_header(tag_code, buf.len() as u32));
         try!(self.output.write_all(&buf));
+        Ok(())
+    }
+
+    fn write_define_sound(&mut self, sound: &Sound) -> Result<()> {
+        try!(self.write_tag_header(
+            TagCode::DefineSound,
+            7 + sound.data.len() as u32
+        ));
+        try!(self.write_u16(sound.id));
+        try!(self.write_ubits(4, match sound.compression {
+            AudioCompression::UncompressedUnknownEndian => 0,
+            AudioCompression::Adpcm => 1,
+            AudioCompression::Mp3 => 2,
+            AudioCompression::Uncompressed => 3,
+            AudioCompression::Nellymoser16Khz => 4,
+            AudioCompression::Nellymoser8Khz => 5,
+            AudioCompression::Nellymoser => 6,
+            AudioCompression::Speex => 11,
+        }));
+        try!(self.write_ubits(2, match sound.sample_rate {
+            5500 => 0,
+            11000 => 1,
+            22000 => 2,
+            44000 => 3,
+            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid sample rates.")),
+        }));
+        try!(self.write_bit(sound.is_16_bit));
+        try!(self.write_bit(sound.is_stereo));
+        try!(self.write_u32(sound.num_samples));
+        try!(self.output.write_all(&sound.data));
         Ok(())
     }
 

@@ -279,6 +279,7 @@ pub enum Tag {
     DefineBinaryData { id: CharacterId, data: Vec<u8> },
     DefineScalingGrid { id: CharacterId, splitter_rect: Rectangle },
     DefineShape(Shape),
+    DefineSound(Box<Sound>),
     DefineSprite(Sprite),
     DoAbc(Vec<u8>),
     DoAction(Vec<u8>),
@@ -327,6 +328,17 @@ pub struct Shape {
     pub has_scaling_strokes: bool,
     pub styles: ShapeStyles,
     pub shape: Vec<ShapeRecord>,
+}
+
+#[derive(Debug,PartialEq,Clone)]
+pub struct Sound {
+    pub id: CharacterId,
+    pub compression: AudioCompression,
+    pub sample_rate: u16,
+    pub is_16_bit: bool,
+    pub is_stereo: bool,
+    pub num_samples: u32,
+    pub data: Vec<u8>,
 }
 
 #[derive(Debug,PartialEq)]
@@ -440,15 +452,28 @@ impl LineStyle {
     }
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug,PartialEq,Clone,Copy)]
 pub enum LineCapStyle {
     Round,
     None,
     Square,
 }
-#[derive(Debug,PartialEq)]
+
+#[derive(Debug,PartialEq,Clone,Copy)]
 pub enum LineJoinStyle {
     Round,
     Bevel,
     Miter(f32),
+}
+
+#[derive(Debug,PartialEq,Clone,Copy)]
+pub enum AudioCompression {
+    UncompressedUnknownEndian,
+    Adpcm,
+    Mp3,
+    Uncompressed,
+    Nellymoser16Khz,
+    Nellymoser8Khz,
+    Nellymoser,
+    Speex,
 }

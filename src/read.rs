@@ -345,6 +345,7 @@ impl<R: Read> Reader<R> {
             Some(TagCode::DefineShape2) => try!(tag_reader.read_define_shape(2)),
             Some(TagCode::DefineShape3) => try!(tag_reader.read_define_shape(3)),
             Some(TagCode::DefineShape4) => try!(tag_reader.read_define_shape(4)),
+            Some(TagCode::DefineSound) => try!(tag_reader.read_define_sound()),
             Some(TagCode::ImportAssets) => {
                 let url = try!(tag_reader.read_c_string());
                 let num_imports = try!(tag_reader.read_u16());
@@ -594,6 +595,44 @@ impl<R: Read> Reader<R> {
             styles: styles,
             shape: records,
         }))
+    }
+
+    fn read_define_sound(&mut self) -> Result<Tag> {
+        let id = try!(self.read_u16());
+        let flags = try!(self.read_u8());
+        let compression = match flags >> 4 {
+            0 => AudioCompression::UncompressedUnknownEndian,
+            1 => AudioCompression::Adpcm,
+            2 => AudioCompression::Mp3,
+            3 => AudioCompression::Uncompressed,
+            4 => AudioCompression::Nellymoser16Khz,
+            5 => AudioCompression::Nellymoser8Khz,
+            6 => AudioCompression::Nellymoser,
+            11 => AudioCompression::Speex,
+            _ => return Err(Error::new(ErrorKind::InvalidData,
+                        "Invalid audio format.")),
+        };
+        let sample_rate = match (flags & 0b11_00) >> 2 {
+            0 => 5500,
+            1 => 11000,
+            2 => 22000,
+            3 => 44000,
+            _ => unreachable!(),
+        };
+        let is_16_bit = (flags & 0b10) != 0;
+        let is_stereo = (flags & 0b1) != 0;
+        let num_samples = try!(self.read_u32());
+        let mut data = Vec::new();
+        try!(self.input.read_to_end(&mut data));
+        Ok(Tag::DefineSound(Box::new(Sound {
+            id: id,
+            compression: compression,
+            sample_rate: sample_rate,
+            is_16_bit: is_16_bit,
+            is_stereo: is_stereo,
+            num_samples: num_samples,
+            data: data
+        })))
     }
 
     fn read_shape_styles(&mut self, shape_version: u8) -> Result<ShapeStyles> {
