@@ -308,6 +308,25 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
     ),
 
     (
+        10,
+        Tag::EnableTelemetry {
+            password_hash: vec![]
+        },
+        read_tag_bytes_from_file("tests/swfs/enabletelemetry.swf", TagCode::EnableTelemetry)
+    ),
+
+    (
+        10,
+        Tag::EnableTelemetry {
+            password_hash: vec![
+                207, 128, 205, 138, 237, 72, 45, 93, 21, 39, 215, 220, 114, 252, 239, 248,
+                78, 99, 38, 89, 40, 72, 68, 125, 45, 192, 176, 232, 125, 252, 154, 144
+            ]
+        },
+        read_tag_bytes_from_file("tests/swfs/enabletelemetry-password.swf", TagCode::EnableTelemetry)
+    ),
+
+    (
         6,
         Tag::ExportAssets(vec![
             ExportedAsset { id: 2, name: "Test💯".to_string() },

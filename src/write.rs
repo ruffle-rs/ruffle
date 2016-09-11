@@ -382,6 +382,17 @@ impl<W: Write> Writer<W> {
                 try!(self.write_c_string(password_md5));
             },
 
+            &Tag::EnableTelemetry { ref password_hash } => {
+                if password_hash.len() > 0 {
+                    try!(self.write_tag_header(TagCode::EnableTelemetry, 34));
+                    try!(self.write_u16(0));
+                    try!(self.output.write_all(&password_hash[0..32]));
+                } else {
+                    try!(self.write_tag_header(TagCode::EnableTelemetry, 2));
+                    try!(self.write_u16(0));
+                }
+            },
+
             &Tag::ImportAssets { ref url, ref imports } => {
                 let len = imports.iter().map(|e| e.name.len() as u32 + 3).sum::<u32>()
                             + url.len() as u32 + 1

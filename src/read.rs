@@ -346,6 +346,18 @@ impl<R: Read> Reader<R> {
             Some(TagCode::DefineShape3) => try!(tag_reader.read_define_shape(3)),
             Some(TagCode::DefineShape4) => try!(tag_reader.read_define_shape(4)),
             Some(TagCode::DefineSound) => try!(tag_reader.read_define_sound()),
+            Some(TagCode::EnableTelemetry) => {
+                try!(tag_reader.read_u16()); // Reserved
+                let password_hash = if length > 2 {
+                    let mut data = Vec::with_capacity(32);
+                    data.resize(32, 0);
+                    try!(tag_reader.input.read_exact(&mut data));
+                    data
+                } else {
+                    vec![]
+                };
+                Tag::EnableTelemetry { password_hash: password_hash } 
+            },
             Some(TagCode::ImportAssets) => {
                 let url = try!(tag_reader.read_c_string());
                 let num_imports = try!(tag_reader.read_u16());

@@ -285,6 +285,7 @@ pub enum Tag {
     DoAction(Vec<u8>),
     DoInitAction { id: CharacterId, action_data: Vec<u8> },
     EnableDebugger(String),
+    EnableTelemetry { password_hash: Vec<u8> },
     Metadata(String),
 
     ImportAssets { url: String, imports: Vec<ExportedAsset> },
