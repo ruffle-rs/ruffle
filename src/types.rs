@@ -277,6 +277,7 @@ pub enum Tag {
 
     Protect(Option<String>),
     
+    DefineScalingGrid { id: CharacterId, splitter_rect: Rectangle },
     DefineShape(Shape),
     DefineSprite(Sprite),
     EnableDebugger(String),

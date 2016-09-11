@@ -333,6 +333,18 @@ impl<W: Write> Writer<W> {
                 }
             },
 
+            &Tag::DefineScalingGrid { id, ref splitter_rect } => {
+                let mut buf = Vec::new();
+                {
+                    let mut writer = Writer::new(&mut buf, self.version);
+                    try!(writer.write_u16(id));
+                    try!(writer.write_rectangle(splitter_rect));
+                    try!(writer.flush_bits());
+                }
+                try!(self.write_tag_header(TagCode::DefineScalingGrid, buf.len() as u32));
+                try!(self.output.write_all(&buf));
+            },
+
             &Tag::DefineShape(ref shape) => try!(self.write_define_shape(shape)),
             &Tag::DefineSprite(ref sprite) => try!(self.write_define_sprite(sprite)),
 

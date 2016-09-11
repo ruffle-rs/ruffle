@@ -365,6 +365,11 @@ impl<R: Read> Reader<R> {
                 Tag::SetBackgroundColor(try!(tag_reader.read_rgb()))
             },
 
+            Some(TagCode::DefineScalingGrid) => Tag::DefineScalingGrid {
+                id: try!(tag_reader.read_u16()),
+                splitter_rect: try!(tag_reader.read_rectangle()),
+            },
+            
             Some(TagCode::EnableDebugger) => Tag::EnableDebugger(try!(tag_reader.read_c_string())),
             Some(TagCode::EnableDebugger2) => {
                 try!(tag_reader.read_u16()); // Reserved

@@ -19,6 +19,15 @@ pub type TagTestData = TestData<Tag>;
 
 pub fn tag_tests() -> Vec<TagTestData> { vec![
     (
+        8,
+        Tag::DefineScalingGrid {
+            id: 2,
+            splitter_rect: Rectangle { x_min: 10f32, x_max: 40f32, y_min: 10f32, y_max: 40f32 },
+        },
+        read_tag_bytes_from_file("tests/swfs/definescalinggrid.swf", TagCode::DefineScalingGrid)
+    ),
+
+    (
         1, // Minimum version not listed in SWF19.
         Tag::DefineSceneAndFrameLabelData {
             scenes: vec![
