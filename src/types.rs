@@ -322,6 +322,9 @@ pub struct Shape {
     pub id: CharacterId,
     pub shape_bounds: Rectangle,
     pub edge_bounds: Rectangle,
+    pub has_fill_winding_rule: bool,
+    pub has_non_scaling_strokes: bool,
+    pub has_scaling_strokes: bool,
     pub styles: ShapeStyles,
     pub shape: Vec<ShapeRecord>,
 }
@@ -381,6 +384,7 @@ pub enum FillStyle {
 
 #[derive(Debug,PartialEq)]
 pub struct Gradient {
+    pub matrix: Matrix,
     pub spread: GradientSpread,
     pub interpolation: GradientInterpolation,
     pub records: Vec<GradientRecord>,
@@ -409,9 +413,33 @@ pub struct GradientRecord {
 pub struct LineStyle {
     pub width: u16, // Twips
     pub color: Color,
+    pub start_cap: LineCapStyle,
+    pub end_cap: LineCapStyle,
+    pub join_style: LineJoinStyle,
+    pub fill_style: Option<FillStyle>,
+    pub allow_scale_x: bool,
+    pub allow_scale_y: bool,
+    pub is_pixel_hinted: bool,
+    pub allow_close: bool,
 }
 
-// TODO: LineStyle2.
+impl LineStyle {
+    pub fn new_v1(width: u16, color: Color) -> LineStyle {
+        LineStyle {
+            width: width,
+            color: color,
+            start_cap: LineCapStyle::Round,
+            end_cap: LineCapStyle::Round,
+            join_style: LineJoinStyle::Round,
+            fill_style: None,
+            allow_scale_x: false,
+            allow_scale_y: false,
+            is_pixel_hinted: false,
+            allow_close: true,
+        }
+    }
+}
+
 #[derive(Debug,PartialEq)]
 pub enum LineCapStyle {
     Round,

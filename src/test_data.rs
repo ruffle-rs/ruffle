@@ -58,6 +58,9 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
             id: 1,
             shape_bounds: Rectangle { x_min: 0f32, x_max: 20f32, y_min: 0f32, y_max: 20f32 },
             edge_bounds: Rectangle { x_min: 0f32, x_max: 20f32, y_min: 0f32, y_max: 20f32 },
+            has_fill_winding_rule: false,
+            has_non_scaling_strokes: true,
+            has_scaling_strokes: false,
             styles: ShapeStyles {
                 fill_styles: vec![
                     FillStyle::Color(Color { r: 255, g: 0, b: 0, a: 255 })
@@ -92,6 +95,168 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
             ]
         }),
         read_tag_bytes_from_file("tests/swfs/define_shape.swf", TagCode::DefineShape)
+    ),
+
+    (
+        8,
+        Tag::DefineShape(Shape {
+            version: 3,
+            id: 1,
+            shape_bounds: Rectangle { x_min: 0f32, x_max: 50f32, y_min: 0f32, y_max: 50f32 },
+            edge_bounds: Rectangle { x_min: 0f32, x_max: 50f32, y_min: 0f32, y_max: 50f32 },
+            has_fill_winding_rule: false,
+            has_non_scaling_strokes: true,
+            has_scaling_strokes: false,
+            styles: ShapeStyles {
+                fill_styles: vec![
+                    FillStyle::RadialGradient(Gradient {
+                        matrix: Matrix { translate_x: 24.95f32, translate_y: 24.95f32, scale_x: 0.030731201f32, scale_y: 0.030731201f32, rotate_skew_0: 0f32, rotate_skew_1: 0f32 },
+                        spread: GradientSpread::Pad,
+                        interpolation: GradientInterpolation::RGB,
+                        records: vec![
+                            GradientRecord { ratio: 0, color: Color { r: 255, g: 0, b: 0, a: 255 } },
+                            GradientRecord { ratio: 255, color: Color { r: 0, g: 0, b: 0, a: 0 } }
+                        ]
+                    })
+                ],
+                line_styles: vec![]
+            },
+            shape: vec![
+                ShapeRecord::StyleChange(StyleChangeData {
+                    move_delta_x: 50f32,
+                    move_delta_y: 25f32,
+                    fill_style_0: None,
+                    fill_style_1: Some(1),
+                    line_style: None,
+                    new_styles: None
+                }),
+                ShapeRecord::CurvedEdge { control_delta_x: 0f32, control_delta_y: 10.35f32, anchor_delta_x: -7.35f32, anchor_delta_y: 7.3f32 },
+                ShapeRecord::CurvedEdge { control_delta_x: -7.3f32, control_delta_y: 7.35f32, anchor_delta_x: -10.35f32, anchor_delta_y: 0f32 },
+                ShapeRecord::CurvedEdge { control_delta_x: -10.35f32, control_delta_y: 0f32, anchor_delta_x: -7.35f32, anchor_delta_y: -7.35f32 },
+                ShapeRecord::CurvedEdge { control_delta_x: -7.3f32, control_delta_y: -7.3f32, anchor_delta_x: 0f32, anchor_delta_y: -10.35f32 },
+                ShapeRecord::CurvedEdge { control_delta_x: 0f32, control_delta_y: -10.35f32, anchor_delta_x: 7.3f32, anchor_delta_y: -7.35f32 },
+                ShapeRecord::CurvedEdge { control_delta_x: 7.35f32, control_delta_y: -7.3f32, anchor_delta_x: 10.35f32, anchor_delta_y: 0f32 },
+                ShapeRecord::CurvedEdge { control_delta_x: 10.35f32, control_delta_y: 0f32, anchor_delta_x: 7.3f32, anchor_delta_y: 7.3f32 },
+                ShapeRecord::CurvedEdge { control_delta_x: 7.35f32, control_delta_y: 7.35f32, anchor_delta_x: 0f32, anchor_delta_y: 10.35f32 }
+            ]
+        }),
+        read_tag_bytes_from_file("tests/swfs/defineshape3.swf", TagCode::DefineShape3)
+    ),
+
+    (
+        8,
+        Tag::DefineShape(Shape {
+            version: 4,
+            id: 1,
+            shape_bounds: Rectangle { x_min: -10f32, x_max: 260f32, y_min: -10f32, y_max: 110f32 },
+            edge_bounds: Rectangle { x_min: 0f32, x_max: 250f32, y_min: 0f32, y_max: 100f32 },
+            has_fill_winding_rule: false,
+            has_non_scaling_strokes: true,
+            has_scaling_strokes: false,
+            styles: ShapeStyles {
+                fill_styles: vec![
+                    FillStyle::Color(Color { r: 255, g: 0, b: 0, a: 255 }),
+                    FillStyle::FocalGradient {
+                        gradient: Gradient {
+                            matrix: Matrix { translate_x: 49.55f32, translate_y: 46.55f32, scale_x: 0.06199646f32, scale_y: 0.06199646f32, rotate_skew_0: 0f32, rotate_skew_1: 0f32 },
+                            spread: GradientSpread::Pad,
+                            interpolation: GradientInterpolation::LinearRGB,
+                            records: vec![
+                                GradientRecord { ratio: 0, color: Color { r: 255, g: 0, b: 0, a: 255 } },
+                                GradientRecord { ratio: 255, color: Color { r: 0, g: 0, b: 0, a: 0 } }
+                            ]
+                        },
+                        focal_point: 0.56640625f32
+                    }
+                ],
+                line_styles: vec![
+                    LineStyle { 
+                        width: 400,
+                        color: Color { r: 0, g: 153, b: 0, a: 255 },
+                        start_cap: LineCapStyle::None,
+                        end_cap: LineCapStyle::None,
+                        join_style: LineJoinStyle::Bevel,
+                        fill_style: None,
+                        allow_scale_x: false,
+                        allow_scale_y: false,
+                        is_pixel_hinted: true,
+                        allow_close: true
+                    },
+                    LineStyle {
+                        width: 400,
+                        color: Color { r: 0, g: 0, b: 0, a: 0 },
+                        start_cap: LineCapStyle::Round,
+                        end_cap: LineCapStyle::Round,
+                        join_style: LineJoinStyle::Round,
+                        fill_style: Some(
+                            FillStyle::LinearGradient(Gradient {
+                                matrix: Matrix { translate_x: 50f32, translate_y: 50f32, scale_x: 0.07324219f32, scale_y: 0.07324219f32, rotate_skew_0: 0f32, rotate_skew_1: 0f32 },
+                                spread: GradientSpread::Pad,
+                                interpolation: GradientInterpolation::RGB,
+                                records: vec![
+                                    GradientRecord { ratio: 0, color: Color { r: 255, g: 255, b: 255, a: 255 } },
+                                    GradientRecord { ratio: 255, color: Color { r: 0, g: 0, b: 0, a: 255 } }
+                                ]
+                            })),
+                            allow_scale_x: true,
+                            allow_scale_y: false,
+                            is_pixel_hinted: true,
+                            allow_close: true
+                        },
+                        LineStyle {
+                            width: 400,
+                            color: Color { r: 0, g: 153, b: 0, a: 255 },
+                            start_cap: LineCapStyle::Round,
+                            end_cap: LineCapStyle::Round,
+                            join_style: LineJoinStyle::Miter(56f32),
+                            fill_style: None,
+                            allow_scale_x: true,
+                            allow_scale_y: false,
+                            is_pixel_hinted: true,
+                            allow_close: true
+                        }
+                    ]
+            },
+            shape: vec![
+                ShapeRecord::StyleChange(StyleChangeData {
+                    move_delta_x: 150f32,
+                    move_delta_y: 0f32,
+                    fill_style_0: None,
+                    fill_style_1: Some(1),
+                    line_style: Some(1),
+                    new_styles: None
+                }),
+                ShapeRecord::StraightEdge { delta_x: 100f32, delta_y: 0f32 },
+                ShapeRecord::StraightEdge { delta_x: 0f32, delta_y: 100f32 },
+                ShapeRecord::StyleChange(StyleChangeData {
+                    move_delta_x: 0f32,
+                    move_delta_y: 0f32,
+                    fill_style_0: None,
+                    fill_style_1: None,
+                    line_style: Some(3),
+                    new_styles: None
+                }),
+                ShapeRecord::StraightEdge { delta_x: -100f32, delta_y: 0f32 },
+                ShapeRecord::StraightEdge { delta_x: 0f32, delta_y: -100f32 },
+                ShapeRecord::StyleChange(StyleChangeData {
+                    move_delta_x: 100f32,
+                    move_delta_y: 50f32,
+                    fill_style_0: None,
+                    fill_style_1: Some(2),
+                    line_style: Some(2),
+                    new_styles: None
+                }),
+                ShapeRecord::CurvedEdge { control_delta_x: 0f32, control_delta_y: 20.65f32, anchor_delta_x: -14.65f32, anchor_delta_y: 14.6f32 },
+                ShapeRecord::CurvedEdge { control_delta_x: -14.7f32, control_delta_y: 14.75f32, anchor_delta_x: -20.65f32, anchor_delta_y: 0f32 },
+                ShapeRecord::CurvedEdge { control_delta_x: -20.7f32, control_delta_y: 0f32, anchor_delta_x: -14.65f32, anchor_delta_y: -14.75f32 },
+                ShapeRecord::CurvedEdge { control_delta_x: -14.65f32, control_delta_y: -14.6f32, anchor_delta_x: 0f32, anchor_delta_y: -20.65f32 },
+                ShapeRecord::CurvedEdge { control_delta_x: 0f32, control_delta_y: -20.7f32, anchor_delta_x: 14.65f32, anchor_delta_y: -14.7f32 },
+                ShapeRecord::CurvedEdge { control_delta_x: 14.65f32, control_delta_y: -14.6f32, anchor_delta_x: 20.7f32, anchor_delta_y: 0f32 },
+                ShapeRecord::CurvedEdge { control_delta_x: 20.65f32, control_delta_y: 0f32, anchor_delta_x: 14.7f32, anchor_delta_y: 14.6f32 },
+                ShapeRecord::CurvedEdge { control_delta_x: 14.65f32, control_delta_y: 14.7f32, anchor_delta_x: 0f32, anchor_delta_y: 20.7f32 }
+            ]
+        }),
+        read_tag_bytes_from_file("tests/swfs/defineshape4.swf", TagCode::DefineShape4)
     ),
 
     (

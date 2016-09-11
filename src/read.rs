@@ -332,6 +332,9 @@ impl<R: Read> Reader<R> {
             Some(TagCode::End) => return Ok(None),
             Some(TagCode::ShowFrame) => Tag::ShowFrame,
             Some(TagCode::DefineShape) => try!(tag_reader.read_define_shape(1)),
+            Some(TagCode::DefineShape2) => try!(tag_reader.read_define_shape(2)),
+            Some(TagCode::DefineShape3) => try!(tag_reader.read_define_shape(3)),
+            Some(TagCode::DefineShape4) => try!(tag_reader.read_define_shape(4)),
             Some(TagCode::ImportAssets) => {
                 let url = try!(tag_reader.read_c_string());
                 let num_imports = try!(tag_reader.read_u16());
@@ -551,6 +554,20 @@ impl<R: Read> Reader<R> {
     fn read_define_shape(&mut self, version: u8) -> Result<Tag> {
         let id = try!(self.read_u16());
         let shape_bounds = try!(self.read_rectangle());
+        let (edge_bounds, has_fill_winding_rule,
+            has_non_scaling_strokes, has_scaling_strokes) =
+        if version >= 4 {
+            let edge_bounds = try!(self.read_rectangle());
+            let flags = try!(self.read_u8());
+            (
+                edge_bounds,
+                (flags & 0b100) != 0,
+                (flags & 0b10) != 0,
+                (flags & 0b1) != 0
+            )
+        } else {
+            (shape_bounds.clone(), false, true, false)
+        };
         let styles = try!(self.read_shape_styles(version));
         let mut records = Vec::new();
         while let Some(record) = try!(self.read_shape_record(version)) {
@@ -559,8 +576,11 @@ impl<R: Read> Reader<R> {
         Ok(Tag::DefineShape(Shape {
             version: version,
             id: id,
-            shape_bounds: shape_bounds.clone(),
-            edge_bounds: shape_bounds,
+            shape_bounds: shape_bounds,
+            edge_bounds: edge_bounds,
+            has_fill_winding_rule: has_fill_winding_rule,
+            has_non_scaling_strokes: has_non_scaling_strokes,
+            has_scaling_strokes: has_scaling_strokes,
             styles: styles,
             shape: records,
         }))
@@ -611,7 +631,7 @@ impl<R: Read> Reader<R> {
             0x12 => FillStyle::RadialGradient(try!(self.read_gradient(shape_version))),
 
             0x13 => {
-                if self.version < 8 {
+                if self.version < 8 || shape_version < 4 {
                     return Err(Error::new(ErrorKind::InvalidData,
                                           "Focal gradients are only supported in SWF version 8 \
                                            or higher."));
@@ -637,17 +657,72 @@ impl<R: Read> Reader<R> {
     }
 
     fn read_line_style(&mut self, shape_version: u8) -> Result<LineStyle> {
-        Ok(LineStyle {
-            width: try!(self.read_u16()), // TODO: Twips
-            color: if shape_version >= 3 {
+        if shape_version < 4 {
+            // LineStyle1
+            Ok(LineStyle::new_v1(
+                try!(self.read_u16()), // TODO: Twips
+                if shape_version >= 3 {
+                    try!(self.read_rgba())
+                } else {
+                    try!(self.read_rgb())
+                }
+            ))
+        } else {
+            // LineStyle2 in DefineShape4
+            let width = try!(self.read_u16());
+            let start_cap = match try!(self.read_ubits(2)) {
+                0 => LineCapStyle::Round,
+                1 => LineCapStyle::None,
+                2 => LineCapStyle::Square,
+                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid line cap type.")),
+            };
+            let join_style_id = try!(self.read_ubits(2));
+            let has_fill = try!(self.read_bit());
+            let allow_scale_x = !try!(self.read_bit());
+            let allow_scale_y = !try!(self.read_bit());
+            let is_pixel_hinted = try!(self.read_bit());
+            try!(self.read_ubits(5));
+            let allow_close = !try!(self.read_bit());
+            let end_cap = match try!(self.read_ubits(2)) {
+                0 => LineCapStyle::Round,
+                1 => LineCapStyle::None,
+                2 => LineCapStyle::Square,
+                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid line cap type.")),
+            };
+            let join_style = match join_style_id {
+                0 => LineJoinStyle::Round,
+                1 => LineJoinStyle::Bevel,
+                2 => LineJoinStyle::Miter(try!(self.read_fixed8())),
+                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid line cap type.")),
+            };
+            let color = if !has_fill {
                 try!(self.read_rgba())
             } else {
-                try!(self.read_rgb())
-            },
-        })
+                Color { r: 0, g: 0, b: 0, a: 0 }
+            };
+            let fill_style = if has_fill {
+                Some(try!(self.read_fill_style(shape_version)))
+            } else {
+                None
+            };
+            Ok( LineStyle {
+                width: width,
+                color: color,
+                start_cap: start_cap,
+                end_cap: end_cap,
+                join_style: join_style,
+                allow_scale_x: allow_scale_x,
+                allow_scale_y: allow_scale_y,
+                is_pixel_hinted: is_pixel_hinted,
+                allow_close: allow_close,
+                fill_style: fill_style,
+            })
+        }
     }
 
     fn read_gradient(&mut self, shape_version: u8) -> Result<Gradient> {
+        let matrix = try!(self.read_matrix());
+        self.byte_align();
         let spread = match try!(self.read_ubits(2)) {
             0 => GradientSpread::Pad,
             1 => GradientSpread::Reflect,
@@ -675,6 +750,7 @@ impl<R: Read> Reader<R> {
             });
         }
         Ok(Gradient {
+            matrix: matrix,
             spread: spread,
             interpolation: interpolation,
             records: records,
@@ -1371,7 +1447,7 @@ pub mod tests {
     #[test]
     fn read_line_style() {
         // DefineShape1 and 2 read RGB colors.
-        let line_style = LineStyle { width: 0, color: Color { r: 255, g: 0, b: 0, a: 255 } };
+        let line_style = LineStyle::new_v1( 0, Color { r: 255, g: 0, b: 0, a: 255 } );
         assert_eq!(reader(&[0, 0, 255, 0, 0]).read_line_style(2).unwrap(), line_style);
 
         // DefineShape3 and 4 read RGBA colors.

@@ -521,6 +521,16 @@ impl<W: Write> Writer<W> {
             let mut writer = Writer::new(&mut buf, self.version);
             try!(writer.write_u16(shape.id));
             try!(writer.write_rectangle(&shape.shape_bounds));
+            if shape.version >= 4 {
+                try!(writer.write_rectangle(&shape.edge_bounds));
+                try!(writer.flush_bits());
+                try!(writer.write_u8(
+                    if shape.has_fill_winding_rule { 0b100 } else { 0 } |
+                    if shape.has_non_scaling_strokes { 0b10 } else { 0 } |
+                    if shape.has_scaling_strokes { 0b1 } else { 0 }
+                ));
+            }
+
             try!(writer.write_shape_styles(&shape.styles, shape.version));
 
             for shape_record in &shape.shape {
@@ -718,15 +728,51 @@ impl<W: Write> Writer<W> {
 
     fn write_line_style(&mut self, line_style: &LineStyle, shape_version: u8) -> Result<()> {
         try!(self.write_u16(line_style.width));
-        if shape_version >= 3 {
+        if shape_version >= 4 {
+            // LineStyle2
+            try!(self.write_ubits(2, match line_style.start_cap {
+                LineCapStyle::Round => 0,
+                LineCapStyle::None => 1,
+                LineCapStyle::Square => 2,
+            }));
+            try!(self.write_ubits(2, match line_style.join_style {
+                LineJoinStyle::Round => 0,
+                LineJoinStyle::Bevel => 1,
+                LineJoinStyle::Miter(_) => 2,
+            }));
+            try!(self.write_bit(
+                if let Some(_) = line_style.fill_style { true } else { false }
+            ));
+            try!(self.write_bit(!line_style.allow_scale_x));
+            try!(self.write_bit(!line_style.allow_scale_y));
+            try!(self.write_bit(line_style.is_pixel_hinted));
+            try!(self.write_ubits(5, 0));
+            try!(self.write_bit(!line_style.allow_close));
+            try!(self.write_ubits(2, match line_style.end_cap {
+                LineCapStyle::Round => 0,
+                LineCapStyle::None => 1,
+                LineCapStyle::Square => 2,
+            }));
+            if let LineJoinStyle::Miter(miter_factor) = line_style.join_style {
+                try!(self.write_fixed8(miter_factor));
+            }
+            match line_style.fill_style {
+                None => try!(self.write_rgba(&line_style.color)),
+                Some(ref fill) => try!(self.write_fill_style(fill, shape_version)),
+            }
+        } else if shape_version >= 3 {
+            // LineStyle1 with RGBA
             try!(self.write_rgba(&line_style.color));
         } else {
+            // LineStyle1 with RGB
             try!(self.write_rgb(&line_style.color));
         }
         Ok(())
     }
 
     fn write_gradient(&mut self, gradient: &Gradient, shape_version: u8) -> Result<()> {
+        try!(self.write_matrix(&gradient.matrix));
+        try!(self.flush_bits());
         let spread_bits = match gradient.spread {
             GradientSpread::Pad => 0,
             GradientSpread::Reflect => 1,
