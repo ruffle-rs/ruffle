@@ -111,6 +111,14 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
     ),
 
     (
+        5,
+        Tag::DoAction(
+            vec![150, 10, 0, 0, 84, 101, 115, 116, 105, 110, 103, 33, 0, 38, 0],
+        ),
+        read_tag_bytes_from_file("tests/swfs/doaction.swf", TagCode::DoAction)
+    ),
+
+    (
         6,
         Tag::EnableDebugger("$1$ve$EG3LE6bumvJ2pR8F5qXny/".to_string()),
         read_tag_bytes_from_file("tests/swfs/enabledebugger2.swf", TagCode::EnableDebugger2)

@@ -348,6 +348,11 @@ impl<W: Write> Writer<W> {
             &Tag::DefineShape(ref shape) => try!(self.write_define_shape(shape)),
             &Tag::DefineSprite(ref sprite) => try!(self.write_define_sprite(sprite)),
 
+            &Tag::DoAction(ref action_data) => {
+                try!(self.write_tag_header(TagCode::DoAction, action_data.len() as u32));
+                try!(self.output.write_all(action_data));
+            },
+
             &Tag::EnableDebugger(ref password_md5) => {
                 let len = password_md5.len() as u32 + 1;
                 if self.version >= 6 {

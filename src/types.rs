@@ -280,6 +280,7 @@ pub enum Tag {
     DefineScalingGrid { id: CharacterId, splitter_rect: Rectangle },
     DefineShape(Shape),
     DefineSprite(Sprite),
+    DoAction(Vec<u8>),
     EnableDebugger(String),
     Metadata(String),
 
