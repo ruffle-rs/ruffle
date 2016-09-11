@@ -348,8 +348,17 @@ impl<W: Write> Writer<W> {
             &Tag::DefineShape(ref shape) => try!(self.write_define_shape(shape)),
             &Tag::DefineSprite(ref sprite) => try!(self.write_define_sprite(sprite)),
 
+            &Tag::DoAbc(ref action_data) => {
+                try!(self.write_tag_header(TagCode::DoAbc, action_data.len() as u32));
+                try!(self.output.write_all(action_data));
+            },
             &Tag::DoAction(ref action_data) => {
                 try!(self.write_tag_header(TagCode::DoAction, action_data.len() as u32));
+                try!(self.output.write_all(action_data));
+            },
+            &Tag::DoInitAction { id, ref action_data } => {
+                try!(self.write_tag_header(TagCode::DoInitAction, action_data.len() as u32 + 2));
+                try!(self.write_u16(id));
                 try!(self.output.write_all(action_data));
             },
 

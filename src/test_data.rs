@@ -120,6 +120,15 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
 
     (
         6,
+        Tag::DoInitAction {
+            id: 2,
+            action_data: vec![150, 6, 0, 0, 116, 101, 115, 116, 0, 38, 0],
+        },
+        read_tag_bytes_from_file("tests/swfs/doinitaction.swf", TagCode::DoInitAction)
+    ),
+
+    (
+        6,
         Tag::EnableDebugger("$1$ve$EG3LE6bumvJ2pR8F5qXny/".to_string()),
         read_tag_bytes_from_file("tests/swfs/enabledebugger2.swf", TagCode::EnableDebugger2)
     ),

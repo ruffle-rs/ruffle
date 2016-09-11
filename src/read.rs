@@ -370,10 +370,23 @@ impl<R: Read> Reader<R> {
                 splitter_rect: try!(tag_reader.read_rectangle()),
             },
 
+            Some(TagCode::DoAbc) => {
+                let mut action_data = Vec::with_capacity(length);
+                try!(tag_reader.input.read_to_end(&mut action_data));
+                Tag::DoAbc(action_data)
+            },
+
             Some(TagCode::DoAction) => {
                 let mut action_data = Vec::with_capacity(length);
                 try!(tag_reader.input.read_to_end(&mut action_data));
                 Tag::DoAction(action_data)
+            },
+
+            Some(TagCode::DoInitAction) => {
+                let id = try!(tag_reader.read_u16());
+                let mut action_data = Vec::with_capacity(length);
+                try!(tag_reader.input.read_to_end(&mut action_data));
+                Tag::DoInitAction { id: id, action_data: action_data }
             },
 
             Some(TagCode::EnableDebugger) => Tag::EnableDebugger(try!(tag_reader.read_c_string())),
