@@ -276,7 +276,7 @@ pub enum Tag {
     ShowFrame,
 
     Protect(Option<String>),
-    
+    DefineBinaryData { id: CharacterId, data: Vec<u8> },
     DefineScalingGrid { id: CharacterId, splitter_rect: Rectangle },
     DefineShape(Shape),
     DefineSprite(Sprite),

@@ -331,6 +331,16 @@ impl<R: Read> Reader<R> {
         let tag = match TagCode::from_u16(tag_code) {
             Some(TagCode::End) => return Ok(None),
             Some(TagCode::ShowFrame) => Tag::ShowFrame,
+            Some(TagCode::DefineBinaryData) => {
+                let id = try!(tag_reader.read_u16());
+                try!(tag_reader.read_u32()); // Reserved
+                let mut data = Vec::with_capacity(length - 6);
+                try!(tag_reader.input.read_to_end(&mut data));
+                Tag::DefineBinaryData {
+                    id: id,
+                    data: data,
+                }
+            },
             Some(TagCode::DefineShape) => try!(tag_reader.read_define_shape(1)),
             Some(TagCode::DefineShape2) => try!(tag_reader.read_define_shape(2)),
             Some(TagCode::DefineShape3) => try!(tag_reader.read_define_shape(3)),

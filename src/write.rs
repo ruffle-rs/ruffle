@@ -333,6 +333,12 @@ impl<W: Write> Writer<W> {
                 }
             },
 
+            &Tag::DefineBinaryData { id, ref data } => {
+                try!(self.write_tag_header(TagCode::DefineBinaryData, data.len() as u32 + 6));
+                try!(self.write_u16(id));
+                try!(self.write_u32(0)); // Reserved
+                try!(self.output.write_all(&data));
+            },
             &Tag::DefineScalingGrid { id, ref splitter_rect } => {
                 let mut buf = Vec::new();
                 {

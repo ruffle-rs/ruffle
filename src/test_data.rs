@@ -19,6 +19,15 @@ pub type TagTestData = TestData<Tag>;
 
 pub fn tag_tests() -> Vec<TagTestData> { vec![
     (
+        9, // Minimum version not listed in SWF19.
+        Tag::DefineBinaryData {
+            id: 1,
+            data: vec![84, 101, 115, 116, 105, 110, 103, 33]
+        },
+        read_tag_bytes_from_file("tests/swfs/definebinarydata.swf", TagCode::DefineBinaryData)
+    ),
+
+    (
         8,
         Tag::DefineScalingGrid {
             id: 2,
