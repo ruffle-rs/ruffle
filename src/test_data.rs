@@ -569,6 +569,21 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
         read_tag_bytes_from_file("tests/swfs/symbolclass.swf", TagCode::SymbolClass)
     ),
 
+    (
+        4,
+        Tag::StartSound {
+            id: 1,
+            sound_info: Box::new(SoundInfo {
+                event: SoundEvent::Event,
+                in_sample: None,
+                out_sample: None,
+                num_loops: 1,
+                envelope: None,
+            }),
+        },
+        read_tag_bytes_from_file("tests/swfs/definesound.swf", TagCode::StartSound)
+    ),
+
     (1, Tag::Unknown { tag_code: 512, data: vec![] }, vec![0b00_000000, 0b10000000]),
     (1, Tag::Unknown { tag_code: 513, data: vec![1, 2] },  vec![0b01_000010, 0b10000000, 1, 2]),
     (

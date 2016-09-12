@@ -291,6 +291,7 @@ pub enum Tag {
     ImportAssets { url: String, imports: Vec<ExportedAsset> },
     SetBackgroundColor(Color),
     SetTabIndex { depth: Depth, tab_index: u16 },
+    StartSound { id: CharacterId, sound_info: Box<SoundInfo> },
     SymbolClass(Vec<SymbolClassLink>),
     PlaceObject(Box<PlaceObject>),
     RemoveObject { depth: Depth, character_id: Option<CharacterId> },
@@ -340,6 +341,33 @@ pub struct Sound {
     pub is_stereo: bool,
     pub num_samples: u32,
     pub data: Vec<u8>,
+}
+
+
+#[derive(Debug,PartialEq,Clone)]
+pub struct SoundInfo {
+    pub event: SoundEvent,
+    pub in_sample: Option<u32>,
+    pub out_sample: Option<u32>,
+    pub num_loops: u16,
+    pub envelope: Option<SoundEnvelope>,
+}
+
+
+#[derive(Debug,PartialEq,Clone,Copy)]
+pub enum SoundEvent {
+    Event,
+    Start,
+    Stop,
+}
+
+pub type SoundEnvelope = Vec<SoundEnvelopePoint>;
+
+#[derive(Debug,PartialEq,Clone)]
+pub struct SoundEnvelopePoint {
+    pub sample: u32,
+    pub left_volume: f32,
+    pub right_volume: f32,
 }
 
 #[derive(Debug,PartialEq)]

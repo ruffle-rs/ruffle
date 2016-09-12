@@ -391,6 +391,11 @@ impl<R: Read> Reader<R> {
                 Tag::SetBackgroundColor(try!(tag_reader.read_rgb()))
             },
 
+            Some(TagCode::StartSound) => Tag::StartSound {
+                id: try!(tag_reader.read_u16()),
+                sound_info: Box::new(try!(tag_reader.read_sound_info())),
+            },
+
             Some(TagCode::DefineScalingGrid) => Tag::DefineScalingGrid {
                 id: try!(tag_reader.read_u16()),
                 splitter_rect: try!(tag_reader.read_rectangle()),
@@ -1216,6 +1221,52 @@ impl<R: Read> Reader<R> {
         };
         self.byte_align();
         Ok(filter)
+    }
+
+    fn read_sound_info(&mut self) -> Result<SoundInfo> {
+        let flags = try!(self.read_u8());
+        let event = match (flags >> 4) & 0b11 {
+            0b10 | 0b11 => SoundEvent::Stop,
+            0b00 => SoundEvent::Event,
+            0b01 => SoundEvent::Start,
+            _ => unreachable!(),
+        };
+        let in_sample = if (flags & 0b1) != 0 {
+            Some(try!(self.read_u32()))
+        } else {
+            None
+        };
+        let out_sample = if (flags & 0b10) != 0 {
+            Some(try!(self.read_u32()))
+        } else {
+            None
+        };
+        let num_loops = if (flags & 0b100) != 0 {
+            try!(self.read_u16())
+        } else {
+            1
+        };
+        let envelope = if (flags & 0b1000) != 0 {
+            let num_points = try!(self.read_u8());
+            let mut envelope = SoundEnvelope::new();
+            for _ in 0..num_points {
+                envelope.push(SoundEnvelopePoint {
+                    sample: try!(self.read_u32()),
+                    left_volume: try!(self.read_u16()) as f32 / 65535f32,
+                    right_volume: try!(self.read_u16()) as f32 / 65535f32,
+                })
+            }
+            Some(envelope)
+        } else {
+            None
+        };
+        Ok(SoundInfo {
+            event: event,
+            in_sample: in_sample,
+            out_sample: out_sample,
+            num_loops: num_loops,
+            envelope: envelope,
+        })
     }
 }
 

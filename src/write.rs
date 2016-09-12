@@ -454,6 +454,44 @@ impl<W: Write> Writer<W> {
                 try!(self.write_i16(depth));
             },
 
+            &Tag::StartSound { id, ref sound_info } => {
+                let length = 3
+                    + if let Some(_) = sound_info.in_sample { 4 } else { 0 }
+                    + if let Some(_) = sound_info.out_sample { 4 } else { 0 }
+                    + if sound_info.num_loops > 1 { 2 } else { 0 }
+                    + if let Some(ref e) = sound_info.envelope { e.len() as u32 * 8 } else { 0 };
+                try!(self.write_tag_header(TagCode::StartSound, length));
+                try!(self.write_u16(id));
+                let flags =
+                    match sound_info.event {
+                        SoundEvent::Event => 0b00_0000u8,
+                        SoundEvent::Start => 0b01_0000u8,
+                        SoundEvent::Stop => 0b10_0000u8,
+                    }
+                    | if let Some(_) = sound_info.in_sample { 0b1 } else { 0 }
+                    | if let Some(_) = sound_info.out_sample { 0b10 } else { 0 }
+                    | if sound_info.num_loops > 1 { 0b100 } else { 0 }
+                    | if let Some(_) = sound_info.envelope { 0b1000 } else { 0 };
+                try!(self.write_u8(flags));
+                if let Some(n) = sound_info.in_sample {
+                    try!(self.write_u32(n));
+                }
+                if let Some(n) = sound_info.out_sample {
+                    try!(self.write_u32(n));
+                }
+                if sound_info.num_loops > 1 {
+                    try!(self.write_u16(sound_info.num_loops));
+                }
+                if let Some(ref envelope) = sound_info.envelope {
+                    try!(self.write_u8(envelope.len() as u8));
+                    for point in envelope {
+                        try!(self.write_u32(point.sample));
+                        try!(self.write_u16((point.left_volume * 65535f32) as u16));
+                        try!(self.write_u16((point.right_volume * 65535f32) as u16));
+                    }
+                }
+            },
+
             &Tag::SymbolClass(ref symbols) => {
                 let len = symbols.iter().map(|e| e.class_name.len() as u32 + 3).sum::<u32>()
                             + 2;
