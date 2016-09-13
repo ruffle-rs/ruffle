@@ -292,6 +292,7 @@ pub enum Tag {
     SetBackgroundColor(Color),
     SetTabIndex { depth: Depth, tab_index: u16 },
     StartSound { id: CharacterId, sound_info: Box<SoundInfo> },
+    StartSound2 { class_name: String, sound_info: Box<SoundInfo> },
     SymbolClass(Vec<SymbolClassLink>),
     PlaceObject(Box<PlaceObject>),
     RemoveObject { depth: Depth, character_id: Option<CharacterId> },

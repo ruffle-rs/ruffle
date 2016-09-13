@@ -396,6 +396,11 @@ impl<R: Read> Reader<R> {
                 sound_info: Box::new(try!(tag_reader.read_sound_info())),
             },
 
+            Some(TagCode::StartSound2) => Tag::StartSound2 {
+                class_name: try!(tag_reader.read_c_string()),
+                sound_info: Box::new(try!(tag_reader.read_sound_info())),
+            },
+
             Some(TagCode::DefineScalingGrid) => Tag::DefineScalingGrid {
                 id: try!(tag_reader.read_u16()),
                 splitter_rect: try!(tag_reader.read_rectangle()),
@@ -630,10 +635,10 @@ impl<R: Read> Reader<R> {
                         "Invalid audio format.")),
         };
         let sample_rate = match (flags & 0b11_00) >> 2 {
-            0 => 5500,
-            1 => 11000,
-            2 => 22000,
-            3 => 44000,
+            0 => 5512,
+            1 => 11025,
+            2 => 22050,
+            3 => 44100,
             _ => unreachable!(),
         };
         let is_16_bit = (flags & 0b10) != 0;
@@ -1252,8 +1257,8 @@ impl<R: Read> Reader<R> {
             for _ in 0..num_points {
                 envelope.push(SoundEnvelopePoint {
                     sample: try!(self.read_u32()),
-                    left_volume: try!(self.read_u16()) as f32 / 65535f32,
-                    right_volume: try!(self.read_u16()) as f32 / 65535f32,
+                    left_volume: try!(self.read_u16()) as f32 / 32768f32,
+                    right_volume: try!(self.read_u16()) as f32 / 32768f32,
                 })
             }
             Some(envelope)

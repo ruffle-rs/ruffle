@@ -459,37 +459,21 @@ impl<W: Write> Writer<W> {
                     + if let Some(_) = sound_info.in_sample { 4 } else { 0 }
                     + if let Some(_) = sound_info.out_sample { 4 } else { 0 }
                     + if sound_info.num_loops > 1 { 2 } else { 0 }
-                    + if let Some(ref e) = sound_info.envelope { e.len() as u32 * 8 } else { 0 };
+                    + if let Some(ref e) = sound_info.envelope { e.len() as u32 * 8 + 1 } else { 0 };
                 try!(self.write_tag_header(TagCode::StartSound, length));
                 try!(self.write_u16(id));
-                let flags =
-                    match sound_info.event {
-                        SoundEvent::Event => 0b00_0000u8,
-                        SoundEvent::Start => 0b01_0000u8,
-                        SoundEvent::Stop => 0b10_0000u8,
-                    }
-                    | if let Some(_) = sound_info.in_sample { 0b1 } else { 0 }
-                    | if let Some(_) = sound_info.out_sample { 0b10 } else { 0 }
-                    | if sound_info.num_loops > 1 { 0b100 } else { 0 }
-                    | if let Some(_) = sound_info.envelope { 0b1000 } else { 0 };
-                try!(self.write_u8(flags));
-                if let Some(n) = sound_info.in_sample {
-                    try!(self.write_u32(n));
-                }
-                if let Some(n) = sound_info.out_sample {
-                    try!(self.write_u32(n));
-                }
-                if sound_info.num_loops > 1 {
-                    try!(self.write_u16(sound_info.num_loops));
-                }
-                if let Some(ref envelope) = sound_info.envelope {
-                    try!(self.write_u8(envelope.len() as u8));
-                    for point in envelope {
-                        try!(self.write_u32(point.sample));
-                        try!(self.write_u16((point.left_volume * 65535f32) as u16));
-                        try!(self.write_u16((point.right_volume * 65535f32) as u16));
-                    }
-                }
+                try!(self.write_sound_info(sound_info));
+            },
+
+            &Tag::StartSound2 { ref class_name, ref sound_info } => {
+                let length = class_name.len() as u32 + 2
+                    + if let Some(_) = sound_info.in_sample { 4 } else { 0 }
+                    + if let Some(_) = sound_info.out_sample { 4 } else { 0 }
+                    + if sound_info.num_loops > 1 { 2 } else { 0 }
+                    + if let Some(ref e) = sound_info.envelope { e.len() as u32 * 8 + 1 } else { 0 };
+                try!(self.write_tag_header(TagCode::StartSound2, length));
+                try!(self.write_c_string(class_name));
+                try!(self.write_sound_info(sound_info));
             },
 
             &Tag::SymbolClass(ref symbols) => {
@@ -626,11 +610,11 @@ impl<W: Write> Writer<W> {
             AudioCompression::Speex => 11,
         }));
         try!(self.write_ubits(2, match sound.sample_rate {
-            5500 => 0,
-            11000 => 1,
-            22000 => 2,
-            44000 => 3,
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid sample rates.")),
+            5512 => 0,
+            11025 => 1,
+            22050 => 2,
+            44100 => 3,
+            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid sample rate.")),
         }));
         try!(self.write_bit(sound.is_16_bit));
         try!(self.write_bit(sound.is_stereo));
@@ -1199,6 +1183,38 @@ impl<W: Write> Writer<W> {
             try!(self.write_u8(0));
         }
         try!(self.flush_bits());
+        Ok(())
+    }
+
+    fn write_sound_info(&mut self, sound_info: &SoundInfo) -> Result<()> {
+        let flags =
+            match sound_info.event {
+                SoundEvent::Event => 0b00_0000u8,
+                SoundEvent::Start => 0b01_0000u8,
+                SoundEvent::Stop => 0b10_0000u8,
+            }
+            | if let Some(_) = sound_info.in_sample { 0b1 } else { 0 }
+            | if let Some(_) = sound_info.out_sample { 0b10 } else { 0 }
+            | if sound_info.num_loops > 1 { 0b100 } else { 0 }
+            | if let Some(_) = sound_info.envelope { 0b1000 } else { 0 };
+        try!(self.write_u8(flags));
+        if let Some(n) = sound_info.in_sample {
+            try!(self.write_u32(n));
+        }
+        if let Some(n) = sound_info.out_sample {
+            try!(self.write_u32(n));
+        }
+        if sound_info.num_loops > 1 {
+            try!(self.write_u16(sound_info.num_loops));
+        }
+        if let Some(ref envelope) = sound_info.envelope {
+            try!(self.write_u8(envelope.len() as u8));
+            for point in envelope {
+                try!(self.write_u32(point.sample));
+                try!(self.write_u16((point.left_volume * 32768f32) as u16));
+                try!(self.write_u16((point.right_volume * 32768f32) as u16));
+            }
+        }
         Ok(())
     }
 

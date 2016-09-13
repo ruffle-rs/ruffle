@@ -269,6 +269,20 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
     ),
 
     (
+        4,
+        Tag::DefineSound(Box::new(Sound {
+            id: 1,
+            compression: AudioCompression::Uncompressed,
+            sample_rate: 44100,
+            is_16_bit: true,
+            is_stereo: false,
+            num_samples: 10,
+            data: vec![255, 127, 0, 128, 255, 127, 0, 128, 255, 127, 0, 128, 255, 127, 0, 128, 255, 127, 0, 128], 
+        })),
+        read_tag_bytes_from_file("tests/swfs/definesound.swf", TagCode::DefineSound)
+    ),
+
+    (
         3,
         Tag::DefineSprite(Sprite {
             id: 1,
@@ -574,14 +588,35 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
         Tag::StartSound {
             id: 1,
             sound_info: Box::new(SoundInfo {
-                event: SoundEvent::Event,
+                event: SoundEvent::Start,
                 in_sample: None,
                 out_sample: None,
-                num_loops: 1,
+                num_loops: 3,
                 envelope: None,
             }),
         },
         read_tag_bytes_from_file("tests/swfs/definesound.swf", TagCode::StartSound)
+    ),
+
+    (
+        9,
+        Tag::StartSound2 {
+            class_name: "TestSound".to_string(),
+            sound_info: Box::new(SoundInfo {
+                event: SoundEvent::Event,
+                in_sample: None,
+                out_sample: None,
+                num_loops: 1,
+                envelope: Some(vec![
+                    SoundEnvelopePoint {
+                        sample: 0,
+                        left_volume: 0.0,
+                        right_volume: 1.0,
+                    }
+                ]),
+            }),
+        },
+        read_tag_bytes_from_file("tests/swfs/startsound2.swf", TagCode::StartSound2)
     ),
 
     (1, Tag::Unknown { tag_code: 512, data: vec![] }, vec![0b00_000000, 0b10000000]),
