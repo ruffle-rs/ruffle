@@ -291,6 +291,7 @@ pub enum Tag {
     ImportAssets { url: String, imports: Vec<ExportedAsset> },
     SetBackgroundColor(Color),
     SetTabIndex { depth: Depth, tab_index: u16 },
+    SoundStreamBlock(Vec<u8>),
     SoundStreamHead(Box<SoundStreamInfo>),
     SoundStreamHead2(Box<SoundStreamInfo>),
     StartSound { id: CharacterId, sound_info: Box<SoundInfo> },

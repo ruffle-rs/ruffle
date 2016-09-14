@@ -454,6 +454,11 @@ impl<W: Write> Writer<W> {
                 try!(self.write_i16(depth));
             },
 
+            &Tag::SoundStreamBlock(ref data) => {
+                try!(self.write_tag_header(TagCode::SoundStreamBlock, data.len() as u32));
+                try!(self.output.write_all(data));
+            }
+
             &Tag::SoundStreamHead(ref sound_stream_info) => {
                 try!(self.write_sound_stream_head(sound_stream_info, 1));
             }

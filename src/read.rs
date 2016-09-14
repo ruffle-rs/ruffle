@@ -391,6 +391,12 @@ impl<R: Read> Reader<R> {
                 Tag::SetBackgroundColor(try!(tag_reader.read_rgb()))
             },
 
+            Some(TagCode::SoundStreamBlock) => {
+                let mut data = Vec::with_capacity(length);
+                try!(tag_reader.input.read_to_end(&mut data));
+                Tag::SoundStreamBlock(data)
+            },
+
             Some(TagCode::SoundStreamHead) => Tag::SoundStreamHead(
                 // TODO: Disallow certain compressions.
                 Box::new(try!(tag_reader.read_sound_stream_info()))
