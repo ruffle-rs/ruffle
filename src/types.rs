@@ -293,6 +293,8 @@ pub enum Tag {
     Protect(Option<String>),
     DefineBinaryData { id: CharacterId, data: Vec<u8> },
     DefineButton(Box<Button>),
+    DefineButtonColorTransform { id: CharacterId, color_transforms: Vec<ColorTransform> },
+    DefineButtonSound(Box<ButtonSounds>),
     DefineScalingGrid { id: CharacterId, splitter_rect: Rectangle },
     DefineShape(Shape),
     DefineSound(Box<Sound>),
@@ -565,3 +567,14 @@ pub enum ButtonState {
     Down,
     HitTest,
 }
+
+#[derive(Debug,PartialEq,Clone)]
+pub struct ButtonSounds {
+    pub id: CharacterId,
+    pub over_to_up_sound: Option<ButtonSound>,
+    pub up_to_over_sound: Option<ButtonSound>,
+    pub over_to_down_sound: Option<ButtonSound>,
+    pub down_to_over_sound: Option<ButtonSound>,
+}
+
+pub type ButtonSound = (CharacterId, SoundInfo);

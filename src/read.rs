@@ -342,6 +342,51 @@ impl<R: Read> Reader<R> {
                 }
             },
             Some(TagCode::DefineButton) => try!(tag_reader.read_define_button()),
+            Some(TagCode::DefineButtonCxform) => {
+                let id = try!(tag_reader.read_u16());
+                // SWF19 is incorrect here. It seems you can have many color transforms in this
+                // tag, one for each character inside the button? In order of state/depth?
+                let mut color_transforms = Vec::new();
+                while let Ok(color_transform) = tag_reader.read_color_transform_no_alpha() {
+                    color_transforms.push(color_transform);
+                }
+                Tag::DefineButtonColorTransform {
+                    id: id,
+                    color_transforms: color_transforms
+                }
+            },
+            Some(TagCode::DefineButtonSound) => {
+                let button_id = try!(tag_reader.read_u16());
+
+                let sound_id = try!(tag_reader.read_u16());
+                let over_to_up_sound = if sound_id != 0 {
+                    Some((sound_id, try!(tag_reader.read_sound_info())))
+                } else { None };
+
+                let sound_id = try!(tag_reader.read_u16());
+                let up_to_over_sound = if sound_id != 0 {
+                    Some((sound_id, try!(tag_reader.read_sound_info())))
+                } else { None };
+
+                let sound_id = try!(tag_reader.read_u16());
+                let over_to_down_sound = if sound_id != 0 {
+                    Some((sound_id, try!(tag_reader.read_sound_info())))
+                } else { None };
+
+                let sound_id = try!(tag_reader.read_u16());
+                let down_to_over_sound = if sound_id != 0 {
+                    Some((sound_id, try!(tag_reader.read_sound_info())))
+                } else { None };
+
+                Tag::DefineButtonSound(Box::new(ButtonSounds {
+                    id: button_id,
+                    over_to_up_sound: over_to_up_sound,
+                    up_to_over_sound: up_to_over_sound,
+                    over_to_down_sound: over_to_down_sound,
+                    down_to_over_sound: down_to_over_sound,
+                }))
+            },
+
             Some(TagCode::DefineShape) => try!(tag_reader.read_define_shape(1)),
             Some(TagCode::DefineShape2) => try!(tag_reader.read_define_shape(2)),
             Some(TagCode::DefineShape3) => try!(tag_reader.read_define_shape(3)),

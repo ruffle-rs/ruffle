@@ -57,6 +57,71 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
     ),
 
     (
+        2,
+        Tag::DefineButtonColorTransform {
+            id: 3,
+            color_transforms: vec![
+                ColorTransform {
+                    r_multiply: 1f32,
+                    g_multiply: 0f32,
+                    b_multiply: 0f32,
+                    a_multiply: 1f32,
+                    r_add: 1,
+                    g_add: 0,
+                    b_add: 0,
+                    a_add: 0,
+                },
+                ColorTransform {
+                    r_multiply: 0f32,
+                    g_multiply: 1f32,
+                    b_multiply: 0f32,
+                    a_multiply: 1f32,
+                    r_add: 0,
+                    g_add: 1,
+                    b_add: 0,
+                    a_add: 0,
+                },
+                ColorTransform {
+                    r_multiply: 0f32,
+                    g_multiply: 0f32,
+                    b_multiply: 1f32,
+                    a_multiply: 1f32,
+                    r_add: 0,
+                    g_add: 0,
+                    b_add: 1,
+                    a_add: 0,
+                },
+            ],
+        },
+        read_tag_bytes_from_file("tests/swfs/definebuttoncxformsound.swf", TagCode::DefineButtonCxform)
+    ),
+
+    (
+        2,
+        Tag::DefineButtonSound(Box::new(ButtonSounds {
+            id: 3,
+            up_to_over_sound: Some((2, SoundInfo {
+                event: SoundEvent::Event,
+                in_sample: None,
+                out_sample: None,
+                num_loops: 1,
+                envelope: None,
+            })),
+            over_to_down_sound: Some((2, SoundInfo {
+                event: SoundEvent::Start,
+                in_sample: None,
+                out_sample: None,
+                num_loops: 2,
+                envelope: None,
+            })),
+            down_to_over_sound: None,
+            over_to_up_sound: None,
+
+        })),
+        read_tag_bytes_from_file("tests/swfs/definebuttoncxformsound.swf", TagCode::DefineButtonSound)
+    ),
+
+    (
         8,
         Tag::DefineScalingGrid {
             id: 2,

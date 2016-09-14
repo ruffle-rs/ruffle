@@ -344,6 +344,46 @@ impl<W: Write> Writer<W> {
                 try!(self.write_define_button(button))
             },
 
+            &Tag::DefineButtonColorTransform { id, ref color_transforms } => {
+                let mut buf = Vec::new();
+                {
+                    let mut writer = Writer::new(&mut buf, self.version);
+                    try!(writer.write_u16(id));
+                    for color_transform in color_transforms {
+                        try!(writer.write_color_transform_no_alpha(color_transform));
+                        try!(writer.flush_bits());
+                    }
+                }
+                try!(self.write_tag_header(TagCode::DefineButtonCxform, buf.len() as u32));
+                try!(self.output.write_all(&buf));
+            },
+
+            &Tag::DefineButtonSound(ref button_sounds) => {
+                let mut buf = Vec::new();
+                {
+                    let mut writer = Writer::new(&mut buf, self.version);
+                    try!(writer.write_u16(button_sounds.id));
+                    if let Some(ref sound) = button_sounds.over_to_up_sound {
+                        try!(writer.write_u16(sound.0));
+                        try!(writer.write_sound_info(&sound.1));
+                    } else { try!(writer.write_u16(0)) };
+                    if let Some(ref sound) = button_sounds.up_to_over_sound {
+                        try!(writer.write_u16(sound.0));
+                        try!(writer.write_sound_info(&sound.1));
+                    } else { try!(writer.write_u16(0)) };
+                    if let Some(ref sound) = button_sounds.over_to_down_sound {
+                        try!(writer.write_u16(sound.0));
+                        try!(writer.write_sound_info(&sound.1));
+                    } else { try!(writer.write_u16(0)) };
+                    if let Some(ref sound) = button_sounds.down_to_over_sound {
+                        try!(writer.write_u16(sound.0));
+                        try!(writer.write_sound_info(&sound.1));
+                    } else { try!(writer.write_u16(0)) };
+                }
+                try!(self.write_tag_header(TagCode::DefineButtonSound, buf.len() as u32));
+                try!(self.output.write_all(&buf));
+            },
+
             &Tag::DefineScalingGrid { id, ref splitter_rect } => {
                 let mut buf = Vec::new();
                 {
