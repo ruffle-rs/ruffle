@@ -28,6 +28,35 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
     ),
 
     (
+        1,
+        Tag::DefineButton(Box::new(Button {
+            id: 3,
+            records: vec![
+                ButtonRecord {
+                    id: 1,
+                    states: vec![ButtonState::Up, ButtonState::Over].into_iter().collect(),
+                    depth: 1,
+                    matrix: Matrix::new(),
+                    color_transform: ColorTransform::new(),
+                    filters: vec![],
+                    blend_mode: BlendMode::Normal,
+                },
+                ButtonRecord {
+                    id: 2,
+                    states: vec![ButtonState::Down, ButtonState::HitTest].into_iter().collect(),
+                    depth: 1,
+                    matrix: Matrix::new(),
+                    color_transform: ColorTransform::new(),
+                    filters: vec![],
+                    blend_mode: BlendMode::Normal,
+                }
+            ],
+            action_data: vec![0],
+        })),
+        read_tag_bytes_from_file("tests/swfs/definebutton.swf", TagCode::DefineButton)
+    ),
+
+    (
         8,
         Tag::DefineScalingGrid {
             id: 2,

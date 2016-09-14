@@ -339,6 +339,11 @@ impl<W: Write> Writer<W> {
                 try!(self.write_u32(0)); // Reserved
                 try!(self.output.write_all(&data));
             },
+
+            &Tag::DefineButton(ref button) => {
+                try!(self.write_define_button(button))
+            },
+
             &Tag::DefineScalingGrid { id, ref splitter_rect } => {
                 let mut buf = Vec::new();
                 {
@@ -544,6 +549,22 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
+    fn write_define_button(&mut self, button: &Button) -> Result<()> {
+        let mut buf = Vec::new();
+        {
+            let mut writer = Writer::new(&mut buf, self.version);
+            try!(writer.write_u16(button.id));
+            for record in &button.records {
+                try!(writer.write_button_record(record, 1));
+            }
+            try!(writer.write_u8(0)); // End button records
+            try!(writer.output.write_all(&button.action_data));
+        }
+        try!(self.write_tag_header(TagCode::DefineButton, buf.len() as u32));
+        try!(self.output.write_all(&buf));
+        Ok(())
+    }
+
     fn write_define_scene_and_frame_label_data(&mut self,
                                                scenes: &Vec<FrameLabel>,
                                                frame_labels: &Vec<FrameLabel>)
@@ -629,6 +650,55 @@ impl<W: Write> Writer<W> {
         try!(self.write_tag_header(TagCode::DefineSprite, buf.len() as u32));
         try!(self.output.write_all(&buf));
         Ok(())
+    }
+
+    fn write_button_record(&mut self, record: &ButtonRecord, tag_version: u8) -> Result<()> {
+        // TODO: Validate version
+        let flags =
+            if record.blend_mode != BlendMode::Normal { 0b10_0000 } else { 0 } |
+            if !record.filters.is_empty() { 0b1_0000 } else { 0 } |
+            if record.states.contains(&ButtonState::HitTest) { 0b1000 } else { 0 } |
+            if record.states.contains(&ButtonState::Down) { 0b100 } else { 0 } |
+            if record.states.contains(&ButtonState::Over) { 0b10 } else { 0 } |
+            if record.states.contains(&ButtonState::Up) { 0b1 } else { 0 };
+        try!(self.write_u8(flags));
+        try!(self.write_u16(record.id));
+        try!(self.write_i16(record.depth));
+        try!(self.write_matrix(&record.matrix));
+        if tag_version >= 2 {
+            try!(self.write_color_transform(&record.color_transform));
+            if !record.filters.is_empty() {
+                try!(self.write_u8(record.filters.len() as u8));
+                for filter in &record.filters {
+                    try!(self.write_filter(filter));
+                }
+            }
+            if record.blend_mode != BlendMode::Normal {
+                try!(self.write_blend_mode(record.blend_mode));
+            }
+        }
+        Ok(())
+    }
+
+    fn write_blend_mode(&mut self, blend_mode: BlendMode) -> Result<()> {
+        self.write_u8(
+            match blend_mode {
+                BlendMode::Normal => 0,
+                BlendMode::Layer => 2,
+                BlendMode::Multiply => 3,
+                BlendMode::Screen => 4,
+                BlendMode::Lighten => 5,
+                BlendMode::Darken => 6,
+                BlendMode::Difference => 7,
+                BlendMode::Add => 8,
+                BlendMode::Subtract => 9,
+                BlendMode::Invert => 10,
+                BlendMode::Alpha => 11,
+                BlendMode::Erase => 12,
+                BlendMode::Overlay => 13,
+                BlendMode::HardLight => 14,
+            }
+        )
     }
 
     fn write_shape_styles(&mut self, styles: &ShapeStyles, shape_version: u8) -> Result<()> {
@@ -958,22 +1028,7 @@ impl<W: Write> Writer<W> {
                 }
 
                 if place_object.blend_mode != BlendMode::Normal {
-                    try!(writer.write_u8(match place_object.blend_mode {
-                        BlendMode::Normal => 0,
-                        BlendMode::Layer => 2,
-                        BlendMode::Multiply => 3,
-                        BlendMode::Screen => 4,
-                        BlendMode::Lighten => 5,
-                        BlendMode::Darken => 6,
-                        BlendMode::Difference => 7,
-                        BlendMode::Add => 8,
-                        BlendMode::Subtract => 9,
-                        BlendMode::Invert => 10,
-                        BlendMode::Alpha => 11,
-                        BlendMode::Erase => 12,
-                        BlendMode::Overlay => 13,
-                        BlendMode::HardLight => 14,
-                    }));
+                    try!(writer.write_blend_mode(place_object.blend_mode));
                 }
 
                 if place_object.is_bitmap_cached {

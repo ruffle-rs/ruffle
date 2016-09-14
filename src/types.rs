@@ -34,7 +34,7 @@ pub struct Color {
     pub a: u8,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug,PartialEq,Clone)]
 pub struct ColorTransform {
     pub r_multiply: f32,
     pub g_multiply: f32,
@@ -46,7 +46,22 @@ pub struct ColorTransform {
     pub a_add: i16,
 }
 
-#[derive(Debug,PartialEq)]
+impl ColorTransform {
+    pub fn new() -> ColorTransform {
+        ColorTransform {
+            r_multiply: 1f32,
+            g_multiply: 1f32,
+            b_multiply: 1f32,
+            a_multiply: 1f32,
+            r_add: 0,
+            g_add: 0,
+            b_add: 0,
+            a_add: 0,
+        }
+    }
+}
+
+#[derive(Debug,PartialEq,Clone)]
 pub struct Matrix {
     pub translate_x: f32,
     pub translate_y: f32,
@@ -277,6 +292,7 @@ pub enum Tag {
 
     Protect(Option<String>),
     DefineBinaryData { id: CharacterId, data: Vec<u8> },
+    DefineButton(Box<Button>),
     DefineScalingGrid { id: CharacterId, splitter_rect: Rectangle },
     DefineShape(Shape),
     DefineSound(Box<Sound>),
@@ -522,4 +538,30 @@ pub struct SoundStreamInfo {
     pub playback_format: SoundFormat,
     pub num_samples_per_block: u16,
     pub latency_seek: i16,
+}
+
+#[derive(Debug,PartialEq,Clone)]
+pub struct Button {
+    pub id: CharacterId,
+    pub records: Vec<ButtonRecord>,
+    pub action_data: Vec<u8>,
+}
+
+#[derive(Debug,PartialEq,Clone)]
+pub struct ButtonRecord {
+    pub states: HashSet<ButtonState>,
+    pub id: CharacterId,
+    pub depth: Depth,
+    pub matrix: Matrix,
+    pub color_transform: ColorTransform,
+    pub filters: Vec<Filter>,
+    pub blend_mode: BlendMode,
+}
+
+#[derive(Debug,PartialEq,Eq,Clone,Copy,Hash)]
+pub enum ButtonState {
+    Up,
+    Over,
+    Down,
+    HitTest,
 }

@@ -341,6 +341,7 @@ impl<R: Read> Reader<R> {
                     data: data,
                 }
             },
+            Some(TagCode::DefineButton) => try!(tag_reader.read_define_button()),
             Some(TagCode::DefineShape) => try!(tag_reader.read_define_shape(1)),
             Some(TagCode::DefineShape2) => try!(tag_reader.read_define_shape(2)),
             Some(TagCode::DefineShape3) => try!(tag_reader.read_define_shape(3)),
@@ -572,6 +573,62 @@ impl<R: Read> Reader<R> {
             length = try!(self.read_u32()) as usize;
         }
         Ok((tag_code, length))
+    }
+
+    fn read_define_button(&mut self) -> Result<Tag> {
+        let id = try!(self.read_u16());
+        let mut records = Vec::new();
+        while let Some(record) = try!(self.read_button_record(1)) {
+            records.push(record);
+        }
+        let mut action_data = Vec::new();
+        try!(self.input.read_to_end(&mut action_data));
+        Ok(Tag::DefineButton(Box::new(Button {
+            id: id,
+            records: records,
+            action_data: action_data,
+        })))
+    }
+
+    fn read_button_record(&mut self, version: u8) -> Result<Option<ButtonRecord>> {
+        let flags = try!(self.read_u8());
+        if flags == 0 {
+            return Ok(None);
+        }
+        let mut states = HashSet::with_capacity(4);
+        if (flags & 0b1) != 0 { states.insert(ButtonState::Up); }
+        if (flags & 0b10) != 0 { states.insert(ButtonState::Over); }
+        if (flags & 0b100) != 0 { states.insert(ButtonState::Down); }
+        if (flags & 0b1000) != 0 { states.insert(ButtonState::HitTest); }
+        let id = try!(self.read_u16());
+        let depth = try!(self.read_i16());
+        let matrix = try!(self.read_matrix());
+        let color_transform = if version >= 2 {
+            try!(self.read_color_transform())
+        } else {
+            ColorTransform::new()
+        };
+        let mut filters = vec![];
+        if (flags & 0b1_0000) != 0 {
+            let num_filters = try!(self.read_u8());
+            for _ in 0..num_filters {
+                filters.push(try!(self.read_filter()));
+            }
+        }
+        let blend_mode = if (flags & 0b10_0000) != 0 {
+            try!(self.read_blend_mode())
+        } else {
+            BlendMode::Normal
+        };
+        Ok(Some(ButtonRecord {
+            states: states,
+            id: id,
+            depth: depth,
+            matrix: matrix,
+            color_transform: color_transform,
+            filters: filters,
+            blend_mode: blend_mode,
+        }))
     }
 
     fn read_define_scene_and_frame_label_data(&mut self) -> Result<Tag> {
@@ -986,23 +1043,7 @@ impl<R: Read> Reader<R> {
             }
         } 
         let blend_mode = if (flags & 0b10_00000000) != 0 {
-            match try!(self.read_u8()) {
-                0 | 1 => BlendMode::Normal,
-                2 => BlendMode::Layer,
-                3 => BlendMode::Multiply,
-                4 => BlendMode::Screen,
-                5 => BlendMode::Lighten,
-                6 => BlendMode::Darken,
-                7 => BlendMode::Difference,
-                8 => BlendMode::Add,
-                9 => BlendMode::Subtract,
-                10 => BlendMode::Invert,
-                11 => BlendMode::Alpha,
-                12 => BlendMode::Erase,
-                13 => BlendMode::Overlay,
-                14 => BlendMode::HardLight,
-                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid blend mode")),
-            }
+            try!(self.read_blend_mode())
         } else { BlendMode::Normal };
         let is_bitmap_cached = (flags & 0b100_00000000) != 0 && try!(self.read_u8()) != 0;
         let is_visible = (flags & 0b100000_00000000) == 0 || try!(self.read_u8()) != 0;
@@ -1031,6 +1072,26 @@ impl<R: Read> Reader<R> {
             background_color: background_color,
             blend_mode: blend_mode,
         })))
+    }
+
+    fn read_blend_mode(&mut self) -> Result<BlendMode> {
+        Ok(match try!(self.read_u8()) {
+            0 | 1 => BlendMode::Normal,
+            2 => BlendMode::Layer,
+            3 => BlendMode::Multiply,
+            4 => BlendMode::Screen,
+            5 => BlendMode::Lighten,
+            6 => BlendMode::Darken,
+            7 => BlendMode::Difference,
+            8 => BlendMode::Add,
+            9 => BlendMode::Subtract,
+            10 => BlendMode::Invert,
+            11 => BlendMode::Alpha,
+            12 => BlendMode::Erase,
+            13 => BlendMode::Overlay,
+            14 => BlendMode::HardLight,
+            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid blend mode")),
+        })
     }
 
     fn read_clip_actions(&mut self) -> Result<Vec<ClipAction>> {
