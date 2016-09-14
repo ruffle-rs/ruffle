@@ -272,10 +272,12 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
         4,
         Tag::DefineSound(Box::new(Sound {
             id: 1,
-            compression: AudioCompression::Uncompressed,
-            sample_rate: 44100,
-            is_16_bit: true,
-            is_stereo: false,
+            format: SoundFormat {
+                compression: AudioCompression::Uncompressed,
+                sample_rate: 44100,
+                is_16_bit: true,
+                is_stereo: false,
+            },
             num_samples: 10,
             data: vec![255, 127, 0, 128, 255, 127, 0, 128, 255, 127, 0, 128, 255, 127, 0, 128, 255, 127, 0, 128], 
         })),
@@ -573,6 +575,27 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
     ),
 
     (1, Tag::ShowFrame, vec![0b01_000000, 0]),
+
+    (
+        3,
+        Tag::SoundStreamHead2(Box::new(SoundStreamInfo {
+            stream_format: SoundFormat {
+                compression: AudioCompression::Uncompressed,
+                sample_rate: 5512,
+                is_16_bit: true,
+                is_stereo: false,
+            },
+            playback_format: SoundFormat {
+                compression: AudioCompression::UncompressedUnknownEndian,
+                sample_rate: 5512,
+                is_16_bit: true,
+                is_stereo: false,
+            },
+            num_samples_per_block: 229,
+            latency_seek: 0,
+        })),
+        read_tag_bytes_from_file("tests/swfs/soundstreamhead2.swf", TagCode::SoundStreamHead2)
+    ),
 
     (
         9,

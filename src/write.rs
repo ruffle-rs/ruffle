@@ -454,6 +454,14 @@ impl<W: Write> Writer<W> {
                 try!(self.write_i16(depth));
             },
 
+            &Tag::SoundStreamHead(ref sound_stream_info) => {
+                try!(self.write_sound_stream_head(sound_stream_info, 1));
+            }
+
+            &Tag::SoundStreamHead2(ref sound_stream_info) => {
+                try!(self.write_sound_stream_head(sound_stream_info, 2));
+            }
+
             &Tag::StartSound { id, ref sound_info } => {
                 let length = 3
                     + if let Some(_) = sound_info.in_sample { 4 } else { 0 }
@@ -599,25 +607,7 @@ impl<W: Write> Writer<W> {
             7 + sound.data.len() as u32
         ));
         try!(self.write_u16(sound.id));
-        try!(self.write_ubits(4, match sound.compression {
-            AudioCompression::UncompressedUnknownEndian => 0,
-            AudioCompression::Adpcm => 1,
-            AudioCompression::Mp3 => 2,
-            AudioCompression::Uncompressed => 3,
-            AudioCompression::Nellymoser16Khz => 4,
-            AudioCompression::Nellymoser8Khz => 5,
-            AudioCompression::Nellymoser => 6,
-            AudioCompression::Speex => 11,
-        }));
-        try!(self.write_ubits(2, match sound.sample_rate {
-            5512 => 0,
-            11025 => 1,
-            22050 => 2,
-            44100 => 3,
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid sample rate.")),
-        }));
-        try!(self.write_bit(sound.is_16_bit));
-        try!(self.write_bit(sound.is_stereo));
+        try!(self.write_sound_format(&sound.format));
         try!(self.write_u32(sound.num_samples));
         try!(self.output.write_all(&sound.data));
         Ok(())
@@ -1182,6 +1172,52 @@ impl<W: Write> Writer<W> {
             try!(self.write_bit(clip_events.contains(&ClipEvent::DragOut)));
             try!(self.write_u8(0));
         }
+        try!(self.flush_bits());
+        Ok(())
+    }
+
+    fn write_sound_stream_head(&mut self, stream_info: &SoundStreamInfo, version: u8) -> Result<()> {
+        let tag_code = if version >= 2 {
+            TagCode::SoundStreamHead2
+        } else {
+            TagCode::SoundStreamHead
+        };
+        // MP3 compression has added latency seek field.
+        let length = if stream_info.stream_format.compression == AudioCompression::Mp3 {
+            6
+        } else {
+            4
+        };
+        try!(self.write_tag_header(tag_code, length));
+        try!(self.write_sound_format(&stream_info.playback_format));
+        try!(self.write_sound_format(&stream_info.stream_format));
+        try!(self.write_u16(stream_info.num_samples_per_block));
+        if stream_info.stream_format.compression  == AudioCompression::Mp3 {
+            try!(self.write_i16(stream_info.latency_seek));
+        }
+        Ok(())
+    }
+
+    fn write_sound_format(&mut self, sound_format: &SoundFormat) -> Result<()> {
+        try!(self.write_ubits(4, match sound_format.compression {
+            AudioCompression::UncompressedUnknownEndian => 0,
+            AudioCompression::Adpcm => 1,
+            AudioCompression::Mp3 => 2,
+            AudioCompression::Uncompressed => 3,
+            AudioCompression::Nellymoser16Khz => 4,
+            AudioCompression::Nellymoser8Khz => 5,
+            AudioCompression::Nellymoser => 6,
+            AudioCompression::Speex => 11,
+        }));
+        try!(self.write_ubits(2, match sound_format.sample_rate {
+            5512 => 0,
+            11025 => 1,
+            22050 => 2,
+            44100 => 3,
+            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid sample rate.")),
+        }));
+        try!(self.write_bit(sound_format.is_16_bit));
+        try!(self.write_bit(sound_format.is_stereo));
         try!(self.flush_bits());
         Ok(())
     }

@@ -291,6 +291,8 @@ pub enum Tag {
     ImportAssets { url: String, imports: Vec<ExportedAsset> },
     SetBackgroundColor(Color),
     SetTabIndex { depth: Depth, tab_index: u16 },
+    SoundStreamHead(Box<SoundStreamInfo>),
+    SoundStreamHead2(Box<SoundStreamInfo>),
     StartSound { id: CharacterId, sound_info: Box<SoundInfo> },
     StartSound2 { class_name: String, sound_info: Box<SoundInfo> },
     SymbolClass(Vec<SymbolClassLink>),
@@ -336,10 +338,7 @@ pub struct Shape {
 #[derive(Debug,PartialEq,Clone)]
 pub struct Sound {
     pub id: CharacterId,
-    pub compression: AudioCompression,
-    pub sample_rate: u16,
-    pub is_16_bit: bool,
-    pub is_stereo: bool,
+    pub format: SoundFormat,
     pub num_samples: u32,
     pub data: Vec<u8>,
 }
@@ -506,4 +505,20 @@ pub enum AudioCompression {
     Nellymoser8Khz,
     Nellymoser,
     Speex,
+}
+
+#[derive(Debug,PartialEq,Clone)]
+pub struct SoundFormat {
+    pub compression: AudioCompression,
+    pub sample_rate: u16,
+    pub is_stereo: bool,
+    pub is_16_bit: bool,
+}
+
+#[derive(Debug,PartialEq,Clone)]
+pub struct SoundStreamInfo {
+    pub stream_format: SoundFormat,
+    pub playback_format: SoundFormat,
+    pub num_samples_per_block: u16,
+    pub latency_seek: i16,
 }

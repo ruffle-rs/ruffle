@@ -391,6 +391,15 @@ impl<R: Read> Reader<R> {
                 Tag::SetBackgroundColor(try!(tag_reader.read_rgb()))
             },
 
+            Some(TagCode::SoundStreamHead) => Tag::SoundStreamHead(
+                // TODO: Disallow certain compressions.
+                Box::new(try!(tag_reader.read_sound_stream_info()))
+            ),
+
+            Some(TagCode::SoundStreamHead2) => Tag::SoundStreamHead2(
+                Box::new(try!(tag_reader.read_sound_stream_info()))
+            ),
+
             Some(TagCode::StartSound) => Tag::StartSound {
                 id: try!(tag_reader.read_u16()),
                 sound_info: Box::new(try!(tag_reader.read_sound_info())),
@@ -621,40 +630,33 @@ impl<R: Read> Reader<R> {
 
     fn read_define_sound(&mut self) -> Result<Tag> {
         let id = try!(self.read_u16());
-        let flags = try!(self.read_u8());
-        let compression = match flags >> 4 {
-            0 => AudioCompression::UncompressedUnknownEndian,
-            1 => AudioCompression::Adpcm,
-            2 => AudioCompression::Mp3,
-            3 => AudioCompression::Uncompressed,
-            4 => AudioCompression::Nellymoser16Khz,
-            5 => AudioCompression::Nellymoser8Khz,
-            6 => AudioCompression::Nellymoser,
-            11 => AudioCompression::Speex,
-            _ => return Err(Error::new(ErrorKind::InvalidData,
-                        "Invalid audio format.")),
-        };
-        let sample_rate = match (flags & 0b11_00) >> 2 {
-            0 => 5512,
-            1 => 11025,
-            2 => 22050,
-            3 => 44100,
-            _ => unreachable!(),
-        };
-        let is_16_bit = (flags & 0b10) != 0;
-        let is_stereo = (flags & 0b1) != 0;
+        let format = try!(self.read_sound_format());
         let num_samples = try!(self.read_u32());
         let mut data = Vec::new();
         try!(self.input.read_to_end(&mut data));
         Ok(Tag::DefineSound(Box::new(Sound {
             id: id,
-            compression: compression,
-            sample_rate: sample_rate,
-            is_16_bit: is_16_bit,
-            is_stereo: is_stereo,
+            format: format,
             num_samples: num_samples,
             data: data
         })))
+    }
+
+    fn read_sound_stream_info(&mut self) -> Result<SoundStreamInfo> {
+        // TODO: Verify version requirements.
+        let playback_format = try!(self.read_sound_format());
+        let stream_format = try!(self.read_sound_format());
+        let num_samples_per_block = try!(self.read_u16());
+        let latency_seek = if stream_format.compression == AudioCompression::Mp3 {
+            // Specs say this is i16, not u16. How are negative values used?
+            try!(self.read_i16())
+        } else { 0 };
+        Ok(SoundStreamInfo {
+            stream_format: stream_format,
+            playback_format: playback_format,
+            num_samples_per_block: num_samples_per_block,
+            latency_seek: latency_seek,
+        })
     }
 
     fn read_shape_styles(&mut self, shape_version: u8) -> Result<ShapeStyles> {
@@ -1226,6 +1228,37 @@ impl<R: Read> Reader<R> {
         };
         self.byte_align();
         Ok(filter)
+    }
+
+    fn read_sound_format(&mut self) -> Result<SoundFormat> {
+        let flags = try!(self.read_u8());
+        let compression = match flags >> 4 {
+            0 => AudioCompression::UncompressedUnknownEndian,
+            1 => AudioCompression::Adpcm,
+            2 => AudioCompression::Mp3,
+            3 => AudioCompression::Uncompressed,
+            4 => AudioCompression::Nellymoser16Khz,
+            5 => AudioCompression::Nellymoser8Khz,
+            6 => AudioCompression::Nellymoser,
+            11 => AudioCompression::Speex,
+            _ => return Err(Error::new(ErrorKind::InvalidData,
+                        "Invalid audio format.")),
+        };
+        let sample_rate = match (flags & 0b11_00) >> 2 {
+            0 => 5512,
+            1 => 11025,
+            2 => 22050,
+            3 => 44100,
+            _ => unreachable!(),
+        };
+        let is_16_bit = (flags & 0b10) != 0;
+        let is_stereo = (flags & 0b1) != 0;
+        Ok(SoundFormat {
+            compression: compression,
+            sample_rate: sample_rate,
+            is_16_bit: is_16_bit,
+            is_stereo: is_stereo,
+        })
     }
 
     fn read_sound_info(&mut self) -> Result<SoundInfo> {
