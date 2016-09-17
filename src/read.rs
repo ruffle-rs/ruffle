@@ -342,6 +342,7 @@ impl<R: Read> Reader<R> {
                 }
             },
             Some(TagCode::DefineButton) => try!(tag_reader.read_define_button()),
+            Some(TagCode::DefineButton2) => try!(tag_reader.read_define_button_2()),
             Some(TagCode::DefineButtonCxform) => {
                 let id = try!(tag_reader.read_u16());
                 // SWF19 is incorrect here. It seems you can have many color transforms in this
@@ -630,8 +631,43 @@ impl<R: Read> Reader<R> {
         try!(self.input.read_to_end(&mut action_data));
         Ok(Tag::DefineButton(Box::new(Button {
             id: id,
+            is_track_as_menu: false,
             records: records,
-            action_data: action_data,
+            actions: vec![ButtonAction {
+                conditions: vec![ButtonActionCondition::OverDownToOverUp].into_iter().collect(),
+                key_code: None,
+                action_data: action_data,
+            }]
+        })))
+    }
+
+    fn read_define_button_2(&mut self) -> Result<Tag> {
+        let id = try!(self.read_u16());
+        let flags = try!(self.read_u8());
+        let is_track_as_menu = (flags & 0b1) != 0;
+        let action_offset = try!(self.read_u16());
+
+        let mut records = Vec::new();
+        while let Some(record) = try!(self.read_button_record(2)) {
+            records.push(record);
+        }
+
+        let mut actions = Vec::new();
+        if action_offset != 0 {
+            loop {
+                let (button_action, has_more_actions) = try!(self.read_button_action());
+                actions.push(button_action);
+                if !has_more_actions {
+                    break;
+                }
+            }
+        }
+
+        Ok(Tag::DefineButton2(Box::new(Button {
+            id: id,
+            is_track_as_menu: is_track_as_menu,
+            records: records,
+            actions: actions,
         })))
     }
 
@@ -674,6 +710,43 @@ impl<R: Read> Reader<R> {
             filters: filters,
             blend_mode: blend_mode,
         }))
+    }
+
+    fn read_button_action(&mut self) -> Result<(ButtonAction, bool)> {
+        let length = try!(self.read_u16());
+        let flags = try!(self.read_u16());
+        let mut conditions = HashSet::with_capacity(8);
+        if (flags & 0b1) != 0 { conditions.insert(ButtonActionCondition::IdleToOverUp); }
+        if (flags & 0b10) != 0 { conditions.insert(ButtonActionCondition::OverUpToIdle); }
+        if (flags & 0b100) != 0 { conditions.insert(ButtonActionCondition::OverUpToOverDown); }
+        if (flags & 0b1000) != 0 { conditions.insert(ButtonActionCondition::OverDownToOverUp); }
+        if (flags & 0b1_0000) != 0 { conditions.insert(ButtonActionCondition::OverDownToOutDown); }
+        if (flags & 0b10_0000) != 0 { conditions.insert(ButtonActionCondition::OutDownToOverDown); }
+        if (flags & 0b100_0000) != 0 { conditions.insert(ButtonActionCondition::OutDownToIdle); }
+        if (flags & 0b1000_0000) != 0 { conditions.insert(ButtonActionCondition::IdleToOverDown); }
+
+        if (flags & 0b1_0000_0000) != 0 { conditions.insert(ButtonActionCondition::OverDownToIdle); }
+        let key_code = (flags >> 9) as u8;
+        if key_code != 0 {
+            conditions.insert(ButtonActionCondition::KeyPress);
+        }
+        let mut action_data = Vec::with_capacity(length as usize);
+        if length > 0 {
+            action_data.resize( length as usize - 4, 0 );
+            try!(self.input.read_exact(&mut action_data));
+        } else {
+            try!(self.input.read_to_end(&mut action_data));
+        }
+        Ok(
+            (
+                ButtonAction {
+                    conditions: conditions,
+                    key_code: if key_code != 0 { Some(key_code) } else { None },
+                    action_data: action_data,
+                },
+                length != 0
+            )
+        )
     }
 
     fn read_define_scene_and_frame_label_data(&mut self) -> Result<Tag> {

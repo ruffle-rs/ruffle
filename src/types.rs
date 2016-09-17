@@ -293,6 +293,7 @@ pub enum Tag {
     Protect(Option<String>),
     DefineBinaryData { id: CharacterId, data: Vec<u8> },
     DefineButton(Box<Button>),
+    DefineButton2(Box<Button>),
     DefineButtonColorTransform { id: CharacterId, color_transforms: Vec<ColorTransform> },
     DefineButtonSound(Box<ButtonSounds>),
     DefineScalingGrid { id: CharacterId, splitter_rect: Rectangle },
@@ -545,8 +546,9 @@ pub struct SoundStreamInfo {
 #[derive(Debug,PartialEq,Clone)]
 pub struct Button {
     pub id: CharacterId,
+    pub is_track_as_menu: bool,
     pub records: Vec<ButtonRecord>,
-    pub action_data: Vec<u8>,
+    pub actions: Vec<ButtonAction>,
 }
 
 #[derive(Debug,PartialEq,Clone)]
@@ -578,3 +580,24 @@ pub struct ButtonSounds {
 }
 
 pub type ButtonSound = (CharacterId, SoundInfo);
+
+#[derive(Debug,PartialEq,Clone)]
+pub struct ButtonAction {
+    pub conditions: HashSet<ButtonActionCondition>,
+    pub key_code: Option<u8>,
+    pub action_data: Vec<u8>,
+}
+
+#[derive(Debug,PartialEq,Eq,Clone,Copy,Hash)]
+pub enum ButtonActionCondition {
+    IdleToOverDown,
+    OutDownToIdle,
+    OutDownToOverDown,
+    OverDownToOutDown,
+    OverDownToOverUp,
+    OverUpToOverDown,
+    OverUpToIdle,
+    IdleToOverUp,
+    OverDownToIdle,
+    KeyPress
+}

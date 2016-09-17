@@ -31,6 +31,7 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
         1,
         Tag::DefineButton(Box::new(Button {
             id: 3,
+            is_track_as_menu: false,
             records: vec![
                 ButtonRecord {
                     id: 1,
@@ -51,9 +52,60 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
                     blend_mode: BlendMode::Normal,
                 }
             ],
-            action_data: vec![0],
+            actions: vec![ButtonAction {
+                conditions: vec![ButtonActionCondition::OverDownToOverUp].into_iter().collect(),
+                key_code: None,
+                action_data: vec![0],
+            }],
         })),
         read_tag_bytes_from_file("tests/swfs/definebutton.swf", TagCode::DefineButton)
+    ),
+
+    (
+        3,
+        Tag::DefineButton2(Box::new(Button {
+            id: 4,
+            is_track_as_menu: true,
+            records: vec![
+                ButtonRecord {
+                    id: 2,
+                    states: vec![ButtonState::Up, ButtonState::Over].into_iter().collect(),
+                    depth: 1,
+                    matrix: Matrix::new(),
+                    color_transform: ColorTransform { r_multiply: 1f32, g_multiply: 1f32, b_multiply: 1f32, a_multiply: 1f32, r_add: 200, g_add: 0, b_add: 0, a_add: 0 },
+                    filters: vec![
+                        Filter::BlurFilter(Box::new(BlurFilter {
+                            blur_x: 5f64,
+                            blur_y: 5f64,
+                            num_passes: 1,
+                        })),
+                    ],
+                    blend_mode: BlendMode::Difference,
+                },
+                ButtonRecord {
+                    id: 3,
+                    states: vec![ButtonState::Down, ButtonState::HitTest].into_iter().collect(),
+                    depth: 1,
+                    matrix: Matrix::new(),
+                    color_transform: ColorTransform { r_multiply: 0f32, g_multiply: 1f32, b_multiply: 0f32, a_multiply: 1f32, r_add: 0, g_add: 0, b_add: 0, a_add: 0 },
+                    filters: vec![],
+                    blend_mode: BlendMode::Normal,
+                },
+            ],
+            actions: vec![
+                ButtonAction {
+                    conditions: vec![ButtonActionCondition::OverDownToOverUp].into_iter().collect(),
+                    key_code: None,
+                    action_data: vec![150, 3, 0, 0, 65, 0, 38, 0], // trace("A");
+                },
+                ButtonAction {
+                    conditions: vec![ButtonActionCondition::KeyPress].into_iter().collect(),
+                    key_code: Some(3), // Home
+                    action_data: vec![150, 3, 0, 0, 66, 0, 38, 0], // trace("B");
+                },
+            ],
+        })),
+        read_tag_bytes_from_file("tests/swfs/definebutton2.swf", TagCode::DefineButton2)
     ),
 
     (

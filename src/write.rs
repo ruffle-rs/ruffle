@@ -249,10 +249,10 @@ impl<W: Write> Writer<W> {
             color_transform.b_add != 0 || color_transform.a_add != 0;
         let multiply = [color_transform.r_multiply, color_transform.g_multiply,
             color_transform.b_multiply, color_transform.a_multiply];
-        let add = [color_transform.a_add, color_transform.g_add,
+        let add = [color_transform.r_add, color_transform.g_add,
             color_transform.b_add, color_transform.a_add];
-        try!(self.write_bit(has_mult));
         try!(self.write_bit(has_add));
+        try!(self.write_bit(has_mult));
         let mut num_bits = 0u8;
         if has_mult {
             num_bits = multiply.iter().map(|n| count_sbits((*n * 256f32) as i32)).max().unwrap();
@@ -342,6 +342,10 @@ impl<W: Write> Writer<W> {
 
             &Tag::DefineButton(ref button) => {
                 try!(self.write_define_button(button))
+            },
+
+            &Tag::DefineButton2(ref button) => {
+                try!(self.write_define_button_2(button))
             },
 
             &Tag::DefineButtonColorTransform { id, ref color_transforms } => {
@@ -598,9 +602,62 @@ impl<W: Write> Writer<W> {
                 try!(writer.write_button_record(record, 1));
             }
             try!(writer.write_u8(0)); // End button records
-            try!(writer.output.write_all(&button.action_data));
+            // TODO: Assert we have some action.
+            try!(writer.output.write_all(&button.actions[0].action_data));
         }
         try!(self.write_tag_header(TagCode::DefineButton, buf.len() as u32));
+        try!(self.output.write_all(&buf));
+        Ok(())
+    }
+
+    fn write_define_button_2(&mut self, button: &Button) -> Result<()> {
+        let mut buf = Vec::new();
+        {
+            let mut writer = Writer::new(&mut buf, self.version);
+            try!(writer.write_u16(button.id));
+            let flags = if button.is_track_as_menu { 1 } else { 0 };
+            try!(writer.write_u8(flags));
+
+            let mut record_data = Vec::new();
+            {
+                let mut writer_2 = Writer::new(&mut record_data, self.version);
+                for record in &button.records {
+                    try!(writer_2.write_button_record(record, 2));
+                }
+                try!(writer_2.write_u8(0)); // End button records
+            }
+            try!(writer.write_u16(record_data.len() as u16 + 2));
+            try!(writer.output.write_all(&record_data));
+
+            let mut iter = button.actions.iter().peekable();
+            while let Some(action) = iter.next() {
+                if let Some(_) = iter.peek() {
+                    let length = action.action_data.len() as u16 + 4;
+                    try!(writer.write_u16(length));
+                } else {
+                    try!(writer.write_u16(0));
+                }
+                try!(writer.write_u8(
+                    if action.conditions.contains(&ButtonActionCondition::IdleToOverDown) { 0b1000_0000 } else { 0 } |
+                    if action.conditions.contains(&ButtonActionCondition::OutDownToIdle) { 0b100_0000 } else { 0 } |
+                    if action.conditions.contains(&ButtonActionCondition::OutDownToOverDown) { 0b10_0000 } else { 0 } |
+                    if action.conditions.contains(&ButtonActionCondition::OverDownToOutDown) { 0b1_0000 } else { 0 } |
+                    if action.conditions.contains(&ButtonActionCondition::OverDownToOverUp) { 0b1000 } else { 0 } |
+                    if action.conditions.contains(&ButtonActionCondition::OverUpToOverDown) { 0b100 } else { 0 } |
+                    if action.conditions.contains(&ButtonActionCondition::OverUpToIdle) { 0b10 } else { 0 } |
+                    if action.conditions.contains(&ButtonActionCondition::IdleToOverUp) { 0b1 } else { 0 }
+                ));
+                let mut flags = if action.conditions.contains(&ButtonActionCondition::OverDownToIdle) { 0b1 } else { 0 };
+                if action.conditions.contains(&ButtonActionCondition::KeyPress) {
+                    if let Some(key_code) = action.key_code {
+                        flags |= key_code << 1;
+                    }
+                }
+                try!(writer.write_u8(flags));
+                try!(writer.output.write_all(&action.action_data));
+            }
+        }
+        try!(self.write_tag_header(TagCode::DefineButton2, buf.len() as u32));
         try!(self.output.write_all(&buf));
         Ok(())
     }
