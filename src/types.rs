@@ -426,7 +426,7 @@ pub struct StyleChangeData {
     pub new_styles: Option<ShapeStyles>,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug,PartialEq,Clone)]
 pub enum FillStyle {
     Color(Color),
     LinearGradient(Gradient),
@@ -443,7 +443,7 @@ pub enum FillStyle {
     },
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug,PartialEq,Clone)]
 pub struct Gradient {
     pub matrix: Matrix,
     pub spread: GradientSpread,
@@ -451,14 +451,14 @@ pub struct Gradient {
     pub records: Vec<GradientRecord>,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug,PartialEq,Clone,Copy)]
 pub enum GradientSpread {
     Pad,
     Reflect,
     Repeat,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug,PartialEq,Clone,Copy)]
 pub enum GradientInterpolation {
     RGB,
     LinearRGB,
@@ -470,7 +470,7 @@ pub struct GradientRecord {
     pub color: Color,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug,PartialEq,Clone)]
 pub struct LineStyle {
     pub width: u16, // Twips
     pub color: Color,
