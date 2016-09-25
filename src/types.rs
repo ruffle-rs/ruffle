@@ -418,8 +418,7 @@ pub enum ShapeRecord {
 
 #[derive(Debug,PartialEq)]
 pub struct StyleChangeData {
-    pub move_delta_x: f32,
-    pub move_delta_y: f32,
+    pub move_to: Option<(f32, f32)>,
     pub fill_style_0: Option<u32>,
     pub fill_style_1: Option<u32>,
     pub line_style: Option<u32>,

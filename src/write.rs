@@ -879,11 +879,10 @@ impl<W: Write> Writer<W> {
                 try!(self.write_bit(style_change.line_style.is_some()));
                 try!(self.write_bit(style_change.fill_style_1.is_some()));
                 try!(self.write_bit(style_change.fill_style_0.is_some()));
-                try!(self.write_bit(style_change.move_delta_x != 0f32 ||
-                                    style_change.move_delta_y != 0f32));
-                if style_change.move_delta_x != 0f32 || style_change.move_delta_y != 0f32 {
-                    let move_twips_x = (style_change.move_delta_x * 20f32) as i32;
-                    let move_twips_y = (style_change.move_delta_y * 20f32) as i32;
+                try!(self.write_bit(style_change.move_to.is_some()));
+                if let Some((move_x, move_y)) = style_change.move_to {
+                    let move_twips_x = (move_x * 20f32) as i32;
+                    let move_twips_y = (move_y * 20f32) as i32;
                     let num_bits = max(count_sbits(move_twips_x), count_sbits(move_twips_y));
                     try!(self.write_ubits(5, num_bits as u32));
                     try!(self.write_sbits(num_bits, move_twips_x));

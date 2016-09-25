@@ -1052,8 +1052,7 @@ impl<R: Read> Reader<R> {
                 let num_fill_bits = self.num_fill_bits as usize;
                 let num_line_bits = self.num_line_bits as usize;
                 let mut new_style = StyleChangeData {
-                    move_delta_x: 0f32,
-                    move_delta_y: 0f32,
+                    move_to: None,
                     fill_style_0: None,
                     fill_style_1: None,
                     line_style: None,
@@ -1062,8 +1061,10 @@ impl<R: Read> Reader<R> {
                 if (flags & 0b1) != 0 {
                     // move
                     let num_bits = try!(self.read_ubits(5)) as usize;
-                    new_style.move_delta_x = (try!(self.read_sbits(num_bits)) as f32) / 20f32;
-                    new_style.move_delta_y = (try!(self.read_sbits(num_bits)) as f32) / 20f32;
+                    new_style.move_to = Some((
+                        (try!(self.read_sbits(num_bits)) as f32) / 20f32,
+                        (try!(self.read_sbits(num_bits)) as f32) / 20f32
+                    ));
                 }
                 if (flags & 0b10) != 0 {
                     new_style.fill_style_0 = Some(try!(self.read_ubits(num_fill_bits)));

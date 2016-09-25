@@ -224,8 +224,7 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
             },
             shape: vec![
                 ShapeRecord::StyleChange(StyleChangeData {
-                    move_delta_x: 0f32,
-                    move_delta_y: 0f32,
+                    move_to: None,
                     fill_style_0: None,
                     fill_style_1: Some(1),
                     line_style: None,
@@ -278,8 +277,7 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
             },
             shape: vec![
                 ShapeRecord::StyleChange(StyleChangeData {
-                    move_delta_x: 50f32,
-                    move_delta_y: 25f32,
+                    move_to: Some((50f32, 25f32)),
                     fill_style_0: None,
                     fill_style_1: Some(1),
                     line_style: None,
@@ -374,8 +372,7 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
             },
             shape: vec![
                 ShapeRecord::StyleChange(StyleChangeData {
-                    move_delta_x: 150f32,
-                    move_delta_y: 0f32,
+                    move_to: Some((150f32, 0f32)),
                     fill_style_0: None,
                     fill_style_1: Some(1),
                     line_style: Some(1),
@@ -384,8 +381,7 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
                 ShapeRecord::StraightEdge { delta_x: 100f32, delta_y: 0f32 },
                 ShapeRecord::StraightEdge { delta_x: 0f32, delta_y: 100f32 },
                 ShapeRecord::StyleChange(StyleChangeData {
-                    move_delta_x: 0f32,
-                    move_delta_y: 0f32,
+                    move_to: None,
                     fill_style_0: None,
                     fill_style_1: None,
                     line_style: Some(3),
@@ -394,8 +390,7 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
                 ShapeRecord::StraightEdge { delta_x: -100f32, delta_y: 0f32 },
                 ShapeRecord::StraightEdge { delta_x: 0f32, delta_y: -100f32 },
                 ShapeRecord::StyleChange(StyleChangeData {
-                    move_delta_x: 100f32,
-                    move_delta_y: 50f32,
+                    move_to: Some((100f32, 50f32)),
                     fill_style_0: None,
                     fill_style_1: Some(2),
                     line_style: Some(2),
