@@ -13,6 +13,7 @@ extern crate flate2;
 extern crate num;
 extern crate xz2;
 
+pub mod avm1;
 pub mod read;
 mod tag_codes;
 mod types;

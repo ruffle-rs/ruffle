@@ -57,6 +57,33 @@ fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<(Swf, Reader<Box<Re
     Ok((swf, reader))
 }
 
+trait SwfRead {
+    fn read_u8(&mut self) -> Result<u8>;
+
+    fn read_u16(&mut self) -> Result<u16>;
+    fn read_u32(&mut self) -> Result<u32>;
+    fn read_i8(&mut self) -> Result<i8>;
+    fn read_i16(&mut self) -> Result<i16>;
+    fn read_i32(&mut self) -> Result<i16>;
+    fn read_fixed8(&mut self) -> Result<f32>;
+    fn read_fixed16(&mut self) -> Result<f64>;
+
+    fn read_c_string(&mut self) -> Result<String> {
+        let mut bytes = Vec::new();
+        loop {
+            let byte = try!(self.read_u8());
+            if byte == 0 {
+                break;
+            }
+            bytes.push(byte)
+        }
+        // TODO: There is probably a better way to do this.
+        // TODO: Verify ANSI for SWF 5 and earlier.
+        String::from_utf8(bytes)
+            .map_err(|_| Error::new(ErrorKind::InvalidData, "Invalid string data"))
+    }
+}
+
 pub struct Reader<R: Read> {
     input: R,
     version: u8,
