@@ -3,14 +3,14 @@ use avm1::opcode::OpCode;
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::{Read, Result};
 
-pub struct ActionReader<R: Read> {
+pub struct Reader<R: Read> {
     inner: R,
     version: u8,
 }
 
-impl<R: Read> ActionReader<R> {
-    pub fn new(inner: R, version: u8) -> ActionReader<R> {
-        ActionReader { inner: inner, version: version }
+impl<R: Read> Reader<R> {
+    pub fn new(inner: R, version: u8) -> Reader<R> {
+        Reader { inner: inner, version: version }
     }
 
     pub fn read_action_list(&mut self) -> Result<Vec<Action>> {
@@ -24,7 +24,7 @@ impl<R: Read> ActionReader<R> {
     pub fn read_action(&mut self) -> Result<Option<Action>> {
         let (opcode, length) = try!(self.read_opcode_and_length());
 
-        let mut action_reader = ActionReader::new(self.inner.by_ref().take(length as u64), self.version);
+        let mut action_reader = Reader::new(self.inner.by_ref().take(length as u64), self.version);
 
         use num::FromPrimitive;
         let action = match OpCode::from_u8(opcode) {
