@@ -41,7 +41,31 @@ impl<W: Write> Writer<W> {
     pub fn write_opcode_and_length(&mut self, opcode: u8, length: usize) -> Result<()> {
         try!(self.inner.write_u8(opcode));
         assert!( opcode >= 0x80 || length == 0, "Opcodes less than 0x80 must have length 0" );
-        try!(self.inner.write_u16::<LittleEndian>(length as u16));
+        if opcode >= 0x80 {
+            try!(self.inner.write_u16::<LittleEndian>(length as u16));
+        }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test_data;
+
+    #[test]
+    fn write_action() {
+        for (swf_version, action, expected_bytes) in test_data::avm1_tests() {
+            let mut written_bytes = Vec::new();
+            Writer::new(&mut written_bytes, swf_version).write_action(&action).unwrap();
+            if written_bytes != expected_bytes {
+                panic!(
+                    "Error writing action.\nTag:\n{:?}\n\nWrote:\n{:?}\n\nExpected:\n{:?}",
+                    action,
+                    written_bytes,
+                    expected_bytes
+                );
+            }
+        }
     }
 }

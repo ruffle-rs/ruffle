@@ -1,3 +1,4 @@
+use avm1::types::Action;
 use std::fs::File;
 use std::vec::Vec;
 use read::read_swf;
@@ -16,6 +17,7 @@ pub fn echo_swf(filename: &str) {
 
 pub type TestData<T> = (u8, T, Vec<u8>);
 pub type TagTestData = TestData<Tag>;
+pub type Avm1TestData = TestData<Action>;
 
 pub fn tag_tests() -> Vec<TagTestData> { vec![
     (
@@ -795,4 +797,11 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ],
     ),
+] }
+
+pub fn avm1_tests() -> Vec<Avm1TestData> { vec![
+    (3, Action::NextFrame, vec![0x04]),
+
+    (1, Action::Unknown { opcode: 0x79, data: vec![] }, vec![0x79]),
+    (1, Action::Unknown { opcode: 0xA0, data: vec![2, 3] }, vec![0xA0, 2, 0, 2, 3]),
 ] }
