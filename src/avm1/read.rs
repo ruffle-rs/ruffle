@@ -31,6 +31,11 @@ impl<R: Read> Reader<R> {
             Some(OpCode::End) => return Ok(None),
 
             Some(OpCode::NextFrame) => Action::NextFrame,
+            Some(OpCode::Play) => Action::Play,
+            Some(OpCode::PreviousFrame) => Action::PreviousFrame,
+            Some(OpCode::Stop) => Action::Stop,
+            Some(OpCode::StopSounds) => Action::StopSounds,
+            Some(OpCode::ToggleQuality) => Action::ToggleQuality,
 
             _ => {
                 let mut data = Vec::with_capacity(length);

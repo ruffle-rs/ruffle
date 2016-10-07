@@ -24,7 +24,11 @@ impl<W: Write> Writer<W> {
     pub fn write_action(&mut self, action: &Action) -> Result<()> {
         match action {
             &Action::NextFrame => try!(self.write_action_header(OpCode::NextFrame, 0)),
-
+            &Action::Play => try!(self.write_action_header(OpCode::Play, 0)),
+            &Action::PreviousFrame => try!(self.write_action_header(OpCode::PreviousFrame, 0)),
+            &Action::Stop => try!(self.write_action_header(OpCode::Stop, 0)),
+            &Action::StopSounds => try!(self.write_action_header(OpCode::StopSounds, 0)),
+            &Action::ToggleQuality => try!(self.write_action_header(OpCode::ToggleQuality, 0)),
             &Action::Unknown { opcode, ref data } => {
                 try!(self.write_opcode_and_length(opcode, data.len()));
                 try!(self.inner.write_all(&data));
