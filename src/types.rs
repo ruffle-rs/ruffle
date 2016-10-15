@@ -1,3 +1,4 @@
+use avm1;
 use std::collections::HashSet;
 
 #[derive(Debug,PartialEq)]
@@ -301,7 +302,7 @@ pub enum Tag {
     DefineSound(Box<Sound>),
     DefineSprite(Sprite),
     DoAbc(Vec<u8>),
-    DoAction(Vec<u8>),
+    DoAction(Vec<avm1::types::Action>),
     DoInitAction { id: CharacterId, action_data: Vec<u8> },
     EnableDebugger(String),
     EnableTelemetry { password_hash: Vec<u8> },

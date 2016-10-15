@@ -1,3 +1,4 @@
+use avm1;
 use byteorder::{LittleEndian, WriteBytesExt};
 use flate2::Compression as ZlibCompression;
 use flate2::write::ZlibEncoder;
@@ -408,9 +409,14 @@ impl<W: Write> Writer<W> {
                 try!(self.write_tag_header(TagCode::DoAbc, action_data.len() as u32));
                 try!(self.output.write_all(action_data));
             },
-            &Tag::DoAction(ref action_data) => {
-                try!(self.write_tag_header(TagCode::DoAction, action_data.len() as u32));
-                try!(self.output.write_all(action_data));
+            &Tag::DoAction(ref actions) => {
+                let mut buf = Vec::new();
+                {
+                    let mut action_writer = avm1::write::Writer::new(&mut buf, self.version);
+                    try!(action_writer.write_action_list(&actions));
+                }
+                try!(self.write_tag_header(TagCode::DoAction, buf.len() as u32));
+                try!(self.output.write_all(&buf));
             },
             &Tag::DoInitAction { id, ref action_data } => {
                 try!(self.write_tag_header(TagCode::DoInitAction, action_data.len() as u32 + 2));

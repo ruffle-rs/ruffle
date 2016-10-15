@@ -1,3 +1,4 @@
+use avm1;
 use byteorder::{LittleEndian, ReadBytesExt};
 use flate2::read::ZlibDecoder;
 use num::FromPrimitive;
@@ -502,9 +503,9 @@ impl<R: Read> Reader<R> {
             },
 
             Some(TagCode::DoAction) => {
-                let mut action_data = Vec::with_capacity(length);
-                try!(tag_reader.input.read_to_end(&mut action_data));
-                Tag::DoAction(action_data)
+                let mut action_reader = avm1::read::Reader::new(&mut tag_reader.input, self.version);
+                let actions = try!(action_reader.read_action_list());
+                Tag::DoAction(actions)
             },
 
             Some(TagCode::DoInitAction) => {

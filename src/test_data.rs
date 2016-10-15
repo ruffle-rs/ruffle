@@ -446,7 +446,10 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
     (
         5,
         Tag::DoAction(
-            vec![150, 10, 0, 0, 84, 101, 115, 116, 105, 110, 103, 33, 0, 38, 0],
+            vec![
+                Action::Unknown { opcode: 150, data: vec![0, 84, 101, 115, 116, 105, 110, 103, 33, 0] },
+                Action::Unknown { opcode: 38, data: vec![] },
+            ]
         ),
         read_tag_bytes_from_file("tests/swfs/doaction.swf", TagCode::DoAction)
     ),
