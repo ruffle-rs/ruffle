@@ -23,12 +23,26 @@ impl<W: Write> Writer<W> {
 
     pub fn write_action(&mut self, action: &Action) -> Result<()> {
         match action {
+            &Action::GetUrl { ref url, ref target } => {
+                try!(self.write_action_header(OpCode::GetUrl, url.len() + target.len() + 2));
+                try!(self.write_c_string(url));
+                try!(self.write_c_string(target));
+            },
+            &Action::GotoFrame(frame) => {
+                try!(self.write_action_header(OpCode::GotoFrame, 2));
+                try!(self.inner.write_u16::<LittleEndian>(frame));
+            },
             &Action::NextFrame => try!(self.write_action_header(OpCode::NextFrame, 0)),
             &Action::Play => try!(self.write_action_header(OpCode::Play, 0)),
             &Action::PreviousFrame => try!(self.write_action_header(OpCode::PreviousFrame, 0)),
             &Action::Stop => try!(self.write_action_header(OpCode::Stop, 0)),
             &Action::StopSounds => try!(self.write_action_header(OpCode::StopSounds, 0)),
             &Action::ToggleQuality => try!(self.write_action_header(OpCode::ToggleQuality, 0)),
+            &Action::WaitForFrame { frame, num_actions_to_skip } => {
+                try!(self.write_action_header(OpCode::WaitForFrame, 3));
+                try!(self.inner.write_u16::<LittleEndian>(frame));
+                try!(self.inner.write_u8(num_actions_to_skip));
+            },
             &Action::Unknown { opcode, ref data } => {
                 try!(self.write_opcode_and_length(opcode, data.len()));
                 try!(self.inner.write_all(&data));
@@ -49,6 +63,11 @@ impl<W: Write> Writer<W> {
             try!(self.inner.write_u16::<LittleEndian>(length as u16));
         }
         Ok(())
+    }
+
+    fn write_c_string(&mut self, s: &str) -> Result<()> {
+        try!(self.inner.write_all(s.as_bytes()));
+        self.inner.write_u8(0)
     }
 }
 

@@ -1,7 +1,7 @@
 use avm1::types::Action;
 use avm1::opcode::OpCode;
 use byteorder::{LittleEndian, ReadBytesExt};
-use std::io::{Read, Result};
+use std::io::{Error, ErrorKind, Read, Result};
 
 pub struct Reader<R: Read> {
     inner: R,
@@ -30,13 +30,24 @@ impl<R: Read> Reader<R> {
         let action = match OpCode::from_u8(opcode) {
             Some(OpCode::End) => return Ok(None),
 
+            Some(OpCode::GetUrl) => Action::GetUrl {
+                url: try!(action_reader.read_c_string()),
+                target: try!(action_reader.read_c_string()),
+            },
+            Some(OpCode::GotoFrame) => {
+                let frame = try!(action_reader.inner.read_u16::<LittleEndian>());
+                Action::GotoFrame(frame)
+            },
             Some(OpCode::NextFrame) => Action::NextFrame,
             Some(OpCode::Play) => Action::Play,
             Some(OpCode::PreviousFrame) => Action::PreviousFrame,
             Some(OpCode::Stop) => Action::Stop,
             Some(OpCode::StopSounds) => Action::StopSounds,
             Some(OpCode::ToggleQuality) => Action::ToggleQuality,
-
+            Some(OpCode::WaitForFrame) => Action::WaitForFrame {
+                frame: try!(action_reader.inner.read_u16::<LittleEndian>()),
+                num_actions_to_skip: try!(action_reader.inner.read_u8()),
+            },
             _ => {
                 let mut data = Vec::with_capacity(length);
                 try!(action_reader.inner.read_to_end(&mut data));
@@ -53,6 +64,21 @@ impl<R: Read> Reader<R> {
             try!(self.inner.read_u16::<LittleEndian>()) as usize
         } else { 0 };
         Ok((opcode, length))
+    }
+
+    fn read_c_string(&mut self) -> Result<String> {
+        let mut bytes = Vec::new();
+        loop {
+            let byte = try!(self.inner.read_u8());
+            if byte == 0 {
+                break;
+            }
+            bytes.push(byte)
+        }
+        // TODO: There is probably a better way to do this.
+        // TODO: Verify ANSI for SWF 5 and earlier.
+        String::from_utf8(bytes)
+            .map_err(|_| Error::new(ErrorKind::InvalidData, "Invalid string data"))
     }
 }
 

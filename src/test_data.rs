@@ -803,9 +803,19 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
 ] }
 
 pub fn avm1_tests() -> Vec<Avm1TestData> { vec![
+    (
+        3,
+        Action::GetUrl { url: String::from("a"), target: String::from("b") },
+        vec![0x83, 4, 0, 97, 0, 98, 0]
+    ),
+    (3, Action::GotoFrame(11), vec![0x81, 2, 0, 11, 0]),
     (3, Action::NextFrame, vec![0x04]),
+    (3, Action::Play, vec![0x06]),
     (3, Action::PreviousFrame, vec![0x05]),
-
+    (3, Action::Stop, vec![0x07]),
+    (3, Action::StopSounds, vec![0x09]),
+    (3, Action::ToggleQuality, vec![0x08]),
+    (3, Action::WaitForFrame { frame: 4, num_actions_to_skip: 10 }, vec![0x8A, 3, 0, 4, 0, 10]),
     (1, Action::Unknown { opcode: 0x79, data: vec![] }, vec![0x79]),
     (1, Action::Unknown { opcode: 0xA0, data: vec![2, 3] }, vec![0xA0, 2, 0, 2, 3]),
 ] }
