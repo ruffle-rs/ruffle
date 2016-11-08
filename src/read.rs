@@ -58,16 +58,40 @@ fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<(Swf, Reader<Box<Re
     Ok((swf, reader))
 }
 
-trait SwfRead {
-    fn read_u8(&mut self) -> Result<u8>;
+trait SwfRead<R: Read> {
+    fn get_inner(&mut self) -> &mut R;
 
-    fn read_u16(&mut self) -> Result<u16>;
-    fn read_u32(&mut self) -> Result<u32>;
-    fn read_i8(&mut self) -> Result<i8>;
-    fn read_i16(&mut self) -> Result<i16>;
-    fn read_i32(&mut self) -> Result<i16>;
-    fn read_fixed8(&mut self) -> Result<f32>;
-    fn read_fixed16(&mut self) -> Result<f64>;
+    fn read_u8(&mut self) -> Result<u8> {
+        self.get_inner().read_u8()
+    }
+
+    fn read_u16(&mut self) -> Result<u16> {
+        self.get_inner().read_u16::<LittleEndian>()
+    }
+
+    fn read_u32(&mut self) -> Result<u32> {
+        self.get_inner().read_u32::<LittleEndian>()
+    }
+
+    fn read_i8(&mut self) -> Result<i8> {
+        self.get_inner().read_i8()
+    }
+
+    fn read_i16(&mut self) -> Result<i16> {
+        self.get_inner().read_i16::<LittleEndian>()
+    }
+
+    fn read_i32(&mut self) -> Result<i32> {
+        self.get_inner().read_i32::<LittleEndian>()
+    }
+
+    fn read_fixed8(&mut self) -> Result<f32> {
+        self.read_i16().map(|n| n as f32 / 256f32)
+    }
+
+    fn read_fixed16(&mut self) -> Result<f64> {
+        self.read_i32().map(|n| n as f64 / 65536f64)
+    }
 
     fn read_c_string(&mut self) -> Result<String> {
         let mut bytes = Vec::new();
@@ -94,6 +118,42 @@ pub struct Reader<R: Read> {
 
     num_fill_bits: u8,
     num_line_bits: u8,
+}
+
+impl<R: Read> SwfRead<R> for Reader<R> {
+    fn get_inner(&mut self) -> &mut R {
+        &mut self.input
+    }
+
+    fn read_u8(&mut self) -> Result<u8> {
+        self.byte_align();
+        self.input.read_u8()
+    }
+
+    fn read_u16(&mut self) -> Result<u16> {
+        self.byte_align();
+        self.input.read_u16::<LittleEndian>()
+    }
+
+    fn read_u32(&mut self) -> Result<u32> {
+        self.byte_align();
+        self.input.read_u32::<LittleEndian>()
+    }
+
+    fn read_i8(&mut self) -> Result<i8> {
+        self.byte_align();
+        self.input.read_i8()
+    }
+
+    fn read_i16(&mut self) -> Result<i16> {
+        self.byte_align();
+        self.input.read_i16::<LittleEndian>()
+    }
+
+    fn read_i32(&mut self) -> Result<i32> {
+        self.byte_align();
+        self.input.read_i32::<LittleEndian>()
+    }
 }
 
 impl<R: Read> Reader<R> {
@@ -131,27 +191,6 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    fn read_u8(&mut self) -> Result<u8> {
-        self.byte_align();
-        self.input.read_u8()
-    }
-
-    fn read_u16(&mut self) -> Result<u16> {
-        self.byte_align();
-        self.input.read_u16::<LittleEndian>()
-    }
-
-    fn read_u32(&mut self) -> Result<u32> {
-        self.byte_align();
-        self.input.read_u32::<LittleEndian>()
-    }
-
-    #[allow(dead_code)]
-    fn read_i16(&mut self) -> Result<i16> {
-        self.byte_align();
-        self.input.read_i16::<LittleEndian>()
-    }
-
     fn read_bit(&mut self) -> Result<bool> {
         if self.bit_index == 0 {
             self.byte = try!(self.input.read_u8());
@@ -187,16 +226,6 @@ impl<R: Read> Reader<R> {
         self.read_sbits(num_bits).map(|n| (n as f32) / 65536f32)
     }
 
-    fn read_fixed8(&mut self) -> Result<f32> {
-        self.byte_align();
-        self.input.read_i16::<LittleEndian>().map(|n| n as f32 / 256f32)
-    }
-
-    fn read_fixed16(&mut self) -> Result<f64> {
-        self.byte_align();
-        self.input.read_i32::<LittleEndian>().map(|n| n as f64 / 65536f64)
-    }
-
     fn read_encoded_u32(&mut self) -> Result<u32> {
         let mut val = 0u32;
         for i in 0..5 {
@@ -207,21 +236,6 @@ impl<R: Read> Reader<R> {
             }
         }
         Ok(val)
-    }
-
-    fn read_c_string(&mut self) -> Result<String> {
-        let mut bytes = Vec::new();
-        loop {
-            let byte = try!(self.read_u8());
-            if byte == 0 {
-                break;
-            }
-            bytes.push(byte)
-        }
-        // TODO: There is probably a better way to do this.
-        // TODO: Verify ANSI for SWF 5 and earlier.
-        String::from_utf8(bytes)
-            .map_err(|_| Error::new(ErrorKind::InvalidData, "Invalid string data"))
     }
 
     fn read_rgb(&mut self) -> Result<Color> {
@@ -1528,6 +1542,7 @@ pub mod tests {
     use std::io::{Cursor, Read};
     use std::vec::Vec;
     use super::*;
+    use super::SwfRead;
     use test_data;
     use types::*;
     use tag_codes::TagCode;

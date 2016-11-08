@@ -66,6 +66,47 @@ pub fn write_swf<W: Write>(swf: &Swf, mut output: W) -> Result<()> {
     Ok(())
 }
 
+trait SwfWrite<W: Write> {
+    fn get_inner(&mut self) -> &mut W;
+
+    fn write_u8(&mut self, n: u8) -> Result<()> {
+        self.get_inner().write_u8(n)
+    }
+
+    fn write_u16(&mut self, n: u16) -> Result<()> {
+        self.get_inner().write_u16::<LittleEndian>(n)
+    }
+
+    fn write_u32(&mut self, n: u32) -> Result<()> {
+        self.get_inner().write_u32::<LittleEndian>(n)
+    }
+
+    fn write_i8(&mut self, n: i8) -> Result<()> {
+        self.get_inner().write_i8(n)
+    }
+
+    fn write_i16(&mut self, n: i16) -> Result<()> {
+        self.get_inner().write_i16::<LittleEndian>(n)
+    }
+
+    fn write_i32(&mut self, n: i32) -> Result<()> {
+        self.get_inner().write_i32::<LittleEndian>(n)
+    }
+
+    fn write_fixed8(&mut self, n: f32) -> Result<()> {
+        self.write_i16((n * 256f32) as i16)
+    }
+
+    fn write_fixed16(&mut self, n: f64) -> Result<()> {
+        self.write_i32((n * 65536f64) as i32)
+    }
+
+    fn write_c_string(&mut self, s: &str) -> Result<()> {
+        try!(self.get_inner().write_all(s.as_bytes()));
+        self.write_u8(0)
+    }
+}
+
 struct Writer<W: Write> {
     pub output: W,
     pub version: u8,
@@ -75,21 +116,9 @@ struct Writer<W: Write> {
     pub num_line_bits: u8,
 }
 
-impl<W: Write> Writer<W> {
-    fn new(output: W, version: u8) -> Writer<W> {
-        Writer {
-            output: output,
-            version: version,
-            byte: 0,
-            bit_index: 8,
-            num_fill_bits: 0,
-            num_line_bits: 0,
-        }
-    }
-
-    #[allow(dead_code)]
-    fn into_inner(self) -> W {
-        self.output
+impl<W: Write> SwfWrite<W> for Writer<W> {
+    fn get_inner(&mut self) -> &mut W {
+        &mut self.output
     }
 
     fn write_u8(&mut self, n: u8) -> Result<()> {
@@ -107,20 +136,43 @@ impl<W: Write> Writer<W> {
         self.output.write_u32::<LittleEndian>(n)
     }
 
-    #[allow(dead_code)]
+    fn write_i8(&mut self, n: i8) -> Result<()> {
+        try!(self.flush_bits());
+        self.output.write_i8(n)
+    }
+
     fn write_i16(&mut self, n: i16) -> Result<()> {
         try!(self.flush_bits());
         self.output.write_i16::<LittleEndian>(n)
     }
 
-    fn write_fixed8(&mut self, n: f32) -> Result<()> {
+    fn write_i32(&mut self, n: i32) -> Result<()> {
         try!(self.flush_bits());
-        self.output.write_i16::<LittleEndian>((n * 256f32) as i16)
+        self.output.write_i32::<LittleEndian>(n)
     }
 
-    fn write_fixed16(&mut self, n: f64) -> Result<()> {
+    fn write_c_string(&mut self, s: &str) -> Result<()> {
         try!(self.flush_bits());
-        self.output.write_i32::<LittleEndian>((n * 65536f64) as i32)
+        try!(self.get_inner().write_all(s.as_bytes()));
+        self.write_u8(0)
+    }
+}
+
+impl<W: Write> Writer<W> {
+    fn new(output: W, version: u8) -> Writer<W> {
+        Writer {
+            output: output,
+            version: version,
+            byte: 0,
+            bit_index: 8,
+            num_fill_bits: 0,
+            num_line_bits: 0,
+        }
+    }
+
+    #[allow(dead_code)]
+    fn into_inner(self) -> W {
+        self.output
     }
 
     fn write_bit(&mut self, set: bool) -> Result<()> {
@@ -172,12 +224,6 @@ impl<W: Write> Writer<W> {
             }
         }
         Ok(())
-    }
-
-    fn write_c_string(&mut self, s: &str) -> Result<()> {
-        try!(self.flush_bits());
-        try!(self.output.write_all(s.as_bytes()));
-        self.write_u8(0)
     }
 
     fn write_rectangle(&mut self, rectangle: &Rectangle) -> Result<()> {
@@ -1472,6 +1518,7 @@ fn count_fbits(n: f32) -> u8 {
 mod tests {
     use super::*;
     use super::Writer;
+    use super::SwfWrite;
     use std::io::Result;
     use test_data;
     use types::*;
