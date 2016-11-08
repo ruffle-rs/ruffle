@@ -41,6 +41,10 @@ impl<W: Write> Writer<W> {
             &Action::NextFrame => try!(self.write_action_header(OpCode::NextFrame, 0)),
             &Action::Play => try!(self.write_action_header(OpCode::Play, 0)),
             &Action::PreviousFrame => try!(self.write_action_header(OpCode::PreviousFrame, 0)),
+            &Action::SetTarget(ref target) => {
+                try!(self.write_action_header(OpCode::SetTarget, target.len() + 1));
+                try!(self.write_c_string(target));
+            },
             &Action::Stop => try!(self.write_action_header(OpCode::Stop, 0)),
             &Action::StopSounds => try!(self.write_action_header(OpCode::StopSounds, 0)),
             &Action::ToggleQuality => try!(self.write_action_header(OpCode::ToggleQuality, 0)),

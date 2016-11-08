@@ -47,6 +47,7 @@ impl<R: Read> Reader<R> {
             Some(OpCode::NextFrame) => Action::NextFrame,
             Some(OpCode::Play) => Action::Play,
             Some(OpCode::PreviousFrame) => Action::PreviousFrame,
+            Some(OpCode::SetTarget) => Action::SetTarget(try!(action_reader.read_c_string())),
             Some(OpCode::Stop) => Action::Stop,
             Some(OpCode::StopSounds) => Action::StopSounds,
             Some(OpCode::ToggleQuality) => Action::ToggleQuality,

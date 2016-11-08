@@ -5,6 +5,7 @@ pub enum Action {
     NextFrame,
     Play,
     PreviousFrame,
+    SetTarget(String),
     Stop,
     StopSounds,
     ToggleQuality,
