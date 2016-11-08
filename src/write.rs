@@ -66,7 +66,7 @@ pub fn write_swf<W: Write>(swf: &Swf, mut output: W) -> Result<()> {
     Ok(())
 }
 
-trait SwfWrite<W: Write> {
+pub trait SwfWrite<W: Write> {
     fn get_inner(&mut self) -> &mut W;
 
     fn write_u8(&mut self, n: u8) -> Result<()> {
@@ -1518,7 +1518,6 @@ fn count_fbits(n: f32) -> u8 {
 mod tests {
     use super::*;
     use super::Writer;
-    use super::SwfWrite;
     use std::io::Result;
     use test_data;
     use types::*;

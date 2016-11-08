@@ -1,11 +1,17 @@
 use avm1::types::Action;
 use avm1::opcode::OpCode;
-use byteorder::{LittleEndian, ReadBytesExt};
-use std::io::{Error, ErrorKind, Read, Result};
+use read::SwfRead;
+use std::io::{Read, Result};
 
 pub struct Reader<R: Read> {
     inner: R,
     version: u8,
+}
+
+impl<R: Read> SwfRead<R> for Reader<R> {
+    fn get_inner(&mut self) -> &mut R {
+        &mut self.inner
+    }
 }
 
 impl<R: Read> Reader<R> {
@@ -35,7 +41,7 @@ impl<R: Read> Reader<R> {
                 target: try!(action_reader.read_c_string()),
             },
             Some(OpCode::GotoFrame) => {
-                let frame = try!(action_reader.inner.read_u16::<LittleEndian>());
+                let frame = try!(action_reader.read_u16());
                 Action::GotoFrame(frame)
             },
             Some(OpCode::NextFrame) => Action::NextFrame,
@@ -45,8 +51,8 @@ impl<R: Read> Reader<R> {
             Some(OpCode::StopSounds) => Action::StopSounds,
             Some(OpCode::ToggleQuality) => Action::ToggleQuality,
             Some(OpCode::WaitForFrame) => Action::WaitForFrame {
-                frame: try!(action_reader.inner.read_u16::<LittleEndian>()),
-                num_actions_to_skip: try!(action_reader.inner.read_u8()),
+                frame: try!(action_reader.read_u16()),
+                num_actions_to_skip: try!(action_reader.read_u8()),
             },
             _ => {
                 let mut data = Vec::with_capacity(length);
@@ -59,26 +65,11 @@ impl<R: Read> Reader<R> {
     }
 
     pub fn read_opcode_and_length(&mut self) -> Result<(u8, usize)> {
-        let opcode = try!(self.inner.read_u8());
+        let opcode = try!(self.read_u8());
         let length = if opcode >= 0x80 {
-            try!(self.inner.read_u16::<LittleEndian>()) as usize
+            try!(self.read_u16()) as usize
         } else { 0 };
         Ok((opcode, length))
-    }
-
-    fn read_c_string(&mut self) -> Result<String> {
-        let mut bytes = Vec::new();
-        loop {
-            let byte = try!(self.inner.read_u8());
-            if byte == 0 {
-                break;
-            }
-            bytes.push(byte)
-        }
-        // TODO: There is probably a better way to do this.
-        // TODO: Verify ANSI for SWF 5 and earlier.
-        String::from_utf8(bytes)
-            .map_err(|_| Error::new(ErrorKind::InvalidData, "Invalid string data"))
     }
 }
 

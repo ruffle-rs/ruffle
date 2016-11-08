@@ -1,11 +1,17 @@
 use avm1::types::Action;
 use avm1::opcode::OpCode;
-use byteorder::{LittleEndian, WriteBytesExt};
+use write::SwfWrite;
 use std::io::{Result, Write};
 
 pub struct Writer<W: Write> {
     inner: W,
     version: u8,
+}
+
+impl<W: Write> SwfWrite<W> for Writer<W> {
+    fn get_inner(&mut self) -> &mut W {
+        &mut self.inner
+    }
 }
 
 impl<W: Write> Writer<W> {
@@ -17,7 +23,7 @@ impl<W: Write> Writer<W> {
         for action in actions {
             try!(self.write_action(action));
         }
-        try!(self.inner.write_u8(0)); // End
+        try!(self.write_u8(0)); // End
         Ok(())
     }
 
@@ -30,7 +36,7 @@ impl<W: Write> Writer<W> {
             },
             &Action::GotoFrame(frame) => {
                 try!(self.write_action_header(OpCode::GotoFrame, 2));
-                try!(self.inner.write_u16::<LittleEndian>(frame));
+                try!(self.write_u16(frame));
             },
             &Action::NextFrame => try!(self.write_action_header(OpCode::NextFrame, 0)),
             &Action::Play => try!(self.write_action_header(OpCode::Play, 0)),
@@ -40,8 +46,8 @@ impl<W: Write> Writer<W> {
             &Action::ToggleQuality => try!(self.write_action_header(OpCode::ToggleQuality, 0)),
             &Action::WaitForFrame { frame, num_actions_to_skip } => {
                 try!(self.write_action_header(OpCode::WaitForFrame, 3));
-                try!(self.inner.write_u16::<LittleEndian>(frame));
-                try!(self.inner.write_u8(num_actions_to_skip));
+                try!(self.write_u16(frame));
+                try!(self.write_u8(num_actions_to_skip));
             },
             &Action::Unknown { opcode, ref data } => {
                 try!(self.write_opcode_and_length(opcode, data.len()));
@@ -57,17 +63,17 @@ impl<W: Write> Writer<W> {
     }
 
     pub fn write_opcode_and_length(&mut self, opcode: u8, length: usize) -> Result<()> {
-        try!(self.inner.write_u8(opcode));
+        try!(self.write_u8(opcode));
         assert!( opcode >= 0x80 || length == 0, "Opcodes less than 0x80 must have length 0" );
         if opcode >= 0x80 {
-            try!(self.inner.write_u16::<LittleEndian>(length as u16));
+            try!(self.write_u16(length as u16));
         }
         Ok(())
     }
 
     fn write_c_string(&mut self, s: &str) -> Result<()> {
         try!(self.inner.write_all(s.as_bytes()));
-        self.inner.write_u8(0)
+        self.write_u8(0)
     }
 }
 

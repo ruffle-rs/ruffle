@@ -58,7 +58,7 @@ fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<(Swf, Reader<Box<Re
     Ok((swf, reader))
 }
 
-trait SwfRead<R: Read> {
+pub trait SwfRead<R: Read> {
     fn get_inner(&mut self) -> &mut R;
 
     fn read_u8(&mut self) -> Result<u8> {
@@ -1542,7 +1542,6 @@ pub mod tests {
     use std::io::{Cursor, Read};
     use std::vec::Vec;
     use super::*;
-    use super::SwfRead;
     use test_data;
     use types::*;
     use tag_codes::TagCode;
