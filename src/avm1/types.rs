@@ -5,6 +5,7 @@ pub enum Action {
     GotoLabel(String),
     NextFrame,
     Play,
+    Pop,
     PreviousFrame,
     SetTarget(String),
     Stop,

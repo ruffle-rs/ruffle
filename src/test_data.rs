@@ -812,6 +812,7 @@ pub fn avm1_tests() -> Vec<Avm1TestData> { vec![
     (3, Action::GotoLabel("testb".to_string()), vec![0x8C, 6, 0, 116, 101, 115, 116, 98, 0]),
     (3, Action::NextFrame, vec![0x04]),
     (3, Action::Play, vec![0x06]),
+    (4, Action::Pop, vec![0x17]),
     (3, Action::PreviousFrame, vec![0x05]),
     (3, Action::SetTarget("test".to_string()), vec![0x8B, 5, 0, 116, 101, 115, 116, 0]),
     (3, Action::Stop, vec![0x07]),

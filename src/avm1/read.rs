@@ -47,6 +47,7 @@ impl<R: Read> Reader<R> {
             Some(OpCode::GotoLabel) => Action::GotoLabel(try!(action_reader.read_c_string())),
             Some(OpCode::NextFrame) => Action::NextFrame,
             Some(OpCode::Play) => Action::Play,
+            Some(OpCode::Pop) => Action::Pop,
             Some(OpCode::PreviousFrame) => Action::PreviousFrame,
             Some(OpCode::SetTarget) => Action::SetTarget(try!(action_reader.read_c_string())),
             Some(OpCode::Stop) => Action::Stop,
