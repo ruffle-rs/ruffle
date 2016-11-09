@@ -38,6 +38,10 @@ impl<W: Write> Writer<W> {
                 try!(self.write_action_header(OpCode::GotoFrame, 2));
                 try!(self.write_u16(frame));
             },
+            &Action::GotoLabel(ref label) => {
+                try!(self.write_action_header(OpCode::GotoLabel, label.len() + 1));
+                try!(self.write_c_string(label));
+            },
             &Action::NextFrame => try!(self.write_action_header(OpCode::NextFrame, 0)),
             &Action::Play => try!(self.write_action_header(OpCode::Play, 0)),
             &Action::PreviousFrame => try!(self.write_action_header(OpCode::PreviousFrame, 0)),

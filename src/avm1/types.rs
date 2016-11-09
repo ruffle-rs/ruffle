@@ -2,6 +2,7 @@
 pub enum Action {
     GetUrl { url: String, target: String },
     GotoFrame(u16),
+    GotoLabel(String),
     NextFrame,
     Play,
     PreviousFrame,
