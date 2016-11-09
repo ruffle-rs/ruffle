@@ -1,7 +1,7 @@
-use avm1::types::Action;
+use avm1::types::{Action, Value};
 use avm1::opcode::OpCode;
 use read::SwfRead;
-use std::io::{Read, Result};
+use std::io::{Error, ErrorKind, Read, Result};
 
 pub struct Reader<R: Read> {
     inner: R,
@@ -49,6 +49,14 @@ impl<R: Read> Reader<R> {
             Some(OpCode::Play) => Action::Play,
             Some(OpCode::Pop) => Action::Pop,
             Some(OpCode::PreviousFrame) => Action::PreviousFrame,
+            // TODO: Verify correct version for complex types.
+            Some(OpCode::Push) => {
+                let mut values = vec![];
+                while let Ok(value) = action_reader.read_push_value() {
+                    values.push(value);
+                };
+                Action::Push(values)
+            },
             Some(OpCode::SetTarget) => Action::SetTarget(try!(action_reader.read_c_string())),
             Some(OpCode::Stop) => Action::Stop,
             Some(OpCode::StopSounds) => Action::StopSounds,
@@ -73,6 +81,23 @@ impl<R: Read> Reader<R> {
             try!(self.read_u16()) as usize
         } else { 0 };
         Ok((opcode, length))
+    }
+
+    fn read_push_value(&mut self) -> Result<Value> {
+        let value = match try!(self.read_u8()) {
+            0 => Value::Str(try!(self.read_c_string())),
+            1 => Value::Float(try!(self.read_f32())),
+            2 => Value::Null,
+            3 => Value::Undefined,
+            4 => Value::Register(try!(self.read_u8())),
+            5 => Value::Bool(try!(self.read_u8()) != 0),
+            6 => Value::Double(try!(self.read_f64())),
+            7 => Value::Int(try!(self.read_u32())),
+            8 => Value::ConstantPool(try!(self.read_u8()) as u16),
+            9 => Value::ConstantPool(try!(self.read_u16())),
+            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid value type in ActionPush")),
+        };
+        Ok(value)
     }
 }
 

@@ -93,6 +93,22 @@ pub trait SwfRead<R: Read> {
         self.read_i32().map(|n| n as f64 / 65536f64)
     }
 
+    fn read_f32(&mut self) -> Result<f32> {
+        self.get_inner().read_f32::<LittleEndian>()
+    }
+
+    fn read_f64(&mut self) -> Result<f64> {
+        // Flash weirdly stores f64 as two LE 32-bit chunks.
+        // First word is the hi-word, second word is the lo-word.
+        let mut num = [0u8; 8];
+        try!(self.get_inner().read_exact(&mut num));
+        num.swap(0, 4);
+        num.swap(1, 5);
+        num.swap(2, 6);
+        num.swap(3, 7);
+        (&num[..]).read_f64::<LittleEndian>()
+    }
+
     fn read_c_string(&mut self) -> Result<String> {
         let mut bytes = Vec::new();
         loop {
@@ -153,6 +169,16 @@ impl<R: Read> SwfRead<R> for Reader<R> {
     fn read_i32(&mut self) -> Result<i32> {
         self.byte_align();
         self.input.read_i32::<LittleEndian>()
+    }
+
+    fn read_f32(&mut self) -> Result<f32> {
+        self.byte_align();
+        self.input.read_f32::<LittleEndian>()
+    }
+
+    fn read_f64(&mut self) -> Result<f64> {
+        self.byte_align();
+        self.input.read_f64::<LittleEndian>()
     }
 }
 

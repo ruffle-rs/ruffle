@@ -101,6 +101,22 @@ pub trait SwfWrite<W: Write> {
         self.write_i32((n * 65536f64) as i32)
     }
 
+    fn write_f32(&mut self, n: f32) -> Result<()> {
+        self.get_inner().write_f32::<LittleEndian>(n)
+    }
+
+    fn write_f64(&mut self, n: f64) -> Result<()> {
+        // Flash weirdly stores f64 as two LE 32-bit chunks.
+        // First word is the hi-word, second word is the lo-word.
+        let mut num = [0u8; 8];
+        try!((&mut num[..]).write_f64::<LittleEndian>(n));
+        num.swap(0, 4);
+        num.swap(1, 5);
+        num.swap(2, 6);
+        num.swap(3, 7);
+        self.get_inner().write_all(&num)
+    }
+
     fn write_c_string(&mut self, s: &str) -> Result<()> {
         try!(self.get_inner().write_all(s.as_bytes()));
         self.write_u8(0)
@@ -149,6 +165,16 @@ impl<W: Write> SwfWrite<W> for Writer<W> {
     fn write_i32(&mut self, n: i32) -> Result<()> {
         try!(self.flush_bits());
         self.output.write_i32::<LittleEndian>(n)
+    }
+
+    fn write_f32(&mut self, n: f32) -> Result<()> {
+        try!(self.flush_bits());
+        self.output.write_f32::<LittleEndian>(n)
+    }
+
+    fn write_f64(&mut self, n: f64) -> Result<()> {
+        try!(self.flush_bits());
+        self.output.write_f64::<LittleEndian>(n)
     }
 
     fn write_c_string(&mut self, s: &str) -> Result<()> {

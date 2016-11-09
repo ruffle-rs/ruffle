@@ -1,4 +1,4 @@
-use avm1::types::Action;
+use avm1::types::*;
 use std::fs::File;
 use std::vec::Vec;
 use read::read_swf;
@@ -447,7 +447,7 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
         5,
         Tag::DoAction(
             vec![
-                Action::Unknown { opcode: 150, data: vec![0, 84, 101, 115, 116, 105, 110, 103, 33, 0] },
+                Action::Push(vec![Value::Str("Testing!".to_string())]),
                 Action::Unknown { opcode: 38, data: vec![] },
             ]
         ),
@@ -814,6 +814,19 @@ pub fn avm1_tests() -> Vec<Avm1TestData> { vec![
     (3, Action::Play, vec![0x06]),
     (4, Action::Pop, vec![0x17]),
     (3, Action::PreviousFrame, vec![0x05]),
+    (4, Action::Push(vec![Value::Str("test".to_string())]), vec![0x96, 6, 0, 0, 116, 101, 115, 116, 0]),
+    (4, Action::Push(vec![Value::Float(0.0)]), vec![0x96, 5, 0, 1, 0, 0, 0, 0]),
+    (5, Action::Push(vec![Value::Double(1.5)]), vec![0x96, 9, 0, 6, 0, 0, 248, 63, 0, 0, 0, 0]),
+    (5, Action::Push(vec![Value::Null]), vec![0x96, 1, 0, 2]),
+    (5, Action::Push(vec![Value::Undefined]), vec![0x96, 1, 0, 3]),
+    (5, Action::Push(vec![Value::Null, Value::Undefined]), vec![0x96, 2, 0, 2, 3]),
+    (5, Action::Push(vec![Value::Register(1)]), vec![0x96, 2, 0, 4, 1]),
+    (5, Action::Push(vec![Value::Bool(false)]), vec![0x96, 2, 0, 5, 0]),
+    (5, Action::Push(vec![Value::Bool(true)]), vec![0x96, 2, 0, 5, 1]),
+    (5, Action::Push(vec![Value::Double(0.0)]), vec![0x96, 9, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0]),
+    (5, Action::Push(vec![Value::Int(31)]), vec![0x96, 5, 0, 7, 31, 0, 0, 0]),
+    (5, Action::Push(vec![Value::ConstantPool(77)]), vec![0x96, 2, 0, 8, 77]),
+    (5, Action::Push(vec![Value::ConstantPool(257)]), vec![0x96, 3, 0, 9, 1, 1]),
     (3, Action::SetTarget("test".to_string()), vec![0x8B, 5, 0, 116, 101, 115, 116, 0]),
     (3, Action::Stop, vec![0x07]),
     (3, Action::StopSounds, vec![0x09]),
