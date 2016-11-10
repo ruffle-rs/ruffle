@@ -29,6 +29,8 @@ impl<W: Write> Writer<W> {
 
     pub fn write_action(&mut self, action: &Action) -> Result<()> {
         match action {
+            &Action::Add => try!(self.write_action_header(OpCode::Add, 0)),
+            &Action::Divide => try!(self.write_action_header(OpCode::Divide, 0)),
             &Action::GetUrl { ref url, ref target } => {
                 try!(self.write_action_header(OpCode::GetUrl, url.len() + target.len() + 2));
                 try!(self.write_c_string(url));
@@ -42,6 +44,7 @@ impl<W: Write> Writer<W> {
                 try!(self.write_action_header(OpCode::GotoLabel, label.len() + 1));
                 try!(self.write_c_string(label));
             },
+            &Action::Multiply => try!(self.write_action_header(OpCode::Multiply, 0)),
             &Action::NextFrame => try!(self.write_action_header(OpCode::NextFrame, 0)),
             &Action::Play => try!(self.write_action_header(OpCode::Play, 0)),
             &Action::Pop => try!(self.write_action_header(OpCode::Pop, 0)),
@@ -71,6 +74,7 @@ impl<W: Write> Writer<W> {
             },
             &Action::Stop => try!(self.write_action_header(OpCode::Stop, 0)),
             &Action::StopSounds => try!(self.write_action_header(OpCode::StopSounds, 0)),
+            &Action::Subtract => try!(self.write_action_header(OpCode::Subtract, 0)),
             &Action::ToggleQuality => try!(self.write_action_header(OpCode::ToggleQuality, 0)),
             &Action::WaitForFrame { frame, num_actions_to_skip } => {
                 try!(self.write_action_header(OpCode::WaitForFrame, 3));

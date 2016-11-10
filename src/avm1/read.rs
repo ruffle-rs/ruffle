@@ -36,6 +36,8 @@ impl<R: Read> Reader<R> {
         let action = match OpCode::from_u8(opcode) {
             Some(OpCode::End) => return Ok(None),
 
+            Some(OpCode::Add) => Action::Add,
+            Some(OpCode::Divide) => Action::Divide,
             Some(OpCode::GetUrl) => Action::GetUrl {
                 url: try!(action_reader.read_c_string()),
                 target: try!(action_reader.read_c_string()),
@@ -45,6 +47,7 @@ impl<R: Read> Reader<R> {
                 Action::GotoFrame(frame)
             },
             Some(OpCode::GotoLabel) => Action::GotoLabel(try!(action_reader.read_c_string())),
+            Some(OpCode::Multiply) => Action::Multiply,
             Some(OpCode::NextFrame) => Action::NextFrame,
             Some(OpCode::Play) => Action::Play,
             Some(OpCode::Pop) => Action::Pop,
@@ -60,6 +63,7 @@ impl<R: Read> Reader<R> {
             Some(OpCode::SetTarget) => Action::SetTarget(try!(action_reader.read_c_string())),
             Some(OpCode::Stop) => Action::Stop,
             Some(OpCode::StopSounds) => Action::StopSounds,
+            Some(OpCode::Subtract) => Action::Subtract,
             Some(OpCode::ToggleQuality) => Action::ToggleQuality,
             Some(OpCode::WaitForFrame) => Action::WaitForFrame {
                 frame: try!(action_reader.read_u16()),

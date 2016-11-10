@@ -1,8 +1,11 @@
 #[derive(Debug,PartialEq)]
 pub enum Action {
+    Add,
+    Divide,
     GetUrl { url: String, target: String },
     GotoFrame(u16),
     GotoLabel(String),
+    Multiply,
     NextFrame,
     Play,
     Pop,
@@ -11,6 +14,7 @@ pub enum Action {
     SetTarget(String),
     Stop,
     StopSounds,
+    Subtract,
     ToggleQuality,
     WaitForFrame { frame: u16, num_actions_to_skip: u8 },
     Unknown { opcode: u8, data: Vec<u8> },
