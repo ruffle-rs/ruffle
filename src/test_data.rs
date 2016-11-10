@@ -448,7 +448,7 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
         Tag::DoAction(
             vec![
                 Action::Push(vec![Value::Str("Testing!".to_string())]),
-                Action::Unknown { opcode: 38, data: vec![] },
+                Action::Trace,
             ]
         ),
         read_tag_bytes_from_file("tests/swfs/doaction.swf", TagCode::DoAction)
@@ -804,16 +804,39 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
 
 pub fn avm1_tests() -> Vec<Avm1TestData> { vec![
     (4, Action::Add, vec![0x0A]),
+    (4, Action::AsciiToChar, vec![0x33]),
+    (4, Action::Call, vec![0x9E, 0, 0]),
+    (4, Action::CharToAscii, vec![0x32]),
     (4, Action::Divide, vec![0x0D]),
+    (4, Action::Equals, vec![0x0E]),
+    (4, Action::GetTime, vec![0x34]),
     (
         3,
         Action::GetUrl { url: String::from("a"), target: String::from("b") },
         vec![0x83, 4, 0, 97, 0, 98, 0]
     ),
+    (
+        4,
+        Action::GetUrl2 { send_vars_method: SendVarsMethod::Post, is_target_sprite: true, is_load_vars: false },
+        vec![0x9A, 1, 0, 0b10_0000_10]
+    ),
+    (4, Action::GetVariable, vec![0x1C]),
     (3, Action::GotoFrame(11), vec![0x81, 2, 0, 11, 0]),
+    (4, Action::GotoFrame2 { set_playing: false, scene_offset: 0 }, vec![0x9F, 1, 0, 0]),
+    (4, Action::GotoFrame2 { set_playing: true, scene_offset: 259 }, vec![0x9F, 3, 0, 0b11, 3, 1]),
     (3, Action::GotoLabel("testb".to_string()), vec![0x8C, 6, 0, 116, 101, 115, 116, 98, 0]),
+    (4, Action::If { offset: 1 }, vec![0x9D, 2, 0, 1, 0]),
+    (4, Action::Jump { offset: 1 }, vec![0x99, 2, 0, 1, 0]),
+    (4, Action::Less, vec![0x0F]),
+    (4, Action::MBAsciiToChar, vec![0x37]),
+    (4, Action::MBCharToAscii, vec![0x36]),
+    (4, Action::MBStringExtract, vec![0x35]),
+    (4, Action::MBStringLength, vec![0x31]),
     (4, Action::Multiply, vec![0x0C]),
     (3, Action::NextFrame, vec![0x04]),
+    (4, Action::And, vec![0x10]),
+    (4, Action::Not, vec![0x12]),
+    (4, Action::Or, vec![0x11]),
     (3, Action::Play, vec![0x06]),
     (4, Action::Pop, vec![0x17]),
     (3, Action::PreviousFrame, vec![0x05]),
@@ -830,12 +853,22 @@ pub fn avm1_tests() -> Vec<Avm1TestData> { vec![
     (5, Action::Push(vec![Value::Int(31)]), vec![0x96, 5, 0, 7, 31, 0, 0, 0]),
     (5, Action::Push(vec![Value::ConstantPool(77)]), vec![0x96, 2, 0, 8, 77]),
     (5, Action::Push(vec![Value::ConstantPool(257)]), vec![0x96, 3, 0, 9, 1, 1]),
+    (4, Action::RandomNumber, vec![0x30]),
     (3, Action::SetTarget("test".to_string()), vec![0x8B, 5, 0, 116, 101, 115, 116, 0]),
+    (4, Action::SetVariable, vec![0x1D]),
     (3, Action::Stop, vec![0x07]),
     (3, Action::StopSounds, vec![0x09]),
+    (4, Action::StringAdd, vec![0x21]),
+    (4, Action::StringEquals, vec![0x13]),
+    (4, Action::StringExtract, vec![0x15]),
+    (4, Action::StringLength, vec![0x14]),
+    (4, Action::StringLess, vec![0x29]),
     (4, Action::Subtract, vec![0x0B]),
     (3, Action::ToggleQuality, vec![0x08]),
+    (4, Action::ToInteger, vec![0x18]),
+    (4, Action::Trace, vec![0x26]),
     (3, Action::WaitForFrame { frame: 4, num_actions_to_skip: 10 }, vec![0x8A, 3, 0, 4, 0, 10]),
+    (4, Action::WaitForFrame2 { num_actions_to_skip: 34 }, vec![0x8D, 1, 0, 34]),
     (1, Action::Unknown { opcode: 0x79, data: vec![] }, vec![0x79]),
     (1, Action::Unknown { opcode: 0xA0, data: vec![2, 3] }, vec![0xA0, 2, 0, 2, 3]),
 ] }

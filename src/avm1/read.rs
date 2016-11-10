@@ -1,4 +1,4 @@
-use avm1::types::{Action, Value};
+use avm1::types::{Action, SendVarsMethod, Value};
 use avm1::opcode::OpCode;
 use read::SwfRead;
 use std::io::{Error, ErrorKind, Read, Result};
@@ -37,18 +37,59 @@ impl<R: Read> Reader<R> {
             Some(OpCode::End) => return Ok(None),
 
             Some(OpCode::Add) => Action::Add,
+            Some(OpCode::And) => Action::And,
+            Some(OpCode::AsciiToChar) => Action::AsciiToChar,
+            Some(OpCode::Call) => Action::Call,
+            Some(OpCode::CharToAscii) => Action::CharToAscii,
+            Some(OpCode::CloneSprite) => Action::CloneSprite,
             Some(OpCode::Divide) => Action::Divide,
+            Some(OpCode::EndDrag) => Action::EndDrag,
+            Some(OpCode::Equals) => Action::Equals,
+            Some(OpCode::GetProperty) => Action::GetProperty,
+            Some(OpCode::GetTime) => Action::GetTime,
             Some(OpCode::GetUrl) => Action::GetUrl {
                 url: try!(action_reader.read_c_string()),
                 target: try!(action_reader.read_c_string()),
             },
+            Some(OpCode::GetUrl2) => {
+                let flags = try!(action_reader.read_u8());
+                Action::GetUrl2 {
+                    is_target_sprite: flags & 0b10 != 0,
+                    is_load_vars: flags & 0b1 != 0,
+                    send_vars_method: match flags >> 6 {
+                        0 => SendVarsMethod::None,
+                        1 => SendVarsMethod::Get,
+                        2 => SendVarsMethod::Post,
+                        _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid HTTP method in ActionGetUrl2")),
+                    }
+                }
+            },
+            Some(OpCode::GetVariable) => Action::GetVariable,
             Some(OpCode::GotoFrame) => {
                 let frame = try!(action_reader.read_u16());
                 Action::GotoFrame(frame)
             },
+            Some(OpCode::GotoFrame2) => {
+                let flags = try!(action_reader.read_u8());
+                Action::GotoFrame2 {
+                    set_playing: flags & 0b1 != 0,
+                    scene_offset: if flags & 0b10 != 0 {
+                        try!(action_reader.read_u16())
+                    } else { 0 },
+                }
+            },
             Some(OpCode::GotoLabel) => Action::GotoLabel(try!(action_reader.read_c_string())),
+            Some(OpCode::If) => Action::If { offset: try!(action_reader.read_i16()) },
+            Some(OpCode::Jump) => Action::Jump { offset: try!(action_reader.read_i16()) },
+            Some(OpCode::Less) => Action::Less,
+            Some(OpCode::MBAsciiToChar) => Action::MBAsciiToChar,
+            Some(OpCode::MBCharToAscii) => Action::MBCharToAscii,
+            Some(OpCode::MBStringExtract) => Action::MBStringExtract,
+            Some(OpCode::MBStringLength) => Action::MBStringLength,
             Some(OpCode::Multiply) => Action::Multiply,
             Some(OpCode::NextFrame) => Action::NextFrame,
+            Some(OpCode::Not) => Action::Not,
+            Some(OpCode::Or) => Action::Or,
             Some(OpCode::Play) => Action::Play,
             Some(OpCode::Pop) => Action::Pop,
             Some(OpCode::PreviousFrame) => Action::PreviousFrame,
@@ -60,13 +101,29 @@ impl<R: Read> Reader<R> {
                 };
                 Action::Push(values)
             },
+            Some(OpCode::RandomNumber) => Action::RandomNumber,
+            Some(OpCode::RemoveSprite) => Action::RemoveSprite,
+            Some(OpCode::SetProperty) => Action::SetProperty,
             Some(OpCode::SetTarget) => Action::SetTarget(try!(action_reader.read_c_string())),
+            Some(OpCode::SetTarget2) => Action::SetTarget2,
+            Some(OpCode::SetVariable) => Action::SetVariable,
+            Some(OpCode::StartDrag) => Action::StartDrag,
             Some(OpCode::Stop) => Action::Stop,
             Some(OpCode::StopSounds) => Action::StopSounds,
+            Some(OpCode::StringAdd) => Action::StringAdd,
+            Some(OpCode::StringEquals) => Action::StringEquals,
+            Some(OpCode::StringExtract) => Action::StringExtract,
+            Some(OpCode::StringLength) => Action::StringLength,
+            Some(OpCode::StringLess) => Action::StringLess,
             Some(OpCode::Subtract) => Action::Subtract,
+            Some(OpCode::ToInteger) => Action::ToInteger,
             Some(OpCode::ToggleQuality) => Action::ToggleQuality,
+            Some(OpCode::Trace) => Action::Trace,
             Some(OpCode::WaitForFrame) => Action::WaitForFrame {
                 frame: try!(action_reader.read_u16()),
+                num_actions_to_skip: try!(action_reader.read_u8()),
+            },
+            Some(OpCode::WaitForFrame2) => Action::WaitForFrame2 {
                 num_actions_to_skip: try!(action_reader.read_u8()),
             },
             _ => {
