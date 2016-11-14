@@ -1,4 +1,4 @@
-use avm1::types::{Action, SendVarsMethod, Value};
+use avm1::types::*;
 use avm1::opcode::OpCode;
 use write::SwfWrite;
 use std::io::{Result, Write};
@@ -29,24 +29,105 @@ impl<W: Write> Writer<W> {
 
     pub fn write_action(&mut self, action: &Action) -> Result<()> {
         match action {
-            &Action::Add => try!(self.write_action_header(OpCode::Add, 0)),
-            &Action::And => try!(self.write_action_header(OpCode::And, 0)),
-            &Action::AsciiToChar => try!(self.write_action_header(OpCode::AsciiToChar, 0)),
-            &Action::Call => try!(self.write_action_header(OpCode::Call, 0)),
-            &Action::CharToAscii => try!(self.write_action_header(OpCode::CharToAscii, 0)),
-            &Action::CloneSprite => try!(self.write_action_header(OpCode::CloneSprite, 0)),
-            &Action::Divide => try!(self.write_action_header(OpCode::Divide, 0)),
-            &Action::EndDrag => try!(self.write_action_header(OpCode::EndDrag, 0)),
-            &Action::Equals => try!(self.write_action_header(OpCode::Equals, 0)),
-            &Action::GetProperty => try!(self.write_action_header(OpCode::GetProperty, 0)),
-            &Action::GetTime => try!(self.write_action_header(OpCode::GetTime, 0)),
+            &Action::Add => self.write_action_header(OpCode::Add, 0)?,
+            &Action::Add2 => self.write_action_header(OpCode::Add2, 0)?,
+            &Action::And => self.write_action_header(OpCode::And, 0)?,
+            &Action::AsciiToChar => self.write_action_header(OpCode::AsciiToChar, 0)?,
+            &Action::BitAnd => self.write_action_header(OpCode::BitAnd, 0)?,
+            &Action::BitLShift => self.write_action_header(OpCode::BitLShift, 0)?,
+            &Action::BitOr => self.write_action_header(OpCode::BitOr, 0)?,
+            &Action::BitRShift => self.write_action_header(OpCode::BitRShift, 0)?,
+            &Action::BitURShift => self.write_action_header(OpCode::BitURShift, 0)?,
+            &Action::BitXor => self.write_action_header(OpCode::BitXor, 0)?,
+            &Action::Call => self.write_action_header(OpCode::Call, 0)?,
+            &Action::CallFunction => self.write_action_header(OpCode::CallFunction, 0)?,
+            &Action::CallMethod => self.write_action_header(OpCode::CallMethod, 0)?,
+            &Action::CastOp => self.write_action_header(OpCode::CastOp, 0)?,
+            &Action::CharToAscii => self.write_action_header(OpCode::CharToAscii, 0)?,
+            &Action::CloneSprite => self.write_action_header(OpCode::CloneSprite, 0)?,
+            &Action::ConstantPool(ref constants) => {
+                let len = 2 + constants.iter().map(|c| c.len() + 1).sum::<usize>();
+                self.write_action_header(OpCode::ConstantPool, len)?;
+                self.write_u16(constants.len() as u16)?;
+                for constant in constants {
+                    self.write_c_string(constant)?;
+                }
+            },
+            &Action::Decrement => self.write_action_header(OpCode::Decrement, 0)?,
+            &Action::DefineFunction { ref name, ref params, ref actions } => {
+                let mut action_buf = vec![];
+                {
+                    let mut fn_writer = Writer::new(&mut action_buf, self.version);
+                    fn_writer.write_action_list(actions)?;
+                }
+                let len = name.len() + 1
+                            + 2 + params.iter().map(|p| p.len() + 1).sum::<usize>()
+                            + 2 + action_buf.len();
+                self.write_action_header(OpCode::DefineFunction, len)?;
+                self.write_c_string(name)?;
+                self.write_u16(params.len() as u16)?;
+                for param in params {
+                    self.write_c_string(param)?;
+                }
+                self.write_u16(action_buf.len() as u16)?;
+                self.inner.write_all(&action_buf)?;
+            },
+            &Action::DefineFunction2(ref function) => {
+                let mut action_buf = vec![];
+                {
+                    let mut fn_writer = Writer::new(&mut action_buf, self.version);
+                    fn_writer.write_action_list(&function.actions)?;
+                }
+                let len = function.name.len() + 1
+                            + 3 + function.params.iter().map(|p| p.name.len() + 2).sum::<usize>()
+                            + 4 + action_buf.len();
+                let num_registers = function.params.iter().map(
+                    |p| if p.register_index.is_none() { 1 } else { 0 }).sum();
+                self.write_action_header(OpCode::DefineFunction2, len)?;
+                self.write_c_string(&function.name)?;
+                self.write_u16(function.params.len() as u16)?;
+                self.write_u8(num_registers)?;
+                let flags =
+                    if function.preload_global { 0b1_00000000 } else { 0 } |
+                    if function.preload_parent { 0b10000000 } else { 0 } |
+                    if function.preload_root { 0b1000000 } else { 0 } | 
+                    if function.suppress_super { 0b100000 } else { 0 } |
+                    if function.preload_super { 0b10000 } else { 0 } |
+                    if function.suppress_arguments { 0b1000 } else { 0 } |
+                    if function.preload_arguments { 0b100 } else { 0 } |
+                    if function.suppress_this { 0b10 } else { 0 } |
+                    if function.preload_this { 0b1 } else { 0 };
+                self.write_u16(flags)?;
+                for param in &function.params {
+                    self.write_u8(
+                        if let Some(n) = param.register_index { n } else { 0 }
+                    )?;
+                    self.write_c_string(&param.name)?;
+                }
+                self.write_u16(action_buf.len() as u16)?;
+                self.inner.write_all(&action_buf)?;
+            },
+            &Action::DefineLocal => self.write_action_header(OpCode::DefineLocal, 0)?,
+            &Action::DefineLocal2 => self.write_action_header(OpCode::DefineLocal2, 0)?,
+            &Action::Divide => self.write_action_header(OpCode::Divide, 0)?,
+            &Action::Delete => self.write_action_header(OpCode::Delete, 0)?,
+            &Action::Delete2 => self.write_action_header(OpCode::Delete2, 0)?,
+            &Action::EndDrag => self.write_action_header(OpCode::EndDrag, 0)?,
+            &Action::Enumerate => self.write_action_header(OpCode::Enumerate, 0)?,
+            &Action::Enumerate2 => self.write_action_header(OpCode::Enumerate2, 0)?,
+            &Action::Equals => self.write_action_header(OpCode::Equals, 0)?,
+            &Action::Equals2 => self.write_action_header(OpCode::Equals2, 0)?,
+            &Action::Extends => self.write_action_header(OpCode::Extends, 0)?,
+            &Action::GetMember => self.write_action_header(OpCode::GetMember, 0)?,
+            &Action::GetProperty => self.write_action_header(OpCode::GetProperty, 0)?,
+            &Action::GetTime => self.write_action_header(OpCode::GetTime, 0)?,
             &Action::GetUrl { ref url, ref target } => {
-                try!(self.write_action_header(OpCode::GetUrl, url.len() + target.len() + 2));
-                try!(self.write_c_string(url));
-                try!(self.write_c_string(target));
+                self.write_action_header(OpCode::GetUrl, url.len() + target.len() + 2)?;
+                self.write_c_string(url)?;
+                self.write_c_string(target)?;
             },
             &Action::GetUrl2 { send_vars_method, is_target_sprite, is_load_vars } => {
-                try!(self.write_action_header(OpCode::GetUrl2, 1));
+                self.write_action_header(OpCode::GetUrl2, 1)?;
                 let flags =
                     (match send_vars_method {
                         SendVarsMethod::None => 0,
@@ -55,47 +136,57 @@ impl<W: Write> Writer<W> {
                     } << 6) |
                     if is_target_sprite { 0b10 } else { 0 } |
                     if is_load_vars { 0b1 } else { 0 };
-                try!(self.write_u8(flags));
+                self.write_u8(flags)?;
             },
-            &Action::GetVariable => try!(self.write_action_header(OpCode::GetVariable, 0)),
+            &Action::GetVariable => self.write_action_header(OpCode::GetVariable, 0)?,
             &Action::GotoFrame(frame) => {
-                try!(self.write_action_header(OpCode::GotoFrame, 2));
-                try!(self.write_u16(frame));
+                self.write_action_header(OpCode::GotoFrame, 2)?;
+                self.write_u16(frame)?;
             },
             &Action::GotoFrame2 { set_playing, scene_offset } => {
                 if scene_offset != 0 {
-                    try!(self.write_action_header(OpCode::GotoFrame2, 3));
-                    try!(self.write_u8(if set_playing { 0b11 } else { 0b01 }));
-                    try!(self.write_u16(scene_offset));
+                    self.write_action_header(OpCode::GotoFrame2, 3)?;
+                    self.write_u8(if set_playing { 0b11 } else { 0b01 })?;
+                    self.write_u16(scene_offset)?;
                 } else {
-                    try!(self.write_action_header(OpCode::GotoFrame2, 1));
-                    try!(self.write_u8(if set_playing { 0b10 } else { 0b00 }));
+                    self.write_action_header(OpCode::GotoFrame2, 1)?;
+                    self.write_u8(if set_playing { 0b10 } else { 0b00 })?;
                 }
             },
             &Action::GotoLabel(ref label) => {
-                try!(self.write_action_header(OpCode::GotoLabel, label.len() + 1));
-                try!(self.write_c_string(label));
+                self.write_action_header(OpCode::GotoLabel, label.len() + 1)?;
+                self.write_c_string(label)?;
             },
+            &Action::Greater => self.write_action_header(OpCode::Greater, 0)?,
             &Action::If { offset } => {
-                try!(self.write_action_header(OpCode::If, 2));
-                try!(self.write_i16(offset));
+                self.write_action_header(OpCode::If, 2)?;
+                self.write_i16(offset)?;
             },
+            &Action::ImplementsOp => self.write_action_header(OpCode::ImplementsOp, 0)?,
+            &Action::Increment => self.write_action_header(OpCode::Increment, 0)?,
+            &Action::InitArray => self.write_action_header(OpCode::InitArray, 0)?,
+            &Action::InitObject => self.write_action_header(OpCode::InitObject, 0)?,
+            &Action::InstanceOf => self.write_action_header(OpCode::InstanceOf, 0)?,
             &Action::Jump { offset } => {
-                try!(self.write_action_header(OpCode::Jump, 2));
-                try!(self.write_i16(offset));
+                self.write_action_header(OpCode::Jump, 2)?;
+                self.write_i16(offset)?;
             },
-            &Action::Less => try!(self.write_action_header(OpCode::Less, 0)),
-            &Action::MBAsciiToChar => try!(self.write_action_header(OpCode::MBAsciiToChar, 0)),
-            &Action::MBCharToAscii => try!(self.write_action_header(OpCode::MBCharToAscii, 0)),
-            &Action::MBStringExtract => try!(self.write_action_header(OpCode::MBStringExtract, 0)),
-            &Action::MBStringLength => try!(self.write_action_header(OpCode::MBStringLength, 0)),
-            &Action::Multiply => try!(self.write_action_header(OpCode::Multiply, 0)),
-            &Action::NextFrame => try!(self.write_action_header(OpCode::NextFrame, 0)),
-            &Action::Not => try!(self.write_action_header(OpCode::Not, 0)),
-            &Action::Or => try!(self.write_action_header(OpCode::Or, 0)),
-            &Action::Play => try!(self.write_action_header(OpCode::Play, 0)),
-            &Action::Pop => try!(self.write_action_header(OpCode::Pop, 0)),
-            &Action::PreviousFrame => try!(self.write_action_header(OpCode::PreviousFrame, 0)),
+            &Action::Less => self.write_action_header(OpCode::Less, 0)?,
+            &Action::Less2 => self.write_action_header(OpCode::Less2, 0)?,
+            &Action::MBAsciiToChar => self.write_action_header(OpCode::MBAsciiToChar, 0)?,
+            &Action::MBCharToAscii => self.write_action_header(OpCode::MBCharToAscii, 0)?,
+            &Action::MBStringExtract => self.write_action_header(OpCode::MBStringExtract, 0)?,
+            &Action::MBStringLength => self.write_action_header(OpCode::MBStringLength, 0)?,
+            &Action::Modulo => self.write_action_header(OpCode::Modulo, 0)?,
+            &Action::Multiply => self.write_action_header(OpCode::Multiply, 0)?,
+            &Action::NewMethod => self.write_action_header(OpCode::NewMethod, 0)?,
+            &Action::NewObject => self.write_action_header(OpCode::NewObject, 0)?,
+            &Action::NextFrame => self.write_action_header(OpCode::NextFrame, 0)?,
+            &Action::Not => self.write_action_header(OpCode::Not, 0)?,
+            &Action::Or => self.write_action_header(OpCode::Or, 0)?,
+            &Action::Play => self.write_action_header(OpCode::Play, 0)?,
+            &Action::Pop => self.write_action_header(OpCode::Pop, 0)?,
+            &Action::PreviousFrame => self.write_action_header(OpCode::PreviousFrame, 0)?,
             &Action::Push(ref values) => {
                 let len = values.iter().map(|v| {
                     match v {
@@ -110,44 +201,104 @@ impl<W: Write> Writer<W> {
                         &Value::ConstantPool(v) => if v < 256 { 2 } else { 3 },
                     }
                 }).sum();
-                try!(self.write_action_header(OpCode::Push, len));
+                self.write_action_header(OpCode::Push, len)?;
                 for value in values {
-                    try!(self.write_push_value(value));
+                    self.write_push_value(value)?;
                 }
             },
-            &Action::RandomNumber => try!(self.write_action_header(OpCode::RandomNumber, 0)),
-            &Action::RemoveSprite => try!(self.write_action_header(OpCode::RemoveSprite, 0)),
-            &Action::SetProperty => try!(self.write_action_header(OpCode::SetProperty, 0)),
+            &Action::PushDuplicate => self.write_action_header(OpCode::PushDuplicate, 0)?,
+            &Action::RandomNumber => self.write_action_header(OpCode::RandomNumber, 0)?,
+            &Action::RemoveSprite => self.write_action_header(OpCode::RemoveSprite, 0)?,
+            &Action::Return => self.write_action_header(OpCode::Return, 0)?,
+            &Action::SetMember => self.write_action_header(OpCode::SetMember, 0)?,
+            &Action::SetProperty => self.write_action_header(OpCode::SetProperty, 0)?,
             &Action::SetTarget(ref target) => {
-                try!(self.write_action_header(OpCode::SetTarget, target.len() + 1));
-                try!(self.write_c_string(target));
+                self.write_action_header(OpCode::SetTarget, target.len() + 1)?;
+                self.write_c_string(target)?;
             },
-            &Action::SetTarget2 => try!(self.write_action_header(OpCode::SetTarget2, 0)),
-            &Action::SetVariable => try!(self.write_action_header(OpCode::SetVariable, 0)),
-            &Action::StartDrag => try!(self.write_action_header(OpCode::StartDrag, 0)),
-            &Action::Stop => try!(self.write_action_header(OpCode::Stop, 0)),
-            &Action::StopSounds => try!(self.write_action_header(OpCode::StopSounds, 0)),
-            &Action::StringAdd => try!(self.write_action_header(OpCode::StringAdd, 0)),
-            &Action::StringEquals => try!(self.write_action_header(OpCode::StringEquals, 0)),
-            &Action::StringExtract => try!(self.write_action_header(OpCode::StringExtract, 0)),
-            &Action::StringLength => try!(self.write_action_header(OpCode::StringLength, 0)),
-            &Action::StringLess => try!(self.write_action_header(OpCode::StringLess, 0)),
-            &Action::Subtract => try!(self.write_action_header(OpCode::Subtract, 0)),
-            &Action::ToInteger => try!(self.write_action_header(OpCode::ToInteger, 0)),
-            &Action::ToggleQuality => try!(self.write_action_header(OpCode::ToggleQuality, 0)),
-            &Action::Trace => try!(self.write_action_header(OpCode::Trace, 0)),
+            &Action::SetTarget2 => self.write_action_header(OpCode::SetTarget2, 0)?,
+            &Action::SetVariable => self.write_action_header(OpCode::SetVariable, 0)?,
+            &Action::StackSwap => self.write_action_header(OpCode::StackSwap, 0)?,
+            &Action::StartDrag => self.write_action_header(OpCode::StartDrag, 0)?,
+            &Action::Stop => self.write_action_header(OpCode::Stop, 0)?,
+            &Action::StopSounds => self.write_action_header(OpCode::StopSounds, 0)?,
+            &Action::StoreRegister(register) => {
+                self.write_action_header(OpCode::StoreRegister, 1)?;
+                self.write_u8(register)?;
+            },
+            &Action::StrictEquals => self.write_action_header(OpCode::StrictEquals, 0)?,
+            &Action::StringAdd => self.write_action_header(OpCode::StringAdd, 0)?,
+            &Action::StringEquals => self.write_action_header(OpCode::StringEquals, 0)?,
+            &Action::StringExtract => self.write_action_header(OpCode::StringExtract, 0)?,
+            &Action::StringGreater => self.write_action_header(OpCode::StringGreater, 0)?,
+            &Action::StringLength => self.write_action_header(OpCode::StringLength, 0)?,
+            &Action::StringLess => self.write_action_header(OpCode::StringLess, 0)?,
+            &Action::Subtract => self.write_action_header(OpCode::Subtract, 0)?,
+            &Action::TargetPath => self.write_action_header(OpCode::TargetPath, 0)?,
+            &Action::Throw => self.write_action_header(OpCode::Throw, 0)?,
+            &Action::ToggleQuality => self.write_action_header(OpCode::ToggleQuality, 0)?,
+            &Action::ToInteger => self.write_action_header(OpCode::ToInteger, 0)?,
+            &Action::ToNumber => self.write_action_header(OpCode::ToNumber, 0)?,
+            &Action::ToString => self.write_action_header(OpCode::ToString, 0)?,
+            &Action::Trace => self.write_action_header(OpCode::Trace, 0)?,
+            &Action::Try(ref try_block) => {
+                let try_length;
+                let catch_length;
+                let finally_length;
+                let mut action_buf = vec![];
+                {
+                    let mut fn_writer = Writer::new(&mut action_buf, self.version);
+                    fn_writer.write_action_list(&try_block.try)?;
+                    try_length = fn_writer.inner.len();
+                    if let Some((_, ref catch)) = try_block.catch {
+                        fn_writer.write_action_list(catch)?;
+                    }
+                    catch_length = fn_writer.inner.len() - try_length;
+                    if let Some(ref finally) = try_block.finally {
+                        fn_writer.write_action_list(finally)?;
+                    }
+                    finally_length = fn_writer.inner.len() - (try_length + catch_length);
+                }
+                let len = 7 + action_buf.len() +
+                    if let Some((CatchVar::Var(ref name), _)) = try_block.catch { name.len() + 1 } else { 1 };
+                self.write_action_header(OpCode::Try, len)?;
+                self.write_u8(
+                    if let Some((CatchVar::Register(_), _)) = try_block.catch { 0b100 } else { 0 } |
+                    if try_block.finally.is_some() { 0b10 } else { 0 } |
+                    if try_block.catch.is_some() { 0b1 } else { 0 }
+                )?;
+                self.write_u16(try_length as u16)?;
+                self.write_u16(catch_length as u16)?;
+                self.write_u16(finally_length as u16)?;
+                match try_block.catch {
+                    Some((CatchVar::Var(ref name), _)) => self.write_c_string(name)?,
+                    Some((CatchVar::Register(i), _)) => self.write_u8(i)?,
+                    _ => (),
+                }
+                self.inner.write_all(&action_buf)?;
+            },
+            &Action::TypeOf => self.write_action_header(OpCode::TypeOf, 0)?,
             &Action::WaitForFrame { frame, num_actions_to_skip } => {
-                try!(self.write_action_header(OpCode::WaitForFrame, 3));
-                try!(self.write_u16(frame));
-                try!(self.write_u8(num_actions_to_skip));
+                self.write_action_header(OpCode::WaitForFrame, 3)?;
+                self.write_u16(frame)?;
+                self.write_u8(num_actions_to_skip)?;
             },
             &Action::WaitForFrame2 { num_actions_to_skip } => {
-                try!(self.write_action_header(OpCode::WaitForFrame2, 1));
-                try!(self.write_u8(num_actions_to_skip));
+                self.write_action_header(OpCode::WaitForFrame2, 1)?;
+                self.write_u8(num_actions_to_skip)?;
+            },
+            &Action::With { ref actions } => {
+                let mut action_buf = vec![];
+                {
+                    let mut fn_writer = Writer::new(&mut action_buf, self.version);
+                    fn_writer.write_action_list(actions)?;
+                }
+                self.write_action_header(OpCode::With, action_buf.len())?;
+                self.inner.write_all(&action_buf)?;
             },
             &Action::Unknown { opcode, ref data } => {
-                try!(self.write_opcode_and_length(opcode, data.len()));
-                try!(self.inner.write_all(&data));
+                self.write_opcode_and_length(opcode, data.len())?;
+                self.inner.write_all(&data)?;
             }
         }
 

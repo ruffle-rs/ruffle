@@ -81,8 +81,6 @@ pub enum OpCode {
     InstanceOf = 0x54,
     Enumerate2 = 0x55,
 
-    DoInitAction = 0x59,
-
     BitAnd = 0x60,
     BitOr = 0x61,
     BitXor = 0x62,
