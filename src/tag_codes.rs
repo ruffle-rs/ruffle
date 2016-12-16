@@ -10,7 +10,7 @@ pub enum TagCode {
     RemoveObject = 5,
     DefineBits = 6,
     DefineButton = 7,
-    JpefTables = 8,
+    JpegTables = 8,
     SetBackgroundColor = 9,
     DefineFont = 10,
     DefineText = 11,

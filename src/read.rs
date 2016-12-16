@@ -409,6 +409,15 @@ impl<R: Read> Reader<R> {
                     data: data,
                 }
             },
+            Some(TagCode::DefineBits) => {
+                let id = tag_reader.read_u16()?;
+                let mut jpeg_data = Vec::with_capacity(length - 2);
+                tag_reader.input.read_to_end(&mut jpeg_data)?;
+                Tag::DefineBits {
+                    id: id,
+                    jpeg_data: jpeg_data,
+                }
+            },
             Some(TagCode::DefineButton) => try!(tag_reader.read_define_button()),
             Some(TagCode::DefineButton2) => try!(tag_reader.read_define_button_2()),
             Some(TagCode::DefineButtonCxform) => {
@@ -498,6 +507,12 @@ impl<R: Read> Reader<R> {
                     });
                 }
                 Tag::ImportAssets { url: url, imports: imports }
+            },
+
+            Some(TagCode::JpegTables) => {
+                let mut data = Vec::with_capacity(length);
+                tag_reader.input.read_to_end(&mut data)?;
+                Tag::JpegTables(data)
             },
 
             Some(TagCode::Metadata) => Tag::Metadata(try!(tag_reader.read_c_string())),

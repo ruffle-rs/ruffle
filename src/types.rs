@@ -293,6 +293,7 @@ pub enum Tag {
 
     Protect(Option<String>),
     DefineBinaryData { id: CharacterId, data: Vec<u8> },
+    DefineBits { id: CharacterId, jpeg_data: Vec<u8> },
     DefineButton(Box<Button>),
     DefineButton2(Box<Button>),
     DefineButtonColorTransform { id: CharacterId, color_transforms: Vec<ColorTransform> },
@@ -307,8 +308,8 @@ pub enum Tag {
     EnableDebugger(String),
     EnableTelemetry { password_hash: Vec<u8> },
     Metadata(String),
-
     ImportAssets { url: String, imports: Vec<ExportedAsset> },
+    JpegTables(Vec<u8>),
     SetBackgroundColor(Color),
     SetTabIndex { depth: Depth, tab_index: u16 },
     SoundStreamBlock(Vec<u8>),
