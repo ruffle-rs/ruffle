@@ -23,7 +23,7 @@ pub enum TagCode {
     SoundStreamHead = 18,
     SoundStreamBlock = 19,
     DefineBitsLossless = 20,
-    DefineBitsJpeg = 21,
+    DefineBitsJpeg2 = 21,
     DefineShape2 = 22,
     DefineButtonCxform = 23,
     Protect = 24,

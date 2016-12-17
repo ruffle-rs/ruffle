@@ -419,6 +419,12 @@ impl<W: Write> Writer<W> {
                 self.output.write_all(jpeg_data)?;
             },
 
+            &Tag::DefineBitsJpeg2 { id, ref jpeg_data } => {
+                self.write_tag_header(TagCode::DefineBitsJpeg2, jpeg_data.len() as u32 + 2)?;
+                self.write_u16(id)?;
+                self.output.write_all(jpeg_data)?;
+            },
+
             &Tag::DefineButton(ref button) => {
                 try!(self.write_define_button(button))
             },
@@ -551,7 +557,7 @@ impl<W: Write> Writer<W> {
                 self.write_tag_header(TagCode::JpegTables, data.len() as u32)?;
                 self.output.write_all(data)?;
             },
-            
+
             &Tag::Metadata(ref metadata) => {
                 try!(self.write_tag_header(TagCode::Metadata, metadata.len() as u32 + 1));
                 try!(self.write_c_string(metadata));

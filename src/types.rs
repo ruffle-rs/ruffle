@@ -294,6 +294,7 @@ pub enum Tag {
     Protect(Option<String>),
     DefineBinaryData { id: CharacterId, data: Vec<u8> },
     DefineBits { id: CharacterId, jpeg_data: Vec<u8> },
+    DefineBitsJpeg2 { id: CharacterId, jpeg_data: Vec<u8> },
     DefineButton(Box<Button>),
     DefineButton2(Box<Button>),
     DefineButtonColorTransform { id: CharacterId, color_transforms: Vec<ColorTransform> },

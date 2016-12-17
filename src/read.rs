@@ -418,6 +418,15 @@ impl<R: Read> Reader<R> {
                     jpeg_data: jpeg_data,
                 }
             },
+            Some(TagCode::DefineBitsJpeg2) => {
+                let id = tag_reader.read_u16()?;
+                let mut jpeg_data = Vec::with_capacity(length - 2);
+                tag_reader.input.read_to_end(&mut jpeg_data)?;
+                Tag::DefineBitsJpeg2 {
+                    id: id,
+                    jpeg_data: jpeg_data,
+                }
+            },
             Some(TagCode::DefineButton) => try!(tag_reader.read_define_button()),
             Some(TagCode::DefineButton2) => try!(tag_reader.read_define_button_2()),
             Some(TagCode::DefineButtonCxform) => {
