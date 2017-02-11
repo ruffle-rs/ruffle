@@ -473,6 +473,41 @@ impl<W: Write> Writer<W> {
                 try!(self.output.write_all(&buf));
             },
 
+            &Tag::DefineFont(ref font) => {
+                let num_glyphs = font.glyphs.len();
+                let mut offsets = vec![];
+                let mut buf = vec![];
+                {
+                    let mut writer = Writer::new(&mut buf, self.version);
+                    for glyph in &font.glyphs {
+                        let offset = num_glyphs * 2 + writer.output.len();
+                        offsets.push(offset as u16);
+
+                        // Bit length for fill and line indices.
+                        // TODO: This theoretically could be >1?
+                        writer.num_fill_bits = 1;
+                        writer.num_line_bits = 0;
+                        writer.write_ubits(4, 1)?;
+                        writer.write_ubits(4, 0)?;
+
+                        for shape_record in glyph {
+                            try!(writer.write_shape_record(shape_record, 1));
+                        }
+                        // End shape record.
+                        writer.write_ubits(6, 0)?;
+                        writer.flush_bits()?;
+                    }
+                }
+
+                let tag_len = (2 + 2 * font.glyphs.len() + buf.len()) as u32;
+                self.write_tag_header(TagCode::DefineFont, tag_len)?;
+                self.write_u16(font.id)?;
+                for offset in offsets {
+                    self.write_u16(offset)?;
+                }
+                self.output.write_all(&buf)?;
+            },
+
             &Tag::DefineScalingGrid { id, ref splitter_rect } => {
                 let mut buf = Vec::new();
                 {

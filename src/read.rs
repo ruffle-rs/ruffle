@@ -473,7 +473,7 @@ impl<R: Read> Reader<R> {
                     down_to_over_sound: down_to_over_sound,
                 }))
             },
-
+            Some(TagCode::DefineFont) => try!(tag_reader.read_define_font()),
             Some(TagCode::DefineShape) => try!(tag_reader.read_define_shape(1)),
             Some(TagCode::DefineShape2) => try!(tag_reader.read_define_shape(2)),
             Some(TagCode::DefineShape3) => try!(tag_reader.read_define_shape(3)),
@@ -864,6 +864,36 @@ impl<R: Read> Reader<R> {
             scenes: scenes,
             frame_labels: frame_labels,
         })
+    }
+
+    fn read_define_font(&mut self) -> Result<Tag> {
+        let id = self.read_u16()?;
+        let num_glyphs = self.read_u16()? / 2;
+
+        let mut glyphs = vec![];
+        if num_glyphs > 0 {
+            for _ in 0..(num_glyphs-1) {
+                self.read_u16()?;
+            }
+
+            for _ in 0..num_glyphs {
+                let mut glyph = vec![];
+                self.num_fill_bits = self.read_ubits(4)? as u8;
+                self.num_line_bits = self.read_ubits(4)? as u8;
+                while let Some(record) = self.read_shape_record(1)? {
+                    glyph.push(record);
+                }
+                glyphs.push(glyph);
+                self.byte_align();
+            }
+        }
+
+        Ok(Tag::DefineFont(Box::new(
+            Font {
+                id: id,
+                glyphs: glyphs,
+            }
+        )))
     }
 
     fn read_define_shape(&mut self, version: u8) -> Result<Tag> {

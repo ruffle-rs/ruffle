@@ -299,6 +299,7 @@ pub enum Tag {
     DefineButton2(Box<Button>),
     DefineButtonColorTransform { id: CharacterId, color_transforms: Vec<ColorTransform> },
     DefineButtonSound(Box<ButtonSounds>),
+    DefineFont(Box<Font>),
     DefineScalingGrid { id: CharacterId, splitter_rect: Rectangle },
     DefineShape(Shape),
     DefineSound(Box<Sound>),
@@ -603,3 +604,11 @@ pub enum ButtonActionCondition {
     OverDownToIdle,
     KeyPress
 }
+
+#[derive(Debug, PartialEq)]
+pub struct Font {
+    pub id: CharacterId,
+    pub glyphs: Vec<Glyph>,
+}
+
+type Glyph = Vec<ShapeRecord>;

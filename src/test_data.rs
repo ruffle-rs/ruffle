@@ -230,6 +230,42 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
     ),
 
     (
+        1,
+        Tag::DefineFont(Box::new(Font {
+            id: 1,
+            glyphs: vec![
+                vec![
+                    ShapeRecord::StyleChange(StyleChangeData {
+                        move_to: Some((19.45, -14.0)),
+                        fill_style_0: None,
+                        fill_style_1: Some(1),
+                        line_style: Some(0),
+                        new_styles: None
+                    }),
+                    ShapeRecord::StraightEdge { delta_x: -15.6, delta_y: 0.0 },
+                    ShapeRecord::StraightEdge { delta_x: 0.0, delta_y: -4.55 },
+                    ShapeRecord::StraightEdge { delta_x: 15.6, delta_y: 0.0 },
+                    ShapeRecord::StraightEdge { delta_x: 0.0, delta_y: 4.55 }
+                ],
+                vec![
+                    ShapeRecord::StyleChange(StyleChangeData {
+                        move_to: Some((32.65, 7.5)),
+                        fill_style_0: None,
+                        fill_style_1: Some(1),
+                        line_style: Some(0),
+                        new_styles: None
+                    }),
+                    ShapeRecord::StraightEdge { delta_x: -32.75, delta_y: 0.0 },
+                    ShapeRecord::StraightEdge { delta_x: 0.0, delta_y: -3.0 },
+                    ShapeRecord::StraightEdge { delta_x: 32.75, delta_y: 0.0 },
+                    ShapeRecord::StraightEdge { delta_x: 0.0, delta_y: 3.0 }
+                ],
+            ],
+        })),
+        read_tag_bytes_from_file("tests/swfs/DefineFont-MX.swf", TagCode::DefineFont)
+    ),
+
+    (
         8,
         Tag::DefineScalingGrid {
             id: 2,
