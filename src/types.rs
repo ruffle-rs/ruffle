@@ -300,6 +300,7 @@ pub enum Tag {
     DefineButtonColorTransform { id: CharacterId, color_transforms: Vec<ColorTransform> },
     DefineButtonSound(Box<ButtonSounds>),
     DefineFont(Box<Font>),
+    DefineFontInfo(Box<FontInfo>),
     DefineScalingGrid { id: CharacterId, splitter_rect: Rectangle },
     DefineShape(Shape),
     DefineSound(Box<Sound>),
@@ -609,6 +610,18 @@ pub enum ButtonActionCondition {
 pub struct Font {
     pub id: CharacterId,
     pub glyphs: Vec<Glyph>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct FontInfo {
+    pub id: CharacterId,
+    pub name: String,
+    pub is_small_text: bool,
+    pub is_shift_jis: bool,
+    pub is_ansi: bool,
+    pub is_bold: bool,
+    pub is_italic: bool,
+    pub code_table: Vec<u16>,
 }
 
 type Glyph = Vec<ShapeRecord>;

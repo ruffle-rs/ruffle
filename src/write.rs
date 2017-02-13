@@ -508,6 +508,36 @@ impl<W: Write> Writer<W> {
                 self.output.write_all(&buf)?;
             },
 
+            &Tag::DefineFontInfo(ref font_info) => {
+                let use_wide_codes = self.version >= 6;
+
+                let len = font_info.name.len() +
+                    if use_wide_codes { 2 } else { 1 } * font_info.code_table.len() +
+                    4;
+
+                self.write_tag_header(TagCode::DefineFontInfo, len as u32)?;
+                self.write_u16(font_info.id)?;
+
+                // SWF19 has ANSI and Shift-JIS backwards?
+                self.write_u8(font_info.name.len() as u8)?;
+                self.output.write_all(font_info.name.as_bytes())?;
+                self.write_u8(
+                    if font_info.is_small_text { 0b100000 } else { 0 } |
+                    if font_info.is_ansi { 0b10000 } else { 0 } |
+                    if font_info.is_shift_jis { 0b1000 } else { 0 } |
+                    if font_info.is_italic { 0b100 } else { 0 } |
+                    if font_info.is_bold { 0b10 } else { 0 } |
+                    if use_wide_codes { 0b1 } else { 0 }
+                )?;
+                for &code in &font_info.code_table {
+                    if use_wide_codes {
+                        self.write_u16(code)?;
+                    } else {
+                        self.write_u8(code as u8)?;
+                    }
+                }
+            },
+
             &Tag::DefineScalingGrid { id, ref splitter_rect } => {
                 let mut buf = Vec::new();
                 {

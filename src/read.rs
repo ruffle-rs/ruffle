@@ -474,6 +474,7 @@ impl<R: Read> Reader<R> {
                 }))
             },
             Some(TagCode::DefineFont) => try!(tag_reader.read_define_font()),
+            Some(TagCode::DefineFontInfo) => tag_reader.read_define_font_info()?,
             Some(TagCode::DefineShape) => try!(tag_reader.read_define_shape(1)),
             Some(TagCode::DefineShape2) => try!(tag_reader.read_define_shape(2)),
             Some(TagCode::DefineShape3) => try!(tag_reader.read_define_shape(3)),
@@ -894,6 +895,39 @@ impl<R: Read> Reader<R> {
                 glyphs: glyphs,
             }
         )))
+    }
+
+    fn read_define_font_info(&mut self) -> Result<Tag> {
+        let id = self.read_u16()?;
+
+        let font_name_len = self.read_u8()?;
+        let mut font_name = String::with_capacity(font_name_len as usize);
+        self.input.by_ref().take(font_name_len as u64).read_to_string(&mut font_name)?;
+
+        let flags = self.read_u8()?;
+        let use_wide_codes = flags & 0b1 != 0;
+        let mut code_table = vec![];
+        if use_wide_codes {
+            while let Ok(code) = self.read_u16() {
+                code_table.push(code);
+            }
+        } else {
+            while let Ok(code) = self.read_u8() {
+                code_table.push(code as u16);
+            }
+        }
+
+        // SWF19 has ANSI and Shift-JIS backwards?
+        Ok(Tag::DefineFontInfo(Box::new(FontInfo {
+            id: id,
+            name: font_name,
+            is_small_text: flags & 0b100000 != 0,
+            is_ansi: flags & 0b10000 != 0,
+            is_shift_jis: flags & 0b1000 != 0,
+            is_italic: flags & 0b100 != 0,
+            is_bold: flags & 0b10 != 0,
+            code_table: code_table,
+        })))
     }
 
     fn read_define_shape(&mut self, version: u8) -> Result<Tag> {

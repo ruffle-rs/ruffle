@@ -266,6 +266,21 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
     ),
 
     (
+        1,
+        Tag::DefineFontInfo(Box::new(FontInfo {
+            id: 1,
+            name: "Verdana".to_string(),
+            is_small_text: false,
+            is_ansi: true,
+            is_shift_jis: false,
+            is_italic: false,
+            is_bold: false,
+            code_table: vec![45, 95],
+        })),
+        read_tag_bytes_from_file("tests/swfs/DefineFont-MX.swf", TagCode::DefineFontInfo)
+    ),
+
+    (
         8,
         Tag::DefineScalingGrid {
             id: 2,
