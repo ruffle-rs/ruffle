@@ -561,6 +561,32 @@ impl<R: Read> Reader<R> {
                 sound_info: Box::new(try!(tag_reader.read_sound_info())),
             },
 
+            Some(TagCode::DefineBitsLossless) => {
+                let id = tag_reader.read_character_id()?;
+                let format = match tag_reader.read_u8()? {
+                    3 => BitmapFormat::ColorMap8,
+                    4 => BitmapFormat::Rgb15,
+                    5 => BitmapFormat::Rgb24,
+                    _ => return Err(Error::new(ErrorKind::InvalidData,
+                                          "Invalid bitmap format.")),
+                };
+                let width = tag_reader.read_u16()?;
+                let height = tag_reader.read_u16()?;
+                let num_colors = if format == BitmapFormat::ColorMap8 {
+                    tag_reader.read_u8()?
+                } else { 0 };
+                let mut data = Vec::new();
+                tag_reader.input.read_to_end(&mut data)?;
+                Tag::DefineBitsLossless(Box::new(DefineBitsLossless {
+                    id: id,
+                    format: format,
+                    width: width,
+                    height: height,
+                    num_colors: num_colors,
+                    data: data,
+                }))
+            },
+
             Some(TagCode::DefineScalingGrid) => Tag::DefineScalingGrid {
                 id: try!(tag_reader.read_u16()),
                 splitter_rect: try!(tag_reader.read_rectangle()),

@@ -429,6 +429,27 @@ impl<W: Write> Writer<W> {
                 self.output.write_all(jpeg_data)?;
             },
 
+            &Tag::DefineBitsLossless(ref tag) => {
+                let mut length = 7 + tag.data.len();
+                if tag.format == BitmapFormat::ColorMap8 {
+                    length += 1;
+                }
+                self.write_tag_header(TagCode::DefineBitsLossless, length as u32)?;
+                self.write_character_id(tag.id)?;
+                let format_id = match tag.format {
+                    BitmapFormat::ColorMap8 => 3,
+                    BitmapFormat::Rgb15 => 4,
+                    BitmapFormat::Rgb24 => 5,
+                };
+                self.write_u8(format_id)?;
+                self.write_u16(tag.width)?;
+                self.write_u16(tag.height);
+                if tag.format == BitmapFormat::ColorMap8 {
+                    self.write_u8(tag.num_colors)?;
+                }
+                self.output.write_all(&tag.data);
+            },
+
             &Tag::DefineButton(ref button) => {
                 try!(self.write_define_button(button))
             },

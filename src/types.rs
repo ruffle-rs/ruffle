@@ -295,6 +295,7 @@ pub enum Tag {
     DefineBinaryData { id: CharacterId, data: Vec<u8> },
     DefineBits { id: CharacterId, jpeg_data: Vec<u8> },
     DefineBitsJpeg2 { id: CharacterId, jpeg_data: Vec<u8> },
+    DefineBitsLossless(Box<DefineBitsLossless>),
     DefineButton(Box<Button>),
     DefineButton2(Box<Button>),
     DefineButtonColorTransform { id: CharacterId, color_transforms: Vec<ColorTransform> },
@@ -649,4 +650,21 @@ pub struct TextRecord {
 pub struct GlyphEntry {
     pub index: u32,
     pub advance: i32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct DefineBitsLossless {
+    pub id: CharacterId,
+    pub format: BitmapFormat,
+    pub width: u16,
+    pub height: u16,
+    pub num_colors: u8,
+    pub data: Vec<u8>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BitmapFormat {
+    ColorMap8,
+    Rgb15,
+    Rgb24,
 }
