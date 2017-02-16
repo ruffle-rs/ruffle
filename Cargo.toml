@@ -9,8 +9,8 @@ readme = "README.md"
 description = "Read and write the Adobe Flash SWF file format."
 
 [dependencies]
-byteorder = "*"
-enum_primitive = "*"
-flate2 = "*"
-num = "*"
+byteorder = "1.0"
+enum_primitive = "0.1.1"
+flate2 = "0.2.17"
+num = "0.1"
 xz2 = { git = "https://github.com/alexcrichton/xz2-rs", rev = "09ce8db2" }
