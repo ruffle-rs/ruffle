@@ -267,6 +267,10 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
+    fn write_character_id(&mut self, id: CharacterId) -> Result<()> {
+        self.write_u16(id)
+    }
+
     fn write_rgb(&mut self, color: &Color) -> Result<()> {
         try!(self.write_u8(color.r));
         try!(self.write_u8(color.g));
@@ -553,7 +557,7 @@ impl<W: Write> Writer<W> {
             &Tag::DefineShape(ref shape) => try!(self.write_define_shape(shape)),
             &Tag::DefineSound(ref sound) => try!(self.write_define_sound(sound)),
             &Tag::DefineSprite(ref sprite) => try!(self.write_define_sprite(sprite)),
-
+            &Tag::DefineText(ref text) => self.write_define_text(text)?,
             &Tag::DoAbc(ref action_data) => {
                 try!(self.write_tag_header(TagCode::DoAbc, action_data.len() as u32));
                 try!(self.output.write_all(action_data));
@@ -1567,6 +1571,62 @@ impl<W: Write> Writer<W> {
                 try!(self.write_u16((point.right_volume * 32768f32) as u16));
             }
         }
+        Ok(())
+    }
+
+    fn write_define_text(&mut self, text: &Text) -> Result<()> {
+        let mut buf = Vec::new();
+        {
+            let mut writer = Writer::new(&mut buf, self.version);
+            writer.write_character_id(text.id)?;
+            writer.write_rectangle(&text.bounds)?;
+            writer.write_matrix(&text.matrix)?;
+            let num_glyph_bits = text.records
+                .iter()
+                .flat_map(|r| r.glyphs.iter().map(|g| count_ubits(g.index)))
+                .max()
+                .unwrap_or(0);
+            let num_advance_bits = text.records
+                .iter()
+                .flat_map(|r| r.glyphs.iter().map(|g| count_sbits(g.advance)))
+                .max()
+                .unwrap_or(0);
+            writer.write_u8(num_glyph_bits)?;
+            writer.write_u8(num_advance_bits)?;
+
+            for record in &text.records {
+                let flags =
+                    0b10000000 |
+                    if record.font_id.is_some() { 0b1000 } else { 0 } |
+                    if record.color.is_some() { 0b100 } else { 0 } |
+                    if record.y_offset.is_some() { 0b10 } else { 0 } |
+                    if record.x_offset.is_some() { 0b1 } else { 0 };
+                writer.write_u8(flags)?;
+                if let Some(id) = record.font_id {
+                    writer.write_character_id(id)?;
+                }
+                if let Some(ref color) = record.color {
+                    writer.write_rgb(color)?;
+                }
+                if let Some(x) = record.x_offset {
+                    writer.write_i16((x * 20.0) as i16)?;
+                }
+                if let Some(y) = record.y_offset {
+                    writer.write_i16((y * 20.0) as i16)?;
+                }
+                if let Some(height) = record.height {
+                    writer.write_u16(height)?;
+                }
+                writer.write_u8(record.glyphs.len() as u8)?;
+                for glyph in &record.glyphs {
+                    writer.write_ubits(num_glyph_bits, glyph.index)?;
+                    writer.write_sbits(num_advance_bits, glyph.advance)?;
+                }
+            }
+            writer.write_u8(0)?; // End of text records.
+        }
+        self.write_tag_header(TagCode::DefineText, buf.len() as u32)?;
+        self.output.write_all(&buf)?;
         Ok(())
     }
 

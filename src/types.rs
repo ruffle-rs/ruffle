@@ -305,6 +305,7 @@ pub enum Tag {
     DefineShape(Shape),
     DefineSound(Box<Sound>),
     DefineSprite(Sprite),
+    DefineText(Box<Text>),
     DoAbc(Vec<u8>),
     DoAction(Vec<avm1::types::Action>),
     DoInitAction { id: CharacterId, action_data: Vec<u8> },
@@ -625,3 +626,27 @@ pub struct FontInfo {
 }
 
 type Glyph = Vec<ShapeRecord>;
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Text {
+    pub id: CharacterId,
+    pub bounds: Rectangle,
+    pub matrix: Matrix,
+    pub records: Vec<TextRecord>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct TextRecord {
+    pub font_id: Option<CharacterId>,
+    pub color: Option<Color>,
+    pub x_offset: Option<f32>,  // TODO(Herschel): twips
+    pub y_offset: Option<f32>,
+    pub height: Option<u16>,
+    pub glyphs: Vec<GlyphEntry>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct GlyphEntry {
+    pub index: u32,
+    pub advance: i32,
+}

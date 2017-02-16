@@ -549,6 +549,30 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
     ),
 
     (
+        1,
+        Tag::DefineText(Box::new(Text {
+            id: 2,
+            bounds: Rectangle { x_min: 1.2, x_max: 38.65, y_min: 4.1, y_max: 18.45 },
+            matrix: Matrix::new(),
+            records: vec![
+                TextRecord {
+                    font_id: Some(1),
+                    color: Some(Color { r: 0, g: 0, b: 0, a: 255 }),
+                    x_offset: None,
+                    y_offset: Some(16.1),
+                    height: Some(320),
+                    glyphs: vec![
+                        GlyphEntry { index: 0, advance: 145 },
+                        GlyphEntry { index: 1, advance: 203 },
+                        GlyphEntry { index: 0, advance: 145 },
+                    ],
+                },
+            ],
+        })),
+        read_tag_bytes_from_file("tests/swfs/DefineFont-MX.swf", TagCode::DefineText)
+    ),
+
+    (
         5,
         Tag::DoAction(
             vec![
