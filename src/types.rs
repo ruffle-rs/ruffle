@@ -300,6 +300,7 @@ pub enum Tag {
     DefineButton2(Box<Button>),
     DefineButtonColorTransform { id: CharacterId, color_transforms: Vec<ColorTransform> },
     DefineButtonSound(Box<ButtonSounds>),
+    DefineEditText(Box<EditText>),
     DefineFont(Box<Font>),
     DefineFontInfo(Box<FontInfo>),
     DefineScalingGrid { id: CharacterId, splitter_rect: Rectangle },
@@ -650,6 +651,47 @@ pub struct TextRecord {
 pub struct GlyphEntry {
     pub index: u32,
     pub advance: i32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct EditText {
+    pub id: CharacterId,
+    pub bounds: Rectangle,
+    pub font_id: Option<CharacterId>, // TODO(Herschel): Combine with height
+    pub font_class_name: Option<String>,
+    pub height: Option<u16>,
+    pub color: Option<Color>,
+    pub max_length: Option<u16>,
+    pub layout: Option<TextLayout>,
+    pub variable_name: String,
+    pub initial_text: Option<String>,
+    pub is_word_wrap: bool,
+    pub is_multiline: bool,
+    pub is_password: bool,
+    pub is_read_only: bool,
+    pub is_auto_size: bool,
+    pub is_selectable: bool,
+    pub has_border: bool,
+    pub was_static: bool,
+    pub is_html: bool,
+    pub is_device_font: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct TextLayout {
+    pub align: TextAlign,
+    pub left_margin: f32, // TODO(Herschel): twips
+    pub right_margin: f32,
+    pub indent: f32,
+    pub leading: f32,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TextAlign {
+    Left,
+    Center,
+    Right,
+    Justify,
 }
 
 #[derive(Clone, Debug, PartialEq)]

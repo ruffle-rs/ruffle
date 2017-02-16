@@ -230,6 +230,39 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
     ),
 
     (
+        4,
+        Tag::DefineEditText(Box::new(EditText {
+            id: 2,
+            bounds: Rectangle { x_min: -2.0, x_max: 77.9, y_min: -2.0, y_max: 23.9 },
+            font_id: Some(1),
+            font_class_name: None,
+            height: Some(360),
+            color: Some(Color { r: 0, g: 255, b: 0, a: 255 }),
+            max_length: None,
+            layout: Some(TextLayout {
+                align: TextAlign::Justify,
+                left_margin: 3.0,
+                right_margin: 4.0,
+                indent: 1.0,
+                leading: 2.0,
+            }),
+            variable_name: "foo".to_string(),
+            initial_text: Some("-_-".to_string()),
+            is_word_wrap: false,
+            is_multiline: true,
+            is_password: false,
+            is_read_only: true,
+            is_auto_size: false,
+            is_selectable: true,
+            has_border: true,
+            was_static: false,
+            is_html: false,
+            is_device_font: true,
+        })),
+        read_tag_bytes_from_file("tests/swfs/DefineEditText-MX.swf", TagCode::DefineEditText)
+    ),
+
+    (
         1,
         Tag::DefineFont(Box::new(Font {
             id: 1,

@@ -477,7 +477,8 @@ impl<R: Read> Reader<R> {
                     down_to_over_sound: down_to_over_sound,
                 }))
             },
-            Some(TagCode::DefineFont) => try!(tag_reader.read_define_font()),
+            Some(TagCode::DefineEditText) => tag_reader.read_define_edit_text()?,
+            Some(TagCode::DefineFont) => tag_reader.read_define_font()?,
             Some(TagCode::DefineFontInfo) => tag_reader.read_define_font_info()?,
             Some(TagCode::DefineShape) => try!(tag_reader.read_define_shape(1)),
             Some(TagCode::DefineShape2) => try!(tag_reader.read_define_shape(2)),
@@ -1731,6 +1732,69 @@ impl<R: Read> Reader<R> {
             height: height,
             glyphs: glyphs,
         }))
+    }
+
+    fn read_define_edit_text(&mut self) -> Result<Tag> {
+        let id = self.read_character_id()?;
+        let bounds = self.read_rectangle()?;
+        let flags = self.read_u8()?;
+        let flags2 = self.read_u8()?;
+        let font_id = if flags & 0b1 != 0 {
+            Some(self.read_character_id()?)
+        } else { None };
+        let font_class_name = if flags2 & 0b10000000 != 0 {
+            Some(self.read_c_string()?)
+        } else { None };
+        let height = if flags & 0b1 != 0 {
+            Some(self.read_u16()?)
+        } else { None };
+        let color = if flags & 0b100 != 0 {
+            Some(self.read_rgba()?)
+        } else { None };
+        let max_length = if flags & 0b10 != 0 {
+            Some(self.read_u16()?)
+        } else { None };
+        let layout = if flags & 0b100000 != 0 {
+            Some(TextLayout {
+                align: match self.read_u8()? {
+                    0 => TextAlign::Left,
+                    1 => TextAlign::Right,
+                    2 => TextAlign::Center,
+                    3 => TextAlign::Justify,
+                    _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid edit text alignment")),
+                },
+                left_margin: self.read_u16()? as f32 / 20.0,
+                right_margin: self.read_u16()? as f32 / 20.0,
+                indent: self.read_u16()? as f32 / 20.0,
+                leading: self.read_i16()? as f32 / 20.0,
+            })
+        } else { None };
+        let variable_name = self.read_c_string()?;
+        let initial_text = if flags & 0b10000000 != 0 {
+            Some(self.read_c_string()?)
+        } else { None };
+        Ok(Tag::DefineEditText(Box::new(EditText {
+            id: id,
+            bounds: bounds,
+            font_id: font_id,
+            font_class_name: font_class_name,
+            height: height,
+            color: color,
+            max_length: max_length,
+            layout: layout,
+            variable_name: variable_name,
+            initial_text: initial_text,
+            is_word_wrap: flags & 0b1000000 != 0,
+            is_multiline: flags & 0b100000 != 0,
+            is_password: flags & 0b10000 != 0,
+            is_read_only: flags & 0b1000 != 0,
+            is_auto_size: flags2 & 0b1000000 != 0,
+            is_selectable: flags2 & 0b10000 == 0,
+            has_border: flags2 & 0b1000 != 0,
+            was_static: flags2 & 0b100 != 0,
+            is_html: flags2 & 0b10 != 0,
+            is_device_font: flags2 & 0b1 == 0,
+        })))
     }
 }
 

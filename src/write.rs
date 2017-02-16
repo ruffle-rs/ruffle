@@ -498,6 +498,8 @@ impl<W: Write> Writer<W> {
                 try!(self.output.write_all(&buf));
             },
 
+            &Tag::DefineEditText(ref edit_text) => self.write_define_edit_text(edit_text)?,
+
             &Tag::DefineFont(ref font) => {
                 let num_glyphs = font.glyphs.len();
                 let mut offsets = vec![];
@@ -1647,6 +1649,80 @@ impl<W: Write> Writer<W> {
             writer.write_u8(0)?; // End of text records.
         }
         self.write_tag_header(TagCode::DefineText, buf.len() as u32)?;
+        self.output.write_all(&buf)?;
+        Ok(())
+    }
+
+    fn write_define_edit_text(&mut self, edit_text: &EditText) -> Result<()> {
+        let mut buf = Vec::new();
+        {
+            let mut writer = Writer::new(&mut buf, self.version);
+            writer.write_character_id(edit_text.id)?;
+            writer.write_rectangle(&edit_text.bounds)?;
+            let flags =
+                if edit_text.initial_text.is_some() { 0b10000000 } else { 0 } |
+                if edit_text.is_word_wrap { 0b1000000 } else { 0 } |
+                if edit_text.is_multiline { 0b100000 } else { 0 } |
+                if edit_text.is_password { 0b10000 } else { 0 } |
+                if edit_text.is_read_only { 0b1000 } else { 0 } |
+                if edit_text.color.is_some() { 0b100 } else { 0 } |
+                if edit_text.max_length.is_some() { 0b10 } else { 0 } |
+                if edit_text.font_id.is_some() { 0b1 } else { 0 };
+            let flags2 =
+                if edit_text.font_class_name.is_some() { 0b10000000 } else { 0 } |
+                if edit_text.is_auto_size { 0b1000000 } else { 0 } |
+                if edit_text.layout.is_some() { 0b100000 } else { 0 } |
+                if !edit_text.is_selectable { 0b10000 } else { 0 } |
+                if edit_text.has_border { 0b1000 } else { 0 } |
+                if edit_text.was_static { 0b100 } else { 0 } |
+                if edit_text.is_html { 0b10 } else { 0 } |
+                if !edit_text.is_device_font { 0b1 } else { 0 };
+
+            writer.write_u8(flags)?;
+            writer.write_u8(flags2)?;
+
+            if let Some(font_id) = edit_text.font_id {
+                writer.write_character_id(font_id)?;
+            }
+
+            // TODO(Herschel): Check SWF version.
+            if let Some(ref class) = edit_text.font_class_name {
+                writer.write_c_string(class)?;
+            }
+
+            // TODO(Herschel): Height only exists iff HasFontId, maybe for HasFontClass too?
+            if let Some(height) = edit_text.height {
+                writer.write_u16(height)?
+            }
+
+            if let Some(ref color) = edit_text.color {
+                writer.write_rgba(&color)?
+            }
+
+            if let Some(len) = edit_text.max_length {
+                writer.write_u16(len)?;
+            }
+
+            if let Some(ref layout) = edit_text.layout {
+                writer.write_u8(match layout.align {
+                    TextAlign::Left => 0,
+                    TextAlign::Right => 1,
+                    TextAlign::Center => 2,
+                    TextAlign::Justify => 3,
+                })?;
+                writer.write_u16((layout.left_margin * 20.0) as u16)?;
+                writer.write_u16((layout.right_margin * 20.0) as u16)?;
+                writer.write_u16((layout.indent * 20.0) as u16)?;
+                writer.write_i16((layout.leading * 20.0) as i16)?;
+            }
+
+            writer.write_c_string(&edit_text.variable_name)?;
+            if let Some(ref text) = edit_text.initial_text {
+                writer.write_c_string(text)?;
+            }
+        }
+
+        self.write_tag_header(TagCode::DefineEditText, buf.len() as u32)?;
         self.output.write_all(&buf)?;
         Ok(())
     }
