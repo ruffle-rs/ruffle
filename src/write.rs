@@ -443,11 +443,11 @@ impl<W: Write> Writer<W> {
                 };
                 self.write_u8(format_id)?;
                 self.write_u16(tag.width)?;
-                self.write_u16(tag.height);
+                self.write_u16(tag.height)?;
                 if tag.format == BitmapFormat::ColorMap8 {
                     self.write_u8(tag.num_colors)?;
                 }
-                self.output.write_all(&tag.data);
+                self.output.write_all(&tag.data)?;
             },
 
             &Tag::DefineButton(ref button) => {
