@@ -384,6 +384,17 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
+    fn write_language(&mut self, language: Language) -> Result<()> {
+        self.write_u8(match language {
+            Language::Unknown => 0,
+            Language::Latin => 1,
+            Language::Japanese => 2,
+            Language::Korean => 3,
+            Language::SimplifiedChinese => 4,
+            Language::TraditionalChinese => 5,
+        })
+    }
+
     fn write_tag(&mut self, tag: &Tag) -> Result<()> {
         match tag {
             &Tag::ShowFrame => try!(self.write_tag_header(TagCode::ShowFrame, 0)),
@@ -536,13 +547,16 @@ impl<W: Write> Writer<W> {
             },
 
             &Tag::DefineFontInfo(ref font_info) => {
-                let use_wide_codes = self.version >= 6;
+                let use_wide_codes = self.version >= 6 || font_info.version >= 2;
 
                 let len = font_info.name.len() +
                     if use_wide_codes { 2 } else { 1 } * font_info.code_table.len() +
+                    if font_info.version >= 2 { 1 } else { 0 } +
                     4;
 
-                self.write_tag_header(TagCode::DefineFontInfo, len as u32)?;
+                let tag_id = if font_info.version == 1 { TagCode::DefineFontInfo }
+                    else { TagCode::DefineFontInfo2 };
+                self.write_tag_header(tag_id, len as u32)?;
                 self.write_u16(font_info.id)?;
 
                 // SWF19 has ANSI and Shift-JIS backwards?
@@ -556,6 +570,10 @@ impl<W: Write> Writer<W> {
                     if font_info.is_bold { 0b10 } else { 0 } |
                     if use_wide_codes { 0b1 } else { 0 }
                 )?;
+                // TODO(Herschel): Assert language is unknown for v1.
+                if font_info.version >= 2 {
+                    self.write_language(font_info.language)?;
+                }
                 for &code in &font_info.code_table {
                     if use_wide_codes {
                         self.write_u16(code)?;

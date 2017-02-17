@@ -85,6 +85,16 @@ impl Matrix {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Language {
+    Unknown,
+    Latin,
+    Japanese,
+    Korean,
+    SimplifiedChinese,
+    TraditionalChinese,
+}
+
 #[derive(Debug,PartialEq)]
 pub struct FileAttributes {
     pub use_direct_blit: bool,
@@ -405,13 +415,13 @@ pub struct Sprite {
     pub tags: Vec<Tag>,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ShapeStyles {
     pub fill_styles: Vec<FillStyle>,
     pub line_styles: Vec<LineStyle>,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ShapeRecord {
     // TODO: Twips
     StyleChange(StyleChangeData),
@@ -424,7 +434,7 @@ pub enum ShapeRecord {
     },
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct StyleChangeData {
     pub move_to: Option<(f32, f32)>,
     pub fill_style_0: Option<u32>,
@@ -609,7 +619,7 @@ pub enum ButtonActionCondition {
     KeyPress
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Font {
     pub id: CharacterId,
     pub glyphs: Vec<Glyph>,
@@ -618,12 +628,14 @@ pub struct Font {
 #[derive(Clone, Debug, PartialEq)]
 pub struct FontInfo {
     pub id: CharacterId,
+    pub version: u8,
     pub name: String,
     pub is_small_text: bool,
     pub is_shift_jis: bool,
     pub is_ansi: bool,
     pub is_bold: bool,
     pub is_italic: bool,
+    pub language: Language,
     pub code_table: Vec<u16>,
 }
 
