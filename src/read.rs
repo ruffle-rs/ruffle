@@ -1777,7 +1777,7 @@ impl<R: Read> Reader<R> {
         let max_length = if flags & 0b10 != 0 {
             Some(self.read_u16()?)
         } else { None };
-        let layout = if flags & 0b100000 != 0 {
+        let layout = if flags2 & 0b100000 != 0 {
             Some(TextLayout {
                 align: match self.read_u8()? {
                     0 => TextAlign::Left,
