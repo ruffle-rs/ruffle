@@ -314,8 +314,10 @@ pub enum Tag {
     DefineEditText(Box<EditText>),
     DefineFont(Box<FontV1>),
     DefineFont2(Box<Font>),
+    DefineFont4(Font4),
     DefineFontAlignZones { id: CharacterId, thickness: FontThickness, zones: Vec<FontAlignZone> },
     DefineFontInfo(Box<FontInfo>),
+    DefineFontName { id: CharacterId, name: String, copyright_info: String },
     DefineScalingGrid { id: CharacterId, splitter_rect: Rectangle },
     DefineShape(Shape),
     DefineSound(Box<Sound>),
@@ -642,6 +644,15 @@ pub struct Font {
     pub is_ansi: bool,
     pub is_bold: bool,
     pub is_italic: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Font4 {
+    pub id: CharacterId,
+    pub is_italic: bool,
+    pub is_bold: bool,
+    pub name: String,
+    pub data: Option<Vec<u8>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

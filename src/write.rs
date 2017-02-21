@@ -563,6 +563,7 @@ impl<W: Write> Writer<W> {
             },
 
             &Tag::DefineFont2(ref font) => self.write_define_font_2(font)?,
+            &Tag::DefineFont4(ref font) => self.write_define_font_4(font)?,
 
             &Tag::DefineFontAlignZones { id, thickness, ref zones } => {
                 self.write_tag_header(TagCode::DefineFontAlignZones, 3 + 10 * zones.len() as u32)?;
@@ -617,6 +618,14 @@ impl<W: Write> Writer<W> {
                         self.write_u8(code as u8)?;
                     }
                 }
+            },
+
+            &Tag::DefineFontName { id, ref name, ref copyright_info } => {
+                let len = name.len() + copyright_info.len() + 4;
+                self.write_tag_header(TagCode::DefineFontName, len as u32)?;
+                self.write_character_id(id)?;
+                self.write_c_string(name)?;
+                self.write_c_string(copyright_info)?;
             },
 
             &Tag::DefineScalingGrid { id, ref splitter_rect } => {
@@ -1749,6 +1758,25 @@ impl<W: Write> Writer<W> {
         let tag_code = if font.version == 2 { TagCode::DefineFont2 } else { TagCode::DefineFont3 };
         self.write_tag_header(tag_code, buf.len() as u32)?;
         self.output.write_all(&buf)?;
+        Ok(())
+    }
+
+    fn write_define_font_4(&mut self, font: &Font4) -> Result<()> {
+        let mut tag_len = 4 + font.name.len();
+        if let Some(ref data) = font.data {
+            tag_len += data.len()
+        };
+        self.write_tag_header(TagCode::DefineFont4, tag_len as u32)?;
+        self.write_character_id(font.id)?;
+        self.write_u8(
+            if font.data.is_some() { 0b100 } else { 0 } |
+            if font.is_italic { 0b10 } else { 0 } |
+            if font.is_bold { 0b1 } else { 0 }
+        )?;
+        self.write_c_string(&font.name)?;
+        if let Some(ref data) = font.data {
+            self.output.write_all(data)?;
+        }
         Ok(())
     }
 

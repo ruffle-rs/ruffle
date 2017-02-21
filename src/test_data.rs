@@ -479,6 +479,18 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
     ),
 
     (
+        10,
+        Tag::DefineFont4(Font4 {
+            id: 1,
+            name: "Dummy".to_string(),
+            is_italic: false,
+            is_bold: false,
+            data: None,
+        }),
+        read_tag_bytes_from_file("tests/swfs/DefineFont4-CC.swf", TagCode::DefineFont4)
+    ),
+
+    (
         1,
         Tag::DefineFontInfo(Box::new(FontInfo {
             id: 1,
@@ -510,6 +522,16 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
             code_table: vec![45, 95],
         })),
         read_tag_bytes_from_file("tests/swfs/DefineText2-MX.swf", TagCode::DefineFontInfo2)
+    ),
+
+    (
+        9,
+        Tag::DefineFontName {
+            id: 2,
+            name: "Dummy".to_string(),
+            copyright_info: "Dummy font for swf-rs tests".to_string(),
+        },
+        read_tag_bytes_from_file("tests/swfs/DefineFont4-CC.swf", TagCode::DefineFontName)
     ),
 
     (

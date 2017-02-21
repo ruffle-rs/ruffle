@@ -495,9 +495,11 @@ impl<R: Read> Reader<R> {
             Some(TagCode::DefineFont) => tag_reader.read_define_font()?,
             Some(TagCode::DefineFont2) => tag_reader.read_define_font_2(2)?,
             Some(TagCode::DefineFont3) => tag_reader.read_define_font_2(3)?,
+            Some(TagCode::DefineFont4) => tag_reader.read_define_font_4()?,
             Some(TagCode::DefineFontAlignZones) => tag_reader.read_define_font_align_zones()?,
             Some(TagCode::DefineFontInfo) => tag_reader.read_define_font_info(1)?,
             Some(TagCode::DefineFontInfo2) => tag_reader.read_define_font_info(2)?,
+            Some(TagCode::DefineFontName) => tag_reader.read_define_font_name()?,
             Some(TagCode::DefineShape) => tag_reader.read_define_shape(1)?,
             Some(TagCode::DefineShape2) => tag_reader.read_define_shape(2)?,
             Some(TagCode::DefineShape3) => tag_reader.read_define_shape(3)?,
@@ -1064,6 +1066,25 @@ impl<R: Read> Reader<R> {
         )))
     }
 
+    fn read_define_font_4(&mut self) -> Result<Tag> {
+        let id = self.read_character_id()?;
+        let flags = self.read_u8()?;
+        let name = self.read_c_string()?;
+        let has_font_data = flags & 0b100 != 0;
+        let data = if has_font_data {
+            let mut data = vec![];
+            self.input.read_to_end(&mut data)?;
+            Some(data)
+        } else { None };
+        Ok(Tag::DefineFont4(Font4 {
+            id: id,
+            is_italic: flags & 0b10 != 0,
+            is_bold: flags & 0b1 != 0,
+            name: name,
+            data: data,
+        }))
+    }
+
     fn read_kerning_record(&mut self, has_wide_codes: bool) -> Result<KerningRecord> {
         Ok(KerningRecord {
             left_code: if has_wide_codes { self.read_u16()? } else { self.read_u8()? as u16 },
@@ -1143,6 +1164,14 @@ impl<R: Read> Reader<R> {
             language: language,
             code_table: code_table,
         })))
+    }
+
+    fn read_define_font_name(&mut self) -> Result<Tag> {
+        Ok(Tag::DefineFontName {
+            id: self.read_character_id()?,
+            name: self.read_c_string()?,
+            copyright_info: self.read_c_string()?,
+        })
     }
 
     fn read_define_shape(&mut self, version: u8) -> Result<Tag> {
