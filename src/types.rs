@@ -302,6 +302,7 @@ pub enum Tag {
     ShowFrame,
 
     Protect(Option<String>),
+    CsmTextSettings(CsmTextSettings),
     DefineBinaryData { id: CharacterId, data: Vec<u8> },
     DefineBits { id: CharacterId, jpeg_data: Vec<u8> },
     DefineBitsJpeg2 { id: CharacterId, jpeg_data: Vec<u8> },
@@ -313,6 +314,7 @@ pub enum Tag {
     DefineEditText(Box<EditText>),
     DefineFont(Box<FontV1>),
     DefineFont2(Box<Font>),
+    DefineFontAlignZones { id: CharacterId, thickness: FontThickness, zones: Vec<FontAlignZone> },
     DefineFontInfo(Box<FontInfo>),
     DefineScalingGrid { id: CharacterId, splitter_rect: Rectangle },
     DefineShape(Shape),
@@ -742,6 +744,38 @@ pub enum TextAlign {
     Center,
     Right,
     Justify,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct FontAlignZone {
+    // TODO(Herschel): Read these as f16s.
+    pub left: i16,
+    pub width: i16,
+    pub bottom: i16,
+    pub height: i16,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FontThickness {
+    Thin,
+    Medium,
+    Thick
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct CsmTextSettings {
+    pub id: CharacterId,
+    pub use_advanced_rendering: bool,
+    pub grid_fit: TextGridFit,
+    pub thickness: f32, // TODO(Herschel): 0.0 is default. Should be Option?
+    pub sharpness: f32,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TextGridFit {
+    None,
+    Pixel,
+    SubPixel,
 }
 
 #[derive(Clone, Debug, PartialEq)]

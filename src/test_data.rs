@@ -21,6 +21,18 @@ pub type Avm1TestData = TestData<Action>;
 
 pub fn tag_tests() -> Vec<TagTestData> { vec![
     (
+        8,
+        Tag::CsmTextSettings(CsmTextSettings {
+            id: 2,
+            use_advanced_rendering: true,
+            grid_fit: TextGridFit::SubPixel,
+            thickness: 1.0,
+            sharpness: 2.0,
+        }),
+        read_tag_bytes_from_file("tests/swfs/DefineFont3-CS55.swf", TagCode::CsmTextSettings)
+    ),
+
+    (
         9, // Minimum version not listed in SWF19.
         Tag::DefineBinaryData {
             id: 1,
@@ -375,7 +387,96 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
         })),
         read_tag_bytes_from_file("tests/swfs/DefineFont2-CS55.swf", TagCode::DefineFont2)
     ),
+
+    
+    (
+        8,
+        Tag::DefineFont2(Box::new(Font {
+            version: 3,
+            id: 1,
+            name: "Dummy\u{0}".to_string(), // TODO(Herschel): Extra null byte?
+            is_small_text: false,
+            is_ansi: false,
+            is_shift_jis: false,
+            is_italic: false,
+            is_bold: false,
+            language: Language::Latin,
+            layout: Some(FontLayout {
+                ascent: 17160,
+                descent: 4180,
+                leading: 860,
+                kerning: vec![
+                    KerningRecord { left_code: 65, right_code: 65, adjustment: -5000 },
+                    KerningRecord { left_code: 66, right_code: 65, adjustment: -25536 },
+                    KerningRecord { left_code: 65, right_code: 66, adjustment: -15000 },
+                    KerningRecord { left_code: 66, right_code: 66, adjustment: -5000 },
+                ],
+            }),
+            glyphs: vec![
+                Glyph {
+                    shape_records: vec![
+                        ShapeRecord::StyleChange(StyleChangeData {
+                            move_to: Some((205.5, -527.5)),
+                            fill_style_0: Some(1),
+                            fill_style_1: None,
+                            line_style: None,
+                            new_styles: None }
+                        ),
+                        ShapeRecord::StraightEdge { delta_x: 371.0, delta_y: 0.0 },
+                        ShapeRecord::StraightEdge { delta_x: 0.0, delta_y: 65.0 },
+                        ShapeRecord::StraightEdge { delta_x: -371.0, delta_y: 0.0 },
+                        ShapeRecord::StraightEdge { delta_x: 0.0, delta_y: -65.0 }
+                    ],
+                    code: 65,
+                    advance: Some(15400),
+                    bounds: Some(Rectangle { x_min: 0.0, x_max: 0.0, y_min: 0.0, y_max: 0.0 })
+                },
+                Glyph {
+                    shape_records: vec![
+                        ShapeRecord::StyleChange(StyleChangeData {
+                            move_to: Some((249.0, -694.0)),
+                            fill_style_0: Some(1),
+                            fill_style_1: None,
+                            line_style: None,
+                            new_styles: None
+                        }),
+                        ShapeRecord::StraightEdge { delta_x: 135.5, delta_y: 0.0 },
+                        ShapeRecord::StraightEdge { delta_x: 0.0, delta_y: 660.5 },
+                        ShapeRecord::StraightEdge { delta_x: -135.5, delta_y: 0.0 },
+                        ShapeRecord::StraightEdge { delta_x: 0.0, delta_y: -660.5 }
+                    ],
+                    code: 66,
+                    advance: Some(12200),
+                    bounds: Some(Rectangle { x_min: 0.0, x_max: 0.0, y_min: 0.0, y_max: 0.0 })
+                }
+            ], 
+        })),
+        read_tag_bytes_from_file("tests/swfs/DefineFont3-CS55.swf", TagCode::DefineFont3)
+    ),
     */
+
+    (
+        8,
+        Tag::DefineFontAlignZones {
+            id: 1,
+            thickness: FontThickness::Thin,
+            zones: vec![
+                FontAlignZone {
+                    left: 13098,
+                    width: 0,
+                    bottom: 0,
+                    height: 17102,
+                },
+                FontAlignZone {
+                    left: 15333,
+                    width: 0,
+                    bottom: 0,
+                    height: 17102,
+                }
+            ],
+        },
+        read_tag_bytes_from_file("tests/swfs/DefineFont3-CS55.swf", TagCode::DefineFontAlignZones)
+    ),
 
     (
         1,

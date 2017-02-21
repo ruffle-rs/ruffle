@@ -416,6 +416,7 @@ impl<R: Read> Reader<R> {
         let tag = match TagCode::from_u16(tag_code) {
             Some(TagCode::End) => return Ok(None),
             Some(TagCode::ShowFrame) => Tag::ShowFrame,
+            Some(TagCode::CsmTextSettings) => tag_reader.read_csm_text_settings()?,
             Some(TagCode::DefineBinaryData) => {
                 let id = tag_reader.read_u16()?;
                 tag_reader.read_u32()?; // Reserved
@@ -494,6 +495,7 @@ impl<R: Read> Reader<R> {
             Some(TagCode::DefineFont) => tag_reader.read_define_font()?,
             Some(TagCode::DefineFont2) => tag_reader.read_define_font_2(2)?,
             Some(TagCode::DefineFont3) => tag_reader.read_define_font_2(3)?,
+            Some(TagCode::DefineFontAlignZones) => tag_reader.read_define_font_align_zones()?,
             Some(TagCode::DefineFontInfo) => tag_reader.read_define_font_info(1)?,
             Some(TagCode::DefineFontInfo2) => tag_reader.read_define_font_info(2)?,
             Some(TagCode::DefineShape) => tag_reader.read_define_shape(1)?,
@@ -890,6 +892,26 @@ impl<R: Read> Reader<R> {
         )
     }
 
+    fn read_csm_text_settings(&mut self) -> Result<Tag> {
+        let id = self.read_character_id()?;
+        let flags = self.read_u8()?;
+        let thickness = self.read_f32()?;
+        let sharpness = self.read_f32()?;
+        self.read_u8()?;    // Reserved (0).
+        Ok(Tag::CsmTextSettings(CsmTextSettings {
+            id: id,
+            use_advanced_rendering: flags & 0b01000000 != 0,
+            grid_fit: match flags & 0b11_000 {
+                0b00_000 => TextGridFit::None,
+                0b01_000 => TextGridFit::Pixel,
+                0b10_000 => TextGridFit::SubPixel,
+                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid text grid fitting")),
+            },
+            thickness: thickness,
+            sharpness: sharpness,
+        }))
+    }
+
     fn read_define_scene_and_frame_label_data(&mut self) -> Result<Tag> {
         let num_scenes = self.read_encoded_u32()? as usize;
         let mut scenes = Vec::with_capacity(num_scenes);
@@ -1048,6 +1070,37 @@ impl<R: Read> Reader<R> {
             right_code: if has_wide_codes { self.read_u16()? } else { self.read_u8()? as u16 },
             adjustment: self.read_i16()?, // TODO(Herschel): Twips
         })
+    }
+
+    fn read_define_font_align_zones(&mut self) -> Result<Tag> {
+        let id = self.read_character_id()?;
+        let thickness = match self.read_u8()? {
+            0b00_000000 => FontThickness::Thin,
+            0b01_000000 => FontThickness::Medium,
+            0b10_000000 => FontThickness::Thick,
+            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid font thickness type.")),
+        };
+        let mut zones = vec![];
+        while let Ok(zone) = self.read_font_align_zone() {
+            zones.push(zone);
+        }
+        Ok(Tag::DefineFontAlignZones {
+            id: id,
+            thickness: thickness,
+            zones: zones,
+        })
+    }
+
+    fn read_font_align_zone(&mut self) -> Result<FontAlignZone> {
+        self.read_u8()?; // Always 2.
+        let zone = FontAlignZone {
+            left: self.read_i16()?,
+            width: self.read_i16()?,
+            bottom: self.read_i16()?,
+            height: self.read_i16()?,
+        };
+        self.read_u8()?; // Always 0b000000_11 (2 dimensions).
+        Ok(zone)
     }
 
     fn read_define_font_info(&mut self, version: u8) -> Result<Tag> {

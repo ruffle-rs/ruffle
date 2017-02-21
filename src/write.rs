@@ -421,6 +421,22 @@ impl<W: Write> Writer<W> {
                 }
             },
 
+            &Tag::CsmTextSettings(ref settings) => {
+                self.write_tag_header(TagCode::CsmTextSettings, 12)?;
+                self.write_character_id(settings.id)?;
+                self.write_u8(
+                    if settings.use_advanced_rendering { 0b01_000000 } else { 0 } |
+                    match settings.grid_fit {
+                        TextGridFit::None => 0,
+                        TextGridFit::Pixel => 0b01_000,
+                        TextGridFit::SubPixel => 0b10_000,
+                    }
+                )?;
+                self.write_f32(settings.thickness)?;
+                self.write_f32(settings.sharpness)?;
+                self.write_u8(0)?; // Reserved (0).
+            },
+
             &Tag::DefineBinaryData { id, ref data } => {
                 self.write_tag_header(TagCode::DefineBinaryData, data.len() as u32 + 6)?;
                 self.write_u16(id)?;
@@ -547,6 +563,24 @@ impl<W: Write> Writer<W> {
             },
 
             &Tag::DefineFont2(ref font) => self.write_define_font_2(font)?,
+
+            &Tag::DefineFontAlignZones { id, thickness, ref zones } => {
+                self.write_tag_header(TagCode::DefineFontAlignZones, 3 + 10 * zones.len() as u32)?;
+                self.write_character_id(id)?;
+                self.write_u8(match thickness {
+                    FontThickness::Thin => 0b00_000000,
+                    FontThickness::Medium => 0b01_000000,
+                    FontThickness::Thick => 0b10_000000,
+                })?;
+                for zone in zones {
+                    self.write_u8(2)?;  // Always 2 dimensions.
+                    self.write_i16(zone.left)?;
+                    self.write_i16(zone.width)?;
+                    self.write_i16(zone.bottom)?;
+                    self.write_i16(zone.height)?;
+                    self.write_u8(0b000000_11)?; // Always 2 dimensions.
+                }
+            },
 
             &Tag::DefineFontInfo(ref font_info) => {
                 let use_wide_codes = self.version >= 6 || font_info.version >= 2;
