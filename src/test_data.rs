@@ -264,7 +264,7 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
 
     (
         1,
-        Tag::DefineFont(Box::new(Font {
+        Tag::DefineFont(Box::new(FontV1 {
             id: 1,
             glyphs: vec![
                 vec![
@@ -297,6 +297,85 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
         })),
         read_tag_bytes_from_file("tests/swfs/DefineFont-MX.swf", TagCode::DefineFont)
     ),
+
+    (
+        3,
+        Tag::DefineFont2(Box::new(Font {
+            version: 2,
+            id: 1,
+            name: "Verdana".to_string(),
+            is_small_text: false,
+            is_ansi: true,
+            is_shift_jis: false,
+            is_italic: false,
+            is_bold: false,
+            language: Language::Unknown,
+            layout: None,
+            glyphs: vec![],
+        })),
+        read_tag_bytes_from_file("tests/swfs/DefineEditText-MX.swf", TagCode::DefineFont2)
+    ),
+
+    /* TODO(Herschel): Flash writes out zero rectangles with 1-bit,
+     * Causing this test to fail.
+    (
+        6,
+        Tag::DefineFont2(Box::new(Font2 {
+            version: 2,
+            id: 1,
+            name: "Verdana\u{0}".to_string(),
+            is_small_text: false,
+            is_ansi: false,
+            is_shift_jis: false,
+            is_italic: false,
+            is_bold: false,
+            language: Language::Latin,
+            layout: Some(Font2Layout {
+                ascent: 1030,
+                descent: 215,
+                leading: 221,
+                kerning: vec![],
+            }),
+            glyphs: vec![
+                Glyph2 {
+                    code: 33,
+                    advance: Some(403),
+                    bounds: Some(Rectangle {
+                        x_min: 0.0,
+                        x_max: 0.0,
+                        y_min: 0.0,
+                        y_max: 0.0,
+                    }),
+                    shape_records: vec![
+                        ShapeRecord::StyleChange(StyleChangeData {
+                            move_to: Some((12.9, -37.2)),
+                            fill_style_0: Some(1),
+                            fill_style_1: None,
+                            line_style: None,
+                            new_styles: None
+                        }),
+                        ShapeRecord::StraightEdge { delta_x: -0.65, delta_y: 26.95 },
+                        ShapeRecord::StraightEdge { delta_x: -4.25, delta_y: 0.0 },
+                        ShapeRecord::StraightEdge { delta_x: -0.7, delta_y: -26.95 },
+                        ShapeRecord::StraightEdge { delta_x: 5.6, delta_y: 0.0 },
+                        ShapeRecord::StyleChange(StyleChangeData {
+                            move_to: Some((12.65, 0.0)),
+                            fill_style_0: None,
+                            fill_style_1: None,
+                            line_style: None,
+                            new_styles: None
+                        }),
+                        ShapeRecord::StraightEdge { delta_x: -5.1, delta_y: 0.0 },
+                        ShapeRecord::StraightEdge { delta_x: 0.0, delta_y: -5.25 },
+                        ShapeRecord::StraightEdge { delta_x: 5.1, delta_y: 0.0 },
+                        ShapeRecord::StraightEdge { delta_x: 0.0, delta_y: 5.25 }
+                    ],
+                }
+            ], 
+        })),
+        read_tag_bytes_from_file("tests/swfs/DefineFont2-CS55.swf", TagCode::DefineFont2)
+    ),
+    */
 
     (
         1,

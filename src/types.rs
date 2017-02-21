@@ -311,7 +311,8 @@ pub enum Tag {
     DefineButtonColorTransform { id: CharacterId, color_transforms: Vec<ColorTransform> },
     DefineButtonSound(Box<ButtonSounds>),
     DefineEditText(Box<EditText>),
-    DefineFont(Box<Font>),
+    DefineFont(Box<FontV1>),
+    DefineFont2(Box<Font>),
     DefineFontInfo(Box<FontInfo>),
     DefineScalingGrid { id: CharacterId, splitter_rect: Rectangle },
     DefineShape(Shape),
@@ -620,9 +621,48 @@ pub enum ButtonActionCondition {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Font {
+pub struct FontV1 {
     pub id: CharacterId,
+    pub glyphs: Vec<Vec<ShapeRecord>>,
+}
+
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Font {
+    pub version: u8,
+    pub id: CharacterId,
+    pub name: String,
+    pub language: Language,
+    pub layout: Option<FontLayout>,
     pub glyphs: Vec<Glyph>,
+    pub is_small_text: bool,
+    pub is_shift_jis: bool, // TODO(Herschel): Use enum for Shift-JIS/ANSI/UCS-2
+    pub is_ansi: bool,
+    pub is_bold: bool,
+    pub is_italic: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Glyph {
+    pub shape_records: Vec<ShapeRecord>,
+    pub code: u16,
+    pub advance: Option<i16>,
+    pub bounds: Option<Rectangle>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FontLayout {
+    pub ascent: u16,
+    pub descent: u16,
+    pub leading: i16,
+    pub kerning: Vec<KerningRecord>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct KerningRecord {
+    pub left_code: u16,
+    pub right_code: u16,
+    pub adjustment: i16,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -638,8 +678,6 @@ pub struct FontInfo {
     pub language: Language,
     pub code_table: Vec<u16>,
 }
-
-type Glyph = Vec<ShapeRecord>;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Text {

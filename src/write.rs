@@ -546,6 +546,8 @@ impl<W: Write> Writer<W> {
                 self.output.write_all(&buf)?;
             },
 
+            &Tag::DefineFont2(ref font) => self.write_define_font_2(font)?,
+
             &Tag::DefineFontInfo(ref font_info) => {
                 let use_wide_codes = self.version >= 6 || font_info.version >= 2;
 
@@ -1612,6 +1614,119 @@ impl<W: Write> Writer<W> {
                 self.write_u16((point.right_volume * 32768f32) as u16)?;
             }
         }
+        Ok(())
+    }
+
+    fn write_define_font_2(&mut self, font: &Font) -> Result<()> {
+        let mut buf = Vec::new();
+        {
+            let num_glyphs = font.glyphs.len();
+
+            // We must write the glyph shapes into a temporary buffer
+            // so that we can calculate their offsets.
+            let mut offsets = vec![];
+            let mut has_wide_offsets = false;
+            let has_wide_codes = !font.is_ansi;
+            let mut shape_buf = Vec::new();
+            {
+                let mut shape_writer = Writer::new(&mut shape_buf, self.version);
+
+                // ShapeTable
+                shape_writer.num_fill_bits = 1;
+                shape_writer.num_line_bits = 0;
+                for glyph in &font.glyphs {
+                    // Store offset for later.
+                    let offset = num_glyphs * 4 + shape_writer.output.len();
+                    offsets.push(offset);
+                    if offset > 0xFFFF {
+                        has_wide_offsets = true;
+                    }
+
+                    shape_writer.write_ubits(4, 1)?;
+                    shape_writer.write_ubits(4, 0)?;
+
+                    for shape_record in &glyph.shape_records {
+                        shape_writer.write_shape_record(shape_record, 1)?;
+                    }
+                    // End shape record.
+                    shape_writer.write_ubits(6, 0)?;
+                    shape_writer.flush_bits()?;
+                }
+            }
+
+            let mut writer = Writer::new(&mut buf, self.version);
+            writer.write_character_id(font.id)?;
+            writer.write_u8(
+                if font.layout.is_some() { 0b10000000 } else { 0 } |
+                if font.is_shift_jis { 0b1000000 } else { 0 } |
+                if font.is_small_text { 0b100000 } else { 0 } |
+                if font.is_ansi { 0b10000 } else { 0 } |
+                if has_wide_offsets { 0b1000 } else { 0 } |
+                if has_wide_codes { 0b100 } else { 0 } |
+                if font.is_italic { 0b10 } else { 0 } |
+                if font.is_bold { 0b1 } else { 0 }
+            )?;
+            writer.write_language(font.language)?;
+            writer.write_u8(font.name.len() as u8)?;
+            writer.output.write_all(font.name.as_bytes())?;
+            writer.write_u16(num_glyphs as u16)?;
+
+            // OffsetTable
+            for offset in offsets {
+                if has_wide_offsets { writer.write_u32(offset as u32)?; } else { writer.write_u16(offset as u16)?; }
+            }
+            
+            // CodeTableOffset
+            let code_table_offset = (num_glyphs + 1) * if has_wide_offsets { 4 } else { 2 } + shape_buf.len();
+            if has_wide_offsets { writer.write_u32(code_table_offset as u32)?; } else { writer.write_u16(code_table_offset as u16)?; }
+             
+            writer.output.write_all(&shape_buf)?;
+
+            // CodeTable
+            for glyph in &font.glyphs {
+                if has_wide_codes { writer.write_u16(glyph.code)?; } else { writer.write_u8(glyph.code as u8)?; }
+            }
+
+            if let Some(ref layout) = font.layout {
+                writer.write_u16(layout.ascent)?;
+                writer.write_u16(layout.descent)?;
+                writer.write_i16(layout.leading)?;
+                for glyph in &font.glyphs {
+                    writer.write_i16(
+                        glyph.advance.ok_or(
+                            Error::new(ErrorKind::InvalidData, "glyph.advance cannot be None")
+                        )?
+                    )?;
+                }
+                for glyph in &font.glyphs {
+                    writer.write_rectangle(
+                        glyph.bounds.as_ref().ok_or(
+                            Error::new(ErrorKind::InvalidData, "glyph.bounds cannot be None")
+                        )?
+                    )?;
+                }
+                writer.write_u16(layout.kerning.len() as u16)?;
+                for kerning_record in &layout.kerning {
+                    writer.write_kerning_record(kerning_record, has_wide_codes)?;
+                }
+            }
+        }
+
+        let tag_code = if font.version == 2 { TagCode::DefineFont2 } else { TagCode::DefineFont3 };
+        self.write_tag_header(tag_code, buf.len() as u32)?;
+        self.output.write_all(&buf)?;
+        Ok(())
+    }
+
+    fn write_kerning_record(&mut self, kerning: &KerningRecord, has_wide_codes: bool) -> Result<()> {
+        if has_wide_codes {
+            self.write_u16(kerning.left_code)?;
+            self.write_u16(kerning.right_code)?;
+        } else {
+            self.write_u8(kerning.left_code as u8)?;
+            self.write_u8(kerning.right_code as u8)?;
+        }
+        self.write_i16(kerning.adjustment)?;
         Ok(())
     }
 

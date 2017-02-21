@@ -492,6 +492,8 @@ impl<R: Read> Reader<R> {
             },
             Some(TagCode::DefineEditText) => tag_reader.read_define_edit_text()?,
             Some(TagCode::DefineFont) => tag_reader.read_define_font()?,
+            Some(TagCode::DefineFont2) => tag_reader.read_define_font_2(2)?,
+            Some(TagCode::DefineFont3) => tag_reader.read_define_font_2(3)?,
             Some(TagCode::DefineFontInfo) => tag_reader.read_define_font_info(1)?,
             Some(TagCode::DefineFontInfo2) => tag_reader.read_define_font_info(2)?,
             Some(TagCode::DefineShape) => tag_reader.read_define_shape(1)?,
@@ -936,11 +938,116 @@ impl<R: Read> Reader<R> {
         }
 
         Ok(Tag::DefineFont(Box::new(
-            Font {
+            FontV1 {
                 id: id,
                 glyphs: glyphs,
             }
         )))
+    }
+
+    fn read_define_font_2(&mut self, version: u8) -> Result<Tag> {
+        let id = self.read_character_id()?;
+
+        let flags = self.read_u8()?;
+        let has_layout = flags & 0b10000000 != 0;
+        let is_shift_jis = flags & 0b1000000 != 0;
+        let is_small_text = flags & 0b100000 != 0;
+        let is_ansi = flags & 0b10000 != 0;
+        let has_wide_offsets = flags & 0b1000 != 0;
+        let has_wide_codes = flags & 0b100 != 0;
+        let is_italic = flags & 0b10 != 0;
+        let is_bold = flags & 0b1 != 0;
+
+        let language = self.read_language()?;
+        let name_len = self.read_u8()?;
+        let mut name = String::with_capacity(name_len as usize);
+        self.input.by_ref().take(name_len as u64).read_to_string(&mut name)?;
+
+        let num_glyphs = self.read_u16()? as usize;
+        let mut glyphs = Vec::with_capacity(num_glyphs);
+        glyphs.resize(num_glyphs, Glyph {
+            shape_records: vec![],
+            code: 0,
+            advance: None,
+            bounds: None,
+        });
+
+        // OffsetTable
+        // We are throwing these away.
+        for _ in &mut glyphs {
+            if has_wide_offsets { self.read_u32()? } else { self.read_u16()? as u32 };
+        }
+
+        // CodeTableOffset
+        if has_wide_offsets { self.read_u32()?; } else { self.read_u16()?; }
+
+        // ShapeTable
+        for glyph in &mut glyphs {
+            self.num_fill_bits = self.read_ubits(4)? as u8;
+            self.num_line_bits = self.read_ubits(4)? as u8;
+            while let Some(record) = self.read_shape_record(1)? {
+                glyph.shape_records.push(record);
+            }
+            self.byte_align();
+        }
+
+        // CodeTable
+        for glyph in &mut glyphs {
+            glyph.code = if has_wide_codes { self.read_u16()? } else { self.read_u8()? as u16 };
+        }
+
+        let layout = if has_layout {
+            let ascent = self.read_u16()?;
+            let descent = self.read_u16()?;
+            let leading = self.read_i16()?;
+
+            for glyph in &mut glyphs {
+                glyph.advance = Some(self.read_i16()?);
+            }
+
+            for glyph in &mut glyphs {
+                glyph.bounds = Some(self.read_rectangle()?);
+            }
+
+            let num_kerning_records = self.read_u16()? as usize;
+            let mut kerning_records = Vec::with_capacity(num_kerning_records);
+            for _ in 0..num_kerning_records {
+                kerning_records.push(self.read_kerning_record(has_wide_codes)?);
+            }
+
+            Some(FontLayout {
+                ascent: ascent,
+                descent: descent,
+                leading: leading,
+                kerning: kerning_records,
+            })
+        } else {
+            None
+        };
+
+        Ok(Tag::DefineFont2(Box::new(
+            Font {
+                version: version,
+                id: id,
+                name: name,
+                language: language,
+                layout: layout,
+                glyphs: glyphs,
+                is_small_text: is_small_text,
+                is_shift_jis: is_shift_jis,
+                is_ansi: is_ansi,
+                is_bold: is_bold,
+                is_italic: is_italic,
+            }
+        )))
+    }
+
+    fn read_kerning_record(&mut self, has_wide_codes: bool) -> Result<KerningRecord> {
+        Ok(KerningRecord {
+            left_code: if has_wide_codes { self.read_u16()? } else { self.read_u8()? as u16 },
+            right_code: if has_wide_codes { self.read_u16()? } else { self.read_u8()? as u16 },
+            adjustment: self.read_i16()?, // TODO(Herschel): Twips
+        })
     }
 
     fn read_define_font_info(&mut self, version: u8) -> Result<Tag> {
