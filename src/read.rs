@@ -500,6 +500,8 @@ impl<R: Read> Reader<R> {
             Some(TagCode::DefineFontInfo) => tag_reader.read_define_font_info(1)?,
             Some(TagCode::DefineFontInfo2) => tag_reader.read_define_font_info(2)?,
             Some(TagCode::DefineFontName) => tag_reader.read_define_font_name()?,
+            Some(TagCode::DefineMorphShape) => tag_reader.read_define_morph_shape(1)?,
+            Some(TagCode::DefineMorphShape2) => tag_reader.read_define_morph_shape(2)?,
             Some(TagCode::DefineShape) => tag_reader.read_define_shape(1)?,
             Some(TagCode::DefineShape2) => tag_reader.read_define_shape(2)?,
             Some(TagCode::DefineShape3) => tag_reader.read_define_shape(3)?,
@@ -1172,6 +1174,265 @@ impl<R: Read> Reader<R> {
             name: self.read_c_string()?,
             copyright_info: self.read_c_string()?,
         })
+    }
+
+    fn read_define_morph_shape(&mut self, shape_version: u8) -> Result<Tag> {
+        let id = self.read_character_id()?;
+        let start_shape_bounds = self.read_rectangle()?;
+        let end_shape_bounds = self.read_rectangle()?;
+        let (start_edge_bounds, end_edge_bounds,
+            has_non_scaling_strokes, has_scaling_strokes) =
+            if shape_version >= 2 {
+                let start_edge_bounds = self.read_rectangle()?;
+                let end_edge_bounds = self.read_rectangle()?;
+                let flags = self.read_u8()?;
+                (start_edge_bounds, end_edge_bounds, flags & 0b10 != 0, flags & 0b1 != 0) 
+            } else {
+                (start_shape_bounds.clone(), end_shape_bounds.clone(), true, false)
+            };
+
+        self.read_u32()?; // Offset to EndEdges.
+
+        let num_fill_styles = match self.read_u8()? {
+            0xff => self.read_u16()? as usize,
+            n => n as usize,
+        };
+        let mut start_fill_styles = Vec::with_capacity(num_fill_styles);
+        let mut end_fill_styles = Vec::with_capacity(num_fill_styles);
+        for _ in 0..num_fill_styles {
+            let (start, end) = self.read_morph_fill_style(shape_version)?;
+            start_fill_styles.push(start);
+            end_fill_styles.push(end);
+        }
+
+        let num_line_styles = match self.read_u8()? {
+            0xff => self.read_u16()? as usize,
+            n => n as usize,
+        };
+        let mut start_line_styles = Vec::with_capacity(num_line_styles);
+        let mut end_line_styles = Vec::with_capacity(num_line_styles);
+        for _ in 0..num_line_styles {
+            let (start, end) = self.read_morph_line_style(shape_version)?;
+            start_line_styles.push(start);
+            end_line_styles.push(end);
+        }
+
+        // TODO(Herschel): Add read_shape
+        self.num_fill_bits = self.read_ubits(4)? as u8;
+        self.num_line_bits = self.read_ubits(4)? as u8;
+        let mut start_shape = Vec::new();
+        while let Some(record) = self.read_shape_record(1)? {
+            start_shape.push(record);
+        }
+
+        self.byte_align();
+        let mut end_shape = Vec::new();
+        self.read_u8()?; // NumFillBits and NumLineBits are written as 0 for the end shape.
+        while let Some(record) = self.read_shape_record(1)? {
+            end_shape.push(record);
+        }
+        Ok(Tag::DefineMorphShape(Box::new(DefineMorphShape {
+            id: id,
+            version: shape_version,
+            has_non_scaling_strokes: has_non_scaling_strokes,
+            has_scaling_strokes: has_scaling_strokes,
+            start: MorphShape {
+                shape_bounds: start_shape_bounds,
+                edge_bounds: start_edge_bounds,
+                shape: start_shape,
+                fill_styles: start_fill_styles,
+                line_styles: start_line_styles,
+            },
+            end: MorphShape {
+                shape_bounds: end_shape_bounds,
+                edge_bounds: end_edge_bounds,
+                shape: end_shape,
+                fill_styles: end_fill_styles,
+                line_styles: end_line_styles,
+            },
+        })))
+    }
+
+    fn read_morph_line_style(&mut self, shape_version: u8) -> Result<(LineStyle, LineStyle)> {
+        if shape_version < 2 {
+            let start_width = self.read_u16()?;
+            let end_width = self.read_u16()?;
+            let start_color = self.read_rgba()?;
+            let end_color = self.read_rgba()?;
+
+            Ok((
+                LineStyle::new_v1(start_width, start_color),
+                LineStyle::new_v1(end_width, end_color)
+            ))
+        } else {
+            // MorphLineStyle2 in DefineMorphShape2.
+            let start_width = self.read_u16()?;
+            let end_width = self.read_u16()?;
+            let start_cap = match self.read_ubits(2)? {
+                0 => LineCapStyle::Round,
+                1 => LineCapStyle::None,
+                2 => LineCapStyle::Square,
+                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid line cap type.")),
+            };
+            let join_style_id = self.read_ubits(2)?;
+            let has_fill = self.read_bit()?;
+            let allow_scale_x = !self.read_bit()?;
+            let allow_scale_y = !self.read_bit()?;
+            let is_pixel_hinted = self.read_bit()?;
+            self.read_ubits(5)?;
+            let allow_close = !self.read_bit()?;
+            let end_cap = match self.read_ubits(2)? {
+                0 => LineCapStyle::Round,
+                1 => LineCapStyle::None,
+                2 => LineCapStyle::Square,
+                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid line cap type.")),
+            };
+            let join_style = match join_style_id {
+                0 => LineJoinStyle::Round,
+                1 => LineJoinStyle::Bevel,
+                2 => LineJoinStyle::Miter(self.read_fixed8()?),
+                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid line cap type.")),
+            };
+            let (start_color, end_color) = if !has_fill {
+                (self.read_rgba()?, self.read_rgba()?)
+            } else {
+                (Color { r: 0, g: 0, b: 0, a: 0 }, Color { r: 0, g: 0, b: 0, a: 0 })
+            };
+            let (start_fill_style, end_fill_style) = if has_fill {
+                let (start, end) = self.read_morph_fill_style(shape_version)?;
+                (Some(start), Some(end))
+            } else {
+                (None, None)
+            };
+            Ok((
+                LineStyle {
+                    width: start_width,
+                    color: start_color,
+                    start_cap: start_cap,
+                    end_cap: end_cap,
+                    join_style: join_style,
+                    allow_scale_x: allow_scale_x,
+                    allow_scale_y: allow_scale_y,
+                    is_pixel_hinted: is_pixel_hinted,
+                    allow_close: allow_close,
+                    fill_style: start_fill_style,
+                },
+                LineStyle {
+                    width: end_width,
+                    color: end_color,
+                    start_cap: start_cap,
+                    end_cap: end_cap,
+                    join_style: join_style,
+                    allow_scale_x: allow_scale_x,
+                    allow_scale_y: allow_scale_y,
+                    is_pixel_hinted: is_pixel_hinted,
+                    allow_close: allow_close,
+                    fill_style: end_fill_style,
+                }
+            ))
+        }
+    }
+
+    fn read_morph_fill_style(&mut self, shape_version: u8) -> Result<(FillStyle, FillStyle)> {
+        let fill_style_type = self.read_u8()?;
+        let fill_style = match fill_style_type {
+            0x00 => {
+                let start_color = self.read_rgba()?;
+                let end_color = self.read_rgba()?;
+                (FillStyle::Color(start_color), FillStyle::Color(end_color))
+            },
+
+            0x10 => {
+                let (start_gradient, end_gradient) = self.read_morph_gradient()?;
+                (
+                    FillStyle::LinearGradient(start_gradient),
+                    FillStyle::LinearGradient(end_gradient)
+                )
+            },
+
+            0x12 => {
+                let (start_gradient, end_gradient) = self.read_morph_gradient()?;
+                (
+                    FillStyle::RadialGradient(start_gradient),
+                    FillStyle::RadialGradient(end_gradient)
+                )
+            },
+
+            0x13 => {
+                if self.version < 8 || shape_version < 2 {
+                    return Err(Error::new(ErrorKind::InvalidData,
+                                          "Focal gradients are only supported in SWF version 8 \
+                                           or higher."));
+                }
+                // TODO(Herschel): How is focal_point stored?
+                let (start_gradient, end_gradient) = self.read_morph_gradient()?;
+                let start_focal_point = self.read_fixed8()?;
+                let end_focal_point = self.read_fixed8()?;
+                (
+                    FillStyle::FocalGradient {
+                        gradient: start_gradient,
+                        focal_point: start_focal_point,
+                    },
+                    FillStyle::FocalGradient {
+                        gradient: end_gradient,
+                        focal_point: end_focal_point,
+                    }
+                )
+            },
+
+            0x40...0x43 => {
+                let id = self.read_character_id()?;
+                (
+                    FillStyle::Bitmap {
+                        id: id,
+                        matrix: self.read_matrix()?,
+                        is_smoothed: (fill_style_type & 0b10) == 0,
+                        is_repeating: (fill_style_type & 0b01) == 0,
+                    },
+                    FillStyle::Bitmap {
+                        id: id,
+                        matrix: self.read_matrix()?,
+                        is_smoothed: (fill_style_type & 0b10) == 0,
+                        is_repeating: (fill_style_type & 0b01) == 0,
+                    },
+                )
+            }
+
+            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid fill style.")),
+        };
+        Ok(fill_style)
+    }
+
+    fn read_morph_gradient(&mut self) -> Result<(Gradient, Gradient)> {
+        let start_matrix = self.read_matrix()?;
+        let end_matrix = self.read_matrix()?;
+        let num_records = self.read_u8()? as usize;
+        let mut start_records = Vec::with_capacity(num_records);
+        let mut end_records = Vec::with_capacity(num_records);
+        for _ in 0..num_records {
+            start_records.push(GradientRecord {
+                ratio: self.read_u8()?,
+                color: self.read_rgba()?,
+            });
+            end_records.push(GradientRecord {
+                ratio: self.read_u8()?,
+                color: self.read_rgba()?,
+            });
+        }
+        Ok((
+            Gradient {
+                matrix: start_matrix,
+                spread: GradientSpread::Pad, // TODO(Herschel): What are the defaults?
+                interpolation: GradientInterpolation::RGB,
+                records: start_records,
+            },
+            Gradient {
+                matrix: end_matrix,
+                spread: GradientSpread::Pad, // TODO(Herschel): What are the defaults?
+                interpolation: GradientInterpolation::RGB,
+                records: end_records,
+            }
+        ))
     }
 
     fn read_define_shape(&mut self, version: u8) -> Result<Tag> {

@@ -318,6 +318,7 @@ pub enum Tag {
     DefineFontAlignZones { id: CharacterId, thickness: FontThickness, zones: Vec<FontAlignZone> },
     DefineFontInfo(Box<FontInfo>),
     DefineFontName { id: CharacterId, name: String, copyright_info: String },
+    DefineMorphShape(Box<DefineMorphShape>),
     DefineScalingGrid { id: CharacterId, splitter_rect: Rectangle },
     DefineShape(Shape),
     DefineSound(Box<Sound>),
@@ -622,6 +623,25 @@ pub enum ButtonActionCondition {
     IdleToOverUp,
     OverDownToIdle,
     KeyPress
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct DefineMorphShape {
+    pub version: u8,
+    pub id: CharacterId,
+    pub has_non_scaling_strokes: bool,
+    pub has_scaling_strokes: bool,
+    pub start: MorphShape,
+    pub end: MorphShape,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct MorphShape {
+    pub shape_bounds: Rectangle,
+    pub edge_bounds: Rectangle,
+    pub fill_styles: Vec<FillStyle>,
+    pub line_styles: Vec<LineStyle>,
+    pub shape: Vec<ShapeRecord>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

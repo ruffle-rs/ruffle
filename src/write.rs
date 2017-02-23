@@ -628,6 +628,8 @@ impl<W: Write> Writer<W> {
                 self.write_c_string(copyright_info)?;
             },
 
+            &Tag::DefineMorphShape(ref define_morph_shape) => self.write_define_morph_shape(define_morph_shape)?,
+
             &Tag::DefineScalingGrid { id, ref splitter_rect } => {
                 let mut buf = Vec::new();
                 {
@@ -909,6 +911,228 @@ impl<W: Write> Writer<W> {
         }
         self.write_tag_header(TagCode::DefineButton2, buf.len() as u32)?;
         self.output.write_all(&buf)?;
+        Ok(())
+    }
+
+    fn write_define_morph_shape(&mut self, data: &DefineMorphShape) -> Result<()> {
+        if data.start.fill_styles.len() != data.end.fill_styles.len() || 
+             data.start.line_styles.len() != data.end.line_styles.len() {
+            return Err(Error::new(ErrorKind::InvalidData,
+                "Start and end state of a morph shape must have the same number of styles."));
+        }
+
+        let num_fill_styles = data.start.fill_styles.len();
+        let num_line_styles = data.start.line_styles.len();
+        let num_fill_bits = count_ubits(num_fill_styles as u32);
+        let num_line_bits = count_ubits(num_line_styles as u32);
+
+        // Need to write styles first, to calculate offset to EndEdges.
+        let mut start_buf = Vec::new();
+        {
+            let mut writer = Writer::new(&mut start_buf, self.version);
+
+            // Styles
+            // TODO(Herschel): Make fn write_style_len. Check version.
+            if num_fill_styles >= 0xff {
+                writer.write_u8(0xff)?;
+                writer.write_u16(num_fill_styles as u16)?;
+            } else {
+                writer.write_u8(num_fill_styles as u8)?;
+            }
+            for (start, end) in data.start.fill_styles.iter().zip(data.end.fill_styles.iter()) {
+                writer.write_morph_fill_style(start, end, data.version)?;
+            }
+
+            if num_line_styles >= 0xff {
+                writer.write_u8(0xff)?;
+                writer.write_u16(num_line_styles as u16)?;
+            } else {
+                writer.write_u8(num_line_styles as u8)?;
+            }
+            for (start, end) in data.start.line_styles.iter().zip(data.end.line_styles.iter()) {
+                writer.write_morph_line_style(start, end, data.version)?;
+            }
+
+            // TODO(Herschel): Make fn write_shape.
+            writer.write_ubits(4, num_fill_bits as u32)?;
+            writer.write_ubits(4, num_line_bits as u32)?;
+            writer.num_fill_bits = num_fill_bits;
+            writer.num_line_bits = num_line_bits;
+            for shape_record in &data.start.shape {
+                writer.write_shape_record(shape_record, 1)?;
+            }
+            // End shape record.
+            writer.write_ubits(6, 0)?;
+            writer.flush_bits()?;
+        }
+
+        let mut buf = Vec::new();
+        {
+            let mut writer = Writer::new(&mut buf, self.version);
+            writer.write_character_id(data.id)?;
+            writer.write_rectangle(&data.start.shape_bounds)?;
+            writer.write_rectangle(&data.end.shape_bounds)?;
+            if data.version >= 2 {
+                writer.write_rectangle(&data.start.edge_bounds)?;
+                writer.write_rectangle(&data.end.edge_bounds)?;
+                writer.write_u8(
+                    if data.has_non_scaling_strokes { 0b10 } else { 0 } |
+                    if data.has_scaling_strokes { 0b1 } else { 0 }
+                )?;
+            }
+
+            // Offset to EndEdges.
+            writer.write_u32(start_buf.len() as u32)?;
+
+            writer.output.write_all(&start_buf)?;
+
+            // EndEdges.
+            writer.write_u8(0)?; // NumFillBits and NumLineBits are written as 0 for the end shape.
+            writer.num_fill_bits = num_fill_bits;
+            writer.num_line_bits = num_line_bits;
+            for shape_record in &data.end.shape {
+                writer.write_shape_record(shape_record, 1)?;
+            }
+            // End shape record.
+            writer.write_ubits(6, 0)?;
+            writer.flush_bits()?;
+        }
+
+        let tag_code = if data.version == 1 { TagCode::DefineMorphShape } else { TagCode::DefineMorphShape2 };
+        self.write_tag_header(tag_code, buf.len() as u32)?;
+        self.output.write_all(&buf)?;
+        Ok(())
+    }
+
+    fn write_morph_fill_style(&mut self, start: &FillStyle, end: &FillStyle, shape_version: u8) -> Result<()> {
+        match (start, end) {
+            (&FillStyle::Color(ref start_color), &FillStyle::Color(ref end_color)) => {
+                self.write_u8(0x00)?; // Solid color.
+                self.write_rgba(start_color)?;
+                self.write_rgba(end_color)?;
+            },
+
+            (&FillStyle::LinearGradient(ref start_gradient), &FillStyle::LinearGradient(ref end_gradient)) => {
+                self.write_u8(0x10)?; // Linear gradient.
+                self.write_morph_gradient(start_gradient, end_gradient)?;
+            },
+
+            (&FillStyle::RadialGradient(ref start_gradient), &FillStyle::RadialGradient(ref end_gradient)) => {
+                self.write_u8(0x12)?; // Linear gradient.
+                self.write_morph_gradient(start_gradient, end_gradient)?;
+            },
+
+            (
+                &FillStyle::FocalGradient { gradient: ref start_gradient, focal_point: start_focal_point },
+                &FillStyle::FocalGradient { gradient: ref end_gradient, focal_point: end_focal_point }
+            ) => {
+                if self.version < 8 || shape_version < 2 {
+                    return Err(Error::new(ErrorKind::InvalidData,
+                                          "Focal gradients are only support in SWF version 8 \
+                                           and higher."));
+                }
+
+                self.write_u8(0x13)?; // Focal gradient.
+                self.write_morph_gradient(start_gradient, end_gradient)?;
+                self.write_fixed8(start_focal_point)?;
+                self.write_fixed8(end_focal_point)?;
+            },
+
+            (
+                &FillStyle::Bitmap { id, matrix: ref start_matrix, is_smoothed, is_repeating },
+                &FillStyle::Bitmap { id: end_id, matrix: ref end_matrix, is_smoothed: end_is_smoothed, is_repeating: end_is_repeating }
+            ) if id == end_id && is_smoothed == end_is_smoothed || is_repeating == end_is_repeating => {
+                let fill_style_type = match (is_smoothed, is_repeating) {
+                    (true, true) => 0x40,
+                    (true, false) => 0x41,
+                    (false, true) => 0x42,
+                    (false, false) => 0x43,
+                };
+                self.write_u8(fill_style_type)?;
+                self.write_u16(id)?;
+                self.write_matrix(start_matrix)?;
+                self.write_matrix(end_matrix)?;
+            },
+
+            _ => return Err(Error::new(ErrorKind::InvalidData,
+                        "Morph start and end fill styles must be the same variant.")),
+        }
+        Ok(())
+    }
+
+    fn write_morph_gradient(&mut self, start: &Gradient, end: &Gradient) -> Result<()> {
+        self.write_matrix(&start.matrix)?;
+        self.write_matrix(&end.matrix)?;
+        if start.records.len() != end.records.len() {
+            return Err(Error::new(ErrorKind::InvalidData,
+                        "Morph start and end gradient must have the same amount of records."));
+        }
+        self.write_u8(start.records.len() as u8)?;
+        for (start_record, end_record) in start.records.iter().zip(end.records.iter()) {
+            self.write_u8(start_record.ratio)?;
+            self.write_rgba(&start_record.color)?;
+            self.write_u8(end_record.ratio)?;
+            self.write_rgba(&end_record.color)?;
+        }
+        Ok(())
+    }
+
+    fn write_morph_line_style(&mut self, start: &LineStyle, end: &LineStyle, shape_version: u8) -> Result<()>  {        
+        if shape_version < 2 {
+            self.write_u16(start.width)?;
+            self.write_u16(end.width)?;
+            self.write_rgba(&start.color)?;
+            self.write_rgba(&end.color)?;
+        } else {
+            if start.start_cap != end.start_cap || start.join_style != end.join_style ||
+                start.allow_scale_x != end.allow_scale_x || start.allow_scale_y != end.allow_scale_y ||
+                start.is_pixel_hinted != end.is_pixel_hinted || start.allow_close != end.allow_close ||
+                start.end_cap != end.end_cap {
+                return Err(Error::new(ErrorKind::InvalidData,
+                        "Morph start and end line styles must have the same join parameters."));
+            }
+
+            self.write_u16(start.width)?;
+            self.write_u16(end.width)?;
+
+            // MorphLineStyle2
+            self.write_ubits(2, match start.start_cap {
+                LineCapStyle::Round => 0,
+                LineCapStyle::None => 1,
+                LineCapStyle::Square => 2,
+            })?;
+            self.write_ubits(2, match start.join_style {
+                LineJoinStyle::Round => 0,
+                LineJoinStyle::Bevel => 1,
+                LineJoinStyle::Miter(_) => 2,
+            })?;
+            self.write_bit(start.fill_style.is_some())?;
+            self.write_bit(!start.allow_scale_x)?;
+            self.write_bit(!start.allow_scale_y)?;
+            self.write_bit(start.is_pixel_hinted)?;
+            self.write_ubits(5, 0)?;
+            self.write_bit(!start.allow_close)?;
+            self.write_ubits(2, match start.end_cap {
+                LineCapStyle::Round => 0,
+                LineCapStyle::None => 1,
+                LineCapStyle::Square => 2,
+            })?;
+            if let LineJoinStyle::Miter(miter_factor) = start.join_style {
+                self.write_fixed8(miter_factor)?;
+            }
+            match (&start.fill_style, &end.fill_style) {
+                (&None, &None) => {
+                    self.write_rgba(&start.color)?;
+                    self.write_rgba(&end.color)?;
+                },
+
+                (&Some(ref start_fill), &Some(ref end_fill)) =>
+                    self.write_morph_fill_style(start_fill, end_fill, shape_version)?,
+
+                _ => return Err(Error::new(ErrorKind::InvalidData,
+                        "Morph start and end line styles must both have fill styles.")),
+            }
+        }
         Ok(())
     }
 
