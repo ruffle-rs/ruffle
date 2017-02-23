@@ -324,6 +324,7 @@ pub enum Tag {
     DefineSound(Box<Sound>),
     DefineSprite(Sprite),
     DefineText(Box<Text>),
+    DefineVideoStream(DefineVideoStream),
     DoAbc(Vec<u8>),
     DoAction(Vec<avm1::types::Action>),
     DoInitAction { id: CharacterId, action_data: Vec<u8> },
@@ -342,7 +343,7 @@ pub enum Tag {
     SymbolClass(Vec<SymbolClassLink>),
     PlaceObject(Box<PlaceObject>),
     RemoveObject { depth: Depth, character_id: Option<CharacterId> },
-
+    VideoFrame(VideoFrame),
     FileAttributes(FileAttributes),
 
     FrameLabel { label: String, is_anchor: bool },
@@ -824,4 +825,40 @@ pub enum BitmapFormat {
     ColorMap8,
     Rgb15,
     Rgb24,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct DefineVideoStream {
+    pub id: CharacterId,
+    pub num_frames: u16,
+    pub width: u16,
+    pub height: u16,
+    pub is_smoothed: bool,
+    pub deblocking: VideoDeblocking,
+    pub codec: VideoCodec,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum VideoDeblocking {
+    UseVideoPacketValue,
+    None,
+    Level1,
+    Level2,
+    Level3,
+    Level4,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum VideoCodec {
+    H263,
+    ScreenVideo,
+    VP6,
+    VP6WithAlpha,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct VideoFrame {
+    pub stream_id: CharacterId,
+    pub frame_num: u16,
+    pub data: Vec<u8>,
 }

@@ -1059,6 +1059,20 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
     ),
 
     (
+        6,
+        Tag::DefineVideoStream(DefineVideoStream {
+            id: 1,
+            num_frames: 4,
+            width: 8,
+            height: 8,
+            deblocking: VideoDeblocking::UseVideoPacketValue,
+            is_smoothed: false,
+            codec: VideoCodec::H263,
+        }),
+        read_tag_bytes_from_file("tests/swfs/DefineVideoStream-CC.swf", TagCode::DefineVideoStream)
+    ),
+
+    (
         5,
         Tag::DoAction(
             vec![
@@ -1435,6 +1449,16 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
             }),
         },
         read_tag_bytes_from_file("tests/swfs/startsound2.swf", TagCode::StartSound2)
+    ),
+
+    (
+        6,
+        Tag::VideoFrame(VideoFrame {
+            stream_id: 1,
+            frame_num: 0,
+            data: vec![0, 0, 132, 0, 4, 4, 17, 38, 190, 190, 190, 190, 201, 182],
+        }),
+        read_tag_bytes_from_file("tests/swfs/DefineVideoStream-CC.swf", TagCode::VideoFrame)
     ),
 
     (1, Tag::Unknown { tag_code: 512, data: vec![] }, vec![0b00_000000, 0b10000000]),

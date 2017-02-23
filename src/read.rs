@@ -508,6 +508,7 @@ impl<R: Read> Reader<R> {
             Some(TagCode::DefineShape4) => tag_reader.read_define_shape(4)?,
             Some(TagCode::DefineSound) => tag_reader.read_define_sound()?,
             Some(TagCode::DefineText) => tag_reader.read_define_text()?,
+            Some(TagCode::DefineVideoStream) => tag_reader.read_define_video_stream()?,
             Some(TagCode::EnableTelemetry) => {
                 tag_reader.read_u16()?; // Reserved
                 let password_hash = if length > 2 {
@@ -734,6 +735,8 @@ impl<R: Read> Reader<R> {
                 }
             },
 
+            Some(TagCode::VideoFrame) => tag_reader.read_video_frame()?,
+            
             _ => {
                 let size = length as usize;
                 let mut data = Vec::with_capacity(size);
@@ -743,7 +746,7 @@ impl<R: Read> Reader<R> {
                     tag_code: tag_code,
                     data: data,
                 }
-            }
+            },
         };
 
         if cfg!(debug_assertions) {
@@ -2268,6 +2271,51 @@ impl<R: Read> Reader<R> {
             is_html: flags2 & 0b10 != 0,
             is_device_font: flags2 & 0b1 == 0,
         })))
+    }
+
+    fn read_define_video_stream(&mut self) -> Result<Tag> {
+        let id = self.read_character_id()?;
+        let num_frames = self.read_u16()?;
+        let width = self.read_u16()?;
+        let height = self.read_u16()?;
+        let flags = self.read_u8()?;
+        // TODO(Herschel): Check SWF version.
+        let codec = match self.read_u8()? {
+            2 => VideoCodec::H263,
+            3 => VideoCodec::ScreenVideo,
+            4 => VideoCodec::VP6,
+            5 => VideoCodec::VP6WithAlpha,
+            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid video codec.")),
+        };
+        Ok(Tag::DefineVideoStream(DefineVideoStream {
+            id: id,
+            num_frames: num_frames,
+            width: width,
+            height: height,
+            is_smoothed: flags & 0b1 != 0,
+            codec: codec,
+            deblocking: match flags & 0b100_0 {
+                0b000_0 => VideoDeblocking::UseVideoPacketValue,
+                0b001_0 => VideoDeblocking::None,
+                0b010_0 => VideoDeblocking::Level1,
+                0b011_0 => VideoDeblocking::Level2,
+                0b100_0 => VideoDeblocking::Level3,
+                0b101_0 => VideoDeblocking::Level4,
+                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid video deblocking value.")),
+            },
+        }))
+    }
+
+    fn read_video_frame(&mut self) -> Result<Tag> {
+        let stream_id = self.read_character_id()?;
+        let frame_num = self.read_u16()?;
+        let mut data = vec![];
+        self.input.read_to_end(&mut data)?;
+        Ok(Tag::VideoFrame(VideoFrame {
+            stream_id: stream_id,
+            frame_num: frame_num,
+            data: data,
+        }))
     }
 }
 

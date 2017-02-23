@@ -646,6 +646,7 @@ impl<W: Write> Writer<W> {
             &Tag::DefineSound(ref sound) => self.write_define_sound(sound)?,
             &Tag::DefineSprite(ref sprite) => self.write_define_sprite(sprite)?,
             &Tag::DefineText(ref text) => self.write_define_text(text)?,
+            &Tag::DefineVideoStream(ref video) => self.write_define_video_stream(video)?,
             &Tag::DoAbc(ref action_data) => {
                 self.write_tag_header(TagCode::DoAbc, action_data.len() as u32)?;
                 self.output.write_all(action_data)?;
@@ -799,6 +800,13 @@ impl<W: Write> Writer<W> {
                     self.write_u16(id)?;
                     self.write_c_string(class_name)?;
                 }
+            },
+
+            &Tag::VideoFrame(ref frame) => {
+                self.write_tag_header(TagCode::VideoFrame, 4 + frame.data.len() as u32)?;
+                self.write_character_id(frame.stream_id)?;
+                self.write_u16(frame.frame_num)?;
+                self.output.write_all(&frame.data)?;
             },
 
             &Tag::FileAttributes(ref attributes) => {
@@ -2143,6 +2151,32 @@ impl<W: Write> Writer<W> {
 
         self.write_tag_header(TagCode::DefineEditText, buf.len() as u32)?;
         self.output.write_all(&buf)?;
+        Ok(())
+    }
+
+    fn write_define_video_stream(&mut self, video: &DefineVideoStream) -> Result<()> {
+        self.write_tag_header(TagCode::DefineVideoStream, 10)?;
+        self.write_character_id(video.id)?;
+        self.write_u16(video.num_frames)?;
+        self.write_u16(video.width)?;
+        self.write_u16(video.height)?;
+        self.write_u8(
+            match video.deblocking {
+                VideoDeblocking::UseVideoPacketValue => 0b000_0,
+                VideoDeblocking::None => 0b001_0,
+                VideoDeblocking::Level1 => 0b010_0,
+                VideoDeblocking::Level2 => 0b011_0,
+                VideoDeblocking::Level3 => 0b100_0,
+                VideoDeblocking::Level4 => 0b101_0,
+            } |
+            if video.is_smoothed { 0b1 } else { 0 }
+        )?;
+        self.write_u8(match video.codec {
+            VideoCodec::H263 => 2,
+            VideoCodec::ScreenVideo => 3,
+            VideoCodec::VP6 => 4,
+            VideoCodec::VP6WithAlpha => 5,
+        })?;
         Ok(())
     }
 
