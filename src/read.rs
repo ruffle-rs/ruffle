@@ -699,6 +699,7 @@ impl<R: Read> Reader<R> {
             Some(TagCode::PlaceObject) => tag_reader.read_place_object()?,
             Some(TagCode::PlaceObject2) => tag_reader.read_place_object_2_or_3(2)?,
             Some(TagCode::PlaceObject3)  => tag_reader.read_place_object_2_or_3(3)?,
+            Some(TagCode::PlaceObject4)  => tag_reader.read_place_object_2_or_3(4)?,
 
             Some(TagCode::RemoveObject) => {
                 Tag::RemoveObject {
@@ -1757,6 +1758,7 @@ impl<R: Read> Reader<R> {
             is_image: false,
             is_bitmap_cached: false,
             is_visible: true,
+            amf_data: None,
         })))
     }
 
@@ -1816,6 +1818,11 @@ impl<R: Read> Reader<R> {
         let clip_actions = if (flags & 0b1000_0000) != 0 {
             self.read_clip_actions()?
         } else { vec![] };
+        let amf_data = if place_object_version >= 4 {
+            let mut amf = vec![];
+            self.input.read_to_end(&mut amf)?;
+            Some(amf)
+        } else { None };
         Ok(Tag::PlaceObject(Box::new(PlaceObject {
             version: place_object_version,
             action: action,
@@ -1833,6 +1840,7 @@ impl<R: Read> Reader<R> {
             filters: filters,
             background_color: background_color,
             blend_mode: blend_mode,
+            amf_data: amf_data,
         })))
     }
 

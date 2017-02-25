@@ -757,6 +757,7 @@ impl<W: Write> Writer<W> {
                 1 => self.write_place_object(place_object)?,
                 2 => self.write_place_object_2_or_3(place_object, 2)?,
                 3 => self.write_place_object_2_or_3(place_object, 3)?,
+                4 => self.write_place_object_2_or_3(place_object, 4)?,
                 _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid PlaceObject version.")),
             },
 
@@ -1640,11 +1641,19 @@ impl<W: Write> Writer<W> {
                 writer.write_clip_actions(&place_object.clip_actions)?;
             }
             writer.flush_bits()?;
+
+            // PlaceObject4 adds some embedded AMF data per instance.
+            if place_object_version >= 4 {
+                if let Some(ref data) = place_object.amf_data {
+                    writer.output.write_all(data)?;
+                }
+            }
         }
-        let tag_code = if place_object_version == 2 {
-            TagCode::PlaceObject2
-        } else {
-            TagCode::PlaceObject3
+        let tag_code = match place_object_version {
+            2 => TagCode::PlaceObject2,
+            3 => TagCode::PlaceObject3,
+            4 => TagCode::PlaceObject4,
+            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid PlaceObject version.")),
         };
         self.write_tag_header(tag_code, buf.len() as u32)?;
         self.output.write_all(&buf)?;

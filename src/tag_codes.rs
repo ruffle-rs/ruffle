@@ -84,5 +84,6 @@ pub enum TagCode {
     DefineFont4 = 91,
 
     EnableTelemetry = 93,
+    PlaceObject4 = 94,
 }
 }

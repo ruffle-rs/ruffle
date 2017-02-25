@@ -1306,6 +1306,7 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
             is_image: false,
             is_bitmap_cached: false,
             is_visible: true,
+            amf_data: None,
         })),
         read_tag_bytes_from_file("tests/swfs/define_shape.swf", TagCode::PlaceObject2)
     ),
@@ -1345,6 +1346,7 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
             is_image: false,
             is_bitmap_cached: false,
             is_visible: true,
+            amf_data: None,
         })),
         read_tag_bytes_from_file("tests/swfs/placeobject2-clipactions.swf", TagCode::PlaceObject2)
     ),
@@ -1432,8 +1434,41 @@ pub fn tag_tests() -> Vec<TagTestData> { vec![
             is_image: false,
             is_bitmap_cached: true,
             is_visible: false,
+            amf_data: None,
         })),
         read_tag_bytes_from_file("tests/swfs/placeobject3-theworks.swf", TagCode::PlaceObject3)
+    ),
+
+    // Undocumented PlaceObject4 tag.
+    (
+        19,
+        Tag::PlaceObject(Box::new(PlaceObject {
+            version: 4,
+            action: PlaceObjectAction::Place(2),
+            depth: 1,
+            matrix: Some(Matrix {
+                translate_x: 10.0,
+                translate_y: 10.0,
+                rotate_skew_0: 0.0,
+                rotate_skew_1: 0.0,
+                scale_x: 1.0,
+                scale_y: 1.0,
+            }),
+            color_transform: None,
+            ratio: None,
+            name: None,
+            clip_depth: None,
+            class_name: None,
+            filters: vec![],
+            background_color: None,
+            blend_mode: BlendMode::Normal,
+            clip_actions: vec![],
+            is_image: false,
+            is_bitmap_cached: false,
+            is_visible: true,
+            amf_data: Some(vec![10, 11, 1, 9, 116, 101, 115, 116, 6, 17, 84, 101, 115, 116, 105, 110, 103, 33, 1]),
+        })),
+        read_tag_bytes_from_file("tests/swfs/PlaceObject4-CC.swf", TagCode::PlaceObject4)
     ),
 
     (

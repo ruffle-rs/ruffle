@@ -132,6 +132,7 @@ pub struct PlaceObject {
     pub is_image: bool,
     pub is_bitmap_cached: bool,
     pub is_visible: bool,
+    pub amf_data: Option<Vec<u8>>,
 }
 
 #[derive(Debug,PartialEq,Clone,Copy)]
