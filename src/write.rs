@@ -456,17 +456,31 @@ impl<W: Write> Writer<W> {
                 self.output.write_all(jpeg_data)?;
             },
 
+            &Tag::DefineBitsJpeg3(ref jpeg) => {
+                self.write_tag_header(TagCode::DefineBitsJpeg3, (jpeg.data.len() + jpeg.alpha_data.len() + 6) as u32)?;
+                self.write_u16(jpeg.id)?;
+                if jpeg.version >= 4 {
+                    self.write_fixed8(jpeg.deblocking)?;
+                }
+                // TODO(Herschel): Verify deblocking parameter is zero in version 3.
+                self.write_u32(jpeg.data.len() as u32)?;
+                self.output.write_all(&jpeg.data)?;
+                self.output.write_all(&jpeg.alpha_data)?;
+            },
+
             &Tag::DefineBitsLossless(ref tag) => {
                 let mut length = 7 + tag.data.len();
                 if tag.format == BitmapFormat::ColorMap8 {
                     length += 1;
                 }
-                self.write_tag_header(TagCode::DefineBitsLossless, length as u32)?;
+                // TODO(Herschel): Throw error if RGB15 in tag version 2.
+                let tag_code = if tag.version == 1 { TagCode::DefineBitsLossless } else { TagCode::DefineBitsLossless2 };
+                self.write_tag_header(tag_code, length as u32)?;
                 self.write_character_id(tag.id)?;
                 let format_id = match tag.format {
                     BitmapFormat::ColorMap8 => 3,
                     BitmapFormat::Rgb15 => 4,
-                    BitmapFormat::Rgb24 => 5,
+                    BitmapFormat::Rgb32 => 5,
                 };
                 self.write_u8(format_id)?;
                 self.write_u16(tag.width)?;

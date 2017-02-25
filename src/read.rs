@@ -445,6 +445,8 @@ impl<R: Read> Reader<R> {
                     jpeg_data: jpeg_data,
                 }
             },
+            Some(TagCode::DefineBitsJpeg3) => tag_reader.read_define_bits_jpeg_3(3)?,
+            Some(TagCode::DefineBitsJpeg4) => tag_reader.read_define_bits_jpeg_3(4)?,
             Some(TagCode::DefineButton) => tag_reader.read_define_button()?,
             Some(TagCode::DefineButton2) => tag_reader.read_define_button_2()?,
             Some(TagCode::DefineButtonCxform) => {
@@ -585,31 +587,8 @@ impl<R: Read> Reader<R> {
                 sound_info: Box::new(tag_reader.read_sound_info()?),
             },
 
-            Some(TagCode::DefineBitsLossless) => {
-                let id = tag_reader.read_character_id()?;
-                let format = match tag_reader.read_u8()? {
-                    3 => BitmapFormat::ColorMap8,
-                    4 => BitmapFormat::Rgb15,
-                    5 => BitmapFormat::Rgb24,
-                    _ => return Err(Error::new(ErrorKind::InvalidData,
-                                          "Invalid bitmap format.")),
-                };
-                let width = tag_reader.read_u16()?;
-                let height = tag_reader.read_u16()?;
-                let num_colors = if format == BitmapFormat::ColorMap8 {
-                    tag_reader.read_u8()?
-                } else { 0 };
-                let mut data = Vec::new();
-                tag_reader.input.read_to_end(&mut data)?;
-                Tag::DefineBitsLossless(Box::new(DefineBitsLossless {
-                    id: id,
-                    format: format,
-                    width: width,
-                    height: height,
-                    num_colors: num_colors,
-                    data: data,
-                }))
-            },
+            Some(TagCode::DefineBitsLossless) => tag_reader.read_define_bits_lossless(1)?,
+            Some(TagCode::DefineBitsLossless2) => tag_reader.read_define_bits_lossless(2)?,
 
             Some(TagCode::DefineScalingGrid) => Tag::DefineScalingGrid {
                 id: tag_reader.read_u16()?,
@@ -736,7 +715,7 @@ impl<R: Read> Reader<R> {
             },
 
             Some(TagCode::VideoFrame) => tag_reader.read_video_frame()?,
-            
+
             _ => {
                 let size = length as usize;
                 let mut data = Vec::with_capacity(size);
@@ -2317,6 +2296,51 @@ impl<R: Read> Reader<R> {
             data: data,
         }))
     }
+
+    fn read_define_bits_jpeg_3(&mut self, version: u8) -> Result<Tag> {
+        let id = self.read_character_id()?;
+        let data_size = self.read_u32()? as usize;
+        let deblocking = if version >= 4 { self.read_fixed8()? } else { 0.0 };
+        let mut data = vec![];
+        data.resize(data_size, 0);
+        self.input.read_exact(&mut data)?;
+        let mut alpha_data = vec![];
+        self.input.read_to_end(&mut alpha_data)?;
+        Ok(Tag::DefineBitsJpeg3(DefineBitsJpeg3 {
+            version: version,
+            id: id,
+            deblocking: deblocking,
+            data: data,
+            alpha_data: alpha_data,
+        }))
+    }
+
+    fn read_define_bits_lossless(&mut self, version: u8) -> Result<Tag> {
+        let id = self.read_character_id()?;
+        let format = match self.read_u8()? {
+            3 => BitmapFormat::ColorMap8,
+            4 if version == 1 => BitmapFormat::Rgb15,
+            5 => BitmapFormat::Rgb32,
+            _ => return Err(Error::new(ErrorKind::InvalidData,
+                                  "Invalid bitmap format.")),
+        };
+        let width = self.read_u16()?;
+        let height = self.read_u16()?;
+        let num_colors = if format == BitmapFormat::ColorMap8 {
+            self.read_u8()?
+        } else { 0 };
+        let mut data = Vec::new();
+        self.input.read_to_end(&mut data)?;
+        Ok(Tag::DefineBitsLossless(DefineBitsLossless {
+            version: version,
+            id: id,
+            format: format,
+            width: width,
+            height: height,
+            num_colors: num_colors,
+            data: data,
+        }))
+    }   
 }
 
 #[cfg(test)]

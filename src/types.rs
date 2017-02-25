@@ -306,7 +306,8 @@ pub enum Tag {
     DefineBinaryData { id: CharacterId, data: Vec<u8> },
     DefineBits { id: CharacterId, jpeg_data: Vec<u8> },
     DefineBitsJpeg2 { id: CharacterId, jpeg_data: Vec<u8> },
-    DefineBitsLossless(Box<DefineBitsLossless>),
+    DefineBitsJpeg3(DefineBitsJpeg3),
+    DefineBitsLossless(DefineBitsLossless),
     DefineButton(Box<Button>),
     DefineButton2(Box<Button>),
     DefineButtonColorTransform { id: CharacterId, color_transforms: Vec<ColorTransform> },
@@ -812,6 +813,7 @@ pub enum TextGridFit {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DefineBitsLossless {
+    pub version: u8,
     pub id: CharacterId,
     pub format: BitmapFormat,
     pub width: u16,
@@ -824,7 +826,7 @@ pub struct DefineBitsLossless {
 pub enum BitmapFormat {
     ColorMap8,
     Rgb15,
-    Rgb24,
+    Rgb32,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -861,4 +863,13 @@ pub struct VideoFrame {
     pub stream_id: CharacterId,
     pub frame_num: u16,
     pub data: Vec<u8>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct DefineBitsJpeg3 {
+    pub id: CharacterId,
+    pub version: u8,
+    pub deblocking: f32,
+    pub data: Vec<u8>,
+    pub alpha_data: Vec<u8>,
 }
