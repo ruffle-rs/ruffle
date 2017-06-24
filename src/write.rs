@@ -2678,7 +2678,6 @@ mod tests {
     use super::Writer;
     use std::io::Result;
     use test_data;
-    use types::*;
 
     fn new_swf() -> Swf {
         Swf {
@@ -3009,7 +3008,7 @@ mod tests {
             let mut buf = Vec::new();
             {
                 let mut writer = Writer::new(&mut buf, 1);
-                writer.write_tag_list(&vec![]).unwrap();
+                writer.write_tag_list(&[]).unwrap();
             }
             assert_eq!(buf, [0, 0]);
         }
@@ -3017,7 +3016,7 @@ mod tests {
             let mut buf = Vec::new();
             {
                 let mut writer = Writer::new(&mut buf, 1);
-                writer.write_tag_list(&vec![Tag::ShowFrame]).unwrap();
+                writer.write_tag_list(&[Tag::ShowFrame]).unwrap();
             }
             assert_eq!(buf, [0b01_000000, 0b00000000, 0, 0]);
         }
@@ -3026,13 +3025,15 @@ mod tests {
             {
                 let mut writer = Writer::new(&mut buf, 1);
                 writer
-                    .write_tag_list(&vec![
-                        Tag::Unknown {
-                            tag_code: 512,
-                            data: vec![0; 100],
-                        },
-                        Tag::ShowFrame,
-                    ])
+                    .write_tag_list(
+                        &[
+                            Tag::Unknown {
+                                tag_code: 512,
+                                data: vec![0; 100],
+                            },
+                            Tag::ShowFrame,
+                        ],
+                    )
                     .unwrap();
             }
             let mut expected = vec![0b00_111111, 0b10000000, 100, 0, 0, 0];

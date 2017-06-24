@@ -1,3 +1,5 @@
+#![allow(float_cmp)]
+
 use avm1;
 use byteorder::{LittleEndian, ReadBytesExt};
 use flate2::read::ZlibDecoder;
@@ -2589,7 +2591,6 @@ pub mod tests {
     use std::vec::Vec;
     use super::*;
     use test_data;
-    use types::*;
     use tag_codes::TagCode;
 
     fn reader(data: &[u8]) -> Reader<&[u8]> {
@@ -2632,26 +2633,24 @@ pub mod tests {
             cursor.read_exact(&mut data[..]).unwrap();
             if swf_tag_code == 0 {
                 panic!("Tag not found");
-            } else {
-                if swf_tag_code == tag_code as u16 {
-                    if index == 0 {
-                        // Flash tends to export tags with the extended header even if the size
-                        // would fit with the standard header.
-                        // This screws up our tests, because swf-rs writes tags with the
-                        // minimum header necessary.
-                        // We want to easily write new tests by exporting SWFs from the Flash
-                        // software, so rewrite with a standard header to match swf-rs output.
-                        if length < 0b111111 && (data[0] & 0b111111) == 0b111111 {
-                            let mut tag_data = Vec::with_capacity(length + 2);
-                            tag_data.extend_from_slice(&data[0..2]);
-                            tag_data.extend_from_slice(&data[6..]);
-                            tag_data[0] = (data[0] & !0b111111) | (length as u8);
-                            data = tag_data;
-                        }
-                        return data;
-                    } else {
-                        index -= 1;
+            } else if swf_tag_code == tag_code as u16 {
+                if index == 0 {
+                    // Flash tends to export tags with the extended header even if the size
+                    // would fit with the standard header.
+                    // This screws up our tests, because swf-rs writes tags with the
+                    // minimum header necessary.
+                    // We want to easily write new tests by exporting SWFs from the Flash
+                    // software, so rewrite with a standard header to match swf-rs output.
+                    if length < 0b111111 && (data[0] & 0b111111) == 0b111111 {
+                        let mut tag_data = Vec::with_capacity(length + 2);
+                        tag_data.extend_from_slice(&data[0..2]);
+                        tag_data.extend_from_slice(&data[6..]);
+                        tag_data[0] = (data[0] & !0b111111) | (length as u8);
+                        data = tag_data;
                     }
+                    return data;
+                } else {
+                    index -= 1;
                 }
             }
         }
@@ -2912,7 +2911,7 @@ pub mod tests {
     #[test]
     fn read_c_string() {
         {
-            let buf = "Testing\0".as_bytes();
+            let buf = b"Testing\0";
             let mut reader = Reader::new(&buf[..], 1);
             assert_eq!(reader.read_c_string().unwrap(), "Testing");
         }

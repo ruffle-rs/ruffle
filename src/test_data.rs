@@ -3513,7 +3513,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         (
             1,
             Tag::Metadata("aa!".to_string()),
-            vec![0b01_000100, 0b000_10011, 'a' as u8, 'a' as u8, '!' as u8, 0],
+            vec![0b01_000100, 0b000_10011, b'a', b'a', b'!', 0],
         ),
 
         (
