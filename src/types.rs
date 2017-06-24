@@ -62,6 +62,12 @@ impl ColorTransform {
     }
 }
 
+impl Default for ColorTransform {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Matrix {
     pub translate_x: f32,
@@ -82,6 +88,12 @@ impl Matrix {
             rotate_skew_0: 0f32,
             rotate_skew_1: 0f32,
         }
+    }
+}
+
+impl Default for Matrix {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

@@ -1,3 +1,6 @@
+#![allow(cyclomatic_complexity)]
+#![allow(float_cmp)]
+
 use avm1;
 use byteorder::{LittleEndian, WriteBytesExt};
 use flate2::Compression as ZlibCompression;
