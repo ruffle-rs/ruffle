@@ -743,12 +743,10 @@ impl<R: Read> Reader<R> {
             }
         };
 
-        if cfg!(debug_assertions) {
+        if cfg!(debug_assertions) && tag_reader.read_u8().is_ok() {
             // There should be no data remaining in the tag if we read it correctly.
             // If there is data remaining, we probably screwed up, so panic in debug builds.
-            if let Ok(_) = tag_reader.read_u8() {
-                panic!("Error reading tag {:?}", tag_code);
-            }
+            panic!("Error reading tag {:?}", tag_code);
         }
 
         Ok(Some(tag))

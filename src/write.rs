@@ -310,14 +310,15 @@ impl<W: Write> Writer<W> {
         ];
         self.write_bit(has_mult)?;
         self.write_bit(has_add)?;
-        let mut num_bits = 0u8;
-        if has_mult {
-            num_bits = multiply
+        let mut num_bits = if has_mult {
+            multiply
                 .iter()
                 .map(|n| count_sbits((*n * 256f32) as i32))
                 .max()
-                .unwrap();
-        }
+                .unwrap()
+        } else {
+            0u8
+        };
         if has_add {
             num_bits = max(
                 num_bits,
@@ -359,14 +360,15 @@ impl<W: Write> Writer<W> {
         ];
         self.write_bit(has_add)?;
         self.write_bit(has_mult)?;
-        let mut num_bits = 0u8;
-        if has_mult {
-            num_bits = multiply
+        let mut num_bits = if has_mult {
+            multiply
                 .iter()
                 .map(|n| count_sbits((*n * 256f32) as i32))
                 .max()
-                .unwrap();
-        }
+                .unwrap()
+        } else {
+            0u8
+        };
         if has_add {
             num_bits = max(
                 num_bits,
@@ -435,10 +437,10 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_tag(&mut self, tag: &Tag) -> Result<()> {
-        match tag {
-            &Tag::ShowFrame => self.write_tag_header(TagCode::ShowFrame, 0)?,
+        match *tag {
+            Tag::ShowFrame => self.write_tag_header(TagCode::ShowFrame, 0)?,
 
-            &Tag::ExportAssets(ref exports) => {
+            Tag::ExportAssets(ref exports) => {
                 let len = exports.iter().map(|e| e.name.len() as u32 + 1).sum::<u32>() +
                     exports.len() as u32 * 2 + 2;
                 self.write_tag_header(TagCode::ExportAssets, len)?;
@@ -449,8 +451,8 @@ impl<W: Write> Writer<W> {
                 }
             }
 
-            &Tag::Protect(ref password) => {
-                if let &Some(ref password_md5) = password {
+            Tag::Protect(ref password) => {
+                if let Some(ref password_md5) = *password {
                     self.write_tag_header(TagCode::Protect, password_md5.len() as u32 + 3)?;
                     self.write_u16(0)?; // Two null bytes? Not specified in SWF19.
                     self.write_c_string(password_md5)?;
@@ -459,7 +461,7 @@ impl<W: Write> Writer<W> {
                 }
             }
 
-            &Tag::CsmTextSettings(ref settings) => {
+            Tag::CsmTextSettings(ref settings) => {
                 self.write_tag_header(TagCode::CsmTextSettings, 12)?;
                 self.write_character_id(settings.id)?;
                 self.write_u8(
@@ -479,26 +481,26 @@ impl<W: Write> Writer<W> {
                 self.write_u8(0)?; // Reserved (0).
             }
 
-            &Tag::DefineBinaryData { id, ref data } => {
+            Tag::DefineBinaryData { id, ref data } => {
                 self.write_tag_header(TagCode::DefineBinaryData, data.len() as u32 + 6)?;
                 self.write_u16(id)?;
                 self.write_u32(0)?; // Reserved
-                self.output.write_all(&data)?;
+                self.output.write_all(data)?;
             }
 
-            &Tag::DefineBits { id, ref jpeg_data } => {
+            Tag::DefineBits { id, ref jpeg_data } => {
                 self.write_tag_header(TagCode::DefineBits, jpeg_data.len() as u32 + 2)?;
                 self.write_u16(id)?;
                 self.output.write_all(jpeg_data)?;
             }
 
-            &Tag::DefineBitsJpeg2 { id, ref jpeg_data } => {
+            Tag::DefineBitsJpeg2 { id, ref jpeg_data } => {
                 self.write_tag_header(TagCode::DefineBitsJpeg2, jpeg_data.len() as u32 + 2)?;
                 self.write_u16(id)?;
                 self.output.write_all(jpeg_data)?;
             }
 
-            &Tag::DefineBitsJpeg3(ref jpeg) => {
+            Tag::DefineBitsJpeg3(ref jpeg) => {
                 self.write_tag_header(
                     TagCode::DefineBitsJpeg3,
                     (jpeg.data.len() + jpeg.alpha_data.len() + 6) as u32,
@@ -513,7 +515,7 @@ impl<W: Write> Writer<W> {
                 self.output.write_all(&jpeg.alpha_data)?;
             }
 
-            &Tag::DefineBitsLossless(ref tag) => {
+            Tag::DefineBitsLossless(ref tag) => {
                 let mut length = 7 + tag.data.len();
                 if tag.format == BitmapFormat::ColorMap8 {
                     length += 1;
@@ -540,11 +542,11 @@ impl<W: Write> Writer<W> {
                 self.output.write_all(&tag.data)?;
             }
 
-            &Tag::DefineButton(ref button) => self.write_define_button(button)?,
+            Tag::DefineButton(ref button) => self.write_define_button(button)?,
 
-            &Tag::DefineButton2(ref button) => self.write_define_button_2(button)?,
+            Tag::DefineButton2(ref button) => self.write_define_button_2(button)?,
 
-            &Tag::DefineButtonColorTransform {
+            Tag::DefineButtonColorTransform {
                 id,
                 ref color_transforms,
             } => {
@@ -561,7 +563,7 @@ impl<W: Write> Writer<W> {
                 self.output.write_all(&buf)?;
             }
 
-            &Tag::DefineButtonSound(ref button_sounds) => {
+            Tag::DefineButtonSound(ref button_sounds) => {
                 let mut buf = Vec::new();
                 {
                     let mut writer = Writer::new(&mut buf, self.version);
@@ -595,9 +597,9 @@ impl<W: Write> Writer<W> {
                 self.output.write_all(&buf)?;
             }
 
-            &Tag::DefineEditText(ref edit_text) => self.write_define_edit_text(edit_text)?,
+            Tag::DefineEditText(ref edit_text) => self.write_define_edit_text(edit_text)?,
 
-            &Tag::DefineFont(ref font) => {
+            Tag::DefineFont(ref font) => {
                 let num_glyphs = font.glyphs.len();
                 let mut offsets = vec![];
                 let mut buf = vec![];
@@ -632,10 +634,10 @@ impl<W: Write> Writer<W> {
                 self.output.write_all(&buf)?;
             }
 
-            &Tag::DefineFont2(ref font) => self.write_define_font_2(font)?,
-            &Tag::DefineFont4(ref font) => self.write_define_font_4(font)?,
+            Tag::DefineFont2(ref font) => self.write_define_font_2(font)?,
+            Tag::DefineFont4(ref font) => self.write_define_font_4(font)?,
 
-            &Tag::DefineFontAlignZones {
+            Tag::DefineFontAlignZones {
                 id,
                 thickness,
                 ref zones,
@@ -657,7 +659,7 @@ impl<W: Write> Writer<W> {
                 }
             }
 
-            &Tag::DefineFontInfo(ref font_info) => {
+            Tag::DefineFontInfo(ref font_info) => {
                 let use_wide_codes = self.version >= 6 || font_info.version >= 2;
 
                 let len = font_info.name.len() +
@@ -696,7 +698,7 @@ impl<W: Write> Writer<W> {
                 }
             }
 
-            &Tag::DefineFontName {
+            Tag::DefineFontName {
                 id,
                 ref name,
                 ref copyright_info,
@@ -708,11 +710,11 @@ impl<W: Write> Writer<W> {
                 self.write_c_string(copyright_info)?;
             }
 
-            &Tag::DefineMorphShape(ref define_morph_shape) => {
+            Tag::DefineMorphShape(ref define_morph_shape) => {
                 self.write_define_morph_shape(define_morph_shape)?
             }
 
-            &Tag::DefineScalingGrid {
+            Tag::DefineScalingGrid {
                 id,
                 ref splitter_rect,
             } => {
@@ -727,25 +729,25 @@ impl<W: Write> Writer<W> {
                 self.output.write_all(&buf)?;
             }
 
-            &Tag::DefineShape(ref shape) => self.write_define_shape(shape)?,
-            &Tag::DefineSound(ref sound) => self.write_define_sound(sound)?,
-            &Tag::DefineSprite(ref sprite) => self.write_define_sprite(sprite)?,
-            &Tag::DefineText(ref text) => self.write_define_text(text)?,
-            &Tag::DefineVideoStream(ref video) => self.write_define_video_stream(video)?,
-            &Tag::DoAbc(ref action_data) => {
+            Tag::DefineShape(ref shape) => self.write_define_shape(shape)?,
+            Tag::DefineSound(ref sound) => self.write_define_sound(sound)?,
+            Tag::DefineSprite(ref sprite) => self.write_define_sprite(sprite)?,
+            Tag::DefineText(ref text) => self.write_define_text(text)?,
+            Tag::DefineVideoStream(ref video) => self.write_define_video_stream(video)?,
+            Tag::DoAbc(ref action_data) => {
                 self.write_tag_header(TagCode::DoAbc, action_data.len() as u32)?;
                 self.output.write_all(action_data)?;
             }
-            &Tag::DoAction(ref actions) => {
+            Tag::DoAction(ref actions) => {
                 let mut buf = Vec::new();
                 {
                     let mut action_writer = avm1::write::Writer::new(&mut buf, self.version);
-                    action_writer.write_action_list(&actions)?;
+                    action_writer.write_action_list(actions)?;
                 }
                 self.write_tag_header(TagCode::DoAction, buf.len() as u32)?;
                 self.output.write_all(&buf)?;
             }
-            &Tag::DoInitAction {
+            Tag::DoInitAction {
                 id,
                 ref action_data,
             } => {
@@ -754,7 +756,7 @@ impl<W: Write> Writer<W> {
                 self.output.write_all(action_data)?;
             }
 
-            &Tag::EnableDebugger(ref password_md5) => {
+            Tag::EnableDebugger(ref password_md5) => {
                 let len = password_md5.len() as u32 + 1;
                 if self.version >= 6 {
                     // SWF v6+ uses EnableDebugger2 tag.
@@ -767,8 +769,8 @@ impl<W: Write> Writer<W> {
                 self.write_c_string(password_md5)?;
             }
 
-            &Tag::EnableTelemetry { ref password_hash } => {
-                if password_hash.len() > 0 {
+            Tag::EnableTelemetry { ref password_hash } => {
+                if !password_hash.is_empty() {
                     self.write_tag_header(TagCode::EnableTelemetry, 34)?;
                     self.write_u16(0)?;
                     self.output.write_all(&password_hash[0..32])?;
@@ -778,7 +780,7 @@ impl<W: Write> Writer<W> {
                 }
             }
 
-            &Tag::ImportAssets {
+            Tag::ImportAssets {
                 ref url,
                 ref imports,
             } => {
@@ -801,23 +803,23 @@ impl<W: Write> Writer<W> {
                 }
             }
 
-            &Tag::JpegTables(ref data) => {
+            Tag::JpegTables(ref data) => {
                 self.write_tag_header(TagCode::JpegTables, data.len() as u32)?;
                 self.output.write_all(data)?;
             }
 
-            &Tag::Metadata(ref metadata) => {
+            Tag::Metadata(ref metadata) => {
                 self.write_tag_header(TagCode::Metadata, metadata.len() as u32 + 1)?;
                 self.write_c_string(metadata)?;
             }
 
             // TODO: Allow clone of color.
-            &Tag::SetBackgroundColor(ref color) => {
+            Tag::SetBackgroundColor(ref color) => {
                 self.write_tag_header(TagCode::SetBackgroundColor, 3)?;
                 self.write_rgb(color)?;
             }
 
-            &Tag::ScriptLimits {
+            Tag::ScriptLimits {
                 max_recursion_depth,
                 timeout_in_seconds,
             } => {
@@ -826,13 +828,13 @@ impl<W: Write> Writer<W> {
                 self.write_u16(timeout_in_seconds)?;
             }
 
-            &Tag::SetTabIndex { depth, tab_index } => {
+            Tag::SetTabIndex { depth, tab_index } => {
                 self.write_tag_header(TagCode::SetTabIndex, 4)?;
                 self.write_i16(depth)?;
                 self.write_u16(tab_index)?;
             }
 
-            &Tag::PlaceObject(ref place_object) => {
+            Tag::PlaceObject(ref place_object) => {
                 match (*place_object).version {
                     1 => self.write_place_object(place_object)?,
                     2 => self.write_place_object_2_or_3(place_object, 2)?,
@@ -847,7 +849,7 @@ impl<W: Write> Writer<W> {
                 }
             }
 
-            &Tag::RemoveObject {
+            Tag::RemoveObject {
                 depth,
                 character_id,
             } => {
@@ -860,27 +862,22 @@ impl<W: Write> Writer<W> {
                 self.write_i16(depth)?;
             }
 
-            &Tag::SoundStreamBlock(ref data) => {
+            Tag::SoundStreamBlock(ref data) => {
                 self.write_tag_header(TagCode::SoundStreamBlock, data.len() as u32)?;
                 self.output.write_all(data)?;
             }
 
-            &Tag::SoundStreamHead(ref sound_stream_info) => {
+            Tag::SoundStreamHead(ref sound_stream_info) => {
                 self.write_sound_stream_head(sound_stream_info, 1)?;
             }
 
-            &Tag::SoundStreamHead2(ref sound_stream_info) => {
+            Tag::SoundStreamHead2(ref sound_stream_info) => {
                 self.write_sound_stream_head(sound_stream_info, 2)?;
             }
 
-            &Tag::StartSound { id, ref sound_info } => {
-                let length = 3 +
-                    if let Some(_) = sound_info.in_sample {
-                        4
-                    } else {
-                        0
-                    } +
-                    if let Some(_) = sound_info.out_sample {
+            Tag::StartSound { id, ref sound_info } => {
+                let length = 3 + if sound_info.in_sample.is_some() { 4 } else { 0 } +
+                    if sound_info.out_sample.is_some() {
                         4
                     } else {
                         0
@@ -895,17 +892,13 @@ impl<W: Write> Writer<W> {
                 self.write_sound_info(sound_info)?;
             }
 
-            &Tag::StartSound2 {
+            Tag::StartSound2 {
                 ref class_name,
                 ref sound_info,
             } => {
                 let length = class_name.len() as u32 + 2 +
-                    if let Some(_) = sound_info.in_sample {
-                        4
-                    } else {
-                        0
-                    } +
-                    if let Some(_) = sound_info.out_sample {
+                    if sound_info.in_sample.is_some() { 4 } else { 0 } +
+                    if sound_info.out_sample.is_some() {
                         4
                     } else {
                         0
@@ -920,7 +913,7 @@ impl<W: Write> Writer<W> {
                 self.write_sound_info(sound_info)?;
             }
 
-            &Tag::SymbolClass(ref symbols) => {
+            Tag::SymbolClass(ref symbols) => {
                 let len = symbols
                     .iter()
                     .map(|e| e.class_name.len() as u32 + 3)
@@ -933,14 +926,14 @@ impl<W: Write> Writer<W> {
                 }
             }
 
-            &Tag::VideoFrame(ref frame) => {
+            Tag::VideoFrame(ref frame) => {
                 self.write_tag_header(TagCode::VideoFrame, 4 + frame.data.len() as u32)?;
                 self.write_character_id(frame.stream_id)?;
                 self.write_u16(frame.frame_num)?;
                 self.output.write_all(&frame.data)?;
             }
 
-            &Tag::FileAttributes(ref attributes) => {
+            Tag::FileAttributes(ref attributes) => {
                 self.write_tag_header(TagCode::FileAttributes, 4)?;
                 let mut flags = 0u32;
                 if attributes.use_direct_blit {
@@ -961,7 +954,7 @@ impl<W: Write> Writer<W> {
                 self.write_u32(flags)?;
             }
 
-            &Tag::FrameLabel {
+            Tag::FrameLabel {
                 ref label,
                 is_anchor,
             } => {
@@ -975,12 +968,12 @@ impl<W: Write> Writer<W> {
                 }
             }
 
-            &Tag::DefineSceneAndFrameLabelData {
+            Tag::DefineSceneAndFrameLabelData {
                 ref scenes,
                 ref frame_labels,
             } => self.write_define_scene_and_frame_label_data(scenes, frame_labels)?,
 
-            &Tag::Unknown { tag_code, ref data } => {
+            Tag::Unknown { tag_code, ref data } => {
                 self.write_tag_code_and_length(tag_code, data.len() as u32)?;
                 self.output.write_all(data)?;
             }
@@ -1026,7 +1019,7 @@ impl<W: Write> Writer<W> {
 
             let mut iter = button.actions.iter().peekable();
             while let Some(action) = iter.next() {
-                if let Some(_) = iter.peek() {
+                if iter.peek().is_some() {
                     let length = action.action_data.len() as u16 + 4;
                     writer.write_u16(length)?;
                 } else {
@@ -1423,8 +1416,8 @@ impl<W: Write> Writer<W> {
 
     fn write_define_scene_and_frame_label_data(
         &mut self,
-        scenes: &Vec<FrameLabel>,
-        frame_labels: &Vec<FrameLabel>,
+        scenes: &[FrameLabel],
+        frame_labels: &[FrameLabel],
     ) -> Result<()> {
 
         let mut buf = Vec::with_capacity((scenes.len() + frame_labels.len()) * 4);
@@ -1620,8 +1613,8 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_shape_record(&mut self, record: &ShapeRecord, shape_version: u8) -> Result<()> {
-        match record {
-            &ShapeRecord::StraightEdge { delta_x, delta_y } => {
+        match *record {
+            ShapeRecord::StraightEdge { delta_x, delta_y } => {
                 self.write_ubits(2, 0b11)?; // Straight edge
                 let delta_x_twips = (delta_x * 20f32) as i32;
                 let delta_y_twips = (delta_y * 20f32) as i32;
@@ -1641,7 +1634,7 @@ impl<W: Write> Writer<W> {
                     self.write_sbits(num_bits, delta_y_twips)?;
                 }
             }
-            &ShapeRecord::CurvedEdge {
+            ShapeRecord::CurvedEdge {
                 control_delta_x,
                 control_delta_y,
                 anchor_delta_x,
@@ -1667,7 +1660,7 @@ impl<W: Write> Writer<W> {
                 self.write_sbits(num_bits, anchor_twips_x)?;
                 self.write_sbits(num_bits, anchor_twips_y)?;
             }
-            &ShapeRecord::StyleChange(ref style_change) => {
+            ShapeRecord::StyleChange(ref style_change) => {
                 self.write_bit(false)?; // Style change
                 let num_fill_bits = self.num_fill_bits;
                 let num_line_bits = self.num_line_bits;
@@ -1708,8 +1701,8 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_fill_style(&mut self, fill_style: &FillStyle, shape_version: u8) -> Result<()> {
-        match fill_style {
-            &FillStyle::Color(ref color) => {
+        match *fill_style {
+            FillStyle::Color(ref color) => {
                 self.write_u8(0x00)?; // Solid color.
                 if shape_version >= 3 {
                     self.write_rgba(color)?
@@ -1718,17 +1711,17 @@ impl<W: Write> Writer<W> {
                 }
             }
 
-            &FillStyle::LinearGradient(ref gradient) => {
+            FillStyle::LinearGradient(ref gradient) => {
                 self.write_u8(0x10)?; // Linear gradient.
                 self.write_gradient(gradient, shape_version)?;
             }
 
-            &FillStyle::RadialGradient(ref gradient) => {
+            FillStyle::RadialGradient(ref gradient) => {
                 self.write_u8(0x12)?; // Linear gradient.
                 self.write_gradient(gradient, shape_version)?;
             }
 
-            &FillStyle::FocalGradient {
+            FillStyle::FocalGradient {
                 ref gradient,
                 focal_point,
             } => {
@@ -1745,7 +1738,7 @@ impl<W: Write> Writer<W> {
                 self.write_fixed8(focal_point)?;
             }
 
-            &FillStyle::Bitmap {
+            FillStyle::Bitmap {
                 id,
                 ref matrix,
                 is_smoothed,
@@ -1785,11 +1778,7 @@ impl<W: Write> Writer<W> {
                     LineJoinStyle::Miter(_) => 2,
                 },
             )?;
-            self.write_bit(if let Some(_) = line_style.fill_style {
-                true
-            } else {
-                false
-            })?;
+            self.write_bit(line_style.fill_style.is_some())?;
             self.write_bit(!line_style.allow_scale_x)?;
             self.write_bit(!line_style.allow_scale_y)?;
             self.write_bit(line_style.is_pixel_hinted)?;
@@ -1862,7 +1851,7 @@ impl<W: Write> Writer<W> {
             }
             writer.write_i16(place_object.depth)?;
             if let Some(ref matrix) = place_object.matrix {
-                writer.write_matrix(&matrix)?;
+                writer.write_matrix(matrix)?;
             } else {
                 writer.write_matrix(&Matrix::new())?;
             }
@@ -2038,8 +2027,8 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_filter(&mut self, filter: &Filter) -> Result<()> {
-        match filter {
-            &Filter::DropShadowFilter(ref drop_shadow) => {
+        match *filter {
+            Filter::DropShadowFilter(ref drop_shadow) => {
                 self.write_u8(0)?;
                 self.write_rgba(&drop_shadow.color)?;
                 self.write_fixed16(drop_shadow.blur_x)?;
@@ -2053,14 +2042,14 @@ impl<W: Write> Writer<W> {
                 self.write_ubits(5, drop_shadow.num_passes as u32)?;
             }
 
-            &Filter::BlurFilter(ref blur) => {
+            Filter::BlurFilter(ref blur) => {
                 self.write_u8(1)?;
                 self.write_fixed16(blur.blur_x)?;
                 self.write_fixed16(blur.blur_y)?;
                 self.write_u8(blur.num_passes << 3)?;
             }
 
-            &Filter::GlowFilter(ref glow) => {
+            Filter::GlowFilter(ref glow) => {
                 self.write_u8(2)?;
                 self.write_rgba(&glow.color)?;
                 self.write_fixed16(glow.blur_x)?;
@@ -2072,7 +2061,7 @@ impl<W: Write> Writer<W> {
                 self.write_ubits(5, glow.num_passes as u32)?;
             }
 
-            &Filter::BevelFilter(ref bevel) => {
+            Filter::BevelFilter(ref bevel) => {
                 self.write_u8(3)?;
                 self.write_rgba(&bevel.shadow_color)?;
                 self.write_rgba(&bevel.highlight_color)?;
@@ -2088,7 +2077,7 @@ impl<W: Write> Writer<W> {
                 self.write_ubits(4, bevel.num_passes as u32)?;
             }
 
-            &Filter::GradientGlowFilter(ref glow) => {
+            Filter::GradientGlowFilter(ref glow) => {
                 self.write_u8(4)?;
                 self.write_u8(glow.colors.len() as u8)?;
                 for gradient_record in &glow.colors {
@@ -2109,7 +2098,7 @@ impl<W: Write> Writer<W> {
                 self.write_ubits(4, glow.num_passes as u32)?;
             }
 
-            &Filter::ConvolutionFilter(ref convolve) => {
+            Filter::ConvolutionFilter(ref convolve) => {
                 self.write_u8(5)?;
                 self.write_u8(convolve.num_matrix_cols)?;
                 self.write_u8(convolve.num_matrix_rows)?;
@@ -2125,14 +2114,14 @@ impl<W: Write> Writer<W> {
                 )?;
             }
 
-            &Filter::ColorMatrixFilter(ref color_matrix) => {
+            Filter::ColorMatrixFilter(ref color_matrix) => {
                 self.write_u8(6)?;
                 for i in 0..20 {
                     self.write_fixed16(color_matrix.matrix[i])?;
                 }
             }
 
-            &Filter::GradientBevelFilter(ref bevel) => {
+            Filter::GradientBevelFilter(ref bevel) => {
                 self.write_u8(7)?;
                 self.write_u8(bevel.colors.len() as u8)?;
                 for gradient_record in &bevel.colors {
@@ -2157,7 +2146,7 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_clip_actions(&mut self, clip_actions: &Vec<ClipAction>) -> Result<()> {
+    fn write_clip_actions(&mut self, clip_actions: &[ClipAction]) -> Result<()> {
         self.write_u16(0)?; // Reserved
         {
             let mut all_events = HashSet::with_capacity(32);
@@ -2276,17 +2265,17 @@ impl<W: Write> Writer<W> {
             SoundEvent::Start => 0b01_0000u8,
             SoundEvent::Stop => 0b10_0000u8,
         } |
-            if let Some(_) = sound_info.in_sample {
+            if sound_info.in_sample.is_some() {
                 0b1
             } else {
                 0
             } |
-            if let Some(_) = sound_info.out_sample {
+            if sound_info.out_sample.is_some() {
                 0b10
             } else {
                 0
             } | if sound_info.num_loops > 1 { 0b100 } else { 0 } |
-            if let Some(_) = sound_info.envelope {
+            if sound_info.envelope.is_some() {
                 0b1000
             } else {
                 0
@@ -2400,18 +2389,19 @@ impl<W: Write> Writer<W> {
                 writer.write_u16(layout.descent)?;
                 writer.write_i16(layout.leading)?;
                 for glyph in &font.glyphs {
-                    writer.write_i16(glyph.advance.ok_or(Error::new(
-                        ErrorKind::InvalidData,
-                        "glyph.advance cannot be None",
-                    ))?)?;
+                    writer.write_i16(glyph
+                        .advance
+                        .ok_or_else(|| {
+                            Error::new(ErrorKind::InvalidData, "glyph.advance cannot be None")
+                        })?)?;
                 }
                 for glyph in &font.glyphs {
-                    writer.write_rectangle(
-                        glyph.bounds.as_ref().ok_or(Error::new(
-                            ErrorKind::InvalidData,
-                            "glyph.bounds cannot be None",
-                        ))?,
-                    )?;
+                    writer.write_rectangle(glyph
+                        .bounds
+                        .as_ref()
+                        .ok_or_else(|| {
+                            Error::new(ErrorKind::InvalidData, "glyph.bounds cannot be None")
+                        })?)?;
                 }
                 writer.write_u16(layout.kerning.len() as u16)?;
                 for kerning_record in &layout.kerning {
@@ -2571,7 +2561,7 @@ impl<W: Write> Writer<W> {
             }
 
             if let Some(ref color) = edit_text.color {
-                writer.write_rgba(&color)?
+                writer.write_rgba(color)?
             }
 
             if let Some(len) = edit_text.max_length {
@@ -2644,7 +2634,7 @@ impl<W: Write> Writer<W> {
         }
     }
 
-    fn write_tag_list(&mut self, tags: &Vec<Tag>) -> Result<()> {
+    fn write_tag_list(&mut self, tags: &[Tag]) -> Result<()> {
         // TODO: Better error handling. Can skip errored tags, unless EOF.
         for tag in tags {
             self.write_tag(tag)?;
