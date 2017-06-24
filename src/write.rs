@@ -39,18 +39,18 @@ pub fn write_swf<W: Write>(swf: &Swf, mut output: W) -> Result<()> {
     match swf.compression {
         Compression::None => {
             output.write_all(&swf_body)?;
-        },
+        }
 
         Compression::Zlib => {
             let mut encoder = ZlibEncoder::new(&mut output, ZlibCompression::Best);
             encoder.write_all(&swf_body)?;
         }
 
+        // LZMA header.
+        // SWF format has a mangled LZMA header, so we have to do some magic to conver the
+        // standard LZMA header to SWF format.
+        // https://adobe.ly/2s8oYzn
         Compression::Lzma => {
-            // LZMA header.
-            // SWF format has a mangled LZMA header, so we have to do some magic to conver the
-            // standard LZMA header to SWF format.
-            // https://helpx.adobe.com/flash-player/kb/exception-thrown-you-decompress-lzma-compressed.html
             use xz2::stream::{Action, LzmaOptions, Stream};
             let mut stream = Stream::new_lzma_encoder(&LzmaOptions::new_preset(9)?)?;
             let mut lzma_header = [0; 13];
@@ -254,8 +254,12 @@ impl<W: Write> Writer<W> {
 
     fn write_rectangle(&mut self, rectangle: &Rectangle) -> Result<()> {
         self.flush_bits()?;
-        let num_bits: u8 = [rectangle.x_min, rectangle.x_max, rectangle.y_min, rectangle.y_max]
-            .iter()
+        let num_bits: u8 = [
+            rectangle.x_min,
+            rectangle.x_max,
+            rectangle.y_min,
+            rectangle.y_max,
+        ].iter()
             .map(|x| count_sbits((*x * 20f32) as i32))
             .max()
             .unwrap();
@@ -293,16 +297,32 @@ impl<W: Write> Writer<W> {
             color_transform.b_multiply != 1f32;
         let has_add = color_transform.r_add != 0 || color_transform.g_add != 0 ||
             color_transform.b_add != 0;
-        let multiply = [color_transform.r_multiply, color_transform.g_multiply, color_transform.b_multiply];
-        let add = [color_transform.a_add, color_transform.g_add, color_transform.b_add, color_transform.a_add];
+        let multiply = [
+            color_transform.r_multiply,
+            color_transform.g_multiply,
+            color_transform.b_multiply,
+        ];
+        let add = [
+            color_transform.a_add,
+            color_transform.g_add,
+            color_transform.b_add,
+            color_transform.a_add,
+        ];
         self.write_bit(has_mult)?;
         self.write_bit(has_add)?;
         let mut num_bits = 0u8;
         if has_mult {
-            num_bits = multiply.iter().map(|n| count_sbits((*n * 256f32) as i32)).max().unwrap();
+            num_bits = multiply
+                .iter()
+                .map(|n| count_sbits((*n * 256f32) as i32))
+                .max()
+                .unwrap();
         }
         if has_add {
-            num_bits = max(num_bits, add.iter().map(|n| count_sbits(*n as i32)).max().unwrap());
+            num_bits = max(
+                num_bits,
+                add.iter().map(|n| count_sbits(*n as i32)).max().unwrap(),
+            );
         }
         self.write_ubits(4, num_bits as u32)?;
         if has_mult {
@@ -321,21 +341,37 @@ impl<W: Write> Writer<W> {
     fn write_color_transform(&mut self, color_transform: &ColorTransform) -> Result<()> {
         self.flush_bits()?;
         let has_mult = color_transform.r_multiply != 1f32 || color_transform.g_multiply != 1f32 ||
-            color_transform.b_multiply != 1f32 || color_transform.a_multiply != 1f32;
+            color_transform.b_multiply != 1f32 ||
+            color_transform.a_multiply != 1f32;
         let has_add = color_transform.r_add != 0 || color_transform.g_add != 0 ||
             color_transform.b_add != 0 || color_transform.a_add != 0;
-        let multiply = [color_transform.r_multiply, color_transform.g_multiply,
-            color_transform.b_multiply, color_transform.a_multiply];
-        let add = [color_transform.r_add, color_transform.g_add,
-            color_transform.b_add, color_transform.a_add];
+        let multiply = [
+            color_transform.r_multiply,
+            color_transform.g_multiply,
+            color_transform.b_multiply,
+            color_transform.a_multiply,
+        ];
+        let add = [
+            color_transform.r_add,
+            color_transform.g_add,
+            color_transform.b_add,
+            color_transform.a_add,
+        ];
         self.write_bit(has_add)?;
         self.write_bit(has_mult)?;
         let mut num_bits = 0u8;
         if has_mult {
-            num_bits = multiply.iter().map(|n| count_sbits((*n * 256f32) as i32)).max().unwrap();
+            num_bits = multiply
+                .iter()
+                .map(|n| count_sbits((*n * 256f32) as i32))
+                .max()
+                .unwrap();
         }
         if has_add {
-            num_bits = max(num_bits, add.iter().map(|n| count_sbits(*n as i32)).max().unwrap());
+            num_bits = max(
+                num_bits,
+                add.iter().map(|n| count_sbits(*n as i32)).max().unwrap(),
+            );
         }
         self.write_ubits(4, num_bits as u32)?;
         if has_mult {
@@ -377,7 +413,10 @@ impl<W: Write> Writer<W> {
         // Translate (always written)
         let translate_x_twips = (m.translate_x * 20f32) as i32;
         let translate_y_twips = (m.translate_y * 20f32) as i32;
-        let num_bits = max(count_sbits(translate_x_twips), count_sbits(translate_y_twips));
+        let num_bits = max(
+            count_sbits(translate_x_twips),
+            count_sbits(translate_y_twips),
+        );
         self.write_ubits(5, num_bits as u32)?;
         self.write_sbits(num_bits, translate_x_twips)?;
         self.write_sbits(num_bits, translate_y_twips)?;
@@ -400,16 +439,15 @@ impl<W: Write> Writer<W> {
             &Tag::ShowFrame => self.write_tag_header(TagCode::ShowFrame, 0)?,
 
             &Tag::ExportAssets(ref exports) => {
-                let len = exports.iter().map(|e| e.name.len() as u32 + 1).sum::<u32>()
-                            + exports.len() as u32 * 2
-                            + 2;
+                let len = exports.iter().map(|e| e.name.len() as u32 + 1).sum::<u32>() +
+                    exports.len() as u32 * 2 + 2;
                 self.write_tag_header(TagCode::ExportAssets, len)?;
                 self.write_u16(exports.len() as u16)?;
-                for &ExportedAsset {id, ref name} in exports {
+                for &ExportedAsset { id, ref name } in exports {
                     self.write_u16(id)?;
                     self.write_c_string(name)?;
                 }
-            },
+            }
 
             &Tag::Protect(ref password) => {
                 if let &Some(ref password_md5) = password {
@@ -419,45 +457,52 @@ impl<W: Write> Writer<W> {
                 } else {
                     self.write_tag_header(TagCode::Protect, 0)?;
                 }
-            },
+            }
 
             &Tag::CsmTextSettings(ref settings) => {
                 self.write_tag_header(TagCode::CsmTextSettings, 12)?;
                 self.write_character_id(settings.id)?;
                 self.write_u8(
-                    if settings.use_advanced_rendering { 0b01_000000 } else { 0 } |
-                    match settings.grid_fit {
-                        TextGridFit::None => 0,
-                        TextGridFit::Pixel => 0b01_000,
-                        TextGridFit::SubPixel => 0b10_000,
-                    }
+                    if settings.use_advanced_rendering {
+                        0b01_000000
+                    } else {
+                        0
+                    } |
+                        match settings.grid_fit {
+                            TextGridFit::None => 0,
+                            TextGridFit::Pixel => 0b01_000,
+                            TextGridFit::SubPixel => 0b10_000,
+                        },
                 )?;
                 self.write_f32(settings.thickness)?;
                 self.write_f32(settings.sharpness)?;
                 self.write_u8(0)?; // Reserved (0).
-            },
+            }
 
             &Tag::DefineBinaryData { id, ref data } => {
                 self.write_tag_header(TagCode::DefineBinaryData, data.len() as u32 + 6)?;
                 self.write_u16(id)?;
                 self.write_u32(0)?; // Reserved
                 self.output.write_all(&data)?;
-            },
+            }
 
             &Tag::DefineBits { id, ref jpeg_data } => {
                 self.write_tag_header(TagCode::DefineBits, jpeg_data.len() as u32 + 2)?;
                 self.write_u16(id)?;
                 self.output.write_all(jpeg_data)?;
-            },
+            }
 
             &Tag::DefineBitsJpeg2 { id, ref jpeg_data } => {
                 self.write_tag_header(TagCode::DefineBitsJpeg2, jpeg_data.len() as u32 + 2)?;
                 self.write_u16(id)?;
                 self.output.write_all(jpeg_data)?;
-            },
+            }
 
             &Tag::DefineBitsJpeg3(ref jpeg) => {
-                self.write_tag_header(TagCode::DefineBitsJpeg3, (jpeg.data.len() + jpeg.alpha_data.len() + 6) as u32)?;
+                self.write_tag_header(
+                    TagCode::DefineBitsJpeg3,
+                    (jpeg.data.len() + jpeg.alpha_data.len() + 6) as u32,
+                )?;
                 self.write_u16(jpeg.id)?;
                 if jpeg.version >= 4 {
                     self.write_fixed8(jpeg.deblocking)?;
@@ -466,7 +511,7 @@ impl<W: Write> Writer<W> {
                 self.write_u32(jpeg.data.len() as u32)?;
                 self.output.write_all(&jpeg.data)?;
                 self.output.write_all(&jpeg.alpha_data)?;
-            },
+            }
 
             &Tag::DefineBitsLossless(ref tag) => {
                 let mut length = 7 + tag.data.len();
@@ -474,7 +519,11 @@ impl<W: Write> Writer<W> {
                     length += 1;
                 }
                 // TODO(Herschel): Throw error if RGB15 in tag version 2.
-                let tag_code = if tag.version == 1 { TagCode::DefineBitsLossless } else { TagCode::DefineBitsLossless2 };
+                let tag_code = if tag.version == 1 {
+                    TagCode::DefineBitsLossless
+                } else {
+                    TagCode::DefineBitsLossless2
+                };
                 self.write_tag_header(tag_code, length as u32)?;
                 self.write_character_id(tag.id)?;
                 let format_id = match tag.format {
@@ -489,17 +538,16 @@ impl<W: Write> Writer<W> {
                     self.write_u8(tag.num_colors)?;
                 }
                 self.output.write_all(&tag.data)?;
-            },
+            }
 
-            &Tag::DefineButton(ref button) => {
-                self.write_define_button(button)?
-            },
+            &Tag::DefineButton(ref button) => self.write_define_button(button)?,
 
-            &Tag::DefineButton2(ref button) => {
-                self.write_define_button_2(button)?
-            },
+            &Tag::DefineButton2(ref button) => self.write_define_button_2(button)?,
 
-            &Tag::DefineButtonColorTransform { id, ref color_transforms } => {
+            &Tag::DefineButtonColorTransform {
+                id,
+                ref color_transforms,
+            } => {
                 let mut buf = Vec::new();
                 {
                     let mut writer = Writer::new(&mut buf, self.version);
@@ -511,7 +559,7 @@ impl<W: Write> Writer<W> {
                 }
                 self.write_tag_header(TagCode::DefineButtonCxform, buf.len() as u32)?;
                 self.output.write_all(&buf)?;
-            },
+            }
 
             &Tag::DefineButtonSound(ref button_sounds) => {
                 let mut buf = Vec::new();
@@ -521,23 +569,31 @@ impl<W: Write> Writer<W> {
                     if let Some(ref sound) = button_sounds.over_to_up_sound {
                         writer.write_u16(sound.0)?;
                         writer.write_sound_info(&sound.1)?;
-                    } else { writer.write_u16(0)? };
+                    } else {
+                        writer.write_u16(0)?
+                    };
                     if let Some(ref sound) = button_sounds.up_to_over_sound {
                         writer.write_u16(sound.0)?;
                         writer.write_sound_info(&sound.1)?;
-                    } else { writer.write_u16(0)? };
+                    } else {
+                        writer.write_u16(0)?
+                    };
                     if let Some(ref sound) = button_sounds.over_to_down_sound {
                         writer.write_u16(sound.0)?;
                         writer.write_sound_info(&sound.1)?;
-                    } else { writer.write_u16(0)? };
+                    } else {
+                        writer.write_u16(0)?
+                    };
                     if let Some(ref sound) = button_sounds.down_to_over_sound {
                         writer.write_u16(sound.0)?;
                         writer.write_sound_info(&sound.1)?;
-                    } else { writer.write_u16(0)? };
+                    } else {
+                        writer.write_u16(0)?
+                    };
                 }
                 self.write_tag_header(TagCode::DefineButtonSound, buf.len() as u32)?;
                 self.output.write_all(&buf)?;
-            },
+            }
 
             &Tag::DefineEditText(ref edit_text) => self.write_define_edit_text(edit_text)?,
 
@@ -574,12 +630,16 @@ impl<W: Write> Writer<W> {
                     self.write_u16(offset)?;
                 }
                 self.output.write_all(&buf)?;
-            },
+            }
 
             &Tag::DefineFont2(ref font) => self.write_define_font_2(font)?,
             &Tag::DefineFont4(ref font) => self.write_define_font_4(font)?,
 
-            &Tag::DefineFontAlignZones { id, thickness, ref zones } => {
+            &Tag::DefineFontAlignZones {
+                id,
+                thickness,
+                ref zones,
+            } => {
                 self.write_tag_header(TagCode::DefineFontAlignZones, 3 + 10 * zones.len() as u32)?;
                 self.write_character_id(id)?;
                 self.write_u8(match thickness {
@@ -588,25 +648,27 @@ impl<W: Write> Writer<W> {
                     FontThickness::Thick => 0b10_000000,
                 })?;
                 for zone in zones {
-                    self.write_u8(2)?;  // Always 2 dimensions.
+                    self.write_u8(2)?; // Always 2 dimensions.
                     self.write_i16(zone.left)?;
                     self.write_i16(zone.width)?;
                     self.write_i16(zone.bottom)?;
                     self.write_i16(zone.height)?;
                     self.write_u8(0b000000_11)?; // Always 2 dimensions.
                 }
-            },
+            }
 
             &Tag::DefineFontInfo(ref font_info) => {
                 let use_wide_codes = self.version >= 6 || font_info.version >= 2;
 
                 let len = font_info.name.len() +
                     if use_wide_codes { 2 } else { 1 } * font_info.code_table.len() +
-                    if font_info.version >= 2 { 1 } else { 0 } +
-                    4;
+                    if font_info.version >= 2 { 1 } else { 0 } + 4;
 
-                let tag_id = if font_info.version == 1 { TagCode::DefineFontInfo }
-                    else { TagCode::DefineFontInfo2 };
+                let tag_id = if font_info.version == 1 {
+                    TagCode::DefineFontInfo
+                } else {
+                    TagCode::DefineFontInfo2
+                };
                 self.write_tag_header(tag_id, len as u32)?;
                 self.write_u16(font_info.id)?;
 
@@ -615,11 +677,11 @@ impl<W: Write> Writer<W> {
                 self.output.write_all(font_info.name.as_bytes())?;
                 self.write_u8(
                     if font_info.is_small_text { 0b100000 } else { 0 } |
-                    if font_info.is_ansi { 0b10000 } else { 0 } |
-                    if font_info.is_shift_jis { 0b1000 } else { 0 } |
-                    if font_info.is_italic { 0b100 } else { 0 } |
-                    if font_info.is_bold { 0b10 } else { 0 } |
-                    if use_wide_codes { 0b1 } else { 0 }
+                        if font_info.is_ansi { 0b10000 } else { 0 } |
+                        if font_info.is_shift_jis { 0b1000 } else { 0 } |
+                        if font_info.is_italic { 0b100 } else { 0 } |
+                        if font_info.is_bold { 0b10 } else { 0 } |
+                        if use_wide_codes { 0b1 } else { 0 },
                 )?;
                 // TODO(Herschel): Assert language is unknown for v1.
                 if font_info.version >= 2 {
@@ -632,19 +694,28 @@ impl<W: Write> Writer<W> {
                         self.write_u8(code as u8)?;
                     }
                 }
-            },
+            }
 
-            &Tag::DefineFontName { id, ref name, ref copyright_info } => {
+            &Tag::DefineFontName {
+                id,
+                ref name,
+                ref copyright_info,
+            } => {
                 let len = name.len() + copyright_info.len() + 4;
                 self.write_tag_header(TagCode::DefineFontName, len as u32)?;
                 self.write_character_id(id)?;
                 self.write_c_string(name)?;
                 self.write_c_string(copyright_info)?;
-            },
+            }
 
-            &Tag::DefineMorphShape(ref define_morph_shape) => self.write_define_morph_shape(define_morph_shape)?,
+            &Tag::DefineMorphShape(ref define_morph_shape) => {
+                self.write_define_morph_shape(define_morph_shape)?
+            }
 
-            &Tag::DefineScalingGrid { id, ref splitter_rect } => {
+            &Tag::DefineScalingGrid {
+                id,
+                ref splitter_rect,
+            } => {
                 let mut buf = Vec::new();
                 {
                     let mut writer = Writer::new(&mut buf, self.version);
@@ -654,7 +725,7 @@ impl<W: Write> Writer<W> {
                 }
                 self.write_tag_header(TagCode::DefineScalingGrid, buf.len() as u32)?;
                 self.output.write_all(&buf)?;
-            },
+            }
 
             &Tag::DefineShape(ref shape) => self.write_define_shape(shape)?,
             &Tag::DefineSound(ref sound) => self.write_define_sound(sound)?,
@@ -664,7 +735,7 @@ impl<W: Write> Writer<W> {
             &Tag::DoAbc(ref action_data) => {
                 self.write_tag_header(TagCode::DoAbc, action_data.len() as u32)?;
                 self.output.write_all(action_data)?;
-            },
+            }
             &Tag::DoAction(ref actions) => {
                 let mut buf = Vec::new();
                 {
@@ -673,12 +744,15 @@ impl<W: Write> Writer<W> {
                 }
                 self.write_tag_header(TagCode::DoAction, buf.len() as u32)?;
                 self.output.write_all(&buf)?;
-            },
-            &Tag::DoInitAction { id, ref action_data } => {
+            }
+            &Tag::DoInitAction {
+                id,
+                ref action_data,
+            } => {
                 self.write_tag_header(TagCode::DoInitAction, action_data.len() as u32 + 2)?;
                 self.write_u16(id)?;
                 self.output.write_all(action_data)?;
-            },
+            }
 
             &Tag::EnableDebugger(ref password_md5) => {
                 let len = password_md5.len() as u32 + 1;
@@ -689,9 +763,9 @@ impl<W: Write> Writer<W> {
                 } else {
                     self.write_tag_header(TagCode::EnableDebugger, len)?;
                 }
-                
+
                 self.write_c_string(password_md5)?;
-            },
+            }
 
             &Tag::EnableTelemetry { ref password_hash } => {
                 if password_hash.len() > 0 {
@@ -702,12 +776,14 @@ impl<W: Write> Writer<W> {
                     self.write_tag_header(TagCode::EnableTelemetry, 2)?;
                     self.write_u16(0)?;
                 }
-            },
+            }
 
-            &Tag::ImportAssets { ref url, ref imports } => {
-                let len = imports.iter().map(|e| e.name.len() as u32 + 3).sum::<u32>()
-                            + url.len() as u32 + 1
-                            + 2;
+            &Tag::ImportAssets {
+                ref url,
+                ref imports,
+            } => {
+                let len = imports.iter().map(|e| e.name.len() as u32 + 3).sum::<u32>() +
+                    url.len() as u32 + 1 + 2;
                 // SWF v8 and later use ImportAssets2 tag.
                 if self.version >= 8 {
                     self.write_tag_header(TagCode::ImportAssets2, len + 2)?;
@@ -719,49 +795,62 @@ impl<W: Write> Writer<W> {
                     self.write_c_string(url)?;
                 }
                 self.write_u16(imports.len() as u16)?;
-                for &ExportedAsset {id, ref name} in imports {
+                for &ExportedAsset { id, ref name } in imports {
                     self.write_u16(id)?;
                     self.write_c_string(name)?;
                 }
-            },
+            }
 
             &Tag::JpegTables(ref data) => {
                 self.write_tag_header(TagCode::JpegTables, data.len() as u32)?;
                 self.output.write_all(data)?;
-            },
+            }
 
             &Tag::Metadata(ref metadata) => {
                 self.write_tag_header(TagCode::Metadata, metadata.len() as u32 + 1)?;
                 self.write_c_string(metadata)?;
-            },
+            }
 
             // TODO: Allow clone of color.
             &Tag::SetBackgroundColor(ref color) => {
                 self.write_tag_header(TagCode::SetBackgroundColor, 3)?;
                 self.write_rgb(color)?;
-            },
+            }
 
-            &Tag::ScriptLimits { max_recursion_depth, timeout_in_seconds } => {
+            &Tag::ScriptLimits {
+                max_recursion_depth,
+                timeout_in_seconds,
+            } => {
                 self.write_tag_header(TagCode::ScriptLimits, 4)?;
                 self.write_u16(max_recursion_depth)?;
                 self.write_u16(timeout_in_seconds)?;
-            },
+            }
 
             &Tag::SetTabIndex { depth, tab_index } => {
                 self.write_tag_header(TagCode::SetTabIndex, 4)?;
                 self.write_i16(depth)?;
                 self.write_u16(tab_index)?;
-            },
+            }
 
-            &Tag::PlaceObject(ref place_object) => match (*place_object).version {
-                1 => self.write_place_object(place_object)?,
-                2 => self.write_place_object_2_or_3(place_object, 2)?,
-                3 => self.write_place_object_2_or_3(place_object, 3)?,
-                4 => self.write_place_object_2_or_3(place_object, 4)?,
-                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid PlaceObject version.")),
-            },
+            &Tag::PlaceObject(ref place_object) => {
+                match (*place_object).version {
+                    1 => self.write_place_object(place_object)?,
+                    2 => self.write_place_object_2_or_3(place_object, 2)?,
+                    3 => self.write_place_object_2_or_3(place_object, 3)?,
+                    4 => self.write_place_object_2_or_3(place_object, 4)?,
+                    _ => {
+                        return Err(Error::new(
+                            ErrorKind::InvalidData,
+                            "Invalid PlaceObject version.",
+                        ))
+                    }
+                }
+            }
 
-            &Tag::RemoveObject { depth, character_id } => {
+            &Tag::RemoveObject {
+                depth,
+                character_id,
+            } => {
                 if let Some(id) = character_id {
                     self.write_tag_header(TagCode::RemoveObject, 4)?;
                     self.write_u16(id)?;
@@ -769,7 +858,7 @@ impl<W: Write> Writer<W> {
                     self.write_tag_header(TagCode::RemoveObject2, 2)?;
                 }
                 self.write_i16(depth)?;
-            },
+            }
 
             &Tag::SoundStreamBlock(ref data) => {
                 self.write_tag_header(TagCode::SoundStreamBlock, data.len() as u32)?;
@@ -785,44 +874,71 @@ impl<W: Write> Writer<W> {
             }
 
             &Tag::StartSound { id, ref sound_info } => {
-                let length = 3
-                    + if let Some(_) = sound_info.in_sample { 4 } else { 0 }
-                    + if let Some(_) = sound_info.out_sample { 4 } else { 0 }
-                    + if sound_info.num_loops > 1 { 2 } else { 0 }
-                    + if let Some(ref e) = sound_info.envelope { e.len() as u32 * 8 + 1 } else { 0 };
+                let length = 3 +
+                    if let Some(_) = sound_info.in_sample {
+                        4
+                    } else {
+                        0
+                    } +
+                    if let Some(_) = sound_info.out_sample {
+                        4
+                    } else {
+                        0
+                    } + if sound_info.num_loops > 1 { 2 } else { 0 } +
+                    if let Some(ref e) = sound_info.envelope {
+                        e.len() as u32 * 8 + 1
+                    } else {
+                        0
+                    };
                 self.write_tag_header(TagCode::StartSound, length)?;
                 self.write_u16(id)?;
                 self.write_sound_info(sound_info)?;
-            },
+            }
 
-            &Tag::StartSound2 { ref class_name, ref sound_info } => {
-                let length = class_name.len() as u32 + 2
-                    + if let Some(_) = sound_info.in_sample { 4 } else { 0 }
-                    + if let Some(_) = sound_info.out_sample { 4 } else { 0 }
-                    + if sound_info.num_loops > 1 { 2 } else { 0 }
-                    + if let Some(ref e) = sound_info.envelope { e.len() as u32 * 8 + 1 } else { 0 };
+            &Tag::StartSound2 {
+                ref class_name,
+                ref sound_info,
+            } => {
+                let length = class_name.len() as u32 + 2 +
+                    if let Some(_) = sound_info.in_sample {
+                        4
+                    } else {
+                        0
+                    } +
+                    if let Some(_) = sound_info.out_sample {
+                        4
+                    } else {
+                        0
+                    } + if sound_info.num_loops > 1 { 2 } else { 0 } +
+                    if let Some(ref e) = sound_info.envelope {
+                        e.len() as u32 * 8 + 1
+                    } else {
+                        0
+                    };
                 self.write_tag_header(TagCode::StartSound2, length)?;
                 self.write_c_string(class_name)?;
                 self.write_sound_info(sound_info)?;
-            },
+            }
 
             &Tag::SymbolClass(ref symbols) => {
-                let len = symbols.iter().map(|e| e.class_name.len() as u32 + 3).sum::<u32>()
-                            + 2;
+                let len = symbols
+                    .iter()
+                    .map(|e| e.class_name.len() as u32 + 3)
+                    .sum::<u32>() + 2;
                 self.write_tag_header(TagCode::SymbolClass, len)?;
                 self.write_u16(symbols.len() as u16)?;
-                for &SymbolClassLink {id, ref class_name} in symbols {
+                for &SymbolClassLink { id, ref class_name } in symbols {
                     self.write_u16(id)?;
                     self.write_c_string(class_name)?;
                 }
-            },
+            }
 
             &Tag::VideoFrame(ref frame) => {
                 self.write_tag_header(TagCode::VideoFrame, 4 + frame.data.len() as u32)?;
                 self.write_character_id(frame.stream_id)?;
                 self.write_u16(frame.frame_num)?;
                 self.output.write_all(&frame.data)?;
-            },
+            }
 
             &Tag::FileAttributes(ref attributes) => {
                 self.write_tag_header(TagCode::FileAttributes, 4)?;
@@ -845,7 +961,10 @@ impl<W: Write> Writer<W> {
                 self.write_u32(flags)?;
             }
 
-            &Tag::FrameLabel { ref label, is_anchor } => {
+            &Tag::FrameLabel {
+                ref label,
+                is_anchor,
+            } => {
                 // TODO: Assert proper version
                 let is_anchor = is_anchor && self.version >= 6;
                 let length = label.len() as u32 + if is_anchor { 2 } else { 1 };
@@ -854,11 +973,12 @@ impl<W: Write> Writer<W> {
                 if is_anchor {
                     self.write_u8(1)?;
                 }
-            },
-
-            &Tag::DefineSceneAndFrameLabelData { ref scenes, ref frame_labels } => {
-                self.write_define_scene_and_frame_label_data(scenes, frame_labels)?
             }
+
+            &Tag::DefineSceneAndFrameLabelData {
+                ref scenes,
+                ref frame_labels,
+            } => self.write_define_scene_and_frame_label_data(scenes, frame_labels)?,
 
             &Tag::Unknown { tag_code, ref data } => {
                 self.write_tag_code_and_length(tag_code, data.len() as u32)?;
@@ -913,16 +1033,79 @@ impl<W: Write> Writer<W> {
                     writer.write_u16(0)?;
                 }
                 writer.write_u8(
-                    if action.conditions.contains(&ButtonActionCondition::IdleToOverDown) { 0b1000_0000 } else { 0 } |
-                    if action.conditions.contains(&ButtonActionCondition::OutDownToIdle) { 0b100_0000 } else { 0 } |
-                    if action.conditions.contains(&ButtonActionCondition::OutDownToOverDown) { 0b10_0000 } else { 0 } |
-                    if action.conditions.contains(&ButtonActionCondition::OverDownToOutDown) { 0b1_0000 } else { 0 } |
-                    if action.conditions.contains(&ButtonActionCondition::OverDownToOverUp) { 0b1000 } else { 0 } |
-                    if action.conditions.contains(&ButtonActionCondition::OverUpToOverDown) { 0b100 } else { 0 } |
-                    if action.conditions.contains(&ButtonActionCondition::OverUpToIdle) { 0b10 } else { 0 } |
-                    if action.conditions.contains(&ButtonActionCondition::IdleToOverUp) { 0b1 } else { 0 }
+                    if action
+                        .conditions
+                        .contains(&ButtonActionCondition::IdleToOverDown)
+                    {
+                        0b1000_0000
+                    } else {
+                        0
+                    } |
+                        if action
+                            .conditions
+                            .contains(&ButtonActionCondition::OutDownToIdle)
+                        {
+                            0b100_0000
+                        } else {
+                            0
+                        } |
+                        if action
+                            .conditions
+                            .contains(&ButtonActionCondition::OutDownToOverDown)
+                        {
+                            0b10_0000
+                        } else {
+                            0
+                        } |
+                        if action
+                            .conditions
+                            .contains(&ButtonActionCondition::OverDownToOutDown)
+                        {
+                            0b1_0000
+                        } else {
+                            0
+                        } |
+                        if action
+                            .conditions
+                            .contains(&ButtonActionCondition::OverDownToOverUp)
+                        {
+                            0b1000
+                        } else {
+                            0
+                        } |
+                        if action
+                            .conditions
+                            .contains(&ButtonActionCondition::OverUpToOverDown)
+                        {
+                            0b100
+                        } else {
+                            0
+                        } |
+                        if action
+                            .conditions
+                            .contains(&ButtonActionCondition::OverUpToIdle)
+                        {
+                            0b10
+                        } else {
+                            0
+                        } |
+                        if action
+                            .conditions
+                            .contains(&ButtonActionCondition::IdleToOverUp)
+                        {
+                            0b1
+                        } else {
+                            0
+                        },
                 )?;
-                let mut flags = if action.conditions.contains(&ButtonActionCondition::OverDownToIdle) { 0b1 } else { 0 };
+                let mut flags = if action
+                    .conditions
+                    .contains(&ButtonActionCondition::OverDownToIdle)
+                {
+                    0b1
+                } else {
+                    0
+                };
                 if action.conditions.contains(&ButtonActionCondition::KeyPress) {
                     if let Some(key_code) = action.key_code {
                         flags |= key_code << 1;
@@ -938,10 +1121,13 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_define_morph_shape(&mut self, data: &DefineMorphShape) -> Result<()> {
-        if data.start.fill_styles.len() != data.end.fill_styles.len() || 
-             data.start.line_styles.len() != data.end.line_styles.len() {
-            return Err(Error::new(ErrorKind::InvalidData,
-                "Start and end state of a morph shape must have the same number of styles."));
+        if data.start.fill_styles.len() != data.end.fill_styles.len() ||
+            data.start.line_styles.len() != data.end.line_styles.len()
+        {
+            return Err(Error::new(
+                ErrorKind::InvalidData,
+                "Start and end state of a morph shape must have the same number of styles.",
+            ));
         }
 
         let num_fill_styles = data.start.fill_styles.len();
@@ -962,7 +1148,11 @@ impl<W: Write> Writer<W> {
             } else {
                 writer.write_u8(num_fill_styles as u8)?;
             }
-            for (start, end) in data.start.fill_styles.iter().zip(data.end.fill_styles.iter()) {
+            for (start, end) in data.start
+                .fill_styles
+                .iter()
+                .zip(data.end.fill_styles.iter())
+            {
                 writer.write_morph_fill_style(start, end, data.version)?;
             }
 
@@ -972,7 +1162,11 @@ impl<W: Write> Writer<W> {
             } else {
                 writer.write_u8(num_line_styles as u8)?;
             }
-            for (start, end) in data.start.line_styles.iter().zip(data.end.line_styles.iter()) {
+            for (start, end) in data.start
+                .line_styles
+                .iter()
+                .zip(data.end.line_styles.iter())
+            {
                 writer.write_morph_line_style(start, end, data.version)?;
             }
 
@@ -999,8 +1193,11 @@ impl<W: Write> Writer<W> {
                 writer.write_rectangle(&data.start.edge_bounds)?;
                 writer.write_rectangle(&data.end.edge_bounds)?;
                 writer.write_u8(
-                    if data.has_non_scaling_strokes { 0b10 } else { 0 } |
-                    if data.has_scaling_strokes { 0b1 } else { 0 }
+                    if data.has_non_scaling_strokes {
+                        0b10
+                    } else {
+                        0
+                    } | if data.has_scaling_strokes { 0b1 } else { 0 },
                 )?;
             }
 
@@ -1021,50 +1218,85 @@ impl<W: Write> Writer<W> {
             writer.flush_bits()?;
         }
 
-        let tag_code = if data.version == 1 { TagCode::DefineMorphShape } else { TagCode::DefineMorphShape2 };
+        let tag_code = if data.version == 1 {
+            TagCode::DefineMorphShape
+        } else {
+            TagCode::DefineMorphShape2
+        };
         self.write_tag_header(tag_code, buf.len() as u32)?;
         self.output.write_all(&buf)?;
         Ok(())
     }
 
-    fn write_morph_fill_style(&mut self, start: &FillStyle, end: &FillStyle, shape_version: u8) -> Result<()> {
+    fn write_morph_fill_style(
+        &mut self,
+        start: &FillStyle,
+        end: &FillStyle,
+        shape_version: u8,
+    ) -> Result<()> {
         match (start, end) {
             (&FillStyle::Color(ref start_color), &FillStyle::Color(ref end_color)) => {
                 self.write_u8(0x00)?; // Solid color.
                 self.write_rgba(start_color)?;
                 self.write_rgba(end_color)?;
-            },
-
-            (&FillStyle::LinearGradient(ref start_gradient), &FillStyle::LinearGradient(ref end_gradient)) => {
-                self.write_u8(0x10)?; // Linear gradient.
-                self.write_morph_gradient(start_gradient, end_gradient)?;
-            },
-
-            (&FillStyle::RadialGradient(ref start_gradient), &FillStyle::RadialGradient(ref end_gradient)) => {
-                self.write_u8(0x12)?; // Linear gradient.
-                self.write_morph_gradient(start_gradient, end_gradient)?;
-            },
+            }
 
             (
-                &FillStyle::FocalGradient { gradient: ref start_gradient, focal_point: start_focal_point },
-                &FillStyle::FocalGradient { gradient: ref end_gradient, focal_point: end_focal_point }
+                &FillStyle::LinearGradient(ref start_gradient),
+                &FillStyle::LinearGradient(ref end_gradient),
+            ) => {
+                self.write_u8(0x10)?; // Linear gradient.
+                self.write_morph_gradient(start_gradient, end_gradient)?;
+            }
+
+            (
+                &FillStyle::RadialGradient(ref start_gradient),
+                &FillStyle::RadialGradient(ref end_gradient),
+            ) => {
+                self.write_u8(0x12)?; // Linear gradient.
+                self.write_morph_gradient(start_gradient, end_gradient)?;
+            }
+
+            (
+                &FillStyle::FocalGradient {
+                    gradient: ref start_gradient,
+                    focal_point: start_focal_point,
+                },
+                &FillStyle::FocalGradient {
+                    gradient: ref end_gradient,
+                    focal_point: end_focal_point,
+                },
             ) => {
                 if self.version < 8 || shape_version < 2 {
-                    return Err(Error::new(ErrorKind::InvalidData,
-                                          "Focal gradients are only support in SWF version 8 \
-                                           and higher."));
+                    return Err(Error::new(
+                        ErrorKind::InvalidData,
+                        "Focal gradients are only support in SWF version 8 \
+                         and higher.",
+                    ));
                 }
 
                 self.write_u8(0x13)?; // Focal gradient.
                 self.write_morph_gradient(start_gradient, end_gradient)?;
                 self.write_fixed8(start_focal_point)?;
                 self.write_fixed8(end_focal_point)?;
-            },
+            }
 
             (
-                &FillStyle::Bitmap { id, matrix: ref start_matrix, is_smoothed, is_repeating },
-                &FillStyle::Bitmap { id: end_id, matrix: ref end_matrix, is_smoothed: end_is_smoothed, is_repeating: end_is_repeating }
-            ) if id == end_id && is_smoothed == end_is_smoothed || is_repeating == end_is_repeating => {
+                &FillStyle::Bitmap {
+                    id,
+                    matrix: ref start_matrix,
+                    is_smoothed,
+                    is_repeating,
+                },
+                &FillStyle::Bitmap {
+                    id: end_id,
+                    matrix: ref end_matrix,
+                    is_smoothed: end_is_smoothed,
+                    is_repeating: end_is_repeating,
+                },
+            )
+                if id == end_id && is_smoothed == end_is_smoothed ||
+                       is_repeating == end_is_repeating => {
                 let fill_style_type = match (is_smoothed, is_repeating) {
                     (true, true) => 0x40,
                     (true, false) => 0x41,
@@ -1075,10 +1307,14 @@ impl<W: Write> Writer<W> {
                 self.write_u16(id)?;
                 self.write_matrix(start_matrix)?;
                 self.write_matrix(end_matrix)?;
-            },
+            }
 
-            _ => return Err(Error::new(ErrorKind::InvalidData,
-                        "Morph start and end fill styles must be the same variant.")),
+            _ => {
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    "Morph start and end fill styles must be the same variant.",
+                ))
+            }
         }
         Ok(())
     }
@@ -1087,8 +1323,10 @@ impl<W: Write> Writer<W> {
         self.write_matrix(&start.matrix)?;
         self.write_matrix(&end.matrix)?;
         if start.records.len() != end.records.len() {
-            return Err(Error::new(ErrorKind::InvalidData,
-                        "Morph start and end gradient must have the same amount of records."));
+            return Err(Error::new(
+                ErrorKind::InvalidData,
+                "Morph start and end gradient must have the same amount of records.",
+            ));
         }
         self.write_u8(start.records.len() as u8)?;
         for (start_record, end_record) in start.records.iter().zip(end.records.iter()) {
@@ -1100,7 +1338,12 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_morph_line_style(&mut self, start: &LineStyle, end: &LineStyle, shape_version: u8) -> Result<()>  {        
+    fn write_morph_line_style(
+        &mut self,
+        start: &LineStyle,
+        end: &LineStyle,
+        shape_version: u8,
+    ) -> Result<()> {
         if shape_version < 2 {
             self.write_u16(start.width)?;
             self.write_u16(end.width)?;
@@ -1108,38 +1351,52 @@ impl<W: Write> Writer<W> {
             self.write_rgba(&end.color)?;
         } else {
             if start.start_cap != end.start_cap || start.join_style != end.join_style ||
-                start.allow_scale_x != end.allow_scale_x || start.allow_scale_y != end.allow_scale_y ||
-                start.is_pixel_hinted != end.is_pixel_hinted || start.allow_close != end.allow_close ||
-                start.end_cap != end.end_cap {
-                return Err(Error::new(ErrorKind::InvalidData,
-                        "Morph start and end line styles must have the same join parameters."));
+                start.allow_scale_x != end.allow_scale_x ||
+                start.allow_scale_y != end.allow_scale_y ||
+                start.is_pixel_hinted != end.is_pixel_hinted ||
+                start.allow_close != end.allow_close ||
+                start.end_cap != end.end_cap
+            {
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    "Morph start and end line styles must have the same join parameters.",
+                ));
             }
 
             self.write_u16(start.width)?;
             self.write_u16(end.width)?;
 
             // MorphLineStyle2
-            self.write_ubits(2, match start.start_cap {
-                LineCapStyle::Round => 0,
-                LineCapStyle::None => 1,
-                LineCapStyle::Square => 2,
-            })?;
-            self.write_ubits(2, match start.join_style {
-                LineJoinStyle::Round => 0,
-                LineJoinStyle::Bevel => 1,
-                LineJoinStyle::Miter(_) => 2,
-            })?;
+            self.write_ubits(
+                2,
+                match start.start_cap {
+                    LineCapStyle::Round => 0,
+                    LineCapStyle::None => 1,
+                    LineCapStyle::Square => 2,
+                },
+            )?;
+            self.write_ubits(
+                2,
+                match start.join_style {
+                    LineJoinStyle::Round => 0,
+                    LineJoinStyle::Bevel => 1,
+                    LineJoinStyle::Miter(_) => 2,
+                },
+            )?;
             self.write_bit(start.fill_style.is_some())?;
             self.write_bit(!start.allow_scale_x)?;
             self.write_bit(!start.allow_scale_y)?;
             self.write_bit(start.is_pixel_hinted)?;
             self.write_ubits(5, 0)?;
             self.write_bit(!start.allow_close)?;
-            self.write_ubits(2, match start.end_cap {
-                LineCapStyle::Round => 0,
-                LineCapStyle::None => 1,
-                LineCapStyle::Square => 2,
-            })?;
+            self.write_ubits(
+                2,
+                match start.end_cap {
+                    LineCapStyle::Round => 0,
+                    LineCapStyle::None => 1,
+                    LineCapStyle::Square => 2,
+                },
+            )?;
             if let LineJoinStyle::Miter(miter_factor) = start.join_style {
                 self.write_fixed8(miter_factor)?;
             }
@@ -1147,22 +1404,28 @@ impl<W: Write> Writer<W> {
                 (&None, &None) => {
                     self.write_rgba(&start.color)?;
                     self.write_rgba(&end.color)?;
-                },
+                }
 
-                (&Some(ref start_fill), &Some(ref end_fill)) =>
-                    self.write_morph_fill_style(start_fill, end_fill, shape_version)?,
+                (&Some(ref start_fill), &Some(ref end_fill)) => {
+                    self.write_morph_fill_style(start_fill, end_fill, shape_version)?
+                }
 
-                _ => return Err(Error::new(ErrorKind::InvalidData,
-                        "Morph start and end line styles must both have fill styles.")),
+                _ => {
+                    return Err(Error::new(
+                        ErrorKind::InvalidData,
+                        "Morph start and end line styles must both have fill styles.",
+                    ))
+                }
             }
         }
         Ok(())
     }
 
-    fn write_define_scene_and_frame_label_data(&mut self,
-                                               scenes: &Vec<FrameLabel>,
-                                               frame_labels: &Vec<FrameLabel>)
-                                               -> Result<()> {
+    fn write_define_scene_and_frame_label_data(
+        &mut self,
+        scenes: &Vec<FrameLabel>,
+        frame_labels: &Vec<FrameLabel>,
+    ) -> Result<()> {
 
         let mut buf = Vec::with_capacity((scenes.len() + frame_labels.len()) * 4);
         {
@@ -1193,9 +1456,16 @@ impl<W: Write> Writer<W> {
                 writer.write_rectangle(&shape.edge_bounds)?;
                 writer.flush_bits()?;
                 writer.write_u8(
-                    if shape.has_fill_winding_rule { 0b100 } else { 0 } |
-                    if shape.has_non_scaling_strokes { 0b10 } else { 0 } |
-                    if shape.has_scaling_strokes { 0b1 } else { 0 }
+                    if shape.has_fill_winding_rule {
+                        0b100
+                    } else {
+                        0
+                    } |
+                        if shape.has_non_scaling_strokes {
+                            0b10
+                        } else {
+                            0
+                        } | if shape.has_scaling_strokes { 0b1 } else { 0 },
                 )?;
             }
 
@@ -1214,7 +1484,12 @@ impl<W: Write> Writer<W> {
             2 => TagCode::DefineShape2,
             3 => TagCode::DefineShape3,
             4 => TagCode::DefineShape4,
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid DefineShape version.")),
+            _ => {
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    "Invalid DefineShape version.",
+                ))
+            }
         };
         self.write_tag_header(tag_code, buf.len() as u32)?;
         self.output.write_all(&buf)?;
@@ -1222,10 +1497,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_define_sound(&mut self, sound: &Sound) -> Result<()> {
-        self.write_tag_header(
-            TagCode::DefineSound,
-            7 + sound.data.len() as u32
-        )?;
+        self.write_tag_header(TagCode::DefineSound, 7 + sound.data.len() as u32)?;
         self.write_u16(sound.id)?;
         self.write_sound_format(&sound.format)?;
         self.write_u32(sound.num_samples)?;
@@ -1248,13 +1520,36 @@ impl<W: Write> Writer<W> {
 
     fn write_button_record(&mut self, record: &ButtonRecord, tag_version: u8) -> Result<()> {
         // TODO: Validate version
-        let flags =
-            if record.blend_mode != BlendMode::Normal { 0b10_0000 } else { 0 } |
-            if !record.filters.is_empty() { 0b1_0000 } else { 0 } |
-            if record.states.contains(&ButtonState::HitTest) { 0b1000 } else { 0 } |
-            if record.states.contains(&ButtonState::Down) { 0b100 } else { 0 } |
-            if record.states.contains(&ButtonState::Over) { 0b10 } else { 0 } |
-            if record.states.contains(&ButtonState::Up) { 0b1 } else { 0 };
+        let flags = if record.blend_mode != BlendMode::Normal {
+            0b10_0000
+        } else {
+            0
+        } |
+            if !record.filters.is_empty() {
+                0b1_0000
+            } else {
+                0
+            } |
+            if record.states.contains(&ButtonState::HitTest) {
+                0b1000
+            } else {
+                0
+            } |
+            if record.states.contains(&ButtonState::Down) {
+                0b100
+            } else {
+                0
+            } |
+            if record.states.contains(&ButtonState::Over) {
+                0b10
+            } else {
+                0
+            } |
+            if record.states.contains(&ButtonState::Up) {
+                0b1
+            } else {
+                0
+            };
         self.write_u8(flags)?;
         self.write_u16(record.id)?;
         self.write_i16(record.depth)?;
@@ -1275,24 +1570,22 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_blend_mode(&mut self, blend_mode: BlendMode) -> Result<()> {
-        self.write_u8(
-            match blend_mode {
-                BlendMode::Normal => 0,
-                BlendMode::Layer => 2,
-                BlendMode::Multiply => 3,
-                BlendMode::Screen => 4,
-                BlendMode::Lighten => 5,
-                BlendMode::Darken => 6,
-                BlendMode::Difference => 7,
-                BlendMode::Add => 8,
-                BlendMode::Subtract => 9,
-                BlendMode::Invert => 10,
-                BlendMode::Alpha => 11,
-                BlendMode::Erase => 12,
-                BlendMode::Overlay => 13,
-                BlendMode::HardLight => 14,
-            }
-        )
+        self.write_u8(match blend_mode {
+            BlendMode::Normal => 0,
+            BlendMode::Layer => 2,
+            BlendMode::Multiply => 3,
+            BlendMode::Screen => 4,
+            BlendMode::Lighten => 5,
+            BlendMode::Darken => 6,
+            BlendMode::Difference => 7,
+            BlendMode::Add => 8,
+            BlendMode::Subtract => 9,
+            BlendMode::Invert => 10,
+            BlendMode::Alpha => 11,
+            BlendMode::Erase => 12,
+            BlendMode::Overlay => 13,
+            BlendMode::HardLight => 14,
+        })
     }
 
     fn write_shape_styles(&mut self, styles: &ShapeStyles, shape_version: u8) -> Result<()> {
@@ -1348,17 +1641,23 @@ impl<W: Write> Writer<W> {
                     self.write_sbits(num_bits, delta_y_twips)?;
                 }
             }
-            &ShapeRecord::CurvedEdge { control_delta_x,
-                                       control_delta_y,
-                                       anchor_delta_x,
-                                       anchor_delta_y } => {
+            &ShapeRecord::CurvedEdge {
+                control_delta_x,
+                control_delta_y,
+                anchor_delta_x,
+                anchor_delta_y,
+            } => {
                 self.write_ubits(2, 0b10)?; // Curved edge
                 let control_twips_x = (control_delta_x * 20f32) as i32;
                 let control_twips_y = (control_delta_y * 20f32) as i32;
                 let anchor_twips_x = (anchor_delta_x * 20f32) as i32;
                 let anchor_twips_y = (anchor_delta_y * 20f32) as i32;
-                let num_bits = [control_twips_x, control_twips_y, anchor_twips_x, anchor_twips_y]
-                    .iter()
+                let num_bits = [
+                    control_twips_x,
+                    control_twips_y,
+                    anchor_twips_x,
+                    anchor_twips_y,
+                ].iter()
                     .map(|x| count_sbits(*x))
                     .max()
                     .unwrap();
@@ -1369,7 +1668,7 @@ impl<W: Write> Writer<W> {
                 self.write_sbits(num_bits, anchor_twips_y)?;
             }
             &ShapeRecord::StyleChange(ref style_change) => {
-                self.write_bit(false)?;  // Style change
+                self.write_bit(false)?; // Style change
                 let num_fill_bits = self.num_fill_bits;
                 let num_line_bits = self.num_line_bits;
                 self.write_bit(style_change.new_styles.is_some())?;
@@ -1396,8 +1695,10 @@ impl<W: Write> Writer<W> {
                 }
                 if let Some(ref new_styles) = style_change.new_styles {
                     if shape_version < 2 {
-                        return Err(Error::new(ErrorKind::InvalidData,
-                                              "Only DefineShape2 and higher may change styles."));
+                        return Err(Error::new(
+                            ErrorKind::InvalidData,
+                            "Only DefineShape2 and higher may change styles.",
+                        ));
                     }
                     self.write_shape_styles(new_styles, shape_version)?;
                 }
@@ -1427,11 +1728,16 @@ impl<W: Write> Writer<W> {
                 self.write_gradient(gradient, shape_version)?;
             }
 
-            &FillStyle::FocalGradient { ref gradient, focal_point } => {
+            &FillStyle::FocalGradient {
+                ref gradient,
+                focal_point,
+            } => {
                 if self.version < 8 {
-                    return Err(Error::new(ErrorKind::InvalidData,
-                                          "Focal gradients are only support in SWF version 8 \
-                                           and higher."));
+                    return Err(Error::new(
+                        ErrorKind::InvalidData,
+                        "Focal gradients are only support in SWF version 8 \
+                         and higher.",
+                    ));
                 }
 
                 self.write_u8(0x13)?; // Focal gradient.
@@ -1439,7 +1745,12 @@ impl<W: Write> Writer<W> {
                 self.write_fixed8(focal_point)?;
             }
 
-            &FillStyle::Bitmap { id, ref matrix, is_smoothed, is_repeating } => {
+            &FillStyle::Bitmap {
+                id,
+                ref matrix,
+                is_smoothed,
+                is_repeating,
+            } => {
                 let fill_style_type = match (is_smoothed, is_repeating) {
                     (true, true) => 0x40,
                     (true, false) => 0x41,
@@ -1458,29 +1769,40 @@ impl<W: Write> Writer<W> {
         self.write_u16(line_style.width)?;
         if shape_version >= 4 {
             // LineStyle2
-            self.write_ubits(2, match line_style.start_cap {
-                LineCapStyle::Round => 0,
-                LineCapStyle::None => 1,
-                LineCapStyle::Square => 2,
-            })?;
-            self.write_ubits(2, match line_style.join_style {
-                LineJoinStyle::Round => 0,
-                LineJoinStyle::Bevel => 1,
-                LineJoinStyle::Miter(_) => 2,
-            })?;
-            self.write_bit(
-                if let Some(_) = line_style.fill_style { true } else { false }
+            self.write_ubits(
+                2,
+                match line_style.start_cap {
+                    LineCapStyle::Round => 0,
+                    LineCapStyle::None => 1,
+                    LineCapStyle::Square => 2,
+                },
             )?;
+            self.write_ubits(
+                2,
+                match line_style.join_style {
+                    LineJoinStyle::Round => 0,
+                    LineJoinStyle::Bevel => 1,
+                    LineJoinStyle::Miter(_) => 2,
+                },
+            )?;
+            self.write_bit(if let Some(_) = line_style.fill_style {
+                true
+            } else {
+                false
+            })?;
             self.write_bit(!line_style.allow_scale_x)?;
             self.write_bit(!line_style.allow_scale_y)?;
             self.write_bit(line_style.is_pixel_hinted)?;
             self.write_ubits(5, 0)?;
             self.write_bit(!line_style.allow_close)?;
-            self.write_ubits(2, match line_style.end_cap {
-                LineCapStyle::Round => 0,
-                LineCapStyle::None => 1,
-                LineCapStyle::Square => 2,
-            })?;
+            self.write_ubits(
+                2,
+                match line_style.end_cap {
+                    LineCapStyle::Round => 0,
+                    LineCapStyle::None => 1,
+                    LineCapStyle::Square => 2,
+                },
+            )?;
             if let LineJoinStyle::Miter(miter_factor) = line_style.join_style {
                 self.write_fixed8(miter_factor)?;
             }
@@ -1535,7 +1857,7 @@ impl<W: Write> Writer<W> {
             } else {
                 return Err(Error::new(
                     ErrorKind::InvalidData,
-                    "PlaceObject version 1 can only use a Place action."
+                    "PlaceObject version 1 can only use a Place action.",
                 ));
             }
             writer.write_i16(place_object.depth)?;
@@ -1553,33 +1875,84 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_place_object_2_or_3(&mut self, place_object: &PlaceObject, place_object_version: u8) -> Result<()> {
+    fn write_place_object_2_or_3(
+        &mut self,
+        place_object: &PlaceObject,
+        place_object_version: u8,
+    ) -> Result<()> {
         let mut buf = Vec::new();
         {
             // TODO: Assert version.
             let mut writer = Writer::new(&mut buf, self.version);
             writer.write_u8(
-                if !place_object.clip_actions.is_empty() { 0b1000_0000 } else { 0 } |
-                if place_object.clip_depth.is_some() { 0b0100_0000 } else { 0 } |
-                if place_object.name.is_some() { 0b0010_0000 } else { 0 } |
-                if place_object.ratio.is_some() { 0b0001_0000 } else { 0 } |
-                if place_object.color_transform.is_some() { 0b0000_1000 } else { 0 } |
-                if place_object.matrix.is_some() { 0b0000_0100 } else { 0 } |
-                match place_object.action {
-                    PlaceObjectAction::Place(_) => 0b10,
-                    PlaceObjectAction::Modify => 0b01,
-                    PlaceObjectAction::Replace(_) => 0b11,
-                }
+                if !place_object.clip_actions.is_empty() {
+                    0b1000_0000
+                } else {
+                    0
+                } |
+                    if place_object.clip_depth.is_some() {
+                        0b0100_0000
+                    } else {
+                        0
+                    } |
+                    if place_object.name.is_some() {
+                        0b0010_0000
+                    } else {
+                        0
+                    } |
+                    if place_object.ratio.is_some() {
+                        0b0001_0000
+                    } else {
+                        0
+                    } |
+                    if place_object.color_transform.is_some() {
+                        0b0000_1000
+                    } else {
+                        0
+                    } |
+                    if place_object.matrix.is_some() {
+                        0b0000_0100
+                    } else {
+                        0
+                    } |
+                    match place_object.action {
+                        PlaceObjectAction::Place(_) => 0b10,
+                        PlaceObjectAction::Modify => 0b01,
+                        PlaceObjectAction::Replace(_) => 0b11,
+                    },
             )?;
             if place_object_version >= 3 {
                 writer.write_u8(
-                    if place_object.background_color.is_some() { 0b100_0000 } else { 0 } |
-                    if !place_object.is_visible { 0b10_0000 } else { 0 } |
-                    if place_object.is_image { 0b1_0000 } else { 0 } |
-                    if place_object.class_name.is_some() { 0b1000 } else { 0 } |
-                    if place_object.is_bitmap_cached { 0b100 } else { 0 } |
-                    if place_object.blend_mode != BlendMode::Normal { 0b10 } else { 0 } |
-                    if !place_object.filters.is_empty() { 0b1 } else { 0 }
+                    if place_object.background_color.is_some() {
+                        0b100_0000
+                    } else {
+                        0
+                    } |
+                        if !place_object.is_visible {
+                            0b10_0000
+                        } else {
+                            0
+                        } | if place_object.is_image { 0b1_0000 } else { 0 } |
+                        if place_object.class_name.is_some() {
+                            0b1000
+                        } else {
+                            0
+                        } |
+                        if place_object.is_bitmap_cached {
+                            0b100
+                        } else {
+                            0
+                        } |
+                        if place_object.blend_mode != BlendMode::Normal {
+                            0b10
+                        } else {
+                            0
+                        } |
+                        if !place_object.filters.is_empty() {
+                            0b1
+                        } else {
+                            0
+                        },
                 )?;
             }
             writer.write_i16(place_object.depth)?;
@@ -1592,8 +1965,7 @@ impl<W: Write> Writer<W> {
 
             match place_object.action {
                 PlaceObjectAction::Place(character_id) |
-                PlaceObjectAction::Replace(character_id) => 
-                    writer.write_u16(character_id)?,
+                PlaceObjectAction::Replace(character_id) => writer.write_u16(character_id)?,
                 PlaceObjectAction::Modify => (),
             }
             if let Some(ref matrix) = place_object.matrix {
@@ -1602,7 +1974,7 @@ impl<W: Write> Writer<W> {
             if let Some(ref color_transform) = place_object.color_transform {
                 writer.write_color_transform(color_transform)?;
             };
-            if let Some(ratio) = place_object.ratio { 
+            if let Some(ratio) = place_object.ratio {
                 writer.write_u16(ratio)?;
             }
             if let Some(ref name) = place_object.name {
@@ -1653,7 +2025,12 @@ impl<W: Write> Writer<W> {
             2 => TagCode::PlaceObject2,
             3 => TagCode::PlaceObject3,
             4 => TagCode::PlaceObject4,
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid PlaceObject version.")),
+            _ => {
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    "Invalid PlaceObject version.",
+                ))
+            }
         };
         self.write_tag_header(tag_code, buf.len() as u32)?;
         self.output.write_all(&buf)?;
@@ -1674,14 +2051,14 @@ impl<W: Write> Writer<W> {
                 self.write_bit(drop_shadow.is_knockout)?;
                 self.write_bit(true)?;
                 self.write_ubits(5, drop_shadow.num_passes as u32)?;
-            },
+            }
 
             &Filter::BlurFilter(ref blur) => {
                 self.write_u8(1)?;
                 self.write_fixed16(blur.blur_x)?;
                 self.write_fixed16(blur.blur_y)?;
                 self.write_u8(blur.num_passes << 3)?;
-            },
+            }
 
             &Filter::GlowFilter(ref glow) => {
                 self.write_u8(2)?;
@@ -1693,7 +2070,7 @@ impl<W: Write> Writer<W> {
                 self.write_bit(glow.is_knockout)?;
                 self.write_bit(true)?;
                 self.write_ubits(5, glow.num_passes as u32)?;
-            },
+            }
 
             &Filter::BevelFilter(ref bevel) => {
                 self.write_u8(3)?;
@@ -1709,7 +2086,7 @@ impl<W: Write> Writer<W> {
                 self.write_bit(true)?;
                 self.write_bit(bevel.is_on_top)?;
                 self.write_ubits(4, bevel.num_passes as u32)?;
-            },
+            }
 
             &Filter::GradientGlowFilter(ref glow) => {
                 self.write_u8(4)?;
@@ -1730,7 +2107,7 @@ impl<W: Write> Writer<W> {
                 self.write_bit(true)?;
                 self.write_bit(glow.is_on_top)?;
                 self.write_ubits(4, glow.num_passes as u32)?;
-            },
+            }
 
             &Filter::ConvolutionFilter(ref convolve) => {
                 self.write_u8(5)?;
@@ -1744,16 +2121,16 @@ impl<W: Write> Writer<W> {
                 self.write_rgba(&convolve.default_color)?;
                 self.write_u8(
                     if convolve.is_clamped { 0b10 } else { 0 } |
-                    if convolve.is_preserve_alpha { 0b1 } else { 0 }
+                        if convolve.is_preserve_alpha { 0b1 } else { 0 },
                 )?;
-            },
+            }
 
             &Filter::ColorMatrixFilter(ref color_matrix) => {
                 self.write_u8(6)?;
                 for i in 0..20 {
                     self.write_fixed16(color_matrix.matrix[i])?;
                 }
-            },
+            }
 
             &Filter::GradientBevelFilter(ref bevel) => {
                 self.write_u8(7)?;
@@ -1774,7 +2151,7 @@ impl<W: Write> Writer<W> {
                 self.write_bit(true)?;
                 self.write_bit(bevel.is_on_top)?;
                 self.write_ubits(4, bevel.num_passes as u32)?;
-            },
+            }
         }
         self.flush_bits()?;
         Ok(())
@@ -1791,8 +2168,8 @@ impl<W: Write> Writer<W> {
         }
         for action in clip_actions {
             self.write_clip_event_flags(&action.events)?;
-            let action_length = action.action_data.len() as u32
-                                + if action.key_code.is_some() { 1 } else { 0 };
+            let action_length = action.action_data.len() as u32 +
+                if action.key_code.is_some() { 1 } else { 0 };
             self.write_u32(action_length)?;
             if let Some(k) = action.key_code {
                 self.write_u8(k)?;
@@ -1837,7 +2214,11 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_sound_stream_head(&mut self, stream_info: &SoundStreamInfo, version: u8) -> Result<()> {
+    fn write_sound_stream_head(
+        &mut self,
+        stream_info: &SoundStreamInfo,
+        version: u8,
+    ) -> Result<()> {
         let tag_code = if version >= 2 {
             TagCode::SoundStreamHead2
         } else {
@@ -1853,30 +2234,36 @@ impl<W: Write> Writer<W> {
         self.write_sound_format(&stream_info.playback_format)?;
         self.write_sound_format(&stream_info.stream_format)?;
         self.write_u16(stream_info.num_samples_per_block)?;
-        if stream_info.stream_format.compression  == AudioCompression::Mp3 {
+        if stream_info.stream_format.compression == AudioCompression::Mp3 {
             self.write_i16(stream_info.latency_seek)?;
         }
         Ok(())
     }
 
     fn write_sound_format(&mut self, sound_format: &SoundFormat) -> Result<()> {
-        self.write_ubits(4, match sound_format.compression {
-            AudioCompression::UncompressedUnknownEndian => 0,
-            AudioCompression::Adpcm => 1,
-            AudioCompression::Mp3 => 2,
-            AudioCompression::Uncompressed => 3,
-            AudioCompression::Nellymoser16Khz => 4,
-            AudioCompression::Nellymoser8Khz => 5,
-            AudioCompression::Nellymoser => 6,
-            AudioCompression::Speex => 11,
-        })?;
-        self.write_ubits(2, match sound_format.sample_rate {
-            5512 => 0,
-            11025 => 1,
-            22050 => 2,
-            44100 => 3,
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid sample rate.")),
-        })?;
+        self.write_ubits(
+            4,
+            match sound_format.compression {
+                AudioCompression::UncompressedUnknownEndian => 0,
+                AudioCompression::Adpcm => 1,
+                AudioCompression::Mp3 => 2,
+                AudioCompression::Uncompressed => 3,
+                AudioCompression::Nellymoser16Khz => 4,
+                AudioCompression::Nellymoser8Khz => 5,
+                AudioCompression::Nellymoser => 6,
+                AudioCompression::Speex => 11,
+            },
+        )?;
+        self.write_ubits(
+            2,
+            match sound_format.sample_rate {
+                5512 => 0,
+                11025 => 1,
+                22050 => 2,
+                44100 => 3,
+                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid sample rate.")),
+            },
+        )?;
         self.write_bit(sound_format.is_16_bit)?;
         self.write_bit(sound_format.is_stereo)?;
         self.flush_bits()?;
@@ -1884,16 +2271,26 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_sound_info(&mut self, sound_info: &SoundInfo) -> Result<()> {
-        let flags =
-            match sound_info.event {
-                SoundEvent::Event => 0b00_0000u8,
-                SoundEvent::Start => 0b01_0000u8,
-                SoundEvent::Stop => 0b10_0000u8,
-            }
-            | if let Some(_) = sound_info.in_sample { 0b1 } else { 0 }
-            | if let Some(_) = sound_info.out_sample { 0b10 } else { 0 }
-            | if sound_info.num_loops > 1 { 0b100 } else { 0 }
-            | if let Some(_) = sound_info.envelope { 0b1000 } else { 0 };
+        let flags = match sound_info.event {
+            SoundEvent::Event => 0b00_0000u8,
+            SoundEvent::Start => 0b01_0000u8,
+            SoundEvent::Stop => 0b10_0000u8,
+        } |
+            if let Some(_) = sound_info.in_sample {
+                0b1
+            } else {
+                0
+            } |
+            if let Some(_) = sound_info.out_sample {
+                0b10
+            } else {
+                0
+            } | if sound_info.num_loops > 1 { 0b100 } else { 0 } |
+            if let Some(_) = sound_info.envelope {
+                0b1000
+            } else {
+                0
+            };
         self.write_u8(flags)?;
         if let Some(n) = sound_info.in_sample {
             self.write_u32(n)?;
@@ -1956,13 +2353,13 @@ impl<W: Write> Writer<W> {
             writer.write_character_id(font.id)?;
             writer.write_u8(
                 if font.layout.is_some() { 0b10000000 } else { 0 } |
-                if font.is_shift_jis { 0b1000000 } else { 0 } |
-                if font.is_small_text { 0b100000 } else { 0 } |
-                if font.is_ansi { 0b10000 } else { 0 } |
-                if has_wide_offsets { 0b1000 } else { 0 } |
-                if has_wide_codes { 0b100 } else { 0 } |
-                if font.is_italic { 0b10 } else { 0 } |
-                if font.is_bold { 0b1 } else { 0 }
+                    if font.is_shift_jis { 0b1000000 } else { 0 } |
+                    if font.is_small_text { 0b100000 } else { 0 } |
+                    if font.is_ansi { 0b10000 } else { 0 } |
+                    if has_wide_offsets { 0b1000 } else { 0 } |
+                    if has_wide_codes { 0b100 } else { 0 } |
+                    if font.is_italic { 0b10 } else { 0 } |
+                    if font.is_bold { 0b1 } else { 0 },
             )?;
             writer.write_language(font.language)?;
             writer.write_u8(font.name.len() as u8)?;
@@ -1971,18 +2368,31 @@ impl<W: Write> Writer<W> {
 
             // OffsetTable
             for offset in offsets {
-                if has_wide_offsets { writer.write_u32(offset as u32)?; } else { writer.write_u16(offset as u16)?; }
+                if has_wide_offsets {
+                    writer.write_u32(offset as u32)?;
+                } else {
+                    writer.write_u16(offset as u16)?;
+                }
             }
-            
+
             // CodeTableOffset
-            let code_table_offset = (num_glyphs + 1) * if has_wide_offsets { 4 } else { 2 } + shape_buf.len();
-            if has_wide_offsets { writer.write_u32(code_table_offset as u32)?; } else { writer.write_u16(code_table_offset as u16)?; }
-             
+            let code_table_offset = (num_glyphs + 1) * if has_wide_offsets { 4 } else { 2 } +
+                shape_buf.len();
+            if has_wide_offsets {
+                writer.write_u32(code_table_offset as u32)?;
+            } else {
+                writer.write_u16(code_table_offset as u16)?;
+            }
+
             writer.output.write_all(&shape_buf)?;
 
             // CodeTable
             for glyph in &font.glyphs {
-                if has_wide_codes { writer.write_u16(glyph.code)?; } else { writer.write_u8(glyph.code as u8)?; }
+                if has_wide_codes {
+                    writer.write_u16(glyph.code)?;
+                } else {
+                    writer.write_u8(glyph.code as u8)?;
+                }
             }
 
             if let Some(ref layout) = font.layout {
@@ -1990,17 +2400,17 @@ impl<W: Write> Writer<W> {
                 writer.write_u16(layout.descent)?;
                 writer.write_i16(layout.leading)?;
                 for glyph in &font.glyphs {
-                    writer.write_i16(
-                        glyph.advance.ok_or(
-                            Error::new(ErrorKind::InvalidData, "glyph.advance cannot be None")
-                        )?
-                    )?;
+                    writer.write_i16(glyph.advance.ok_or(Error::new(
+                        ErrorKind::InvalidData,
+                        "glyph.advance cannot be None",
+                    ))?)?;
                 }
                 for glyph in &font.glyphs {
                     writer.write_rectangle(
-                        glyph.bounds.as_ref().ok_or(
-                            Error::new(ErrorKind::InvalidData, "glyph.bounds cannot be None")
-                        )?
+                        glyph.bounds.as_ref().ok_or(Error::new(
+                            ErrorKind::InvalidData,
+                            "glyph.bounds cannot be None",
+                        ))?,
                     )?;
                 }
                 writer.write_u16(layout.kerning.len() as u16)?;
@@ -2010,7 +2420,11 @@ impl<W: Write> Writer<W> {
             }
         }
 
-        let tag_code = if font.version == 2 { TagCode::DefineFont2 } else { TagCode::DefineFont3 };
+        let tag_code = if font.version == 2 {
+            TagCode::DefineFont2
+        } else {
+            TagCode::DefineFont3
+        };
         self.write_tag_header(tag_code, buf.len() as u32)?;
         self.output.write_all(&buf)?;
         Ok(())
@@ -2024,9 +2438,8 @@ impl<W: Write> Writer<W> {
         self.write_tag_header(TagCode::DefineFont4, tag_len as u32)?;
         self.write_character_id(font.id)?;
         self.write_u8(
-            if font.data.is_some() { 0b100 } else { 0 } |
-            if font.is_italic { 0b10 } else { 0 } |
-            if font.is_bold { 0b1 } else { 0 }
+            if font.data.is_some() { 0b100 } else { 0 } | if font.is_italic { 0b10 } else { 0 } |
+                if font.is_bold { 0b1 } else { 0 },
         )?;
         self.write_c_string(&font.name)?;
         if let Some(ref data) = font.data {
@@ -2035,7 +2448,11 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_kerning_record(&mut self, kerning: &KerningRecord, has_wide_codes: bool) -> Result<()> {
+    fn write_kerning_record(
+        &mut self,
+        kerning: &KerningRecord,
+        has_wide_codes: bool,
+    ) -> Result<()> {
         if has_wide_codes {
             self.write_u16(kerning.left_code)?;
             self.write_u16(kerning.right_code)?;
@@ -2068,9 +2485,7 @@ impl<W: Write> Writer<W> {
             writer.write_u8(num_advance_bits)?;
 
             for record in &text.records {
-                let flags =
-                    0b10000000 |
-                    if record.font_id.is_some() { 0b1000 } else { 0 } |
+                let flags = 0b10000000 | if record.font_id.is_some() { 0b1000 } else { 0 } |
                     if record.color.is_some() { 0b100 } else { 0 } |
                     if record.y_offset.is_some() { 0b10 } else { 0 } |
                     if record.x_offset.is_some() { 0b1 } else { 0 };
@@ -2109,20 +2524,30 @@ impl<W: Write> Writer<W> {
             let mut writer = Writer::new(&mut buf, self.version);
             writer.write_character_id(edit_text.id)?;
             writer.write_rectangle(&edit_text.bounds)?;
-            let flags =
-                if edit_text.initial_text.is_some() { 0b10000000 } else { 0 } |
-                if edit_text.is_word_wrap { 0b1000000 } else { 0 } |
+            let flags = if edit_text.initial_text.is_some() {
+                0b10000000
+            } else {
+                0
+            } | if edit_text.is_word_wrap { 0b1000000 } else { 0 } |
                 if edit_text.is_multiline { 0b100000 } else { 0 } |
                 if edit_text.is_password { 0b10000 } else { 0 } |
                 if edit_text.is_read_only { 0b1000 } else { 0 } |
                 if edit_text.color.is_some() { 0b100 } else { 0 } |
-                if edit_text.max_length.is_some() { 0b10 } else { 0 } |
-                if edit_text.font_id.is_some() { 0b1 } else { 0 };
-            let flags2 =
-                if edit_text.font_class_name.is_some() { 0b10000000 } else { 0 } |
-                if edit_text.is_auto_size { 0b1000000 } else { 0 } |
-                if edit_text.layout.is_some() { 0b100000 } else { 0 } |
-                if !edit_text.is_selectable { 0b10000 } else { 0 } |
+                if edit_text.max_length.is_some() {
+                    0b10
+                } else {
+                    0
+                } | if edit_text.font_id.is_some() { 0b1 } else { 0 };
+            let flags2 = if edit_text.font_class_name.is_some() {
+                0b10000000
+            } else {
+                0
+            } | if edit_text.is_auto_size { 0b1000000 } else { 0 } |
+                if edit_text.layout.is_some() {
+                    0b100000
+                } else {
+                    0
+                } | if !edit_text.is_selectable { 0b10000 } else { 0 } |
                 if edit_text.has_border { 0b1000 } else { 0 } |
                 if edit_text.was_static { 0b100 } else { 0 } |
                 if edit_text.is_html { 0b10 } else { 0 } |
@@ -2191,8 +2616,7 @@ impl<W: Write> Writer<W> {
                 VideoDeblocking::Level2 => 0b011_0,
                 VideoDeblocking::Level3 => 0b100_0,
                 VideoDeblocking::Level4 => 0b101_0,
-            } |
-            if video.is_smoothed { 0b1 } else { 0 }
+            } | if video.is_smoothed { 0b1 } else { 0 },
         )?;
         self.write_u8(match video.codec {
             VideoCodec::H263 => 2,
@@ -2287,12 +2711,18 @@ mod tests {
             swf.compression = compression;
             write_swf(&swf, &mut buf)
         }
-        assert!(write_dummy_swf(Compression::None).is_ok(),
-                "Failed to write uncompressed SWF.");
-        assert!(write_dummy_swf(Compression::Zlib).is_ok(),
-                "Failed to write zlib SWF.");
-        assert!(write_dummy_swf(Compression::Lzma).is_ok(),
-                "Failed to write LZMA SWF.");
+        assert!(
+            write_dummy_swf(Compression::None).is_ok(),
+            "Failed to write uncompressed SWF."
+        );
+        assert!(
+            write_dummy_swf(Compression::Zlib).is_ok(),
+            "Failed to write zlib SWF."
+        );
+        assert!(
+            write_dummy_swf(Compression::Lzma).is_ok(),
+            "Failed to write LZMA SWF."
+        );
     }
 
     #[test]
@@ -2305,9 +2735,19 @@ mod tests {
             writer.write_fixed8(6.5f32).unwrap();
             writer.write_fixed8(-20.75f32).unwrap();
         }
-        assert_eq!(buf,
-                   [0b00000000, 0b00000000, 0b00000000, 0b00000001, 0b10000000, 0b00000110,
-                    0b01000000, 0b11101011]);
+        assert_eq!(
+            buf,
+            [
+                0b00000000,
+                0b00000000,
+                0b00000000,
+                0b00000001,
+                0b10000000,
+                0b00000110,
+                0b01000000,
+                0b11101011
+            ]
+        );
     }
 
     #[test]
@@ -2324,16 +2764,42 @@ mod tests {
         assert_eq!(write_to_buf(0), [0]);
         assert_eq!(write_to_buf(2), [2]);
         assert_eq!(write_to_buf(129), [0b1_0000001, 0b0_0000001]);
-        assert_eq!(write_to_buf(0b1100111_0000001_0000001),
-                   [0b1_0000001, 0b1_0000001, 0b0_1100111]);
-        assert_eq!(write_to_buf(0b1111_0000000_0000000_0000000_0000000u32),
-                   [0b1_0000000, 0b1_0000000, 0b1_0000000, 0b1_0000000, 0b0000_1111]);
+        assert_eq!(
+            write_to_buf(0b1100111_0000001_0000001),
+            [0b1_0000001, 0b1_0000001, 0b0_1100111]
+        );
+        assert_eq!(
+            write_to_buf(0b1111_0000000_0000000_0000000_0000000u32),
+            [
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b0000_1111
+            ]
+        );
     }
 
     #[test]
     fn write_bit() {
-        let bits = [false, true, false, true, false, true, false, true, false, false, true, false,
-                    false, true, false, true];
+        let bits = [
+            false,
+            true,
+            false,
+            true,
+            false,
+            true,
+            false,
+            true,
+            false,
+            false,
+            true,
+            false,
+            false,
+            true,
+            false,
+            true,
+        ];
         let mut buf = Vec::new();
         {
             let mut writer = Writer::new(&mut buf, 1);
@@ -2386,8 +2852,16 @@ mod tests {
             }
             writer.flush_bits().unwrap();
         }
-        assert_eq!(buf,
-                   [0b01_000000, 0b00000000, 0b00_11_0000, 0b00000000, 0b0000_0000]);
+        assert_eq!(
+            buf,
+            [
+                0b01_000000,
+                0b00000000,
+                0b00_11_0000,
+                0b00000000,
+                0b0000_0000
+            ]
+        );
     }
 
     #[test]
@@ -2429,8 +2903,10 @@ mod tests {
                 let mut writer = Writer::new(&mut buf, 1);
                 writer.write_c_string("😀😂!🐼").unwrap();
             }
-            assert_eq!(buf,
-                       "😀😂!🐼\0".bytes().into_iter().collect::<Vec<_>>());
+            assert_eq!(
+                buf,
+                "😀😂!🐼\0".bytes().into_iter().collect::<Vec<_>>()
+            );
         }
     }
 
@@ -2520,7 +2996,9 @@ mod tests {
     fn write_tags() {
         for (swf_version, tag, expected_tag_bytes) in test_data::tag_tests() {
             let mut written_tag_bytes = Vec::new();
-            Writer::new(&mut written_tag_bytes, swf_version).write_tag(&tag).unwrap();
+            Writer::new(&mut written_tag_bytes, swf_version)
+                .write_tag(&tag)
+                .unwrap();
             if written_tag_bytes != expected_tag_bytes {
                 panic!(
                     "Error reading tag.\nTag:\n{:?}\n\nWrote:\n{:?}\n\nExpected:\n{:?}",
@@ -2554,11 +3032,14 @@ mod tests {
             let mut buf = Vec::new();
             {
                 let mut writer = Writer::new(&mut buf, 1);
-                writer.write_tag_list(&vec![Tag::Unknown {
-                                              tag_code: 512,
-                                              data: vec![0; 100],
-                                          },
-                                          Tag::ShowFrame])
+                writer
+                    .write_tag_list(&vec![
+                        Tag::Unknown {
+                            tag_code: 512,
+                            data: vec![0; 100],
+                        },
+                        Tag::ShowFrame,
+                    ])
                     .unwrap();
             }
             let mut expected = vec![0b00_111111, 0b10000000, 100, 0, 0, 0];

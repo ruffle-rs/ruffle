@@ -109,7 +109,7 @@ pub enum OpCode {
     With = 0x94,
 
     Push = 0x96,
-    
+
     Jump = 0x99,
     GetUrl2 = 0x9A,
     DefineFunction = 0x9B,

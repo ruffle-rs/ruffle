@@ -16,7 +16,10 @@ impl<R: Read> SwfRead<R> for Reader<R> {
 
 impl<R: Read> Reader<R> {
     pub fn new(inner: R, version: u8) -> Reader<R> {
-        Reader { inner: inner, version: version }
+        Reader {
+            inner: inner,
+            version: version,
+        }
     }
 
     pub fn read_action_list(&mut self) -> Result<Vec<Action>> {
@@ -59,7 +62,7 @@ impl<R: Read> Reader<R> {
                         constants.push(action_reader.read_c_string()?);
                     }
                     Action::ConstantPool(constants)
-                },
+                }
                 OpCode::Decrement => Action::Decrement,
                 OpCode::DefineFunction => action_reader.read_define_function()?,
                 OpCode::DefineFunction2 => action_reader.read_define_function_2()?,
@@ -90,24 +93,31 @@ impl<R: Read> Reader<R> {
                             0 => SendVarsMethod::None,
                             1 => SendVarsMethod::Get,
                             2 => SendVarsMethod::Post,
-                            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid HTTP method in ActionGetUrl2")),
-                        }
+                            _ => {
+                                return Err(Error::new(
+                                    ErrorKind::InvalidData,
+                                    "Invalid HTTP method in ActionGetUrl2",
+                                ))
+                            }
+                        },
                     }
-                },
+                }
                 OpCode::GetVariable => Action::GetVariable,
                 OpCode::GotoFrame => {
                     let frame = try!(action_reader.read_u16());
                     Action::GotoFrame(frame)
-                },
+                }
                 OpCode::GotoFrame2 => {
                     let flags = try!(action_reader.read_u8());
                     Action::GotoFrame2 {
                         set_playing: flags & 0b1 != 0,
                         scene_offset: if flags & 0b10 != 0 {
                             try!(action_reader.read_u16())
-                        } else { 0 },
+                        } else {
+                            0
+                        },
                     }
-                },
+                }
                 OpCode::GotoLabel => Action::GotoLabel(try!(action_reader.read_c_string())),
                 OpCode::Greater => Action::Greater,
                 OpCode::If => Action::If { offset: try!(action_reader.read_i16()) },
@@ -138,9 +148,9 @@ impl<R: Read> Reader<R> {
                     let mut values = vec![];
                     while let Ok(value) = action_reader.read_push_value() {
                         values.push(value);
-                    };
+                    }
                     Action::Push(values)
-                },
+                }
                 OpCode::PushDuplicate => Action::PushDuplicate,
                 OpCode::RandomNumber => Action::RandomNumber,
                 OpCode::RemoveSprite => Action::RemoveSprite,
@@ -180,10 +190,10 @@ impl<R: Read> Reader<R> {
                     let code_length = action_reader.read_u16()?;
                     let mut with_reader = Reader::new(
                         (&mut action_reader.inner as &mut Read).take(code_length as u64),
-                        self.version
+                        self.version,
                     );
                     Action::With { actions: with_reader.read_action_list()? }
-                },
+                }
                 OpCode::WaitForFrame2 => Action::WaitForFrame2 {
                     num_actions_to_skip: try!(action_reader.read_u8()),
                 },
@@ -199,14 +209,19 @@ impl<R: Read> Reader<R> {
         let opcode = try!(self.read_u8());
         let length = if opcode >= 0x80 {
             try!(self.read_u16()) as usize
-        } else { 0 };
+        } else {
+            0
+        };
         Ok((opcode, length))
     }
 
     fn read_unknown_action(&mut self, opcode: u8, length: usize) -> Result<Action> {
         let mut data = vec![0u8; length];
         self.inner.read_exact(&mut data)?;
-        Ok(Action::Unknown { opcode: opcode, data: data })
+        Ok(Action::Unknown {
+            opcode: opcode,
+            data: data,
+        })
     }
 
     fn read_push_value(&mut self) -> Result<Value> {
@@ -221,7 +236,12 @@ impl<R: Read> Reader<R> {
             7 => Value::Int(try!(self.read_u32())),
             8 => Value::ConstantPool(try!(self.read_u8()) as u16),
             9 => Value::ConstantPool(try!(self.read_u16())),
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid value type in ActionPush")),
+            _ => {
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    "Invalid value type in ActionPush",
+                ))
+            }
         };
         Ok(value)
     }
@@ -236,7 +256,7 @@ impl<R: Read> Reader<R> {
         let code_length = self.read_u16()?;
         let mut fn_reader = Reader::new(
             (&mut self.inner as &mut Read).take(code_length as u64),
-            self.version
+            self.version,
         );
         Ok(Action::DefineFunction {
             name: name,
@@ -252,7 +272,7 @@ impl<R: Read> Reader<R> {
         let flags = self.read_u16()?;
         let mut params = Vec::with_capacity(num_params as usize + num_registers as usize);
         for _ in 0..num_params {
-            let register = self.read_u8()?; 
+            let register = self.read_u8()?;
             params.push(FunctionParam {
                 name: self.read_c_string()?,
                 register_index: if register == 0 { None } else { Some(register) },
@@ -261,7 +281,7 @@ impl<R: Read> Reader<R> {
         let code_length = self.read_u16()?;
         let mut fn_reader = Reader::new(
             (&mut self.inner as &mut Read).take(code_length as u64),
-            self.version
+            self.version,
         );
         Ok(Action::DefineFunction2(Function {
             name: name,
@@ -292,28 +312,36 @@ impl<R: Read> Reader<R> {
         let try_actions = {
             let mut fn_reader = Reader::new(
                 (&mut self.inner as &mut Read).take(try_length as u64),
-                self.version
+                self.version,
             );
             fn_reader.read_action_list()?
         };
         let catch_actions = {
             let mut fn_reader = Reader::new(
                 (&mut self.inner as &mut Read).take(catch_length as u64),
-                self.version
+                self.version,
             );
             fn_reader.read_action_list()?
         };
         let finally_actions = {
             let mut fn_reader = Reader::new(
                 (&mut self.inner as &mut Read).take(finally_length as u64),
-                self.version
+                self.version,
             );
             fn_reader.read_action_list()?
         };
         Ok(Action::Try(TryBlock {
             try: try_actions,
-            catch: if flags & 0b1 != 0 { Some((catch_var, catch_actions)) } else { None }, 
-            finally: if flags & 0b10 != 0 { Some(finally_actions) } else { None },
+            catch: if flags & 0b1 != 0 {
+                Some((catch_var, catch_actions))
+            } else {
+                None
+            },
+            finally: if flags & 0b10 != 0 {
+                Some(finally_actions)
+            } else {
+                None
+            },
         }))
     }
 }

@@ -1,7 +1,7 @@
 use avm1;
 use std::collections::HashSet;
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Swf {
     pub version: u8,
     pub compression: Compression,
@@ -12,14 +12,14 @@ pub struct Swf {
 }
 
 /// Defines the compression type used in an SWF.
-#[derive(Debug,PartialEq,Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Compression {
     None,
     Zlib,
     Lzma,
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Rectangle {
     pub x_min: f32,
     pub x_max: f32,
@@ -27,7 +27,7 @@ pub struct Rectangle {
     pub y_max: f32,
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Color {
     pub r: u8,
     pub g: u8,
@@ -35,7 +35,7 @@ pub struct Color {
     pub a: u8,
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ColorTransform {
     pub r_multiply: f32,
     pub g_multiply: f32,
@@ -62,7 +62,7 @@ impl ColorTransform {
     }
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Matrix {
     pub translate_x: f32,
     pub translate_y: f32,
@@ -95,7 +95,7 @@ pub enum Language {
     TraditionalChinese,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct FileAttributes {
     pub use_direct_blit: bool,
     pub use_gpu: bool,
@@ -104,7 +104,7 @@ pub struct FileAttributes {
     pub use_network_sandbox: bool,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct FrameLabel {
     pub frame_num: u32,
     pub label: String,
@@ -114,7 +114,7 @@ pub type Depth = i16;
 pub type CharacterId = u16;
 pub type Twips = i32;
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct PlaceObject {
     pub version: u8,
     pub action: PlaceObjectAction,
@@ -135,7 +135,7 @@ pub struct PlaceObject {
     pub amf_data: Option<Vec<u8>>,
 }
 
-#[derive(Debug,PartialEq,Clone,Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PlaceObjectAction {
     Place(CharacterId),
     Modify,
@@ -143,7 +143,7 @@ pub enum PlaceObjectAction {
 }
 
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Filter {
     DropShadowFilter(Box<DropShadowFilter>),
     BlurFilter(Box<BlurFilter>),
@@ -155,7 +155,7 @@ pub enum Filter {
     GradientBevelFilter(Box<GradientBevelFilter>),
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct DropShadowFilter {
     pub color: Color,
     pub blur_x: f64,
@@ -168,14 +168,14 @@ pub struct DropShadowFilter {
     pub num_passes: u8,
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct BlurFilter {
     pub blur_x: f64,
     pub blur_y: f64,
     pub num_passes: u8,
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct GlowFilter {
     pub color: Color,
     pub blur_x: f64,
@@ -186,7 +186,7 @@ pub struct GlowFilter {
     pub num_passes: u8,
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct BevelFilter {
     pub shadow_color: Color,
     pub highlight_color: Color,
@@ -201,7 +201,7 @@ pub struct BevelFilter {
     pub num_passes: u8,
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct GradientGlowFilter {
     pub colors: Vec<GradientRecord>,
     pub blur_x: f64,
@@ -215,7 +215,7 @@ pub struct GradientGlowFilter {
     pub num_passes: u8,
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ConvolutionFilter {
     pub num_matrix_rows: u8,
     pub num_matrix_cols: u8,
@@ -227,12 +227,12 @@ pub struct ConvolutionFilter {
     pub is_preserve_alpha: bool,
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ColorMatrixFilter {
     pub matrix: [f64; 20],
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct GradientBevelFilter {
     pub colors: Vec<GradientRecord>,
     pub blur_x: f64,
@@ -246,7 +246,7 @@ pub struct GradientBevelFilter {
     pub num_passes: u8,
 }
 
-#[derive(Debug,PartialEq,Eq,Clone,Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum BlendMode {
     Normal,
     Layer,
@@ -262,16 +262,16 @@ pub enum BlendMode {
     Erase,
     Overlay,
     HardLight,
-} 
+}
 
-#[derive(Debug,PartialEq,Eq,Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ClipAction {
     pub events: HashSet<ClipEvent>,
     pub key_code: Option<u8>,
     pub action_data: Vec<u8>,
 }
 
-#[derive(Debug,PartialEq,Eq,Clone,Copy,Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum ClipEvent {
     KeyUp,
     KeyDown,
@@ -296,10 +296,13 @@ pub enum ClipEvent {
 
 pub type ClipEventFlags = HashSet<ClipEvent>;
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Tag {
     ExportAssets(Vec<ExportedAsset>),
-    ScriptLimits { max_recursion_depth: u16, timeout_in_seconds: u16 },
+    ScriptLimits {
+        max_recursion_depth: u16,
+        timeout_in_seconds: u16,
+    },
     ShowFrame,
 
     Protect(Option<String>),
@@ -311,17 +314,31 @@ pub enum Tag {
     DefineBitsLossless(DefineBitsLossless),
     DefineButton(Box<Button>),
     DefineButton2(Box<Button>),
-    DefineButtonColorTransform { id: CharacterId, color_transforms: Vec<ColorTransform> },
+    DefineButtonColorTransform {
+        id: CharacterId,
+        color_transforms: Vec<ColorTransform>,
+    },
     DefineButtonSound(Box<ButtonSounds>),
     DefineEditText(Box<EditText>),
     DefineFont(Box<FontV1>),
     DefineFont2(Box<Font>),
     DefineFont4(Font4),
-    DefineFontAlignZones { id: CharacterId, thickness: FontThickness, zones: Vec<FontAlignZone> },
+    DefineFontAlignZones {
+        id: CharacterId,
+        thickness: FontThickness,
+        zones: Vec<FontAlignZone>,
+    },
     DefineFontInfo(Box<FontInfo>),
-    DefineFontName { id: CharacterId, name: String, copyright_info: String },
+    DefineFontName {
+        id: CharacterId,
+        name: String,
+        copyright_info: String,
+    },
     DefineMorphShape(Box<DefineMorphShape>),
-    DefineScalingGrid { id: CharacterId, splitter_rect: Rectangle },
+    DefineScalingGrid {
+        id: CharacterId,
+        splitter_rect: Rectangle,
+    },
     DefineShape(Shape),
     DefineSound(Box<Sound>),
     DefineSprite(Sprite),
@@ -329,22 +346,37 @@ pub enum Tag {
     DefineVideoStream(DefineVideoStream),
     DoAbc(Vec<u8>),
     DoAction(Vec<avm1::types::Action>),
-    DoInitAction { id: CharacterId, action_data: Vec<u8> },
+    DoInitAction {
+        id: CharacterId,
+        action_data: Vec<u8>,
+    },
     EnableDebugger(String),
     EnableTelemetry { password_hash: Vec<u8> },
     Metadata(String),
-    ImportAssets { url: String, imports: Vec<ExportedAsset> },
+    ImportAssets {
+        url: String,
+        imports: Vec<ExportedAsset>,
+    },
     JpegTables(Vec<u8>),
     SetBackgroundColor(Color),
     SetTabIndex { depth: Depth, tab_index: u16 },
     SoundStreamBlock(Vec<u8>),
     SoundStreamHead(Box<SoundStreamInfo>),
     SoundStreamHead2(Box<SoundStreamInfo>),
-    StartSound { id: CharacterId, sound_info: Box<SoundInfo> },
-    StartSound2 { class_name: String, sound_info: Box<SoundInfo> },
+    StartSound {
+        id: CharacterId,
+        sound_info: Box<SoundInfo>,
+    },
+    StartSound2 {
+        class_name: String,
+        sound_info: Box<SoundInfo>,
+    },
     SymbolClass(Vec<SymbolClassLink>),
     PlaceObject(Box<PlaceObject>),
-    RemoveObject { depth: Depth, character_id: Option<CharacterId> },
+    RemoveObject {
+        depth: Depth,
+        character_id: Option<CharacterId>,
+    },
     VideoFrame(VideoFrame),
     FileAttributes(FileAttributes),
 
@@ -357,19 +389,19 @@ pub enum Tag {
     Unknown { tag_code: u16, data: Vec<u8> },
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ExportedAsset {
     pub id: CharacterId,
     pub name: String,
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct SymbolClassLink {
     pub id: CharacterId,
-    pub class_name: String
+    pub class_name: String,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Shape {
     pub version: u8,
     pub id: CharacterId,
@@ -382,7 +414,7 @@ pub struct Shape {
     pub shape: Vec<ShapeRecord>,
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Sound {
     pub id: CharacterId,
     pub format: SoundFormat,
@@ -391,7 +423,7 @@ pub struct Sound {
 }
 
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct SoundInfo {
     pub event: SoundEvent,
     pub in_sample: Option<u32>,
@@ -401,7 +433,7 @@ pub struct SoundInfo {
 }
 
 
-#[derive(Debug,PartialEq,Clone,Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum SoundEvent {
     Event,
     Start,
@@ -410,14 +442,14 @@ pub enum SoundEvent {
 
 pub type SoundEnvelope = Vec<SoundEnvelopePoint>;
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct SoundEnvelopePoint {
     pub sample: u32,
     pub left_volume: f32,
     pub right_volume: f32,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Sprite {
     pub id: CharacterId,
     pub num_frames: u16,
@@ -452,7 +484,7 @@ pub struct StyleChangeData {
     pub new_styles: Option<ShapeStyles>,
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum FillStyle {
     Color(Color),
     LinearGradient(Gradient),
@@ -469,7 +501,7 @@ pub enum FillStyle {
     },
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Gradient {
     pub matrix: Matrix,
     pub spread: GradientSpread,
@@ -477,26 +509,26 @@ pub struct Gradient {
     pub records: Vec<GradientRecord>,
 }
 
-#[derive(Debug,PartialEq,Clone,Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum GradientSpread {
     Pad,
     Reflect,
     Repeat,
 }
 
-#[derive(Debug,PartialEq,Clone,Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum GradientInterpolation {
     RGB,
     LinearRGB,
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct GradientRecord {
     pub ratio: u8,
     pub color: Color,
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct LineStyle {
     pub width: u16, // Twips
     pub color: Color,
@@ -527,21 +559,21 @@ impl LineStyle {
     }
 }
 
-#[derive(Debug,PartialEq,Clone,Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum LineCapStyle {
     Round,
     None,
     Square,
 }
 
-#[derive(Debug,PartialEq,Clone,Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum LineJoinStyle {
     Round,
     Bevel,
     Miter(f32),
 }
 
-#[derive(Debug,PartialEq,Clone,Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum AudioCompression {
     UncompressedUnknownEndian,
     Adpcm,
@@ -553,7 +585,7 @@ pub enum AudioCompression {
     Speex,
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct SoundFormat {
     pub compression: AudioCompression,
     pub sample_rate: u16,
@@ -561,7 +593,7 @@ pub struct SoundFormat {
     pub is_16_bit: bool,
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct SoundStreamInfo {
     pub stream_format: SoundFormat,
     pub playback_format: SoundFormat,
@@ -569,7 +601,7 @@ pub struct SoundStreamInfo {
     pub latency_seek: i16,
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Button {
     pub id: CharacterId,
     pub is_track_as_menu: bool,
@@ -577,7 +609,7 @@ pub struct Button {
     pub actions: Vec<ButtonAction>,
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ButtonRecord {
     pub states: HashSet<ButtonState>,
     pub id: CharacterId,
@@ -588,7 +620,7 @@ pub struct ButtonRecord {
     pub blend_mode: BlendMode,
 }
 
-#[derive(Debug,PartialEq,Eq,Clone,Copy,Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum ButtonState {
     Up,
     Over,
@@ -596,7 +628,7 @@ pub enum ButtonState {
     HitTest,
 }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ButtonSounds {
     pub id: CharacterId,
     pub over_to_up_sound: Option<ButtonSound>,
@@ -607,14 +639,14 @@ pub struct ButtonSounds {
 
 pub type ButtonSound = (CharacterId, SoundInfo);
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ButtonAction {
     pub conditions: HashSet<ButtonActionCondition>,
     pub key_code: Option<u8>,
     pub action_data: Vec<u8>,
 }
 
-#[derive(Debug,PartialEq,Eq,Clone,Copy,Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum ButtonActionCondition {
     IdleToOverDown,
     OutDownToIdle,
@@ -625,7 +657,7 @@ pub enum ButtonActionCondition {
     OverUpToIdle,
     IdleToOverUp,
     OverDownToIdle,
-    KeyPress
+    KeyPress,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -727,7 +759,7 @@ pub struct Text {
 pub struct TextRecord {
     pub font_id: Option<CharacterId>,
     pub color: Option<Color>,
-    pub x_offset: Option<f32>,  // TODO(Herschel): twips
+    pub x_offset: Option<f32>, // TODO(Herschel): twips
     pub y_offset: Option<f32>,
     pub height: Option<u16>,
     pub glyphs: Vec<GlyphEntry>,
@@ -793,7 +825,7 @@ pub struct FontAlignZone {
 pub enum FontThickness {
     Thin,
     Medium,
-    Thick
+    Thick,
 }
 
 #[derive(Clone, Debug, PartialEq)]

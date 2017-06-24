@@ -14,8 +14,7 @@ pub fn read_swf<R: Read>(input: R) -> Result<Swf> {
     Ok(swf)
 }
 
-fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<(Swf, Reader<Box<Read + 'a>>)>
-{
+fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<(Swf, Reader<Box<Read + 'a>>)> {
     // Read SWF header.
     let compression = Reader::read_compression_type(&mut input)?;
     let version = input.read_u8()?;
@@ -36,9 +35,11 @@ fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<(Swf, Reader<Box<Re
             input.read_exact(&mut lzma_properties)?;
             let mut lzma_header = Cursor::new(Vec::with_capacity(13));
             lzma_header.write_all(&lzma_properties)?;
-            lzma_header.write_u64::<LittleEndian>(uncompressed_length as u64)?;
+            lzma_header
+                .write_u64::<LittleEndian>(uncompressed_length as u64)?;
             let mut lzma_stream = Stream::new_lzma_decoder(u64::max_value())?;
-            lzma_stream.process(&lzma_header.into_inner(), &mut [0u8; 1], Action::Run)?;
+            lzma_stream
+                .process(&lzma_header.into_inner(), &mut [0u8; 1], Action::Run)?;
             Box::new(XzDecoder::new_stream(input, lzma_stream))
         }
     };
@@ -120,8 +121,9 @@ pub trait SwfRead<R: Read> {
         }
         // TODO: There is probably a better way to do this.
         // TODO: Verify ANSI for SWF 5 and earlier.
-        String::from_utf8(bytes)
-            .map_err(|_| Error::new(ErrorKind::InvalidData, "Invalid string data"))
+        String::from_utf8(bytes).map_err(|_| {
+            Error::new(ErrorKind::InvalidData, "Invalid string data")
+        })
     }
 }
 
@@ -242,7 +244,8 @@ impl<R: Read> Reader<R> {
 
     fn read_sbits(&mut self, num_bits: usize) -> Result<i32> {
         if num_bits > 0 {
-            self.read_ubits(num_bits).map(|n| (n as i32) << (32 - num_bits) >> (32 - num_bits))
+            self.read_ubits(num_bits)
+                .map(|n| (n as i32) << (32 - num_bits) >> (32 - num_bits))
         } else {
             Ok(0)
         }
@@ -381,8 +384,7 @@ impl<R: Read> Reader<R> {
             3 => Language::Korean,
             4 => Language::SimplifiedChinese,
             5 => Language::TraditionalChinese,
-            _ => return Err(Error::new(ErrorKind::InvalidData,
-                                          "Invalid language code.")),
+            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid language code.")),
         })
     }
 
@@ -411,7 +413,6 @@ impl<R: Read> Reader<R> {
         let (tag_code, length) = self.read_tag_code_and_length()?;
 
         let mut tag_reader = Reader::new(self.input.by_ref().take(length as u64), self.version);
-        //let mut tag_reader = Reader::new(Box::new(self.input.by_ref().take(length as u64)) as Box<Read>, self.version);
         use tag_codes::TagCode;
         let tag = match TagCode::from_u16(tag_code) {
             Some(TagCode::End) => return Ok(None),
@@ -422,11 +423,8 @@ impl<R: Read> Reader<R> {
                 tag_reader.read_u32()?; // Reserved
                 let mut data = Vec::with_capacity(length - 6);
                 tag_reader.input.read_to_end(&mut data)?;
-                Tag::DefineBinaryData {
-                    id: id,
-                    data: data,
-                }
-            },
+                Tag::DefineBinaryData { id: id, data: data }
+            }
             Some(TagCode::DefineBits) => {
                 let id = tag_reader.read_u16()?;
                 let mut jpeg_data = Vec::with_capacity(length - 2);
@@ -435,7 +433,7 @@ impl<R: Read> Reader<R> {
                     id: id,
                     jpeg_data: jpeg_data,
                 }
-            },
+            }
             Some(TagCode::DefineBitsJpeg2) => {
                 let id = tag_reader.read_u16()?;
                 let mut jpeg_data = Vec::with_capacity(length - 2);
@@ -444,7 +442,7 @@ impl<R: Read> Reader<R> {
                     id: id,
                     jpeg_data: jpeg_data,
                 }
-            },
+            }
             Some(TagCode::DefineBitsJpeg3) => tag_reader.read_define_bits_jpeg_3(3)?,
             Some(TagCode::DefineBitsJpeg4) => tag_reader.read_define_bits_jpeg_3(4)?,
             Some(TagCode::DefineButton) => tag_reader.read_define_button()?,
@@ -459,31 +457,39 @@ impl<R: Read> Reader<R> {
                 }
                 Tag::DefineButtonColorTransform {
                     id: id,
-                    color_transforms: color_transforms
+                    color_transforms: color_transforms,
                 }
-            },
+            }
             Some(TagCode::DefineButtonSound) => {
                 let button_id = tag_reader.read_u16()?;
 
                 let sound_id = tag_reader.read_u16()?;
                 let over_to_up_sound = if sound_id != 0 {
                     Some((sound_id, tag_reader.read_sound_info()?))
-                } else { None };
+                } else {
+                    None
+                };
 
                 let sound_id = tag_reader.read_u16()?;
                 let up_to_over_sound = if sound_id != 0 {
                     Some((sound_id, tag_reader.read_sound_info()?))
-                } else { None };
+                } else {
+                    None
+                };
 
                 let sound_id = tag_reader.read_u16()?;
                 let over_to_down_sound = if sound_id != 0 {
                     Some((sound_id, tag_reader.read_sound_info()?))
-                } else { None };
+                } else {
+                    None
+                };
 
                 let sound_id = tag_reader.read_u16()?;
                 let down_to_over_sound = if sound_id != 0 {
                     Some((sound_id, tag_reader.read_sound_info()?))
-                } else { None };
+                } else {
+                    None
+                };
 
                 Tag::DefineButtonSound(Box::new(ButtonSounds {
                     id: button_id,
@@ -492,7 +498,7 @@ impl<R: Read> Reader<R> {
                     over_to_down_sound: over_to_down_sound,
                     down_to_over_sound: down_to_over_sound,
                 }))
-            },
+            }
             Some(TagCode::DefineEditText) => tag_reader.read_define_edit_text()?,
             Some(TagCode::DefineFont) => tag_reader.read_define_font()?,
             Some(TagCode::DefineFont2) => tag_reader.read_define_font_2(2)?,
@@ -521,8 +527,8 @@ impl<R: Read> Reader<R> {
                 } else {
                     vec![]
                 };
-                Tag::EnableTelemetry { password_hash: password_hash } 
-            },
+                Tag::EnableTelemetry { password_hash: password_hash }
+            }
             Some(TagCode::ImportAssets) => {
                 let url = tag_reader.read_c_string()?;
                 let num_imports = tag_reader.read_u16()?;
@@ -533,8 +539,11 @@ impl<R: Read> Reader<R> {
                         name: tag_reader.read_c_string()?,
                     });
                 }
-                Tag::ImportAssets { url: url, imports: imports }
-            },
+                Tag::ImportAssets {
+                    url: url,
+                    imports: imports,
+                }
+            }
             Some(TagCode::ImportAssets2) => {
                 let url = tag_reader.read_c_string()?;
                 tag_reader.read_u8()?; // Reserved; must be 1
@@ -547,34 +556,35 @@ impl<R: Read> Reader<R> {
                         name: tag_reader.read_c_string()?,
                     });
                 }
-                Tag::ImportAssets { url: url, imports: imports }
-            },
+                Tag::ImportAssets {
+                    url: url,
+                    imports: imports,
+                }
+            }
 
             Some(TagCode::JpegTables) => {
                 let mut data = Vec::with_capacity(length);
                 tag_reader.input.read_to_end(&mut data)?;
                 Tag::JpegTables(data)
-            },
+            }
 
             Some(TagCode::Metadata) => Tag::Metadata(tag_reader.read_c_string()?),
 
-            Some(TagCode::SetBackgroundColor) => {
-                Tag::SetBackgroundColor(tag_reader.read_rgb()?)
-            },
+            Some(TagCode::SetBackgroundColor) => Tag::SetBackgroundColor(tag_reader.read_rgb()?),
 
             Some(TagCode::SoundStreamBlock) => {
                 let mut data = Vec::with_capacity(length);
                 tag_reader.input.read_to_end(&mut data)?;
                 Tag::SoundStreamBlock(data)
-            },
+            }
 
             Some(TagCode::SoundStreamHead) => Tag::SoundStreamHead(
                 // TODO: Disallow certain compressions.
-                Box::new(tag_reader.read_sound_stream_info()?)
+                Box::new(tag_reader.read_sound_stream_info()?),
             ),
 
             Some(TagCode::SoundStreamHead2) => Tag::SoundStreamHead2(
-                Box::new(tag_reader.read_sound_stream_info()?)
+                Box::new(tag_reader.read_sound_stream_info()?),
             ),
 
             Some(TagCode::StartSound) => Tag::StartSound {
@@ -599,26 +609,30 @@ impl<R: Read> Reader<R> {
                 let mut action_data = Vec::with_capacity(length);
                 tag_reader.input.read_to_end(&mut action_data)?;
                 Tag::DoAbc(action_data)
-            },
+            }
 
             Some(TagCode::DoAction) => {
-                let mut action_reader = avm1::read::Reader::new(&mut tag_reader.input, self.version);
+                let mut action_reader =
+                    avm1::read::Reader::new(&mut tag_reader.input, self.version);
                 let actions = action_reader.read_action_list()?;
                 Tag::DoAction(actions)
-            },
+            }
 
             Some(TagCode::DoInitAction) => {
                 let id = tag_reader.read_u16()?;
                 let mut action_data = Vec::with_capacity(length);
                 tag_reader.input.read_to_end(&mut action_data)?;
-                Tag::DoInitAction { id: id, action_data: action_data }
-            },
+                Tag::DoInitAction {
+                    id: id,
+                    action_data: action_data,
+                }
+            }
 
             Some(TagCode::EnableDebugger) => Tag::EnableDebugger(tag_reader.read_c_string()?),
             Some(TagCode::EnableDebugger2) => {
                 tag_reader.read_u16()?; // Reserved
                 Tag::EnableDebugger(tag_reader.read_c_string()?)
-            },
+            }
 
             Some(TagCode::ScriptLimits) => Tag::ScriptLimits {
                 max_recursion_depth: tag_reader.read_u16()?,
@@ -640,7 +654,7 @@ impl<R: Read> Reader<R> {
                     });
                 }
                 Tag::SymbolClass(symbols)
-            },
+            }
 
             Some(TagCode::ExportAssets) => {
                 let num_exports = tag_reader.read_u16()?;
@@ -652,7 +666,7 @@ impl<R: Read> Reader<R> {
                     });
                 }
                 Tag::ExportAssets(exports)
-            },
+            }
 
             Some(TagCode::FileAttributes) => {
                 let flags = tag_reader.read_u32()?;
@@ -663,57 +677,57 @@ impl<R: Read> Reader<R> {
                     is_action_script_3: (flags & 0b00001000) != 0,
                     use_network_sandbox: (flags & 0b00000001) != 0,
                 })
-            },
+            }
 
             Some(TagCode::Protect) => {
-                tag_reader.read_u16()?;  // Two null bytes? Not specified in SWF19.
-                Tag::Protect(
-                    if length > 0 { Some(tag_reader.read_c_string()?) } else { None }
-                )
-            },
+                tag_reader.read_u16()?; // Two null bytes? Not specified in SWF19.
+                Tag::Protect(if length > 0 {
+                    Some(tag_reader.read_c_string()?)
+                } else {
+                    None
+                })
+            }
 
             Some(TagCode::DefineSceneAndFrameLabelData) => {
                 tag_reader.read_define_scene_and_frame_label_data()?
-            },
+            }
 
             Some(TagCode::FrameLabel) => {
                 let label = tag_reader.read_c_string()?;
                 Tag::FrameLabel {
                     is_anchor: tag_reader.version >= 6 && length > label.len() + 1 &&
-                                tag_reader.read_u8()? != 0,
+                        tag_reader.read_u8()? != 0,
                     label: label,
                 }
-            },
+            }
 
             Some(TagCode::DefineSprite) => {
                 // TODO: There's probably a better way to prevent the infinite type recursion.
                 // Tags can only be nested one level deep, so perhaps I can implement
                 // read_tag_list for Reader<Take<R>> to enforce this.
-                let mut sprite_reader = Reader::new(
-                    &mut tag_reader.input as &mut Read,
-                    self.version
-                );
+                let mut sprite_reader =
+                    Reader::new(&mut tag_reader.input as &mut Read, self.version);
                 sprite_reader.read_define_sprite()?
-            },
+            }
 
             Some(TagCode::PlaceObject) => tag_reader.read_place_object()?,
             Some(TagCode::PlaceObject2) => tag_reader.read_place_object_2_or_3(2)?,
-            Some(TagCode::PlaceObject3)  => tag_reader.read_place_object_2_or_3(3)?,
-            Some(TagCode::PlaceObject4)  => tag_reader.read_place_object_2_or_3(4)?,
+            Some(TagCode::PlaceObject3) => tag_reader.read_place_object_2_or_3(3)?,
+            Some(TagCode::PlaceObject4) => tag_reader.read_place_object_2_or_3(4)?,
 
             Some(TagCode::RemoveObject) => {
                 Tag::RemoveObject {
                     character_id: Some(tag_reader.read_u16()?),
                     depth: tag_reader.read_i16()?,
                 }
-            },
+            }
 
             Some(TagCode::RemoveObject2) => {
                 Tag::RemoveObject {
                     depth: tag_reader.read_i16()?,
                     character_id: None,
                 }
-            },
+            }
 
             Some(TagCode::VideoFrame) => tag_reader.read_video_frame()?,
 
@@ -726,7 +740,7 @@ impl<R: Read> Reader<R> {
                     tag_code: tag_code,
                     data: data,
                 }
-            },
+            }
         };
 
         if cfg!(debug_assertions) {
@@ -763,11 +777,15 @@ impl<R: Read> Reader<R> {
             id: id,
             is_track_as_menu: false,
             records: records,
-            actions: vec![ButtonAction {
-                conditions: vec![ButtonActionCondition::OverDownToOverUp].into_iter().collect(),
-                key_code: None,
-                action_data: action_data,
-            }]
+            actions: vec![
+                ButtonAction {
+                    conditions: vec![ButtonActionCondition::OverDownToOverUp]
+                        .into_iter()
+                        .collect(),
+                    key_code: None,
+                    action_data: action_data,
+                },
+            ],
         })))
     }
 
@@ -807,10 +825,18 @@ impl<R: Read> Reader<R> {
             return Ok(None);
         }
         let mut states = HashSet::with_capacity(4);
-        if (flags & 0b1) != 0 { states.insert(ButtonState::Up); }
-        if (flags & 0b10) != 0 { states.insert(ButtonState::Over); }
-        if (flags & 0b100) != 0 { states.insert(ButtonState::Down); }
-        if (flags & 0b1000) != 0 { states.insert(ButtonState::HitTest); }
+        if (flags & 0b1) != 0 {
+            states.insert(ButtonState::Up);
+        }
+        if (flags & 0b10) != 0 {
+            states.insert(ButtonState::Over);
+        }
+        if (flags & 0b100) != 0 {
+            states.insert(ButtonState::Down);
+        }
+        if (flags & 0b1000) != 0 {
+            states.insert(ButtonState::HitTest);
+        }
         let id = self.read_u16()?;
         let depth = self.read_i16()?;
         let matrix = self.read_matrix()?;
@@ -846,37 +872,53 @@ impl<R: Read> Reader<R> {
         let length = self.read_u16()?;
         let flags = self.read_u16()?;
         let mut conditions = HashSet::with_capacity(8);
-        if (flags & 0b1) != 0 { conditions.insert(ButtonActionCondition::IdleToOverUp); }
-        if (flags & 0b10) != 0 { conditions.insert(ButtonActionCondition::OverUpToIdle); }
-        if (flags & 0b100) != 0 { conditions.insert(ButtonActionCondition::OverUpToOverDown); }
-        if (flags & 0b1000) != 0 { conditions.insert(ButtonActionCondition::OverDownToOverUp); }
-        if (flags & 0b1_0000) != 0 { conditions.insert(ButtonActionCondition::OverDownToOutDown); }
-        if (flags & 0b10_0000) != 0 { conditions.insert(ButtonActionCondition::OutDownToOverDown); }
-        if (flags & 0b100_0000) != 0 { conditions.insert(ButtonActionCondition::OutDownToIdle); }
-        if (flags & 0b1000_0000) != 0 { conditions.insert(ButtonActionCondition::IdleToOverDown); }
+        if (flags & 0b1) != 0 {
+            conditions.insert(ButtonActionCondition::IdleToOverUp);
+        }
+        if (flags & 0b10) != 0 {
+            conditions.insert(ButtonActionCondition::OverUpToIdle);
+        }
+        if (flags & 0b100) != 0 {
+            conditions.insert(ButtonActionCondition::OverUpToOverDown);
+        }
+        if (flags & 0b1000) != 0 {
+            conditions.insert(ButtonActionCondition::OverDownToOverUp);
+        }
+        if (flags & 0b1_0000) != 0 {
+            conditions.insert(ButtonActionCondition::OverDownToOutDown);
+        }
+        if (flags & 0b10_0000) != 0 {
+            conditions.insert(ButtonActionCondition::OutDownToOverDown);
+        }
+        if (flags & 0b100_0000) != 0 {
+            conditions.insert(ButtonActionCondition::OutDownToIdle);
+        }
+        if (flags & 0b1000_0000) != 0 {
+            conditions.insert(ButtonActionCondition::IdleToOverDown);
+        }
 
-        if (flags & 0b1_0000_0000) != 0 { conditions.insert(ButtonActionCondition::OverDownToIdle); }
+        if (flags & 0b1_0000_0000) != 0 {
+            conditions.insert(ButtonActionCondition::OverDownToIdle);
+        }
         let key_code = (flags >> 9) as u8;
         if key_code != 0 {
             conditions.insert(ButtonActionCondition::KeyPress);
         }
         let mut action_data = Vec::with_capacity(length as usize);
         if length > 0 {
-            action_data.resize( length as usize - 4, 0 );
+            action_data.resize(length as usize - 4, 0);
             self.input.read_exact(&mut action_data)?;
         } else {
             self.input.read_to_end(&mut action_data)?;
         }
-        Ok(
-            (
-                ButtonAction {
-                    conditions: conditions,
-                    key_code: if key_code != 0 { Some(key_code) } else { None },
-                    action_data: action_data,
-                },
-                length != 0
-            )
-        )
+        Ok((
+            ButtonAction {
+                conditions: conditions,
+                key_code: if key_code != 0 { Some(key_code) } else { None },
+                action_data: action_data,
+            },
+            length != 0,
+        ))
     }
 
     fn read_csm_text_settings(&mut self) -> Result<Tag> {
@@ -884,7 +926,7 @@ impl<R: Read> Reader<R> {
         let flags = self.read_u8()?;
         let thickness = self.read_f32()?;
         let sharpness = self.read_f32()?;
-        self.read_u8()?;    // Reserved (0).
+        self.read_u8()?; // Reserved (0).
         Ok(Tag::CsmTextSettings(CsmTextSettings {
             id: id,
             use_advanced_rendering: flags & 0b01000000 != 0,
@@ -892,7 +934,12 @@ impl<R: Read> Reader<R> {
                 0b00_000 => TextGridFit::None,
                 0b01_000 => TextGridFit::Pixel,
                 0b10_000 => TextGridFit::SubPixel,
-                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid text grid fitting")),
+                _ => {
+                    return Err(Error::new(
+                        ErrorKind::InvalidData,
+                        "Invalid text grid fitting",
+                    ))
+                }
             },
             thickness: thickness,
             sharpness: sharpness,
@@ -930,7 +977,7 @@ impl<R: Read> Reader<R> {
 
         let mut glyphs = vec![];
         if num_glyphs > 0 {
-            for _ in 0..(num_glyphs-1) {
+            for _ in 0..(num_glyphs - 1) {
                 self.read_u16()?;
             }
 
@@ -946,12 +993,10 @@ impl<R: Read> Reader<R> {
             }
         }
 
-        Ok(Tag::DefineFont(Box::new(
-            FontV1 {
-                id: id,
-                glyphs: glyphs,
-            }
-        )))
+        Ok(Tag::DefineFont(Box::new(FontV1 {
+            id: id,
+            glyphs: glyphs,
+        })))
     }
 
     fn read_define_font_2(&mut self, version: u8) -> Result<Tag> {
@@ -970,25 +1015,39 @@ impl<R: Read> Reader<R> {
         let language = self.read_language()?;
         let name_len = self.read_u8()?;
         let mut name = String::with_capacity(name_len as usize);
-        self.input.by_ref().take(name_len as u64).read_to_string(&mut name)?;
+        self.input
+            .by_ref()
+            .take(name_len as u64)
+            .read_to_string(&mut name)?;
 
         let num_glyphs = self.read_u16()? as usize;
         let mut glyphs = Vec::with_capacity(num_glyphs);
-        glyphs.resize(num_glyphs, Glyph {
-            shape_records: vec![],
-            code: 0,
-            advance: None,
-            bounds: None,
-        });
+        glyphs.resize(
+            num_glyphs,
+            Glyph {
+                shape_records: vec![],
+                code: 0,
+                advance: None,
+                bounds: None,
+            },
+        );
 
         // OffsetTable
         // We are throwing these away.
         for _ in &mut glyphs {
-            if has_wide_offsets { self.read_u32()? } else { self.read_u16()? as u32 };
+            if has_wide_offsets {
+                self.read_u32()?
+            } else {
+                self.read_u16()? as u32
+            };
         }
 
         // CodeTableOffset
-        if has_wide_offsets { self.read_u32()?; } else { self.read_u16()?; }
+        if has_wide_offsets {
+            self.read_u32()?;
+        } else {
+            self.read_u16()?;
+        }
 
         // ShapeTable
         for glyph in &mut glyphs {
@@ -1002,7 +1061,11 @@ impl<R: Read> Reader<R> {
 
         // CodeTable
         for glyph in &mut glyphs {
-            glyph.code = if has_wide_codes { self.read_u16()? } else { self.read_u8()? as u16 };
+            glyph.code = if has_wide_codes {
+                self.read_u16()?
+            } else {
+                self.read_u8()? as u16
+            };
         }
 
         let layout = if has_layout {
@@ -1034,21 +1097,19 @@ impl<R: Read> Reader<R> {
             None
         };
 
-        Ok(Tag::DefineFont2(Box::new(
-            Font {
-                version: version,
-                id: id,
-                name: name,
-                language: language,
-                layout: layout,
-                glyphs: glyphs,
-                is_small_text: is_small_text,
-                is_shift_jis: is_shift_jis,
-                is_ansi: is_ansi,
-                is_bold: is_bold,
-                is_italic: is_italic,
-            }
-        )))
+        Ok(Tag::DefineFont2(Box::new(Font {
+            version: version,
+            id: id,
+            name: name,
+            language: language,
+            layout: layout,
+            glyphs: glyphs,
+            is_small_text: is_small_text,
+            is_shift_jis: is_shift_jis,
+            is_ansi: is_ansi,
+            is_bold: is_bold,
+            is_italic: is_italic,
+        })))
     }
 
     fn read_define_font_4(&mut self) -> Result<Tag> {
@@ -1060,7 +1121,9 @@ impl<R: Read> Reader<R> {
             let mut data = vec![];
             self.input.read_to_end(&mut data)?;
             Some(data)
-        } else { None };
+        } else {
+            None
+        };
         Ok(Tag::DefineFont4(Font4 {
             id: id,
             is_italic: flags & 0b10 != 0,
@@ -1072,8 +1135,16 @@ impl<R: Read> Reader<R> {
 
     fn read_kerning_record(&mut self, has_wide_codes: bool) -> Result<KerningRecord> {
         Ok(KerningRecord {
-            left_code: if has_wide_codes { self.read_u16()? } else { self.read_u8()? as u16 },
-            right_code: if has_wide_codes { self.read_u16()? } else { self.read_u8()? as u16 },
+            left_code: if has_wide_codes {
+                self.read_u16()?
+            } else {
+                self.read_u8()? as u16
+            },
+            right_code: if has_wide_codes {
+                self.read_u16()?
+            } else {
+                self.read_u8()? as u16
+            },
             adjustment: self.read_i16()?, // TODO(Herschel): Twips
         })
     }
@@ -1084,7 +1155,12 @@ impl<R: Read> Reader<R> {
             0b00_000000 => FontThickness::Thin,
             0b01_000000 => FontThickness::Medium,
             0b10_000000 => FontThickness::Thick,
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid font thickness type.")),
+            _ => {
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    "Invalid font thickness type.",
+                ))
+            }
         };
         let mut zones = vec![];
         while let Ok(zone) = self.read_font_align_zone() {
@@ -1114,7 +1190,10 @@ impl<R: Read> Reader<R> {
 
         let font_name_len = self.read_u8()?;
         let mut font_name = String::with_capacity(font_name_len as usize);
-        self.input.by_ref().take(font_name_len as u64).read_to_string(&mut font_name)?;
+        self.input
+            .by_ref()
+            .take(font_name_len as u64)
+            .read_to_string(&mut font_name)?;
 
         let flags = self.read_u8()?;
         let use_wide_codes = flags & 0b1 != 0; // TODO(Herschel): Warn if false for version 2.
@@ -1163,15 +1242,24 @@ impl<R: Read> Reader<R> {
         let id = self.read_character_id()?;
         let start_shape_bounds = self.read_rectangle()?;
         let end_shape_bounds = self.read_rectangle()?;
-        let (start_edge_bounds, end_edge_bounds,
-            has_non_scaling_strokes, has_scaling_strokes) =
+        let (start_edge_bounds, end_edge_bounds, has_non_scaling_strokes, has_scaling_strokes) =
             if shape_version >= 2 {
                 let start_edge_bounds = self.read_rectangle()?;
                 let end_edge_bounds = self.read_rectangle()?;
                 let flags = self.read_u8()?;
-                (start_edge_bounds, end_edge_bounds, flags & 0b10 != 0, flags & 0b1 != 0) 
+                (
+                    start_edge_bounds,
+                    end_edge_bounds,
+                    flags & 0b10 != 0,
+                    flags & 0b1 != 0,
+                )
             } else {
-                (start_shape_bounds.clone(), end_shape_bounds.clone(), true, false)
+                (
+                    start_shape_bounds.clone(),
+                    end_shape_bounds.clone(),
+                    true,
+                    false,
+                )
             };
 
         self.read_u32()?; // Offset to EndEdges.
@@ -1245,7 +1333,7 @@ impl<R: Read> Reader<R> {
 
             Ok((
                 LineStyle::new_v1(start_width, start_color),
-                LineStyle::new_v1(end_width, end_color)
+                LineStyle::new_v1(end_width, end_color),
             ))
         } else {
             // MorphLineStyle2 in DefineMorphShape2.
@@ -1279,7 +1367,20 @@ impl<R: Read> Reader<R> {
             let (start_color, end_color) = if !has_fill {
                 (self.read_rgba()?, self.read_rgba()?)
             } else {
-                (Color { r: 0, g: 0, b: 0, a: 0 }, Color { r: 0, g: 0, b: 0, a: 0 })
+                (
+                    Color {
+                        r: 0,
+                        g: 0,
+                        b: 0,
+                        a: 0,
+                    },
+                    Color {
+                        r: 0,
+                        g: 0,
+                        b: 0,
+                        a: 0,
+                    },
+                )
             };
             let (start_fill_style, end_fill_style) = if has_fill {
                 let (start, end) = self.read_morph_fill_style(shape_version)?;
@@ -1311,7 +1412,7 @@ impl<R: Read> Reader<R> {
                     is_pixel_hinted: is_pixel_hinted,
                     allow_close: allow_close,
                     fill_style: end_fill_style,
-                }
+                },
             ))
         }
     }
@@ -1323,29 +1424,31 @@ impl<R: Read> Reader<R> {
                 let start_color = self.read_rgba()?;
                 let end_color = self.read_rgba()?;
                 (FillStyle::Color(start_color), FillStyle::Color(end_color))
-            },
+            }
 
             0x10 => {
                 let (start_gradient, end_gradient) = self.read_morph_gradient()?;
                 (
                     FillStyle::LinearGradient(start_gradient),
-                    FillStyle::LinearGradient(end_gradient)
+                    FillStyle::LinearGradient(end_gradient),
                 )
-            },
+            }
 
             0x12 => {
                 let (start_gradient, end_gradient) = self.read_morph_gradient()?;
                 (
                     FillStyle::RadialGradient(start_gradient),
-                    FillStyle::RadialGradient(end_gradient)
+                    FillStyle::RadialGradient(end_gradient),
                 )
-            },
+            }
 
             0x13 => {
                 if self.version < 8 || shape_version < 2 {
-                    return Err(Error::new(ErrorKind::InvalidData,
-                                          "Focal gradients are only supported in SWF version 8 \
-                                           or higher."));
+                    return Err(Error::new(
+                        ErrorKind::InvalidData,
+                        "Focal gradients are only supported in SWF version 8 \
+                         or higher.",
+                    ));
                 }
                 // TODO(Herschel): How is focal_point stored?
                 let (start_gradient, end_gradient) = self.read_morph_gradient()?;
@@ -1359,9 +1462,9 @@ impl<R: Read> Reader<R> {
                     FillStyle::FocalGradient {
                         gradient: end_gradient,
                         focal_point: end_focal_point,
-                    }
+                    },
                 )
-            },
+            }
 
             0x40...0x43 => {
                 let id = self.read_character_id()?;
@@ -1414,27 +1517,26 @@ impl<R: Read> Reader<R> {
                 spread: GradientSpread::Pad, // TODO(Herschel): What are the defaults?
                 interpolation: GradientInterpolation::RGB,
                 records: end_records,
-            }
+            },
         ))
     }
 
     fn read_define_shape(&mut self, version: u8) -> Result<Tag> {
         let id = self.read_u16()?;
         let shape_bounds = self.read_rectangle()?;
-        let (edge_bounds, has_fill_winding_rule,
-            has_non_scaling_strokes, has_scaling_strokes) =
-        if version >= 4 {
-            let edge_bounds = self.read_rectangle()?;
-            let flags = self.read_u8()?;
-            (
-                edge_bounds,
-                (flags & 0b100) != 0,
-                (flags & 0b10) != 0,
-                (flags & 0b1) != 0
-            )
-        } else {
-            (shape_bounds.clone(), false, true, false)
-        };
+        let (edge_bounds, has_fill_winding_rule, has_non_scaling_strokes, has_scaling_strokes) =
+            if version >= 4 {
+                let edge_bounds = self.read_rectangle()?;
+                let flags = self.read_u8()?;
+                (
+                    edge_bounds,
+                    (flags & 0b100) != 0,
+                    (flags & 0b10) != 0,
+                    (flags & 0b1) != 0,
+                )
+            } else {
+                (shape_bounds.clone(), false, true, false)
+            };
         let styles = self.read_shape_styles(version)?;
         let mut records = Vec::new();
         while let Some(record) = self.read_shape_record(version)? {
@@ -1463,7 +1565,7 @@ impl<R: Read> Reader<R> {
             id: id,
             format: format,
             num_samples: num_samples,
-            data: data
+            data: data,
         })))
     }
 
@@ -1475,7 +1577,9 @@ impl<R: Read> Reader<R> {
         let latency_seek = if stream_format.compression == AudioCompression::Mp3 {
             // Specs say this is i16, not u16. How are negative values used?
             self.read_i16()?
-        } else { 0 };
+        } else {
+            0
+        };
         Ok(SoundStreamInfo {
             stream_format: stream_format,
             playback_format: playback_format,
@@ -1530,9 +1634,11 @@ impl<R: Read> Reader<R> {
 
             0x13 => {
                 if self.version < 8 || shape_version < 4 {
-                    return Err(Error::new(ErrorKind::InvalidData,
-                                          "Focal gradients are only supported in SWF version 8 \
-                                           or higher."));
+                    return Err(Error::new(
+                        ErrorKind::InvalidData,
+                        "Focal gradients are only supported in SWF version 8 \
+                         or higher.",
+                    ));
                 }
                 FillStyle::FocalGradient {
                     gradient: self.read_gradient(shape_version)?,
@@ -1563,7 +1669,7 @@ impl<R: Read> Reader<R> {
                     self.read_rgba()?
                 } else {
                     self.read_rgb()?
-                }
+                },
             ))
         } else {
             // LineStyle2 in DefineShape4
@@ -1596,14 +1702,19 @@ impl<R: Read> Reader<R> {
             let color = if !has_fill {
                 self.read_rgba()?
             } else {
-                Color { r: 0, g: 0, b: 0, a: 0 }
+                Color {
+                    r: 0,
+                    g: 0,
+                    b: 0,
+                    a: 0,
+                }
             };
             let fill_style = if has_fill {
                 Some(self.read_fill_style(shape_version)?)
             } else {
                 None
             };
-            Ok( LineStyle {
+            Ok(LineStyle {
                 width: width,
                 color: color,
                 start_cap: start_cap,
@@ -1625,14 +1736,21 @@ impl<R: Read> Reader<R> {
             0 => GradientSpread::Pad,
             1 => GradientSpread::Reflect,
             2 => GradientSpread::Repeat,
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid gradient spread mode.")),
+            _ => {
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    "Invalid gradient spread mode.",
+                ))
+            }
         };
         let interpolation = match self.read_ubits(2)? {
             0 => GradientInterpolation::RGB,
             1 => GradientInterpolation::LinearRGB,
             _ => {
-                return Err(Error::new(ErrorKind::InvalidData,
-                                      "Invalid gradient interpolation mode."))
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    "Invalid gradient interpolation mode.",
+                ))
             }
         };
         let num_records = self.read_ubits(4)? as usize;
@@ -1707,7 +1825,7 @@ impl<R: Read> Reader<R> {
                     let num_bits = self.read_ubits(5)? as usize;
                     new_style.move_to = Some((
                         (self.read_sbits(num_bits)? as f32) / 20f32,
-                        (self.read_sbits(num_bits)? as f32) / 20f32
+                        (self.read_sbits(num_bits)? as f32) / 20f32,
                     ));
                 }
                 if (flags & 0b10) != 0 {
@@ -1774,29 +1892,48 @@ impl<R: Read> Reader<R> {
         // PlaceObject3
         let is_image = (flags & 0b10000_00000000) != 0;
         let has_class_name = (flags & 0b1000_00000000) != 0 || (is_image && (flags & 0b10) != 0);
-        let class_name = if has_class_name { Some(self.read_c_string()?) } else { None };
+        let class_name = if has_class_name {
+            Some(self.read_c_string()?)
+        } else {
+            None
+        };
 
         let action = match flags & 0b11 {
             0b01 => PlaceObjectAction::Modify,
             0b10 => PlaceObjectAction::Place(self.read_u16()?),
             0b11 => PlaceObjectAction::Replace(self.read_u16()?),
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid PlaceObject type")),
+            _ => {
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    "Invalid PlaceObject type",
+                ))
+            }
         };
         let matrix = if (flags & 0b100) != 0 {
             Some(self.read_matrix()?)
-        } else { None };
+        } else {
+            None
+        };
         let color_transform = if (flags & 0b1000) != 0 {
             Some(self.read_color_transform()?)
-        } else { None};
+        } else {
+            None
+        };
         let ratio = if (flags & 0b1_0000) != 0 {
             Some(self.read_u16()?)
-        } else { None };
+        } else {
+            None
+        };
         let name = if (flags & 0b10_0000) != 0 {
             Some(self.read_c_string()?)
-        } else { None };
+        } else {
+            None
+        };
         let clip_depth = if (flags & 0b100_0000) != 0 {
             Some(self.read_i16()?)
-        } else { None };
+        } else {
+            None
+        };
 
         // PlaceObject3
         let mut filters = vec![];
@@ -1805,24 +1942,32 @@ impl<R: Read> Reader<R> {
             for _ in 0..num_filters {
                 filters.push(self.read_filter()?);
             }
-        } 
+        }
         let blend_mode = if (flags & 0b10_00000000) != 0 {
             self.read_blend_mode()?
-        } else { BlendMode::Normal };
+        } else {
+            BlendMode::Normal
+        };
         let is_bitmap_cached = (flags & 0b100_00000000) != 0 && self.read_u8()? != 0;
         let is_visible = (flags & 0b100000_00000000) == 0 || self.read_u8()? != 0;
         let background_color = if (flags & 0b1000000_00000000) != 0 {
             Some(self.read_rgba()?)
-        } else { None };
+        } else {
+            None
+        };
 
         let clip_actions = if (flags & 0b1000_0000) != 0 {
             self.read_clip_actions()?
-        } else { vec![] };
+        } else {
+            vec![]
+        };
         let amf_data = if place_object_version >= 4 {
             let mut amf = vec![];
             self.input.read_to_end(&mut amf)?;
             Some(amf)
-        } else { None };
+        } else {
+            None
+        };
         Ok(Tag::PlaceObject(Box::new(PlaceObject {
             version: place_object_version,
             action: action,
@@ -1903,26 +2048,58 @@ impl<R: Read> Reader<R> {
     fn read_clip_event_flags(&mut self) -> Result<HashSet<ClipEvent>> {
         // TODO: Switch to a bitset.
         let mut event_list = HashSet::with_capacity(32);
-        if self.read_bit()? { event_list.insert(ClipEvent::KeyUp); }
-        if self.read_bit()? { event_list.insert(ClipEvent::KeyDown); }
-        if self.read_bit()? { event_list.insert(ClipEvent::MouseUp); }
-        if self.read_bit()? { event_list.insert(ClipEvent::MouseDown); }
-        if self.read_bit()? { event_list.insert(ClipEvent::MouseMove); }
-        if self.read_bit()? { event_list.insert(ClipEvent::Unload); }
-        if self.read_bit()? { event_list.insert(ClipEvent::EnterFrame); }
-        if self.read_bit()? { event_list.insert(ClipEvent::Load); }
+        if self.read_bit()? {
+            event_list.insert(ClipEvent::KeyUp);
+        }
+        if self.read_bit()? {
+            event_list.insert(ClipEvent::KeyDown);
+        }
+        if self.read_bit()? {
+            event_list.insert(ClipEvent::MouseUp);
+        }
+        if self.read_bit()? {
+            event_list.insert(ClipEvent::MouseDown);
+        }
+        if self.read_bit()? {
+            event_list.insert(ClipEvent::MouseMove);
+        }
+        if self.read_bit()? {
+            event_list.insert(ClipEvent::Unload);
+        }
+        if self.read_bit()? {
+            event_list.insert(ClipEvent::EnterFrame);
+        }
+        if self.read_bit()? {
+            event_list.insert(ClipEvent::Load);
+        }
         if self.version < 6 {
             self.read_u16()?;
             self.read_u8()?;
         } else {
-            if self.read_bit()? { event_list.insert(ClipEvent::DragOver); }
-            if self.read_bit()? { event_list.insert(ClipEvent::RollOut); }
-            if self.read_bit()? { event_list.insert(ClipEvent::RollOver); }
-            if self.read_bit()? { event_list.insert(ClipEvent::ReleaseOutside); }
-            if self.read_bit()? { event_list.insert(ClipEvent::Release); }
-            if self.read_bit()? { event_list.insert(ClipEvent::Press); }
-            if self.read_bit()? { event_list.insert(ClipEvent::Initialize); }
-            if self.read_bit()? { event_list.insert(ClipEvent::Data); }
+            if self.read_bit()? {
+                event_list.insert(ClipEvent::DragOver);
+            }
+            if self.read_bit()? {
+                event_list.insert(ClipEvent::RollOut);
+            }
+            if self.read_bit()? {
+                event_list.insert(ClipEvent::RollOver);
+            }
+            if self.read_bit()? {
+                event_list.insert(ClipEvent::ReleaseOutside);
+            }
+            if self.read_bit()? {
+                event_list.insert(ClipEvent::Release);
+            }
+            if self.read_bit()? {
+                event_list.insert(ClipEvent::Press);
+            }
+            if self.read_bit()? {
+                event_list.insert(ClipEvent::Initialize);
+            }
+            if self.read_bit()? {
+                event_list.insert(ClipEvent::Data);
+            }
             if self.version < 6 {
                 self.read_u16()?;
             } else {
@@ -1930,8 +2107,12 @@ impl<R: Read> Reader<R> {
                 if self.read_bit()? && self.version >= 7 {
                     event_list.insert(ClipEvent::Construct);
                 }
-                if self.read_bit()? { event_list.insert(ClipEvent::KeyPress); }
-                if self.read_bit()? { event_list.insert(ClipEvent::DragOut); }
+                if self.read_bit()? {
+                    event_list.insert(ClipEvent::KeyPress);
+                }
+                if self.read_bit()? {
+                    event_list.insert(ClipEvent::DragOut);
+                }
                 self.read_u8()?;
             }
         }
@@ -1987,9 +2168,10 @@ impl<R: Read> Reader<R> {
                 }
                 let mut gradient_records = Vec::with_capacity(num_colors as usize);
                 for color in colors {
-                    gradient_records.push(
-                        GradientRecord { color: color, ratio: self.read_u8()? }
-                    );
+                    gradient_records.push(GradientRecord {
+                        color: color,
+                        ratio: self.read_u8()?,
+                    });
                 }
                 Filter::GradientGlowFilter(Box::new(GradientGlowFilter {
                     colors: gradient_records,
@@ -2003,7 +2185,7 @@ impl<R: Read> Reader<R> {
                     is_on_top: (self.read_ubits(2)? & 0b1) != 0,
                     num_passes: self.read_ubits(4)? as u8,
                 }))
-            },
+            }
             5 => {
                 let num_matrix_cols = self.read_u8()?;
                 let num_matrix_rows = self.read_u8()?;
@@ -2026,16 +2208,14 @@ impl<R: Read> Reader<R> {
                     is_clamped: (flags & 0b10) != 0,
                     is_preserve_alpha: (flags & 0b1) != 0,
                 }))
-            },
+            }
             6 => {
                 let mut matrix = [0f64; 20];
                 for i in 0..20 {
                     matrix[i] = self.read_fixed16()?;
                 }
-                Filter::ColorMatrixFilter(Box::new(ColorMatrixFilter {
-                    matrix: matrix
-                }))
-            },
+                Filter::ColorMatrixFilter(Box::new(ColorMatrixFilter { matrix: matrix }))
+            }
             7 => {
                 let num_colors = self.read_u8()?;
                 let mut colors = Vec::with_capacity(num_colors as usize);
@@ -2044,9 +2224,10 @@ impl<R: Read> Reader<R> {
                 }
                 let mut gradient_records = Vec::with_capacity(num_colors as usize);
                 for color in colors {
-                    gradient_records.push(
-                        GradientRecord { color: color, ratio: self.read_u8()? }
-                    );
+                    gradient_records.push(GradientRecord {
+                        color: color,
+                        ratio: self.read_u8()?,
+                    });
                 }
                 Filter::GradientBevelFilter(Box::new(GradientBevelFilter {
                     colors: gradient_records,
@@ -2060,7 +2241,7 @@ impl<R: Read> Reader<R> {
                     is_on_top: (self.read_ubits(2)? & 0b1) != 0,
                     num_passes: self.read_ubits(4)? as u8 & 0b011111,
                 }))
-            },
+            }
             _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid filter type")),
         };
         self.byte_align();
@@ -2078,8 +2259,7 @@ impl<R: Read> Reader<R> {
             5 => AudioCompression::Nellymoser8Khz,
             6 => AudioCompression::Nellymoser,
             11 => AudioCompression::Speex,
-            _ => return Err(Error::new(ErrorKind::InvalidData,
-                        "Invalid audio format.")),
+            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid audio format.")),
         };
         let sample_rate = match (flags & 0b11_00) >> 2 {
             0 => 5512,
@@ -2164,7 +2344,11 @@ impl<R: Read> Reader<R> {
         })))
     }
 
-    fn read_text_record(&mut self, num_glyph_bits: u8, num_advance_bits: u8) -> Result<Option<TextRecord>> {
+    fn read_text_record(
+        &mut self,
+        num_glyph_bits: u8,
+        num_advance_bits: u8,
+    ) -> Result<Option<TextRecord>> {
         let flags = self.read_u8()?;
 
         if flags == 0 {
@@ -2172,11 +2356,31 @@ impl<R: Read> Reader<R> {
             return Ok(None);
         }
 
-        let font_id = if flags & 0b1000 != 0 { Some(self.read_character_id()?) } else { None };
-        let color = if flags & 0b100 != 0 { Some(self.read_rgb()?) } else { None };
-        let x_offset = if flags & 0b1 != 0 { Some(self.read_i16()? as f32 / 20.0) } else { None };
-        let y_offset = if flags & 0b10 != 0 { Some(self.read_i16()? as f32 / 20.0) } else { None };
-        let height = if flags & 0b1000 != 0 { Some(self.read_u16()?) } else { None };
+        let font_id = if flags & 0b1000 != 0 {
+            Some(self.read_character_id()?)
+        } else {
+            None
+        };
+        let color = if flags & 0b100 != 0 {
+            Some(self.read_rgb()?)
+        } else {
+            None
+        };
+        let x_offset = if flags & 0b1 != 0 {
+            Some(self.read_i16()? as f32 / 20.0)
+        } else {
+            None
+        };
+        let y_offset = if flags & 0b10 != 0 {
+            Some(self.read_i16()? as f32 / 20.0)
+        } else {
+            None
+        };
+        let height = if flags & 0b1000 != 0 {
+            Some(self.read_u16()?)
+        } else {
+            None
+        };
         // TODO(Herschel): font_id and height are tied together. Merge them into a struct?
         let num_glyphs = self.read_u8()?;
         let mut glyphs = Vec::with_capacity(num_glyphs as usize);
@@ -2204,19 +2408,29 @@ impl<R: Read> Reader<R> {
         let flags2 = self.read_u8()?;
         let font_id = if flags & 0b1 != 0 {
             Some(self.read_character_id()?)
-        } else { None };
+        } else {
+            None
+        };
         let font_class_name = if flags2 & 0b10000000 != 0 {
             Some(self.read_c_string()?)
-        } else { None };
+        } else {
+            None
+        };
         let height = if flags & 0b1 != 0 {
             Some(self.read_u16()?)
-        } else { None };
+        } else {
+            None
+        };
         let color = if flags & 0b100 != 0 {
             Some(self.read_rgba()?)
-        } else { None };
+        } else {
+            None
+        };
         let max_length = if flags & 0b10 != 0 {
             Some(self.read_u16()?)
-        } else { None };
+        } else {
+            None
+        };
         let layout = if flags2 & 0b100000 != 0 {
             Some(TextLayout {
                 align: match self.read_u8()? {
@@ -2224,18 +2438,27 @@ impl<R: Read> Reader<R> {
                     1 => TextAlign::Right,
                     2 => TextAlign::Center,
                     3 => TextAlign::Justify,
-                    _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid edit text alignment")),
+                    _ => {
+                        return Err(Error::new(
+                            ErrorKind::InvalidData,
+                            "Invalid edit text alignment",
+                        ))
+                    }
                 },
                 left_margin: self.read_u16()? as f32 / 20.0,
                 right_margin: self.read_u16()? as f32 / 20.0,
                 indent: self.read_u16()? as f32 / 20.0,
                 leading: self.read_i16()? as f32 / 20.0,
             })
-        } else { None };
+        } else {
+            None
+        };
         let variable_name = self.read_c_string()?;
         let initial_text = if flags & 0b10000000 != 0 {
             Some(self.read_c_string()?)
-        } else { None };
+        } else {
+            None
+        };
         Ok(Tag::DefineEditText(Box::new(EditText {
             id: id,
             bounds: bounds,
@@ -2288,7 +2511,12 @@ impl<R: Read> Reader<R> {
                 0b011_0 => VideoDeblocking::Level2,
                 0b100_0 => VideoDeblocking::Level3,
                 0b101_0 => VideoDeblocking::Level4,
-                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid video deblocking value.")),
+                _ => {
+                    return Err(Error::new(
+                        ErrorKind::InvalidData,
+                        "Invalid video deblocking value.",
+                    ))
+                }
             },
         }))
     }
@@ -2308,7 +2536,11 @@ impl<R: Read> Reader<R> {
     fn read_define_bits_jpeg_3(&mut self, version: u8) -> Result<Tag> {
         let id = self.read_character_id()?;
         let data_size = self.read_u32()? as usize;
-        let deblocking = if version >= 4 { self.read_fixed8()? } else { 0.0 };
+        let deblocking = if version >= 4 {
+            self.read_fixed8()?
+        } else {
+            0.0
+        };
         let mut data = vec![];
         data.resize(data_size, 0);
         self.input.read_exact(&mut data)?;
@@ -2329,14 +2561,15 @@ impl<R: Read> Reader<R> {
             3 => BitmapFormat::ColorMap8,
             4 if version == 1 => BitmapFormat::Rgb15,
             5 => BitmapFormat::Rgb32,
-            _ => return Err(Error::new(ErrorKind::InvalidData,
-                                  "Invalid bitmap format.")),
+            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid bitmap format.")),
         };
         let width = self.read_u16()?;
         let height = self.read_u16()?;
         let num_colors = if format == BitmapFormat::ColorMap8 {
             self.read_u8()?
-        } else { 0 };
+        } else {
+            0
+        };
         let mut data = Vec::new();
         self.input.read_to_end(&mut data)?;
         Ok(Tag::DefineBitsLossless(DefineBitsLossless {
@@ -2348,7 +2581,7 @@ impl<R: Read> Reader<R> {
             num_colors: num_colors,
             data: data,
         }))
-    }   
+    }
 }
 
 #[cfg(test)]
@@ -2373,7 +2606,11 @@ pub mod tests {
         read_swf(&data[..]).unwrap()
     }
 
-    pub fn read_tag_bytes_from_file_with_index(path: &str, tag_code: TagCode, mut index: usize) -> Vec<u8> {
+    pub fn read_tag_bytes_from_file_with_index(
+        path: &str,
+        tag_code: TagCode,
+        mut index: usize,
+    ) -> Vec<u8> {
         let mut file = File::open(path).unwrap();
         let mut data = Vec::new();
         file.read_to_end(&mut data).unwrap();
@@ -2386,7 +2623,7 @@ pub mod tests {
         let mut cursor = Cursor::new(data);
         loop {
             let pos = cursor.position();
-            let (swf_tag_code, length) =  {
+            let (swf_tag_code, length) = {
                 let mut tag_reader = Reader::new(&mut cursor, swf.version);
                 tag_reader.read_tag_code_and_length().unwrap()
             };
@@ -2428,12 +2665,18 @@ pub mod tests {
 
     #[test]
     fn read_swfs() {
-        assert_eq!(read_from_file("tests/swfs/uncompressed.swf").compression,
-                   Compression::None);
-        assert_eq!(read_from_file("tests/swfs/zlib.swf").compression,
-                   Compression::Zlib);
-        assert_eq!(read_from_file("tests/swfs/lzma.swf").compression,
-                   Compression::Lzma);
+        assert_eq!(
+            read_from_file("tests/swfs/uncompressed.swf").compression,
+            Compression::None
+        );
+        assert_eq!(
+            read_from_file("tests/swfs/zlib.swf").compression,
+            Compression::Zlib
+        );
+        assert_eq!(
+            read_from_file("tests/swfs/lzma.swf").compression,
+            Compression::Lzma
+        );
     }
 
     #[test]
@@ -2446,12 +2689,18 @@ pub mod tests {
 
     #[test]
     fn read_compression_type() {
-        assert_eq!(Reader::read_compression_type(&b"FWS"[..]).unwrap(),
-                   Compression::None);
-        assert_eq!(Reader::read_compression_type(&b"CWS"[..]).unwrap(),
-                   Compression::Zlib);
-        assert_eq!(Reader::read_compression_type(&b"ZWS"[..]).unwrap(),
-                   Compression::Lzma);
+        assert_eq!(
+            Reader::read_compression_type(&b"FWS"[..]).unwrap(),
+            Compression::None
+        );
+        assert_eq!(
+            Reader::read_compression_type(&b"CWS"[..]).unwrap(),
+            Compression::Zlib
+        );
+        assert_eq!(
+            Reader::read_compression_type(&b"ZWS"[..]).unwrap(),
+            Compression::Lzma
+        );
         assert!(Reader::read_compression_type(&b"ABC"[..]).is_err());
     }
 
@@ -2459,42 +2708,84 @@ pub mod tests {
     fn read_bit() {
         let mut buf: &[u8] = &[0b01010101, 0b00100101];
         let mut reader = Reader::new(&mut buf, 1);
-        assert_eq!((0..16).map(|_| reader.read_bit().unwrap()).collect::<Vec<_>>(),
-                   [false, true, false, true, false, true, false, true, false, false, true,
-                    false, false, true, false, true]);
+        assert_eq!(
+            (0..16)
+                .map(|_| reader.read_bit().unwrap())
+                .collect::<Vec<_>>(),
+            [
+                false,
+                true,
+                false,
+                true,
+                false,
+                true,
+                false,
+                true,
+                false,
+                false,
+                true,
+                false,
+                false,
+                true,
+                false,
+                true
+            ]
+        );
     }
 
     #[test]
     fn read_ubits() {
         let mut buf: &[u8] = &[0b01010101, 0b00100101];
         let mut reader = Reader::new(&mut buf, 1);
-        assert_eq!((0..8).map(|_| reader.read_ubits(2).unwrap()).collect::<Vec<_>>(),
-                   [1, 1, 1, 1, 0, 2, 1, 1]);
+        assert_eq!(
+            (0..8)
+                .map(|_| reader.read_ubits(2).unwrap())
+                .collect::<Vec<_>>(),
+            [1, 1, 1, 1, 0, 2, 1, 1]
+        );
     }
 
     #[test]
     fn read_sbits() {
         let mut buf: &[u8] = &[0b01010101, 0b00100101];
         let mut reader = Reader::new(&mut buf, 1);
-        assert_eq!((0..8).map(|_| reader.read_sbits(2).unwrap()).collect::<Vec<_>>(),
-                   [1, 1, 1, 1, 0, -2, 1, 1]);
+        assert_eq!(
+            (0..8)
+                .map(|_| reader.read_sbits(2).unwrap())
+                .collect::<Vec<_>>(),
+            [1, 1, 1, 1, 0, -2, 1, 1]
+        );
     }
 
     #[test]
     fn read_fbits() {
         assert_eq!(Reader::new(&[0][..], 1).read_fbits(5).unwrap(), 0f32);
-        assert_eq!(Reader::new(&[0b01000000, 0b00000000, 0b0_0000000][..], 1)
-                       .read_fbits(17)
-                       .unwrap(),
-                   0.5f32);
-        assert_eq!(Reader::new(&[0b10000000, 0b00000000][..], 1).read_fbits(16).unwrap(),
-                   -0.5f32);
+        assert_eq!(
+            Reader::new(&[0b01000000, 0b00000000, 0b0_0000000][..], 1)
+                .read_fbits(17)
+                .unwrap(),
+            0.5f32
+        );
+        assert_eq!(
+            Reader::new(&[0b10000000, 0b00000000][..], 1)
+                .read_fbits(16)
+                .unwrap(),
+            -0.5f32
+        );
     }
 
     #[test]
     fn read_fixed8() {
-        let buf = [0b00000000, 0b00000000, 0b00000000, 0b00000001, 0b10000000, 0b00000110,
-                   0b01000000, 0b11101011];
+        let buf = [
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000001,
+            0b10000000,
+            0b00000110,
+            0b01000000,
+            0b11101011,
+        ];
         let mut reader = Reader::new(&buf[..], 1);
         assert_eq!(reader.read_fixed8().unwrap(), 0f32);
         assert_eq!(reader.read_fixed8().unwrap(), 1f32);
@@ -2508,12 +2799,34 @@ pub mod tests {
         assert_eq!(read(&[0]), 0);
         assert_eq!(read(&[2]), 2);
         assert_eq!(read(&[0b1_0000001, 0b0_0000001]), 129);
-        assert_eq!(read(&[0b1_0000001, 0b1_0000001, 0b0_1100111]),
-                   0b1100111_0000001_0000001);
-        assert_eq!(read(&[0b1_0000000, 0b1_0000000, 0b1_0000000, 0b1_0000000, 0b0000_1111]),
-                   0b1111_0000000_0000000_0000000_0000000);
-        assert_eq!(read(&[0b1_0000000, 0b1_0000000, 0b1_0000000, 0b1_0000000, 0b1111_1111]),
-                   0b1111_0000000_0000000_0000000_0000000);
+        assert_eq!(
+            read(&[0b1_0000001, 0b1_0000001, 0b0_1100111]),
+            0b1100111_0000001_0000001
+        );
+        assert_eq!(
+            read(
+                &[
+                    0b1_0000000,
+                    0b1_0000000,
+                    0b1_0000000,
+                    0b1_0000000,
+                    0b0000_1111
+                ]
+            ),
+            0b1111_0000000_0000000_0000000_0000000
+        );
+        assert_eq!(
+            read(
+                &[
+                    0b1_0000000,
+                    0b1_0000000,
+                    0b1_0000000,
+                    0b1_0000000,
+                    0b1111_1111
+                ]
+            ),
+            0b1111_0000000_0000000_0000000_0000000
+        );
     }
 
     #[test]
@@ -2521,13 +2834,15 @@ pub mod tests {
         let buf = [0b00000_000];
         let mut reader = Reader::new(&buf[..], 1);
         let rectangle = reader.read_rectangle().unwrap();
-        assert_eq!(rectangle,
-                   Rectangle {
-                       x_min: 0f32,
-                       x_max: 0f32,
-                       y_min: 0f32,
-                       y_max: 0f32,
-                   });
+        assert_eq!(
+            rectangle,
+            Rectangle {
+                x_min: 0f32,
+                x_max: 0f32,
+                y_min: 0f32,
+                y_max: 0f32,
+            }
+        );
     }
 
     #[test]
@@ -2535,13 +2850,15 @@ pub mod tests {
         let buf = [0b00110_101, 0b100_01010, 0b0_101100_0, 0b10100_000];
         let mut reader = Reader::new(&buf[..], 1);
         let rectangle = reader.read_rectangle().unwrap();
-        assert_eq!(rectangle,
-                   Rectangle {
-                       x_min: -1f32,
-                       x_max: 1f32,
-                       y_min: -1f32,
-                       y_max: 1f32,
-                   });
+        assert_eq!(
+            rectangle,
+            Rectangle {
+                x_min: -1f32,
+                x_max: 1f32,
+                y_min: -1f32,
+                y_max: 1f32,
+            }
+        );
     }
 
     #[test]
@@ -2550,15 +2867,17 @@ pub mod tests {
             let buf = [0b0_0_00001_0, 0b0_0000000];
             let mut reader = Reader::new(&buf[..], 1);
             let matrix = reader.read_matrix().unwrap();
-            assert_eq!(matrix,
-                       Matrix {
-                           translate_x: 0f32,
-                           translate_y: 0f32,
-                           scale_x: 1f32,
-                           scale_y: 1f32,
-                           rotate_skew_0: 0f32,
-                           rotate_skew_1: 0f32,
-                       });
+            assert_eq!(
+                matrix,
+                Matrix {
+                    translate_x: 0f32,
+                    translate_y: 0f32,
+                    scale_x: 1f32,
+                    scale_y: 1f32,
+                    rotate_skew_0: 0f32,
+                    rotate_skew_1: 0f32,
+                }
+            );
         }
     }
 
@@ -2567,24 +2886,28 @@ pub mod tests {
         {
             let buf = [1, 128, 255];
             let mut reader = Reader::new(&buf[..], 1);
-            assert_eq!(reader.read_rgb().unwrap(),
-                       Color {
-                           r: 1,
-                           g: 128,
-                           b: 255,
-                           a: 255,
-                       });
+            assert_eq!(
+                reader.read_rgb().unwrap(),
+                Color {
+                    r: 1,
+                    g: 128,
+                    b: 255,
+                    a: 255,
+                }
+            );
         }
         {
             let buf = [1, 128, 235, 44];
             let mut reader = Reader::new(&buf[..], 1);
-            assert_eq!(reader.read_rgba().unwrap(),
-                       Color {
-                           r: 1,
-                           g: 128,
-                           b: 235,
-                           a: 44,
-                       });
+            assert_eq!(
+                reader.read_rgba().unwrap(),
+                Color {
+                    r: 1,
+                    g: 128,
+                    b: 235,
+                    a: 44,
+                }
+            );
         }
     }
 
@@ -2610,38 +2933,70 @@ pub mod tests {
     }
 
     #[test]
-    fn read_shape_styles() {
-    }
+    fn read_shape_styles() {}
 
     #[test]
     fn read_fill_style() {
         let read = |buf: &[u8], shape_version| reader(buf).read_fill_style(shape_version).unwrap();
 
-        let fill_style = FillStyle::Color(Color { r: 255, g: 0, b: 0, a: 255 });
+        let fill_style = FillStyle::Color(Color {
+            r: 255,
+            g: 0,
+            b: 0,
+            a: 255,
+        });
         assert_eq!(read(&[0, 255, 0, 0], 1), fill_style);
 
         // DefineShape3 and 4 read RGBA colors.
-        let fill_style = FillStyle::Color(Color { r: 255, g: 0, b: 0, a: 50 });
+        let fill_style = FillStyle::Color(Color {
+            r: 255,
+            g: 0,
+            b: 0,
+            a: 50,
+        });
         assert_eq!(read(&[0, 255, 0, 0, 50], 3), fill_style);
 
         let fill_style = FillStyle::Bitmap {
-            id: 20, matrix: Matrix::new(), is_smoothed: false, is_repeating: true
+            id: 20,
+            matrix: Matrix::new(),
+            is_smoothed: false,
+            is_repeating: true,
         };
-        assert_eq!(read(&[0x42, 20, 0, 0b00_00001_0, 0b0_0000000], 3), fill_style);
+        assert_eq!(
+            read(&[0x42, 20, 0, 0b00_00001_0, 0b0_0000000], 3),
+            fill_style
+        );
 
         let mut matrix = Matrix::new();
         matrix.translate_x = 1f32;
         let fill_style = FillStyle::Bitmap {
-            id: 33, matrix: matrix, is_smoothed: false, is_repeating: false
+            id: 33,
+            matrix: matrix,
+            is_smoothed: false,
+            is_repeating: false,
         };
-        assert_eq!(read(&[0x43, 33, 0, 0b00_00110_0, 0b10100_000, 0b000_00000], 3), fill_style);
+        assert_eq!(
+            read(&[0x43, 33, 0, 0b00_00110_0, 0b10100_000, 0b000_00000], 3),
+            fill_style
+        );
     }
 
     #[test]
     fn read_line_style() {
         // DefineShape1 and 2 read RGB colors.
-        let line_style = LineStyle::new_v1( 0, Color { r: 255, g: 0, b: 0, a: 255 } );
-        assert_eq!(reader(&[0, 0, 255, 0, 0]).read_line_style(2).unwrap(), line_style);
+        let line_style = LineStyle::new_v1(
+            0,
+            Color {
+                r: 255,
+                g: 0,
+                b: 0,
+                a: 255,
+            },
+        );
+        assert_eq!(
+            reader(&[0, 0, 255, 0, 0]).read_line_style(2).unwrap(),
+            line_style
+        );
 
         // DefineShape3 and 4 read RGBA colors.
         // let line_style = LineStyle { width: 3, color: Color { r: 1, g: 2, b: 3, a: 10 } };
@@ -2663,7 +3018,10 @@ pub mod tests {
             delta_x: 1f32,
             delta_y: 1f32,
         };
-        assert_eq!(read(&[0b11_0100_1_0, 0b1010_0010, 0b100_00000]), shape_record);
+        assert_eq!(
+            read(&[0b11_0100_1_0, 0b1010_0010, 0b100_00000]),
+            shape_record
+        );
 
         let shape_record = ShapeRecord::StraightEdge {
             delta_x: 0f32,

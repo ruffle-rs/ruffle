@@ -1,4 +1,4 @@
-#[derive(Clone,Debug,PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Action {
     Add,
     Add2,
@@ -18,7 +18,11 @@ pub enum Action {
     CloneSprite,
     ConstantPool(Vec<String>),
     Decrement,
-    DefineFunction { name: String, params: Vec<String>, actions: Vec<Action> },
+    DefineFunction {
+        name: String,
+        params: Vec<String>,
+        actions: Vec<Action>,
+    },
     DefineFunction2(Function),
     DefineLocal,
     DefineLocal2,
@@ -35,10 +39,17 @@ pub enum Action {
     GetProperty,
     GetTime,
     GetUrl { url: String, target: String },
-    GetUrl2 { send_vars_method: SendVarsMethod, is_target_sprite: bool, is_load_vars: bool },
+    GetUrl2 {
+        send_vars_method: SendVarsMethod,
+        is_target_sprite: bool,
+        is_load_vars: bool,
+    },
     GetVariable,
     GotoFrame(u16),
-    GotoFrame2 { set_playing: bool, scene_offset: u16 },
+    GotoFrame2 {
+        set_playing: bool,
+        scene_offset: u16,
+    },
     GotoLabel(String),
     Greater,
     If { offset: i16 },
@@ -102,7 +113,7 @@ pub enum Action {
     Unknown { opcode: u8, data: Vec<u8> },
 }
 
-#[derive(Clone,Debug,PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Value {
     Undefined,
     Null,
@@ -115,14 +126,14 @@ pub enum Value {
     ConstantPool(u16),
 }
 
-#[derive(Clone,Copy,Debug,PartialEq,Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SendVarsMethod {
     None,
     Get,
     Post,
 }
 
-#[derive(Clone,Debug,PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Function {
     pub name: String,
     pub params: Vec<FunctionParam>,
@@ -138,20 +149,20 @@ pub struct Function {
     pub actions: Vec<Action>,
 }
 
-#[derive(Clone,Debug,PartialEq,Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FunctionParam {
     pub name: String,
     pub register_index: Option<u8>,
 }
 
-#[derive(Clone,Debug,PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct TryBlock {
     pub try: Vec<Action>,
     pub catch: Option<(CatchVar, Vec<Action>)>,
     pub finally: Option<Vec<Action>>,
 }
 
-#[derive(Clone,Debug,PartialEq,Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CatchVar {
     Var(String),
     Register(u8),

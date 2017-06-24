@@ -16,9 +16,12 @@ impl<W: Write> SwfWrite<W> for Writer<W> {
 
 impl<W: Write> Writer<W> {
     pub fn new(inner: W, version: u8) -> Writer<W> {
-        Writer { inner: inner, version: version }
+        Writer {
+            inner: inner,
+            version: version,
+        }
     }
-    
+
     pub fn write_action_list(&mut self, actions: &Vec<Action>) -> Result<()> {
         for action in actions {
             try!(self.write_action(action));
@@ -52,17 +55,20 @@ impl<W: Write> Writer<W> {
                 for constant in constants {
                     self.write_c_string(constant)?;
                 }
-            },
+            }
             &Action::Decrement => self.write_action_header(OpCode::Decrement, 0)?,
-            &Action::DefineFunction { ref name, ref params, ref actions } => {
+            &Action::DefineFunction {
+                ref name,
+                ref params,
+                ref actions,
+            } => {
                 let mut action_buf = vec![];
                 {
                     let mut fn_writer = Writer::new(&mut action_buf, self.version);
                     fn_writer.write_action_list(actions)?;
                 }
-                let len = name.len() + 1
-                            + 2 + params.iter().map(|p| p.len() + 1).sum::<usize>()
-                            + 2 + action_buf.len();
+                let len = name.len() + 1 + 2 + params.iter().map(|p| p.len() + 1).sum::<usize>() +
+                    2 + action_buf.len();
                 self.write_action_header(OpCode::DefineFunction, len)?;
                 self.write_c_string(name)?;
                 self.write_u16(params.len() as u16)?;
@@ -71,42 +77,60 @@ impl<W: Write> Writer<W> {
                 }
                 self.write_u16(action_buf.len() as u16)?;
                 self.inner.write_all(&action_buf)?;
-            },
+            }
             &Action::DefineFunction2(ref function) => {
                 let mut action_buf = vec![];
                 {
                     let mut fn_writer = Writer::new(&mut action_buf, self.version);
                     fn_writer.write_action_list(&function.actions)?;
                 }
-                let len = function.name.len() + 1
-                            + 3 + function.params.iter().map(|p| p.name.len() + 2).sum::<usize>()
-                            + 4 + action_buf.len();
-                let num_registers = function.params.iter().map(
-                    |p| if p.register_index.is_none() { 1 } else { 0 }).sum();
+                let len = function.name.len() + 1 + 3 +
+                    function
+                        .params
+                        .iter()
+                        .map(|p| p.name.len() + 2)
+                        .sum::<usize>() + 4 + action_buf.len();
+                let num_registers = function
+                    .params
+                    .iter()
+                    .map(|p| if p.register_index.is_none() { 1 } else { 0 })
+                    .sum();
                 self.write_action_header(OpCode::DefineFunction2, len)?;
                 self.write_c_string(&function.name)?;
                 self.write_u16(function.params.len() as u16)?;
                 self.write_u8(num_registers)?;
                 let flags =
-                    if function.preload_global { 0b1_00000000 } else { 0 } |
-                    if function.preload_parent { 0b10000000 } else { 0 } |
-                    if function.preload_root { 0b1000000 } else { 0 } | 
-                    if function.suppress_super { 0b100000 } else { 0 } |
-                    if function.preload_super { 0b10000 } else { 0 } |
-                    if function.suppress_arguments { 0b1000 } else { 0 } |
-                    if function.preload_arguments { 0b100 } else { 0 } |
-                    if function.suppress_this { 0b10 } else { 0 } |
-                    if function.preload_this { 0b1 } else { 0 };
+                    if function.preload_global {
+                        0b1_00000000
+                    } else {
+                        0
+                    } |
+                        if function.preload_parent {
+                            0b10000000
+                        } else {
+                            0
+                        } | if function.preload_root { 0b1000000 } else { 0 } |
+                        if function.suppress_super { 0b100000 } else { 0 } |
+                        if function.preload_super { 0b10000 } else { 0 } |
+                        if function.suppress_arguments {
+                            0b1000
+                        } else {
+                            0
+                        } | if function.preload_arguments { 0b100 } else { 0 } |
+                        if function.suppress_this { 0b10 } else { 0 } |
+                        if function.preload_this { 0b1 } else { 0 };
                 self.write_u16(flags)?;
                 for param in &function.params {
-                    self.write_u8(
-                        if let Some(n) = param.register_index { n } else { 0 }
-                    )?;
+                    self.write_u8(if let Some(n) = param.register_index {
+                        n
+                    } else {
+                        0
+                    })?;
                     self.write_c_string(&param.name)?;
                 }
                 self.write_u16(action_buf.len() as u16)?;
                 self.inner.write_all(&action_buf)?;
-            },
+            }
             &Action::DefineLocal => self.write_action_header(OpCode::DefineLocal, 0)?,
             &Action::DefineLocal2 => self.write_action_header(OpCode::DefineLocal2, 0)?,
             &Action::Divide => self.write_action_header(OpCode::Divide, 0)?,
@@ -121,29 +145,38 @@ impl<W: Write> Writer<W> {
             &Action::GetMember => self.write_action_header(OpCode::GetMember, 0)?,
             &Action::GetProperty => self.write_action_header(OpCode::GetProperty, 0)?,
             &Action::GetTime => self.write_action_header(OpCode::GetTime, 0)?,
-            &Action::GetUrl { ref url, ref target } => {
+            &Action::GetUrl {
+                ref url,
+                ref target,
+            } => {
                 self.write_action_header(OpCode::GetUrl, url.len() + target.len() + 2)?;
                 self.write_c_string(url)?;
                 self.write_c_string(target)?;
-            },
-            &Action::GetUrl2 { send_vars_method, is_target_sprite, is_load_vars } => {
+            }
+            &Action::GetUrl2 {
+                send_vars_method,
+                is_target_sprite,
+                is_load_vars,
+            } => {
                 self.write_action_header(OpCode::GetUrl2, 1)?;
-                let flags =
-                    (match send_vars_method {
-                        SendVarsMethod::None => 0,
-                        SendVarsMethod::Get => 1,
-                        SendVarsMethod::Post => 2,
-                    } << 6) |
+                let flags = (match send_vars_method {
+                                 SendVarsMethod::None => 0,
+                                 SendVarsMethod::Get => 1,
+                                 SendVarsMethod::Post => 2,
+                             } << 6) |
                     if is_target_sprite { 0b10 } else { 0 } |
                     if is_load_vars { 0b1 } else { 0 };
                 self.write_u8(flags)?;
-            },
+            }
             &Action::GetVariable => self.write_action_header(OpCode::GetVariable, 0)?,
             &Action::GotoFrame(frame) => {
                 self.write_action_header(OpCode::GotoFrame, 2)?;
                 self.write_u16(frame)?;
-            },
-            &Action::GotoFrame2 { set_playing, scene_offset } => {
+            }
+            &Action::GotoFrame2 {
+                set_playing,
+                scene_offset,
+            } => {
                 if scene_offset != 0 {
                     self.write_action_header(OpCode::GotoFrame2, 3)?;
                     self.write_u8(if set_playing { 0b11 } else { 0b01 })?;
@@ -152,16 +185,16 @@ impl<W: Write> Writer<W> {
                     self.write_action_header(OpCode::GotoFrame2, 1)?;
                     self.write_u8(if set_playing { 0b10 } else { 0b00 })?;
                 }
-            },
+            }
             &Action::GotoLabel(ref label) => {
                 self.write_action_header(OpCode::GotoLabel, label.len() + 1)?;
                 self.write_c_string(label)?;
-            },
+            }
             &Action::Greater => self.write_action_header(OpCode::Greater, 0)?,
             &Action::If { offset } => {
                 self.write_action_header(OpCode::If, 2)?;
                 self.write_i16(offset)?;
-            },
+            }
             &Action::ImplementsOp => self.write_action_header(OpCode::ImplementsOp, 0)?,
             &Action::Increment => self.write_action_header(OpCode::Increment, 0)?,
             &Action::InitArray => self.write_action_header(OpCode::InitArray, 0)?,
@@ -170,7 +203,7 @@ impl<W: Write> Writer<W> {
             &Action::Jump { offset } => {
                 self.write_action_header(OpCode::Jump, 2)?;
                 self.write_i16(offset)?;
-            },
+            }
             &Action::Less => self.write_action_header(OpCode::Less, 0)?,
             &Action::Less2 => self.write_action_header(OpCode::Less2, 0)?,
             &Action::MBAsciiToChar => self.write_action_header(OpCode::MBAsciiToChar, 0)?,
@@ -188,8 +221,9 @@ impl<W: Write> Writer<W> {
             &Action::Pop => self.write_action_header(OpCode::Pop, 0)?,
             &Action::PreviousFrame => self.write_action_header(OpCode::PreviousFrame, 0)?,
             &Action::Push(ref values) => {
-                let len = values.iter().map(|v| {
-                    match v {
+                let len = values
+                    .iter()
+                    .map(|v| match v {
                         &Value::Str(ref string) => string.len() + 2,
                         &Value::Float(_) => 5,
                         &Value::Null => 1,
@@ -198,14 +232,20 @@ impl<W: Write> Writer<W> {
                         &Value::Bool(_) => 2,
                         &Value::Double(_) => 9,
                         &Value::Int(_) => 5,
-                        &Value::ConstantPool(v) => if v < 256 { 2 } else { 3 },
-                    }
-                }).sum();
+                        &Value::ConstantPool(v) => {
+                            if v < 256 {
+                                2
+                            } else {
+                                3
+                            }
+                        }
+                    })
+                    .sum();
                 self.write_action_header(OpCode::Push, len)?;
                 for value in values {
                     self.write_push_value(value)?;
                 }
-            },
+            }
             &Action::PushDuplicate => self.write_action_header(OpCode::PushDuplicate, 0)?,
             &Action::RandomNumber => self.write_action_header(OpCode::RandomNumber, 0)?,
             &Action::RemoveSprite => self.write_action_header(OpCode::RemoveSprite, 0)?,
@@ -215,7 +255,7 @@ impl<W: Write> Writer<W> {
             &Action::SetTarget(ref target) => {
                 self.write_action_header(OpCode::SetTarget, target.len() + 1)?;
                 self.write_c_string(target)?;
-            },
+            }
             &Action::SetTarget2 => self.write_action_header(OpCode::SetTarget2, 0)?,
             &Action::SetVariable => self.write_action_header(OpCode::SetVariable, 0)?,
             &Action::StackSwap => self.write_action_header(OpCode::StackSwap, 0)?,
@@ -225,7 +265,7 @@ impl<W: Write> Writer<W> {
             &Action::StoreRegister(register) => {
                 self.write_action_header(OpCode::StoreRegister, 1)?;
                 self.write_u8(register)?;
-            },
+            }
             &Action::StrictEquals => self.write_action_header(OpCode::StrictEquals, 0)?,
             &Action::StringAdd => self.write_action_header(OpCode::StringAdd, 0)?,
             &Action::StringEquals => self.write_action_header(OpCode::StringEquals, 0)?,
@@ -260,12 +300,19 @@ impl<W: Write> Writer<W> {
                     finally_length = fn_writer.inner.len() - (try_length + catch_length);
                 }
                 let len = 7 + action_buf.len() +
-                    if let Some((CatchVar::Var(ref name), _)) = try_block.catch { name.len() + 1 } else { 1 };
+                    if let Some((CatchVar::Var(ref name), _)) = try_block.catch {
+                        name.len() + 1
+                    } else {
+                        1
+                    };
                 self.write_action_header(OpCode::Try, len)?;
                 self.write_u8(
-                    if let Some((CatchVar::Register(_), _)) = try_block.catch { 0b100 } else { 0 } |
-                    if try_block.finally.is_some() { 0b10 } else { 0 } |
-                    if try_block.catch.is_some() { 0b1 } else { 0 }
+                    if let Some((CatchVar::Register(_), _)) = try_block.catch {
+                        0b100
+                    } else {
+                        0
+                    } | if try_block.finally.is_some() { 0b10 } else { 0 } |
+                        if try_block.catch.is_some() { 0b1 } else { 0 },
                 )?;
                 self.write_u16(try_length as u16)?;
                 self.write_u16(catch_length as u16)?;
@@ -276,17 +323,20 @@ impl<W: Write> Writer<W> {
                     _ => (),
                 }
                 self.inner.write_all(&action_buf)?;
-            },
+            }
             &Action::TypeOf => self.write_action_header(OpCode::TypeOf, 0)?,
-            &Action::WaitForFrame { frame, num_actions_to_skip } => {
+            &Action::WaitForFrame {
+                frame,
+                num_actions_to_skip,
+            } => {
                 self.write_action_header(OpCode::WaitForFrame, 3)?;
                 self.write_u16(frame)?;
                 self.write_u8(num_actions_to_skip)?;
-            },
+            }
             &Action::WaitForFrame2 { num_actions_to_skip } => {
                 self.write_action_header(OpCode::WaitForFrame2, 1)?;
                 self.write_u8(num_actions_to_skip)?;
-            },
+            }
             &Action::With { ref actions } => {
                 let mut action_buf = vec![];
                 {
@@ -295,7 +345,7 @@ impl<W: Write> Writer<W> {
                 }
                 self.write_action_header(OpCode::With, action_buf.len())?;
                 self.inner.write_all(&action_buf)?;
-            },
+            }
             &Action::Unknown { opcode, ref data } => {
                 self.write_opcode_and_length(opcode, data.len())?;
                 self.inner.write_all(&data)?;
@@ -311,7 +361,10 @@ impl<W: Write> Writer<W> {
 
     pub fn write_opcode_and_length(&mut self, opcode: u8, length: usize) -> Result<()> {
         try!(self.write_u8(opcode));
-        assert!( opcode >= 0x80 || length == 0, "Opcodes less than 0x80 must have length 0" );
+        assert!(
+            opcode >= 0x80 || length == 0,
+            "Opcodes less than 0x80 must have length 0"
+        );
         if opcode >= 0x80 {
             try!(self.write_u16(length as u16));
         }
@@ -323,33 +376,33 @@ impl<W: Write> Writer<W> {
             &Value::Str(ref string) => {
                 try!(self.write_u8(0));
                 try!(self.write_c_string(string));
-            },
+            }
             &Value::Float(v) => {
                 try!(self.write_u8(1));
                 try!(self.write_f32(v));
-            },
+            }
             &Value::Null => {
                 try!(self.write_u8(2));
-            },
+            }
             &Value::Undefined => {
                 try!(self.write_u8(3));
-            },
+            }
             &Value::Register(v) => {
                 try!(self.write_u8(4));
                 try!(self.write_u8(v));
-            },
+            }
             &Value::Bool(v) => {
                 try!(self.write_u8(5));
                 try!(self.write_u8(v as u8));
-            },
+            }
             &Value::Double(v) => {
                 try!(self.write_u8(6));
                 try!(self.write_f64(v));
-            },
+            }
             &Value::Int(v) => {
                 try!(self.write_u8(7));
                 try!(self.write_u32(v));
-            },
+            }
             &Value::ConstantPool(v) => {
                 if v < 256 {
                     try!(self.write_u8(8));
@@ -358,7 +411,7 @@ impl<W: Write> Writer<W> {
                     try!(self.write_u8(9));
                     try!(self.write_u16(v));
                 }
-            },
+            }
         };
         Ok(())
     }
@@ -373,7 +426,9 @@ mod tests {
     fn write_action() {
         for (swf_version, action, expected_bytes) in test_data::avm1_tests() {
             let mut written_bytes = Vec::new();
-            Writer::new(&mut written_bytes, swf_version).write_action(&action).unwrap();
+            Writer::new(&mut written_bytes, swf_version)
+                .write_action(&action)
+                .unwrap();
             if written_bytes != expected_bytes {
                 panic!(
                     "Error writing action.\nTag:\n{:?}\n\nWrote:\n{:?}\n\nExpected:\n{:?}",
