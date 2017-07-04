@@ -1,4 +1,4 @@
-#![allow(float_cmp)]
+#![cfg_attr(any(feature="clippy", feature="cargo-clippy"), allow(float_cmp))]
 
 use avm1;
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -2211,8 +2211,8 @@ impl<R: Read> Reader<R> {
             }
             6 => {
                 let mut matrix = [0f64; 20];
-                for i in 0..20 {
-                    matrix[i] = self.read_fixed16()?;
+                for m in &mut matrix {
+                    *m = self.read_fixed16()?;
                 }
                 Filter::ColorMatrixFilter(Box::new(ColorMatrixFilter { matrix: matrix }))
             }

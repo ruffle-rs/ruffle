@@ -30,7 +30,7 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    #[allow(cyclomatic_complexity)]
+    #[cfg_attr(any(feature = "clippy", feature = "cargo-clippy"), allow(cyclomatic_complexity))]
     pub fn write_action(&mut self, action: &Action) -> Result<()> {
         match *action {
             Action::Add => self.write_action_header(OpCode::Add, 0)?,

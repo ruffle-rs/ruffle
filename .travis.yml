@@ -9,9 +9,9 @@ matrix:
     - rust: nightly
 before_script:
   - export PATH="$PATH:$HOME/.cargo/bin"
-  - (test $TRAVIS_RUST_VERSION != "nightly" || cargo install rustfmt-nightly)
+  - (test $TRAVIS_RUST_VERSION != "nightly" || cargo install rustfmt-nightly || true)
 script:
-  - (test $TRAVIS_RUST_VERSION != "nightly" || cargo fmt)
+  - (test $TRAVIS_RUST_VERSION != "nightly" || cargo fmt -- --write-mode=diff)
   - (test $TRAVIS_RUST_VERSION != "nightly" || cargo build --features "clippy")
   - (test $TRAVIS_RUST_VERSION != "nightly" || cargo test --features "clippy")
   - (test $TRAVIS_RUST_VERSION == "nightly" || cargo build)

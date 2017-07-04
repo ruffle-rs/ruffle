@@ -1,5 +1,5 @@
-#![allow(cyclomatic_complexity)]
-#![allow(float_cmp)]
+#![cfg_attr(any(feature="clippy", feature="cargo-clippy"), allow(cyclomatic_complexity))]
+#![cfg_attr(any(feature="clippy", feature="cargo-clippy"), allow(float_cmp))]
 
 use avm1;
 use byteorder::{LittleEndian, WriteBytesExt};
@@ -2795,7 +2795,7 @@ mod tests {
         let mut buf = Vec::new();
         {
             let mut writer = Writer::new(&mut buf, 1);
-            for b in bits.iter() {
+            for b in &bits {
                 writer.write_bit(*b).unwrap();
             }
         }
@@ -2809,7 +2809,7 @@ mod tests {
         let mut buf = Vec::new();
         {
             let mut writer = Writer::new(&mut buf, 1);
-            for n in nums.iter() {
+            for n in &nums {
                 writer.write_ubits(num_bits, *n).unwrap();
             }
             writer.flush_bits().unwrap();
@@ -2824,7 +2824,7 @@ mod tests {
         let mut buf = Vec::new();
         {
             let mut writer = Writer::new(&mut buf, 1);
-            for n in nums.iter() {
+            for n in &nums {
                 writer.write_sbits(num_bits, *n).unwrap();
             }
             writer.flush_bits().unwrap();
@@ -2839,7 +2839,7 @@ mod tests {
         let mut buf = Vec::new();
         {
             let mut writer = Writer::new(&mut buf, 1);
-            for n in nums.iter() {
+            for n in &nums {
                 writer.write_fbits(num_bits, *n).unwrap();
             }
             writer.flush_bits().unwrap();
