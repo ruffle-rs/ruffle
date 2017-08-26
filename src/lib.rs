@@ -6,9 +6,8 @@
 //!
 //! This library consits of a `read` module for decoding SWF data, and a `write` library for
 //! writing SWF data.
-
-#![cfg_attr(feature="clippy", feature(plugin))]
-#![cfg_attr(feature="clippy", plugin(clippy))]
+#![cfg_attr(feature = "clippy", feature(plugin))]
+#![cfg_attr(feature = "clippy", plugin(clippy))]
 
 extern crate byteorder;
 #[macro_use]
@@ -18,6 +17,7 @@ extern crate num;
 extern crate xz2;
 
 pub mod avm1;
+pub mod avm2;
 pub mod read;
 mod tag_codes;
 mod types;

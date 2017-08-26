@@ -1,4 +1,6 @@
 use avm1::types::*;
+use avm2::types::*;
+use avm2::read::tests::read_abc_from_file;
 use std::fs::File;
 use std::vec::Vec;
 use read::read_swf;
@@ -18,6 +20,7 @@ pub fn echo_swf(filename: &str) {
 pub type TestData<T> = (u8, T, Vec<u8>);
 pub type TagTestData = TestData<Tag>;
 pub type Avm1TestData = TestData<Action>;
+pub type Avm2TestData = TestData<AbcFile>;
 
 pub fn tag_tests() -> Vec<TagTestData> {
     vec![
@@ -32,7 +35,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             }),
             read_tag_bytes_from_file("tests/swfs/DefineFont3-CS55.swf", TagCode::CsmTextSettings),
         ),
-
         (
             9, // Minimum version not listed in SWF19.
             Tag::DefineBinaryData {
@@ -41,7 +43,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             },
             read_tag_bytes_from_file("tests/swfs/definebinarydata.swf", TagCode::DefineBinaryData),
         ),
-
         (
             1,
             Tag::DefineBits {
@@ -120,7 +121,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 TagCode::DefineBits,
             ),
         ),
-
         (
             1,
             Tag::DefineBitsJpeg2 {
@@ -773,7 +773,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 TagCode::DefineBitsJpeg2,
             ),
         ),
-
         (
             3,
             Tag::DefineBitsJpeg3(DefineBitsJpeg3 {
@@ -1077,7 +1076,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 TagCode::DefineBitsJpeg3,
             ),
         ),
-
         /* TODO(Herschel): How do I get Flash to generate a DefineBitsJPEG4 tag?
     (
         10,
@@ -1136,7 +1134,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 TagCode::DefineBitsLossless,
             ),
         ),
-
         (
             3,
             Tag::DefineBitsLossless(DefineBitsLossless {
@@ -1169,7 +1166,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 TagCode::DefineBitsLossless2,
             ),
         ),
-
         (
             1,
             Tag::DefineButton(Box::new(Button {
@@ -1211,7 +1207,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             })),
             read_tag_bytes_from_file("tests/swfs/definebutton.swf", TagCode::DefineButton),
         ),
-
         (
             3,
             Tag::DefineButton2(Box::new(Button {
@@ -1275,14 +1270,13 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     },
                     ButtonAction {
                         conditions: vec![ButtonActionCondition::KeyPress].into_iter().collect(),
-                        key_code: Some(3), // Home
+                        key_code: Some(3),                             // Home
                         action_data: vec![150, 3, 0, 0, 66, 0, 38, 0], // trace("B");
                     },
                 ],
             })),
             read_tag_bytes_from_file("tests/swfs/definebutton2.swf", TagCode::DefineButton2),
         ),
-
         (
             2,
             Tag::DefineButtonColorTransform {
@@ -1325,7 +1319,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 TagCode::DefineButtonCxform,
             ),
         ),
-
         (
             2,
             Tag::DefineButtonSound(Box::new(ButtonSounds {
@@ -1358,7 +1351,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 TagCode::DefineButtonSound,
             ),
         ),
-
         (
             4,
             Tag::DefineEditText(Box::new(EditText {
@@ -1401,7 +1393,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             })),
             read_tag_bytes_from_file("tests/swfs/DefineEditText-MX.swf", TagCode::DefineEditText),
         ),
-
         (
             1,
             Tag::DefineFont(Box::new(FontV1 {
@@ -1461,7 +1452,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             })),
             read_tag_bytes_from_file("tests/swfs/DefineFont-MX.swf", TagCode::DefineFont),
         ),
-
         (
             3,
             Tag::DefineFont2(Box::new(Font {
@@ -1479,7 +1469,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             })),
             read_tag_bytes_from_file("tests/swfs/DefineEditText-MX.swf", TagCode::DefineFont2),
         ),
-
         /* TODO(Herschel): Flash writes out zero rectangles with 1-bit,
      * Causing this test to fail.
     (
@@ -1630,7 +1619,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 TagCode::DefineFontAlignZones,
             ),
         ),
-
         (
             10,
             Tag::DefineFont4(Font4 {
@@ -1642,7 +1630,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             }),
             read_tag_bytes_from_file("tests/swfs/DefineFont4-CC.swf", TagCode::DefineFont4),
         ),
-
         (
             1,
             Tag::DefineFontInfo(Box::new(FontInfo {
@@ -1659,7 +1646,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             })),
             read_tag_bytes_from_file("tests/swfs/DefineFont-MX.swf", TagCode::DefineFontInfo),
         ),
-
         (
             6,
             Tag::DefineFontInfo(Box::new(FontInfo {
@@ -1676,7 +1662,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             })),
             read_tag_bytes_from_file("tests/swfs/DefineText2-MX.swf", TagCode::DefineFontInfo2),
         ),
-
         (
             9,
             Tag::DefineFontName {
@@ -1686,7 +1671,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             },
             read_tag_bytes_from_file("tests/swfs/DefineFont4-CC.swf", TagCode::DefineFontName),
         ),
-
         (
             3,
             Tag::DefineMorphShape(Box::new(DefineMorphShape {
@@ -1915,7 +1899,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 TagCode::DefineMorphShape,
             ),
         ),
-
         (
             8,
             Tag::DefineMorphShape(Box::new(DefineMorphShape {
@@ -2184,7 +2167,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 TagCode::DefineMorphShape2,
             ),
         ),
-
         (
             8,
             Tag::DefineScalingGrid {
@@ -2201,7 +2183,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 TagCode::DefineScalingGrid,
             ),
         ),
-
         (
             1, // Minimum version not listed in SWF19.
             Tag::DefineSceneAndFrameLabelData {
@@ -2243,7 +2224,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 TagCode::DefineSceneAndFrameLabelData,
             ),
         ),
-
         (
             1,
             Tag::DefineShape(Shape {
@@ -2303,7 +2283,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             }),
             read_tag_bytes_from_file("tests/swfs/define_shape.swf", TagCode::DefineShape),
         ),
-
         (
             8,
             Tag::DefineShape(Shape {
@@ -2421,7 +2400,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             }),
             read_tag_bytes_from_file("tests/swfs/defineshape3.swf", TagCode::DefineShape3),
         ),
-
         (
             8,
             Tag::DefineShape(Shape {
@@ -2661,7 +2639,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             }),
             read_tag_bytes_from_file("tests/swfs/defineshape4.swf", TagCode::DefineShape4),
         ),
-
         (
             4,
             Tag::DefineSound(Box::new(Sound {
@@ -2698,7 +2675,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             })),
             read_tag_bytes_from_file("tests/swfs/definesound.swf", TagCode::DefineSound),
         ),
-
         (
             3,
             Tag::DefineSprite(Sprite {
@@ -2714,7 +2690,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             }),
             read_tag_bytes_from_file("tests/swfs/define_sprite.swf", TagCode::DefineSprite),
         ),
-
         (
             1,
             Tag::DefineText(Box::new(Text {
@@ -2757,7 +2732,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             })),
             read_tag_bytes_from_file("tests/swfs/DefineFont-MX.swf", TagCode::DefineText),
         ),
-
         (
             6,
             Tag::DefineVideoStream(DefineVideoStream {
@@ -2774,7 +2748,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 TagCode::DefineVideoStream,
             ),
         ),
-
         (
             5,
             Tag::DoAction(vec![
@@ -2783,7 +2756,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             ]),
             read_tag_bytes_from_file("tests/swfs/doaction.swf", TagCode::DoAction),
         ),
-
         (
             6,
             Tag::DoInitAction {
@@ -2792,19 +2764,18 @@ pub fn tag_tests() -> Vec<TagTestData> {
             },
             read_tag_bytes_from_file("tests/swfs/doinitaction.swf", TagCode::DoInitAction),
         ),
-
         (
             6,
             Tag::EnableDebugger("$1$ve$EG3LE6bumvJ2pR8F5qXny/".to_string()),
             read_tag_bytes_from_file("tests/swfs/enabledebugger2.swf", TagCode::EnableDebugger2),
         ),
-
         (
             10,
-            Tag::EnableTelemetry { password_hash: vec![] },
+            Tag::EnableTelemetry {
+                password_hash: vec![],
+            },
             read_tag_bytes_from_file("tests/swfs/enabletelemetry.swf", TagCode::EnableTelemetry),
         ),
-
         (
             10,
             Tag::EnableTelemetry {
@@ -2848,7 +2819,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 TagCode::EnableTelemetry,
             ),
         ),
-
         (
             6,
             Tag::ExportAssets(vec![
@@ -2859,7 +2829,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             ]),
             read_tag_bytes_from_file("tests/swfs/exportassets.swf", TagCode::ExportAssets),
         ),
-
         (
             8,
             Tag::FileAttributes(FileAttributes {
@@ -2871,7 +2840,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             }),
             vec![0b01_000100, 0b00010001, 0b00101000, 0, 0, 0],
         ),
-
         (
             3,
             Tag::FrameLabel {
@@ -2884,7 +2852,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 0,
             ),
         ),
-
         (
             6, // Anchor tags supported in SWF version 6 and later.
             Tag::FrameLabel {
@@ -2897,7 +2864,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 1,
             ),
         ),
-
         (
             7,
             Tag::ImportAssets {
@@ -2911,7 +2877,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             },
             read_tag_bytes_from_file("tests/swfs/importassets.swf", TagCode::ImportAssets),
         ),
-
         (
             8,
             Tag::ImportAssets {
@@ -2925,7 +2890,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             },
             read_tag_bytes_from_file("tests/swfs/importassets2.swf", TagCode::ImportAssets2),
         ),
-
         (
             1,
             Tag::JpegTables(vec![
@@ -3509,13 +3473,11 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 TagCode::JpegTables,
             ),
         ),
-
         (
             1,
             Tag::Metadata("aa!".to_string()),
             vec![0b01_000100, 0b000_10011, b'a', b'a', b'!', 0],
         ),
-
         (
             4,
             Tag::PlaceObject(Box::new(PlaceObject {
@@ -3539,7 +3501,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             })),
             read_tag_bytes_from_file("tests/swfs/define_shape.swf", TagCode::PlaceObject2),
         ),
-
         (
             6, // ClipActions added in SWF version 5-6.
             Tag::PlaceObject(Box::new(PlaceObject {
@@ -3584,7 +3545,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 TagCode::PlaceObject2,
             ),
         ),
-
         (
             8,
             Tag::PlaceObject(Box::new(PlaceObject {
@@ -3722,7 +3682,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 TagCode::PlaceObject3,
             ),
         ),
-
         // Undocumented PlaceObject4 tag.
         (
             19,
@@ -3774,13 +3733,11 @@ pub fn tag_tests() -> Vec<TagTestData> {
             })),
             read_tag_bytes_from_file("tests/swfs/PlaceObject4-CC.swf", TagCode::PlaceObject4),
         ),
-
         (
             5, // Password supported in SWF version 5 or later.
             Tag::Protect(Some("$1$d/$yMscKH17OJ0paJT.e67iz0".to_string())),
             read_tag_bytes_from_file("tests/swfs/protect.swf", TagCode::Protect),
         ),
-
         (
             1,
             Tag::SetBackgroundColor(Color {
@@ -3791,7 +3748,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             }),
             vec![0b01_000011, 0b00000010, 64, 150, 255],
         ),
-
         (
             7,
             Tag::SetTabIndex {
@@ -3800,7 +3756,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             },
             vec![0b10_000100, 0b000_10000, 2, 0, 1, 0],
         ),
-
         (
             7,
             Tag::ScriptLimits {
@@ -3809,9 +3764,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
             },
             read_tag_bytes_from_file("tests/swfs/scriptlimits.swf", TagCode::ScriptLimits),
         ),
-
         (1, Tag::ShowFrame, vec![0b01_000000, 0]),
-
         (
             3,
             Tag::SoundStreamHead2(Box::new(SoundStreamInfo {
@@ -3832,7 +3785,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             })),
             read_tag_bytes_from_file("tests/swfs/soundstreamhead2.swf", TagCode::SoundStreamHead2),
         ),
-
         (
             9,
             Tag::SymbolClass(vec![
@@ -3847,7 +3799,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             ]),
             read_tag_bytes_from_file("tests/swfs/symbolclass.swf", TagCode::SymbolClass),
         ),
-
         (
             4,
             Tag::StartSound {
@@ -3862,7 +3813,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             },
             read_tag_bytes_from_file("tests/swfs/definesound.swf", TagCode::StartSound),
         ),
-
         (
             9,
             Tag::StartSound2 {
@@ -3883,7 +3833,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             },
             read_tag_bytes_from_file("tests/swfs/startsound2.swf", TagCode::StartSound2),
         ),
-
         (
             6,
             Tag::VideoFrame(VideoFrame {
@@ -3893,7 +3842,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
             }),
             read_tag_bytes_from_file("tests/swfs/DefineVideoStream-CC.swf", TagCode::VideoFrame),
         ),
-
         (
             1,
             Tag::Unknown {
@@ -4141,7 +4089,9 @@ pub fn avm1_tests() -> Vec<Avm1TestData> {
         ),
         (
             4,
-            Action::WaitForFrame2 { num_actions_to_skip: 34 },
+            Action::WaitForFrame2 {
+                num_actions_to_skip: 34,
+            },
             vec![0x8D, 1, 0, 34],
         ),
         (
@@ -4159,6 +4109,137 @@ pub fn avm1_tests() -> Vec<Avm1TestData> {
                 data: vec![2, 3],
             },
             vec![0xA0, 2, 0, 2, 3],
+        ),
+    ]
+}
+
+pub fn avm2_tests() -> Vec<Avm2TestData> {
+    vec![
+        (
+            10,
+            AbcFile {
+                major_version: 46,
+                minor_version: 16,
+                constant_pool: ConstantPool {
+                    ints: vec![],
+                    uints: vec![],
+                    doubles: vec![],
+                    strings: vec![
+                        "".to_string(),
+                        "void".to_string(),
+                        "Avm2Test".to_string(),
+                        "trace".to_string(),
+                        "Test".to_string(),
+                    ],
+                    namespaces: vec![Namespace::Package(Index::new(1))],
+                    namespace_sets: vec![],
+                    multinames: vec![
+                        Multiname::QName {
+                            namespace: Index::new(1),
+                            name: Index::new(2),
+                        },
+                        Multiname::QName {
+                            namespace: Index::new(1),
+                            name: Index::new(3),
+                        },
+                        Multiname::QName {
+                            namespace: Index::new(1),
+                            name: Index::new(4),
+                        },
+                    ],
+                },
+                methods: vec![
+                    Method {
+                        name: Index::new(0),
+                        params: vec![],
+                        return_type: Index::new(1),
+                        needs_arguments_object: false,
+                        needs_activation: false,
+                        needs_rest: false,
+                        needs_dxns: false,
+                    },
+                    Method {
+                        name: Index::new(0),
+                        params: vec![],
+                        return_type: Index::new(0),
+                        needs_arguments_object: false,
+                        needs_activation: false,
+                        needs_rest: false,
+                        needs_dxns: false,
+                    },
+                ],
+                metadata: vec![],
+                instances: vec![],
+                classes: vec![],
+                scripts: vec![
+                    Script {
+                        init_method: Index::new(1),
+                        traits: vec![
+                            Trait {
+                                name: Index::new(2),
+                                kind: TraitKind::Method {
+                                    disp_id: 1,
+                                    method: Index::new(0),
+                                },
+                                metadata: vec![],
+                                is_final: false,
+                                is_override: false,
+                            },
+                        ],
+                    },
+                ],
+                method_bodies: vec![
+                    MethodBody {
+                        method: Index::new(0),
+                        max_stack: 2,
+                        num_locals: 1,
+                        init_scope_depth: 1,
+                        max_scope_depth: 2,
+                        code: vec![
+                            Op::GetLocal { index: 0 },
+                            Op::PushScope,
+                            Op::FindPropStrict {
+                                index: Index::new(3),
+                            },
+                            Op::PushString {
+                                value: Index::new(5),
+                            },
+                            Op::CallPropVoid {
+                                index: Index::new(3),
+                                num_args: 1,
+                            },
+                            Op::ReturnVoid,
+                        ],
+                        exceptions: vec![],
+                        traits: vec![],
+                    },
+                    MethodBody {
+                        method: Index::new(1),
+                        max_stack: 1,
+                        num_locals: 2,
+                        init_scope_depth: 1,
+                        max_scope_depth: 2,
+                        code: vec![
+                            Op::GetLocal { index: 0 },
+                            Op::PushScope,
+                            Op::FindPropStrict {
+                                index: Index::new(2),
+                            },
+                            Op::CallProperty {
+                                index: Index::new(2),
+                                num_args: 0,
+                            },
+                            Op::CoerceA,
+                            Op::SetLocal { index: 1 },
+                            Op::GetLocal { index: 1 },
+                            Op::ReturnValue,
+                        ],
+                        exceptions: vec![],
+                        traits: vec![],
+                    },
+                ],
+            },
+            read_abc_from_file("tests/swfs/AVM2-Dummy.swf"),
         ),
     ]
 }

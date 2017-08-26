@@ -356,7 +356,7 @@ pub enum Tag {
     DefineSprite(Sprite),
     DefineText(Box<Text>),
     DefineVideoStream(DefineVideoStream),
-    DoAbc(Vec<u8>),
+    DoAbc(DoAbc),
     DoAction(Vec<avm1::types::Action>),
     DoInitAction {
         id: CharacterId,
@@ -917,4 +917,11 @@ pub struct DefineBitsJpeg3 {
     pub deblocking: f32,
     pub data: Vec<u8>,
     pub alpha_data: Vec<u8>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct DoAbc {
+    pub name: String,
+    pub is_lazy_initialize: bool,
+    pub data: Vec<u8>,
 }

@@ -37,11 +37,9 @@ fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<(Swf, Reader<Box<Re
             input.read_exact(&mut lzma_properties)?;
             let mut lzma_header = Cursor::new(Vec::with_capacity(13));
             lzma_header.write_all(&lzma_properties)?;
-            lzma_header
-                .write_u64::<LittleEndian>(uncompressed_length as u64)?;
+            lzma_header.write_u64::<LittleEndian>(uncompressed_length as u64)?;
             let mut lzma_stream = Stream::new_lzma_decoder(u64::max_value())?;
-            lzma_stream
-                .process(&lzma_header.into_inner(), &mut [0u8; 1], Action::Run)?;
+            lzma_stream.process(&lzma_header.into_inner(), &mut [0u8; 1], Action::Run)?;
             Box::new(XzDecoder::new_stream(input, lzma_stream))
         }
     };
@@ -529,7 +527,9 @@ impl<R: Read> Reader<R> {
                 } else {
                     vec![]
                 };
-                Tag::EnableTelemetry { password_hash: password_hash }
+                Tag::EnableTelemetry {
+                    password_hash: password_hash,
+                }
             }
             Some(TagCode::ImportAssets) => {
                 let url = tag_reader.read_c_string()?;
@@ -585,9 +585,9 @@ impl<R: Read> Reader<R> {
                 Box::new(tag_reader.read_sound_stream_info()?),
             ),
 
-            Some(TagCode::SoundStreamHead2) => Tag::SoundStreamHead2(
-                Box::new(tag_reader.read_sound_stream_info()?),
-            ),
+            Some(TagCode::SoundStreamHead2) => {
+                Tag::SoundStreamHead2(Box::new(tag_reader.read_sound_stream_info()?))
+            }
 
             Some(TagCode::StartSound) => Tag::StartSound {
                 id: tag_reader.read_u16()?,
@@ -608,9 +608,15 @@ impl<R: Read> Reader<R> {
             },
 
             Some(TagCode::DoAbc) => {
-                let mut action_data = Vec::with_capacity(length);
-                tag_reader.input.read_to_end(&mut action_data)?;
-                Tag::DoAbc(action_data)
+                let flags = tag_reader.read_u32()?;
+                let name = tag_reader.read_c_string()?;
+                let mut abc_data = Vec::with_capacity(length - 4 - name.len());
+                tag_reader.input.read_to_end(&mut abc_data)?;
+                Tag::DoAbc(DoAbc {
+                    name: name,
+                    is_lazy_initialize: flags & 1 != 0,
+                    data: abc_data,
+                })
             }
 
             Some(TagCode::DoAction) => {
@@ -717,19 +723,15 @@ impl<R: Read> Reader<R> {
             Some(TagCode::PlaceObject3) => tag_reader.read_place_object_2_or_3(3)?,
             Some(TagCode::PlaceObject4) => tag_reader.read_place_object_2_or_3(4)?,
 
-            Some(TagCode::RemoveObject) => {
-                Tag::RemoveObject {
-                    character_id: Some(tag_reader.read_u16()?),
-                    depth: tag_reader.read_i16()?,
-                }
-            }
+            Some(TagCode::RemoveObject) => Tag::RemoveObject {
+                character_id: Some(tag_reader.read_u16()?),
+                depth: tag_reader.read_i16()?,
+            },
 
-            Some(TagCode::RemoveObject2) => {
-                Tag::RemoveObject {
-                    depth: tag_reader.read_i16()?,
-                    character_id: None,
-                }
-            }
+            Some(TagCode::RemoveObject2) => Tag::RemoveObject {
+                depth: tag_reader.read_i16()?,
+                character_id: None,
+            },
 
             Some(TagCode::VideoFrame) => tag_reader.read_video_frame()?,
 
@@ -1646,14 +1648,12 @@ impl<R: Read> Reader<R> {
                 }
             }
 
-            0x40...0x43 => {
-                FillStyle::Bitmap {
-                    id: self.read_u16()?,
-                    matrix: self.read_matrix()?,
-                    is_smoothed: (fill_style_type & 0b10) == 0,
-                    is_repeating: (fill_style_type & 0b01) == 0,
-                }
-            }
+            0x40...0x43 => FillStyle::Bitmap {
+                id: self.read_u16()?,
+                matrix: self.read_matrix()?,
+                is_smoothed: (fill_style_type & 0b10) == 0,
+                is_repeating: (fill_style_type & 0b01) == 0,
+            },
 
             _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid fill style.")),
         };
@@ -2801,27 +2801,23 @@ pub mod tests {
             0b1100111_0000001_0000001
         );
         assert_eq!(
-            read(
-                &[
-                    0b1_0000000,
-                    0b1_0000000,
-                    0b1_0000000,
-                    0b1_0000000,
-                    0b0000_1111
-                ]
-            ),
+            read(&[
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b0000_1111
+            ]),
             0b1111_0000000_0000000_0000000_0000000
         );
         assert_eq!(
-            read(
-                &[
-                    0b1_0000000,
-                    0b1_0000000,
-                    0b1_0000000,
-                    0b1_0000000,
-                    0b1111_1111
-                ]
-            ),
+            read(&[
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b1111_1111
+            ]),
             0b1111_0000000_0000000_0000000_0000000
         );
     }
