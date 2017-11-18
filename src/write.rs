@@ -1,7 +1,6 @@
 #![cfg_attr(any(feature="clippy", feature="cargo-clippy"), allow(cyclomatic_complexity))]
 #![cfg_attr(any(feature="clippy", feature="cargo-clippy"), allow(float_cmp))]
 
-use avm1;
 use byteorder::{LittleEndian, WriteBytesExt};
 use flate2::Compression as ZlibCompression;
 use flate2::write::ZlibEncoder;
@@ -745,14 +744,9 @@ impl<W: Write> Writer<W> {
                 self.write_c_string(&do_abc.name)?;
                 self.output.write_all(&do_abc.data)?;
             }
-            Tag::DoAction(ref actions) => {
-                let mut buf = Vec::new();
-                {
-                    let mut action_writer = avm1::write::Writer::new(&mut buf, self.version);
-                    action_writer.write_action_list(actions)?;
-                }
-                self.write_tag_header(TagCode::DoAction, buf.len() as u32)?;
-                self.output.write_all(&buf)?;
+            Tag::DoAction(ref action_data) => {
+                self.write_tag_header(TagCode::DoAction, action_data.len() as u32)?;
+                self.output.write_all(action_data)?;
             }
             Tag::DoInitAction {
                 id,

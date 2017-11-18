@@ -1,6 +1,5 @@
 #![cfg_attr(any(feature="clippy", feature="cargo-clippy"), allow(float_cmp))]
 
-use avm1;
 use byteorder::{LittleEndian, ReadBytesExt};
 use flate2::read::ZlibDecoder;
 use num::FromPrimitive;
@@ -620,10 +619,9 @@ impl<R: Read> Reader<R> {
             }
 
             Some(TagCode::DoAction) => {
-                let mut action_reader =
-                    avm1::read::Reader::new(&mut tag_reader.input, self.version);
-                let actions = action_reader.read_action_list()?;
-                Tag::DoAction(actions)
+                let mut action_data = Vec::with_capacity(length);
+                tag_reader.input.read_to_end(&mut action_data)?;
+                Tag::DoAction(action_data)
             }
 
             Some(TagCode::DoInitAction) => {

@@ -1,4 +1,3 @@
-use avm1;
 use std::collections::HashSet;
 
 #[derive(Debug, PartialEq)]
@@ -357,7 +356,7 @@ pub enum Tag {
     DefineText(Box<Text>),
     DefineVideoStream(DefineVideoStream),
     DoAbc(DoAbc),
-    DoAction(Vec<avm1::types::Action>),
+    DoAction(Vec<u8>),
     DoInitAction {
         id: CharacterId,
         action_data: Vec<u8>,
