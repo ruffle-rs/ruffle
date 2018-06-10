@@ -9,7 +9,6 @@ readme = "README.md"
 description = "Read and write the Adobe Flash SWF file format."
 
 [dependencies]
-clippy = {version = "*", optional = true}
 byteorder = "1.0"
 flate2 = "1.0"
 num-derive = "0.2"
