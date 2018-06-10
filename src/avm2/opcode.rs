@@ -1,6 +1,5 @@
-enum_from_primitive! {
 #[allow(dead_code)]
-#[derive(Debug,PartialEq,Clone,Copy)]
+#[derive(Debug,PartialEq,Clone,Copy,FromPrimitive)]
 pub enum OpCode {
     Add = 0xA0,
     AddI = 0xC5,
@@ -145,5 +144,4 @@ pub enum OpCode {
     Throw = 0x03,
     TypeOf = 0x95,
     URShift = 0xa7,
-}
 }

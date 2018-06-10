@@ -2,7 +2,6 @@
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use flate2::read::ZlibDecoder;
-use num::FromPrimitive;
 use std::collections::HashSet;
 use std::io::{Error, ErrorKind, Read, Result};
 use types::*;
@@ -409,6 +408,8 @@ impl<R: Read> Reader<R> {
     }
 
     fn read_tag(&mut self) -> Result<Option<Tag>> {
+        use num_traits::FromPrimitive;
+        
         let (tag_code, length) = self.read_tag_code_and_length()?;
 
         let mut tag_reader = Reader::new(self.input.by_ref().take(length as u64), self.version);

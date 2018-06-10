@@ -31,11 +31,12 @@ impl<R: Read> Reader<R> {
     }
 
     pub fn read_action(&mut self) -> Result<Option<Action>> {
+        use num_traits::FromPrimitive;
+        
         let (opcode, length) = try!(self.read_opcode_and_length());
 
         let mut action_reader = Reader::new(self.inner.by_ref().take(length as u64), self.version);
 
-        use num::FromPrimitive;
         let action = if let Some(op) = OpCode::from_u8(opcode) {
             match op {
                 OpCode::End => return Ok(None),

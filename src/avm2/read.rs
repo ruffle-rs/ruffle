@@ -517,7 +517,7 @@ impl<R: Read> Reader<R> {
 
     fn read_op(&mut self) -> Result<Option<Op>> {
         use avm2::opcode::OpCode;
-        use num::FromPrimitive;
+        use num_traits::FromPrimitive;
 
         let opcode = match OpCode::from_u8(self.read_u8()?) {
             Some(o) => o,

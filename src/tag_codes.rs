@@ -1,6 +1,5 @@
-enum_from_primitive! {
 #[allow(dead_code)]
-#[derive(Debug,PartialEq,Clone,Copy)]
+#[derive(Debug,PartialEq,Clone,Copy,FromPrimitive)]
 pub enum TagCode {
     End = 0,
     ShowFrame = 1,
@@ -85,5 +84,4 @@ pub enum TagCode {
 
     EnableTelemetry = 93,
     PlaceObject4 = 94,
-}
 }

@@ -10,10 +10,10 @@
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 
 extern crate byteorder;
-#[macro_use]
-extern crate enum_primitive;
 extern crate flate2;
-extern crate num;
+#[macro_use]
+extern crate num_derive;
+extern crate num_traits;
 extern crate xz2;
 
 pub mod avm1;

@@ -1,6 +1,5 @@
-enum_from_primitive! {
 #[allow(dead_code)]
-#[derive(Debug,PartialEq,Clone,Copy)]
+#[derive(Debug,PartialEq,Clone,Copy,FromPrimitive)]
 pub enum OpCode {
     End = 0x00,
 
@@ -116,5 +115,4 @@ pub enum OpCode {
     If = 0x9D,
     Call = 0x9E,
     GotoFrame2 = 0x9F,
-}
 }

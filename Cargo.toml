@@ -11,9 +11,9 @@ description = "Read and write the Adobe Flash SWF file format."
 [dependencies]
 clippy = {version = "*", optional = true}
 byteorder = "1.0"
-enum_primitive = "0.1.1"
 flate2 = "1.0"
-num = "0.1"
+num-derive = "0.2"
+num-traits = "0.2"
 xz2 = "0.1.5"
 
 [features]
