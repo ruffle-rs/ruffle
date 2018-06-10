@@ -44,7 +44,7 @@ pub fn write_swf<W: Write>(swf: &Swf, mut output: W) -> Result<()> {
         }
 
         Compression::Zlib => {
-            let mut encoder = ZlibEncoder::new(&mut output, ZlibCompression::Best);
+            let mut encoder = ZlibEncoder::new(&mut output, ZlibCompression::best());
             encoder.write_all(&swf_body)?;
         }
 

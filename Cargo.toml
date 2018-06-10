@@ -12,9 +12,9 @@ description = "Read and write the Adobe Flash SWF file format."
 clippy = {version = "*", optional = true}
 byteorder = "1.0"
 enum_primitive = "0.1.1"
-flate2 = "0.2.17"
+flate2 = "1.0"
 num = "0.1"
-xz2 = { git = "https://github.com/alexcrichton/xz2-rs", rev = "7458dd8" }
+xz2 = "0.1.5"
 
 [features]
 default = []
