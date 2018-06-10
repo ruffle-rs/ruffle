@@ -17,7 +17,7 @@ fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<(Swf, Reader<Box<Re
     // Read SWF header.
     let compression = Reader::read_compression_type(&mut input)?;
     let version = input.read_u8()?;
-    let uncompressed_length = input.read_u32::<LittleEndian>()?;
+    let _uncompressed_length = input.read_u32::<LittleEndian>()?;
 
     // Now the SWF switches to a compressed stream.
     let decompressed_input: Box<Read> = match compression {
