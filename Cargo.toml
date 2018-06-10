@@ -10,11 +10,12 @@ description = "Read and write the Adobe Flash SWF file format."
 
 [dependencies]
 byteorder = "1.0"
-flate2 = "1.0"
 num-derive = "0.2"
 num-traits = "0.2"
+libflate = {version = "0.1", optional = true}
+flate2 = {version = "1.0", optional = true}
 xz2 = {version = "0.1.5", optional = true}
 
 [features]
-default = []
+default = ["libflate"]
 lzma-support = ["xz2"]

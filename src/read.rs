@@ -1,7 +1,6 @@
 #![cfg_attr(any(feature="clippy", feature="cargo-clippy"), allow(float_cmp))]
 
 use byteorder::{LittleEndian, ReadBytesExt};
-use flate2::read::ZlibDecoder;
 use std::collections::HashSet;
 use std::io::{Error, ErrorKind, Read, Result};
 use types::*;
@@ -22,7 +21,7 @@ fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<(Swf, Reader<Box<Re
     // Now the SWF switches to a compressed stream.
     let decompressed_input: Box<Read> = match compression {
         Compression::None => Box::new(input),
-        Compression::Zlib => Box::new(ZlibDecoder::new(input)),
+        Compression::Zlib => make_zlib_reader(input)?,
         Compression::Lzma => make_lzma_reader(input)?,
     };
 
@@ -41,6 +40,24 @@ fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<(Swf, Reader<Box<Re
     Ok((swf, reader))
 }
 
+#[cfg(feature = "flate2")]
+fn make_zlib_reader<'a, R: Read + 'a>(input: R) -> Result<Box<Read + 'a>> {
+    use flate2::read::ZlibDecoder;
+    Ok(Box::new(ZlibDecoder::new(input)))
+}
+
+#[cfg(feature = "libflate")]
+fn make_zlib_reader<'a, R: Read + 'a>(input: R) -> Result<Box<Read + 'a>> {
+    use libflate::zlib::Decoder;
+    let decoder = Decoder::new(input)?;
+    Ok(Box::new(decoder))
+}
+
+#[cfg(not(any(feature = "flate2",feature = "libflate")))]
+fn make_zlib_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<Read + 'a>> {
+    Err(Error::new(ErrorKind::InvalidData, "Support for Zlib compressed SWFs is not enabled."))
+}
+
 #[cfg(feature = "lzma-support")]
 fn make_lzma_reader<'a, R: Read + 'a>(mut input: R) -> Result<Box<Read + 'a>> {
     // Flash uses a mangled LZMA header, so we have to massage it into the normal
@@ -56,11 +73,11 @@ fn make_lzma_reader<'a, R: Read + 'a>(mut input: R) -> Result<Box<Read + 'a>> {
     lzma_header.write_u64::<LittleEndian>(uncompressed_length as u64)?;
     let mut lzma_stream = Stream::new_lzma_decoder(u64::max_value())?;
     lzma_stream.process(&lzma_header.into_inner(), &mut [0u8; 1], Action::Run)?;
-    Box::new(XzDecoder::new_stream(input, lzma_stream))
+    Ok(Box::new(XzDecoder::new_stream(input, lzma_stream)))
 }
 
 #[cfg(not(feature = "lzma-support"))]
-fn make_lzma_reader<'a, R: Read + 'a>(_: R) -> Result<Box<Read + 'a>> {
+fn make_lzma_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<Read + 'a>> {
     Err(Error::new(ErrorKind::InvalidData, "Support for LZMA compressed SWFs is not enabled."))
 }
 

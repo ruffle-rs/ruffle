@@ -2,8 +2,6 @@
 #![cfg_attr(any(feature="clippy", feature="cargo-clippy"), allow(float_cmp))]
 
 use byteorder::{LittleEndian, WriteBytesExt};
-use flate2::Compression as ZlibCompression;
-use flate2::write::ZlibEncoder;
 use std::cmp::max;
 use std::collections::HashSet;
 use std::io::{Error, ErrorKind, Result, Write};
@@ -42,23 +40,40 @@ pub fn write_swf<W: Write>(swf: &Swf, mut output: W) -> Result<()> {
             output.write_all(&swf_body)?;
         }
 
-        Compression::Zlib => {
-            let mut encoder = ZlibEncoder::new(&mut output, ZlibCompression::best());
-            encoder.write_all(&swf_body)?;
-        }
+        Compression::Zlib => write_zlib_swf(&mut output, &swf_body)?,
 
         // LZMA header.
         // SWF format has a mangled LZMA header, so we have to do some magic to conver the
         // standard LZMA header to SWF format.
         // https://adobe.ly/2s8oYzn
-        Compression::Lzma => write_lzma_swf(&mut output)?,
+        Compression::Lzma => write_lzma_swf(&mut output, &swf_body)?,
     };
 
     Ok(())
 }
 
+#[cfg(feature = "flate2")]
+fn write_zlib_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
+    use flate2::Compression;
+    use flate2::write::ZlibEncoder;
+    let mut encoder = ZlibEncoder::new(&mut output, Compression::best());
+    encoder.write_all(&swf_body)
+}
+
+#[cfg(feature = "libflate")]
+fn write_zlib_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
+    use libflate::zlib::Encoder;
+    let mut encoder = Encoder::new(&mut output)?;
+    encoder.write_all(&swf_body)
+}
+
+#[cfg(not(any(feature = "flate2",feature = "libflate")))]
+fn write_zlib_swf<W: Write>(_output: W, _swf_body: &[u8]) -> Result<()> {
+    Err(Error::new(ErrorKind::InvalidData, "Support for Zlib compressed SWFs is not enabled."))
+}
+
 #[cfg(feature = "lzma-support")]
-fn write_lzma_swf<W: Write>(mut output: W) -> Result<()> {
+fn write_lzma_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
     use xz2::write::XzEncoder;
     use xz2::stream::{Action, LzmaOptions, Stream};
     let mut stream = Stream::new_lzma_encoder(&LzmaOptions::new_preset(9)?)?;
@@ -73,7 +88,7 @@ fn write_lzma_swf<W: Write>(mut output: W) -> Result<()> {
 }
 
 #[cfg(not(feature = "lzma-support"))]
-fn write_lzma_swf<W: Write>(_: W) -> Result<()> {
+fn write_lzma_swf<W: Write>(_output: W, _swf_body: &[u8]) -> Result<()> {
     Err(Error::new(ErrorKind::InvalidData, "Support for LZMA compressed SWFs is not enabled."))
 }
 
