@@ -5,7 +5,6 @@ use flate2::read::ZlibDecoder;
 use std::collections::HashSet;
 use std::io::{Error, ErrorKind, Read, Result};
 use types::*;
-use xz2::read::XzDecoder;
 
 /// Reads SWF data from a stream.
 pub fn read_swf<R: Read>(input: R) -> Result<Swf> {
@@ -24,22 +23,7 @@ fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<(Swf, Reader<Box<Re
     let decompressed_input: Box<Read> = match compression {
         Compression::None => Box::new(input),
         Compression::Zlib => Box::new(ZlibDecoder::new(input)),
-        Compression::Lzma => {
-            // Flash uses a mangled LZMA header, so we have to massage it into the normal
-            // format.
-            use std::io::{Cursor, Write};
-            use xz2::stream::{Action, Stream};
-            use byteorder::WriteBytesExt;
-            input.read_u32::<LittleEndian>()?; // Compressed length
-            let mut lzma_properties = [0u8; 5];
-            input.read_exact(&mut lzma_properties)?;
-            let mut lzma_header = Cursor::new(Vec::with_capacity(13));
-            lzma_header.write_all(&lzma_properties)?;
-            lzma_header.write_u64::<LittleEndian>(uncompressed_length as u64)?;
-            let mut lzma_stream = Stream::new_lzma_decoder(u64::max_value())?;
-            lzma_stream.process(&lzma_header.into_inner(), &mut [0u8; 1], Action::Run)?;
-            Box::new(XzDecoder::new_stream(input, lzma_stream))
-        }
+        Compression::Lzma => make_lzma_reader(input)?,
     };
 
     let mut reader = Reader::new(decompressed_input, version);
@@ -55,6 +39,29 @@ fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<(Swf, Reader<Box<Re
         tags: vec![],
     };
     Ok((swf, reader))
+}
+
+#[cfg(feature = "lzma-support")]
+fn make_lzma_reader<'a, R: Read + 'a>(mut input: R) -> Result<Box<Read + 'a>> {
+    // Flash uses a mangled LZMA header, so we have to massage it into the normal
+    // format.
+    use std::io::{Cursor, Write};
+    use xz2::stream::{Action, Stream};
+    use byteorder::WriteBytesExt;
+    input.read_u32::<LittleEndian>()?; // Compressed length
+    let mut lzma_properties = [0u8; 5];
+    input.read_exact(&mut lzma_properties)?;
+    let mut lzma_header = Cursor::new(Vec::with_capacity(13));
+    lzma_header.write_all(&lzma_properties)?;
+    lzma_header.write_u64::<LittleEndian>(uncompressed_length as u64)?;
+    let mut lzma_stream = Stream::new_lzma_decoder(u64::max_value())?;
+    lzma_stream.process(&lzma_header.into_inner(), &mut [0u8; 1], Action::Run)?;
+    Box::new(XzDecoder::new_stream(input, lzma_stream))
+}
+
+#[cfg(not(feature = "lzma-support"))]
+fn make_lzma_reader<'a, R: Read + 'a>(_: R) -> Result<Box<Read + 'a>> {
+    Err(Error::new(ErrorKind::InvalidData, "Support for LZMA compressed SWFs is not enabled."))
 }
 
 pub trait SwfRead<R: Read> {
@@ -409,7 +416,7 @@ impl<R: Read> Reader<R> {
 
     fn read_tag(&mut self) -> Result<Option<Tag>> {
         use num_traits::FromPrimitive;
-        
+
         let (tag_code, length) = self.read_tag_code_and_length()?;
 
         let mut tag_reader = Reader::new(self.input.by_ref().take(length as u64), self.version);
@@ -2669,10 +2676,12 @@ pub mod tests {
             read_from_file("tests/swfs/zlib.swf").compression,
             Compression::Zlib
         );
-        assert_eq!(
-            read_from_file("tests/swfs/lzma.swf").compression,
-            Compression::Lzma
-        );
+        if cfg!(feature = "lzma-support") {
+            assert_eq!(
+                read_from_file("tests/swfs/lzma.swf").compression,
+                Compression::Lzma
+            );
+        }
     }
 
     #[test]

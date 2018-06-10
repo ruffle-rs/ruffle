@@ -14,7 +14,8 @@ byteorder = "1.0"
 flate2 = "1.0"
 num-derive = "0.2"
 num-traits = "0.2"
-xz2 = "0.1.5"
+xz2 = {version = "0.1.5", optional = true}
 
 [features]
 default = []
+lzma-support = ["xz2"]

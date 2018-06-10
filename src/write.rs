@@ -9,7 +9,6 @@ use std::collections::HashSet;
 use std::io::{Error, ErrorKind, Result, Write};
 use tag_codes::TagCode;
 use types::*;
-use xz2::write::XzEncoder;
 
 pub fn write_swf<W: Write>(swf: &Swf, mut output: W) -> Result<()> {
     let signature = match swf.compression {
@@ -52,20 +51,30 @@ pub fn write_swf<W: Write>(swf: &Swf, mut output: W) -> Result<()> {
         // SWF format has a mangled LZMA header, so we have to do some magic to conver the
         // standard LZMA header to SWF format.
         // https://adobe.ly/2s8oYzn
-        Compression::Lzma => {
-            use xz2::stream::{Action, LzmaOptions, Stream};
-            let mut stream = Stream::new_lzma_encoder(&LzmaOptions::new_preset(9)?)?;
-            let mut lzma_header = [0; 13];
-            stream.process(&[], &mut lzma_header, Action::Run)?;
-            // Compressed length. We just write out a dummy value.
-            output.write_u32::<LittleEndian>(0xffffffff)?;
-            output.write_all(&lzma_header[0..5])?; // LZMA property bytes.
-            let mut encoder = XzEncoder::new_stream(&mut output, stream);
-            encoder.write_all(&swf_body)?;
-        }
+        Compression::Lzma => write_lzma_swf(&mut output)?,
     };
 
     Ok(())
+}
+
+#[cfg(feature = "lzma-support")]
+fn write_lzma_swf<W: Write>(mut output: W) -> Result<()> {
+    use xz2::write::XzEncoder;
+    use xz2::stream::{Action, LzmaOptions, Stream};
+    let mut stream = Stream::new_lzma_encoder(&LzmaOptions::new_preset(9)?)?;
+    let mut lzma_header = [0; 13];
+    stream.process(&[], &mut lzma_header, Action::Run)?;
+    // Compressed length. We just write out a dummy value.
+    output.write_u32::<LittleEndian>(0xffffffff)?;
+    output.write_all(&lzma_header[0..5])?; // LZMA property bytes.
+    let mut encoder = XzEncoder::new_stream(&mut output, stream);
+    encoder.write_all(&swf_body)?;
+    Ok(())
+}
+
+#[cfg(not(feature = "lzma-support"))]
+fn write_lzma_swf<W: Write>(_: W) -> Result<()> {
+    Err(Error::new(ErrorKind::InvalidData, "Support for LZMA compressed SWFs is not enabled."))
 }
 
 pub trait SwfWrite<W: Write> {
@@ -2691,10 +2700,12 @@ mod tests {
             write_dummy_swf(Compression::Zlib).is_ok(),
             "Failed to write zlib SWF."
         );
-        assert!(
-            write_dummy_swf(Compression::Lzma).is_ok(),
-            "Failed to write LZMA SWF."
-        );
+        if cfg!(feature = "lzma-support") {
+            assert!(
+                write_dummy_swf(Compression::Lzma).is_ok(),
+                "Failed to write LZMA SWF."
+            );
+        }
     }
 
     #[test]
