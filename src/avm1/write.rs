@@ -24,9 +24,9 @@ impl<W: Write> Writer<W> {
 
     pub fn write_action_list(&mut self, actions: &[Action]) -> Result<()> {
         for action in actions {
-            try!(self.write_action(action));
+            self.write_action(action)?;
         }
-        try!(self.write_u8(0)); // End
+        self.write_u8(0)?; // End
         Ok(())
     }
 
@@ -287,7 +287,7 @@ impl<W: Write> Writer<W> {
                 let mut action_buf = vec![];
                 {
                     let mut fn_writer = Writer::new(&mut action_buf, self.version);
-                    fn_writer.write_action_list(&try_block.try)?;
+                    fn_writer.write_action_list(&try_block.try_actions)?;
                     try_length = fn_writer.inner.len();
                     if let Some((_, ref catch)) = try_block.catch {
                         fn_writer.write_action_list(catch)?;
@@ -359,13 +359,13 @@ impl<W: Write> Writer<W> {
     }
 
     pub fn write_opcode_and_length(&mut self, opcode: u8, length: usize) -> Result<()> {
-        try!(self.write_u8(opcode));
+        self.write_u8(opcode)?;
         assert!(
             opcode >= 0x80 || length == 0,
             "Opcodes less than 0x80 must have length 0"
         );
         if opcode >= 0x80 {
-            try!(self.write_u16(length as u16));
+            self.write_u16(length as u16)?;
         }
         Ok(())
     }
@@ -373,42 +373,42 @@ impl<W: Write> Writer<W> {
     fn write_push_value(&mut self, value: &Value) -> Result<()> {
         match *value {
             Value::Str(ref string) => {
-                try!(self.write_u8(0));
-                try!(self.write_c_string(string));
+                self.write_u8(0)?;
+                self.write_c_string(string)?;
             }
             Value::Float(v) => {
-                try!(self.write_u8(1));
-                try!(self.write_f32(v));
+                self.write_u8(1)?;
+                self.write_f32(v)?;
             }
             Value::Null => {
-                try!(self.write_u8(2));
+                self.write_u8(2)?;
             }
             Value::Undefined => {
-                try!(self.write_u8(3));
+                self.write_u8(3)?;
             }
             Value::Register(v) => {
-                try!(self.write_u8(4));
-                try!(self.write_u8(v));
+                self.write_u8(4)?;
+                self.write_u8(v)?;
             }
             Value::Bool(v) => {
-                try!(self.write_u8(5));
-                try!(self.write_u8(v as u8));
+                self.write_u8(5)?;
+                self.write_u8(v as u8)?;
             }
             Value::Double(v) => {
-                try!(self.write_u8(6));
-                try!(self.write_f64(v));
+                self.write_u8(6)?;
+                self.write_f64(v)?;
             }
             Value::Int(v) => {
-                try!(self.write_u8(7));
-                try!(self.write_u32(v));
+                self.write_u8(7)?;
+                self.write_u32(v)?;
             }
             Value::ConstantPool(v) => {
                 if v < 256 {
-                    try!(self.write_u8(8));
-                    try!(self.write_u8(v as u8));
+                    self.write_u8(8)?;
+                    self.write_u8(v as u8)?;
                 } else {
-                    try!(self.write_u8(9));
-                    try!(self.write_u16(v));
+                    self.write_u8(9)?;
+                    self.write_u16(v)?;
                 }
             }
         };

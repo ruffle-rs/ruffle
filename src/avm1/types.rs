@@ -157,7 +157,7 @@ pub struct FunctionParam {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TryBlock {
-    pub try: Vec<Action>,
+    pub try_actions: Vec<Action>,
     pub catch: Option<(CatchVar, Vec<Action>)>,
     pub finally: Option<Vec<Action>>,
 }
