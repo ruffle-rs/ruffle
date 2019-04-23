@@ -1,9 +1,9 @@
 #![allow(clippy::float_cmp, clippy::inconsistent_digit_grouping, clippy::unreadable_literal)]
 
+use crate::types::*;
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::collections::HashSet;
 use std::io::{Error, ErrorKind, Read, Result};
-use crate::types::*;
 
 /// Reads SWF data from a stream.
 pub fn read_swf<R: Read>(input: R) -> Result<Swf> {
@@ -53,18 +53,21 @@ fn make_zlib_reader<'a, R: Read + 'a>(input: R) -> Result<Box<Read + 'a>> {
     Ok(Box::new(decoder))
 }
 
-#[cfg(not(any(feature = "flate2",feature = "libflate")))]
+#[cfg(not(any(feature = "flate2", feature = "libflate")))]
 fn make_zlib_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<Read + 'a>> {
-    Err(Error::new(ErrorKind::InvalidData, "Support for Zlib compressed SWFs is not enabled."))
+    Err(Error::new(
+        ErrorKind::InvalidData,
+        "Support for Zlib compressed SWFs is not enabled.",
+    ))
 }
 
 #[cfg(feature = "lzma-support")]
 fn make_lzma_reader<'a, R: Read + 'a>(mut input: R) -> Result<Box<Read + 'a>> {
     // Flash uses a mangled LZMA header, so we have to massage it into the normal
     // format.
+    use byteorder::WriteBytesExt;
     use std::io::{Cursor, Write};
     use xz2::stream::{Action, Stream};
-    use byteorder::WriteBytesExt;
     input.read_u32::<LittleEndian>()?; // Compressed length
     let mut lzma_properties = [0u8; 5];
     input.read_exact(&mut lzma_properties)?;
@@ -78,7 +81,10 @@ fn make_lzma_reader<'a, R: Read + 'a>(mut input: R) -> Result<Box<Read + 'a>> {
 
 #[cfg(not(feature = "lzma-support"))]
 fn make_lzma_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<Read + 'a>> {
-    Err(Error::new(ErrorKind::InvalidData, "Support for LZMA compressed SWFs is not enabled."))
+    Err(Error::new(
+        ErrorKind::InvalidData,
+        "Support for LZMA compressed SWFs is not enabled.",
+    ))
 }
 
 pub trait SwfRead<R: Read> {
@@ -143,9 +149,8 @@ pub trait SwfRead<R: Read> {
         }
         // TODO: There is probably a better way to do this.
         // TODO: Verify ANSI for SWF 5 and earlier.
-        String::from_utf8(bytes).map_err(|_| {
-            Error::new(ErrorKind::InvalidData, "Invalid string data")
-        })
+        String::from_utf8(bytes)
+            .map_err(|_| Error::new(ErrorKind::InvalidData, "Invalid string data"))
     }
 }
 
@@ -297,12 +302,7 @@ impl<R: Read> Reader<R> {
         let r = self.read_u8()?;
         let g = self.read_u8()?;
         let b = self.read_u8()?;
-        Ok(Color {
-            r,
-            g,
-            b,
-            a: 255,
-        })
+        Ok(Color { r, g, b, a: 255 })
     }
 
     fn read_rgba(&mut self) -> Result<Color> {
@@ -310,12 +310,7 @@ impl<R: Read> Reader<R> {
         let g = self.read_u8()?;
         let b = self.read_u8()?;
         let a = self.read_u8()?;
-        Ok(Color {
-            r,
-            g,
-            b,
-            a,
-        })
+        Ok(Color { r, g, b, a })
     }
 
     fn read_color_transform_no_alpha(&mut self) -> Result<ColorTransform> {
@@ -452,19 +447,13 @@ impl<R: Read> Reader<R> {
                 let id = tag_reader.read_u16()?;
                 let mut jpeg_data = Vec::with_capacity(length - 2);
                 tag_reader.input.read_to_end(&mut jpeg_data)?;
-                Tag::DefineBits {
-                    id,
-                    jpeg_data,
-                }
+                Tag::DefineBits { id, jpeg_data }
             }
             Some(TagCode::DefineBitsJpeg2) => {
                 let id = tag_reader.read_u16()?;
                 let mut jpeg_data = Vec::with_capacity(length - 2);
                 tag_reader.input.read_to_end(&mut jpeg_data)?;
-                Tag::DefineBitsJpeg2 {
-                    id,
-                    jpeg_data,
-                }
+                Tag::DefineBitsJpeg2 { id, jpeg_data }
             }
             Some(TagCode::DefineBitsJpeg3) => tag_reader.read_define_bits_jpeg_3(3)?,
             Some(TagCode::DefineBitsJpeg4) => tag_reader.read_define_bits_jpeg_3(4)?,
@@ -549,9 +538,7 @@ impl<R: Read> Reader<R> {
                 } else {
                     vec![]
                 };
-                Tag::EnableTelemetry {
-                    password_hash,
-                }
+                Tag::EnableTelemetry { password_hash }
             }
             Some(TagCode::ImportAssets) => {
                 let url = tag_reader.read_c_string()?;
@@ -563,10 +550,7 @@ impl<R: Read> Reader<R> {
                         name: tag_reader.read_c_string()?,
                     });
                 }
-                Tag::ImportAssets {
-                    url,
-                    imports,
-                }
+                Tag::ImportAssets { url, imports }
             }
             Some(TagCode::ImportAssets2) => {
                 let url = tag_reader.read_c_string()?;
@@ -580,10 +564,7 @@ impl<R: Read> Reader<R> {
                         name: tag_reader.read_c_string()?,
                     });
                 }
-                Tag::ImportAssets {
-                    url,
-                    imports,
-                }
+                Tag::ImportAssets { url, imports }
             }
 
             Some(TagCode::JpegTables) => {
@@ -651,10 +632,7 @@ impl<R: Read> Reader<R> {
                 let id = tag_reader.read_u16()?;
                 let mut action_data = Vec::with_capacity(length);
                 tag_reader.input.read_to_end(&mut action_data)?;
-                Tag::DoInitAction {
-                    id,
-                    action_data,
-                }
+                Tag::DoInitAction { id, action_data }
             }
 
             Some(TagCode::EnableDebugger) => Tag::EnableDebugger(tag_reader.read_c_string()?),
@@ -724,8 +702,9 @@ impl<R: Read> Reader<R> {
             Some(TagCode::FrameLabel) => {
                 let label = tag_reader.read_c_string()?;
                 Tag::FrameLabel {
-                    is_anchor: tag_reader.version >= 6 && length > label.len() + 1 &&
-                        tag_reader.read_u8()? != 0,
+                    is_anchor: tag_reader.version >= 6
+                        && length > label.len() + 1
+                        && tag_reader.read_u8()? != 0,
                     label,
                 }
             }
@@ -760,10 +739,7 @@ impl<R: Read> Reader<R> {
                 let size = length as usize;
                 let mut data = vec![0; size];
                 tag_reader.input.read_exact(&mut data[..])?;
-                Tag::Unknown {
-                    tag_code,
-                    data,
-                }
+                Tag::Unknown { tag_code, data }
             }
         };
 
@@ -799,15 +775,13 @@ impl<R: Read> Reader<R> {
             id,
             is_track_as_menu: false,
             records,
-            actions: vec![
-                ButtonAction {
-                    conditions: vec![ButtonActionCondition::OverDownToOverUp]
-                        .into_iter()
-                        .collect(),
-                    key_code: None,
-                    action_data: action_data,
-                },
-            ],
+            actions: vec![ButtonAction {
+                conditions: vec![ButtonActionCondition::OverDownToOverUp]
+                    .into_iter()
+                    .collect(),
+                key_code: None,
+                action_data: action_data,
+            }],
         })))
     }
 
@@ -1015,10 +989,7 @@ impl<R: Read> Reader<R> {
             }
         }
 
-        Ok(Tag::DefineFont(Box::new(FontV1 {
-            id,
-            glyphs,
-        })))
+        Ok(Tag::DefineFont(Box::new(FontV1 { id, glyphs })))
     }
 
     fn read_define_font_2(&mut self, version: u8) -> Result<Tag> {
@@ -2605,12 +2576,12 @@ impl<R: Read> Reader<R> {
 
 #[cfg(test)]
 pub mod tests {
+    use super::*;
+    use crate::tag_codes::TagCode;
+    use crate::test_data;
     use std::fs::File;
     use std::io::{Cursor, Read};
     use std::vec::Vec;
-    use super::*;
-    use crate::test_data;
-    use crate::tag_codes::TagCode;
 
     fn reader(data: &[u8]) -> Reader<&[u8]> {
         let default_version = 13;
@@ -2731,22 +2702,8 @@ pub mod tests {
                 .map(|_| reader.read_bit().unwrap())
                 .collect::<Vec<_>>(),
             [
-                false,
-                true,
-                false,
-                true,
-                false,
-                true,
-                false,
-                true,
-                false,
-                false,
-                true,
-                false,
-                false,
-                true,
-                false,
-                true
+                false, true, false, true, false, true, false, true, false, false, true, false,
+                false, true, false, true
             ]
         );
     }
@@ -2795,13 +2752,7 @@ pub mod tests {
     #[test]
     fn read_fixed8() {
         let buf = [
-            0b00000000,
-            0b00000000,
-            0b00000000,
-            0b00000001,
-            0b10000000,
-            0b00000110,
-            0b01000000,
+            0b00000000, 0b00000000, 0b00000000, 0b00000001, 0b10000000, 0b00000110, 0b01000000,
             0b11101011,
         ];
         let mut reader = Reader::new(&buf[..], 1);
@@ -3059,8 +3010,7 @@ pub mod tests {
                 // Failed, result doesn't match.
                 panic!(
                     "Incorrectly parsed tag.\nRead:\n{:?}\n\nExpected:\n{:?}",
-                    parsed_tag,
-                    expected_tag
+                    parsed_tag, expected_tag
                 );
             }
         }

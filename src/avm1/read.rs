@@ -1,7 +1,7 @@
 #![allow(clippy::unreadable_literal)]
 
-use crate::avm1::types::*;
 use crate::avm1::opcode::OpCode;
+use crate::avm1::types::*;
 use crate::read::SwfRead;
 use std::io::{Error, ErrorKind, Read, Result};
 
@@ -18,10 +18,7 @@ impl<R: Read> SwfRead<R> for Reader<R> {
 
 impl<R: Read> Reader<R> {
     pub fn new(inner: R, version: u8) -> Reader<R> {
-        Reader {
-            inner,
-            version,
-        }
+        Reader { inner, version }
     }
 
     pub fn read_action_list(&mut self) -> Result<Vec<Action>> {
@@ -34,7 +31,7 @@ impl<R: Read> Reader<R> {
 
     pub fn read_action(&mut self) -> Result<Option<Action>> {
         use num_traits::FromPrimitive;
-        
+
         let (opcode, length) = self.read_opcode_and_length()?;
 
         let mut action_reader = Reader::new(self.inner.by_ref().take(length as u64), self.version);
@@ -123,13 +120,17 @@ impl<R: Read> Reader<R> {
                 }
                 OpCode::GotoLabel => Action::GotoLabel(action_reader.read_c_string()?),
                 OpCode::Greater => Action::Greater,
-                OpCode::If => Action::If { offset: action_reader.read_i16()? },
+                OpCode::If => Action::If {
+                    offset: action_reader.read_i16()?,
+                },
                 OpCode::ImplementsOp => Action::ImplementsOp,
                 OpCode::Increment => Action::Increment,
                 OpCode::InitArray => Action::InitArray,
                 OpCode::InitObject => Action::InitObject,
                 OpCode::InstanceOf => Action::InstanceOf,
-                OpCode::Jump => Action::Jump { offset: action_reader.read_i16()? },
+                OpCode::Jump => Action::Jump {
+                    offset: action_reader.read_i16()?,
+                },
                 OpCode::Less => Action::Less,
                 OpCode::Less2 => Action::Less2,
                 OpCode::MBAsciiToChar => Action::MBAsciiToChar,
@@ -195,7 +196,9 @@ impl<R: Read> Reader<R> {
                         (&mut action_reader.inner as &mut Read).take(code_length.into()),
                         self.version,
                     );
-                    Action::With { actions: with_reader.read_action_list()? }
+                    Action::With {
+                        actions: with_reader.read_action_list()?,
+                    }
                 }
                 OpCode::WaitForFrame2 => Action::WaitForFrame2 {
                     num_actions_to_skip: action_reader.read_u8()?,
@@ -221,10 +224,7 @@ impl<R: Read> Reader<R> {
     fn read_unknown_action(&mut self, opcode: u8, length: usize) -> Result<Action> {
         let mut data = vec![0u8; length];
         self.inner.read_exact(&mut data)?;
-        Ok(Action::Unknown {
-            opcode,
-            data,
-        })
+        Ok(Action::Unknown { opcode, data })
     }
 
     fn read_push_value(&mut self) -> Result<Value> {
@@ -363,8 +363,7 @@ pub mod tests {
                 // Failed, result doesn't match.
                 panic!(
                     "Incorrectly parsed action.\nRead:\n{:?}\n\nExpected:\n{:?}",
-                    parsed_action,
-                    expected_action
+                    parsed_action, expected_action
                 );
             }
         }

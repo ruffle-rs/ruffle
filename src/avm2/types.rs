@@ -60,8 +60,12 @@ pub enum Multiname {
         namespace: Index<Namespace>,
         name: Index<String>,
     },
-    RTQName { name: Index<String> },
-    RTQNameA { name: Index<String> },
+    RTQName {
+        name: Index<String>,
+    },
+    RTQNameA {
+        name: Index<String>,
+    },
     RTQNameL,
     RTQNameLA,
     Multiname {
@@ -72,8 +76,12 @@ pub enum Multiname {
         namespace_set: Index<NamespaceSet>,
         name: Index<String>,
     },
-    MultinameL { namespace_set: Index<NamespaceSet> },
-    MultinameLA { namespace_set: Index<NamespaceSet> },
+    MultinameL {
+        namespace_set: Index<NamespaceSet>,
+    },
+    MultinameLA {
+        namespace_set: Index<NamespaceSet>,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -178,10 +186,22 @@ pub enum TraitKind {
         type_name: Index<Multiname>,
         value: Option<DefaultValue>,
     },
-    Method { disp_id: u32, method: Index<Method> },
-    Getter { disp_id: u32, method: Index<Method> },
-    Setter { disp_id: u32, method: Index<Method> },
-    Class { slot_id: u32, class: Index<Class> },
+    Method {
+        disp_id: u32,
+        method: Index<Method>,
+    },
+    Getter {
+        disp_id: u32,
+        method: Index<Method>,
+    },
+    Setter {
+        disp_id: u32,
+        method: Index<Method>,
+    },
+    Class {
+        slot_id: u32,
+        class: Index<Class>,
+    },
     Function {
         slot_id: u32,
         function: Index<Method>,
@@ -209,14 +229,21 @@ pub struct Script {
 pub enum Op {
     Add,
     AddI,
-    AsType { type_name: Index<Multiname> },
+    AsType {
+        type_name: Index<Multiname>,
+    },
     AsTypeLate,
     BitAnd,
     BitNot,
     BitOr,
     BitXor,
-    Call { num_args: u32 },
-    CallMethod { index: Index<Method>, num_args: u32 },
+    Call {
+        num_args: u32,
+    },
+    CallMethod {
+        index: Index<Method>,
+        num_args: u32,
+    },
     CallProperty {
         index: Index<Multiname>,
         num_args: u32,
@@ -229,7 +256,10 @@ pub enum Op {
         index: Index<Multiname>,
         num_args: u32,
     },
-    CallStatic { index: Index<Method>, num_args: u32 },
+    CallStatic {
+        index: Index<Method>,
+        num_args: u32,
+    },
     CallSuper {
         index: Index<Multiname>,
         num_args: u32,
@@ -239,15 +269,21 @@ pub enum Op {
         num_args: u32,
     },
     CheckFilter,
-    Coerce { index: Index<Multiname> },
+    Coerce {
+        index: Index<Multiname>,
+    },
     CoerceA,
     CoerceS,
-    Construct { num_args: u32 },
+    Construct {
+        num_args: u32,
+    },
     ConstructProp {
         index: Index<Multiname>,
         num_args: u32,
     },
-    ConstructSuper { num_args: u32 },
+    ConstructSuper {
+        num_args: u32,
+    },
     ConvertB,
     ConvertD,
     ConvertI,
@@ -259,31 +295,63 @@ pub enum Op {
         register_name: Index<String>,
         register: u8,
     },
-    DebugFile { file_name: Index<String> },
-    DebugLine { line_num: u32 },
-    DecLocal { index: u32 },
-    DecLocalI { index: u32 },
+    DebugFile {
+        file_name: Index<String>,
+    },
+    DebugLine {
+        line_num: u32,
+    },
+    DecLocal {
+        index: u32,
+    },
+    DecLocalI {
+        index: u32,
+    },
     Decrement,
     DecrementI,
-    DeleteProperty { index: Index<Multiname> },
+    DeleteProperty {
+        index: Index<Multiname>,
+    },
     Divide,
     Dup,
-    Dxns { index: Index<String> },
+    Dxns {
+        index: Index<String>,
+    },
     DxnsLate,
     Equals,
     EscXAttr,
     EscXElem,
-    FindProperty { index: Index<Multiname> },
-    FindPropStrict { index: Index<Multiname> },
-    GetDescendants { index: Index<Multiname> },
+    FindProperty {
+        index: Index<Multiname>,
+    },
+    FindPropStrict {
+        index: Index<Multiname>,
+    },
+    GetDescendants {
+        index: Index<Multiname>,
+    },
     GetGlobalScope,
-    GetGlobalSlot { index: u32 },
-    GetLex { index: Index<Multiname> },
-    GetLocal { index: u32 },
-    GetProperty { index: Index<Multiname> },
-    GetScopeObject { index: u8 },
-    GetSlot { index: u32 },
-    GetSuper { index: Index<Multiname> },
+    GetGlobalSlot {
+        index: u32,
+    },
+    GetLex {
+        index: Index<Multiname>,
+    },
+    GetLocal {
+        index: u32,
+    },
+    GetProperty {
+        index: Index<Multiname>,
+    },
+    GetScopeObject {
+        index: u8,
+    },
+    GetSlot {
+        index: u32,
+    },
+    GetSuper {
+        index: Index<Multiname>,
+    },
     GreaterEquals,
     GreaterThan,
     HasNext,
@@ -291,31 +359,71 @@ pub enum Op {
         object_register: u32,
         index_register: u32,
     },
-    IfEq { offset: i32 },
-    IfFalse { offset: i32 },
-    IfGe { offset: i32 },
-    IfGt { offset: i32 },
-    IfLe { offset: i32 },
-    IfLt { offset: i32 },
-    IfNge { offset: i32 },
-    IfNgt { offset: i32 },
-    IfNle { offset: i32 },
-    IfNlt { offset: i32 },
-    IfNe { offset: i32 },
-    IfStrictEq { offset: i32 },
-    IfStrictNe { offset: i32 },
-    IfTrue { offset: i32 },
+    IfEq {
+        offset: i32,
+    },
+    IfFalse {
+        offset: i32,
+    },
+    IfGe {
+        offset: i32,
+    },
+    IfGt {
+        offset: i32,
+    },
+    IfLe {
+        offset: i32,
+    },
+    IfLt {
+        offset: i32,
+    },
+    IfNge {
+        offset: i32,
+    },
+    IfNgt {
+        offset: i32,
+    },
+    IfNle {
+        offset: i32,
+    },
+    IfNlt {
+        offset: i32,
+    },
+    IfNe {
+        offset: i32,
+    },
+    IfStrictEq {
+        offset: i32,
+    },
+    IfStrictNe {
+        offset: i32,
+    },
+    IfTrue {
+        offset: i32,
+    },
     In,
-    IncLocal { index: u32 },
-    IncLocalI { index: u32 },
+    IncLocal {
+        index: u32,
+    },
+    IncLocalI {
+        index: u32,
+    },
     Increment,
     IncrementI,
-    InitProperty { index: Index<Multiname> },
+    InitProperty {
+        index: Index<Multiname>,
+    },
     InstanceOf,
-    IsType { index: Index<Multiname> },
+    IsType {
+        index: Index<Multiname>,
+    },
     IsTypeLate,
-    Jump { offset: i32 },
-    Kill { index: u32 },
+    Jump {
+        offset: i32,
+    },
+    Kill {
+        index: u32,
+    },
     Label,
     LessEquals,
     LessThan,
@@ -330,39 +438,73 @@ pub enum Op {
     Negate,
     NegateI,
     NewActivation,
-    NewArray { num_args: u32 },
-    NewCatch { index: Index<Exception> },
-    NewClass { index: Index<Class> },
-    NewFunction { index: Index<Method> },
-    NewObject { num_args: u32 },
+    NewArray {
+        num_args: u32,
+    },
+    NewCatch {
+        index: Index<Exception>,
+    },
+    NewClass {
+        index: Index<Class>,
+    },
+    NewFunction {
+        index: Index<Method>,
+    },
+    NewObject {
+        num_args: u32,
+    },
     NextName,
     NextValue,
     Nop,
     Not,
     Pop,
     PopScope,
-    PushByte { value: u8 },
-    PushDouble { value: Index<f64> },
+    PushByte {
+        value: u8,
+    },
+    PushDouble {
+        value: Index<f64>,
+    },
     PushFalse,
-    PushInt { value: Index<i32> },
-    PushNamespace { value: Index<Namespace> },
+    PushInt {
+        value: Index<i32>,
+    },
+    PushNamespace {
+        value: Index<Namespace>,
+    },
     PushNaN,
     PushNull,
     PushScope,
-    PushShort { value: u32 }, // TODO: Is this really a u30?
-    PushString { value: Index<String> },
+    PushShort {
+        value: u32,
+    }, // TODO: Is this really a u30?
+    PushString {
+        value: Index<String>,
+    },
     PushTrue,
-    PushUint { value: Index<u32> },
+    PushUint {
+        value: Index<u32>,
+    },
     PushUndefined,
     PushWith,
     ReturnValue,
     ReturnVoid,
     RShift,
-    SetLocal { index: u32 },
-    SetGlobalSlot { index: u32 },
-    SetProperty { index: Index<Multiname> },
-    SetSlot { index: u32 },
-    SetSuper { index: Index<Multiname> },
+    SetLocal {
+        index: u32,
+    },
+    SetGlobalSlot {
+        index: u32,
+    },
+    SetProperty {
+        index: Index<Multiname>,
+    },
+    SetSlot {
+        index: u32,
+    },
+    SetSuper {
+        index: Index<Multiname>,
+    },
     StrictEquals,
     Subtract,
     SubtractI,

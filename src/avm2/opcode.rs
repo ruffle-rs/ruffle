@@ -1,7 +1,7 @@
 #![allow(clippy::useless_attribute)]
 
 #[allow(dead_code)]
-#[derive(Debug,PartialEq,Clone,Copy,FromPrimitive)]
+#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive)]
 pub enum OpCode {
     Add = 0xA0,
     AddI = 0xC5,

@@ -1,7 +1,7 @@
 #![allow(clippy::useless_attribute)]
 
 #[allow(dead_code)]
-#[derive(Debug,PartialEq,Clone,Copy,FromPrimitive)]
+#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive)]
 pub enum OpCode {
     End = 0x00,
 

@@ -90,10 +90,9 @@ impl<R: Read> Reader<R> {
     }
 
     fn read_i24(&mut self) -> Result<i32> {
-        Ok(
-            i32::from(self.read_u8()?) | (i32::from(self.read_u8()?) << 8) |
-                (i32::from(self.read_u8()?) << 16),
-        )
+        Ok(i32::from(self.read_u8()?)
+            | (i32::from(self.read_u8()?) << 8)
+            | (i32::from(self.read_u8()?) << 16))
     }
     fn read_i32(&mut self) -> Result<i32> {
         let mut n: i32 = 0;
@@ -114,7 +113,10 @@ impl<R: Read> Reader<R> {
     fn read_string(&mut self) -> Result<String> {
         let len = self.read_u30()? as usize;
         let mut s = String::with_capacity(len);
-        self.inner.by_ref().take(len as u64).read_to_string(&mut s)?;
+        self.inner
+            .by_ref()
+            .take(len as u64)
+            .read_to_string(&mut s)?;
         Ok(s)
     }
 
@@ -352,10 +354,7 @@ impl<R: Read> Reader<R> {
                 value: self.read_index()?,
             })
         }
-        Ok(Metadata {
-            name,
-            items,
-        })
+        Ok(Metadata { name, items })
     }
 
     fn read_instance(&mut self) -> Result<Instance> {
@@ -877,8 +876,7 @@ pub mod tests {
                 // Failed, result doesn't match.
                 panic!(
                     "Incorrectly parsed ABC.\nRead:\n{:?}\n\nExpected:\n{:?}",
-                    parsed,
-                    abc_file
+                    parsed, abc_file
                 );
             }
         }

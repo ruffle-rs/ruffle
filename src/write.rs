@@ -1,11 +1,11 @@
 #![allow(clippy::cyclomatic_complexity, clippy::float_cmp, clippy::inconsistent_digit_grouping, clippy::unreadable_literal)]
 
+use crate::tag_codes::TagCode;
+use crate::types::*;
 use byteorder::{LittleEndian, WriteBytesExt};
 use std::cmp::max;
 use std::collections::HashSet;
 use std::io::{Error, ErrorKind, Result, Write};
-use crate::tag_codes::TagCode;
-use crate::types::*;
 
 pub fn write_swf<W: Write>(swf: &Swf, mut output: W) -> Result<()> {
     let signature = match swf.compression {
@@ -53,8 +53,8 @@ pub fn write_swf<W: Write>(swf: &Swf, mut output: W) -> Result<()> {
 
 #[cfg(feature = "flate2")]
 fn write_zlib_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
-    use flate2::Compression;
     use flate2::write::ZlibEncoder;
+    use flate2::Compression;
     let mut encoder = ZlibEncoder::new(&mut output, Compression::best());
     encoder.write_all(&swf_body)
 }
@@ -66,15 +66,18 @@ fn write_zlib_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
     encoder.write_all(&swf_body)
 }
 
-#[cfg(not(any(feature = "flate2",feature = "libflate")))]
+#[cfg(not(any(feature = "flate2", feature = "libflate")))]
 fn write_zlib_swf<W: Write>(_output: W, _swf_body: &[u8]) -> Result<()> {
-    Err(Error::new(ErrorKind::InvalidData, "Support for Zlib compressed SWFs is not enabled."))
+    Err(Error::new(
+        ErrorKind::InvalidData,
+        "Support for Zlib compressed SWFs is not enabled.",
+    ))
 }
 
 #[cfg(feature = "lzma-support")]
 fn write_lzma_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
-    use xz2::write::XzEncoder;
     use xz2::stream::{Action, LzmaOptions, Stream};
+    use xz2::write::XzEncoder;
     let mut stream = Stream::new_lzma_encoder(&LzmaOptions::new_preset(9)?)?;
     let mut lzma_header = [0; 13];
     stream.process(&[], &mut lzma_header, Action::Run)?;
@@ -88,7 +91,10 @@ fn write_lzma_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
 
 #[cfg(not(feature = "lzma-support"))]
 fn write_lzma_swf<W: Write>(_output: W, _swf_body: &[u8]) -> Result<()> {
-    Err(Error::new(ErrorKind::InvalidData, "Support for LZMA compressed SWFs is not enabled."))
+    Err(Error::new(
+        ErrorKind::InvalidData,
+        "Support for LZMA compressed SWFs is not enabled.",
+    ))
 }
 
 pub trait SwfWrite<W: Write> {
@@ -246,7 +252,6 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-
     fn write_ubits(&mut self, num_bits: u8, n: u32) -> Result<()> {
         for i in 0..num_bits {
             self.write_bit(n & (1 << u32::from(num_bits - i - 1)) != 0)?;
@@ -284,10 +289,11 @@ impl<W: Write> Writer<W> {
             rectangle.x_max,
             rectangle.y_min,
             rectangle.y_max,
-        ].iter()
-            .map(|x| count_sbits((*x * 20f32) as i32))
-            .max()
-            .unwrap();
+        ]
+        .iter()
+        .map(|x| count_sbits((*x * 20f32) as i32))
+        .max()
+        .unwrap();
         self.write_ubits(5, num_bits.into())?;
         self.write_sbits(num_bits, (rectangle.x_min * 20f32) as i32)?;
         self.write_sbits(num_bits, (rectangle.x_max * 20f32) as i32)?;
@@ -318,8 +324,9 @@ impl<W: Write> Writer<W> {
     fn write_color_transform_no_alpha(&mut self, color_transform: &ColorTransform) -> Result<()> {
         // TODO: Assert that alpha is 1.0?
         self.flush_bits()?;
-        let has_mult = color_transform.r_multiply != 1f32 || color_transform.g_multiply != 1f32 ||
-            color_transform.b_multiply != 1f32;
+        let has_mult = color_transform.r_multiply != 1f32
+            || color_transform.g_multiply != 1f32
+            || color_transform.b_multiply != 1f32;
         let has_add =
             color_transform.r_add != 0 || color_transform.g_add != 0 || color_transform.b_add != 0;
         let multiply = [
@@ -347,7 +354,10 @@ impl<W: Write> Writer<W> {
         if has_add {
             num_bits = max(
                 num_bits,
-                add.iter().map(|n| count_sbits(i32::from(*n))).max().unwrap(),
+                add.iter()
+                    .map(|n| count_sbits(i32::from(*n)))
+                    .max()
+                    .unwrap(),
             );
         }
         self.write_ubits(4, num_bits.into())?;
@@ -366,11 +376,14 @@ impl<W: Write> Writer<W> {
 
     fn write_color_transform(&mut self, color_transform: &ColorTransform) -> Result<()> {
         self.flush_bits()?;
-        let has_mult = color_transform.r_multiply != 1f32 || color_transform.g_multiply != 1f32 ||
-            color_transform.b_multiply != 1f32 ||
-            color_transform.a_multiply != 1f32;
-        let has_add = color_transform.r_add != 0 || color_transform.g_add != 0 ||
-            color_transform.b_add != 0 || color_transform.a_add != 0;
+        let has_mult = color_transform.r_multiply != 1f32
+            || color_transform.g_multiply != 1f32
+            || color_transform.b_multiply != 1f32
+            || color_transform.a_multiply != 1f32;
+        let has_add = color_transform.r_add != 0
+            || color_transform.g_add != 0
+            || color_transform.b_add != 0
+            || color_transform.a_add != 0;
         let multiply = [
             color_transform.r_multiply,
             color_transform.g_multiply,
@@ -397,7 +410,10 @@ impl<W: Write> Writer<W> {
         if has_add {
             num_bits = max(
                 num_bits,
-                add.iter().map(|n| count_sbits(i32::from(*n))).max().unwrap(),
+                add.iter()
+                    .map(|n| count_sbits(i32::from(*n)))
+                    .max()
+                    .unwrap(),
             );
         }
         self.write_ubits(4, num_bits.into())?;
@@ -415,7 +431,6 @@ impl<W: Write> Writer<W> {
         }
         Ok(())
     }
-
 
     fn write_matrix(&mut self, m: &Matrix) -> Result<()> {
         self.flush_bits()?;
@@ -466,8 +481,9 @@ impl<W: Write> Writer<W> {
             Tag::ShowFrame => self.write_tag_header(TagCode::ShowFrame, 0)?,
 
             Tag::ExportAssets(ref exports) => {
-                let len = exports.iter().map(|e| e.name.len() as u32 + 1).sum::<u32>() +
-                    exports.len() as u32 * 2 + 2;
+                let len = exports.iter().map(|e| e.name.len() as u32 + 1).sum::<u32>()
+                    + exports.len() as u32 * 2
+                    + 2;
                 self.write_tag_header(TagCode::ExportAssets, len)?;
                 self.write_u16(exports.len() as u16)?;
                 for &ExportedAsset { id, ref name } in exports {
@@ -686,9 +702,10 @@ impl<W: Write> Writer<W> {
             Tag::DefineFontInfo(ref font_info) => {
                 let use_wide_codes = self.version >= 6 || font_info.version >= 2;
 
-                let len = font_info.name.len() +
-                    if use_wide_codes { 2 } else { 1 } * font_info.code_table.len() +
-                    if font_info.version >= 2 { 1 } else { 0 } + 4;
+                let len = font_info.name.len()
+                    + if use_wide_codes { 2 } else { 1 } * font_info.code_table.len()
+                    + if font_info.version >= 2 { 1 } else { 0 }
+                    + 4;
 
                 let tag_id = if font_info.version == 1 {
                     TagCode::DefineFontInfo
@@ -702,14 +719,12 @@ impl<W: Write> Writer<W> {
                 self.write_u8(font_info.name.len() as u8)?;
                 self.output.write_all(font_info.name.as_bytes())?;
                 self.write_u8(
-                    if font_info.is_small_text { 0b100000 } else { 0 } | if font_info.is_ansi {
-                        0b10000
-                    } else {
-                        0
-                    } | if font_info.is_shift_jis { 0b1000 } else { 0 } |
-                        if font_info.is_italic { 0b100 } else { 0 } |
-                        if font_info.is_bold { 0b10 } else { 0 } |
-                        if use_wide_codes { 0b1 } else { 0 },
+                    if font_info.is_small_text { 0b100000 } else { 0 }
+                        | if font_info.is_ansi { 0b10000 } else { 0 }
+                        | if font_info.is_shift_jis { 0b1000 } else { 0 }
+                        | if font_info.is_italic { 0b100 } else { 0 }
+                        | if font_info.is_bold { 0b10 } else { 0 }
+                        | if use_wide_codes { 0b1 } else { 0 },
                 )?;
                 // TODO(Herschel): Assert language is unknown for v1.
                 if font_info.version >= 2 {
@@ -793,21 +808,25 @@ impl<W: Write> Writer<W> {
                 self.write_c_string(password_md5)?;
             }
 
-            Tag::EnableTelemetry { ref password_hash } => if !password_hash.is_empty() {
-                self.write_tag_header(TagCode::EnableTelemetry, 34)?;
-                self.write_u16(0)?;
-                self.output.write_all(&password_hash[0..32])?;
-            } else {
-                self.write_tag_header(TagCode::EnableTelemetry, 2)?;
-                self.write_u16(0)?;
-            },
+            Tag::EnableTelemetry { ref password_hash } => {
+                if !password_hash.is_empty() {
+                    self.write_tag_header(TagCode::EnableTelemetry, 34)?;
+                    self.write_u16(0)?;
+                    self.output.write_all(&password_hash[0..32])?;
+                } else {
+                    self.write_tag_header(TagCode::EnableTelemetry, 2)?;
+                    self.write_u16(0)?;
+                }
+            }
 
             Tag::ImportAssets {
                 ref url,
                 ref imports,
             } => {
-                let len = imports.iter().map(|e| e.name.len() as u32 + 3).sum::<u32>() +
-                    url.len() as u32 + 1 + 2;
+                let len = imports.iter().map(|e| e.name.len() as u32 + 3).sum::<u32>()
+                    + url.len() as u32
+                    + 1
+                    + 2;
                 // SWF v8 and later use ImportAssets2 tag.
                 if self.version >= 8 {
                     self.write_tag_header(TagCode::ImportAssets2, len + 2)?;
@@ -896,13 +915,15 @@ impl<W: Write> Writer<W> {
             }
 
             Tag::StartSound { id, ref sound_info } => {
-                let length = 3 + if sound_info.in_sample.is_some() { 4 } else { 0 } +
-                    if sound_info.out_sample.is_some() {
+                let length = 3
+                    + if sound_info.in_sample.is_some() { 4 } else { 0 }
+                    + if sound_info.out_sample.is_some() {
                         4
                     } else {
                         0
-                    } + if sound_info.num_loops > 1 { 2 } else { 0 } +
-                    if let Some(ref e) = sound_info.envelope {
+                    }
+                    + if sound_info.num_loops > 1 { 2 } else { 0 }
+                    + if let Some(ref e) = sound_info.envelope {
                         e.len() as u32 * 8 + 1
                     } else {
                         0
@@ -916,16 +937,16 @@ impl<W: Write> Writer<W> {
                 ref class_name,
                 ref sound_info,
             } => {
-                let length = class_name.len() as u32 + 2 + if sound_info.in_sample.is_some() {
-                    4
-                } else {
-                    0
-                } + if sound_info.out_sample.is_some() {
-                    4
-                } else {
-                    0
-                } + if sound_info.num_loops > 1 { 2 } else { 0 } +
-                    if let Some(ref e) = sound_info.envelope {
+                let length = class_name.len() as u32
+                    + 2
+                    + if sound_info.in_sample.is_some() { 4 } else { 0 }
+                    + if sound_info.out_sample.is_some() {
+                        4
+                    } else {
+                        0
+                    }
+                    + if sound_info.num_loops > 1 { 2 } else { 0 }
+                    + if let Some(ref e) = sound_info.envelope {
                         e.len() as u32 * 8 + 1
                     } else {
                         0
@@ -939,7 +960,8 @@ impl<W: Write> Writer<W> {
                 let len = symbols
                     .iter()
                     .map(|e| e.class_name.len() as u32 + 3)
-                    .sum::<u32>() + 2;
+                    .sum::<u32>()
+                    + 2;
                 self.write_tag_header(TagCode::SymbolClass, len)?;
                 self.write_u16(symbols.len() as u16)?;
                 for &SymbolClassLink { id, ref class_name } in symbols {
@@ -1012,7 +1034,7 @@ impl<W: Write> Writer<W> {
                 writer.write_button_record(record, 1)?;
             }
             writer.write_u8(0)?; // End button records
-            // TODO: Assert we have some action.
+                                 // TODO: Assert we have some action.
             writer.output.write_all(&button.actions[0].action_data)?;
         }
         self.write_tag_header(TagCode::DefineButton, buf.len() as u32)?;
@@ -1055,63 +1077,56 @@ impl<W: Write> Writer<W> {
                         0b1000_0000
                     } else {
                         0
-                    } |
-                        if action
-                            .conditions
-                            .contains(&ButtonActionCondition::OutDownToIdle)
-                        {
-                            0b100_0000
-                        } else {
-                            0
-                        } |
-                        if action
-                            .conditions
-                            .contains(&ButtonActionCondition::OutDownToOverDown)
-                        {
-                            0b10_0000
-                        } else {
-                            0
-                        } |
-                        if action
-                            .conditions
-                            .contains(&ButtonActionCondition::OverDownToOutDown)
-                        {
-                            0b1_0000
-                        } else {
-                            0
-                        } |
-                        if action
-                            .conditions
-                            .contains(&ButtonActionCondition::OverDownToOverUp)
-                        {
-                            0b1000
-                        } else {
-                            0
-                        } |
-                        if action
-                            .conditions
-                            .contains(&ButtonActionCondition::OverUpToOverDown)
-                        {
-                            0b100
-                        } else {
-                            0
-                        } |
-                        if action
-                            .conditions
-                            .contains(&ButtonActionCondition::OverUpToIdle)
-                        {
-                            0b10
-                        } else {
-                            0
-                        } |
-                        if action
-                            .conditions
-                            .contains(&ButtonActionCondition::IdleToOverUp)
-                        {
-                            0b1
-                        } else {
-                            0
-                        },
+                    } | if action
+                        .conditions
+                        .contains(&ButtonActionCondition::OutDownToIdle)
+                    {
+                        0b100_0000
+                    } else {
+                        0
+                    } | if action
+                        .conditions
+                        .contains(&ButtonActionCondition::OutDownToOverDown)
+                    {
+                        0b10_0000
+                    } else {
+                        0
+                    } | if action
+                        .conditions
+                        .contains(&ButtonActionCondition::OverDownToOutDown)
+                    {
+                        0b1_0000
+                    } else {
+                        0
+                    } | if action
+                        .conditions
+                        .contains(&ButtonActionCondition::OverDownToOverUp)
+                    {
+                        0b1000
+                    } else {
+                        0
+                    } | if action
+                        .conditions
+                        .contains(&ButtonActionCondition::OverUpToOverDown)
+                    {
+                        0b100
+                    } else {
+                        0
+                    } | if action
+                        .conditions
+                        .contains(&ButtonActionCondition::OverUpToIdle)
+                    {
+                        0b10
+                    } else {
+                        0
+                    } | if action
+                        .conditions
+                        .contains(&ButtonActionCondition::IdleToOverUp)
+                    {
+                        0b1
+                    } else {
+                        0
+                    },
                 )?;
                 let mut flags = if action
                     .conditions
@@ -1136,8 +1151,8 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_define_morph_shape(&mut self, data: &DefineMorphShape) -> Result<()> {
-        if data.start.fill_styles.len() != data.end.fill_styles.len() ||
-            data.start.line_styles.len() != data.end.line_styles.len()
+        if data.start.fill_styles.len() != data.end.fill_styles.len()
+            || data.start.line_styles.len() != data.end.line_styles.len()
         {
             return Err(Error::new(
                 ErrorKind::InvalidData,
@@ -1163,7 +1178,8 @@ impl<W: Write> Writer<W> {
             } else {
                 writer.write_u8(num_fill_styles as u8)?;
             }
-            for (start, end) in data.start
+            for (start, end) in data
+                .start
                 .fill_styles
                 .iter()
                 .zip(data.end.fill_styles.iter())
@@ -1177,7 +1193,8 @@ impl<W: Write> Writer<W> {
             } else {
                 writer.write_u8(num_line_styles as u8)?;
             }
-            for (start, end) in data.start
+            for (start, end) in data
+                .start
                 .line_styles
                 .iter()
                 .zip(data.end.line_styles.iter())
@@ -1309,8 +1326,8 @@ impl<W: Write> Writer<W> {
                     is_smoothed: end_is_smoothed,
                     is_repeating: end_is_repeating,
                 },
-            ) if id == end_id && is_smoothed == end_is_smoothed ||
-                is_repeating == end_is_repeating =>
+            ) if id == end_id && is_smoothed == end_is_smoothed
+                || is_repeating == end_is_repeating =>
             {
                 let fill_style_type = match (is_smoothed, is_repeating) {
                     (true, true) => 0x40,
@@ -1365,11 +1382,13 @@ impl<W: Write> Writer<W> {
             self.write_rgba(&start.color)?;
             self.write_rgba(&end.color)?;
         } else {
-            if start.start_cap != end.start_cap || start.join_style != end.join_style ||
-                start.allow_scale_x != end.allow_scale_x ||
-                start.allow_scale_y != end.allow_scale_y ||
-                start.is_pixel_hinted != end.is_pixel_hinted ||
-                start.allow_close != end.allow_close || start.end_cap != end.end_cap
+            if start.start_cap != end.start_cap
+                || start.join_style != end.join_style
+                || start.allow_scale_x != end.allow_scale_x
+                || start.allow_scale_y != end.allow_scale_y
+                || start.is_pixel_hinted != end.is_pixel_hinted
+                || start.allow_close != end.allow_close
+                || start.end_cap != end.end_cap
             {
                 return Err(Error::new(
                     ErrorKind::InvalidData,
@@ -1664,10 +1683,11 @@ impl<W: Write> Writer<W> {
                     control_twips_y,
                     anchor_twips_x,
                     anchor_twips_y,
-                ].iter()
-                    .map(|x| count_sbits(*x))
-                    .max()
-                    .unwrap();
+                ]
+                .iter()
+                .map(|x| count_sbits(*x))
+                .max()
+                .unwrap();
                 self.write_ubits(4, u32::from(num_bits) - 2)?;
                 self.write_sbits(num_bits, control_twips_x)?;
                 self.write_sbits(num_bits, control_twips_y)?;
@@ -1928,24 +1948,27 @@ impl<W: Write> Writer<W> {
                         0b10_0000
                     } else {
                         0
-                    } | if place_object.is_image { 0b1_0000 } else { 0 } |
-                        if place_object.class_name.is_some() {
+                    } | if place_object.is_image { 0b1_0000 } else { 0 }
+                        | if place_object.class_name.is_some() {
                             0b1000
                         } else {
                             0
-                        } | if place_object.is_bitmap_cached {
-                        0b100
-                    } else {
-                        0
-                    } | if place_object.blend_mode != BlendMode::Normal {
-                        0b10
-                    } else {
-                        0
-                    } | if !place_object.filters.is_empty() {
-                        0b1
-                    } else {
-                        0
-                    },
+                        }
+                        | if place_object.is_bitmap_cached {
+                            0b100
+                        } else {
+                            0
+                        }
+                        | if place_object.blend_mode != BlendMode::Normal {
+                            0b10
+                        } else {
+                            0
+                        }
+                        | if !place_object.filters.is_empty() {
+                            0b1
+                        } else {
+                            0
+                        },
                 )?;
             }
             writer.write_i16(place_object.depth)?;
@@ -1957,8 +1980,8 @@ impl<W: Write> Writer<W> {
             }
 
             match place_object.action {
-                PlaceObjectAction::Place(character_id) |
-                PlaceObjectAction::Replace(character_id) => writer.write_u16(character_id)?,
+                PlaceObjectAction::Place(character_id)
+                | PlaceObjectAction::Replace(character_id) => writer.write_u16(character_id)?,
                 PlaceObjectAction::Modify => (),
             }
             if let Some(ref matrix) = place_object.matrix {
@@ -2113,11 +2136,8 @@ impl<W: Write> Writer<W> {
                 }
                 self.write_rgba(&convolve.default_color)?;
                 self.write_u8(
-                    if convolve.is_clamped { 0b10 } else { 0 } | if convolve.is_preserve_alpha {
-                        0b1
-                    } else {
-                        0
-                    },
+                    if convolve.is_clamped { 0b10 } else { 0 }
+                        | if convolve.is_preserve_alpha { 0b1 } else { 0 },
                 )?;
             }
 
@@ -2279,8 +2299,8 @@ impl<W: Write> Writer<W> {
             0b10
         } else {
             0
-        } | if sound_info.num_loops > 1 { 0b100 } else { 0 } |
-            if sound_info.envelope.is_some() {
+        } | if sound_info.num_loops > 1 { 0b100 } else { 0 }
+            | if sound_info.envelope.is_some() {
                 0b1000
             } else {
                 0
@@ -2346,20 +2366,14 @@ impl<W: Write> Writer<W> {
             let mut writer = Writer::new(&mut buf, self.version);
             writer.write_character_id(font.id)?;
             writer.write_u8(
-                if font.layout.is_some() { 0b10000000 } else { 0 } | if font.is_shift_jis {
-                    0b1000000
-                } else {
-                    0
-                } | if font.is_small_text { 0b100000 } else { 0 } |
-                    if font.is_ansi { 0b10000 } else { 0 } | if has_wide_offsets {
-                    0b1000
-                } else {
-                    0
-                } | if has_wide_codes { 0b100 } else { 0 } | if font.is_italic {
-                    0b10
-                } else {
-                    0
-                } | if font.is_bold { 0b1 } else { 0 },
+                if font.layout.is_some() { 0b10000000 } else { 0 }
+                    | if font.is_shift_jis { 0b1000000 } else { 0 }
+                    | if font.is_small_text { 0b100000 } else { 0 }
+                    | if font.is_ansi { 0b10000 } else { 0 }
+                    | if has_wide_offsets { 0b1000 } else { 0 }
+                    | if has_wide_codes { 0b100 } else { 0 }
+                    | if font.is_italic { 0b10 } else { 0 }
+                    | if font.is_bold { 0b1 } else { 0 },
             )?;
             writer.write_language(font.language)?;
             writer.write_u8(font.name.len() as u8)?;
@@ -2434,8 +2448,9 @@ impl<W: Write> Writer<W> {
         self.write_tag_header(TagCode::DefineFont4, tag_len as u32)?;
         self.write_character_id(font.id)?;
         self.write_u8(
-            if font.data.is_some() { 0b100 } else { 0 } | if font.is_italic { 0b10 } else { 0 } |
-                if font.is_bold { 0b1 } else { 0 },
+            if font.data.is_some() { 0b100 } else { 0 }
+                | if font.is_italic { 0b10 } else { 0 }
+                | if font.is_bold { 0b1 } else { 0 },
         )?;
         self.write_c_string(&font.name)?;
         if let Some(ref data) = font.data {
@@ -2467,12 +2482,14 @@ impl<W: Write> Writer<W> {
             writer.write_character_id(text.id)?;
             writer.write_rectangle(&text.bounds)?;
             writer.write_matrix(&text.matrix)?;
-            let num_glyph_bits = text.records
+            let num_glyph_bits = text
+                .records
                 .iter()
                 .flat_map(|r| r.glyphs.iter().map(|g| count_ubits(g.index)))
                 .max()
                 .unwrap_or(0);
-            let num_advance_bits = text.records
+            let num_advance_bits = text
+                .records
                 .iter()
                 .flat_map(|r| r.glyphs.iter().map(|g| count_sbits(g.advance)))
                 .max()
@@ -2481,10 +2498,11 @@ impl<W: Write> Writer<W> {
             writer.write_u8(num_advance_bits)?;
 
             for record in &text.records {
-                let flags = 0b10000000 | if record.font_id.is_some() { 0b1000 } else { 0 } |
-                    if record.color.is_some() { 0b100 } else { 0 } |
-                    if record.y_offset.is_some() { 0b10 } else { 0 } |
-                    if record.x_offset.is_some() { 0b1 } else { 0 };
+                let flags = 0b10000000
+                    | if record.font_id.is_some() { 0b1000 } else { 0 }
+                    | if record.color.is_some() { 0b100 } else { 0 }
+                    | if record.y_offset.is_some() { 0b10 } else { 0 }
+                    | if record.x_offset.is_some() { 0b1 } else { 0 };
                 writer.write_u8(flags)?;
                 if let Some(id) = record.font_id {
                     writer.write_character_id(id)?;
@@ -2524,30 +2542,32 @@ impl<W: Write> Writer<W> {
                 0b10000000
             } else {
                 0
-            } | if edit_text.is_word_wrap { 0b1000000 } else { 0 } |
-                if edit_text.is_multiline { 0b100000 } else { 0 } |
-                if edit_text.is_password { 0b10000 } else { 0 } |
-                if edit_text.is_read_only { 0b1000 } else { 0 } |
-                if edit_text.color.is_some() { 0b100 } else { 0 } |
-                if edit_text.max_length.is_some() {
+            } | if edit_text.is_word_wrap { 0b1000000 } else { 0 }
+                | if edit_text.is_multiline { 0b100000 } else { 0 }
+                | if edit_text.is_password { 0b10000 } else { 0 }
+                | if edit_text.is_read_only { 0b1000 } else { 0 }
+                | if edit_text.color.is_some() { 0b100 } else { 0 }
+                | if edit_text.max_length.is_some() {
                     0b10
                 } else {
                     0
-                } | if edit_text.font_id.is_some() { 0b1 } else { 0 };
+                }
+                | if edit_text.font_id.is_some() { 0b1 } else { 0 };
             let flags2 = if edit_text.font_class_name.is_some() {
                 0b10000000
             } else {
                 0
-            } | if edit_text.is_auto_size { 0b1000000 } else { 0 } |
-                if edit_text.layout.is_some() {
+            } | if edit_text.is_auto_size { 0b1000000 } else { 0 }
+                | if edit_text.layout.is_some() {
                     0b100000
                 } else {
                     0
-                } | if !edit_text.is_selectable { 0b10000 } else { 0 } |
-                if edit_text.has_border { 0b1000 } else { 0 } |
-                if edit_text.was_static { 0b100 } else { 0 } |
-                if edit_text.is_html { 0b10 } else { 0 } |
-                if !edit_text.is_device_font { 0b1 } else { 0 };
+                }
+                | if !edit_text.is_selectable { 0b10000 } else { 0 }
+                | if edit_text.has_border { 0b1000 } else { 0 }
+                | if edit_text.was_static { 0b100 } else { 0 }
+                | if edit_text.is_html { 0b10 } else { 0 }
+                | if !edit_text.is_device_font { 0b1 } else { 0 };
 
             writer.write_u8(flags)?;
             writer.write_u8(flags2)?;
@@ -2677,10 +2697,10 @@ fn count_fbits(n: f32) -> u8 {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::Writer;
-    use std::io::Result;
+    use super::*;
     use crate::test_data;
+    use std::io::Result;
 
     fn new_swf() -> Swf {
         Swf {
@@ -2735,13 +2755,7 @@ mod tests {
         assert_eq!(
             buf,
             [
-                0b00000000,
-                0b00000000,
-                0b00000000,
-                0b00000001,
-                0b10000000,
-                0b00000110,
-                0b01000000,
+                0b00000000, 0b00000000, 0b00000000, 0b00000001, 0b10000000, 0b00000110, 0b01000000,
                 0b11101011
             ]
         );
@@ -2780,22 +2794,8 @@ mod tests {
     #[test]
     fn write_bit() {
         let bits = [
-            false,
-            true,
-            false,
-            true,
-            false,
-            true,
-            false,
-            true,
-            false,
-            false,
-            true,
-            false,
-            false,
-            true,
-            false,
-            true,
+            false, true, false, true, false, true, false, true, false, false, true, false, false,
+            true, false, true,
         ];
         let mut buf = Vec::new();
         {
@@ -2900,10 +2900,7 @@ mod tests {
                 let mut writer = Writer::new(&mut buf, 1);
                 writer.write_c_string("😀😂!🐼").unwrap();
             }
-            assert_eq!(
-                buf,
-                "😀😂!🐼\0".bytes().collect::<Vec<_>>()
-            );
+            assert_eq!(buf, "😀😂!🐼\0".bytes().collect::<Vec<_>>());
         }
     }
 
@@ -2999,9 +2996,7 @@ mod tests {
             if written_tag_bytes != expected_tag_bytes {
                 panic!(
                     "Error reading tag.\nTag:\n{:?}\n\nWrote:\n{:?}\n\nExpected:\n{:?}",
-                    tag,
-                    written_tag_bytes,
-                    expected_tag_bytes
+                    tag, written_tag_bytes, expected_tag_bytes
                 );
             }
         }

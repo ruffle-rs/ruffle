@@ -153,7 +153,6 @@ pub enum PlaceObjectAction {
     Replace(CharacterId),
 }
 
-
 #[derive(Debug, PartialEq, Clone)]
 pub enum Filter {
     DropShadowFilter(Box<DropShadowFilter>),
@@ -318,9 +317,18 @@ pub enum Tag {
 
     Protect(Option<String>),
     CsmTextSettings(CsmTextSettings),
-    DefineBinaryData { id: CharacterId, data: Vec<u8> },
-    DefineBits { id: CharacterId, jpeg_data: Vec<u8> },
-    DefineBitsJpeg2 { id: CharacterId, jpeg_data: Vec<u8> },
+    DefineBinaryData {
+        id: CharacterId,
+        data: Vec<u8>,
+    },
+    DefineBits {
+        id: CharacterId,
+        jpeg_data: Vec<u8>,
+    },
+    DefineBitsJpeg2 {
+        id: CharacterId,
+        jpeg_data: Vec<u8>,
+    },
     DefineBitsJpeg3(DefineBitsJpeg3),
     DefineBitsLossless(DefineBitsLossless),
     DefineButton(Box<Button>),
@@ -362,7 +370,9 @@ pub enum Tag {
         action_data: Vec<u8>,
     },
     EnableDebugger(String),
-    EnableTelemetry { password_hash: Vec<u8> },
+    EnableTelemetry {
+        password_hash: Vec<u8>,
+    },
     Metadata(String),
     ImportAssets {
         url: String,
@@ -370,7 +380,10 @@ pub enum Tag {
     },
     JpegTables(Vec<u8>),
     SetBackgroundColor(Color),
-    SetTabIndex { depth: Depth, tab_index: u16 },
+    SetTabIndex {
+        depth: Depth,
+        tab_index: u16,
+    },
     SoundStreamBlock(Vec<u8>),
     SoundStreamHead(Box<SoundStreamInfo>),
     SoundStreamHead2(Box<SoundStreamInfo>),
@@ -391,13 +404,19 @@ pub enum Tag {
     VideoFrame(VideoFrame),
     FileAttributes(FileAttributes),
 
-    FrameLabel { label: String, is_anchor: bool },
+    FrameLabel {
+        label: String,
+        is_anchor: bool,
+    },
     DefineSceneAndFrameLabelData {
         scenes: Vec<FrameLabel>,
         frame_labels: Vec<FrameLabel>,
     },
 
-    Unknown { tag_code: u16, data: Vec<u8> },
+    Unknown {
+        tag_code: u16,
+        data: Vec<u8>,
+    },
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -433,7 +452,6 @@ pub struct Sound {
     pub data: Vec<u8>,
 }
 
-
 #[derive(Debug, PartialEq, Clone)]
 pub struct SoundInfo {
     pub event: SoundEvent,
@@ -442,7 +460,6 @@ pub struct SoundInfo {
     pub num_loops: u16,
     pub envelope: Option<SoundEnvelope>,
 }
-
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum SoundEvent {
@@ -477,7 +494,10 @@ pub struct ShapeStyles {
 pub enum ShapeRecord {
     // TODO: Twips
     StyleChange(StyleChangeData),
-    StraightEdge { delta_x: f32, delta_y: f32 },
+    StraightEdge {
+        delta_x: f32,
+        delta_y: f32,
+    },
     CurvedEdge {
         control_delta_x: f32,
         control_delta_y: f32,
@@ -695,7 +715,6 @@ pub struct FontV1 {
     pub id: CharacterId,
     pub glyphs: Vec<Vec<ShapeRecord>>,
 }
-
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Font {

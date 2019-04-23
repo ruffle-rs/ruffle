@@ -293,13 +293,12 @@ impl<W: Write> Writer<W> {
         }
         self.write_index(&method.name)?;
         self.write_u8(
-            if has_param_names { 0x80 } else { 0 } | if method.needs_dxns { 0x40 } else { 0 } |
-                if num_optional_params > 0 { 0x08 } else { 0 } | if method.needs_rest {
-                0x04
-            } else {
-                0
-            } | if method.needs_activation { 0x02 } else { 0 } |
-                if method.needs_arguments_object {
+            if has_param_names { 0x80 } else { 0 }
+                | if method.needs_dxns { 0x40 } else { 0 }
+                | if num_optional_params > 0 { 0x08 } else { 0 }
+                | if method.needs_rest { 0x04 } else { 0 }
+                | if method.needs_activation { 0x02 } else { 0 }
+                | if method.needs_arguments_object {
                     0x01
                 } else {
                     0
@@ -396,11 +395,9 @@ impl<W: Write> Writer<W> {
                 0x08
             } else {
                 0
-            } | if instance.is_interface { 0x04 } else { 0 } | if instance.is_final {
-                0x02
-            } else {
-                0
-            } | if instance.is_sealed { 0x01 } else { 0 },
+            } | if instance.is_interface { 0x04 } else { 0 }
+                | if instance.is_final { 0x02 } else { 0 }
+                | if instance.is_sealed { 0x01 } else { 0 },
         )?;
 
         if let Some(ref namespace) = instance.protected_namespace {
@@ -442,11 +439,12 @@ impl<W: Write> Writer<W> {
 
     fn write_trait(&mut self, t: &Trait) -> Result<()> {
         self.write_index(&t.name)?;
-        let flags = if !t.metadata.is_empty() { 0b0100_0000 } else { 0 } | if t.is_override {
-            0b0010_0000
+        let flags = if !t.metadata.is_empty() {
+            0b0100_0000
         } else {
             0
-        } | if t.is_final { 0b0001_0000 } else { 0 };
+        } | if t.is_override { 0b0010_0000 } else { 0 }
+            | if t.is_final { 0b0001_0000 } else { 0 };
 
         match t.kind {
             TraitKind::Slot {
@@ -990,8 +988,7 @@ pub mod tests {
                 // Failed, result doesn't match.
                 panic!(
                     "Incorrectly written ABC.\nWritten:\n{:?}\n\nExpected:\n{:?}",
-                    out,
-                    bytes
+                    out, bytes
                 );
             }
         }
