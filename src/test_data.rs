@@ -1,13 +1,13 @@
-use avm1::types::*;
-use avm2::types::*;
-use avm2::read::tests::read_abc_from_file;
+use crate::avm1::types::*;
+use crate::avm2::types::*;
+use crate::avm2::read::tests::read_abc_from_file;
 use std::fs::File;
 use std::vec::Vec;
-use read::read_swf;
-use read::tests::{read_tag_bytes_from_file, read_tag_bytes_from_file_with_index};
-use tag_codes::TagCode;
-use types::*;
-use write::write_swf;
+use crate::read::read_swf;
+use crate::read::tests::{read_tag_bytes_from_file, read_tag_bytes_from_file_with_index};
+use crate::tag_codes::TagCode;
+use crate::types::*;
+use crate::write::write_swf;
 
 #[allow(dead_code)]
 pub fn echo_swf(filename: &str) {

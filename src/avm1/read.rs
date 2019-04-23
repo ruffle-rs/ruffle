@@ -1,6 +1,6 @@
-use avm1::types::*;
-use avm1::opcode::OpCode;
-use read::SwfRead;
+use crate::avm1::types::*;
+use crate::avm1::opcode::OpCode;
+use crate::read::SwfRead;
 use std::io::{Error, ErrorKind, Read, Result};
 
 pub struct Reader<R: Read> {
@@ -350,7 +350,7 @@ impl<R: Read> Reader<R> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use test_data;
+    use crate::test_data;
 
     #[test]
     fn read_action() {

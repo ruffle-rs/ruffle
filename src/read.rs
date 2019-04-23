@@ -3,7 +3,7 @@
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::collections::HashSet;
 use std::io::{Error, ErrorKind, Read, Result};
-use types::*;
+use crate::types::*;
 
 /// Reads SWF data from a stream.
 pub fn read_swf<R: Read>(input: R) -> Result<Swf> {
@@ -437,7 +437,7 @@ impl<R: Read> Reader<R> {
         let (tag_code, length) = self.read_tag_code_and_length()?;
 
         let mut tag_reader = Reader::new(self.input.by_ref().take(length as u64), self.version);
-        use tag_codes::TagCode;
+        use crate::tag_codes::TagCode;
         let tag = match TagCode::from_u16(tag_code) {
             Some(TagCode::End) => return Ok(None),
             Some(TagCode::ShowFrame) => Tag::ShowFrame,
@@ -2613,8 +2613,8 @@ pub mod tests {
     use std::io::{Cursor, Read};
     use std::vec::Vec;
     use super::*;
-    use test_data;
-    use tag_codes::TagCode;
+    use crate::test_data;
+    use crate::tag_codes::TagCode;
 
     fn reader(data: &[u8]) -> Reader<&[u8]> {
         let default_version = 13;

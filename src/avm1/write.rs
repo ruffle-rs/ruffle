@@ -1,6 +1,6 @@
-use avm1::types::*;
-use avm1::opcode::OpCode;
-use write::SwfWrite;
+use crate::avm1::types::*;
+use crate::avm1::opcode::OpCode;
+use crate::write::SwfWrite;
 use std::io::{Result, Write};
 
 pub struct Writer<W: Write> {
@@ -419,7 +419,7 @@ impl<W: Write> Writer<W> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_data;
+    use crate::test_data;
 
     #[test]
     fn write_action() {

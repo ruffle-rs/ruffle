@@ -1,5 +1,5 @@
-use avm2::types::*;
-use read::SwfRead;
+use crate::avm2::types::*;
+use crate::read::SwfRead;
 use std::io::{Error, ErrorKind, Read, Result};
 
 pub struct Reader<R: Read> {
@@ -516,7 +516,7 @@ impl<R: Read> Reader<R> {
     }
 
     fn read_op(&mut self) -> Result<Option<Op>> {
-        use avm2::opcode::OpCode;
+        use crate::avm2::opcode::OpCode;
         use num_traits::FromPrimitive;
 
         let opcode = match OpCode::from_u8(self.read_u8()?) {
@@ -848,16 +848,16 @@ impl<R: Read> Reader<R> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use test_data;
+    use crate::test_data;
 
     pub fn read_abc_from_file(path: &str) -> Vec<u8> {
-        use types::Tag;
+        use crate::types::Tag;
         use std::fs::File;
 
         let mut file = File::open(path).unwrap();
         let mut data = Vec::new();
         file.read_to_end(&mut data).unwrap();
-        let swf = ::read_swf(&data[..]).unwrap();
+        let swf = crate::read_swf(&data[..]).unwrap();
         for tag in swf.tags {
             match tag {
                 Tag::DoAbc(do_abc) => return do_abc.data,

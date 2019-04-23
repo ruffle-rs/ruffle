@@ -5,8 +5,8 @@ use byteorder::{LittleEndian, WriteBytesExt};
 use std::cmp::max;
 use std::collections::HashSet;
 use std::io::{Error, ErrorKind, Result, Write};
-use tag_codes::TagCode;
-use types::*;
+use crate::tag_codes::TagCode;
+use crate::types::*;
 
 pub fn write_swf<W: Write>(swf: &Swf, mut output: W) -> Result<()> {
     let signature = match swf.compression {
@@ -2681,7 +2681,7 @@ mod tests {
     use super::*;
     use super::Writer;
     use std::io::Result;
-    use test_data;
+    use crate::test_data;
 
     fn new_swf() -> Swf {
         Swf {
