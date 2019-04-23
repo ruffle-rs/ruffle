@@ -15,7 +15,7 @@ impl<W: Write> SwfWrite<W> for Writer<W> {
 
 impl<W: Write> Writer<W> {
     pub fn new(inner: W) -> Writer<W> {
-        Writer { inner: inner }
+        Writer { inner }
     }
 
     pub fn write(&mut self, abc_file: AbcFile) -> Result<()> {
@@ -109,7 +109,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_constant_pool(&mut self, constant_pool: &ConstantPool) -> Result<()> {
-        if constant_pool.ints.len() > 0 {
+        if !constant_pool.ints.is_empty() {
             self.write_u30(constant_pool.ints.len() as u32 + 1)?;
             for n in &constant_pool.ints {
                 self.write_i32(*n)?;
@@ -118,7 +118,7 @@ impl<W: Write> Writer<W> {
             self.write_u32(0)?;
         }
 
-        if constant_pool.uints.len() > 0 {
+        if !constant_pool.uints.is_empty() {
             self.write_u30(constant_pool.uints.len() as u32 + 1)?;
             for n in &constant_pool.uints {
                 self.write_u32(*n)?;
@@ -127,7 +127,7 @@ impl<W: Write> Writer<W> {
             self.write_u30(0)?;
         }
 
-        if constant_pool.doubles.len() > 0 {
+        if !constant_pool.doubles.is_empty() {
             self.write_u30(constant_pool.doubles.len() as u32 + 1)?;
             for n in &constant_pool.doubles {
                 self.write_f64(*n)?;
@@ -136,7 +136,7 @@ impl<W: Write> Writer<W> {
             self.write_u32(0)?;
         }
 
-        if constant_pool.strings.len() > 0 {
+        if !constant_pool.strings.is_empty() {
             self.write_u30(constant_pool.strings.len() as u32 + 1)?;
             for s in &constant_pool.strings {
                 self.write_string(s)?;
@@ -145,7 +145,7 @@ impl<W: Write> Writer<W> {
             self.write_u32(0)?;
         }
 
-        if constant_pool.namespaces.len() > 0 {
+        if !constant_pool.namespaces.is_empty() {
             self.write_u30(constant_pool.namespaces.len() as u32 + 1)?;
             for namespace in &constant_pool.namespaces {
                 self.write_namespace(namespace)?;
@@ -154,7 +154,7 @@ impl<W: Write> Writer<W> {
             self.write_u32(0)?;
         }
 
-        if constant_pool.namespace_sets.len() > 0 {
+        if !constant_pool.namespace_sets.is_empty() {
             self.write_u30(constant_pool.namespace_sets.len() as u32 + 1)?;
             for namespace_set in &constant_pool.namespace_sets {
                 self.write_namespace_set(namespace_set)?;
@@ -163,7 +163,7 @@ impl<W: Write> Writer<W> {
             self.write_u32(0)?;
         }
 
-        if constant_pool.multinames.len() > 0 {
+        if !constant_pool.multinames.is_empty() {
             self.write_u30(constant_pool.multinames.len() as u32 + 1)?;
             for multiname in &constant_pool.multinames {
                 self.write_multiname(multiname)?;
@@ -209,7 +209,7 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_namespace_set(&mut self, namespace_set: &NamespaceSet) -> Result<()> {
+    fn write_namespace_set(&mut self, namespace_set: &[Index<Namespace>]) -> Result<()> {
         self.write_u30(namespace_set.len() as u32)?;
         for i in namespace_set {
             self.write_index(i)?;
@@ -442,7 +442,7 @@ impl<W: Write> Writer<W> {
 
     fn write_trait(&mut self, t: &Trait) -> Result<()> {
         self.write_index(&t.name)?;
-        let flags = if t.metadata.len() > 0 { 0b0100_0000 } else { 0 } | if t.is_override {
+        let flags = if !t.metadata.is_empty() { 0b0100_0000 } else { 0 } | if t.is_override {
             0b0010_0000
         } else {
             0
@@ -508,7 +508,7 @@ impl<W: Write> Writer<W> {
             }
         }
 
-        if t.metadata.len() > 0 {
+        if !t.metadata.is_empty() {
             self.write_u30(t.metadata.len() as u32)?;
             for metadata in &t.metadata {
                 self.write_index(metadata)?;

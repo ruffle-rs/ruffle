@@ -556,8 +556,8 @@ pub struct LineStyle {
 impl LineStyle {
     pub fn new_v1(width: u16, color: Color) -> LineStyle {
         LineStyle {
-            width: width,
-            color: color,
+            width,
+            color,
             start_cap: LineCapStyle::Round,
             end_cap: LineCapStyle::Round,
             join_style: LineJoinStyle::Round,

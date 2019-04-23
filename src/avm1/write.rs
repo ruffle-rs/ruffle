@@ -1,3 +1,5 @@
+#![allow(clippy::cyclomatic_complexity, clippy::unreadable_literal)]
+
 use crate::avm1::types::*;
 use crate::avm1::opcode::OpCode;
 use crate::write::SwfWrite;
@@ -17,8 +19,8 @@ impl<W: Write> SwfWrite<W> for Writer<W> {
 impl<W: Write> Writer<W> {
     pub fn new(inner: W, version: u8) -> Writer<W> {
         Writer {
-            inner: inner,
-            version: version,
+            inner,
+            version,
         }
     }
 

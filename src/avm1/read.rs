@@ -1,3 +1,5 @@
+#![allow(clippy::unreadable_literal)]
+
 use crate::avm1::types::*;
 use crate::avm1::opcode::OpCode;
 use crate::read::SwfRead;
@@ -17,8 +19,8 @@ impl<R: Read> SwfRead<R> for Reader<R> {
 impl<R: Read> Reader<R> {
     pub fn new(inner: R, version: u8) -> Reader<R> {
         Reader {
-            inner: inner,
-            version: version,
+            inner,
+            version,
         }
     }
 
@@ -190,7 +192,7 @@ impl<R: Read> Reader<R> {
                 OpCode::With => {
                     let code_length = action_reader.read_u16()?;
                     let mut with_reader = Reader::new(
-                        (&mut action_reader.inner as &mut Read).take(code_length as u64),
+                        (&mut action_reader.inner as &mut Read).take(code_length.into()),
                         self.version,
                     );
                     Action::With { actions: with_reader.read_action_list()? }
@@ -220,8 +222,8 @@ impl<R: Read> Reader<R> {
         let mut data = vec![0u8; length];
         self.inner.read_exact(&mut data)?;
         Ok(Action::Unknown {
-            opcode: opcode,
-            data: data,
+            opcode,
+            data,
         })
     }
 
@@ -235,7 +237,7 @@ impl<R: Read> Reader<R> {
             5 => Value::Bool(self.read_u8()? != 0),
             6 => Value::Double(self.read_f64()?),
             7 => Value::Int(self.read_u32()?),
-            8 => Value::ConstantPool(self.read_u8()? as u16),
+            8 => Value::ConstantPool(self.read_u8()?.into()),
             9 => Value::ConstantPool(self.read_u16()?),
             _ => {
                 return Err(Error::new(
@@ -256,12 +258,12 @@ impl<R: Read> Reader<R> {
         }
         let code_length = self.read_u16()?;
         let mut fn_reader = Reader::new(
-            (&mut self.inner as &mut Read).take(code_length as u64),
+            (&mut self.inner as &mut Read).take(code_length.into()),
             self.version,
         );
         Ok(Action::DefineFunction {
-            name: name,
-            params: params,
+            name,
+            params,
             actions: fn_reader.read_action_list()?,
         })
     }
@@ -281,12 +283,12 @@ impl<R: Read> Reader<R> {
         }
         let code_length = self.read_u16()?;
         let mut fn_reader = Reader::new(
-            (&mut self.inner as &mut Read).take(code_length as u64),
+            (&mut self.inner as &mut Read).take(code_length.into()),
             self.version,
         );
         Ok(Action::DefineFunction2(Function {
-            name: name,
-            params: params,
+            name,
+            params,
             preload_global: flags & 0b1_00000000 != 0,
             preload_parent: flags & 0b10000000 != 0,
             preload_root: flags & 0b1000000 != 0,
@@ -312,21 +314,21 @@ impl<R: Read> Reader<R> {
         };
         let try_actions = {
             let mut fn_reader = Reader::new(
-                (&mut self.inner as &mut Read).take(try_length as u64),
+                (&mut self.inner as &mut Read).take(try_length.into()),
                 self.version,
             );
             fn_reader.read_action_list()?
         };
         let catch_actions = {
             let mut fn_reader = Reader::new(
-                (&mut self.inner as &mut Read).take(catch_length as u64),
+                (&mut self.inner as &mut Read).take(catch_length.into()),
                 self.version,
             );
             fn_reader.read_action_list()?
         };
         let finally_actions = {
             let mut fn_reader = Reader::new(
-                (&mut self.inner as &mut Read).take(finally_length as u64),
+                (&mut self.inner as &mut Read).take(finally_length.into()),
                 self.version,
             );
             fn_reader.read_action_list()?

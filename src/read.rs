@@ -1,4 +1,4 @@
-#![allow(clippy::float_cmp)]
+#![allow(clippy::float_cmp, clippy::inconsistent_digit_grouping, clippy::unreadable_literal)]
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::collections::HashSet;
@@ -30,11 +30,11 @@ fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<(Swf, Reader<Box<Re
     let frame_rate = reader.read_fixed8()?;
     let num_frames = reader.read_u16()?;
     let swf = Swf {
-        version: version,
-        compression: compression,
-        stage_size: stage_size,
-        frame_rate: frame_rate,
-        num_frames: num_frames,
+        version,
+        compression,
+        stage_size,
+        frame_rate,
+        num_frames,
         tags: vec![],
     };
     Ok((swf, reader))
@@ -109,11 +109,11 @@ pub trait SwfRead<R: Read> {
     }
 
     fn read_fixed8(&mut self) -> Result<f32> {
-        self.read_i16().map(|n| n as f32 / 256f32)
+        self.read_i16().map(|n| f32::from(n) / 256f32)
     }
 
     fn read_fixed16(&mut self) -> Result<f64> {
-        self.read_i32().map(|n| n as f64 / 65536f64)
+        self.read_i32().map(|n| f64::from(n) / 65536f64)
     }
 
     fn read_f32(&mut self) -> Result<f32> {
@@ -209,8 +209,8 @@ impl<R: Read> SwfRead<R> for Reader<R> {
 impl<R: Read> Reader<R> {
     pub fn new(input: R, version: u8) -> Reader<R> {
         Reader {
-            input: input,
-            version: version,
+            input,
+            version,
             byte: 0,
             bit_index: 0,
             num_fill_bits: 0,
@@ -281,7 +281,7 @@ impl<R: Read> Reader<R> {
         let mut val = 0u32;
         for i in 0..5 {
             let byte = self.read_u8()?;
-            val |= ((byte & 0b01111111) as u32) << (i * 7);
+            val |= u32::from(byte & 0b01111111) << (i * 7);
             if byte & 0b10000000 == 0 {
                 break;
             }
@@ -298,9 +298,9 @@ impl<R: Read> Reader<R> {
         let g = self.read_u8()?;
         let b = self.read_u8()?;
         Ok(Color {
-            r: r,
-            g: g,
-            b: b,
+            r,
+            g,
+            b,
             a: 255,
         })
     }
@@ -311,10 +311,10 @@ impl<R: Read> Reader<R> {
         let b = self.read_u8()?;
         let a = self.read_u8()?;
         Ok(Color {
-            r: r,
-            g: g,
-            b: b,
-            a: a,
+            r,
+            g,
+            b,
+            a,
         })
     }
 
@@ -423,8 +423,7 @@ impl<R: Read> Reader<R> {
                     if cfg!(debug_assertions) {
                         panic!("Error reading tag");
                     }
-                    use std::convert::From;
-                    return Err(From::from(err));
+                    return Err(err);
                 }
             };
         }
@@ -447,15 +446,15 @@ impl<R: Read> Reader<R> {
                 tag_reader.read_u32()?; // Reserved
                 let mut data = Vec::with_capacity(length - 6);
                 tag_reader.input.read_to_end(&mut data)?;
-                Tag::DefineBinaryData { id: id, data: data }
+                Tag::DefineBinaryData { id, data }
             }
             Some(TagCode::DefineBits) => {
                 let id = tag_reader.read_u16()?;
                 let mut jpeg_data = Vec::with_capacity(length - 2);
                 tag_reader.input.read_to_end(&mut jpeg_data)?;
                 Tag::DefineBits {
-                    id: id,
-                    jpeg_data: jpeg_data,
+                    id,
+                    jpeg_data,
                 }
             }
             Some(TagCode::DefineBitsJpeg2) => {
@@ -463,8 +462,8 @@ impl<R: Read> Reader<R> {
                 let mut jpeg_data = Vec::with_capacity(length - 2);
                 tag_reader.input.read_to_end(&mut jpeg_data)?;
                 Tag::DefineBitsJpeg2 {
-                    id: id,
-                    jpeg_data: jpeg_data,
+                    id,
+                    jpeg_data,
                 }
             }
             Some(TagCode::DefineBitsJpeg3) => tag_reader.read_define_bits_jpeg_3(3)?,
@@ -480,8 +479,8 @@ impl<R: Read> Reader<R> {
                     color_transforms.push(color_transform);
                 }
                 Tag::DefineButtonColorTransform {
-                    id: id,
-                    color_transforms: color_transforms,
+                    id,
+                    color_transforms,
                 }
             }
             Some(TagCode::DefineButtonSound) => {
@@ -517,10 +516,10 @@ impl<R: Read> Reader<R> {
 
                 Tag::DefineButtonSound(Box::new(ButtonSounds {
                     id: button_id,
-                    over_to_up_sound: over_to_up_sound,
-                    up_to_over_sound: up_to_over_sound,
-                    over_to_down_sound: over_to_down_sound,
-                    down_to_over_sound: down_to_over_sound,
+                    over_to_up_sound,
+                    up_to_over_sound,
+                    over_to_down_sound,
+                    down_to_over_sound,
                 }))
             }
             Some(TagCode::DefineEditText) => tag_reader.read_define_edit_text()?,
@@ -544,15 +543,14 @@ impl<R: Read> Reader<R> {
             Some(TagCode::EnableTelemetry) => {
                 tag_reader.read_u16()?; // Reserved
                 let password_hash = if length > 2 {
-                    let mut data = Vec::with_capacity(32);
-                    data.resize(32, 0);
+                    let mut data = vec![0; 32];
                     tag_reader.input.read_exact(&mut data)?;
                     data
                 } else {
                     vec![]
                 };
                 Tag::EnableTelemetry {
-                    password_hash: password_hash,
+                    password_hash,
                 }
             }
             Some(TagCode::ImportAssets) => {
@@ -566,8 +564,8 @@ impl<R: Read> Reader<R> {
                     });
                 }
                 Tag::ImportAssets {
-                    url: url,
-                    imports: imports,
+                    url,
+                    imports,
                 }
             }
             Some(TagCode::ImportAssets2) => {
@@ -583,8 +581,8 @@ impl<R: Read> Reader<R> {
                     });
                 }
                 Tag::ImportAssets {
-                    url: url,
-                    imports: imports,
+                    url,
+                    imports,
                 }
             }
 
@@ -637,7 +635,7 @@ impl<R: Read> Reader<R> {
                 let mut abc_data = Vec::with_capacity(length - 4 - name.len());
                 tag_reader.input.read_to_end(&mut abc_data)?;
                 Tag::DoAbc(DoAbc {
-                    name: name,
+                    name,
                     is_lazy_initialize: flags & 1 != 0,
                     data: abc_data,
                 })
@@ -654,8 +652,8 @@ impl<R: Read> Reader<R> {
                 let mut action_data = Vec::with_capacity(length);
                 tag_reader.input.read_to_end(&mut action_data)?;
                 Tag::DoInitAction {
-                    id: id,
-                    action_data: action_data,
+                    id,
+                    action_data,
                 }
             }
 
@@ -728,7 +726,7 @@ impl<R: Read> Reader<R> {
                 Tag::FrameLabel {
                     is_anchor: tag_reader.version >= 6 && length > label.len() + 1 &&
                         tag_reader.read_u8()? != 0,
-                    label: label,
+                    label,
                 }
             }
 
@@ -760,12 +758,11 @@ impl<R: Read> Reader<R> {
 
             _ => {
                 let size = length as usize;
-                let mut data = Vec::with_capacity(size);
-                data.resize(size, 0);
+                let mut data = vec![0; size];
                 tag_reader.input.read_exact(&mut data[..])?;
                 Tag::Unknown {
-                    tag_code: tag_code,
-                    data: data,
+                    tag_code,
+                    data,
                 }
             }
         };
@@ -799,9 +796,9 @@ impl<R: Read> Reader<R> {
         let mut action_data = Vec::new();
         self.input.read_to_end(&mut action_data)?;
         Ok(Tag::DefineButton(Box::new(Button {
-            id: id,
+            id,
             is_track_as_menu: false,
-            records: records,
+            records,
             actions: vec![
                 ButtonAction {
                     conditions: vec![ButtonActionCondition::OverDownToOverUp]
@@ -837,10 +834,10 @@ impl<R: Read> Reader<R> {
         }
 
         Ok(Tag::DefineButton2(Box::new(Button {
-            id: id,
-            is_track_as_menu: is_track_as_menu,
-            records: records,
-            actions: actions,
+            id,
+            is_track_as_menu,
+            records,
+            actions,
         })))
     }
 
@@ -883,13 +880,13 @@ impl<R: Read> Reader<R> {
             BlendMode::Normal
         };
         Ok(Some(ButtonRecord {
-            states: states,
-            id: id,
-            depth: depth,
-            matrix: matrix,
-            color_transform: color_transform,
-            filters: filters,
-            blend_mode: blend_mode,
+            states,
+            id,
+            depth,
+            matrix,
+            color_transform,
+            filters,
+            blend_mode,
         }))
     }
 
@@ -938,9 +935,9 @@ impl<R: Read> Reader<R> {
         }
         Ok((
             ButtonAction {
-                conditions: conditions,
+                conditions,
                 key_code: if key_code != 0 { Some(key_code) } else { None },
-                action_data: action_data,
+                action_data,
             },
             length != 0,
         ))
@@ -953,7 +950,7 @@ impl<R: Read> Reader<R> {
         let sharpness = self.read_f32()?;
         self.read_u8()?; // Reserved (0).
         Ok(Tag::CsmTextSettings(CsmTextSettings {
-            id: id,
+            id,
             use_advanced_rendering: flags & 0b01000000 != 0,
             grid_fit: match flags & 0b11_000 {
                 0b00_000 => TextGridFit::None,
@@ -966,8 +963,8 @@ impl<R: Read> Reader<R> {
                     ))
                 }
             },
-            thickness: thickness,
-            sharpness: sharpness,
+            thickness,
+            sharpness,
         }))
     }
 
@@ -991,8 +988,8 @@ impl<R: Read> Reader<R> {
         }
 
         Ok(Tag::DefineSceneAndFrameLabelData {
-            scenes: scenes,
-            frame_labels: frame_labels,
+            scenes,
+            frame_labels,
         })
     }
 
@@ -1019,8 +1016,8 @@ impl<R: Read> Reader<R> {
         }
 
         Ok(Tag::DefineFont(Box::new(FontV1 {
-            id: id,
-            glyphs: glyphs,
+            id,
+            glyphs,
         })))
     }
 
@@ -1042,7 +1039,7 @@ impl<R: Read> Reader<R> {
         let mut name = String::with_capacity(name_len as usize);
         self.input
             .by_ref()
-            .take(name_len as u64)
+            .take(name_len.into())
             .read_to_string(&mut name)?;
 
         let num_glyphs = self.read_u16()? as usize;
@@ -1061,9 +1058,9 @@ impl<R: Read> Reader<R> {
         // We are throwing these away.
         for _ in &mut glyphs {
             if has_wide_offsets {
-                self.read_u32()?
+                self.read_u32()?;
             } else {
-                self.read_u16()? as u32
+                u32::from(self.read_u16()?);
             };
         }
 
@@ -1071,7 +1068,7 @@ impl<R: Read> Reader<R> {
         if has_wide_offsets {
             self.read_u32()?;
         } else {
-            self.read_u16()?;
+            u32::from(self.read_u16()?);
         }
 
         // ShapeTable
@@ -1089,7 +1086,7 @@ impl<R: Read> Reader<R> {
             glyph.code = if has_wide_codes {
                 self.read_u16()?
             } else {
-                self.read_u8()? as u16
+                u16::from(self.read_u8()?)
             };
         }
 
@@ -1113,9 +1110,9 @@ impl<R: Read> Reader<R> {
             }
 
             Some(FontLayout {
-                ascent: ascent,
-                descent: descent,
-                leading: leading,
+                ascent,
+                descent,
+                leading,
                 kerning: kerning_records,
             })
         } else {
@@ -1123,17 +1120,17 @@ impl<R: Read> Reader<R> {
         };
 
         Ok(Tag::DefineFont2(Box::new(Font {
-            version: version,
-            id: id,
-            name: name,
-            language: language,
-            layout: layout,
-            glyphs: glyphs,
-            is_small_text: is_small_text,
-            is_shift_jis: is_shift_jis,
-            is_ansi: is_ansi,
-            is_bold: is_bold,
-            is_italic: is_italic,
+            version,
+            id,
+            name,
+            language,
+            layout,
+            glyphs,
+            is_small_text,
+            is_shift_jis,
+            is_ansi,
+            is_bold,
+            is_italic,
         })))
     }
 
@@ -1150,11 +1147,11 @@ impl<R: Read> Reader<R> {
             None
         };
         Ok(Tag::DefineFont4(Font4 {
-            id: id,
+            id,
             is_italic: flags & 0b10 != 0,
             is_bold: flags & 0b1 != 0,
-            name: name,
-            data: data,
+            name,
+            data,
         }))
     }
 
@@ -1163,12 +1160,12 @@ impl<R: Read> Reader<R> {
             left_code: if has_wide_codes {
                 self.read_u16()?
             } else {
-                self.read_u8()? as u16
+                u16::from(self.read_u8()?)
             },
             right_code: if has_wide_codes {
                 self.read_u16()?
             } else {
-                self.read_u8()? as u16
+                u16::from(self.read_u8()?)
             },
             adjustment: self.read_i16()?, // TODO(Herschel): Twips
         })
@@ -1192,9 +1189,9 @@ impl<R: Read> Reader<R> {
             zones.push(zone);
         }
         Ok(Tag::DefineFontAlignZones {
-            id: id,
-            thickness: thickness,
-            zones: zones,
+            id,
+            thickness,
+            zones,
         })
     }
 
@@ -1217,7 +1214,7 @@ impl<R: Read> Reader<R> {
         let mut font_name = String::with_capacity(font_name_len as usize);
         self.input
             .by_ref()
-            .take(font_name_len as u64)
+            .take(font_name_len.into())
             .read_to_string(&mut font_name)?;
 
         let flags = self.read_u8()?;
@@ -1236,22 +1233,22 @@ impl<R: Read> Reader<R> {
             }
         } else {
             while let Ok(code) = self.read_u8() {
-                code_table.push(code as u16);
+                code_table.push(u16::from(code));
             }
         }
 
         // SWF19 has ANSI and Shift-JIS backwards?
         Ok(Tag::DefineFontInfo(Box::new(FontInfo {
-            id: id,
-            version: version,
+            id,
+            version,
             name: font_name,
             is_small_text: flags & 0b100000 != 0,
             is_ansi: flags & 0b10000 != 0,
             is_shift_jis: flags & 0b1000 != 0,
             is_italic: flags & 0b100 != 0,
             is_bold: flags & 0b10 != 0,
-            language: language,
-            code_table: code_table,
+            language,
+            code_table,
         })))
     }
 
@@ -1328,10 +1325,10 @@ impl<R: Read> Reader<R> {
             end_shape.push(record);
         }
         Ok(Tag::DefineMorphShape(Box::new(DefineMorphShape {
-            id: id,
+            id,
             version: shape_version,
-            has_non_scaling_strokes: has_non_scaling_strokes,
-            has_scaling_strokes: has_scaling_strokes,
+            has_non_scaling_strokes,
+            has_scaling_strokes,
             start: MorphShape {
                 shape_bounds: start_shape_bounds,
                 edge_bounds: start_edge_bounds,
@@ -1417,25 +1414,25 @@ impl<R: Read> Reader<R> {
                 LineStyle {
                     width: start_width,
                     color: start_color,
-                    start_cap: start_cap,
-                    end_cap: end_cap,
-                    join_style: join_style,
-                    allow_scale_x: allow_scale_x,
-                    allow_scale_y: allow_scale_y,
-                    is_pixel_hinted: is_pixel_hinted,
-                    allow_close: allow_close,
+                    start_cap,
+                    end_cap,
+                    join_style,
+                    allow_scale_x,
+                    allow_scale_y,
+                    is_pixel_hinted,
+                    allow_close,
                     fill_style: start_fill_style,
                 },
                 LineStyle {
                     width: end_width,
                     color: end_color,
-                    start_cap: start_cap,
-                    end_cap: end_cap,
-                    join_style: join_style,
-                    allow_scale_x: allow_scale_x,
-                    allow_scale_y: allow_scale_y,
-                    is_pixel_hinted: is_pixel_hinted,
-                    allow_close: allow_close,
+                    start_cap,
+                    end_cap,
+                    join_style,
+                    allow_scale_x,
+                    allow_scale_y,
+                    is_pixel_hinted,
+                    allow_close,
                     fill_style: end_fill_style,
                 },
             ))
@@ -1495,13 +1492,13 @@ impl<R: Read> Reader<R> {
                 let id = self.read_character_id()?;
                 (
                     FillStyle::Bitmap {
-                        id: id,
+                        id,
                         matrix: self.read_matrix()?,
                         is_smoothed: (fill_style_type & 0b10) == 0,
                         is_repeating: (fill_style_type & 0b01) == 0,
                     },
                     FillStyle::Bitmap {
-                        id: id,
+                        id,
                         matrix: self.read_matrix()?,
                         is_smoothed: (fill_style_type & 0b10) == 0,
                         is_repeating: (fill_style_type & 0b01) == 0,
@@ -1568,14 +1565,14 @@ impl<R: Read> Reader<R> {
             records.push(record);
         }
         Ok(Tag::DefineShape(Shape {
-            version: version,
-            id: id,
-            shape_bounds: shape_bounds,
-            edge_bounds: edge_bounds,
-            has_fill_winding_rule: has_fill_winding_rule,
-            has_non_scaling_strokes: has_non_scaling_strokes,
-            has_scaling_strokes: has_scaling_strokes,
-            styles: styles,
+            version,
+            id,
+            shape_bounds,
+            edge_bounds,
+            has_fill_winding_rule,
+            has_non_scaling_strokes,
+            has_scaling_strokes,
+            styles,
             shape: records,
         }))
     }
@@ -1587,10 +1584,10 @@ impl<R: Read> Reader<R> {
         let mut data = Vec::new();
         self.input.read_to_end(&mut data)?;
         Ok(Tag::DefineSound(Box::new(Sound {
-            id: id,
-            format: format,
-            num_samples: num_samples,
-            data: data,
+            id,
+            format,
+            num_samples,
+            data,
         })))
     }
 
@@ -1606,10 +1603,10 @@ impl<R: Read> Reader<R> {
             0
         };
         Ok(SoundStreamInfo {
-            stream_format: stream_format,
-            playback_format: playback_format,
-            num_samples_per_block: num_samples_per_block,
-            latency_seek: latency_seek,
+            stream_format,
+            playback_format,
+            num_samples_per_block,
+            latency_seek,
         })
     }
 
@@ -1636,8 +1633,8 @@ impl<R: Read> Reader<R> {
         self.num_fill_bits = self.read_ubits(4)? as u8;
         self.num_line_bits = self.read_ubits(4)? as u8;
         Ok(ShapeStyles {
-            fill_styles: fill_styles,
-            line_styles: line_styles,
+            fill_styles,
+            line_styles,
         })
     }
 
@@ -1738,16 +1735,16 @@ impl<R: Read> Reader<R> {
                 None
             };
             Ok(LineStyle {
-                width: width,
-                color: color,
-                start_cap: start_cap,
-                end_cap: end_cap,
-                join_style: join_style,
-                allow_scale_x: allow_scale_x,
-                allow_scale_y: allow_scale_y,
-                is_pixel_hinted: is_pixel_hinted,
-                allow_close: allow_close,
-                fill_style: fill_style,
+                width,
+                color,
+                start_cap,
+                end_cap,
+                join_style,
+                allow_scale_x,
+                allow_scale_y,
+                is_pixel_hinted,
+                allow_close,
+                fill_style,
             })
         }
     }
@@ -1789,10 +1786,10 @@ impl<R: Read> Reader<R> {
             });
         }
         Ok(Gradient {
-            matrix: matrix,
-            spread: spread,
-            interpolation: interpolation,
-            records: records,
+            matrix,
+            spread,
+            interpolation,
+            records,
         })
     }
 
@@ -1907,7 +1904,7 @@ impl<R: Read> Reader<R> {
         let flags = if place_object_version >= 3 {
             self.read_u16()?
         } else {
-            self.read_u8()? as u16
+            u16::from(self.read_u8()?)
         };
 
         let depth = self.read_i16()?;
@@ -1993,22 +1990,22 @@ impl<R: Read> Reader<R> {
         };
         Ok(Tag::PlaceObject(Box::new(PlaceObject {
             version: place_object_version,
-            action: action,
-            depth: depth,
-            matrix: matrix,
-            color_transform: color_transform,
-            ratio: ratio,
-            name: name,
-            clip_depth: clip_depth,
-            clip_actions: clip_actions,
-            is_image: is_image,
-            is_bitmap_cached: is_bitmap_cached,
-            is_visible: is_visible,
-            class_name: class_name,
-            filters: filters,
-            background_color: background_color,
-            blend_mode: blend_mode,
-            amf_data: amf_data,
+            action,
+            depth,
+            matrix,
+            color_transform,
+            ratio,
+            name,
+            clip_depth,
+            clip_actions,
+            is_image,
+            is_bitmap_cached,
+            is_visible,
+            class_name,
+            filters,
+            background_color,
+            blend_mode,
+            amf_data,
         })))
     }
 
@@ -2056,14 +2053,13 @@ impl<R: Read> Reader<R> {
                 None
             };
 
-            let mut action_data = Vec::with_capacity(length as usize);
-            action_data.resize(length as usize, 0);
+            let mut action_data = vec![0; length as usize];
             self.input.read_exact(&mut action_data)?;
 
             Ok(Some(ClipAction {
-                events: events,
-                key_code: key_code,
-                action_data: action_data,
+                events,
+                key_code,
+                action_data,
             }))
         }
     }
@@ -2192,7 +2188,7 @@ impl<R: Read> Reader<R> {
                 let mut gradient_records = Vec::with_capacity(num_colors as usize);
                 for color in colors {
                     gradient_records.push(GradientRecord {
-                        color: color,
+                        color,
                         ratio: self.read_u8()?,
                     });
                 }
@@ -2222,12 +2218,12 @@ impl<R: Read> Reader<R> {
                 let default_color = self.read_rgba()?;
                 let flags = self.read_u8()?;
                 Filter::ConvolutionFilter(Box::new(ConvolutionFilter {
-                    num_matrix_cols: num_matrix_cols,
-                    num_matrix_rows: num_matrix_rows,
-                    divisor: divisor,
-                    bias: bias,
-                    matrix: matrix,
-                    default_color: default_color,
+                    num_matrix_cols,
+                    num_matrix_rows,
+                    divisor,
+                    bias,
+                    matrix,
+                    default_color,
                     is_clamped: (flags & 0b10) != 0,
                     is_preserve_alpha: (flags & 0b1) != 0,
                 }))
@@ -2237,7 +2233,7 @@ impl<R: Read> Reader<R> {
                 for m in &mut matrix {
                     *m = self.read_fixed16()?;
                 }
-                Filter::ColorMatrixFilter(Box::new(ColorMatrixFilter { matrix: matrix }))
+                Filter::ColorMatrixFilter(Box::new(ColorMatrixFilter { matrix }))
             }
             7 => {
                 let num_colors = self.read_u8()?;
@@ -2248,7 +2244,7 @@ impl<R: Read> Reader<R> {
                 let mut gradient_records = Vec::with_capacity(num_colors as usize);
                 for color in colors {
                     gradient_records.push(GradientRecord {
-                        color: color,
+                        color,
                         ratio: self.read_u8()?,
                     });
                 }
@@ -2294,10 +2290,10 @@ impl<R: Read> Reader<R> {
         let is_16_bit = (flags & 0b10) != 0;
         let is_stereo = (flags & 0b1) != 0;
         Ok(SoundFormat {
-            compression: compression,
-            sample_rate: sample_rate,
-            is_16_bit: is_16_bit,
-            is_stereo: is_stereo,
+            compression,
+            sample_rate,
+            is_16_bit,
+            is_stereo,
         })
     }
 
@@ -2330,8 +2326,8 @@ impl<R: Read> Reader<R> {
             for _ in 0..num_points {
                 envelope.push(SoundEnvelopePoint {
                     sample: self.read_u32()?,
-                    left_volume: self.read_u16()? as f32 / 32768f32,
-                    right_volume: self.read_u16()? as f32 / 32768f32,
+                    left_volume: f32::from(self.read_u16()?) / 32768f32,
+                    right_volume: f32::from(self.read_u16()?) / 32768f32,
                 })
             }
             Some(envelope)
@@ -2339,11 +2335,11 @@ impl<R: Read> Reader<R> {
             None
         };
         Ok(SoundInfo {
-            event: event,
-            in_sample: in_sample,
-            out_sample: out_sample,
-            num_loops: num_loops,
-            envelope: envelope,
+            event,
+            in_sample,
+            out_sample,
+            num_loops,
+            envelope,
         })
     }
 
@@ -2360,10 +2356,10 @@ impl<R: Read> Reader<R> {
         }
 
         Ok(Tag::DefineText(Box::new(Text {
-            id: id,
-            bounds: bounds,
-            matrix: matrix,
-            records: records,
+            id,
+            bounds,
+            matrix,
+            records,
         })))
     }
 
@@ -2390,12 +2386,12 @@ impl<R: Read> Reader<R> {
             None
         };
         let x_offset = if flags & 0b1 != 0 {
-            Some(self.read_i16()? as f32 / 20.0)
+            Some(f32::from(self.read_i16()?) / 20.0)
         } else {
             None
         };
         let y_offset = if flags & 0b10 != 0 {
-            Some(self.read_i16()? as f32 / 20.0)
+            Some(f32::from(self.read_i16()?) / 20.0)
         } else {
             None
         };
@@ -2415,12 +2411,12 @@ impl<R: Read> Reader<R> {
         }
 
         Ok(Some(TextRecord {
-            font_id: font_id,
-            color: color,
-            x_offset: x_offset,
-            y_offset: y_offset,
-            height: height,
-            glyphs: glyphs,
+            font_id,
+            color,
+            x_offset,
+            y_offset,
+            height,
+            glyphs,
         }))
     }
 
@@ -2468,10 +2464,10 @@ impl<R: Read> Reader<R> {
                         ))
                     }
                 },
-                left_margin: self.read_u16()? as f32 / 20.0,
-                right_margin: self.read_u16()? as f32 / 20.0,
-                indent: self.read_u16()? as f32 / 20.0,
-                leading: self.read_i16()? as f32 / 20.0,
+                left_margin: f32::from(self.read_u16()?) / 20.0,
+                right_margin: f32::from(self.read_u16()?) / 20.0,
+                indent: f32::from(self.read_u16()?) / 20.0,
+                leading: f32::from(self.read_i16()?) / 20.0,
             })
         } else {
             None
@@ -2483,16 +2479,16 @@ impl<R: Read> Reader<R> {
             None
         };
         Ok(Tag::DefineEditText(Box::new(EditText {
-            id: id,
-            bounds: bounds,
-            font_id: font_id,
-            font_class_name: font_class_name,
-            height: height,
-            color: color,
-            max_length: max_length,
-            layout: layout,
-            variable_name: variable_name,
-            initial_text: initial_text,
+            id,
+            bounds,
+            font_id,
+            font_class_name,
+            height,
+            color,
+            max_length,
+            layout,
+            variable_name,
+            initial_text,
             is_word_wrap: flags & 0b1000000 != 0,
             is_multiline: flags & 0b100000 != 0,
             is_password: flags & 0b10000 != 0,
@@ -2521,12 +2517,12 @@ impl<R: Read> Reader<R> {
             _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid video codec.")),
         };
         Ok(Tag::DefineVideoStream(DefineVideoStream {
-            id: id,
-            num_frames: num_frames,
-            width: width,
-            height: height,
+            id,
+            num_frames,
+            width,
+            height,
             is_smoothed: flags & 0b1 != 0,
-            codec: codec,
+            codec,
             deblocking: match flags & 0b100_0 {
                 0b000_0 => VideoDeblocking::UseVideoPacketValue,
                 0b001_0 => VideoDeblocking::None,
@@ -2550,9 +2546,9 @@ impl<R: Read> Reader<R> {
         let mut data = vec![];
         self.input.read_to_end(&mut data)?;
         Ok(Tag::VideoFrame(VideoFrame {
-            stream_id: stream_id,
-            frame_num: frame_num,
-            data: data,
+            stream_id,
+            frame_num,
+            data,
         }))
     }
 
@@ -2570,11 +2566,11 @@ impl<R: Read> Reader<R> {
         let mut alpha_data = vec![];
         self.input.read_to_end(&mut alpha_data)?;
         Ok(Tag::DefineBitsJpeg3(DefineBitsJpeg3 {
-            version: version,
-            id: id,
-            deblocking: deblocking,
-            data: data,
-            alpha_data: alpha_data,
+            version,
+            id,
+            deblocking,
+            data,
+            alpha_data,
         }))
     }
 
@@ -2596,13 +2592,13 @@ impl<R: Read> Reader<R> {
         let mut data = Vec::new();
         self.input.read_to_end(&mut data)?;
         Ok(Tag::DefineBitsLossless(DefineBitsLossless {
-            version: version,
-            id: id,
-            format: format,
-            width: width,
-            height: height,
-            num_colors: num_colors,
-            data: data,
+            version,
+            id,
+            format,
+            width,
+            height,
+            num_colors,
+            data,
         }))
     }
 }
@@ -2989,7 +2985,7 @@ pub mod tests {
         matrix.translate_x = 1f32;
         let fill_style = FillStyle::Bitmap {
             id: 33,
-            matrix: matrix,
+            matrix,
             is_smoothed: false,
             is_repeating: false,
         };

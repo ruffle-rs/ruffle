@@ -14,7 +14,7 @@ impl<R: Read> SwfRead<R> for Reader<R> {
 
 impl<R: Read> Reader<R> {
     pub fn new(inner: R) -> Reader<R> {
-        Reader { inner: inner }
+        Reader { inner }
     }
 
     pub fn read(&mut self) -> Result<AbcFile> {
@@ -58,16 +58,16 @@ impl<R: Read> Reader<R> {
         }
 
         Ok(AbcFile {
-            major_version: major_version,
-            minor_version: minor_version,
+            major_version,
+            minor_version,
 
-            constant_pool: constant_pool,
-            methods: methods,
-            metadata: metadata,
-            instances: instances,
-            classes: classes,
-            scripts: scripts,
-            method_bodies: method_bodies,
+            constant_pool,
+            methods,
+            metadata,
+            instances,
+            classes,
+            scripts,
+            method_bodies,
         })
     }
 
@@ -75,7 +75,7 @@ impl<R: Read> Reader<R> {
         let mut n = 0;
         let mut i = 0;
         loop {
-            let byte = self.read_u8()? as u32;
+            let byte: u32 = self.read_u8()?.into();
             n |= (byte & 0b0111_1111) << i;
             i += 7;
             if byte & 0b1000_0000 == 0 {
@@ -91,15 +91,15 @@ impl<R: Read> Reader<R> {
 
     fn read_i24(&mut self) -> Result<i32> {
         Ok(
-            (self.read_u8()? as i32) | ((self.read_u8()? as i32) << 8) |
-                ((self.read_u8()? as i32) << 16),
+            i32::from(self.read_u8()?) | (i32::from(self.read_u8()?) << 8) |
+                (i32::from(self.read_u8()?) << 16),
         )
     }
     fn read_i32(&mut self) -> Result<i32> {
         let mut n: i32 = 0;
         let mut i = 0;
         loop {
-            let byte = self.read_u8()? as i32;
+            let byte: i32 = self.read_u8()?.into();
             n |= (byte & 0b0111_1111) << i;
             i += 7;
             if byte & 0b1000_0000 == 0 {
@@ -244,13 +244,13 @@ impl<R: Read> Reader<R> {
         }
 
         Ok(ConstantPool {
-            ints: ints,
-            uints: uints,
-            doubles: doubles,
-            strings: strings,
-            namespaces: namespaces,
-            namespace_sets: namespace_sets,
-            multinames: multinames,
+            ints,
+            uints,
+            doubles,
+            strings,
+            namespaces,
+            namespace_sets,
+            multinames,
         })
     }
 
@@ -270,21 +270,23 @@ impl<R: Read> Reader<R> {
 
         if flags & 0x08 != 0 {
             let num_optional_params = self.read_u30()? as usize;
+            #[allow(clippy::needless_range_loop)]
             for i in 0..num_optional_params {
                 params[i].default_value = Some(self.read_constant_value()?);
             }
         }
 
         if flags & 0x80 != 0 {
+            #[allow(clippy::needless_range_loop)]
             for i in 0..num_params {
                 params[i].name = Some(self.read_index()?);
             }
         }
 
         Ok(Method {
-            name: name,
-            params: params,
-            return_type: return_type,
+            name,
+            params,
+            return_type,
             needs_arguments_object: flags & 0x01 != 0,
             needs_activation: flags & 0x02 != 0,
             needs_rest: flags & 0x04 != 0,
@@ -351,8 +353,8 @@ impl<R: Read> Reader<R> {
             })
         }
         Ok(Metadata {
-            name: name,
-            items: items,
+            name,
+            items,
         })
     }
 
@@ -382,12 +384,12 @@ impl<R: Read> Reader<R> {
         }
 
         Ok(Instance {
-            name: name,
-            super_name: super_name,
-            protected_namespace: protected_namespace,
-            interfaces: interfaces,
-            traits: traits,
-            init_method: init_method,
+            name,
+            super_name,
+            protected_namespace,
+            interfaces,
+            traits,
+            init_method,
             is_sealed: flags & 0x01 != 0,
             is_final: flags & 0x02 != 0,
             is_interface: flags & 0x04 != 0,
@@ -402,8 +404,8 @@ impl<R: Read> Reader<R> {
             traits.push(self.read_trait()?);
         }
         Ok(Class {
-            init_method: init_method,
-            traits: traits,
+            init_method,
+            traits,
         })
     }
 
@@ -415,8 +417,8 @@ impl<R: Read> Reader<R> {
             traits.push(self.read_trait()?);
         }
         Ok(Script {
-            init_method: init_method,
-            traits: traits,
+            init_method,
+            traits,
         })
     }
 
@@ -467,9 +469,9 @@ impl<R: Read> Reader<R> {
         }
 
         Ok(Trait {
-            name: name,
-            kind: kind,
-            metadata: metadata,
+            name,
+            kind,
+            metadata,
             is_final: flags & 0b0001_0000 != 0,
             is_override: flags & 0b0010_0000 != 0,
         })
@@ -485,7 +487,7 @@ impl<R: Read> Reader<R> {
         let code_len = self.read_u30()?;
         let mut code = vec![];
         {
-            let mut code_reader = Reader::new(self.inner.by_ref().take(code_len as u64));
+            let mut code_reader = Reader::new(self.inner.by_ref().take(code_len.into()));
             while let Ok(Some(op)) = code_reader.read_op() {
                 code.push(op);
             }
@@ -504,14 +506,14 @@ impl<R: Read> Reader<R> {
         }
 
         Ok(MethodBody {
-            method: method,
-            max_stack: max_stack,
-            num_locals: num_locals,
-            init_scope_depth: init_scope_depth,
-            max_scope_depth: max_scope_depth,
-            code: code,
-            exceptions: exceptions,
-            traits: traits,
+            method,
+            max_stack,
+            num_locals,
+            init_scope_depth,
+            max_scope_depth,
+            code,
+            exceptions,
+            traits,
         })
     }
 
@@ -859,9 +861,8 @@ pub mod tests {
         file.read_to_end(&mut data).unwrap();
         let swf = crate::read_swf(&data[..]).unwrap();
         for tag in swf.tags {
-            match tag {
-                Tag::DoAbc(do_abc) => return do_abc.data,
-                _ => (),
+            if let Tag::DoAbc(do_abc) = tag {
+                return do_abc.data;
             }
         }
         panic!("ABC tag not found in {}", path);
