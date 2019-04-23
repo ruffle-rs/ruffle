@@ -1,4 +1,4 @@
-#![cfg_attr(any(feature="clippy", feature="cargo-clippy"), allow(float_cmp))]
+#![allow(clippy::float_cmp)]
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::collections::HashSet;

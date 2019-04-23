@@ -1,5 +1,4 @@
-#![cfg_attr(any(feature="clippy", feature="cargo-clippy"), allow(cyclomatic_complexity))]
-#![cfg_attr(any(feature="clippy", feature="cargo-clippy"), allow(float_cmp))]
+#![allow(clippy::float_cmp)]
 
 use byteorder::{LittleEndian, WriteBytesExt};
 use std::cmp::max;
