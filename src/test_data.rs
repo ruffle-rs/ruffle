@@ -2118,6 +2118,11 @@ pub fn tag_tests() -> Vec<TagTestData> {
             read_tag_bytes_from_file("tests/swfs/PlaceObject4-CC.swf", TagCode::PlaceObject4),
         ),
         (
+            2,
+            Tag::Protect(None),
+            read_tag_bytes_from_file("tests/swfs/ProtectNoPassword-CC.swf", TagCode::Protect),
+        ),
+        (
             5, // Password supported in SWF version 5 or later.
             Tag::Protect(Some("$1$d/$yMscKH17OJ0paJT.e67iz0".to_string())),
             read_tag_bytes_from_file("tests/swfs/protect.swf", TagCode::Protect),
