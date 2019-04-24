@@ -1,5 +1,7 @@
+#![allow(clippy::useless_attribute)]
+
 #[allow(dead_code)]
-#[derive(Debug,PartialEq,Clone,Copy,FromPrimitive)]
+#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive)]
 pub enum TagCode {
     End = 0,
     ShowFrame = 1,

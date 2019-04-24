@@ -1,6 +1,6 @@
-use avm2::opcode::OpCode;
-use avm2::types::*;
-use write::SwfWrite;
+use crate::avm2::opcode::OpCode;
+use crate::avm2::types::*;
+use crate::write::SwfWrite;
 use std::io::{Result, Write};
 
 pub struct Writer<W: Write> {
@@ -15,7 +15,7 @@ impl<W: Write> SwfWrite<W> for Writer<W> {
 
 impl<W: Write> Writer<W> {
     pub fn new(inner: W) -> Writer<W> {
-        Writer { inner: inner }
+        Writer { inner }
     }
 
     pub fn write(&mut self, abc_file: AbcFile) -> Result<()> {
@@ -109,7 +109,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_constant_pool(&mut self, constant_pool: &ConstantPool) -> Result<()> {
-        if constant_pool.ints.len() > 0 {
+        if !constant_pool.ints.is_empty() {
             self.write_u30(constant_pool.ints.len() as u32 + 1)?;
             for n in &constant_pool.ints {
                 self.write_i32(*n)?;
@@ -118,7 +118,7 @@ impl<W: Write> Writer<W> {
             self.write_u32(0)?;
         }
 
-        if constant_pool.uints.len() > 0 {
+        if !constant_pool.uints.is_empty() {
             self.write_u30(constant_pool.uints.len() as u32 + 1)?;
             for n in &constant_pool.uints {
                 self.write_u32(*n)?;
@@ -127,7 +127,7 @@ impl<W: Write> Writer<W> {
             self.write_u30(0)?;
         }
 
-        if constant_pool.doubles.len() > 0 {
+        if !constant_pool.doubles.is_empty() {
             self.write_u30(constant_pool.doubles.len() as u32 + 1)?;
             for n in &constant_pool.doubles {
                 self.write_f64(*n)?;
@@ -136,7 +136,7 @@ impl<W: Write> Writer<W> {
             self.write_u32(0)?;
         }
 
-        if constant_pool.strings.len() > 0 {
+        if !constant_pool.strings.is_empty() {
             self.write_u30(constant_pool.strings.len() as u32 + 1)?;
             for s in &constant_pool.strings {
                 self.write_string(s)?;
@@ -145,7 +145,7 @@ impl<W: Write> Writer<W> {
             self.write_u32(0)?;
         }
 
-        if constant_pool.namespaces.len() > 0 {
+        if !constant_pool.namespaces.is_empty() {
             self.write_u30(constant_pool.namespaces.len() as u32 + 1)?;
             for namespace in &constant_pool.namespaces {
                 self.write_namespace(namespace)?;
@@ -154,7 +154,7 @@ impl<W: Write> Writer<W> {
             self.write_u32(0)?;
         }
 
-        if constant_pool.namespace_sets.len() > 0 {
+        if !constant_pool.namespace_sets.is_empty() {
             self.write_u30(constant_pool.namespace_sets.len() as u32 + 1)?;
             for namespace_set in &constant_pool.namespace_sets {
                 self.write_namespace_set(namespace_set)?;
@@ -163,7 +163,7 @@ impl<W: Write> Writer<W> {
             self.write_u32(0)?;
         }
 
-        if constant_pool.multinames.len() > 0 {
+        if !constant_pool.multinames.is_empty() {
             self.write_u30(constant_pool.multinames.len() as u32 + 1)?;
             for multiname in &constant_pool.multinames {
                 self.write_multiname(multiname)?;
@@ -209,7 +209,7 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_namespace_set(&mut self, namespace_set: &NamespaceSet) -> Result<()> {
+    fn write_namespace_set(&mut self, namespace_set: &[Index<Namespace>]) -> Result<()> {
         self.write_u30(namespace_set.len() as u32)?;
         for i in namespace_set {
             self.write_index(i)?;
@@ -293,13 +293,12 @@ impl<W: Write> Writer<W> {
         }
         self.write_index(&method.name)?;
         self.write_u8(
-            if has_param_names { 0x80 } else { 0 } | if method.needs_dxns { 0x40 } else { 0 } |
-                if num_optional_params > 0 { 0x08 } else { 0 } | if method.needs_rest {
-                0x04
-            } else {
-                0
-            } | if method.needs_activation { 0x02 } else { 0 } |
-                if method.needs_arguments_object {
+            if has_param_names { 0x80 } else { 0 }
+                | if method.needs_dxns { 0x40 } else { 0 }
+                | if num_optional_params > 0 { 0x08 } else { 0 }
+                | if method.needs_rest { 0x04 } else { 0 }
+                | if method.needs_activation { 0x02 } else { 0 }
+                | if method.needs_arguments_object {
                     0x01
                 } else {
                     0
@@ -396,11 +395,9 @@ impl<W: Write> Writer<W> {
                 0x08
             } else {
                 0
-            } | if instance.is_interface { 0x04 } else { 0 } | if instance.is_final {
-                0x02
-            } else {
-                0
-            } | if instance.is_sealed { 0x01 } else { 0 },
+            } | if instance.is_interface { 0x04 } else { 0 }
+                | if instance.is_final { 0x02 } else { 0 }
+                | if instance.is_sealed { 0x01 } else { 0 },
         )?;
 
         if let Some(ref namespace) = instance.protected_namespace {
@@ -442,11 +439,12 @@ impl<W: Write> Writer<W> {
 
     fn write_trait(&mut self, t: &Trait) -> Result<()> {
         self.write_index(&t.name)?;
-        let flags = if t.metadata.len() > 0 { 0b0100_0000 } else { 0 } | if t.is_override {
-            0b0010_0000
+        let flags = if !t.metadata.is_empty() {
+            0b0100_0000
         } else {
             0
-        } | if t.is_final { 0b0001_0000 } else { 0 };
+        } | if t.is_override { 0b0010_0000 } else { 0 }
+            | if t.is_final { 0b0001_0000 } else { 0 };
 
         match t.kind {
             TraitKind::Slot {
@@ -508,7 +506,7 @@ impl<W: Write> Writer<W> {
             }
         }
 
-        if t.metadata.len() > 0 {
+        if !t.metadata.is_empty() {
             self.write_u30(t.metadata.len() as u32)?;
             for metadata in &t.metadata {
                 self.write_index(metadata)?;
@@ -976,7 +974,7 @@ impl<W: Write> Writer<W> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use test_data;
+    use crate::test_data;
 
     #[test]
     fn write_abc() {
@@ -990,8 +988,7 @@ pub mod tests {
                 // Failed, result doesn't match.
                 panic!(
                     "Incorrectly written ABC.\nWritten:\n{:?}\n\nExpected:\n{:?}",
-                    out,
-                    bytes
+                    out, bytes
                 );
             }
         }

@@ -38,7 +38,10 @@ pub enum Action {
     GetMember,
     GetProperty,
     GetTime,
-    GetUrl { url: String, target: String },
+    GetUrl {
+        url: String,
+        target: String,
+    },
     GetUrl2 {
         send_vars_method: SendVarsMethod,
         is_target_sprite: bool,
@@ -52,13 +55,17 @@ pub enum Action {
     },
     GotoLabel(String),
     Greater,
-    If { offset: i16 },
+    If {
+        offset: i16,
+    },
     ImplementsOp,
     Increment,
     InitArray,
     InitObject,
     InstanceOf,
-    Jump { offset: i16 },
+    Jump {
+        offset: i16,
+    },
     Less,
     Less2,
     MBAsciiToChar,
@@ -107,10 +114,20 @@ pub enum Action {
     Trace,
     Try(TryBlock),
     TypeOf,
-    WaitForFrame { frame: u16, num_actions_to_skip: u8 },
-    WaitForFrame2 { num_actions_to_skip: u8 },
-    With { actions: Vec<Action> },
-    Unknown { opcode: u8, data: Vec<u8> },
+    WaitForFrame {
+        frame: u16,
+        num_actions_to_skip: u8,
+    },
+    WaitForFrame2 {
+        num_actions_to_skip: u8,
+    },
+    With {
+        actions: Vec<Action>,
+    },
+    Unknown {
+        opcode: u8,
+        data: Vec<u8>,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -157,7 +174,7 @@ pub struct FunctionParam {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TryBlock {
-    pub try: Vec<Action>,
+    pub try_actions: Vec<Action>,
     pub catch: Option<(CatchVar, Vec<Action>)>,
     pub finally: Option<Vec<Action>>,
 }
