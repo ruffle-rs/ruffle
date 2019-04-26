@@ -1,4 +1,5 @@
 mod character;
+mod color_transform;
 mod display_object;
 mod graphic;
 mod library;
@@ -7,6 +8,7 @@ mod movie_clip;
 mod shape_utils;
 mod stage;
 
+use self::color_transform::{ColorTransform, ColorTransformStack};
 use self::display_object::DisplayObject;
 use self::library::Library;
 use self::matrix::{Matrix, MatrixStack};
@@ -70,6 +72,7 @@ impl Player {
             render_context: RenderContext {
                 context_2d: context,
                 matrix_stack: MatrixStack::new(),
+                color_transform_stack: ColorTransformStack::new(),
             },
 
             library: Library::new(),
@@ -148,4 +151,5 @@ pub struct UpdateContext<'a> {
 pub struct RenderContext {
     context_2d: CanvasRenderingContext2d,
     matrix_stack: MatrixStack,
+    color_transform_stack: ColorTransformStack,
 }

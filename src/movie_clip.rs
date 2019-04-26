@@ -1,3 +1,4 @@
+use crate::color_transform::ColorTransform;
 use crate::display_object::{DisplayObject, DisplayObjectNode};
 use crate::matrix::Matrix;
 use crate::Library;
@@ -16,6 +17,7 @@ pub struct MovieClip {
     tag_stream_pos: u64,
     is_playing: bool,
     matrix: Matrix,
+    color_transform: ColorTransform,
     current_frame: FrameNumber,
     next_frame: FrameNumber,
     total_frames: FrameNumber,
@@ -29,6 +31,7 @@ impl MovieClip {
             tag_stream_pos: 0,
             is_playing: true,
             matrix: Matrix::default(),
+            color_transform: Default::default(),
             current_frame: 0,
             next_frame: 1,
             total_frames: 1,
@@ -44,6 +47,7 @@ impl MovieClip {
             tag_stream_pos: tag_stream_start,
             is_playing: true,
             matrix: Matrix::default(),
+            color_transform: Default::default(),
             current_frame: 0,
             next_frame: 1,
             total_frames: num_frames,
@@ -168,7 +172,7 @@ impl DisplayObject for MovieClip {
 
     fn render(&self, context: &mut RenderContext) {
         context.matrix_stack.push(&self.matrix);
-        let world_matrix = context.matrix_stack.matrix();
+        context.color_transform_stack.push(&self.color_transform);
 
         let mut sorted_children: Vec<_> = self.children.iter().collect();
         sorted_children.sort_by_key(|(depth, _)| *depth);
@@ -178,10 +182,15 @@ impl DisplayObject for MovieClip {
         }
 
         context.matrix_stack.pop();
+        context.color_transform_stack.pop();
     }
 
     fn set_matrix(&mut self, matrix: Matrix) {
         self.matrix = matrix;
+    }
+
+    fn set_color_transform(&mut self, color_transform: ColorTransform) {
+        self.color_transform = color_transform;
     }
 }
 

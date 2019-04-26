@@ -1,4 +1,5 @@
 use crate::Matrix;
+use log::{info, trace, warn};
 use std::collections::{HashMap, VecDeque};
 use svg::node::element::{
     path::Data, Definitions, Image, LinearGradient, Path as SvgPath, Pattern, RadialGradient, Stop,
@@ -29,13 +30,16 @@ pub fn swf_shape_to_svg(shape: &Shape) -> String {
     let mut num_defs = 0;
 
     let mut svg_paths = vec![];
-    for path in swf_shape_to_paths(shape) {
+    let (paths, strokes) = swf_shape_to_paths(shape);
+    for path in paths {
         let mut svg_path = SvgPath::new();
 
         svg_path = svg_path.set(
             "fill",
             match path.fill_style {
-                FillStyle::Color(Color { r, g, b, a }) => format!("rgba({},{},{},{})", r, g, b, a),
+                FillStyle::Color(Color { r, g, b, a }) => {
+                    format!("rgba({},{},{},{})", r, g, b, f32::from(a) / 255.0)
+                }
                 FillStyle::LinearGradient(gradient) => {
                     let matrix = Matrix::from(gradient.matrix);
                     let shift = Matrix {
@@ -69,7 +73,10 @@ pub fn swf_shape_to_svg(shape: &Shape) -> String {
                                 "stop-color",
                                 format!(
                                     "rgba({},{},{},{})",
-                                    record.color.r, record.color.g, record.color.b, record.color.a
+                                    record.color.r,
+                                    record.color.g,
+                                    record.color.b,
+                                    f32::from(record.color.a) / 255.0
                                 ),
                             );
                         svg_gradient = svg_gradient.add(stop);
@@ -214,6 +221,40 @@ pub fn swf_shape_to_svg(shape: &Shape) -> String {
         svg_paths.push(svg_path);
     }
 
+    for stroke in strokes {
+        let mut svg_path = SvgPath::new();
+        let line_style = stroke.line_style.unwrap();
+        svg_path = svg_path
+            .set("fill", "none")
+            .set(
+                "stroke",
+                format!(
+                    "rgba({},{},{},{})",
+                    line_style.color.r, line_style.color.g, line_style.color.b, line_style.color.a
+                ),
+            )
+            .set("width", line_style.width as f32 / 20.0);
+
+        let mut data = Data::new();
+        for subpath in &stroke.subpaths {
+            data = data.move_to(subpath.start);
+
+            for edge in &subpath.edges {
+                match edge {
+                    SubpathEdge::Straight(x, y) => {
+                        data = data.line_to((*x, *y));
+                    }
+                    SubpathEdge::Bezier(cx, cy, ax, ay) => {
+                        data = data.quadratic_curve_to((*cx, *cy, *ax, *ay));
+                    }
+                }
+            }
+        }
+
+        svg_path = svg_path.set("d", data);
+        svg_paths.push(svg_path);
+    }
+
     if num_defs > 0 {
         document = document.add(defs);
     }
@@ -225,17 +266,26 @@ pub fn swf_shape_to_svg(shape: &Shape) -> String {
     document.to_string()
 }
 
-fn swf_shape_to_paths(shape: &Shape) -> Vec<Path> {
+struct Stroke {
+    path: Path,
+    line_style: LineStyle,
+}
+
+// TODO(Herschel): Iterater-ize this.
+fn swf_shape_to_paths(shape: &Shape) -> (Vec<Path>, Vec<Path>) {
     let mut layers = vec![];
     let mut paths = HashMap::<u32, Path>::new();
+    let mut stroke_paths = HashMap::<u32, Path>::new();
 
     let mut x = 0f32;
     let mut y = 0f32;
 
     let mut fill_style_0 = 0;
     let mut fill_style_1 = 0;
+    let mut line_style = 0;
     let mut i = 0;
     let mut fill_styles = &shape.styles.fill_styles;
+    let mut line_styles = &shape.styles.line_styles;
     for record in &shape.shape {
         use swf::ShapeRecord::*;
         match record {
@@ -253,11 +303,17 @@ fn swf_shape_to_paths(shape: &Shape) -> Vec<Path> {
                     fill_style_1 = i;
                 }
 
+                if let Some(i) = style_change.line_style {
+                    line_style = i;
+                }
+
                 if let Some(ref new_styles) = style_change.new_styles {
                     // TODO
-                    layers.push(paths);
+                    layers.push((paths, stroke_paths));
                     paths = HashMap::new();
+                    stroke_paths = HashMap::new();
                     fill_styles = &new_styles.fill_styles;
+                    line_styles = &new_styles.line_styles;
                 }
             }
 
@@ -272,6 +328,13 @@ fn swf_shape_to_paths(shape: &Shape) -> Vec<Path> {
                 if fill_style_1 != 0 {
                     let path = paths.entry(fill_style_1).or_insert_with(|| {
                         Path::new(fill_styles[fill_style_1 as usize - 1].clone())
+                    });
+                    path.add_edge((x, y), SubpathEdge::Straight(x + delta_x, y + delta_y));
+                }
+
+                if line_style != 0 {
+                    let path = stroke_paths.entry(line_style).or_insert_with(|| {
+                        Path::new_stroke(line_styles[line_style as usize - 1].clone())
                     });
                     path.add_edge((x, y), SubpathEdge::Straight(x + delta_x, y + delta_y));
                 }
@@ -314,21 +377,47 @@ fn swf_shape_to_paths(shape: &Shape) -> Vec<Path> {
                     );
                 }
 
+                if line_style != 0 {
+                    let path = stroke_paths.entry(line_style).or_insert_with(|| {
+                        Path::new_stroke(line_styles[line_style as usize - 1].clone())
+                    });
+                    path.add_edge(
+                        (x, y),
+                        SubpathEdge::Bezier(
+                            x + control_delta_x,
+                            y + control_delta_y,
+                            x + control_delta_x + anchor_delta_x,
+                            y + control_delta_y + anchor_delta_y,
+                        ),
+                    );
+                }
+
                 x += control_delta_x + anchor_delta_x;
                 y += control_delta_y + anchor_delta_y;
             }
         }
     }
 
-    layers.push(paths);
-    layers
-        .into_iter()
-        .flat_map(|p| p.into_iter().map(|(_, sp)| sp))
-        .collect::<Vec<_>>()
+    layers.push((paths, stroke_paths));
+
+    let mut out_paths = vec![];
+    let mut out_strokes = vec![];
+    for (paths, strokes) in layers {
+        for (_, path) in paths {
+            out_paths.push(path);
+        }
+
+        for (_, stroke) in strokes {
+            out_strokes.push(stroke);
+        }
+    }
+
+    (out_paths, out_strokes)
 }
 
 pub struct Path {
     fill_style: FillStyle,
+    line_style: Option<LineStyle>,
     subpaths: Vec<Subpath>,
 }
 
@@ -336,6 +425,20 @@ impl Path {
     fn new(fill_style: FillStyle) -> Path {
         Path {
             fill_style,
+            line_style: None,
+            subpaths: vec![],
+        }
+    }
+
+    fn new_stroke(line_style: LineStyle) -> Path {
+        Path {
+            fill_style: FillStyle::Color(Color {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 0,
+            }),
+            line_style: Some(line_style),
             subpaths: vec![],
         }
     }

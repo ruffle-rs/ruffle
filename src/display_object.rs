@@ -1,3 +1,4 @@
+use crate::ColorTransform;
 use crate::Matrix;
 use crate::{graphic::Graphic, MovieClip, Stage};
 use crate::{RenderContext, UpdateContext};
@@ -9,6 +10,7 @@ pub trait DisplayObject {
     fn update_frame_number(&mut self) {}
     fn render(&self, context: &mut RenderContext);
     fn set_matrix(&mut self, matrix: Matrix);
+    fn set_color_transform(&mut self, color_transform: ColorTransform);
 }
 
 pub enum DisplayObjectNode {
@@ -47,6 +49,16 @@ impl DisplayObject for DisplayObjectNode {
             DisplayObjectNode::Graphic(graphic) => graphic.set_matrix(matrix),
             DisplayObjectNode::MovieClip(movie_clip) => movie_clip.set_matrix(matrix),
             DisplayObjectNode::Stage(stage) => stage.set_matrix(matrix),
+        }
+    }
+
+    fn set_color_transform(&mut self, color_transform: ColorTransform) {
+        match self {
+            DisplayObjectNode::Graphic(graphic) => graphic.set_color_transform(color_transform),
+            DisplayObjectNode::MovieClip(movie_clip) => {
+                movie_clip.set_color_transform(color_transform)
+            }
+            DisplayObjectNode::Stage(stage) => stage.set_color_transform(color_transform),
         }
     }
 }
