@@ -12,8 +12,8 @@ impl From<swf::Matrix> for Matrix {
     fn from(matrix: swf::Matrix) -> Matrix {
         Matrix {
             a: matrix.scale_x,
-            b: matrix.rotate_skew_1,
-            c: matrix.rotate_skew_0,
+            b: matrix.rotate_skew_0,
+            c: matrix.rotate_skew_1,
             d: matrix.scale_y,
             tx: matrix.translate_x,
             ty: matrix.translate_y,
@@ -69,7 +69,7 @@ impl MatrixStack {
     }
 
     pub fn push(&mut self, matrix: &Matrix) {
-        let new_matrix = *matrix * *self.matrix();
+        let new_matrix = *self.matrix() * *matrix;
         self.0.push(new_matrix);
     }
 

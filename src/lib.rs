@@ -5,12 +5,13 @@ mod library;
 mod matrix;
 mod movie_clip;
 mod shape_utils;
+mod stage;
 
-use self::character::Character;
 use self::display_object::DisplayObject;
 use self::library::Library;
 use self::matrix::{Matrix, MatrixStack};
 use self::movie_clip::MovieClip;
+use self::stage::Stage;
 use bacon_rajan_cc::Cc;
 use js_sys::{ArrayBuffer, Uint8Array};
 use log::{info, trace, warn};
@@ -18,7 +19,6 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io::Cursor;
 use std::rc::Rc;
-use swf::Color;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, HtmlImageElement};
@@ -28,17 +28,16 @@ type CharacterId = swf::CharacterId;
 #[wasm_bindgen]
 pub struct Player {
     tag_stream: swf::read::Reader<Cursor<Vec<u8>>>,
+
     canvas: HtmlCanvasElement,
     render_context: RenderContext,
 
     library: Library,
-    root: Cc<RefCell<MovieClip>>,
+    stage: Cc<RefCell<Stage>>,
 
     frame_rate: f64,
     frame_accumulator: f64,
     cur_timestamp: f64,
-
-    background_color: Color,
 }
 
 #[wasm_bindgen]
@@ -66,15 +65,15 @@ impl Player {
 
         Player {
             tag_stream,
-
             canvas,
+
             render_context: RenderContext {
                 context_2d: context,
                 matrix_stack: MatrixStack::new(),
             },
 
             library: Library::new(),
-            root: MovieClip::new(),
+            stage: Stage::new(swf.num_frames),
 
             frame_rate: swf.frame_rate.into(),
             frame_accumulator: 0.0,
@@ -83,12 +82,6 @@ impl Player {
                 .performance()
                 .expect("Expected performance")
                 .now(),
-            background_color: Color {
-                r: 255,
-                g: 255,
-                b: 255,
-                a: 255,
-            },
         }
     }
 
@@ -112,48 +105,28 @@ impl Player {
 
 impl Player {
     fn run_frame(&mut self) {
-        use swf::Tag;
+        let mut update_context = UpdateContext {
+            tag_stream: &mut self.tag_stream,
+            position_stack: vec![],
+            library: &mut self.library,
+        };
 
-        while let Ok(Some(tag)) = self.tag_stream.read_tag() {
-            trace!("{:?}", tag);
-            match tag {
-                Tag::FileAttributes(file_attributes) => {}
-
-                Tag::SetBackgroundColor(color) => self.background_color = color,
-
-                Tag::ShowFrame => break,
-
-                Tag::DefineSceneAndFrameLabelData {
-                    scenes,
-                    frame_labels,
-                } => (), // TODO(Herschel)
-
-                Tag::DefineShape(shape) => {
-                    if !self.library.contains_character(shape.id) {
-                        let svg = shape_utils::swf_shape_to_svg(&shape);
-                        info!("{}", svg);
-                        let mut image = HtmlImageElement::new().unwrap();
-                        image.set_src(&format!("data:image/svg+xml;utf8;{}", svg));
-                        self.library
-                            .register_character(shape.id, Character::Graphic { image });
-                    }
-                }
-
-                //tag => self.root.borrow_mut().run_tag(tag)
-                _ => (),
-            }
-        }
+        let mut stage = self.stage.borrow_mut();
+        stage.run_frame(&mut update_context);
+        stage.update_frame_number();
     }
 
     fn render(&mut self) {
-        let background_color = format!(
+        let stage = self.stage.borrow_mut();
+        let background_color = stage.background_color();
+        let css_color = format!(
             "rgb({}, {}, {})",
-            self.background_color.r, self.background_color.g, self.background_color.b
+            background_color.r, background_color.g, background_color.b
         );
-        info!("{:?}", background_color);
+        self.render_context.context_2d.reset_transform().unwrap();
         self.render_context
             .context_2d
-            .set_fill_style(&background_color.into());
+            .set_fill_style(&format!("{}", css_color).into());
 
         let width: f64 = self.canvas.width().into();
         let height: f64 = self.canvas.height().into();
@@ -162,8 +135,14 @@ impl Player {
             .context_2d
             .fill_rect(0.0, 0.0, width, height);
 
-        self.root.borrow_mut().render(&mut self.render_context);
+        stage.render(&mut self.render_context);
     }
+}
+
+pub struct UpdateContext<'a> {
+    tag_stream: &'a mut swf::read::Reader<Cursor<Vec<u8>>>,
+    position_stack: Vec<u64>,
+    library: &'a mut Library,
 }
 
 pub struct RenderContext {

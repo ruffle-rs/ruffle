@@ -30,14 +30,20 @@ impl Library {
         id: CharacterId,
     ) -> Result<DisplayObjectNode, Box<std::error::Error>> {
         match self.characters.get(&id) {
-            Some(Character::Graphic { image }) => {
-                Ok(DisplayObjectNode::Graphic(Graphic::new(image.clone())))
-            }
+            Some(Character::Graphic {
+                image,
+                x_min,
+                y_min,
+            }) => Ok(DisplayObjectNode::Graphic(Graphic::new(
+                image.clone(),
+                *x_min,
+                *y_min,
+            ))),
             Some(Character::MovieClip {
-                tag_stream,
+                tag_stream_start,
                 num_frames,
             }) => Ok(DisplayObjectNode::MovieClip(MovieClip::new_with_data(
-                tag_stream.clone(),
+                *tag_stream_start,
                 *num_frames,
             ))),
             Some(_) => Err("Not a DisplayObject".into()),

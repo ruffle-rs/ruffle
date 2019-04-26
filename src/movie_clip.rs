@@ -1,7 +1,7 @@
 use crate::display_object::{DisplayObject, DisplayObjectNode};
 use crate::matrix::Matrix;
 use crate::Library;
-use crate::RenderContext;
+use crate::{RenderContext, UpdateContext};
 use bacon_rajan_cc::{Cc, Trace, Tracer};
 use log::{info, trace, warn};
 use std::cell::RefCell;
@@ -12,10 +12,12 @@ type Depth = i16;
 type FrameNumber = u16;
 
 pub struct MovieClip {
-    tag_stream: Option<swf::read::Reader<Cursor<Vec<u8>>>>,
+    tag_stream_start: Option<u64>,
+    tag_stream_pos: u64,
     is_playing: bool,
     matrix: Matrix,
     current_frame: FrameNumber,
+    next_frame: FrameNumber,
     total_frames: FrameNumber,
     children: HashMap<Depth, Cc<RefCell<DisplayObjectNode>>>,
 }
@@ -23,105 +25,163 @@ pub struct MovieClip {
 impl MovieClip {
     pub fn new() -> Cc<RefCell<MovieClip>> {
         let clip = MovieClip {
-            tag_stream: None,
+            tag_stream_start: None,
+            tag_stream_pos: 0,
             is_playing: true,
             matrix: Matrix::default(),
-            current_frame: 1,
+            current_frame: 0,
+            next_frame: 1,
             total_frames: 1,
             children: HashMap::new(),
         };
         Cc::new(RefCell::new(clip))
     }
 
-    pub fn new_with_data(
-        tag_stream: swf::read::Reader<Cursor<Vec<u8>>>,
-        num_frames: u16,
-    ) -> MovieClip {
+    pub fn new_with_data(tag_stream_start: u64, num_frames: u16) -> MovieClip {
+        info!("start: {} ", tag_stream_start);
         MovieClip {
-            tag_stream: Some(tag_stream),
+            tag_stream_start: Some(tag_stream_start),
+            tag_stream_pos: tag_stream_start,
             is_playing: true,
             matrix: Matrix::default(),
-            current_frame: 1,
+            current_frame: 0,
+            next_frame: 1,
             total_frames: num_frames,
             children: HashMap::new(),
         }
     }
 
-    fn run_place_object(&mut self, place_object: &swf::PlaceObject, library: &Library) {
+    pub fn run_place_object(
+        children: &mut HashMap<Depth, Cc<RefCell<DisplayObjectNode>>>,
+        place_object: &swf::PlaceObject,
+        context: &mut UpdateContext,
+    ) {
         use swf::PlaceObjectAction;
-        match place_object.action {
+        let mut character = match place_object.action {
             PlaceObjectAction::Place(id) => {
                 // TODO(Herschel): Behavior when character doesn't exist/isn't a DisplayObject?
-                let mut character = library.instantiate_display_object(id).unwrap();
+                let character =
+                    if let Ok(mut character) = context.library.instantiate_display_object(id) {
+                        Cc::new(RefCell::new(character))
+                    } else {
+                        return;
+                    };
 
                 // TODO(Herschel): Behavior when depth is occupied? (I think it replaces)
-                self.children
-                    .insert(place_object.depth, Cc::new(RefCell::new(character)));
+                children.insert(place_object.depth, character.clone());
+                character
             }
-            PlaceObjectAction::Modify => (),
+            PlaceObjectAction::Modify => {
+                if let Some(child) = children.get(&place_object.depth) {
+                    child.clone()
+                } else {
+                    return;
+                }
+            }
             PlaceObjectAction::Replace(id) => {
-                let mut character = library.instantiate_display_object(id).unwrap();
+                let character =
+                    if let Ok(mut character) = context.library.instantiate_display_object(id) {
+                        Cc::new(RefCell::new(character))
+                    } else {
+                        return;
+                    };
 
-                // TODO(Herschel): Behavior when depth is occupied? (I think it replaces)
-                self.children
-                    .insert(place_object.depth, Cc::new(RefCell::new(character)));
+                children.insert(place_object.depth, character.clone());
+                character
             }
+        };
+
+        let mut character = character.borrow_mut();
+        if let Some(matrix) = &place_object.matrix {
+            let m = matrix.clone();
+            character.set_matrix(Matrix::from(m));
         }
     }
 }
 
 impl DisplayObject for MovieClip {
-    fn run_frame(&mut self, library: &Library) {
-        use swf::Tag;
-        if self.tag_stream.is_some() {
-            while let Ok(Some(tag)) = self.tag_stream.as_mut().unwrap().read_tag() {
-                trace!("{:?}", tag);
+    fn run_frame(&mut self, context: &mut UpdateContext) {
+        use swf::{read::SwfRead, Tag};
+        if self.tag_stream_start.is_some() {
+            context
+                .position_stack
+                .push(context.tag_stream.get_ref().position());
+            context
+                .tag_stream
+                .get_inner()
+                .set_position(self.tag_stream_pos);
+
+            while let Ok(Some(tag)) = context.tag_stream.read_tag() {
+                //trace!("mc: {:?}", tag);
                 match tag {
                     Tag::ShowFrame => break,
                     Tag::PlaceObject(place_object) => {
-                        self.run_place_object(&*place_object, library)
+                        MovieClip::run_place_object(&mut self.children, &*place_object, context)
                     }
-                    _ => unimplemented!("Umimplemented tag: {:?}", tag),
+                    Tag::RemoveObject {
+                        depth,
+                        character_id,
+                    } => {
+                        // TODO(Herschel): How does the character ID work for RemoveObject?
+                        self.children.remove(&depth);
+                        info!("REMOVE {} {}", depth, self.children.len());
+                    }
+
+                    Tag::JpegTables(_) => (),
+                    Tag::SoundStreamHead(_) => (),
+                    Tag::SoundStreamHead2(_) => (),
+                    Tag::SoundStreamBlock(_) => (),
+                    Tag::DoAction(_) => (),
+                    _ => info!("Umimplemented tag: {:?}", tag),
                 }
             }
+            self.tag_stream_pos = context.tag_stream.get_ref().position();
+            context
+                .tag_stream
+                .get_inner()
+                .set_position(context.position_stack.pop().unwrap());
 
             // Advance frame number.
-            self.current_frame += 1;
-            if self.current_frame < self.total_frames {
-                self.current_frame += 1;
+            if self.next_frame < self.total_frames {
+                self.next_frame += 1;
             } else {
-                self.current_frame = 1;
-                //tag_stream.to_inner().set_position(0);
+                self.next_frame = 1;
+                if let Some(start) = self.tag_stream_start {
+                    self.tag_stream_pos = start;
+                }
             }
         }
 
         // TODO(Herschel): Verify order of execution for parent/children.
         // Parent first? Children first? Sorted by depth?
         for child in self.children.values() {
-            child.borrow_mut().run_frame(library);
+            child.borrow_mut().run_frame(context);
+        }
+    }
+
+    fn update_frame_number(&mut self) {
+        self.current_frame = self.next_frame;
+        for child in self.children.values() {
+            child.borrow_mut().update_frame_number();
         }
     }
 
     fn render(&self, context: &mut RenderContext) {
         context.matrix_stack.push(&self.matrix);
         let world_matrix = context.matrix_stack.matrix();
-        context
-            .context_2d
-            .transform(
-                world_matrix.a.into(),
-                world_matrix.b.into(),
-                world_matrix.c.into(),
-                world_matrix.d.into(),
-                world_matrix.tx.into(),
-                world_matrix.ty.into(),
-            )
-            .unwrap();
 
-        for child in self.children.values() {
-            child.borrow_mut().render(context);
+        let mut sorted_children: Vec<_> = self.children.iter().collect();
+        sorted_children.sort_by_key(|(depth, _)| *depth);
+
+        for child in sorted_children {
+            child.1.borrow_mut().render(context);
         }
 
         context.matrix_stack.pop();
+    }
+
+    fn set_matrix(&mut self, matrix: Matrix) {
+        self.matrix = matrix;
     }
 }
 
