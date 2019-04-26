@@ -1,4 +1,8 @@
-#![allow(clippy::float_cmp, clippy::inconsistent_digit_grouping, clippy::unreadable_literal)]
+#![allow(
+    clippy::float_cmp,
+    clippy::inconsistent_digit_grouping,
+    clippy::unreadable_literal
+)]
 
 use crate::types::*;
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -38,6 +42,15 @@ fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<(Swf, Reader<Box<Re
         tags: vec![],
     };
     Ok((swf, reader))
+}
+
+pub fn read_swf_header_decompressed<'a, R: Read + 'a>(
+    input: R,
+) -> Result<(Swf, Reader<std::io::Cursor<Vec<u8>>>)> {
+    let (swf, mut reader) = read_swf_header(input)?;
+    let mut data = vec![];
+    reader.get_inner().read_to_end(&mut data)?;
+    Ok((swf, Reader::new(std::io::Cursor::new(data), reader.version)))
 }
 
 #[cfg(feature = "flate2")]
@@ -221,6 +234,10 @@ impl<R: Read> Reader<R> {
             num_fill_bits: 0,
             num_line_bits: 0,
         }
+    }
+
+    pub fn get_ref(&self) -> &R {
+        &self.input
     }
 
     fn read_compression_type(mut input: R) -> Result<Compression> {
@@ -425,7 +442,7 @@ impl<R: Read> Reader<R> {
         Ok(tags)
     }
 
-    fn read_tag(&mut self) -> Result<Option<Tag>> {
+    pub fn read_tag(&mut self) -> Result<Option<Tag>> {
         use num_traits::FromPrimitive;
 
         let (tag_code, length) = self.read_tag_code_and_length()?;
@@ -752,7 +769,7 @@ impl<R: Read> Reader<R> {
         Ok(Some(tag))
     }
 
-    fn read_tag_code_and_length(&mut self) -> Result<(u16, usize)> {
+    pub fn read_tag_code_and_length(&mut self) -> Result<(u16, usize)> {
         let tag_code_and_length = self.read_u16()?;
         let tag_code = tag_code_and_length >> 6;
         let mut length = (tag_code_and_length & 0b111111) as usize;
