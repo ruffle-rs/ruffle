@@ -27,14 +27,12 @@ pub struct Player {
     render_context: RenderContext,
 
     ui: Box<UiBackend>,
-    renderer: Box<RenderBackend>,
 
     library: Library,
     stage: Cc<RefCell<Stage>>,
 
     frame_rate: f64,
     frame_accumulator: f64,
-    //cur_timestamp: f64,
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
@@ -49,9 +47,9 @@ impl Player {
             tag_stream,
 
             ui,
-            renderer,
 
             render_context: RenderContext {
+                renderer,
                 matrix_stack: MatrixStack::new(),
                 color_transform_stack: ColorTransformStack::new(),
             },
@@ -61,7 +59,6 @@ impl Player {
 
             frame_rate: swf.frame_rate.into(),
             frame_accumulator: 0.0,
-            //cur_timestamp: std::time::Instant::now(),
         })
     }
 
@@ -81,21 +78,18 @@ impl Player {
         }
     }
 
-    pub fn tick(&mut self, timestamp: f64) {
-        // let dt = timestamp - self.cur_timestamp;
-        // self.cur_timestamp = timestamp;
+    pub fn tick(&mut self, dt: f64) {
+        self.frame_accumulator += dt;
+        let frame_time = 1000.0 / self.frame_rate;
+        let needs_render = self.frame_accumulator >= frame_time;
+        while self.frame_accumulator >= frame_time {
+            self.frame_accumulator -= frame_time;
+            self.run_frame();
+        }
 
-        // self.frame_accumulator += dt;
-        // let frame_time = 1000.0 / self.frame_rate;
-        // let needs_render = self.frame_accumulator >= frame_time;
-        // while self.frame_accumulator >= frame_time {
-        //     self.frame_accumulator -= frame_time;
-        //     self.run_frame();
-        // }
-
-        // if needs_render {
-        //     self.render();
-        // }
+        if needs_render {
+            self.render();
+        }
     }
 }
 
@@ -105,6 +99,7 @@ impl Player {
             tag_stream: &mut self.tag_stream,
             position_stack: vec![],
             library: &mut self.library,
+            renderer: &mut *self.render_context.renderer,
         };
 
         let mut stage = self.stage.borrow_mut();
@@ -113,10 +108,11 @@ impl Player {
     }
 
     fn render(&mut self) {
+        self.render_context.renderer.begin_frame();
+
         let stage = self.stage.borrow_mut();
 
-        /*
-        let background_color = stage.background_color();
+        /*let background_color = stage.background_color();
         let css_color = format!(
             "rgb({}, {}, {})",
             background_color.r, background_color.g, background_color.b
@@ -132,9 +128,11 @@ impl Player {
         self.render_context
             .context_2d
             .fill_rect(0.0, 0.0, width, height);
-            */
+        */
 
         stage.render(&mut self.render_context);
+
+        self.render_context.renderer.end_frame();
     }
 }
 
@@ -142,10 +140,11 @@ pub struct UpdateContext<'a> {
     pub tag_stream: &'a mut swf::read::Reader<Cursor<Vec<u8>>>,
     pub position_stack: Vec<u64>,
     pub library: &'a mut Library,
+    pub renderer: &'a mut RenderBackend,
 }
 
 pub struct RenderContext {
-    //pub context_2d: CanvasRenderingContext2d,
+    pub renderer: Box<RenderBackend>,
     pub matrix_stack: MatrixStack,
     pub color_transform_stack: ColorTransformStack,
 }

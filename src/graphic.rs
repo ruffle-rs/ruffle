@@ -1,3 +1,4 @@
+use crate::backend::render::common::ShapeHandle;
 use crate::color_transform::ColorTransform;
 use crate::display_object::DisplayObject;
 use crate::matrix::Matrix;
@@ -7,6 +8,7 @@ use bacon_rajan_cc::{Trace, Tracer};
 use web_sys::HtmlImageElement;
 
 pub struct Graphic {
+    shape_handle: ShapeHandle,
     matrix: Matrix,
     color_transform: ColorTransform,
     x_min: f32,
@@ -14,8 +16,9 @@ pub struct Graphic {
 }
 
 impl Graphic {
-    pub fn new(x_min: f32, y_min: f32) -> Graphic {
+    pub fn new(shape_handle: ShapeHandle, x_min: f32, y_min: f32) -> Graphic {
         Graphic {
+            shape_handle,
             color_transform: Default::default(),
             x_min,
             y_min,
@@ -63,7 +66,10 @@ impl DisplayObject for Graphic {
         //     .draw_image_with_html_image_element(&self.image, self.x_min.into(), self.y_min.into())
         //     .expect("Couldn't render image");
 
-        context.matrix_stack.pop();
+        context
+            .renderer
+            .render_shape(self.shape_handle, &world_matrix);
+
         context.color_transform_stack.push(&self.color_transform);
     }
 

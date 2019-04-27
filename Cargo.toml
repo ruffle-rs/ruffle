@@ -25,6 +25,7 @@ swf = { git = "https://github.com/Herschel/swf-rs", version = "*" }
 
 # Desktop dependencies
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+lyon = "0.13.1"
 structopt = "0.2.15"
 glium = "0.24"
 glutin = "0.20"

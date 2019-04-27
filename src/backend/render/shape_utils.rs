@@ -266,7 +266,7 @@ struct Stroke {
 }
 
 // TODO(Herschel): Iterater-ize this.
-fn swf_shape_to_paths(shape: &Shape) -> (Vec<Path>, Vec<Path>) {
+pub fn swf_shape_to_paths(shape: &Shape) -> (Vec<Path>, Vec<Path>) {
     let mut layers = vec![];
     let mut paths = HashMap::<u32, Path>::new();
     let mut stroke_paths = HashMap::<u32, Path>::new();

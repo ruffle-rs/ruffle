@@ -1,8 +1,8 @@
 pub enum Character {
     Graphic {
-        //image: HtmlImageElement,
         x_min: f32,
         y_min: f32,
+        shape_handle: crate::backend::render::common::ShapeHandle,
     },
     MovieClip {
         num_frames: u16,

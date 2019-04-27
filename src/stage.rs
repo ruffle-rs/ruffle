@@ -79,12 +79,11 @@ impl DisplayObject for Stage {
 
                     Tag::DefineShape(shape) => {
                         if !context.library.contains_character(shape.id) {
-                            //let mut image = HtmlImageElement::new().unwrap();
-                            //image.set_src(&url_encoded_svg);
+                            let shape_handle = context.renderer.register_shape(&shape);
                             context.library.register_character(
                                 shape.id,
                                 Character::Graphic {
-                                    //image,
+                                    shape_handle,
                                     x_min: shape.shape_bounds.x_min,
                                     y_min: shape.shape_bounds.y_min,
                                 },
@@ -155,6 +154,8 @@ impl DisplayObject for Stage {
     }
 
     fn render(&self, context: &mut RenderContext) {
+        context.renderer.clear(self.background_color.clone());
+
         context.matrix_stack.push(&self.matrix);
         context.color_transform_stack.push(&self.color_transform);
 

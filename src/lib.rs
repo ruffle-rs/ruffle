@@ -7,10 +7,10 @@ mod library;
 mod matrix;
 mod movie_clip;
 mod player;
-mod shape_utils;
 mod stage;
 
 pub use player::Player;
+use swf::Color;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[allow(dead_code)]
