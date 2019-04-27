@@ -1,7 +1,7 @@
-use crate::ColorTransform;
-use crate::Matrix;
-use crate::{graphic::Graphic, MovieClip, Stage};
-use crate::{RenderContext, UpdateContext};
+use crate::color_transform::ColorTransform;
+use crate::matrix::Matrix;
+use crate::player::{RenderContext, UpdateContext};
+use crate::{graphic::Graphic, movie_clip::MovieClip, stage::Stage};
 use bacon_rajan_cc::{Trace, Tracer};
 
 pub trait DisplayObject {

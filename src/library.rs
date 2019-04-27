@@ -31,13 +31,12 @@ impl Library {
     ) -> Result<DisplayObjectNode, Box<std::error::Error>> {
         match self.characters.get(&id) {
             Some(Character::Graphic {
-                image,
+                //image,
                 x_min,
                 y_min,
             }) => Ok(DisplayObjectNode::Graphic(Graphic::new(
-                image.clone(),
-                *x_min,
-                *y_min,
+                //image.clone(),
+                *x_min, *y_min,
             ))),
             Some(Character::MovieClip {
                 tag_stream_start,

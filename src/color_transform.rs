@@ -26,6 +26,7 @@ impl From<swf::ColorTransform> for ColorTransform {
 }
 
 impl ColorTransform {
+    #[allow(clippy::float_cmp)]
     pub fn is_identity(&self) -> bool {
         self.r_mult == 1.0
             && self.g_mult == 1.0

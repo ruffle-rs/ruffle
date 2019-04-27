@@ -6,6 +6,12 @@ edition = "2018"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+name = "fluster"
+path = "src/lib.rs"
+
+[[bin]]
+name = "fluster"
+path = "src/lib.rs"
 
 [features]
 default = ["console_error_panic_hook", "console_log"]
@@ -15,7 +21,14 @@ bacon_rajan_cc = "0.2"
 log = "0.4"
 url = "1.7.2"
 svg = "0.5.12"
-swf = { path = "../swf-rs", version = "*" }
+swf = { git = "https://github.com/Herschel/swf-rs", version = "*" }
+
+# Desktop dependencies
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+structopt = "0.2.15"
+glium = "0.24"
+glutin = "0.20"
+winit = "0.19.1"
 
 # Wasm32 dependencies
 [target.'cfg(target_arch = "wasm32")'.dependencies]
@@ -33,3 +46,6 @@ features = ["CanvasRenderingContext2d", "HtmlCanvasElement", "Performance", "Htm
 
 [dev-dependencies]
 wasm-bindgen-test = "0.2"
+
+[patch.'https://github.com/Herschel/swf-rs']
+swf = { path = "../swf-rs" }

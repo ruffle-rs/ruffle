@@ -1,5 +1,4 @@
-use crate::Matrix;
-use log::{info, trace, warn};
+use crate::matrix::Matrix;
 use std::collections::{HashMap, VecDeque};
 use svg::node::element::{
     path::Data, Definitions, Image, LinearGradient, Path as SvgPath, Pattern, RadialGradient, Stop,
@@ -179,12 +178,7 @@ pub fn swf_shape_to_svg(shape: &Shape) -> String {
                     num_defs += 1;
                     fill_id
                 }
-                FillStyle::Bitmap {
-                    id,
-                    matrix,
-                    is_smoothed,
-                    is_repeating,
-                } => {
+                FillStyle::Bitmap { .. } => {
                     let svg_image = Image::new(); // TODO: .set("xlink:href", "");
 
                     let svg_pattern = Pattern::new()
@@ -283,7 +277,6 @@ fn swf_shape_to_paths(shape: &Shape) -> (Vec<Path>, Vec<Path>) {
     let mut fill_style_0 = 0;
     let mut fill_style_1 = 0;
     let mut line_style = 0;
-    let mut i = 0;
     let mut fill_styles = &shape.styles.fill_styles;
     let mut line_styles = &shape.styles.line_styles;
     for record in &shape.shape {

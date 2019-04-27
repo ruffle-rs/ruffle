@@ -3,15 +3,12 @@ use crate::color_transform::ColorTransform;
 use crate::display_object::{DisplayObject, DisplayObjectNode};
 use crate::matrix::Matrix;
 use crate::movie_clip::MovieClip;
-use crate::Library;
-use crate::{RenderContext, UpdateContext};
+use crate::player::{RenderContext, UpdateContext};
 use bacon_rajan_cc::{Cc, Trace, Tracer};
-use log::{info, trace, warn};
+use log::info;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::io::Cursor;
 use swf::Color;
-use web_sys::HtmlImageElement;
 
 type Depth = i16;
 type FrameNumber = u16;
@@ -78,26 +75,16 @@ impl DisplayObject for Stage {
 
                     Tag::ShowFrame => break,
 
-                    Tag::DefineSceneAndFrameLabelData {
-                        scenes,
-                        frame_labels,
-                    } => (), // TODO(Herschel)
+                    Tag::DefineSceneAndFrameLabelData { .. } => (), // TODO(Herschel)
 
                     Tag::DefineShape(shape) => {
                         if !context.library.contains_character(shape.id) {
-                            let svg = crate::shape_utils::swf_shape_to_svg(&shape);
-                            use url::percent_encoding::{utf8_percent_encode, DEFAULT_ENCODE_SET};
-                            let url_encoded_svg = format!(
-                                "data:image/svg+xml,{}",
-                                utf8_percent_encode(&svg, DEFAULT_ENCODE_SET)
-                            );
-
-                            let mut image = HtmlImageElement::new().unwrap();
-                            image.set_src(&url_encoded_svg);
+                            //let mut image = HtmlImageElement::new().unwrap();
+                            //image.set_src(&url_encoded_svg);
                             context.library.register_character(
                                 shape.id,
                                 Character::Graphic {
-                                    image,
+                                    //image,
                                     x_min: shape.shape_bounds.x_min,
                                     y_min: shape.shape_bounds.y_min,
                                 },
@@ -122,14 +109,10 @@ impl DisplayObject for Stage {
                         }
                     }
 
-                    Tag::ShowFrame => break,
                     Tag::PlaceObject(place_object) => {
                         MovieClip::run_place_object(&mut self.children, &*place_object, context)
                     }
-                    Tag::RemoveObject {
-                        depth,
-                        character_id,
-                    } => {
+                    Tag::RemoveObject { depth, .. } => {
                         // TODO(Herschel): How does the character ID work for RemoveObject?
                         self.children.remove(&depth).is_some();
                         info!("REMOVE {} {}", depth, self.children.len());

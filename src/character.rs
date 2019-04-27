@@ -1,8 +1,6 @@
-use web_sys::HtmlImageElement;
-
 pub enum Character {
     Graphic {
-        image: HtmlImageElement,
+        //image: HtmlImageElement,
         x_min: f32,
         y_min: f32,
     },

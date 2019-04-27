@@ -1,13 +1,11 @@
 use crate::color_transform::ColorTransform;
 use crate::display_object::{DisplayObject, DisplayObjectNode};
 use crate::matrix::Matrix;
-use crate::Library;
-use crate::{RenderContext, UpdateContext};
+use crate::player::{RenderContext, UpdateContext};
 use bacon_rajan_cc::{Cc, Trace, Tracer};
-use log::{info, trace, warn};
+use log::info;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::io::Cursor;
 
 type Depth = i16;
 type FrameNumber = u16;
@@ -65,7 +63,7 @@ impl MovieClip {
             PlaceObjectAction::Place(id) => {
                 // TODO(Herschel): Behavior when character doesn't exist/isn't a DisplayObject?
                 let character =
-                    if let Ok(mut character) = context.library.instantiate_display_object(id) {
+                    if let Ok(character) = context.library.instantiate_display_object(id) {
                         Cc::new(RefCell::new(character))
                     } else {
                         return;
@@ -84,7 +82,7 @@ impl MovieClip {
             }
             PlaceObjectAction::Replace(id) => {
                 let character =
-                    if let Ok(mut character) = context.library.instantiate_display_object(id) {
+                    if let Ok(character) = context.library.instantiate_display_object(id) {
                         Cc::new(RefCell::new(character))
                     } else {
                         return;
@@ -122,10 +120,7 @@ impl DisplayObject for MovieClip {
                     Tag::PlaceObject(place_object) => {
                         MovieClip::run_place_object(&mut self.children, &*place_object, context)
                     }
-                    Tag::RemoveObject {
-                        depth,
-                        character_id,
-                    } => {
+                    Tag::RemoveObject { depth, .. } => {
                         // TODO(Herschel): How does the character ID work for RemoveObject?
                         self.children.remove(&depth);
                         info!("REMOVE {} {}", depth, self.children.len());
