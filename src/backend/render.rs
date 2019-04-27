@@ -1,7 +1,7 @@
 pub mod common;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod glium;
 pub mod shape_utils;
-
 #[cfg(target_arch = "wasm32")]
 pub mod web_canvas;
 

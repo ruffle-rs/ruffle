@@ -37,7 +37,20 @@ pub struct Player {
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 impl Player {
+    #[cfg(target_arch = "wasm32")]
+    pub fn new(swf_data: js_sys::Uint8Array) -> Result<Player, JsValue> {
+        console_error_panic_hook::set_once();
+        let mut data = vec![0; swf_data.length() as usize];
+        swf_data.copy_to(&mut data[..]);
+        Self::new_internal(data).map_err(|_| JsValue::null())
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn new(swf_data: Vec<u8>) -> Result<Player, Box<std::error::Error>> {
+        Self::new_internal(swf_data)
+    }
+
+    fn new_internal(swf_data: Vec<u8>) -> Result<Player, Box<std::error::Error>> {
         let (swf, tag_stream) = swf::read::read_swf_header_decompressed(&swf_data[..]).unwrap();
         info!("{}x{}", swf.stage_size.x_max, swf.stage_size.y_max);
 
@@ -111,25 +124,6 @@ impl Player {
         self.render_context.renderer.begin_frame();
 
         let stage = self.stage.borrow_mut();
-
-        /*let background_color = stage.background_color();
-        let css_color = format!(
-            "rgb({}, {}, {})",
-            background_color.r, background_color.g, background_color.b
-        );
-        self.render_context.context_2d.reset_transform().unwrap();
-        self.render_context
-            .context_2d
-            .set_fill_style(&format!("{}", css_color).into());
-
-        let width: f64 = self.canvas.width().into();
-        let height: f64 = self.canvas.height().into();
-
-        self.render_context
-            .context_2d
-            .fill_rect(0.0, 0.0, width, height);
-        */
-
         stage.render(&mut self.render_context);
 
         self.render_context.renderer.end_frame();
