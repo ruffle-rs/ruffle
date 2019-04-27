@@ -16,15 +16,20 @@ function fileSelected() {
     }
 }
 
+let timestamp = 0;
 function playSwf(swfData) {
     let canvas = document.getElementById("fluster-canvas");
     if (swfData && canvas) {
-        player = Player.new(swfData, canvas);
+        let data = new Uint8Array(swfData);
+        player = Player.new(data);
+        timestamp = performance.now();
         window.requestAnimationFrame(tickPlayer);
     }
 }
 
-function tickPlayer(timestamp) {
-    player.tick(timestamp);
+function tickPlayer(newTimestamp) {
+    let dt = newTimestamp - timestamp;
+    player.tick(dt);
+    timestamp = newTimestamp;
     window.requestAnimationFrame(tickPlayer);
 }

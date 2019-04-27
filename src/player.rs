@@ -94,6 +94,7 @@ impl Player {
     pub fn tick(&mut self, dt: f64) {
         self.frame_accumulator += dt;
         let frame_time = 1000.0 / self.frame_rate;
+        info!("{} / {}", self.frame_accumulator, frame_time);
         let needs_render = self.frame_accumulator >= frame_time;
         while self.frame_accumulator >= frame_time {
             self.frame_accumulator -= frame_time;
