@@ -1,0 +1,33 @@
+[package]
+name = "fluster_core"
+version = "0.1.0"
+authors = ["Mike Welsh <mwelsh@gmail.com>"]
+edition = "2018"
+
+[features]
+default = ["console_error_panic_hook", "console_log"]
+
+[dependencies]
+bacon_rajan_cc = "0.2"
+log = "0.4"
+url = "1.7.2"
+svg = "0.5.12"
+swf = { git = "https://github.com/Herschel/swf-rs", version = "*" }
+
+# Desktop dependencies
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+lyon = "0.13.1"
+glium = "0.24"
+glutin = "0.20"
+winit = "0.19.1"
+
+# Wasm32 dependencies
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = { version = "0.1.1", optional = true }
+console_log = { version = "0.1", optional = true }
+js-sys = "0.3.19"
+wasm-bindgen = "0.2"
+
+[dependencies.web-sys]
+version = "0.3.19"
+features = ["CanvasRenderingContext2d", "Document", "Element", "HtmlCanvasElement", "Performance", "HtmlImageElement", "Window"]

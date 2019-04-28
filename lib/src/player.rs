@@ -20,7 +20,6 @@ use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, HtmlImageElement};
 
 type CharacterId = swf::CharacterId;
 
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 pub struct Player {
     tag_stream: swf::read::Reader<Cursor<Vec<u8>>>,
 
@@ -35,17 +34,7 @@ pub struct Player {
     frame_accumulator: f64,
 }
 
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 impl Player {
-    #[cfg(target_arch = "wasm32")]
-    pub fn new(swf_data: js_sys::Uint8Array) -> Result<Player, JsValue> {
-        console_error_panic_hook::set_once();
-        let mut data = vec![0; swf_data.length() as usize];
-        swf_data.copy_to(&mut data[..]);
-        Self::new_internal(data).map_err(|_| JsValue::null())
-    }
-
-    #[cfg(not(target_arch = "wasm32"))]
     pub fn new(swf_data: Vec<u8>) -> Result<Player, Box<std::error::Error>> {
         Self::new_internal(swf_data)
     }

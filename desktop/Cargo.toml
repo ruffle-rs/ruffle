@@ -1,0 +1,9 @@
+[package]
+name = "fluster"
+version = "0.1.0"
+authors = ["Mike Welsh <mwelsh@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+fluster_core = { path = "../lib" }
+structopt = "0.2.15"
