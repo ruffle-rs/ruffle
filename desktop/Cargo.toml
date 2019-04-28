@@ -1,5 +1,5 @@
 [package]
-name = "fluster"
+name = "fluster_desktop"
 version = "0.1.0"
 authors = ["Mike Welsh <mwelsh@gmail.com>"]
 edition = "2018"

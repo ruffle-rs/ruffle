@@ -37,42 +37,44 @@ impl RenderBackend for GliumRenderBackend {
 
         use lyon::tessellation::FillOptions;
 
-        // let mut mesh: VertexBuffers<_, u16> = VertexBuffers::new();
-        // let paths = swf_shape_to_lyon_paths(shape);
-        // let fill_tess = FillTessellator::new();
-        // for path in paths {
-        //     let mut buffers_builder = BuffersBuilder::new(&mut mesh, ());
-        //     fill_tess.tessellate_path(
-        //         path.into_iter(),
-        //         &FillOptions::even_odd(),
-        //         &mut buffers_builder,
-        //     );
-        // }
+        let mut mesh: VertexBuffers<_, u32> = VertexBuffers::new();
+        let paths = swf_shape_to_lyon_paths(shape);
+        let mut fill_tess = FillTessellator::new();
 
-        let vertices = vec![
-            Vertex {
-                position: [0.0, 0.0],
-                color: [1.0, 0.0, 0.0, 1.0],
-            },
-            Vertex {
-                position: [100.0, 0.0],
-                color: [1.0, 0.0, 0.0, 1.0],
-            },
-            Vertex {
-                position: [100.0, 100.0],
-                color: [1.0, 0.0, 0.0, 1.0],
-            },
-            Vertex {
-                position: [0.0, 100.0],
-                color: [1.0, 0.0, 0.0, 1.0],
-            },
-        ];
-        let indices = vec![0, 1, 2, 0, 2, 3];
-        let vertex_buffer = glium::VertexBuffer::new(&self.display, &vertices).unwrap();
+        for (cmd, path) in paths {
+            if let &PathCommandType::Stroke(_) = &cmd {
+                continue;
+            }
+            let color = match cmd {
+                PathCommandType::Fill(FillStyle::Color(color)) => [
+                    f32::from(color.r) / 255.0,
+                    f32::from(color.g) / 255.0,
+                    f32::from(color.b) / 255.0,
+                    f32::from(color.a) / 255.0,
+                ],
+                PathCommandType::Fill(_) => [1.0, 0.0, 0.0, 1.0],
+                PathCommandType::Stroke(_) => unreachable!(),
+            };
+            let vertex_ctor = move |vertex: tessellation::FillVertex| Vertex {
+                position: [vertex.position.x, vertex.position.y],
+                color,
+            };
+
+            let mut buffers_builder = BuffersBuilder::new(&mut mesh, vertex_ctor);
+            fill_tess
+                .tessellate_path(
+                    path.into_iter(),
+                    &FillOptions::even_odd(),
+                    &mut buffers_builder,
+                )
+                .expect("Tessellation error");
+        }
+
+        let vertex_buffer = glium::VertexBuffer::new(&self.display, &mesh.vertices[..]).unwrap();
         let index_buffer = glium::IndexBuffer::new(
             &self.display,
             glium::index::PrimitiveType::TrianglesList,
-            &indices,
+            &mesh.indices[..],
         )
         .unwrap();
 
@@ -178,13 +180,15 @@ fn point(x: f32, y: f32) -> lyon::math::Point {
     lyon::math::Point::new(x, y)
 }
 
-fn swf_shape_to_lyon_paths(shape: &swf::Shape) -> Vec<Vec<lyon::path::PathEvent>> {
+fn swf_shape_to_lyon_paths(
+    shape: &swf::Shape,
+) -> Vec<(PathCommandType, Vec<lyon::path::PathEvent>)> {
     let cmds = get_paths(shape);
     let mut out_paths = vec![];
     let mut prev;
     use lyon::geom::{LineSegment, QuadraticBezierSegment};
     for cmd in cmds {
-        if let PathCommandType::Fill(fill_style) = cmd.command_type {
+        if let PathCommandType::Fill(fill_style) = &cmd.command_type {
             let mut out_path = vec![PathEvent::MoveTo(point(cmd.path.start.0, cmd.path.start.1))];
             prev = point(cmd.path.start.0, cmd.path.start.1);
             for edge in cmd.path.edges {
@@ -213,7 +217,7 @@ fn swf_shape_to_lyon_paths(shape: &swf::Shape) -> Vec<Vec<lyon::path::PathEvent>
                 from: prev,
                 to: prev,
             }));
-            out_paths.push(out_path);
+            out_paths.push((cmd.command_type, out_path));
         }
     }
     out_paths
