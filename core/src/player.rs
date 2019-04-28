@@ -1,4 +1,4 @@
-use crate::backend::{render::RenderBackend, ui::UiBackend};
+use crate::backend::render::RenderBackend;
 use crate::color_transform::ColorTransformStack;
 use crate::display_object::DisplayObject;
 use crate::library::Library;
@@ -25,8 +25,6 @@ pub struct Player {
 
     render_context: RenderContext,
 
-    ui: Box<UiBackend>,
-
     library: Library,
     stage: Cc<RefCell<Stage>>,
 
@@ -35,20 +33,22 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(swf_data: Vec<u8>) -> Result<Player, Box<std::error::Error>> {
-        Self::new_internal(swf_data)
+    pub fn new(
+        renderer: Box<RenderBackend>,
+        swf_data: Vec<u8>,
+    ) -> Result<Player, Box<std::error::Error>> {
+        Self::new_internal(renderer, swf_data)
     }
 
-    fn new_internal(swf_data: Vec<u8>) -> Result<Player, Box<std::error::Error>> {
+    fn new_internal(
+        renderer: Box<RenderBackend>,
+        swf_data: Vec<u8>,
+    ) -> Result<Player, Box<std::error::Error>> {
         let (swf, tag_stream) = swf::read::read_swf_header_decompressed(&swf_data[..]).unwrap();
         info!("{}x{}", swf.stage_size.x_max, swf.stage_size.y_max);
 
-        let (ui, renderer) = crate::backend::build()?;
-
         Ok(Player {
             tag_stream,
-
-            ui,
 
             render_context: RenderContext {
                 renderer,
@@ -62,22 +62,6 @@ impl Player {
             frame_rate: swf.frame_rate.into(),
             frame_accumulator: 0.0,
         })
-    }
-
-    pub fn play(&mut self) {
-        use std::time::{Duration, Instant};
-
-        let mut time = Instant::now();
-
-        while self.ui.poll_events() {
-            let new_time = Instant::now();
-            let dt = new_time.duration_since(time).as_millis();
-            time = new_time;
-
-            self.tick(dt as f64);
-
-            std::thread::sleep(Duration::from_millis(1000 / 60));
-        }
     }
 
     pub fn tick(&mut self, dt: f64) {

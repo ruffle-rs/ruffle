@@ -227,7 +227,7 @@ pub fn swf_shape_to_svg(shape: &Shape) -> String {
                     line_style.color.r, line_style.color.g, line_style.color.b, line_style.color.a
                 ),
             )
-            .set("width", line_style.width as f32 / 20.0);
+            .set("width", f32::from(line_style.width) / 20.0);
 
         let mut data = Data::new();
         for subpath in &stroke.subpaths {

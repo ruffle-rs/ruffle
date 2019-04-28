@@ -1,4 +1,4 @@
-import { Player } from "fluster";
+import { Player } from "../pkg/fluster";
 
 let fileInput = document.getElementById("file-input");
 fileInput.addEventListener("change", fileSelected, false);
@@ -20,8 +20,7 @@ let timestamp = 0;
 function playSwf(swfData) {
     let canvas = document.getElementById("fluster-canvas");
     if (swfData && canvas) {
-        let data = new Uint8Array(swfData);
-        player = Player.new(data);
+        player = Player.new(canvas, new Uint8Array(swfData));
         timestamp = performance.now();
         window.requestAnimationFrame(tickPlayer);
     }

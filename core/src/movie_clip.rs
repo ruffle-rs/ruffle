@@ -59,7 +59,7 @@ impl MovieClip {
         context: &mut UpdateContext,
     ) {
         use swf::PlaceObjectAction;
-        let mut character = match place_object.action {
+        let character = match place_object.action {
             PlaceObjectAction::Place(id) => {
                 // TODO(Herschel): Behavior when character doesn't exist/isn't a DisplayObject?
                 let character =

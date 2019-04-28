@@ -1,0 +1,26 @@
+[package]
+name = "fluster_core"
+version = "0.1.0"
+authors = ["Mike Welsh <mwelsh@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+bacon_rajan_cc = "0.2"
+log = "0.4"
+url = "1.7.2"
+svg = "0.5.12"
+swf = { git = "https://github.com/Herschel/swf-rs", version = "*" }
+js-sys = "0.3.19"
+wasm-bindgen = "0.2"
+
+[dependencies.web-sys]
+version = "0.3.19"
+features = ["CanvasRenderingContext2d", "HtmlCanvasElement", "HtmlImageElement"]
+
+# Desktop dependencies
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+lyon = "0.13.1"
+glium = "0.24"
+glutin = "0.20"
+winit = "0.19.1"
+

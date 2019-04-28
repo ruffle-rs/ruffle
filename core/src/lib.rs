@@ -1,4 +1,4 @@
-mod backend;
+pub mod backend;
 mod character;
 mod color_transform;
 mod display_object;

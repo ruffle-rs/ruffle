@@ -1,9 +1,8 @@
-use super::{common::ShapeHandle, shape_utils, RenderBackend};
-use crate::backend::ui::glutin::GlutinBackend;
+use super::{common::ShapeHandle, RenderBackend};
 use crate::{matrix::Matrix, Color};
 use glium::{implement_vertex, uniform, Display, Frame, Surface};
-use lyon::tessellation::geometry_builder::{BuffersBuilder, VertexBuffers, VertexConstructor};
-use lyon::tessellation::FillVertex;
+use glutin::WindowedContext;
+use lyon::tessellation::geometry_builder::{BuffersBuilder, VertexBuffers};
 use lyon::{path::PathEvent, tessellation, tessellation::FillTessellator};
 use std::collections::{HashMap, VecDeque};
 use swf::{FillStyle, LineStyle};
@@ -16,8 +15,10 @@ pub struct GliumRenderBackend {
 }
 
 impl GliumRenderBackend {
-    pub fn new(ui: &mut GlutinBackend) -> Result<GliumRenderBackend, Box<std::error::Error>> {
-        let display = Display::from_gl_window(ui.take_context())?;
+    pub fn new(
+        windowed_context: WindowedContext,
+    ) -> Result<GliumRenderBackend, Box<std::error::Error>> {
+        let display = Display::from_gl_window(windowed_context)?;
 
         let shader_program =
             glium::Program::from_source(&display, VERTEX_SHADER, FRAGMENT_SHADER, None)?;
@@ -42,7 +43,7 @@ impl RenderBackend for GliumRenderBackend {
         let mut fill_tess = FillTessellator::new();
 
         for (cmd, path) in paths {
-            if let &PathCommandType::Stroke(_) = &cmd {
+            if let PathCommandType::Stroke(_) = cmd {
                 continue;
             }
             let color = match cmd {
@@ -188,7 +189,7 @@ fn swf_shape_to_lyon_paths(
     let mut prev;
     use lyon::geom::{LineSegment, QuadraticBezierSegment};
     for cmd in cmds {
-        if let PathCommandType::Fill(fill_style) = &cmd.command_type {
+        if let PathCommandType::Fill(_fill_style) = &cmd.command_type {
             let mut out_path = vec![PathEvent::MoveTo(point(cmd.path.start.0, cmd.path.start.1))];
             prev = point(cmd.path.start.0, cmd.path.start.1);
             for edge in cmd.path.edges {
@@ -260,7 +261,7 @@ fn get_paths(shape: &swf::Shape) -> impl Iterator<Item = PathCommand> {
                 }
 
                 if let Some(ref new_styles) = style_change.new_styles {
-                    for (id, paths) in paths {
+                    for (_id, paths) in paths {
                         for path in paths.open_paths {
                             out.push(PathCommand {
                                 command_type: paths.command_type.clone(),
