@@ -19,7 +19,7 @@ wasm-bindgen = "0.2"
 
 [dependencies.web-sys]
 version = "0.3.19"
-features = ["CanvasRenderingContext2d", "HtmlCanvasElement"]
+features = ["CanvasRenderingContext2d", "CssStyleDeclaration", "HtmlCanvasElement", "HtmlElement"]
 
 [dev-dependencies]
 wasm-bindgen-test = "0.2"

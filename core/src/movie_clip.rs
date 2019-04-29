@@ -156,7 +156,6 @@ impl DisplayObjectUpdate for MovieClip {
                     Tag::RemoveObject { depth, .. } => {
                         // TODO(Herschel): How does the character ID work for RemoveObject?
                         self.children.remove(&depth);
-                        info!("REMOVE {} {}", depth, self.children.len());
                     }
 
                     Tag::JpegTables(_) => (),

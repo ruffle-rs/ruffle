@@ -1,5 +1,6 @@
 use fluster_core::backend::render::web_canvas::WebCanvasRenderBackend;
 use js_sys::Uint8Array;
+use std::error::Error;
 use wasm_bindgen::{prelude::*, JsValue};
 use web_sys::HtmlCanvasElement;
 
@@ -18,16 +19,26 @@ impl Player {
 }
 
 impl Player {
-    fn new_internal(
-        canvas: HtmlCanvasElement,
-        swf_data: Uint8Array,
-    ) -> Result<Player, Box<std::error::Error>> {
+    fn new_internal(canvas: HtmlCanvasElement, swf_data: Uint8Array) -> Result<Player, Box<Error>> {
         let mut data = vec![0; swf_data.length() as usize];
         swf_data.copy_to(&mut data[..]);
 
-        let renderer = WebCanvasRenderBackend::new(canvas)?;
+        let renderer = WebCanvasRenderBackend::new(&canvas)?;
 
         let player = fluster_core::Player::new(Box::new(renderer), data)?;
+
+        // Update canvas size to match player size.
+        canvas.set_width(player.movie_width());
+        canvas.set_height(player.movie_height());
+
+        let style = canvas.style();
+        style
+            .set_property("width", &format!("{}px", player.movie_width()))
+            .map_err(|_| "Unable to set style")?;
+        style
+            .set_property("height", &format!("{}px", player.movie_height()))
+            .map_err(|_| "Unable to set style")?;
+
         Ok(Player(player))
     }
 }

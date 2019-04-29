@@ -5,9 +5,8 @@ use wasm_bindgen::JsCast;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, HtmlImageElement};
 
 pub struct WebCanvasRenderBackend {
+    canvas: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
-    width: f64,
-    height: f64,
 
     shapes: Vec<ShapeData>,
 }
@@ -19,9 +18,7 @@ struct ShapeData {
 }
 
 impl WebCanvasRenderBackend {
-    pub fn new(canvas: HtmlCanvasElement) -> Result<Self, Box<std::error::Error>> {
-        let width = canvas.width();
-        let height = canvas.height();
+    pub fn new(canvas: &HtmlCanvasElement) -> Result<Self, Box<std::error::Error>> {
         let context: CanvasRenderingContext2d = canvas
             .get_context("2d")
             .map_err(|_| "Could not create context")?
@@ -30,9 +27,8 @@ impl WebCanvasRenderBackend {
             .map_err(|_| "Expected CanvasRenderingContext2d")?;
 
         Ok(Self {
+            canvas: canvas.clone(),
             context,
-            width: width.into(),
-            height: height.into(),
             shapes: vec![],
         })
     }
@@ -71,9 +67,13 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn clear(&mut self, color: Color) {
+        let width = self.canvas.width();
+        let height = self.canvas.height();
+
         let color = format!("rgb({}, {}, {}", color.r, color.g, color.b);
         self.context.set_fill_style(&color.into());
-        self.context.fill_rect(0.0, 0.0, self.width, self.height);
+        self.context
+            .fill_rect(0.0, 0.0, width.into(), height.into());
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, matrix: &Matrix) {

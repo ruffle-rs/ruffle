@@ -32,6 +32,9 @@ pub struct Player {
 
     frame_rate: f64,
     frame_accumulator: f64,
+
+    movie_width: u32,
+    movie_height: u32,
 }
 
 impl Player {
@@ -63,6 +66,9 @@ impl Player {
 
             frame_rate: swf.frame_rate.into(),
             frame_accumulator: 0.0,
+
+            movie_width: (swf.stage_size.x_max - swf.stage_size.x_min) as u32,
+            movie_height: (swf.stage_size.y_max - swf.stage_size.y_min) as u32,
         })
     }
 
@@ -79,6 +85,14 @@ impl Player {
         if needs_render {
             self.render();
         }
+    }
+
+    pub fn movie_width(&self) -> u32 {
+        self.movie_width
+    }
+
+    pub fn movie_height(&self) -> u32 {
+        self.movie_height
     }
 }
 
