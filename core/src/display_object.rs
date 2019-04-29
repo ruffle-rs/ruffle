@@ -1,74 +1,111 @@
-use crate::color_transform::ColorTransform;
-use crate::matrix::Matrix;
 use crate::player::{RenderContext, UpdateContext};
-use crate::{graphic::Graphic, movie_clip::MovieClip, stage::Stage};
+use crate::prelude::*;
+use crate::transform::Transform;
 use bacon_rajan_cc::{Trace, Tracer};
 
-pub trait DisplayObject {
-    //fn children_gc_mut(&self) -> std::slice::Iter<&mut DisplayObjectNode>;
-    fn run_frame(&mut self, context: &mut UpdateContext);
+pub struct DisplayObjectBase {
+    depth: Depth,
+    transform: Transform,
+}
+
+impl Default for DisplayObjectBase {
+    fn default() -> Self {
+        Self {
+            depth: Default::default(),
+            transform: Default::default(),
+        }
+    }
+}
+
+impl DisplayObjectImpl for DisplayObjectBase {
+    fn get_matrix(&self) -> &Matrix {
+        &self.transform.matrix
+    }
+    fn set_matrix(&mut self, matrix: &Matrix) {
+        self.transform.matrix = matrix.clone();
+    }
+    fn get_color_transform(&self) -> &ColorTransform {
+        &self.transform.color_transform
+    }
+    fn set_color_transform(&mut self, color_transform: &ColorTransform) {
+        self.transform.color_transform = color_transform.clone();
+    }
+}
+
+impl DisplayObjectUpdate for DisplayObjectBase {
+    fn run_frame(&mut self, context: &mut UpdateContext) {}
     fn update_frame_number(&mut self) {}
-    fn render(&self, context: &mut RenderContext);
-    fn set_matrix(&mut self, matrix: Matrix);
-    fn set_color_transform(&mut self, color_transform: ColorTransform);
+    fn render(&self, context: &mut RenderContext) {}
 }
 
-pub enum DisplayObjectNode {
-    Graphic(Graphic),
-    MovieClip(MovieClip),
-    Stage(Stage),
+impl Trace for DisplayObjectBase {
+    fn trace(&mut self, _tracer: &mut Tracer) {}
 }
 
-impl DisplayObject for DisplayObjectNode {
-    fn run_frame(&mut self, context: &mut UpdateContext) {
-        match self {
-            DisplayObjectNode::Graphic(graphic) => graphic.run_frame(context),
-            DisplayObjectNode::MovieClip(movie_clip) => movie_clip.run_frame(context),
-            DisplayObjectNode::Stage(stage) => stage.run_frame(context),
-        }
-    }
+pub trait DisplayObjectImpl: DisplayObjectUpdate {
+    fn get_matrix(&self) -> &Matrix;
+    fn set_matrix(&mut self, matrix: &Matrix);
+    fn get_color_transform(&self) -> &ColorTransform;
+    fn set_color_transform(&mut self, color_transform: &ColorTransform);
+}
 
-    fn update_frame_number(&mut self) {
-        match self {
-            DisplayObjectNode::Graphic(graphic) => graphic.update_frame_number(),
-            DisplayObjectNode::MovieClip(movie_clip) => movie_clip.update_frame_number(),
-            DisplayObjectNode::Stage(stage) => stage.update_frame_number(),
-        }
-    }
+pub trait DisplayObjectUpdate: Trace {
+    fn run_frame(&mut self, _context: &mut UpdateContext) {}
+    fn update_frame_number(&mut self) {}
+    fn render(&self, _context: &mut RenderContext) {}
+}
 
-    fn render(&self, context: &mut RenderContext) {
-        match self {
-            DisplayObjectNode::Graphic(graphic) => graphic.render(context),
-            DisplayObjectNode::MovieClip(movie_clip) => movie_clip.render(context),
-            DisplayObjectNode::Stage(stage) => stage.render(context),
-        }
-    }
-
-    fn set_matrix(&mut self, matrix: Matrix) {
-        match self {
-            DisplayObjectNode::Graphic(graphic) => graphic.set_matrix(matrix),
-            DisplayObjectNode::MovieClip(movie_clip) => movie_clip.set_matrix(matrix),
-            DisplayObjectNode::Stage(stage) => stage.set_matrix(matrix),
-        }
-    }
-
-    fn set_color_transform(&mut self, color_transform: ColorTransform) {
-        match self {
-            DisplayObjectNode::Graphic(graphic) => graphic.set_color_transform(color_transform),
-            DisplayObjectNode::MovieClip(movie_clip) => {
-                movie_clip.set_color_transform(color_transform)
+macro_rules! impl_display_object {
+    ($name:ident, $field:ident) => {
+        impl crate::display_object::DisplayObjectImpl for $name {
+            fn get_matrix(&self) -> &Matrix {
+                self.$field.get_matrix()
             }
-            DisplayObjectNode::Stage(stage) => stage.set_color_transform(color_transform),
+            fn set_matrix(&mut self, matrix: &Matrix) {
+                self.$field.set_matrix(matrix)
+            }
+            fn get_color_transform(&self) -> &ColorTransform {
+                self.$field.get_color_transform()
+            }
+            fn set_color_transform(&mut self, color_transform: &ColorTransform) {
+                self.$field.set_color_transform(color_transform)
+            }
         }
+    };
+}
+
+// TODO(Herschel): We wrap in a box because using a trait object
+// directly with Cc gets hairy.
+// Extra heap allocation, though.
+// Revisit this eventually, some possibilities:
+// - Just use a dumb enum.
+// - Some DST magic if we remove the Box below and mark this !Sized?
+pub struct DisplayObject {
+    inner: Box<DisplayObjectImpl>,
+}
+
+impl DisplayObject {
+    pub fn new(inner: Box<DisplayObjectImpl>) -> DisplayObject {
+        DisplayObject { inner }
     }
 }
 
-impl Trace for DisplayObjectNode {
+impl_display_object!(DisplayObject, inner);
+
+impl DisplayObjectUpdate for DisplayObject {
+    fn run_frame(&mut self, context: &mut UpdateContext) {
+        self.inner.run_frame(context)
+    }
+    fn update_frame_number(&mut self) {
+        self.inner.update_frame_number()
+    }
+    fn render(&self, context: &mut RenderContext) {
+        self.inner.render(context)
+    }
+}
+
+impl Trace for DisplayObject {
     fn trace(&mut self, tracer: &mut Tracer) {
-        match self {
-            DisplayObjectNode::Graphic(graphic) => graphic.trace(tracer),
-            DisplayObjectNode::MovieClip(movie_clip) => movie_clip.trace(tracer),
-            DisplayObjectNode::Stage(stage) => stage.trace(tracer),
-        }
+        self.inner.trace(tracer)
     }
 }

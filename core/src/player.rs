@@ -1,9 +1,10 @@
 use crate::backend::render::RenderBackend;
 use crate::color_transform::ColorTransformStack;
-use crate::display_object::DisplayObject;
+use crate::display_object::{DisplayObject, DisplayObjectUpdate};
 use crate::library::Library;
 use crate::matrix::MatrixStack;
-use crate::stage::Stage;
+use crate::movie_clip::MovieClip;
+use crate::prelude::*;
 use bacon_rajan_cc::Cc;
 use log::info;
 use std::cell::RefCell;
@@ -26,7 +27,8 @@ pub struct Player {
     render_context: RenderContext,
 
     library: Library,
-    stage: Cc<RefCell<Stage>>,
+    stage: Cc<RefCell<DisplayObject>>,
+    background_color: Color,
 
     frame_rate: f64,
     frame_accumulator: f64,
@@ -37,15 +39,10 @@ impl Player {
         renderer: Box<RenderBackend>,
         swf_data: Vec<u8>,
     ) -> Result<Player, Box<std::error::Error>> {
-        Self::new_internal(renderer, swf_data)
-    }
-
-    fn new_internal(
-        renderer: Box<RenderBackend>,
-        swf_data: Vec<u8>,
-    ) -> Result<Player, Box<std::error::Error>> {
         let (swf, tag_stream) = swf::read::read_swf_header_decompressed(&swf_data[..]).unwrap();
         info!("{}x{}", swf.stage_size.x_max, swf.stage_size.y_max);
+
+        let stage = DisplayObject::new(Box::new(MovieClip::new_with_data(0, swf.num_frames)));
 
         Ok(Player {
             tag_stream,
@@ -55,9 +52,14 @@ impl Player {
                 matrix_stack: MatrixStack::new(),
                 color_transform_stack: ColorTransformStack::new(),
             },
-
+            background_color: Color {
+                r: 255,
+                g: 255,
+                b: 255,
+                a: 255,
+            },
             library: Library::new(),
-            stage: Stage::new(swf.num_frames),
+            stage: Cc::new(RefCell::new(stage)),
 
             frame_rate: swf.frame_rate.into(),
             frame_accumulator: 0.0,
@@ -86,6 +88,7 @@ impl Player {
             tag_stream: &mut self.tag_stream,
             position_stack: vec![],
             library: &mut self.library,
+            background_color: &mut self.background_color,
             renderer: &mut *self.render_context.renderer,
         };
 
@@ -96,6 +99,10 @@ impl Player {
 
     fn render(&mut self) {
         self.render_context.renderer.begin_frame();
+
+        self.render_context
+            .renderer
+            .clear(self.background_color.clone());
 
         let stage = self.stage.borrow_mut();
         stage.render(&mut self.render_context);
@@ -108,6 +115,7 @@ pub struct UpdateContext<'a> {
     pub tag_stream: &'a mut swf::read::Reader<Cursor<Vec<u8>>>,
     pub position_stack: Vec<u64>,
     pub library: &'a mut Library,
+    pub background_color: &'a mut Color,
     pub renderer: &'a mut RenderBackend,
 }
 

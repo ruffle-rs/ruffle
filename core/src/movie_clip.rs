@@ -1,5 +1,8 @@
+use crate::character::Character;
 use crate::color_transform::ColorTransform;
-use crate::display_object::{DisplayObject, DisplayObjectNode};
+use crate::display_object::{
+    DisplayObject, DisplayObjectBase, DisplayObjectImpl, DisplayObjectUpdate,
+};
 use crate::matrix::Matrix;
 use crate::player::{RenderContext, UpdateContext};
 use bacon_rajan_cc::{Cc, Trace, Tracer};
@@ -11,41 +14,38 @@ type Depth = i16;
 type FrameNumber = u16;
 
 pub struct MovieClip {
+    base: DisplayObjectBase,
     tag_stream_start: Option<u64>,
     tag_stream_pos: u64,
     is_playing: bool,
-    matrix: Matrix,
-    color_transform: ColorTransform,
     current_frame: FrameNumber,
     next_frame: FrameNumber,
     total_frames: FrameNumber,
-    children: HashMap<Depth, Cc<RefCell<DisplayObjectNode>>>,
+    children: HashMap<Depth, Cc<RefCell<DisplayObject>>>,
 }
 
+impl_display_object!(MovieClip, base);
+
 impl MovieClip {
-    pub fn new() -> Cc<RefCell<MovieClip>> {
-        let clip = MovieClip {
+    pub fn new() -> MovieClip {
+        MovieClip {
+            base: Default::default(),
             tag_stream_start: None,
             tag_stream_pos: 0,
             is_playing: true,
-            matrix: Matrix::default(),
-            color_transform: Default::default(),
             current_frame: 0,
             next_frame: 1,
             total_frames: 1,
             children: HashMap::new(),
-        };
-        Cc::new(RefCell::new(clip))
+        }
     }
 
     pub fn new_with_data(tag_stream_start: u64, num_frames: u16) -> MovieClip {
-        info!("start: {} ", tag_stream_start);
         MovieClip {
+            base: Default::default(),
             tag_stream_start: Some(tag_stream_start),
             tag_stream_pos: tag_stream_start,
             is_playing: true,
-            matrix: Matrix::default(),
-            color_transform: Default::default(),
             current_frame: 0,
             next_frame: 1,
             total_frames: num_frames,
@@ -54,7 +54,7 @@ impl MovieClip {
     }
 
     pub fn run_place_object(
-        children: &mut HashMap<Depth, Cc<RefCell<DisplayObjectNode>>>,
+        children: &mut HashMap<Depth, Cc<RefCell<DisplayObject>>>,
         place_object: &swf::PlaceObject,
         context: &mut UpdateContext,
     ) {
@@ -96,12 +96,12 @@ impl MovieClip {
         let mut character = character.borrow_mut();
         if let Some(matrix) = &place_object.matrix {
             let m = matrix.clone();
-            character.set_matrix(Matrix::from(m));
+            character.set_matrix(&Matrix::from(m));
         }
     }
 }
 
-impl DisplayObject for MovieClip {
+impl DisplayObjectUpdate for MovieClip {
     fn run_frame(&mut self, context: &mut UpdateContext) {
         use swf::{read::SwfRead, Tag};
         if self.tag_stream_start.is_some() {
@@ -113,9 +113,42 @@ impl DisplayObject for MovieClip {
                 .get_inner()
                 .set_position(self.tag_stream_pos);
 
+            let mut start_pos = self.tag_stream_pos;
             while let Ok(Some(tag)) = context.tag_stream.read_tag() {
                 //trace!("mc: {:?}", tag);
                 match tag {
+                    Tag::SetBackgroundColor(color) => *context.background_color = color,
+                    Tag::DefineShape(shape) => {
+                        if !context.library.contains_character(shape.id) {
+                            let shape_handle = context.renderer.register_shape(&shape);
+                            context.library.register_character(
+                                shape.id,
+                                Character::Graphic {
+                                    shape_handle,
+                                    x_min: shape.shape_bounds.x_min,
+                                    y_min: shape.shape_bounds.y_min,
+                                },
+                            );
+                        }
+                    }
+                    Tag::DefineSprite(sprite) => {
+                        let pos = context.tag_stream.get_ref().position();
+                        context.tag_stream.get_inner().set_position(start_pos);
+                        context.tag_stream.read_tag_code_and_length().unwrap();
+                        context.tag_stream.read_u32().unwrap();
+                        let mc_start_pos = context.tag_stream.get_ref().position();
+                        context.tag_stream.get_inner().set_position(pos);
+                        if !context.library.contains_character(sprite.id) {
+                            context.library.register_character(
+                                sprite.id,
+                                Character::MovieClip {
+                                    num_frames: sprite.num_frames,
+                                    tag_stream_start: mc_start_pos,
+                                },
+                            );
+                        }
+                    }
+
                     Tag::ShowFrame => break,
                     Tag::PlaceObject(place_object) => {
                         MovieClip::run_place_object(&mut self.children, &*place_object, context)
@@ -133,6 +166,7 @@ impl DisplayObject for MovieClip {
                     Tag::DoAction(_) => (),
                     _ => info!("Umimplemented tag: {:?}", tag),
                 }
+                start_pos = context.tag_stream.get_ref().position();
             }
             self.tag_stream_pos = context.tag_stream.get_ref().position();
             context
@@ -166,8 +200,10 @@ impl DisplayObject for MovieClip {
     }
 
     fn render(&self, context: &mut RenderContext) {
-        context.matrix_stack.push(&self.matrix);
-        context.color_transform_stack.push(&self.color_transform);
+        context.matrix_stack.push(self.get_matrix());
+        context
+            .color_transform_stack
+            .push(self.get_color_transform());
 
         let mut sorted_children: Vec<_> = self.children.iter().collect();
         sorted_children.sort_by_key(|(depth, _)| *depth);
@@ -178,14 +214,6 @@ impl DisplayObject for MovieClip {
 
         context.matrix_stack.pop();
         context.color_transform_stack.pop();
-    }
-
-    fn set_matrix(&mut self, matrix: Matrix) {
-        self.matrix = matrix;
-    }
-
-    fn set_color_transform(&mut self, color_transform: ColorTransform) {
-        self.color_transform = color_transform;
     }
 }
 

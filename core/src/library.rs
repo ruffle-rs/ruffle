@@ -1,5 +1,5 @@
 use crate::character::Character;
-use crate::display_object::DisplayObjectNode;
+use crate::display_object::DisplayObject;
 use crate::graphic::Graphic;
 use crate::movie_clip::MovieClip;
 use std::collections::HashMap;
@@ -28,24 +28,24 @@ impl Library {
     pub fn instantiate_display_object(
         &self,
         id: CharacterId,
-    ) -> Result<DisplayObjectNode, Box<std::error::Error>> {
+    ) -> Result<DisplayObject, Box<std::error::Error>> {
         match self.characters.get(&id) {
             Some(Character::Graphic {
                 x_min,
                 y_min,
                 shape_handle,
-            }) => Ok(DisplayObjectNode::Graphic(Graphic::new(
+            }) => Ok(DisplayObject::new(Box::new(Graphic::new(
                 *shape_handle,
                 *x_min,
                 *y_min,
-            ))),
+            )))),
             Some(Character::MovieClip {
                 tag_stream_start,
                 num_frames,
-            }) => Ok(DisplayObjectNode::MovieClip(MovieClip::new_with_data(
+            }) => Ok(DisplayObject::new(Box::new(MovieClip::new_with_data(
                 *tag_stream_start,
                 *num_frames,
-            ))),
+            )))),
             Some(_) => Err("Not a DisplayObject".into()),
             None => Err("Character id doesn't exist".into()),
         }
