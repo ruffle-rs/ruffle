@@ -30,6 +30,9 @@ function loadRemoteSwf(swfData) {
 }
 
 function playSwf(swfData) {
+    //let audio = new AudioContext();
+    //audio.decodeAudioData(swfData).then(data => console.log("success"));
+    //return;
     let canvas = document.getElementById("fluster-canvas");
     if (swfData && canvas) {
         console.log(swfData);
