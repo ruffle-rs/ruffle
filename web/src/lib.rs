@@ -1,4 +1,6 @@
-use fluster_core::backend::render::web_canvas::WebCanvasRenderBackend;
+use fluster_core::backend::{
+    audio::web::WebAudioBackend, render::web_canvas::WebCanvasRenderBackend,
+};
 use js_sys::Uint8Array;
 use std::error::Error;
 use wasm_bindgen::{prelude::*, JsValue};
@@ -20,12 +22,16 @@ impl Player {
 
 impl Player {
     fn new_internal(canvas: HtmlCanvasElement, swf_data: Uint8Array) -> Result<Player, Box<Error>> {
+        console_error_panic_hook::set_once();
+        console_log::init_with_level(log::Level::Trace)?;
+
         let mut data = vec![0; swf_data.length() as usize];
         swf_data.copy_to(&mut data[..]);
 
         let renderer = WebCanvasRenderBackend::new(&canvas)?;
+        let audio = WebAudioBackend::new()?;
 
-        let player = fluster_core::Player::new(Box::new(renderer), data)?;
+        let player = fluster_core::Player::new(Box::new(renderer), Box::new(audio), data)?;
 
         // Update canvas size to match player size.
         canvas.set_width(player.movie_width());

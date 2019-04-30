@@ -1,7 +1,7 @@
 #[macro_use]
 mod display_object;
 
-pub mod backend;
+mod audio;
 mod character;
 mod color_transform;
 mod graphic;
@@ -11,6 +11,8 @@ mod movie_clip;
 mod player;
 mod prelude;
 mod transform;
+
+pub mod backend;
 
 pub use player::Player;
 use swf::Color;

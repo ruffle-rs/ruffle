@@ -1,4 +1,5 @@
-use crate::backend::render::RenderBackend;
+use crate::audio::Audio;
+use crate::backend::{audio::AudioBackend, render::RenderBackend};
 use crate::color_transform::ColorTransformStack;
 use crate::display_object::{DisplayObject, DisplayObjectUpdate};
 use crate::library::Library;
@@ -25,6 +26,7 @@ pub struct Player {
     tag_stream: swf::read::Reader<Cursor<Vec<u8>>>,
 
     render_context: RenderContext,
+    audio: Audio,
 
     library: Library,
     stage: Cc<RefCell<DisplayObject>>,
@@ -40,6 +42,7 @@ pub struct Player {
 impl Player {
     pub fn new(
         renderer: Box<RenderBackend>,
+        audio: Box<AudioBackend>,
         swf_data: Vec<u8>,
     ) -> Result<Player, Box<std::error::Error>> {
         let (swf, tag_stream) = swf::read::read_swf_header_decompressed(&swf_data[..]).unwrap();
@@ -55,6 +58,9 @@ impl Player {
                 matrix_stack: MatrixStack::new(),
                 color_transform_stack: ColorTransformStack::new(),
             },
+
+            audio: Audio::new(audio),
+
             background_color: Color {
                 r: 255,
                 g: 255,
@@ -75,7 +81,7 @@ impl Player {
     pub fn tick(&mut self, dt: f64) {
         self.frame_accumulator += dt;
         let frame_time = 1000.0 / self.frame_rate;
-        info!("{} / {}", self.frame_accumulator, frame_time);
+
         let needs_render = self.frame_accumulator >= frame_time;
         while self.frame_accumulator >= frame_time {
             self.frame_accumulator -= frame_time;
@@ -104,6 +110,7 @@ impl Player {
             library: &mut self.library,
             background_color: &mut self.background_color,
             renderer: &mut *self.render_context.renderer,
+            audio: &mut self.audio,
         };
 
         let mut stage = self.stage.borrow_mut();
@@ -131,6 +138,7 @@ pub struct UpdateContext<'a> {
     pub library: &'a mut Library,
     pub background_color: &'a mut Color,
     pub renderer: &'a mut RenderBackend,
+    pub audio: &'a mut Audio,
 }
 
 pub struct RenderContext {

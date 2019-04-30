@@ -1,3 +1,4 @@
+use crate::audio::AudioStreamHandle;
 use crate::character::Character;
 use crate::color_transform::ColorTransform;
 use crate::display_object::{
@@ -21,6 +22,7 @@ pub struct MovieClip {
     current_frame: FrameNumber,
     next_frame: FrameNumber,
     total_frames: FrameNumber,
+    audio_stream: Option<AudioStreamHandle>,
     children: HashMap<Depth, Cc<RefCell<DisplayObject>>>,
 }
 
@@ -36,6 +38,7 @@ impl MovieClip {
             current_frame: 0,
             next_frame: 1,
             total_frames: 1,
+            audio_stream: None,
             children: HashMap::new(),
         }
     }
@@ -48,6 +51,7 @@ impl MovieClip {
             is_playing: true,
             current_frame: 0,
             next_frame: 1,
+            audio_stream: None,
             total_frames: num_frames,
             children: HashMap::new(),
         }
@@ -97,6 +101,24 @@ impl MovieClip {
         if let Some(matrix) = &place_object.matrix {
             let m = matrix.clone();
             character.set_matrix(&Matrix::from(m));
+        }
+    }
+
+    fn sound_stream_head(
+        &mut self,
+        stream_info: &swf::SoundStreamInfo,
+        context: &mut UpdateContext,
+        _length: usize,
+        _version: u8,
+    ) {
+        if self.audio_stream.is_none() {
+            self.audio_stream = Some(context.audio.register_stream(stream_info));
+        }
+    }
+
+    fn sound_stream_block(&mut self, samples: &[u8], context: &mut UpdateContext, _length: usize) {
+        if let Some(stream) = self.audio_stream {
+            context.audio.queue_stream_samples(stream, samples)
         }
     }
 }
@@ -158,10 +180,13 @@ impl DisplayObjectUpdate for MovieClip {
                         self.children.remove(&depth);
                     }
 
+                    Tag::SoundStreamHead(info) => self.sound_stream_head(&info, context, 0, 1),
+                    Tag::SoundStreamHead2(info) => self.sound_stream_head(&info, context, 0, 2),
+                    Tag::SoundStreamBlock(samples) => {
+                        self.sound_stream_block(&samples[..], context, 0)
+                    }
+
                     Tag::JpegTables(_) => (),
-                    Tag::SoundStreamHead(_) => (),
-                    Tag::SoundStreamHead2(_) => (),
-                    Tag::SoundStreamBlock(_) => (),
                     Tag::DoAction(_) => (),
                     _ => info!("Umimplemented tag: {:?}", tag),
                 }

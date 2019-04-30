@@ -46,7 +46,6 @@ impl RenderBackend for WebCanvasRenderBackend {
             "data:image/svg+xml,{}",
             utf8_percent_encode(&svg, DEFAULT_ENCODE_SET)
         );
-        info!("{}", svg_encoded);
         image.set_src(&svg_encoded);
 
         self.shapes.push(ShapeData {

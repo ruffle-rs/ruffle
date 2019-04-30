@@ -1,4 +1,6 @@
-use fluster_core::{backend::render::glium::GliumRenderBackend, Player};
+use fluster_core::{
+    backend::audio::null::NullAudioBackend, backend::render::glium::GliumRenderBackend, Player,
+};
 use glutin::{ContextBuilder, Event, EventsLoop, WindowBuilder, WindowEvent};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
@@ -28,8 +30,9 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<std::error::Error>> {
     let mut events_loop = EventsLoop::new();
     let window_builder = WindowBuilder::new();
     let windowed_context = ContextBuilder::new().build_windowed(window_builder, &events_loop)?;
+    let audio = NullAudioBackend::new();
     let renderer = GliumRenderBackend::new(windowed_context)?;
-    let mut player = Player::new(Box::new(renderer), swf_data)?;
+    let mut player = Player::new(Box::new(renderer), Box::new(audio), swf_data)?;
 
     let mut time = Instant::now();
     loop {

@@ -7,3 +7,6 @@ members = [
 
 [patch.'https://github.com/Herschel/swf-rs']
 swf = { path = "../swf-rs" }
+
+[patch.crates-io]
+minimp3 = { path = "../minimp3-rs" }
