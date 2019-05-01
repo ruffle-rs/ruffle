@@ -18,6 +18,10 @@ impl Default for DisplayObjectBase {
 }
 
 impl DisplayObjectImpl for DisplayObjectBase {
+    fn transform(&self) -> &Transform {
+        &self.transform
+    }
+
     fn get_matrix(&self) -> &Matrix {
         &self.transform.matrix
     }
@@ -43,6 +47,7 @@ impl Trace for DisplayObjectBase {
 }
 
 pub trait DisplayObjectImpl: DisplayObjectUpdate {
+    fn transform(&self) -> &Transform;
     fn get_matrix(&self) -> &Matrix;
     fn set_matrix(&mut self, matrix: &Matrix);
     fn get_color_transform(&self) -> &ColorTransform;
@@ -58,6 +63,9 @@ pub trait DisplayObjectUpdate: Trace {
 macro_rules! impl_display_object {
     ($name:ident, $field:ident) => {
         impl crate::display_object::DisplayObjectImpl for $name {
+            fn transform(&self) -> &crate::transform::Transform {
+                self.$field.transform()
+            }
             fn get_matrix(&self) -> &Matrix {
                 self.$field.get_matrix()
             }

@@ -1,7 +1,7 @@
 use super::{common::ShapeHandle, RenderBackend};
-use crate::{matrix::Matrix, Color};
-use glium::{implement_vertex, uniform, Display, Frame, Surface};
-use glutin::{Window, WindowedContext};
+use crate::{transform::Transform, Color};
+use glium::{draw_parameters::DrawParameters, implement_vertex, uniform, Display, Frame, Surface};
+use glutin::WindowedContext;
 use lyon::tessellation::geometry_builder::{BuffersBuilder, VertexBuffers};
 use lyon::{path::PathEvent, tessellation, tessellation::FillTessellator};
 use std::collections::{HashMap, VecDeque};
@@ -11,6 +11,7 @@ pub struct GliumRenderBackend {
     display: Display,
     target: Option<Frame>,
     shader_program: glium::Program,
+    gradient_shader_program: glium::Program,
     meshes: Vec<Mesh>,
     movie_width: f32,
     movie_height: f32,
@@ -22,12 +23,39 @@ impl GliumRenderBackend {
     ) -> Result<GliumRenderBackend, Box<std::error::Error>> {
         let display = Display::from_gl_window(windowed_context)?;
 
-        let shader_program =
-            glium::Program::from_source(&display, VERTEX_SHADER, FRAGMENT_SHADER, None)?;
+        use glium::program::ProgramCreationInput;
+        let shader_program = glium::Program::new(
+            &display,
+            ProgramCreationInput::SourceCode {
+                vertex_shader: VERTEX_SHADER,
+                fragment_shader: FRAGMENT_SHADER,
+                geometry_shader: None,
+                tessellation_control_shader: None,
+                tessellation_evaluation_shader: None,
+                transform_feedback_varyings: None,
+                outputs_srgb: true,
+                uses_point_size: false,
+            },
+        )?;
+
+        let gradient_shader_program = glium::Program::new(
+            &display,
+            ProgramCreationInput::SourceCode {
+                vertex_shader: TEXTURE_VERTEX_SHADER,
+                fragment_shader: GRADIENT_FRAGMENT_SHADER,
+                geometry_shader: None,
+                tessellation_control_shader: None,
+                tessellation_evaluation_shader: None,
+                transform_feedback_varyings: None,
+                outputs_srgb: true,
+                uses_point_size: false,
+            },
+        )?;
 
         Ok(GliumRenderBackend {
             display,
             shader_program,
+            gradient_shader_program,
             target: None,
             meshes: vec![],
             movie_width: 500.0,
@@ -63,7 +91,7 @@ impl RenderBackend for GliumRenderBackend {
         let mut num_verts = 0;
         let mut num_indices = 0;
 
-        for (cmd, path) in paths {
+        for (cmd, path) in paths.clone() {
             let color = match cmd {
                 PathCommandType::Fill(FillStyle::Color(color)) => [
                     f32::from(color.r) / 255.0,
@@ -93,12 +121,11 @@ impl RenderBackend for GliumRenderBackend {
             indices.extend(lyon_mesh.indices.iter().map(|&n| n + vert_offset));
         }
 
-        let vertex_buffer =
-            glium::VertexBuffer::new(&self.display, &lyon_mesh.vertices[..]).unwrap();
+        let vertex_buffer = glium::VertexBuffer::new(&self.display, &vertices[..]).unwrap();
         let index_buffer = glium::IndexBuffer::new(
             &self.display,
             glium::index::PrimitiveType::TrianglesList,
-            &lyon_mesh.indices[..],
+            &indices[..],
         )
         .unwrap();
 
@@ -108,72 +135,92 @@ impl RenderBackend for GliumRenderBackend {
             index_buffer,
         });
 
-        // // Gradient
-        // for (cmd, path) in paths {
-        //     if let PathCommandType::Stroke(_) = cmd {
-        //         continue;
-        //     }
-        //     let matrix = match cmd {
-        //         PathCommandType::Fill(FillStyle::LinearGradient(gradient)) => {
-        //             let mut m = gradient.matrix.clone();
-        //             let tx = m.translate_x * 20.0;
-        //             let ty = m.translate_y * 20.0;
-        //             let det = m.scale_x * m.scale_y - m.rotate_skew_1 * m.rotate_skew_0;
-        //             let mut a = m.scale_y / det;
-        //             let mut b = -m.rotate_skew_1 / det;
-        //             let mut c = -(tx * m.scale_y - m.rotate_skew_1 * ty) / det;
-        //             let mut d = -m.rotate_skew_0 / det;
-        //             let mut e = m.scale_x / det;
-        //             let mut f = (tx * m.rotate_skew_0 - m.scale_x * ty) / det;
+        for (cmd, path) in paths {
+            if let PathCommandType::Stroke(_) = cmd {
+                continue;
+            }
+            let (gradient_matrix, gradient_colors, gradient_ratios, num_gradient_colors) = match cmd
+            {
+                PathCommandType::Fill(FillStyle::LinearGradient(gradient)) => {
+                    let mut m = gradient.matrix.clone();
+                    let tx = m.translate_x * 20.0;
+                    let ty = m.translate_y * 20.0;
+                    let det = m.scale_x * m.scale_y - m.rotate_skew_1 * m.rotate_skew_0;
+                    let mut a = m.scale_y / det;
+                    let mut b = -m.rotate_skew_1 / det;
+                    let mut c = -(tx * m.scale_y - m.rotate_skew_1 * ty) / det;
+                    let mut d = -m.rotate_skew_0 / det;
+                    let mut e = m.scale_x / det;
+                    let mut f = (tx * m.rotate_skew_0 - m.scale_x * ty) / det;
 
-        //             a *= 20.0 / 32768.0;
-        //             b *= 20.0 / 32768.0;
-        //             d *= 20.0 / 32768.0;
-        //             e *= 20.0 / 32768.0;
+                    a *= 20.0 / 32768.0;
+                    b *= 20.0 / 32768.0;
+                    d *= 20.0 / 32768.0;
+                    e *= 20.0 / 32768.0;
 
-        //             c /= 32768.0;
-        //             f /= 32768.0;
-        //             c += 0.5;
-        //             f += 0.5;
-        //             [a, b, c, d, e, f]
-        //         }
-        //         PathCommandType::Fill(_) => continue,
-        //         PathCommandType::Stroke(_) => continue,
-        //     };
+                    c /= 32768.0;
+                    f /= 32768.0;
+                    c += 0.5;
+                    f += 0.5;
+                    let matrix = [
+                        [a, c, 0.0, 0.0],
+                        [b, d, 0.0, 0.0],
+                        [0.0, 0.0, 1.0, 0.0],
+                        [e, f, 0.0, 1.0],
+                    ];
 
-        //     let vertex_ctor = move |vertex: tessellation::FillVertex| Vertex {
-        //         position: [vertex.position.x, vertex.position.y],
-        //         color: [u, v],
-        //     };
+                    let mut colors = [[0.0; 4]; 4];
+                    let mut ratios = [0.0; 4];
+                    for (i, record) in gradient.records.iter().enumerate() {
+                        colors[i] = [
+                            record.color.r as f32 / 255.0,
+                            record.color.g as f32 / 255.0,
+                            record.color.b as f32 / 255.0,
+                            record.color.a as f32 / 255.0,
+                        ];
+                        ratios[i] = record.ratio as f32 / 255.0;
+                    }
 
-        //     let mut buffers_builder = BuffersBuilder::new(&mut lyon_mesh, vertex_ctor);
-        //     fill_tess
-        //         .tessellate_path(
-        //             path.into_iter(),
-        //             &FillOptions::even_odd(),
-        //             &mut buffers_builder,
-        //         )
-        //         .expect("Tessellation error");
+                    (matrix, colors, ratios, gradient.records.len() as u8)
+                }
+                PathCommandType::Fill(_) => continue,
+                PathCommandType::Stroke(_) => continue,
+            };
 
-        //     let vert_offset = vertices.len() as u32;
-        //     vertices.extend(lyon_mesh.vertices.iter());
-        //     indices.extend(lyon_mesh.indices.iter().map(|&n| n + vert_offset));
-        // }
+            let vertex_ctor = move |vertex: tessellation::FillVertex| Vertex {
+                position: [vertex.position.x, vertex.position.y],
+                color: [0.0, 0.0, 0.0, 0.0],
+            };
 
-        // let vertex_buffer =
-        //     glium::VertexBuffer::new(&self.display, &lyon_mesh.vertices[..]).unwrap();
-        // let index_buffer = glium::IndexBuffer::new(
-        //     &self.display,
-        //     glium::index::PrimitiveType::TrianglesList,
-        //     &lyon_mesh.indices[..],
-        // )
-        // .unwrap();
+            let mut buffers_builder = BuffersBuilder::new(&mut lyon_mesh, vertex_ctor);
+            fill_tess
+                .tessellate_path(
+                    path.into_iter(),
+                    &FillOptions::even_odd(),
+                    &mut buffers_builder,
+                )
+                .expect("Tessellation error");
 
-        // mesh.draws.push(Draw {
-        //     draw_type: DrawType::Color,
-        //     vertex_buffer,
-        //     index_buffer,
-        // });
+            let vertex_buffer =
+                glium::VertexBuffer::new(&self.display, &lyon_mesh.vertices[..]).unwrap();
+            let index_buffer = glium::IndexBuffer::new(
+                &self.display,
+                glium::index::PrimitiveType::TrianglesList,
+                &lyon_mesh.indices[..],
+            )
+            .unwrap();
+
+            mesh.draws.push(Draw {
+                draw_type: DrawType::LinearGradient {
+                    gradient_matrix,
+                    gradient_colors,
+                    gradient_ratios,
+                    num_gradient_colors,
+                },
+                vertex_buffer,
+                index_buffer,
+            });
+        }
 
         self.meshes.push(mesh);
 
@@ -193,7 +240,7 @@ impl RenderBackend for GliumRenderBackend {
 
     fn clear(&mut self, color: Color) {
         let target = self.target.as_mut().unwrap();
-        target.clear_color(
+        target.clear_color_srgb(
             f32::from(color.r) / 255.0,
             f32::from(color.g) / 255.0,
             f32::from(color.b) / 255.0,
@@ -201,7 +248,7 @@ impl RenderBackend for GliumRenderBackend {
         );
     }
 
-    fn render_shape(&mut self, shape: ShapeHandle, matrix: &Matrix) {
+    fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
         let target = self.target.as_mut().unwrap();
 
         let mesh = &self.meshes[shape.0];
@@ -214,11 +261,30 @@ impl RenderBackend for GliumRenderBackend {
         ];
 
         let world_matrix = [
-            [matrix.a, matrix.b, 0.0, 0.0],
-            [matrix.b, matrix.d, 0.0, 0.0],
+            [transform.matrix.a, transform.matrix.b, 0.0, 0.0],
+            [transform.matrix.c, transform.matrix.d, 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0],
-            [matrix.tx, matrix.ty, 0.0, 1.0],
+            [transform.matrix.tx, transform.matrix.ty, 0.0, 1.0],
         ];
+
+        let mult_color = [
+            transform.color_transform.r_mult,
+            transform.color_transform.g_mult,
+            transform.color_transform.b_mult,
+            transform.color_transform.a_mult,
+        ];
+
+        let add_color = [
+            transform.color_transform.r_add,
+            transform.color_transform.g_add,
+            transform.color_transform.b_add,
+            transform.color_transform.a_add,
+        ];
+
+        let draw_parameters = DrawParameters {
+            blend: glium::Blend::alpha_blending(),
+            ..Default::default()
+        };
 
         for draw in &mesh.draws {
             match draw.draw_type {
@@ -228,12 +294,27 @@ impl RenderBackend for GliumRenderBackend {
                             &draw.vertex_buffer,
                             &draw.index_buffer,
                             &self.shader_program,
-                            &uniform! { view_matrix: view_matrix, world_matrix: world_matrix },
-                            &Default::default(),
+                            &uniform! { view_matrix: view_matrix, world_matrix: world_matrix, mult_color: mult_color, add_color: add_color },
+                            &draw_parameters
                         )
                         .unwrap();
                 }
-                _ => (),
+                DrawType::LinearGradient {
+                    gradient_matrix,
+                    gradient_colors,
+                    gradient_ratios,
+                    num_gradient_colors,
+                } => {
+                    target
+                        .draw(
+                            &draw.vertex_buffer,
+                            &draw.index_buffer,
+                            &self.gradient_shader_program,
+                            &uniform! { view_matrix: view_matrix, world_matrix: world_matrix, mult_color: mult_color, add_color: add_color, gradient_matrix: gradient_matrix, gradient_colors: gradient_colors, gradient_ratios: gradient_ratios, num_gradient_colors: num_gradient_colors },
+                            &draw_parameters
+                        )
+                        .unwrap();
+                }
             }
         }
     }
@@ -248,19 +329,21 @@ struct Vertex {
 implement_vertex!(Vertex, position, color);
 
 const VERTEX_SHADER: &str = r#"
-#version 140
+    #version 140
 
-uniform mat4 view_matrix;
-uniform mat4 world_matrix;
+    uniform mat4 view_matrix;
+    uniform mat4 world_matrix;
+    uniform vec4 mult_color;
+    uniform vec4 add_color;
+    
+    in vec2 position;
+    in vec4 color;
+    out vec4 frag_color;
 
-in vec2 position;
-in vec4 color;
-out vec4 frag_color;
-
-void main() {
-    frag_color = color;
-    gl_Position = view_matrix * world_matrix * vec4(position, 0.0, 1.0);
-}
+    void main() {
+        frag_color = color * mult_color + add_color;
+        gl_Position = view_matrix * world_matrix * vec4(position, 0.0, 1.0);
+    }
 "#;
 
 const FRAGMENT_SHADER: &str = r#"
@@ -269,6 +352,47 @@ const FRAGMENT_SHADER: &str = r#"
     out vec4 out_color;
     void main() {
         out_color = frag_color;
+    }
+"#;
+
+const TEXTURE_VERTEX_SHADER: &str = r#"
+    #version 140
+
+    uniform mat4 view_matrix;
+    uniform mat4 world_matrix;
+
+    in vec2 position;
+    in vec4 color;
+    out vec2 frag_uv;
+
+    void main() {
+        frag_uv = position.xy;
+        gl_Position = view_matrix * world_matrix * vec4(position, 0.0, 1.0);
+    }
+"#;
+
+const GRADIENT_FRAGMENT_SHADER: &str = r#"
+    #version 140
+    in vec2 frag_uv;
+    out vec4 out_color;
+    uniform vec4 mult_color;
+    uniform vec4 add_color;
+    uniform mat4 gradient_matrix;
+    uniform vec4 gradient_colors[4];
+    uniform float gradient_ratios[4];
+    int num_gradient_colors;
+
+    void main() {
+        vec2 uv = (gradient_matrix * vec4(frag_uv, 0.0, 1.0)).xy;
+        int i = 0;
+        while( uv.x < gradient_ratios[i] && i < num_gradient_colors ) {
+            i++;
+        }
+        i = (i < num_gradient_colors) ? i : num_gradient_colors - 1;
+        int j = (i + 1 < num_gradient_colors) ? i + 1 : i;
+
+        out_color = mix(gradient_colors[i], gradient_colors[j], (uv.x - gradient_ratios[i]) / (gradient_ratios[j] - gradient_ratios[i])); 
+        out_color = out_color * mult_color + add_color;
     }
 "#;
 
@@ -284,7 +408,12 @@ struct Draw {
 
 enum DrawType {
     Color,
-    LinearGradient,
+    LinearGradient {
+        gradient_matrix: [[f32; 4]; 4],
+        gradient_colors: [[f32; 4]; 4],
+        gradient_ratios: [f32; 4],
+        num_gradient_colors: u8,
+    },
 }
 
 fn point(x: f32, y: f32) -> lyon::math::Point {

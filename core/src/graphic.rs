@@ -31,20 +31,13 @@ impl DisplayObjectUpdate for Graphic {
     }
 
     fn render(&self, context: &mut RenderContext) {
-        context.matrix_stack.push(self.get_matrix());
-        context
-            .color_transform_stack
-            .push(self.get_color_transform());
-
-        let world_matrix = context.matrix_stack.matrix();
-        let color_transform = context.color_transform_stack.color_transform();
+        context.transform_stack.push(self.transform());
 
         context
             .renderer
-            .render_shape(self.shape_handle, &world_matrix);
+            .render_shape(self.shape_handle, context.transform_stack.transform());
 
-        context.color_transform_stack.pop();
-        context.matrix_stack.pop();
+        context.transform_stack.pop();
     }
 }
 

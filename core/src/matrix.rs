@@ -60,27 +60,3 @@ impl std::ops::MulAssign for Matrix {
         }
     }
 }
-
-pub struct MatrixStack(Vec<Matrix>);
-
-impl MatrixStack {
-    pub fn new() -> MatrixStack {
-        MatrixStack(vec![Matrix::default()])
-    }
-
-    pub fn push(&mut self, matrix: &Matrix) {
-        let new_matrix = *self.matrix() * *matrix;
-        self.0.push(new_matrix);
-    }
-
-    pub fn pop(&mut self) {
-        if self.0.len() <= 1 {
-            panic!("Matrix stack underflow");
-        }
-        self.0.pop();
-    }
-
-    pub fn matrix(&self) -> &Matrix {
-        &self.0[self.0.len() - 1]
-    }
-}
