@@ -1,4 +1,4 @@
-#[Fluster 😳](https://github.com/Herschel/fluster)
+# [Fluster 😳](https://github.com/Herschel/fluster)
 
 Fluster is an Adobe Flash Player emulator written in Rust.
 
