@@ -29,7 +29,11 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<std::error::Error>> {
 
     let mut events_loop = EventsLoop::new();
     let window_builder = WindowBuilder::new().with_title("Fluster");
-    let windowed_context = ContextBuilder::new().build_windowed(window_builder, &events_loop)?;
+    let windowed_context = ContextBuilder::new()
+        .with_vsync(true)
+        .with_multisampling(4)
+        .with_srgb(true)
+        .build_windowed(window_builder, &events_loop)?;
     let audio = NullAudioBackend::new();
     let renderer = GliumRenderBackend::new(windowed_context)?;
     let display = renderer.display().clone();
