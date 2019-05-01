@@ -1,7 +1,7 @@
 use super::{common::ShapeHandle, RenderBackend};
 use crate::{matrix::Matrix, Color};
 use glium::{implement_vertex, uniform, Display, Frame, Surface};
-use glutin::WindowedContext;
+use glutin::{Window, WindowedContext};
 use lyon::tessellation::geometry_builder::{BuffersBuilder, VertexBuffers};
 use lyon::{path::PathEvent, tessellation, tessellation::FillTessellator};
 use std::collections::{HashMap, VecDeque};
@@ -12,6 +12,8 @@ pub struct GliumRenderBackend {
     target: Option<Frame>,
     shader_program: glium::Program,
     meshes: Vec<Mesh>,
+    movie_width: f32,
+    movie_height: f32,
 }
 
 impl GliumRenderBackend {
@@ -28,24 +30,40 @@ impl GliumRenderBackend {
             shader_program,
             target: None,
             meshes: vec![],
+            movie_width: 500.0,
+            movie_height: 500.0,
         })
+    }
+
+    pub fn display(&self) -> &Display {
+        &self.display
     }
 }
 
 impl RenderBackend for GliumRenderBackend {
+    fn set_dimensions(&mut self, width: u32, height: u32) {
+        self.movie_width = width as f32;
+        self.movie_height = height as f32;
+    }
+
     fn register_shape(&mut self, shape: &swf::Shape) -> ShapeHandle {
         let handle = ShapeHandle(self.meshes.len());
 
         use lyon::tessellation::FillOptions;
 
-        let mut mesh: VertexBuffers<_, u32> = VertexBuffers::new();
+        let mut mesh = Mesh { draws: vec![] };
+
+        let mut vertices: Vec<Vertex> = vec![];
+        let mut indices: Vec<u32> = vec![];
+
+        let mut lyon_mesh: VertexBuffers<_, u32> = VertexBuffers::new();
         let paths = swf_shape_to_lyon_paths(shape);
         let mut fill_tess = FillTessellator::new();
 
+        let mut num_verts = 0;
+        let mut num_indices = 0;
+
         for (cmd, path) in paths {
-            if let PathCommandType::Stroke(_) = cmd {
-                continue;
-            }
             let color = match cmd {
                 PathCommandType::Fill(FillStyle::Color(color)) => [
                     f32::from(color.r) / 255.0,
@@ -53,15 +71,15 @@ impl RenderBackend for GliumRenderBackend {
                     f32::from(color.b) / 255.0,
                     f32::from(color.a) / 255.0,
                 ],
-                PathCommandType::Fill(_) => [1.0, 0.0, 0.0, 1.0],
-                PathCommandType::Stroke(_) => unreachable!(),
+                PathCommandType::Fill(_) => continue,
+                PathCommandType::Stroke(_) => continue,
             };
             let vertex_ctor = move |vertex: tessellation::FillVertex| Vertex {
                 position: [vertex.position.x, vertex.position.y],
                 color,
             };
 
-            let mut buffers_builder = BuffersBuilder::new(&mut mesh, vertex_ctor);
+            let mut buffers_builder = BuffersBuilder::new(&mut lyon_mesh, vertex_ctor);
             fill_tess
                 .tessellate_path(
                     path.into_iter(),
@@ -69,20 +87,94 @@ impl RenderBackend for GliumRenderBackend {
                     &mut buffers_builder,
                 )
                 .expect("Tessellation error");
+
+            let vert_offset = vertices.len() as u32;
+            vertices.extend(lyon_mesh.vertices.iter());
+            indices.extend(lyon_mesh.indices.iter().map(|&n| n + vert_offset));
         }
 
-        let vertex_buffer = glium::VertexBuffer::new(&self.display, &mesh.vertices[..]).unwrap();
+        let vertex_buffer =
+            glium::VertexBuffer::new(&self.display, &lyon_mesh.vertices[..]).unwrap();
         let index_buffer = glium::IndexBuffer::new(
             &self.display,
             glium::index::PrimitiveType::TrianglesList,
-            &mesh.indices[..],
+            &lyon_mesh.indices[..],
         )
         .unwrap();
 
-        let mesh = Mesh {
+        mesh.draws.push(Draw {
+            draw_type: DrawType::Color,
             vertex_buffer,
             index_buffer,
-        };
+        });
+
+        // // Gradient
+        // for (cmd, path) in paths {
+        //     if let PathCommandType::Stroke(_) = cmd {
+        //         continue;
+        //     }
+        //     let matrix = match cmd {
+        //         PathCommandType::Fill(FillStyle::LinearGradient(gradient)) => {
+        //             let mut m = gradient.matrix.clone();
+        //             let tx = m.translate_x * 20.0;
+        //             let ty = m.translate_y * 20.0;
+        //             let det = m.scale_x * m.scale_y - m.rotate_skew_1 * m.rotate_skew_0;
+        //             let mut a = m.scale_y / det;
+        //             let mut b = -m.rotate_skew_1 / det;
+        //             let mut c = -(tx * m.scale_y - m.rotate_skew_1 * ty) / det;
+        //             let mut d = -m.rotate_skew_0 / det;
+        //             let mut e = m.scale_x / det;
+        //             let mut f = (tx * m.rotate_skew_0 - m.scale_x * ty) / det;
+
+        //             a *= 20.0 / 32768.0;
+        //             b *= 20.0 / 32768.0;
+        //             d *= 20.0 / 32768.0;
+        //             e *= 20.0 / 32768.0;
+
+        //             c /= 32768.0;
+        //             f /= 32768.0;
+        //             c += 0.5;
+        //             f += 0.5;
+        //             [a, b, c, d, e, f]
+        //         }
+        //         PathCommandType::Fill(_) => continue,
+        //         PathCommandType::Stroke(_) => continue,
+        //     };
+
+        //     let vertex_ctor = move |vertex: tessellation::FillVertex| Vertex {
+        //         position: [vertex.position.x, vertex.position.y],
+        //         color: [u, v],
+        //     };
+
+        //     let mut buffers_builder = BuffersBuilder::new(&mut lyon_mesh, vertex_ctor);
+        //     fill_tess
+        //         .tessellate_path(
+        //             path.into_iter(),
+        //             &FillOptions::even_odd(),
+        //             &mut buffers_builder,
+        //         )
+        //         .expect("Tessellation error");
+
+        //     let vert_offset = vertices.len() as u32;
+        //     vertices.extend(lyon_mesh.vertices.iter());
+        //     indices.extend(lyon_mesh.indices.iter().map(|&n| n + vert_offset));
+        // }
+
+        // let vertex_buffer =
+        //     glium::VertexBuffer::new(&self.display, &lyon_mesh.vertices[..]).unwrap();
+        // let index_buffer = glium::IndexBuffer::new(
+        //     &self.display,
+        //     glium::index::PrimitiveType::TrianglesList,
+        //     &lyon_mesh.indices[..],
+        // )
+        // .unwrap();
+
+        // mesh.draws.push(Draw {
+        //     draw_type: DrawType::Color,
+        //     vertex_buffer,
+        //     index_buffer,
+        // });
+
         self.meshes.push(mesh);
 
         handle
@@ -110,11 +202,13 @@ impl RenderBackend for GliumRenderBackend {
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, matrix: &Matrix) {
+        let target = self.target.as_mut().unwrap();
+
         let mesh = &self.meshes[shape.0];
 
         let view_matrix = [
-            [1.0 / 250.0f32, 0.0, 0.0, 0.0],
-            [0.0, -1.0 / 250.0, 0.0, 0.0],
+            [1.0 / (self.movie_width as f32 / 2.0), 0.0, 0.0, 0.0],
+            [0.0, -1.0 / (self.movie_height as f32 / 2.0), 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0],
             [-1.0, 1.0, 0.0, 1.0],
         ];
@@ -126,16 +220,22 @@ impl RenderBackend for GliumRenderBackend {
             [matrix.tx, matrix.ty, 0.0, 1.0],
         ];
 
-        let target = self.target.as_mut().unwrap();
-        target
-            .draw(
-                &mesh.vertex_buffer,
-                &mesh.index_buffer,
-                &self.shader_program,
-                &uniform! { view_matrix: view_matrix, world_matrix: world_matrix },
-                &Default::default(),
-            )
-            .unwrap();
+        for draw in &mesh.draws {
+            match draw.draw_type {
+                DrawType::Color => {
+                    target
+                        .draw(
+                            &draw.vertex_buffer,
+                            &draw.index_buffer,
+                            &self.shader_program,
+                            &uniform! { view_matrix: view_matrix, world_matrix: world_matrix },
+                            &Default::default(),
+                        )
+                        .unwrap();
+                }
+                _ => (),
+            }
+        }
     }
 }
 
@@ -173,8 +273,18 @@ const FRAGMENT_SHADER: &str = r#"
 "#;
 
 struct Mesh {
+    draws: Vec<Draw>,
+}
+
+struct Draw {
+    draw_type: DrawType,
     vertex_buffer: glium::VertexBuffer<Vertex>,
     index_buffer: glium::IndexBuffer<u32>,
+}
+
+enum DrawType {
+    Color,
+    LinearGradient,
 }
 
 fn point(x: f32, y: f32) -> lyon::math::Point {

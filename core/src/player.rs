@@ -41,7 +41,7 @@ pub struct Player {
 
 impl Player {
     pub fn new(
-        renderer: Box<RenderBackend>,
+        mut renderer: Box<RenderBackend>,
         audio: Box<AudioBackend>,
         swf_data: Vec<u8>,
     ) -> Result<Player, Box<std::error::Error>> {
@@ -49,6 +49,9 @@ impl Player {
         info!("{}x{}", swf.stage_size.x_max, swf.stage_size.y_max);
 
         let stage = DisplayObject::new(Box::new(MovieClip::new_with_data(0, swf.num_frames)));
+        let movie_width = (swf.stage_size.x_max - swf.stage_size.x_min) as u32;
+        let movie_height = (swf.stage_size.y_max - swf.stage_size.y_min) as u32;
+        renderer.set_dimensions(movie_width, movie_height);
 
         Ok(Player {
             tag_stream,
@@ -73,8 +76,8 @@ impl Player {
             frame_rate: swf.frame_rate.into(),
             frame_accumulator: 0.0,
 
-            movie_width: (swf.stage_size.x_max - swf.stage_size.x_min) as u32,
-            movie_height: (swf.stage_size.y_max - swf.stage_size.y_min) as u32,
+            movie_width: movie_width,
+            movie_height: movie_height,
         })
     }
 

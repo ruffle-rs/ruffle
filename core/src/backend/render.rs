@@ -11,6 +11,8 @@ use self::common::ShapeHandle;
 use crate::{matrix::Matrix, Color};
 
 pub trait RenderBackend {
+    fn set_dimensions(&mut self, width: u32, height: u32);
+
     fn register_shape(&mut self, shape: &swf::Shape) -> common::ShapeHandle;
 
     fn begin_frame(&mut self);

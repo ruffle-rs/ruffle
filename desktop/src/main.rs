@@ -1,7 +1,7 @@
 use fluster_core::{
     backend::audio::null::NullAudioBackend, backend::render::glium::GliumRenderBackend, Player,
 };
-use glutin::{ContextBuilder, Event, EventsLoop, WindowBuilder, WindowEvent};
+use glutin::{dpi::LogicalSize, ContextBuilder, Event, EventsLoop, WindowBuilder, WindowEvent};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
@@ -28,11 +28,23 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<std::error::Error>> {
     let swf_data = std::fs::read(input_path)?;
 
     let mut events_loop = EventsLoop::new();
-    let window_builder = WindowBuilder::new();
+    let window_builder = WindowBuilder::new().with_title("Fluster");
     let windowed_context = ContextBuilder::new().build_windowed(window_builder, &events_loop)?;
     let audio = NullAudioBackend::new();
     let renderer = GliumRenderBackend::new(windowed_context)?;
+    let display = renderer.display().clone();
     let mut player = Player::new(Box::new(renderer), Box::new(audio), swf_data)?;
+
+    let logical_size: LogicalSize = (player.movie_width(), player.movie_height()).into();
+    let hidpi_factor = display.gl_window().get_hidpi_factor();
+
+    display
+        .gl_window()
+        .resize(logical_size.to_physical(hidpi_factor));
+
+    dbg!((player.movie_width(), player.movie_height()));
+
+    display.gl_window().set_inner_size(logical_size);
 
     let mut time = Instant::now();
     loop {

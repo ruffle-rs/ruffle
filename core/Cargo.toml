@@ -8,7 +8,6 @@ edition = "2018"
 bacon_rajan_cc = "0.2"
 generational-arena = "0.1"
 log = "0.4"
-minimp3 = "0.3.2"
 url = "1.7.2"
 svg = "0.5.12"
 swf = { git = "https://github.com/Herschel/swf-rs", version = "*" }
