@@ -64,8 +64,8 @@ impl std::ops::Mul for ColorTransform {
             a_mult: self.a_mult * rhs.a_mult,
 
             r_add: self.r_mult * rhs.r_add + self.r_add,
-            g_add: self.g_mult * rhs.b_add + self.g_add,
-            b_add: self.b_mult * rhs.g_add + self.b_add,
+            g_add: self.g_mult * rhs.g_add + self.g_add,
+            b_add: self.b_mult * rhs.b_add + self.b_add,
             a_add: self.a_mult * rhs.a_add + self.a_add,
         }
     }

@@ -1,5 +1,5 @@
 use super::{common::ShapeHandle, RenderBackend};
-use crate::{matrix::Matrix, Color};
+use crate::{transform::Transform, Color};
 
 pub struct NullRenderer;
 
@@ -11,5 +11,5 @@ impl RenderBackend for NullRenderer {
     fn begin_frame(&mut self) {}
     fn end_frame(&mut self) {}
     fn clear(&mut self, _color: Color) {}
-    fn render_shape(&mut self, _shape: ShapeHandle, _matrix: &Matrix) {}
+    fn render_shape(&mut self, _shape: ShapeHandle, _transform: &Transform) {}
 }

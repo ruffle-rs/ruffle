@@ -92,7 +92,15 @@ impl MovieClip {
                         return;
                     };
 
-                children.insert(place_object.depth, character.clone());
+                if let Some(prev_character) = children.insert(place_object.depth, character.clone())
+                {
+                    character
+                        .borrow_mut()
+                        .set_matrix(prev_character.borrow().get_matrix());
+                    character
+                        .borrow_mut()
+                        .set_color_transform(prev_character.borrow().get_color_transform());
+                }
                 character
             }
         };
@@ -101,6 +109,10 @@ impl MovieClip {
         if let Some(matrix) = &place_object.matrix {
             let m = matrix.clone();
             character.set_matrix(&Matrix::from(m));
+        }
+
+        if let Some(color_transform) = &place_object.color_transform {
+            character.set_color_transform(&ColorTransform::from(color_transform.clone()));
         }
     }
 
@@ -224,10 +236,7 @@ impl DisplayObjectUpdate for MovieClip {
     }
 
     fn render(&self, context: &mut RenderContext) {
-        context.matrix_stack.push(self.get_matrix());
-        context
-            .color_transform_stack
-            .push(self.get_color_transform());
+        context.transform_stack.push(self.transform());
 
         let mut sorted_children: Vec<_> = self.children.iter().collect();
         sorted_children.sort_by_key(|(depth, _)| *depth);
@@ -236,8 +245,7 @@ impl DisplayObjectUpdate for MovieClip {
             child.1.borrow_mut().render(context);
         }
 
-        context.matrix_stack.pop();
-        context.color_transform_stack.pop();
+        context.transform_stack.pop();
     }
 }
 

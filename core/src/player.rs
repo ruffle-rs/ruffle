@@ -1,11 +1,10 @@
 use crate::audio::Audio;
 use crate::backend::{audio::AudioBackend, render::RenderBackend};
-use crate::color_transform::ColorTransformStack;
 use crate::display_object::{DisplayObject, DisplayObjectUpdate};
 use crate::library::Library;
-use crate::matrix::MatrixStack;
 use crate::movie_clip::MovieClip;
 use crate::prelude::*;
+use crate::transform::TransformStack;
 use bacon_rajan_cc::Cc;
 use log::info;
 use std::cell::RefCell;
@@ -58,8 +57,7 @@ impl Player {
 
             render_context: RenderContext {
                 renderer,
-                matrix_stack: MatrixStack::new(),
-                color_transform_stack: ColorTransformStack::new(),
+                transform_stack: TransformStack::new(),
             },
 
             audio: Audio::new(audio),
@@ -146,6 +144,5 @@ pub struct UpdateContext<'a> {
 
 pub struct RenderContext {
     pub renderer: Box<RenderBackend>,
-    pub matrix_stack: MatrixStack,
-    pub color_transform_stack: ColorTransformStack,
+    pub transform_stack: TransformStack,
 }
