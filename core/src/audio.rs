@@ -20,6 +20,10 @@ impl Audio {
     pub fn queue_stream_samples(&mut self, handle: AudioStreamHandle, samples: &[u8]) {
         self.backend.queue_stream_samples(handle, samples)
     }
+
+    pub fn stop_all_sounds(&mut self) {
+        // TODO(Herschel)
+    }
 }
 
 struct AudioStream {

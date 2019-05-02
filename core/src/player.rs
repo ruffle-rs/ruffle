@@ -1,4 +1,5 @@
 use crate::audio::Audio;
+use crate::avm1::Avm1;
 use crate::backend::{audio::AudioBackend, render::RenderBackend};
 use crate::display_object::{DisplayObject, DisplayObjectUpdate};
 use crate::library::Library;
@@ -24,6 +25,8 @@ type CharacterId = swf::CharacterId;
 pub struct Player {
     tag_stream: swf::read::Reader<Cursor<Vec<u8>>>,
 
+    avm: Avm1,
+
     render_context: RenderContext,
     audio: Audio,
 
@@ -33,6 +36,7 @@ pub struct Player {
 
     frame_rate: f64,
     frame_accumulator: f64,
+    global_time: u64,
 
     movie_width: u32,
     movie_height: u32,
@@ -55,6 +59,8 @@ impl Player {
         Ok(Player {
             tag_stream,
 
+            avm: Avm1::new(swf.version),
+
             render_context: RenderContext {
                 renderer,
                 transform_stack: TransformStack::new(),
@@ -73,6 +79,7 @@ impl Player {
 
             frame_rate: swf.frame_rate.into(),
             frame_accumulator: 0.0,
+            global_time: 0,
 
             movie_width: movie_width,
             movie_height: movie_height,
@@ -81,6 +88,7 @@ impl Player {
 
     pub fn tick(&mut self, dt: f64) {
         self.frame_accumulator += dt;
+        self.global_time += dt as u64;
         let frame_time = 1000.0 / self.frame_rate;
 
         let needs_render = self.frame_accumulator >= frame_time;
@@ -106,17 +114,19 @@ impl Player {
 impl Player {
     fn run_frame(&mut self) {
         let mut update_context = UpdateContext {
+            global_time: self.global_time,
             tag_stream: &mut self.tag_stream,
             position_stack: vec![],
             library: &mut self.library,
             background_color: &mut self.background_color,
+            avm1: &mut self.avm,
             renderer: &mut *self.render_context.renderer,
             audio: &mut self.audio,
         };
 
         let mut stage = self.stage.borrow_mut();
         stage.run_frame(&mut update_context);
-        stage.update_frame_number();
+        stage.run_post_frame(&mut update_context);
     }
 
     fn render(&mut self) {
@@ -134,10 +144,12 @@ impl Player {
 }
 
 pub struct UpdateContext<'a> {
+    pub global_time: u64,
     pub tag_stream: &'a mut swf::read::Reader<Cursor<Vec<u8>>>,
     pub position_stack: Vec<u64>,
     pub library: &'a mut Library,
     pub background_color: &'a mut Color,
+    pub avm1: &'a mut Avm1,
     pub renderer: &'a mut RenderBackend,
     pub audio: &'a mut Audio,
 }

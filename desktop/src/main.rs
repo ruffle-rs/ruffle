@@ -14,6 +14,8 @@ struct Opt {
 }
 
 fn main() {
+    env_logger::init();
+
     let opt = Opt::from_args();
 
     let ret = run_player(opt.input_path);

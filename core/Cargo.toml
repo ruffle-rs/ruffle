@@ -9,6 +9,7 @@ bacon_rajan_cc = "0.2"
 generational-arena = "0.1"
 log = "0.4"
 url = "1.7.2"
+rand = "0.6.5"
 svg = "0.5.12"
 swf = { git = "https://github.com/Herschel/swf-rs", version = "*" }
 js-sys = "0.3.19"

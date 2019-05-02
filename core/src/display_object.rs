@@ -36,11 +36,7 @@ impl DisplayObjectImpl for DisplayObjectBase {
     }
 }
 
-impl DisplayObjectUpdate for DisplayObjectBase {
-    fn run_frame(&mut self, context: &mut UpdateContext) {}
-    fn update_frame_number(&mut self) {}
-    fn render(&self, context: &mut RenderContext) {}
-}
+impl DisplayObjectUpdate for DisplayObjectBase {}
 
 impl Trace for DisplayObjectBase {
     fn trace(&mut self, _tracer: &mut Tracer) {}
@@ -56,7 +52,7 @@ pub trait DisplayObjectImpl: DisplayObjectUpdate {
 
 pub trait DisplayObjectUpdate: Trace {
     fn run_frame(&mut self, _context: &mut UpdateContext) {}
-    fn update_frame_number(&mut self) {}
+    fn run_post_frame(&mut self, _context: &mut UpdateContext) {}
     fn render(&self, _context: &mut RenderContext) {}
 }
 
@@ -104,9 +100,11 @@ impl DisplayObjectUpdate for DisplayObject {
     fn run_frame(&mut self, context: &mut UpdateContext) {
         self.inner.run_frame(context)
     }
-    fn update_frame_number(&mut self) {
-        self.inner.update_frame_number()
+
+    fn run_post_frame(&mut self, context: &mut UpdateContext) {
+        self.inner.run_post_frame(context)
     }
+
     fn render(&self, context: &mut RenderContext) {
         self.inner.render(context)
     }

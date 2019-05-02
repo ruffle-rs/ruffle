@@ -9,7 +9,8 @@ use crate::player::{RenderContext, UpdateContext};
 use bacon_rajan_cc::{Cc, Trace, Tracer};
 use log::info;
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
+use swf::read::SwfRead;
 
 type Depth = i16;
 type FrameNumber = u16;
@@ -19,8 +20,8 @@ pub struct MovieClip {
     tag_stream_start: Option<u64>,
     tag_stream_pos: u64,
     is_playing: bool,
+    goto_queue: VecDeque<FrameNumber>,
     current_frame: FrameNumber,
-    next_frame: FrameNumber,
     total_frames: FrameNumber,
     audio_stream: Option<AudioStreamHandle>,
     children: HashMap<Depth, Cc<RefCell<DisplayObject>>>,
@@ -35,8 +36,8 @@ impl MovieClip {
             tag_stream_start: None,
             tag_stream_pos: 0,
             is_playing: true,
+            goto_queue: VecDeque::new(),
             current_frame: 0,
-            next_frame: 1,
             total_frames: 1,
             audio_stream: None,
             children: HashMap::new(),
@@ -49,12 +50,75 @@ impl MovieClip {
             tag_stream_start: Some(tag_stream_start),
             tag_stream_pos: tag_stream_start,
             is_playing: true,
+            goto_queue: VecDeque::new(),
             current_frame: 0,
-            next_frame: 1,
             audio_stream: None,
             total_frames: num_frames,
             children: HashMap::new(),
         }
+    }
+
+    pub fn playing(&self) -> bool {
+        self.is_playing
+    }
+
+    pub fn next_frame(&mut self) {
+        if self.current_frame + 1 <= self.total_frames {
+            self.goto_frame(self.current_frame + 1, true);
+        }
+    }
+
+    pub fn play(&mut self) {
+        self.is_playing = true;
+    }
+
+    pub fn prev_frame(&mut self) {
+        if self.current_frame > 1 {
+            self.goto_frame(self.current_frame - 1, true);
+        }
+    }
+
+    pub fn stop(&mut self) {
+        self.is_playing = false;
+    }
+
+    pub fn goto_frame(&mut self, frame: FrameNumber, stop: bool) {
+        self.goto_queue.push_back(frame);
+
+        if stop {
+            self.stop();
+        } else {
+            self.play();
+        }
+    }
+
+    fn run_goto_queue(&mut self, context: &mut UpdateContext) {
+        let mut i = 0;
+        while i < self.goto_queue.len() {
+            let frame = self.goto_queue[i];
+            if frame >= self.current_frame {
+                // Advancing
+                while self.current_frame + 1 < frame {
+                    self.run_frame_internal(context, true);
+                }
+                self.run_frame_internal(context, false);
+            } else {
+                // Rewind
+                // Reset everything to blank, start from frame 1,
+                // and advance forward
+                self.children.clear();
+                self.tag_stream_pos = self.tag_stream_start.unwrap_or(0);
+                self.current_frame = 0;
+                while self.current_frame + 1 < frame {
+                    self.run_frame_internal(context, true);
+                }
+                self.run_frame_internal(context, false);
+            }
+
+            i += 1;
+        }
+
+        self.goto_queue.clear();
     }
 
     pub fn run_place_object(
@@ -116,40 +180,52 @@ impl MovieClip {
         }
     }
 
-    fn sound_stream_head(
-        &mut self,
-        stream_info: &swf::SoundStreamInfo,
-        context: &mut UpdateContext,
-        _length: usize,
-        _version: u8,
-    ) {
-        if self.audio_stream.is_none() {
-            self.audio_stream = Some(context.audio.register_stream(stream_info));
-        }
+    fn do_action(&mut self, context: &mut UpdateContext, data: &[u8]) {
+        let mut action_context = crate::avm1::ActionContext {
+            global_time: context.global_time,
+            active_clip: self,
+            audio: context.audio,
+        };
+        if let Err(e) = context.avm1.do_action(&mut action_context, &data[..]) {}
     }
 
-    fn sound_stream_block(&mut self, samples: &[u8], context: &mut UpdateContext, _length: usize) {
-        if let Some(stream) = self.audio_stream {
-            context.audio.queue_stream_samples(stream, samples)
+    fn run_frame_internal(&mut self, context: &mut UpdateContext, only_display_actions: bool) {
+        use swf::Tag;
+
+        // Advance frame number.
+        if self.current_frame < self.total_frames {
+            self.current_frame += 1;
+        } else {
+            self.current_frame = 1;
+            self.children.clear();
+            if let Some(start) = self.tag_stream_start {
+                self.tag_stream_pos = start;
+            }
         }
-    }
-}
 
-impl DisplayObjectUpdate for MovieClip {
-    fn run_frame(&mut self, context: &mut UpdateContext) {
-        use swf::{read::SwfRead, Tag};
-        if self.tag_stream_start.is_some() {
-            context
-                .position_stack
-                .push(context.tag_stream.get_ref().position());
-            context
-                .tag_stream
-                .get_inner()
-                .set_position(self.tag_stream_pos);
+        context
+            .tag_stream
+            .get_inner()
+            .set_position(self.tag_stream_pos);
 
-            let mut start_pos = self.tag_stream_pos;
-            while let Ok(Some(tag)) = context.tag_stream.read_tag() {
-                //trace!("mc: {:?}", tag);
+        let mut start_pos = self.tag_stream_pos;
+
+        while let Ok(Some(tag)) = context.tag_stream.read_tag() {
+            if only_display_actions {
+                match tag {
+                    Tag::ShowFrame => break,
+                    Tag::PlaceObject(place_object) => {
+                        MovieClip::run_place_object(&mut self.children, &*place_object, context)
+                    }
+                    Tag::RemoveObject { depth, .. } => {
+                        // TODO(Herschel): How does the character ID work for RemoveObject?
+                        self.children.remove(&depth);
+                    }
+
+                    // All non-display-list tags get ignored.
+                    _ => (),
+                }
+            } else {
                 match tag {
                     Tag::SetBackgroundColor(color) => *context.background_color = color,
                     Tag::DefineShape(shape) => {
@@ -199,39 +275,63 @@ impl DisplayObjectUpdate for MovieClip {
                     }
 
                     Tag::JpegTables(_) => (),
-                    Tag::DoAction(_) => (),
+                    Tag::DoAction(data) => self.do_action(context, &data[..]),
                     _ => info!("Umimplemented tag: {:?}", tag),
                 }
                 start_pos = context.tag_stream.get_ref().position();
             }
-            self.tag_stream_pos = context.tag_stream.get_ref().position();
+        }
+
+        self.tag_stream_pos = context.tag_stream.get_ref().position();
+    }
+
+    fn sound_stream_head(
+        &mut self,
+        stream_info: &swf::SoundStreamInfo,
+        context: &mut UpdateContext,
+        _length: usize,
+        _version: u8,
+    ) {
+        if self.audio_stream.is_none() {
+            self.audio_stream = Some(context.audio.register_stream(stream_info));
+        }
+    }
+
+    fn sound_stream_block(&mut self, samples: &[u8], context: &mut UpdateContext, _length: usize) {
+        if let Some(stream) = self.audio_stream {
+            context.audio.queue_stream_samples(stream, samples)
+        }
+    }
+}
+
+impl DisplayObjectUpdate for MovieClip {
+    fn run_frame(&mut self, context: &mut UpdateContext) {
+        info!("CF: {}", self.current_frame);
+        if self.is_playing && self.tag_stream_start.is_some() {
+            context
+                .position_stack
+                .push(context.tag_stream.get_ref().position());
+
+            self.run_frame_internal(context, false);
+
+            // TODO(Herschel): Verify order of execution for parent/children.
+            // Parent first? Children first? Sorted by depth?
+            for child in self.children.values() {
+                child.borrow_mut().run_frame(context);
+            }
+
             context
                 .tag_stream
                 .get_inner()
                 .set_position(context.position_stack.pop().unwrap());
-
-            // Advance frame number.
-            if self.next_frame < self.total_frames {
-                self.next_frame += 1;
-            } else {
-                self.next_frame = 1;
-                if let Some(start) = self.tag_stream_start {
-                    self.tag_stream_pos = start;
-                }
-            }
-        }
-
-        // TODO(Herschel): Verify order of execution for parent/children.
-        // Parent first? Children first? Sorted by depth?
-        for child in self.children.values() {
-            child.borrow_mut().run_frame(context);
         }
     }
 
-    fn update_frame_number(&mut self) {
-        self.current_frame = self.next_frame;
+    fn run_post_frame(&mut self, context: &mut UpdateContext) {
+        self.run_goto_queue(context);
+
         for child in self.children.values() {
-            child.borrow_mut().update_frame_number();
+            child.borrow_mut().run_post_frame(context);
         }
     }
 
