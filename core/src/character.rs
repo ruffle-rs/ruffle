@@ -8,5 +8,6 @@ pub enum Character {
         num_frames: u16,
         tag_stream_start: u64,
     },
+    Button(Box<swf::Button>),
     Sound,
 }

@@ -228,6 +228,13 @@ impl MovieClip {
             } else {
                 match tag {
                     Tag::SetBackgroundColor(color) => *context.background_color = color,
+                    Tag::DefineButton2(button) => {
+                        if !context.library.contains_character(button.id) {
+                            context
+                                .library
+                                .register_character(button.id, Character::Button(button));
+                        }
+                    }
                     Tag::DefineShape(shape) => {
                         if !context.library.contains_character(shape.id) {
                             let shape_handle = context.renderer.register_shape(&shape);

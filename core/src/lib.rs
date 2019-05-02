@@ -3,6 +3,7 @@ mod display_object;
 
 mod audio;
 mod avm1;
+mod button;
 mod character;
 mod color_transform;
 mod graphic;
