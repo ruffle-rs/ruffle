@@ -306,7 +306,6 @@ impl MovieClip {
 
 impl DisplayObjectUpdate for MovieClip {
     fn run_frame(&mut self, context: &mut UpdateContext) {
-        info!("CF: {}", self.current_frame);
         if self.is_playing && self.tag_stream_start.is_some() {
             context
                 .position_stack

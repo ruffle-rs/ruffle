@@ -1,5 +1,6 @@
 use crate::movie_clip::MovieClip;
-use rand::{rngs::SmallRng, FromEntropy, Rng};
+use rand::{rngs::SmallRng, Rng, SeedableRng};
+use std::collections::HashMap;
 use std::io::Cursor;
 use swf::avm1::read::Reader;
 
@@ -15,6 +16,8 @@ pub struct Avm1 {
     swf_version: u8,
     stack: Vec<Value>,
     rng: SmallRng,
+    constant_pool: Vec<String>,
+    locals: HashMap<String, Value>,
 }
 
 type Error = Box<std::error::Error>;
@@ -24,7 +27,9 @@ impl Avm1 {
         Self {
             swf_version,
             stack: vec![],
-            rng: SmallRng::from_entropy(),
+            rng: SmallRng::from_seed([0u8; 16]), // TODO(Herschel): Get a proper seed on all platforms.
+            constant_pool: vec![],
+            locals: HashMap::new(),
         }
     }
 
@@ -35,13 +40,38 @@ impl Avm1 {
             use swf::avm1::types::Action;
             match action {
                 Action::Add => self.action_add(context)?,
+                Action::Add2 => self.action_add_2(context)?,
                 Action::And => self.action_and(context)?,
                 Action::AsciiToChar => self.action_ascii_to_char(context)?,
+                Action::BitAnd => self.action_bit_and(context)?,
+                Action::BitLShift => self.action_bit_lshift(context)?,
+                Action::BitOr => self.action_bit_or(context)?,
+                Action::BitRShift => self.action_bit_rshift(context)?,
+                Action::BitURShift => self.action_bit_urshift(context)?,
+                Action::BitXor => self.action_bit_xor(context)?,
                 Action::Call => self.action_call(context)?,
+                Action::CallFunction => self.action_call_function(context)?,
+                Action::CallMethod => self.action_call_method(context)?,
                 Action::CharToAscii => self.action_char_to_ascii(context)?,
+                Action::ConstantPool(constant_pool) => {
+                    self.action_constant_pool(context, &constant_pool[..])?
+                }
+                Action::Decrement => self.action_decrement(context)?,
+                Action::DefineFunction {
+                    name,
+                    params,
+                    actions,
+                } => self.action_define_function(context, &name, &params[..], &actions[..])?,
+                Action::DefineLocal => self.action_define_local(context)?,
+                Action::DefineLocal2 => self.action_define_local_2(context)?,
+                Action::Delete => self.action_delete(context)?,
+                Action::Delete2 => self.action_delete_2(context)?,
                 Action::Divide => self.action_divide(context)?,
                 Action::EndDrag => self.action_end_drag(context)?,
+                Action::Enumerate => self.action_enumerate(context)?,
                 Action::Equals => self.action_equals(context)?,
+                Action::Equals2 => self.action_equals_2(context)?,
+                Action::GetMember => self.action_get_member(context)?,
                 Action::GetTime => self.action_get_time(context)?,
                 Action::GetUrl { url, target } => self.action_get_url(context, &url, &target)?,
                 Action::GetUrl2 {
@@ -61,34 +91,50 @@ impl Avm1 {
                 } => self.action_goto_frame_2(context, set_playing, scene_offset)?,
                 Action::GotoLabel(label) => self.action_goto_label(context, &label)?,
                 Action::If { offset } => self.action_if(context, offset, &mut reader)?,
+                Action::Increment => self.action_increment(context)?,
+                Action::InitArray => self.action_init_array(context)?,
+                Action::InitObject => self.action_init_object(context)?,
                 Action::Jump { offset } => self.action_jump(context, offset, &mut reader)?,
                 Action::Less => self.action_less(context)?,
+                Action::Less2 => self.action_less_2(context)?,
                 Action::MBAsciiToChar => self.action_mb_ascii_to_char(context)?,
                 Action::MBCharToAscii => self.action_mb_char_to_ascii(context)?,
                 Action::MBStringLength => self.action_mb_string_length(context)?,
                 Action::MBStringExtract => self.action_mb_string_extract(context)?,
+                Action::Modulo => self.action_modulo(context)?,
                 Action::Multiply => self.action_multiply(context)?,
-                Action::NextFrame => self.next_frame(context)?,
+                Action::NextFrame => self.action_next_frame(context)?,
+                Action::NewMethod => self.action_new_method(context)?,
+                Action::NewObject => self.action_new_object(context)?,
                 Action::Not => self.action_not(context)?,
                 Action::Play => self.play(context)?,
                 Action::Pop => self.action_pop(context)?,
                 Action::PreviousFrame => self.prev_frame(context)?,
                 Action::Push(values) => self.action_push(context, &values[..])?,
+                Action::PushDuplicate => self.action_push_duplicate(context)?,
                 Action::RandomNumber => self.action_random_number(context)?,
                 Action::RemoveSprite => self.action_remove_sprite(context)?,
-                Action::SetTarget(target) => self.set_target(context, &target)?,
+                Action::Return => self.action_return(context)?,
+                Action::SetMember => self.action_set_member(context)?,
+                Action::SetTarget(target) => self.action_set_target(context, &target)?,
+                Action::StackSwap => self.action_stack_swap(context)?,
                 Action::StartDrag => self.action_start_drag(context)?,
-                Action::Stop => self.stop(context)?,
-                Action::StopSounds => self.stop_sounds(context)?,
+                Action::Stop => self.action_stop(context)?,
+                Action::StopSounds => self.action_stop_sounds(context)?,
+                Action::StoreRegister(register) => self.action_store_register(context, register)?,
                 Action::StringAdd => self.action_string_add(context)?,
                 Action::StringEquals => self.action_string_equals(context)?,
                 Action::StringExtract => self.action_string_extract(context)?,
                 Action::StringLength => self.action_string_length(context)?,
                 Action::StringLess => self.action_string_less(context)?,
                 Action::Subtract => self.action_subtract(context)?,
+                Action::TargetPath => self.action_target_path(context)?,
                 Action::ToggleQuality => self.toggle_quality(context)?,
                 Action::ToInteger => self.action_to_integer(context)?,
+                Action::ToNumber => self.action_to_number(context)?,
+                Action::ToString => self.action_to_string(context)?,
                 Action::Trace => self.action_trace(context)?,
+                Action::TypeOf => self.action_type_of(context)?,
                 Action::WaitForFrame {
                     frame,
                     num_actions_to_skip,
@@ -98,6 +144,7 @@ impl Avm1 {
                 Action::WaitForFrame2 {
                     num_actions_to_skip,
                 } => self.action_wait_for_frame_2(context, num_actions_to_skip, &mut reader)?,
+                Action::With { actions } => self.action_with(context)?,
                 _ => self.unknown_op(context)?,
             }
         }
@@ -110,21 +157,39 @@ impl Avm1 {
     }
 
     fn pop(&mut self) -> Result<Value, Error> {
-        self.stack.pop().ok_or("Stack underflow".into())
+        self.stack.pop().ok_or_else(|| "Stack underflow".into())
     }
 
-    fn unknown_op(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn unknown_op(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         Err("Unknown op".into())
     }
 
-    fn action_add(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_add(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let a = self.pop()?;
         let b = self.pop()?;
         self.push(Value::Number(b.into_number_v1() + a.into_number_v1()));
         Ok(())
     }
 
-    fn action_and(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_add_2(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        // ECMA-262 s. 11.6.1
+        let a = self.pop()?;
+        let b = self.pop()?;
+        // TODO(Herschel):
+        if let Value::String(a) = a {
+            let mut s = b.to_string();
+            s.push_str(&a);
+            self.push(Value::String(s));
+        } else if let Value::String(mut b) = b {
+            b.push_str(&a.to_string());
+            self.push(Value::String(b));
+        } else {
+            self.push(Value::Number(b.into_number() + a.into_number()));
+        }
+        Ok(())
+    }
+
+    fn action_and(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         // AS1 logical and
         let a = self.pop()?;
         let b = self.pop()?;
@@ -133,14 +198,14 @@ impl Avm1 {
         Ok(())
     }
 
-    fn action_ascii_to_char(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_ascii_to_char(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         // TODO(Herschel): Results on incorrect operands?
         let val = (self.pop()?.as_f64()? as u8) as char;
         self.push(Value::String(val.to_string()));
         Ok(())
     }
 
-    fn action_char_to_ascii(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_char_to_ascii(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         // TODO(Herschel): Results on incorrect operands?
         let s = self.pop()?.to_string();
         let result = s.bytes().nth(0).unwrap_or(0);
@@ -148,14 +213,138 @@ impl Avm1 {
         Ok(())
     }
 
-    fn action_call(&mut self, context: &mut ActionContext) -> Result<(), Error> {
-        let val = self.pop()?;
-        unimplemented!();
-        // TODO(Herschel)
+    fn action_bit_and(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let a = self.pop()?.as_u32()?;
+        let b = self.pop()?.as_u32()?;
+        let result = a & b;
+        self.push(Value::Number(result.into()));
         Ok(())
     }
 
-    fn action_divide(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_bit_lshift(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let a = self.pop()?.as_i32()? & 0b11111; // Only 5 bits used for shift count
+        let b = self.pop()?.as_i32()?;
+        let result = b << a;
+        self.push(Value::Number(result.into()));
+        Ok(())
+    }
+
+    fn action_bit_or(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let a = self.pop()?.as_u32()?;
+        let b = self.pop()?.as_u32()?;
+        let result = a | b;
+        self.push(Value::Number(result.into()));
+        Ok(())
+    }
+
+    fn action_bit_rshift(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let a = self.pop()?.as_i32()? & 0b11111; // Only 5 bits used for shift count
+        let b = self.pop()?.as_i32()?;
+        let result = b >> a;
+        self.push(Value::Number(result.into()));
+        Ok(())
+    }
+
+    fn action_bit_urshift(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let a = self.pop()?.as_u32()? & 0b11111; // Only 5 bits used for shift count
+        let b = self.pop()?.as_u32()?;
+        let result = b >> a;
+        self.push(Value::Number(result.into()));
+        Ok(())
+    }
+
+    fn action_bit_xor(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let a = self.pop()?.as_u32()?;
+        let b = self.pop()?.as_u32()?;
+        let result = b ^ a;
+        self.push(Value::Number(result.into()));
+        Ok(())
+    }
+
+    fn action_call(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let _val = self.pop()?;
+        unimplemented!();
+        // TODO(Herschel)
+    }
+
+    fn action_call_function(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let _fn_name = self.pop()?.as_string()?;
+        let num_args = self.pop()?.as_i64()?; // TODO(Herschel): max arg count?
+        for _ in 0..num_args {
+            self.pop()?;
+        }
+
+        self.stack.push(Value::Undefined);
+        // TODO(Herschel)
+        unimplemented!();
+    }
+
+    fn action_call_method(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let _method_name = self.pop()?.as_string()?;
+        let _object = self.pop()?.as_object()?;
+        let num_args = self.pop()?.as_i64()?; // TODO(Herschel): max arg count?
+        for _ in 0..num_args {
+            self.pop()?;
+        }
+
+        self.stack.push(Value::Undefined);
+        // TODO(Herschel)
+        unimplemented!();
+    }
+
+    fn action_constant_pool(
+        &mut self,
+        _context: &mut ActionContext,
+        constant_pool: &[String],
+    ) -> Result<(), Error> {
+        self.constant_pool = constant_pool.to_vec();
+        Ok(())
+    }
+
+    fn action_decrement(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let a = self.pop()?.into_number();
+        self.push(Value::Number(a - 1.0));
+        Ok(())
+    }
+
+    fn action_define_function(
+        &mut self,
+        _context: &mut ActionContext,
+        name: &str,
+        params: &[String],
+        actions: &[swf::avm1::types::Action],
+    ) -> Result<(), Error> {
+        // TODO(Herschel)
+        unimplemented!();
+    }
+
+    fn action_define_local(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let value = self.pop()?;
+        let name = self.pop()?.as_string()?;
+        self.locals.insert(name, value);
+        Ok(())
+    }
+
+    fn action_define_local_2(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let name = self.pop()?.as_string()?;
+        self.locals.insert(name, Value::Undefined);
+        Ok(())
+    }
+
+    fn action_delete(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let name = self.pop()?.as_string()?;
+        let object = self.pop()?.as_object()?;
+        unimplemented!();
+        // TODO(Herschel)
+    }
+
+    fn action_delete_2(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let name = self.pop()?.as_string()?;
+        unimplemented!();
+        // TODO(Herschel)
+    }
+
+    fn action_divide(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         // AS1 divide
         let a = self.pop()?;
         let b = self.pop()?;
@@ -168,19 +357,54 @@ impl Avm1 {
         Ok(())
     }
 
-    fn action_end_drag(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_end_drag(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         // TODO(Herschel)
-        Ok(())
+        unimplemented!()
+    }
+
+    fn action_enumerate(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let name = self.pop()?.as_string()?;
+        self.push(Value::Null); // Sentinel that indicates end of enumeration
+                                // TODO(Herschel): Push each property name onto the stack
+        unimplemented!()
     }
 
     #[allow(clippy::float_cmp)]
-    fn action_equals(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_equals(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         // AS1 equality
         let a = self.pop()?;
         let b = self.pop()?;
         let result = b.into_number_v1() == a.into_number_v1();
         self.push(Value::from_bool_v1(result, self.swf_version));
         Ok(())
+    }
+
+    #[allow(clippy::float_cmp)]
+    fn action_equals_2(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        // Version >=5 equality
+        let a = self.pop()?;
+        let b = self.pop()?;
+        let result = match (b, a) {
+            (Value::Undefined, Value::Undefined) => true,
+            (Value::Null, Value::Null) => true,
+            (Value::Null, Value::Undefined) => true,
+            (Value::Undefined, Value::Null) => true,
+            (Value::Number(a), Value::Number(b)) => a == b,
+            (Value::String(a), Value::String(b)) => a == b,
+            (Value::Object(a), Value::Object(b)) => false, // TODO(Herschel)
+            (Value::String(a), Value::Number(b)) => a.parse().unwrap_or(std::f64::NAN) == b,
+            (Value::Number(a), Value::String(b)) => a == b.parse().unwrap_or(std::f64::NAN),
+            _ => false,
+        };
+        self.push(Value::Bool(result));
+        Ok(())
+    }
+
+    fn action_get_member(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let name = self.pop()?.as_string()?;
+        let object = self.pop()?.as_object()?;
+        // TODO(Herschel)
+        unimplemented!();
     }
 
     fn action_get_time(&mut self, context: &mut ActionContext) -> Result<(), Error> {
@@ -190,7 +414,7 @@ impl Avm1 {
 
     fn action_get_url(
         &mut self,
-        context: &mut ActionContext,
+        _context: &mut ActionContext,
         _url: &str,
         _target: &str,
     ) -> Result<(), Error> {
@@ -201,14 +425,14 @@ impl Avm1 {
 
     fn action_get_url_2(
         &mut self,
-        context: &mut ActionContext,
-        method: swf::avm1::types::SendVarsMethod,
-        is_target_sprite: bool,
-        is_load_vars: bool,
+        _context: &mut ActionContext,
+        _method: swf::avm1::types::SendVarsMethod,
+        _is_target_sprite: bool,
+        _is_load_vars: bool,
     ) -> Result<(), Error> {
         // TODO(Herschel): Noop for now. Need a UI/ActionScript/network backend
         // to handle network requests appropriately for the platform.
-        let url = self.pop()?.to_string();
+        let _url = self.pop()?.to_string();
 
         Ok(())
     }
@@ -246,7 +470,6 @@ impl Avm1 {
     fn action_goto_label(&mut self, context: &mut ActionContext, label: &str) -> Result<(), Error> {
         // TODO(Herschel)
         unimplemented!("Action::GotoLabel");
-        Ok(())
     }
 
     fn action_if(
@@ -263,6 +486,33 @@ impl Avm1 {
             reader.get_inner().set_position(new_pos);
         }
         Ok(())
+    }
+
+    fn action_increment(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let a = self.pop()?.into_number();
+        self.push(Value::Number(a + 1.0));
+        Ok(())
+    }
+
+    fn action_init_array(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+        let num_elements = self.pop()?.as_i64()?;
+        for _ in 0..num_elements {
+            let value = self.pop()?;
+        }
+
+        // TODO(Herschel)
+        unimplemented!("Action::InitArray");
+    }
+
+    fn action_init_object(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+        let num_props = self.pop()?.as_i64()?;
+        for _ in 0..num_props {
+            let value = self.pop()?;
+            let name = self.pop()?;
+        }
+
+        // TODO(Herschel)
+        unimplemented!("Action::InitArray");
     }
 
     fn action_jump(
@@ -285,6 +535,20 @@ impl Avm1 {
         let b = self.pop()?;
         let result = b.into_number_v1() < a.into_number_v1();
         self.push(Value::from_bool_v1(result, self.swf_version));
+        Ok(())
+    }
+
+    fn action_less_2(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+        // ECMA-262 s. 11.8.5
+        let a = self.pop()?;
+        let b = self.pop()?;
+
+        let result = match (a, b) {
+            (Value::String(a), Value::String(b)) => b.to_string().bytes().lt(a.to_string().bytes()),
+            (a, b) => b.into_number() < a.into_number(),
+        };
+
+        self.push(Value::Bool(result));
         Ok(())
     }
 
@@ -329,6 +593,14 @@ impl Avm1 {
         Ok(())
     }
 
+    fn action_modulo(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+        // TODO: Wrong operands?
+        let a = self.pop()?.as_f64()?;
+        let b = self.pop()?.as_f64()?;
+        self.push(Value::Number(a % b));
+        Ok(())
+    }
+
     fn action_not(&mut self, context: &mut ActionContext) -> Result<(), Error> {
         // AS1 logical not
         let val = self.pop()?;
@@ -337,9 +609,29 @@ impl Avm1 {
         Ok(())
     }
 
-    fn next_frame(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_next_frame(&mut self, context: &mut ActionContext) -> Result<(), Error> {
         context.active_clip.next_frame();
         Ok(())
+    }
+
+    fn action_new_method(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+        let name = self.pop()?.as_string()?;
+        let object = self.pop()?.as_object()?;
+        let num_args = self.pop()?.as_i64()?;
+        self.push(Value::Undefined);
+        // TODO(Herschel)
+        unimplemented!("Action::NewMethod");
+    }
+
+    fn action_new_object(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+        let object = self.pop()?.as_string()?;
+        let num_args = self.pop()?.as_i64()?;
+        for _ in 0..num_args {
+            let arg = self.pop()?;
+        }
+        self.push(Value::Undefined);
+        // TODO(Herschel)
+        unimplemented!("Action::NewObject");
     }
 
     fn action_or(&mut self, context: &mut ActionContext) -> Result<(), Error> {
@@ -389,6 +681,12 @@ impl Avm1 {
         Ok(())
     }
 
+    fn action_push_duplicate(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let val = self.stack.last().ok_or("Stack underflow")?.clone();
+        self.push(val);
+        Ok(())
+    }
+
     fn action_random_number(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let max = self.pop()?.as_f64()? as u32;
         let val = self.rng.gen_range(0, max);
@@ -398,13 +696,39 @@ impl Avm1 {
 
     fn action_remove_sprite(&mut self, context: &mut ActionContext) -> Result<(), Error> {
         let _target = self.pop()?.to_string();
+        // TODO(Herschel)
+        unimplemented!("Action::RemoveSprite");
+    }
 
+    fn action_return(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+        let result = self.pop()?;
+        // TODO(Herschel)
+        unimplemented!("Action::Return");
+    }
+
+    fn action_set_member(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+        let value = self.pop()?;
+        let name = self.pop()?;
+        let object = self.pop()?;
+        // TODO(Herschel)
+        unimplemented!("Action::SetMember");
+    }
+
+    fn action_set_target(
+        &mut self,
+        _context: &mut ActionContext,
+        target: &str,
+    ) -> Result<(), Error> {
+        log::info!("SetTarget: {}", target);
+        // TODO(Herschel)
         Ok(())
     }
 
-    fn set_target(&mut self, _context: &mut ActionContext, target: &str) -> Result<(), Error> {
-        log::info!("SetTarget: {}", target);
-        // TODO(Herschel)
+    fn action_stack_swap(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let a = self.pop()?;
+        let b = self.pop()?;
+        self.push(a);
+        self.push(b);
         Ok(())
     }
 
@@ -413,14 +737,24 @@ impl Avm1 {
         Ok(())
     }
 
-    fn stop(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_stop(&mut self, context: &mut ActionContext) -> Result<(), Error> {
         context.active_clip.stop();
         Ok(())
     }
 
-    fn stop_sounds(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_stop_sounds(&mut self, context: &mut ActionContext) -> Result<(), Error> {
         context.audio.stop_all_sounds();
         Ok(())
+    }
+
+    fn action_store_register(
+        &mut self,
+        context: &mut ActionContext,
+        register: u8,
+    ) -> Result<(), Error> {
+        // Does NOT pop the value from the stack.
+        let val = self.stack.last().ok_or("Stack underflow")?;
+        unimplemented!("Action::StoreRegister");
     }
 
     fn action_string_add(&mut self, context: &mut ActionContext) -> Result<(), Error> {
@@ -486,6 +820,13 @@ impl Avm1 {
         Ok(())
     }
 
+    fn action_target_path(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+        // TODO(Herschel)
+        let clip = self.pop()?.as_object()?;
+        self.push(Value::Undefined);
+        unimplemented!("Action::TargetPath");
+    }
+
     fn toggle_quality(&mut self, context: &mut ActionContext) -> Result<(), Error> {
         // TODO(Herschel): Noop for now? Could chang anti-aliasing on render backend.
         Ok(())
@@ -497,9 +838,34 @@ impl Avm1 {
         Ok(())
     }
 
+    fn action_to_number(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let val = self.pop()?;
+        self.push(Value::Number(val.into_number()));
+        Ok(())
+    }
+
+    fn action_to_string(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let val = self.pop()?;
+        self.push(Value::String(val.to_string()));
+        Ok(())
+    }
+
     fn action_trace(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let val = self.pop()?;
         log::info!("{}", val.to_string());
+        Ok(())
+    }
+
+    fn action_type_of(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let type_str = match self.pop()? {
+            Value::Undefined => "undefined",
+            Value::Null => "null",
+            Value::Number(_) => "number",
+            Value::Bool(_) => "boolean",
+            Value::String(_) => "string",
+            Value::Object(_) => "object",
+        };
+        // TODO(Herschel): function, movieclip
         Ok(())
     }
 
@@ -540,7 +906,14 @@ impl Avm1 {
         }
         Ok(())
     }
+
+    fn action_with(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        let object = self.pop()?.as_object()?;
+        unimplemented!("Action::With");
+    }
 }
+
+type ObjectPtr = ();
 
 #[derive(Debug, Clone)]
 enum Value {
@@ -549,6 +922,7 @@ enum Value {
     Bool(bool),
     Number(f64),
     String(String),
+    Object(ObjectPtr),
 }
 
 impl Value {
@@ -558,6 +932,20 @@ impl Value {
             Value::Number(v) => v,
             Value::String(v) => v.parse().unwrap_or(0.0),
             _ => 0.0,
+        }
+    }
+
+    fn into_number(self) -> f64 {
+        // ECMA-262 2nd edtion s. 9.3 ToNumber
+        use std::f64::NAN;
+        match self {
+            Value::Undefined => NAN,
+            Value::Null => NAN,
+            Value::Bool(false) => 0.0,
+            Value::Bool(true) => 1.0,
+            Value::Number(v) => v,
+            Value::String(v) => v.parse().unwrap_or(NAN), // TODO(Herschel): Handle Infinity/etc.?
+            Value::Object(object) => unimplemented!(),    // TODO(Herschel)
         }
     }
 
@@ -579,22 +967,50 @@ impl Value {
             Value::Bool(v) => v.to_string(),
             Value::Number(v) => v.to_string(), // TODO(Herschel): Rounding for int?
             Value::String(v) => v,
+            Value::Object(_) => "[Object object]".to_string(), // TODO(Herschel):
         }
     }
 
-    fn as_bool(&self) -> bool {
+    fn as_bool(self) -> bool {
         match self {
-            Value::Bool(v) => *v,
-            Value::Number(v) => *v != 0.0,
+            Value::Bool(v) => v,
+            Value::Number(v) => v != 0.0,
             // TODO(Herschel): Value::String(v) => ??
             _ => false,
         }
     }
 
-    fn as_f64(&self) -> Result<f64, Error> {
+    fn as_i32(self) -> Result<i32, Error> {
+        self.as_f64().map(|n| n as i32)
+    }
+
+    fn as_u32(self) -> Result<u32, Error> {
+        self.as_f64().map(|n| n as u32)
+    }
+
+    fn as_i64(self) -> Result<i64, Error> {
+        self.as_f64().map(|n| n as i64)
+    }
+
+    fn as_f64(self) -> Result<f64, Error> {
         match self {
-            Value::Number(v) => Ok(*v),
+            Value::Number(v) => Ok(v),
             _ => Err("Expected Number".into()),
+        }
+    }
+
+    fn as_string(self) -> Result<String, Error> {
+        match self {
+            Value::String(s) => Ok(s),
+            _ => Err("Expected Number".into()),
+        }
+    }
+
+    fn as_object(self) -> Result<ObjectPtr, Error> {
+        if let Value::Object(object) = self {
+            Ok(object)
+        } else {
+            Err("Expected Object".into())
         }
     }
 }
