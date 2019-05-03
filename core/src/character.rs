@@ -8,6 +8,7 @@ pub enum Character {
         num_frames: u16,
         tag_stream_start: u64,
     },
+    Bitmap(crate::backend::render::common::BitmapHandle),
     Button(Box<swf::Button>),
     Sound,
 }

@@ -1,4 +1,7 @@
-use super::{common::ShapeHandle, RenderBackend};
+use super::{
+    common::{BitmapHandle, ShapeHandle},
+    RenderBackend,
+};
 use crate::{transform::Transform, Color};
 use glium::{draw_parameters::DrawParameters, implement_vertex, uniform, Display, Frame, Surface};
 use glutin::WindowedContext;
@@ -225,6 +228,23 @@ impl RenderBackend for GliumRenderBackend {
         self.meshes.push(mesh);
 
         handle
+    }
+
+    fn register_bitmap_jpeg(
+        &mut self,
+        _id: swf::CharacterId,
+        _data: &[u8],
+        jpeg_tables: &[u8],
+    ) -> BitmapHandle {
+        unimplemented!()
+    }
+
+    fn register_bitmap_jpeg_2(&mut self, id: swf::CharacterId, data: &[u8]) -> BitmapHandle {
+        unimplemented!()
+    }
+
+    fn register_bitmap_png(&mut self, swf_tag: &swf::DefineBitsLossless) -> BitmapHandle {
+        unimplemented!()
     }
 
     fn begin_frame(&mut self) {

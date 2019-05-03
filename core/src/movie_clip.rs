@@ -227,12 +227,41 @@ impl MovieClip {
                 }
             } else {
                 match tag {
+                    // Definition Tags
                     Tag::SetBackgroundColor(color) => *context.background_color = color,
                     Tag::DefineButton2(button) => {
                         if !context.library.contains_character(button.id) {
                             context
                                 .library
                                 .register_character(button.id, Character::Button(button));
+                        }
+                    }
+                    Tag::DefineBits { id, jpeg_data } => {
+                        if !context.library.contains_character(id) {
+                            let handle = context.renderer.register_bitmap_jpeg(
+                                id,
+                                &jpeg_data,
+                                context.library.jpeg_tables().unwrap(),
+                            );
+                            context
+                                .library
+                                .register_character(id, Character::Bitmap(handle));
+                        }
+                    }
+                    Tag::DefineBitsJpeg2 { id, jpeg_data } => {
+                        if !context.library.contains_character(id) {
+                            let handle = context.renderer.register_bitmap_jpeg_2(id, &jpeg_data);
+                            context
+                                .library
+                                .register_character(id, Character::Bitmap(handle));
+                        }
+                    }
+                    Tag::DefineBitsLossless(bitmap) => {
+                        if !context.library.contains_character(bitmap.id) {
+                            let handle = context.renderer.register_bitmap_png(&bitmap);
+                            context
+                                .library
+                                .register_character(bitmap.id, Character::Bitmap(handle));
                         }
                     }
                     Tag::DefineShape(shape) => {
@@ -265,7 +294,9 @@ impl MovieClip {
                             );
                         }
                     }
+                    Tag::JpegTables(data) => context.library.set_jpeg_tables(data),
 
+                    // Control Tags
                     Tag::ShowFrame => break,
                     Tag::PlaceObject(place_object) => {
                         MovieClip::run_place_object(&mut self.children, &*place_object, context)

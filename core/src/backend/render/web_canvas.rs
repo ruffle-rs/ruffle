@@ -1,20 +1,32 @@
-use super::{common::ShapeHandle, RenderBackend};
+use super::{common::{BitmapHandle, ShapeHandle}, RenderBackend};
 use crate::{transform::Transform, Color};
 use log::info;
+use std::collections::HashMap;
+use swf::CharacterId;
 use wasm_bindgen::JsCast;
 use web_sys::{CanvasRenderingContext2d, Element, HtmlCanvasElement, HtmlImageElement};
 
 pub struct WebCanvasRenderBackend {
     canvas: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
+    svg_defs: Element,
     color_matrix: Element,
     shapes: Vec<ShapeData>,
+    bitmaps: Vec<BitmapData>,
+    id_to_bitmap: HashMap<CharacterId, BitmapHandle>,
 }
 
 struct ShapeData {
     image: HtmlImageElement,
     x_min: f64,
     y_min: f64,
+}
+
+struct BitmapData {
+    image: HtmlImageElement,
+    width: u32,
+    height: u32,
+    data: String,
 }
 
 impl WebCanvasRenderBackend {
@@ -31,8 +43,6 @@ impl WebCanvasRenderBackend {
             .create_element_ns(Some("http://www.w3.org/2000/svg"), "svg")
             .map_err(|_| "Couldn't make SVG")?;
 
-        info!("{:?}", svg);
-
         svg.set_attribute("width", "0");
         svg.set_attribute("height", "0");
         svg.set_attribute_ns(
@@ -41,6 +51,10 @@ impl WebCanvasRenderBackend {
             "http://www.w3.org/1999/xlink",
         )
         .map_err(|_| "Couldn't make SVG")?;
+
+        let svg_defs = document
+            .create_element_ns(Some("http://www.w3.org/2000/svg"), "defs")
+            .map_err(|_| "Couldn't make SVG defs")?;
 
         let filter = document
             .create_element_ns(Some("http://www.w3.org/2000/svg"), "filter")
@@ -73,8 +87,11 @@ impl WebCanvasRenderBackend {
         filter
             .append_child(&color_matrix.clone())
             .map_err(|_| "append_child failed")?;
-        svg.append_child(&filter)
+        svg_defs.append_child(&filter)
             .map_err(|_| "append_child failed")?;
+        svg.append_child(&svg_defs.clone())
+            .map_err(|_| "append_child failed")?;
+        
         let body = document
             .body()
             .unwrap()
@@ -84,8 +101,11 @@ impl WebCanvasRenderBackend {
         Ok(Self {
             canvas: canvas.clone(),
             color_matrix,
+            svg_defs,
             context,
             shapes: vec![],
+            bitmaps: vec![],
+            id_to_bitmap: HashMap::new(),
         })
     }
 }
@@ -98,11 +118,19 @@ impl RenderBackend for WebCanvasRenderBackend {
 
         let image = HtmlImageElement::new().unwrap();
 
+        let mut bitmaps = HashMap::new();
+        for (id, handle) in &self.id_to_bitmap {
+            let bitmap_data = &self.bitmaps[handle.0];
+            bitmaps.insert(*id, (&bitmap_data.data[..], bitmap_data.width, bitmap_data.height));
+        }
+
         use url::percent_encoding::{utf8_percent_encode, DEFAULT_ENCODE_SET};
-        let svg = super::shape_utils::swf_shape_to_svg(&shape);
+        let svg = super::shape_utils::swf_shape_to_svg(&shape, &bitmaps);
+
         let svg_encoded = format!(
             "data:image/svg+xml,{}",
             utf8_percent_encode(&svg, DEFAULT_ENCODE_SET)
+            //&base64::encode(&svg[..])
         );
         image.set_src(&svg_encoded);
 
@@ -112,6 +140,120 @@ impl RenderBackend for WebCanvasRenderBackend {
             y_min: shape.shape_bounds.y_min.into(),
         });
 
+        handle
+    }
+
+    fn register_bitmap_jpeg(&mut self, id: CharacterId, mut data: &[u8], mut jpeg_tables: &[u8]) -> BitmapHandle {
+        // SWF19 p.138:
+        // "Before version 8 of the SWF file format, SWF files could contain an erroneous header of 0xFF, 0xD9, 0xFF, 0xD8 before the JPEG SOI marker."
+        // Slice off these bytes if necessary.`
+        if &data[0..4] == [0xFF, 0xD9, 0xFF, 0xD8] {
+            data = &data[4..];
+        }
+
+        if &jpeg_tables[0..4] == [0xFF, 0xD9, 0xFF, 0xD8] {
+            jpeg_tables = &jpeg_tables[4..];
+        }
+
+        let mut full_jpeg = jpeg_tables[..jpeg_tables.len()-2].to_vec();
+        full_jpeg.extend_from_slice(&data[2..]);
+
+        self.register_bitmap_jpeg_2(id, &full_jpeg[..])
+    }
+
+    fn register_bitmap_jpeg_2(&mut self, id: CharacterId, mut data: &[u8]) -> BitmapHandle {
+        use url::percent_encoding::{utf8_percent_encode, DEFAULT_ENCODE_SET};
+
+        // SWF19 p.138:
+        // "Before version 8 of the SWF file format, SWF files could contain an erroneous header of 0xFF, 0xD9, 0xFF, 0xD8 before the JPEG SOI marker."
+        // Slice off these bytes if necessary.`
+        if &data[0..4] == [0xFF, 0xD9, 0xFF, 0xD8] {
+            data = &data[4..];
+        }
+
+        let mut decoder = jpeg_decoder::Decoder::new(data);
+        decoder.read_info().unwrap();
+        let metadata = decoder.info().unwrap();
+
+        let image = HtmlImageElement::new().unwrap();
+        let jpeg_encoded = format!(
+            "data:image/jpeg;base64,{}",
+            &base64::encode(&data[..])
+        );
+        image.set_src(&jpeg_encoded);
+
+        let document = web_sys::window().unwrap().document().unwrap();
+
+        let handle = BitmapHandle(self.bitmaps.len());
+        self.bitmaps.push(BitmapData {
+            image,
+            width: metadata.width.into(),
+            height: metadata.height.into(),
+            data: jpeg_encoded
+        });
+        self.id_to_bitmap.insert(id, handle);
+        handle
+    }
+
+    fn register_bitmap_png(&mut self, swf_tag: &swf::DefineBitsLossless) -> BitmapHandle {
+        let image = HtmlImageElement::new().unwrap();
+
+        use std::io::{Read, Write};
+
+        use inflate::inflate_bytes_zlib;
+        let mut decoded_data = inflate_bytes_zlib(&swf_tag.data).unwrap();
+
+        match (swf_tag.version, swf_tag.format) {
+            (1, swf::BitmapFormat::Rgb15) => {
+                unimplemented!("15-bit PNG")
+            },
+            (1, swf::BitmapFormat::Rgb32) => {
+                let mut i = 0;
+                while i < decoded_data.len() {
+                    decoded_data[i] = decoded_data[i+1];
+                    decoded_data[i+1] = decoded_data[i+2];
+                    decoded_data[i+2] = decoded_data[i+3];
+                    decoded_data[i+3] = 0xff;
+                    i += 4;
+                }
+            },
+            (2, swf::BitmapFormat::Rgb32) => {
+                let mut i = 0;
+                while i < decoded_data.len() {
+                    let alpha = decoded_data[i];
+                    decoded_data[i] = decoded_data[i+1];
+                    decoded_data[i+1] = decoded_data[i+2];
+                    decoded_data[i+2] = decoded_data[i+3];
+                    decoded_data[i+3] = alpha;
+                    i += 4;
+                }
+            },
+            _ => unimplemented!()
+        }
+
+        let mut out_png: Vec<u8> = vec![];
+        {
+            use png::{HasParameters, Encoder};
+            let mut encoder = Encoder::new(&mut out_png, swf_tag.width.into(), swf_tag.height.into());
+            encoder.set(png::ColorType::RGBA).set(png::BitDepth::Eight);
+            let mut writer = encoder.write_header().unwrap();
+            writer.write_image_data(&decoded_data).unwrap();
+        }
+
+        let image = HtmlImageElement::new().unwrap();
+        let png_encoded = format!(
+            "data:image/png;base64,{}",
+            &base64::encode(&out_png[..])
+        );
+
+        let handle = BitmapHandle(self.bitmaps.len());
+        self.bitmaps.push(BitmapData {
+            image,
+            width: swf_tag.width.into(),
+            height: swf_tag.height.into(),
+            data: png_encoded
+        });
+        self.id_to_bitmap.insert(swf_tag.id, handle);
         handle
     }
 

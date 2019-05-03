@@ -2,12 +2,17 @@ use fluster_core::backend::{
     audio::web::WebAudioBackend, render::web_canvas::WebCanvasRenderBackend,
 };
 use js_sys::Uint8Array;
+use std::cell::RefCell;
 use std::error::Error;
 use wasm_bindgen::{prelude::*, JsValue};
 use web_sys::HtmlCanvasElement;
 
+thread_local! {
+    pub static PLAYERS: RefCell<Vec<Box<fluster_core::Player>>> = RefCell::new(vec![]);
+}
+
 #[wasm_bindgen]
-pub struct Player(fluster_core::Player);
+pub struct Player(usize);
 
 #[wasm_bindgen]
 impl Player {
@@ -16,7 +21,11 @@ impl Player {
     }
 
     pub fn tick(&mut self, dt: f64) {
-        self.0.tick(dt);
+        PLAYERS.with(|players| {
+            let mut players = players.borrow_mut();
+            let player = &mut players[self.0];
+            player.tick(dt);
+        });
     }
 }
 
@@ -45,6 +54,13 @@ impl Player {
             .set_property("height", &format!("{}px", player.movie_height()))
             .map_err(|_| "Unable to set style")?;
 
-        Ok(Player(player))
+        let handle = PLAYERS.with(move |players| {
+            let mut players = players.borrow_mut();
+            let handle = Player(players.len());
+            players.push(Box::new(player));
+            handle
+        });
+
+        Ok(handle)
     }
 }

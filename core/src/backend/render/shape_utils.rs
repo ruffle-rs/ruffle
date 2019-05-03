@@ -1,12 +1,12 @@
 use crate::matrix::Matrix;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use svg::node::element::{
     path::Data, Definitions, Image, LinearGradient, Path as SvgPath, Pattern, RadialGradient, Stop,
 };
 use svg::Document;
-use swf::{Color, FillStyle, LineStyle, Shape};
+use swf::{CharacterId, Color, FillStyle, LineStyle, Shape};
 
-pub fn swf_shape_to_svg(shape: &Shape) -> String {
+pub fn swf_shape_to_svg(shape: &Shape, bitmaps: &HashMap<CharacterId, (&str, u32, u32)>) -> String {
     //let mut svg = String::new();
     let (width, height) = (
         shape.shape_bounds.x_max - shape.shape_bounds.x_min,
@@ -23,7 +23,10 @@ pub fn swf_shape_to_svg(shape: &Shape) -> String {
                 width,
                 height,
             ),
-        );
+        )
+        .set("xmlns:xlink", "http://www.w3.org/1999/xlink");
+
+    let mut bitmap_defs = HashSet::<CharacterId>::new();
 
     let mut defs = Definitions::new();
     let mut num_defs = 0;
@@ -178,12 +181,59 @@ pub fn swf_shape_to_svg(shape: &Shape) -> String {
                     num_defs += 1;
                     fill_id
                 }
-                FillStyle::Bitmap { .. } => {
-                    let svg_image = Image::new(); // TODO: .set("xlink:href", "");
+                FillStyle::Bitmap { id, matrix, .. } => {
+                    let (bitmap_data, bitmap_width, bitmap_height) =
+                        bitmaps.get(&id).unwrap_or(&("", 0, 0));
+
+                    if !bitmap_defs.contains(&id) {
+                        let image = Image::new()
+                            .set("width", *bitmap_width)
+                            .set("height", *bitmap_height)
+                            .set("xlink:href", *bitmap_data);
+
+                        let bitmap_pattern = Pattern::new()
+                            .set("id", format!("b{}", id))
+                            .set("width", *bitmap_width)
+                            .set("height", *bitmap_height)
+                            .set("patternUnits", "userSpaceOnUse")
+                            .add(image);
+
+                        defs = defs.add(bitmap_pattern);
+                        bitmap_defs.insert(id);
+                    }
+                    log::info!("{:?}", matrix);
+                    let a = Matrix::from(matrix);
+                    // let shift = Matrix {
+                    //     a: 1.0 / 20.0,
+                    //     a: 1.0 / 20.0,
+
+                    //     d: 1.0 / 20.0,
+                    //     tx: 0.0, //-819.2,
+                    //     ty: 0.0, //-819.2,
+                    //     ..Default::default()
+                    // };
+
+                    let mut bitmap_matrix = a;
+                    bitmap_matrix.a /= 20.0;
+                    bitmap_matrix.b /= 20.0;
+                    bitmap_matrix.c /= 20.0;
+                    bitmap_matrix.d /= 20.0;
 
                     let svg_pattern = Pattern::new()
                         .set("id", format!("f{}", num_defs))
-                        .add(svg_image);
+                        .set("xlink:href", format!("#b{}", id))
+                        .set(
+                            "patternTransform",
+                            format!(
+                                "matrix({} {} {} {} {} {})",
+                                bitmap_matrix.a,
+                                bitmap_matrix.b,
+                                bitmap_matrix.c,
+                                bitmap_matrix.d,
+                                bitmap_matrix.tx,
+                                bitmap_matrix.ty
+                            ),
+                        );
 
                     defs = defs.add(svg_pattern);
 

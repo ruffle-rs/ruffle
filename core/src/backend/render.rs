@@ -15,6 +15,10 @@ pub trait RenderBackend {
     fn set_dimensions(&mut self, width: u32, height: u32);
 
     fn register_shape(&mut self, shape: &swf::Shape) -> common::ShapeHandle;
+    fn register_bitmap_jpeg(&mut self, id: swf::CharacterId, data: &[u8], jpeg_tables: &[u8]) -> common::BitmapHandle;
+    fn register_bitmap_jpeg_2(&mut self, id: swf::CharacterId, data: &[u8])
+        -> common::BitmapHandle;
+    fn register_bitmap_png(&mut self, swf_tag: &swf::DefineBitsLossless) -> common::BitmapHandle;
 
     fn begin_frame(&mut self);
     fn clear(&mut self, color: Color);
