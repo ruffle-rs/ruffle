@@ -1,10 +1,10 @@
-use crate::matrix::Matrix;
+use fluster_core::backend::render::swf::{self, CharacterId, Color, FillStyle, LineStyle, Shape};
+use fluster_core::matrix::Matrix;
 use std::collections::{HashMap, HashSet, VecDeque};
 use svg::node::element::{
     path::Data, Definitions, Image, LinearGradient, Path as SvgPath, Pattern, RadialGradient, Stop,
 };
 use svg::Document;
-use swf::{CharacterId, Color, FillStyle, LineStyle, Shape};
 
 pub fn swf_shape_to_svg(shape: &Shape, bitmaps: &HashMap<CharacterId, (&str, u32, u32)>) -> String {
     //let mut svg = String::new();

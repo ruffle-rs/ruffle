@@ -1,4 +1,4 @@
-use crate::backend::render::common::ShapeHandle;
+use crate::backend::render::ShapeHandle;
 use crate::color_transform::ColorTransform;
 use crate::display_object::{DisplayObjectBase, DisplayObjectImpl, DisplayObjectUpdate};
 use crate::matrix::Matrix;

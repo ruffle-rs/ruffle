@@ -6,29 +6,8 @@ edition = "2018"
 
 [dependencies]
 bacon_rajan_cc = "0.2"
-base64 = "0.10.1"
-byteorder = "1.3.1"
 generational-arena = "0.1"
-inflate = "0.4.5"
-jpeg-decoder = "0.1.15"
 log = "0.4"
-png = "0.14.1"
-url = "1.7.2"
 rand = "0.6.5"
-rgb = "0.8"
-svg = "0.5.12"
 swf = { git = "https://github.com/Herschel/swf-rs", version = "*" }
-js-sys = "0.3.19"
-wasm-bindgen = "0.2"
-
-[dependencies.web-sys]
-version = "0.3.19"
-features = ["AudioBuffer", "AudioBufferSourceNode", "AudioContext", "AudioDestinationNode", "AudioNode", "CanvasRenderingContext2d", "Document", "Element", "HtmlCanvasElement", "HtmlImageElement", "Node", "Window"]
-
-# Desktop dependencies
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-lyon = "0.13.1"
-glium = "0.24"
-glutin = "0.20"
-winit = "0.19.1"
 

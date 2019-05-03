@@ -1,6 +1,7 @@
-use fluster_core::{
-    backend::audio::null::NullAudioBackend, backend::render::glium::GliumRenderBackend, Player,
-};
+mod render;
+
+use crate::render::GliumRenderBackend;
+use fluster_core::{backend::audio::NullAudioBackend, Player};
 use glutin::{dpi::LogicalSize, ContextBuilder, Event, EventsLoop, WindowBuilder, WindowEvent};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
@@ -78,18 +79,3 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<std::error::Error>> {
     }
     Ok(())
 }
-
-// impl UiBackend for GlutinBackend {
-//     fn poll_events(&mut self) -> bool {
-//         let mut request_close = false;
-//         self.events_loop.poll_events(|event| match event {
-//             Event::WindowEvent {
-//                 event: WindowEvent::CloseRequested,
-//                 ..
-//             } => request_close = true,
-//             _ => (),
-//         });
-
-//         !request_close
-//     }
-// }

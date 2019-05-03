@@ -1,6 +1,8 @@
-use fluster_core::backend::{
-    audio::web::WebAudioBackend, render::web_canvas::WebCanvasRenderBackend,
-};
+mod audio;
+mod render;
+mod shape_utils;
+
+use crate::{audio::WebAudioBackend, render::WebCanvasRenderBackend};
 use js_sys::Uint8Array;
 use std::cell::RefCell;
 use std::error::Error;

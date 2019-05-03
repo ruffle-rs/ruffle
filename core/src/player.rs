@@ -11,15 +11,6 @@ use log::info;
 use std::cell::RefCell;
 use std::io::Cursor;
 
-#[cfg(target_arch = "wasm32")]
-use js_sys::{ArrayBuffer, Uint8Array};
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::JsCast;
-#[cfg(target_arch = "wasm32")]
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, HtmlImageElement};
-
 type CharacterId = swf::CharacterId;
 
 pub struct Player {

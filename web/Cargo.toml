@@ -11,16 +11,24 @@ crate-type = ["cdylib", "rlib"]
 default = ["console_error_panic_hook", "console_log"]
 
 [dependencies]
+base64 = "0.10.1"
+byteorder = "1.3.1"
 console_error_panic_hook = { version = "0.1.1", optional = true }
 console_log = { version = "0.1", optional = true }
 fluster_core = { path = "../core" }
-log = "0.4"
+generational-arena = "0.1"
+inflate = "0.4.5"
+jpeg-decoder = "0.1.15"
 js-sys = "0.3.19"
+log = "0.4"
+png = "0.14.1"
+svg = "0.5.12"
+url = "1.7.2"
 wasm-bindgen = "0.2"
 
 [dependencies.web-sys]
 version = "0.3.19"
-features = ["CanvasRenderingContext2d", "CssStyleDeclaration", "HtmlCanvasElement", "HtmlElement"]
+features = ["AudioBuffer", "AudioBufferSourceNode", "AudioContext", "AudioDestinationNode", "AudioNode", "CanvasRenderingContext2d", "CssStyleDeclaration", "Document", "Element", "HtmlCanvasElement", "HtmlElement", "HtmlImageElement", "Node", "Window"]
 
 [dev-dependencies]
 wasm-bindgen-test = "0.2"

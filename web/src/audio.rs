@@ -1,10 +1,9 @@
-use super::{AudioBackend, AudioStreamHandle};
+use fluster_core::backend::audio::{swf, AudioBackend, AudioStreamHandle};
 use generational_arena::Arena;
-use js_sys::{ArrayBuffer, Uint8Array};
+use js_sys::Uint8Array;
 use log::info;
-use swf::SoundStreamInfo;
 use wasm_bindgen::closure::Closure;
-use web_sys::{AudioBuffer, AudioBufferSourceNode, AudioContext};
+use web_sys::AudioContext;
 
 pub struct WebAudioBackend {
     context: AudioContext,
@@ -12,7 +11,7 @@ pub struct WebAudioBackend {
 }
 
 struct AudioStream {
-    info: SoundStreamInfo,
+    info: swf::SoundStreamInfo,
     time: f64,
     cur_mp3_frames: Vec<u8>,
     num_mp3_frames: usize,

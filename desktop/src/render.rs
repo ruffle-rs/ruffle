@@ -1,14 +1,10 @@
-use super::{
-    common::{BitmapHandle, ShapeHandle},
-    RenderBackend,
-};
-use crate::{transform::Transform, Color};
+use fluster_core::backend::render::swf::{self, FillStyle, LineStyle};
+use fluster_core::backend::render::{BitmapHandle, Color, RenderBackend, ShapeHandle, Transform};
 use glium::{draw_parameters::DrawParameters, implement_vertex, uniform, Display, Frame, Surface};
 use glutin::WindowedContext;
 use lyon::tessellation::geometry_builder::{BuffersBuilder, VertexBuffers};
 use lyon::{path::PathEvent, tessellation, tessellation::FillTessellator};
 use std::collections::{HashMap, VecDeque};
-use swf::{FillStyle, LineStyle};
 
 pub struct GliumRenderBackend {
     display: Display,

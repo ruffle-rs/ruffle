@@ -6,6 +6,9 @@ edition = "2018"
 
 [dependencies]
 fluster_core = { path = "../core" }
+glium = "0.24"
 glutin = "0.20"
 env_logger = "0.6.1"
+lyon = "0.13.1"
 structopt = "0.2.15"
+winit = "0.19.1"
