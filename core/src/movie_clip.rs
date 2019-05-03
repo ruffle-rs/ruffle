@@ -9,7 +9,7 @@ use crate::player::{RenderContext, UpdateContext};
 use bacon_rajan_cc::{Cc, Trace, Tracer};
 use log::info;
 use std::cell::RefCell;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{BTreeMap, VecDeque};
 use swf::read::SwfRead;
 
 type Depth = i16;
@@ -24,7 +24,7 @@ pub struct MovieClip {
     current_frame: FrameNumber,
     total_frames: FrameNumber,
     audio_stream: Option<AudioStreamHandle>,
-    children: HashMap<Depth, Cc<RefCell<DisplayObject>>>,
+    children: BTreeMap<Depth, Cc<RefCell<DisplayObject>>>,
 }
 
 impl_display_object!(MovieClip, base);
@@ -40,7 +40,7 @@ impl MovieClip {
             current_frame: 0,
             total_frames: 1,
             audio_stream: None,
-            children: HashMap::new(),
+            children: BTreeMap::new(),
         }
     }
 
@@ -54,7 +54,7 @@ impl MovieClip {
             current_frame: 0,
             audio_stream: None,
             total_frames: num_frames,
-            children: HashMap::new(),
+            children: BTreeMap::new(),
         }
     }
 
@@ -121,11 +121,7 @@ impl MovieClip {
         self.goto_queue.clear();
     }
 
-    pub fn run_place_object(
-        children: &mut HashMap<Depth, Cc<RefCell<DisplayObject>>>,
-        place_object: &swf::PlaceObject,
-        context: &mut UpdateContext,
-    ) {
+    pub fn place_object(&mut self, place_object: &swf::PlaceObject, context: &mut UpdateContext) {
         use swf::PlaceObjectAction;
         let character = match place_object.action {
             PlaceObjectAction::Place(id) => {
@@ -138,11 +134,11 @@ impl MovieClip {
                     };
 
                 // TODO(Herschel): Behavior when depth is occupied? (I think it replaces)
-                children.insert(place_object.depth, character.clone());
+                self.children.insert(place_object.depth, character.clone());
                 character
             }
             PlaceObjectAction::Modify => {
-                if let Some(child) = children.get(&place_object.depth) {
+                if let Some(child) = self.children.get(&place_object.depth) {
                     child.clone()
                 } else {
                     return;
@@ -156,7 +152,8 @@ impl MovieClip {
                         return;
                     };
 
-                if let Some(prev_character) = children.insert(place_object.depth, character.clone())
+                if let Some(prev_character) =
+                    self.children.insert(place_object.depth, character.clone())
                 {
                     character
                         .borrow_mut()
@@ -214,9 +211,7 @@ impl MovieClip {
             if only_display_actions {
                 match tag {
                     Tag::ShowFrame => break,
-                    Tag::PlaceObject(place_object) => {
-                        MovieClip::run_place_object(&mut self.children, &*place_object, context)
-                    }
+                    Tag::PlaceObject(place_object) => self.place_object(&*place_object, context),
                     Tag::RemoveObject { depth, .. } => {
                         // TODO(Herschel): How does the character ID work for RemoveObject?
                         self.children.remove(&depth);
@@ -298,9 +293,7 @@ impl MovieClip {
 
                     // Control Tags
                     Tag::ShowFrame => break,
-                    Tag::PlaceObject(place_object) => {
-                        MovieClip::run_place_object(&mut self.children, &*place_object, context)
-                    }
+                    Tag::PlaceObject(place_object) => self.place_object(&*place_object, context),
                     Tag::RemoveObject { depth, .. } => {
                         // TODO(Herschel): How does the character ID work for RemoveObject?
                         self.children.remove(&depth);
@@ -350,15 +343,15 @@ impl DisplayObjectUpdate for MovieClip {
                 .push(context.tag_stream.get_ref().position());
         }
 
-            if self.is_playing {
-                self.run_frame_internal(context, false);
-            }
+        if self.is_playing {
+            self.run_frame_internal(context, false);
+        }
 
-            // TODO(Herschel): Verify order of execution for parent/children.
-            // Parent first? Children first? Sorted by depth?
-            for child in self.children.values() {
-                child.borrow_mut().run_frame(context);
-            }
+        // TODO(Herschel): Verify order of execution for parent/children.
+        // Parent first? Children first? Sorted by depth?
+        for child in self.children.values() {
+            child.borrow_mut().run_frame(context);
+        }
 
         if self.tag_stream_start.is_some() {
             context
@@ -379,11 +372,8 @@ impl DisplayObjectUpdate for MovieClip {
     fn render(&self, context: &mut RenderContext) {
         context.transform_stack.push(self.transform());
 
-        let mut sorted_children: Vec<_> = self.children.iter().collect();
-        sorted_children.sort_by_key(|(depth, _)| *depth);
-
-        for child in sorted_children {
-            child.1.borrow_mut().render(context);
+        for child in self.children.values() {
+            child.borrow_mut().render(context);
         }
 
         context.transform_stack.pop();

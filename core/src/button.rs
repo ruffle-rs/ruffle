@@ -6,11 +6,11 @@ use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use bacon_rajan_cc::{Cc, Trace, Tracer};
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 pub struct Button {
     base: DisplayObjectBase,
-    children: Vec<(Depth, bool, bool, bool, bool, Cc<RefCell<DisplayObject>>)>,
+    children: [BTreeMap<Depth, Cc<RefCell<DisplayObject>>>; 4],
     state: ButtonState,
     release_actions: Vec<u8>,
 }
@@ -18,19 +18,26 @@ pub struct Button {
 impl Button {
     pub fn new(button: &swf::Button, library: &crate::library::Library) -> Button {
         use swf::ButtonState;
-        let mut children = vec![];
+        let mut children = [
+            BTreeMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
+        ];
         for record in &button.records {
             let mut child = library.instantiate_display_object(record.id).unwrap();
             child.set_matrix(&record.matrix.clone().into());
+            child.set_color_transform(&record.color_transform.clone().into());
             let child_ptr = Cc::new(RefCell::new(DisplayObject::new(Box::new(child))));
-            children.push((
-                record.depth,
-                record.states.contains(&ButtonState::Up),
-                record.states.contains(&ButtonState::Over),
-                record.states.contains(&ButtonState::Down),
-                record.states.contains(&ButtonState::HitTest),
-                child_ptr,
-            ));
+            for state in &record.states {
+                let i = match state {
+                    ButtonState::Up => 0,
+                    ButtonState::Over => 1,
+                    ButtonState::Down => 2,
+                    ButtonState::HitTest => continue,
+                };
+                children[i].insert(record.depth, child_ptr.clone());
+            }
         }
 
         let mut release_actions = vec![];
@@ -49,6 +56,30 @@ impl Button {
             state: self::ButtonState::Up,
             release_actions,
         }
+    }
+
+    fn children_in_state(
+        &self,
+        state: ButtonState,
+    ) -> impl Iterator<Item = &Cc<RefCell<DisplayObject>>> {
+        let i = match state {
+            ButtonState::Up => 0,
+            ButtonState::Over => 1,
+            ButtonState::Down => 2,
+        };
+        self.children[i].values()
+    }
+
+    fn children_in_state_mut(
+        &mut self,
+        state: ButtonState,
+    ) -> impl Iterator<Item = &mut Cc<RefCell<DisplayObject>>> {
+        let i = match state {
+            ButtonState::Up => 0,
+            ButtonState::Over => 1,
+            ButtonState::Down => 2,
+        };
+        self.children[i].values_mut()
     }
 }
 
@@ -76,13 +107,13 @@ impl DisplayObjectUpdate for Button {
                 ButtonState::Over
             };
         }
-        for (_, _, _, _, _, child) in &mut self.children {
+        for child in self.children_in_state(self.state) {
             child.borrow_mut().run_frame(context);
         }
     }
 
     fn run_post_frame(&mut self, context: &mut UpdateContext) {
-        for (_, _, _, _, _, child) in &mut self.children {
+        for child in self.children_in_state(self.state) {
             child.borrow_mut().run_post_frame(context);
         }
     }
@@ -90,13 +121,8 @@ impl DisplayObjectUpdate for Button {
     fn render(&self, context: &mut RenderContext) {
         context.transform_stack.push(self.transform());
 
-        for (_, up, over, down, _, child) in &self.children {
-            if (*up && self.state == ButtonState::Up)
-                || (*over && self.state == ButtonState::Over)
-                || (*down && self.state == ButtonState::Down)
-            {
-                child.borrow().render(context);
-            }
+        for child in self.children_in_state(self.state) {
+            child.borrow().render(context);
         }
         context.transform_stack.pop();
     }
@@ -110,8 +136,10 @@ impl DisplayObjectUpdate for Button {
 
 impl Trace for Button {
     fn trace(&mut self, tracer: &mut Tracer) {
-        for (_, _, _, _, _, child) in &mut self.children {
-            child.borrow_mut().trace(tracer);
+        for list in &mut self.children {
+            for child in list.values_mut() {
+                child.borrow_mut().trace(tracer);
+            }
         }
     }
 }
