@@ -344,12 +344,15 @@ impl MovieClip {
 
 impl DisplayObjectUpdate for MovieClip {
     fn run_frame(&mut self, context: &mut UpdateContext) {
-        if self.is_playing && self.tag_stream_start.is_some() {
+        if self.tag_stream_start.is_some() {
             context
                 .position_stack
                 .push(context.tag_stream.get_ref().position());
+        }
 
-            self.run_frame_internal(context, false);
+            if self.is_playing {
+                self.run_frame_internal(context, false);
+            }
 
             // TODO(Herschel): Verify order of execution for parent/children.
             // Parent first? Children first? Sorted by depth?
@@ -357,6 +360,7 @@ impl DisplayObjectUpdate for MovieClip {
                 child.borrow_mut().run_frame(context);
             }
 
+        if self.tag_stream_start.is_some() {
             context
                 .tag_stream
                 .get_inner()
@@ -383,6 +387,12 @@ impl DisplayObjectUpdate for MovieClip {
         }
 
         context.transform_stack.pop();
+    }
+
+    fn handle_click(&mut self, pos: (f32, f32)) {
+        for child in self.children.values_mut() {
+            child.borrow_mut().handle_click(pos);
+        }
     }
 }
 

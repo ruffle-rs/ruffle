@@ -31,6 +31,8 @@ pub struct Player {
 
     movie_width: u32,
     movie_height: u32,
+
+    mouse_pos: (f32, f32),
 }
 
 impl Player {
@@ -74,6 +76,8 @@ impl Player {
 
             movie_width: movie_width,
             movie_height: movie_height,
+
+            mouse_pos: (0.0, 0.0),
         })
     }
 
@@ -100,12 +104,23 @@ impl Player {
     pub fn movie_height(&self) -> u32 {
         self.movie_height
     }
+
+    pub fn mouse_move(&mut self, pos: (f32, f32)) {
+        self.mouse_pos = pos;
+    }
+
+    pub fn mouse_down(&mut self) {}
+
+    pub fn mouse_up(&mut self) {
+        self.stage.borrow_mut().handle_click(self.mouse_pos);
+    }
 }
 
 impl Player {
     fn run_frame(&mut self) {
         let mut update_context = UpdateContext {
             global_time: self.global_time,
+            mouse_pos: self.mouse_pos,
             tag_stream: &mut self.tag_stream,
             position_stack: vec![],
             library: &mut self.library,
@@ -136,6 +151,7 @@ impl Player {
 
 pub struct UpdateContext<'a> {
     pub global_time: u64,
+    pub mouse_pos: (f32, f32),
     pub tag_stream: &'a mut swf::read::Reader<Cursor<Vec<u8>>>,
     pub position_stack: Vec<u64>,
     pub library: &'a mut Library,

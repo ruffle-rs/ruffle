@@ -26,13 +26,13 @@ impl DisplayObjectImpl for DisplayObjectBase {
         &self.transform.matrix
     }
     fn set_matrix(&mut self, matrix: &Matrix) {
-        self.transform.matrix = matrix.clone();
+        self.transform.matrix = *matrix;
     }
     fn get_color_transform(&self) -> &ColorTransform {
         &self.transform.color_transform
     }
     fn set_color_transform(&mut self, color_transform: &ColorTransform) {
-        self.transform.color_transform = color_transform.clone();
+        self.transform.color_transform = *color_transform;
     }
 }
 
@@ -54,6 +54,8 @@ pub trait DisplayObjectUpdate: Trace {
     fn run_frame(&mut self, _context: &mut UpdateContext) {}
     fn run_post_frame(&mut self, _context: &mut UpdateContext) {}
     fn render(&self, _context: &mut RenderContext) {}
+
+    fn handle_click(&mut self, _pos: (f32, f32)) {}
 }
 
 macro_rules! impl_display_object {
@@ -107,6 +109,10 @@ impl DisplayObjectUpdate for DisplayObject {
 
     fn render(&self, context: &mut RenderContext) {
         self.inner.render(context)
+    }
+
+    fn handle_click(&mut self, pos: (f32, f32)) {
+        self.inner.handle_click(pos)
     }
 }
 

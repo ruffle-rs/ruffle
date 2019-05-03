@@ -26,7 +26,6 @@ impl RodioAudioBackend {
 
 impl AudioBackend for RodioAudioBackend {
     fn register_stream(&mut self, stream_info: &swf::SoundStreamInfo) -> AudioStreamHandle {
-        log::info!("SPB: {}", stream_info.num_samples_per_block);
         let sink = Sink::new(&self.device);
         let data = Arc::new(Mutex::new(Cursor::new(vec![])));
 
@@ -57,7 +56,6 @@ impl AudioBackend for RodioAudioBackend {
 
             let mut buffer = stream.data.lock().unwrap();
             buffer.get_mut().extend_from_slice(&samples);
-            log::info!("Wrote: {} {}", samples.len(), buffer.get_ref().len());
         }
     }
 }

@@ -1,7 +1,9 @@
+use crate::button::Button;
 use crate::character::Character;
 use crate::display_object::DisplayObject;
 use crate::graphic::Graphic;
 use crate::movie_clip::MovieClip;
+use crate::player::UpdateContext;
 use std::collections::HashMap;
 use swf::CharacterId;
 
@@ -48,6 +50,9 @@ impl Library {
                 *tag_stream_start,
                 *num_frames,
             )))),
+            Some(Character::Button(button)) => {
+                Ok(DisplayObject::new(Box::new(Button::new(&*button, self))))
+            }
             Some(_) => Err("Not a DisplayObject".into()),
             None => Err("Character id doesn't exist".into()),
         }

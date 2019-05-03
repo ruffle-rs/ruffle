@@ -3,7 +3,10 @@ mod render;
 
 use crate::render::GliumRenderBackend;
 use fluster_core::{backend::audio::NullAudioBackend, Player};
-use glutin::{dpi::LogicalSize, ContextBuilder, Event, EventsLoop, WindowBuilder, WindowEvent};
+use glutin::{
+    dpi::{LogicalPosition, LogicalSize},
+    ContextBuilder, ElementState, Event, EventsLoop, MouseButton, WindowBuilder, WindowEvent,
+};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
@@ -54,16 +57,32 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<std::error::Error>> {
 
     display.gl_window().set_inner_size(logical_size);
 
+    let mut mouse_pos = LogicalPosition::new(0.0, 0.0);
     let mut time = Instant::now();
     loop {
         // Poll UI events
         let mut request_close = false;
-        events_loop.poll_events(|event| match event {
-            Event::WindowEvent {
-                event: WindowEvent::CloseRequested,
-                ..
-            } => request_close = true,
-            _ => (),
+        events_loop.poll_events(|event| {
+            if let Event::WindowEvent { event, .. } = event {
+                match event {
+                    WindowEvent::CursorMoved { position, .. } => {
+                        mouse_pos = position;
+                        player.mouse_move((position.x as f32, position.y as f32));
+                    }
+                    WindowEvent::MouseInput {
+                        button: MouseButton::Left,
+                        state: ElementState::Pressed,
+                        ..
+                    } => player.mouse_down(),
+                    WindowEvent::MouseInput {
+                        button: MouseButton::Left,
+                        state: ElementState::Released,
+                        ..
+                    } => player.mouse_up(),
+                    WindowEvent::CloseRequested => request_close = true,
+                    _ => (),
+                }
+            }
         });
 
         if request_close {
