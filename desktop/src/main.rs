@@ -1,3 +1,4 @@
+mod audio;
 mod render;
 
 use crate::render::GliumRenderBackend;
@@ -37,7 +38,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<std::error::Error>> {
         .with_multisampling(4)
         .with_srgb(true)
         .build_windowed(window_builder, &events_loop)?;
-    let audio = NullAudioBackend::new();
+    let audio = audio::RodioAudioBackend::new()?;
     let renderer = GliumRenderBackend::new(windowed_context)?;
     let display = renderer.display().clone();
     let mut player = Player::new(Box::new(renderer), Box::new(audio), swf_data)?;

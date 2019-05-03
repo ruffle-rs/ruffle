@@ -241,6 +241,34 @@ impl RenderBackend for GliumRenderBackend {
                         focal_point,
                     }
                 }
+                // PathCommandType::Fill(FillStyle::Bitmap {
+                //     id,
+                //     matrix,
+                //     is_repeating,
+                //     is_smoothed,
+                // }) => {
+                //     let mut colors = [[0.0; 4]; 8];
+                //     let mut ratios = [0.0; 8];
+                //     for (i, record) in gradient.records.iter().enumerate() {
+                //         colors[i] = [
+                //             record.color.r as f32 / 255.0,
+                //             record.color.g as f32 / 255.0,
+                //             record.color.b as f32 / 255.0,
+                //             record.color.a as f32 / 255.0,
+                //         ];
+                //         ratios[i] = record.ratio as f32 / 255.0;
+                //     }
+
+                //     GradientUniforms {
+                //         gradient_type: 0,
+                //         ratios,
+                //         colors,
+                //         num_colors: gradient.records.len() as u32,
+                //         matrix: swf_to_gl_matrix(gradient.matrix.clone()),
+                //         repeat_mode: 0,
+                //         focal_point: 0.0,
+                //     }
+                // }
                 PathCommandType::Fill(_) => continue,
                 PathCommandType::Stroke(_) => continue,
             };
