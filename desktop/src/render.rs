@@ -1,6 +1,13 @@
+#![allow(clippy::invalid_ref)]
+
 use fluster_core::backend::render::swf::{self, FillStyle, LineStyle};
 use fluster_core::backend::render::{BitmapHandle, Color, RenderBackend, ShapeHandle, Transform};
-use glium::{draw_parameters::DrawParameters, implement_vertex, uniform, Display, Frame, Surface};
+use glium::texture::texture2d::Texture2d;
+use glium::uniforms::{UniformValue, Uniforms};
+use glium::{
+    draw_parameters::DrawParameters, implement_uniform_block, implement_vertex, uniform, Display,
+    Frame, Surface,
+};
 use glutin::WindowedContext;
 use lyon::tessellation::geometry_builder::{BuffersBuilder, VertexBuffers};
 use lyon::{path::PathEvent, tessellation, tessellation::FillTessellator};
@@ -12,6 +19,7 @@ pub struct GliumRenderBackend {
     shader_program: glium::Program,
     gradient_shader_program: glium::Program,
     meshes: Vec<Mesh>,
+    textures: Vec<Texture2d>,
     movie_width: f32,
     movie_height: f32,
 }
@@ -57,6 +65,7 @@ impl GliumRenderBackend {
             gradient_shader_program,
             target: None,
             meshes: vec![],
+            textures: vec![],
             movie_width: 500.0,
             movie_height: 500.0,
         })
@@ -83,13 +92,10 @@ impl RenderBackend for GliumRenderBackend {
         let mut vertices: Vec<Vertex> = vec![];
         let mut indices: Vec<u32> = vec![];
 
-        let mut lyon_mesh: VertexBuffers<_, u32> = VertexBuffers::new();
         let paths = swf_shape_to_lyon_paths(shape);
         let mut fill_tess = FillTessellator::new();
 
-        let mut num_verts = 0;
-        let mut num_indices = 0;
-
+        let mut lyon_mesh: VertexBuffers<_, u32> = VertexBuffers::new();
         for (cmd, path) in paths.clone() {
             let color = match cmd {
                 PathCommandType::Fill(FillStyle::Color(color)) => [
@@ -134,42 +140,38 @@ impl RenderBackend for GliumRenderBackend {
             index_buffer,
         });
 
+        fn swf_to_gl_matrix(m: swf::Matrix) -> [[f32; 3]; 3] {
+            let tx = m.translate_x * 20.0;
+            let ty = m.translate_y * 20.0;
+            let det = m.scale_x * m.scale_y - m.rotate_skew_1 * m.rotate_skew_0;
+            let mut a = m.scale_y / det;
+            let mut b = -m.rotate_skew_1 / det;
+            let mut c = -(tx * m.scale_y - m.rotate_skew_1 * ty) / det;
+            let mut d = -m.rotate_skew_0 / det;
+            let mut e = m.scale_x / det;
+            let mut f = (tx * m.rotate_skew_0 - m.scale_x * ty) / det;
+            //panic!();
+            a *= 20.0 / 32768.0;
+            b *= 20.0 / 32768.0;
+            d *= 20.0 / 32768.0;
+            e *= 20.0 / 32768.0;
+
+            c /= 32768.0;
+            f /= 32768.0;
+            c += 0.5;
+            f += 0.5;
+            [[a, d, 0.0], [b, e, 0.0], [c, f, 1.0]]
+        }
+
         for (cmd, path) in paths {
+            let mut lyon_mesh: VertexBuffers<_, u32> = VertexBuffers::new();
             if let PathCommandType::Stroke(_) = cmd {
                 continue;
             }
-            let (gradient_matrix, gradient_colors, gradient_ratios, num_gradient_colors) = match cmd
-            {
+            let gradient_uniforms = match cmd {
                 PathCommandType::Fill(FillStyle::LinearGradient(gradient)) => {
-                    let mut m = gradient.matrix.clone();
-                    let tx = m.translate_x * 20.0;
-                    let ty = m.translate_y * 20.0;
-                    let det = m.scale_x * m.scale_y - m.rotate_skew_1 * m.rotate_skew_0;
-                    let mut a = m.scale_y / det;
-                    let mut b = -m.rotate_skew_1 / det;
-                    let mut c = -(tx * m.scale_y - m.rotate_skew_1 * ty) / det;
-                    let mut d = -m.rotate_skew_0 / det;
-                    let mut e = m.scale_x / det;
-                    let mut f = (tx * m.rotate_skew_0 - m.scale_x * ty) / det;
-
-                    a *= 20.0 / 32768.0;
-                    b *= 20.0 / 32768.0;
-                    d *= 20.0 / 32768.0;
-                    e *= 20.0 / 32768.0;
-
-                    c /= 32768.0;
-                    f /= 32768.0;
-                    c += 0.5;
-                    f += 0.5;
-                    let matrix = [
-                        [a, c, 0.0, 0.0],
-                        [b, d, 0.0, 0.0],
-                        [0.0, 0.0, 1.0, 0.0],
-                        [e, f, 0.0, 1.0],
-                    ];
-
-                    let mut colors = [[0.0; 4]; 4];
-                    let mut ratios = [0.0; 4];
+                    let mut colors = [[0.0; 4]; 8];
+                    let mut ratios = [0.0; 8];
                     for (i, record) in gradient.records.iter().enumerate() {
                         colors[i] = [
                             record.color.r as f32 / 255.0,
@@ -180,7 +182,64 @@ impl RenderBackend for GliumRenderBackend {
                         ratios[i] = record.ratio as f32 / 255.0;
                     }
 
-                    (matrix, colors, ratios, gradient.records.len() as u8)
+                    GradientUniforms {
+                        gradient_type: 0,
+                        ratios,
+                        colors,
+                        num_colors: gradient.records.len() as u32,
+                        matrix: swf_to_gl_matrix(gradient.matrix.clone()),
+                        repeat_mode: 0,
+                        focal_point: 0.0,
+                    }
+                }
+                PathCommandType::Fill(FillStyle::RadialGradient(gradient)) => {
+                    let mut colors = [[0.0; 4]; 8];
+                    let mut ratios = [0.0; 8];
+                    for (i, record) in gradient.records.iter().enumerate() {
+                        colors[i] = [
+                            record.color.r as f32 / 255.0,
+                            record.color.g as f32 / 255.0,
+                            record.color.b as f32 / 255.0,
+                            record.color.a as f32 / 255.0,
+                        ];
+                        ratios[i] = record.ratio as f32 / 255.0;
+                    }
+
+                    GradientUniforms {
+                        gradient_type: 1,
+                        ratios,
+                        colors,
+                        num_colors: gradient.records.len() as u32,
+                        matrix: swf_to_gl_matrix(gradient.matrix.clone()),
+                        repeat_mode: 0,
+                        focal_point: 0.0,
+                    }
+                }
+                PathCommandType::Fill(FillStyle::FocalGradient {
+                    gradient,
+                    focal_point,
+                }) => {
+                    let mut colors = [[0.0; 4]; 8];
+                    let mut ratios = [0.0; 8];
+                    for (i, record) in gradient.records.iter().enumerate() {
+                        colors[i] = [
+                            record.color.r as f32 / 255.0,
+                            record.color.g as f32 / 255.0,
+                            record.color.b as f32 / 255.0,
+                            record.color.a as f32 / 255.0,
+                        ];
+                        ratios[i] = record.ratio as f32 / 255.0;
+                    }
+
+                    GradientUniforms {
+                        gradient_type: 2,
+                        ratios,
+                        colors,
+                        num_colors: gradient.records.len() as u32,
+                        matrix: swf_to_gl_matrix(gradient.matrix.clone()),
+                        repeat_mode: 0,
+                        focal_point,
+                    }
                 }
                 PathCommandType::Fill(_) => continue,
                 PathCommandType::Stroke(_) => continue,
@@ -210,12 +269,7 @@ impl RenderBackend for GliumRenderBackend {
             .unwrap();
 
             mesh.draws.push(Draw {
-                draw_type: DrawType::LinearGradient {
-                    gradient_matrix,
-                    gradient_colors,
-                    gradient_ratios,
-                    num_gradient_colors,
-                },
+                draw_type: DrawType::LinearGradient(gradient_uniforms),
                 vertex_buffer,
                 index_buffer,
             });
@@ -229,10 +283,32 @@ impl RenderBackend for GliumRenderBackend {
     fn register_bitmap_jpeg(
         &mut self,
         _id: swf::CharacterId,
-        _data: &[u8],
-        jpeg_tables: &[u8],
+        mut data: &[u8],
+        mut jpeg_tables: &[u8],
     ) -> BitmapHandle {
-        unimplemented!()
+        // SWF19 p.138:
+        // "Before version 8 of the SWF file format, SWF files could contain an erroneous header of 0xFF, 0xD9, 0xFF, 0xD8 before the JPEG SOI marker."
+        // Slice off these bytes if necessary.`
+        if data[0..4] == [0xFF, 0xD9, 0xFF, 0xD8] {
+            data = &data[4..];
+        }
+
+        if jpeg_tables[0..4] == [0xFF, 0xD9, 0xFF, 0xD8] {
+            jpeg_tables = &jpeg_tables[4..];
+        }
+
+        let full_jpeg = fluster_core::backend::render::glue_swf_jpeg_to_tables(jpeg_tables, data);
+        let image = image::load(std::io::Cursor::new(&full_jpeg[..]), image::JPEG)
+            .unwrap()
+            .to_rgba();
+        let image_dimensions = image.dimensions();
+        let image =
+            glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
+        let texture = glium::texture::Texture2d::new(&self.display, image).unwrap();
+
+        let handle = BitmapHandle(self.textures.len());
+        self.textures.push(texture);
+        handle
     }
 
     fn register_bitmap_jpeg_2(&mut self, id: swf::CharacterId, data: &[u8]) -> BitmapHandle {
@@ -315,19 +391,22 @@ impl RenderBackend for GliumRenderBackend {
                         )
                         .unwrap();
                 }
-                DrawType::LinearGradient {
-                    gradient_matrix,
-                    gradient_colors,
-                    gradient_ratios,
-                    num_gradient_colors,
-                } => {
+                DrawType::LinearGradient(gradient_uniforms) => {
+                    let uniforms = AllUniforms {
+                        view_matrix,
+                        world_matrix,
+                        mult_color,
+                        add_color,
+                        gradient: gradient_uniforms,
+                    };
+
                     target
                         .draw(
                             &draw.vertex_buffer,
                             &draw.index_buffer,
                             &self.gradient_shader_program,
-                            &uniform! { view_matrix: view_matrix, world_matrix: world_matrix, mult_color: mult_color, add_color: add_color, gradient_matrix: gradient_matrix, gradient_colors: gradient_colors, gradient_ratios: gradient_ratios, num_gradient_colors: num_gradient_colors },
-                            &draw_parameters
+                            &uniforms,
+                            &draw_parameters,
                         )
                         .unwrap();
                 }
@@ -343,6 +422,59 @@ struct Vertex {
 }
 
 implement_vertex!(Vertex, position, color);
+
+#[derive(Copy, Clone, Debug)]
+struct GradientUniforms {
+    matrix: [[f32; 3]; 3],
+    gradient_type: i32,
+    ratios: [f32; 8],
+    colors: [[f32; 4]; 8],
+    num_colors: u32,
+    repeat_mode: i32,
+    focal_point: f32,
+}
+
+impl Uniforms for GradientUniforms {
+    fn visit_values<'a, F: FnMut(&str, UniformValue<'a>)>(&'a self, mut visit: F) {
+        visit("u_matrix", UniformValue::Mat3(self.matrix));
+        visit(
+            "u_gradient_type",
+            UniformValue::SignedInt(self.gradient_type),
+        );
+        for i in 0..8 {
+            visit(
+                &format!("u_ratios[{}]", i)[..],
+                UniformValue::Float(self.ratios[i]),
+            );
+            visit(
+                &format!("u_colors[{}]", i)[..],
+                UniformValue::Vec4(self.colors[i]),
+            );
+        }
+        visit("u_num_colors", UniformValue::UnsignedInt(self.num_colors));
+        visit("u_repeat_mode", UniformValue::SignedInt(self.repeat_mode));
+        visit("u_focal_point", UniformValue::Float(self.focal_point));
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+struct AllUniforms {
+    world_matrix: [[f32; 4]; 4],
+    view_matrix: [[f32; 4]; 4],
+    mult_color: [f32; 4],
+    add_color: [f32; 4],
+    gradient: GradientUniforms,
+}
+
+impl Uniforms for AllUniforms {
+    fn visit_values<'a, F: FnMut(&str, UniformValue<'a>)>(&'a self, mut visit: F) {
+        visit("world_matrix", UniformValue::Mat4(self.world_matrix));
+        visit("view_matrix", UniformValue::Mat4(self.view_matrix));
+        visit("mult_color", UniformValue::Vec4(self.mult_color));
+        visit("add_color", UniformValue::Vec4(self.add_color));
+        self.gradient.visit_values(visit);
+    }
+}
 
 const VERTEX_SHADER: &str = r#"
     #version 140
@@ -377,38 +509,86 @@ const TEXTURE_VERTEX_SHADER: &str = r#"
     uniform mat4 view_matrix;
     uniform mat4 world_matrix;
 
+    uniform mat3 u_matrix;
+
     in vec2 position;
     in vec4 color;
     out vec2 frag_uv;
 
     void main() {
-        frag_uv = position.xy;
+        frag_uv = vec2(u_matrix * vec3(position, 1.0));
         gl_Position = view_matrix * world_matrix * vec4(position, 0.0, 1.0);
     }
 "#;
 
 const GRADIENT_FRAGMENT_SHADER: &str = r#"
-    #version 140
-    in vec2 frag_uv;
-    out vec4 out_color;
+#version 140
     uniform vec4 mult_color;
     uniform vec4 add_color;
-    uniform mat4 gradient_matrix;
-    uniform vec4 gradient_colors[4];
-    uniform float gradient_ratios[4];
-    int num_gradient_colors;
+
+    uniform int u_gradient_type;
+    uniform float u_ratios[8];
+    uniform vec4 u_colors[8];
+    uniform uint u_num_colors;
+    uniform int u_repeat_mode;
+    uniform float u_focal_point;
+
+    in vec2 frag_uv;
+    out vec4 out_color;
 
     void main() {
-        vec2 uv = (gradient_matrix * vec4(frag_uv, 0.0, 1.0)).xy;
-        int i = 0;
-        while( uv.x < gradient_ratios[i] && i < num_gradient_colors ) {
-            i++;
+        vec4 color;
+        int last = int(int(u_num_colors) - 1);
+        float t;
+        if( u_gradient_type == 0 )
+        {
+            t = frag_uv.x;
         }
-        i = (i < num_gradient_colors) ? i : num_gradient_colors - 1;
-        int j = (i + 1 < num_gradient_colors) ? i + 1 : i;
-
-        out_color = mix(gradient_colors[i], gradient_colors[j], (uv.x - gradient_ratios[i]) / (gradient_ratios[j] - gradient_ratios[i])); 
-        out_color = out_color * mult_color + add_color;
+        else if( u_gradient_type == 1 )
+        {
+            t = length(frag_uv * 2.0 - 1.0);
+        }
+        else if( u_gradient_type == 2 )
+        {
+            vec2 uv = frag_uv * 2.0 - 1.0;
+            vec2 d = vec2(u_focal_point, 0.0) - uv;
+            float l = length(d);
+            d /= l;
+            t = l / (sqrt(1.0 -  u_focal_point*u_focal_point*d.y*d.y) + u_focal_point*d.x);
+        }
+        if( u_repeat_mode == 0 )
+        {
+            // Clamp
+            t = clamp(t, 0.0, 1.0);
+        }
+        else if( u_repeat_mode == 1 )
+        {
+            // Repeat
+            t = fract(t);
+        }
+        else
+        {
+            // Mirror
+            if( t < 0.0 )
+            {
+                t = -t;
+            }
+            if( (int(t)&1) == 0 ) {
+                t = fract(t);
+            } else {
+                t = 1.0 - fract(t);
+            }
+        }
+        int i = 0;
+        int j = 1;
+        while( t > u_ratios[j] )
+        {
+            i = j;
+            j++;
+        }
+        float a = (t - u_ratios[i]) / (u_ratios[j] - u_ratios[i]);
+        color = mix(u_colors[i], u_colors[j], a);            
+        out_color = mult_color * color + add_color;
     }
 "#;
 
@@ -424,12 +604,7 @@ struct Draw {
 
 enum DrawType {
     Color,
-    LinearGradient {
-        gradient_matrix: [[f32; 4]; 4],
-        gradient_colors: [[f32; 4]; 4],
-        gradient_ratios: [f32; 4],
-        num_gradient_colors: u8,
-    },
+    LinearGradient(GradientUniforms),
 }
 
 fn point(x: f32, y: f32) -> lyon::math::Point {

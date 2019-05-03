@@ -64,7 +64,7 @@ impl DisplayObjectUpdate for Button {
                 child.borrow().render(context);
             }
         }
-
+        log::info!("Render button: {}", self.children.len());
         context.transform_stack.pop();
     }
 }

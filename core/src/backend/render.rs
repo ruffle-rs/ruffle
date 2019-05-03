@@ -52,3 +52,10 @@ impl RenderBackend for NullRenderer {
     fn clear(&mut self, _color: Color) {}
     fn render_shape(&mut self, _shape: ShapeHandle, _transform: &Transform) {}
 }
+
+pub fn glue_swf_jpeg_to_tables(jpeg_tables: &[u8], jpeg_data: &[u8]) -> Vec<u8> {
+    let mut full_jpeg = Vec::with_capacity(jpeg_tables.len() + jpeg_data.len() - 4);
+    full_jpeg.extend_from_slice(&jpeg_tables[..jpeg_tables.len() - 2]);
+    full_jpeg.extend_from_slice(&jpeg_data[2..]);
+    full_jpeg
+}

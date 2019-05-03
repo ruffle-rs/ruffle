@@ -9,6 +9,8 @@ fluster_core = { path = "../core" }
 glium = "0.24"
 glutin = "0.20"
 env_logger = "0.6.1"
+image = "0.21.1"
+log = "0.4"
 lyon = "0.13.1"
 structopt = "0.2.15"
 winit = "0.19.1"
