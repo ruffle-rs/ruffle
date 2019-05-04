@@ -143,7 +143,7 @@ impl GliumRenderBackend {
             let mut d = -m.rotate_skew_0 / det;
             let mut e = m.scale_x / det;
             let mut f = (tx * m.rotate_skew_0 - m.scale_x * ty) / det;
-            //panic!();
+
             a *= 20.0 / 32768.0;
             b *= 20.0 / 32768.0;
             d *= 20.0 / 32768.0;
@@ -681,39 +681,43 @@ fn swf_shape_to_lyon_paths(
 ) -> Vec<(PathCommandType, Vec<lyon::path::PathEvent>)> {
     let cmds = get_paths(shape);
     let mut out_paths = vec![];
-    let mut prev;
+    let mut prev = point(0.0, 0.0);
     use lyon::geom::{LineSegment, QuadraticBezierSegment};
     for cmd in cmds {
         if let PathCommandType::Fill(_fill_style) = &cmd.command_type {
-            let mut out_path = vec![PathEvent::MoveTo(point(cmd.path.start.0, cmd.path.start.1))];
-            prev = point(cmd.path.start.0, cmd.path.start.1);
-            for edge in cmd.path.edges {
-                let out_cmd = match edge {
-                    PathEdge::Straight(x, y) => {
-                        let cmd = PathEvent::Line(LineSegment {
-                            from: prev,
-                            to: point(x, y),
-                        });
-                        prev = point(x, y);
-                        cmd
-                    }
-                    PathEdge::Bezier(x1, y1, x2, y2) => {
-                        let cmd = PathEvent::Quadratic(QuadraticBezierSegment {
-                            from: prev,
-                            ctrl: point(x1, y1),
-                            to: point(x2, y2),
-                        });
-                        prev = point(x2, y2);
-                        cmd
-                    }
-                };
-                out_path.push(out_cmd);
+            let mut out_path = vec![];
+            for path in cmd.paths {
+                out_path.push(PathEvent::MoveTo(point(path.start.0, path.start.1)));
+                prev = point(path.start.0, path.start.1);
+                for edge in path.edges {
+                    let out_cmd = match edge {
+                        PathEdge::Straight(x, y) => {
+                            let cmd = PathEvent::Line(LineSegment {
+                                from: prev,
+                                to: point(x, y),
+                            });
+                            prev = point(x, y);
+                            cmd
+                        }
+                        PathEdge::Bezier(x1, y1, x2, y2) => {
+                            let cmd = PathEvent::Quadratic(QuadraticBezierSegment {
+                                from: prev,
+                                ctrl: point(x1, y1),
+                                to: point(x2, y2),
+                            });
+                            prev = point(x2, y2);
+                            cmd
+                        }
+                    };
+                    out_path.push(out_cmd);
+                }
             }
+
             out_path.push(PathEvent::Close(LineSegment {
                 from: prev,
                 to: prev,
             }));
-            out_paths.push((cmd.command_type, out_path));
+            out_paths.push((cmd.command_type.clone(), out_path));
         }
     }
     out_paths
@@ -756,19 +760,21 @@ fn get_paths(shape: &swf::Shape) -> impl Iterator<Item = PathCommand> {
                 }
 
                 if let Some(ref new_styles) = style_change.new_styles {
-                    for (_id, paths) in paths {
+                    for (id, paths) in paths {
+                        let mut out_paths = vec![];
                         for path in paths.open_paths {
-                            out.push(PathCommand {
-                                command_type: paths.command_type.clone(),
-                                path,
-                            })
+                            out_paths.push(path)
                         }
+                        out.push(PathCommand {
+                            command_type: paths.command_type.clone(),
+                            paths: out_paths,
+                        })
                     }
                     for (id, paths) in strokes {
                         for path in paths.open_paths {
                             out.push(PathCommand {
                                 command_type: paths.command_type.clone(),
-                                path,
+                                paths: vec![path],
                             })
                         }
                     }
@@ -873,27 +879,30 @@ fn get_paths(shape: &swf::Shape) -> impl Iterator<Item = PathCommand> {
     }
 
     for (id, paths) in paths {
+        let mut out_paths = vec![];
         for path in paths.open_paths {
-            out.push(PathCommand {
-                command_type: paths.command_type.clone(),
-                path,
-            })
+            out_paths.push(path)
         }
+        out.push(PathCommand {
+            command_type: paths.command_type.clone(),
+            paths: out_paths,
+        })
     }
     for (id, paths) in strokes {
         for path in paths.open_paths {
             out.push(PathCommand {
                 command_type: paths.command_type.clone(),
-                path,
+                paths: vec![path],
             })
         }
     }
     out.into_iter()
 }
 
+#[derive(Debug)]
 pub struct PathCommand {
     command_type: PathCommandType,
-    path: Path,
+    paths: Vec<Path>,
 }
 
 #[derive(Clone, Debug)]
@@ -970,6 +979,7 @@ impl PendingPaths {
     }
 }
 
+#[derive(Debug)]
 struct Path {
     start: (f32, f32),
     end: (f32, f32),
@@ -977,7 +987,7 @@ struct Path {
     edges: VecDeque<PathEdge>,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 enum PathEdge {
     Straight(f32, f32),
     Bezier(f32, f32, f32, f32),
