@@ -6,12 +6,14 @@ mod avm1;
 mod button;
 mod character;
 mod color_transform;
+mod font;
 mod graphic;
 mod library;
 pub mod matrix;
 mod movie_clip;
 mod player;
 mod prelude;
+mod text;
 mod transform;
 
 pub mod backend;

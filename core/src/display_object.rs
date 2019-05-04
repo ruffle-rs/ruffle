@@ -3,6 +3,7 @@ use crate::prelude::*;
 use crate::transform::Transform;
 use bacon_rajan_cc::{Trace, Tracer};
 
+#[derive(Clone)]
 pub struct DisplayObjectBase {
     depth: Depth,
     transform: Transform,

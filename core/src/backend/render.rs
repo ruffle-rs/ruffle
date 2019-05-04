@@ -5,6 +5,7 @@ pub trait RenderBackend {
     fn set_dimensions(&mut self, width: u32, height: u32);
 
     fn register_shape(&mut self, shape: &swf::Shape) -> ShapeHandle;
+    fn register_glyph_shape(&mut self, shape: &swf::Glyph) -> ShapeHandle;
     fn register_bitmap_jpeg(
         &mut self,
         id: swf::CharacterId,
@@ -31,6 +32,9 @@ pub struct NullRenderer;
 impl RenderBackend for NullRenderer {
     fn set_dimensions(&mut self, _width: u32, _height: u32) {}
     fn register_shape(&mut self, _shape: &swf::Shape) -> ShapeHandle {
+        ShapeHandle(0)
+    }
+    fn register_glyph_shape(&mut self, _shape: &swf::Glyph) -> ShapeHandle {
         ShapeHandle(0)
     }
     fn register_bitmap_jpeg(

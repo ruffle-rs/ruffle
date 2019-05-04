@@ -10,5 +10,7 @@ pub enum Character {
     },
     Bitmap(crate::backend::render::BitmapHandle),
     Button(Box<swf::Button>),
+    Font(Box<crate::font::Font>),
+    Text(Box<crate::text::Text>),
     Sound,
 }

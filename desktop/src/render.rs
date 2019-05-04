@@ -74,15 +74,8 @@ impl GliumRenderBackend {
     pub fn display(&self) -> &Display {
         &self.display
     }
-}
 
-impl RenderBackend for GliumRenderBackend {
-    fn set_dimensions(&mut self, width: u32, height: u32) {
-        self.movie_width = width as f32;
-        self.movie_height = height as f32;
-    }
-
-    fn register_shape(&mut self, shape: &swf::Shape) -> ShapeHandle {
+    fn register_shape_internal(&mut self, shape: &swf::Shape) -> ShapeHandle {
         let handle = ShapeHandle(self.meshes.len());
 
         use lyon::tessellation::FillOptions;
@@ -306,6 +299,50 @@ impl RenderBackend for GliumRenderBackend {
         self.meshes.push(mesh);
 
         handle
+    }
+}
+
+impl RenderBackend for GliumRenderBackend {
+    fn set_dimensions(&mut self, width: u32, height: u32) {
+        self.movie_width = width as f32;
+        self.movie_height = height as f32;
+    }
+
+    fn register_shape(&mut self, shape: &swf::Shape) -> ShapeHandle {
+        self.register_shape_internal(shape)
+    }
+
+    fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
+        let shape = swf::Shape {
+            version: 2,
+            id: 0,
+            shape_bounds: swf::Rectangle {
+                x_min: 0.0,
+                x_max: 0.0,
+                y_min: 0.0,
+                y_max: 0.0,
+            },
+            edge_bounds: swf::Rectangle {
+                x_min: 0.0,
+                x_max: 0.0,
+                y_min: 0.0,
+                y_max: 0.0,
+            },
+            has_fill_winding_rule: false,
+            has_non_scaling_strokes: false,
+            has_scaling_strokes: true,
+            styles: swf::ShapeStyles {
+                fill_styles: vec![FillStyle::Color(Color {
+                    r: 255,
+                    g: 25,
+                    b: 255,
+                    a: 255,
+                })],
+                line_styles: vec![],
+            },
+            shape: glyph.shape_records.clone(),
+        };
+        self.register_shape_internal(&shape)
     }
 
     fn register_bitmap_jpeg(

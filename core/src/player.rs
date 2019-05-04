@@ -18,8 +18,9 @@ pub struct Player {
 
     avm: Avm1,
 
-    render_context: RenderContext,
     audio: Audio,
+    renderer: Box<RenderBackend>,
+    transform_stack: TransformStack,
 
     library: Library,
     stage: Cc<RefCell<DisplayObject>>,
@@ -54,11 +55,7 @@ impl Player {
 
             avm: Avm1::new(swf.version),
 
-            render_context: RenderContext {
-                renderer,
-                transform_stack: TransformStack::new(),
-            },
-
+            renderer,
             audio: Audio::new(audio),
 
             background_color: Color {
@@ -67,6 +64,8 @@ impl Player {
                 b: 255,
                 a: 255,
             },
+            transform_stack: TransformStack::new(),
+
             library: Library::new(),
             stage: Cc::new(RefCell::new(stage)),
 
@@ -74,8 +73,8 @@ impl Player {
             frame_accumulator: 0.0,
             global_time: 0,
 
-            movie_width: movie_width,
-            movie_height: movie_height,
+            movie_width,
+            movie_height,
 
             mouse_pos: (0.0, 0.0),
         })
@@ -126,7 +125,7 @@ impl Player {
             library: &mut self.library,
             background_color: &mut self.background_color,
             avm1: &mut self.avm,
-            renderer: &mut *self.render_context.renderer,
+            renderer: &mut *self.renderer,
             audio: &mut self.audio,
         };
 
@@ -136,16 +135,21 @@ impl Player {
     }
 
     fn render(&mut self) {
-        self.render_context.renderer.begin_frame();
+        self.renderer.begin_frame();
 
-        self.render_context
-            .renderer
-            .clear(self.background_color.clone());
+        self.renderer.clear(self.background_color.clone());
 
-        let stage = self.stage.borrow_mut();
-        stage.render(&mut self.render_context);
+        {
+            let mut render_context = RenderContext {
+                renderer: &mut *self.renderer,
+                library: &self.library,
+                transform_stack: &mut self.transform_stack,
+            };
+            let stage = self.stage.borrow_mut();
+            stage.render(&mut render_context);
+        }
 
-        self.render_context.renderer.end_frame();
+        self.renderer.end_frame();
     }
 }
 
@@ -161,7 +165,8 @@ pub struct UpdateContext<'a> {
     pub audio: &'a mut Audio,
 }
 
-pub struct RenderContext {
-    pub renderer: Box<RenderBackend>,
-    pub transform_stack: TransformStack,
+pub struct RenderContext<'a> {
+    pub renderer: &'a mut RenderBackend,
+    pub library: &'a Library,
+    pub transform_stack: &'a mut TransformStack,
 }

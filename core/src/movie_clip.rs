@@ -4,8 +4,10 @@ use crate::color_transform::ColorTransform;
 use crate::display_object::{
     DisplayObject, DisplayObjectBase, DisplayObjectImpl, DisplayObjectUpdate,
 };
+use crate::font::Font;
 use crate::matrix::Matrix;
 use crate::player::{RenderContext, UpdateContext};
+use crate::text::Text;
 use bacon_rajan_cc::{Cc, Trace, Tracer};
 use log::info;
 use std::cell::RefCell;
@@ -259,6 +261,15 @@ impl MovieClip {
                                 .register_character(bitmap.id, Character::Bitmap(handle));
                         }
                     }
+                    Tag::DefineFont2(font) => {
+                        if !context.library.contains_character(font.id) {
+                            let font_object = Font::from_swf_tag(context, &font).unwrap();
+                            context.library.register_character(
+                                font.id,
+                                Character::Font(Box::new(font_object)),
+                            );
+                        }
+                    }
                     Tag::DefineShape(shape) => {
                         if !context.library.contains_character(shape.id) {
                             let shape_handle = context.renderer.register_shape(&shape);
@@ -286,6 +297,15 @@ impl MovieClip {
                                     num_frames: sprite.num_frames,
                                     tag_stream_start: mc_start_pos,
                                 },
+                            );
+                        }
+                    }
+                    Tag::DefineText(text) => {
+                        if !context.library.contains_character(text.id) {
+                            let text_object = Text::from_swf_tag(&text);
+                            context.library.register_character(
+                                text.id,
+                                Character::Text(Box::new(text_object)),
                             );
                         }
                     }

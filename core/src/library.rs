@@ -1,6 +1,7 @@
 use crate::button::Button;
 use crate::character::Character;
 use crate::display_object::DisplayObject;
+use crate::font::Font;
 use crate::graphic::Graphic;
 use crate::movie_clip::MovieClip;
 use crate::player::UpdateContext;
@@ -53,8 +54,17 @@ impl Library {
             Some(Character::Button(button)) => {
                 Ok(DisplayObject::new(Box::new(Button::new(&*button, self))))
             }
+            Some(Character::Text(text)) => Ok(DisplayObject::new(text.clone())),
             Some(_) => Err("Not a DisplayObject".into()),
             None => Err("Character id doesn't exist".into()),
+        }
+    }
+
+    pub fn get_font(&self, id: CharacterId) -> Option<&Font> {
+        if let Some(&Character::Font(ref font)) = self.characters.get(&id) {
+            Some(font)
+        } else {
+            None
         }
     }
 

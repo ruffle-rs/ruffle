@@ -2,6 +2,8 @@ use crate::prelude::*;
 
 /// Represents the transform for a DisplayObject.
 /// This includes both the transformation matrix and the color transform.
+///
+#[derive(Clone)]
 pub struct Transform {
     pub matrix: Matrix,
     pub color_transform: ColorTransform,

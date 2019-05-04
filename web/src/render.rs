@@ -145,6 +145,10 @@ impl RenderBackend for WebCanvasRenderBackend {
         handle
     }
 
+    fn register_glyph_shape(&mut self, _shape: &swf::Glyph) -> ShapeHandle {
+        ShapeHandle(0)
+    }
+
     fn register_bitmap_jpeg(
         &mut self,
         id: CharacterId,
