@@ -5,10 +5,18 @@ use log::info;
 use wasm_bindgen::closure::Closure;
 use web_sys::AudioContext;
 
+thread_local! {
+    //pub static SOUNDS: RefCell<Vec<>>>> = RefCell::new(vec![]);
+}
+
 pub struct WebAudioBackend {
     context: AudioContext,
-    sounds: Arena<()>,
+    sounds: Arena<Sound>,
     streams: Arena<AudioStream>,
+}
+
+struct Sound {
+    object: js_sys::Object,
 }
 
 struct AudioStream {
@@ -19,8 +27,10 @@ struct AudioStream {
     old_mp3_frames: Vec<Vec<u8>>,
 }
 
+type Error = Box<std::error::Error>;
+
 impl WebAudioBackend {
-    pub fn new() -> Result<Self, Box<std::error::Error>> {
+    pub fn new() -> Result<Self, Error> {
         let context = AudioContext::new().map_err(|_| "Unable to create AudioContext")?;
         Ok(Self {
             context,
@@ -33,11 +43,35 @@ impl WebAudioBackend {
 }
 
 impl AudioBackend for WebAudioBackend {
-    fn register_sound(
-        &mut self,
-        swf_sound: &swf::Sound,
-    ) -> Result<SoundHandle, Box<std::error::Error>> {
-        Ok(self.sounds.insert(()))
+    fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, Error> {
+        let mut object = js_sys::Object::new();
+        let sound = Sound {
+            object: object.clone(),
+        };
+        let value = wasm_bindgen::JsValue::from(object);
+        let handle = self.sounds.insert(sound);
+        match swf_sound.format.compression {
+            swf::AudioCompression::Mp3 => {
+                let data_array = unsafe { Uint8Array::view(&swf_sound.data[..]) };
+                let array_buffer = data_array.buffer().slice_with_end(
+                    data_array.byte_offset(),
+                    data_array.byte_offset() + data_array.byte_length(),
+                );
+                let closure = Closure::wrap(Box::new(move |buffer: wasm_bindgen::JsValue| {
+                    log::info!("A");
+                    js_sys::Reflect::set(&value, &"buffer".into(), &buffer).unwrap();
+                    log::info!("B");
+                })
+                    as Box<dyn FnMut(wasm_bindgen::JsValue)>);
+                self.context
+                    .decode_audio_data(&array_buffer)
+                    .unwrap()
+                    .then(&closure);
+                closure.forget();
+            }
+            _ => unimplemented!(),
+        }
+        Ok(handle)
     }
 
     fn register_stream(&mut self, stream_info: &swf::SoundStreamInfo) -> AudioStreamHandle {
@@ -52,7 +86,23 @@ impl AudioBackend for WebAudioBackend {
         self.streams.insert(stream)
     }
 
-    fn play_sound(&mut self, sound: SoundHandle) {}
+    fn play_sound(&mut self, sound: SoundHandle) {
+        use wasm_bindgen::JsCast;
+        if let Some(sound) = self.sounds.get(sound) {
+            let object = js_sys::Reflect::get(&sound.object, &"buffer".into()).unwrap();
+            if object.is_undefined() {
+                return;
+            }
+            let buffer: &web_sys::AudioBuffer = object.dyn_ref().unwrap();
+            let buffer_node = self.context.create_buffer_source().unwrap();
+            buffer_node.set_buffer(Some(buffer));
+            buffer_node
+                .connect_with_audio_node(&self.context.destination())
+                .unwrap();
+
+            buffer_node.start().unwrap();
+        }
+    }
 
     fn queue_stream_samples(&mut self, handle: AudioStreamHandle, samples: &[u8]) {
         if let Some(stream) = self.streams.get_mut(handle) {
