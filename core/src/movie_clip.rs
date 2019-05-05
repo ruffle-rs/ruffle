@@ -283,6 +283,14 @@ impl MovieClip {
                             );
                         }
                     }
+                    Tag::DefineSound(sound) => {
+                        if !context.library.contains_character(sound.id) {
+                            let handle = context.audio.register_sound(&sound).unwrap();
+                            context
+                                .library
+                                .register_character(sound.id, Character::Sound(handle));
+                        }
+                    }
                     Tag::DefineSprite(sprite) => {
                         let pos = context.tag_stream.get_ref().position();
                         context.tag_stream.get_inner().set_position(start_pos);
@@ -317,6 +325,12 @@ impl MovieClip {
                     Tag::RemoveObject { depth, .. } => {
                         // TODO(Herschel): How does the character ID work for RemoveObject?
                         self.children.remove(&depth);
+                    }
+
+                    Tag::StartSound { id, sound_info } => {
+                        if let Some(handle) = context.library.get_sound(id) {
+                            context.audio.play_sound(handle);
+                        }
                     }
 
                     Tag::SoundStreamHead(info) => self.sound_stream_head(&info, context, 0, 1),

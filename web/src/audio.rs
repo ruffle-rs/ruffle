@@ -1,4 +1,4 @@
-use fluster_core::backend::audio::{swf, AudioBackend, AudioStreamHandle};
+use fluster_core::backend::audio::{swf, AudioBackend, AudioStreamHandle, SoundHandle};
 use generational_arena::Arena;
 use js_sys::Uint8Array;
 use log::info;
@@ -7,6 +7,7 @@ use web_sys::AudioContext;
 
 pub struct WebAudioBackend {
     context: AudioContext,
+    sounds: Arena<()>,
     streams: Arena<AudioStream>,
 }
 
@@ -23,6 +24,7 @@ impl WebAudioBackend {
         let context = AudioContext::new().map_err(|_| "Unable to create AudioContext")?;
         Ok(Self {
             context,
+            sounds: Arena::new(),
             streams: Arena::new(),
         })
     }
@@ -31,6 +33,13 @@ impl WebAudioBackend {
 }
 
 impl AudioBackend for WebAudioBackend {
+    fn register_sound(
+        &mut self,
+        swf_sound: &swf::Sound,
+    ) -> Result<SoundHandle, Box<std::error::Error>> {
+        Ok(self.sounds.insert(()))
+    }
+
     fn register_stream(&mut self, stream_info: &swf::SoundStreamInfo) -> AudioStreamHandle {
         let stream = AudioStream {
             info: stream_info.clone(),
@@ -42,6 +51,8 @@ impl AudioBackend for WebAudioBackend {
         info!("Stream {}", stream_info.num_samples_per_block);
         self.streams.insert(stream)
     }
+
+    fn play_sound(&mut self, sound: SoundHandle) {}
 
     fn queue_stream_samples(&mut self, handle: AudioStreamHandle, samples: &[u8]) {
         if let Some(stream) = self.streams.get_mut(handle) {

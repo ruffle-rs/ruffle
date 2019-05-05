@@ -145,8 +145,81 @@ impl RenderBackend for WebCanvasRenderBackend {
         handle
     }
 
-    fn register_glyph_shape(&mut self, _shape: &swf::Glyph) -> ShapeHandle {
-        ShapeHandle(0)
+    fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
+        let bounds = glyph.bounds.clone().unwrap_or_else(|| {
+            let mut bounds = swf::Rectangle {
+                x_min: 999.0,
+                x_max: -999.0,
+                y_min: 999.0,
+                y_max: -999.0,
+            };
+            let mut x = 0.0;
+            let mut y = 0.0;
+            for record in &glyph.shape_records {
+                match record {
+                    swf::ShapeRecord::StyleChange(style_change) => {
+                        if let Some((move_x, move_y)) = style_change.move_to {
+                            x = move_x;
+                            y = move_y;
+                            bounds.x_min = f32::min(bounds.x_min, x);
+                            bounds.x_max = f32::max(bounds.x_max, x);
+                            bounds.y_min = f32::min(bounds.y_min, y);
+                            bounds.y_max = f32::max(bounds.y_max, y);
+                        }
+                    }
+                    swf::ShapeRecord::StraightEdge { delta_x, delta_y } => {
+                        x += delta_x;
+                        y += delta_y;
+                        bounds.x_min = f32::min(bounds.x_min, x);
+                        bounds.x_max = f32::max(bounds.x_max, x);
+                        bounds.y_min = f32::min(bounds.y_min, y);
+                        bounds.y_max = f32::max(bounds.y_max, y);
+                    }
+                    swf::ShapeRecord::CurvedEdge {
+                        control_delta_x,
+                        control_delta_y,
+                        anchor_delta_x,
+                        anchor_delta_y,
+                    } => {
+                        x += control_delta_x;
+                        y += control_delta_y;
+                        bounds.x_min = f32::min(bounds.x_min, x);
+                        bounds.x_max = f32::max(bounds.x_max, x);
+                        bounds.y_min = f32::min(bounds.y_min, y);
+                        bounds.y_max = f32::max(bounds.y_max, y);
+                        x += anchor_delta_x;
+                        y += anchor_delta_y;
+                        bounds.x_min = f32::min(bounds.x_min, x);
+                        bounds.x_max = f32::max(bounds.x_max, x);
+                        bounds.y_min = f32::min(bounds.y_min, y);
+                        bounds.y_max = f32::max(bounds.y_max, y);
+                    }
+                }
+            }
+            bounds.x_min = f32::min(bounds.x_min, bounds.x_max);
+            bounds.y_min = f32::min(bounds.y_min, bounds.y_max);
+            bounds
+        });
+        let shape = swf::Shape {
+            version: 2,
+            id: 0,
+            shape_bounds: bounds.clone(),
+            edge_bounds: bounds,
+            has_fill_winding_rule: false,
+            has_non_scaling_strokes: false,
+            has_scaling_strokes: true,
+            styles: swf::ShapeStyles {
+                fill_styles: vec![swf::FillStyle::Color(Color {
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                    a: 255,
+                })],
+                line_styles: vec![],
+            },
+            shape: glyph.shape_records.clone(),
+        };
+        self.register_shape(&shape)
     }
 
     fn register_bitmap_jpeg(

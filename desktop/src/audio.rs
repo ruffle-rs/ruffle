@@ -1,10 +1,11 @@
-use fluster_core::backend::audio::{swf, AudioBackend, AudioStreamHandle};
+use fluster_core::backend::audio::{swf, AudioBackend, AudioStreamHandle, SoundHandle};
 use generational_arena::Arena;
 use rodio::{source::Source, Sample, Sink};
 use std::io::Cursor;
 use std::sync::{Arc, Mutex};
 
 pub struct RodioAudioBackend {
+    sounds: Arena<Sound>,
     streams: Arena<AudioStream>,
     device: rodio::Device,
 }
@@ -15,9 +16,15 @@ struct AudioStream {
     data: Arc<Mutex<Cursor<Vec<u8>>>>,
 }
 
+struct Sound {
+    format: swf::SoundFormat,
+    data: Vec<u8>,
+}
+
 impl RodioAudioBackend {
     pub fn new() -> Result<Self, Box<std::error::Error>> {
         Ok(Self {
+            sounds: Arena::new(),
             streams: Arena::new(),
             device: rodio::default_output_device().ok_or("Unable to create output device")?,
         })
@@ -25,6 +32,17 @@ impl RodioAudioBackend {
 }
 
 impl AudioBackend for RodioAudioBackend {
+    fn register_sound(
+        &mut self,
+        swf_sound: &swf::Sound,
+    ) -> Result<SoundHandle, Box<std::error::Error>> {
+        let sound = Sound {
+            format: swf_sound.format.clone(),
+            data: swf_sound.data.clone(),
+        };
+        Ok(self.sounds.insert(sound))
+    }
+
     fn register_stream(&mut self, stream_info: &swf::SoundStreamInfo) -> AudioStreamHandle {
         let sink = Sink::new(&self.device);
         let data = Arc::new(Mutex::new(Cursor::new(vec![])));
@@ -43,6 +61,38 @@ impl AudioBackend for RodioAudioBackend {
         };
         stream.sink.append(decoder);
         self.streams.insert(stream)
+    }
+
+    fn play_sound(&mut self, sound: SoundHandle) {
+        let sound = &self.sounds[sound];
+        use swf::AudioCompression;
+
+        log::info!("{:?}", sound.format.compression);
+        match sound.format.compression {
+            AudioCompression::Uncompressed => {
+                let mut data = Vec::with_capacity(sound.data.len() / 2);
+                let mut i = 0;
+                while i < sound.data.len() {
+                    let val = sound.data[i] as i16 | ((sound.data[i + 1] as i16) << 8);
+                    data.push(val);
+                }
+                let buffer = rodio::buffer::SamplesBuffer::new(
+                    if sound.format.is_stereo { 2 } else { 1 },
+                    sound.format.sample_rate.into(),
+                    data,
+                );
+                let sink = Sink::new(&self.device);
+                sink.append(buffer);
+                sink.detach();
+            }
+            AudioCompression::Mp3 => {
+                let decoder = Mp3EventDecoder::new(Cursor::new(sound.data.clone())).unwrap();
+                let sink = Sink::new(&self.device);
+                sink.append(decoder);
+                sink.detach();
+            }
+            _ => unimplemented!(),
+        }
     }
 
     fn queue_stream_samples(&mut self, handle: AudioStreamHandle, mut samples: &[u8]) {
@@ -160,5 +210,78 @@ impl Iterator for Mp3Decoder {
         self.current_frame_offset += 1;
 
         Some(v)
+    }
+}
+
+pub struct Mp3EventDecoder<R>
+where
+    R: Read + Seek,
+{
+    decoder: Decoder<R>,
+    current_frame: Frame,
+    current_frame_offset: usize,
+}
+
+impl<R> Mp3EventDecoder<R>
+where
+    R: Read + Seek,
+{
+    pub fn new(data: R) -> Result<Self, ()> {
+        let mut decoder = Decoder::new(data);
+        let current_frame = decoder.next_frame().map_err(|_| ())?;
+
+        Ok(Mp3EventDecoder {
+            decoder,
+            current_frame,
+            current_frame_offset: 0,
+        })
+    }
+}
+
+impl<R> Source for Mp3EventDecoder<R>
+where
+    R: Read + Seek,
+{
+    #[inline]
+    fn current_frame_len(&self) -> Option<usize> {
+        Some(self.current_frame.data.len())
+    }
+
+    #[inline]
+    fn channels(&self) -> u16 {
+        self.current_frame.channels as _
+    }
+
+    #[inline]
+    fn sample_rate(&self) -> u32 {
+        self.current_frame.sample_rate as _
+    }
+
+    #[inline]
+    fn total_duration(&self) -> Option<Duration> {
+        None
+    }
+}
+
+impl<R> Iterator for Mp3EventDecoder<R>
+where
+    R: Read + Seek,
+{
+    type Item = i16;
+
+    #[inline]
+    fn next(&mut self) -> Option<i16> {
+        if self.current_frame_offset == self.current_frame.data.len() {
+            self.current_frame_offset = 0;
+            match self.decoder.next_frame() {
+                Ok(frame) => self.current_frame = frame,
+                _ => return None,
+            }
+        }
+
+        let v = self.current_frame.data[self.current_frame_offset];
+        self.current_frame_offset += 1;
+
+        return Some(v);
     }
 }

@@ -48,6 +48,10 @@ impl DisplayObjectUpdate for Text {
             height = block.height.unwrap_or(height);
             let mut transform = context.transform_stack.transform().clone();
             transform.matrix.ty += y;
+            transform.color_transform.r_mult = f32::from(color.r) / 255.0;
+            transform.color_transform.g_mult = f32::from(color.g) / 255.0;
+            transform.color_transform.b_mult = f32::from(color.b) / 255.0;
+            transform.color_transform.a_mult = f32::from(color.a) / 255.0;
             if let Some(font) = context.library.get_font(font_id) {
                 for c in &block.glyphs {
                     if let Some(glyph) = font.get_glyph(c.index as usize) {

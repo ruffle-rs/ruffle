@@ -1,10 +1,10 @@
+use crate::backend::audio::SoundHandle;
 use crate::button::Button;
 use crate::character::Character;
 use crate::display_object::DisplayObject;
 use crate::font::Font;
 use crate::graphic::Graphic;
 use crate::movie_clip::MovieClip;
-use crate::player::UpdateContext;
 use std::collections::HashMap;
 use swf::CharacterId;
 
@@ -63,6 +63,14 @@ impl Library {
     pub fn get_font(&self, id: CharacterId) -> Option<&Font> {
         if let Some(&Character::Font(ref font)) = self.characters.get(&id) {
             Some(font)
+        } else {
+            None
+        }
+    }
+
+    pub fn get_sound(&self, id: CharacterId) -> Option<SoundHandle> {
+        if let Some(Character::Sound(sound)) = self.characters.get(&id) {
+            Some(*sound)
         } else {
             None
         }

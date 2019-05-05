@@ -7,14 +7,25 @@ pub struct Audio {
 }
 
 pub type AudioStreamHandle = generational_arena::Index;
+pub type SoundHandle = generational_arena::Index;
+
+type Error = Box<std::error::Error>;
 
 impl Audio {
     pub fn new(backend: Box<AudioBackend>) -> Audio {
         Audio { backend }
     }
 
+    pub fn register_sound(&mut self, sound: &swf::Sound) -> Result<SoundHandle, Error> {
+        self.backend.register_sound(sound)
+    }
+
     pub fn register_stream(&mut self, stream_info: &SoundStreamInfo) -> AudioStreamHandle {
         self.backend.register_stream(stream_info)
+    }
+
+    pub fn play_sound(&mut self, sound: SoundHandle) {
+        self.backend.play_sound(sound)
     }
 
     pub fn queue_stream_samples(&mut self, handle: AudioStreamHandle, samples: &[u8]) {

@@ -12,5 +12,5 @@ pub enum Character {
     Button(Box<swf::Button>),
     Font(Box<crate::font::Font>),
     Text(Box<crate::text::Text>),
-    Sound,
+    Sound(crate::backend::audio::SoundHandle),
 }

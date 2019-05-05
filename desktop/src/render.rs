@@ -334,7 +334,7 @@ impl RenderBackend for GliumRenderBackend {
             styles: swf::ShapeStyles {
                 fill_styles: vec![FillStyle::Color(Color {
                     r: 255,
-                    g: 25,
+                    g: 255,
                     b: 255,
                     a: 255,
                 })],
