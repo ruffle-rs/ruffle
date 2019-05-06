@@ -4,26 +4,74 @@
 <head>
   <meta charset="utf-8">
   <title>Fluster</title>
+  <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
   <style>
     body {
       position: absolute;
       top: 0;
       left: 0;
+      margin: 0;
+      padding: 0;
       width: 100%;
       height: 100%;
+      font-family: 'Lato', sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+    }
+
+    #main {
+      margin: 20px;
+      align-self: center;
+    }
+
+    #nav {
+      width: 100%;
+      background: lightgray;
+      border: 0;
+      border-color: darkgray;
+      border-bottom: 2px;
+      border-style: solid;
+      box-shadow: 0 5px 5px grey;
+      padding: 10px;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-around;
+      align-items: baseline;
+      align-self: flex-start;
+    }
+
+    #title h1 {
+      font-size: 120%;
+      margin: 0;
+      padding: 0;
+    }
+
+    select,
+    input {
+      margin: 0 5px;
     }
   </style>
 </head>
 
 <body>
-  Remote SWF URL: <input type="text" id="remote-input" value="sbemail199.swf"><input type="submit"
-    id="load-remote-button" value="Load">
-  Local SWF: <input type="file" id="file-input">
-  <canvas id="fluster-canvas"></canvas>
+  <div id="nav">
+    <div id="title">
+      <h1>😳 Fluster</h1>
+    </div>
+    <div>
+      Sample SWF: <select id="sample-file">
+        <option>(select a file)</option>
+        <option>sbemail199.swf</option>
+      </select>
+    </div>
+    <div>
+      Local SWF: <input type="file" id="local-file"></div>
+  </div>
+  </div>
+  <div id="main">
+    <canvas id="player"></canvas>
+  </div>
   <script src="./bootstrap.js"></script>
 </body>
 

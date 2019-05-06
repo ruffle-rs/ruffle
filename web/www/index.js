@@ -1,16 +1,15 @@
 import { Player } from "../pkg/fluster";
 
-let fileInput = document.getElementById("file-input");
-fileInput.addEventListener("change", fileSelected, false);
+let sampleFileInput = document.getElementById("sample-file");
+sampleFileInput.addEventListener("change", sampleFileSelected, false);
 
-let remoteInput = document.getElementById("remote-input");
-let loadRemoteButton = document.getElementById("load-remote-button");
-loadRemoteButton.addEventListener("click", loadRemoteSwf, false);
+let localFileInput = document.getElementById("local-file");
+localFileInput.addEventListener("change", localFileSelected, false);
 
 let player;
 
-function fileSelected() {
-    let file = fileInput.files[0];
+function localFileSelected() {
+    let file = localFileInput.files[0];
     if (file) {
         let fileReader = new FileReader();
         fileReader.onload = e => {
@@ -20,22 +19,25 @@ function fileSelected() {
     }
 }
 
-let timestamp = 0;
-
-function loadRemoteSwf(swfData) {
-    fetch(remoteInput.value)
-        .then(response => {
-            response.arrayBuffer().then(data => playSwf(data))
-        });
+function sampleFileSelected() {
+    if (sampleFileInput.selectedIndex <= 0) {
+        // No SWF selected.
+        return;
+    }
+    let file = sampleFileInput.selectedOptions[0].innerText;
+    if (file) {
+        fetch(file)
+            .then(response => {
+                response.arrayBuffer().then(data => playSwf(data))
+            });
+    }
 }
 
+let timestamp = 0;
+
 function playSwf(swfData) {
-    //let audio = new AudioContext();
-    //audio.decodeAudioData(swfData).then(data => console.log("success"));
-    //return;
-    let canvas = document.getElementById("fluster-canvas");
+    let canvas = document.getElementById("player");
     if (swfData && canvas) {
-        console.log(swfData);
         player = Player.new(canvas, new Uint8Array(swfData));
         timestamp = performance.now();
         window.requestAnimationFrame(tickPlayer);
