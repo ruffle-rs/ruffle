@@ -7,6 +7,7 @@ use bacon_rajan_cc::{Trace, Tracer};
 pub struct DisplayObjectBase {
     depth: Depth,
     transform: Transform,
+    name: String,
 }
 
 impl Default for DisplayObjectBase {
@@ -14,6 +15,7 @@ impl Default for DisplayObjectBase {
         Self {
             depth: Default::default(),
             transform: Default::default(),
+            name: Default::default(),
         }
     }
 }
@@ -35,6 +37,12 @@ impl DisplayObjectImpl for DisplayObjectBase {
     fn set_color_transform(&mut self, color_transform: &ColorTransform) {
         self.transform.color_transform = *color_transform;
     }
+    fn name(&self) -> &str {
+        &self.name
+    }
+    fn set_name(&mut self, name: &str) {
+        self.name = name.to_string();
+    }
 }
 
 impl DisplayObjectUpdate for DisplayObjectBase {}
@@ -49,6 +57,8 @@ pub trait DisplayObjectImpl: DisplayObjectUpdate {
     fn set_matrix(&mut self, matrix: &Matrix);
     fn get_color_transform(&self) -> &ColorTransform;
     fn set_color_transform(&mut self, color_transform: &ColorTransform);
+    fn name(&self) -> &str;
+    fn set_name(&mut self, name: &str);
 }
 
 pub trait DisplayObjectUpdate: Trace {
@@ -77,6 +87,12 @@ macro_rules! impl_display_object {
             }
             fn set_color_transform(&mut self, color_transform: &ColorTransform) {
                 self.$field.set_color_transform(color_transform)
+            }
+            fn name(&self) -> &str {
+                self.$field.name()
+            }
+            fn set_name(&mut self, name: &str) {
+                self.$field.set_name(name)
             }
         }
     };

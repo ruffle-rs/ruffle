@@ -177,6 +177,10 @@ impl MovieClip {
         if let Some(color_transform) = &place_object.color_transform {
             character.set_color_transform(&ColorTransform::from(color_transform.clone()));
         }
+
+        if let Some(name) = &place_object.name {
+            character.set_name(name);
+        }
     }
 
     fn do_action(&mut self, context: &mut UpdateContext, data: &[u8]) {
