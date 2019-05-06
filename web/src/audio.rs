@@ -81,25 +81,38 @@ impl AudioBackend for WebAudioBackend {
                 }
                 js_sys::Reflect::set(&value, &"buffer".into(), &audio_buffer).unwrap();
             }
-            // swf::AudioCompression::Adpcm => {
-            //     use fluster_core::backend::audio::AdpcmDecoder;
-            //     let decoder = AdpcmDecoder::new(std::io::Cursor::new(swf_sound.data.clone()));
-            //     let mut out_data = vec![];
-            //     while let Some((x, y)) = decoder.next() {
-            //         out_data.push(x);
-            //         out_data.push(y);
-            //     }
-            //     let num_channels = if swf_sound.format.is_stereo { 2 } else { 1 };
-            //     let audio_buffer = self
-            //         .context
-            //         .create_buffer(
-            //             num_channels,
-            //             out_data.len() as u32 / 2,
-            //             swf_sound.format.sample_rate as f32,
-            //         )
-            //         .unwrap();
-
-            // }
+            swf::AudioCompression::Adpcm => {
+                let num_channels: usize = if swf_sound.format.is_stereo { 2 } else { 1 };
+                let audio_buffer = self
+                    .context
+                    .create_buffer(
+                        num_channels as u32,
+                        swf_sound.num_samples,
+                        swf_sound.format.sample_rate.into(),
+                    )
+                    .unwrap();
+                let mut out = Vec::with_capacity(num_channels);
+                let data = &swf_sound.data[..];
+                let mut decoder = fluster_core::backend::audio::AdpcmDecoder::new(
+                    data,
+                    swf_sound.format.is_stereo,
+                )?;
+                for _ in 0..num_channels {
+                    out.push(Vec::with_capacity(swf_sound.num_samples as usize));
+                }
+                while let Ok((left, right)) = decoder.next() {
+                    out[0].push(f32::from(left) / 32768.0);
+                    if swf_sound.format.is_stereo {
+                        out[1].push(f32::from(right) / 32768.0);
+                    }
+                }
+                for i in 0..num_channels {
+                    audio_buffer
+                        .copy_to_channel(&mut out[i][..], i as i32)
+                        .unwrap();
+                }
+                js_sys::Reflect::set(&value, &"buffer".into(), &audio_buffer).unwrap();
+            }
             swf::AudioCompression::Mp3 => {
                 let data_array = unsafe { Uint8Array::view(&swf_sound.data[..]) };
                 let array_buffer = data_array.buffer().slice_with_end(
