@@ -134,6 +134,7 @@ impl RenderBackend for WebCanvasRenderBackend {
             "data:image/svg+xml,{}",
             utf8_percent_encode(&svg, DEFAULT_ENCODE_SET) //&base64::encode(&svg[..])
         );
+
         image.set_src(&svg_encoded);
 
         self.shapes.push(ShapeData {
@@ -196,8 +197,14 @@ impl RenderBackend for WebCanvasRenderBackend {
                     }
                 }
             }
-            bounds.x_min = f32::min(bounds.x_min, bounds.x_max);
-            bounds.y_min = f32::min(bounds.y_min, bounds.y_max);
+            if bounds.x_max < bounds.x_min || bounds.y_max < bounds.y_min {
+                bounds = swf::Rectangle {
+                    x_min: 0.0,
+                    x_max: 0.0,
+                    y_min: 0.0,
+                    y_max: 0.0,
+                };
+            }
             bounds
         });
         let shape = swf::Shape {
@@ -354,7 +361,12 @@ impl RenderBackend for WebCanvasRenderBackend {
 
     #[allow(clippy::float_cmp)]
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
-        let shape = &self.shapes[shape.0];
+        let shape = if let Some(shape) = self.shapes.get(shape.0) {
+            shape
+        } else {
+            return;
+        };
+
         self.context
             .set_transform(
                 transform.matrix.a.into(),

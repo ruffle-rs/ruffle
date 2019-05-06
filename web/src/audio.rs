@@ -250,7 +250,6 @@ impl AudioBackend for WebAudioBackend {
                 let num_frames = ((samples[0] as u16) | ((samples[1] as u16) << 8)) as usize;
                 let num_frames_to_skip =
                     ((samples[2] as u16) | ((samples[3] as u16) << 8)) as usize;
-                info!("play {} {}", num_frames, num_frames_to_skip);
                 if num_frames == 0 {
                     return;
                 }

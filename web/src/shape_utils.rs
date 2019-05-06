@@ -7,10 +7,12 @@ use svg::node::element::{
 use svg::Document;
 
 pub fn swf_shape_to_svg(shape: &Shape, bitmaps: &HashMap<CharacterId, (&str, u32, u32)>) -> String {
-    //let mut svg = String::new();
+    // Some browsers will vomit if you try to load/draw an image with 0 width/height.
+    // TODO(Herschel): Might be better to just return None in this case and skip
+    // rendering altogether.
     let (width, height) = (
-        shape.shape_bounds.x_max - shape.shape_bounds.x_min,
-        shape.shape_bounds.y_max - shape.shape_bounds.y_min,
+        f32::max(shape.shape_bounds.x_max - shape.shape_bounds.x_min, 1.0),
+        f32::max(shape.shape_bounds.y_max - shape.shape_bounds.y_min, 1.0),
     );
     let mut document = Document::new()
         .set("width", width)
