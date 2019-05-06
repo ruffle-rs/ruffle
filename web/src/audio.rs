@@ -45,12 +45,55 @@ impl WebAudioBackend {
 impl AudioBackend for WebAudioBackend {
     fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, Error> {
         let mut object = js_sys::Object::new();
-        let sound = Sound {
+        let mut sound = Sound {
             object: object.clone(),
         };
         let value = wasm_bindgen::JsValue::from(object);
         let handle = self.sounds.insert(sound);
+        use byteorder::{LittleEndian, ReadBytesExt};
         match swf_sound.format.compression {
+            swf::AudioCompression::Uncompressed => {
+                let num_channels = if swf_sound.format.is_stereo { 2 } else { 1 };
+                let audio_buffer = self
+                    .context
+                    .create_buffer(
+                        num_channels,
+                        swf_sound.data.len() as u32 / num_channels,
+                        swf_sound.format.sample_rate as f32,
+                    )
+                    .unwrap();
+                let mut out_left = Vec::with_capacity(swf_sound.data.len());
+                let mut out_right = Vec::with_capacity(swf_sound.data.len());
+                let mut data = &swf_sound.data[..];
+                while !data.is_empty() {
+                    let sample = data.read_i16::<LittleEndian>()?;
+                    out_left.push(sample as f32 / 32768.0);
+                    let sample = data.read_i16::<LittleEndian>()?;
+                    out_right.push(sample as f32 / 32768.0);
+                }
+                audio_buffer.copy_to_channel(&mut out_left[..], 0).unwrap();
+                audio_buffer.copy_to_channel(&mut out_right[..], 1).unwrap();
+                js_sys::Reflect::set(&value, &"buffer".into(), &audio_buffer).unwrap();
+            }
+            // swf::AudioCompression::Adpcm => {
+            //     use fluster_core::backend::audio::AdpcmDecoder;
+            //     let decoder = AdpcmDecoder::new(std::io::Cursor::new(swf_sound.data.clone()));
+            //     let mut out_data = vec![];
+            //     while let Some((x, y)) = decoder.next() {
+            //         out_data.push(x);
+            //         out_data.push(y);
+            //     }
+            //     let num_channels = if swf_sound.format.is_stereo { 2 } else { 1 };
+            //     let audio_buffer = self
+            //         .context
+            //         .create_buffer(
+            //             num_channels,
+            //             out_data.len() as u32 / 2,
+            //             swf_sound.format.sample_rate as f32,
+            //         )
+            //         .unwrap();
+
+            // }
             swf::AudioCompression::Mp3 => {
                 let data_array = unsafe { Uint8Array::view(&swf_sound.data[..]) };
                 let array_buffer = data_array.buffer().slice_with_end(
@@ -58,9 +101,7 @@ impl AudioBackend for WebAudioBackend {
                     data_array.byte_offset() + data_array.byte_length(),
                 );
                 let closure = Closure::wrap(Box::new(move |buffer: wasm_bindgen::JsValue| {
-                    log::info!("A");
                     js_sys::Reflect::set(&value, &"buffer".into(), &buffer).unwrap();
-                    log::info!("B");
                 })
                     as Box<dyn FnMut(wasm_bindgen::JsValue)>);
                 self.context
