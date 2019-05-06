@@ -50,6 +50,7 @@ impl AudioBackend for WebAudioBackend {
         };
         let value = wasm_bindgen::JsValue::from(object);
         let handle = self.sounds.insert(sound);
+
         use byteorder::{LittleEndian, ReadBytesExt};
         match swf_sound.format.compression {
             swf::AudioCompression::Uncompressed => {
@@ -114,7 +115,7 @@ impl AudioBackend for WebAudioBackend {
                 js_sys::Reflect::set(&value, &"buffer".into(), &audio_buffer).unwrap();
             }
             swf::AudioCompression::Mp3 => {
-                let data_array = unsafe { Uint8Array::view(&swf_sound.data[..]) };
+                let data_array = unsafe { Uint8Array::view(&swf_sound.data[2..]) };
                 let array_buffer = data_array.buffer().slice_with_end(
                     data_array.byte_offset(),
                     data_array.byte_offset() + data_array.byte_length(),
