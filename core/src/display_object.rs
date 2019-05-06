@@ -52,6 +52,7 @@ pub trait DisplayObjectImpl: DisplayObjectUpdate {
 }
 
 pub trait DisplayObjectUpdate: Trace {
+    fn preload(&self, _context: &mut UpdateContext) {}
     fn run_frame(&mut self, _context: &mut UpdateContext) {}
     fn run_post_frame(&mut self, _context: &mut UpdateContext) {}
     fn render(&self, _context: &mut RenderContext) {}
@@ -100,6 +101,10 @@ impl DisplayObject {
 impl_display_object!(DisplayObject, inner);
 
 impl DisplayObjectUpdate for DisplayObject {
+    fn preload(&self, context: &mut UpdateContext) {
+        self.inner.preload(context);
+    }
+
     fn run_frame(&mut self, context: &mut UpdateContext) {
         self.inner.run_frame(context)
     }

@@ -15,6 +15,7 @@ type CharacterId = swf::CharacterId;
 
 pub struct Player {
     tag_stream: swf::read::Reader<Cursor<Vec<u8>>>,
+    preloaded: bool,
 
     avm: Avm1,
 
@@ -52,6 +53,7 @@ impl Player {
 
         Ok(Player {
             tag_stream,
+            preloaded: false,
 
             avm: Avm1::new(swf.version),
 
@@ -130,6 +132,9 @@ impl Player {
         };
 
         let mut stage = self.stage.borrow_mut();
+        if !self.preloaded {
+            stage.preload(&mut update_context);
+        }
         stage.run_frame(&mut update_context);
         stage.run_post_frame(&mut update_context);
     }
