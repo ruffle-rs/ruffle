@@ -34,13 +34,21 @@ function sampleFileSelected() {
 }
 
 let timestamp = 0;
+let animationHandler;
 
 function playSwf(swfData) {
+    if (player) {
+        player.destroy();
+        window.cancelAnimationFrame(animationHandler);
+        player = null;
+        animationHandler = null;
+    }
+
     let canvas = document.getElementById("player");
     if (swfData && canvas) {
         player = Player.new(canvas, new Uint8Array(swfData));
         timestamp = performance.now();
-        window.requestAnimationFrame(tickPlayer);
+        animationHandler = window.requestAnimationFrame(tickPlayer);
     }
 }
 

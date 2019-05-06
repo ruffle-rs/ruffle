@@ -10,7 +10,7 @@ use wasm_bindgen::{prelude::*, JsValue};
 use web_sys::HtmlCanvasElement;
 
 thread_local! {
-    pub static PLAYERS: RefCell<Vec<Box<fluster_core::Player>>> = RefCell::new(vec![]);
+    pub static PLAYERS: RefCell<Vec<Option<Box<fluster_core::Player>>>> = RefCell::new(vec![]);
 }
 
 #[wasm_bindgen]
@@ -25,8 +25,18 @@ impl Player {
     pub fn tick(&mut self, dt: f64) {
         PLAYERS.with(|players| {
             let mut players = players.borrow_mut();
-            let player = &mut players[self.0];
-            player.tick(dt);
+            if let Some(player) = &mut players[self.0] {
+                player.tick(dt);
+            }
+        });
+    }
+
+    pub fn destroy(&mut self) {
+        PLAYERS.with(|players| {
+            let mut players = players.borrow_mut();
+            if self.0 < players.len() {
+                players[self.0] = None;
+            }
         });
     }
 }
@@ -34,7 +44,7 @@ impl Player {
 impl Player {
     fn new_internal(canvas: HtmlCanvasElement, swf_data: Uint8Array) -> Result<Player, Box<Error>> {
         console_error_panic_hook::set_once();
-        console_log::init_with_level(log::Level::Trace)?;
+        let _ = console_log::init_with_level(log::Level::Trace);
 
         let mut data = vec![0; swf_data.length() as usize];
         swf_data.copy_to(&mut data[..]);
@@ -59,7 +69,7 @@ impl Player {
         let handle = PLAYERS.with(move |players| {
             let mut players = players.borrow_mut();
             let handle = Player(players.len());
-            players.push(Box::new(player));
+            players.push(Some(Box::new(player)));
             handle
         });
 
