@@ -53,26 +53,32 @@ impl AudioBackend for WebAudioBackend {
         use byteorder::{LittleEndian, ReadBytesExt};
         match swf_sound.format.compression {
             swf::AudioCompression::Uncompressed => {
-                let num_channels = if swf_sound.format.is_stereo { 2 } else { 1 };
+                let num_channels: usize = if swf_sound.format.is_stereo { 2 } else { 1 };
+                let num_frames = swf_sound.data.len() / num_channels;
                 let audio_buffer = self
                     .context
                     .create_buffer(
-                        num_channels,
-                        swf_sound.data.len() as u32 / num_channels,
-                        swf_sound.format.sample_rate as f32,
+                        num_channels as u32,
+                        num_frames as u32,
+                        swf_sound.format.sample_rate.into(),
                     )
                     .unwrap();
-                let mut out_left = Vec::with_capacity(swf_sound.data.len());
-                let mut out_right = Vec::with_capacity(swf_sound.data.len());
+                let mut out = Vec::with_capacity(num_channels);
+                for _ in 0..num_channels {
+                    out.push(Vec::with_capacity(num_frames));
+                }
                 let mut data = &swf_sound.data[..];
                 while !data.is_empty() {
-                    let sample = data.read_i16::<LittleEndian>()?;
-                    out_left.push(sample as f32 / 32768.0);
-                    let sample = data.read_i16::<LittleEndian>()?;
-                    out_right.push(sample as f32 / 32768.0);
+                    for i in 0..num_channels {
+                        let sample = data.read_i16::<LittleEndian>()?;
+                        out[i].push(f32::from(sample) / 32768.0);
+                    }
                 }
-                audio_buffer.copy_to_channel(&mut out_left[..], 0).unwrap();
-                audio_buffer.copy_to_channel(&mut out_right[..], 1).unwrap();
+                for i in 0..num_channels {
+                    audio_buffer
+                        .copy_to_channel(&mut out[i][..], i as i32)
+                        .unwrap();
+                }
                 js_sys::Reflect::set(&value, &"buffer".into(), &audio_buffer).unwrap();
             }
             // swf::AudioCompression::Adpcm => {
