@@ -135,6 +135,7 @@ impl Player {
         if !self.preloaded {
             let mut stage = self.stage.borrow_mut();
             stage.preload(&mut update_context);
+            self.preloaded = true;
         }
         self.stage.borrow_mut().run_frame(&mut update_context);
         {
