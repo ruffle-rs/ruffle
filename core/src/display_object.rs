@@ -1,7 +1,7 @@
 use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use crate::transform::Transform;
-use bacon_rajan_cc::{Trace, Tracer};
+use bacon_rajan_cc::{Cc, Trace, Tracer};
 
 #[derive(Clone)]
 pub struct DisplayObjectBase {
@@ -68,6 +68,13 @@ pub trait DisplayObjectUpdate: Trace {
     fn render(&self, _context: &mut RenderContext) {}
 
     fn handle_click(&mut self, _pos: (f32, f32)) {}
+    fn visit_children(&self, queue: &mut VecDeque<Cc<RefCell<DisplayObject>>>) {}
+    fn as_movie_clip(&self) -> Option<&crate::movie_clip::MovieClip> {
+        None
+    }
+    fn as_movie_clip_mut(&mut self) -> Option<&mut crate::movie_clip::MovieClip> {
+        None
+    }
 }
 
 macro_rules! impl_display_object {
@@ -136,10 +143,58 @@ impl DisplayObjectUpdate for DisplayObject {
     fn handle_click(&mut self, pos: (f32, f32)) {
         self.inner.handle_click(pos)
     }
+
+    fn visit_children(&self, queue: &mut VecDeque<Cc<RefCell<DisplayObject>>>) {
+        self.inner.visit_children(queue);
+    }
+
+    fn as_movie_clip(&self) -> Option<&crate::movie_clip::MovieClip> {
+        self.inner.as_movie_clip()
+    }
+
+    fn as_movie_clip_mut(&mut self) -> Option<&mut crate::movie_clip::MovieClip> {
+        self.inner.as_movie_clip_mut()
+    }
 }
 
 impl Trace for DisplayObject {
     fn trace(&mut self, tracer: &mut Tracer) {
         self.inner.trace(tracer)
+    }
+}
+
+use std::cell::RefCell;
+use std::collections::VecDeque;
+
+pub struct DisplayObjectVisitor {
+    pub open: VecDeque<Cc<RefCell<DisplayObject>>>,
+}
+
+impl DisplayObjectVisitor {
+    pub fn run(&mut self, context: &mut crate::player::UpdateContext) {
+        let root = self.open[0].clone();
+        while let Some(node) = self.open.pop_front() {
+            // {
+            //     let mut node = node.borrow_mut();
+            //     node.run_frame(context);
+            // }
+            let mut action = None;
+            if let Some(clip) = node.borrow().as_movie_clip() {
+                action = clip.action();
+            }
+            if let Some((pos, len)) = action {
+                let mut action_context = crate::avm1::ActionContext {
+                    global_time: context.global_time,
+                    start_clip: node.clone(),
+                    active_clip: node.clone(),
+                    root: root.clone(),
+                    audio: context.audio,
+                };
+                let data = &context.tag_stream.get_ref().get_ref()[pos..pos + len];
+                if let Err(e) = context.avm1.do_action(&mut action_context, &data[..]) {}
+            }
+            node.borrow_mut().run_post_frame(context);
+            node.borrow().visit_children(&mut self.open);
+        }
     }
 }

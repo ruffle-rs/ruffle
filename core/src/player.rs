@@ -129,14 +129,21 @@ impl Player {
             avm1: &mut self.avm,
             renderer: &mut *self.renderer,
             audio: &mut self.audio,
+            action: None,
         };
 
-        let mut stage = self.stage.borrow_mut();
         if !self.preloaded {
+            let mut stage = self.stage.borrow_mut();
             stage.preload(&mut update_context);
         }
-        stage.run_frame(&mut update_context);
-        stage.run_post_frame(&mut update_context);
+        self.stage.borrow_mut().run_frame(&mut update_context);
+        {
+            let mut queue = std::collections::VecDeque::new();
+            queue.push_back(self.stage.clone());
+            let mut visitor = crate::display_object::DisplayObjectVisitor { open: queue };
+            visitor.run(&mut update_context);
+        }
+        //self.stage.borrow_mut().run_post_frame(&mut update_context);
     }
 
     fn render(&mut self) {
@@ -168,6 +175,7 @@ pub struct UpdateContext<'a> {
     pub avm1: &'a mut Avm1,
     pub renderer: &'a mut RenderBackend,
     pub audio: &'a mut Audio,
+    pub action: Option<(usize, usize)>,
 }
 
 pub struct RenderContext<'a> {

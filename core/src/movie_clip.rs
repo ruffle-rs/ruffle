@@ -11,7 +11,7 @@ use crate::text::Text;
 use bacon_rajan_cc::{Cc, Trace, Tracer};
 use log::info;
 use std::cell::RefCell;
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::{BTreeMap, HashMap, VecDeque};
 use swf::read::SwfRead;
 
 type Depth = i16;
@@ -22,6 +22,7 @@ pub struct MovieClip {
     tag_stream_start: Option<u64>,
     tag_stream_pos: u64,
     is_playing: bool,
+    action: Option<(usize, usize)>,
     goto_queue: VecDeque<FrameNumber>,
     current_frame: FrameNumber,
     total_frames: FrameNumber,
@@ -38,6 +39,7 @@ impl MovieClip {
             tag_stream_start: None,
             tag_stream_pos: 0,
             is_playing: true,
+            action: None,
             goto_queue: VecDeque::new(),
             current_frame: 0,
             total_frames: 1,
@@ -52,6 +54,7 @@ impl MovieClip {
             tag_stream_start: Some(tag_stream_start),
             tag_stream_pos: tag_stream_start,
             is_playing: true,
+            action: None,
             goto_queue: VecDeque::new(),
             current_frame: 0,
             audio_stream: None,
@@ -94,7 +97,75 @@ impl MovieClip {
         }
     }
 
-    fn run_goto_queue(&mut self, context: &mut UpdateContext) {
+    pub fn x(&self) -> f32 {
+        self.get_matrix().tx
+    }
+
+    pub fn y(&self) -> f32 {
+        self.get_matrix().ty
+    }
+
+    pub fn x_scale(&self) -> f32 {
+        self.get_matrix().a * 100.0
+    }
+
+    pub fn y_scale(&self) -> f32 {
+        self.get_matrix().d * 100.0
+    }
+
+    pub fn current_frame(&self) -> FrameNumber {
+        self.current_frame
+    }
+
+    pub fn total_frames(&self) -> FrameNumber {
+        self.total_frames
+    }
+
+    pub fn frames_loaded(&self) -> FrameNumber {
+        // TODO(Herschel): root needs to progressively stream in frames.
+        self.total_frames
+    }
+
+    pub fn get_child_by_name(&self, name: &str) -> Option<&Cc<RefCell<DisplayObject>>> {
+        self.children
+            .values()
+            .find(|child| child.borrow().name() == name)
+    }
+
+    pub fn frame_label_to_number(
+        &self,
+        frame_label: &str,
+        context: &mut UpdateContext,
+    ) -> Option<FrameNumber> {
+        // TODO(Herschel): We should cache the labels in the preload step.
+        let pos = context.tag_stream.get_ref().position();
+        context
+            .tag_stream
+            .get_inner()
+            .set_position(self.tag_stream_start.unwrap());
+        use swf::Tag;
+        let mut frame_num = 1;
+        while let Ok(Some(tag)) = context.tag_stream.read_tag() {
+            match tag {
+                Tag::FrameLabel { label, .. } => {
+                    if label == frame_label {
+                        context.tag_stream.get_inner().set_position(pos);
+                        return Some(frame_num);
+                    }
+                }
+                Tag::ShowFrame => frame_num += 1,
+                _ => (),
+            }
+        }
+        context.tag_stream.get_inner().set_position(pos);
+        None
+    }
+
+    pub fn action(&self) -> Option<(usize, usize)> {
+        self.action
+    }
+
+    pub fn run_goto_queue(&mut self, context: &mut UpdateContext) {
         let mut i = 0;
         while i < self.goto_queue.len() {
             let frame = self.goto_queue[i];
@@ -181,15 +252,6 @@ impl MovieClip {
         if let Some(name) = &place_object.name {
             character.set_name(name);
         }
-    }
-
-    fn do_action(&mut self, context: &mut UpdateContext, data: &[u8]) {
-        let mut action_context = crate::avm1::ActionContext {
-            global_time: context.global_time,
-            active_clip: self,
-            audio: context.audio,
-        };
-        if let Err(e) = context.avm1.do_action(&mut action_context, &data[..]) {}
     }
 
     fn run_frame_internal(&mut self, context: &mut UpdateContext, only_display_actions: bool) {
@@ -344,7 +406,15 @@ impl MovieClip {
                     }
 
                     Tag::JpegTables(_) => (),
-                    Tag::DoAction(data) => self.do_action(context, &data[..]),
+                    // Tag::DoAction(data) => self.do_action(context, &data[..]),
+                    Tag::DoAction(data) => {
+                        let pos = context.tag_stream.get_ref().position();
+                        context.tag_stream.get_inner().set_position(start_pos);
+                        context.tag_stream.read_tag_code_and_length().unwrap();
+                        let start_pos = context.tag_stream.get_ref().position();
+                        context.tag_stream.get_inner().set_position(pos);
+                        self.action = Some((start_pos as usize, data.len()));
+                    }
                     _ => info!("Umimplemented tag: {:?}", tag),
                 }
                 start_pos = context.tag_stream.get_ref().position();
@@ -474,13 +544,13 @@ impl DisplayObjectUpdate for MovieClip {
                     }
                 }
                 Tag::JpegTables(data) => context.library.set_jpeg_tables(data),
-
                 _ => (),
             }
         }
     }
 
     fn run_frame(&mut self, context: &mut UpdateContext) {
+        self.action = None;
         if self.tag_stream_start.is_some() {
             context
                 .position_stack
@@ -508,9 +578,9 @@ impl DisplayObjectUpdate for MovieClip {
     fn run_post_frame(&mut self, context: &mut UpdateContext) {
         self.run_goto_queue(context);
 
-        for child in self.children.values() {
-            child.borrow_mut().run_post_frame(context);
-        }
+        //for child in self.children.values() {
+        //child.borrow_mut().run_post_frame(context);
+        //}
     }
 
     fn render(&self, context: &mut RenderContext) {
@@ -527,6 +597,20 @@ impl DisplayObjectUpdate for MovieClip {
         for child in self.children.values_mut() {
             child.borrow_mut().handle_click(pos);
         }
+    }
+
+    fn visit_children(&self, queue: &mut VecDeque<Cc<RefCell<DisplayObject>>>) {
+        for child in self.children.values() {
+            queue.push_back(child.clone());
+        }
+    }
+
+    fn as_movie_clip(&self) -> Option<&crate::movie_clip::MovieClip> {
+        Some(self)
+    }
+
+    fn as_movie_clip_mut(&mut self) -> Option<&mut crate::movie_clip::MovieClip> {
+        Some(self)
     }
 }
 

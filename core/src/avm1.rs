@@ -1,12 +1,17 @@
+use crate::display_object::{DisplayObject, DisplayObjectUpdate};
 use crate::movie_clip::MovieClip;
+use bacon_rajan_cc::Cc;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
+use std::cell::{Ref, RefCell, RefMut};
 use std::collections::HashMap;
 use std::io::Cursor;
 use swf::avm1::read::Reader;
 
 pub struct ActionContext<'a> {
     pub global_time: u64,
-    pub active_clip: &'a mut MovieClip,
+    pub root: Cc<RefCell<crate::display_object::DisplayObject>>,
+    pub start_clip: Cc<RefCell<crate::display_object::DisplayObject>>,
+    pub active_clip: Cc<RefCell<crate::display_object::DisplayObject>>,
     pub audio: &'a mut crate::audio::Audio,
 }
 
@@ -72,6 +77,7 @@ impl Avm1 {
                 Action::Equals => self.action_equals(context)?,
                 Action::Equals2 => self.action_equals_2(context)?,
                 Action::GetMember => self.action_get_member(context)?,
+                Action::GetProperty => self.action_get_property(context)?,
                 Action::GetTime => self.action_get_time(context)?,
                 Action::GetUrl { url, target } => self.action_get_url(context, &url, &target)?,
                 Action::GetUrl2 {
@@ -150,6 +156,52 @@ impl Avm1 {
         }
 
         Ok(())
+    }
+
+    fn target<'a>(
+        &self,
+        context: &'a ActionContext,
+    ) -> std::cell::Ref<'a, crate::movie_clip::MovieClip> {
+        use crate::display_object::DisplayObjectUpdate;
+        Ref::map(context.active_clip.borrow(), |c| c.as_movie_clip().unwrap())
+    }
+
+    fn target_mut<'a>(
+        &self,
+        context: &'a ActionContext,
+    ) -> std::cell::RefMut<'a, crate::movie_clip::MovieClip> {
+        use crate::display_object::DisplayObjectUpdate;
+        RefMut::map(context.active_clip.borrow_mut(), |c| {
+            c.as_movie_clip_mut().unwrap()
+        })
+    }
+
+    pub fn resolve_slash_path<'a>(
+        start: &'a Cc<RefCell<DisplayObject>>,
+        root: &'a Cc<RefCell<DisplayObject>>,
+        mut path: &str,
+    ) -> Option<Cc<RefCell<crate::display_object::DisplayObject>>> {
+        let mut cur_clip = if path.bytes().nth(0).unwrap_or(0) == b'/' {
+            path = &path[1..];
+            root.clone()
+        } else {
+            start.clone()
+        };
+        if !path.is_empty() {
+            for name in path.split('/') {
+                let next_clip = if let Some(clip) = cur_clip.borrow().as_movie_clip() {
+                    if let Some(child) = clip.get_child_by_name(name) {
+                        child.clone()
+                    } else {
+                        return None;
+                    }
+                } else {
+                    return None;
+                };
+                cur_clip = next_clip;
+            }
+        }
+        Some(cur_clip)
     }
 
     fn push(&mut self, value: impl Into<Value>) {
@@ -407,6 +459,33 @@ impl Avm1 {
         unimplemented!();
     }
 
+    fn action_get_property(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+        let prop_index = self.pop()?.as_u32()? as usize;
+        let clip_path = self.pop()?.as_string()?;
+        let ret = if let Some(clip) =
+            Avm1::resolve_slash_path(&context.active_clip, &context.root, &clip_path)
+        {
+            if let Some(clip) = clip.borrow().as_movie_clip() {
+                match prop_index {
+                    0 => Value::Number(f64::from(clip.x())),
+                    1 => Value::Number(f64::from(clip.y())),
+                    2 => Value::Number(f64::from(clip.x_scale())),
+                    3 => Value::Number(f64::from(clip.y_scale())),
+                    4 => Value::Number(f64::from(clip.current_frame())),
+                    5 => Value::Number(f64::from(clip.total_frames())),
+                    12 => Value::Number(f64::from(clip.frames_loaded())),
+                    _ => unimplemented!(),
+                }
+            } else {
+                Value::Undefined
+            }
+        } else {
+            Value::Undefined
+        };
+        self.push(ret);
+        Ok(())
+    }
+
     fn action_get_time(&mut self, context: &mut ActionContext) -> Result<(), Error> {
         self.stack.push(Value::Number(context.global_time as f64));
         Ok(())
@@ -438,10 +517,11 @@ impl Avm1 {
     }
 
     fn action_goto_frame(&mut self, context: &mut ActionContext, frame: u16) -> Result<(), Error> {
-        if context.active_clip.playing() {
-            context.active_clip.goto_frame(frame + 1, false);
+        let mut clip = self.target_mut(context);
+        if clip.playing() {
+            clip.goto_frame(frame + 1, false);
         } else {
-            context.active_clip.goto_frame(frame + 1, true);
+            clip.goto_frame(frame + 1, true);
         }
         Ok(())
     }
@@ -455,12 +535,15 @@ impl Avm1 {
         // Version 4+ gotoAndPlay/gotoAndStop
         // Param can either be a frame number or a frame label.
         // TODO(Herschel): Slash notation
+        let mut clip = self.target_mut(context);
         match self.pop()? {
-            Value::Number(frame) => context
-                .active_clip
-                .goto_frame(scene_offset + (frame as u16) + 1, !set_playing),
+            Value::Number(frame) => {
+                clip.goto_frame(scene_offset + (frame as u16) + 1, !set_playing)
+            }
             Value::String(frame_label) => {
-                unimplemented!();
+                //if let Some(frame) = clip.frame_label_to_number(&frame_label, context) {
+                //  clip.goto_frame(scene_offset + frame, !set_playing)
+                //}
             }
             _ => return Err("Expected frame number or label".into()),
         }
@@ -468,8 +551,11 @@ impl Avm1 {
     }
 
     fn action_goto_label(&mut self, context: &mut ActionContext, label: &str) -> Result<(), Error> {
-        // TODO(Herschel)
-        unimplemented!("Action::GotoLabel");
+        let mut clip = self.target_mut(context);
+        //if let Some(frame) = clip.frame_label_to_number(label, context) {
+        //clip.goto_frame(frame !set_playing)
+        //}
+        Ok(())
     }
 
     fn action_if(
@@ -610,7 +696,8 @@ impl Avm1 {
     }
 
     fn action_next_frame(&mut self, context: &mut ActionContext) -> Result<(), Error> {
-        context.active_clip.next_frame();
+        let mut clip = self.target_mut(context);
+        clip.next_frame();
         Ok(())
     }
 
@@ -644,12 +731,14 @@ impl Avm1 {
     }
 
     fn play(&mut self, context: &mut ActionContext) -> Result<(), Error> {
-        context.active_clip.play();
+        let mut clip = self.target_mut(context);
+        clip.play();
         Ok(())
     }
 
     fn prev_frame(&mut self, context: &mut ActionContext) -> Result<(), Error> {
-        context.active_clip.prev_frame();
+        let mut clip = self.target_mut(context);
+        clip.prev_frame();
         Ok(())
     }
 
@@ -716,11 +805,18 @@ impl Avm1 {
 
     fn action_set_target(
         &mut self,
-        _context: &mut ActionContext,
+        context: &mut ActionContext,
         target: &str,
     ) -> Result<(), Error> {
         log::info!("SetTarget: {}", target);
-        // TODO(Herschel)
+        if target.is_empty() {
+            context.active_clip = context.start_clip.clone();
+        } else {
+            if let Some(clip) = Avm1::resolve_slash_path(&context.start_clip, &context.root, target)
+            {
+                context.active_clip = clip;
+            }
+        }
         Ok(())
     }
 
@@ -738,7 +834,8 @@ impl Avm1 {
     }
 
     fn action_stop(&mut self, context: &mut ActionContext) -> Result<(), Error> {
-        context.active_clip.stop();
+        let mut clip = self.target_mut(context);
+        clip.stop();
         Ok(())
     }
 

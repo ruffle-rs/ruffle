@@ -88,14 +88,14 @@ impl_display_object!(Button, base);
 impl DisplayObjectUpdate for Button {
     fn run_frame(&mut self, context: &mut UpdateContext) {
         if self.state == ButtonState::Down {
-            let mut action_context = crate::avm1::ActionContext {
-                global_time: context.global_time,
-                active_clip: &mut crate::movie_clip::MovieClip::new(),
-                audio: context.audio,
-            };
-            context
-                .avm1
-                .do_action(&mut action_context, &self.release_actions[..]);
+            // let mut action_context = crate::avm1::ActionContext {
+            //     global_time: context.global_time,
+            //     active_clip: &mut crate::movie_clip::MovieClip::new(),
+            //     audio: context.audio,
+            // };
+            // context
+            //     .avm1
+            //     .do_action(&mut action_context, &self.release_actions[..]);
             self.state = ButtonState::Up;
         } else if self.state == ButtonState::Up {
             let dx = self.get_matrix().tx - context.mouse_pos.0;
