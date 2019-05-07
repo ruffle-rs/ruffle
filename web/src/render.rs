@@ -314,6 +314,41 @@ impl RenderBackend for WebCanvasRenderBackend {
                     i += 4;
                 }
             }
+            (2, swf::BitmapFormat::ColorMap8) => {
+                let mut i = 1;
+                let padded_width = (swf_tag.width + 0b11111) & !0b11111;
+                let mut palette = Vec::with_capacity(swf_tag.num_colors as usize);
+                for _ in 0..swf_tag.num_colors {
+                    palette.push(Color {
+                        r: decoded_data[i],
+                        g: decoded_data[i + 1],
+                        b: decoded_data[i + 2],
+                        a: decoded_data[i + 3],
+                    });
+                    i += 4;
+                }
+                let mut out_data = vec![];
+                for _ in 0..swf_tag.height {
+                    for _ in 0..swf_tag.width {
+                        let entry = decoded_data[i] as usize;
+                        if entry < palette.len() {
+                            let color = &palette[entry];
+                            out_data.push(color.r);
+                            out_data.push(color.g);
+                            out_data.push(color.b);
+                            out_data.push(color.a);
+                        } else {
+                            out_data.push(0);
+                            out_data.push(0);
+                            out_data.push(0);
+                            out_data.push(0);
+                        }
+                        i += 1;
+                    }
+                    i += (padded_width - swf_tag.width) as usize;
+                }
+                decoded_data = out_data;
+            }
             _ => unimplemented!(),
         }
 
