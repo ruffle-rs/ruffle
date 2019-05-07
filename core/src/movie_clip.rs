@@ -1,9 +1,7 @@
 use crate::audio::AudioStreamHandle;
 use crate::character::Character;
 use crate::color_transform::ColorTransform;
-use crate::display_object::{
-    DisplayObject, DisplayObjectBase, DisplayObjectImpl, DisplayObjectUpdate,
-};
+use crate::display_object::{DisplayObject, DisplayObjectBase, DisplayObjectImpl};
 use crate::font::Font;
 use crate::graphic::Graphic;
 use crate::matrix::Matrix;
@@ -31,8 +29,6 @@ pub struct MovieClip {
     audio_stream: Option<AudioStreamHandle>,
     children: BTreeMap<Depth, Cc<RefCell<DisplayObject>>>,
 }
-
-impl_display_object!(MovieClip, base);
 
 impl MovieClip {
     pub fn new() -> MovieClip {
@@ -353,7 +349,9 @@ impl MovieClip {
     }
 }
 
-impl DisplayObjectUpdate for MovieClip {
+impl DisplayObjectImpl for MovieClip {
+    impl_display_object!(base);
+
     fn preload(&self, context: &mut UpdateContext) {
         context
             .tag_stream

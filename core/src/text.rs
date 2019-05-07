@@ -1,6 +1,6 @@
 use crate::backend::render::ShapeHandle;
 use crate::color_transform::ColorTransform;
-use crate::display_object::{DisplayObjectBase, DisplayObjectImpl, DisplayObjectUpdate};
+use crate::display_object::{DisplayObjectBase, DisplayObjectImpl};
 use crate::matrix::Matrix;
 use crate::player::{RenderContext, UpdateContext};
 use bacon_rajan_cc::{Trace, Tracer};
@@ -20,9 +20,9 @@ impl Text {
     }
 }
 
-impl_display_object!(Text, base);
+impl DisplayObjectImpl for Text {
+    impl_display_object!(base);
 
-impl DisplayObjectUpdate for Text {
     fn run_frame(&mut self, _context: &mut UpdateContext) {
         // Noop
     }

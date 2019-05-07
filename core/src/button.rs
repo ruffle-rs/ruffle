@@ -1,6 +1,4 @@
-use crate::display_object::{
-    DisplayObject, DisplayObjectBase, DisplayObjectImpl, DisplayObjectUpdate,
-};
+use crate::display_object::{DisplayObject, DisplayObjectBase, DisplayObjectImpl};
 use crate::matrix::Matrix;
 use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
@@ -84,9 +82,9 @@ impl Button {
     }
 }
 
-impl_display_object!(Button, base);
+impl DisplayObjectImpl for Button {
+    impl_display_object!(base);
 
-impl DisplayObjectUpdate for Button {
     fn run_frame(&mut self, context: &mut UpdateContext) {
         if self.state == ButtonState::Down {
             // let mut action_context = crate::avm1::ActionContext {

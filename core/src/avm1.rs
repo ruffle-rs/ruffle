@@ -1,4 +1,4 @@
-use crate::display_object::{DisplayObject, DisplayObjectUpdate};
+use crate::display_object::{DisplayObject, DisplayObjectImpl};
 use crate::movie_clip::MovieClip;
 use bacon_rajan_cc::Cc;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
@@ -162,7 +162,6 @@ impl Avm1 {
         &self,
         context: &'a ActionContext,
     ) -> std::cell::Ref<'a, crate::movie_clip::MovieClip> {
-        use crate::display_object::DisplayObjectUpdate;
         Ref::map(context.active_clip.borrow(), |c| c.as_movie_clip().unwrap())
     }
 
@@ -170,7 +169,6 @@ impl Avm1 {
         &self,
         context: &'a ActionContext,
     ) -> std::cell::RefMut<'a, crate::movie_clip::MovieClip> {
-        use crate::display_object::DisplayObjectUpdate;
         RefMut::map(context.active_clip.borrow_mut(), |c| {
             c.as_movie_clip_mut().unwrap()
         })

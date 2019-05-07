@@ -1,7 +1,7 @@
 use crate::audio::Audio;
 use crate::avm1::Avm1;
 use crate::backend::{audio::AudioBackend, render::RenderBackend};
-use crate::display_object::{DisplayObject, DisplayObjectUpdate};
+use crate::display_object::{DisplayObject, DisplayObjectImpl};
 use crate::library::Library;
 use crate::movie_clip::MovieClip;
 use crate::prelude::*;

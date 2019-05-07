@@ -45,13 +45,11 @@ impl DisplayObjectImpl for DisplayObjectBase {
     }
 }
 
-impl DisplayObjectUpdate for DisplayObjectBase {}
-
 impl Trace for DisplayObjectBase {
     fn trace(&mut self, _tracer: &mut Tracer) {}
 }
 
-pub trait DisplayObjectImpl: DisplayObjectUpdate {
+pub trait DisplayObjectImpl: Trace {
     fn transform(&self) -> &Transform;
     fn get_matrix(&self) -> &Matrix;
     fn set_matrix(&mut self, matrix: &Matrix);
@@ -59,9 +57,7 @@ pub trait DisplayObjectImpl: DisplayObjectUpdate {
     fn set_color_transform(&mut self, color_transform: &ColorTransform);
     fn name(&self) -> &str;
     fn set_name(&mut self, name: &str);
-}
 
-pub trait DisplayObjectUpdate: Trace {
     fn preload(&self, _context: &mut UpdateContext) {}
     fn run_frame(&mut self, _context: &mut UpdateContext) {}
     fn run_post_frame(&mut self, _context: &mut UpdateContext) {}
@@ -78,8 +74,7 @@ pub trait DisplayObjectUpdate: Trace {
 }
 
 macro_rules! impl_display_object {
-    ($name:ident, $field:ident) => {
-        impl crate::display_object::DisplayObjectImpl for $name {
+    ($field:ident) => {
             fn transform(&self) -> &crate::transform::Transform {
                 self.$field.transform()
             }
@@ -101,7 +96,6 @@ macro_rules! impl_display_object {
             fn set_name(&mut self, name: &str) {
                 self.$field.set_name(name)
             }
-        }
     };
 }
 
@@ -121,9 +115,9 @@ impl DisplayObject {
     }
 }
 
-impl_display_object!(DisplayObject, inner);
+impl DisplayObjectImpl for DisplayObject {
+    impl_display_object!(inner);
 
-impl DisplayObjectUpdate for DisplayObject {
     fn preload(&self, context: &mut UpdateContext) {
         self.inner.preload(context);
     }
