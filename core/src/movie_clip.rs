@@ -321,7 +321,7 @@ impl MovieClip {
                         context.tag_stream.get_inner().set_position(pos);
                         self.action = Some((start_pos as usize, data.len()));
                     }
-                    _ => info!("Umimplemented tag: {:?}", tag),
+                    _ => (), // info!("Umimplemented tag: {:?}", tag),
                 }
                 start_pos = context.tag_stream.get_ref().position();
             }
