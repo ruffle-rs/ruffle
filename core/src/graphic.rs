@@ -5,6 +5,7 @@ use crate::matrix::Matrix;
 use crate::player::{RenderContext, UpdateContext};
 use bacon_rajan_cc::{Trace, Tracer};
 
+#[derive(Clone)]
 pub struct Graphic {
     base: DisplayObjectBase,
     shape_handle: ShapeHandle,
@@ -13,12 +14,13 @@ pub struct Graphic {
 }
 
 impl Graphic {
-    pub fn new(shape_handle: ShapeHandle, x_min: f32, y_min: f32) -> Graphic {
+    pub fn from_swf_tag(swf_shape: &swf::Shape, context: &mut UpdateContext) -> Graphic {
+        let shape_handle = context.renderer.register_shape(swf_shape);
         Graphic {
             base: Default::default(),
             shape_handle,
-            x_min,
-            y_min,
+            x_min: swf_shape.shape_bounds.x_min,
+            y_min: swf_shape.shape_bounds.y_min,
         }
     }
 }

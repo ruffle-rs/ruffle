@@ -5,6 +5,7 @@ use crate::display_object::{
     DisplayObject, DisplayObjectBase, DisplayObjectImpl, DisplayObjectUpdate,
 };
 use crate::font::Font;
+use crate::graphic::Graphic;
 use crate::matrix::Matrix;
 use crate::player::{RenderContext, UpdateContext};
 use crate::text::Text;
@@ -17,6 +18,7 @@ use swf::read::SwfRead;
 type Depth = i16;
 type FrameNumber = u16;
 
+#[derive(Clone)]
 pub struct MovieClip {
     base: DisplayObjectBase,
     tag_stream_start: Option<u64>,
@@ -292,98 +294,6 @@ impl MovieClip {
                 match tag {
                     // Definition Tags
                     Tag::SetBackgroundColor(color) => *context.background_color = color,
-                    Tag::DefineButton2(button) => {
-                        if !context.library.contains_character(button.id) {
-                            context
-                                .library
-                                .register_character(button.id, Character::Button(button));
-                        }
-                    }
-                    Tag::DefineBits { id, jpeg_data } => {
-                        if !context.library.contains_character(id) {
-                            let handle = context.renderer.register_bitmap_jpeg(
-                                id,
-                                &jpeg_data,
-                                context.library.jpeg_tables().unwrap(),
-                            );
-                            context
-                                .library
-                                .register_character(id, Character::Bitmap(handle));
-                        }
-                    }
-                    Tag::DefineBitsJpeg2 { id, jpeg_data } => {
-                        if !context.library.contains_character(id) {
-                            let handle = context.renderer.register_bitmap_jpeg_2(id, &jpeg_data);
-                            context
-                                .library
-                                .register_character(id, Character::Bitmap(handle));
-                        }
-                    }
-                    Tag::DefineBitsLossless(bitmap) => {
-                        if !context.library.contains_character(bitmap.id) {
-                            let handle = context.renderer.register_bitmap_png(&bitmap);
-                            context
-                                .library
-                                .register_character(bitmap.id, Character::Bitmap(handle));
-                        }
-                    }
-                    Tag::DefineFont2(font) => {
-                        if !context.library.contains_character(font.id) {
-                            let font_object = Font::from_swf_tag(context, &font).unwrap();
-                            context.library.register_character(
-                                font.id,
-                                Character::Font(Box::new(font_object)),
-                            );
-                        }
-                    }
-                    Tag::DefineShape(shape) => {
-                        if !context.library.contains_character(shape.id) {
-                            let shape_handle = context.renderer.register_shape(&shape);
-                            context.library.register_character(
-                                shape.id,
-                                Character::Graphic {
-                                    shape_handle,
-                                    x_min: shape.shape_bounds.x_min,
-                                    y_min: shape.shape_bounds.y_min,
-                                },
-                            );
-                        }
-                    }
-                    Tag::DefineSound(sound) => {
-                        if !context.library.contains_character(sound.id) {
-                            let handle = context.audio.register_sound(&sound).unwrap();
-                            context
-                                .library
-                                .register_character(sound.id, Character::Sound(handle));
-                        }
-                    }
-                    Tag::DefineSprite(sprite) => {
-                        let pos = context.tag_stream.get_ref().position();
-                        context.tag_stream.get_inner().set_position(start_pos);
-                        context.tag_stream.read_tag_code_and_length().unwrap();
-                        context.tag_stream.read_u32().unwrap();
-                        let mc_start_pos = context.tag_stream.get_ref().position();
-                        context.tag_stream.get_inner().set_position(pos);
-                        if !context.library.contains_character(sprite.id) {
-                            context.library.register_character(
-                                sprite.id,
-                                Character::MovieClip {
-                                    num_frames: sprite.num_frames,
-                                    tag_stream_start: mc_start_pos,
-                                },
-                            );
-                        }
-                    }
-                    Tag::DefineText(text) => {
-                        if !context.library.contains_character(text.id) {
-                            let text_object = Text::from_swf_tag(&text);
-                            context.library.register_character(
-                                text.id,
-                                Character::Text(Box::new(text_object)),
-                            );
-                        }
-                    }
-                    Tag::JpegTables(data) => context.library.set_jpeg_tables(data),
 
                     // Control Tags
                     Tag::ShowFrame => break,
@@ -451,14 +361,17 @@ impl DisplayObjectUpdate for MovieClip {
             .set_position(self.tag_stream_start.unwrap());
 
         use swf::Tag;
+        let mut start_pos = context.tag_stream.get_ref().position();
         while let Ok(Some(tag)) = context.tag_stream.read_tag() {
             match tag {
                 // Definition Tags
-                Tag::DefineButton2(button) => {
-                    if !context.library.contains_character(button.id) {
+                Tag::DefineButton2(swf_button) => {
+                    if !context.library.contains_character(swf_button.id) {
+                        let button =
+                            crate::button::Button::from_swf_tag(&swf_button, &context.library);
                         context
                             .library
-                            .register_character(button.id, Character::Button(button));
+                            .register_character(swf_button.id, Character::Button(Box::new(button)));
                     }
                 }
                 Tag::DefineBits { id, jpeg_data } => {
@@ -497,16 +410,12 @@ impl DisplayObjectUpdate for MovieClip {
                             .register_character(font.id, Character::Font(Box::new(font_object)));
                     }
                 }
-                Tag::DefineShape(shape) => {
-                    if !context.library.contains_character(shape.id) {
-                        let shape_handle = context.renderer.register_shape(&shape);
+                Tag::DefineShape(swf_shape) => {
+                    if !context.library.contains_character(swf_shape.id) {
+                        let graphic = Graphic::from_swf_tag(&swf_shape, context);
                         context.library.register_character(
-                            shape.id,
-                            Character::Graphic {
-                                shape_handle,
-                                x_min: shape.shape_bounds.x_min,
-                                y_min: shape.shape_bounds.y_min,
-                            },
+                            swf_shape.id,
+                            Character::Graphic(Box::new(graphic)),
                         );
                     }
                 }
@@ -518,23 +427,22 @@ impl DisplayObjectUpdate for MovieClip {
                             .register_character(sound.id, Character::Sound(handle));
                     }
                 }
-                // Tag::DefineSprite(sprite) => {
-                //     let pos = context.tag_stream.get_ref().position();
-                //     context.tag_stream.get_inner().set_position(start_pos);
-                //     context.tag_stream.read_tag_code_and_length().unwrap();
-                //     context.tag_stream.read_u32().unwrap();
-                //     let mc_start_pos = context.tag_stream.get_ref().position();
-                //     context.tag_stream.get_inner().set_position(pos);
-                //     if !context.library.contains_character(sprite.id) {
-                //         context.library.register_character(
-                //             sprite.id,
-                //             Character::MovieClip {
-                //                 num_frames: sprite.num_frames,
-                //                 tag_stream_start: mc_start_pos,
-                //             },
-                //         );
-                //     }
-                // }
+                Tag::DefineSprite(swf_sprite) => {
+                    let pos = context.tag_stream.get_ref().position();
+                    context.tag_stream.get_inner().set_position(start_pos);
+                    context.tag_stream.read_tag_code_and_length().unwrap();
+                    context.tag_stream.read_u32().unwrap();
+                    let mc_start_pos = context.tag_stream.get_ref().position();
+                    context.tag_stream.get_inner().set_position(pos);
+                    if !context.library.contains_character(swf_sprite.id) {
+                        let movie_clip =
+                            MovieClip::new_with_data(mc_start_pos, swf_sprite.num_frames);
+                        context.library.register_character(
+                            swf_sprite.id,
+                            Character::MovieClip(Box::new(movie_clip)),
+                        );
+                    }
+                }
                 Tag::DefineText(text) => {
                     if !context.library.contains_character(text.id) {
                         let text_object = Text::from_swf_tag(&text);
@@ -546,6 +454,7 @@ impl DisplayObjectUpdate for MovieClip {
                 Tag::JpegTables(data) => context.library.set_jpeg_tables(data),
                 _ => (),
             }
+            start_pos = context.tag_stream.get_inner().position();
         }
     }
 

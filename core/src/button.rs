@@ -8,6 +8,7 @@ use bacon_rajan_cc::{Cc, Trace, Tracer};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 
+#[derive(Clone)]
 pub struct Button {
     base: DisplayObjectBase,
     children: [BTreeMap<Depth, Cc<RefCell<DisplayObject>>>; 4],
@@ -16,7 +17,7 @@ pub struct Button {
 }
 
 impl Button {
-    pub fn new(button: &swf::Button, library: &crate::library::Library) -> Button {
+    pub fn from_swf_tag(button: &swf::Button, library: &crate::library::Library) -> Button {
         use swf::ButtonState;
         let mut children = [
             BTreeMap::new(),

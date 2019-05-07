@@ -1,7 +1,7 @@
 use crate::backend::audio::SoundHandle;
 use crate::button::Button;
 use crate::character::Character;
-use crate::display_object::DisplayObject;
+use crate::display_object::{DisplayObject, DisplayObjectImpl};
 use crate::font::Font;
 use crate::graphic::Graphic;
 use crate::movie_clip::MovieClip;
@@ -34,30 +34,15 @@ impl Library {
         &self,
         id: CharacterId,
     ) -> Result<DisplayObject, Box<std::error::Error>> {
-        match self.characters.get(&id) {
-            Some(Character::Graphic {
-                x_min,
-                y_min,
-                shape_handle,
-            }) => Ok(DisplayObject::new(Box::new(Graphic::new(
-                *shape_handle,
-                *x_min,
-                *y_min,
-            )))),
-            Some(Character::MovieClip {
-                tag_stream_start,
-                num_frames,
-            }) => Ok(DisplayObject::new(Box::new(MovieClip::new_with_data(
-                *tag_stream_start,
-                *num_frames,
-            )))),
-            Some(Character::Button(button)) => {
-                Ok(DisplayObject::new(Box::new(Button::new(&*button, self))))
-            }
-            Some(Character::Text(text)) => Ok(DisplayObject::new(text.clone())),
-            Some(_) => Err("Not a DisplayObject".into()),
-            None => Err("Character id doesn't exist".into()),
-        }
+        let obj: Box<DisplayObjectImpl> = match self.characters.get(&id) {
+            Some(Character::Graphic(graphic)) => graphic.clone(),
+            Some(Character::MovieClip(movie_clip)) => movie_clip.clone(),
+            Some(Character::Button(button)) => button.clone(),
+            Some(Character::Text(text)) => text.clone(),
+            Some(_) => return Err("Not a DisplayObject".into()),
+            None => return Err("Character id doesn't exist".into()),
+        };
+        Ok(DisplayObject::new(obj))
     }
 
     pub fn get_font(&self, id: CharacterId) -> Option<&Font> {

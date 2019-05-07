@@ -1,15 +1,8 @@
 pub enum Character {
-    Graphic {
-        x_min: f32,
-        y_min: f32,
-        shape_handle: crate::backend::render::ShapeHandle,
-    },
-    MovieClip {
-        num_frames: u16,
-        tag_stream_start: u64,
-    },
+    Graphic(Box<crate::graphic::Graphic>),
+    MovieClip(Box<crate::movie_clip::MovieClip>),
     Bitmap(crate::backend::render::BitmapHandle),
-    Button(Box<swf::Button>),
+    Button(Box<crate::button::Button>),
     Font(Box<crate::font::Font>),
     Text(Box<crate::text::Text>),
     Sound(crate::backend::audio::SoundHandle),
