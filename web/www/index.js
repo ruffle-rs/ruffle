@@ -8,6 +8,10 @@ localFileInput.addEventListener("change", localFileSelected, false);
 
 let player;
 
+if (window.location.search && window.location.search != "") {
+    loadRemoteFile(window.location.search.substr(1));
+}
+
 function localFileSelected() {
     let file = localFileInput.files[0];
     if (file) {
@@ -24,13 +28,18 @@ function sampleFileSelected() {
         // No SWF selected.
         return;
     }
+
     let file = sampleFileInput.selectedOptions[0].innerText;
     if (file) {
-        fetch(file)
-            .then(response => {
-                response.arrayBuffer().then(data => playSwf(data))
-            });
+        loadRemoteFile(file);
     }
+}
+
+function loadRemoteFile(url) {
+    fetch(url)
+        .then(response => {
+            response.arrayBuffer().then(data => playSwf(data))
+        });
 }
 
 let timestamp = 0;
