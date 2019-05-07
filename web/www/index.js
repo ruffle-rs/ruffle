@@ -9,7 +9,11 @@ localFileInput.addEventListener("change", localFileSelected, false);
 let player;
 
 if (window.location.search && window.location.search != "") {
-    loadRemoteFile(window.location.search.substr(1));
+    let urlParams = new URLSearchParams(window.location.search);
+    let url = urlParams.get("file");
+    if (url && url != "") {
+        loadRemoteFile(url);
+    }
 }
 
 function localFileSelected() {
