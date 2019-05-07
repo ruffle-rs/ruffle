@@ -290,7 +290,6 @@ impl RenderBackend for WebCanvasRenderBackend {
 
         use inflate::inflate_bytes_zlib;
         let mut decoded_data = inflate_bytes_zlib(&swf_tag.data).unwrap();
-
         match (swf_tag.version, swf_tag.format) {
             (1, swf::BitmapFormat::Rgb15) => unimplemented!("15-bit PNG"),
             (1, swf::BitmapFormat::Rgb32) => {
@@ -315,10 +314,11 @@ impl RenderBackend for WebCanvasRenderBackend {
                 }
             }
             (2, swf::BitmapFormat::ColorMap8) => {
-                let mut i = 1;
-                let padded_width = (swf_tag.width + 0b11111) & !0b11111;
-                let mut palette = Vec::with_capacity(swf_tag.num_colors as usize);
-                for _ in 0..swf_tag.num_colors {
+                let mut i = 0;
+                let padded_width = (swf_tag.width + 0b11) & !0b11;
+
+                let mut palette = Vec::with_capacity(swf_tag.num_colors as usize + 1);
+                for _ in 0..swf_tag.num_colors + 1 {
                     palette.push(Color {
                         r: decoded_data[i],
                         g: decoded_data[i + 1],
