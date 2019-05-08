@@ -1,5 +1,0 @@
-language: node_js
-node_js: "10"
-
-script:
-  - ./node_modules/.bin/webpack
