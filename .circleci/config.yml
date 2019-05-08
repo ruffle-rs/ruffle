@@ -1,0 +1,35 @@
+version: 2.1
+description: Ruffle - Flash Player emulator written in Rust
+
+jobs:
+  build:
+    docker:
+      - image: circleci/rust:1.34.1
+    steps:
+      - checkout
+      - restore_cache:
+          key: project-cache
+      - run:
+          name: Desktop Build
+          command: |
+            sudo apt-get update
+            sudo apt-get -y install libasound2-dev # Required for cpal crate on Linux
+            rustup toolchain install stable
+            rustup run stable rustc --version --verbose
+            rustup run stable cargo --version --verbose
+            rustup run stable cargo build --package ruffle_desktop
+      - run:
+          name: Web Build
+          command: |
+            curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            rustup toolchain install stable
+            rustup run stable rustc --version --verbose
+            rustup run stable cargo --version --verbose
+            npm --prefix web install web
+            npm --prefix web run build
+      - save_cache:
+          key: project-cache
+          paths:
+            - "~/.cargo"
+            - "./target"
