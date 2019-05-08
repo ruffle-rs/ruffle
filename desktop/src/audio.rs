@@ -1,6 +1,6 @@
-use fluster_core::backend::audio::{swf, AudioBackend, AudioStreamHandle, SoundHandle};
 use generational_arena::Arena;
 use rodio::{source::Source, Sample, Sink};
+use ruffle_core::backend::audio::{swf, AudioBackend, AudioStreamHandle, SoundHandle};
 use std::io::Cursor;
 use std::sync::{Arc, Mutex};
 

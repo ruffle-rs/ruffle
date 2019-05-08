@@ -1,4 +1,4 @@
-use fluster_core::backend::render::{
+use ruffle_core::backend::render::{
     swf, swf::CharacterId, BitmapHandle, Color, RenderBackend, ShapeHandle, Transform,
 };
 use std::collections::HashMap;

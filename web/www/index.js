@@ -1,4 +1,4 @@
-import { Player } from "../pkg/fluster";
+import { Player } from "../pkg/ruffle";
 
 let sampleFileInput = document.getElementById("sample-file");
 sampleFileInput.addEventListener("change", sampleFileSelected, false);

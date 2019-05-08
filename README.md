@@ -1,6 +1,6 @@
-# [Fluster 😳](https://github.com/Herschel/fluster)
+# [Ruffle](https://github.com/Herschel/ruffle)
 
-Fluster is an Adobe Flash Player emulator written in Rust.
+Ruffle is an Adobe Flash Player emulator written in Rust.
 
 ## Structure
 

@@ -2,11 +2,11 @@ mod audio;
 mod render;
 
 use crate::render::GliumRenderBackend;
-use fluster_core::{backend::audio::NullAudioBackend, Player};
 use glutin::{
     dpi::{LogicalPosition, LogicalSize},
     ContextBuilder, ElementState, Event, EventsLoop, MouseButton, WindowBuilder, WindowEvent,
 };
+use ruffle_core::{backend::audio::NullAudioBackend, Player};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
@@ -35,7 +35,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<std::error::Error>> {
     let swf_data = std::fs::read(input_path)?;
 
     let mut events_loop = EventsLoop::new();
-    let window_builder = WindowBuilder::new().with_title("Fluster");
+    let window_builder = WindowBuilder::new().with_title("Ruffle");
     let windowed_context = ContextBuilder::new()
         .with_vsync(true)
         .with_multisampling(4)

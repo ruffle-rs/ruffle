@@ -10,7 +10,7 @@ use wasm_bindgen::{prelude::*, JsValue};
 use web_sys::HtmlCanvasElement;
 
 thread_local! {
-    pub static PLAYERS: RefCell<Vec<Option<Box<fluster_core::Player>>>> = RefCell::new(vec![]);
+    pub static PLAYERS: RefCell<Vec<Option<Box<ruffle_core::Player>>>> = RefCell::new(vec![]);
 }
 
 #[wasm_bindgen]
@@ -52,7 +52,7 @@ impl Player {
         let renderer = WebCanvasRenderBackend::new(&canvas)?;
         let audio = WebAudioBackend::new()?;
 
-        let player = fluster_core::Player::new(Box::new(renderer), Box::new(audio), data)?;
+        let player = ruffle_core::Player::new(Box::new(renderer), Box::new(audio), data)?;
 
         // Update canvas size to match player size.
         canvas.set_width(player.movie_width());

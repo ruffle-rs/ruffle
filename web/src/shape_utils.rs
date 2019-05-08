@@ -1,5 +1,5 @@
-use fluster_core::backend::render::swf::{self, CharacterId, Color, FillStyle, LineStyle, Shape};
-use fluster_core::matrix::Matrix;
+use ruffle_core::backend::render::swf::{self, CharacterId, Color, FillStyle, LineStyle, Shape};
+use ruffle_core::matrix::Matrix;
 use std::collections::{HashMap, HashSet, VecDeque};
 use svg::node::element::{
     path::Data, Definitions, Image, LinearGradient, Path as SvgPath, Pattern, RadialGradient, Stop,

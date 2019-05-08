@@ -1,7 +1,7 @@
 #![allow(clippy::invalid_ref)]
 
-use fluster_core::backend::render::swf::{self, FillStyle, LineStyle};
-use fluster_core::backend::render::{BitmapHandle, Color, RenderBackend, ShapeHandle, Transform};
+use ruffle_core::backend::render::swf::{self, FillStyle, LineStyle};
+use ruffle_core::backend::render::{BitmapHandle, Color, RenderBackend, ShapeHandle, Transform};
 use glium::texture::texture2d::Texture2d;
 use glium::uniforms::{UniformValue, Uniforms};
 use glium::{
@@ -362,7 +362,7 @@ impl RenderBackend for GliumRenderBackend {
             jpeg_tables = &jpeg_tables[4..];
         }
 
-        let full_jpeg = fluster_core::backend::render::glue_swf_jpeg_to_tables(jpeg_tables, data);
+        let full_jpeg = ruffle_core::backend::render::glue_swf_jpeg_to_tables(jpeg_tables, data);
         let image = image::load(std::io::Cursor::new(&full_jpeg[..]), image::JPEG)
             .unwrap()
             .to_rgba();

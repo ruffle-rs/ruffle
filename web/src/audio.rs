@@ -1,7 +1,7 @@
-use fluster_core::backend::audio::{swf, AudioBackend, AudioStreamHandle, SoundHandle};
 use generational_arena::Arena;
 use js_sys::Uint8Array;
 use log::info;
+use ruffle_core::backend::audio::{swf, AudioBackend, AudioStreamHandle, SoundHandle};
 use wasm_bindgen::closure::Closure;
 use web_sys::AudioContext;
 
@@ -94,7 +94,7 @@ impl AudioBackend for WebAudioBackend {
                     .unwrap();
                 let mut out = Vec::with_capacity(num_channels);
                 let data = &swf_sound.data[..];
-                let mut decoder = fluster_core::backend::audio::AdpcmDecoder::new(
+                let mut decoder = ruffle_core::backend::audio::AdpcmDecoder::new(
                     data,
                     swf_sound.format.is_stereo,
                 )?;
