@@ -60,7 +60,7 @@ pub trait DisplayObjectImpl: Trace {
     fn name(&self) -> &str;
     fn set_name(&mut self, name: &str);
 
-    fn preload(&self, _context: &mut UpdateContext) {}
+    fn preload(&mut self, _context: &mut UpdateContext) {}
     fn run_frame(&mut self, _context: &mut UpdateContext) {}
     fn run_post_frame(&mut self, _context: &mut UpdateContext) {}
     fn render(&self, _context: &mut RenderContext) {}
@@ -131,7 +131,7 @@ impl DisplayObject {
 impl DisplayObjectImpl for DisplayObject {
     impl_display_object!(inner);
 
-    fn preload(&self, context: &mut UpdateContext) {
+    fn preload(&mut self, context: &mut UpdateContext) {
         self.inner.preload(context);
     }
 

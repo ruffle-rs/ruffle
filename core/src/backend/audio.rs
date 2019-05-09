@@ -1,7 +1,7 @@
 use generational_arena::{Arena, Index};
 
 pub mod swf {
-    pub use swf::{read, AudioCompression, Sound, SoundFormat, SoundStreamInfo};
+    pub use swf::{read, AudioCompression, CharacterId, Sound, SoundFormat, SoundStreamInfo};
 }
 
 pub type AudioStreamHandle = Index;
@@ -13,6 +13,9 @@ pub trait AudioBackend {
     fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, Error>;
     fn register_stream(&mut self, stream_info: &swf::SoundStreamInfo) -> AudioStreamHandle;
     fn play_sound(&mut self, sound: SoundHandle);
+    fn preload_stream_samples(&mut self, handle: AudioStreamHandle, samples: &[u8]) {}
+    fn preload_stream_finalize(&mut self, handle: AudioStreamHandle) {}
+    fn start_stream(&mut self, handle: AudioStreamHandle) -> bool { false }
     fn queue_stream_samples(&mut self, handle: AudioStreamHandle, samples: &[u8]);
 }
 

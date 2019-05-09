@@ -14,7 +14,6 @@ type CharacterId = swf::CharacterId;
 
 pub struct Player {
     tag_stream: swf::read::Reader<Cursor<Vec<u8>>>,
-    preloaded: bool,
 
     avm: Avm1,
 
@@ -50,9 +49,8 @@ impl Player {
         let movie_height = (swf.stage_size.y_max - swf.stage_size.y_min) as u32;
         renderer.set_dimensions(movie_width, movie_height);
 
-        Ok(Player {
+        let mut player = Player {
             tag_stream,
-            preloaded: false,
 
             avm: Avm1::new(swf.version),
 
@@ -78,7 +76,11 @@ impl Player {
             movie_height,
 
             mouse_pos: (0.0, 0.0),
-        })
+        };
+
+        player.preload();
+
+        Ok(player)
     }
 
     pub fn tick(&mut self, dt: f64) {
@@ -117,6 +119,24 @@ impl Player {
 }
 
 impl Player {
+    fn preload(&mut self) {
+        let mut update_context = UpdateContext {
+            global_time: self.global_time,
+            mouse_pos: self.mouse_pos,
+            tag_stream: &mut self.tag_stream,
+            position_stack: vec![],
+            library: &mut self.library,
+            background_color: &mut self.background_color,
+            avm1: &mut self.avm,
+            renderer: &mut *self.renderer,
+            audio: &mut self.audio,
+            action: None,
+        };
+
+        let mut stage = self.stage.borrow_mut();
+        stage.preload(&mut update_context);
+    }
+
     fn run_frame(&mut self) {
         let mut update_context = UpdateContext {
             global_time: self.global_time,
@@ -131,11 +151,6 @@ impl Player {
             action: None,
         };
 
-        if !self.preloaded {
-            let mut stage = self.stage.borrow_mut();
-            stage.preload(&mut update_context);
-            self.preloaded = true;
-        }
         self.stage.borrow_mut().run_frame(&mut update_context);
         {
             let mut queue = std::collections::VecDeque::new();

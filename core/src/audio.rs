@@ -28,6 +28,18 @@ impl Audio {
         self.backend.play_sound(sound)
     }
 
+    pub fn preload_stream_samples(&mut self, handle: AudioStreamHandle, samples: &[u8]) {
+        self.backend.preload_stream_samples(handle, samples)
+    }
+
+    pub fn preload_stream_finalize(&mut self, handle: AudioStreamHandle) {
+        self.backend.preload_stream_finalize(handle)
+    }
+
+    pub fn start_stream(&mut self, handle: AudioStreamHandle) -> bool {
+        self.backend.start_stream(handle)
+    }
+
     pub fn queue_stream_samples(&mut self, handle: AudioStreamHandle, samples: &[u8]) {
         self.backend.queue_stream_samples(handle, samples)
     }
@@ -35,8 +47,4 @@ impl Audio {
     pub fn stop_all_sounds(&mut self) {
         // TODO(Herschel)
     }
-}
-
-struct AudioStream {
-    stream_info: SoundStreamInfo,
 }

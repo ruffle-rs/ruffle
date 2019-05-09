@@ -29,6 +29,7 @@ pub struct MovieClip {
 
     #[unsafe_ignore_trace]
     audio_stream: Option<AudioStreamHandle>,
+    stream_started: bool,
 
     children: BTreeMap<Depth, Gc<GcCell<DisplayObject>>>,
 }
@@ -45,6 +46,7 @@ impl MovieClip {
             current_frame: 0,
             total_frames: 1,
             audio_stream: None,
+            stream_started: false,
             children: BTreeMap::new(),
         }
     }
@@ -59,6 +61,7 @@ impl MovieClip {
             goto_queue: VecDeque::new(),
             current_frame: 0,
             audio_stream: None,
+            stream_started: false,
             total_frames: num_frames,
             children: BTreeMap::new(),
         }
@@ -340,14 +343,41 @@ impl MovieClip {
         _length: usize,
         _version: u8,
     ) {
-        if self.audio_stream.is_none() {
-            self.audio_stream = Some(context.audio.register_stream(stream_info));
+        if let Some(stream) = self.audio_stream {
+            //self.audio_stream = Some(context.audio.register_stream(stream_info));
+            self.stream_started = false;
         }
     }
 
     fn sound_stream_block(&mut self, samples: &[u8], context: &mut UpdateContext, _length: usize) {
         if let Some(stream) = self.audio_stream {
-            context.audio.queue_stream_samples(stream, samples)
+            if !self.stream_started {
+                self.stream_started = context.audio.start_stream(stream);
+            }
+            context.audio.queue_stream_samples(stream, samples);
+        }
+    }
+
+    fn preload_sound_stream_head(
+        &mut self,
+        stream_info: &swf::SoundStreamInfo,
+        context: &mut UpdateContext,
+        _length: usize,
+        _version: u8,
+    ) {
+        if self.audio_stream.is_none() {
+            self.audio_stream = Some(context.audio.register_stream(stream_info));
+        }
+    }
+
+    fn preload_sound_stream_block(
+        &mut self,
+        samples: &[u8],
+        context: &mut UpdateContext,
+        _length: usize,
+    ) {
+        if let Some(stream) = self.audio_stream {
+            context.audio.preload_stream_samples(stream, samples)
         }
     }
 }
@@ -355,7 +385,7 @@ impl MovieClip {
 impl DisplayObjectImpl for MovieClip {
     impl_display_object!(base);
 
-    fn preload(&self, context: &mut UpdateContext) {
+    fn preload(&mut self, context: &mut UpdateContext) {
         context
             .tag_stream
             .get_inner()
@@ -436,8 +466,11 @@ impl DisplayObjectImpl for MovieClip {
                     let mc_start_pos = context.tag_stream.get_ref().position();
                     context.tag_stream.get_inner().set_position(pos);
                     if !context.library.contains_character(swf_sprite.id) {
-                        let movie_clip =
+                        let mut movie_clip =
                             MovieClip::new_with_data(mc_start_pos, swf_sprite.num_frames);
+
+                        movie_clip.preload(context);
+
                         context.library.register_character(
                             swf_sprite.id,
                             Character::MovieClip(Box::new(movie_clip)),
@@ -452,10 +485,21 @@ impl DisplayObjectImpl for MovieClip {
                             .register_character(text.id, Character::Text(Box::new(text_object)));
                     }
                 }
+
+                Tag::SoundStreamHead(info) => self.preload_sound_stream_head(&info, context, 0, 1),
+                Tag::SoundStreamHead2(info) => self.preload_sound_stream_head(&info, context, 0, 2),
+                Tag::SoundStreamBlock(samples) => {
+                    self.preload_sound_stream_block(&samples[..], context, 0)
+                }
+
                 Tag::JpegTables(data) => context.library.set_jpeg_tables(data),
                 _ => (),
             }
             start_pos = context.tag_stream.get_inner().position();
+        }
+
+        if let Some(stream) = self.audio_stream {
+            context.audio.preload_stream_finalize(stream);
         }
     }
 
