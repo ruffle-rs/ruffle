@@ -20,6 +20,6 @@ impl Font {
     }
 
     pub fn get_glyph(&self, i: usize) -> Option<ShapeHandle> {
-        self.glyphs.get(i).map(|o| *o)
+        self.glyphs.get(i).cloned()
     }
 }

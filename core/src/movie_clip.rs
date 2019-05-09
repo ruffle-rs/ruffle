@@ -433,6 +433,38 @@ impl DisplayObjectImpl for MovieClip {
                             .register_character(bitmap.id, Character::Bitmap(handle));
                     }
                 }
+                Tag::DefineFont(font) => {
+                    if !context.library.contains_character(font.id) {
+                        let glyphs = font
+                            .glyphs
+                            .into_iter()
+                            .map(|g| swf::Glyph {
+                                shape_records: g,
+                                code: 0,
+                                advance: None,
+                                bounds: None,
+                            })
+                            .collect::<Vec<_>>();
+
+                        let font = swf::Font {
+                            id: font.id,
+                            version: 0,
+                            name: "".to_string(),
+                            glyphs,
+                            language: swf::Language::Unknown,
+                            layout: None,
+                            is_small_text: false,
+                            is_shift_jis: false,
+                            is_ansi: false,
+                            is_bold: false,
+                            is_italic: false,
+                        };
+                        let font_object = Font::from_swf_tag(context, &font).unwrap();
+                        context
+                            .library
+                            .register_character(font.id, Character::Font(Box::new(font_object)));
+                    }
+                }
                 Tag::DefineFont2(font) => {
                     if !context.library.contains_character(font.id) {
                         let font_object = Font::from_swf_tag(context, &font).unwrap();
@@ -440,6 +472,9 @@ impl DisplayObjectImpl for MovieClip {
                             .library
                             .register_character(font.id, Character::Font(Box::new(font_object)));
                     }
+                }
+                Tag::DefineFontInfo(info) => {
+                    // TODO(Herschel)
                 }
                 Tag::DefineShape(swf_shape) => {
                     if !context.library.contains_character(swf_shape.id) {

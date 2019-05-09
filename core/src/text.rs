@@ -3,6 +3,7 @@ use crate::color_transform::ColorTransform;
 use crate::display_object::{DisplayObjectBase, DisplayObjectImpl};
 use crate::matrix::Matrix;
 use crate::player::{RenderContext, UpdateContext};
+use crate::transform::Transform;
 
 #[derive(Clone, Trace, Finalize)]
 pub struct Text {
@@ -40,14 +41,18 @@ impl DisplayObjectImpl for Text {
         };
         let mut font_id = 0;
         let mut height = 0;
+        let mut transform: Transform = Default::default();
         for block in &self.text_blocks {
             x = block.x_offset.unwrap_or(x);
             y = block.y_offset.unwrap_or(y);
             color = block.color.as_ref().unwrap_or_else(|| &color).clone();
             font_id = block.font_id.unwrap_or(font_id);
             height = block.height.unwrap_or(height);
-            let mut transform = context.transform_stack.transform().clone();
-            transform.matrix.ty += y;
+            let scale = f32::from(height) / 1024.0;
+            transform.matrix.a = scale;
+            transform.matrix.d = scale;
+            transform.matrix.tx = x;
+            transform.matrix.ty = y;
             transform.color_transform.r_mult = f32::from(color.r) / 255.0;
             transform.color_transform.g_mult = f32::from(color.g) / 255.0;
             transform.color_transform.b_mult = f32::from(color.b) / 255.0;
@@ -55,8 +60,11 @@ impl DisplayObjectImpl for Text {
             if let Some(font) = context.library.get_font(font_id) {
                 for c in &block.glyphs {
                     if let Some(glyph) = font.get_glyph(c.index as usize) {
-                        context.renderer.render_shape(glyph, &transform);
-                        x += c.advance as f32 / 20.0;
+                        context.transform_stack.push(&transform);
+                        context
+                            .renderer
+                            .render_shape(glyph, context.transform_stack.transform());
+                        context.transform_stack.pop();
                         transform.matrix.tx += c.advance as f32 / 20.0;
                     }
                 }
