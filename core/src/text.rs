@@ -3,11 +3,11 @@ use crate::color_transform::ColorTransform;
 use crate::display_object::{DisplayObjectBase, DisplayObjectImpl};
 use crate::matrix::Matrix;
 use crate::player::{RenderContext, UpdateContext};
-use bacon_rajan_cc::{Trace, Tracer};
 
-#[derive(Clone)]
+#[derive(Clone, Trace, Finalize)]
 pub struct Text {
     base: DisplayObjectBase,
+    #[unsafe_ignore_trace]
     text_blocks: Vec<swf::TextRecord>,
 }
 
@@ -63,11 +63,5 @@ impl DisplayObjectImpl for Text {
             }
         }
         context.transform_stack.pop();
-    }
-}
-
-impl Trace for Text {
-    fn trace(&mut self, _tracer: &mut Tracer) {
-        // Noop
     }
 }

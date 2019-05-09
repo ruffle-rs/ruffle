@@ -2,15 +2,17 @@ use crate::display_object::{DisplayObject, DisplayObjectBase, DisplayObjectImpl}
 use crate::matrix::Matrix;
 use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
-use bacon_rajan_cc::{Cc, Trace, Tracer};
-use std::cell::RefCell;
+use gc::{Gc, GcCell};
 use std::collections::BTreeMap;
 
-#[derive(Clone)]
+#[derive(Clone, Trace, Finalize)]
 pub struct Button {
     base: DisplayObjectBase,
-    children: [BTreeMap<Depth, Cc<RefCell<DisplayObject>>>; 4],
+
+    #[unsafe_ignore_trace]
     state: ButtonState,
+
+    children: [BTreeMap<Depth, Gc<GcCell<DisplayObject>>>; 4],
     release_actions: Vec<u8>,
 }
 
@@ -27,7 +29,7 @@ impl Button {
             let mut child = library.instantiate_display_object(record.id).unwrap();
             child.set_matrix(&record.matrix.clone().into());
             child.set_color_transform(&record.color_transform.clone().into());
-            let child_ptr = Cc::new(RefCell::new(DisplayObject::new(Box::new(child))));
+            let child_ptr = Gc::new(GcCell::new(DisplayObject::new(Box::new(child))));
             for state in &record.states {
                 let i = match state {
                     ButtonState::Up => 0,
@@ -60,7 +62,7 @@ impl Button {
     fn children_in_state(
         &self,
         state: ButtonState,
-    ) -> impl Iterator<Item = &Cc<RefCell<DisplayObject>>> {
+    ) -> impl Iterator<Item = &Gc<GcCell<DisplayObject>>> {
         let i = match state {
             ButtonState::Up => 0,
             ButtonState::Over => 1,
@@ -72,7 +74,7 @@ impl Button {
     fn children_in_state_mut(
         &mut self,
         state: ButtonState,
-    ) -> impl Iterator<Item = &mut Cc<RefCell<DisplayObject>>> {
+    ) -> impl Iterator<Item = &mut Gc<GcCell<DisplayObject>>> {
         let i = match state {
             ButtonState::Up => 0,
             ButtonState::Over => 1,
@@ -129,16 +131,6 @@ impl DisplayObjectImpl for Button {
     fn handle_click(&mut self, _pos: (f32, f32)) {
         if self.state == ButtonState::Over {
             self.state = ButtonState::Down;
-        }
-    }
-}
-
-impl Trace for Button {
-    fn trace(&mut self, tracer: &mut Tracer) {
-        for list in &mut self.children {
-            for child in list.values_mut() {
-                child.borrow_mut().trace(tracer);
-            }
         }
     }
 }

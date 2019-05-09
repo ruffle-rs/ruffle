@@ -3,12 +3,14 @@ use crate::color_transform::ColorTransform;
 use crate::display_object::{DisplayObjectBase, DisplayObjectImpl};
 use crate::matrix::Matrix;
 use crate::player::{RenderContext, UpdateContext};
-use bacon_rajan_cc::{Trace, Tracer};
 
-#[derive(Clone)]
+#[derive(Clone, Trace, Finalize)]
 pub struct Graphic {
     base: DisplayObjectBase,
+
+    #[unsafe_ignore_trace]
     shape_handle: ShapeHandle,
+
     x_min: f32,
     y_min: f32,
 }
@@ -40,11 +42,5 @@ impl DisplayObjectImpl for Graphic {
             .render_shape(self.shape_handle, context.transform_stack.transform());
 
         context.transform_stack.pop();
-    }
-}
-
-impl Trace for Graphic {
-    fn trace(&mut self, _tracer: &mut Tracer) {
-        // Noop
     }
 }

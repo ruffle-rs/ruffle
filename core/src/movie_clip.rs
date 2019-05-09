@@ -7,7 +7,7 @@ use crate::graphic::Graphic;
 use crate::matrix::Matrix;
 use crate::player::{RenderContext, UpdateContext};
 use crate::text::Text;
-use bacon_rajan_cc::{Cc, Trace, Tracer};
+use gc::{Gc, GcCell};
 use log::info;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, VecDeque};
@@ -16,7 +16,7 @@ use swf::read::SwfRead;
 type Depth = i16;
 type FrameNumber = u16;
 
-#[derive(Clone)]
+#[derive(Clone, Trace, Finalize)]
 pub struct MovieClip {
     base: DisplayObjectBase,
     tag_stream_start: Option<u64>,
@@ -26,8 +26,11 @@ pub struct MovieClip {
     goto_queue: VecDeque<FrameNumber>,
     current_frame: FrameNumber,
     total_frames: FrameNumber,
+
+    #[unsafe_ignore_trace]
     audio_stream: Option<AudioStreamHandle>,
-    children: BTreeMap<Depth, Cc<RefCell<DisplayObject>>>,
+
+    children: BTreeMap<Depth, Gc<GcCell<DisplayObject>>>,
 }
 
 impl MovieClip {
@@ -124,7 +127,7 @@ impl MovieClip {
         self.total_frames
     }
 
-    pub fn get_child_by_name(&self, name: &str) -> Option<&Cc<RefCell<DisplayObject>>> {
+    pub fn get_child_by_name(&self, name: &str) -> Option<&Gc<GcCell<DisplayObject>>> {
         self.children
             .values()
             .find(|child| child.borrow().name() == name)
@@ -199,7 +202,7 @@ impl MovieClip {
                 // TODO(Herschel): Behavior when character doesn't exist/isn't a DisplayObject?
                 let character =
                     if let Ok(character) = context.library.instantiate_display_object(id) {
-                        Cc::new(RefCell::new(character))
+                        Gc::new(GcCell::new(character))
                     } else {
                         return;
                     };
@@ -218,7 +221,7 @@ impl MovieClip {
             PlaceObjectAction::Replace(id) => {
                 let character =
                     if let Ok(character) = context.library.instantiate_display_object(id) {
-                        Cc::new(RefCell::new(character))
+                        Gc::new(GcCell::new(character))
                     } else {
                         return;
                     };
@@ -506,7 +509,7 @@ impl DisplayObjectImpl for MovieClip {
         }
     }
 
-    fn visit_children(&self, queue: &mut VecDeque<Cc<RefCell<DisplayObject>>>) {
+    fn visit_children(&self, queue: &mut VecDeque<Gc<GcCell<DisplayObject>>>) {
         for child in self.children.values() {
             queue.push_back(child.clone());
         }
@@ -518,13 +521,5 @@ impl DisplayObjectImpl for MovieClip {
 
     fn as_movie_clip_mut(&mut self) -> Option<&mut crate::movie_clip::MovieClip> {
         Some(self)
-    }
-}
-
-impl Trace for MovieClip {
-    fn trace(&mut self, tracer: &mut Tracer) {
-        for child in self.children.values_mut() {
-            child.trace(tracer);
-        }
     }
 }

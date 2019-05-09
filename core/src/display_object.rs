@@ -1,11 +1,14 @@
 use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use crate::transform::Transform;
-use bacon_rajan_cc::{Cc, Trace, Tracer};
+use gc::{Gc, GcCell, Trace};
+use std::collections::VecDeque;
 
-#[derive(Clone)]
+#[derive(Clone, Trace, Finalize)]
 pub struct DisplayObjectBase {
+    #[unsafe_ignore_trace]
     depth: Depth,
+    #[unsafe_ignore_trace]
     transform: Transform,
     name: String,
 }
@@ -43,10 +46,9 @@ impl DisplayObjectImpl for DisplayObjectBase {
     fn set_name(&mut self, name: &str) {
         self.name = name.to_string();
     }
-}
-
-impl Trace for DisplayObjectBase {
-    fn trace(&mut self, _tracer: &mut Tracer) {}
+    fn box_clone(&self) -> Box<DisplayObjectImpl> {
+        Box::new(self.clone())
+    }
 }
 
 pub trait DisplayObjectImpl: Trace {
@@ -64,38 +66,48 @@ pub trait DisplayObjectImpl: Trace {
     fn render(&self, _context: &mut RenderContext) {}
 
     fn handle_click(&mut self, _pos: (f32, f32)) {}
-    fn visit_children(&self, queue: &mut VecDeque<Cc<RefCell<DisplayObject>>>) {}
+    fn visit_children(&self, queue: &mut VecDeque<Gc<GcCell<DisplayObject>>>) {}
     fn as_movie_clip(&self) -> Option<&crate::movie_clip::MovieClip> {
         None
     }
     fn as_movie_clip_mut(&mut self) -> Option<&mut crate::movie_clip::MovieClip> {
         None
     }
+    fn box_clone(&self) -> Box<DisplayObjectImpl>;
+}
+
+impl Clone for Box<DisplayObjectImpl> {
+    fn clone(&self) -> Box<DisplayObjectImpl> {
+        self.box_clone()
+    }
 }
 
 macro_rules! impl_display_object {
     ($field:ident) => {
-            fn transform(&self) -> &crate::transform::Transform {
-                self.$field.transform()
-            }
-            fn get_matrix(&self) -> &Matrix {
-                self.$field.get_matrix()
-            }
-            fn set_matrix(&mut self, matrix: &Matrix) {
-                self.$field.set_matrix(matrix)
-            }
-            fn get_color_transform(&self) -> &ColorTransform {
-                self.$field.get_color_transform()
-            }
-            fn set_color_transform(&mut self, color_transform: &ColorTransform) {
-                self.$field.set_color_transform(color_transform)
-            }
-            fn name(&self) -> &str {
-                self.$field.name()
-            }
-            fn set_name(&mut self, name: &str) {
-                self.$field.set_name(name)
-            }
+        fn transform(&self) -> &crate::transform::Transform {
+            self.$field.transform()
+        }
+        fn get_matrix(&self) -> &Matrix {
+            self.$field.get_matrix()
+        }
+        fn set_matrix(&mut self, matrix: &Matrix) {
+            self.$field.set_matrix(matrix)
+        }
+        fn get_color_transform(&self) -> &ColorTransform {
+            self.$field.get_color_transform()
+        }
+        fn set_color_transform(&mut self, color_transform: &ColorTransform) {
+            self.$field.set_color_transform(color_transform)
+        }
+        fn name(&self) -> &str {
+            self.$field.name()
+        }
+        fn set_name(&mut self, name: &str) {
+            self.$field.set_name(name)
+        }
+        fn box_clone(&self) -> Box<$crate::display_object::DisplayObjectImpl> {
+            Box::new(self.clone())
+        }
     };
 }
 
@@ -105,6 +117,7 @@ macro_rules! impl_display_object {
 // Revisit this eventually, some possibilities:
 // - Just use a dumb enum.
 // - Some DST magic if we remove the Box below and mark this !Sized?
+#[derive(Clone, Trace, Finalize)]
 pub struct DisplayObject {
     inner: Box<DisplayObjectImpl>,
 }
@@ -138,7 +151,7 @@ impl DisplayObjectImpl for DisplayObject {
         self.inner.handle_click(pos)
     }
 
-    fn visit_children(&self, queue: &mut VecDeque<Cc<RefCell<DisplayObject>>>) {
+    fn visit_children(&self, queue: &mut VecDeque<Gc<GcCell<DisplayObject>>>) {
         self.inner.visit_children(queue);
     }
 
@@ -151,17 +164,8 @@ impl DisplayObjectImpl for DisplayObject {
     }
 }
 
-impl Trace for DisplayObject {
-    fn trace(&mut self, tracer: &mut Tracer) {
-        self.inner.trace(tracer)
-    }
-}
-
-use std::cell::RefCell;
-use std::collections::VecDeque;
-
 pub struct DisplayObjectVisitor {
-    pub open: VecDeque<Cc<RefCell<DisplayObject>>>,
+    pub open: VecDeque<Gc<GcCell<DisplayObject>>>,
 }
 
 impl DisplayObjectVisitor {

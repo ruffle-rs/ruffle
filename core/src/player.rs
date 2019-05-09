@@ -6,9 +6,8 @@ use crate::library::Library;
 use crate::movie_clip::MovieClip;
 use crate::prelude::*;
 use crate::transform::TransformStack;
-use bacon_rajan_cc::Cc;
+use gc::{Gc, GcCell};
 use log::info;
-use std::cell::RefCell;
 use std::io::Cursor;
 
 type CharacterId = swf::CharacterId;
@@ -24,7 +23,7 @@ pub struct Player {
     transform_stack: TransformStack,
 
     library: Library,
-    stage: Cc<RefCell<DisplayObject>>,
+    stage: Gc<GcCell<DisplayObject>>,
     background_color: Color,
 
     frame_rate: f64,
@@ -69,7 +68,7 @@ impl Player {
             transform_stack: TransformStack::new(),
 
             library: Library::new(),
-            stage: Cc::new(RefCell::new(stage)),
+            stage: Gc::new(GcCell::new(stage)),
 
             frame_rate: swf.frame_rate.into(),
             frame_accumulator: 0.0,
