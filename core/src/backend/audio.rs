@@ -15,8 +15,11 @@ pub trait AudioBackend {
     fn play_sound(&mut self, sound: SoundHandle);
     fn preload_stream_samples(&mut self, handle: AudioStreamHandle, samples: &[u8]) {}
     fn preload_stream_finalize(&mut self, handle: AudioStreamHandle) {}
-    fn start_stream(&mut self, handle: AudioStreamHandle) -> bool { false }
+    fn start_stream(&mut self, handle: AudioStreamHandle) -> bool {
+        false
+    }
     fn queue_stream_samples(&mut self, handle: AudioStreamHandle, samples: &[u8]);
+    fn tick(&mut self) {}
 }
 
 pub struct NullAudioBackend {

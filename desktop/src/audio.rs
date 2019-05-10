@@ -6,6 +6,7 @@ use std::sync::{Arc, Mutex};
 
 pub struct RodioAudioBackend {
     sounds: Arena<Sound>,
+    active_sounds: Arena<Sink>,
     streams: Arena<AudioStream>,
     device: rodio::Device,
 }
@@ -26,6 +27,7 @@ impl RodioAudioBackend {
         Ok(Self {
             sounds: Arena::new(),
             streams: Arena::new(),
+            active_sounds: Arena::new(),
             device: rodio::default_output_device().ok_or("Unable to create output device")?,
         })
     }
@@ -67,7 +69,6 @@ impl AudioBackend for RodioAudioBackend {
         let sound = &self.sounds[sound];
         use swf::AudioCompression;
 
-        log::info!("{:?}", sound.format.compression);
         match sound.format.compression {
             AudioCompression::Uncompressed => {
                 let mut data = Vec::with_capacity(sound.data.len() / 2);
@@ -83,13 +84,13 @@ impl AudioBackend for RodioAudioBackend {
                 );
                 let sink = Sink::new(&self.device);
                 sink.append(buffer);
-                sink.detach();
+                self.active_sounds.insert(sink);
             }
             AudioCompression::Mp3 => {
                 let decoder = Mp3EventDecoder::new(Cursor::new(sound.data.clone())).unwrap();
                 let sink = Sink::new(&self.device);
                 sink.append(decoder);
-                sink.detach();
+                self.active_sounds.insert(sink);
             }
             _ => unimplemented!(),
         }
@@ -108,6 +109,10 @@ impl AudioBackend for RodioAudioBackend {
             buffer.get_mut().extend_from_slice(&samples);
         }
     }
+
+    fn tick(&mut self) {
+        self.active_sounds.retain(|_, sink| !sink.empty());
+    }
 }
 
 use std::io::{self, Read, Seek};
@@ -121,10 +126,11 @@ impl Read for ThreadRead {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let mut buffer = self.0.lock().unwrap();
         let result = buffer.read(buf);
-        if buffer.position() == buffer.get_ref().len() as u64 {
-            buffer.get_mut().clear();
-            buffer.set_position(0);
-        }
+        let len_remaining = buffer.get_ref().len() - buffer.position() as usize;
+        let tmp = buffer.get_ref()[buffer.position() as usize..].to_vec();
+        buffer.get_mut().resize(len_remaining, 0);
+        *buffer.get_mut() = tmp;
+        buffer.set_position(0);
         result
     }
 }
@@ -141,6 +147,7 @@ pub struct Mp3Decoder {
     num_channels: u16,
     current_frame: Frame,
     current_frame_offset: usize,
+    playing: bool,
 }
 
 impl Mp3Decoder {
@@ -160,6 +167,7 @@ impl Mp3Decoder {
             sample_rate,
             current_frame,
             current_frame_offset: 0,
+            playing: false,
         })
     }
 }
@@ -191,19 +199,20 @@ impl Iterator for Mp3Decoder {
 
     #[inline]
     fn next(&mut self) -> Option<i16> {
-        {
+        if !self.playing {
             let buffer = self.decoder.reader().0.lock().unwrap();
-            if buffer.get_ref().len() < 1000 {
+            if buffer.get_ref().len() < 44100 / 60 {
                 return Some(0);
             }
+            self.playing = true;
         }
 
         if self.current_frame_offset == self.current_frame.data.len() {
-            self.current_frame_offset = 0;
             match self.decoder.next_frame() {
                 Ok(frame) => self.current_frame = frame,
                 _ => return Some(0),
             }
+            self.current_frame_offset = 0;
         }
 
         let v = self.current_frame.data[self.current_frame_offset];
