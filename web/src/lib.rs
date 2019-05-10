@@ -3,6 +3,7 @@ mod render;
 mod shape_utils;
 
 use crate::{audio::WebAudioBackend, render::WebCanvasRenderBackend};
+use generational_arena::{Arena, Index};
 use js_sys::Uint8Array;
 use std::cell::RefCell;
 use std::error::Error;
@@ -10,11 +11,11 @@ use wasm_bindgen::{prelude::*, JsValue};
 use web_sys::HtmlCanvasElement;
 
 thread_local! {
-    pub static PLAYERS: RefCell<Vec<Option<Box<ruffle_core::Player>>>> = RefCell::new(vec![]);
+    pub static PLAYERS: RefCell<Arena<ruffle_core::Player>> = RefCell::new(Arena::new());
 }
 
 #[wasm_bindgen]
-pub struct Player(usize);
+pub struct Player(Index);
 
 #[wasm_bindgen]
 impl Player {
@@ -25,7 +26,7 @@ impl Player {
     pub fn tick(&mut self, dt: f64) {
         PLAYERS.with(|players| {
             let mut players = players.borrow_mut();
-            if let Some(player) = &mut players[self.0] {
+            if let Some(player) = players.get_mut(self.0) {
                 player.tick(dt);
             }
         });
@@ -34,9 +35,7 @@ impl Player {
     pub fn destroy(&mut self) {
         PLAYERS.with(|players| {
             let mut players = players.borrow_mut();
-            if self.0 < players.len() {
-                players[self.0] = None;
-            }
+            players.remove(self.0);
         });
     }
 }
@@ -68,9 +67,8 @@ impl Player {
 
         let handle = PLAYERS.with(move |players| {
             let mut players = players.borrow_mut();
-            let handle = Player(players.len());
-            players.push(Some(Box::new(player)));
-            handle
+            let index = players.insert(player);
+            Player(index)
         });
 
         Ok(handle)
