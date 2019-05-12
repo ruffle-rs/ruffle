@@ -263,6 +263,10 @@ impl MovieClip {
                 morph_shape.set_ratio(*ratio);
             }
         }
+
+        if let Some(clip_depth) = &place_object.clip_depth {
+            character.set_clip_depth(*clip_depth);
+        }
     }
 
     fn run_frame_internal(&mut self, context: &mut UpdateContext, only_display_actions: bool) {
