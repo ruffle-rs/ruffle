@@ -267,6 +267,7 @@ pub fn swf_shape_to_svg(shape: &Shape, bitmaps: &HashMap<CharacterId, (&str, u32
         svg_paths.push(svg_path);
     }
 
+    use swf::{LineCapStyle, LineJoinStyle};
     for stroke in strokes {
         let mut svg_path = SvgPath::new();
         let line_style = stroke.line_style.unwrap();
@@ -279,7 +280,27 @@ pub fn swf_shape_to_svg(shape: &Shape, bitmaps: &HashMap<CharacterId, (&str, u32
                     line_style.color.r, line_style.color.g, line_style.color.b, line_style.color.a
                 ),
             )
-            .set("width", f32::from(line_style.width) / 20.0);
+            .set("stroke-width", f32::from(line_style.width) / 20.0)
+            .set(
+                "stroke-linecap",
+                match line_style.start_cap {
+                    LineCapStyle::Round => "round",
+                    LineCapStyle::Square => "square",
+                    LineCapStyle::None => "butt",
+                },
+            )
+            .set(
+                "stroke-linejoin",
+                match line_style.join_style {
+                    LineJoinStyle::Round => "round",
+                    LineJoinStyle::Bevel => "bevel",
+                    LineJoinStyle::Miter(_) => "miter",
+                },
+            );
+
+        if let LineJoinStyle::Miter(miter_limit) = line_style.join_style {
+            svg_path = svg_path.set("stroke-miterlimit", miter_limit);
+        }
 
         let mut data = Data::new();
         for subpath in &stroke.subpaths {
