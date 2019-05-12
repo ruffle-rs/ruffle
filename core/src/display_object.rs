@@ -73,6 +73,12 @@ pub trait DisplayObjectImpl: Trace {
     fn as_movie_clip_mut(&mut self) -> Option<&mut crate::movie_clip::MovieClip> {
         None
     }
+    fn as_morph_shape(&self) -> Option<&crate::morph_shape::MorphShape> {
+        None
+    }
+    fn as_morph_shape_mut(&mut self) -> Option<&mut crate::morph_shape::MorphShape> {
+        None
+    }
     fn box_clone(&self) -> Box<DisplayObjectImpl>;
 }
 
@@ -161,6 +167,14 @@ impl DisplayObjectImpl for DisplayObject {
 
     fn as_movie_clip_mut(&mut self) -> Option<&mut crate::movie_clip::MovieClip> {
         self.inner.as_movie_clip_mut()
+    }
+
+    fn as_morph_shape(&self) -> Option<&crate::morph_shape::MorphShape> {
+        self.inner.as_morph_shape()
+    }
+
+    fn as_morph_shape_mut(&mut self) -> Option<&mut crate::morph_shape::MorphShape> {
+        self.inner.as_morph_shape_mut()
     }
 }
 

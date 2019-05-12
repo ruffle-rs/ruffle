@@ -5,6 +5,7 @@ use crate::display_object::{DisplayObject, DisplayObjectImpl};
 use crate::font::Font;
 use crate::graphic::Graphic;
 use crate::movie_clip::MovieClip;
+use crate::prelude::*;
 use std::collections::HashMap;
 use swf::CharacterId;
 
@@ -30,12 +31,21 @@ impl Library {
         self.characters.contains_key(&id)
     }
 
+    pub fn get_character(&self, id: CharacterId) -> Option<&Character> {
+        self.characters.get(&id)
+    }
+
+    pub fn get_character_mut(&mut self, id: CharacterId) -> Option<&mut Character> {
+        self.characters.get_mut(&id)
+    }
+
     pub fn instantiate_display_object(
         &self,
         id: CharacterId,
     ) -> Result<DisplayObject, Box<std::error::Error>> {
         let obj: Box<DisplayObjectImpl> = match self.characters.get(&id) {
             Some(Character::Graphic(graphic)) => graphic.clone(),
+            Some(Character::MorphShape(morph_shape)) => morph_shape.clone(),
             Some(Character::MovieClip(movie_clip)) => movie_clip.clone(),
             Some(Character::Button(button)) => button.clone(),
             Some(Character::Text(text)) => text.clone(),

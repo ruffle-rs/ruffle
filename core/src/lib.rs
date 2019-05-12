@@ -10,9 +10,11 @@ mod font;
 mod graphic;
 mod library;
 pub mod matrix;
+mod morph_shape;
 mod movie_clip;
 mod player;
 mod prelude;
+pub mod shape_utils;
 mod text;
 mod transform;
 

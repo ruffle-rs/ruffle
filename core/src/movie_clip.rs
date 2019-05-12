@@ -5,10 +5,11 @@ use crate::display_object::{DisplayObject, DisplayObjectBase, DisplayObjectImpl}
 use crate::font::Font;
 use crate::graphic::Graphic;
 use crate::matrix::Matrix;
+use crate::morph_shape::MorphShape;
 use crate::player::{RenderContext, UpdateContext};
+use crate::prelude::*;
 use crate::text::Text;
 use gc::{Gc, GcCell};
-use log::info;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use swf::read::SwfRead;
@@ -256,6 +257,12 @@ impl MovieClip {
         if let Some(name) = &place_object.name {
             character.set_name(name);
         }
+
+        if let Some(ratio) = &place_object.ratio {
+            if let Some(morph_shape) = character.as_morph_shape_mut() {
+                morph_shape.set_ratio(*ratio);
+            }
+        }
     }
 
     fn run_frame_internal(&mut self, context: &mut UpdateContext, only_display_actions: bool) {
@@ -391,6 +398,7 @@ impl DisplayObjectImpl for MovieClip {
             .get_inner()
             .set_position(self.tag_stream_start.unwrap());
 
+        let mut ids = HashMap::new();
         use swf::Tag;
         let mut start_pos = context.tag_stream.get_ref().position();
         while let Ok(Some(tag)) = context.tag_stream.read_tag() {
@@ -476,6 +484,15 @@ impl DisplayObjectImpl for MovieClip {
                 Tag::DefineFontInfo(info) => {
                     // TODO(Herschel)
                 }
+                Tag::DefineMorphShape(swf_shape) => {
+                    if !context.library.contains_character(swf_shape.id) {
+                        let morph_shape = MorphShape::from_swf_tag(&swf_shape, context);
+                        context.library.register_character(
+                            swf_shape.id,
+                            Character::MorphShape(Box::new(morph_shape)),
+                        );
+                    }
+                }
                 Tag::DefineShape(swf_shape) => {
                     if !context.library.contains_character(swf_shape.id) {
                         let graphic = Graphic::from_swf_tag(&swf_shape, context);
@@ -518,6 +535,25 @@ impl DisplayObjectImpl for MovieClip {
                         context
                             .library
                             .register_character(text.id, Character::Text(Box::new(text_object)));
+                    }
+                }
+
+                Tag::PlaceObject(place_object) => {
+                    use swf::PlaceObjectAction;
+                    match place_object.action {
+                        PlaceObjectAction::Place(id) | PlaceObjectAction::Replace(id) => {
+                            ids.insert(place_object.depth, id);
+                        }
+                        _ => (),
+                    }
+                    if let Some(ratio) = place_object.ratio {
+                        if let Some(&id) = ids.get(&place_object.depth) {
+                            if let Some(Character::MorphShape(morph_shape)) =
+                                context.library.get_character_mut(id)
+                            {
+                                morph_shape.register_ratio(context.renderer, ratio);
+                            }
+                        }
                     }
                 }
 

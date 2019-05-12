@@ -4,6 +4,7 @@ pub enum Character {
     Bitmap(crate::backend::render::BitmapHandle),
     Button(Box<crate::button::Button>),
     Font(Box<crate::font::Font>),
+    MorphShape(Box<crate::morph_shape::MorphShape>),
     Text(Box<crate::text::Text>),
     Sound(crate::backend::audio::SoundHandle),
 }
