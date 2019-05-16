@@ -8,7 +8,7 @@ Ruffle is an Adobe Flash Player emulator written in Rust.
 
 ### Desktop
 
-* `cargo build --package=ruffle_desktop -- test.swf`
+* `cargo run --package=ruffle_desktop -- test.swf`
 
 ### Web
 
