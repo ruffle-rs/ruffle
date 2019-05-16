@@ -2,6 +2,21 @@
 
 Ruffle is an Adobe Flash Player emulator written in Rust.
 
+## Building
+ 
+[Follow the official guide](https://www.rust-lang.org/tools/install) to install Rust for your platform.
+
+### Desktop
+
+* `cargo build --package=ruffle_desktop -- test.swf`
+
+### Web
+
+* Install [Node.js](https://nodejs.org/en/)
+* Install [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
+* `npm run serve --prefix web`
+* Load indicated page in browser (usually [http://localhost:8080])
+
 ## Structure
 
 - `core` contains the core emulator and common code
