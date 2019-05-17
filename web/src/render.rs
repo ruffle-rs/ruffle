@@ -139,8 +139,8 @@ impl RenderBackend for WebCanvasRenderBackend {
 
         self.shapes.push(ShapeData {
             image,
-            x_min: shape.shape_bounds.x_min.into(),
-            y_min: shape.shape_bounds.y_min.into(),
+            x_min: shape.shape_bounds.x_min.to_pixels(),
+            y_min: shape.shape_bounds.y_min.to_pixels(),
         });
 
         handle
@@ -351,8 +351,8 @@ impl RenderBackend for WebCanvasRenderBackend {
                 transform.matrix.b.into(),
                 transform.matrix.c.into(),
                 transform.matrix.d.into(),
-                transform.matrix.tx.into(),
-                transform.matrix.ty.into(),
+                f64::from(transform.matrix.tx) / 20.0,
+                f64::from(transform.matrix.ty) / 20.0,
             )
             .unwrap();
 

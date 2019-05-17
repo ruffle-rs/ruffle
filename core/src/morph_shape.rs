@@ -5,6 +5,7 @@ use crate::matrix::Matrix;
 use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use std::collections::HashMap;
+use swf::Twips;
 
 #[derive(Clone, Trace, Finalize)]
 pub struct MorphShape {
@@ -103,7 +104,9 @@ impl MorphShape {
             .iter()
             .zip(self.end.line_styles.iter())
             .map(|(start, end)| LineStyle {
-                width: (f32::from(start.width) * a + f32::from(end.width) * b) as u16,
+                width: Twips::new(
+                    ((start.width.get() as f32) * a + (end.width.get() as f32) * b) as i32,
+                ),
                 color: Color {
                     r: (a * f32::from(start.color.r) + b * f32::from(end.color.r)) as u8,
                     g: (a * f32::from(start.color.g) + b * f32::from(end.color.g)) as u8,
@@ -139,8 +142,14 @@ impl MorphShape {
                             ..
                         }) = end
                         {
-                            style_change.move_to =
-                                Some((start_x * a + end_x * b, start_y * a + end_y * b));
+                            style_change.move_to = Some((
+                                Twips::new(
+                                    (start_x.get() as f32 * a + end_x.get() as f32 * b) as i32,
+                                ),
+                                Twips::new(
+                                    (start_y.get() as f32 * a + end_y.get() as f32 * b) as i32,
+                                ),
+                            ));
                         } else {
                             panic!("Expected move_to for morph shape")
                         }
@@ -190,8 +199,8 @@ impl MorphShape {
                     delta_y: end_dy,
                 },
             ) => ShapeRecord::StraightEdge {
-                delta_x: start_dx * a + end_dx * b,
-                delta_y: start_dy * a + end_dy * b,
+                delta_x: Twips::new((start_dx.get() as f32 * a + end_dx.get() as f32 * b) as i32),
+                delta_y: Twips::new((start_dy.get() as f32 * a + end_dy.get() as f32 * b) as i32),
             },
 
             (
@@ -208,10 +217,18 @@ impl MorphShape {
                     anchor_delta_y: end_ady,
                 },
             ) => ShapeRecord::CurvedEdge {
-                control_delta_x: start_cdx * a + end_cdx * b,
-                control_delta_y: start_cdy * a + end_cdy * b,
-                anchor_delta_x: start_adx * a + end_adx * b,
-                anchor_delta_y: start_ady * a + end_ady * b,
+                control_delta_x: Twips::new(
+                    (start_cdx.get() as f32 * a + end_cdx.get() as f32 * b) as i32,
+                ),
+                control_delta_y: Twips::new(
+                    (start_cdy.get() as f32 * a + end_cdy.get() as f32 * b) as i32,
+                ),
+                anchor_delta_x: Twips::new(
+                    (start_adx.get() as f32 * a + end_adx.get() as f32 * b) as i32,
+                ),
+                anchor_delta_y: Twips::new(
+                    (start_ady.get() as f32 * a + end_ady.get() as f32 * b) as i32,
+                ),
             },
 
             (
@@ -226,15 +243,23 @@ impl MorphShape {
                     anchor_delta_y: end_ady,
                 },
             ) => {
-                let start_cdx = start_dx / 2.0;
-                let start_cdy = start_dy / 2.0;
+                let start_cdx = *start_dx / 2;
+                let start_cdy = *start_dy / 2;
                 let start_adx = start_cdx;
                 let start_ady = start_cdy;
                 ShapeRecord::CurvedEdge {
-                    control_delta_x: start_cdx * a + end_cdx * b,
-                    control_delta_y: start_cdy * a + end_cdy * b,
-                    anchor_delta_x: start_adx * a + end_adx * b,
-                    anchor_delta_y: start_ady * a + end_ady * b,
+                    control_delta_x: Twips::new(
+                        (start_cdx.get() as f32 * a + end_cdx.get() as f32 * b) as i32,
+                    ),
+                    control_delta_y: Twips::new(
+                        (start_cdy.get() as f32 * a + end_cdy.get() as f32 * b) as i32,
+                    ),
+                    anchor_delta_x: Twips::new(
+                        (start_adx.get() as f32 * a + end_adx.get() as f32 * b) as i32,
+                    ),
+                    anchor_delta_y: Twips::new(
+                        (start_ady.get() as f32 * a + end_ady.get() as f32 * b) as i32,
+                    ),
                 }
             }
 
@@ -250,15 +275,23 @@ impl MorphShape {
                     delta_y: end_dy,
                 },
             ) => {
-                let end_cdx = end_dx / 2.0;
-                let end_cdy = end_dy / 2.0;
+                let end_cdx = *end_dx / 2;
+                let end_cdy = *end_dy / 2;
                 let end_adx = end_cdx;
                 let end_ady = end_cdy;
                 ShapeRecord::CurvedEdge {
-                    control_delta_x: start_cdx * a + end_cdx * b,
-                    control_delta_y: start_cdy * a + end_cdy * b,
-                    anchor_delta_x: start_adx * a + end_adx * b,
-                    anchor_delta_y: start_ady * a + end_ady * b,
+                    control_delta_x: Twips::new(
+                        (start_cdx.get() as f32 * a + end_cdx.get() as f32 * b) as i32,
+                    ),
+                    control_delta_y: Twips::new(
+                        (start_cdy.get() as f32 * a + end_cdy.get() as f32 * b) as i32,
+                    ),
+                    anchor_delta_x: Twips::new(
+                        (start_adx.get() as f32 * a + end_adx.get() as f32 * b) as i32,
+                    ),
+                    anchor_delta_y: Twips::new(
+                        (start_ady.get() as f32 * a + end_ady.get() as f32 * b) as i32,
+                    ),
                 }
             }
             _ => unreachable!(),

@@ -31,8 +31,8 @@ impl DisplayObjectImpl for Text {
     fn render(&self, context: &mut RenderContext) {
         context.transform_stack.push(self.transform());
 
-        let mut x = 0.0;
-        let mut y = 0.0;
+        let mut x = Default::default();
+        let mut y = Default::default();
         let mut color = swf::Color {
             r: 0,
             g: 0,
@@ -51,8 +51,8 @@ impl DisplayObjectImpl for Text {
             let scale = f32::from(height) / 1024.0;
             transform.matrix.a = scale;
             transform.matrix.d = scale;
-            transform.matrix.tx = x;
-            transform.matrix.ty = y;
+            transform.matrix.tx = x.get() as f32;
+            transform.matrix.ty = y.get() as f32;
             transform.color_transform.r_mult = f32::from(color.r) / 255.0;
             transform.color_transform.g_mult = f32::from(color.g) / 255.0;
             transform.color_transform.b_mult = f32::from(color.b) / 255.0;
@@ -65,7 +65,7 @@ impl DisplayObjectImpl for Text {
                             .renderer
                             .render_shape(glyph, context.transform_stack.transform());
                         context.transform_stack.pop();
-                        transform.matrix.tx += c.advance as f32 / 20.0;
+                        transform.matrix.tx += c.advance as f32;
                     }
                 }
             }

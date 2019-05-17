@@ -10,9 +10,6 @@ pub struct Graphic {
 
     #[unsafe_ignore_trace]
     shape_handle: ShapeHandle,
-
-    x_min: f32,
-    y_min: f32,
 }
 
 impl Graphic {
@@ -21,8 +18,6 @@ impl Graphic {
         Graphic {
             base: Default::default(),
             shape_handle,
-            x_min: swf_shape.shape_bounds.x_min,
-            y_min: swf_shape.shape_bounds.y_min,
         }
     }
 }

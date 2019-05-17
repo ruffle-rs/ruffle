@@ -15,8 +15,8 @@ impl From<swf::Matrix> for Matrix {
             b: matrix.rotate_skew_0,
             c: matrix.rotate_skew_1,
             d: matrix.scale_y,
-            tx: matrix.translate_x,
-            ty: matrix.translate_y,
+            tx: matrix.translate_x.get() as f32,
+            ty: matrix.translate_y.get() as f32,
         }
     }
 }

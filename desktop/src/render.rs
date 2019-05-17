@@ -1,7 +1,5 @@
 #![allow(clippy::invalid_ref)]
 
-use ruffle_core::backend::render::swf::{self, FillStyle, LineStyle};
-use ruffle_core::backend::render::{BitmapHandle, Color, RenderBackend, ShapeHandle, Transform};
 use glium::texture::texture2d::Texture2d;
 use glium::uniforms::{UniformValue, Uniforms};
 use glium::{
@@ -11,7 +9,10 @@ use glium::{
 use glutin::WindowedContext;
 use lyon::tessellation::geometry_builder::{BuffersBuilder, VertexBuffers};
 use lyon::{path::PathEvent, tessellation, tessellation::FillTessellator};
+use ruffle_core::backend::render::swf::{self, FillStyle, LineStyle};
+use ruffle_core::backend::render::{BitmapHandle, Color, RenderBackend, ShapeHandle, Transform};
 use std::collections::{HashMap, VecDeque};
+use swf::Twips;
 
 pub struct GliumRenderBackend {
     display: Display,
@@ -134,8 +135,8 @@ impl GliumRenderBackend {
         });
 
         fn swf_to_gl_matrix(m: swf::Matrix) -> [[f32; 3]; 3] {
-            let tx = m.translate_x * 20.0;
-            let ty = m.translate_y * 20.0;
+            let tx = m.translate_x.get() as f32;
+            let ty = m.translate_y.get() as f32;
             let det = m.scale_x * m.scale_y - m.rotate_skew_1 * m.rotate_skew_0;
             let mut a = m.scale_y / det;
             let mut b = -m.rotate_skew_1 / det;
@@ -144,10 +145,10 @@ impl GliumRenderBackend {
             let mut e = m.scale_x / det;
             let mut f = (tx * m.rotate_skew_0 - m.scale_x * ty) / det;
 
-            a *= 20.0 / 32768.0;
-            b *= 20.0 / 32768.0;
-            d *= 20.0 / 32768.0;
-            e *= 20.0 / 32768.0;
+            a *= 1.0 / 32768.0;
+            b *= 1.0 / 32768.0;
+            d *= 1.0 / 32768.0;
+            e *= 1.0 / 32768.0;
 
             c /= 32768.0;
             f /= 32768.0;
@@ -316,18 +317,8 @@ impl RenderBackend for GliumRenderBackend {
         let shape = swf::Shape {
             version: 2,
             id: 0,
-            shape_bounds: swf::Rectangle {
-                x_min: 0.0,
-                x_max: 0.0,
-                y_min: 0.0,
-                y_max: 0.0,
-            },
-            edge_bounds: swf::Rectangle {
-                x_min: 0.0,
-                x_max: 0.0,
-                y_min: 0.0,
-                y_max: 0.0,
-            },
+            shape_bounds: Default::default(),
+            edge_bounds: Default::default(),
             has_fill_winding_rule: false,
             has_non_scaling_strokes: false,
             has_scaling_strokes: true,
@@ -411,8 +402,13 @@ impl RenderBackend for GliumRenderBackend {
         let mesh = &self.meshes[shape.0];
 
         let view_matrix = [
-            [1.0 / (self.movie_width as f32 / 2.0), 0.0, 0.0, 0.0],
-            [0.0, -1.0 / (self.movie_height as f32 / 2.0), 0.0, 0.0],
+            [1.0 / (20.0 * self.movie_width as f32 / 2.0), 0.0, 0.0, 0.0],
+            [
+                0.0,
+                -1.0 / (20.0 * self.movie_height as f32 / 2.0),
+                0.0,
+                0.0,
+            ],
             [0.0, 0.0, 1.0, 0.0],
             [-1.0, 1.0, 0.0, 1.0],
         ];
@@ -672,8 +668,8 @@ enum DrawType {
     LinearGradient(GradientUniforms),
 }
 
-fn point(x: f32, y: f32) -> lyon::math::Point {
-    lyon::math::Point::new(x, y)
+fn point(x: Twips, y: Twips) -> lyon::math::Point {
+    lyon::math::Point::new(x.get() as f32, y.get() as f32)
 }
 
 fn swf_shape_to_lyon_paths(
@@ -681,7 +677,7 @@ fn swf_shape_to_lyon_paths(
 ) -> Vec<(PathCommandType, Vec<lyon::path::PathEvent>)> {
     let cmds = get_paths(shape);
     let mut out_paths = vec![];
-    let mut prev = point(0.0, 0.0);
+    let mut prev = point(Default::default(), Default::default());
     use lyon::geom::{LineSegment, QuadraticBezierSegment};
     for cmd in cmds {
         if let PathCommandType::Fill(_fill_style) = &cmd.command_type {
@@ -724,8 +720,8 @@ fn swf_shape_to_lyon_paths(
 }
 
 fn get_paths(shape: &swf::Shape) -> impl Iterator<Item = PathCommand> {
-    let mut x = 0.0;
-    let mut y = 0.0;
+    let mut x = Twips::new(0);
+    let mut y = Twips::new(0);
 
     let mut fill_styles = &shape.styles.fill_styles;
     let mut line_styles = &shape.styles.line_styles;
@@ -792,7 +788,7 @@ fn get_paths(shape: &swf::Shape) -> impl Iterator<Item = PathCommand> {
                             fill_styles[fill_style_0 as usize - 1].clone(),
                         ))
                     });
-                    path.add_edge((x + delta_x, y + delta_y), PathEdge::Straight(x, y));
+                    path.add_edge((x + *delta_x, y + *delta_y), PathEdge::Straight(x, y));
                 }
 
                 if fill_style_1 != 0 {
@@ -801,7 +797,7 @@ fn get_paths(shape: &swf::Shape) -> impl Iterator<Item = PathCommand> {
                             fill_styles[fill_style_1 as usize - 1].clone(),
                         ))
                     });
-                    path.add_edge((x, y), PathEdge::Straight(x + delta_x, y + delta_y));
+                    path.add_edge((x, y), PathEdge::Straight(x + *delta_x, y + *delta_y));
                 }
 
                 if line_style != 0 {
@@ -810,11 +806,11 @@ fn get_paths(shape: &swf::Shape) -> impl Iterator<Item = PathCommand> {
                             line_styles[line_style as usize - 1].clone(),
                         ))
                     });
-                    path.add_edge((x, y), PathEdge::Straight(x + delta_x, y + delta_y));
+                    path.add_edge((x, y), PathEdge::Straight(x + *delta_x, y + *delta_y));
                 }
 
-                x += delta_x;
-                y += delta_y;
+                x += *delta_x;
+                y += *delta_y;
             }
 
             CurvedEdge {
@@ -831,10 +827,10 @@ fn get_paths(shape: &swf::Shape) -> impl Iterator<Item = PathCommand> {
                     });
                     path.add_edge(
                         (
-                            x + control_delta_x + anchor_delta_x,
-                            y + control_delta_y + anchor_delta_y,
+                            x + *control_delta_x + *anchor_delta_x,
+                            y + *control_delta_y + *anchor_delta_y,
                         ),
-                        PathEdge::Bezier(x + control_delta_x, y + control_delta_y, x, y),
+                        PathEdge::Bezier(x + *control_delta_x, y + *control_delta_y, x, y),
                     );
                 }
 
@@ -847,10 +843,10 @@ fn get_paths(shape: &swf::Shape) -> impl Iterator<Item = PathCommand> {
                     path.add_edge(
                         (x, y),
                         PathEdge::Bezier(
-                            x + control_delta_x,
-                            y + control_delta_y,
-                            x + control_delta_x + anchor_delta_x,
-                            y + control_delta_y + anchor_delta_y,
+                            x + *control_delta_x,
+                            y + *control_delta_y,
+                            x + *control_delta_x + *anchor_delta_x,
+                            y + *control_delta_y + *anchor_delta_y,
                         ),
                     );
                 }
@@ -864,16 +860,16 @@ fn get_paths(shape: &swf::Shape) -> impl Iterator<Item = PathCommand> {
                     path.add_edge(
                         (x, y),
                         PathEdge::Bezier(
-                            x + control_delta_x,
-                            y + control_delta_y,
-                            x + control_delta_x + anchor_delta_x,
-                            y + control_delta_y + anchor_delta_y,
+                            x + *control_delta_x,
+                            y + *control_delta_y,
+                            x + *control_delta_x + *anchor_delta_x,
+                            y + *control_delta_y + *anchor_delta_y,
                         ),
                     );
                 }
 
-                x += control_delta_x + anchor_delta_x;
-                y += control_delta_y + anchor_delta_y;
+                x += *control_delta_x + *anchor_delta_x;
+                y += *control_delta_y + *anchor_delta_y;
             }
         }
     }
@@ -924,7 +920,7 @@ impl PendingPaths {
         }
     }
 
-    fn add_edge(&mut self, start: (f32, f32), edge: PathEdge) {
+    fn add_edge(&mut self, start: (Twips, Twips), edge: PathEdge) {
         let new_path = Path {
             start,
             end: match edge {
@@ -943,16 +939,9 @@ impl PendingPaths {
     }
 
     fn merge_subpath(&mut self, mut path: Path) {
-        fn approx_eq(a: (f32, f32), b: (f32, f32)) -> bool {
-            let dx = a.0 - b.0;
-            let dy = a.1 - b.1;
-            const EPSILON: f32 = 0.0001;
-            dx.abs() < EPSILON && dy.abs() < EPSILON
-        }
-
         let mut path_index = None;
         for (i, other) in self.open_paths.iter_mut().enumerate() {
-            if approx_eq(path.end, other.start) {
+            if path.end == other.start {
                 other.start = path.start;
                 for edge in path.edges.iter().rev() {
                     other.edges.push_front(*edge);
@@ -961,7 +950,7 @@ impl PendingPaths {
                 break;
             }
 
-            if approx_eq(other.end, path.start) {
+            if other.end == path.start {
                 other.end = path.end;
                 other.edges.append(&mut path.edges);
 
@@ -981,14 +970,14 @@ impl PendingPaths {
 
 #[derive(Debug)]
 struct Path {
-    start: (f32, f32),
-    end: (f32, f32),
+    start: (Twips, Twips),
+    end: (Twips, Twips),
 
     edges: VecDeque<PathEdge>,
 }
 
 #[derive(Copy, Clone, Debug)]
 enum PathEdge {
-    Straight(f32, f32),
-    Bezier(f32, f32, f32, f32),
+    Straight(Twips, Twips),
+    Bezier(Twips, Twips, Twips, Twips),
 }

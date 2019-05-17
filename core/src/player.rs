@@ -45,8 +45,8 @@ impl Player {
         info!("{}x{}", swf.stage_size.x_max, swf.stage_size.y_max);
 
         let stage = DisplayObject::new(Box::new(MovieClip::new_with_data(0, swf.num_frames)));
-        let movie_width = (swf.stage_size.x_max - swf.stage_size.x_min) as u32;
-        let movie_height = (swf.stage_size.y_max - swf.stage_size.y_min) as u32;
+        let movie_width = (swf.stage_size.x_max - swf.stage_size.x_min).to_pixels() as u32;
+        let movie_height = (swf.stage_size.y_max - swf.stage_size.y_min).to_pixels() as u32;
         renderer.set_dimensions(movie_width, movie_height);
 
         let mut player = Player {

@@ -5,14 +5,21 @@ use svg::node::element::{
     path::Data, Definitions, Image, LinearGradient, Path as SvgPath, Pattern, RadialGradient, Stop,
 };
 use svg::Document;
+use swf::Twips;
 
 pub fn swf_shape_to_svg(shape: &Shape, bitmaps: &HashMap<CharacterId, (&str, u32, u32)>) -> String {
     // Some browsers will vomit if you try to load/draw an image with 0 width/height.
     // TODO(Herschel): Might be better to just return None in this case and skip
     // rendering altogether.
     let (width, height) = (
-        f32::max(shape.shape_bounds.x_max - shape.shape_bounds.x_min, 1.0),
-        f32::max(shape.shape_bounds.y_max - shape.shape_bounds.y_min, 1.0),
+        f32::max(
+            (shape.shape_bounds.x_max - shape.shape_bounds.x_min).to_pixels() as f32,
+            1.0,
+        ),
+        f32::max(
+            (shape.shape_bounds.y_max - shape.shape_bounds.y_min).to_pixels() as f32,
+            1.0,
+        ),
     );
     let mut document = Document::new()
         .set("width", width)
@@ -20,13 +27,16 @@ pub fn swf_shape_to_svg(shape: &Shape, bitmaps: &HashMap<CharacterId, (&str, u32
         .set(
             "viewBox",
             (
-                shape.shape_bounds.x_min,
-                shape.shape_bounds.y_min,
-                width,
-                height,
+                shape.shape_bounds.x_min.get(),
+                shape.shape_bounds.y_min.get(),
+                (shape.shape_bounds.x_max - shape.shape_bounds.x_min).get(),
+                (shape.shape_bounds.y_max - shape.shape_bounds.y_min).get(),
             ),
         )
         .set("xmlns:xlink", "http://www.w3.org/1999/xlink");
+
+    let width = (shape.shape_bounds.x_max - shape.shape_bounds.x_min).get() as f32;
+    let height = (shape.shape_bounds.y_max - shape.shape_bounds.y_min).get() as f32;
 
     let mut bitmap_defs = HashSet::<CharacterId>::new();
 
@@ -47,10 +57,10 @@ pub fn swf_shape_to_svg(shape: &Shape, bitmaps: &HashMap<CharacterId, (&str, u32
                 FillStyle::LinearGradient(gradient) => {
                     let matrix = Matrix::from(gradient.matrix);
                     let shift = Matrix {
-                        a: 1638.4 / width,
-                        d: 1638.4 / height,
-                        tx: -819.2,
-                        ty: -819.2,
+                        a: 32768.0 / width,
+                        d: 32768.0 / height,
+                        tx: -16384.0,
+                        ty: -16384.0,
                         ..Default::default()
                     };
                     let gradient_matrix = matrix * shift;
@@ -94,10 +104,10 @@ pub fn swf_shape_to_svg(shape: &Shape, bitmaps: &HashMap<CharacterId, (&str, u32
                 FillStyle::RadialGradient(gradient) => {
                     let matrix = Matrix::from(gradient.matrix);
                     let shift = Matrix {
-                        a: 1638.4 / width,
-                        d: 1638.4 / height,
-                        tx: -819.2,
-                        ty: -819.2,
+                        a: 32768.0 / width,
+                        d: 32768.0 / height,
+                        tx: -16384.0,
+                        ty: -16384.0,
                         ..Default::default()
                     };
                     let gradient_matrix = matrix * shift;
@@ -141,10 +151,10 @@ pub fn swf_shape_to_svg(shape: &Shape, bitmaps: &HashMap<CharacterId, (&str, u32
                 } => {
                     let matrix = Matrix::from(gradient.matrix);
                     let shift = Matrix {
-                        a: 1638.4 / width,
-                        d: 1638.4 / height,
-                        tx: -819.2,
-                        ty: -819.2,
+                        a: 32768.0 / width,
+                        d: 32768.0 / height,
+                        tx: -16384.0,
+                        ty: -16384.0,
                         ..Default::default()
                     };
                     let gradient_matrix = matrix * shift;
@@ -203,23 +213,8 @@ pub fn swf_shape_to_svg(shape: &Shape, bitmaps: &HashMap<CharacterId, (&str, u32
                         defs = defs.add(bitmap_pattern);
                         bitmap_defs.insert(id);
                     }
-                    log::info!("{:?}", matrix);
                     let a = Matrix::from(matrix);
-                    // let shift = Matrix {
-                    //     a: 1.0 / 20.0,
-                    //     a: 1.0 / 20.0,
-
-                    //     d: 1.0 / 20.0,
-                    //     tx: 0.0, //-819.2,
-                    //     ty: 0.0, //-819.2,
-                    //     ..Default::default()
-                    // };
-
                     let mut bitmap_matrix = a;
-                    bitmap_matrix.a /= 20.0;
-                    bitmap_matrix.b /= 20.0;
-                    bitmap_matrix.c /= 20.0;
-                    bitmap_matrix.d /= 20.0;
 
                     let svg_pattern = Pattern::new()
                         .set("id", format!("f{}", num_defs))
@@ -249,15 +244,15 @@ pub fn swf_shape_to_svg(shape: &Shape, bitmaps: &HashMap<CharacterId, (&str, u32
         let mut data = Data::new();
         for subpath in &path.subpaths {
             //svg_paths.push_str(&format!("M{} {}", subpath.start.0, subpath.start.1));
-            data = data.move_to(subpath.start);
+            data = data.move_to((subpath.start.0.get(), subpath.start.1.get()));
 
             for edge in &subpath.edges {
                 match edge {
                     SubpathEdge::Straight(x, y) => {
-                        data = data.line_to((*x, *y));
+                        data = data.line_to((x.get(), y.get()));
                     }
                     SubpathEdge::Bezier(cx, cy, ax, ay) => {
-                        data = data.quadratic_curve_to((*cx, *cy, *ax, *ay));
+                        data = data.quadratic_curve_to((cx.get(), cy.get(), ax.get(), ay.get()));
                     }
                 }
             }
@@ -280,7 +275,7 @@ pub fn swf_shape_to_svg(shape: &Shape, bitmaps: &HashMap<CharacterId, (&str, u32
                     line_style.color.r, line_style.color.g, line_style.color.b, line_style.color.a
                 ),
             )
-            .set("stroke-width", f32::from(line_style.width) / 20.0)
+            .set("stroke-width", line_style.width.get())
             .set(
                 "stroke-linecap",
                 match line_style.start_cap {
@@ -304,15 +299,15 @@ pub fn swf_shape_to_svg(shape: &Shape, bitmaps: &HashMap<CharacterId, (&str, u32
 
         let mut data = Data::new();
         for subpath in &stroke.subpaths {
-            data = data.move_to(subpath.start);
+            data = data.move_to((subpath.start.0.get(), subpath.start.1.get()));
 
             for edge in &subpath.edges {
                 match edge {
                     SubpathEdge::Straight(x, y) => {
-                        data = data.line_to((*x, *y));
+                        data = data.line_to((x.get(), y.get()));
                     }
                     SubpathEdge::Bezier(cx, cy, ax, ay) => {
-                        data = data.quadratic_curve_to((*cx, *cy, *ax, *ay));
+                        data = data.quadratic_curve_to((cx.get(), cy.get(), ax.get(), ay.get()));
                     }
                 }
             }
@@ -344,8 +339,8 @@ pub fn swf_shape_to_paths(shape: &Shape) -> (Vec<Path>, Vec<Path>) {
     let mut paths = HashMap::<u32, Path>::new();
     let mut stroke_paths = HashMap::<u32, Path>::new();
 
-    let mut x = 0f32;
-    let mut y = 0f32;
+    let mut x = Twips::new(0);
+    let mut y = Twips::new(0);
 
     let mut fill_style_0 = 0;
     let mut fill_style_1 = 0;
@@ -388,25 +383,25 @@ pub fn swf_shape_to_paths(shape: &Shape) -> (Vec<Path>, Vec<Path>) {
                     let path = paths.entry(fill_style_0).or_insert_with(|| {
                         Path::new(fill_styles[fill_style_0 as usize - 1].clone())
                     });
-                    path.add_edge((x + delta_x, y + delta_y), SubpathEdge::Straight(x, y));
+                    path.add_edge((x + *delta_x, y + *delta_y), SubpathEdge::Straight(x, y));
                 }
 
                 if fill_style_1 != 0 {
                     let path = paths.entry(fill_style_1).or_insert_with(|| {
                         Path::new(fill_styles[fill_style_1 as usize - 1].clone())
                     });
-                    path.add_edge((x, y), SubpathEdge::Straight(x + delta_x, y + delta_y));
+                    path.add_edge((x, y), SubpathEdge::Straight(x + *delta_x, y + *delta_y));
                 }
 
                 if line_style != 0 {
                     let path = stroke_paths.entry(line_style).or_insert_with(|| {
                         Path::new_stroke(line_styles[line_style as usize - 1].clone())
                     });
-                    path.add_edge((x, y), SubpathEdge::Straight(x + delta_x, y + delta_y));
+                    path.add_edge((x, y), SubpathEdge::Straight(x + *delta_x, y + *delta_y));
                 }
 
-                x += delta_x;
-                y += delta_y;
+                x += *delta_x;
+                y += *delta_y;
             }
 
             CurvedEdge {
@@ -421,10 +416,10 @@ pub fn swf_shape_to_paths(shape: &Shape) -> (Vec<Path>, Vec<Path>) {
                     });
                     path.add_edge(
                         (
-                            x + control_delta_x + anchor_delta_x,
-                            y + control_delta_y + anchor_delta_y,
+                            x + *control_delta_x + *anchor_delta_x,
+                            y + *control_delta_y + *anchor_delta_y,
                         ),
-                        SubpathEdge::Bezier(x + control_delta_x, y + control_delta_y, x, y),
+                        SubpathEdge::Bezier(x + *control_delta_x, y + *control_delta_y, x, y),
                     );
                 }
 
@@ -435,10 +430,10 @@ pub fn swf_shape_to_paths(shape: &Shape) -> (Vec<Path>, Vec<Path>) {
                     path.add_edge(
                         (x, y),
                         SubpathEdge::Bezier(
-                            x + control_delta_x,
-                            y + control_delta_y,
-                            x + control_delta_x + anchor_delta_x,
-                            y + control_delta_y + anchor_delta_y,
+                            x + *control_delta_x,
+                            y + *control_delta_y,
+                            x + *control_delta_x + *anchor_delta_x,
+                            y + *control_delta_y + *anchor_delta_y,
                         ),
                     );
                 }
@@ -450,16 +445,16 @@ pub fn swf_shape_to_paths(shape: &Shape) -> (Vec<Path>, Vec<Path>) {
                     path.add_edge(
                         (x, y),
                         SubpathEdge::Bezier(
-                            x + control_delta_x,
-                            y + control_delta_y,
-                            x + control_delta_x + anchor_delta_x,
-                            y + control_delta_y + anchor_delta_y,
+                            x + *control_delta_x,
+                            y + *control_delta_y,
+                            x + *control_delta_x + *anchor_delta_x,
+                            y + *control_delta_y + *anchor_delta_y,
                         ),
                     );
                 }
 
-                x += control_delta_x + anchor_delta_x;
-                y += control_delta_y + anchor_delta_y;
+                x += *control_delta_x + *anchor_delta_x;
+                y += *control_delta_y + *anchor_delta_y;
             }
         }
     }
@@ -509,7 +504,7 @@ impl Path {
         }
     }
 
-    fn add_edge(&mut self, start: (f32, f32), edge: SubpathEdge) {
+    fn add_edge(&mut self, start: (Twips, Twips), edge: SubpathEdge) {
         let new_subpath = Subpath {
             start,
             end: match edge {
@@ -528,16 +523,9 @@ impl Path {
     }
 
     fn merge_subpath(&mut self, mut subpath: Subpath) {
-        fn approx_eq(a: (f32, f32), b: (f32, f32)) -> bool {
-            let dx = a.0 - b.0;
-            let dy = a.1 - b.1;
-            const EPSILON: f32 = 0.0001;
-            dx.abs() < EPSILON && dy.abs() < EPSILON
-        }
-
         let mut subpath_index = None;
         for (i, other) in self.subpaths.iter_mut().enumerate() {
-            if approx_eq(subpath.end, other.start) {
+            if subpath.end == other.start {
                 other.start = subpath.start;
                 for edge in subpath.edges.iter().rev() {
                     other.edges.push_front(*edge);
@@ -546,7 +534,7 @@ impl Path {
                 break;
             }
 
-            if approx_eq(other.end, subpath.start) {
+            if other.end == subpath.start {
                 other.end = subpath.end;
                 other.edges.append(&mut subpath.edges);
 
@@ -565,14 +553,14 @@ impl Path {
 }
 
 struct Subpath {
-    start: (f32, f32),
-    end: (f32, f32),
+    start: (Twips, Twips),
+    end: (Twips, Twips),
 
     edges: VecDeque<SubpathEdge>,
 }
 
 #[derive(Copy, Clone)]
 enum SubpathEdge {
-    Straight(f32, f32),
-    Bezier(f32, f32, f32, f32),
+    Straight(Twips, Twips),
+    Bezier(Twips, Twips, Twips, Twips),
 }
