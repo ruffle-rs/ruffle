@@ -256,10 +256,10 @@ impl<R: Read> Reader<R> {
         self.byte_align();
         let num_bits = self.read_ubits(5)? as usize;
         Ok(Rectangle {
-            x_min: self.read_sbits(num_bits)? as f32 / 20f32,
-            x_max: self.read_sbits(num_bits)? as f32 / 20f32,
-            y_min: self.read_sbits(num_bits)? as f32 / 20f32,
-            y_max: self.read_sbits(num_bits)? as f32 / 20f32,
+            x_min: self.read_sbits_twips(num_bits)?,
+            x_max: self.read_sbits_twips(num_bits)?,
+            y_min: self.read_sbits_twips(num_bits)?,
+            y_max: self.read_sbits_twips(num_bits)?,
         })
     }
 
@@ -293,6 +293,10 @@ impl<R: Read> Reader<R> {
         } else {
             Ok(0)
         }
+    }
+
+    fn read_sbits_twips(&mut self, num_bits: usize) -> Result<Twips> {
+        self.read_sbits(num_bits).map(Twips::new)
     }
 
     fn read_fbits(&mut self, num_bits: usize) -> Result<f32> {
@@ -405,8 +409,8 @@ impl<R: Read> Reader<R> {
         }
         // Translate (always present)
         let num_bits = self.read_ubits(5)? as usize;
-        m.translate_x = self.read_sbits(num_bits)? as f32 / 20f32;
-        m.translate_y = self.read_sbits(num_bits)? as f32 / 20f32;
+        m.translate_x = self.read_sbits_twips(num_bits)?;
+        m.translate_y = self.read_sbits_twips(num_bits)?;
         Ok(m)
     }
 
@@ -1155,7 +1159,7 @@ impl<R: Read> Reader<R> {
             } else {
                 u16::from(self.read_u8()?)
             },
-            adjustment: self.read_i16()?, // TODO(Herschel): Twips
+            adjustment: Twips::new(self.read_i16()?),
         })
     }
 
@@ -1336,8 +1340,8 @@ impl<R: Read> Reader<R> {
 
     fn read_morph_line_style(&mut self, shape_version: u8) -> Result<(LineStyle, LineStyle)> {
         if shape_version < 2 {
-            let start_width = self.read_u16()?;
-            let end_width = self.read_u16()?;
+            let start_width = Twips::new(self.read_u16()?);
+            let end_width = Twips::new(self.read_u16()?);
             let start_color = self.read_rgba()?;
             let end_color = self.read_rgba()?;
 
@@ -1347,8 +1351,8 @@ impl<R: Read> Reader<R> {
             ))
         } else {
             // MorphLineStyle2 in DefineMorphShape2.
-            let start_width = self.read_u16()?;
-            let end_width = self.read_u16()?;
+            let start_width = Twips::new(self.read_u16()?);
+            let end_width = Twips::new(self.read_u16()?);
             let start_cap = match self.read_ubits(2)? {
                 0 => LineCapStyle::Round,
                 1 => LineCapStyle::None,
@@ -1672,7 +1676,7 @@ impl<R: Read> Reader<R> {
         if shape_version < 4 {
             // LineStyle1
             Ok(LineStyle::new_v1(
-                self.read_u16()?, // TODO: Twips
+                Twips::new(self.read_u16()?),
                 if shape_version >= 3 {
                     self.read_rgba()?
                 } else {
@@ -1681,7 +1685,7 @@ impl<R: Read> Reader<R> {
             ))
         } else {
             // LineStyle2 in DefineShape4
-            let width = self.read_u16()?;
+            let width = Twips::new(self.read_u16()?);
             let start_cap = match self.read_ubits(2)? {
                 0 => LineCapStyle::Round,
                 1 => LineCapStyle::None,
@@ -1782,7 +1786,6 @@ impl<R: Read> Reader<R> {
     }
 
     fn read_shape_record(&mut self, shape_version: u8) -> Result<Option<ShapeRecord>> {
-        // TODO: Twips
         let is_edge_record = self.read_bit()?;
         let shape_record = if is_edge_record {
             let is_straight_edge = self.read_bit()?;
@@ -1792,27 +1795,24 @@ impl<R: Read> Reader<R> {
                 let is_axis_aligned = !self.read_bit()?;
                 let is_vertical = is_axis_aligned && self.read_bit()?;
                 let delta_x = if !is_axis_aligned || !is_vertical {
-                    self.read_sbits(num_bits)?
+                    self.read_sbits_twips(num_bits)?
                 } else {
-                    0
+                    Default::default()
                 };
                 let delta_y = if !is_axis_aligned || is_vertical {
-                    self.read_sbits(num_bits)?
+                    self.read_sbits_twips(num_bits)?
                 } else {
-                    0
+                    Default::default()
                 };
-                Some(ShapeRecord::StraightEdge {
-                    delta_x: (delta_x as f32) / 20f32,
-                    delta_y: (delta_y as f32) / 20f32,
-                })
+                Some(ShapeRecord::StraightEdge { delta_x, delta_y })
             } else {
                 // CurvedEdge
                 let num_bits = self.read_ubits(4)? as usize + 2;
                 Some(ShapeRecord::CurvedEdge {
-                    control_delta_x: (self.read_sbits(num_bits)? as f32) / 20f32,
-                    control_delta_y: (self.read_sbits(num_bits)? as f32) / 20f32,
-                    anchor_delta_x: (self.read_sbits(num_bits)? as f32) / 20f32,
-                    anchor_delta_y: (self.read_sbits(num_bits)? as f32) / 20f32,
+                    control_delta_x: self.read_sbits_twips(num_bits)?,
+                    control_delta_y: self.read_sbits_twips(num_bits)?,
+                    anchor_delta_x: self.read_sbits_twips(num_bits)?,
+                    anchor_delta_y: self.read_sbits_twips(num_bits)?,
                 })
             }
         } else {
@@ -1832,8 +1832,8 @@ impl<R: Read> Reader<R> {
                     // move
                     let num_bits = self.read_ubits(5)? as usize;
                     new_style.move_to = Some((
-                        (self.read_sbits(num_bits)? as f32) / 20f32,
-                        (self.read_sbits(num_bits)? as f32) / 20f32,
+                        self.read_sbits_twips(num_bits)?,
+                        self.read_sbits_twips(num_bits)?,
                     ));
                 }
                 if (flags & 0b10) != 0 {
@@ -2374,12 +2374,12 @@ impl<R: Read> Reader<R> {
             None
         };
         let x_offset = if flags & 0b1 != 0 {
-            Some(f32::from(self.read_i16()?) / 20.0)
+            Some(Twips::new(self.read_i16()?))
         } else {
             None
         };
         let y_offset = if flags & 0b10 != 0 {
-            Some(f32::from(self.read_i16()?) / 20.0)
+            Some(Twips::new(self.read_i16()?))
         } else {
             None
         };
@@ -2452,10 +2452,10 @@ impl<R: Read> Reader<R> {
                         ))
                     }
                 },
-                left_margin: f32::from(self.read_u16()?) / 20.0,
-                right_margin: f32::from(self.read_u16()?) / 20.0,
-                indent: f32::from(self.read_u16()?) / 20.0,
-                leading: f32::from(self.read_i16()?) / 20.0,
+                left_margin: Twips::new(self.read_u16()?),
+                right_margin: Twips::new(self.read_u16()?),
+                indent: Twips::new(self.read_u16()?),
+                leading: Twips::new(self.read_i16()?),
             })
         } else {
             None
@@ -2816,15 +2816,7 @@ pub mod tests {
         let buf = [0b00000_000];
         let mut reader = Reader::new(&buf[..], 1);
         let rectangle = reader.read_rectangle().unwrap();
-        assert_eq!(
-            rectangle,
-            Rectangle {
-                x_min: 0f32,
-                x_max: 0f32,
-                y_min: 0f32,
-                y_max: 0f32,
-            }
-        );
+        assert_eq!(rectangle, Default::default());
     }
 
     #[test]
@@ -2835,10 +2827,10 @@ pub mod tests {
         assert_eq!(
             rectangle,
             Rectangle {
-                x_min: -1f32,
-                x_max: 1f32,
-                y_min: -1f32,
-                y_max: 1f32,
+                x_min: Twips::from_pixels(-1.0),
+                y_min: Twips::from_pixels(-1.0),
+                x_max: Twips::from_pixels(1.0),
+                y_max: Twips::from_pixels(1.0),
             }
         );
     }
@@ -2852,8 +2844,8 @@ pub mod tests {
             assert_eq!(
                 matrix,
                 Matrix {
-                    translate_x: 0f32,
-                    translate_y: 0f32,
+                    translate_x: Twips::from_pixels(0.0),
+                    translate_y: Twips::from_pixels(0.0),
                     scale_x: 1f32,
                     scale_y: 1f32,
                     rotate_skew_0: 0f32,
@@ -2950,7 +2942,7 @@ pub mod tests {
         );
 
         let mut matrix = Matrix::new();
-        matrix.translate_x = 1f32;
+        matrix.translate_x = Twips::from_pixels(1.0);
         let fill_style = FillStyle::Bitmap {
             id: 33,
             matrix,
@@ -2967,7 +2959,7 @@ pub mod tests {
     fn read_line_style() {
         // DefineShape1 and 2 read RGB colors.
         let line_style = LineStyle::new_v1(
-            0,
+            Twips::from_pixels(0.0),
             Color {
                 r: 255,
                 g: 0,
@@ -2997,8 +2989,8 @@ pub mod tests {
         let read = |buf: &[u8]| reader(buf).read_shape_record(2).unwrap().unwrap();
 
         let shape_record = ShapeRecord::StraightEdge {
-            delta_x: 1f32,
-            delta_y: 1f32,
+            delta_x: Twips::from_pixels(1.0),
+            delta_y: Twips::from_pixels(1.0),
         };
         assert_eq!(
             read(&[0b11_0100_1_0, 0b1010_0010, 0b100_00000]),
@@ -3006,14 +2998,14 @@ pub mod tests {
         );
 
         let shape_record = ShapeRecord::StraightEdge {
-            delta_x: 0f32,
-            delta_y: -1f32,
+            delta_x: Twips::from_pixels(0.0),
+            delta_y: Twips::from_pixels(-1.0),
         };
         assert_eq!(read(&[0b11_0100_0_1, 0b101100_00]), shape_record);
 
         let shape_record = ShapeRecord::StraightEdge {
-            delta_x: -1.5f32,
-            delta_y: 0f32,
+            delta_x: Twips::from_pixels(-1.5),
+            delta_y: Twips::from_pixels(0.0),
         };
         assert_eq!(read(&[0b11_0100_0_0, 0b100010_00]), shape_record);
     }

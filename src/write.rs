@@ -1,4 +1,9 @@
-#![allow(clippy::cyclomatic_complexity, clippy::float_cmp, clippy::inconsistent_digit_grouping, clippy::unreadable_literal)]
+#![allow(
+    clippy::cyclomatic_complexity,
+    clippy::float_cmp,
+    clippy::inconsistent_digit_grouping,
+    clippy::unreadable_literal
+)]
 
 use crate::tag_codes::TagCode;
 use crate::types::*;
@@ -263,6 +268,10 @@ impl<W: Write> Writer<W> {
         self.write_ubits(num_bits, n as u32)
     }
 
+    fn write_sbits_twips(&mut self, num_bits: u8, twips: Twips) -> Result<()> {
+        self.write_sbits(num_bits, twips.get())
+    }
+
     fn write_fbits(&mut self, num_bits: u8, n: f32) -> Result<()> {
         self.write_ubits(num_bits, (n * 65536f32) as u32)
     }
@@ -291,14 +300,14 @@ impl<W: Write> Writer<W> {
             rectangle.y_max,
         ]
         .iter()
-        .map(|x| count_sbits((*x * 20f32) as i32))
+        .map(|x| count_sbits_twips(*x))
         .max()
         .unwrap();
         self.write_ubits(5, num_bits.into())?;
-        self.write_sbits(num_bits, (rectangle.x_min * 20f32) as i32)?;
-        self.write_sbits(num_bits, (rectangle.x_max * 20f32) as i32)?;
-        self.write_sbits(num_bits, (rectangle.y_min * 20f32) as i32)?;
-        self.write_sbits(num_bits, (rectangle.y_max * 20f32) as i32)?;
+        self.write_sbits_twips(num_bits, rectangle.x_min)?;
+        self.write_sbits_twips(num_bits, rectangle.x_max)?;
+        self.write_sbits_twips(num_bits, rectangle.y_min)?;
+        self.write_sbits_twips(num_bits, rectangle.y_max)?;
         Ok(())
     }
 
@@ -453,15 +462,13 @@ impl<W: Write> Writer<W> {
             self.write_fbits(num_bits, m.rotate_skew_1)?;
         }
         // Translate (always written)
-        let translate_x_twips = (m.translate_x * 20f32) as i32;
-        let translate_y_twips = (m.translate_y * 20f32) as i32;
         let num_bits = max(
-            count_sbits(translate_x_twips),
-            count_sbits(translate_y_twips),
+            count_sbits_twips(m.translate_x),
+            count_sbits_twips(m.translate_y),
         );
         self.write_ubits(5, num_bits.into())?;
-        self.write_sbits(num_bits, translate_x_twips)?;
-        self.write_sbits(num_bits, translate_y_twips)?;
+        self.write_sbits_twips(num_bits, m.translate_x)?;
+        self.write_sbits_twips(num_bits, m.translate_y)?;
         Ok(())
     }
 
@@ -1377,8 +1384,9 @@ impl<W: Write> Writer<W> {
         shape_version: u8,
     ) -> Result<()> {
         if shape_version < 2 {
-            self.write_u16(start.width)?;
-            self.write_u16(end.width)?;
+            // TODO(Herschel): Handle overflow.
+            self.write_u16(start.width.get() as u16)?;
+            self.write_u16(end.width.get() as u16)?;
             self.write_rgba(&start.color)?;
             self.write_rgba(&end.color)?;
         } else {
@@ -1396,8 +1404,9 @@ impl<W: Write> Writer<W> {
                 ));
             }
 
-            self.write_u16(start.width)?;
-            self.write_u16(end.width)?;
+            // TODO(Herschel): Handle overflow.
+            self.write_u16(start.width.get() as u16)?;
+            self.write_u16(end.width.get() as u16)?;
 
             // MorphLineStyle2
             self.write_ubits(
@@ -1649,22 +1658,20 @@ impl<W: Write> Writer<W> {
         match *record {
             ShapeRecord::StraightEdge { delta_x, delta_y } => {
                 self.write_ubits(2, 0b11)?; // Straight edge
-                let delta_x_twips = (delta_x * 20f32) as i32;
-                let delta_y_twips = (delta_y * 20f32) as i32;
-                // TODO: Check underflow?
-                let mut num_bits = max(count_sbits(delta_x_twips), count_sbits(delta_y_twips));
+                                            // TODO: Check underflow?
+                let mut num_bits = max(count_sbits_twips(delta_x), count_sbits_twips(delta_y));
                 num_bits = max(2, num_bits);
-                let is_axis_aligned = delta_x_twips == 0 || delta_y_twips == 0;
+                let is_axis_aligned = delta_x.get() == 0 || delta_y.get() == 0;
                 self.write_ubits(4, u32::from(num_bits) - 2)?;
                 self.write_bit(!is_axis_aligned)?;
                 if is_axis_aligned {
-                    self.write_bit(delta_x_twips == 0)?;
+                    self.write_bit(delta_x.get() == 0)?;
                 }
-                if delta_x_twips != 0 {
-                    self.write_sbits(num_bits, delta_x_twips)?;
+                if delta_x.get() != 0 {
+                    self.write_sbits_twips(num_bits, delta_x)?;
                 }
-                if delta_y_twips != 0 {
-                    self.write_sbits(num_bits, delta_y_twips)?;
+                if delta_y.get() != 0 {
+                    self.write_sbits_twips(num_bits, delta_y)?;
                 }
             }
             ShapeRecord::CurvedEdge {
@@ -1674,25 +1681,21 @@ impl<W: Write> Writer<W> {
                 anchor_delta_y,
             } => {
                 self.write_ubits(2, 0b10)?; // Curved edge
-                let control_twips_x = (control_delta_x * 20f32) as i32;
-                let control_twips_y = (control_delta_y * 20f32) as i32;
-                let anchor_twips_x = (anchor_delta_x * 20f32) as i32;
-                let anchor_twips_y = (anchor_delta_y * 20f32) as i32;
                 let num_bits = [
-                    control_twips_x,
-                    control_twips_y,
-                    anchor_twips_x,
-                    anchor_twips_y,
+                    control_delta_x,
+                    control_delta_y,
+                    anchor_delta_x,
+                    anchor_delta_y,
                 ]
                 .iter()
-                .map(|x| count_sbits(*x))
+                .map(|x| count_sbits_twips(*x))
                 .max()
                 .unwrap();
                 self.write_ubits(4, u32::from(num_bits) - 2)?;
-                self.write_sbits(num_bits, control_twips_x)?;
-                self.write_sbits(num_bits, control_twips_y)?;
-                self.write_sbits(num_bits, anchor_twips_x)?;
-                self.write_sbits(num_bits, anchor_twips_y)?;
+                self.write_sbits_twips(num_bits, control_delta_x)?;
+                self.write_sbits_twips(num_bits, control_delta_y)?;
+                self.write_sbits_twips(num_bits, anchor_delta_x)?;
+                self.write_sbits_twips(num_bits, anchor_delta_y)?;
             }
             ShapeRecord::StyleChange(ref style_change) => {
                 self.write_bit(false)?; // Style change
@@ -1704,12 +1707,10 @@ impl<W: Write> Writer<W> {
                 self.write_bit(style_change.fill_style_0.is_some())?;
                 self.write_bit(style_change.move_to.is_some())?;
                 if let Some((move_x, move_y)) = style_change.move_to {
-                    let move_twips_x = (move_x * 20f32) as i32;
-                    let move_twips_y = (move_y * 20f32) as i32;
-                    let num_bits = max(count_sbits(move_twips_x), count_sbits(move_twips_y));
+                    let num_bits = max(count_sbits_twips(move_x), count_sbits_twips(move_y));
                     self.write_ubits(5, num_bits.into())?;
-                    self.write_sbits(num_bits, move_twips_x)?;
-                    self.write_sbits(num_bits, move_twips_y)?;
+                    self.write_sbits_twips(num_bits, move_x)?;
+                    self.write_sbits_twips(num_bits, move_y)?;
                 }
                 if let Some(fill_style_index) = style_change.fill_style_0 {
                     self.write_ubits(num_fill_bits, fill_style_index)?;
@@ -1793,7 +1794,8 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_line_style(&mut self, line_style: &LineStyle, shape_version: u8) -> Result<()> {
-        self.write_u16(line_style.width)?;
+        // TODO(Herschel): Handle overflow.
+        self.write_u16(line_style.width.get() as u16)?;
         if shape_version >= 4 {
             // LineStyle2
             self.write_ubits(
@@ -2471,7 +2473,7 @@ impl<W: Write> Writer<W> {
             self.write_u8(kerning.left_code as u8)?;
             self.write_u8(kerning.right_code as u8)?;
         }
-        self.write_i16(kerning.adjustment)?;
+        self.write_i16(kerning.adjustment.get() as i16)?; // TODO(Herschel): Handle overflow
         Ok(())
     }
 
@@ -2511,10 +2513,10 @@ impl<W: Write> Writer<W> {
                     writer.write_rgb(color)?;
                 }
                 if let Some(x) = record.x_offset {
-                    writer.write_i16((x * 20.0) as i16)?;
+                    writer.write_i16(x.get() as i16)?; // TODO(Herschel): Handle overflow.
                 }
                 if let Some(y) = record.y_offset {
-                    writer.write_i16((y * 20.0) as i16)?;
+                    writer.write_i16(y.get() as i16)?;
                 }
                 if let Some(height) = record.height {
                     writer.write_u16(height)?;
@@ -2601,10 +2603,10 @@ impl<W: Write> Writer<W> {
                     TextAlign::Center => 2,
                     TextAlign::Justify => 3,
                 })?;
-                writer.write_u16((layout.left_margin * 20.0) as u16)?;
-                writer.write_u16((layout.right_margin * 20.0) as u16)?;
-                writer.write_u16((layout.indent * 20.0) as u16)?;
-                writer.write_i16((layout.leading * 20.0) as i16)?;
+                writer.write_u16(layout.left_margin.get() as u16)?; // TODO: Handle overflow
+                writer.write_u16(layout.right_margin.get() as u16)?;
+                writer.write_u16(layout.indent.get() as u16)?;
+                writer.write_i16(layout.leading.get() as i16)?;
             }
 
             writer.write_c_string(&edit_text.variable_name)?;
@@ -2691,6 +2693,19 @@ fn count_sbits(n: i32) -> u8 {
     }
 }
 
+fn count_sbits_twips(n: Twips) -> u8 {
+    let n = n.get();
+    if n == 0 {
+        0
+    } else if n == -1 {
+        1
+    } else if n < 0 {
+        count_ubits((!n) as u32) + 1
+    } else {
+        count_ubits(n as u32) + 1
+    }
+}
+
 fn count_fbits(n: f32) -> u8 {
     count_sbits((n * 65536f32) as i32)
 }
@@ -2707,10 +2722,10 @@ mod tests {
             version: 13,
             compression: Compression::Zlib,
             stage_size: Rectangle {
-                x_min: 0f32,
-                x_max: 640f32,
-                y_min: 0f32,
-                y_max: 480f32,
+                x_min: Twips::from_pixels(0.0),
+                x_max: Twips::from_pixels(640.0),
+                y_min: Twips::from_pixels(0.0),
+                y_max: Twips::from_pixels(480.0),
             },
             frame_rate: 60.0,
             num_frames: 1,
@@ -2906,12 +2921,7 @@ mod tests {
 
     #[test]
     fn write_rectangle_zero() {
-        let rect = Rectangle {
-            x_min: 0f32,
-            x_max: 0f32,
-            y_min: 0f32,
-            y_max: 0f32,
-        };
+        let rect: Rectangle = Default::default();
         let mut buf = Vec::new();
         {
             let mut writer = Writer::new(&mut buf, 1);
@@ -2924,10 +2934,10 @@ mod tests {
     #[test]
     fn write_rectangle_signed() {
         let rect = Rectangle {
-            x_min: -1f32,
-            x_max: 1f32,
-            y_min: -1f32,
-            y_max: 1f32,
+            x_min: Twips::from_pixels(-1.0),
+            x_max: Twips::from_pixels(1.0),
+            y_min: Twips::from_pixels(-1.0),
+            y_max: Twips::from_pixels(1.0),
         };
         let mut buf = Vec::new();
         {

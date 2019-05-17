@@ -18,12 +18,93 @@ pub enum Compression {
     Lzma,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Default, PartialOrd, Ord)]
+pub struct Twips(i32);
+
+impl Twips {
+    pub const TWIPS_PER_PIXEL: f64 = 20.0;
+
+    pub fn new<T: Into<i32>>(twips: T) -> Self {
+        Self(twips.into())
+    }
+
+    pub fn get(self) -> i32 {
+        self.0
+    }
+
+    pub fn from_pixels(pixels: f64) -> Self {
+        Self((pixels * Self::TWIPS_PER_PIXEL) as i32)
+    }
+
+    pub fn to_pixels(self) -> f64 {
+        f64::from(self.0) / Self::TWIPS_PER_PIXEL
+    }
+}
+
+impl std::ops::Add for Twips {
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
+        Self(self.0 + other.0)
+    }
+}
+
+impl std::ops::AddAssign for Twips {
+    fn add_assign(&mut self, other: Self) {
+        self.0 += other.0
+    }
+}
+
+impl std::ops::Sub for Twips {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self {
+        Self(self.0 - other.0)
+    }
+}
+
+impl std::ops::SubAssign for Twips {
+    fn sub_assign(&mut self, other: Self) {
+        self.0 -= other.0
+    }
+}
+
+impl std::ops::Mul<i32> for Twips {
+    type Output = Self;
+    fn mul(self, other: i32) -> Self {
+        Self(self.0 * other)
+    }
+}
+
+impl std::ops::MulAssign<i32> for Twips {
+    fn mul_assign(&mut self, other: i32) {
+        self.0 *= other
+    }
+}
+
+impl std::ops::Div<i32> for Twips {
+    type Output = Self;
+    fn div(self, other: i32) -> Self {
+        Self(self.0 / other)
+    }
+}
+
+impl std::ops::DivAssign<i32> for Twips {
+    fn div_assign(&mut self, other: i32) {
+        self.0 /= other
+    }
+}
+
+impl std::fmt::Display for Twips {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.to_pixels())
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Default)]
 pub struct Rectangle {
-    pub x_min: f32,
-    pub x_max: f32,
-    pub y_min: f32,
-    pub y_max: f32,
+    pub x_min: Twips,
+    pub x_max: Twips,
+    pub y_min: Twips,
+    pub y_max: Twips,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -69,8 +150,8 @@ impl Default for ColorTransform {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Matrix {
-    pub translate_x: f32,
-    pub translate_y: f32,
+    pub translate_x: Twips,
+    pub translate_y: Twips,
     pub scale_x: f32,
     pub scale_y: f32,
     pub rotate_skew_0: f32,
@@ -80,8 +161,8 @@ pub struct Matrix {
 impl Matrix {
     pub fn new() -> Matrix {
         Matrix {
-            translate_x: 0f32,
-            translate_y: 0f32,
+            translate_x: Default::default(),
+            translate_y: Default::default(),
             scale_x: 1f32,
             scale_y: 1f32,
             rotate_skew_0: 0f32,
@@ -123,7 +204,6 @@ pub struct FrameLabel {
 
 pub type Depth = i16;
 pub type CharacterId = u16;
-pub type Twips = i32;
 
 #[derive(Debug, PartialEq)]
 pub struct PlaceObject {
@@ -492,23 +572,22 @@ pub struct ShapeStyles {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ShapeRecord {
-    // TODO: Twips
     StyleChange(StyleChangeData),
     StraightEdge {
-        delta_x: f32,
-        delta_y: f32,
+        delta_x: Twips,
+        delta_y: Twips,
     },
     CurvedEdge {
-        control_delta_x: f32,
-        control_delta_y: f32,
-        anchor_delta_x: f32,
-        anchor_delta_y: f32,
+        control_delta_x: Twips,
+        control_delta_y: Twips,
+        anchor_delta_x: Twips,
+        anchor_delta_y: Twips,
     },
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct StyleChangeData {
-    pub move_to: Option<(f32, f32)>,
+    pub move_to: Option<(Twips, Twips)>,
     pub fill_style_0: Option<u32>,
     pub fill_style_1: Option<u32>,
     pub line_style: Option<u32>,
@@ -561,7 +640,7 @@ pub struct GradientRecord {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct LineStyle {
-    pub width: u16, // Twips
+    pub width: Twips,
     pub color: Color,
     pub start_cap: LineCapStyle,
     pub end_cap: LineCapStyle,
@@ -574,7 +653,7 @@ pub struct LineStyle {
 }
 
 impl LineStyle {
-    pub fn new_v1(width: u16, color: Color) -> LineStyle {
+    pub fn new_v1(width: Twips, color: Color) -> LineStyle {
         LineStyle {
             width,
             color,
@@ -760,7 +839,7 @@ pub struct FontLayout {
 pub struct KerningRecord {
     pub left_code: u16,
     pub right_code: u16,
-    pub adjustment: i16,
+    pub adjustment: Twips,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -789,8 +868,8 @@ pub struct Text {
 pub struct TextRecord {
     pub font_id: Option<CharacterId>,
     pub color: Option<Color>,
-    pub x_offset: Option<f32>, // TODO(Herschel): twips
-    pub y_offset: Option<f32>,
+    pub x_offset: Option<Twips>,
+    pub y_offset: Option<Twips>,
     pub height: Option<u16>,
     pub glyphs: Vec<GlyphEntry>,
 }
@@ -828,10 +907,10 @@ pub struct EditText {
 #[derive(Clone, Debug, PartialEq)]
 pub struct TextLayout {
     pub align: TextAlign,
-    pub left_margin: f32, // TODO(Herschel): twips
-    pub right_margin: f32,
-    pub indent: f32,
-    pub leading: f32,
+    pub left_margin: Twips,
+    pub right_margin: Twips,
+    pub indent: Twips,
+    pub leading: Twips,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
