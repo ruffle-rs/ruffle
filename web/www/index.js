@@ -52,22 +52,11 @@ let animationHandler;
 function playSwf(swfData) {
     if (player) {
         player.destroy();
-        window.cancelAnimationFrame(animationHandler);
         player = null;
-        animationHandler = null;
     }
 
     let canvas = document.getElementById("player");
     if (swfData && canvas) {
         player = Player.new(canvas, new Uint8Array(swfData));
-        timestamp = performance.now();
-        animationHandler = window.requestAnimationFrame(tickPlayer);
     }
-}
-
-function tickPlayer(newTimestamp) {
-    let dt = newTimestamp - timestamp;
-    player.tick(dt);
-    timestamp = newTimestamp;
-    window.requestAnimationFrame(tickPlayer);
 }
