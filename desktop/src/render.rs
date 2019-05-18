@@ -107,13 +107,16 @@ impl GliumRenderBackend {
             };
 
             let mut buffers_builder = BuffersBuilder::new(&mut lyon_mesh, vertex_ctor);
-            fill_tess
-                .tessellate_path(
-                    path.into_iter(),
-                    &FillOptions::even_odd(),
-                    &mut buffers_builder,
-                )
-                .expect("Tessellation error");
+
+            if let Err(e) = fill_tess.tessellate_path(
+                path.into_iter(),
+                &FillOptions::even_odd(),
+                &mut buffers_builder,
+            ) {
+                log::error!("Tessellation failure: {:?}", e);
+                self.meshes.push(mesh);
+                return handle;
+            }
 
             let vert_offset = vertices.len() as u32;
             vertices.extend(lyon_mesh.vertices.iter());
@@ -145,10 +148,10 @@ impl GliumRenderBackend {
             let mut e = m.scale_x / det;
             let mut f = (tx * m.rotate_skew_0 - m.scale_x * ty) / det;
 
-            a *= 1.0 / 32768.0;
-            b *= 1.0 / 32768.0;
-            d *= 1.0 / 32768.0;
-            e *= 1.0 / 32768.0;
+            a *= 20.0 / 32768.0;
+            b *= 20.0 / 32768.0;
+            d *= 20.0 / 32768.0;
+            e *= 20.0 / 32768.0;
 
             c /= 32768.0;
             f /= 32768.0;
@@ -273,13 +276,15 @@ impl GliumRenderBackend {
             };
 
             let mut buffers_builder = BuffersBuilder::new(&mut lyon_mesh, vertex_ctor);
-            fill_tess
-                .tessellate_path(
-                    path.into_iter(),
-                    &FillOptions::even_odd(),
-                    &mut buffers_builder,
-                )
-                .expect("Tessellation error");
+            if let Err(e) = fill_tess.tessellate_path(
+                path.into_iter(),
+                &FillOptions::even_odd(),
+                &mut buffers_builder,
+            ) {
+                log::error!("Tessellation failure: {:?}", e);
+                self.meshes.push(mesh);
+                return handle;
+            }
 
             let vertex_buffer =
                 glium::VertexBuffer::new(&self.display, &lyon_mesh.vertices[..]).unwrap();
@@ -402,13 +407,8 @@ impl RenderBackend for GliumRenderBackend {
         let mesh = &self.meshes[shape.0];
 
         let view_matrix = [
-            [1.0 / (20.0 * self.movie_width as f32 / 2.0), 0.0, 0.0, 0.0],
-            [
-                0.0,
-                -1.0 / (20.0 * self.movie_height as f32 / 2.0),
-                0.0,
-                0.0,
-            ],
+            [1.0 / (self.movie_width as f32 / 2.0), 0.0, 0.0, 0.0],
+            [0.0, -1.0 / (self.movie_height as f32 / 2.0), 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0],
             [-1.0, 1.0, 0.0, 1.0],
         ];
@@ -417,7 +417,12 @@ impl RenderBackend for GliumRenderBackend {
             [transform.matrix.a, transform.matrix.b, 0.0, 0.0],
             [transform.matrix.c, transform.matrix.d, 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0],
-            [transform.matrix.tx, transform.matrix.ty, 0.0, 1.0],
+            [
+                transform.matrix.tx / 20.0,
+                transform.matrix.ty / 20.0,
+                0.0,
+                1.0,
+            ],
         ];
 
         let mult_color = [
@@ -669,7 +674,7 @@ enum DrawType {
 }
 
 fn point(x: Twips, y: Twips) -> lyon::math::Point {
-    lyon::math::Point::new(x.get() as f32, y.get() as f32)
+    lyon::math::Point::new(x.to_pixels() as f32, y.to_pixels() as f32)
 }
 
 fn swf_shape_to_lyon_paths(
@@ -875,6 +880,9 @@ fn get_paths(shape: &swf::Shape) -> impl Iterator<Item = PathCommand> {
     }
 
     for (id, paths) in paths {
+        if paths.open_paths.is_empty() {
+            continue;
+        }
         let mut out_paths = vec![];
         for path in paths.open_paths {
             out_paths.push(path)
@@ -885,6 +893,9 @@ fn get_paths(shape: &swf::Shape) -> impl Iterator<Item = PathCommand> {
         })
     }
     for (id, paths) in strokes {
+        if paths.open_paths.is_empty() {
+            continue;
+        }
         for path in paths.open_paths {
             out.push(PathCommand {
                 command_type: paths.command_type.clone(),
