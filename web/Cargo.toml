@@ -24,11 +24,11 @@ log = "0.4"
 png = "0.14.1"
 svg = "0.5.12"
 url = "1.7.2"
-wasm-bindgen = "0.2"
+wasm-bindgen = "0.2.44"
 
 [dependencies.web-sys]
 version = "0.3.19"
 features = ["AudioBuffer", "AudioBufferSourceNode", "AudioContext", "AudioDestinationNode", "AudioNode", "CanvasRenderingContext2d", "CssStyleDeclaration", "Document", "Element", "HtmlCanvasElement", "HtmlElement", "HtmlImageElement", "Node", "Performance", "Window"]
 
 [dev-dependencies]
-wasm-bindgen-test = "0.2"
+wasm-bindgen-test = "0.2.44"
