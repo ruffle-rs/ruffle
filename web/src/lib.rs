@@ -1,45 +1,51 @@
+//! Ruffle web frontend.
 mod audio;
 mod render;
-mod shape_utils;
 
 use crate::{audio::WebAudioBackend, render::WebCanvasRenderBackend};
 use generational_arena::{Arena, Index};
 use js_sys::Uint8Array;
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
-use wasm_bindgen::{prelude::*, JsCast, JsValue};
+use wasm_bindgen::{prelude::*, JsValue};
 use web_sys::HtmlCanvasElement;
 
 thread_local! {
-    static PLAYERS: RefCell<Arena<PlayerInstance>> = RefCell::new(Arena::new());
+    /// We store the actual instances of the ruffle core in a static pool.
+    /// This gives us a clear boundary between the JS side and Rust side, avoiding
+    /// issues with lifetimes and type paramters (which cannot be exported with wasm-bindgen).
+    static INSTANCES: RefCell<Arena<RuffleInstance>> = RefCell::new(Arena::new());
 }
 
 type AnimationHandler = Closure<FnMut(f64)>;
 
-struct PlayerInstance {
+struct RuffleInstance {
     core: ruffle_core::Player,
     timestamp: f64,
     animation_handler: Option<AnimationHandler>, // requestAnimationFrame callback
     animation_handler_id: Option<NonZeroI32>,    // requestAnimationFrame id
 }
 
+/// An opaque handle to a `RuffleInstance` inside the pool.
+///
+/// This type is exported to JS, and is used to interact with the library.
 #[wasm_bindgen]
 #[derive(Clone)]
-pub struct Player(Index);
+pub struct Ruffle(Index);
 
 #[wasm_bindgen]
-impl Player {
-    pub fn new(canvas: HtmlCanvasElement, swf_data: Uint8Array) -> Result<Player, JsValue> {
-        Player::new_internal(canvas, swf_data).map_err(|_| "Error creating player".into())
+impl Ruffle {
+    pub fn new(canvas: HtmlCanvasElement, swf_data: Uint8Array) -> Result<Ruffle, JsValue> {
+        Ruffle::new_internal(canvas, swf_data).map_err(|_| "Error creating player".into())
     }
 
     pub fn destroy(&mut self) -> Result<(), JsValue> {
         // Remove instance from the active list.
-        if let Some(player_instance) = PLAYERS.with(|players| {
-            let mut players = players.borrow_mut();
-            players.remove(self.0)
+        if let Some(instance) = INSTANCES.with(|instances| {
+            let mut instances = instances.borrow_mut();
+            instances.remove(self.0)
         }) {
             // Cancel the animation handler, if it's still active.
-            if let Some(id) = player_instance.animation_handler_id {
+            if let Some(id) = instance.animation_handler_id {
                 if let Some(window) = web_sys::window() {
                     return window.cancel_animation_frame(id.into());
                 }
@@ -51,8 +57,8 @@ impl Player {
     }
 }
 
-impl Player {
-    fn new_internal(canvas: HtmlCanvasElement, swf_data: Uint8Array) -> Result<Player, Box<Error>> {
+impl Ruffle {
+    fn new_internal(canvas: HtmlCanvasElement, swf_data: Uint8Array) -> Result<Ruffle, Box<Error>> {
         console_error_panic_hook::set_once();
         let _ = console_log::init_with_level(log::Level::Trace);
 
@@ -83,7 +89,7 @@ impl Player {
             .now();
 
         // Create instance.
-        let instance = PlayerInstance {
+        let instance = RuffleInstance {
             core,
             animation_handler: None,
             animation_handler_id: None,
@@ -91,47 +97,49 @@ impl Player {
         };
 
         // Register the instance and create the animation frame closure.
-        let mut player = PLAYERS.with(move |players| {
-            let mut players = players.borrow_mut();
-            let index = players.insert(instance);
-            let player = Player(index);
+        let mut ruffle = INSTANCES.with(move |instances| {
+            let mut instances = instances.borrow_mut();
+            let index = instances.insert(instance);
+            let ruffle = Ruffle(index);
 
             // Create the animation frame closure.
             {
-                let mut player = player.clone();
-                let instance = players.get_mut(index).unwrap();
+                let mut ruffle = ruffle.clone();
+                let instance = instances.get_mut(index).unwrap();
                 instance.animation_handler = Some(Closure::wrap(Box::new(move |timestamp: f64| {
-                    player.tick(timestamp);
+                    ruffle.tick(timestamp);
                 })
                     as Box<FnMut(f64)>));
             }
 
-            player
+            ruffle
         });
 
         // Do an initial tick to start the animation loop.
-        player.tick(timestamp);
+        ruffle.tick(timestamp);
 
-        Ok(player)
+        Ok(ruffle)
     }
 
     fn tick(&mut self, timestamp: f64) {
-        PLAYERS.with(|players| {
-            let mut players = players.borrow_mut();
-            if let Some(player_instance) = players.get_mut(self.0) {
-                let dt = timestamp - player_instance.timestamp;
-                player_instance.timestamp = timestamp;
-                player_instance.core.tick(dt);
+        use wasm_bindgen::JsCast;
+
+        INSTANCES.with(|instances| {
+            let mut instances = instances.borrow_mut();
+            if let Some(instance) = instances.get_mut(self.0) {
+                let dt = timestamp - instance.timestamp;
+                instance.timestamp = timestamp;
+                instance.core.tick(dt);
 
                 // Request next animation frame.
-                if let Some(handler) = &player_instance.animation_handler {
+                if let Some(handler) = &instance.animation_handler {
                     let window = web_sys::window().unwrap();
                     let id = window
                         .request_animation_frame(handler.as_ref().unchecked_ref())
                         .unwrap();
-                    player_instance.animation_handler_id = NonZeroI32::new(id);
+                    instance.animation_handler_id = NonZeroI32::new(id);
                 } else {
-                    player_instance.animation_handler_id = None;
+                    instance.animation_handler_id = None;
                 }
             }
         });

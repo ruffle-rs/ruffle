@@ -127,7 +127,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         }
 
         use url::percent_encoding::{utf8_percent_encode, DEFAULT_ENCODE_SET};
-        let svg = crate::shape_utils::swf_shape_to_svg(&shape, &bitmaps);
+        let svg = swf_shape_to_svg(&shape, &bitmaps);
 
         let svg_encoded = format!(
             "data:image/svg+xml,{}",
@@ -391,4 +391,322 @@ impl RenderBackend for WebCanvasRenderBackend {
         self.context.set_filter("none");
         self.context.set_global_alpha(1.0);
     }
+}
+
+fn swf_shape_to_svg(shape: &swf::Shape, bitmaps: &HashMap<CharacterId, (&str, u32, u32)>) -> String {
+    use ruffle_core::matrix::Matrix;
+    use ruffle_core::shape_utils::{DrawPath, DrawCommand, swf_shape_to_paths};
+    use svg::Document;
+    use svg::node::element::{
+        path::Data, Definitions, Image, LinearGradient, Path as SvgPath, Pattern, RadialGradient, Stop,
+    };
+    use swf::{FillStyle, LineCapStyle, LineJoinStyle};
+    use fnv::FnvHashSet;
+
+    // Some browsers will vomit if you try to load/draw an image with 0 width/height.
+    // TODO(Herschel): Might be better to just return None in this case and skip
+    // rendering altogether.
+    let (width, height) = (
+        f32::max(
+            (shape.shape_bounds.x_max - shape.shape_bounds.x_min).to_pixels() as f32,
+            1.0,
+        ),
+        f32::max(
+            (shape.shape_bounds.y_max - shape.shape_bounds.y_min).to_pixels() as f32,
+            1.0,
+        ),
+    );
+    let mut document = Document::new()
+        .set("width", width)
+        .set("height", height)
+        .set(
+            "viewBox",
+            (
+                shape.shape_bounds.x_min.get(),
+                shape.shape_bounds.y_min.get(),
+                (shape.shape_bounds.x_max - shape.shape_bounds.x_min).get(),
+                (shape.shape_bounds.y_max - shape.shape_bounds.y_min).get(),
+            ),
+        )
+        .set("xmlns:xlink", "http://www.w3.org/1999/xlink");
+
+    let width = (shape.shape_bounds.x_max - shape.shape_bounds.x_min).get() as f32;
+    let height = (shape.shape_bounds.y_max - shape.shape_bounds.y_min).get() as f32;
+
+    let mut bitmap_defs: FnvHashSet<CharacterId> = FnvHashSet::default();
+
+    let mut defs = Definitions::new();
+    let mut num_defs = 0;
+
+    let mut svg_paths = vec![];
+    let paths = swf_shape_to_paths(shape);
+    for path in paths {
+        match path {
+            DrawPath::Fill { style, commands } => {
+                let mut svg_path = SvgPath::new();
+
+                svg_path = svg_path.set(
+                    "fill",
+                    match style {
+                        FillStyle::Color(Color { r, g, b, a }) => {
+                            format!("rgba({},{},{},{})", r, g, b, f32::from(*a) / 255.0)
+                        }
+                        FillStyle::LinearGradient(gradient) => {
+                            let matrix: Matrix = Matrix::from(gradient.matrix.clone());
+                            let shift = Matrix {
+                                a: 32768.0 / width,
+                                d: 32768.0 / height,
+                                tx: -16384.0,
+                                ty: -16384.0,
+                                ..Default::default()
+                            };
+                            let gradient_matrix = matrix * shift;
+
+                            let mut svg_gradient = LinearGradient::new()
+                                .set("id", format!("f{}", num_defs))
+                                .set("gradientUnits", "userSpaceOnUse")
+                                .set(
+                                    "gradientTransform",
+                                    format!(
+                                        "matrix({} {} {} {} {} {})",
+                                        gradient_matrix.a,
+                                        gradient_matrix.b,
+                                        gradient_matrix.c,
+                                        gradient_matrix.d,
+                                        gradient_matrix.tx,
+                                        gradient_matrix.ty
+                                    ),
+                                );
+                            for record in &gradient.records {
+                                let stop = Stop::new()
+                                    .set("offset", format!("{}%", f32::from(record.ratio) / 2.55))
+                                    .set(
+                                        "stop-color",
+                                        format!(
+                                            "rgba({},{},{},{})",
+                                            record.color.r,
+                                            record.color.g,
+                                            record.color.b,
+                                            f32::from(record.color.a) / 255.0
+                                        ),
+                                    );
+                                svg_gradient = svg_gradient.add(stop);
+                            }
+                            defs = defs.add(svg_gradient);
+
+                            let fill_id = format!("url(#f{})", num_defs);
+                            num_defs += 1;
+                            fill_id
+                        }
+                        FillStyle::RadialGradient(gradient) => {
+                            let matrix = Matrix::from(gradient.matrix.clone());
+                            let shift = Matrix {
+                                a: 32768.0 / width,
+                                d: 32768.0 / height,
+                                tx: -16384.0,
+                                ty: -16384.0,
+                                ..Default::default()
+                            };
+                            let gradient_matrix = matrix * shift;
+
+                            let mut svg_gradient = RadialGradient::new()
+                                .set("id", format!("f{}", num_defs))
+                                .set("gradientUnits", "userSpaceOnUse")
+                                .set(
+                                    "gradientTransform",
+                                    format!(
+                                        "matrix({} {} {} {} {} {})",
+                                        gradient_matrix.a,
+                                        gradient_matrix.b,
+                                        gradient_matrix.c,
+                                        gradient_matrix.d,
+                                        gradient_matrix.tx,
+                                        gradient_matrix.ty
+                                    ),
+                                );
+                            for record in &gradient.records {
+                                let stop = Stop::new()
+                                    .set("offset", format!("{}%", f32::from(record.ratio) / 2.55))
+                                    .set(
+                                        "stop-color",
+                                        format!(
+                                            "rgba({},{},{},{})",
+                                            record.color.r, record.color.g, record.color.b, record.color.a
+                                        ),
+                                    );
+                                svg_gradient = svg_gradient.add(stop);
+                            }
+                            defs = defs.add(svg_gradient);
+
+                            let fill_id = format!("url(#f{})", num_defs);
+                            num_defs += 1;
+                            fill_id
+                        }
+                        FillStyle::FocalGradient {
+                            gradient,
+                            focal_point,
+                        } => {
+                            let matrix = Matrix::from(gradient.matrix.clone());
+                            let shift = Matrix {
+                                a: 32768.0 / width,
+                                d: 32768.0 / height,
+                                tx: -16384.0,
+                                ty: -16384.0,
+                                ..Default::default()
+                            };
+                            let gradient_matrix = matrix * shift;
+
+                            let mut svg_gradient = RadialGradient::new()
+                                .set("id", format!("f{}", num_defs))
+                                .set("fx", -focal_point)
+                                .set("gradientUnits", "userSpaceOnUse")
+                                .set(
+                                    "gradientTransform",
+                                    format!(
+                                        "matrix({} {} {} {} {} {})",
+                                        gradient_matrix.a,
+                                        gradient_matrix.b,
+                                        gradient_matrix.c,
+                                        gradient_matrix.d,
+                                        gradient_matrix.tx,
+                                        gradient_matrix.ty
+                                    ),
+                                );
+                            for record in &gradient.records {
+                                let stop = Stop::new()
+                                    .set("offset", format!("{}%", f32::from(record.ratio) / 2.55))
+                                    .set(
+                                        "stop-color",
+                                        format!(
+                                            "rgba({},{},{},{})",
+                                            record.color.r, record.color.g, record.color.b, record.color.a
+                                        ),
+                                    );
+                                svg_gradient = svg_gradient.add(stop);
+                            }
+                            defs = defs.add(svg_gradient);
+
+                            let fill_id = format!("url(#f{})", num_defs);
+                            num_defs += 1;
+                            fill_id
+                        }
+                        FillStyle::Bitmap { id, matrix, .. } => {
+                            let (bitmap_data, bitmap_width, bitmap_height) =
+                                bitmaps.get(&id).unwrap_or(&("", 0, 0));
+
+                            if !bitmap_defs.contains(&id) {
+                                let image = Image::new()
+                                    .set("width", *bitmap_width)
+                                    .set("height", *bitmap_height)
+                                    .set("xlink:href", *bitmap_data);
+
+                                let bitmap_pattern = Pattern::new()
+                                    .set("id", format!("b{}", id))
+                                    .set("width", *bitmap_width)
+                                    .set("height", *bitmap_height)
+                                    .set("patternUnits", "userSpaceOnUse")
+                                    .add(image);
+
+                                defs = defs.add(bitmap_pattern);
+                                bitmap_defs.insert(*id);
+                            }
+                            let a = Matrix::from(matrix.clone());
+                            let bitmap_matrix = a;
+
+                            let svg_pattern = Pattern::new()
+                                .set("id", format!("f{}", num_defs))
+                                .set("xlink:href", format!("#b{}", id))
+                                .set(
+                                    "patternTransform",
+                                    format!(
+                                        "matrix({} {} {} {} {} {})",
+                                        bitmap_matrix.a,
+                                        bitmap_matrix.b,
+                                        bitmap_matrix.c,
+                                        bitmap_matrix.d,
+                                        bitmap_matrix.tx,
+                                        bitmap_matrix.ty
+                                    ),
+                                );
+
+                            defs = defs.add(svg_pattern);
+
+                            let fill_id = format!("url(#f{})", num_defs);
+                            num_defs += 1;
+                            fill_id
+                        }
+                    });
+
+                    let mut data = Data::new();
+                    for command in commands {
+                        data = match command {
+                            DrawCommand::MoveTo { x, y } => data.move_to((x.get(), y.get())),
+                            DrawCommand::LineTo { x, y } => data.line_to((x.get(), y.get())),
+                            DrawCommand::CurveTo { x1, y1, x2, y2 } => data.quadratic_curve_to((x1.get(), y1.get(), x2.get(), y2.get())),
+                        };
+                    }
+
+                svg_path = svg_path.set("d", data);
+                svg_paths.push(svg_path);
+            },
+            DrawPath::Stroke { style, commands, is_closed } => {
+                let mut svg_path = SvgPath::new();
+                svg_path = svg_path
+                    .set("fill", "none")
+                    .set(
+                        "stroke",
+                        format!(
+                            "rgba({},{},{},{})",
+                            style.color.r, style.color.g, style.color.b, style.color.a
+                        ),
+                    )
+                    .set("stroke-width", style.width.get())
+                    .set(
+                        "stroke-linecap",
+                        match style.start_cap {
+                            LineCapStyle::Round => "round",
+                            LineCapStyle::Square => "square",
+                            LineCapStyle::None => "butt",
+                        },
+                    )
+                    .set(
+                        "stroke-linejoin",
+                        match style.join_style {
+                            LineJoinStyle::Round => "round",
+                            LineJoinStyle::Bevel => "bevel",
+                            LineJoinStyle::Miter(_) => "miter",
+                        },
+                    );
+
+                if let LineJoinStyle::Miter(miter_limit) = style.join_style {
+                    svg_path = svg_path.set("stroke-miterlimit", miter_limit);
+                }
+
+                let mut data = Data::new();
+                for command in commands {
+                    data = match command {
+                        DrawCommand::MoveTo { x, y } => data.move_to((x.get(), y.get())),
+                        DrawCommand::LineTo { x, y } => data.line_to((x.get(), y.get())),
+                        DrawCommand::CurveTo { x1, y1, x2, y2 } => data.quadratic_curve_to((x1.get(), y1.get(), x2.get(), y2.get())),
+                    };
+                }
+                if is_closed {
+                    data = data.close();
+                }
+
+                svg_path = svg_path.set("d", data);
+                svg_paths.push(svg_path);
+            }
+        }
+    }
+
+    if num_defs > 0 {
+        document = document.add(defs);
+    }
+
+    for svg_path in svg_paths {
+        document = document.add(svg_path);
+    }
+
+    document.to_string()
 }
