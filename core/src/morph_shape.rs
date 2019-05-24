@@ -1,23 +1,20 @@
 use crate::backend::render::{RenderBackend, ShapeHandle};
 use crate::color_transform::ColorTransform;
-use crate::display_object::{DisplayObjectBase, DisplayObjectImpl};
+use crate::display_object::{DisplayObject, DisplayObjectBase};
 use crate::matrix::Matrix;
 use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use std::collections::HashMap;
 use swf::Twips;
 
-#[derive(Clone, Trace, Finalize)]
+#[derive(Clone)]
 pub struct MorphShape {
     base: DisplayObjectBase,
 
-    #[unsafe_ignore_trace]
     start: swf::MorphShape,
 
-    #[unsafe_ignore_trace]
     end: swf::MorphShape,
 
-    #[unsafe_ignore_trace]
     frames: HashMap<u16, ShapeHandle>,
 
     ratio: u16,
@@ -50,7 +47,7 @@ impl MorphShape {
         info!("Registered ratio {}", ratio);
 
         // Interpolate MorphShapes into a Shape.
-        use swf::{Color, FillStyle, Gradient, LineStyle, ShapeRecord, ShapeStyles};
+        use swf::{FillStyle, Gradient, LineStyle, ShapeRecord, ShapeStyles};
         let a = f32::from(ratio) / 65535.0;
         let b = 1.0 - a;
         let fill_styles: Vec<FillStyle> = self
@@ -125,15 +122,14 @@ impl MorphShape {
             .collect();
 
         let mut shape = Vec::with_capacity(self.start.shape.len());
-        let mut start_iter = self.start.shape.iter();
         let mut end_iter = self.end.shape.iter();
-        while let Some(ref start) = start_iter.next() {
+        for start in &self.start.shape {
             match start {
                 &ShapeRecord::StraightEdge { .. } | ShapeRecord::CurvedEdge { .. } => {
                     let end = end_iter.next().unwrap();
                     shape.push(Self::interpolate_edges(&start, &end, a));
                 }
-                &ShapeRecord::StyleChange(style_change) => {
+                &ShapeRecord::StyleChange(ref style_change) => {
                     let mut style_change = style_change.clone();
                     if let Some((start_x, start_y)) = style_change.move_to {
                         let end = end_iter.next().unwrap();
@@ -307,7 +303,7 @@ impl MorphShape {
     }
 }
 
-impl DisplayObjectImpl for MorphShape {
+impl<'gc> DisplayObject<'gc> for MorphShape {
     impl_display_object!(base);
 
     fn as_morph_shape(&self) -> Option<&crate::morph_shape::MorphShape> {
@@ -336,5 +332,12 @@ impl DisplayObjectImpl for MorphShape {
         }
 
         context.transform_stack.pop();
+    }
+}
+
+unsafe impl<'gc> gc_arena::Collect for MorphShape {
+    #[inline]
+    fn needs_trace() -> bool {
+        false
     }
 }

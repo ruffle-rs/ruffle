@@ -1,7 +1,7 @@
 use crate::audio::AudioStreamHandle;
 use crate::character::Character;
 use crate::color_transform::ColorTransform;
-use crate::display_object::{DisplayObject, DisplayObjectBase, DisplayObjectImpl};
+use crate::display_object::{DisplayObject, DisplayObjectBase};
 use crate::font::Font;
 use crate::graphic::Graphic;
 use crate::matrix::Matrix;
@@ -9,41 +9,38 @@ use crate::morph_shape::MorphShape;
 use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use crate::text::Text;
-use gc::{Gc, GcCell};
-use std::cell::RefCell;
-use std::collections::{BTreeMap, HashMap, VecDeque};
+use std::collections::{BTreeMap, HashMap};
 use swf::read::SwfRead;
 
 type Depth = i16;
 type FrameNumber = u16;
 
-#[derive(Clone, Trace, Finalize)]
-pub struct MovieClip {
+#[derive(Clone)]
+pub struct MovieClip<'gc> {
     base: DisplayObjectBase,
     tag_stream_start: Option<u64>,
     tag_stream_pos: u64,
     is_playing: bool,
     action: Option<(usize, usize)>,
-    goto_queue: VecDeque<FrameNumber>,
+    goto_queue: Vec<FrameNumber>,
     current_frame: FrameNumber,
     total_frames: FrameNumber,
 
-    #[unsafe_ignore_trace]
     audio_stream: Option<AudioStreamHandle>,
     stream_started: bool,
 
-    children: BTreeMap<Depth, Gc<GcCell<DisplayObject>>>,
+    children: BTreeMap<Depth, DisplayNode<'gc>>,
 }
 
-impl MovieClip {
-    pub fn new() -> MovieClip {
-        MovieClip {
+impl<'gc> MovieClip<'gc> {
+    pub fn new() -> Self {
+        Self {
             base: Default::default(),
             tag_stream_start: None,
             tag_stream_pos: 0,
             is_playing: true,
             action: None,
-            goto_queue: VecDeque::new(),
+            goto_queue: Vec::new(),
             current_frame: 0,
             total_frames: 1,
             audio_stream: None,
@@ -52,14 +49,14 @@ impl MovieClip {
         }
     }
 
-    pub fn new_with_data(tag_stream_start: u64, num_frames: u16) -> MovieClip {
-        MovieClip {
+    pub fn new_with_data(tag_stream_start: u64, num_frames: u16) -> Self {
+        Self {
             base: Default::default(),
             tag_stream_start: Some(tag_stream_start),
             tag_stream_pos: tag_stream_start,
             is_playing: true,
             action: None,
-            goto_queue: VecDeque::new(),
+            goto_queue: Vec::new(),
             current_frame: 0,
             audio_stream: None,
             stream_started: false,
@@ -73,7 +70,7 @@ impl MovieClip {
     }
 
     pub fn next_frame(&mut self) {
-        if self.current_frame + 1 <= self.total_frames {
+        if self.current_frame < self.total_frames {
             self.goto_frame(self.current_frame + 1, true);
         }
     }
@@ -93,7 +90,7 @@ impl MovieClip {
     }
 
     pub fn goto_frame(&mut self, frame: FrameNumber, stop: bool) {
-        self.goto_queue.push_back(frame);
+        self.goto_queue.push(frame);
 
         if stop {
             self.stop();
@@ -131,10 +128,10 @@ impl MovieClip {
         self.total_frames
     }
 
-    pub fn get_child_by_name(&self, name: &str) -> Option<&Gc<GcCell<DisplayObject>>> {
+    pub fn get_child_by_name(&self, name: &str) -> Option<&DisplayNode<'gc>> {
         self.children
             .values()
-            .find(|child| child.borrow().name() == name)
+            .find(|child| child.read().name() == name)
     }
 
     pub fn frame_label_to_number(
@@ -170,7 +167,7 @@ impl MovieClip {
         self.action
     }
 
-    pub fn run_goto_queue(&mut self, context: &mut UpdateContext) {
+    pub fn run_goto_queue(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         let mut i = 0;
         while i < self.goto_queue.len() {
             let frame = self.goto_queue[i];
@@ -199,77 +196,94 @@ impl MovieClip {
         self.goto_queue.clear();
     }
 
-    pub fn place_object(&mut self, place_object: &swf::PlaceObject, context: &mut UpdateContext) {
+    pub fn place_object(
+        &mut self,
+        place_object: &swf::PlaceObject,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) {
         use swf::PlaceObjectAction;
         let character = match place_object.action {
             PlaceObjectAction::Place(id) => {
                 // TODO(Herschel): Behavior when character doesn't exist/isn't a DisplayObject?
-                let character =
-                    if let Ok(character) = context.library.instantiate_display_object(id) {
-                        Gc::new(GcCell::new(character))
-                    } else {
-                        return;
-                    };
+                let character = if let Ok(character) = context
+                    .library
+                    .instantiate_display_object(id, context.gc_context)
+                {
+                    character
+                } else {
+                    return;
+                };
 
                 // TODO(Herschel): Behavior when depth is occupied? (I think it replaces)
-                self.children.insert(place_object.depth, character.clone());
-                character
+                self.children.insert(place_object.depth, character);
+                self.children.get_mut(&place_object.depth).unwrap()
             }
             PlaceObjectAction::Modify => {
-                if let Some(child) = self.children.get(&place_object.depth) {
-                    child.clone()
+                if let Some(child) = self.children.get_mut(&place_object.depth) {
+                    child
                 } else {
                     return;
                 }
             }
             PlaceObjectAction::Replace(id) => {
-                let character =
-                    if let Ok(character) = context.library.instantiate_display_object(id) {
-                        Gc::new(GcCell::new(character))
-                    } else {
-                        return;
-                    };
-
-                if let Some(prev_character) =
-                    self.children.insert(place_object.depth, character.clone())
+                let character = if let Ok(character) = context
+                    .library
+                    .instantiate_display_object(id, context.gc_context)
                 {
                     character
-                        .borrow_mut()
-                        .set_matrix(prev_character.borrow().get_matrix());
+                } else {
+                    return;
+                };
+
+                let prev_character = self.children.insert(place_object.depth, character);
+                let character = self.children.get_mut(&place_object.depth).unwrap();
+                if let Some(prev_character) = prev_character {
                     character
-                        .borrow_mut()
-                        .set_color_transform(prev_character.borrow().get_color_transform());
+                        .write(context.gc_context)
+                        .set_matrix(prev_character.read().get_matrix());
+                    character
+                        .write(context.gc_context)
+                        .set_color_transform(prev_character.read().get_color_transform());
                 }
                 character
             }
         };
 
-        let mut character = character.borrow_mut();
         if let Some(matrix) = &place_object.matrix {
             let m = matrix.clone();
-            character.set_matrix(&Matrix::from(m));
+            character
+                .write(context.gc_context)
+                .set_matrix(&Matrix::from(m));
         }
 
         if let Some(color_transform) = &place_object.color_transform {
-            character.set_color_transform(&ColorTransform::from(color_transform.clone()));
+            character
+                .write(context.gc_context)
+                .set_color_transform(&ColorTransform::from(color_transform.clone()));
         }
 
         if let Some(name) = &place_object.name {
-            character.set_name(name);
+            character.write(context.gc_context).set_name(name);
         }
 
         if let Some(ratio) = &place_object.ratio {
-            if let Some(morph_shape) = character.as_morph_shape_mut() {
+            if let Some(morph_shape) = character.write(context.gc_context).as_morph_shape_mut() {
                 morph_shape.set_ratio(*ratio);
             }
         }
 
         if let Some(clip_depth) = &place_object.clip_depth {
-            character.set_clip_depth(*clip_depth);
+            character
+                .write(context.gc_context)
+                .set_clip_depth(*clip_depth);
         }
     }
 
-    fn run_frame_internal(&mut self, context: &mut UpdateContext, only_display_actions: bool) {
+    fn run_frame_internal(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        only_display_actions: bool,
+    ) {
         use swf::Tag;
 
         // Advance frame number.
@@ -316,7 +330,7 @@ impl MovieClip {
                         self.children.remove(&depth);
                     }
 
-                    Tag::StartSound { id, sound_info } => {
+                    Tag::StartSound { id, .. } => {
                         if let Some(handle) = context.library.get_sound(id) {
                             context.audio.play_sound(handle);
                         }
@@ -349,12 +363,12 @@ impl MovieClip {
 
     fn sound_stream_head(
         &mut self,
-        stream_info: &swf::SoundStreamInfo,
-        context: &mut UpdateContext,
+        _stream_info: &swf::SoundStreamInfo,
+        _context: &mut UpdateContext,
         _length: usize,
         _version: u8,
     ) {
-        if let Some(stream) = self.audio_stream {
+        if self.audio_stream.is_some() {
             //self.audio_stream = Some(context.audio.register_stream(stream_info));
             self.stream_started = false;
         }
@@ -393,7 +407,7 @@ impl MovieClip {
     }
 }
 
-impl DisplayObjectImpl for MovieClip {
+impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
     impl_display_object!(base);
 
     fn preload(&mut self, context: &mut UpdateContext) {
@@ -410,8 +424,11 @@ impl DisplayObjectImpl for MovieClip {
                 // Definition Tags
                 Tag::DefineButton2(swf_button) => {
                     if !context.library.contains_character(swf_button.id) {
-                        let button =
-                            crate::button::Button::from_swf_tag(&swf_button, &context.library);
+                        let button = crate::button::Button::from_swf_tag(
+                            &swf_button,
+                            &context.library,
+                            context.gc_context,
+                        );
                         context
                             .library
                             .register_character(swf_button.id, Character::Button(Box::new(button)));
@@ -485,7 +502,7 @@ impl DisplayObjectImpl for MovieClip {
                             .register_character(font.id, Character::Font(Box::new(font_object)));
                     }
                 }
-                Tag::DefineFontInfo(info) => {
+                Tag::DefineFontInfo(_) => {
                     // TODO(Herschel)
                 }
                 Tag::DefineMorphShape(swf_shape) => {
@@ -578,7 +595,7 @@ impl DisplayObjectImpl for MovieClip {
         }
     }
 
-    fn run_frame(&mut self, context: &mut UpdateContext) {
+    fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         self.action = None;
         if self.tag_stream_start.is_some() {
             context
@@ -592,8 +609,8 @@ impl DisplayObjectImpl for MovieClip {
 
         // TODO(Herschel): Verify order of execution for parent/children.
         // Parent first? Children first? Sorted by depth?
-        for child in self.children.values() {
-            child.borrow_mut().run_frame(context);
+        for child in self.children.values_mut() {
+            child.write(context.gc_context).run_frame(context);
         }
 
         if self.tag_stream_start.is_some() {
@@ -604,7 +621,7 @@ impl DisplayObjectImpl for MovieClip {
         }
     }
 
-    fn run_post_frame(&mut self, context: &mut UpdateContext) {
+    fn run_post_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         self.run_goto_queue(context);
 
         //for child in self.children.values() {
@@ -612,33 +629,41 @@ impl DisplayObjectImpl for MovieClip {
         //}
     }
 
-    fn render(&self, context: &mut RenderContext) {
+    fn render(&self, context: &mut RenderContext<'_, 'gc>) {
         context.transform_stack.push(self.transform());
 
         for child in self.children.values() {
-            child.borrow_mut().render(context);
+            child.read().render(context);
         }
 
         context.transform_stack.pop();
     }
 
-    fn handle_click(&mut self, pos: (f32, f32)) {
-        for child in self.children.values_mut() {
-            child.borrow_mut().handle_click(pos);
-        }
+    fn handle_click(&mut self, _pos: (f32, f32)) {
+        // for child in self.children.values_mut() {
+        //     child.handle_click(pos);
+        // }
+    }
+    fn as_movie_clip(&self) -> Option<&crate::movie_clip::MovieClip<'gc>> {
+        Some(self)
     }
 
-    fn visit_children(&self, queue: &mut VecDeque<Gc<GcCell<DisplayObject>>>) {
+    fn as_movie_clip_mut(&mut self) -> Option<&mut crate::movie_clip::MovieClip<'gc>> {
+        Some(self)
+    }
+}
+
+impl Default for MovieClip<'_> {
+    fn default() -> Self {
+        MovieClip::new()
+    }
+}
+
+unsafe impl<'gc> gc_arena::Collect for MovieClip<'gc> {
+    #[inline]
+    fn trace(&self, cc: gc_arena::CollectionContext) {
         for child in self.children.values() {
-            queue.push_back(child.clone());
+            child.trace(cc);
         }
-    }
-
-    fn as_movie_clip(&self) -> Option<&crate::movie_clip::MovieClip> {
-        Some(self)
-    }
-
-    fn as_movie_clip_mut(&mut self) -> Option<&mut crate::movie_clip::MovieClip> {
-        Some(self)
     }
 }

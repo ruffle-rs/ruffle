@@ -6,7 +6,7 @@ use glutin::{
     dpi::{LogicalPosition, LogicalSize},
     ContextBuilder, ElementState, Event, EventsLoop, MouseButton, WindowBuilder, WindowEvent,
 };
-use ruffle_core::{backend::audio::NullAudioBackend, Player};
+use ruffle_core::Player;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;

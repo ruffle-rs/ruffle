@@ -1,20 +1,15 @@
 #![allow(clippy::invalid_ref)]
 
-use glium::texture::texture2d::Texture2d;
 use glium::uniforms::{UniformValue, Uniforms};
-use glium::{
-    draw_parameters::DrawParameters, implement_uniform_block, implement_vertex, uniform, Display,
-    Frame, Surface,
-};
+use glium::{draw_parameters::DrawParameters, implement_vertex, uniform, Display, Frame, Surface};
 use glutin::WindowedContext;
 use lyon::tessellation::geometry_builder::{BuffersBuilder, VertexBuffers};
 use lyon::{
     path::PathEvent, tessellation, tessellation::FillTessellator, tessellation::StrokeTessellator,
 };
-use ruffle_core::backend::render::swf::{self, FillStyle, LineStyle};
+use ruffle_core::backend::render::swf::{self, FillStyle};
 use ruffle_core::backend::render::{BitmapHandle, Color, RenderBackend, ShapeHandle, Transform};
 use ruffle_core::shape_utils::{DrawCommand, DrawPath};
-use std::collections::{HashMap, VecDeque};
 use swf::Twips;
 
 pub struct GliumRenderBackend {
@@ -188,14 +183,14 @@ impl GliumRenderBackend {
 
                         let mut colors: Vec<[f32; 4]> = Vec::with_capacity(8);
                         let mut ratios: Vec<f32> = Vec::with_capacity(8);
-                        for (i, record) in gradient.records.iter().enumerate() {
+                        for record in &gradient.records {
                             colors.push([
-                                record.color.r as f32 / 255.0,
-                                record.color.g as f32 / 255.0,
-                                record.color.b as f32 / 255.0,
-                                record.color.a as f32 / 255.0,
+                                f32::from(record.color.r) / 255.0,
+                                f32::from(record.color.g) / 255.0,
+                                f32::from(record.color.b) / 255.0,
+                                f32::from(record.color.a) / 255.0,
                             ]);
-                            ratios.push(record.ratio as f32 / 255.0);
+                            ratios.push(f32::from(record.ratio) / 255.0);
                         }
 
                         let uniforms = GradientUniforms {
@@ -237,14 +232,14 @@ impl GliumRenderBackend {
 
                         let mut colors: Vec<[f32; 4]> = Vec::with_capacity(8);
                         let mut ratios: Vec<f32> = Vec::with_capacity(8);
-                        for (i, record) in gradient.records.iter().enumerate() {
+                        for record in &gradient.records {
                             colors.push([
-                                record.color.r as f32 / 255.0,
-                                record.color.g as f32 / 255.0,
-                                record.color.b as f32 / 255.0,
-                                record.color.a as f32 / 255.0,
+                                f32::from(record.color.r) / 255.0,
+                                f32::from(record.color.g) / 255.0,
+                                f32::from(record.color.b) / 255.0,
+                                f32::from(record.color.a) / 255.0,
                             ]);
-                            ratios.push(record.ratio as f32 / 255.0);
+                            ratios.push(f32::from(record.ratio) / 255.0);
                         }
 
                         let uniforms = GradientUniforms {
@@ -289,14 +284,14 @@ impl GliumRenderBackend {
 
                         let mut colors: Vec<[f32; 4]> = Vec::with_capacity(8);
                         let mut ratios: Vec<f32> = Vec::with_capacity(8);
-                        for (i, record) in gradient.records.iter().enumerate() {
+                        for record in &gradient.records {
                             colors.push([
-                                record.color.r as f32 / 255.0,
-                                record.color.g as f32 / 255.0,
-                                record.color.b as f32 / 255.0,
-                                record.color.a as f32 / 255.0,
+                                f32::from(record.color.r) / 255.0,
+                                f32::from(record.color.g) / 255.0,
+                                f32::from(record.color.b) / 255.0,
+                                f32::from(record.color.a) / 255.0,
                             ]);
-                            ratios.push(record.ratio as f32 / 255.0);
+                            ratios.push(f32::from(record.ratio) / 255.0);
                         }
 
                         let uniforms = GradientUniforms {
@@ -417,7 +412,6 @@ impl GliumRenderBackend {
                         return handle;
                     }
                 }
-                _ => (),
             }
         }
 
@@ -690,12 +684,12 @@ impl RenderBackend for GliumRenderBackend {
         // SWF19 p.138:
         // "Before version 8 of the SWF file format, SWF files could contain an erroneous header of 0xFF, 0xD9, 0xFF, 0xD8 before the JPEG SOI marker."
         // Slice off these bytes if necessary.`
-        if &data[0..4] == [0xFF, 0xD9, 0xFF, 0xD8] {
+        if data[0..4] == [0xFF, 0xD9, 0xFF, 0xD8] {
             data = &data[4..];
         }
 
         if !jpeg_tables.is_empty() {
-            if &jpeg_tables[0..4] == [0xFF, 0xD9, 0xFF, 0xD8] {
+            if jpeg_tables[0..4] == [0xFF, 0xD9, 0xFF, 0xD8] {
                 jpeg_tables = &jpeg_tables[4..];
             }
 
@@ -742,8 +736,6 @@ impl RenderBackend for GliumRenderBackend {
     }
 
     fn register_bitmap_png(&mut self, swf_tag: &swf::DefineBitsLossless) -> BitmapHandle {
-        use std::io::{Read, Write};
-
         use inflate::inflate_bytes_zlib;
         let mut decoded_data = inflate_bytes_zlib(&swf_tag.data).unwrap();
         match (swf_tag.version, swf_tag.format) {
@@ -774,7 +766,7 @@ impl RenderBackend for GliumRenderBackend {
                 let padded_width = (swf_tag.width + 0b11) & !0b11;
 
                 let mut palette = Vec::with_capacity(swf_tag.num_colors as usize + 1);
-                for _ in 0..swf_tag.num_colors + 1 {
+                for _ in 0..=swf_tag.num_colors {
                     palette.push(Color {
                         r: decoded_data[i],
                         g: decoded_data[i + 1],
@@ -810,7 +802,7 @@ impl RenderBackend for GliumRenderBackend {
 
         let image = glium::texture::RawImage2d::from_raw_rgba(
             decoded_data,
-            (swf_tag.width as u32, swf_tag.height as u32),
+            (swf_tag.width.into(), swf_tag.height.into()),
         );
 
         let texture = glium::texture::Texture2d::new(&self.display, image).unwrap();
@@ -1251,6 +1243,7 @@ fn ruffle_path_to_lyon_path(
     })
 }
 
+#[allow(clippy::many_single_char_names)]
 fn swf_to_gl_matrix(m: swf::Matrix) -> [[f32; 3]; 3] {
     let tx = m.translate_x.get() as f32;
     let ty = m.translate_y.get() as f32;
@@ -1274,6 +1267,7 @@ fn swf_to_gl_matrix(m: swf::Matrix) -> [[f32; 3]; 3] {
     [[a, d, 0.0], [b, e, 0.0], [c, f, 1.0]]
 }
 
+#[allow(clippy::many_single_char_names)]
 fn swf_bitmap_to_gl_matrix(m: swf::Matrix, bitmap_width: u32, bitmap_height: u32) -> [[f32; 3]; 3] {
     let bitmap_width = bitmap_width as f32;
     let bitmap_height = bitmap_height as f32;

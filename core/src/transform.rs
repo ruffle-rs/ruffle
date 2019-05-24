@@ -1,9 +1,11 @@
 use crate::prelude::*;
+use gc_arena::Collect;
 
 /// Represents the transform for a DisplayObject.
 /// This includes both the transformation matrix and the color transform.
 ///
-#[derive(Clone)]
+#[derive(Clone, Collect)]
+#[collect(require_static)]
 pub struct Transform {
     pub matrix: Matrix,
     pub color_transform: ColorTransform,
@@ -27,10 +29,9 @@ impl TransformStack {
 
     pub fn push(&mut self, transform: &Transform) {
         let cur_transform = self.transform();
-        self.0.push(Transform {
-            matrix: cur_transform.matrix * transform.matrix,
-            color_transform: cur_transform.color_transform * transform.color_transform,
-        });
+        let matrix = cur_transform.matrix * transform.matrix;
+        let color_transform = cur_transform.color_transform * transform.color_transform;
+        self.0.push(Transform { matrix, color_transform });
     }
 
     pub fn pop(&mut self) {
@@ -42,5 +43,11 @@ impl TransformStack {
 
     pub fn transform(&self) -> &Transform {
         &self.0[self.0.len() - 1]
+    }
+}
+
+impl Default for TransformStack {
+    fn default() -> Self {
+        TransformStack::new()
     }
 }

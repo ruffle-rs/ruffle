@@ -1,28 +1,33 @@
 use crate::audio::Audio;
-use crate::avm1::Avm1;
+//use crate::avm1::Avm1;
 use crate::backend::{audio::AudioBackend, render::RenderBackend};
-use crate::display_object::{DisplayObject, DisplayObjectImpl};
+use crate::display_object::DisplayObject;
 use crate::library::Library;
 use crate::movie_clip::MovieClip;
 use crate::prelude::*;
 use crate::transform::TransformStack;
-use gc::{Gc, GcCell};
+use gc_arena::{make_arena, ArenaParameters, Collect, GcCell, MutationContext};
 use log::info;
 use std::io::Cursor;
 
-type CharacterId = swf::CharacterId;
+#[derive(Collect)]
+#[collect(empty_drop)]
+struct GcRoot<'gc> {
+    library: GcCell<'gc, Library<'gc>>,
+    root: GcCell<'gc, MovieClip<'gc>>,
+}
+
+make_arena!(GcArena, GcRoot);
 
 pub struct Player {
     tag_stream: swf::read::Reader<Cursor<Vec<u8>>>,
 
-    avm: Avm1,
-
+    //avm: Avm1,
     audio: Audio,
     renderer: Box<RenderBackend>,
     transform_stack: TransformStack,
 
-    library: Library,
-    stage: Gc<GcCell<DisplayObject>>,
+    gc_arena: GcArena,
     background_color: Color,
 
     frame_rate: f64,
@@ -40,9 +45,8 @@ impl Player {
         mut renderer: Box<RenderBackend>,
         audio: Box<AudioBackend>,
         swf_data: Vec<u8>,
-    ) -> Result<Player, Box<std::error::Error>> {
+    ) -> Result<Self, Box<std::error::Error>> {
         let (header, mut reader) = swf::read::read_swf_header(&swf_data[..]).unwrap();
-        
         // Decompress the entire SWF in memory.
         let mut data = Vec::new();
         reader.get_mut().read_to_end(&mut data)?;
@@ -50,7 +54,6 @@ impl Player {
 
         info!("{}x{}", header.stage_size.x_max, header.stage_size.y_max);
 
-        let stage = DisplayObject::new(Box::new(MovieClip::new_with_data(0, header.num_frames)));
         let movie_width = (header.stage_size.x_max - header.stage_size.x_min).to_pixels() as u32;
         let movie_height = (header.stage_size.y_max - header.stage_size.y_min).to_pixels() as u32;
         renderer.set_dimensions(movie_width, movie_height);
@@ -58,8 +61,7 @@ impl Player {
         let mut player = Player {
             tag_stream,
 
-            avm: Avm1::new(header.version),
-
+            // avm: Avm1::new(header.version),
             renderer,
             audio: Audio::new(audio),
 
@@ -71,8 +73,10 @@ impl Player {
             },
             transform_stack: TransformStack::new(),
 
-            library: Library::new(),
-            stage: Gc::new(GcCell::new(stage)),
+            gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| GcRoot {
+                library: GcCell::allocate(gc_context, Library::new()),
+                root: GcCell::allocate(gc_context, MovieClip::new_with_data(0, header.num_frames)),
+            }),
 
             frame_rate: header.frame_rate.into(),
             frame_accumulator: 0.0,
@@ -120,51 +124,72 @@ impl Player {
     pub fn mouse_down(&mut self) {}
 
     pub fn mouse_up(&mut self) {
-        self.stage.borrow_mut().handle_click(self.mouse_pos);
+        //self.stage.handle_click(self.mouse_pos);
     }
-}
 
-impl Player {
     fn preload(&mut self) {
-        let mut update_context = UpdateContext {
-            global_time: self.global_time,
-            mouse_pos: self.mouse_pos,
-            tag_stream: &mut self.tag_stream,
-            position_stack: vec![],
-            library: &mut self.library,
-            background_color: &mut self.background_color,
-            avm1: &mut self.avm,
-            renderer: &mut *self.renderer,
-            audio: &mut self.audio,
-            action: None,
-        };
+        let (global_time, mouse_pos, tag_stream, background_color, renderer, audio) = (
+            self.global_time,
+            self.mouse_pos,
+            &mut self.tag_stream,
+            &mut self.background_color,
+            &mut *self.renderer,
+            &mut self.audio,
+        );
 
-        let mut stage = self.stage.borrow_mut();
-        stage.preload(&mut update_context);
+        self.gc_arena.mutate(|gc_context, gc_root| {
+            let mut update_context = UpdateContext {
+                global_time,
+                mouse_pos,
+                tag_stream,
+                position_stack: vec![],
+                library: gc_root.library.write(gc_context),
+                background_color,
+                //avm1: &mut self.avm,
+                renderer,
+                audio,
+                action: None,
+                gc_context,
+            };
+
+            gc_root.root.write(gc_context).preload(&mut update_context);
+        });
     }
 
     fn run_frame(&mut self) {
-        let mut update_context = UpdateContext {
-            global_time: self.global_time,
-            mouse_pos: self.mouse_pos,
-            tag_stream: &mut self.tag_stream,
-            position_stack: vec![],
-            library: &mut self.library,
-            background_color: &mut self.background_color,
-            avm1: &mut self.avm,
-            renderer: &mut *self.renderer,
-            audio: &mut self.audio,
-            action: None,
-        };
+        let (global_time, mouse_pos, tag_stream, background_color, renderer, audio) = (
+            self.global_time,
+            self.mouse_pos,
+            &mut self.tag_stream,
+            &mut self.background_color,
+            &mut *self.renderer,
+            &mut self.audio,
+        );
 
-        self.stage.borrow_mut().run_frame(&mut update_context);
-        {
-            let mut queue = std::collections::VecDeque::new();
-            queue.push_back(self.stage.clone());
-            let mut visitor = crate::display_object::DisplayObjectVisitor { open: queue };
-            visitor.run(&mut update_context);
-        }
-        //self.stage.borrow_mut().run_post_frame(&mut update_context);
+        self.gc_arena.mutate(|gc_context, gc_root| {
+            let mut update_context = UpdateContext {
+                global_time,
+                mouse_pos,
+                tag_stream,
+                position_stack: vec![],
+                library: gc_root.library.write(gc_context),
+                background_color,
+                //avm1: &mut self.avm,
+                renderer,
+                audio,
+                action: None,
+                gc_context,
+            };
+
+            gc_root
+                .root
+                .write(gc_context)
+                .run_frame(&mut update_context);
+            gc_root
+                .root
+                .write(gc_context)
+                .run_post_frame(&mut update_context)
+        });
     }
 
     fn render(&mut self) {
@@ -172,35 +197,36 @@ impl Player {
 
         self.renderer.clear(self.background_color.clone());
 
-        {
+        let (renderer, transform_stack) = (&mut *self.renderer, &mut self.transform_stack);
+        self.gc_arena.mutate(|_gc_context, gc_root| {
             let mut render_context = RenderContext {
-                renderer: &mut *self.renderer,
-                library: &self.library,
-                transform_stack: &mut self.transform_stack,
+                renderer,
+                library: gc_root.library.read(),
+                transform_stack,
             };
-            let stage = self.stage.borrow_mut();
-            stage.render(&mut render_context);
-        }
+            gc_root.root.read().render(&mut render_context);
+        });
 
         self.renderer.end_frame();
     }
 }
 
-pub struct UpdateContext<'a> {
+pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub global_time: u64,
     pub mouse_pos: (f32, f32),
     pub tag_stream: &'a mut swf::read::Reader<Cursor<Vec<u8>>>,
     pub position_stack: Vec<u64>,
-    pub library: &'a mut Library,
+    pub library: std::cell::RefMut<'a, Library<'gc>>,
+    pub gc_context: MutationContext<'gc, 'gc_context>,
     pub background_color: &'a mut Color,
-    pub avm1: &'a mut Avm1,
+    //pub avm1: &'a mut Avm1,
     pub renderer: &'a mut RenderBackend,
     pub audio: &'a mut Audio,
     pub action: Option<(usize, usize)>,
 }
 
-pub struct RenderContext<'a> {
+pub struct RenderContext<'a, 'gc> {
     pub renderer: &'a mut RenderBackend,
-    pub library: &'a Library,
+    pub library: std::cell::Ref<'a, Library<'gc>>,
     pub transform_stack: &'a mut TransformStack,
 }

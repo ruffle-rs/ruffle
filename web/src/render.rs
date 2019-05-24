@@ -8,7 +8,6 @@ use web_sys::{CanvasRenderingContext2d, Element, HtmlCanvasElement, HtmlImageEle
 pub struct WebCanvasRenderBackend {
     canvas: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
-    svg_defs: Element,
     color_matrix: Element,
     shapes: Vec<ShapeData>,
     bitmaps: Vec<BitmapData>,
@@ -21,6 +20,7 @@ struct ShapeData {
     y_min: f64,
 }
 
+#[allow(dead_code)]
 struct BitmapData {
     image: HtmlImageElement,
     width: u32,
@@ -42,9 +42,12 @@ impl WebCanvasRenderBackend {
             .create_element_ns(Some("http://www.w3.org/2000/svg"), "svg")
             .map_err(|_| "Couldn't make SVG")?;
 
-        svg.set_attribute("width", "0");
-        svg.set_attribute("height", "0");
-        //svg.set_attribute("style", "display: none;");
+        svg.set_attribute("width", "0")
+            .map_err(|_| "Couldn't make SVG")?;
+
+        svg.set_attribute("height", "0")
+            .map_err(|_| "Couldn't make SVG")?;
+
         svg.set_attribute_ns(
             Some("http://www.w3.org/2000/xmlns/"),
             "xmlns:xlink",
@@ -52,20 +55,22 @@ impl WebCanvasRenderBackend {
         )
         .map_err(|_| "Couldn't make SVG")?;
 
-        let svg_defs = document
-            .create_element_ns(Some("http://www.w3.org/2000/svg"), "defs")
-            .map_err(|_| "Couldn't make SVG defs")?;
-
         let filter = document
             .create_element_ns(Some("http://www.w3.org/2000/svg"), "filter")
             .map_err(|_| "Couldn't make SVG filter")?;
-        filter.set_attribute("id", "cm");
+        filter
+            .set_attribute("id", "cm")
+            .map_err(|_| "Couldn't make SVG filter")?;
 
         let color_matrix = document
             .create_element_ns(Some("http://www.w3.org/2000/svg"), "feColorMatrix")
             .map_err(|_| "Couldn't make SVG feColorMatrix element")?;
-        color_matrix.set_attribute("type", "matrix");
-        color_matrix.set_attribute("values", "1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0");
+        color_matrix
+            .set_attribute("type", "matrix")
+            .map_err(|_| "Couldn't make SVG feColorMatrix element")?;
+        color_matrix
+            .set_attribute("values", "1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0")
+            .map_err(|_| "Couldn't make SVG feColorMatrix element")?;
         // canvas
         //     .set_attribute(
         //         "style",
@@ -87,20 +92,10 @@ impl WebCanvasRenderBackend {
         filter
             .append_child(&color_matrix.clone())
             .map_err(|_| "append_child failed")?;
-        svg_defs
-            .append_child(&filter)
-            .map_err(|_| "append_child failed")?;
-        svg.append_child(&svg_defs.clone())
-            .map_err(|_| "append_child failed")?;
-
-        let body = canvas
-            .append_child(&svg)
-            .map_err(|_| "append_child failed")?;
 
         Ok(Self {
             canvas: canvas.clone(),
             color_matrix,
-            svg_defs,
             context,
             shapes: vec![],
             bitmaps: vec![],
@@ -180,11 +175,11 @@ impl RenderBackend for WebCanvasRenderBackend {
         // SWF19 p.138:
         // "Before version 8 of the SWF file format, SWF files could contain an erroneous header of 0xFF, 0xD9, 0xFF, 0xD8 before the JPEG SOI marker."
         // Slice off these bytes if necessary.`
-        if &data[0..4] == [0xFF, 0xD9, 0xFF, 0xD8] {
+        if data[0..4] == [0xFF, 0xD9, 0xFF, 0xD8] {
             data = &data[4..];
         }
 
-        if &jpeg_tables[0..4] == [0xFF, 0xD9, 0xFF, 0xD8] {
+        if jpeg_tables[0..4] == [0xFF, 0xD9, 0xFF, 0xD8] {
             jpeg_tables = &jpeg_tables[4..];
         }
 
@@ -195,8 +190,6 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn register_bitmap_jpeg_2(&mut self, id: CharacterId, mut data: &[u8]) -> BitmapHandle {
-        use url::percent_encoding::{utf8_percent_encode, DEFAULT_ENCODE_SET};
-
         // SWF19 p.138:
         // "Before version 8 of the SWF file format, SWF files could contain an erroneous header of 0xFF, 0xD9, 0xFF, 0xD8 before the JPEG SOI marker."
         // Slice off these bytes if necessary.`
@@ -212,8 +205,6 @@ impl RenderBackend for WebCanvasRenderBackend {
         let jpeg_encoded = format!("data:image/jpeg;base64,{}", &base64::encode(&data[..]));
         image.set_src(&jpeg_encoded);
 
-        let document = web_sys::window().unwrap().document().unwrap();
-
         let handle = BitmapHandle(self.bitmaps.len());
         self.bitmaps.push(BitmapData {
             image,
@@ -226,10 +217,6 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn register_bitmap_png(&mut self, swf_tag: &swf::DefineBitsLossless) -> BitmapHandle {
-        let image = HtmlImageElement::new().unwrap();
-
-        use std::io::{Read, Write};
-
         use inflate::inflate_bytes_zlib;
         let mut decoded_data = inflate_bytes_zlib(&swf_tag.data).unwrap();
         match (swf_tag.version, swf_tag.format) {
@@ -260,7 +247,7 @@ impl RenderBackend for WebCanvasRenderBackend {
                 let padded_width = (swf_tag.width + 0b11) & !0b11;
 
                 let mut palette = Vec::with_capacity(swf_tag.num_colors as usize + 1);
-                for _ in 0..swf_tag.num_colors + 1 {
+                for _ in 0..=swf_tag.num_colors {
                     palette.push(Color {
                         r: decoded_data[i],
                         g: decoded_data[i + 1],
@@ -393,15 +380,19 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 }
 
-fn swf_shape_to_svg(shape: &swf::Shape, bitmaps: &HashMap<CharacterId, (&str, u32, u32)>) -> String {
-    use ruffle_core::matrix::Matrix;
-    use ruffle_core::shape_utils::{DrawPath, DrawCommand, swf_shape_to_paths};
-    use svg::Document;
-    use svg::node::element::{
-        path::Data, Definitions, Image, LinearGradient, Path as SvgPath, Pattern, RadialGradient, Stop,
-    };
-    use swf::{FillStyle, LineCapStyle, LineJoinStyle};
+fn swf_shape_to_svg(
+    shape: &swf::Shape,
+    bitmaps: &HashMap<CharacterId, (&str, u32, u32)>,
+) -> String {
     use fnv::FnvHashSet;
+    use ruffle_core::matrix::Matrix;
+    use ruffle_core::shape_utils::{swf_shape_to_paths, DrawCommand, DrawPath};
+    use svg::node::element::{
+        path::Data, Definitions, Image, LinearGradient, Path as SvgPath, Pattern, RadialGradient,
+        Stop,
+    };
+    use svg::Document;
+    use swf::{FillStyle, LineCapStyle, LineJoinStyle};
 
     // Some browsers will vomit if you try to load/draw an image with 0 width/height.
     // TODO(Herschel): Might be better to just return None in this case and skip
@@ -531,7 +522,10 @@ fn swf_shape_to_svg(shape: &swf::Shape, bitmaps: &HashMap<CharacterId, (&str, u3
                                         "stop-color",
                                         format!(
                                             "rgba({},{},{},{})",
-                                            record.color.r, record.color.g, record.color.b, record.color.a
+                                            record.color.r,
+                                            record.color.g,
+                                            record.color.b,
+                                            record.color.a
                                         ),
                                     );
                                 svg_gradient = svg_gradient.add(stop);
@@ -579,7 +573,10 @@ fn swf_shape_to_svg(shape: &swf::Shape, bitmaps: &HashMap<CharacterId, (&str, u3
                                         "stop-color",
                                         format!(
                                             "rgba({},{},{},{})",
-                                            record.color.r, record.color.g, record.color.b, record.color.a
+                                            record.color.r,
+                                            record.color.g,
+                                            record.color.b,
+                                            record.color.a
                                         ),
                                     );
                                 svg_gradient = svg_gradient.add(stop);
@@ -635,21 +632,28 @@ fn swf_shape_to_svg(shape: &swf::Shape, bitmaps: &HashMap<CharacterId, (&str, u3
                             num_defs += 1;
                             fill_id
                         }
-                    });
+                    },
+                );
 
-                    let mut data = Data::new();
-                    for command in commands {
-                        data = match command {
-                            DrawCommand::MoveTo { x, y } => data.move_to((x.get(), y.get())),
-                            DrawCommand::LineTo { x, y } => data.line_to((x.get(), y.get())),
-                            DrawCommand::CurveTo { x1, y1, x2, y2 } => data.quadratic_curve_to((x1.get(), y1.get(), x2.get(), y2.get())),
-                        };
-                    }
+                let mut data = Data::new();
+                for command in commands {
+                    data = match command {
+                        DrawCommand::MoveTo { x, y } => data.move_to((x.get(), y.get())),
+                        DrawCommand::LineTo { x, y } => data.line_to((x.get(), y.get())),
+                        DrawCommand::CurveTo { x1, y1, x2, y2 } => {
+                            data.quadratic_curve_to((x1.get(), y1.get(), x2.get(), y2.get()))
+                        }
+                    };
+                }
 
                 svg_path = svg_path.set("d", data);
                 svg_paths.push(svg_path);
-            },
-            DrawPath::Stroke { style, commands, is_closed } => {
+            }
+            DrawPath::Stroke {
+                style,
+                commands,
+                is_closed,
+            } => {
                 let mut svg_path = SvgPath::new();
                 svg_path = svg_path
                     .set("fill", "none")
@@ -687,7 +691,9 @@ fn swf_shape_to_svg(shape: &swf::Shape, bitmaps: &HashMap<CharacterId, (&str, u3
                     data = match command {
                         DrawCommand::MoveTo { x, y } => data.move_to((x.get(), y.get())),
                         DrawCommand::LineTo { x, y } => data.line_to((x.get(), y.get())),
-                        DrawCommand::CurveTo { x1, y1, x2, y2 } => data.quadratic_curve_to((x1.get(), y1.get(), x2.get(), y2.get())),
+                        DrawCommand::CurveTo { x1, y1, x2, y2 } => {
+                            data.quadratic_curve_to((x1.get(), y1.get(), x2.get(), y2.get()))
+                        }
                     };
                 }
                 if is_closed {

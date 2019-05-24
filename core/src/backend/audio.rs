@@ -1,6 +1,6 @@
 use bitstream_io::{BigEndian, BitReader};
-use std::io::Read;
 use generational_arena::{Arena, Index};
+use std::io::Read;
 
 pub mod swf {
     pub use swf::{read, AudioCompression, CharacterId, Sound, SoundFormat, SoundStreamInfo};
@@ -15,9 +15,9 @@ pub trait AudioBackend {
     fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, Error>;
     fn register_stream(&mut self, stream_info: &swf::SoundStreamInfo) -> AudioStreamHandle;
     fn play_sound(&mut self, sound: SoundHandle);
-    fn preload_stream_samples(&mut self, handle: AudioStreamHandle, samples: &[u8]) {}
-    fn preload_stream_finalize(&mut self, handle: AudioStreamHandle) {}
-    fn start_stream(&mut self, handle: AudioStreamHandle) -> bool {
+    fn preload_stream_samples(&mut self, _handle: AudioStreamHandle, _samples: &[u8]) {}
+    fn preload_stream_finalize(&mut self, _handle: AudioStreamHandle) {}
+    fn start_stream(&mut self, _handle: AudioStreamHandle) -> bool {
         false
     }
     fn queue_stream_samples(&mut self, handle: AudioStreamHandle, samples: &[u8]);
@@ -39,11 +39,11 @@ impl NullAudioBackend {
 }
 
 impl AudioBackend for NullAudioBackend {
-    fn register_sound(&mut self, sound: &swf::Sound) -> Result<SoundHandle, Error> {
+    fn register_sound(&mut self, _sound: &swf::Sound) -> Result<SoundHandle, Error> {
         Ok(self.sounds.insert(()))
     }
 
-    fn play_sound(&mut self, sound: SoundHandle) {}
+    fn play_sound(&mut self, _sound: SoundHandle) {}
 
     fn register_stream(&mut self, _stream_info: &swf::SoundStreamInfo) -> AudioStreamHandle {
         self.streams.insert(())
@@ -51,6 +51,12 @@ impl AudioBackend for NullAudioBackend {
 
     fn queue_stream_samples(&mut self, _handle: AudioStreamHandle, _samples: &[u8]) {
         // Noop
+    }
+}
+
+impl Default for NullAudioBackend {
+    fn default() -> Self {
+        NullAudioBackend::new()
     }
 }
 
@@ -84,16 +90,16 @@ impl<R: Read> AdpcmDecoder<R> {
         29794, 32767,
     ];
 
-    pub fn new(inner: R, is_stereo: bool) -> Result<Self, Error> {        
+    pub fn new(inner: R, is_stereo: bool) -> Result<Self, Error> {
         let mut reader = BitReader::new(inner);
         let bits_per_sample = reader.read::<u8>(2)? as usize + 2;
 
-        let mut left_sample = 0;
-        let mut left_step_index = 0;
-        let mut left_step = 0;
-        let mut right_sample = 0;
-        let mut right_step_index = 0;
-        let mut right_step = 0;
+        let left_sample = 0;
+        let left_step_index = 0;
+        let left_step = 0;
+        let right_sample = 0;
+        let right_step_index = 0;
+        let right_step = 0;
         Ok(Self {
             inner: reader,
             is_stereo,
@@ -108,7 +114,7 @@ impl<R: Read> AdpcmDecoder<R> {
         })
     }
 
-    pub fn next(&mut self) -> Result<(i16, i16), Error> {
+    pub fn next_sample(&mut self) -> Result<(i16, i16), Error> {
         if self.sample_num == 0 {
             // The initial sample values are NOT byte-aligned.
             self.left_sample = self.inner.read_signed(16)?;

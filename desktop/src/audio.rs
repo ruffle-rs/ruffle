@@ -1,5 +1,5 @@
 use generational_arena::Arena;
-use rodio::{source::Source, Sample, Sink};
+use rodio::{source::Source, Sink};
 use ruffle_core::backend::audio::{swf, AudioBackend, AudioStreamHandle, SoundHandle};
 use std::io::Cursor;
 use std::sync::{Arc, Mutex};
@@ -11,6 +11,7 @@ pub struct RodioAudioBackend {
     device: rodio::Device,
 }
 
+#[allow(dead_code)]
 struct AudioStream {
     info: swf::SoundStreamInfo,
     sink: rodio::Sink,
@@ -52,7 +53,7 @@ impl AudioBackend for RodioAudioBackend {
         let format = &stream_info.stream_format;
         let decoder = Mp3Decoder::new(
             if format.is_stereo { 2 } else { 1 },
-            format.sample_rate as u32,
+            format.sample_rate.into(),
             ThreadRead(Arc::clone(&data)),
         )
         .unwrap();
@@ -74,8 +75,9 @@ impl AudioBackend for RodioAudioBackend {
                 let mut data = Vec::with_capacity(sound.data.len() / 2);
                 let mut i = 0;
                 while i < sound.data.len() {
-                    let val = sound.data[i] as i16 | ((sound.data[i + 1] as i16) << 8);
+                    let val = i16::from(sound.data[i]) | (i16::from(sound.data[i + 1]) << 8);
                     data.push(val);
+                    i += 2;
                 }
                 let buffer = rodio::buffer::SamplesBuffer::new(
                     if sound.format.is_stereo { 2 } else { 1 },
@@ -98,11 +100,7 @@ impl AudioBackend for RodioAudioBackend {
 
     fn queue_stream_samples(&mut self, handle: AudioStreamHandle, mut samples: &[u8]) {
         if let Some(stream) = self.streams.get_mut(handle) {
-            let mut stream_channels = 0;
-            let mut n = 0;
-            let mut stream_sample_rate = 0;
-
-            let tag_samples = (samples[0] as u16) | ((samples[1] as u16) << 8);
+            let _tag_samples = u16::from(samples[0]) | (u16::from(samples[1]) << 8);
             samples = &samples[4..];
 
             let mut buffer = stream.data.lock().unwrap();
@@ -291,6 +289,6 @@ where
         let v = self.current_frame.data[self.current_frame_offset];
         self.current_frame_offset += 1;
 
-        return Some(v);
+        Some(v)
     }
 }

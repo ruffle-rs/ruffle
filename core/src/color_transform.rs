@@ -86,27 +86,3 @@ impl std::ops::MulAssign for ColorTransform {
         }
     }
 }
-
-pub struct ColorTransformStack(Vec<ColorTransform>);
-
-impl ColorTransformStack {
-    pub fn new() -> ColorTransformStack {
-        ColorTransformStack(vec![ColorTransform::default()])
-    }
-
-    pub fn push(&mut self, matrix: &ColorTransform) {
-        let new_matrix = *self.color_transform() * *matrix;
-        self.0.push(new_matrix);
-    }
-
-    pub fn pop(&mut self) {
-        if self.0.len() <= 1 {
-            panic!("Matrix stack underflow");
-        }
-        self.0.pop();
-    }
-
-    pub fn color_transform(&self) -> &ColorTransform {
-        &self.0[self.0.len() - 1]
-    }
-}

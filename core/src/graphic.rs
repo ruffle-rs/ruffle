@@ -1,14 +1,13 @@
 use crate::backend::render::ShapeHandle;
 use crate::color_transform::ColorTransform;
-use crate::display_object::{DisplayObjectBase, DisplayObjectImpl};
+use crate::display_object::{DisplayObjectBase, DisplayObject};
 use crate::matrix::Matrix;
 use crate::player::{RenderContext, UpdateContext};
 
-#[derive(Clone, Trace, Finalize)]
+#[derive(Clone)]
 pub struct Graphic {
     base: DisplayObjectBase,
 
-    #[unsafe_ignore_trace]
     shape_handle: ShapeHandle,
 }
 
@@ -22,7 +21,7 @@ impl Graphic {
     }
 }
 
-impl DisplayObjectImpl for Graphic {
+impl<'gc> DisplayObject<'gc> for Graphic {
     impl_display_object!(base);
 
     fn run_frame(&mut self, _context: &mut UpdateContext) {
@@ -37,5 +36,12 @@ impl DisplayObjectImpl for Graphic {
             .render_shape(self.shape_handle, context.transform_stack.transform());
 
         context.transform_stack.pop();
+    }
+}
+
+unsafe impl<'gc> gc_arena::Collect for Graphic {
+    #[inline]
+    fn needs_trace() -> bool {
+        false
     }
 }

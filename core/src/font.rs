@@ -1,11 +1,9 @@
 use crate::backend::render::ShapeHandle;
-use crate::player::{RenderContext, UpdateContext};
-use crate::prelude::*;
+use crate::player::UpdateContext;
 
 type Error = Box<std::error::Error>;
 
 pub struct Font {
-    id: CharacterId,
     glyphs: Vec<ShapeHandle>,
 }
 
@@ -16,7 +14,7 @@ impl Font {
             let shape_handle = context.renderer.register_glyph_shape(glyph);
             glyphs.push(shape_handle);
         }
-        Ok(Font { id: tag.id, glyphs })
+        Ok(Font { glyphs })
     }
 
     pub fn get_glyph(&self, i: usize) -> Option<ShapeHandle> {

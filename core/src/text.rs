@@ -1,14 +1,12 @@
-use crate::backend::render::ShapeHandle;
 use crate::color_transform::ColorTransform;
-use crate::display_object::{DisplayObjectBase, DisplayObjectImpl};
+use crate::display_object::{DisplayObject, DisplayObjectBase};
 use crate::matrix::Matrix;
 use crate::player::{RenderContext, UpdateContext};
 use crate::transform::Transform;
 
-#[derive(Clone, Trace, Finalize)]
+#[derive(Clone)]
 pub struct Text {
     base: DisplayObjectBase,
-    #[unsafe_ignore_trace]
     text_blocks: Vec<swf::TextRecord>,
 }
 
@@ -21,7 +19,7 @@ impl Text {
     }
 }
 
-impl DisplayObjectImpl for Text {
+impl<'gc> DisplayObject<'gc> for Text {
     impl_display_object!(base);
 
     fn run_frame(&mut self, _context: &mut UpdateContext) {
@@ -71,5 +69,12 @@ impl DisplayObjectImpl for Text {
             }
         }
         context.transform_stack.pop();
+    }
+}
+
+unsafe impl<'gc> gc_arena::Collect for Text {
+    #[inline]
+    fn needs_trace() -> bool {
+        false
     }
 }

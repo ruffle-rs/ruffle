@@ -1,6 +1,5 @@
 use generational_arena::Arena;
 use js_sys::Uint8Array;
-use log::info;
 use ruffle_core::backend::audio::{swf, AudioBackend, AudioStreamHandle, SoundHandle};
 use wasm_bindgen::{closure::Closure, JsCast};
 use web_sys::AudioContext;
@@ -21,7 +20,6 @@ struct Sound {
 
 struct AudioStream {
     info: swf::SoundStreamInfo,
-    time: f64,
     compressed_data: Vec<u8>,
     sample_data: [Vec<f32>; 2],
     object: js_sys::Object,
@@ -38,14 +36,12 @@ impl WebAudioBackend {
             streams: Arena::new(),
         })
     }
-
-    const BUFFER_TIME: f64 = 0.05;
 }
 
 impl AudioBackend for WebAudioBackend {
     fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, Error> {
-        let mut object = js_sys::Object::new();
-        let mut sound = Sound {
+        let object = js_sys::Object::new();
+        let sound = Sound {
             object: object.clone(),
         };
         let value = wasm_bindgen::JsValue::from(object);
@@ -81,18 +77,18 @@ impl AudioBackend for WebAudioBackend {
                 }
                 let mut data = &swf_sound.data[..];
                 while !data.is_empty() {
-                    for c in 0..num_channels {
+                    for channel in &mut out {
                         if sample_rate != swf_sound.format.sample_rate {
                             let sample = f32::from(data.read_i16::<LittleEndian>()?) / 32768.0;
                             for _ in 0..sample_multiplier {
-                                out[c].push(sample);
+                                channel.push(sample);
                             }
                         }
                     }
                 }
-                for c in 0..num_channels {
+                for (i, channel) in out.iter_mut().enumerate() {
                     audio_buffer
-                        .copy_to_channel(&mut out[c][..], c as i32)
+                        .copy_to_channel(&mut channel[..], i as i32)
                         .unwrap();
                 }
                 js_sys::Reflect::set(&value, &"buffer".into(), &audio_buffer).unwrap();
@@ -116,7 +112,7 @@ impl AudioBackend for WebAudioBackend {
                 for _ in 0..num_channels {
                     out.push(Vec::with_capacity(swf_sound.num_samples as usize));
                 }
-                while let Ok((left, right)) = decoder.next() {
+                while let Ok((left, right)) = decoder.next_sample() {
                     for _ in 0..sample_multiplier {
                         out[0].push(f32::from(left) / 32768.0);
                         if swf_sound.format.is_stereo {
@@ -124,9 +120,9 @@ impl AudioBackend for WebAudioBackend {
                         }
                     }
                 }
-                for i in 0..num_channels {
+                for (i, channel) in out.iter_mut().enumerate() {
                     audio_buffer
-                        .copy_to_channel(&mut out[i][..], i as i32)
+                        .copy_to_channel(&mut channel[..], i as i32)
                         .unwrap();
                 }
                 js_sys::Reflect::set(&value, &"buffer".into(), &audio_buffer).unwrap();
@@ -155,7 +151,6 @@ impl AudioBackend for WebAudioBackend {
     fn register_stream(&mut self, stream_info: &swf::SoundStreamInfo) -> AudioStreamHandle {
         let stream = AudioStream {
             info: stream_info.clone(),
-            time: 0.0,
             sample_data: [vec![], vec![]],
             compressed_data: vec![],
             object: js_sys::Object::new(),
@@ -180,7 +175,7 @@ impl AudioBackend for WebAudioBackend {
         }
     }
 
-    fn queue_stream_samples(&mut self, handle: AudioStreamHandle, samples: &[u8]) {}
+    fn queue_stream_samples(&mut self, _handle: AudioStreamHandle, _samples: &[u8]) {}
 
     fn preload_stream_samples(&mut self, handle: AudioStreamHandle, samples: &[u8]) {
         use swf::AudioCompression;
@@ -188,15 +183,16 @@ impl AudioBackend for WebAudioBackend {
             let format = &stream.info.stream_format;
             let num_channels = if format.is_stereo { 2 } else { 1 };
             let frame_size = num_channels * if format.is_16_bit { 2 } else { 1 };
-            let num_frames = samples.len() / frame_size;
+            let _num_frames = samples.len() / frame_size;
             let mut i = 0;
             match format.compression {
                 AudioCompression::Uncompressed | AudioCompression::UncompressedUnknownEndian => {
                     if format.is_16_bit {
                         while i < samples.len() {
                             for c in 0..num_channels {
-                                let sample =
-                                    ((samples[i] as u16) | ((samples[i + 1] as u16) << 8)) as i16;
+                                let sample = (u16::from(samples[i])
+                                    | (u16::from(samples[i + 1]) << 8))
+                                    as i16;
                                 stream.sample_data[c].push((f32::from(sample)) / 32768.0);
                                 i += 2;
                             }
@@ -217,7 +213,7 @@ impl AudioBackend for WebAudioBackend {
                     let mut decoder =
                         ruffle_core::backend::audio::AdpcmDecoder::new(samples, format.is_stereo)
                             .unwrap();
-                    while let Ok((left, right)) = decoder.next() {
+                    while let Ok((left, right)) = decoder.next_sample() {
                         stream.sample_data[0].push(f32::from(left) / 32768.0);
                         if format.is_stereo {
                             stream.sample_data[1].push(f32::from(right) / 32768.0);

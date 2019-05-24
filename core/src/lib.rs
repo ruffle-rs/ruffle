@@ -22,6 +22,3 @@ pub mod backend;
 
 pub use player::Player;
 pub use swf::Color;
-
-#[macro_use]
-extern crate gc_derive;
