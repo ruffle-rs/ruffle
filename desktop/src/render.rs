@@ -167,16 +167,16 @@ impl GliumRenderBackend {
             }
             let gradient_uniforms = match cmd {
                 PathCommandType::Fill(FillStyle::LinearGradient(gradient)) => {
-                    let mut colors = [[0.0; 4]; 8];
-                    let mut ratios = [0.0; 8];
+                    let mut colors: Vec<[f32; 4]> = Vec::with_capacity(8);
+                    let mut ratios: Vec<f32> = Vec::with_capacity(8);
                     for (i, record) in gradient.records.iter().enumerate() {
-                        colors[i] = [
+                        colors.push([
                             record.color.r as f32 / 255.0,
                             record.color.g as f32 / 255.0,
                             record.color.b as f32 / 255.0,
                             record.color.a as f32 / 255.0,
-                        ];
-                        ratios[i] = record.ratio as f32 / 255.0;
+                        ]);
+                        ratios.push(record.ratio as f32 / 255.0);
                     }
 
                     GradientUniforms {
@@ -190,16 +190,16 @@ impl GliumRenderBackend {
                     }
                 }
                 PathCommandType::Fill(FillStyle::RadialGradient(gradient)) => {
-                    let mut colors = [[0.0; 4]; 8];
-                    let mut ratios = [0.0; 8];
+                    let mut colors: Vec<[f32; 4]> = Vec::with_capacity(8);
+                    let mut ratios: Vec<f32> = Vec::with_capacity(8);
                     for (i, record) in gradient.records.iter().enumerate() {
-                        colors[i] = [
+                        colors.push([
                             record.color.r as f32 / 255.0,
                             record.color.g as f32 / 255.0,
                             record.color.b as f32 / 255.0,
                             record.color.a as f32 / 255.0,
-                        ];
-                        ratios[i] = record.ratio as f32 / 255.0;
+                        ]);
+                        ratios.push(record.ratio as f32 / 255.0);
                     }
 
                     GradientUniforms {
@@ -216,16 +216,16 @@ impl GliumRenderBackend {
                     gradient,
                     focal_point,
                 }) => {
-                    let mut colors = [[0.0; 4]; 8];
-                    let mut ratios = [0.0; 8];
+                    let mut colors: Vec<[f32; 4]> = Vec::with_capacity(8);
+                    let mut ratios: Vec<f32> = Vec::with_capacity(8);
                     for (i, record) in gradient.records.iter().enumerate() {
-                        colors[i] = [
+                        colors.push([
                             record.color.r as f32 / 255.0,
                             record.color.g as f32 / 255.0,
                             record.color.b as f32 / 255.0,
                             record.color.a as f32 / 255.0,
-                        ];
-                        ratios[i] = record.ratio as f32 / 255.0;
+                        ]);
+                        ratios.push(record.ratio as f32 / 255.0);
                     }
 
                     GradientUniforms {
@@ -445,7 +445,7 @@ impl RenderBackend for GliumRenderBackend {
         };
 
         for draw in &mesh.draws {
-            match draw.draw_type {
+            match &draw.draw_type {
                 DrawType::Color => {
                     target
                         .draw(
@@ -463,7 +463,7 @@ impl RenderBackend for GliumRenderBackend {
                         world_matrix,
                         mult_color,
                         add_color,
-                        gradient: gradient_uniforms,
+                        gradient: gradient_uniforms.clone(),
                     };
 
                     target
@@ -489,12 +489,12 @@ struct Vertex {
 
 implement_vertex!(Vertex, position, color);
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 struct GradientUniforms {
     matrix: [[f32; 3]; 3],
     gradient_type: i32,
-    ratios: [f32; 8],
-    colors: [[f32; 4]; 8],
+    ratios: Vec<f32>,
+    colors: Vec<[f32; 4]>,
     num_colors: u32,
     repeat_mode: i32,
     focal_point: f32,
@@ -523,7 +523,7 @@ impl Uniforms for GradientUniforms {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 struct AllUniforms {
     world_matrix: [[f32; 4]; 4],
     view_matrix: [[f32; 4]; 4],
