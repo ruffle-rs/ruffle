@@ -642,7 +642,7 @@ impl<R: Read> Reader<R> {
         self.bit_index = 0;
     }
 
-    pub fn read_ubits(&mut self, num_bits: usize) -> Result<u32> {
+    fn read_ubits(&mut self, num_bits: usize) -> Result<u32> {
         let mut val = 0u32;
         for _ in 0..num_bits {
             val <<= 1;
@@ -651,7 +651,7 @@ impl<R: Read> Reader<R> {
         Ok(val)
     }
 
-    pub fn read_sbits(&mut self, num_bits: usize) -> Result<i32> {
+    fn read_sbits(&mut self, num_bits: usize) -> Result<i32> {
         if num_bits > 0 {
             self.read_ubits(num_bits)
                 .map(|n| (n as i32) << (32 - num_bits) >> (32 - num_bits))
