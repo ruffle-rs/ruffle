@@ -21,10 +21,15 @@ use std::io::{Error, ErrorKind, Read, Result};
 /// let swf = swf::read_swf(&data[..]).unwrap();
 /// println!("Number of frames: {}", swf.header.num_frames);
 /// ```
-pub fn read_swf<R: Read>(mut input: R) -> Result<Swf> {
+pub fn read_swf<R: Read>(input: R) -> Result<Swf> {
+    let (header, mut reader) = read_swf_header(input)?;
+
+    // Decompress all of SWF into memory at once.
     let mut data = Vec::new();
-    input.read_to_end(&mut data)?;
-    let (header, mut reader) = read_swf_header(&data[..])?;
+    let version = reader.version;
+    reader.get_mut().read_to_end(&mut data)?;
+    let mut reader = Reader::new(&data[..], version);
+
     Ok(Swf {
         header,
         tags: reader.read_tag_list()?,
