@@ -13,44 +13,38 @@ swf = "0.1"
 ## Reading
 
 ```rust
-extern crate swf;
-
 use std::io::BufReader;
 use std::fs::File;
 
-fn main() {
-    let f = File::open("file.swf").unwrap();
-    let reader = BufReader::new(f);
-    let swf = swf::read_swf(reader).unwrap();
-    println!("The SWF has {} frames", swf.num_frames);
-}
+let file = File::open("file.swf").unwrap();
+let reader = BufReader::new(file);
+let swf = swf::read_swf(reader).unwrap();
+println!("The SWF has {} frames", swf.num_frames);
 ```
 
 ## Writing
 
 ```rust,no_run
-extern crate swf;
-
-use std::io::BufWriter;
-use std::fs::File;
 use swf::*;
-
-fn main() {
-    let f = File::create("file.swf").unwrap();
-    let writer = BufWriter::new(f);
-    let swf = Swf {
+let swf = Swf {
+    header: Header {
         version: 6,
         compression: Compression::Zlib,
-        stage_size: Rectangle { x_min: 0f32, x_max: 400f32, y_min: 0f32, y_max: 400f32 },
-        frame_rate: 60f32,
+        stage_size: Rectangle { 
+            x_min: Twips::from_pixels(0.0), x_max: Twips::from_pixels(400.0),
+            y_min: Twips::from_pixels(0.0), y_max: Twips::from_pixels(400.0)
+        },
+        frame_rate: 60.0,
         num_frames: 1,
-        tags: vec![
-            Tag::SetBackgroundColor(Color { r: 255, g: 0, b: 0, a: 255 }),
-            Tag::ShowFrame
-        ]
-    };
-    swf::write_swf(&swf, writer).unwrap();
-}
+    },
+    tags: vec![
+        Tag::SetBackgroundColor(Color { r: 255, g: 0, b: 0, a: 255 }),
+        Tag::ShowFrame
+    ]
+};
+let file = std::fs::File::create("file.swf").unwrap();
+let writer = std::io::BufWriter::new(file);
+swf::write_swf(&swf, writer).unwrap();
 ```
 
 ## License

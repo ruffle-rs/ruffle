@@ -30,9 +30,8 @@ use std::io::{Error, ErrorKind, Result, Write};
 ///         Tag::ShowFrame
 ///     ]
 /// };
-/// let file = std::fs::File::create("file.swf").unwrap();
-/// let writer = std::io::BufWriter::new(file);
-/// swf::write_swf(&swf, writer).unwrap();
+/// let output = Vec::new();
+/// swf::write_swf(&swf, output).unwrap();
 /// ```
 pub fn write_swf<W: Write>(swf: &Swf, mut output: W) -> Result<()> {
     let signature = match swf.header.compression {
