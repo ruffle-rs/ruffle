@@ -17,7 +17,7 @@ use std::io::{Error, ErrorKind, Read, Result};
 ///
 /// # Example
 /// ```
-/// let data = std::fs::read("tests/swfs/define_sprite.swf").unwrap();
+/// let data = std::fs::read("tests/swfs/DefineSprite.swf").unwrap();
 /// let swf = swf::read_swf(&data[..]).unwrap();
 /// println!("Number of frames: {}", swf.header.num_frames);
 /// ```
@@ -38,7 +38,7 @@ pub fn read_swf<R: Read>(mut input: R) -> Result<Swf> {
 ///
 /// # Example
 /// ```
-/// let data = std::fs::read("tests/swfs/define_sprite.swf").unwrap();
+/// let data = std::fs::read("tests/swfs/DefineSprite.swf").unwrap();
 /// let (header, _reader) = swf::read_swf_header(&data[..]).unwrap();
 /// println!("FPS: {}", header.frame_rate);
 /// ```
@@ -267,7 +267,7 @@ impl<R: Read> Reader<R> {
     /// Reads the next SWF tag from the stream.
     /// # Example
     /// ```
-    /// let data = std::fs::read("tests/swfs/define_sprite.swf").unwrap();
+    /// let data = std::fs::read("tests/swfs/DefineSprite.swf").unwrap();
     /// let (header, mut reader) = swf::read_swf_header(&data[..]).unwrap();
     /// while let Some(tag) = reader.read_tag().unwrap() {
     ///     println!("Tag: {:?}", tag);
