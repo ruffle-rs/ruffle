@@ -246,7 +246,7 @@ impl<R: Read> SwfRead<R> for Reader<R> {
 }
 
 impl<R: Read> Reader<R> {
-    fn new(input: R, version: u8) -> Reader<R> {
+    pub fn new(input: R, version: u8) -> Reader<R> {
         Reader {
             input,
             version,
