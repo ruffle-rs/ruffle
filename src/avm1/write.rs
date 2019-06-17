@@ -1,4 +1,4 @@
-#![allow(clippy::cyclomatic_complexity, clippy::unreadable_literal)]
+#![allow(clippy::cognitive_complexity, clippy::unreadable_literal)]
 
 use crate::avm1::opcode::OpCode;
 use crate::avm1::types::*;

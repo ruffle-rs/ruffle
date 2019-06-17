@@ -1,4 +1,9 @@
-#![allow(clippy::cyclomatic_complexity, clippy::float_cmp, clippy::inconsistent_digit_grouping, clippy::unreadable_literal)]
+#![allow(
+    clippy::cognitive_complexity,
+    clippy::float_cmp,
+    clippy::inconsistent_digit_grouping,
+    clippy::unreadable_literal
+)]
 
 use crate::tag_codes::TagCode;
 use crate::types::*;
