@@ -847,6 +847,8 @@ impl<W: Write> Writer<W> {
                 }
             }
 
+            Tag::End => self.write_tag_header(TagCode::End, 0)?,
+
             Tag::ImportAssets {
                 ref url,
                 ref imports,
@@ -2688,8 +2690,9 @@ impl<W: Write> Writer<W> {
         for tag in tags {
             self.write_tag(tag)?;
         }
-        // Write End tag.
-        self.write_u16(0)
+        // Implicit end tag.
+        self.write_tag(&Tag::End)?;
+        Ok(())
     }
 }
 

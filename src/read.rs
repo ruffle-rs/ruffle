@@ -246,7 +246,7 @@ impl<R: Read> SwfRead<R> for Reader<R> {
 }
 
 impl<R: Read> Reader<R> {
-    fn new(input: R, version: u8) -> Reader<R> {
+    pub fn new(input: R, version: u8) -> Reader<R> {
         Reader {
             input,
             version,
@@ -274,11 +274,11 @@ impl<R: Read> Reader<R> {
     /// ```
     /// let data = std::fs::read("tests/swfs/DefineSprite.swf").unwrap();
     /// let (header, mut reader) = swf::read_swf_header(&data[..]).unwrap();
-    /// while let Some(tag) = reader.read_tag().unwrap() {
+    /// while let Ok(tag) = reader.read_tag() {
     ///     println!("Tag: {:?}", tag);
     /// }
     /// ```
-    pub fn read_tag(&mut self) -> Result<Option<Tag>> {
+    pub fn read_tag(&mut self) -> Result<Tag> {
         use num_traits::FromPrimitive;
 
         let (tag_code, length) = self.read_tag_code_and_length()?;
@@ -286,7 +286,7 @@ impl<R: Read> Reader<R> {
         let mut tag_reader = Reader::new(self.input.by_ref().take(length as u64), self.version);
         use crate::tag_code::TagCode;
         let tag = match TagCode::from_u16(tag_code) {
-            Some(TagCode::End) => return Ok(None),
+            Some(TagCode::End) => Tag::End,
             Some(TagCode::ShowFrame) => Tag::ShowFrame,
             Some(TagCode::CsmTextSettings) => tag_reader.read_csm_text_settings()?,
             Some(TagCode::DefineBinaryData) => {
@@ -602,7 +602,7 @@ impl<R: Read> Reader<R> {
             panic!("Error reading tag {:?}", tag_code);
         }
 
-        Ok(Some(tag))
+        Ok(tag)
     }
 
     fn read_compression_type(mut input: R) -> Result<Compression> {
@@ -795,8 +795,8 @@ impl<R: Read> Reader<R> {
         let mut tags = Vec::new();
         loop {
             match self.read_tag() {
-                Ok(Some(tag)) => tags.push(tag),
-                Ok(None) => break,
+                Ok(Tag::End) => break,
+                Ok(tag) => tags.push(tag),
                 Err(err) => {
                     // We screwed up reading this tag in some way.
                     // TODO: We could recover more gracefully in some way.
@@ -806,7 +806,7 @@ impl<R: Read> Reader<R> {
                     }
                     return Err(err);
                 }
-            };
+            }
         }
         Ok(tags)
     }
@@ -2944,13 +2944,6 @@ pub mod tests {
     }
 
     #[test]
-    fn read_end_tag() {
-        let buf = [0, 0];
-        let mut reader = Reader::new(&buf[..], 1);
-        assert_eq!(reader.read_tag().unwrap(), None);
-    }
-
-    #[test]
     fn read_shape_styles() {}
 
     #[test]
@@ -3058,7 +3051,7 @@ pub mod tests {
     fn read_tags() {
         for (swf_version, expected_tag, tag_bytes) in test_data::tag_tests() {
             let mut reader = Reader::new(&tag_bytes[..], swf_version);
-            let parsed_tag = reader.read_tag().unwrap().unwrap();
+            let parsed_tag = reader.read_tag().unwrap();
             if parsed_tag != expected_tag {
                 // Failed, result doesn't match.
                 panic!(

@@ -498,6 +498,7 @@ pub enum Tag {
     EnableTelemetry {
         password_hash: Vec<u8>,
     },
+    End,
     Metadata(String),
     ImportAssets {
         url: String,
