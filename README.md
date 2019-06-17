@@ -1,6 +1,7 @@
 # swf
-
-[![Build Status](https://travis-ci.org/Herschel/swf-rs.svg?branch=master)](https://travis-ci.org/Herschel/swf-rs)
+[![crates.io](https://img.shields.io/crates/v/swf.svg)](https://crates.io/crates/swf)
+[![docs.rs](https://docs.rs/swf/badge.svg)](https://docs.rs/swf)
+[![TravisCI](https://travis-ci.org/Herschel/swf-rs.svg?branch=master)](https://travis-ci.org/Herschel/swf-rs)
 
 A Rust library for reading and writing the Adobe Flash SWF file format.
 

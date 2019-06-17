@@ -2621,6 +2621,6 @@ pub fn avm2_tests() -> Vec<Avm2TestData> {
                 },
             ],
         },
-        read_abc_from_file("tests/swfs/AVM2Dummy.swf"),
+        read_abc_from_file("tests/swfs/Avm2Dummy.swf"),
     )]
 }
