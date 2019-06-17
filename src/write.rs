@@ -1,5 +1,5 @@
 #![allow(
-    clippy::cyclomatic_complexity,
+    clippy::cognitive_complexity,
     clippy::float_cmp,
     clippy::inconsistent_digit_grouping,
     clippy::unreadable_literal
