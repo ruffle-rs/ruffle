@@ -1,3 +1,5 @@
+use bitstream_io::{BigEndian, BitReader};
+use std::io::Read;
 use generational_arena::{Arena, Index};
 
 pub mod swf {
@@ -52,8 +54,8 @@ impl AudioBackend for NullAudioBackend {
     }
 }
 
-pub struct AdpcmDecoder<R: std::io::Read> {
-    inner: swf::read::Reader<R>,
+pub struct AdpcmDecoder<R: Read> {
+    inner: BitReader<R, BigEndian>,
     is_stereo: bool,
     bits_per_sample: usize,
     sample_num: u16,
@@ -65,7 +67,7 @@ pub struct AdpcmDecoder<R: std::io::Read> {
     right_step: i32,
 }
 
-impl<R: std::io::Read> AdpcmDecoder<R> {
+impl<R: Read> AdpcmDecoder<R> {
     const INDEX_TABLE: [&'static [i16]; 4] = [
         &[-1, 2],
         &[-1, -1, 2, 4],
@@ -82,11 +84,9 @@ impl<R: std::io::Read> AdpcmDecoder<R> {
         29794, 32767,
     ];
 
-    pub fn new(inner: R, is_stereo: bool) -> Result<Self, Error> {
-        use self::swf::read::SwfRead;
-
-        let mut reader = swf::read::Reader::new(inner, 1);
-        let bits_per_sample = reader.read_ubits(2)? as usize + 2;
+    pub fn new(inner: R, is_stereo: bool) -> Result<Self, Error> {        
+        let mut reader = BitReader::new(inner);
+        let bits_per_sample = reader.read::<u8>(2)? as usize + 2;
 
         let mut left_sample = 0;
         let mut left_step_index = 0;
@@ -109,23 +109,21 @@ impl<R: std::io::Read> AdpcmDecoder<R> {
     }
 
     pub fn next(&mut self) -> Result<(i16, i16), Error> {
-        use self::swf::read::SwfRead;
-
         if self.sample_num == 0 {
             // The initial sample values are NOT byte-aligned.
-            self.left_sample = self.inner.read_sbits(16)?;
-            self.left_step_index = self.inner.read_ubits(6)? as i16;
+            self.left_sample = self.inner.read_signed(16)?;
+            self.left_step_index = self.inner.read::<u16>(6)? as i16;
             self.left_step = Self::STEP_TABLE[self.left_step_index as usize];
             if self.is_stereo {
-                self.right_sample = self.inner.read_sbits(16)?;
-                self.right_step_index = self.inner.read_ubits(6)? as i16;
+                self.right_sample = self.inner.read_signed(16)?;
+                self.right_step_index = self.inner.read::<u16>(6)? as i16;
                 self.right_step = Self::STEP_TABLE[self.right_step_index as usize];
             }
         }
 
         self.sample_num = (self.sample_num + 1) % 4095;
 
-        let data = self.inner.read_ubits(self.bits_per_sample)? as i32;
+        let data: i32 = self.inner.read::<u32>(self.bits_per_sample as u32)? as i32;
         self.left_step = Self::STEP_TABLE[self.left_step_index as usize];
 
         // (data + 0.5) * step / 2^(bits_per_sample - 2)
@@ -155,7 +153,7 @@ impl<R: std::io::Read> AdpcmDecoder<R> {
         }
 
         if self.is_stereo {
-            let data = self.inner.read_ubits(self.bits_per_sample)? as i32;
+            let data = self.inner.read::<u32>(self.bits_per_sample as u32)? as i32;
             self.right_step = Self::STEP_TABLE[self.right_step_index as usize];
 
             let sign_mask = 1 << (self.bits_per_sample - 1);

@@ -5,6 +5,7 @@ authors = ["Mike Welsh <mwelsh@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+bitstream-io = "0.8.2"
 gc = "0.3.3"
 gc_derive = "0.3.2"
 generational-arena = "0.2.2"

@@ -41,18 +41,24 @@ impl Player {
         audio: Box<AudioBackend>,
         swf_data: Vec<u8>,
     ) -> Result<Player, Box<std::error::Error>> {
-        let (swf, tag_stream) = swf::read::read_swf_header_decompressed(&swf_data[..]).unwrap();
-        info!("{}x{}", swf.stage_size.x_max, swf.stage_size.y_max);
+        let (header, mut reader) = swf::read::read_swf_header(&swf_data[..]).unwrap();
+        
+        // Decompress the entire SWF in memory.
+        let mut data = Vec::new();
+        reader.get_mut().read_to_end(&mut data)?;
+        let tag_stream = swf::read::Reader::new(Cursor::new(data), header.version);
 
-        let stage = DisplayObject::new(Box::new(MovieClip::new_with_data(0, swf.num_frames)));
-        let movie_width = (swf.stage_size.x_max - swf.stage_size.x_min).to_pixels() as u32;
-        let movie_height = (swf.stage_size.y_max - swf.stage_size.y_min).to_pixels() as u32;
+        info!("{}x{}", header.stage_size.x_max, header.stage_size.y_max);
+
+        let stage = DisplayObject::new(Box::new(MovieClip::new_with_data(0, header.num_frames)));
+        let movie_width = (header.stage_size.x_max - header.stage_size.x_min).to_pixels() as u32;
+        let movie_height = (header.stage_size.y_max - header.stage_size.y_min).to_pixels() as u32;
         renderer.set_dimensions(movie_width, movie_height);
 
         let mut player = Player {
             tag_stream,
 
-            avm: Avm1::new(swf.version),
+            avm: Avm1::new(header.version),
 
             renderer,
             audio: Audio::new(audio),
@@ -68,7 +74,7 @@ impl Player {
             library: Library::new(),
             stage: Gc::new(GcCell::new(stage)),
 
-            frame_rate: swf.frame_rate.into(),
+            frame_rate: header.frame_rate.into(),
             frame_accumulator: 0.0,
             global_time: 0,
 
