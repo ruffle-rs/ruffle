@@ -1,6 +1,6 @@
 [package]
 name = "swf"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2018"
 authors = ["Mike Welsh"]
 repository = "https://github.com/Herschel/swf-rs.git"
