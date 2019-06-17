@@ -9,14 +9,40 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use std::collections::HashSet;
 use std::io::{Error, ErrorKind, Read, Result};
 
-/// Reads SWF data from a stream.
-pub fn read_swf<R: Read>(input: R) -> Result<Swf> {
-    let (mut swf, mut reader) = read_swf_header(input)?;
-    swf.tags = reader.read_tag_list()?;
-    Ok(swf)
+/// Convenience method to parse an SWF.
+///
+/// Decompresses the SWF in memory and returns a `Vec` of tags.
+/// If you would like to stream the SWF instead, use `read_swf_header` and
+/// `read_tag`.
+///
+/// # Example
+/// ```
+/// let data = std::fs::read("tests/swfs/define_sprite.swf").unwrap();
+/// let swf = swf::read_swf(&data[..]).unwrap();
+/// println!("Number of frames: {}", swf.header.num_frames);
+/// ```
+pub fn read_swf<R: Read>(mut input: R) -> Result<Swf> {
+    let mut data = Vec::new();
+    input.read_to_end(&mut data)?;
+    let (header, mut reader) = read_swf_header(&data[..])?;
+    Ok(Swf {
+        header,
+        tags: reader.read_tag_list()?,
+    })
 }
 
-fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<(Swf, Reader<Box<Read + 'a>>)> {
+/// Parses an SWF header and returns a `Reader` that can be used
+/// to read the SWF tags inside the SWF file.
+///
+/// Returns an `Error` if this is not a valid SWF file.
+///
+/// # Example
+/// ```
+/// let data = std::fs::read("tests/swfs/define_sprite.swf").unwrap();
+/// let (header, _reader) = swf::read_swf_header(&data[..]).unwrap();
+/// println!("FPS: {}", header.frame_rate);
+/// ```
+pub fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<(Header, Reader<Box<Read + 'a>>)> {
     // Read SWF header.
     let compression = Reader::read_compression_type(&mut input)?;
     let version = input.read_u8()?;
@@ -33,24 +59,14 @@ fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<(Swf, Reader<Box<Re
     let stage_size = reader.read_rectangle()?;
     let frame_rate = reader.read_fixed8()?;
     let num_frames = reader.read_u16()?;
-    let swf = Swf {
+    let header = Header {
         version,
         compression,
         stage_size,
         frame_rate,
         num_frames,
-        tags: vec![],
     };
-    Ok((swf, reader))
-}
-
-pub fn read_swf_header_decompressed<'a, R: Read + 'a>(
-    input: R,
-) -> Result<(Swf, Reader<std::io::Cursor<Vec<u8>>>)> {
-    let (swf, mut reader) = read_swf_header(input)?;
-    let mut data = vec![];
-    reader.get_inner().read_to_end(&mut data)?;
-    Ok((swf, Reader::new(std::io::Cursor::new(data), reader.version)))
+    Ok((header, reader))
 }
 
 #[cfg(feature = "flate2")]
@@ -225,7 +241,7 @@ impl<R: Read> SwfRead<R> for Reader<R> {
 }
 
 impl<R: Read> Reader<R> {
-    pub fn new(input: R, version: u8) -> Reader<R> {
+    fn new(input: R, version: u8) -> Reader<R> {
         Reader {
             input,
             version,
@@ -236,216 +252,27 @@ impl<R: Read> Reader<R> {
         }
     }
 
+    /// Returns a reference to the underlying `Reader`.
     pub fn get_ref(&self) -> &R {
         &self.input
     }
 
-    fn read_compression_type(mut input: R) -> Result<Compression> {
-        let mut signature = [0u8; 3];
-        input.read_exact(&mut signature)?;
-        let compression = match &signature {
-            b"FWS" => Compression::None,
-            b"CWS" => Compression::Zlib,
-            b"ZWS" => Compression::Lzma,
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid SWF")),
-        };
-        Ok(compression)
+    /// Returns a mutable reference to the underlying `Reader`.
+    ///
+    /// Reading from this reference is not recommended.
+    pub fn get_mut(&mut self) -> &mut R {
+        &mut self.input
     }
 
-    fn read_rectangle(&mut self) -> Result<Rectangle> {
-        self.byte_align();
-        let num_bits = self.read_ubits(5)? as usize;
-        Ok(Rectangle {
-            x_min: self.read_sbits_twips(num_bits)?,
-            x_max: self.read_sbits_twips(num_bits)?,
-            y_min: self.read_sbits_twips(num_bits)?,
-            y_max: self.read_sbits_twips(num_bits)?,
-        })
-    }
-
-    fn read_bit(&mut self) -> Result<bool> {
-        if self.bit_index == 0 {
-            self.byte = self.input.read_u8()?;
-            self.bit_index = 8;
-        }
-        self.bit_index -= 1;
-        let val = self.byte & (1 << self.bit_index) != 0;
-        Ok(val)
-    }
-
-    fn byte_align(&mut self) {
-        self.bit_index = 0;
-    }
-
-    pub fn read_ubits(&mut self, num_bits: usize) -> Result<u32> {
-        let mut val = 0u32;
-        for _ in 0..num_bits {
-            val <<= 1;
-            val |= if self.read_bit()? { 1 } else { 0 };
-        }
-        Ok(val)
-    }
-
-    pub fn read_sbits(&mut self, num_bits: usize) -> Result<i32> {
-        if num_bits > 0 {
-            self.read_ubits(num_bits)
-                .map(|n| (n as i32) << (32 - num_bits) >> (32 - num_bits))
-        } else {
-            Ok(0)
-        }
-    }
-
-    fn read_sbits_twips(&mut self, num_bits: usize) -> Result<Twips> {
-        self.read_sbits(num_bits).map(Twips::new)
-    }
-
-    fn read_fbits(&mut self, num_bits: usize) -> Result<f32> {
-        self.read_sbits(num_bits).map(|n| (n as f32) / 65536f32)
-    }
-
-    fn read_encoded_u32(&mut self) -> Result<u32> {
-        let mut val = 0u32;
-        for i in 0..5 {
-            let byte = self.read_u8()?;
-            val |= u32::from(byte & 0b01111111) << (i * 7);
-            if byte & 0b10000000 == 0 {
-                break;
-            }
-        }
-        Ok(val)
-    }
-
-    fn read_character_id(&mut self) -> Result<CharacterId> {
-        self.read_u16()
-    }
-
-    fn read_rgb(&mut self) -> Result<Color> {
-        let r = self.read_u8()?;
-        let g = self.read_u8()?;
-        let b = self.read_u8()?;
-        Ok(Color { r, g, b, a: 255 })
-    }
-
-    fn read_rgba(&mut self) -> Result<Color> {
-        let r = self.read_u8()?;
-        let g = self.read_u8()?;
-        let b = self.read_u8()?;
-        let a = self.read_u8()?;
-        Ok(Color { r, g, b, a })
-    }
-
-    fn read_color_transform_no_alpha(&mut self) -> Result<ColorTransform> {
-        self.byte_align();
-        let has_add = self.read_bit()?;
-        let has_mult = self.read_bit()?;
-        let num_bits = self.read_ubits(4)? as usize;
-        let mut color_transform = ColorTransform {
-            r_multiply: 1f32,
-            g_multiply: 1f32,
-            b_multiply: 1f32,
-            a_multiply: 1f32,
-            r_add: 0i16,
-            g_add: 0i16,
-            b_add: 0i16,
-            a_add: 0i16,
-        };
-        if has_mult {
-            color_transform.r_multiply = self.read_sbits(num_bits)? as f32 / 256f32;
-            color_transform.g_multiply = self.read_sbits(num_bits)? as f32 / 256f32;
-            color_transform.b_multiply = self.read_sbits(num_bits)? as f32 / 256f32;
-        }
-        if has_add {
-            color_transform.r_add = self.read_sbits(num_bits)? as i16;
-            color_transform.g_add = self.read_sbits(num_bits)? as i16;
-            color_transform.b_add = self.read_sbits(num_bits)? as i16;
-        }
-        Ok(color_transform)
-    }
-
-    fn read_color_transform(&mut self) -> Result<ColorTransform> {
-        self.byte_align();
-        let has_add = self.read_bit()?;
-        let has_mult = self.read_bit()?;
-        let num_bits = self.read_ubits(4)? as usize;
-        let mut color_transform = ColorTransform {
-            r_multiply: 1f32,
-            g_multiply: 1f32,
-            b_multiply: 1f32,
-            a_multiply: 1f32,
-            r_add: 0i16,
-            g_add: 0i16,
-            b_add: 0i16,
-            a_add: 0i16,
-        };
-        if has_mult {
-            color_transform.r_multiply = self.read_sbits(num_bits)? as f32 / 256f32;
-            color_transform.g_multiply = self.read_sbits(num_bits)? as f32 / 256f32;
-            color_transform.b_multiply = self.read_sbits(num_bits)? as f32 / 256f32;
-            color_transform.a_multiply = self.read_sbits(num_bits)? as f32 / 256f32;
-        }
-        if has_add {
-            color_transform.r_add = self.read_sbits(num_bits)? as i16;
-            color_transform.g_add = self.read_sbits(num_bits)? as i16;
-            color_transform.b_add = self.read_sbits(num_bits)? as i16;
-            color_transform.a_add = self.read_sbits(num_bits)? as i16;
-        }
-        Ok(color_transform)
-    }
-
-    fn read_matrix(&mut self) -> Result<Matrix> {
-        self.byte_align();
-        let mut m = Matrix::new();
-        // Scale
-        if self.read_bit()? {
-            let num_bits = self.read_ubits(5)? as usize;
-            m.scale_x = self.read_fbits(num_bits)?;
-            m.scale_y = self.read_fbits(num_bits)?;
-        }
-        // Rotate/Skew
-        if self.read_bit()? {
-            let num_bits = self.read_ubits(5)? as usize;
-            m.rotate_skew_0 = self.read_fbits(num_bits)?;
-            m.rotate_skew_1 = self.read_fbits(num_bits)?;
-        }
-        // Translate (always present)
-        let num_bits = self.read_ubits(5)? as usize;
-        m.translate_x = self.read_sbits_twips(num_bits)?;
-        m.translate_y = self.read_sbits_twips(num_bits)?;
-        Ok(m)
-    }
-
-    fn read_language(&mut self) -> Result<Language> {
-        Ok(match self.read_u8()? {
-            0 => Language::Unknown,
-            1 => Language::Latin,
-            2 => Language::Japanese,
-            3 => Language::Korean,
-            4 => Language::SimplifiedChinese,
-            5 => Language::TraditionalChinese,
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid language code.")),
-        })
-    }
-
-    fn read_tag_list(&mut self) -> Result<Vec<Tag>> {
-        let mut tags = Vec::new();
-        loop {
-            match self.read_tag() {
-                Ok(Some(tag)) => tags.push(tag),
-                Ok(None) => break,
-                Err(err) => {
-                    // We screwed up reading this tag in some way.
-                    // TODO: We could recover more gracefully in some way.
-                    // Simply throw away this tag, but keep going.
-                    if cfg!(debug_assertions) {
-                        panic!("Error reading tag");
-                    }
-                    return Err(err);
-                }
-            };
-        }
-        Ok(tags)
-    }
-
+    /// Reads the next SWF tag from the stream.
+    /// # Example
+    /// ```
+    /// let data = std::fs::read("tests/swfs/define_sprite.swf").unwrap();
+    /// let (header, mut reader) = swf::read_swf_header(&data[..]).unwrap();
+    /// while let Some(tag) = reader.read_tag().unwrap() {
+    ///     println!("Tag: {:?}", tag);
+    /// }
+    /// ```
     pub fn read_tag(&mut self) -> Result<Option<Tag>> {
         use num_traits::FromPrimitive;
 
@@ -771,6 +598,212 @@ impl<R: Read> Reader<R> {
         }
 
         Ok(Some(tag))
+    }
+
+    fn read_compression_type(mut input: R) -> Result<Compression> {
+        let mut signature = [0u8; 3];
+        input.read_exact(&mut signature)?;
+        let compression = match &signature {
+            b"FWS" => Compression::None,
+            b"CWS" => Compression::Zlib,
+            b"ZWS" => Compression::Lzma,
+            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid SWF")),
+        };
+        Ok(compression)
+    }
+
+    fn read_rectangle(&mut self) -> Result<Rectangle> {
+        self.byte_align();
+        let num_bits = self.read_ubits(5)? as usize;
+        Ok(Rectangle {
+            x_min: self.read_sbits_twips(num_bits)?,
+            x_max: self.read_sbits_twips(num_bits)?,
+            y_min: self.read_sbits_twips(num_bits)?,
+            y_max: self.read_sbits_twips(num_bits)?,
+        })
+    }
+
+    fn read_bit(&mut self) -> Result<bool> {
+        if self.bit_index == 0 {
+            self.byte = self.input.read_u8()?;
+            self.bit_index = 8;
+        }
+        self.bit_index -= 1;
+        let val = self.byte & (1 << self.bit_index) != 0;
+        Ok(val)
+    }
+
+    fn byte_align(&mut self) {
+        self.bit_index = 0;
+    }
+
+    pub fn read_ubits(&mut self, num_bits: usize) -> Result<u32> {
+        let mut val = 0u32;
+        for _ in 0..num_bits {
+            val <<= 1;
+            val |= if self.read_bit()? { 1 } else { 0 };
+        }
+        Ok(val)
+    }
+
+    pub fn read_sbits(&mut self, num_bits: usize) -> Result<i32> {
+        if num_bits > 0 {
+            self.read_ubits(num_bits)
+                .map(|n| (n as i32) << (32 - num_bits) >> (32 - num_bits))
+        } else {
+            Ok(0)
+        }
+    }
+
+    fn read_sbits_twips(&mut self, num_bits: usize) -> Result<Twips> {
+        self.read_sbits(num_bits).map(Twips::new)
+    }
+
+    fn read_fbits(&mut self, num_bits: usize) -> Result<f32> {
+        self.read_sbits(num_bits).map(|n| (n as f32) / 65536f32)
+    }
+
+    fn read_encoded_u32(&mut self) -> Result<u32> {
+        let mut val = 0u32;
+        for i in 0..5 {
+            let byte = self.read_u8()?;
+            val |= u32::from(byte & 0b01111111) << (i * 7);
+            if byte & 0b10000000 == 0 {
+                break;
+            }
+        }
+        Ok(val)
+    }
+
+    fn read_character_id(&mut self) -> Result<CharacterId> {
+        self.read_u16()
+    }
+
+    fn read_rgb(&mut self) -> Result<Color> {
+        let r = self.read_u8()?;
+        let g = self.read_u8()?;
+        let b = self.read_u8()?;
+        Ok(Color { r, g, b, a: 255 })
+    }
+
+    fn read_rgba(&mut self) -> Result<Color> {
+        let r = self.read_u8()?;
+        let g = self.read_u8()?;
+        let b = self.read_u8()?;
+        let a = self.read_u8()?;
+        Ok(Color { r, g, b, a })
+    }
+
+    fn read_color_transform_no_alpha(&mut self) -> Result<ColorTransform> {
+        self.byte_align();
+        let has_add = self.read_bit()?;
+        let has_mult = self.read_bit()?;
+        let num_bits = self.read_ubits(4)? as usize;
+        let mut color_transform = ColorTransform {
+            r_multiply: 1f32,
+            g_multiply: 1f32,
+            b_multiply: 1f32,
+            a_multiply: 1f32,
+            r_add: 0i16,
+            g_add: 0i16,
+            b_add: 0i16,
+            a_add: 0i16,
+        };
+        if has_mult {
+            color_transform.r_multiply = self.read_sbits(num_bits)? as f32 / 256f32;
+            color_transform.g_multiply = self.read_sbits(num_bits)? as f32 / 256f32;
+            color_transform.b_multiply = self.read_sbits(num_bits)? as f32 / 256f32;
+        }
+        if has_add {
+            color_transform.r_add = self.read_sbits(num_bits)? as i16;
+            color_transform.g_add = self.read_sbits(num_bits)? as i16;
+            color_transform.b_add = self.read_sbits(num_bits)? as i16;
+        }
+        Ok(color_transform)
+    }
+
+    fn read_color_transform(&mut self) -> Result<ColorTransform> {
+        self.byte_align();
+        let has_add = self.read_bit()?;
+        let has_mult = self.read_bit()?;
+        let num_bits = self.read_ubits(4)? as usize;
+        let mut color_transform = ColorTransform {
+            r_multiply: 1f32,
+            g_multiply: 1f32,
+            b_multiply: 1f32,
+            a_multiply: 1f32,
+            r_add: 0i16,
+            g_add: 0i16,
+            b_add: 0i16,
+            a_add: 0i16,
+        };
+        if has_mult {
+            color_transform.r_multiply = self.read_sbits(num_bits)? as f32 / 256f32;
+            color_transform.g_multiply = self.read_sbits(num_bits)? as f32 / 256f32;
+            color_transform.b_multiply = self.read_sbits(num_bits)? as f32 / 256f32;
+            color_transform.a_multiply = self.read_sbits(num_bits)? as f32 / 256f32;
+        }
+        if has_add {
+            color_transform.r_add = self.read_sbits(num_bits)? as i16;
+            color_transform.g_add = self.read_sbits(num_bits)? as i16;
+            color_transform.b_add = self.read_sbits(num_bits)? as i16;
+            color_transform.a_add = self.read_sbits(num_bits)? as i16;
+        }
+        Ok(color_transform)
+    }
+
+    fn read_matrix(&mut self) -> Result<Matrix> {
+        self.byte_align();
+        let mut m = Matrix::new();
+        // Scale
+        if self.read_bit()? {
+            let num_bits = self.read_ubits(5)? as usize;
+            m.scale_x = self.read_fbits(num_bits)?;
+            m.scale_y = self.read_fbits(num_bits)?;
+        }
+        // Rotate/Skew
+        if self.read_bit()? {
+            let num_bits = self.read_ubits(5)? as usize;
+            m.rotate_skew_0 = self.read_fbits(num_bits)?;
+            m.rotate_skew_1 = self.read_fbits(num_bits)?;
+        }
+        // Translate (always present)
+        let num_bits = self.read_ubits(5)? as usize;
+        m.translate_x = self.read_sbits_twips(num_bits)?;
+        m.translate_y = self.read_sbits_twips(num_bits)?;
+        Ok(m)
+    }
+
+    fn read_language(&mut self) -> Result<Language> {
+        Ok(match self.read_u8()? {
+            0 => Language::Unknown,
+            1 => Language::Latin,
+            2 => Language::Japanese,
+            3 => Language::Korean,
+            4 => Language::SimplifiedChinese,
+            5 => Language::TraditionalChinese,
+            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid language code.")),
+        })
+    }
+
+    fn read_tag_list(&mut self) -> Result<Vec<Tag>> {
+        let mut tags = Vec::new();
+        loop {
+            match self.read_tag() {
+                Ok(Some(tag)) => tags.push(tag),
+                Ok(None) => break,
+                Err(err) => {
+                    // We screwed up reading this tag in some way.
+                    // TODO: We could recover more gracefully in some way.
+                    // Simply throw away this tag, but keep going.
+                    if cfg!(debug_assertions) {
+                        panic!("Error reading tag");
+                    }
+                    return Err(err);
+                }
+            };
+        }
+        Ok(tags)
     }
 
     pub fn read_tag_code_and_length(&mut self) -> Result<(u16, usize)> {
@@ -2670,16 +2703,18 @@ pub mod tests {
     #[test]
     fn read_swfs() {
         assert_eq!(
-            read_from_file("tests/swfs/uncompressed.swf").compression,
+            read_from_file("tests/swfs/uncompressed.swf")
+                .header
+                .compression,
             Compression::None
         );
         assert_eq!(
-            read_from_file("tests/swfs/zlib.swf").compression,
+            read_from_file("tests/swfs/zlib.swf").header.compression,
             Compression::Zlib
         );
         if cfg!(feature = "lzma-support") {
             assert_eq!(
-                read_from_file("tests/swfs/lzma.swf").compression,
+                read_from_file("tests/swfs/lzma.swf").header.compression,
                 Compression::Lzma
             );
         }

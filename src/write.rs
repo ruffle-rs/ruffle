@@ -12,23 +12,45 @@ use std::cmp::max;
 use std::collections::HashSet;
 use std::io::{Error, ErrorKind, Result, Write};
 
+/// Writes an SWF file to an output stream.
+/// # Example
+/// ```
+/// use swf::*;
+///
+/// let swf = Swf {
+///     header: Header {
+///         version: 6,
+///         compression: Compression::Zlib,
+///         stage_size: Rectangle { x_min: Twips::from_pixels(0.0), x_max: Twips::from_pixels(400.0), y_min: Twips::from_pixels(0.0), y_max: Twips::from_pixels(400.0) },
+///         frame_rate: 60.0,
+///         num_frames: 1,
+///     },
+///     tags: vec![
+///         Tag::SetBackgroundColor(Color { r: 255, g: 0, b: 0, a: 255 }),
+///         Tag::ShowFrame
+///     ]
+/// };
+/// let file = std::fs::File::create("file.swf").unwrap();
+/// let writer = std::io::BufWriter::new(file);
+/// swf::write_swf(&swf, writer).unwrap();
+/// ```
 pub fn write_swf<W: Write>(swf: &Swf, mut output: W) -> Result<()> {
-    let signature = match swf.compression {
+    let signature = match swf.header.compression {
         Compression::None => b"FWS",
         Compression::Zlib => b"CWS",
         Compression::Lzma => b"ZWS",
     };
     output.write_all(&signature[..])?;
-    output.write_u8(swf.version)?;
+    output.write_u8(swf.header.version)?;
 
     // Write SWF body.
     let mut swf_body = Vec::new();
     {
-        let mut writer = Writer::new(&mut swf_body, swf.version);
+        let mut writer = Writer::new(&mut swf_body, swf.header.version);
 
-        writer.write_rectangle(&swf.stage_size)?;
-        writer.write_fixed8(swf.frame_rate)?;
-        writer.write_u16(swf.num_frames)?;
+        writer.write_rectangle(&swf.header.stage_size)?;
+        writer.write_fixed8(swf.header.frame_rate)?;
+        writer.write_u16(swf.header.num_frames)?;
 
         // Write main timeline tag list.
         writer.write_tag_list(&swf.tags)?;
@@ -39,7 +61,7 @@ pub fn write_swf<W: Write>(swf: &Swf, mut output: W) -> Result<()> {
     output.write_u32::<LittleEndian>(swf_body.len() as u32 + 8)?;
 
     // Compress SWF body.
-    match swf.compression {
+    match swf.header.compression {
         Compression::None => {
             output.write_all(&swf_body)?;
         }
@@ -2719,16 +2741,18 @@ mod tests {
 
     fn new_swf() -> Swf {
         Swf {
-            version: 13,
-            compression: Compression::Zlib,
-            stage_size: Rectangle {
-                x_min: Twips::from_pixels(0.0),
-                x_max: Twips::from_pixels(640.0),
-                y_min: Twips::from_pixels(0.0),
-                y_max: Twips::from_pixels(480.0),
+            header: Header {
+                version: 13,
+                compression: Compression::Zlib,
+                stage_size: Rectangle {
+                    x_min: Twips::from_pixels(0.0),
+                    x_max: Twips::from_pixels(640.0),
+                    y_min: Twips::from_pixels(0.0),
+                    y_max: Twips::from_pixels(480.0),
+                },
+                frame_rate: 60.0,
+                num_frames: 1,
             },
-            frame_rate: 60.0,
-            num_frames: 1,
             tags: vec![],
         }
     }
@@ -2738,7 +2762,7 @@ mod tests {
         fn write_dummy_swf(compression: Compression) -> Result<()> {
             let mut buf = Vec::new();
             let mut swf = new_swf();
-            swf.compression = compression;
+            swf.header.compression = compression;
             write_swf(&swf, &mut buf)
         }
         assert!(

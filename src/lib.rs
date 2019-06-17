@@ -29,7 +29,7 @@ pub mod write;
 mod test_data;
 
 /// Parses an SWF from a `Read` stream.
-pub use read::read_swf;
+pub use read::{read_swf, read_swf_header};
 
 /// Writes an SWF to a `Write` stream.
 pub use write::write_swf;

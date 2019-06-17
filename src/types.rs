@@ -1,16 +1,36 @@
+//! The data structures used in an Adobe SWF file.
+//!
+//! These structures are documented in the Adobe SWF File Foramt Specification
+//! version 19 (henceforth SWF19):
+//! https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf
 use std::collections::HashSet;
 
+/// A complete header and tags in the SWF file.
+/// This is returned by the `swf::read_swf` convenience method.
 #[derive(Debug, PartialEq)]
 pub struct Swf {
+    pub header: Header,
+    pub tags: Vec<Tag>,
+}
+
+/// The header of an SWF file.
+///
+/// Notably contains the compression format used by the rest of the SWF data.
+///
+/// [SWF19 p.27](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=27)
+#[derive(Debug, PartialEq)]
+pub struct Header {
     pub version: u8,
     pub compression: Compression,
     pub stage_size: Rectangle,
     pub frame_rate: f32,
     pub num_frames: u16,
-    pub tags: Vec<Tag>,
 }
 
-/// Defines the compression type used in an SWF.
+/// The compression foramt used internally by the SWF file.
+///
+/// The vast majority of SWFs will use zlib compression.
+/// [SWF19 p.27](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=27)
 #[derive(Debug, PartialEq, Eq)]
 pub enum Compression {
     None,
@@ -18,24 +38,42 @@ pub enum Compression {
     Lzma,
 }
 
+/// Most coordinates in an SWF file are represented in "twips".
+/// A twip is 1/20th of a pixel.
+///
+/// `Twips` is a type-safe wrapper type documenting where Twips are used
+/// in the SWF format.
+///
+/// Use `Twips::from_pixels` and `Twips::to_pixels` to convert to and from
+/// pixel values.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Default, PartialOrd, Ord)]
 pub struct Twips(i32);
 
 impl Twips {
+    /// There are 20 twips in a pixel.
     pub const TWIPS_PER_PIXEL: f64 = 20.0;
 
+    /// Creates a new `Twips` object. Note that the `twips` value is in twips,
+    /// not pixels. Use `from_pixels` to convert from pixel units.
     pub fn new<T: Into<i32>>(twips: T) -> Self {
         Self(twips.into())
     }
 
+    /// Returns the number of twips.
     pub fn get(self) -> i32 {
         self.0
     }
 
+    /// Converts the number of pixels into twips.
+    ///
+    /// This may be a lossy conversion; any precision less than a twip (1/20 pixels) is truncated.
     pub fn from_pixels(pixels: f64) -> Self {
         Self((pixels * Self::TWIPS_PER_PIXEL) as i32)
     }
 
+    /// Converts this twips value into pixel units.
+    ///
+    /// This is a lossless operation.
     pub fn to_pixels(self) -> f64 {
         f64::from(self.0) / Self::TWIPS_PER_PIXEL
     }
@@ -386,6 +424,13 @@ pub enum ClipEvent {
 
 pub type ClipEventFlags = HashSet<ClipEvent>;
 
+/// Represents a tag in an SWF file.
+///
+/// The SWF format is made up of a stream of tags. Each tag either
+/// defines a character (graphic, sound, movieclip), or places/modifies
+/// an instance of these characters on the display list.
+///
+// [SWF19 p.29](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=29)
 #[derive(Debug, PartialEq)]
 pub enum Tag {
     ExportAssets(Vec<ExportedAsset>),
