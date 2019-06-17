@@ -5,7 +5,7 @@
     clippy::unreadable_literal
 )]
 
-use crate::tag_codes::TagCode;
+use crate::tag_code::TagCode;
 use crate::types::*;
 use byteorder::{LittleEndian, WriteBytesExt};
 use std::cmp::max;

@@ -279,7 +279,7 @@ impl<R: Read> Reader<R> {
         let (tag_code, length) = self.read_tag_code_and_length()?;
 
         let mut tag_reader = Reader::new(self.input.by_ref().take(length as u64), self.version);
-        use crate::tag_codes::TagCode;
+        use crate::tag_code::TagCode;
         let tag = match TagCode::from_u16(tag_code) {
             Some(TagCode::End) => return Ok(None),
             Some(TagCode::ShowFrame) => Tag::ShowFrame,
@@ -2627,7 +2627,7 @@ impl<R: Read> Reader<R> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::tag_codes::TagCode;
+    use crate::tag_code::TagCode;
     use crate::test_data;
     use std::fs::File;
     use std::io::{Cursor, Read};

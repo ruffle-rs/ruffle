@@ -21,18 +21,15 @@ extern crate xz2;
 pub mod avm1;
 pub mod avm2;
 pub mod read;
-mod tag_codes;
+mod tag_code;
 mod types;
 pub mod write;
 
 #[cfg(test)]
 mod test_data;
 
-/// Parses an SWF from a `Read` stream.
+/// Reexports
 pub use read::{read_swf, read_swf_header};
-
-/// Writes an SWF to a `Write` stream.
-pub use write::write_swf;
-
-/// Types used to represent a parsed SWF.
+pub use tag_code::TagCode;
 pub use types::*;
+pub use write::write_swf;

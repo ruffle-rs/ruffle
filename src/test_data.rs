@@ -5,7 +5,7 @@ use crate::avm2::read::tests::read_abc_from_file;
 use crate::avm2::types::*;
 use crate::read::read_swf;
 use crate::read::tests::{read_tag_bytes_from_file, read_tag_bytes_from_file_with_index};
-use crate::tag_codes::TagCode;
+use crate::tag_code::TagCode;
 use crate::types::*;
 use crate::write::write_swf;
 use std::fs::File;
