@@ -1,4 +1,8 @@
-#![allow(clippy::float_cmp, clippy::inconsistent_digit_grouping, clippy::unreadable_literal)]
+#![allow(
+    clippy::float_cmp,
+    clippy::inconsistent_digit_grouping,
+    clippy::unreadable_literal
+)]
 
 use crate::types::*;
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -2600,7 +2604,11 @@ pub mod tests {
         tag_code: TagCode,
         mut index: usize,
     ) -> Vec<u8> {
-        let mut file = File::open(path).unwrap();
+        let mut file = if let Ok(file) = File::open(path) {
+            file
+        } else {
+            panic!("Cannot open {}", path);
+        };
         let mut data = Vec::new();
         file.read_to_end(&mut data).unwrap();
 
