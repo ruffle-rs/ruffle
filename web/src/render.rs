@@ -44,6 +44,7 @@ impl WebCanvasRenderBackend {
 
         svg.set_attribute("width", "0");
         svg.set_attribute("height", "0");
+        //svg.set_attribute("style", "display: none;");
         svg.set_attribute_ns(
             Some("http://www.w3.org/2000/xmlns/"),
             "xmlns:xlink",
@@ -92,9 +93,7 @@ impl WebCanvasRenderBackend {
         svg.append_child(&svg_defs.clone())
             .map_err(|_| "append_child failed")?;
 
-        let body = document
-            .body()
-            .unwrap()
+        let body = canvas
             .append_child(&svg)
             .map_err(|_| "append_child failed")?;
 
