@@ -1,10 +1,14 @@
 import { Player } from "../../pkg/ruffle";
 
 let sampleFileInput = document.getElementById("sample-file");
-sampleFileInput.addEventListener("change", sampleFileSelected, false);
+if (sampleFileInput) {
+    sampleFileInput.addEventListener("change", sampleFileSelected, false);
+}
 
 let localFileInput = document.getElementById("local-file");
-localFileInput.addEventListener("change", localFileSelected, false);
+if (localFileInput) {
+    localFileInput.addEventListener("change", localFileSelected, false);
+}
 
 let player;
 
