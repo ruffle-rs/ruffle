@@ -26,8 +26,9 @@ jobs:
             rustup toolchain install stable
             rustup run stable rustc --version --verbose
             rustup run stable cargo --version --verbose
-            npm --prefix web install web
-            npm --prefix web run build
+            cd web/demo
+            npm install
+            npm run build
       - save_cache:
           key: project-cache
           paths:
