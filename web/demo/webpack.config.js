@@ -1,3 +1,4 @@
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
 const webpack = require('webpack');
@@ -7,23 +8,18 @@ module.exports = {
   entry: path.resolve(__dirname, "www/bootstrap.js"),
   output: {
     path: path.resolve(__dirname, "dist"),
-    filename: "bootstrap.js",
+    filename: "index.js",
   },
   mode: "development",
   plugins: [
+    new CleanWebpackPlugin(),
     new CopyWebpackPlugin([{
       from: path.resolve(__dirname, "www/index.html"),
       to: "index.html"
     }]),
     new WasmPackPlugin({
-      crateDirectory: path.resolve(__dirname, "."),
+      crateDirectory: path.resolve(__dirname, ".."),
       extraArgs: "--out-name=ruffle",
-    }),
-    // Have this example work in Edge which doesn't ship `TextEncoder` or
-    // `TextDecoder` at this time.
-    new webpack.ProvidePlugin({
-      TextDecoder: ['text-encoding', 'TextDecoder'],
-      TextEncoder: ['text-encoding', 'TextEncoder']
     })
-  ],
+  ]
 };
