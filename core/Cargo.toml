@@ -11,4 +11,4 @@ gc_derive = "0.3.2"
 generational-arena = "0.2.2"
 log = "0.4"
 rand = "0.6.5"
-swf = { git = "https://github.com/Herschel/swf-rs", branch = "ruffle" }
+swf = { git = "https://github.com/Herschel/swf-rs", rev = "afbf8fd" }
