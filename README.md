@@ -1,4 +1,4 @@
-# [Ruffle](https://github.com/Herschel/ruffle)
+# ![Ruffle](https://ruffle.rs/assets/logo.png)
 
 Ruffle is an Adobe Flash Player emulator written in Rust.
 
