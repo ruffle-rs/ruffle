@@ -1,4 +1,5 @@
 # ![Ruffle](https://ruffle.rs/assets/logo.png)
+[![CircleCI](https://circleci.com/gh/ruffle-rs/ruffle.svg?style=svg)](https://circleci.com/gh/ruffle-rs/ruffle)
 
 Ruffle is an Adobe Flash Player emulator written in Rust.
 
