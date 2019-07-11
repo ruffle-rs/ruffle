@@ -14,7 +14,7 @@ image = "0.21.1"
 inflate = "0.4.5"
 jpeg-decoder = "0.1.15"
 log = "0.4"
-lyon = { git = "https://github.com/nical/lyon", branch = "tess-flattening" }
+lyon = "0.13.3"
 minimp3 = { git = "https://github.com/germangb/minimp3-rs" }
 structopt = "0.2.15"
 winit = "0.19.1"
