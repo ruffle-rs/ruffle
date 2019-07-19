@@ -13,7 +13,7 @@ pub struct RodioAudioBackend {
 
 #[allow(dead_code)]
 struct AudioStream {
-    info: swf::SoundStreamInfo,
+    info: swf::SoundStreamHead,
     sink: rodio::Sink,
     data: Arc<Mutex<Cursor<Vec<u8>>>>,
 }
@@ -46,7 +46,7 @@ impl AudioBackend for RodioAudioBackend {
         Ok(self.sounds.insert(sound))
     }
 
-    fn register_stream(&mut self, stream_info: &swf::SoundStreamInfo) -> AudioStreamHandle {
+    fn register_stream(&mut self, stream_info: &swf::SoundStreamHead) -> AudioStreamHandle {
         let sink = Sink::new(&self.device);
         let data = Arc::new(Mutex::new(Cursor::new(vec![])));
 

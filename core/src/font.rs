@@ -1,5 +1,4 @@
-use crate::backend::render::ShapeHandle;
-use crate::player::UpdateContext;
+use crate::backend::render::{RenderBackend, ShapeHandle};
 
 type Error = Box<std::error::Error>;
 
@@ -8,10 +7,10 @@ pub struct Font {
 }
 
 impl Font {
-    pub fn from_swf_tag(context: &mut UpdateContext, tag: &swf::Font) -> Result<Font, Error> {
+    pub fn from_swf_tag(renderer: &mut RenderBackend, tag: &swf::Font) -> Result<Font, Error> {
         let mut glyphs = vec![];
         for glyph in &tag.glyphs {
-            let shape_handle = context.renderer.register_glyph_shape(glyph);
+            let shape_handle = renderer.register_glyph_shape(glyph);
             glyphs.push(shape_handle);
         }
         Ok(Font { glyphs })

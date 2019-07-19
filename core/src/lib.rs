@@ -15,6 +15,7 @@ mod movie_clip;
 mod player;
 mod prelude;
 pub mod shape_utils;
+mod tag_utils;
 mod text;
 mod transform;
 

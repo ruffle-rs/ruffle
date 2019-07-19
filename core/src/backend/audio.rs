@@ -3,7 +3,7 @@ use generational_arena::{Arena, Index};
 use std::io::Read;
 
 pub mod swf {
-    pub use swf::{read, AudioCompression, CharacterId, Sound, SoundFormat, SoundStreamInfo};
+    pub use swf::{read, AudioCompression, CharacterId, Sound, SoundFormat, SoundStreamHead};
 }
 
 pub type AudioStreamHandle = Index;
@@ -13,7 +13,7 @@ type Error = Box<std::error::Error>;
 
 pub trait AudioBackend {
     fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, Error>;
-    fn register_stream(&mut self, stream_info: &swf::SoundStreamInfo) -> AudioStreamHandle;
+    fn register_stream(&mut self, stream_info: &swf::SoundStreamHead) -> AudioStreamHandle;
     fn play_sound(&mut self, sound: SoundHandle);
     fn preload_stream_samples(&mut self, _handle: AudioStreamHandle, _samples: &[u8]) {}
     fn preload_stream_finalize(&mut self, _handle: AudioStreamHandle) {}
@@ -45,7 +45,7 @@ impl AudioBackend for NullAudioBackend {
 
     fn play_sound(&mut self, _sound: SoundHandle) {}
 
-    fn register_stream(&mut self, _stream_info: &swf::SoundStreamInfo) -> AudioStreamHandle {
+    fn register_stream(&mut self, _stream_info: &swf::SoundStreamHead) -> AudioStreamHandle {
         self.streams.insert(())
     }
 

@@ -19,7 +19,7 @@ struct Sound {
 }
 
 struct AudioStream {
-    info: swf::SoundStreamInfo,
+    info: swf::SoundStreamHead,
     compressed_data: Vec<u8>,
     sample_data: [Vec<f32>; 2],
     object: js_sys::Object,
@@ -148,7 +148,7 @@ impl AudioBackend for WebAudioBackend {
         Ok(handle)
     }
 
-    fn register_stream(&mut self, stream_info: &swf::SoundStreamInfo) -> AudioStreamHandle {
+    fn register_stream(&mut self, stream_info: &swf::SoundStreamHead) -> AudioStreamHandle {
         let stream = AudioStream {
             info: stream_info.clone(),
             sample_data: [vec![], vec![]],

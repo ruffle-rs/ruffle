@@ -22,7 +22,11 @@ impl<'gc> Library<'gc> {
 
     pub fn register_character(&mut self, id: CharacterId, character: Character<'gc>) {
         // TODO(Herschel): What is the behavior if id already exists?
-        self.characters.insert(id, character);
+        if !self.contains_character(id) {
+            self.characters.insert(id, character);
+        } else {
+            log::error!("Character ID collision: Tried to register ID {} twice", id);
+        }
     }
 
     pub fn contains_character(&self, id: CharacterId) -> bool {

@@ -12,4 +12,7 @@ gc-arena-derive = "0.1.1"
 generational-arena = "0.2.2"
 log = "0.4"
 rand = "0.6.5"
-swf = { git = "https://github.com/Herschel/swf-rs", rev = "afbf8fd" }
+swf = { git = "https://github.com/Herschel/swf-rs", rev = "44c9262" }
+
+[features]
+default = ["minimp3"]

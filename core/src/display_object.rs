@@ -100,16 +100,16 @@ macro_rules! impl_display_object {
         fn transform(&self) -> &crate::transform::Transform {
             self.$field.transform()
         }
-        fn get_matrix(&self) -> &Matrix {
+        fn get_matrix(&self) -> &crate::matrix::Matrix {
             self.$field.get_matrix()
         }
-        fn set_matrix(&mut self, matrix: &Matrix) {
+        fn set_matrix(&mut self, matrix: &crate::matrix::Matrix) {
             self.$field.set_matrix(matrix)
         }
-        fn get_color_transform(&self) -> &ColorTransform {
+        fn get_color_transform(&self) -> &crate::color_transform::ColorTransform {
             self.$field.get_color_transform()
         }
-        fn set_color_transform(&mut self, color_transform: &ColorTransform) {
+        fn set_color_transform(&mut self, color_transform: &crate::color_transform::ColorTransform) {
             self.$field.set_color_transform(color_transform)
         }
         fn name(&self) -> &str {
@@ -118,13 +118,13 @@ macro_rules! impl_display_object {
         fn set_name(&mut self, name: &str) {
             self.$field.set_name(name)
         }
-        fn clip_depth(&self) -> $crate::prelude::Depth {
+        fn clip_depth(&self) -> crate::prelude::Depth {
             self.$field.clip_depth()
         }
-        fn set_clip_depth(&mut self, depth: $crate::prelude::Depth) {
+        fn set_clip_depth(&mut self, depth: crate::prelude::Depth) {
             self.$field.set_clip_depth(depth)
         }
-        fn box_clone(&self) -> Box<$crate::display_object::DisplayObject<'gc>> {
+        fn box_clone(&self) -> Box<crate::display_object::DisplayObject<'gc>> {
             Box::new(self.clone())
         }
     };

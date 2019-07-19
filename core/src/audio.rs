@@ -1,6 +1,6 @@
 use crate::backend::audio::AudioBackend;
 //use generational_arena::Arena;
-use swf::SoundStreamInfo;
+use swf::SoundStreamHead;
 
 pub struct Audio {
     backend: Box<AudioBackend>,
@@ -20,7 +20,7 @@ impl Audio {
         self.backend.register_sound(sound)
     }
 
-    pub fn register_stream(&mut self, stream_info: &SoundStreamInfo) -> AudioStreamHandle {
+    pub fn register_stream(&mut self, stream_info: &SoundStreamHead) -> AudioStreamHandle {
         self.backend.register_stream(stream_info)
     }
 
