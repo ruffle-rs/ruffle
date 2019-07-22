@@ -279,8 +279,6 @@ impl<R: Read> Reader<R> {
     /// }
     /// ```
     pub fn read_tag(&mut self) -> Result<Option<Tag>> {
-        use num_traits::FromPrimitive;
-
         let (tag_code, length) = self.read_tag_code_and_length()?;
 
         let mut tag_reader = Reader::new(self.input.by_ref().take(length as u64), self.version);

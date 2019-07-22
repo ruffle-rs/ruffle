@@ -87,3 +87,9 @@ pub enum TagCode {
     EnableTelemetry = 93,
     PlaceObject4 = 94,
 }
+
+impl TagCode {
+    pub fn from_u16(n: u16) -> Option<Self> {
+        num_traits::FromPrimitive::from_u16(n)
+    }
+}
