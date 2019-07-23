@@ -489,7 +489,7 @@ pub enum Tag {
     DefineText(Box<Text>),
     DefineVideoStream(DefineVideoStream),
     DoAbc(DoAbc),
-    DoAction(Vec<u8>),
+    DoAction(DoAction),
     DoInitAction {
         id: CharacterId,
         action_data: Vec<u8>,
@@ -503,29 +503,23 @@ pub enum Tag {
         url: String,
         imports: Vec<ExportedAsset>,
     },
-    JpegTables(Vec<u8>),
-    SetBackgroundColor(Color),
+    JpegTables(JpegTables),
+    SetBackgroundColor(SetBackgroundColor),
     SetTabIndex {
         depth: Depth,
         tab_index: u16,
     },
-    SoundStreamBlock(Vec<u8>),
-    SoundStreamHead(Box<SoundStreamInfo>),
-    SoundStreamHead2(Box<SoundStreamInfo>),
-    StartSound {
-        id: CharacterId,
-        sound_info: Box<SoundInfo>,
-    },
+    SoundStreamBlock(SoundStreamBlock),
+    SoundStreamHead(Box<SoundStreamHead>),
+    SoundStreamHead2(Box<SoundStreamHead>),
+    StartSound(StartSound),
     StartSound2 {
         class_name: String,
         sound_info: Box<SoundInfo>,
     },
     SymbolClass(Vec<SymbolClassLink>),
     PlaceObject(Box<PlaceObject>),
-    RemoveObject {
-        depth: Depth,
-        character_id: Option<CharacterId>,
-    },
+    RemoveObject(RemoveObject),
     VideoFrame(VideoFrame),
     FileAttributes(FileAttributes),
 
@@ -549,6 +543,14 @@ pub struct ExportedAsset {
     pub id: CharacterId,
     pub name: String,
 }
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct RemoveObject {
+    pub depth: Depth,
+    pub character_id: Option<CharacterId>,
+}
+
+pub type SetBackgroundColor = Color;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct SymbolClassLink {
@@ -600,6 +602,12 @@ pub struct SoundEnvelopePoint {
     pub sample: u32,
     pub left_volume: f32,
     pub right_volume: f32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct StartSound {
+    pub id: CharacterId,
+    pub sound_info: Box<SoundInfo>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -749,12 +757,14 @@ pub struct SoundFormat {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct SoundStreamInfo {
+pub struct SoundStreamHead {
     pub stream_format: SoundFormat,
     pub playback_format: SoundFormat,
     pub num_samples_per_block: u16,
     pub latency_seek: i16,
 }
+
+pub type SoundStreamBlock = Vec<u8>;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Button {
@@ -1067,3 +1077,7 @@ pub struct DoAbc {
     pub is_lazy_initialize: bool,
     pub data: Vec<u8>,
 }
+
+pub type DoAction = Vec<u8>;
+
+pub type JpegTables = Vec<u8>;

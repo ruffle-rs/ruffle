@@ -885,7 +885,7 @@ impl<W: Write> Writer<W> {
             // TODO: Allow clone of color.
             Tag::SetBackgroundColor(ref color) => {
                 self.write_tag_header(TagCode::SetBackgroundColor, 3)?;
-                self.write_rgb(color)?;
+                self.write_rgb(&color)?;
             }
 
             Tag::ScriptLimits {
@@ -916,17 +916,14 @@ impl<W: Write> Writer<W> {
                 }
             },
 
-            Tag::RemoveObject {
-                depth,
-                character_id,
-            } => {
-                if let Some(id) = character_id {
+            Tag::RemoveObject(ref remove_object) => {
+                if let Some(id) = remove_object.character_id {
                     self.write_tag_header(TagCode::RemoveObject, 4)?;
                     self.write_u16(id)?;
                 } else {
                     self.write_tag_header(TagCode::RemoveObject2, 2)?;
                 }
-                self.write_i16(depth)?;
+                self.write_i16(remove_object.depth)?;
             }
 
             Tag::SoundStreamBlock(ref data) => {
@@ -934,15 +931,16 @@ impl<W: Write> Writer<W> {
                 self.output.write_all(data)?;
             }
 
-            Tag::SoundStreamHead(ref sound_stream_info) => {
-                self.write_sound_stream_head(sound_stream_info, 1)?;
+            Tag::SoundStreamHead(ref sound_stream_head) => {
+                self.write_sound_stream_head(sound_stream_head, 1)?;
             }
 
-            Tag::SoundStreamHead2(ref sound_stream_info) => {
-                self.write_sound_stream_head(sound_stream_info, 2)?;
+            Tag::SoundStreamHead2(ref sound_stream_head) => {
+                self.write_sound_stream_head(sound_stream_head, 2)?;
             }
 
-            Tag::StartSound { id, ref sound_info } => {
+            Tag::StartSound(ref start_sound) => {
+                let sound_info = &start_sound.sound_info;
                 let length = 3
                     + if sound_info.in_sample.is_some() { 4 } else { 0 }
                     + if sound_info.out_sample.is_some() {
@@ -957,7 +955,7 @@ impl<W: Write> Writer<W> {
                         0
                     };
                 self.write_tag_header(TagCode::StartSound, length)?;
-                self.write_u16(id)?;
+                self.write_u16(start_sound.id)?;
                 self.write_sound_info(sound_info)?;
             }
 
@@ -2255,7 +2253,7 @@ impl<W: Write> Writer<W> {
 
     fn write_sound_stream_head(
         &mut self,
-        stream_info: &SoundStreamInfo,
+        stream_head: &SoundStreamHead,
         version: u8,
     ) -> Result<()> {
         let tag_code = if version >= 2 {
@@ -2264,17 +2262,17 @@ impl<W: Write> Writer<W> {
             TagCode::SoundStreamHead
         };
         // MP3 compression has added latency seek field.
-        let length = if stream_info.stream_format.compression == AudioCompression::Mp3 {
+        let length = if stream_head.stream_format.compression == AudioCompression::Mp3 {
             6
         } else {
             4
         };
         self.write_tag_header(tag_code, length)?;
-        self.write_sound_format(&stream_info.playback_format)?;
-        self.write_sound_format(&stream_info.stream_format)?;
-        self.write_u16(stream_info.num_samples_per_block)?;
-        if stream_info.stream_format.compression == AudioCompression::Mp3 {
-            self.write_i16(stream_info.latency_seek)?;
+        self.write_sound_format(&stream_head.playback_format)?;
+        self.write_sound_format(&stream_head.stream_format)?;
+        self.write_u16(stream_head.num_samples_per_block)?;
+        if stream_head.stream_format.compression == AudioCompression::Mp3 {
+            self.write_i16(stream_head.latency_seek)?;
         }
         Ok(())
     }

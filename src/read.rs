@@ -308,8 +308,12 @@ impl<R: Read> Reader<R> {
             }
             Some(TagCode::DefineBitsJpeg3) => tag_reader.read_define_bits_jpeg_3(3)?,
             Some(TagCode::DefineBitsJpeg4) => tag_reader.read_define_bits_jpeg_3(4)?,
-            Some(TagCode::DefineButton) => tag_reader.read_define_button()?,
-            Some(TagCode::DefineButton2) => tag_reader.read_define_button_2()?,
+            Some(TagCode::DefineButton) => {
+                Tag::DefineButton(Box::new(tag_reader.read_define_button_1()?))
+            }
+            Some(TagCode::DefineButton2) => {
+                Tag::DefineButton2(Box::new(tag_reader.read_define_button_2()?))
+            }
             Some(TagCode::DefineButtonCxform) => {
                 let id = tag_reader.read_u16()?;
                 // SWF19 is incorrect here. It seems you can have many color transforms in this
@@ -363,22 +367,34 @@ impl<R: Read> Reader<R> {
                 }))
             }
             Some(TagCode::DefineEditText) => tag_reader.read_define_edit_text()?,
-            Some(TagCode::DefineFont) => tag_reader.read_define_font()?,
-            Some(TagCode::DefineFont2) => tag_reader.read_define_font_2(2)?,
-            Some(TagCode::DefineFont3) => tag_reader.read_define_font_2(3)?,
-            Some(TagCode::DefineFont4) => tag_reader.read_define_font_4()?,
+            Some(TagCode::DefineFont) => {
+                Tag::DefineFont(Box::new(tag_reader.read_define_font_1()?))
+            }
+            Some(TagCode::DefineFont2) => {
+                Tag::DefineFont2(Box::new(tag_reader.read_define_font_2(2)?))
+            }
+            Some(TagCode::DefineFont3) => {
+                Tag::DefineFont2(Box::new(tag_reader.read_define_font_2(3)?))
+            }
+            Some(TagCode::DefineFont4) => Tag::DefineFont4(tag_reader.read_define_font_4()?),
             Some(TagCode::DefineFontAlignZones) => tag_reader.read_define_font_align_zones()?,
             Some(TagCode::DefineFontInfo) => tag_reader.read_define_font_info(1)?,
             Some(TagCode::DefineFontInfo2) => tag_reader.read_define_font_info(2)?,
             Some(TagCode::DefineFontName) => tag_reader.read_define_font_name()?,
-            Some(TagCode::DefineMorphShape) => tag_reader.read_define_morph_shape(1)?,
-            Some(TagCode::DefineMorphShape2) => tag_reader.read_define_morph_shape(2)?,
-            Some(TagCode::DefineShape) => tag_reader.read_define_shape(1)?,
-            Some(TagCode::DefineShape2) => tag_reader.read_define_shape(2)?,
-            Some(TagCode::DefineShape3) => tag_reader.read_define_shape(3)?,
-            Some(TagCode::DefineShape4) => tag_reader.read_define_shape(4)?,
-            Some(TagCode::DefineSound) => tag_reader.read_define_sound()?,
-            Some(TagCode::DefineText) => tag_reader.read_define_text()?,
+            Some(TagCode::DefineMorphShape) => {
+                Tag::DefineMorphShape(Box::new(tag_reader.read_define_morph_shape(1)?))
+            }
+            Some(TagCode::DefineMorphShape2) => {
+                Tag::DefineMorphShape(Box::new(tag_reader.read_define_morph_shape(2)?))
+            }
+            Some(TagCode::DefineShape) => Tag::DefineShape(tag_reader.read_define_shape(1)?),
+            Some(TagCode::DefineShape2) => Tag::DefineShape(tag_reader.read_define_shape(2)?),
+            Some(TagCode::DefineShape3) => Tag::DefineShape(tag_reader.read_define_shape(3)?),
+            Some(TagCode::DefineShape4) => Tag::DefineShape(tag_reader.read_define_shape(4)?),
+            Some(TagCode::DefineSound) => {
+                Tag::DefineSound(Box::new(tag_reader.read_define_sound()?))
+            }
+            Some(TagCode::DefineText) => Tag::DefineText(Box::new(tag_reader.read_define_text()?)),
             Some(TagCode::DefineVideoStream) => tag_reader.read_define_video_stream()?,
             Some(TagCode::EnableTelemetry) => {
                 tag_reader.read_u16()?; // Reserved
@@ -436,25 +452,26 @@ impl<R: Read> Reader<R> {
 
             Some(TagCode::SoundStreamHead) => Tag::SoundStreamHead(
                 // TODO: Disallow certain compressions.
-                Box::new(tag_reader.read_sound_stream_info()?),
+                Box::new(tag_reader.read_sound_stream_head()?),
             ),
 
             Some(TagCode::SoundStreamHead2) => {
-                Tag::SoundStreamHead2(Box::new(tag_reader.read_sound_stream_info()?))
+                Tag::SoundStreamHead2(Box::new(tag_reader.read_sound_stream_head()?))
             }
 
-            Some(TagCode::StartSound) => Tag::StartSound {
-                id: tag_reader.read_u16()?,
-                sound_info: Box::new(tag_reader.read_sound_info()?),
-            },
+            Some(TagCode::StartSound) => Tag::StartSound(tag_reader.read_start_sound_1()?),
 
             Some(TagCode::StartSound2) => Tag::StartSound2 {
                 class_name: tag_reader.read_c_string()?,
                 sound_info: Box::new(tag_reader.read_sound_info()?),
             },
 
-            Some(TagCode::DefineBitsLossless) => tag_reader.read_define_bits_lossless(1)?,
-            Some(TagCode::DefineBitsLossless2) => tag_reader.read_define_bits_lossless(2)?,
+            Some(TagCode::DefineBitsLossless) => {
+                Tag::DefineBitsLossless(tag_reader.read_define_bits_lossless(1)?)
+            }
+            Some(TagCode::DefineBitsLossless2) => {
+                Tag::DefineBitsLossless(tag_reader.read_define_bits_lossless(2)?)
+            }
 
             Some(TagCode::DefineScalingGrid) => Tag::DefineScalingGrid {
                 id: tag_reader.read_u16()?,
@@ -569,20 +586,22 @@ impl<R: Read> Reader<R> {
                 sprite_reader.read_define_sprite()?
             }
 
-            Some(TagCode::PlaceObject) => tag_reader.read_place_object()?,
-            Some(TagCode::PlaceObject2) => tag_reader.read_place_object_2_or_3(2)?,
-            Some(TagCode::PlaceObject3) => tag_reader.read_place_object_2_or_3(3)?,
-            Some(TagCode::PlaceObject4) => tag_reader.read_place_object_2_or_3(4)?,
+            Some(TagCode::PlaceObject) => {
+                Tag::PlaceObject(Box::new(tag_reader.read_place_object()?))
+            }
+            Some(TagCode::PlaceObject2) => {
+                Tag::PlaceObject(Box::new(tag_reader.read_place_object_2_or_3(2)?))
+            }
+            Some(TagCode::PlaceObject3) => {
+                Tag::PlaceObject(Box::new(tag_reader.read_place_object_2_or_3(3)?))
+            }
+            Some(TagCode::PlaceObject4) => {
+                Tag::PlaceObject(Box::new(tag_reader.read_place_object_2_or_3(4)?))
+            }
 
-            Some(TagCode::RemoveObject) => Tag::RemoveObject {
-                character_id: Some(tag_reader.read_u16()?),
-                depth: tag_reader.read_i16()?,
-            },
+            Some(TagCode::RemoveObject) => Tag::RemoveObject(tag_reader.read_remove_object_1()?),
 
-            Some(TagCode::RemoveObject2) => Tag::RemoveObject {
-                depth: tag_reader.read_i16()?,
-                character_id: None,
-            },
+            Some(TagCode::RemoveObject2) => Tag::RemoveObject(tag_reader.read_remove_object_2()?),
 
             Some(TagCode::VideoFrame) => tag_reader.read_video_frame()?,
 
@@ -603,7 +622,7 @@ impl<R: Read> Reader<R> {
         Ok(Some(tag))
     }
 
-    fn read_compression_type(mut input: R) -> Result<Compression> {
+    pub fn read_compression_type(mut input: R) -> Result<Compression> {
         let mut signature = [0u8; 3];
         input.read_exact(&mut signature)?;
         let compression = match &signature {
@@ -615,7 +634,7 @@ impl<R: Read> Reader<R> {
         Ok(compression)
     }
 
-    fn read_rectangle(&mut self) -> Result<Rectangle> {
+    pub fn read_rectangle(&mut self) -> Result<Rectangle> {
         self.byte_align();
         let num_bits = self.read_ubits(5)? as usize;
         Ok(Rectangle {
@@ -626,7 +645,7 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    fn read_bit(&mut self) -> Result<bool> {
+    pub fn read_bit(&mut self) -> Result<bool> {
         if self.bit_index == 0 {
             self.byte = self.input.read_u8()?;
             self.bit_index = 8;
@@ -636,11 +655,11 @@ impl<R: Read> Reader<R> {
         Ok(val)
     }
 
-    fn byte_align(&mut self) {
+    pub fn byte_align(&mut self) {
         self.bit_index = 0;
     }
 
-    fn read_ubits(&mut self, num_bits: usize) -> Result<u32> {
+    pub fn read_ubits(&mut self, num_bits: usize) -> Result<u32> {
         let mut val = 0u32;
         for _ in 0..num_bits {
             val <<= 1;
@@ -649,7 +668,7 @@ impl<R: Read> Reader<R> {
         Ok(val)
     }
 
-    fn read_sbits(&mut self, num_bits: usize) -> Result<i32> {
+    pub fn read_sbits(&mut self, num_bits: usize) -> Result<i32> {
         if num_bits > 0 {
             self.read_ubits(num_bits)
                 .map(|n| (n as i32) << (32 - num_bits) >> (32 - num_bits))
@@ -658,15 +677,15 @@ impl<R: Read> Reader<R> {
         }
     }
 
-    fn read_sbits_twips(&mut self, num_bits: usize) -> Result<Twips> {
+    pub fn read_sbits_twips(&mut self, num_bits: usize) -> Result<Twips> {
         self.read_sbits(num_bits).map(Twips::new)
     }
 
-    fn read_fbits(&mut self, num_bits: usize) -> Result<f32> {
+    pub fn read_fbits(&mut self, num_bits: usize) -> Result<f32> {
         self.read_sbits(num_bits).map(|n| (n as f32) / 65536f32)
     }
 
-    fn read_encoded_u32(&mut self) -> Result<u32> {
+    pub fn read_encoded_u32(&mut self) -> Result<u32> {
         let mut val = 0u32;
         for i in 0..5 {
             let byte = self.read_u8()?;
@@ -678,18 +697,18 @@ impl<R: Read> Reader<R> {
         Ok(val)
     }
 
-    fn read_character_id(&mut self) -> Result<CharacterId> {
+    pub fn read_character_id(&mut self) -> Result<CharacterId> {
         self.read_u16()
     }
 
-    fn read_rgb(&mut self) -> Result<Color> {
+    pub fn read_rgb(&mut self) -> Result<Color> {
         let r = self.read_u8()?;
         let g = self.read_u8()?;
         let b = self.read_u8()?;
         Ok(Color { r, g, b, a: 255 })
     }
 
-    fn read_rgba(&mut self) -> Result<Color> {
+    pub fn read_rgba(&mut self) -> Result<Color> {
         let r = self.read_u8()?;
         let g = self.read_u8()?;
         let b = self.read_u8()?;
@@ -697,7 +716,7 @@ impl<R: Read> Reader<R> {
         Ok(Color { r, g, b, a })
     }
 
-    fn read_color_transform_no_alpha(&mut self) -> Result<ColorTransform> {
+    pub fn read_color_transform_no_alpha(&mut self) -> Result<ColorTransform> {
         self.byte_align();
         let has_add = self.read_bit()?;
         let has_mult = self.read_bit()?;
@@ -820,7 +839,7 @@ impl<R: Read> Reader<R> {
         Ok((tag_code, length))
     }
 
-    fn read_define_button(&mut self) -> Result<Tag> {
+    pub fn read_define_button_1(&mut self) -> Result<Button> {
         let id = self.read_u16()?;
         let mut records = Vec::new();
         while let Some(record) = self.read_button_record(1)? {
@@ -828,7 +847,7 @@ impl<R: Read> Reader<R> {
         }
         let mut action_data = Vec::new();
         self.input.read_to_end(&mut action_data)?;
-        Ok(Tag::DefineButton(Box::new(Button {
+        Ok(Button {
             id,
             is_track_as_menu: false,
             records,
@@ -839,10 +858,10 @@ impl<R: Read> Reader<R> {
                 key_code: None,
                 action_data: action_data,
             }],
-        })))
+        })
     }
 
-    fn read_define_button_2(&mut self) -> Result<Tag> {
+    pub fn read_define_button_2(&mut self) -> Result<Button> {
         let id = self.read_u16()?;
         let flags = self.read_u8()?;
         let is_track_as_menu = (flags & 0b1) != 0;
@@ -864,12 +883,12 @@ impl<R: Read> Reader<R> {
             }
         }
 
-        Ok(Tag::DefineButton2(Box::new(Button {
+        Ok(Button {
             id,
             is_track_as_menu,
             records,
             actions,
-        })))
+        })
     }
 
     fn read_button_record(&mut self, version: u8) -> Result<Option<ButtonRecord>> {
@@ -1024,7 +1043,7 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    fn read_define_font(&mut self) -> Result<Tag> {
+    pub fn read_define_font_1(&mut self) -> Result<FontV1> {
         let id = self.read_u16()?;
         let num_glyphs = self.read_u16()? / 2;
 
@@ -1046,10 +1065,10 @@ impl<R: Read> Reader<R> {
             }
         }
 
-        Ok(Tag::DefineFont(Box::new(FontV1 { id, glyphs })))
+        Ok(FontV1 { id, glyphs })
     }
 
-    fn read_define_font_2(&mut self, version: u8) -> Result<Tag> {
+    pub fn read_define_font_2(&mut self, version: u8) -> Result<Font> {
         let id = self.read_character_id()?;
 
         let flags = self.read_u8()?;
@@ -1147,7 +1166,7 @@ impl<R: Read> Reader<R> {
             None
         };
 
-        Ok(Tag::DefineFont2(Box::new(Font {
+        Ok(Font {
             version,
             id,
             name,
@@ -1159,10 +1178,10 @@ impl<R: Read> Reader<R> {
             is_ansi,
             is_bold,
             is_italic,
-        })))
+        })
     }
 
-    fn read_define_font_4(&mut self) -> Result<Tag> {
+    pub fn read_define_font_4(&mut self) -> Result<Font4> {
         let id = self.read_character_id()?;
         let flags = self.read_u8()?;
         let name = self.read_c_string()?;
@@ -1174,13 +1193,13 @@ impl<R: Read> Reader<R> {
         } else {
             None
         };
-        Ok(Tag::DefineFont4(Font4 {
+        Ok(Font4 {
             id,
             is_italic: flags & 0b10 != 0,
             is_bold: flags & 0b1 != 0,
             name,
             data,
-        }))
+        })
     }
 
     fn read_kerning_record(&mut self, has_wide_codes: bool) -> Result<KerningRecord> {
@@ -1288,7 +1307,7 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    fn read_define_morph_shape(&mut self, shape_version: u8) -> Result<Tag> {
+    pub fn read_define_morph_shape(&mut self, shape_version: u8) -> Result<DefineMorphShape> {
         let id = self.read_character_id()?;
         let start_shape_bounds = self.read_rectangle()?;
         let end_shape_bounds = self.read_rectangle()?;
@@ -1352,7 +1371,7 @@ impl<R: Read> Reader<R> {
         while let Some(record) = self.read_shape_record(1)? {
             end_shape.push(record);
         }
-        Ok(Tag::DefineMorphShape(Box::new(DefineMorphShape {
+        Ok(DefineMorphShape {
             id,
             version: shape_version,
             has_non_scaling_strokes,
@@ -1371,7 +1390,7 @@ impl<R: Read> Reader<R> {
                 fill_styles: end_fill_styles,
                 line_styles: end_line_styles,
             },
-        })))
+        })
     }
 
     fn read_morph_line_style(&mut self, shape_version: u8) -> Result<(LineStyle, LineStyle)> {
@@ -1571,7 +1590,7 @@ impl<R: Read> Reader<R> {
         ))
     }
 
-    fn read_define_shape(&mut self, version: u8) -> Result<Tag> {
+    pub fn read_define_shape(&mut self, version: u8) -> Result<Shape> {
         let id = self.read_u16()?;
         let shape_bounds = self.read_rectangle()?;
         let (edge_bounds, has_fill_winding_rule, has_non_scaling_strokes, has_scaling_strokes) =
@@ -1592,7 +1611,7 @@ impl<R: Read> Reader<R> {
         while let Some(record) = self.read_shape_record(version)? {
             records.push(record);
         }
-        Ok(Tag::DefineShape(Shape {
+        Ok(Shape {
             version,
             id,
             shape_bounds,
@@ -1602,24 +1621,24 @@ impl<R: Read> Reader<R> {
             has_scaling_strokes,
             styles,
             shape: records,
-        }))
+        })
     }
 
-    fn read_define_sound(&mut self) -> Result<Tag> {
+    pub fn read_define_sound(&mut self) -> Result<Sound> {
         let id = self.read_u16()?;
         let format = self.read_sound_format()?;
         let num_samples = self.read_u32()?;
         let mut data = Vec::new();
         self.input.read_to_end(&mut data)?;
-        Ok(Tag::DefineSound(Box::new(Sound {
+        Ok(Sound {
             id,
             format,
             num_samples,
             data,
-        })))
+        })
     }
 
-    fn read_sound_stream_info(&mut self) -> Result<SoundStreamInfo> {
+    pub fn read_sound_stream_head(&mut self) -> Result<SoundStreamHead> {
         // TODO: Verify version requirements.
         let playback_format = self.read_sound_format()?;
         let stream_format = self.read_sound_format()?;
@@ -1630,7 +1649,7 @@ impl<R: Read> Reader<R> {
         } else {
             0
         };
-        Ok(SoundStreamInfo {
+        Ok(SoundStreamHead {
             stream_format,
             playback_format,
             num_samples_per_block,
@@ -1893,7 +1912,7 @@ impl<R: Read> Reader<R> {
         Ok(shape_record)
     }
 
-    fn read_define_sprite(&mut self) -> Result<Tag> {
+    pub fn read_define_sprite(&mut self) -> Result<Tag> {
         Ok(Tag::DefineSprite(Sprite {
             id: self.read_u16()?,
             num_frames: self.read_u16()?,
@@ -1901,9 +1920,9 @@ impl<R: Read> Reader<R> {
         }))
     }
 
-    fn read_place_object(&mut self) -> Result<Tag> {
+    pub fn read_place_object(&mut self) -> Result<PlaceObject> {
         // TODO: What's a best way to know if the tag has a color transform?
-        Ok(Tag::PlaceObject(Box::new(PlaceObject {
+        Ok(PlaceObject {
             version: 1,
             action: PlaceObjectAction::Place(self.read_u16()?),
             depth: self.read_i16()?,
@@ -1921,10 +1940,10 @@ impl<R: Read> Reader<R> {
             is_bitmap_cached: false,
             is_visible: true,
             amf_data: None,
-        })))
+        })
     }
 
-    fn read_place_object_2_or_3(&mut self, place_object_version: u8) -> Result<Tag> {
+    pub fn read_place_object_2_or_3(&mut self, place_object_version: u8) -> Result<PlaceObject> {
         let flags = if place_object_version >= 3 {
             self.read_u16()?
         } else {
@@ -2012,7 +2031,7 @@ impl<R: Read> Reader<R> {
         } else {
             None
         };
-        Ok(Tag::PlaceObject(Box::new(PlaceObject {
+        Ok(PlaceObject {
             version: place_object_version,
             action,
             depth,
@@ -2030,10 +2049,24 @@ impl<R: Read> Reader<R> {
             background_color,
             blend_mode,
             amf_data,
-        })))
+        })
     }
 
-    fn read_blend_mode(&mut self) -> Result<BlendMode> {
+    pub fn read_remove_object_1(&mut self) -> Result<RemoveObject> {
+        Ok(RemoveObject {
+            character_id: Some(self.read_u16()?),
+            depth: self.read_i16()?,
+        })
+    }
+
+    pub fn read_remove_object_2(&mut self) -> Result<RemoveObject> {
+        Ok(RemoveObject {
+            depth: self.read_i16()?,
+            character_id: None,
+        })
+    }
+
+    pub fn read_blend_mode(&mut self) -> Result<BlendMode> {
         Ok(match self.read_u8()? {
             0 | 1 => BlendMode::Normal,
             2 => BlendMode::Layer,
@@ -2162,7 +2195,7 @@ impl<R: Read> Reader<R> {
         Ok(event_list)
     }
 
-    fn read_filter(&mut self) -> Result<Filter> {
+    pub fn read_filter(&mut self) -> Result<Filter> {
         self.byte_align();
         let filter = match self.read_u8()? {
             0 => Filter::DropShadowFilter(Box::new(DropShadowFilter {
@@ -2291,7 +2324,7 @@ impl<R: Read> Reader<R> {
         Ok(filter)
     }
 
-    fn read_sound_format(&mut self) -> Result<SoundFormat> {
+    pub fn read_sound_format(&mut self) -> Result<SoundFormat> {
         let flags = self.read_u8()?;
         let compression = match flags >> 4 {
             0 => AudioCompression::UncompressedUnknownEndian,
@@ -2321,7 +2354,7 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    fn read_sound_info(&mut self) -> Result<SoundInfo> {
+    pub fn read_sound_info(&mut self) -> Result<SoundInfo> {
         let flags = self.read_u8()?;
         let event = match (flags >> 4) & 0b11 {
             0b10 | 0b11 => SoundEvent::Stop,
@@ -2367,7 +2400,14 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    fn read_define_text(&mut self) -> Result<Tag> {
+    pub fn read_start_sound_1(&mut self) -> Result<StartSound> {
+        Ok(StartSound {
+            id: self.read_u16()?,
+            sound_info: Box::new(self.read_sound_info()?),
+        })
+    }
+
+    pub fn read_define_text(&mut self) -> Result<Text> {
         let id = self.read_character_id()?;
         let bounds = self.read_rectangle()?;
         let matrix = self.read_matrix()?;
@@ -2379,12 +2419,12 @@ impl<R: Read> Reader<R> {
             records.push(record);
         }
 
-        Ok(Tag::DefineText(Box::new(Text {
+        Ok(Text {
             id,
             bounds,
             matrix,
             records,
-        })))
+        })
     }
 
     fn read_text_record(
@@ -2598,7 +2638,7 @@ impl<R: Read> Reader<R> {
         }))
     }
 
-    fn read_define_bits_lossless(&mut self, version: u8) -> Result<Tag> {
+    pub fn read_define_bits_lossless(&mut self, version: u8) -> Result<DefineBitsLossless> {
         let id = self.read_character_id()?;
         let format = match self.read_u8()? {
             3 => BitmapFormat::ColorMap8,
@@ -2615,7 +2655,7 @@ impl<R: Read> Reader<R> {
         };
         let mut data = Vec::new();
         self.input.read_to_end(&mut data)?;
-        Ok(Tag::DefineBitsLossless(DefineBitsLossless {
+        Ok(DefineBitsLossless {
             version,
             id,
             format,
@@ -2623,7 +2663,7 @@ impl<R: Read> Reader<R> {
             height,
             num_colors,
             data,
-        }))
+        })
     }
 }
 

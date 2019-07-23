@@ -2156,7 +2156,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         (1, Tag::ShowFrame, vec![0b01_000000, 0]),
         (
             3,
-            Tag::SoundStreamHead2(Box::new(SoundStreamInfo {
+            Tag::SoundStreamHead2(Box::new(SoundStreamHead {
                 stream_format: SoundFormat {
                     compression: AudioCompression::Uncompressed,
                     sample_rate: 5512,
@@ -2190,7 +2190,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             4,
-            Tag::StartSound {
+            Tag::StartSound(StartSound {
                 id: 1,
                 sound_info: Box::new(SoundInfo {
                     event: SoundEvent::Start,
@@ -2199,7 +2199,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     num_loops: 3,
                     envelope: None,
                 }),
-            },
+            }),
             read_tag_bytes_from_file("tests/swfs/DefineSound.swf", TagCode::StartSound),
         ),
         (
