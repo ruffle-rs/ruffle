@@ -1,6 +1,4 @@
 use crate::backend::audio::AudioBackend;
-//use generational_arena::Arena;
-use swf::SoundStreamHead;
 
 pub struct Audio {
     backend: Box<AudioBackend>,
@@ -20,31 +18,40 @@ impl Audio {
         self.backend.register_sound(sound)
     }
 
-    pub fn register_stream(&mut self, stream_info: &SoundStreamHead) -> AudioStreamHandle {
-        self.backend.register_stream(stream_info)
-    }
-
     pub fn play_sound(&mut self, sound: SoundHandle) {
         self.backend.play_sound(sound)
     }
 
-    pub fn preload_stream_samples(&mut self, handle: AudioStreamHandle, samples: &[u8]) {
-        self.backend.preload_stream_samples(handle, samples)
+    pub fn preload_sound_stream_head(
+        &mut self,
+        clip_id: swf::CharacterId,
+        stream_info: &swf::SoundStreamHead,
+    ) {
+        self.backend.preload_sound_stream_head(clip_id, stream_info)
     }
 
-    pub fn preload_stream_finalize(&mut self, handle: AudioStreamHandle) {
-        self.backend.preload_stream_finalize(handle)
+    pub fn preload_sound_stream_block(&mut self, clip_id: swf::CharacterId, audio_data: &[u8]) {
+        self.backend.preload_sound_stream_block(clip_id, audio_data);
     }
 
-    pub fn start_stream(&mut self, handle: AudioStreamHandle) -> bool {
-        self.backend.start_stream(handle)
+    pub fn preload_sound_stream_end(&mut self, clip_id: swf::CharacterId) {
+        self.backend.preload_sound_stream_end(clip_id);
     }
 
-    pub fn queue_stream_samples(&mut self, handle: AudioStreamHandle, samples: &[u8]) {
-        self.backend.queue_stream_samples(handle, samples)
+    pub fn start_stream(
+        &mut self,
+        clip_id: crate::prelude::CharacterId,
+        clip_data: crate::tag_utils::SwfSlice,
+        handle: &swf::SoundStreamHead,
+    ) -> AudioStreamHandle {
+        self.backend.start_stream(clip_id, clip_data, handle)
     }
 
     pub fn stop_all_sounds(&mut self) {
         // TODO(Herschel)
+    }
+
+    pub fn is_loading_complete(&self) -> bool {
+        self.backend.is_loading_complete()
     }
 }

@@ -15,21 +15,25 @@ base64 = "0.10.1"
 byteorder = "1.3.1"
 console_error_panic_hook = { version = "0.1.1", optional = true }
 console_log = { version = "0.1", optional = true }
-ruffle_core = { path = "../core" }
 fnv = "1.0.3"
 generational-arena = "0.2.2"
 inflate = "0.4.5"
 jpeg-decoder = "0.1.15"
-js-sys = "0.3.19"
+js-sys = "0.3.25"
 log = "0.4"
 png = "0.14.1"
 svg = "0.5.12"
 url = "1.7.2"
-wasm-bindgen = "0.2.44"
+wasm-bindgen = "0.2.48"
+
+[dependencies.ruffle_core]
+path = "../core"
+default-features = false
+features = ["puremp3"]
 
 [dependencies.web-sys]
-version = "0.3.19"
-features = ["AudioBuffer", "AudioBufferSourceNode", "AudioContext", "AudioDestinationNode", "AudioNode", "CanvasRenderingContext2d", "CssStyleDeclaration", "Document", "Element", "HtmlCanvasElement", "HtmlElement", "HtmlImageElement", "Node", "Performance", "Window"]
+version = "0.3.25"
+features = ["AudioBuffer", "AudioBufferSourceNode", "AudioProcessingEvent", "AudioContext", "AudioDestinationNode", "AudioNode", "CanvasRenderingContext2d", "CssStyleDeclaration", "Document", "Element", "HtmlCanvasElement", "HtmlElement", "HtmlImageElement", "Node", "Performance", "ScriptProcessorNode", "Window"]
 
 [dev-dependencies]
-wasm-bindgen-test = "0.2.44"
+wasm-bindgen-test = "0.2.48"

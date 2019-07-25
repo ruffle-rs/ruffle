@@ -8,6 +8,7 @@ use crate::prelude::*;
 use crate::transform::TransformStack;
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell, MutationContext};
 use log::info;
+use std::sync::Arc;
 
 #[derive(Collect)]
 #[collect(empty_drop)]
@@ -19,7 +20,7 @@ struct GcRoot<'gc> {
 make_arena!(GcArena, GcRoot);
 
 pub struct Player {
-    swf_data: Vec<u8>,
+    swf_data: Arc<Vec<u8>>,
     swf_version: u8,
 
     avm: Avm1,
@@ -59,7 +60,7 @@ impl Player {
         renderer.set_dimensions(movie_width, movie_height);
 
         let mut player = Player {
-            swf_data: data,
+            swf_data: Arc::new(data),
             swf_version: header.version,
 
             avm: Avm1::new(header.version),
@@ -76,7 +77,10 @@ impl Player {
 
             gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| GcRoot {
                 library: GcCell::allocate(gc_context, Library::new()),
-                root: GcCell::allocate(gc_context, MovieClip::new_with_data(0, swf_len, header.num_frames)),
+                root: GcCell::allocate(
+                    gc_context,
+                    MovieClip::new_with_data(0, 0, swf_len, header.num_frames),
+                ),
             }),
 
             frame_rate: header.frame_rate.into(),
@@ -95,6 +99,12 @@ impl Player {
     }
 
     pub fn tick(&mut self, dt: f64) {
+        // Don't run until preloading is complete.
+        // TODO: Eventually we want to stream content similar to the Flash player.
+        if !self.audio.is_loading_complete() {
+            return;
+        }
+
         self.frame_accumulator += dt;
         self.global_time += dt as u64;
         let frame_time = 1000.0 / self.frame_rate;
@@ -151,7 +161,7 @@ impl Player {
                 avm,
                 renderer,
                 audio,
-                action: None,
+                actions: vec![],
                 gc_context,
             };
 
@@ -182,7 +192,7 @@ impl Player {
                 avm,
                 renderer,
                 audio,
-                action: None,
+                actions: vec![],
                 gc_context,
             };
 
@@ -218,7 +228,7 @@ impl Player {
 
 pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub swf_version: u8,
-    pub swf_data: &'a [u8],
+    pub swf_data: &'a Arc<Vec<u8>>,
     pub global_time: u64,
     pub mouse_pos: (f32, f32),
     pub library: std::cell::RefMut<'a, Library<'gc>>,
@@ -227,7 +237,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub avm: &'a mut Avm1,
     pub renderer: &'a mut RenderBackend,
     pub audio: &'a mut Audio,
-    pub action: Option<(usize, usize)>,
+    pub actions: Vec<crate::tag_utils::SwfSlice>,
 }
 
 pub struct RenderContext<'a, 'gc> {

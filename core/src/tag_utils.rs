@@ -3,6 +3,18 @@ use swf::TagCode;
 pub type DecodeResult = Result<(), Box<std::error::Error>>;
 pub type SwfStream<R> = swf::read::Reader<std::io::Cursor<R>>;
 
+pub struct SwfSlice {
+    pub data: std::sync::Arc<Vec<u8>>,
+    pub start: usize,
+    pub end: usize,
+}
+
+impl AsRef<[u8]> for SwfSlice {
+    fn as_ref(&self) -> &[u8] {
+        &self.data[self.start..self.end]
+    }
+}
+
 pub fn decode_tags<'a, R, F>(
     reader: &'a mut SwfStream<R>,
     mut tag_callback: F,

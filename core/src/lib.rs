@@ -15,7 +15,7 @@ mod movie_clip;
 mod player;
 mod prelude;
 pub mod shape_utils;
-mod tag_utils;
+pub mod tag_utils;
 mod text;
 mod transform;
 
@@ -23,3 +23,4 @@ pub mod backend;
 
 pub use player::Player;
 pub use swf::Color;
+pub use swf;

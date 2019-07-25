@@ -1,26 +1,27 @@
 use generational_arena::Arena;
-use rodio::{source::Source, Sink};
+use ruffle_core::backend::audio::decoders::{stream_tag_reader, AdpcmDecoder, Decoder, Mp3Decoder};
 use ruffle_core::backend::audio::{swf, AudioBackend, AudioStreamHandle, SoundHandle};
 use std::io::Cursor;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 pub struct RodioAudioBackend {
     sounds: Arena<Sound>,
-    active_sounds: Arena<Sink>,
+    active_sounds: Arena<rodio::Sink>,
     streams: Arena<AudioStream>,
     device: rodio::Device,
 }
 
 #[allow(dead_code)]
 struct AudioStream {
+    clip_id: swf::CharacterId,
     info: swf::SoundStreamHead,
     sink: rodio::Sink,
-    data: Arc<Mutex<Cursor<Vec<u8>>>>,
 }
 
+#[allow(dead_code)]
 struct Sound {
     format: swf::SoundFormat,
-    data: Vec<u8>,
+    data: Arc<Vec<u8>>,
 }
 
 impl RodioAudioBackend {
@@ -41,28 +42,32 @@ impl AudioBackend for RodioAudioBackend {
     ) -> Result<SoundHandle, Box<std::error::Error>> {
         let sound = Sound {
             format: swf_sound.format.clone(),
-            data: swf_sound.data.clone(),
+            data: Arc::new(swf_sound.data.clone()),
         };
         Ok(self.sounds.insert(sound))
     }
 
-    fn register_stream(&mut self, stream_info: &swf::SoundStreamHead) -> AudioStreamHandle {
-        let sink = Sink::new(&self.device);
-        let data = Arc::new(Mutex::new(Cursor::new(vec![])));
+    fn start_stream(
+        &mut self,
+        clip_id: swf::CharacterId,
+        clip_data: ruffle_core::tag_utils::SwfSlice,
+        stream_info: &swf::SoundStreamHead,
+    ) -> AudioStreamHandle {
+        let sink = rodio::Sink::new(&self.device);
 
         let format = &stream_info.stream_format;
         let decoder = Mp3Decoder::new(
             if format.is_stereo { 2 } else { 1 },
             format.sample_rate.into(),
-            ThreadRead(Arc::clone(&data)),
-        )
-        .unwrap();
+            stream_tag_reader(clip_data),
+        );
+
         let stream = AudioStream {
+            clip_id,
             info: stream_info.clone(),
             sink,
-            data,
         };
-        stream.sink.append(decoder);
+        stream.sink.append(DecoderSource(Box::new(decoder)));
         self.streams.insert(stream)
     }
 
@@ -84,27 +89,32 @@ impl AudioBackend for RodioAudioBackend {
                     sound.format.sample_rate.into(),
                     data,
                 );
-                let sink = Sink::new(&self.device);
+                let sink = rodio::Sink::new(&self.device);
                 sink.append(buffer);
                 self.active_sounds.insert(sink);
             }
+            AudioCompression::Adpcm => {
+                let decoder = AdpcmDecoder::new(
+                    Cursor::new(sound.data.to_vec()),
+                    sound.format.is_stereo,
+                    sound.format.sample_rate,
+                )
+                .unwrap();
+                let sink = rodio::Sink::new(&self.device);
+                sink.append(DecoderSource(Box::new(decoder)));
+                self.active_sounds.insert(sink);
+            }
             AudioCompression::Mp3 => {
-                let decoder = Mp3EventDecoder::new(Cursor::new(sound.data.clone())).unwrap();
-                let sink = Sink::new(&self.device);
-                sink.append(decoder);
+                let decoder = Mp3Decoder::new(
+                    if sound.format.is_stereo { 2 } else { 1 },
+                    sound.format.sample_rate.into(),
+                    Cursor::new(sound.data.to_vec()),
+                );
+                let sink = rodio::Sink::new(&self.device);
+                sink.append(DecoderSource(Box::new(decoder)));
                 self.active_sounds.insert(sink);
             }
             _ => unimplemented!(),
-        }
-    }
-
-    fn queue_stream_samples(&mut self, handle: AudioStreamHandle, mut samples: &[u8]) {
-        if let Some(stream) = self.streams.get_mut(handle) {
-            let _tag_samples = u16::from(samples[0]) | (u16::from(samples[1]) << 8);
-            samples = &samples[4..];
-
-            let mut buffer = stream.data.lock().unwrap();
-            buffer.get_mut().extend_from_slice(&samples);
         }
     }
 
@@ -113,182 +123,34 @@ impl AudioBackend for RodioAudioBackend {
     }
 }
 
-use std::io::{self, Read, Seek};
-use std::time::Duration;
+struct DecoderSource(Box<Decoder + Send>);
 
-use minimp3::{Decoder, Frame};
-
-pub struct ThreadRead(Arc<Mutex<Cursor<Vec<u8>>>>);
-
-impl Read for ThreadRead {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let mut buffer = self.0.lock().unwrap();
-        let result = buffer.read(buf);
-        let len_remaining = buffer.get_ref().len() - buffer.position() as usize;
-        let tmp = buffer.get_ref()[buffer.position() as usize..].to_vec();
-        buffer.get_mut().resize(len_remaining, 0);
-        *buffer.get_mut() = tmp;
-        buffer.set_position(0);
-        result
-    }
-}
-
-impl Seek for ThreadRead {
-    fn seek(&mut self, pos: std::io::SeekFrom) -> io::Result<u64> {
-        self.0.lock().unwrap().seek(pos)
-    }
-}
-
-pub struct Mp3Decoder {
-    decoder: Decoder<ThreadRead>,
-    sample_rate: u32,
-    num_channels: u16,
-    current_frame: Frame,
-    current_frame_offset: usize,
-    playing: bool,
-}
-
-impl Mp3Decoder {
-    pub fn new(num_channels: u16, sample_rate: u32, data: ThreadRead) -> Result<Self, ()> {
-        let decoder = Decoder::new(data);
-        let current_frame = Frame {
-            data: vec![],
-            sample_rate: sample_rate as _,
-            channels: num_channels as _,
-            layer: 3,
-            bitrate: 160,
-        };
-
-        Ok(Mp3Decoder {
-            decoder,
-            num_channels,
-            sample_rate,
-            current_frame,
-            current_frame_offset: 0,
-            playing: false,
-        })
-    }
-}
-
-impl Source for Mp3Decoder {
-    #[inline]
-    fn current_frame_len(&self) -> Option<usize> {
-        None //Some(self.current_frame.data.len())
-    }
-
-    #[inline]
-    fn channels(&self) -> u16 {
-        self.num_channels
-    }
-
-    #[inline]
-    fn sample_rate(&self) -> u32 {
-        self.sample_rate
-    }
-
-    #[inline]
-    fn total_duration(&self) -> Option<Duration> {
-        None
-    }
-}
-
-impl Iterator for Mp3Decoder {
+impl Iterator for DecoderSource {
     type Item = i16;
 
     #[inline]
     fn next(&mut self) -> Option<i16> {
-        if !self.playing {
-            let buffer = self.decoder.reader().0.lock().unwrap();
-            if buffer.get_ref().len() < 44100 / 60 {
-                return Some(0);
-            }
-            self.playing = true;
-        }
-
-        if self.current_frame_offset == self.current_frame.data.len() {
-            match self.decoder.next_frame() {
-                Ok(frame) => self.current_frame = frame,
-                _ => return Some(0),
-            }
-            self.current_frame_offset = 0;
-        }
-
-        let v = self.current_frame.data[self.current_frame_offset];
-        self.current_frame_offset += 1;
-
-        Some(v)
+        self.0.next()
     }
 }
-
-pub struct Mp3EventDecoder<R>
-where
-    R: Read + Seek,
-{
-    decoder: Decoder<R>,
-    current_frame: Frame,
-    current_frame_offset: usize,
-}
-
-impl<R> Mp3EventDecoder<R>
-where
-    R: Read + Seek,
-{
-    pub fn new(data: R) -> Result<Self, ()> {
-        let mut decoder = Decoder::new(data);
-        let current_frame = decoder.next_frame().map_err(|_| ())?;
-
-        Ok(Mp3EventDecoder {
-            decoder,
-            current_frame,
-            current_frame_offset: 0,
-        })
-    }
-}
-
-impl<R> Source for Mp3EventDecoder<R>
-where
-    R: Read + Seek,
-{
+impl rodio::Source for DecoderSource {
     #[inline]
     fn current_frame_len(&self) -> Option<usize> {
-        Some(self.current_frame.data.len())
+        None
     }
 
     #[inline]
     fn channels(&self) -> u16 {
-        self.current_frame.channels as _
+        self.0.num_channels().into()
     }
 
     #[inline]
     fn sample_rate(&self) -> u32 {
-        self.current_frame.sample_rate as _
+        self.0.sample_rate().into()
     }
 
     #[inline]
-    fn total_duration(&self) -> Option<Duration> {
+    fn total_duration(&self) -> Option<std::time::Duration> {
         None
-    }
-}
-
-impl<R> Iterator for Mp3EventDecoder<R>
-where
-    R: Read + Seek,
-{
-    type Item = i16;
-
-    #[inline]
-    fn next(&mut self) -> Option<i16> {
-        if self.current_frame_offset == self.current_frame.data.len() {
-            self.current_frame_offset = 0;
-            match self.decoder.next_frame() {
-                Ok(frame) => self.current_frame = frame,
-                _ => return None,
-            }
-        }
-
-        let v = self.current_frame.data[self.current_frame_offset];
-        self.current_frame_offset += 1;
-
-        Some(v)
     }
 }
