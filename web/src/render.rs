@@ -55,11 +55,18 @@ impl WebCanvasRenderBackend {
         )
         .map_err(|_| "Couldn't make SVG")?;
 
+        // Ensure a previous instance of the color matrix filter node doesn't exist.
+        // TODO: Remove it in player.destroy()? This is dangerous if the client page has something with this id...
+        if let Some(element) = document.get_element_by_id("_cm") {
+            element.remove();
+        }
+
+        // Create a color matrix filter to handle Flash color effects.
         let filter = document
             .create_element_ns(Some("http://www.w3.org/2000/svg"), "filter")
             .map_err(|_| "Couldn't make SVG filter")?;
         filter
-            .set_attribute("id", "cm")
+            .set_attribute("id", "_cm")
             .map_err(|_| "Couldn't make SVG filter")?;
 
         let color_matrix = document
@@ -71,26 +78,13 @@ impl WebCanvasRenderBackend {
         color_matrix
             .set_attribute("values", "1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0")
             .map_err(|_| "Couldn't make SVG feColorMatrix element")?;
-        // canvas
-        //     .set_attribute(
-        //         "style",
-        //         "color-interpolation-filters:linearRGB;color-interpolation:linearRGB",
-        //     )
-        //     .unwrap();
-        // color_matrix
-        //     .set_attribute(
-        //         "style",
-        //         "color-interpolation-filters:linearRGB;color-interpolation:linearRGB",
-        //     )
-        //     .unwrap();
-        // filter
-        //     .set_attribute(
-        //         "style",
-        //         "color-interpolation-filters:linearRGB;color-interpolation:linearRGB",
-        //     )
-        //     .unwrap();
+
         filter
             .append_child(&color_matrix.clone())
+            .map_err(|_| "append_child failed")?;
+
+        canvas
+            .append_child(&filter)
             .map_err(|_| "append_child failed")?;
 
         Ok(Self {
@@ -368,7 +362,7 @@ impl RenderBackend for WebCanvasRenderBackend {
                 .set_attribute("values", &matrix_str)
                 .unwrap();
 
-            self.context.set_filter("url('#cm')");
+            self.context.set_filter("url('#_cm')");
         }
 
         self.context
