@@ -9,7 +9,7 @@ pub struct ActionContext<'a, 'gc> {
     pub root: DisplayNode<'gc>,
     pub start_clip: DisplayNode<'gc>,
     pub active_clip: DisplayNode<'gc>,
-    pub audio: &'a mut crate::audio::Audio,
+    pub audio: &'a mut crate::backend::audio::AudioBackend,
 }
 
 pub struct Avm1 {
@@ -834,8 +834,8 @@ impl Avm1 {
         Ok(())
     }
 
-    fn action_stop_sounds(&mut self, context: &mut ActionContext) -> Result<(), Error> {
-        context.audio.stop_all_sounds();
+    fn action_stop_sounds(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        // TODO(Herschel)
         Ok(())
     }
 

@@ -1,4 +1,4 @@
-use crate::audio::AudioStreamHandle;
+use crate::backend::audio::AudioStreamHandle;
 use crate::character::Character;
 use crate::color_transform::ColorTransform;
 use crate::display_object::{DisplayObject, DisplayObjectBase};

@@ -1,4 +1,3 @@
-use crate::audio::Audio;
 use crate::avm1::Avm1;
 use crate::backend::{audio::AudioBackend, render::RenderBackend};
 use crate::display_object::DisplayObject;
@@ -26,7 +25,7 @@ pub struct Player {
     is_playing: bool,
 
     avm: Avm1,
-    audio: Audio,
+    audio: Box<AudioBackend>,
     renderer: Box<RenderBackend>,
     transform_stack: TransformStack,
 
@@ -69,7 +68,7 @@ impl Player {
 
             avm: Avm1::new(header.version),
             renderer,
-            audio: Audio::new(audio),
+            audio,
 
             background_color: Color {
                 r: 255,
@@ -164,7 +163,7 @@ impl Player {
             self.swf_version,
             &mut self.background_color,
             &mut *self.renderer,
-            &mut self.audio,
+            &mut *self.audio,
             &mut self.avm,
         );
 
@@ -195,7 +194,7 @@ impl Player {
             self.swf_version,
             &mut self.background_color,
             &mut *self.renderer,
-            &mut self.audio,
+            &mut *self.audio,
             &mut self.avm,
         );
 
@@ -258,7 +257,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub background_color: &'a mut Color,
     pub avm: &'a mut Avm1,
     pub renderer: &'a mut RenderBackend,
-    pub audio: &'a mut Audio,
+    pub audio: &'a mut AudioBackend,
     pub actions: Vec<crate::tag_utils::SwfSlice>,
 }
 

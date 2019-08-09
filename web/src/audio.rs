@@ -376,7 +376,7 @@ impl AudioBackend for WebAudioBackend {
 
     fn prime_audio(&mut self) {
         // Allow audio to start playing after a user gesture.
-        self.context.resume();
+        let _ = self.context.resume();
     }
 }
 
