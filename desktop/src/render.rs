@@ -946,6 +946,8 @@ impl RenderBackend for GliumRenderBackend {
             }
         }
     }
+
+    fn draw_pause_overlay(&mut self) {}
 }
 
 struct Texture {

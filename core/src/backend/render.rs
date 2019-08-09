@@ -19,6 +19,7 @@ pub trait RenderBackend {
     fn clear(&mut self, color: Color);
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform);
     fn end_frame(&mut self);
+    fn draw_pause_overlay(&mut self);
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -55,6 +56,7 @@ impl RenderBackend for NullRenderer {
     fn end_frame(&mut self) {}
     fn clear(&mut self, _color: Color) {}
     fn render_shape(&mut self, _shape: ShapeHandle, _transform: &Transform) {}
+    fn draw_pause_overlay(&mut self) {}
 }
 
 pub fn glue_swf_jpeg_to_tables(jpeg_tables: &[u8], jpeg_data: &[u8]) -> Vec<u8> {

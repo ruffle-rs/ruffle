@@ -6,8 +6,8 @@ use crate::{audio::WebAudioBackend, render::WebCanvasRenderBackend};
 use generational_arena::{Arena, Index};
 use js_sys::Uint8Array;
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
-use wasm_bindgen::{prelude::*, JsValue};
-use web_sys::HtmlCanvasElement;
+use wasm_bindgen::{prelude::*, JsCast, JsValue};
+use web_sys::{Event, EventTarget, HtmlCanvasElement};
 
 thread_local! {
     /// We store the actual instances of the ruffle core in a static pool.
@@ -23,6 +23,8 @@ struct RuffleInstance {
     timestamp: f64,
     animation_handler: Option<AnimationHandler>, // requestAnimationFrame callback
     animation_handler_id: Option<NonZeroI32>,    // requestAnimationFrame id
+    #[allow(dead_code)]
+    click_callback: Option<Closure<FnMut(Event)>>,
 }
 
 /// An opaque handle to a `RuffleInstance` inside the pool.
@@ -93,6 +95,7 @@ impl Ruffle {
             core,
             animation_handler: None,
             animation_handler_id: None,
+            click_callback: None,
             timestamp,
         };
 
@@ -112,6 +115,31 @@ impl Ruffle {
                     as Box<FnMut(f64)>));
             }
 
+            // Create click event handler.
+            {
+                let click_callback = Closure::wrap(Box::new(move |_| {
+                    INSTANCES.with(move |instances| {
+                        let mut instances = instances.borrow_mut();
+                        if let Some(instance) = instances.get_mut(index) {
+                            instance.core.set_is_playing(true);
+                        }
+                    });
+                }) as Box<FnMut(Event)>);
+                let canvas_events: &EventTarget = canvas.as_ref();
+                canvas_events
+                    .add_event_listener_with_callback(
+                        "click",
+                        click_callback.as_ref().unchecked_ref(),
+                    )
+                    .unwrap();
+                canvas.style().set_property("cursor", "pointer").unwrap();
+                let instance = instances.get_mut(index).unwrap();
+                instance.click_callback = Some(click_callback);
+
+                // Do an initial render for the pause overlay.
+                instance.core.render();
+            }
+
             ruffle
         });
 
@@ -122,13 +150,12 @@ impl Ruffle {
     }
 
     fn tick(&mut self, timestamp: f64) {
-        use wasm_bindgen::JsCast;
-
         INSTANCES.with(|instances| {
             let mut instances = instances.borrow_mut();
             if let Some(instance) = instances.get_mut(self.0) {
                 let dt = timestamp - instance.timestamp;
                 instance.timestamp = timestamp;
+
                 instance.core.tick(dt);
 
                 // Request next animation frame.

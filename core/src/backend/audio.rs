@@ -11,6 +11,7 @@ pub type SoundHandle = Index;
 type Error = Box<std::error::Error>;
 
 pub trait AudioBackend {
+    fn prime_audio(&mut self) {}
     fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, Error>;
     fn preload_sound_stream_head(
         &mut self,

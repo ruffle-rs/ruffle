@@ -311,7 +311,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         let width = self.canvas.width();
         let height = self.canvas.height();
 
-        let color = format!("rgb({}, {}, {}", color.r, color.g, color.b);
+        let color = format!("rgb({}, {}, {})", color.r, color.g, color.b);
         self.context.set_fill_style(&color.into());
         self.context
             .fill_rect(0.0, 0.0, width.into(), height.into());
@@ -371,6 +371,20 @@ impl RenderBackend for WebCanvasRenderBackend {
 
         self.context.set_filter("none");
         self.context.set_global_alpha(1.0);
+    }
+
+    fn draw_pause_overlay(&mut self) {
+        let width = f64::from(self.canvas.width());
+        let height = f64::from(self.canvas.height());
+        self.context.set_fill_style(&"rgba(0, 0, 0, 0.5)".into());
+        self.context.fill_rect(0.0, 0.0, width, height);
+        self.context.set_text_align("center");
+        self.context.set_fill_style(&"white".into());
+        self.context
+            .set_font(&format!("bold {}px sans-serif", height * 0.1));
+        let _ = self
+            .context
+            .fill_text("Click to Play", width / 2.0, height / 2.0);
     }
 }
 

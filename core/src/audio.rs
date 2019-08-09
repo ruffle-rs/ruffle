@@ -54,4 +54,8 @@ impl Audio {
     pub fn is_loading_complete(&self) -> bool {
         self.backend.is_loading_complete()
     }
+
+    pub fn prime_audio(&mut self) {
+        self.backend.prime_audio();
+    }
 }

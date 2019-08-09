@@ -373,6 +373,11 @@ impl AudioBackend for WebAudioBackend {
     fn is_loading_complete(&self) -> bool {
         NUM_SOUNDS_LOADING.with(|n| n.get() == 0)
     }
+
+    fn prime_audio(&mut self) {
+        // Allow audio to start playing after a user gesture.
+        self.context.resume();
+    }
 }
 
 // Janky resmapling code.

@@ -23,6 +23,8 @@ pub struct Player {
     swf_data: Arc<Vec<u8>>,
     swf_version: u8,
 
+    is_playing: bool,
+
     avm: Avm1,
     audio: Audio,
     renderer: Box<RenderBackend>,
@@ -62,6 +64,8 @@ impl Player {
         let mut player = Player {
             swf_data: Arc::new(data),
             swf_version: header.version,
+
+            is_playing: false,
 
             avm: Avm1::new(header.version),
             renderer,
@@ -105,19 +109,33 @@ impl Player {
             return;
         }
 
-        self.frame_accumulator += dt;
-        self.global_time += dt as u64;
-        let frame_time = 1000.0 / self.frame_rate;
+        if self.is_playing() {
+            self.frame_accumulator += dt;
+            self.global_time += dt as u64;
+            let frame_time = 1000.0 / self.frame_rate;
 
-        let needs_render = self.frame_accumulator >= frame_time;
-        while self.frame_accumulator >= frame_time {
-            self.frame_accumulator -= frame_time;
-            self.run_frame();
-        }
+            let needs_render = self.frame_accumulator >= frame_time;
+            while self.frame_accumulator >= frame_time {
+                self.frame_accumulator -= frame_time;
+                self.run_frame();
+            }
 
-        if needs_render {
-            self.render();
+            if needs_render {
+                self.render();
+            }
         }
+    }
+
+    pub fn is_playing(&self) -> bool {
+        self.is_playing
+    }
+
+    pub fn set_is_playing(&mut self, v: bool) {
+        if v {
+            // Allow auto-play after user gesture for web backends.
+            self.audio.prime_audio();
+        }
+        self.is_playing = v;
     }
 
     pub fn movie_width(&self) -> u32 {
@@ -207,7 +225,7 @@ impl Player {
         });
     }
 
-    fn render(&mut self) {
+    pub fn render(&mut self) {
         self.renderer.begin_frame();
 
         self.renderer.clear(self.background_color.clone());
@@ -221,6 +239,10 @@ impl Player {
             };
             gc_root.root.read().render(&mut render_context);
         });
+
+        if !self.is_playing() {
+            self.renderer.draw_pause_overlay();
+        }
 
         self.renderer.end_frame();
     }
