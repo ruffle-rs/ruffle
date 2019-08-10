@@ -19,7 +19,7 @@ thread_local! {
 type AnimationHandler = Closure<FnMut(f64)>;
 
 struct RuffleInstance {
-    core: ruffle_core::Player,
+    core: ruffle_core::Player<WebAudioBackend, WebCanvasRenderBackend>,
     timestamp: f64,
     animation_handler: Option<AnimationHandler>, // requestAnimationFrame callback
     animation_handler_id: Option<NonZeroI32>,    // requestAnimationFrame id
@@ -70,7 +70,7 @@ impl Ruffle {
         let renderer = WebCanvasRenderBackend::new(&canvas)?;
         let audio = WebAudioBackend::new()?;
 
-        let core = ruffle_core::Player::new(Box::new(renderer), Box::new(audio), data)?;
+        let core = ruffle_core::Player::new(renderer, audio, data)?;
 
         // Update canvas size to match player size.
         canvas.set_width(core.movie_width());

@@ -44,7 +44,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<std::error::Error>> {
     let audio = audio::RodioAudioBackend::new()?;
     let renderer = GliumRenderBackend::new(windowed_context)?;
     let display = renderer.display().clone();
-    let mut player = Player::new(Box::new(renderer), Box::new(audio), swf_data)?;
+    let mut player = Player::new(renderer, audio, swf_data)?;
     player.set_is_playing(true); // Desktop player will auto-play.
 
     let logical_size: LogicalSize = (player.movie_width(), player.movie_height()).into();

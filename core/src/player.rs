@@ -18,15 +18,15 @@ struct GcRoot<'gc> {
 
 make_arena!(GcArena, GcRoot);
 
-pub struct Player {
+pub struct Player<Audio: AudioBackend, Renderer: RenderBackend> {
     swf_data: Arc<Vec<u8>>,
     swf_version: u8,
 
     is_playing: bool,
 
     avm: Avm1,
-    audio: Box<AudioBackend>,
-    renderer: Box<RenderBackend>,
+    audio: Audio,
+    renderer: Renderer,
     transform_stack: TransformStack,
 
     gc_arena: GcArena,
@@ -42,10 +42,10 @@ pub struct Player {
     mouse_pos: (f32, f32),
 }
 
-impl Player {
+impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
     pub fn new(
-        mut renderer: Box<RenderBackend>,
-        audio: Box<AudioBackend>,
+        mut renderer: Renderer,
+        audio: Audio,
         swf_data: Vec<u8>,
     ) -> Result<Self, Box<std::error::Error>> {
         let (header, mut reader) = swf::read::read_swf_header(&swf_data[..]).unwrap();
@@ -162,8 +162,8 @@ impl Player {
             &mut self.swf_data,
             self.swf_version,
             &mut self.background_color,
-            &mut *self.renderer,
-            &mut *self.audio,
+            &mut self.renderer,
+            &mut self.audio,
             &mut self.avm,
         );
 
@@ -193,8 +193,8 @@ impl Player {
             &mut self.swf_data,
             self.swf_version,
             &mut self.background_color,
-            &mut *self.renderer,
-            &mut *self.audio,
+            &mut self.renderer,
+            &mut self.audio,
             &mut self.avm,
         );
 
@@ -229,7 +229,7 @@ impl Player {
 
         self.renderer.clear(self.background_color.clone());
 
-        let (renderer, transform_stack) = (&mut *self.renderer, &mut self.transform_stack);
+        let (renderer, transform_stack) = (&mut self.renderer, &mut self.transform_stack);
         self.gc_arena.mutate(|_gc_context, gc_root| {
             let mut render_context = RenderContext {
                 renderer,
