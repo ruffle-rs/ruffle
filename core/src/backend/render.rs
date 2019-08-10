@@ -2,8 +2,8 @@ pub use crate::{transform::Transform, Color};
 pub use swf;
 
 pub trait RenderBackend {
-    fn set_dimensions(&mut self, width: u32, height: u32);
-
+    fn set_movie_dimensions(&mut self, width: u32, height: u32);
+    fn set_viewport_dimensions(&mut self, width: u32, height: u32);
     fn register_shape(&mut self, shape: &swf::Shape) -> ShapeHandle;
     fn register_glyph_shape(&mut self, shape: &swf::Glyph) -> ShapeHandle;
     fn register_bitmap_jpeg(
@@ -31,7 +31,8 @@ pub struct BitmapHandle(pub usize);
 pub struct NullRenderer;
 
 impl RenderBackend for NullRenderer {
-    fn set_dimensions(&mut self, _width: u32, _height: u32) {}
+    fn set_movie_dimensions(&mut self, _width: u32, _height: u32) {}
+    fn set_viewport_dimensions(&mut self, _width: u32, _height: u32) {}
     fn register_shape(&mut self, _shape: &swf::Shape) -> ShapeHandle {
         ShapeHandle(0)
     }

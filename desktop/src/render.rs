@@ -22,6 +22,11 @@ pub struct GliumRenderBackend {
     textures: Vec<(swf::CharacterId, Texture)>,
     movie_width: f32,
     movie_height: f32,
+    viewport_width: f32,
+    viewport_height: f32,
+    margin_width: f32,
+    margin_height: f32,
+    view_matrix: [[f32; 4]; 4],
 }
 
 impl GliumRenderBackend {
@@ -73,7 +78,7 @@ impl GliumRenderBackend {
             },
         )?;
 
-        Ok(GliumRenderBackend {
+        let mut renderer = GliumRenderBackend {
             display,
             shader_program,
             gradient_shader_program,
@@ -83,7 +88,14 @@ impl GliumRenderBackend {
             textures: vec![],
             movie_width: 500.0,
             movie_height: 500.0,
-        })
+            viewport_width: 500.0,
+            viewport_height: 500.0,
+            margin_width: 0.0,
+            margin_height: 0.0,
+            view_matrix: [[0.0; 4]; 4],
+        };
+        renderer.build_matrices();
+        Ok(renderer)
     }
 
     pub fn display(&self) -> &Display {
@@ -419,233 +431,117 @@ impl GliumRenderBackend {
 
         self.meshes.push(mesh);
 
-        //lyon_mesh.vertices
-
-        //     for cmd in cmds {
-        //         let color = match cmd {
-        //             PathCommandType::Fill(FillStyle::Color(color)) => [
-        //                 f32::from(color.r) / 255.0,
-        //                 f32::from(color.g) / 255.0,
-        //                 f32::from(color.b) / 255.0,
-        //                 f32::from(color.a) / 255.0,
-        //             ],
-        //             PathCommandType::Fill(_) => continue,
-        //             PathCommandType::Stroke(_) => continue,
-        //         };
-        //         let vertex_ctor = move |vertex: tessellation::FillVertex| Vertex {
-        //             position: [vertex.position.x, vertex.position.y],
-        //             color,
-        //         };
-
-        //         let mut buffers_builder = BuffersBuilder::new(&mut lyon_mesh, vertex_ctor);
-
-        //         if let Err(e) = fill_tess.tessellate_path(
-        //             path.into_iter(),
-        //             &FillOptions::even_odd(),
-        //             &mut buffers_builder,
-        //         ) {
-        //             log::error!("Tessellation failure: {:?}", e);
-        //             self.meshes.push(mesh);
-        //             return handle;
-        //         }
-
-        //         let vert_offset = vertices.len() as u32;
-        //         vertices.extend(lyon_mesh.vertices.iter());
-        //         indices.extend(lyon_mesh.indices.iter().map(|&n| n + vert_offset));
-        //     }
-
-        //     let vertex_buffer = glium::VertexBuffer::new(&self.display, &vertices[..]).unwrap();
-        //     let index_buffer = glium::IndexBuffer::new(
-        //         &self.display,
-        //         glium::index::PrimitiveType::TrianglesList,
-        //         &indices[..],
-        //     )
-        //     .unwrap();
-
-        //     mesh.draws.push(Draw {
-        //         draw_type: DrawType::Color,
-        //         vertex_buffer,
-        //         index_buffer,
-        //     });
-
-        //     fn swf_to_gl_matrix(m: swf::Matrix) -> [[f32; 3]; 3] {
-        //         let tx = m.translate_x.get() as f32;
-        //         let ty = m.translate_y.get() as f32;
-        //         let det = m.scale_x * m.scale_y - m.rotate_skew_1 * m.rotate_skew_0;
-        //         let mut a = m.scale_y / det;
-        //         let mut b = -m.rotate_skew_1 / det;
-        //         let mut c = -(tx * m.scale_y - m.rotate_skew_1 * ty) / det;
-        //         let mut d = -m.rotate_skew_0 / det;
-        //         let mut e = m.scale_x / det;
-        //         let mut f = (tx * m.rotate_skew_0 - m.scale_x * ty) / det;
-
-        //         a *= 20.0 / 32768.0;
-        //         b *= 20.0 / 32768.0;
-        //         d *= 20.0 / 32768.0;
-        //         e *= 20.0 / 32768.0;
-
-        //         c /= 32768.0;
-        //         f /= 32768.0;
-        //         c += 0.5;
-        //         f += 0.5;
-        //         [[a, d, 0.0], [b, e, 0.0], [c, f, 1.0]]
-        //     }
-
-        //     for (cmd, path) in paths {
-        //         let mut lyon_mesh: VertexBuffers<_, u32> = VertexBuffers::new();
-        //         if let PathCommandType::Stroke(_) = cmd {
-        //             continue;
-        //         }
-        //         let gradient_uniforms = match cmd {
-        //             PathCommandType::Fill(FillStyle::LinearGradient(gradient)) => {
-        //                 let mut colors: Vec<[f32; 4]> = Vec::with_capacity(8);
-        //                 let mut ratios: Vec<f32> = Vec::with_capacity(8);
-        //                 for (i, record) in gradient.records.iter().enumerate() {
-        //                     colors.push([
-        //                         record.color.r as f32 / 255.0,
-        //                         record.color.g as f32 / 255.0,
-        //                         record.color.b as f32 / 255.0,
-        //                         record.color.a as f32 / 255.0,
-        //                     ]);
-        //                     ratios.push(record.ratio as f32 / 255.0);
-        //                 }
-
-        //                 GradientUniforms {
-        //                     gradient_type: 0,
-        //                     ratios,
-        //                     colors,
-        //                     num_colors: gradient.records.len() as u32,
-        //                     matrix: swf_to_gl_matrix(gradient.matrix.clone()),
-        //                     repeat_mode: 0,
-        //                     focal_point: 0.0,
-        //                 }
-        //             }
-        //             PathCommandType::Fill(FillStyle::RadialGradient(gradient)) => {
-        //                 let mut colors: Vec<[f32; 4]> = Vec::with_capacity(8);
-        //                 let mut ratios: Vec<f32> = Vec::with_capacity(8);
-        //                 for (i, record) in gradient.records.iter().enumerate() {
-        //                     colors.push([
-        //                         record.color.r as f32 / 255.0,
-        //                         record.color.g as f32 / 255.0,
-        //                         record.color.b as f32 / 255.0,
-        //                         record.color.a as f32 / 255.0,
-        //                     ]);
-        //                     ratios.push(record.ratio as f32 / 255.0);
-        //                 }
-
-        //                 GradientUniforms {
-        //                     gradient_type: 1,
-        //                     ratios,
-        //                     colors,
-        //                     num_colors: gradient.records.len() as u32,
-        //                     matrix: swf_to_gl_matrix(gradient.matrix.clone()),
-        //                     repeat_mode: 0,
-        //                     focal_point: 0.0,
-        //                 }
-        //             }
-        //             PathCommandType::Fill(FillStyle::FocalGradient {
-        //                 gradient,
-        //                 focal_point,
-        //             }) => {
-        //                 let mut colors: Vec<[f32; 4]> = Vec::with_capacity(8);
-        //                 let mut ratios: Vec<f32> = Vec::with_capacity(8);
-        //                 for (i, record) in gradient.records.iter().enumerate() {
-        //                     colors.push([
-        //                         record.color.r as f32 / 255.0,
-        //                         record.color.g as f32 / 255.0,
-        //                         record.color.b as f32 / 255.0,
-        //                         record.color.a as f32 / 255.0,
-        //                     ]);
-        //                     ratios.push(record.ratio as f32 / 255.0);
-        //                 }
-
-        //                 GradientUniforms {
-        //                     gradient_type: 2,
-        //                     ratios,
-        //                     colors,
-        //                     num_colors: gradient.records.len() as u32,
-        //                     matrix: swf_to_gl_matrix(gradient.matrix.clone()),
-        //                     repeat_mode: 0,
-        //                     focal_point,
-        //                 }
-        //             }
-        //             // PathCommandType::Fill(FillStyle::Bitmap {
-        //             //     id,
-        //             //     matrix,
-        //             //     is_repeating,
-        //             //     is_smoothed,
-        //             // }) => {
-        //             //     let mut colors = [[0.0; 4]; 8];
-        //             //     let mut ratios = [0.0; 8];
-        //             //     for (i, record) in gradient.records.iter().enumerate() {
-        //             //         colors[i] = [
-        //             //             record.color.r as f32 / 255.0,
-        //             //             record.color.g as f32 / 255.0,
-        //             //             record.color.b as f32 / 255.0,
-        //             //             record.color.a as f32 / 255.0,
-        //             //         ];
-        //             //         ratios[i] = record.ratio as f32 / 255.0;
-        //             //     }
-
-        //             //     GradientUniforms {
-        //             //         gradient_type: 0,
-        //             //         ratios,
-        //             //         colors,
-        //             //         num_colors: gradient.records.len() as u32,
-        //             //         matrix: swf_to_gl_matrix(gradient.matrix.clone()),
-        //             //         repeat_mode: 0,
-        //             //         focal_point: 0.0,
-        //             //     }
-        //             // }
-        //             PathCommandType::Fill(_) => continue,
-        //             PathCommandType::Stroke(_) => continue,
-        //         };
-
-        //         let vertex_ctor = move |vertex: tessellation::FillVertex| Vertex {
-        //             position: [vertex.position.x, vertex.position.y],
-        //             color: [0.0, 0.0, 0.0, 0.0],
-        //         };
-
-        //         let mut buffers_builder = BuffersBuilder::new(&mut lyon_mesh, vertex_ctor);
-        //         if let Err(e) = fill_tess.tessellate_path(
-        //             path.into_iter(),
-        //             &FillOptions::even_odd(),
-        //             &mut buffers_builder,
-        //         ) {
-        //             log::error!("Tessellation failure: {:?}", e);
-        //             self.meshes.push(mesh);
-        //             return handle;
-        //         }
-
-        //         let vertex_buffer =
-        //             glium::VertexBuffer::new(&self.display, &lyon_mesh.vertices[..]).unwrap();
-        //         let index_buffer = glium::IndexBuffer::new(
-        //             &self.display,
-        //             glium::index::PrimitiveType::TrianglesList,
-        //             &lyon_mesh.indices[..],
-        //         )
-        //         .unwrap();
-
-        //         mesh.draws.push(Draw {
-        //             draw_type: DrawType::LinearGradient(gradient_uniforms),
-        //             vertex_buffer,
-        //             index_buffer,
-        //         });
-        //     }
-
-        //     self.meshes.push(mesh);
-
-        //     handle
-        // }
-
         handle
+    }
+
+    fn build_matrices(&mut self) {
+        let movie_aspect = self.movie_width / self.movie_height;
+        let viewport_aspect = self.viewport_width / self.viewport_height;
+        let (scale_x, scale_y, margin_width, margin_height) = if viewport_aspect > movie_aspect {
+            let scale = self.viewport_height / self.movie_height;
+            (
+                self.movie_width / (self.movie_height * viewport_aspect),
+                1.0,
+                (self.viewport_width - self.movie_width * scale) / 2.0,
+                0.0,
+            )
+        } else {
+            let scale = self.viewport_width / self.movie_width;
+            (
+                1.0,
+                self.movie_height / (self.movie_width / viewport_aspect),
+                0.0,
+                (self.viewport_height - self.movie_height * scale) / 2.0,
+            )
+        };
+        self.margin_width = margin_width;
+        self.margin_height = margin_height;
+        self.view_matrix = [
+            [scale_x / (self.movie_width as f32 / 2.0), 0.0, 0.0, 0.0],
+            [0.0, -scale_y / (self.movie_height as f32 / 2.0), 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [
+                -1.0 + 2.0 * margin_width / self.viewport_width,
+                1.0 - 2.0 * margin_height / self.viewport_height,
+                0.0,
+                1.0,
+            ],
+        ];
+    }
+
+    fn draw_letterbox(&mut self) {
+        let target = self.target.as_mut().unwrap();
+        let black = Some((0.0, 0.0, 0.0, 1.0));
+        let margin_width = self.margin_width as u32;
+        let margin_height = self.margin_height as u32;
+        let viewport_width = self.viewport_width as u32;
+        let viewport_height = self.viewport_height as u32;
+        if margin_width > 0 {
+            target.clear(
+                Some(&glium::Rect {
+                    left: 0,
+                    bottom: 0,
+                    width: margin_width,
+                    height: viewport_height * 2,
+                }),
+                black,
+                true,
+                None,
+                None,
+            );
+            target.clear(
+                Some(&glium::Rect {
+                    left: viewport_width * 2 - margin_width * 2,
+                    bottom: 0,
+                    width: margin_width
+                    height: viewport_height * 2,
+                }),
+                black,
+                true,
+                None,
+                None,
+            );
+        }
+        if margin_height > 0 {
+            target.clear(
+                Some(&glium::Rect {
+                    left: 0,
+                    bottom: 0,
+                    width: viewport_width * 2,
+                    height: margin_height * 2,
+                }),
+                black,
+                true,
+                None,
+                None,
+            );
+            target.clear(
+                Some(&glium::Rect {
+                    left: 0,
+                    bottom: viewport_height * 2 - margin_height * 2,
+                    width: viewport_width * 2,
+                    height: margin_height * 2,
+                }),
+                black,
+                true,
+                None,
+                None,
+            );
+        }
     }
 }
 
 impl RenderBackend for GliumRenderBackend {
-    fn set_dimensions(&mut self, width: u32, height: u32) {
+    fn set_movie_dimensions(&mut self, width: u32, height: u32) {
         self.movie_width = width as f32;
         self.movie_height = height as f32;
+        self.build_matrices();
+    }
+
+    fn set_viewport_dimensions(&mut self, width: u32, height: u32) {
+        self.viewport_width = width as f32;
+        self.viewport_height = height as f32;
+        self.build_matrices();
     }
 
     fn register_shape(&mut self, shape: &swf::Shape) -> ShapeHandle {
@@ -827,6 +723,9 @@ impl RenderBackend for GliumRenderBackend {
 
     fn end_frame(&mut self) {
         assert!(self.target.is_some());
+
+        self.draw_letterbox();
+
         let target = self.target.take().unwrap();
         target.finish().unwrap();
     }
@@ -845,13 +744,6 @@ impl RenderBackend for GliumRenderBackend {
         let target = self.target.as_mut().unwrap();
 
         let mesh = &self.meshes[shape.0];
-
-        let view_matrix = [
-            [1.0 / (self.movie_width as f32 / 2.0), 0.0, 0.0, 0.0],
-            [0.0, -1.0 / (self.movie_height as f32 / 2.0), 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [-1.0, 1.0, 0.0, 1.0],
-        ];
 
         let world_matrix = [
             [transform.matrix.a, transform.matrix.b, 0.0, 0.0],
@@ -892,14 +784,14 @@ impl RenderBackend for GliumRenderBackend {
                             &draw.vertex_buffer,
                             &draw.index_buffer,
                             &self.shader_program,
-                            &uniform! { view_matrix: view_matrix, world_matrix: world_matrix, mult_color: mult_color, add_color: add_color },
+                            &uniform! { view_matrix: self.view_matrix, world_matrix: world_matrix, mult_color: mult_color, add_color: add_color },
                             &draw_parameters
                         )
                         .unwrap();
                 }
                 DrawType::Gradient(gradient_uniforms) => {
                     let uniforms = GradientUniformsFull {
-                        view_matrix,
+                        view_matrix: self.view_matrix,
                         world_matrix,
                         mult_color,
                         add_color,
@@ -925,7 +817,7 @@ impl RenderBackend for GliumRenderBackend {
                         .1;
 
                     let uniforms = BitmapUniformsFull {
-                        view_matrix,
+                        view_matrix: self.view_matrix,
                         world_matrix,
                         mult_color,
                         add_color,

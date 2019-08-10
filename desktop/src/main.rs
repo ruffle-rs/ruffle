@@ -6,7 +6,7 @@ use glutin::{
     dpi::{LogicalPosition, LogicalSize},
     ContextBuilder, ElementState, Event, EventsLoop, MouseButton, WindowBuilder, WindowEvent,
 };
-use ruffle_core::Player;
+use ruffle_core::{backend::render::RenderBackend, Player};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
@@ -66,6 +66,9 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<std::error::Error>> {
         events_loop.poll_events(|event| {
             if let Event::WindowEvent { event, .. } = event {
                 match event {
+                    WindowEvent::Resized(size) => {
+                        player.renderer_mut().set_viewport_dimensions(size.width as u32, size.height as u32)
+                    }
                     WindowEvent::CursorMoved { position, .. } => {
                         mouse_pos = position;
                         player.mouse_move((position.x as f32, position.y as f32));

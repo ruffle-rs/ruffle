@@ -58,7 +58,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
 
         let movie_width = (header.stage_size.x_max - header.stage_size.x_min).to_pixels() as u32;
         let movie_height = (header.stage_size.y_max - header.stage_size.y_min).to_pixels() as u32;
-        renderer.set_dimensions(movie_width, movie_height);
+        renderer.set_movie_dimensions(movie_width, movie_height);
 
         let mut player = Player {
             swf_data: Arc::new(data),
@@ -244,6 +244,14 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
         }
 
         self.renderer.end_frame();
+    }
+
+    pub fn renderer(&self) -> &Renderer {
+        &self.renderer
+    }
+
+    pub fn renderer_mut(&mut self) -> &mut Renderer {
+        &mut self.renderer
     }
 }
 
