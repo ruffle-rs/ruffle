@@ -482,7 +482,7 @@ impl GliumRenderBackend {
                     left: 0,
                     bottom: 0,
                     width: margin_width,
-                    height: viewport_height * 2,
+                    height: viewport_height,
                 }),
                 black,
                 true,
@@ -491,24 +491,23 @@ impl GliumRenderBackend {
             );
             target.clear(
                 Some(&glium::Rect {
-                    left: viewport_width * 2 - margin_width * 2,
+                    left: viewport_width - margin_width,
                     bottom: 0,
-                    width: margin_width
-                    height: viewport_height * 2,
+                    width: margin_width,
+                    height: viewport_height,
                 }),
                 black,
                 true,
                 None,
                 None,
             );
-        }
-        if margin_height > 0 {
+        } else if margin_height > 0 {
             target.clear(
                 Some(&glium::Rect {
                     left: 0,
                     bottom: 0,
-                    width: viewport_width * 2,
-                    height: margin_height * 2,
+                    width: viewport_width,
+                    height: margin_height,
                 }),
                 black,
                 true,
@@ -518,9 +517,9 @@ impl GliumRenderBackend {
             target.clear(
                 Some(&glium::Rect {
                     left: 0,
-                    bottom: viewport_height * 2 - margin_height * 2,
-                    width: viewport_width * 2,
-                    height: margin_height * 2,
+                    bottom: viewport_height - margin_height,
+                    width: viewport_width,
+                    height: margin_height,
                 }),
                 black,
                 true,

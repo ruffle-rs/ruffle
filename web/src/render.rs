@@ -99,7 +99,8 @@ impl WebCanvasRenderBackend {
 }
 
 impl RenderBackend for WebCanvasRenderBackend {
-    fn set_dimensions(&mut self, _width: u32, _height: u32) {}
+    fn set_movie_dimensions(&mut self, _width: u32, _height: u32) {}
+    fn set_viewport_dimensions(&mut self, _width: u32, _height: u32) {}
 
     fn register_shape(&mut self, shape: &swf::Shape) -> ShapeHandle {
         let handle = ShapeHandle(self.shapes.len());

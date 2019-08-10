@@ -66,8 +66,12 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<std::error::Error>> {
         events_loop.poll_events(|event| {
             if let Event::WindowEvent { event, .. } = event {
                 match event {
-                    WindowEvent::Resized(size) => {
-                        player.renderer_mut().set_viewport_dimensions(size.width as u32, size.height as u32)
+                    WindowEvent::Resized(logical_size) => {
+                        let size = logical_size.to_physical(hidpi_factor);
+                        player.renderer_mut().set_viewport_dimensions(
+                            size.width.ceil() as u32,
+                            size.height.ceil() as u32,
+                        )
                     }
                     WindowEvent::CursorMoved { position, .. } => {
                         mouse_pos = position;
