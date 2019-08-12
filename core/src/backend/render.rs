@@ -66,3 +66,123 @@ pub fn glue_swf_jpeg_to_tables(jpeg_tables: &[u8], jpeg_data: &[u8]) -> Vec<u8> 
     full_jpeg.extend_from_slice(&jpeg_data[2..]);
     full_jpeg
 }
+
+/// Decodes the bitmap data in DefineBitsLossless tag into RGBA.
+/// DefineBitsLossless is Zlib encoded pixel data (similar to PNG), possibly
+/// palletized.
+pub fn define_bits_lossless_to_rgba(swf_tag: &swf::DefineBitsLossless) -> Result<Vec<u8>, Box<std::error::Error>> {
+    use std::io::Read;
+
+    // Decompress the image data (DEFLAT compression).
+    let mut decoded_data = {
+        let mut data = vec![];
+        let mut decoder = libflate::zlib::Decoder::new(&swf_tag.data[..])?;
+        decoder.read_to_end(&mut data)?;
+        data
+    };
+
+    // Swizzle/de-palettize the bitmap.
+    let out_data = match (swf_tag.version, swf_tag.format) {
+        (1, swf::BitmapFormat::Rgb15) => unimplemented!("15-bit PNG"),
+        (1, swf::BitmapFormat::Rgb32) => {
+            let mut i = 0;
+            while i < decoded_data.len() {
+                decoded_data[i] = decoded_data[i + 1];
+                decoded_data[i + 1] = decoded_data[i + 2];
+                decoded_data[i + 2] = decoded_data[i + 3];
+                decoded_data[i + 3] = 0xff;
+                i += 4;
+            }
+            decoded_data
+        }
+        (2, swf::BitmapFormat::Rgb32) => {
+            let mut i = 0;
+            while i < decoded_data.len() {
+                let alpha = decoded_data[i];
+                decoded_data[i] = decoded_data[i + 1];
+                decoded_data[i + 1] = decoded_data[i + 2];
+                decoded_data[i + 2] = decoded_data[i + 3];
+                decoded_data[i + 3] = alpha;
+                i += 4;
+            }
+            decoded_data
+        }
+        (1, swf::BitmapFormat::ColorMap8) => {
+            let mut i = 0;
+            let padded_width = (swf_tag.width + 0b11) & !0b11;
+
+            let mut palette = Vec::with_capacity(swf_tag.num_colors as usize + 1);
+            for _ in 0..=swf_tag.num_colors {
+                palette.push(Color {
+                    r: decoded_data[i],
+                    g: decoded_data[i + 1],
+                    b: decoded_data[i + 2],
+                    a: 255,
+                });
+                i += 3;
+            }
+            let mut out_data = vec![];
+            for _ in 0..swf_tag.height {
+                for _ in 0..swf_tag.width {
+                    let entry = decoded_data[i] as usize;
+                    if entry < palette.len() {
+                        let color = &palette[entry];
+                        out_data.push(color.r);
+                        out_data.push(color.g);
+                        out_data.push(color.b);
+                        out_data.push(color.a);
+                    } else {
+                        out_data.push(0);
+                        out_data.push(0);
+                        out_data.push(0);
+                        out_data.push(255);
+                    }
+                    i += 1;
+                }
+                i += (padded_width - swf_tag.width) as usize;
+            }
+            out_data
+        }
+        (2, swf::BitmapFormat::ColorMap8) => {
+            let mut i = 0;
+            let padded_width = (swf_tag.width + 0b11) & !0b11;
+
+            let mut palette = Vec::with_capacity(swf_tag.num_colors as usize + 1);
+            for _ in 0..=swf_tag.num_colors {
+                palette.push(Color {
+                    r: decoded_data[i],
+                    g: decoded_data[i + 1],
+                    b: decoded_data[i + 2],
+                    a: decoded_data[i + 3],
+                });
+                i += 4;
+            }
+            let mut out_data = vec![];
+            for _ in 0..swf_tag.height {
+                for _ in 0..swf_tag.width {
+                    let entry = decoded_data[i] as usize;
+                    if entry < palette.len() {
+                        let color = &palette[entry];
+                        out_data.push(color.r);
+                        out_data.push(color.g);
+                        out_data.push(color.b);
+                        out_data.push(color.a);
+                    } else {
+                        out_data.push(0);
+                        out_data.push(0);
+                        out_data.push(0);
+                        out_data.push(0);
+                    }
+                    i += 1;
+                }
+                i += (padded_width - swf_tag.width) as usize;
+            }
+            out_data
+        }
+        _ => {
+            unimplemented!("{:?} {:?}", swf_tag.version, swf_tag.format)
+        }
+    };
+
+    Ok(out_data)
+}

@@ -631,69 +631,7 @@ impl RenderBackend for GliumRenderBackend {
     }
 
     fn register_bitmap_png(&mut self, swf_tag: &swf::DefineBitsLossless) -> BitmapHandle {
-        use inflate::inflate_bytes_zlib;
-        let mut decoded_data = inflate_bytes_zlib(&swf_tag.data).unwrap();
-        match (swf_tag.version, swf_tag.format) {
-            (1, swf::BitmapFormat::Rgb15) => unimplemented!("15-bit PNG"),
-            (1, swf::BitmapFormat::Rgb32) => {
-                let mut i = 0;
-                while i < decoded_data.len() {
-                    decoded_data[i] = decoded_data[i + 1];
-                    decoded_data[i + 1] = decoded_data[i + 2];
-                    decoded_data[i + 2] = decoded_data[i + 3];
-                    decoded_data[i + 3] = 0xff;
-                    i += 4;
-                }
-            }
-            (2, swf::BitmapFormat::Rgb32) => {
-                let mut i = 0;
-                while i < decoded_data.len() {
-                    let alpha = decoded_data[i];
-                    decoded_data[i] = decoded_data[i + 1];
-                    decoded_data[i + 1] = decoded_data[i + 2];
-                    decoded_data[i + 2] = decoded_data[i + 3];
-                    decoded_data[i + 3] = alpha;
-                    i += 4;
-                }
-            }
-            (2, swf::BitmapFormat::ColorMap8) => {
-                let mut i = 0;
-                let padded_width = (swf_tag.width + 0b11) & !0b11;
-
-                let mut palette = Vec::with_capacity(swf_tag.num_colors as usize + 1);
-                for _ in 0..=swf_tag.num_colors {
-                    palette.push(Color {
-                        r: decoded_data[i],
-                        g: decoded_data[i + 1],
-                        b: decoded_data[i + 2],
-                        a: decoded_data[i + 3],
-                    });
-                    i += 4;
-                }
-                let mut out_data = vec![];
-                for _ in 0..swf_tag.height {
-                    for _ in 0..swf_tag.width {
-                        let entry = decoded_data[i] as usize;
-                        if entry < palette.len() {
-                            let color = &palette[entry];
-                            out_data.push(color.r);
-                            out_data.push(color.g);
-                            out_data.push(color.b);
-                            out_data.push(color.a);
-                        } else {
-                            out_data.push(0);
-                            out_data.push(0);
-                            out_data.push(0);
-                            out_data.push(0);
-                        }
-                        i += 1;
-                    }
-                    i += (padded_width - swf_tag.width) as usize;
-                }
-                decoded_data = out_data;
-            }
-            _ => unimplemented!(),
-        }
+        let decoded_data = ruffle_core::backend::render::define_bits_lossless_to_rgba(swf_tag).expect("Error decoding DefineBitsLossless");
 
         let image = glium::texture::RawImage2d::from_raw_rgba(
             decoded_data,
