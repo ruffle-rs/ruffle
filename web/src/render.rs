@@ -251,35 +251,18 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn register_bitmap_jpeg(
         &mut self,
         id: CharacterId,
-        mut data: &[u8],
-        mut jpeg_tables: &[u8],
+        data: &[u8],
+        jpeg_tables: &[u8],
     ) -> BitmapHandle {
-        // SWF19 p.138:
-        // "Before version 8 of the SWF file format, SWF files could contain an erroneous header of 0xFF, 0xD9, 0xFF, 0xD8 before the JPEG SOI marker."
-        // Slice off these bytes if necessary.`
-        if data[0..4] == [0xFF, 0xD9, 0xFF, 0xD8] {
-            data = &data[4..];
-        }
-
-        if jpeg_tables[0..4] == [0xFF, 0xD9, 0xFF, 0xD8] {
-            jpeg_tables = &jpeg_tables[4..];
-        }
-
         let mut full_jpeg = jpeg_tables[..jpeg_tables.len() - 2].to_vec();
         full_jpeg.extend_from_slice(&data[2..]);
 
         self.register_bitmap_jpeg_2(id, &full_jpeg[..])
     }
 
-    fn register_bitmap_jpeg_2(&mut self, id: CharacterId, mut data: &[u8]) -> BitmapHandle {
-        // SWF19 p.138:
-        // "Before version 8 of the SWF file format, SWF files could contain an erroneous header of 0xFF, 0xD9, 0xFF, 0xD8 before the JPEG SOI marker."
-        // Slice off these bytes if necessary.`
-        if data[0..4] == [0xFF, 0xD9, 0xFF, 0xD8] {
-            data = &data[4..];
-        }
-
-        let mut decoder = jpeg_decoder::Decoder::new(data);
+    fn register_bitmap_jpeg_2(&mut self, id: CharacterId, data: &[u8]) -> BitmapHandle {
+        let data = ruffle_core::backend::render::remove_invalid_jpeg_data(data);
+        let mut decoder = jpeg_decoder::Decoder::new(&data[..]);
         decoder.read_info().unwrap();
         let metadata = decoder.info().unwrap();
 
@@ -299,7 +282,8 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn register_bitmap_png(&mut self, swf_tag: &swf::DefineBitsLossless) -> BitmapHandle {
-        let decoded_data = ruffle_core::backend::render::define_bits_lossless_to_rgba(swf_tag).expect("Error decoding DefineBitsLossless");
+        let decoded_data = ruffle_core::backend::render::define_bits_lossless_to_rgba(swf_tag)
+            .expect("Error decoding DefineBitsLossless");
 
         let mut out_png: Vec<u8> = vec![];
         {

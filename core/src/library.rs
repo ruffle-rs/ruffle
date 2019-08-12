@@ -75,6 +75,7 @@ impl<'gc> Library<'gc> {
     }
 
     pub fn set_jpeg_tables(&mut self, data: Vec<u8>) {
+        let data = crate::backend::render::remove_invalid_jpeg_data(&data[..]).to_vec();
         self.jpeg_tables = Some(data);
     }
 
