@@ -42,12 +42,11 @@ impl MorphShape {
             return;
         }
 
-        info!("Registered ratio {}", ratio);
-
         // Interpolate MorphShapes into a Shape.
         use swf::{FillStyle, Gradient, LineStyle, ShapeRecord, ShapeStyles};
-        let a = f32::from(ratio) / 65535.0;
-        let b = 1.0 - a;
+        // Start shape is ratio 65535, end shape is ratio 0.
+        let b = f32::from(ratio) / 65535.0;
+        let a = 1.0 - b;
         let fill_styles: Vec<FillStyle> = self
             .start
             .fill_styles
@@ -120,22 +119,30 @@ impl MorphShape {
             .collect();
 
         let mut shape = Vec::with_capacity(self.start.shape.len());
+        let mut start_iter = self.start.shape.iter();
         let mut end_iter = self.end.shape.iter();
-        for start in &self.start.shape {
-            match start {
-                &ShapeRecord::StraightEdge { .. } | ShapeRecord::CurvedEdge { .. } => {
-                    let end = end_iter.next().unwrap();
-                    shape.push(Self::interpolate_edges(&start, &end, a));
-                }
-                &ShapeRecord::StyleChange(ref style_change) => {
-                    let mut style_change = style_change.clone();
-                    if let Some((start_x, start_y)) = style_change.move_to {
-                        let end = end_iter.next().unwrap();
-                        if let ShapeRecord::StyleChange(swf::StyleChangeData {
-                            move_to: Some((end_x, end_y)),
-                            ..
-                        }) = end
-                        {
+        let mut start = start_iter.next();
+        let mut end = end_iter.next();
+        let mut start_x = Twips::new(0);
+        let mut start_y = Twips::new(0);
+        let mut end_x = Twips::new(0);
+        let mut end_y = Twips::new(0);
+        // TODO: Feels like this could be cleaned up a bit.
+        // We step through both the start records and end records, interpolating edges pairwise.
+        // Fill style/line style changes should only appear in the start records.
+        // However, StyleChangeRecord move_to can appear it both start and end records,
+        // and not necessarily in matching pairs; therefore, we have to keep track of the pen position
+        // in case one side is missing a move_to; it will implicitly use the last pen position.
+        while let (Some(s), Some(e)) = (start, end) {
+            match (s, e) {
+                (ShapeRecord::StyleChange(start_change), ShapeRecord::StyleChange(end_change)) => {
+                    let mut style_change = start_change.clone();
+                    if let Some((s_x, s_y)) = start_change.move_to {
+                        if let Some((e_x, e_y)) = end_change.move_to {
+                            start_x = s_x;
+                            start_y = s_y;
+                            end_x = e_x;
+                            end_y = e_y;
                             style_change.move_to = Some((
                                 Twips::new(
                                     (start_x.get() as f32 * a + end_x.get() as f32 * b) as i32,
@@ -149,6 +156,44 @@ impl MorphShape {
                         }
                     }
                     shape.push(ShapeRecord::StyleChange(style_change));
+                    start = start_iter.next();
+                    end = end_iter.next();
+                }
+                (ShapeRecord::StyleChange(start_change), _) => {
+                    let mut style_change = start_change.clone();
+                    if let Some((s_x, s_y)) = start_change.move_to {
+                        start_x = s_x;
+                        start_y = s_y;
+                        style_change.move_to = Some((
+                            Twips::new((start_x.get() as f32 * a + end_x.get() as f32 * b) as i32),
+                            Twips::new((start_y.get() as f32 * a + end_y.get() as f32 * b) as i32),
+                        ));
+                    }
+                    shape.push(ShapeRecord::StyleChange(style_change));
+                    Self::update_pos(&mut start_x, &mut start_y, s);
+                    start = start_iter.next();
+                }
+                (_, ShapeRecord::StyleChange(end_change)) => {
+                    let mut style_change = end_change.clone();
+                    if let Some((e_x, e_y)) = end_change.move_to {
+                        end_x = e_x;
+                        end_y = e_y;
+                        style_change.move_to = Some((
+                            Twips::new((start_x.get() as f32 * a + end_x.get() as f32 * b) as i32),
+                            Twips::new((start_y.get() as f32 * a + end_y.get() as f32 * b) as i32),
+                        ));
+                    }
+                    shape.push(ShapeRecord::StyleChange(style_change));
+                    Self::update_pos(&mut end_x, &mut end_y, s);
+                    end = end_iter.next();
+                    continue;
+                }
+                _ => {
+                    shape.push(Self::interpolate_edges(s, e, a));
+                    Self::update_pos(&mut start_x, &mut start_y, s);
+                    Self::update_pos(&mut end_x, &mut end_y, e);
+                    start = start_iter.next();
+                    end = end_iter.next();
                 }
             }
         }
@@ -173,6 +218,31 @@ impl MorphShape {
 
         let shape_handle = renderer.register_shape(&shape);
         self.frames.insert(ratio, shape_handle);
+    }
+
+    fn update_pos(x: &mut Twips, y: &mut Twips, record: &swf::ShapeRecord) {
+        use swf::ShapeRecord;
+        match record {
+            ShapeRecord::StraightEdge { delta_x, delta_y } => {
+                *x += *delta_x;
+                *y += *delta_y;
+            }
+            ShapeRecord::CurvedEdge {
+                control_delta_x,
+                control_delta_y,
+                anchor_delta_x,
+                anchor_delta_y,
+            } => {
+                *x += *control_delta_x + *anchor_delta_x;
+                *y += *control_delta_y + *anchor_delta_y;
+            }
+            ShapeRecord::StyleChange(ref style_change) => {
+                if let Some((move_x, move_y)) = style_change.move_to {
+                    *x = move_x;
+                    *y = move_y;
+                }
+            }
+        }
     }
 
     fn interpolate_edges(
@@ -288,7 +358,7 @@ impl MorphShape {
                     ),
                 }
             }
-            _ => unreachable!(),
+            _ => unreachable!("{:?} {:?}", start, end),
         }
     }
 
