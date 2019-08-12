@@ -1,4 +1,5 @@
 pub use crate::{transform::Transform, Color};
+use std::io::Read;
 pub use swf;
 
 pub trait RenderBackend {
@@ -13,6 +14,12 @@ pub trait RenderBackend {
         jpeg_tables: &[u8],
     ) -> BitmapHandle;
     fn register_bitmap_jpeg_2(&mut self, id: swf::CharacterId, data: &[u8]) -> BitmapHandle;
+    fn register_bitmap_jpeg_3(
+        &mut self,
+        id: swf::CharacterId,
+        jpeg_data: &[u8],
+        alpha_data: &[u8],
+    ) -> BitmapHandle;
     fn register_bitmap_png(&mut self, swf_tag: &swf::DefineBitsLossless) -> BitmapHandle;
 
     fn begin_frame(&mut self);
@@ -50,6 +57,14 @@ impl RenderBackend for NullRenderer {
     fn register_bitmap_jpeg_2(&mut self, _id: swf::CharacterId, _data: &[u8]) -> BitmapHandle {
         BitmapHandle(0)
     }
+    fn register_bitmap_jpeg_3(
+        &mut self,
+        _id: swf::CharacterId,
+        _data: &[u8],
+        _alpha_data: &[u8],
+    ) -> BitmapHandle {
+        BitmapHandle(0)
+    }
     fn register_bitmap_png(&mut self, _swf_tag: &swf::DefineBitsLossless) -> BitmapHandle {
         BitmapHandle(0)
     }
@@ -85,15 +100,49 @@ pub fn remove_invalid_jpeg_data(data: &[u8]) -> std::borrow::Cow<[u8]> {
     }
 }
 
+/// Decodes a JPEG with optional alpha data.
+///
+pub fn define_bits_jpeg_to_rgba(
+    jpeg_data: &[u8],
+    alpha_data: &[u8],
+) -> Result<(u32, u32, Vec<u8>), Box<std::error::Error>> {
+    let jpeg_data = remove_invalid_jpeg_data(jpeg_data);
+
+    let mut decoder = jpeg_decoder::Decoder::new(&jpeg_data[..]);
+    decoder.read_info().unwrap();
+    let metadata = decoder.info().unwrap();
+    let decoded_data = decoder.decode().expect("failed to decode image");
+
+    // Decompress the alpha data (DEFLATE compression).
+    let alpha_data = {
+        let mut data = vec![];
+        let mut decoder = libflate::zlib::Decoder::new(alpha_data)?;
+        decoder.read_to_end(&mut data)?;
+        data
+    };
+
+    let mut rgba = Vec::with_capacity((decoded_data.len() / 3) * 4);
+    let mut i = 0;
+    let mut a = 0;
+    while i < decoded_data.len() {
+        rgba.push(decoded_data[i]);
+        rgba.push(decoded_data[i + 1]);
+        rgba.push(decoded_data[i + 2]);
+        rgba.push(alpha_data[a]);
+        i += 3;
+        a += 1;
+    }
+
+    Ok((metadata.width.into(), metadata.height.into(), rgba))
+}
+
 /// Decodes the bitmap data in DefineBitsLossless tag into RGBA.
 /// DefineBitsLossless is Zlib encoded pixel data (similar to PNG), possibly
 /// palletized.
 pub fn define_bits_lossless_to_rgba(
     swf_tag: &swf::DefineBitsLossless,
 ) -> Result<Vec<u8>, Box<std::error::Error>> {
-    use std::io::Read;
-
-    // Decompress the image data (DEFLAT compression).
+    // Decompress the image data (DEFLATE compression).
     let mut decoded_data = {
         let mut data = vec![];
         let mut decoder = libflate::zlib::Decoder::new(&swf_tag.data[..])?;

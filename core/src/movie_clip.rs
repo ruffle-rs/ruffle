@@ -267,8 +267,8 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
         let tag_callback = |reader: &mut _, tag_code, tag_len| match tag_code {
             TagCode::DefineBits => self.define_bits(context, reader, tag_len),
             TagCode::DefineBitsJpeg2 => self.define_bits_jpeg_2(context, reader, tag_len),
-            TagCode::DefineBitsJpeg3 => unimplemented!(),
-            TagCode::DefineBitsJpeg4 => unimplemented!(),
+            TagCode::DefineBitsJpeg3 => self.define_bits_jpeg_3(context, reader, tag_len),
+            TagCode::DefineBitsJpeg4 => self.define_bits_jpeg_4(context, reader, tag_len),
             TagCode::DefineBitsLossless => self.define_bits_lossless(context, reader, 1),
             TagCode::DefineBitsLossless2 => self.define_bits_lossless(context, reader, 2),
             TagCode::DefineButton => self.define_button_1(context, reader),
@@ -538,6 +538,67 @@ impl<'gc, 'a> MovieClip<'gc> {
             .take(data_len as u64)
             .read_to_end(&mut jpeg_data)?;
         let handle = context.renderer.register_bitmap_jpeg_2(id, &jpeg_data);
+        context
+            .library
+            .register_character(id, Character::Bitmap(handle));
+        Ok(())
+    }
+
+    #[inline]
+    fn define_bits_jpeg_3(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        reader: &mut SwfStream<&'a [u8]>,
+        tag_len: usize,
+    ) -> DecodeResult {
+        use std::io::Read;
+        let id = reader.read_u16()?;
+        let jpeg_len = reader.read_u32()? as usize;
+        let alpha_len = tag_len - 6 - jpeg_len;
+        let mut jpeg_data = Vec::with_capacity(jpeg_len);
+        let mut alpha_data = Vec::with_capacity(alpha_len);
+        reader
+            .get_mut()
+            .take(jpeg_len as u64)
+            .read_to_end(&mut jpeg_data)?;
+        reader
+            .get_mut()
+            .take(alpha_len as u64)
+            .read_to_end(&mut alpha_data)?;
+        let handle = context
+            .renderer
+            .register_bitmap_jpeg_3(id, &jpeg_data, &alpha_data);
+        context
+            .library
+            .register_character(id, Character::Bitmap(handle));
+        Ok(())
+    }
+
+    #[inline]
+    fn define_bits_jpeg_4(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        reader: &mut SwfStream<&'a [u8]>,
+        tag_len: usize,
+    ) -> DecodeResult {
+        use std::io::Read;
+        let id = reader.read_u16()?;
+        let jpeg_len = reader.read_u32()? as usize;
+        let _deblocking = reader.read_u16()?;
+        let alpha_len = tag_len - 6 - jpeg_len;
+        let mut jpeg_data = Vec::with_capacity(jpeg_len);
+        let mut alpha_data = Vec::with_capacity(alpha_len);
+        reader
+            .get_mut()
+            .take(jpeg_len as u64)
+            .read_to_end(&mut jpeg_data)?;
+        reader
+            .get_mut()
+            .take(alpha_len as u64)
+            .read_to_end(&mut alpha_data)?;
+        let handle = context
+            .renderer
+            .register_bitmap_jpeg_3(id, &jpeg_data, &alpha_data);
         context
             .library
             .register_character(id, Character::Bitmap(handle));

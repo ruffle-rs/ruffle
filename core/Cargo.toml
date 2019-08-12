@@ -17,5 +17,9 @@ puremp3 = { version = "0.1", optional = true }
 rand = "0.6.5"
 swf = { git = "https://github.com/Herschel/swf-rs", rev = "44c9262" }
 
+[dependencies.jpeg-decoder]
+version = "0.1.15"
+default-features = false # can't use rayon on web
+
 [features]
 default = ["minimp3"]

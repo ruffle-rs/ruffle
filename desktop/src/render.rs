@@ -613,6 +613,31 @@ impl RenderBackend for GliumRenderBackend {
         handle
     }
 
+    fn register_bitmap_jpeg_3(
+        &mut self,
+        id: swf::CharacterId,
+        jpeg_data: &[u8],
+        alpha_data: &[u8],
+    ) -> BitmapHandle {
+        let (width, height, rgba) =
+            ruffle_core::backend::render::define_bits_jpeg_to_rgba(jpeg_data, alpha_data)
+                .expect("Error decoding DefineBitsJPEG3");
+
+        let image = glium::texture::RawImage2d::from_raw_rgba(rgba, (width, height));
+        let texture = glium::texture::Texture2d::new(&self.display, image).unwrap();
+        let handle = BitmapHandle(self.textures.len());
+        self.textures.push((
+            id,
+            Texture {
+                texture,
+                width,
+                height,
+            },
+        ));
+
+        handle
+    }
+
     fn register_bitmap_png(&mut self, swf_tag: &swf::DefineBitsLossless) -> BitmapHandle {
         let decoded_data = ruffle_core::backend::render::define_bits_lossless_to_rgba(swf_tag)
             .expect("Error decoding DefineBitsLossless");
