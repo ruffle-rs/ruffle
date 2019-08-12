@@ -67,24 +67,20 @@ impl Ruffle {
         let mut data = vec![0; swf_data.length() as usize];
         swf_data.copy_to(&mut data[..]);
 
+        let window = web_sys::window().ok_or_else(|| "Expected window")?;
         let renderer = WebCanvasRenderBackend::new(&canvas)?;
         let audio = WebAudioBackend::new()?;
 
         let core = ruffle_core::Player::new(renderer, audio, data)?;
 
-        // Update canvas size to match player size.
-        canvas.set_width(core.movie_width());
-        canvas.set_height(core.movie_height());
+        // let style = canvas.style();
+        // style
+        //     .set_property("width", &format!("{}px", canvas_width))
+        //     .map_err(|_| "Unable to set style")?;
+        // style
+        //     .set_property("height", &format!("{}px", canvas_height))
+        //     .map_err(|_| "Unable to set style")?;
 
-        let style = canvas.style();
-        style
-            .set_property("width", &format!("{}px", core.movie_width()))
-            .map_err(|_| "Unable to set style")?;
-        style
-            .set_property("height", &format!("{}px", core.movie_height()))
-            .map_err(|_| "Unable to set style")?;
-
-        let window = web_sys::window().ok_or_else(|| "Expected window")?;
         let timestamp = window
             .performance()
             .ok_or_else(|| "Expected performance")?
