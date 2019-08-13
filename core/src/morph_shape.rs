@@ -6,8 +6,8 @@ use std::collections::HashMap;
 use swf::Twips;
 
 #[derive(Clone)]
-pub struct MorphShape {
-    base: DisplayObjectBase,
+pub struct MorphShape<'gc> {
+    base: DisplayObjectBase<'gc>,
 
     start: swf::MorphShape,
 
@@ -18,7 +18,7 @@ pub struct MorphShape {
     ratio: u16,
 }
 
-impl MorphShape {
+impl<'gc> MorphShape<'gc> {
     pub fn from_swf_tag(swf_tag: &swf::DefineMorphShape, renderer: &mut dyn RenderBackend) -> Self {
         // Convert the MorphShape into a normal Shape.
         // TODO(Herschel): impl From in swf crate?
@@ -371,14 +371,14 @@ impl MorphShape {
     }
 }
 
-impl<'gc> DisplayObject<'gc> for MorphShape {
+impl<'gc> DisplayObject<'gc> for MorphShape<'gc> {
     impl_display_object!(base);
 
-    fn as_morph_shape(&self) -> Option<&crate::morph_shape::MorphShape> {
+    fn as_morph_shape(&self) -> Option<&Self> {
         Some(self)
     }
 
-    fn as_morph_shape_mut(&mut self) -> Option<&mut crate::morph_shape::MorphShape> {
+    fn as_morph_shape_mut(&mut self) -> Option<&mut Self> {
         Some(self)
     }
 
@@ -403,7 +403,7 @@ impl<'gc> DisplayObject<'gc> for MorphShape {
     }
 }
 
-unsafe impl<'gc> gc_arena::Collect for MorphShape {
+unsafe impl<'gc> gc_arena::Collect for MorphShape<'gc> {
     #[inline]
     fn needs_trace() -> bool {
         false

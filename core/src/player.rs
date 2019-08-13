@@ -1,6 +1,5 @@
 use crate::avm1::Avm1;
 use crate::backend::{audio::AudioBackend, render::RenderBackend};
-use crate::display_object::DisplayObject;
 use crate::library::Library;
 use crate::movie_clip::MovieClip;
 use crate::prelude::*;
@@ -13,7 +12,7 @@ use std::sync::Arc;
 #[collect(empty_drop)]
 struct GcRoot<'gc> {
     library: GcCell<'gc, Library<'gc>>,
-    root: GcCell<'gc, MovieClip<'gc>>,
+    root: DisplayNode<'gc>,
 }
 
 make_arena!(GcArena, GcRoot);
@@ -82,7 +81,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                 library: GcCell::allocate(gc_context, Library::new()),
                 root: GcCell::allocate(
                     gc_context,
-                    MovieClip::new_with_data(0, 0, swf_len, header.num_frames),
+                    Box::new(MovieClip::new_with_data(0, 0, swf_len, header.num_frames)),
                 ),
             }),
 
@@ -180,6 +179,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                 audio,
                 actions: vec![],
                 gc_context,
+                active_clip: gc_root.root,
             };
 
             gc_root.root.write(gc_context).preload(&mut update_context);
@@ -211,6 +211,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                 audio,
                 actions: vec![],
                 gc_context,
+                active_clip: gc_root.root,
             };
 
             gc_root
@@ -267,6 +268,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub renderer: &'a mut dyn RenderBackend,
     pub audio: &'a mut dyn AudioBackend,
     pub actions: Vec<crate::tag_utils::SwfSlice>,
+    pub active_clip: DisplayNode<'gc>,
 }
 
 pub struct RenderContext<'a, 'gc> {

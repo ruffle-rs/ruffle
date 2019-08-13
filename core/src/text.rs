@@ -3,12 +3,12 @@ use crate::player::{RenderContext, UpdateContext};
 use crate::transform::Transform;
 
 #[derive(Clone)]
-pub struct Text {
-    base: DisplayObjectBase,
+pub struct Text<'gc> {
+    base: DisplayObjectBase<'gc>,
     text_blocks: Vec<swf::TextRecord>,
 }
 
-impl Text {
+impl<'gc> Text<'gc> {
     pub fn from_swf_tag(tag: &swf::Text) -> Self {
         Self {
             base: Default::default(),
@@ -17,7 +17,7 @@ impl Text {
     }
 }
 
-impl<'gc> DisplayObject<'gc> for Text {
+impl<'gc> DisplayObject<'gc> for Text<'gc> {
     impl_display_object!(base);
 
     fn run_frame(&mut self, _context: &mut UpdateContext) {
@@ -70,7 +70,7 @@ impl<'gc> DisplayObject<'gc> for Text {
     }
 }
 
-unsafe impl<'gc> gc_arena::Collect for Text {
+unsafe impl<'gc> gc_arena::Collect for Text<'gc> {
     #[inline]
     fn needs_trace() -> bool {
         false

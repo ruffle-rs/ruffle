@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 
 #[derive(Clone)]
 pub struct Button<'gc> {
-    base: DisplayObjectBase,
+    base: DisplayObjectBase<'gc>,
 
     state: ButtonState,
 

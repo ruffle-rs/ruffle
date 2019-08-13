@@ -5,16 +5,18 @@ use gc_arena::{Collect, GcCell};
 
 #[derive(Clone, Collect)]
 #[collect(empty_drop)]
-pub struct DisplayObjectBase {
+pub struct DisplayObjectBase<'gc> {
+    parent: Option<DisplayNode<'gc>>,
     depth: Depth,
     transform: Transform,
     name: String,
     clip_depth: Depth,
 }
 
-impl Default for DisplayObjectBase {
+impl<'gc> Default for DisplayObjectBase<'gc> {
     fn default() -> Self {
         Self {
+            parent: Default::default(),
             depth: Default::default(),
             transform: Default::default(),
             name: Default::default(),
@@ -23,7 +25,7 @@ impl Default for DisplayObjectBase {
     }
 }
 
-impl<'gc> DisplayObject<'gc> for DisplayObjectBase {
+impl<'gc> DisplayObject<'gc> for DisplayObjectBase<'gc> {
     fn transform(&self) -> &Transform {
         &self.transform
     }
@@ -52,7 +54,17 @@ impl<'gc> DisplayObject<'gc> for DisplayObjectBase {
     fn set_clip_depth(&mut self, depth: Depth) {
         self.clip_depth = depth;
     }
+<<<<<<< HEAD
     fn box_clone(&self) -> Box<dyn DisplayObject<'gc>> {
+=======
+    fn parent(&self) -> Option<DisplayNode<'gc>> {
+        self.parent
+    }
+    fn set_parent(&mut self, parent: Option<DisplayNode<'gc>>) {
+        self.parent = parent;
+    }
+    fn box_clone(&self) -> Box<DisplayObject<'gc>> {
+>>>>>>> core: Add parent to DisplayObjectBase
         Box::new(self.clone())
     }
 }
@@ -67,6 +79,8 @@ pub trait DisplayObject<'gc>: 'gc + Collect {
     fn set_name(&mut self, name: &str);
     fn clip_depth(&self) -> Depth;
     fn set_clip_depth(&mut self, depth: Depth);
+    fn parent(&self) -> Option<DisplayNode<'gc>>;
+    fn set_parent(&mut self, parent: Option<DisplayNode<'gc>>);
 
     fn preload(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
     fn run_frame(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
@@ -80,10 +94,10 @@ pub trait DisplayObject<'gc>: 'gc + Collect {
     fn as_movie_clip_mut(&mut self) -> Option<&mut crate::movie_clip::MovieClip<'gc>> {
         None
     }
-    fn as_morph_shape(&self) -> Option<&crate::morph_shape::MorphShape> {
+    fn as_morph_shape(&self) -> Option<&crate::morph_shape::MorphShape<'gc>> {
         None
     }
-    fn as_morph_shape_mut(&mut self) -> Option<&mut crate::morph_shape::MorphShape> {
+    fn as_morph_shape_mut(&mut self) -> Option<&mut crate::morph_shape::MorphShape<'gc>> {
         None
     }
     fn box_clone(&self) -> Box<dyn DisplayObject<'gc>>;
@@ -123,6 +137,12 @@ macro_rules! impl_display_object {
         }
         fn set_clip_depth(&mut self, depth: crate::prelude::Depth) {
             self.$field.set_clip_depth(depth)
+        }
+        fn parent(&self) -> Option<crate::display_object::DisplayNode<'gc>> {
+            self.$field.parent()
+        }
+        fn set_parent(&mut self, parent: Option<crate::display_object::DisplayNode<'gc>>) {
+            self.$field.set_parent(parent)
         }
         fn box_clone(&self) -> Box<dyn crate::display_object::DisplayObject<'gc>> {
             Box::new(self.clone())

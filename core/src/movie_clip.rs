@@ -18,7 +18,7 @@ type FrameNumber = u16;
 
 #[derive(Clone)]
 pub struct MovieClip<'gc> {
-    base: DisplayObjectBase,
+    base: DisplayObjectBase<'gc>,
     id: CharacterId,
     tag_stream_start: u64,
     tag_stream_pos: u64,
@@ -312,6 +312,7 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
         // TODO(Herschel): Verify order of execution for parent/children.
         // Parent first? Children first? Sorted by depth?
         for child in self.children.values_mut() {
+            context.active_clip = *child;
             child.write(context.gc_context).run_frame(context);
         }
     }
@@ -320,6 +321,7 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
         self.run_goto_queue(context);
 
         for child in self.children.values() {
+            context.active_clip = *child;
             child.write(context.gc_context).run_post_frame(context);
         }
     }
@@ -837,6 +839,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                 };
 
                 // TODO(Herschel): Behavior when depth is occupied? (I think it replaces)
+                character.write(context.gc_context).set_parent(Some(context.active_clip));
                 self.children.insert(place_object.depth, character);
                 self.children.get_mut(&place_object.depth).unwrap()
             }
@@ -857,6 +860,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                     return Ok(());
                 };
 
+                character.write(context.gc_context).set_parent(Some(context.active_clip));
                 let prev_character = self.children.insert(place_object.depth, character);
                 let character = self.children.get_mut(&place_object.depth).unwrap();
                 if let Some(prev_character) = prev_character {

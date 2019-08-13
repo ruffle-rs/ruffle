@@ -3,14 +3,14 @@ use crate::display_object::{DisplayObject, DisplayObjectBase};
 use crate::player::{RenderContext, UpdateContext};
 
 #[derive(Clone)]
-pub struct Graphic {
-    base: DisplayObjectBase,
+pub struct Graphic<'gc> {
+    base: DisplayObjectBase<'gc>,
 
     shape_handle: ShapeHandle,
 }
 
-impl Graphic {
-    pub fn from_swf_tag(swf_shape: &swf::Shape, renderer: &mut dyn RenderBackend) -> Graphic {
+impl<'gc> Graphic<'gc> {
+    pub fn from_swf_tag(swf_shape: &swf::Shape, renderer: &mut dyn RenderBackend) -> Self {
         let shape_handle = renderer.register_shape(swf_shape);
         Graphic {
             base: Default::default(),
@@ -19,7 +19,7 @@ impl Graphic {
     }
 }
 
-impl<'gc> DisplayObject<'gc> for Graphic {
+impl<'gc> DisplayObject<'gc> for Graphic<'gc> {
     impl_display_object!(base);
 
     fn run_frame(&mut self, _context: &mut UpdateContext) {
@@ -37,7 +37,7 @@ impl<'gc> DisplayObject<'gc> for Graphic {
     }
 }
 
-unsafe impl<'gc> gc_arena::Collect for Graphic {
+unsafe impl<'gc> gc_arena::Collect for Graphic<'gc> {
     #[inline]
     fn needs_trace() -> bool {
         false
