@@ -30,13 +30,13 @@ impl<'gc> DisplayObject<'gc> for DisplayObjectBase<'gc> {
         &self.transform
     }
 
-    fn get_matrix(&self) -> &Matrix {
+    fn matrix(&self) -> &Matrix {
         &self.transform.matrix
     }
     fn set_matrix(&mut self, matrix: &Matrix) {
         self.transform.matrix = *matrix;
     }
-    fn get_color_transform(&self) -> &ColorTransform {
+    fn color_transform(&self) -> &ColorTransform {
         &self.transform.color_transform
     }
     fn set_color_transform(&mut self, color_transform: &ColorTransform) {
@@ -70,10 +70,18 @@ impl<'gc> DisplayObject<'gc> for DisplayObjectBase<'gc> {
 }
 
 pub trait DisplayObject<'gc>: 'gc + Collect {
+    fn local_bounds(&self) -> BoundingBox {
+        BoundingBox::default()
+    }
+
+    fn world_bounds(&self) -> BoundingBox {
+        BoundingBox::default()
+    }
+
     fn transform(&self) -> &Transform;
-    fn get_matrix(&self) -> &Matrix;
+    fn matrix(&self) -> &Matrix;
     fn set_matrix(&mut self, matrix: &Matrix);
-    fn get_color_transform(&self) -> &ColorTransform;
+    fn color_transform(&self) -> &ColorTransform;
     fn set_color_transform(&mut self, color_transform: &ColorTransform);
     fn name(&self) -> &str;
     fn set_name(&mut self, name: &str);
@@ -114,14 +122,14 @@ macro_rules! impl_display_object {
         fn transform(&self) -> &crate::transform::Transform {
             self.$field.transform()
         }
-        fn get_matrix(&self) -> &crate::matrix::Matrix {
-            self.$field.get_matrix()
+        fn matrix(&self) -> &crate::matrix::Matrix {
+            self.$field.matrix()
         }
         fn set_matrix(&mut self, matrix: &crate::matrix::Matrix) {
             self.$field.set_matrix(matrix)
         }
-        fn get_color_transform(&self) -> &crate::color_transform::ColorTransform {
-            self.$field.get_color_transform()
+        fn color_transform(&self) -> &crate::color_transform::ColorTransform {
+            self.$field.color_transform()
         }
         fn set_color_transform(&mut self, color_transform: &crate::color_transform::ColorTransform) {
             self.$field.set_color_transform(color_transform)

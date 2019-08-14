@@ -226,6 +226,14 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
     }
 
     pub fn render(&mut self) {
+        let view_bounds = BoundingBox {
+            x_min: Twips::new(0),
+            y_min: Twips::new(0),
+            x_max: Twips::from_pixels(self.movie_width.into()),
+            y_max: Twips::from_pixels(self.movie_height.into()),
+            valid: true,
+        };
+
         self.renderer.begin_frame();
 
         self.renderer.clear(self.background_color.clone());
@@ -236,6 +244,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                 renderer,
                 library: gc_root.library.read(),
                 transform_stack,
+                view_bounds,
             };
             gc_root.root.read().render(&mut render_context);
         });
@@ -275,4 +284,5 @@ pub struct RenderContext<'a, 'gc> {
     pub renderer: &'a mut dyn RenderBackend,
     pub library: std::cell::Ref<'a, Library<'gc>>,
     pub transform_stack: &'a mut TransformStack,
+    pub view_bounds: BoundingBox,
 }

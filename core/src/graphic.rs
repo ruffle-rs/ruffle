@@ -26,11 +26,31 @@ impl<'gc> Graphic<'gc> {
 impl<'gc> DisplayObject<'gc> for Graphic<'gc> {
     impl_display_object!(base);
 
+    fn local_bounds(&self) -> BoundingBox {
+        self.static_data.bounds.clone()
+    }
+
+    fn world_bounds(&self) -> BoundingBox {
+        let mut bounds = self.local_bounds().transform(self.matrix());
+        let mut node = self.parent();
+        while let Some(display_object) = node {
+            let display_object = display_object.read();
+            bounds = bounds.transform(display_object.matrix());
+            node = display_object.parent();
+        }
+        bounds
+    }
+
     fn run_frame(&mut self, _context: &mut UpdateContext) {
         // Noop
     }
 
     fn render(&self, context: &mut RenderContext) {
+        if !self.world_bounds().intersects(&context.view_bounds) {
+            // Off-screen; culled
+            return;
+        }
+
         context.transform_stack.push(self.transform());
 
         context.renderer.render_shape(

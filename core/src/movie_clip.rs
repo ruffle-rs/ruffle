@@ -109,19 +109,19 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn x(&self) -> f32 {
-        self.get_matrix().tx
+        self.matrix().tx
     }
 
     pub fn y(&self) -> f32 {
-        self.get_matrix().ty
+        self.matrix().ty
     }
 
     pub fn x_scale(&self) -> f32 {
-        self.get_matrix().a * 100.0
+        self.matrix().a * 100.0
     }
 
     pub fn y_scale(&self) -> f32 {
-        self.get_matrix().d * 100.0
+        self.matrix().d * 100.0
     }
 
     pub fn current_frame(&self) -> FrameNumber {
@@ -866,10 +866,10 @@ impl<'gc, 'a> MovieClip<'gc> {
                 if let Some(prev_character) = prev_character {
                     character
                         .write(context.gc_context)
-                        .set_matrix(prev_character.read().get_matrix());
+                        .set_matrix(prev_character.read().matrix());
                     character
                         .write(context.gc_context)
-                        .set_color_transform(prev_character.read().get_color_transform());
+                        .set_color_transform(prev_character.read().color_transform());
                 }
                 character
             }

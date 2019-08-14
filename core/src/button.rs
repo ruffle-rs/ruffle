@@ -102,8 +102,8 @@ impl<'gc> DisplayObject<'gc> for Button<'gc> {
             //     .do_action(&mut action_context, &self.release_actions[..]);
             self.state = ButtonState::Up;
         } else if self.state == ButtonState::Up {
-            let dx = self.get_matrix().tx - context.mouse_pos.0;
-            let dy = self.get_matrix().ty - context.mouse_pos.1;
+            let dx = self.matrix().tx - context.mouse_pos.0;
+            let dy = self.matrix().ty - context.mouse_pos.1;
             let len = f32::sqrt(dx * dx + dy * dy);
             self.state = if len > 20.0 {
                 ButtonState::Up

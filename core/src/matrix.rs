@@ -1,3 +1,5 @@
+use swf::Twips;
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Matrix {
     pub a: f32,
@@ -32,6 +34,16 @@ impl std::ops::Mul for Matrix {
             tx: self.a * rhs.tx + self.c * rhs.ty + self.tx,
             ty: self.b * rhs.tx + self.d * rhs.ty + self.ty,
         }
+    }
+}
+
+impl std::ops::Mul<(Twips, Twips)> for Matrix {
+    type Output = (Twips, Twips);
+    fn mul(self, (x, y): (Twips, Twips)) -> (Twips, Twips) {
+        let (x, y) = (x.get() as f32, y.get() as f32);
+        let out_x = self.a * x + self.c * y + self.tx;
+        let out_y = self.b * x + self.d * y + self.ty;
+        (Twips::new(out_x as i32), Twips::new(out_y as i32))
     }
 }
 
