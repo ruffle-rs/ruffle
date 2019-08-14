@@ -43,6 +43,10 @@ impl BoundingBox {
 
         x_min <= x_max && y_min <= y_max
     }
+
+    pub fn contains(&self, (x, y): (Twips, Twips)) -> bool {
+        self.valid && x >= self.x_min && x <= self.x_max && y >= self.y_min && y <= self.y_max
+    }
 }
 
 impl Default for BoundingBox {

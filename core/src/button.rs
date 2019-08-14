@@ -1,4 +1,5 @@
 use crate::display_object::{DisplayObject, DisplayObjectBase};
+use crate::event::PlayerEvent;
 use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use std::collections::BTreeMap;
@@ -65,7 +66,10 @@ impl<'gc> Button<'gc> {
         }
     }
 
-    fn children_in_state(&self, state: ButtonState) -> impl Iterator<Item = &DisplayNode<'gc>> {
+    fn children_in_state(
+        &self,
+        state: ButtonState,
+    ) -> impl std::iter::DoubleEndedIterator<Item = &DisplayNode<'gc>> {
         let i = match state {
             ButtonState::Up => 0,
             ButtonState::Over => 1,
@@ -77,7 +81,7 @@ impl<'gc> Button<'gc> {
     fn children_in_state_mut(
         &mut self,
         state: ButtonState,
-    ) -> impl Iterator<Item = &mut DisplayNode<'gc>> {
+    ) -> impl std::iter::DoubleEndedIterator<Item = &mut DisplayNode<'gc>> {
         let i = match state {
             ButtonState::Up => 0,
             ButtonState::Over => 1,
@@ -91,33 +95,18 @@ impl<'gc> DisplayObject<'gc> for Button<'gc> {
     impl_display_object!(base);
 
     fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        if self.state == ButtonState::Down {
-            // let mut action_context = crate::avm1::ActionContext {
-            //     global_time: context.global_time,
-            //     active_clip: &mut crate::movie_clip::MovieClip::new(),
-            //     audio: context.audio,
-            // };
-            // context
-            //     .avm1
-            //     .do_action(&mut action_context, &self.release_actions[..]);
-            self.state = ButtonState::Up;
-        } else if self.state == ButtonState::Up {
-            let dx = self.matrix().tx - context.mouse_pos.0;
-            let dy = self.matrix().ty - context.mouse_pos.1;
-            let len = f32::sqrt(dx * dx + dy * dy);
-            self.state = if len > 20.0 {
-                ButtonState::Up
-            } else {
-                ButtonState::Over
-            };
-        }
         for child in self.children_in_state_mut(self.state) {
+            child
+                .write(context.gc_context)
+                .set_parent(Some(context.active_clip));
+            context.active_clip = *child;
             child.write(context.gc_context).run_frame(context);
         }
     }
 
     fn run_post_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         for child in self.children_in_state_mut(self.state) {
+            context.active_clip = *child;
             child.write(context.gc_context).run_post_frame(context);
         }
     }
@@ -131,9 +120,33 @@ impl<'gc> DisplayObject<'gc> for Button<'gc> {
         context.transform_stack.pop();
     }
 
-    fn handle_click(&mut self, _pos: (f32, f32)) {
-        if self.state == ButtonState::Over {
-            self.state = ButtonState::Down;
+    fn hit_test(&self, point: (Twips, Twips)) -> bool {
+        //if self.world_bounds().contains(point) {
+        for child in self.children_in_state(self.state).rev() {
+            if child.read().hit_test(point) {
+                return true;
+            }
+        }
+        //}
+
+        false
+    }
+
+    fn handle_event(
+        &mut self,
+        context: &mut crate::player::UpdateContext<'_, 'gc, '_>,
+        event: PlayerEvent,
+    ) {
+        match event {
+            PlayerEvent::RollOver => self.state = ButtonState::Over,
+            PlayerEvent::Click => {
+                let slice = crate::tag_utils::SwfSlice {
+                    data: std::sync::Arc::new(self.release_actions.clone()),
+                    start: 0,
+                    end: self.release_actions.len(),
+                };
+                context.actions.push((self.parent().unwrap(), slice));
+            }
         }
     }
 }

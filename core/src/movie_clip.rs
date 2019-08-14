@@ -336,11 +336,30 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
         context.transform_stack.pop();
     }
 
-    fn handle_click(&mut self, _pos: (f32, f32)) {
-        // for child in self.children.values_mut() {
-        //     child.handle_click(pos);
-        // }
+    fn pick(&self, point: (Twips, Twips)) -> Option<DisplayNode<'gc>> {
+        //if self.world_bounds().contains(point) {
+        for child in self.children.values().rev() {
+            if child.read().hit_test(point) {
+                return Some(*child);
+            }
+        }
+        //}
+
+        None
     }
+
+    fn hit_test(&self, point: (Twips, Twips)) -> bool {
+        //if self.world_bounds().contains(point) {
+        for child in self.children.values().rev() {
+            if child.read().hit_test(point) {
+                return true;
+            }
+        }
+        //}
+
+        false
+    }
+
     fn as_movie_clip(&self) -> Option<&crate::movie_clip::MovieClip<'gc>> {
         Some(self)
     }
@@ -804,12 +823,16 @@ impl<'gc, 'a> MovieClip<'gc> {
         tag_len: usize,
     ) -> DecodeResult {
         // Queue the actions.
+        // TODO: The reader is actually reading the tag slice at this point (tag_stream.take()),
+        // so make sure to get the proper offsets. This feels kind of bad.
+        let start = (self.tag_stream_start + reader.get_ref().position()) as usize;
+        let end = start + tag_len;
         let slice = crate::tag_utils::SwfSlice {
             data: std::sync::Arc::clone(context.swf_data),
-            start: reader.get_ref().position() as usize,
-            end: reader.get_ref().position() as usize + tag_len,
+            start,
+            end,
         };
-        context.actions.push(slice);
+        context.actions.push((context.active_clip, slice));
         Ok(())
     }
 
@@ -839,7 +862,9 @@ impl<'gc, 'a> MovieClip<'gc> {
                 };
 
                 // TODO(Herschel): Behavior when depth is occupied? (I think it replaces)
-                character.write(context.gc_context).set_parent(Some(context.active_clip));
+                character
+                    .write(context.gc_context)
+                    .set_parent(Some(context.active_clip));
                 self.children.insert(place_object.depth, character);
                 self.children.get_mut(&place_object.depth).unwrap()
             }
@@ -860,7 +885,9 @@ impl<'gc, 'a> MovieClip<'gc> {
                     return Ok(());
                 };
 
-                character.write(context.gc_context).set_parent(Some(context.active_clip));
+                character
+                    .write(context.gc_context)
+                    .set_parent(Some(context.active_clip));
                 let prev_character = self.children.insert(place_object.depth, character);
                 let character = self.children.get_mut(&place_object.depth).unwrap();
                 if let Some(prev_character) = prev_character {

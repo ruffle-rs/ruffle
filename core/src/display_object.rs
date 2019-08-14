@@ -109,6 +109,21 @@ pub trait DisplayObject<'gc>: 'gc + Collect {
         None
     }
     fn box_clone(&self) -> Box<dyn DisplayObject<'gc>>;
+
+    fn pick(&self, _: (Twips, Twips)) -> Option<DisplayNode<'gc>> {
+        None
+    }
+
+    fn hit_test(&self, _: (Twips, Twips)) -> bool {
+        false
+    }
+
+    fn handle_event(
+        &mut self,
+        _context: &mut crate::player::UpdateContext<'_, 'gc, '_>,
+        _event: crate::event::PlayerEvent,
+    ) {
+    }
 }
 
 impl<'gc> Clone for Box<dyn DisplayObject<'gc>> {

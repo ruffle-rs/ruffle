@@ -4,9 +4,9 @@ mod render;
 use crate::render::GliumRenderBackend;
 use glutin::{
     dpi::{LogicalPosition, LogicalSize},
-    ContextBuilder, ElementState, Event, EventsLoop, MouseButton, WindowBuilder, WindowEvent,
+    ContextBuilder, ElementState, EventsLoop, MouseButton, WindowBuilder, WindowEvent,
 };
-use ruffle_core::{backend::render::RenderBackend, Player};
+use ruffle_core::{backend::render::RenderBackend, swf::Twips, Player};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
@@ -64,7 +64,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         // Poll UI events
         let mut request_close = false;
         events_loop.poll_events(|event| {
-            if let Event::WindowEvent { event, .. } = event {
+            if let glutin::Event::WindowEvent { event, .. } = event {
                 match event {
                     WindowEvent::Resized(logical_size) => {
                         let size = logical_size.to_physical(hidpi_factor);
@@ -75,18 +75,22 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                     }
                     WindowEvent::CursorMoved { position, .. } => {
                         mouse_pos = position;
-                        player.mouse_move((position.x as f32, position.y as f32));
+                        let event = ruffle_core::Event::MouseMove {x: Twips::from_pixels(position.x), y: Twips::from_pixels(position.y)};
+                        player.handle_event(event)
                     }
                     WindowEvent::MouseInput {
                         button: MouseButton::Left,
                         state: ElementState::Pressed,
                         ..
-                    } => player.mouse_down(),
+                    } => {
+                        let event = ruffle_core::Event::MouseDown {x: Twips::from_pixels(mouse_pos.x), y: Twips::from_pixels(mouse_pos.y)};
+                        player.handle_event(event)
+                    }
                     WindowEvent::MouseInput {
                         button: MouseButton::Left,
                         state: ElementState::Released,
                         ..
-                    } => player.mouse_up(),
+                    } => {}
                     WindowEvent::CloseRequested => request_close = true,
                     _ => (),
                 }

@@ -4,6 +4,7 @@ use crate::library::Library;
 use crate::movie_clip::MovieClip;
 use crate::prelude::*;
 use crate::transform::TransformStack;
+use crate::Event;
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell, MutationContext};
 use log::info;
 use std::sync::Arc;
@@ -37,8 +38,6 @@ pub struct Player<Audio: AudioBackend, Renderer: RenderBackend> {
 
     movie_width: u32,
     movie_height: u32,
-
-    mouse_pos: (f32, f32),
 }
 
 impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
@@ -91,8 +90,6 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
 
             movie_width,
             movie_height,
-
-            mouse_pos: (0.0, 0.0),
         };
 
         player.preload();
@@ -144,20 +141,78 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
         self.movie_height
     }
 
-    pub fn mouse_move(&mut self, pos: (f32, f32)) {
-        self.mouse_pos = pos;
-    }
+    pub fn handle_event(&mut self, event: Event) {
+        let (global_time, swf_data, swf_version, background_color, renderer, audio, avm) = (
+            self.global_time,
+            &mut self.swf_data,
+            self.swf_version,
+            &mut self.background_color,
+            &mut self.renderer,
+            &mut self.audio,
+            &mut self.avm,
+        );
 
-    pub fn mouse_down(&mut self) {}
+        self.gc_arena.mutate(move |gc_context, gc_root| {
+            let actions = {
+                let mut update_context = UpdateContext {
+                    global_time,
+                    swf_data,
+                    swf_version,
+                    library: gc_root.library.write(gc_context),
+                    background_color,
+                    avm,
+                    renderer,
+                    audio,
+                    actions: vec![],
+                    gc_context,
+                    active_clip: gc_root.root,
+                };
 
-    pub fn mouse_up(&mut self) {
-        //self.stage.handle_click(self.mouse_pos);
+                match event {
+                    Event::MouseMove { x, y } => {
+                        if let Some(node) = gc_root.root.read().pick((x, y)) {
+                            update_context.active_clip = node;
+                            node.write(gc_context).handle_event(
+                                &mut update_context,
+                                crate::event::PlayerEvent::RollOver,
+                            );
+                        };
+                    }
+                    Event::MouseDown { x, y } => {
+                        if let Some(node) = gc_root.root.read().pick((x, y)) {
+                            update_context.active_clip = node;
+                            node.write(gc_context).handle_event(
+                                &mut update_context,
+                                crate::event::PlayerEvent::Click,
+                            );
+                        };
+                    }
+                    _ => (),
+                }
+                update_context.actions
+            };
+
+            if !actions.is_empty() {
+                let mut action_context = crate::avm1::ActionContext {
+                    gc_context,
+                    global_time,
+                    root: gc_root.root,
+                    start_clip: gc_root.root,
+                    active_clip: gc_root.root,
+                    audio,
+                };
+                for (active_clip, action) in actions {
+                    action_context.start_clip = active_clip;
+                    action_context.active_clip = active_clip;
+                    let _ = avm.do_action(&mut action_context, action.as_ref());
+                }
+            }
+        });
     }
 
     fn preload(&mut self) {
-        let (global_time, mouse_pos, swf_data, swf_version, background_color, renderer, audio, avm) = (
+        let (global_time, swf_data, swf_version, background_color, renderer, audio, avm) = (
             self.global_time,
-            self.mouse_pos,
             &mut self.swf_data,
             self.swf_version,
             &mut self.background_color,
@@ -169,7 +224,6 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
         self.gc_arena.mutate(|gc_context, gc_root| {
             let mut update_context = UpdateContext {
                 global_time,
-                mouse_pos,
                 swf_data,
                 swf_version,
                 library: gc_root.library.write(gc_context),
@@ -187,9 +241,8 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
     }
 
     fn run_frame(&mut self) {
-        let (global_time, mouse_pos, swf_data, swf_version, background_color, renderer, audio, avm) = (
+        let (global_time, swf_data, swf_version, background_color, renderer, audio, avm) = (
             self.global_time,
-            self.mouse_pos,
             &mut self.swf_data,
             self.swf_version,
             &mut self.background_color,
@@ -199,29 +252,63 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
-            let mut update_context = UpdateContext {
-                global_time,
-                mouse_pos,
-                swf_data,
-                swf_version,
-                library: gc_root.library.write(gc_context),
-                background_color,
-                avm,
-                renderer,
-                audio,
-                actions: vec![],
-                gc_context,
-                active_clip: gc_root.root,
-            };
+            let actions = {
+                let mut update_context = UpdateContext {
+                    global_time,
+                    swf_data,
+                    swf_version,
+                    library: gc_root.library.write(gc_context),
+                    background_color,
+                    avm,
+                    renderer,
+                    audio,
+                    actions: vec![],
+                    gc_context,
+                    active_clip: gc_root.root,
+                };
 
-            gc_root
-                .root
-                .write(gc_context)
-                .run_frame(&mut update_context);
-            gc_root
-                .root
-                .write(gc_context)
-                .run_post_frame(&mut update_context)
+                gc_root
+                    .root
+                    .write(gc_context)
+                    .run_frame(&mut update_context);
+                update_context.actions
+            };
+            {
+                let mut action_context = crate::avm1::ActionContext {
+                    gc_context,
+                    global_time,
+                    root: gc_root.root,
+                    start_clip: gc_root.root,
+                    active_clip: gc_root.root,
+                    audio,
+                };
+                for (active_clip, action) in actions {
+                    action_context.start_clip = active_clip;
+                    action_context.active_clip = active_clip;
+                    let _ = avm.do_action(&mut action_context, action.as_ref());
+                }
+            }
+
+            {
+                let mut update_context = UpdateContext {
+                    global_time,
+                    swf_data,
+                    swf_version,
+                    library: gc_root.library.write(gc_context),
+                    background_color,
+                    avm,
+                    renderer,
+                    audio,
+                    actions: vec![],
+                    gc_context,
+                    active_clip: gc_root.root,
+                };
+
+                gc_root
+                    .root
+                    .write(gc_context)
+                    .run_post_frame(&mut update_context)
+            }
         });
     }
 
@@ -269,14 +356,13 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub swf_version: u8,
     pub swf_data: &'a Arc<Vec<u8>>,
     pub global_time: u64,
-    pub mouse_pos: (f32, f32),
     pub library: std::cell::RefMut<'a, Library<'gc>>,
     pub gc_context: MutationContext<'gc, 'gc_context>,
     pub background_color: &'a mut Color,
     pub avm: &'a mut Avm1,
     pub renderer: &'a mut dyn RenderBackend,
     pub audio: &'a mut dyn AudioBackend,
-    pub actions: Vec<crate::tag_utils::SwfSlice>,
+    pub actions: Vec<(DisplayNode<'gc>, crate::tag_utils::SwfSlice)>,
     pub active_clip: DisplayNode<'gc>,
 }
 
