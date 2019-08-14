@@ -1,20 +1,24 @@
-use crate::backend::render::{RenderBackend, ShapeHandle};
+use crate::backend::render::ShapeHandle;
 use crate::display_object::{DisplayObject, DisplayObjectBase};
 use crate::player::{RenderContext, UpdateContext};
+use crate::prelude::*;
 
 #[derive(Clone)]
 pub struct Graphic<'gc> {
     base: DisplayObjectBase<'gc>,
-
-    shape_handle: ShapeHandle,
+    static_data: gc_arena::Gc<'gc, GraphicStatic>,
 }
 
 impl<'gc> Graphic<'gc> {
-    pub fn from_swf_tag(swf_shape: &swf::Shape, renderer: &mut dyn RenderBackend) -> Self {
-        let shape_handle = renderer.register_shape(swf_shape);
+    pub fn from_swf_tag(context: &mut UpdateContext<'_, 'gc, '_>, swf_shape: &swf::Shape) -> Self {
+        let static_data = GraphicStatic {
+            id: swf_shape.id,
+            render_handle: context.renderer.register_shape(swf_shape),
+            bounds: swf_shape.shape_bounds.clone().into(),
+        };
         Graphic {
             base: Default::default(),
-            shape_handle,
+            static_data: gc_arena::Gc::allocate(context.gc_context, static_data),
         }
     }
 }
@@ -29,15 +33,31 @@ impl<'gc> DisplayObject<'gc> for Graphic<'gc> {
     fn render(&self, context: &mut RenderContext) {
         context.transform_stack.push(self.transform());
 
-        context
-            .renderer
-            .render_shape(self.shape_handle, context.transform_stack.transform());
+        context.renderer.render_shape(
+            self.static_data.render_handle,
+            context.transform_stack.transform(),
+        );
 
         context.transform_stack.pop();
     }
 }
 
 unsafe impl<'gc> gc_arena::Collect for Graphic<'gc> {
+    #[inline]
+    fn needs_trace() -> bool {
+        false
+    }
+}
+
+/// Static data shared between all instances of a graphic.
+#[allow(dead_code)]
+struct GraphicStatic {
+    id: CharacterId,
+    render_handle: ShapeHandle,
+    bounds: BoundingBox,
+}
+
+unsafe impl<'gc> gc_arena::Collect for GraphicStatic {
     #[inline]
     fn needs_trace() -> bool {
         false

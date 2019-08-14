@@ -405,7 +405,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         version: u8,
     ) -> DecodeResult {
         let swf_shape = reader.read_define_shape(version)?;
-        let graphic = Graphic::from_swf_tag(&swf_shape, context.renderer);
+        let graphic = Graphic::from_swf_tag(context, &swf_shape);
         context
             .library
             .register_character(swf_shape.id, Character::Graphic(Box::new(graphic)));

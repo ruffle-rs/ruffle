@@ -2,6 +2,7 @@
 mod display_object;
 
 mod avm1;
+mod bounding_box;
 mod button;
 mod character;
 mod color_transform;
@@ -21,5 +22,4 @@ mod transform;
 pub mod backend;
 
 pub use player::Player;
-pub use swf::Color;
-pub use swf;
+pub use swf;pub use swf::Color;
