@@ -33,6 +33,9 @@ impl<'gc> DisplayObject<'gc> for DisplayObjectBase<'gc> {
     fn matrix(&self) -> &Matrix {
         &self.transform.matrix
     }
+    fn matrix_mut(&mut self) -> &mut Matrix {
+        &mut self.transform.matrix
+    }
     fn set_matrix(&mut self, matrix: &Matrix) {
         self.transform.matrix = *matrix;
     }
@@ -76,6 +79,7 @@ pub trait DisplayObject<'gc>: 'gc + Collect {
 
     fn transform(&self) -> &Transform;
     fn matrix(&self) -> &Matrix;
+    fn matrix_mut(&mut self) -> &mut Matrix;
     fn set_matrix(&mut self, matrix: &Matrix);
     fn color_transform(&self) -> &ColorTransform;
     fn set_color_transform(&mut self, color_transform: &ColorTransform);
@@ -135,6 +139,9 @@ macro_rules! impl_display_object {
         }
         fn matrix(&self) -> &crate::matrix::Matrix {
             self.$field.matrix()
+        }
+        fn matrix_mut(&mut self) -> &mut crate::matrix::Matrix {
+            self.$field.matrix_mut()
         }
         fn set_matrix(&mut self, matrix: &crate::matrix::Matrix) {
             self.$field.set_matrix(matrix)

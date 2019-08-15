@@ -118,16 +118,32 @@ impl<'gc> MovieClip<'gc> {
         self.matrix().tx
     }
 
+    pub fn set_x(&mut self, val: f32) {
+        self.matrix_mut().tx = val;
+    }
+
     pub fn y(&self) -> f32 {
         self.matrix().ty
+    }
+
+    pub fn set_y(&mut self, val: f32) {
+        self.matrix_mut().ty = val;
     }
 
     pub fn x_scale(&self) -> f32 {
         self.matrix().a * 100.0
     }
 
+    pub fn set_x_scale(&mut self, val: f32) {
+        self.matrix_mut().a = val / 100.0;
+    }
+
     pub fn y_scale(&self) -> f32 {
         self.matrix().d * 100.0
+    }
+
+    pub fn set_y_scale(&mut self, val: f32) {
+        self.matrix_mut().d = val / 100.0;
     }
 
     pub fn current_frame(&self) -> FrameNumber {

@@ -120,6 +120,7 @@ impl Avm1 {
                 Action::RemoveSprite => self.action_remove_sprite(context)?,
                 Action::Return => self.action_return(context)?,
                 Action::SetMember => self.action_set_member(context)?,
+                Action::SetProperty => self.action_set_property(context)?,
                 Action::SetTarget(target) => self.action_set_target(context, &target)?,
                 Action::SetVariable => self.action_set_variable(context)?,
                 Action::StackSwap => self.action_stack_swap(context)?,
@@ -826,6 +827,29 @@ impl Avm1 {
         let _object = self.pop()?;
         // TODO(Herschel)
         unimplemented!("Action::SetMember");
+    }
+
+    fn action_set_property(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+        let value = self.pop()?.as_f64()? as f32;
+        let prop_index = self.pop()?.as_u32()? as usize;
+        let clip_path = self.pop()?;
+        let path = clip_path.as_string()?;
+        if let Some(clip) =
+            Avm1::resolve_slash_path(context.active_clip, context.root, path)
+        {
+            if let Some(clip) = clip.write(context.gc_context).as_movie_clip_mut() {
+                match prop_index {
+                    0 => clip.set_x(value),
+                    1 => clip.set_y(value),
+                    2 => clip.set_x_scale(value),
+                    3 => clip.set_y_scale(value),
+                    _ => log::warn!("ActionSetProperty: Unimplemented property index {}", prop_index),
+                }
+            }
+        } else {
+            log::warn!("ActionSetProperty: Invalid path {}", path);
+        }
+        Ok(())
     }
 
     fn action_set_variable(&mut self, context: &mut ActionContext) -> Result<(), Error> {
