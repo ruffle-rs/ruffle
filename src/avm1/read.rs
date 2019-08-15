@@ -193,7 +193,7 @@ impl<R: Read> Reader<R> {
                 OpCode::With => {
                     let code_length = action_reader.read_u16()?;
                     let mut with_reader = Reader::new(
-                        (&mut action_reader.inner as &mut Read).take(code_length.into()),
+                        (&mut action_reader.inner as &mut dyn Read).take(code_length.into()),
                         self.version,
                     );
                     Action::With {
@@ -258,7 +258,7 @@ impl<R: Read> Reader<R> {
         }
         let code_length = self.read_u16()?;
         let mut fn_reader = Reader::new(
-            (&mut self.inner as &mut Read).take(code_length.into()),
+            (&mut self.inner as &mut dyn Read).take(code_length.into()),
             self.version,
         );
         Ok(Action::DefineFunction {
@@ -283,7 +283,7 @@ impl<R: Read> Reader<R> {
         }
         let code_length = self.read_u16()?;
         let mut fn_reader = Reader::new(
-            (&mut self.inner as &mut Read).take(code_length.into()),
+            (&mut self.inner as &mut dyn Read).take(code_length.into()),
             self.version,
         );
         Ok(Action::DefineFunction2(Function {
@@ -314,21 +314,21 @@ impl<R: Read> Reader<R> {
         };
         let try_actions = {
             let mut fn_reader = Reader::new(
-                (&mut self.inner as &mut Read).take(try_length.into()),
+                (&mut self.inner as &mut dyn Read).take(try_length.into()),
                 self.version,
             );
             fn_reader.read_action_list()?
         };
         let catch_actions = {
             let mut fn_reader = Reader::new(
-                (&mut self.inner as &mut Read).take(catch_length.into()),
+                (&mut self.inner as &mut dyn Read).take(catch_length.into()),
                 self.version,
             );
             fn_reader.read_action_list()?
         };
         let finally_actions = {
             let mut fn_reader = Reader::new(
-                (&mut self.inner as &mut Read).take(finally_length.into()),
+                (&mut self.inner as &mut dyn Read).take(finally_length.into()),
                 self.version,
             );
             fn_reader.read_action_list()?

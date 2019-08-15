@@ -47,14 +47,16 @@ pub fn read_swf<R: Read>(input: R) -> Result<Swf> {
 /// let (header, _reader) = swf::read_swf_header(&data[..]).unwrap();
 /// println!("FPS: {}", header.frame_rate);
 /// ```
-pub fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<(Header, Reader<Box<Read + 'a>>)> {
+pub fn read_swf_header<'a, R: Read + 'a>(
+    mut input: R,
+) -> Result<(Header, Reader<Box<dyn Read + 'a>>)> {
     // Read SWF header.
     let compression = Reader::read_compression_type(&mut input)?;
     let version = input.read_u8()?;
     let _uncompressed_length = input.read_u32::<LittleEndian>()?;
 
     // Now the SWF switches to a compressed stream.
-    let decompressed_input: Box<Read> = match compression {
+    let decompressed_input: Box<dyn Read> = match compression {
         Compression::None => Box::new(input),
         Compression::Zlib => make_zlib_reader(input)?,
         Compression::Lzma => make_lzma_reader(input)?,
@@ -75,20 +77,20 @@ pub fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<(Header, Reader
 }
 
 #[cfg(feature = "flate2")]
-fn make_zlib_reader<'a, R: Read + 'a>(input: R) -> Result<Box<Read + 'a>> {
+fn make_zlib_reader<'a, R: Read + 'a>(input: R) -> Result<Box<dyn Read + 'a>> {
     use flate2::read::ZlibDecoder;
     Ok(Box::new(ZlibDecoder::new(input)))
 }
 
 #[cfg(feature = "libflate")]
-fn make_zlib_reader<'a, R: Read + 'a>(input: R) -> Result<Box<Read + 'a>> {
+fn make_zlib_reader<'a, R: Read + 'a>(input: R) -> Result<Box<dyn Read + 'a>> {
     use libflate::zlib::Decoder;
     let decoder = Decoder::new(input)?;
     Ok(Box::new(decoder))
 }
 
 #[cfg(not(any(feature = "flate2", feature = "libflate")))]
-fn make_zlib_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<Read + 'a>> {
+fn make_zlib_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<dyn Read + 'a>> {
     Err(Error::new(
         ErrorKind::InvalidData,
         "Support for Zlib compressed SWFs is not enabled.",
@@ -96,7 +98,7 @@ fn make_zlib_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<Read + 'a>> {
 }
 
 #[cfg(feature = "lzma-support")]
-fn make_lzma_reader<'a, R: Read + 'a>(mut input: R) -> Result<Box<Read + 'a>> {
+fn make_lzma_reader<'a, R: Read + 'a>(mut input: R) -> Result<Box<dyn Read + 'a>> {
     // Flash uses a mangled LZMA header, so we have to massage it into the normal
     // format.
     use byteorder::WriteBytesExt;
@@ -114,7 +116,7 @@ fn make_lzma_reader<'a, R: Read + 'a>(mut input: R) -> Result<Box<Read + 'a>> {
 }
 
 #[cfg(not(feature = "lzma-support"))]
-fn make_lzma_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<Read + 'a>> {
+fn make_lzma_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<dyn Read + 'a>> {
     Err(Error::new(
         ErrorKind::InvalidData,
         "Support for LZMA compressed SWFs is not enabled.",
@@ -563,9 +565,9 @@ impl<R: Read> Reader<R> {
                 })
             }
 
-            Some(TagCode::DefineSceneAndFrameLabelData) => {
-                Tag::DefineSceneAndFrameLabelData(tag_reader.read_define_scene_and_frame_label_data()?)
-            }
+            Some(TagCode::DefineSceneAndFrameLabelData) => Tag::DefineSceneAndFrameLabelData(
+                tag_reader.read_define_scene_and_frame_label_data()?,
+            ),
 
             Some(TagCode::FrameLabel) => Tag::FrameLabel(tag_reader.read_frame_label(length)?),
 
@@ -574,7 +576,7 @@ impl<R: Read> Reader<R> {
                 // Tags can only be nested one level deep, so perhaps I can implement
                 // read_tag_list for Reader<Take<R>> to enforce this.
                 let mut sprite_reader =
-                    Reader::new(&mut tag_reader.input as &mut Read, self.version);
+                    Reader::new(&mut tag_reader.input as &mut dyn Read, self.version);
                 sprite_reader.read_define_sprite()?
             }
 
@@ -1013,14 +1015,14 @@ impl<R: Read> Reader<R> {
     pub fn read_frame_label(&mut self, length: usize) -> Result<FrameLabel> {
         let label = self.read_c_string()?;
         Ok(FrameLabel {
-            is_anchor: self.version >= 6
-                && length > label.len() + 1
-                && self.read_u8()? != 0,
+            is_anchor: self.version >= 6 && length > label.len() + 1 && self.read_u8()? != 0,
             label,
         })
     }
 
-    pub fn read_define_scene_and_frame_label_data(&mut self) -> Result<DefineSceneAndFrameLabelData> {
+    pub fn read_define_scene_and_frame_label_data(
+        &mut self,
+    ) -> Result<DefineSceneAndFrameLabelData> {
         let num_scenes = self.read_encoded_u32()? as usize;
         let mut scenes = Vec::with_capacity(num_scenes);
         for _ in 0..num_scenes {
