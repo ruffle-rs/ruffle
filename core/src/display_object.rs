@@ -54,17 +54,13 @@ impl<'gc> DisplayObject<'gc> for DisplayObjectBase<'gc> {
     fn set_clip_depth(&mut self, depth: Depth) {
         self.clip_depth = depth;
     }
-<<<<<<< HEAD
-    fn box_clone(&self) -> Box<dyn DisplayObject<'gc>> {
-=======
     fn parent(&self) -> Option<DisplayNode<'gc>> {
         self.parent
     }
     fn set_parent(&mut self, parent: Option<DisplayNode<'gc>>) {
         self.parent = parent;
     }
-    fn box_clone(&self) -> Box<DisplayObject<'gc>> {
->>>>>>> core: Add parent to DisplayObjectBase
+    fn box_clone(&self) -> Box<dyn DisplayObject<'gc>> {
         Box::new(self.clone())
     }
 }
