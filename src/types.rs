@@ -236,6 +236,18 @@ pub struct FileAttributes {
 
 #[derive(Debug, PartialEq)]
 pub struct FrameLabel {
+    pub label: String,
+    pub is_anchor: bool,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct DefineSceneAndFrameLabelData {
+    pub scenes: Vec<FrameLabelData>,
+    pub frame_labels: Vec<FrameLabelData>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct FrameLabelData {
     pub frame_num: u32,
     pub label: String,
 }
@@ -523,14 +535,8 @@ pub enum Tag {
     VideoFrame(VideoFrame),
     FileAttributes(FileAttributes),
 
-    FrameLabel {
-        label: String,
-        is_anchor: bool,
-    },
-    DefineSceneAndFrameLabelData {
-        scenes: Vec<FrameLabel>,
-        frame_labels: Vec<FrameLabel>,
-    },
+    FrameLabel(FrameLabel),
+    DefineSceneAndFrameLabelData(DefineSceneAndFrameLabelData),
 
     Unknown {
         tag_code: u16,

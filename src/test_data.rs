@@ -1190,40 +1190,40 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             1, // Minimum version not listed in SWF19.
-            Tag::DefineSceneAndFrameLabelData {
+            Tag::DefineSceneAndFrameLabelData(DefineSceneAndFrameLabelData {
                 scenes: vec![
-                    FrameLabel {
+                    FrameLabelData {
                         frame_num: 0,
                         label: "Scene 1".to_string(),
                     },
-                    FrameLabel {
+                    FrameLabelData {
                         frame_num: 25,
                         label: "Scene2Scene2Scene2Scene2Scene2".to_string(),
                     },
-                    FrameLabel {
+                    FrameLabelData {
                         frame_num: 26,
                         label: "test日本語test".to_string(),
                     },
                 ],
                 frame_labels: vec![
-                    FrameLabel {
+                    FrameLabelData {
                         frame_num: 0,
                         label: "a".to_string(),
                     },
-                    FrameLabel {
+                    FrameLabelData {
                         frame_num: 9,
                         label: "b".to_string(),
                     },
-                    FrameLabel {
+                    FrameLabelData {
                         frame_num: 17,
                         label: "❤😁aaa".to_string(),
                     },
-                    FrameLabel {
+                    FrameLabelData {
                         frame_num: 25,
                         label: "frameInScene2".to_string(),
                     },
                 ],
-            },
+            }),
             read_tag_bytes_from_file(
                 "tests/swfs/DefineSceneAndFrameLabelData.swf",
                 TagCode::DefineSceneAndFrameLabelData,
@@ -1793,10 +1793,10 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             3,
-            Tag::FrameLabel {
+            Tag::FrameLabel(FrameLabel {
                 label: "test".to_string(),
                 is_anchor: false,
-            },
+            }),
             read_tag_bytes_from_file_with_index(
                 "tests/swfs/FrameLabel-CS6.swf",
                 TagCode::FrameLabel,
@@ -1805,10 +1805,10 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             6, // Anchor tags supported in SWF version 6 and later.
-            Tag::FrameLabel {
+            Tag::FrameLabel(FrameLabel {
                 label: "anchor_tag".to_string(),
                 is_anchor: true,
-            },
+            }),
             read_tag_bytes_from_file_with_index(
                 "tests/swfs/FrameLabel-CS6.swf",
                 TagCode::FrameLabel,

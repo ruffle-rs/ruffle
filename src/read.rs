@@ -564,18 +564,10 @@ impl<R: Read> Reader<R> {
             }
 
             Some(TagCode::DefineSceneAndFrameLabelData) => {
-                tag_reader.read_define_scene_and_frame_label_data()?
+                Tag::DefineSceneAndFrameLabelData(tag_reader.read_define_scene_and_frame_label_data()?)
             }
 
-            Some(TagCode::FrameLabel) => {
-                let label = tag_reader.read_c_string()?;
-                Tag::FrameLabel {
-                    is_anchor: tag_reader.version >= 6
-                        && length > label.len() + 1
-                        && tag_reader.read_u8()? != 0,
-                    label,
-                }
-            }
+            Some(TagCode::FrameLabel) => Tag::FrameLabel(tag_reader.read_frame_label(length)?),
 
             Some(TagCode::DefineSprite) => {
                 // TODO: There's probably a better way to prevent the infinite type recursion.
@@ -1018,11 +1010,21 @@ impl<R: Read> Reader<R> {
         }))
     }
 
-    fn read_define_scene_and_frame_label_data(&mut self) -> Result<Tag> {
+    pub fn read_frame_label(&mut self, length: usize) -> Result<FrameLabel> {
+        let label = self.read_c_string()?;
+        Ok(FrameLabel {
+            is_anchor: self.version >= 6
+                && length > label.len() + 1
+                && self.read_u8()? != 0,
+            label,
+        })
+    }
+
+    pub fn read_define_scene_and_frame_label_data(&mut self) -> Result<DefineSceneAndFrameLabelData> {
         let num_scenes = self.read_encoded_u32()? as usize;
         let mut scenes = Vec::with_capacity(num_scenes);
         for _ in 0..num_scenes {
-            scenes.push(FrameLabel {
+            scenes.push(FrameLabelData {
                 frame_num: self.read_encoded_u32()?,
                 label: self.read_c_string()?,
             });
@@ -1031,13 +1033,13 @@ impl<R: Read> Reader<R> {
         let num_frame_labels = self.read_encoded_u32()? as usize;
         let mut frame_labels = Vec::with_capacity(num_frame_labels);
         for _ in 0..num_frame_labels {
-            frame_labels.push(FrameLabel {
+            frame_labels.push(FrameLabelData {
                 frame_num: self.read_encoded_u32()?,
                 label: self.read_c_string()?,
             });
         }
 
-        Ok(Tag::DefineSceneAndFrameLabelData {
+        Ok(DefineSceneAndFrameLabelData {
             scenes,
             frame_labels,
         })

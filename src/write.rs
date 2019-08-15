@@ -1024,10 +1024,10 @@ impl<W: Write> Writer<W> {
                 self.write_u32(flags)?;
             }
 
-            Tag::FrameLabel {
+            Tag::FrameLabel(FrameLabel {
                 ref label,
                 is_anchor,
-            } => {
+            }) => {
                 // TODO: Assert proper version
                 let is_anchor = is_anchor && self.version >= 6;
                 let length = label.len() as u32 + if is_anchor { 2 } else { 1 };
@@ -1038,10 +1038,7 @@ impl<W: Write> Writer<W> {
                 }
             }
 
-            Tag::DefineSceneAndFrameLabelData {
-                ref scenes,
-                ref frame_labels,
-            } => self.write_define_scene_and_frame_label_data(scenes, frame_labels)?,
+            Tag::DefineSceneAndFrameLabelData(ref data) => self.write_define_scene_and_frame_label_data(data)?,
 
             Tag::Unknown { tag_code, ref data } => {
                 self.write_tag_code_and_length(tag_code, data.len() as u32)?;
@@ -1484,19 +1481,18 @@ impl<W: Write> Writer<W> {
 
     fn write_define_scene_and_frame_label_data(
         &mut self,
-        scenes: &[FrameLabel],
-        frame_labels: &[FrameLabel],
+        data: &DefineSceneAndFrameLabelData,
     ) -> Result<()> {
-        let mut buf = Vec::with_capacity((scenes.len() + frame_labels.len()) * 4);
+        let mut buf = Vec::with_capacity((data.scenes.len() + data.frame_labels.len()) * 4);
         {
             let mut writer = Writer::new(&mut buf, self.version);
-            writer.write_encoded_u32(scenes.len() as u32)?;
-            for scene in scenes {
+            writer.write_encoded_u32(data.scenes.len() as u32)?;
+            for scene in &data.scenes {
                 writer.write_encoded_u32(scene.frame_num)?;
                 writer.write_c_string(&scene.label)?;
             }
-            writer.write_encoded_u32(frame_labels.len() as u32)?;
-            for frame_label in frame_labels {
+            writer.write_encoded_u32(data.frame_labels.len() as u32)?;
+            for frame_label in &data.frame_labels {
                 writer.write_encoded_u32(frame_label.frame_num)?;
                 writer.write_c_string(&frame_label.label)?;
             }
