@@ -1539,7 +1539,7 @@ impl<R: Read> Reader<R> {
                 )
             }
 
-            0x40...0x43 => {
+            0x40..=0x43 => {
                 let id = self.read_character_id()?;
                 (
                     FillStyle::Bitmap {
@@ -1719,7 +1719,7 @@ impl<R: Read> Reader<R> {
                 }
             }
 
-            0x40...0x43 => FillStyle::Bitmap {
+            0x40..=0x43 => FillStyle::Bitmap {
                 id: self.read_u16()?,
                 matrix: self.read_matrix()?,
                 is_smoothed: (fill_style_type & 0b10) == 0,
