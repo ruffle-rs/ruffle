@@ -4,7 +4,7 @@ description: Ruffle - Flash Player emulator written in Rust
 jobs:
   build:
     docker:
-      - image: circleci/rust:1.37
+      - image: circleci/rust:1.36
     steps:
       - checkout
       - restore_cache:
