@@ -804,11 +804,11 @@ impl Avm1 {
         target: &str,
     ) -> Result<(), Error> {
         if target.is_empty() {
-            context.active_clip = context.start_clip.clone();
-        } else {
-            if let Some(clip) = Avm1::resolve_slash_path(context.start_clip, context.root, target) {
-                context.active_clip = clip;
-            }
+            context.active_clip = context.start_clip;
+        } else if let Some(clip) =
+            Avm1::resolve_slash_path(context.start_clip, context.root, target)
+        {
+            context.active_clip = clip;
         }
         Ok(())
     }
