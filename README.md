@@ -1,18 +1,24 @@
-# Ruffle
-
 <p align="center">
  <a href="https://ruffle.rs"><img src="https://ruffle.rs/assets/logo.png" alt="Ruffle"></a>
 </p>
-
-<p align="center"><b>
- <a href="https://ruffle.rs">website</a> | <a href="https://ruffle.rs/demo?file=heroes_of_cybertron.swf">demo</a>
-</b></p>
-
 <p align="center">
- <a href="https://circleci.com/gh/ruffle-rs/ruffle"><img src="https://circleci.com/gh/ruffle-rs/ruffle.svg?style=svg"></a>
+ <a href="https://travis-ci.org/ruffle-rs/ruffle">
+  <img src="https://img.shields.io/circleci/build/github/ruffle-rs/ruffle" alt="Travis Build Status">
+ </a>
+  <a href="https://discord.gg/J8hgCQN">
+      <img src="https://img.shields.io/discord/610531541889581066" alt="Ruffle Discord">
+  </a>
+  <br>
+  <strong><a href="https://ruffle.rs">website</a> | <a href="https://ruffle.rs/demo?file=heroes_of_cybertron.swf">demo</a> </strong>
 </p>
 
-Ruffle is an Adobe Flash Player emulator written in Rust.
+# Ruffle
+
+Ruffle is an Adobe Flash Player emulator written in the Rust programming language. Ruffle targets both the desktop and the web using WebAssembly.
+
+## Project status
+
+Ruffle is in the proof-of-concept stage, and can currently run early Flash animations. ActionScript support is still forthcoming; for more info, read the [project roadmap](https://github.com/ruffle-rs/ruffle/wiki/Roadmap).
 
 ## Building
  
