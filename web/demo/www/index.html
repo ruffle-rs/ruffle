@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ruffle</title>
   <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
   <style>
@@ -50,6 +51,12 @@
       padding: 0;
     }
 
+    @media only screen and (max-device-width: 600px) {
+      #file-picker {
+        display: none;
+      }
+    }
+
     select,
     input {
       margin: 0 5px;
@@ -67,7 +74,7 @@
     <div id="title">
       <h1>Ruffle</h1>
     </div>
-    <div>
+    <div id="file-picker">
       Local SWF: <input type="file" id="local-file"></div>
   </div>
   </div>
