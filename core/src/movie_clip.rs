@@ -115,19 +115,19 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn x(&self) -> f32 {
-        self.matrix().tx
+        self.matrix().tx / Twips::TWIPS_PER_PIXEL as f32
     }
 
     pub fn set_x(&mut self, val: f32) {
-        self.matrix_mut().tx = val;
+        self.matrix_mut().tx = val * Twips::TWIPS_PER_PIXEL as f32;
     }
 
     pub fn y(&self) -> f32 {
-        self.matrix().ty
+        self.matrix().ty / Twips::TWIPS_PER_PIXEL as f32
     }
 
     pub fn set_y(&mut self, val: f32) {
-        self.matrix_mut().ty = val;
+        self.matrix_mut().ty = val * Twips::TWIPS_PER_PIXEL as f32;
     }
 
     pub fn x_scale(&self) -> f32 {
