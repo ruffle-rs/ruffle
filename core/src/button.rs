@@ -152,6 +152,7 @@ impl<'gc> DisplayObject<'gc> for Button<'gc> {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[allow(dead_code)]
 enum ButtonState {
     Up,
     Over,
