@@ -75,6 +75,7 @@ impl Avm1 {
                 Action::GetMember => self.action_get_member(context)?,
                 Action::GetProperty => self.action_get_property(context)?,
                 Action::GetTime => self.action_get_time(context)?,
+                Action::GetVariable => self.action_get_variable(context)?,
                 Action::GetUrl { url, target } => self.action_get_url(context, &url, &target)?,
                 Action::GetUrl2 {
                     send_vars_method,
@@ -120,6 +121,7 @@ impl Avm1 {
                 Action::Return => self.action_return(context)?,
                 Action::SetMember => self.action_set_member(context)?,
                 Action::SetTarget(target) => self.action_set_target(context, &target)?,
+                Action::SetVariable => self.action_set_variable(context)?,
                 Action::StackSwap => self.action_stack_swap(context)?,
                 Action::StartDrag => self.action_start_drag(context)?,
                 Action::Stop => self.action_stop(context)?,
@@ -181,6 +183,25 @@ impl Avm1 {
             }
         }
         Some(cur_clip)
+    }
+
+    pub fn resolve_slash_path_variable<'gc, 's>(
+        start: DisplayNode<'gc>,
+        root: DisplayNode<'gc>,
+        path: &'s str,
+    ) -> Option<(DisplayNode<'gc>, &'s str)> {
+        if !path.is_empty() {
+            let mut var_iter = path.splitn(2, ':');
+            match (var_iter.next(), var_iter.next()) {
+                (Some(var_name), None) => return Some((start, var_name)),
+                (Some(path), Some(var_name)) => if let Some(node) = Self::resolve_slash_path(start, root, path) {
+                    return Some((node, var_name));
+                }
+                _ => (),
+            }
+        }
+
+        None
     }
 
     fn push(&mut self, value: impl Into<Value>) {
@@ -476,6 +497,19 @@ impl Avm1 {
         Ok(())
     }
 
+    fn action_get_variable(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+        // Flash 4-style variable
+        let var_path = self.pop()?;
+        if let Some((node, var_name)) = Self::resolve_slash_path_variable(context.active_clip, context.root, var_path.as_string()?) {
+            if let Some(clip) = node.read().as_movie_clip() {
+                self.push(clip.get_variable(var_name));
+            }
+        } else {
+            self.push(Value::Undefined);
+        }
+        Ok(())
+    }
+
     fn action_get_url(
         &mut self,
         _context: &mut ActionContext,
@@ -504,11 +538,7 @@ impl Avm1 {
     fn action_goto_frame(&mut self, context: &mut ActionContext, frame: u16) -> Result<(), Error> {
         let mut display_object = context.active_clip.write(context.gc_context);
         let clip = display_object.as_movie_clip_mut().unwrap();
-        if clip.playing() {
-            clip.goto_frame(frame + 1, false);
-        } else {
-            clip.goto_frame(frame + 1, true);
-        }
+        clip.goto_frame(frame + 1, true);
         Ok(())
     }
 
@@ -798,6 +828,18 @@ impl Avm1 {
         unimplemented!("Action::SetMember");
     }
 
+    fn action_set_variable(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+        // Flash 4-style variable
+        let value = self.pop()?;
+        let var_path = self.pop()?;
+        if let Some((node, var_name)) = Self::resolve_slash_path_variable(context.active_clip, context.root, var_path.as_string()?) {
+            if let Some(clip) = node.write(context.gc_context).as_movie_clip_mut() {
+                clip.set_variable(var_name, value);
+            }
+        }
+        Ok(())
+    }
+
     fn action_set_target(
         &mut self,
         context: &mut ActionContext,
@@ -809,6 +851,9 @@ impl Avm1 {
             Avm1::resolve_slash_path(context.start_clip, context.root, target)
         {
             context.active_clip = clip;
+        } else {
+            log::warn!("SetTarget failed: {} not found", target);
+            // TODO: Do we change active_clip to something? Undefined?
         }
         Ok(())
     }
@@ -1008,7 +1053,7 @@ type ObjectPtr = std::marker::PhantomData<()>;
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-enum Value {
+pub enum Value {
     Undefined,
     Null,
     Bool(bool),

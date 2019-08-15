@@ -1,3 +1,4 @@
+use crate::avm1;
 use crate::backend::audio::AudioStreamHandle;
 use crate::character::Character;
 use crate::color_transform::ColorTransform;
@@ -10,7 +11,7 @@ use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use crate::tag_utils::{self, DecodeResult, SwfStream};
 use crate::text::Text;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use swf::read::SwfRead;
 
 type Depth = i16;
@@ -32,6 +33,7 @@ pub struct MovieClip<'gc> {
     audio_stream: Option<AudioStreamHandle>,
 
     children: BTreeMap<Depth, DisplayNode<'gc>>,
+    variables: HashMap<String, avm1::Value>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -49,6 +51,7 @@ impl<'gc> MovieClip<'gc> {
             audio_stream: None,
             audio_stream_info: None,
             children: BTreeMap::new(),
+            variables: HashMap::new(),
         }
     }
 
@@ -71,6 +74,7 @@ impl<'gc> MovieClip<'gc> {
             audio_stream_info: None,
             total_frames: num_frames,
             children: BTreeMap::new(),
+            variables: HashMap::new(),
         }
     }
 
@@ -99,7 +103,9 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn goto_frame(&mut self, frame: FrameNumber, stop: bool) {
-        self.goto_queue.push(frame);
+        if frame != self.current_frame {
+            self.goto_queue.push(frame);
+        }
 
         if stop {
             self.stop();
@@ -138,6 +144,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn get_child_by_name(&self, name: &str) -> Option<&DisplayNode<'gc>> {
+        // TODO: Make a HashMap from name -> child?
         self.children
             .values()
             .find(|child| child.read().name() == name)
@@ -193,6 +200,16 @@ impl<'gc> MovieClip<'gc> {
         }
 
         self.goto_queue.clear();
+    }
+
+    pub fn get_variable(&self, var_name: &str) -> avm1::Value {
+        // TODO: Value should be Copy (and contain a Cow/GcCell for big objects)
+        self.variables.get(var_name).unwrap_or(&avm1::Value::Undefined).clone()
+    }
+
+    pub fn set_variable(&mut self, var_name: &str, value: avm1::Value) {
+        // TODO: Cow for String values.
+        self.variables.insert(var_name.to_owned(), value);
     }
 
     fn reader<'a>(
@@ -342,22 +359,15 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
             if child.read().hit_test(point) {
                 return Some(*child);
             }
-        }
-        //}
 
-        None
-    }
-
-    fn hit_test(&self, point: (Twips, Twips)) -> bool {
-        //if self.world_bounds().contains(point) {
-        for child in self.children.values().rev() {
-            if child.read().hit_test(point) {
-                return true;
+            let button = child.read().pick(point);
+            if button.is_some() {
+                return button;
             }
         }
         //}
 
-        false
+        None
     }
 
     fn as_movie_clip(&self) -> Option<&crate::movie_clip::MovieClip<'gc>> {

@@ -41,10 +41,6 @@ impl<'gc> DisplayObject<'gc> for Graphic<'gc> {
         bounds
     }
 
-    fn hit_test(&self, point: (Twips, Twips)) -> bool {
-        self.world_bounds().contains(point)
-    }
-
     fn run_frame(&mut self, _context: &mut UpdateContext) {
         // Noop
     }

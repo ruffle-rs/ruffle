@@ -52,7 +52,9 @@ impl<'gc> Button<'gc> {
         for actions in &button.actions {
             if actions
                 .conditions
-                .contains(&swf::ButtonActionCondition::OverDownToOverUp)
+                .contains(&swf::ButtonActionCondition::OverDownToOverUp) || actions
+                .conditions
+                .contains(&swf::ButtonActionCondition::OverUpToOverDown)
             {
                 release_actions = actions.action_data.clone();
             }
@@ -123,7 +125,7 @@ impl<'gc> DisplayObject<'gc> for Button<'gc> {
     fn hit_test(&self, point: (Twips, Twips)) -> bool {
         //if self.world_bounds().contains(point) {
         for child in self.children_in_state(self.state).rev() {
-            if child.read().hit_test(point) {
+            if child.read().world_bounds().contains(point) {
                 return true;
             }
         }
