@@ -252,7 +252,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
-            let actions = {
+            let mut actions = {
                 let mut update_context = UpdateContext {
                     global_time,
                     swf_data,
@@ -273,41 +273,53 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                     .run_frame(&mut update_context);
                 update_context.actions
             };
-            {
-                let mut action_context = crate::avm1::ActionContext {
-                    gc_context,
-                    global_time,
-                    root: gc_root.root,
-                    start_clip: gc_root.root,
-                    active_clip: gc_root.root,
-                    audio,
-                };
-                for (active_clip, action) in actions {
-                    action_context.start_clip = active_clip;
-                    action_context.active_clip = active_clip;
-                    let _ = avm.do_action(&mut action_context, action.as_ref());
+
+            // TODO: Loop here because goto-ing a frame can queue up for actions.
+            // Need to figure out the proper order of operations between ticking a clip
+            // and running the actions.
+            loop {
+                {
+                    let mut action_context = crate::avm1::ActionContext {
+                        gc_context,
+                        global_time,
+                        root: gc_root.root,
+                        start_clip: gc_root.root,
+                        active_clip: gc_root.root,
+                        audio,
+                    };
+                    for (active_clip, action) in actions {
+                        action_context.start_clip = active_clip;
+                        action_context.active_clip = active_clip;
+                        let _ = avm.do_action(&mut action_context, action.as_ref());
+                    }
                 }
-            }
 
-            {
-                let mut update_context = UpdateContext {
-                    global_time,
-                    swf_data,
-                    swf_version,
-                    library: gc_root.library.write(gc_context),
-                    background_color,
-                    avm,
-                    renderer,
-                    audio,
-                    actions: vec![],
-                    gc_context,
-                    active_clip: gc_root.root,
+                actions = {
+                    let mut update_context = UpdateContext {
+                        global_time,
+                        swf_data,
+                        swf_version,
+                        library: gc_root.library.write(gc_context),
+                        background_color,
+                        avm,
+                        renderer,
+                        audio,
+                        actions: vec![],
+                        gc_context,
+                        active_clip: gc_root.root,
+                    };
+
+                    gc_root
+                        .root
+                        .write(gc_context)
+                        .run_post_frame(&mut update_context);
+
+                    update_context.actions
                 };
 
-                gc_root
-                    .root
-                    .write(gc_context)
-                    .run_post_frame(&mut update_context)
+                if actions.is_empty() {
+                    break;
+                }
             }
         });
     }
