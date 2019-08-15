@@ -87,9 +87,12 @@ pub fn glue_swf_jpeg_to_tables(jpeg_tables: &[u8], jpeg_data: &[u8]) -> Vec<u8> 
 /// SWF19 p.138:
 /// "Before version 8 of the SWF file format, SWF files could contain an erroneous header of 0xFF, 0xD9, 0xFF, 0xD8 before the JPEG SOI marker."
 /// These bytes need to be removed for the JPEG to decode properly.
-pub fn remove_invalid_jpeg_data(data: &[u8]) -> std::borrow::Cow<[u8]> {
+pub fn remove_invalid_jpeg_data(mut data: &[u8]) -> std::borrow::Cow<[u8]> {
     // TODO: Might be better to return an Box<Iterator<Item=u8>> instead of a Cow here,
     // where the spliced iter is a data[..n].chain(data[n+4..])?
+    if data[..4] == [0xFF, 0xD9, 0xFF, 0xD8] {
+        data = &data[4..];
+    }
     if let Some(pos) = (0..data.len() - 4).find(|&n| data[n..n + 4] == [0xFF, 0xD9, 0xFF, 0xD8]) {
         let mut out_data = Vec::with_capacity(data.len() - 4);
         out_data.extend_from_slice(&data[..pos]);

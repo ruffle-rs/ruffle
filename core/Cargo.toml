@@ -18,7 +18,8 @@ rand = "0.6.5"
 swf = { git = "https://github.com/Herschel/swf-rs", rev = "44c9262" }
 
 [dependencies.jpeg-decoder]
-version = "0.1.15"
+git = "https://github.com/kaksmet/jpeg-decoder"
+rev = "e76f194"
 default-features = false # can't use rayon on web
 
 [features]

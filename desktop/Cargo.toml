@@ -11,7 +11,7 @@ glutin = "0.20"
 env_logger = "0.6.1"
 generational-arena = "0.2.2"
 image = "0.21.1"
-jpeg-decoder = "0.1.15"
+jpeg-decoder = { git = "https://github.com/kaksmet/jpeg-decoder", rev = "e76f194" }
 log = "0.4"
 lyon = "0.13.3"
 structopt = "0.2.15"
