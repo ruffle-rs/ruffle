@@ -19,7 +19,7 @@ pub struct MorphShape {
 }
 
 impl MorphShape {
-    pub fn from_swf_tag(swf_tag: &swf::DefineMorphShape, renderer: &mut RenderBackend) -> Self {
+    pub fn from_swf_tag(swf_tag: &swf::DefineMorphShape, renderer: &mut dyn RenderBackend) -> Self {
         // Convert the MorphShape into a normal Shape.
         // TODO(Herschel): impl From in swf crate?
         let mut morph_shape = Self {
@@ -36,7 +36,7 @@ impl MorphShape {
         morph_shape
     }
 
-    pub fn register_ratio(&mut self, renderer: &mut RenderBackend, ratio: u16) {
+    pub fn register_ratio(&mut self, renderer: &mut dyn RenderBackend, ratio: u16) {
         if self.frames.contains_key(&ratio) {
             // Already registered.
             return;

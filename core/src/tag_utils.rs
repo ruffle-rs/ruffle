@@ -1,6 +1,6 @@
 use swf::TagCode;
 
-pub type DecodeResult = Result<(), Box<std::error::Error>>;
+pub type DecodeResult = Result<(), Box<dyn std::error::Error>>;
 pub type SwfStream<R> = swf::read::Reader<std::io::Cursor<R>>;
 
 pub struct SwfSlice {
@@ -19,7 +19,7 @@ pub fn decode_tags<'a, R, F>(
     reader: &'a mut SwfStream<R>,
     mut tag_callback: F,
     stop_tag: TagCode,
-) -> Result<(), Box<std::error::Error>>
+) -> Result<(), Box<dyn std::error::Error>>
 where
     R: 'a + AsRef<[u8]>,
     F: FnMut(&mut SwfStream<R>, TagCode, usize) -> DecodeResult,

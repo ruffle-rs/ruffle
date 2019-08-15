@@ -52,7 +52,7 @@ impl<'gc> DisplayObject<'gc> for DisplayObjectBase {
     fn set_clip_depth(&mut self, depth: Depth) {
         self.clip_depth = depth;
     }
-    fn box_clone(&self) -> Box<DisplayObject<'gc>> {
+    fn box_clone(&self) -> Box<dyn DisplayObject<'gc>> {
         Box::new(self.clone())
     }
 }
@@ -86,11 +86,11 @@ pub trait DisplayObject<'gc>: 'gc + Collect {
     fn as_morph_shape_mut(&mut self) -> Option<&mut crate::morph_shape::MorphShape> {
         None
     }
-    fn box_clone(&self) -> Box<DisplayObject<'gc>>;
+    fn box_clone(&self) -> Box<dyn DisplayObject<'gc>>;
 }
 
-impl<'gc> Clone for Box<DisplayObject<'gc>> {
-    fn clone(&self) -> Box<DisplayObject<'gc>> {
+impl<'gc> Clone for Box<dyn DisplayObject<'gc>> {
+    fn clone(&self) -> Box<dyn DisplayObject<'gc>> {
         self.box_clone()
     }
 }
@@ -124,7 +124,7 @@ macro_rules! impl_display_object {
         fn set_clip_depth(&mut self, depth: crate::prelude::Depth) {
             self.$field.set_clip_depth(depth)
         }
-        fn box_clone(&self) -> Box<crate::display_object::DisplayObject<'gc>> {
+        fn box_clone(&self) -> Box<dyn crate::display_object::DisplayObject<'gc>> {
             Box::new(self.clone())
         }
     };

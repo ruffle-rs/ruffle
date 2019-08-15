@@ -16,7 +16,7 @@ thread_local! {
     static INSTANCES: RefCell<Arena<RuffleInstance>> = RefCell::new(Arena::new());
 }
 
-type AnimationHandler = Closure<FnMut(f64)>;
+type AnimationHandler = Closure<dyn FnMut(f64)>;
 
 struct RuffleInstance {
     core: ruffle_core::Player<WebAudioBackend, WebCanvasRenderBackend>,
@@ -24,7 +24,7 @@ struct RuffleInstance {
     animation_handler: Option<AnimationHandler>, // requestAnimationFrame callback
     animation_handler_id: Option<NonZeroI32>,    // requestAnimationFrame id
     #[allow(dead_code)]
-    click_callback: Option<Closure<FnMut(Event)>>,
+    click_callback: Option<Closure<dyn FnMut(Event)>>,
 }
 
 /// An opaque handle to a `RuffleInstance` inside the pool.
@@ -60,7 +60,10 @@ impl Ruffle {
 }
 
 impl Ruffle {
-    fn new_internal(canvas: HtmlCanvasElement, swf_data: Uint8Array) -> Result<Ruffle, Box<Error>> {
+    fn new_internal(
+        canvas: HtmlCanvasElement,
+        swf_data: Uint8Array,
+    ) -> Result<Ruffle, Box<dyn Error>> {
         console_error_panic_hook::set_once();
         let _ = console_log::init_with_level(log::Level::Trace);
 
@@ -108,7 +111,7 @@ impl Ruffle {
                 instance.animation_handler = Some(Closure::wrap(Box::new(move |timestamp: f64| {
                     ruffle.tick(timestamp);
                 })
-                    as Box<FnMut(f64)>));
+                    as Box<dyn FnMut(f64)>));
             }
 
             // Create click event handler.
@@ -120,7 +123,7 @@ impl Ruffle {
                             instance.core.set_is_playing(true);
                         }
                     });
-                }) as Box<FnMut(Event)>);
+                }) as Box<dyn FnMut(Event)>);
                 let canvas_events: &EventTarget = canvas.as_ref();
                 canvas_events
                     .add_event_listener_with_callback(

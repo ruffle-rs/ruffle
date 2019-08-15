@@ -54,7 +54,7 @@ enum AudioStream {
     AudioBuffer { node: web_sys::AudioBufferSourceNode },
 }
 
-type Error = Box<std::error::Error>;
+type Error = Box<dyn std::error::Error>;
 
 impl WebAudioBackend {
     pub fn new() -> Result<Self, Error> {
@@ -135,7 +135,7 @@ impl WebAudioBackend {
                                     script_node.disconnect().unwrap();
                                 }
                             })
-                        }) as Box<FnMut(web_sys::AudioProcessingEvent)>);
+                        }) as Box<dyn FnMut(web_sys::AudioProcessingEvent)>);
                         script_processor_node.set_onaudioprocess(Some(closure.as_ref().unchecked_ref()));
                         // TODO: This will leak memory per playing sound. Remember and properly drop the closure.
                         closure.forget();

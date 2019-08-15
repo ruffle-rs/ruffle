@@ -25,7 +25,7 @@ struct Sound {
 }
 
 impl RodioAudioBackend {
-    pub fn new() -> Result<Self, Box<std::error::Error>> {
+    pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         Ok(Self {
             sounds: Arena::new(),
             streams: Arena::new(),
@@ -39,7 +39,7 @@ impl AudioBackend for RodioAudioBackend {
     fn register_sound(
         &mut self,
         swf_sound: &swf::Sound,
-    ) -> Result<SoundHandle, Box<std::error::Error>> {
+    ) -> Result<SoundHandle, Box<dyn std::error::Error>> {
         let sound = Sound {
             format: swf_sound.format.clone(),
             data: Arc::new(swf_sound.data.clone()),
@@ -123,7 +123,7 @@ impl AudioBackend for RodioAudioBackend {
     }
 }
 
-struct DecoderSource(Box<Decoder + Send>);
+struct DecoderSource(Box<dyn Decoder + Send>);
 
 impl Iterator for DecoderSource {
     type Item = i16;

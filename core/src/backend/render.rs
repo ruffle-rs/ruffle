@@ -108,7 +108,7 @@ pub fn remove_invalid_jpeg_data(mut data: &[u8]) -> std::borrow::Cow<[u8]> {
 pub fn define_bits_jpeg_to_rgba(
     jpeg_data: &[u8],
     alpha_data: &[u8],
-) -> Result<(u32, u32, Vec<u8>), Box<std::error::Error>> {
+) -> Result<(u32, u32, Vec<u8>), Box<dyn std::error::Error>> {
     let jpeg_data = remove_invalid_jpeg_data(jpeg_data);
 
     let mut decoder = jpeg_decoder::Decoder::new(&jpeg_data[..]);
@@ -144,7 +144,7 @@ pub fn define_bits_jpeg_to_rgba(
 /// palletized.
 pub fn define_bits_lossless_to_rgba(
     swf_tag: &swf::DefineBitsLossless,
-) -> Result<Vec<u8>, Box<std::error::Error>> {
+) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     // Decompress the image data (DEFLATE compression).
     let mut decoded_data = {
         let mut data = vec![];

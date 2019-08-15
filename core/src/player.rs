@@ -47,7 +47,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
         mut renderer: Renderer,
         audio: Audio,
         swf_data: Vec<u8>,
-    ) -> Result<Self, Box<std::error::Error>> {
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let (header, mut reader) = swf::read::read_swf_header(&swf_data[..]).unwrap();
         // Decompress the entire SWF in memory.
         let mut data = Vec::new();
@@ -264,13 +264,13 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub gc_context: MutationContext<'gc, 'gc_context>,
     pub background_color: &'a mut Color,
     pub avm: &'a mut Avm1,
-    pub renderer: &'a mut RenderBackend,
-    pub audio: &'a mut AudioBackend,
+    pub renderer: &'a mut dyn RenderBackend,
+    pub audio: &'a mut dyn AudioBackend,
     pub actions: Vec<crate::tag_utils::SwfSlice>,
 }
 
 pub struct RenderContext<'a, 'gc> {
-    pub renderer: &'a mut RenderBackend,
+    pub renderer: &'a mut dyn RenderBackend,
     pub library: std::cell::Ref<'a, Library<'gc>>,
     pub transform_stack: &'a mut TransformStack,
 }

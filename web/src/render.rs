@@ -38,7 +38,7 @@ struct BitmapData {
 }
 
 impl WebCanvasRenderBackend {
-    pub fn new(canvas: &HtmlCanvasElement) -> Result<Self, Box<std::error::Error>> {
+    pub fn new(canvas: &HtmlCanvasElement) -> Result<Self, Box<dyn std::error::Error>> {
         let context: CanvasRenderingContext2d = canvas
             .get_context("2d")
             .map_err(|_| "Could not create context")?

@@ -9,7 +9,7 @@ pub struct ActionContext<'a, 'gc> {
     pub root: DisplayNode<'gc>,
     pub start_clip: DisplayNode<'gc>,
     pub active_clip: DisplayNode<'gc>,
-    pub audio: &'a mut crate::backend::audio::AudioBackend,
+    pub audio: &'a mut dyn crate::backend::audio::AudioBackend,
 }
 
 pub struct Avm1 {
@@ -20,7 +20,7 @@ pub struct Avm1 {
     locals: HashMap<String, Value>,
 }
 
-type Error = Box<std::error::Error>;
+type Error = Box<dyn std::error::Error>;
 
 impl Avm1 {
     pub fn new(swf_version: u8) -> Self {

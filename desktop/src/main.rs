@@ -31,7 +31,7 @@ fn main() {
     }
 }
 
-fn run_player(input_path: PathBuf) -> Result<(), Box<std::error::Error>> {
+fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     let swf_data = std::fs::read(input_path)?;
 
     let mut events_loop = EventsLoop::new();

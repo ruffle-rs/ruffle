@@ -10,7 +10,7 @@ pub struct Graphic {
 }
 
 impl Graphic {
-    pub fn from_swf_tag(swf_shape: &swf::Shape, renderer: &mut RenderBackend) -> Graphic {
+    pub fn from_swf_tag(swf_shape: &swf::Shape, renderer: &mut dyn RenderBackend) -> Graphic {
         let shape_handle = renderer.register_shape(swf_shape);
         Graphic {
             base: Default::default(),

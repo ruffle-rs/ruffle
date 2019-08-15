@@ -8,7 +8,7 @@ pub mod swf {
 pub type AudioStreamHandle = Index;
 pub type SoundHandle = Index;
 
-type Error = Box<std::error::Error>;
+type Error = Box<dyn std::error::Error>;
 
 pub trait AudioBackend {
     fn prime_audio(&mut self) {}

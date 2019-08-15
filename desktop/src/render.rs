@@ -32,7 +32,7 @@ pub struct GliumRenderBackend {
 impl GliumRenderBackend {
     pub fn new(
         windowed_context: WindowedContext,
-    ) -> Result<GliumRenderBackend, Box<std::error::Error>> {
+    ) -> Result<GliumRenderBackend, Box<dyn std::error::Error>> {
         let display = Display::from_gl_window(windowed_context)?;
 
         use glium::program::ProgramCreationInput;
