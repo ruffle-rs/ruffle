@@ -225,11 +225,11 @@ impl<'gc> MovieClip<'gc> {
 
         use swf::TagCode;
         if only_display_actions {
-            let tag_callback = |reader: &mut _, tag_code, _tag_len| match tag_code {
-                TagCode::PlaceObject => self.place_object(context, reader, 1),
-                TagCode::PlaceObject2 => self.place_object(context, reader, 2),
-                TagCode::PlaceObject3 => self.place_object(context, reader, 3),
-                TagCode::PlaceObject4 => self.place_object(context, reader, 4),
+            let tag_callback = |reader: &mut _, tag_code, tag_len| match tag_code {
+                TagCode::PlaceObject => self.place_object(context, reader, tag_len, 1),
+                TagCode::PlaceObject2 => self.place_object(context, reader, tag_len, 2),
+                TagCode::PlaceObject3 => self.place_object(context, reader, tag_len, 3),
+                TagCode::PlaceObject4 => self.place_object(context, reader, tag_len, 4),
                 TagCode::RemoveObject => self.remove_object(context, reader, 1),
                 TagCode::RemoveObject2 => self.remove_object(context, reader, 2),
                 _ => Ok(()),
@@ -238,10 +238,10 @@ impl<'gc> MovieClip<'gc> {
         } else {
             let tag_callback = |reader: &mut _, tag_code, tag_len| match tag_code {
                 TagCode::DoAction => self.do_action(context, reader, tag_len),
-                TagCode::PlaceObject => self.place_object(context, reader, 1),
-                TagCode::PlaceObject2 => self.place_object(context, reader, 2),
-                TagCode::PlaceObject3 => self.place_object(context, reader, 3),
-                TagCode::PlaceObject4 => self.place_object(context, reader, 4),
+                TagCode::PlaceObject => self.place_object(context, reader, tag_len, 1),
+                TagCode::PlaceObject2 => self.place_object(context, reader, tag_len, 2),
+                TagCode::PlaceObject3 => self.place_object(context, reader, tag_len, 3),
+                TagCode::PlaceObject4 => self.place_object(context, reader, tag_len, 4),
                 TagCode::RemoveObject => self.remove_object(context, reader, 1),
                 TagCode::RemoveObject2 => self.remove_object(context, reader, 2),
                 TagCode::SetBackgroundColor => self.set_background_color(context, reader),
@@ -287,10 +287,10 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
             TagCode::DefineSprite => self.define_sprite(context, reader, tag_len),
             TagCode::DefineText => self.define_text(context, reader),
             TagCode::JpegTables => self.jpeg_tables(context, reader, tag_len),
-            TagCode::PlaceObject => self.preload_place_object(context, reader, &mut ids, 1),
-            TagCode::PlaceObject2 => self.preload_place_object(context, reader, &mut ids, 2),
-            TagCode::PlaceObject3 => self.preload_place_object(context, reader, &mut ids, 3),
-            TagCode::PlaceObject4 => self.preload_place_object(context, reader, &mut ids, 4),
+            TagCode::PlaceObject => self.preload_place_object(context, reader, tag_len, &mut ids, 1),
+            TagCode::PlaceObject2 => self.preload_place_object(context, reader, tag_len, &mut ids, 2),
+            TagCode::PlaceObject3 => self.preload_place_object(context, reader, tag_len, &mut ids, 3),
+            TagCode::PlaceObject4 => self.preload_place_object(context, reader, tag_len, &mut ids, 4),
             TagCode::RemoveObject => self.preload_remove_object(context, reader, &mut ids, 1),
             TagCode::RemoveObject2 => self.preload_remove_object(context, reader, &mut ids, 2),
             TagCode::SoundStreamHead => self.preload_sound_stream_head(context, reader, 1),
@@ -415,12 +415,13 @@ impl<'gc, 'a> MovieClip<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<&'a [u8]>,
+        tag_len: usize,
         ids: &mut fnv::FnvHashMap<Depth, CharacterId>,
         version: u8,
     ) -> DecodeResult {
         use swf::PlaceObjectAction;
         let place_object = if version == 1 {
-            reader.read_place_object()
+            reader.read_place_object(tag_len)
         } else {
             reader.read_place_object_2_or_3(version)
         }?;
@@ -814,10 +815,11 @@ impl<'gc, 'a> MovieClip<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<&'a [u8]>,
+        tag_len: usize,
         version: u8,
     ) -> DecodeResult {
         let place_object = if version == 1 {
-            reader.read_place_object()
+            reader.read_place_object(tag_len)
         } else {
             reader.read_place_object_2_or_3(version)
         }?;
