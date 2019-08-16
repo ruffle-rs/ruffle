@@ -80,7 +80,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                 library: GcCell::allocate(gc_context, Library::new()),
                 root: GcCell::allocate(
                     gc_context,
-                    Box::new(MovieClip::new_with_data(0, 0, swf_len, header.num_frames)),
+                    Box::new(MovieClip::new_with_data(gc_context, 0, 0, swf_len, header.num_frames)),
                 ),
             }),
 

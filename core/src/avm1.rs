@@ -570,14 +570,19 @@ impl Avm1 {
 
     fn action_goto_label(
         &mut self,
-        _context: &mut ActionContext,
-        _label: &str,
+        context: &mut ActionContext,
+        label: &str,
     ) -> Result<(), Error> {
-        // let mut display_object = context.active_clip.borrow_mut();
-        // let mut clip = display_object.as_movie_clip_mut().unwrap();
-        //if let Some(frame) = clip.frame_label_to_number(label, context) {
-        //clip.goto_frame(frame !set_playing)
-        //}
+        let mut display_object = context.active_clip.write(context.gc_context);
+        if let Some(clip) = display_object.as_movie_clip_mut() {
+            if let Some(frame) = clip.frame_label_to_number(label) {
+                clip.goto_frame(frame, true);
+            } else {
+                log::warn!("ActionGoToLabel: Frame label '{}' not found", label);
+            }
+        } else {
+            log::warn!("ActionGoToLabel: Expected movie clip");
+        }
         Ok(())
     }
 

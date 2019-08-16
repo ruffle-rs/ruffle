@@ -11,6 +11,7 @@ use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use crate::tag_utils::{self, DecodeResult, SwfStream};
 use crate::text::Text;
+use gc_arena::{Gc, MutationContext};
 use std::collections::{BTreeMap, HashMap};
 use swf::read::SwfRead;
 
@@ -20,42 +21,33 @@ type FrameNumber = u16;
 #[derive(Clone)]
 pub struct MovieClip<'gc> {
     base: DisplayObjectBase<'gc>,
-    id: CharacterId,
-    tag_stream_start: u64,
+    static_data: Gc<'gc, MovieClipStatic>,
     tag_stream_pos: u64,
-    tag_stream_len: usize,
     is_playing: bool,
     goto_queue: Vec<FrameNumber>,
     current_frame: FrameNumber,
-    total_frames: FrameNumber,
-
-    audio_stream_info: Option<swf::SoundStreamHead>,
     audio_stream: Option<AudioStreamHandle>,
-
     children: BTreeMap<Depth, DisplayNode<'gc>>,
     variables: HashMap<String, avm1::Value>,
 }
 
 impl<'gc> MovieClip<'gc> {
-    pub fn new() -> Self {
+    pub fn new(gc_context: MutationContext<'gc, '_>) -> Self {
         Self {
             base: Default::default(),
-            id: 0,
-            tag_stream_start: 0,
+            static_data: Gc::allocate(gc_context, MovieClipStatic::default()),
             tag_stream_pos: 0,
-            tag_stream_len: 0,
             is_playing: true,
             goto_queue: Vec::new(),
             current_frame: 0,
-            total_frames: 1,
             audio_stream: None,
-            audio_stream_info: None,
             children: BTreeMap::new(),
             variables: HashMap::new(),
         }
     }
 
     pub fn new_with_data(
+        gc_context: MutationContext<'gc, '_>,
         id: CharacterId,
         tag_stream_start: u64,
         tag_stream_len: usize,
@@ -63,16 +55,19 @@ impl<'gc> MovieClip<'gc> {
     ) -> Self {
         Self {
             base: Default::default(),
-            id,
-            tag_stream_start,
+            static_data: Gc::allocate(gc_context, MovieClipStatic {
+                id,
+                tag_stream_start,
+                tag_stream_len,
+                total_frames: num_frames,
+                audio_stream_info: None,
+                frame_labels: HashMap::new(),
+            }),
             tag_stream_pos: 0,
-            tag_stream_len,
             is_playing: true,
             goto_queue: Vec::new(),
             current_frame: 0,
             audio_stream: None,
-            audio_stream_info: None,
-            total_frames: num_frames,
             children: BTreeMap::new(),
             variables: HashMap::new(),
         }
@@ -83,7 +78,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn next_frame(&mut self) {
-        if self.current_frame < self.total_frames {
+        if self.current_frame() < self.total_frames() {
             self.goto_frame(self.current_frame + 1, true);
         }
     }
@@ -151,12 +146,12 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn total_frames(&self) -> FrameNumber {
-        self.total_frames
+        self.static_data.total_frames
     }
 
     pub fn frames_loaded(&self) -> FrameNumber {
         // TODO(Herschel): root needs to progressively stream in frames.
-        self.total_frames
+        self.static_data.total_frames
     }
 
     pub fn get_child_by_name(&self, name: &str) -> Option<&DisplayNode<'gc>> {
@@ -168,25 +163,9 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn frame_label_to_number(
         &self,
-        _frame_label: &str,
-        _context: &mut UpdateContext<'_, '_, '_>,
+        frame_label: &str,
     ) -> Option<FrameNumber> {
-        // TODO(Herschel): We should cache the labels in the preload step.
-        // let mut reader = self.reader(context);
-        // use swf::Tag;
-        // let mut frame_num = 1;
-        // while let Ok(Some(tag)) = reader.read_tag() {
-        //     match tag {
-        //         Tag::FrameLabel { label, .. } => {
-        //             if label == frame_label {
-        //                 return Some(frame_num);
-        //             }
-        //         }
-        //         Tag::ShowFrame => frame_num += 1,
-        //         _ => (),
-        //     }
-        // }
-        None
+        self.static_data.frame_labels.get(frame_label).copied()
     }
 
     pub fn run_goto_queue(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
@@ -228,13 +207,25 @@ impl<'gc> MovieClip<'gc> {
         self.variables.insert(var_name.to_owned(), value);
     }
 
+    fn id(&self) -> CharacterId {
+        self.static_data.id
+    }
+
+    fn tag_stream_start(&self) -> u64 {
+        self.static_data.tag_stream_start
+    }
+
+    fn tag_stream_len(&self) -> usize {
+        self.static_data.tag_stream_len
+    }
+
     fn reader<'a>(
         &self,
         context: &UpdateContext<'a, '_, '_>,
     ) -> swf::read::Reader<std::io::Cursor<&'a [u8]>> {
         let mut cursor = std::io::Cursor::new(
-            &context.swf_data[self.tag_stream_start as usize
-                ..self.tag_stream_start as usize + self.tag_stream_len],
+            &context.swf_data[self.tag_stream_start() as usize
+                ..self.tag_stream_start() as usize + self.tag_stream_len()],
         );
         cursor.set_position(self.tag_stream_pos);
         swf::read::Reader::new(cursor, context.swf_version)
@@ -245,7 +236,7 @@ impl<'gc> MovieClip<'gc> {
         only_display_actions: bool,
     ) {
         // Advance frame number.
-        if self.current_frame < self.total_frames {
+        if self.current_frame() < self.total_frames() {
             self.current_frame += 1;
         } else {
             self.current_frame = 1;
@@ -293,9 +284,12 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
     impl_display_object!(base);
 
     fn preload(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        // Ignore error for now.
+        // TODO: Re-creating static data because preload step occurs after construction.
+        // Should be able to hoist this up somewhere, or use MaybeUnit.
+        let mut static_data = (&*self.static_data).clone();
         use swf::TagCode;
         let mut reader = self.reader(context);
+        let mut cur_frame = 1;
         let mut ids = fnv::FnvHashMap::default();
         let tag_callback = |reader: &mut _, tag_code, tag_len| match tag_code {
             TagCode::DefineBits => self.define_bits(context, reader, tag_len),
@@ -319,6 +313,7 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
             TagCode::DefineSound => self.define_sound(context, reader, tag_len),
             TagCode::DefineSprite => self.define_sprite(context, reader, tag_len),
             TagCode::DefineText => self.define_text(context, reader),
+            TagCode::FrameLabel => self.frame_label(context, reader, tag_len, cur_frame, &mut static_data),
             TagCode::JpegTables => self.jpeg_tables(context, reader, tag_len),
             TagCode::PlaceObject => self.preload_place_object(context, reader, tag_len, &mut ids, 1),
             TagCode::PlaceObject2 => self.preload_place_object(context, reader, tag_len, &mut ids, 2),
@@ -326,14 +321,16 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
             TagCode::PlaceObject4 => self.preload_place_object(context, reader, tag_len, &mut ids, 4),
             TagCode::RemoveObject => self.preload_remove_object(context, reader, &mut ids, 1),
             TagCode::RemoveObject2 => self.preload_remove_object(context, reader, &mut ids, 2),
-            TagCode::SoundStreamHead => self.preload_sound_stream_head(context, reader, 1),
-            TagCode::SoundStreamHead2 => self.preload_sound_stream_head(context, reader, 2),
+            TagCode::ShowFrame => self.preload_show_frame(context, reader, &mut cur_frame),
+            TagCode::SoundStreamHead => self.preload_sound_stream_head(context, reader, &mut static_data, 1),
+            TagCode::SoundStreamHead2 => self.preload_sound_stream_head(context, reader, &mut static_data, 2),
             TagCode::SoundStreamBlock => self.preload_sound_stream_block(context, reader, tag_len),
             _ => Ok(()),
         };
         let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End);
-        if self.audio_stream_info.is_some() {
-            context.audio.preload_sound_stream_end(self.id);
+        self.static_data = Gc::allocate(context.gc_context, static_data);
+        if self.static_data.audio_stream_info.is_some() {
+            context.audio.preload_sound_stream_end(self.id());
         }
     }
 
@@ -392,12 +389,6 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
 
     fn as_movie_clip_mut(&mut self) -> Option<&mut crate::movie_clip::MovieClip<'gc>> {
         Some(self)
-    }
-}
-
-impl Default for MovieClip<'_> {
-    fn default() -> Self {
-        MovieClip::new()
     }
 }
 
@@ -519,11 +510,11 @@ impl<'gc, 'a> MovieClip<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
         tag_len: usize,
     ) -> DecodeResult {
-        if self.audio_stream_info.is_some() {
+        if self.static_data.audio_stream_info.is_some() {
             let pos = reader.get_ref().position() as usize;
             let data = reader.get_ref().get_ref();
             let data = &data[pos..pos + tag_len];
-            context.audio.preload_sound_stream_block(self.id, data);
+            context.audio.preload_sound_stream_block(self.id(), data);
         }
 
         Ok(())
@@ -534,13 +525,14 @@ impl<'gc, 'a> MovieClip<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<&'a [u8]>,
+        static_data: &mut MovieClipStatic,
         _version: u8,
     ) -> DecodeResult {
         let audio_stream_info = reader.read_sound_stream_head()?;
         context
             .audio
-            .preload_sound_stream_head(self.id, &audio_stream_info);
-        self.audio_stream_info = Some(audio_stream_info);
+            .preload_sound_stream_head(self.id(), &audio_stream_info);
+        static_data.audio_stream_info = Some(audio_stream_info);
         Ok(())
     }
 
@@ -778,7 +770,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         let id = reader.read_character_id()?;
         let num_frames = reader.read_u16()?;
         let mut movie_clip =
-            MovieClip::new_with_data(id, reader.get_ref().position(), tag_len - 4, num_frames);
+            MovieClip::new_with_data(context.gc_context, id, reader.get_ref().position(), tag_len - 4, num_frames);
 
         movie_clip.preload(context);
 
@@ -800,6 +792,22 @@ impl<'gc, 'a> MovieClip<'gc> {
         context
             .library
             .register_character(text.id, Character::Text(Box::new(text_object)));
+        Ok(())
+    }
+
+    #[inline]
+    fn frame_label(
+        &mut self,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+        reader: &mut SwfStream<&'a [u8]>,
+        tag_len: usize,
+        cur_frame: FrameNumber,
+        static_data: &mut MovieClipStatic,
+    ) -> DecodeResult {
+        let frame_label = reader.read_frame_label(tag_len)?;
+        if static_data.frame_labels.insert(frame_label.label, cur_frame).is_some() {
+            log::warn!("Movie clip {}: Duplicated frame label", self.id());
+        }
         Ok(())
     }
 
@@ -837,6 +845,17 @@ impl<'gc, 'a> MovieClip<'gc> {
         ids.remove(&remove_object.depth);
         Ok(())
     }
+
+    #[inline]
+    fn preload_show_frame(
+        &mut self,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+        _reader: &mut SwfStream<&'a [u8]>,
+        cur_frame: &mut FrameNumber,
+    ) -> DecodeResult {
+        *cur_frame += 1;
+        Ok(())
+    }
 }
 
 // Control tags
@@ -851,7 +870,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         // Queue the actions.
         // TODO: The reader is actually reading the tag slice at this point (tag_stream.take()),
         // so make sure to get the proper offsets. This feels kind of bad.
-        let start = (self.tag_stream_start + reader.get_ref().position()) as usize;
+        let start = (self.tag_stream_start() + reader.get_ref().position()) as usize;
         let end = start + tag_len;
         let slice = crate::tag_utils::SwfSlice {
             data: std::sync::Arc::clone(context.swf_data),
@@ -866,7 +885,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<&'a [u8]>,
-        tag_len: usize,
+        tag_len: usize,        
         version: u8,
     ) -> DecodeResult {
         let place_object = if version == 1 {
@@ -992,13 +1011,13 @@ impl<'gc, 'a> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         _reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
-        if let (Some(stream_info), None) = (&self.audio_stream_info, &self.audio_stream) {
+        if let (Some(stream_info), None) = (&self.static_data.audio_stream_info, &self.audio_stream) {
             let slice = crate::tag_utils::SwfSlice {
                 data: std::sync::Arc::clone(context.swf_data),
-                start: self.tag_stream_start as usize,
-                end: self.tag_stream_start as usize + self.tag_stream_len,
+                start: self.tag_stream_start() as usize,
+                end: self.tag_stream_start() as usize + self.tag_stream_len(),
             };
-            let audio_stream = context.audio.start_stream(self.id, slice, stream_info);
+            let audio_stream = context.audio.start_stream(self.id(), slice, stream_info);
             self.audio_stream = Some(audio_stream);
         }
 
@@ -1016,5 +1035,38 @@ impl<'gc, 'a> MovieClip<'gc> {
             context.audio.play_sound(handle);
         }
         Ok(())
+    }
+}
+
+
+/// Static data shared between all instances of a movie clip.
+#[allow(dead_code)]
+#[derive(Clone)]
+struct MovieClipStatic {
+    id: CharacterId,
+    tag_stream_start: u64,
+    tag_stream_len: usize,
+    frame_labels: HashMap<String, FrameNumber>,
+    audio_stream_info: Option<swf::SoundStreamHead>,
+    total_frames: FrameNumber,
+}
+
+impl Default for MovieClipStatic {
+    fn default() -> Self {
+        Self {
+            id: 0,
+            tag_stream_start: 0,
+            tag_stream_len: 0,
+            total_frames: 1,
+            frame_labels: HashMap::new(),
+            audio_stream_info: None,
+        }
+    }
+}
+
+unsafe impl<'gc> gc_arena::Collect for MovieClipStatic {
+    #[inline]
+    fn needs_trace() -> bool {
+        false
     }
 }
