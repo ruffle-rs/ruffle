@@ -207,7 +207,7 @@ impl<'gc> MovieClip<'gc> {
         self.variables.insert(var_name.to_owned(), value);
     }
 
-    fn id(&self) -> CharacterId {
+    pub fn id(&self) -> CharacterId {
         self.static_data.id
     }
 

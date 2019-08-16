@@ -557,11 +557,12 @@ impl Avm1 {
             Value::Number(frame) => {
                 clip.goto_frame(scene_offset + (frame as u16) + 1, !set_playing)
             }
-            Value::String(_frame_label) => {
-                unimplemented!()
-                //if let Some(frame) = clip.frame_label_to_number(&frame_label, context) {
-                //  clip.goto_frame(scene_offset + frame, !set_playing)
-                //}
+            Value::String(frame_label) => {
+                if let Some(frame) = clip.frame_label_to_number(&frame_label) {
+                    clip.goto_frame(scene_offset + frame, !set_playing)
+                } else {
+                    log::warn!("ActionGotoFrame2 failed: Movie clip {} does not contain frame label '{}'", clip.id(), frame_label);
+                }
             }
             _ => return Err("Expected frame number or label".into()),
         }
