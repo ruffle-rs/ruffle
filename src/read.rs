@@ -472,6 +472,8 @@ impl<R: Read> Reader<R> {
                 sound_info: Box::new(tag_reader.read_sound_info()?),
             },
 
+            Some(TagCode::DebugId) => Tag::DebugId(tag_reader.read_debug_id()?),
+
             Some(TagCode::DefineBitsLossless) => {
                 Tag::DefineBitsLossless(tag_reader.read_define_bits_lossless(1)?)
             }
@@ -2684,7 +2686,7 @@ impl<R: Read> Reader<R> {
     }
 
     pub fn read_product_info(&mut self) -> Result<ProductInfo> {
-        // Not document in SWF19 reference.
+        // Not documented in SWF19 reference.
         // See http://wahlers.com.br/claus/blog/undocumented-swf-tags-written-by-mxmlc/
         Ok(ProductInfo {
             product_id: self.read_u32()?,
@@ -2694,6 +2696,14 @@ impl<R: Read> Reader<R> {
             build_number: self.get_mut().read_u64::<LittleEndian>()?,
             compilation_date: self.get_mut().read_u64::<LittleEndian>()?,
         })
+    }
+
+    pub fn read_debug_id(&mut self) -> Result<DebugId> {
+        // Not documented in SWF19 reference.
+        // See http://wahlers.com.br/claus/blog/undocumented-swf-tags-written-by-mxmlc/
+        let mut debug_id = [0u8; 16];
+        self.get_mut().read_exact(&mut debug_id)?;
+        Ok(debug_id)
     }
 }
 

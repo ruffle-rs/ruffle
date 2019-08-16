@@ -43,7 +43,7 @@ pub enum TagCode {
     DefineSprite = 39,
 
     ProductInfo = 41,
-    
+
     FrameLabel = 43,
 
     SoundStreamHead2 = 45,
@@ -59,6 +59,7 @@ pub enum TagCode {
     VideoFrame = 61,
     DefineFontInfo2 = 62,
 
+    DebugId = 63,
     EnableDebugger2 = 64,
     ScriptLimits = 65,
     SetTabIndex = 66,

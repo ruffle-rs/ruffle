@@ -454,6 +454,7 @@ pub enum Tag {
 
     Protect(Option<String>),
     CsmTextSettings(CsmTextSettings),
+    DebugId(DebugId),
     DefineBinaryData {
         id: CharacterId,
         data: Vec<u8>,
@@ -1091,7 +1092,7 @@ pub type DoAction = Vec<u8>;
 pub type JpegTables = Vec<u8>;
 
 /// `ProductInfo` contains information about the software used to generate the SWF.
-/// Not document in the SWF19 reference. Emitted by mxmlc.
+/// Not documented in the SWF19 reference. Emitted by mxmlc.
 /// See http://wahlers.com.br/claus/blog/undocumented-swf-tags-written-by-mxmlc/
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ProductInfo {
@@ -1102,3 +1103,6 @@ pub struct ProductInfo {
     pub build_number: u64,
     pub compilation_date: u64,
 }
+
+/// `DebugId` is a UUID written to debug SWFs and used by the Flash Debugger.
+pub type DebugId = [u8; 16];

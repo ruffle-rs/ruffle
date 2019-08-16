@@ -1044,6 +1044,7 @@ impl<W: Write> Writer<W> {
 
             Tag::DefineSceneAndFrameLabelData(ref data) => self.write_define_scene_and_frame_label_data(data)?,
             Tag::ProductInfo(ref product_info) => self.write_product_info(product_info)?,
+            Tag::DebugId(ref debug_id) => self.write_debug_id(debug_id)?,
 
             Tag::Unknown { tag_code, ref data } => {
                 self.write_tag_code_and_length(tag_code, data.len() as u32)?;
@@ -2674,6 +2675,10 @@ impl<W: Write> Writer<W> {
         self.write_u64(product_info.build_number)?;
         self.write_u64(product_info.compilation_date)?;
         Ok(())
+    }
+
+    fn write_debug_id(&mut self, debug_id: &DebugId) -> Result<()> {
+        self.get_inner().write_all(debug_id)
     }
 
     fn write_tag_header(&mut self, tag_code: TagCode, length: u32) -> Result<()> {
