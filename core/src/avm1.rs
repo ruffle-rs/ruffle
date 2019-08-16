@@ -795,7 +795,14 @@ impl Avm1 {
                 SwfValue::Double(v) => Value::Number(*v),
                 SwfValue::Str(v) => Value::String(v.clone()),
                 SwfValue::Register(_v) => unimplemented!(),
-                SwfValue::ConstantPool(_v) => unimplemented!(),
+                SwfValue::ConstantPool(i) => {
+                    if let Some(value) = self.constant_pool.get(*i as usize) {
+                        Value::String(value.clone())
+                    } else {
+                        log::warn!("ActionPush: Constant pool index {} out of range (len = {})", i, self.constant_pool.len());
+                        Value::Undefined
+                    }
+                }
             };
             self.push(value);
         }
