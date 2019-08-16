@@ -581,7 +581,7 @@ impl<R: Read> Reader<R> {
             }
 
             Some(TagCode::PlaceObject) => {
-                Tag::PlaceObject(Box::new(tag_reader.read_place_object()?))
+                Tag::PlaceObject(Box::new(tag_reader.read_place_object(length)?))
             }
             Some(TagCode::PlaceObject2) => {
                 Tag::PlaceObject(Box::new(tag_reader.read_place_object_2_or_3(2)?))
@@ -1924,14 +1924,19 @@ impl<R: Read> Reader<R> {
         }))
     }
 
-    pub fn read_place_object(&mut self) -> Result<PlaceObject> {
+    pub fn read_place_object(&mut self, tag_length: usize) -> Result<PlaceObject> {
         // TODO: What's a best way to know if the tag has a color transform?
+        // You only know if there is still data remaining after the matrix.
+        // This sucks.
+        let mut vector = [0; 128];
+        self.get_mut().read_exact(&mut vector[..tag_length])?;
+        let mut reader = Reader::new(&vector[..], self.version);
         Ok(PlaceObject {
             version: 1,
-            action: PlaceObjectAction::Place(self.read_u16()?),
-            depth: self.read_i16()?,
-            matrix: Some(self.read_matrix()?),
-            color_transform: self.read_color_transform_no_alpha().ok(),
+            action: PlaceObjectAction::Place(reader.read_u16()?),
+            depth: reader.read_i16()?,
+            matrix: Some(reader.read_matrix()?),
+            color_transform: if !reader.get_ref().is_empty() { Some(reader.read_color_transform_no_alpha()?) } else { None },
             ratio: None,
             name: None,
             clip_depth: None,
