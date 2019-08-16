@@ -138,6 +138,10 @@ pub trait SwfWrite<W: Write> {
         self.get_inner().write_u32::<LittleEndian>(n)
     }
 
+    fn write_u64(&mut self, n: u64) -> Result<()> {
+        self.get_inner().write_u64::<LittleEndian>(n)
+    }
+
     fn write_i8(&mut self, n: i8) -> Result<()> {
         self.get_inner().write_i8(n)
     }
@@ -1039,6 +1043,7 @@ impl<W: Write> Writer<W> {
             }
 
             Tag::DefineSceneAndFrameLabelData(ref data) => self.write_define_scene_and_frame_label_data(data)?,
+            Tag::ProductInfo(ref product_info) => self.write_product_info(product_info)?,
 
             Tag::Unknown { tag_code, ref data } => {
                 self.write_tag_code_and_length(tag_code, data.len() as u32)?;
@@ -2657,6 +2662,17 @@ impl<W: Write> Writer<W> {
             VideoCodec::VP6 => 4,
             VideoCodec::VP6WithAlpha => 5,
         })?;
+        Ok(())
+    }
+
+    fn write_product_info(&mut self, product_info: &ProductInfo) -> Result<()> {
+        self.write_tag_header(TagCode::ProductInfo, 26)?;
+        self.write_u32(product_info.product_id)?;
+        self.write_u32(product_info.edition)?;
+        self.write_u8(product_info.major_version)?;
+        self.write_u8(product_info.minor_version)?;
+        self.write_u64(product_info.build_number)?;
+        self.write_u64(product_info.compilation_date)?;
         Ok(())
     }
 

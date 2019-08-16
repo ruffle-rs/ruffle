@@ -138,6 +138,10 @@ pub trait SwfRead<R: Read> {
         self.get_inner().read_u32::<LittleEndian>()
     }
 
+    fn read_u64(&mut self) -> Result<u64> {
+        self.get_inner().read_u64::<LittleEndian>()
+    }
+
     fn read_i8(&mut self) -> Result<i8> {
         self.get_inner().read_i8()
     }
@@ -598,7 +602,7 @@ impl<R: Read> Reader<R> {
             Some(TagCode::RemoveObject2) => Tag::RemoveObject(tag_reader.read_remove_object_2()?),
 
             Some(TagCode::VideoFrame) => tag_reader.read_video_frame()?,
-
+            Some(TagCode::ProductInfo) => Tag::ProductInfo(tag_reader.read_product_info()?),
             _ => {
                 let size = length as usize;
                 let mut data = vec![0; size];
@@ -1936,7 +1940,11 @@ impl<R: Read> Reader<R> {
             action: PlaceObjectAction::Place(reader.read_u16()?),
             depth: reader.read_i16()?,
             matrix: Some(reader.read_matrix()?),
-            color_transform: if !reader.get_ref().is_empty() { Some(reader.read_color_transform_no_alpha()?) } else { None },
+            color_transform: if !reader.get_ref().is_empty() {
+                Some(reader.read_color_transform_no_alpha()?)
+            } else {
+                None
+            },
             ratio: None,
             name: None,
             clip_depth: None,
@@ -2672,6 +2680,19 @@ impl<R: Read> Reader<R> {
             height,
             num_colors,
             data,
+        })
+    }
+
+    pub fn read_product_info(&mut self) -> Result<ProductInfo> {
+        // Not document in SWF19 reference.
+        // See http://wahlers.com.br/claus/blog/undocumented-swf-tags-written-by-mxmlc/
+        Ok(ProductInfo {
+            product_id: self.read_u32()?,
+            edition: self.read_u32()?,
+            major_version: self.read_u8()?,
+            minor_version: self.read_u8()?,
+            build_number: self.get_mut().read_u64::<LittleEndian>()?,
+            compilation_date: self.get_mut().read_u64::<LittleEndian>()?,
         })
     }
 }
