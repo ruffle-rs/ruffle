@@ -1,10 +1,10 @@
 use crate::avm1::Avm1;
 use crate::backend::{audio::AudioBackend, render::RenderBackend};
+use crate::event::{ClipEvent, Event};
 use crate::library::Library;
 use crate::movie_clip::MovieClip;
 use crate::prelude::*;
 use crate::transform::TransformStack;
-use crate::Event;
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell, MutationContext};
 use log::info;
 use std::sync::Arc;
@@ -14,6 +14,7 @@ use std::sync::Arc;
 struct GcRoot<'gc> {
     library: GcCell<'gc, Library<'gc>>,
     root: DisplayNode<'gc>,
+    mouse_hover_node: GcCell<'gc, Option<DisplayNode<'gc>>>, // TODO: Remove GcCell wrapped inside GcCell.
 }
 
 make_arena!(GcArena, GcRoot);
@@ -38,6 +39,9 @@ pub struct Player<Audio: AudioBackend, Renderer: RenderBackend> {
 
     movie_width: u32,
     movie_height: u32,
+
+    mouse_pos: (Twips, Twips),
+    is_mouse_down: bool,
 }
 
 impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
@@ -80,8 +84,15 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                 library: GcCell::allocate(gc_context, Library::new()),
                 root: GcCell::allocate(
                     gc_context,
-                    Box::new(MovieClip::new_with_data(gc_context, 0, 0, swf_len, header.num_frames)),
+                    Box::new(MovieClip::new_with_data(
+                        gc_context,
+                        0,
+                        0,
+                        swf_len,
+                        header.num_frames,
+                    )),
                 ),
+                mouse_hover_node: GcCell::allocate(gc_context, None),
             }),
 
             frame_rate: header.frame_rate.into(),
@@ -90,6 +101,9 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
 
             movie_width,
             movie_height,
+
+            mouse_pos: (Twips::new(0), Twips::new(0)),
+            is_mouse_down: false,
         };
 
         player.preload();
@@ -142,7 +156,19 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
     }
 
     pub fn handle_event(&mut self, event: Event) {
-        let (global_time, swf_data, swf_version, background_color, renderer, audio, avm) = (
+        let mut needs_render = false;
+
+        let (
+            global_time,
+            swf_data,
+            swf_version,
+            background_color,
+            renderer,
+            audio,
+            avm,
+            mouse_pos,
+            is_mouse_down,
+        ) = (
             self.global_time,
             &mut self.swf_data,
             self.swf_version,
@@ -150,9 +176,12 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
             &mut self.renderer,
             &mut self.audio,
             &mut self.avm,
+            &mut self.mouse_pos,
+            &mut self.is_mouse_down,
         );
 
-        self.gc_arena.mutate(move |gc_context, gc_root| {
+        let mut needs_mouse_update = false;
+        self.gc_arena.mutate(|gc_context, gc_root| {
             let actions = {
                 let mut update_context = UpdateContext {
                     global_time,
@@ -170,22 +199,38 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
 
                 match event {
                     Event::MouseMove { x, y } => {
-                        if let Some(node) = gc_root.root.read().pick((x, y)) {
-                            update_context.active_clip = node;
-                            node.write(gc_context).handle_event(
-                                &mut update_context,
-                                crate::event::PlayerEvent::RollOver,
-                            );
-                        };
+                        *mouse_pos = (x, y);
+                        needs_mouse_update = true;
+                    }
+                    Event::MouseLeft => {
+                        // TODO: Just setting to a bogus value for now.
+                        *mouse_pos = (Twips::new(std::i32::MAX), Twips::new(std::i32::MAX));
+                        needs_mouse_update = true;
                     }
                     Event::MouseDown { x, y } => {
-                        if let Some(node) = gc_root.root.read().pick((x, y)) {
-                            update_context.active_clip = node;
-                            node.write(gc_context).handle_event(
-                                &mut update_context,
-                                crate::event::PlayerEvent::Click,
-                            );
-                        };
+                        *mouse_pos = (x, y);
+                        *is_mouse_down = true;
+                        needs_render = true;
+                        if let Some(node) = &*gc_root.mouse_hover_node.read() {
+                            update_context.active_clip = *node;
+                            node.write(gc_context)
+                                .handle_event(&mut update_context, ClipEvent::Press);
+                        }
+                    }
+                    Event::MouseUp { x, y } => {
+                        *mouse_pos = (x, y);
+                        *is_mouse_down = false;
+                        needs_render = true;
+                        if let Some(node) = &*gc_root.mouse_hover_node.read() {
+                            if gc_root.root.read().pick(*mouse_pos).map(GcCell::as_ptr)
+                                == Some(node.as_ptr())
+                            {
+                                update_context.active_clip = *node;
+                                node.write(gc_context)
+                                    .handle_event(&mut update_context, ClipEvent::Release);
+                            }
+                        }
+                        needs_mouse_update = true;
                     }
                     _ => (),
                 }
@@ -208,6 +253,80 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                 }
             }
         });
+
+        if needs_mouse_update && self.update_mouse() {
+            needs_render = true;
+        }
+
+        if needs_render {
+            self.render();
+        }
+    }
+
+    fn update_mouse(&mut self) -> bool {
+        // Don't update roll-over state when mouse is down.
+        // TODO: This depends on button tracking.
+        if self.is_mouse_down {
+            return false;
+        }
+
+        let (global_time, swf_data, swf_version, background_color, renderer, audio, avm, mouse_pos) = (
+            self.global_time,
+            &mut self.swf_data,
+            self.swf_version,
+            &mut self.background_color,
+            &mut self.renderer,
+            &mut self.audio,
+            &mut self.avm,
+            self.mouse_pos,
+        );
+
+        let hover_changed = self.gc_arena.mutate(|gc_context, gc_root| {
+            // Updare hovered display object.
+            let new_hover_node = gc_root.root.read().pick(mouse_pos);
+            // Check if the hovered object has changed.
+            // TODO: Yuck... what's the best way to determine if the pointers are the same?
+            if gc_root.mouse_hover_node.read().map(GcCell::as_ptr)
+                != new_hover_node.map(GcCell::as_ptr)
+            {
+                let mut update_context = UpdateContext {
+                    global_time,
+                    swf_data,
+                    swf_version,
+                    library: gc_root.library.write(gc_context),
+                    background_color,
+                    avm,
+                    renderer,
+                    audio,
+                    actions: vec![],
+                    gc_context,
+                    active_clip: gc_root.root,
+                };
+
+                // Fire rollOut event for previous object.
+                if let Some(node) = &*gc_root.mouse_hover_node.write(gc_context) {
+                    update_context.active_clip = *node;
+                    node.write(gc_context)
+                        .handle_event(&mut update_context, ClipEvent::RollOut);
+                }
+
+                *gc_root.mouse_hover_node.write(gc_context) = new_hover_node;
+
+                // Fire rollOver event for new object.
+                if let Some(node) = new_hover_node {
+                    update_context.active_clip = node;
+                    node.write(gc_context)
+                        .handle_event(&mut update_context, ClipEvent::RollOver);
+                }
+
+                true
+            } else {
+                false
+            }
+        });
+
+        // TODO: render
+        hover_changed
     }
 
     fn preload(&mut self) {
@@ -322,6 +441,9 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                 }
             }
         });
+
+        // Update mouse state (check for new hovered button, etc.)
+        self.update_mouse();
     }
 
     pub fn render(&mut self) {

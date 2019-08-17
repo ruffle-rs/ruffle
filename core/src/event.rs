@@ -6,10 +6,16 @@ pub enum Event {
     MouseMove { x: Twips, y: Twips },
     MouseUp { x: Twips, y: Twips },
     MouseDown { x: Twips, y: Twips },
+    MouseLeft,
 }
 
 #[derive(Debug)]
-pub enum PlayerEvent {
+pub enum ClipEvent {
+    Press,
+    Release,
+    RollOut,
     RollOver,
-    Click,
+    KeyPress(KeyCode),
 }
+
+type KeyCode = u8;

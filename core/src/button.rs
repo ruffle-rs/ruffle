@@ -1,5 +1,5 @@
 use crate::display_object::{DisplayObject, DisplayObjectBase};
-use crate::event::PlayerEvent;
+use crate::event::ClipEvent;
 use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use std::collections::BTreeMap;
@@ -7,12 +7,16 @@ use std::collections::BTreeMap;
 #[derive(Clone)]
 pub struct Button<'gc> {
     base: DisplayObjectBase<'gc>,
-
+    static_data: gc_arena::Gc<'gc, ButtonStatic>,
     state: ButtonState,
-
     children: [BTreeMap<Depth, DisplayNode<'gc>>; 4],
-    release_actions: Vec<u8>,
+    tracking: ButtonTracking,
 }
+
+const UP_STATE: usize = 0;
+const OVER_STATE: usize = 1;
+const DOWN_STATE: usize = 2;
+const HIT_STATE: usize = 3;
 
 impl<'gc> Button<'gc> {
     pub fn from_swf_tag(
@@ -39,32 +43,47 @@ impl<'gc> Button<'gc> {
                 .set_color_transform(&record.color_transform.clone().into());
             for state in &record.states {
                 let i = match state {
-                    ButtonState::Up => 0,
-                    ButtonState::Over => 1,
-                    ButtonState::Down => 2,
-                    ButtonState::HitTest => continue,
+                    ButtonState::Up => UP_STATE,
+                    ButtonState::Over => OVER_STATE,
+                    ButtonState::Down => DOWN_STATE,
+                    ButtonState::HitTest => HIT_STATE,
                 };
                 children[i].insert(record.depth, child);
             }
         }
 
-        let mut release_actions = vec![];
-        for actions in &button.actions {
-            if actions
-                .conditions
-                .contains(&swf::ButtonActionCondition::OverDownToOverUp) || actions
-                .conditions
-                .contains(&swf::ButtonActionCondition::OverUpToOverDown)
-            {
-                release_actions = actions.action_data.clone();
+        let mut actions = vec![];
+        for action in &button.actions {
+            let action_data = crate::tag_utils::SwfSlice {
+                data: std::sync::Arc::new(action.action_data.clone()),
+                start: 0,
+                end: action.action_data.len(),
+            };
+            for condition in &action.conditions {
+                let button_action = ButtonAction {
+                    action_data: action_data.clone(),
+                    condition: *condition,
+                    key_code: action.key_code,
+                };
+                actions.push(button_action);
             }
         }
 
+        let static_data = ButtonStatic {
+            id: button.id,
+            actions,
+        };
+
         Button {
             base: Default::default(),
+            static_data: gc_arena::Gc::allocate(gc_context, static_data),
             children,
             state: self::ButtonState::Up,
-            release_actions,
+            tracking: if button.is_track_as_menu {
+                ButtonTracking::Menu
+            } else {
+                ButtonTracking::Push
+            },
         }
     }
 
@@ -73,9 +92,10 @@ impl<'gc> Button<'gc> {
         state: ButtonState,
     ) -> impl std::iter::DoubleEndedIterator<Item = &DisplayNode<'gc>> {
         let i = match state {
-            ButtonState::Up => 0,
-            ButtonState::Over => 1,
-            ButtonState::Down => 2,
+            ButtonState::Up => UP_STATE,
+            ButtonState::Over => OVER_STATE,
+            ButtonState::Down => DOWN_STATE,
+            ButtonState::Hit => HIT_STATE,
         };
         self.children[i].values()
     }
@@ -85,11 +105,28 @@ impl<'gc> Button<'gc> {
         state: ButtonState,
     ) -> impl std::iter::DoubleEndedIterator<Item = &mut DisplayNode<'gc>> {
         let i = match state {
-            ButtonState::Up => 0,
-            ButtonState::Over => 1,
-            ButtonState::Down => 2,
+            ButtonState::Up => UP_STATE,
+            ButtonState::Over => OVER_STATE,
+            ButtonState::Down => DOWN_STATE,
+            ButtonState::Hit => HIT_STATE,
         };
         self.children[i].values_mut()
+    }
+
+    fn run_actions(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        condition: swf::ButtonActionCondition,
+        key_code: Option<u8>,
+    ) {
+        for action in &self.static_data.actions {
+            if action.condition == condition && action.key_code == key_code {
+                // Note that AVM1 buttons run actions relative to their parent, not themselves.
+                context
+                    .actions
+                    .push((self.parent().unwrap(), action.action_data.clone()));
+            }
+        }
     }
 }
 
@@ -97,6 +134,15 @@ impl<'gc> DisplayObject<'gc> for Button<'gc> {
     impl_display_object!(base);
 
     fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        // TODO: Set parent for all children. Yuck... Do this on creation instead.
+        for state in &mut self.children {
+            for child in state.values_mut() {
+                child
+                    .write(context.gc_context)
+                    .set_parent(Some(context.active_clip));
+            }
+        }
+
         for child in self.children_in_state_mut(self.state) {
             child
                 .write(context.gc_context)
@@ -123,8 +169,13 @@ impl<'gc> DisplayObject<'gc> for Button<'gc> {
     }
 
     fn hit_test(&self, point: (Twips, Twips)) -> bool {
-        //if self.world_bounds().contains(point) {
-        for child in self.children_in_state(self.state).rev() {
+        // Use hit state to determine hit area; otherwise use current state.
+        let hit_state = if !self.children[HIT_STATE].is_empty() {
+            ButtonState::Hit
+        } else {
+            self.state
+        };
+        for child in self.children_in_state(hit_state).rev() {
             if child.read().world_bounds().contains(point) {
                 return true;
             }
@@ -137,17 +188,46 @@ impl<'gc> DisplayObject<'gc> for Button<'gc> {
     fn handle_event(
         &mut self,
         context: &mut crate::player::UpdateContext<'_, 'gc, '_>,
-        event: PlayerEvent,
+        event: ClipEvent,
     ) {
-        match event {
-            PlayerEvent::RollOver => self.state = ButtonState::Over,
-            PlayerEvent::Click => {
-                let slice = crate::tag_utils::SwfSlice {
-                    data: std::sync::Arc::new(self.release_actions.clone()),
-                    start: 0,
-                    end: self.release_actions.len(),
-                };
-                context.actions.push((self.parent().unwrap(), slice));
+        let new_state = match event {
+            ClipEvent::RollOut => ButtonState::Up,
+            ClipEvent::RollOver => ButtonState::Over,
+            ClipEvent::Press => ButtonState::Down,
+            ClipEvent::Release => ButtonState::Over,
+            ClipEvent::KeyPress(key) => {
+                self.run_actions(context, swf::ButtonActionCondition::KeyPress, Some(key));
+                self.state
+            }
+            _ => self.state,
+        };
+
+        match (self.state, new_state) {
+            (ButtonState::Up, ButtonState::Over) => {
+                self.run_actions(context, swf::ButtonActionCondition::IdleToOverUp, None);
+            }
+            (ButtonState::Over, ButtonState::Up) => {
+                self.run_actions(context, swf::ButtonActionCondition::OverUpToIdle, None);
+            }
+            (ButtonState::Over, ButtonState::Down) => {
+                self.run_actions(context, swf::ButtonActionCondition::OverUpToOverDown, None);
+            }
+            (ButtonState::Down, ButtonState::Over) => {
+                self.run_actions(context, swf::ButtonActionCondition::OverDownToOverUp, None);
+            }
+            _ => (),
+        }
+
+        self.state = new_state;
+    }
+}
+
+unsafe impl<'gc> gc_arena::Collect for Button<'gc> {
+    #[inline]
+    fn trace(&self, cc: gc_arena::CollectionContext) {
+        for state in &self.children {
+            for child in state.values() {
+                child.trace(cc);
             }
         }
     }
@@ -159,15 +239,33 @@ enum ButtonState {
     Up,
     Over,
     Down,
+    Hit,
 }
 
-unsafe impl<'gc> gc_arena::Collect for Button<'gc> {
+#[derive(Clone)]
+struct ButtonAction {
+    action_data: crate::tag_utils::SwfSlice,
+    condition: swf::ButtonActionCondition,
+    key_code: Option<u8>,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum ButtonTracking {
+    Push,
+    Menu,
+}
+
+/// Static data shared between all instances of a button.
+#[allow(dead_code)]
+#[derive(Clone)]
+struct ButtonStatic {
+    id: CharacterId,
+    actions: Vec<ButtonAction>,
+}
+
+unsafe impl<'gc> gc_arena::Collect for ButtonStatic {
     #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        for state in &self.children {
-            for child in state.values() {
-                child.trace(cc);
-            }
-        }
+    fn needs_trace() -> bool {
+        false
     }
 }

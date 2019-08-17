@@ -3,6 +3,7 @@ use swf::TagCode;
 pub type DecodeResult = Result<(), Box<dyn std::error::Error>>;
 pub type SwfStream<R> = swf::read::Reader<std::io::Cursor<R>>;
 
+#[derive(Debug, Clone)]
 pub struct SwfSlice {
     pub data: std::sync::Arc<Vec<u8>>,
     pub start: usize,

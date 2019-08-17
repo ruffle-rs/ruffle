@@ -75,22 +75,33 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                     }
                     WindowEvent::CursorMoved { position, .. } => {
                         mouse_pos = position;
-                        let event = ruffle_core::Event::MouseMove {x: Twips::from_pixels(position.x), y: Twips::from_pixels(position.y)};
-                        player.handle_event(event)
+                        let event = ruffle_core::Event::MouseMove {
+                            x: Twips::from_pixels(position.x),
+                            y: Twips::from_pixels(position.y),
+                        };
+                        player.handle_event(event);
                     }
                     WindowEvent::MouseInput {
                         button: MouseButton::Left,
-                        state: ElementState::Pressed,
+                        state: pressed,
                         ..
                     } => {
-                        let event = ruffle_core::Event::MouseDown {x: Twips::from_pixels(mouse_pos.x), y: Twips::from_pixels(mouse_pos.y)};
-                        player.handle_event(event)
+                        let event = if pressed == ElementState::Pressed {
+                            ruffle_core::Event::MouseDown {
+                                x: Twips::from_pixels(mouse_pos.x),
+                                y: Twips::from_pixels(mouse_pos.y),
+                            }
+                        } else {
+                            ruffle_core::Event::MouseUp {
+                                x: Twips::from_pixels(mouse_pos.x),
+                                y: Twips::from_pixels(mouse_pos.y),
+                            }
+                        };
+                        player.handle_event(event);
                     }
-                    WindowEvent::MouseInput {
-                        button: MouseButton::Left,
-                        state: ElementState::Released,
-                        ..
-                    } => {}
+                    WindowEvent::CursorLeft { .. } => {
+                        player.handle_event(ruffle_core::Event::MouseLeft)
+                    }
                     WindowEvent::CloseRequested => request_close = true,
                     _ => (),
                 }
