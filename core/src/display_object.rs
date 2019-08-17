@@ -121,7 +121,7 @@ pub trait DisplayObject<'gc>: 'gc + Collect {
     fn handle_event(
         &mut self,
         _context: &mut crate::player::UpdateContext<'_, 'gc, '_>,
-        _event: crate::event::PlayerEvent,
+        _event: crate::event::ClipEvent,
     ) {
     }
 }

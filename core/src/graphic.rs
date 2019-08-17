@@ -31,6 +31,7 @@ impl<'gc> DisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn world_bounds(&self) -> BoundingBox {
+        // TODO: Use dirty flags and cache this.
         let mut bounds = self.local_bounds().transform(self.matrix());
         let mut node = self.parent();
         while let Some(display_object) = node {

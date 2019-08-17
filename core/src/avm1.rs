@@ -480,8 +480,9 @@ impl Avm1 {
                     3 => Value::Number(f64::from(clip.y_scale())),
                     4 => Value::Number(f64::from(clip.current_frame())),
                     5 => Value::Number(f64::from(clip.total_frames())),
+                    10 => Value::Number(f64::from(clip.rotation())),
                     12 => Value::Number(f64::from(clip.frames_loaded())),
-                    _ => unimplemented!(),
+                    _ => unimplemented!("{}", prop_index),
                 }
             } else {
                 Value::Undefined
@@ -843,7 +844,7 @@ impl Avm1 {
     }
 
     fn action_set_property(&mut self, context: &mut ActionContext) -> Result<(), Error> {
-        let value = self.pop()?.as_f64()? as f32;
+        let value = self.pop()?.into_number_v1() as f32;
         let prop_index = self.pop()?.as_u32()? as usize;
         let clip_path = self.pop()?;
         let path = clip_path.as_string()?;
@@ -856,6 +857,7 @@ impl Avm1 {
                     1 => clip.set_y(value),
                     2 => clip.set_x_scale(value),
                     3 => clip.set_y_scale(value),
+                    10 => clip.set_rotation(value),
                     _ => log::warn!("ActionSetProperty: Unimplemented property index {}", prop_index),
                 }
             }

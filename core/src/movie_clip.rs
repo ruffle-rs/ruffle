@@ -149,6 +149,31 @@ impl<'gc> MovieClip<'gc> {
         self.static_data.total_frames
     }
 
+    pub fn rotation(&self) -> f32 {
+        // TODO: Cache the user-friendly transform values like rotation.
+        let matrix = self.matrix();
+        f32::atan2(matrix.b, matrix.a).to_degrees()
+    }
+
+    pub fn set_rotation(&mut self, degrees: f32) {
+        // TODO: Use cached user-friendly transform values.
+        let angle = degrees.to_radians();
+        let cos = f32::cos(angle);
+        let sin = f32::sin(angle);
+        let scale_x = self.x_scale() / 100.0;
+        let scale_y = self.y_scale() / 100.0;
+
+        let matrix = self.matrix_mut();
+        *matrix = Matrix {
+            a: scale_x * cos,
+            b: scale_x * sin,
+            c: scale_y * cos,
+            d: -scale_y * sin,
+            tx: matrix.tx,
+            ty: matrix.ty, 
+        };
+    }
+
     pub fn frames_loaded(&self) -> FrameNumber {
         // TODO(Herschel): root needs to progressively stream in frames.
         self.static_data.total_frames
