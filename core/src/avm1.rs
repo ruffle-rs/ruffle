@@ -39,119 +39,118 @@ impl Avm1 {
 
         while let Some(action) = reader.read_action()? {
             use swf::avm1::types::Action;
-            match action {
-                Action::Add => self.action_add(context)?,
-                Action::Add2 => self.action_add_2(context)?,
-                Action::And => self.action_and(context)?,
-                Action::AsciiToChar => self.action_ascii_to_char(context)?,
-                Action::BitAnd => self.action_bit_and(context)?,
-                Action::BitLShift => self.action_bit_lshift(context)?,
-                Action::BitOr => self.action_bit_or(context)?,
-                Action::BitRShift => self.action_bit_rshift(context)?,
-                Action::BitURShift => self.action_bit_urshift(context)?,
-                Action::BitXor => self.action_bit_xor(context)?,
-                Action::Call => self.action_call(context)?,
-                Action::CallFunction => self.action_call_function(context)?,
-                Action::CallMethod => self.action_call_method(context)?,
-                Action::CharToAscii => self.action_char_to_ascii(context)?,
+            let result = match action {
+                Action::Add => self.action_add(context),
+                Action::Add2 => self.action_add_2(context),
+                Action::And => self.action_and(context),
+                Action::AsciiToChar => self.action_ascii_to_char(context),
+                Action::BitAnd => self.action_bit_and(context),
+                Action::BitLShift => self.action_bit_lshift(context),
+                Action::BitOr => self.action_bit_or(context),
+                Action::BitRShift => self.action_bit_rshift(context),
+                Action::BitURShift => self.action_bit_urshift(context),
+                Action::BitXor => self.action_bit_xor(context),
+                Action::Call => self.action_call(context),
+                Action::CallFunction => self.action_call_function(context),
+                Action::CallMethod => self.action_call_method(context),
+                Action::CharToAscii => self.action_char_to_ascii(context),
                 Action::ConstantPool(constant_pool) => {
-                    self.action_constant_pool(context, &constant_pool[..])?
+                    self.action_constant_pool(context, &constant_pool[..])
                 }
-                Action::Decrement => self.action_decrement(context)?,
+                Action::Decrement => self.action_decrement(context),
                 Action::DefineFunction {
                     name,
                     params,
                     actions,
-                } => self.action_define_function(context, &name, &params[..], &actions[..])?,
-                Action::DefineLocal => self.action_define_local(context)?,
-                Action::DefineLocal2 => self.action_define_local_2(context)?,
-                Action::Delete => self.action_delete(context)?,
-                Action::Delete2 => self.action_delete_2(context)?,
-                Action::Divide => self.action_divide(context)?,
-                Action::EndDrag => self.action_end_drag(context)?,
-                Action::Enumerate => self.action_enumerate(context)?,
-                Action::Equals => self.action_equals(context)?,
-                Action::Equals2 => self.action_equals_2(context)?,
-                Action::GetMember => self.action_get_member(context)?,
-                Action::GetProperty => self.action_get_property(context)?,
-                Action::GetTime => self.action_get_time(context)?,
-                Action::GetVariable => self.action_get_variable(context)?,
-                Action::GetUrl { url, target } => self.action_get_url(context, &url, &target)?,
+                } => self.action_define_function(context, &name, &params[..], &actions[..]),
+                Action::DefineLocal => self.action_define_local(context),
+                Action::DefineLocal2 => self.action_define_local_2(context),
+                Action::Delete => self.action_delete(context),
+                Action::Delete2 => self.action_delete_2(context),
+                Action::Divide => self.action_divide(context),
+                Action::EndDrag => self.action_end_drag(context),
+                Action::Enumerate => self.action_enumerate(context),
+                Action::Equals => self.action_equals(context),
+                Action::Equals2 => self.action_equals_2(context),
+                Action::GetMember => self.action_get_member(context),
+                Action::GetProperty => self.action_get_property(context),
+                Action::GetTime => self.action_get_time(context),
+                Action::GetVariable => self.action_get_variable(context),
+                Action::GetUrl { url, target } => self.action_get_url(context, &url, &target),
                 Action::GetUrl2 {
                     send_vars_method,
                     is_target_sprite,
                     is_load_vars,
-                } => self.action_get_url_2(
-                    context,
-                    send_vars_method,
-                    is_target_sprite,
-                    is_load_vars,
-                )?,
-                Action::GotoFrame(frame) => self.action_goto_frame(context, frame)?,
+                } => {
+                    self.action_get_url_2(context, send_vars_method, is_target_sprite, is_load_vars)
+                }
+                Action::GotoFrame(frame) => self.action_goto_frame(context, frame),
                 Action::GotoFrame2 {
                     set_playing,
                     scene_offset,
-                } => self.action_goto_frame_2(context, set_playing, scene_offset)?,
-                Action::GotoLabel(label) => self.action_goto_label(context, &label)?,
-                Action::If { offset } => self.action_if(context, offset, &mut reader)?,
-                Action::Increment => self.action_increment(context)?,
-                Action::InitArray => self.action_init_array(context)?,
-                Action::InitObject => self.action_init_object(context)?,
-                Action::Jump { offset } => self.action_jump(context, offset, &mut reader)?,
-                Action::Less => self.action_less(context)?,
-                Action::Less2 => self.action_less_2(context)?,
-                Action::MBAsciiToChar => self.action_mb_ascii_to_char(context)?,
-                Action::MBCharToAscii => self.action_mb_char_to_ascii(context)?,
-                Action::MBStringLength => self.action_mb_string_length(context)?,
-                Action::MBStringExtract => self.action_mb_string_extract(context)?,
-                Action::Modulo => self.action_modulo(context)?,
-                Action::Multiply => self.action_multiply(context)?,
-                Action::NextFrame => self.action_next_frame(context)?,
-                Action::NewMethod => self.action_new_method(context)?,
-                Action::NewObject => self.action_new_object(context)?,
-                Action::Not => self.action_not(context)?,
-                Action::Or => self.action_or(context)?,
-                Action::Play => self.play(context)?,
-                Action::Pop => self.action_pop(context)?,
-                Action::PreviousFrame => self.prev_frame(context)?,
-                Action::Push(values) => self.action_push(context, &values[..])?,
-                Action::PushDuplicate => self.action_push_duplicate(context)?,
-                Action::RandomNumber => self.action_random_number(context)?,
-                Action::RemoveSprite => self.action_remove_sprite(context)?,
-                Action::Return => self.action_return(context)?,
-                Action::SetMember => self.action_set_member(context)?,
-                Action::SetProperty => self.action_set_property(context)?,
-                Action::SetTarget(target) => self.action_set_target(context, &target)?,
-                Action::SetVariable => self.action_set_variable(context)?,
-                Action::StackSwap => self.action_stack_swap(context)?,
-                Action::StartDrag => self.action_start_drag(context)?,
-                Action::Stop => self.action_stop(context)?,
-                Action::StopSounds => self.action_stop_sounds(context)?,
-                Action::StoreRegister(register) => self.action_store_register(context, register)?,
-                Action::StringAdd => self.action_string_add(context)?,
-                Action::StringEquals => self.action_string_equals(context)?,
-                Action::StringExtract => self.action_string_extract(context)?,
-                Action::StringLength => self.action_string_length(context)?,
-                Action::StringLess => self.action_string_less(context)?,
-                Action::Subtract => self.action_subtract(context)?,
-                Action::TargetPath => self.action_target_path(context)?,
-                Action::ToggleQuality => self.toggle_quality(context)?,
-                Action::ToInteger => self.action_to_integer(context)?,
-                Action::ToNumber => self.action_to_number(context)?,
-                Action::ToString => self.action_to_string(context)?,
-                Action::Trace => self.action_trace(context)?,
-                Action::TypeOf => self.action_type_of(context)?,
+                } => self.action_goto_frame_2(context, set_playing, scene_offset),
+                Action::GotoLabel(label) => self.action_goto_label(context, &label),
+                Action::If { offset } => self.action_if(context, offset, &mut reader),
+                Action::Increment => self.action_increment(context),
+                Action::InitArray => self.action_init_array(context),
+                Action::InitObject => self.action_init_object(context),
+                Action::Jump { offset } => self.action_jump(context, offset, &mut reader),
+                Action::Less => self.action_less(context),
+                Action::Less2 => self.action_less_2(context),
+                Action::MBAsciiToChar => self.action_mb_ascii_to_char(context),
+                Action::MBCharToAscii => self.action_mb_char_to_ascii(context),
+                Action::MBStringLength => self.action_mb_string_length(context),
+                Action::MBStringExtract => self.action_mb_string_extract(context),
+                Action::Modulo => self.action_modulo(context),
+                Action::Multiply => self.action_multiply(context),
+                Action::NextFrame => self.action_next_frame(context),
+                Action::NewMethod => self.action_new_method(context),
+                Action::NewObject => self.action_new_object(context),
+                Action::Not => self.action_not(context),
+                Action::Or => self.action_or(context),
+                Action::Play => self.play(context),
+                Action::Pop => self.action_pop(context),
+                Action::PreviousFrame => self.prev_frame(context),
+                Action::Push(values) => self.action_push(context, &values[..]),
+                Action::PushDuplicate => self.action_push_duplicate(context),
+                Action::RandomNumber => self.action_random_number(context),
+                Action::RemoveSprite => self.action_remove_sprite(context),
+                Action::Return => self.action_return(context),
+                Action::SetMember => self.action_set_member(context),
+                Action::SetProperty => self.action_set_property(context),
+                Action::SetTarget(target) => self.action_set_target(context, &target),
+                Action::SetVariable => self.action_set_variable(context),
+                Action::StackSwap => self.action_stack_swap(context),
+                Action::StartDrag => self.action_start_drag(context),
+                Action::Stop => self.action_stop(context),
+                Action::StopSounds => self.action_stop_sounds(context),
+                Action::StoreRegister(register) => self.action_store_register(context, register),
+                Action::StringAdd => self.action_string_add(context),
+                Action::StringEquals => self.action_string_equals(context),
+                Action::StringExtract => self.action_string_extract(context),
+                Action::StringLength => self.action_string_length(context),
+                Action::StringLess => self.action_string_less(context),
+                Action::Subtract => self.action_subtract(context),
+                Action::TargetPath => self.action_target_path(context),
+                Action::ToggleQuality => self.toggle_quality(context),
+                Action::ToInteger => self.action_to_integer(context),
+                Action::ToNumber => self.action_to_number(context),
+                Action::ToString => self.action_to_string(context),
+                Action::Trace => self.action_trace(context),
+                Action::TypeOf => self.action_type_of(context),
                 Action::WaitForFrame {
                     frame,
                     num_actions_to_skip,
-                } => {
-                    self.action_wait_for_frame(context, frame, num_actions_to_skip, &mut reader)?
-                }
+                } => self.action_wait_for_frame(context, frame, num_actions_to_skip, &mut reader),
                 Action::WaitForFrame2 {
                     num_actions_to_skip,
-                } => self.action_wait_for_frame_2(context, num_actions_to_skip, &mut reader)?,
-                Action::With { .. } => self.action_with(context)?,
-                _ => self.unknown_op(context, action)?,
+                } => self.action_wait_for_frame_2(context, num_actions_to_skip, &mut reader),
+                Action::With { .. } => self.action_with(context),
+                _ => self.unknown_op(context, action),
+            };
+            if let Err(ref e) = result {
+                log::error!("AVM1 error: {}", e);
+                return result;
             }
         }
 
@@ -195,8 +194,10 @@ impl Avm1 {
             let mut var_iter = path.splitn(2, ':');
             match (var_iter.next(), var_iter.next()) {
                 (Some(var_name), None) => return Some((start, var_name)),
-                (Some(path), Some(var_name)) => if let Some(node) = Self::resolve_slash_path(start, root, path) {
-                    return Some((node, var_name));
+                (Some(path), Some(var_name)) => {
+                    if let Some(node) = Self::resolve_slash_path(start, root, path) {
+                        return Some((node, var_name));
+                    }
                 }
                 _ => (),
             }
@@ -321,8 +322,8 @@ impl Avm1 {
 
     fn action_call(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let _val = self.pop()?;
-        unimplemented!();
         // TODO(Herschel)
+        Err("Unimplemented action: Call".into())
     }
 
     fn action_call_function(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
@@ -334,7 +335,7 @@ impl Avm1 {
 
         self.stack.push(Value::Undefined);
         // TODO(Herschel)
-        unimplemented!();
+        Err("Unimplemented action: CallFunction".into())
     }
 
     fn action_call_method(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
@@ -347,7 +348,7 @@ impl Avm1 {
 
         self.stack.push(Value::Undefined);
         // TODO(Herschel)
-        unimplemented!();
+        Err("Unimplemented action: CallMethod".into())
     }
 
     fn action_constant_pool(
@@ -373,7 +374,7 @@ impl Avm1 {
         _actions: &[swf::avm1::types::Action],
     ) -> Result<(), Error> {
         // TODO(Herschel)
-        unimplemented!();
+        Err("Unimplemented action: DefineFunction".into())
     }
 
     fn action_define_local(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
@@ -393,13 +394,13 @@ impl Avm1 {
     fn action_delete(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let _name = self.pop()?.as_string()?;
         let _object = self.pop()?.as_object()?;
-        unimplemented!();
+        Err("Unimplemented action: Delete".into())
         // TODO(Herschel)
     }
 
     fn action_delete_2(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let _name = self.pop()?.as_string()?;
-        unimplemented!();
+        Err("Unimplemented action: Delete2".into())
         // TODO(Herschel)
     }
 
@@ -418,14 +419,14 @@ impl Avm1 {
 
     fn action_end_drag(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         // TODO(Herschel)
-        unimplemented!()
+        Err("Unimplemented action: EndDrag".into())
     }
 
     fn action_enumerate(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let _name = self.pop()?.as_string()?;
         self.push(Value::Null); // Sentinel that indicates end of enumeration
                                 // TODO(Herschel): Push each property name onto the stack
-        unimplemented!()
+        Err("Unimplemented action: Enumerate".into())
     }
 
     #[allow(clippy::float_cmp)]
@@ -463,7 +464,7 @@ impl Avm1 {
         let _name = self.pop()?.as_string()?;
         let _object = self.pop()?.as_object()?;
         // TODO(Herschel)
-        unimplemented!();
+        Err("Unimplemented action: GetMember".into())
     }
 
     fn action_get_property(&mut self, context: &mut ActionContext) -> Result<(), Error> {
@@ -482,7 +483,10 @@ impl Avm1 {
                     5 => Value::Number(f64::from(clip.total_frames())),
                     10 => Value::Number(f64::from(clip.rotation())),
                     12 => Value::Number(f64::from(clip.frames_loaded())),
-                    _ => unimplemented!("{}", prop_index),
+                    _ => {
+                        log::error!("GetProperty: Unimplemented property index {}", prop_index);
+                        Value::Undefined
+                    }
                 }
             } else {
                 Value::Undefined
@@ -502,7 +506,11 @@ impl Avm1 {
     fn action_get_variable(&mut self, context: &mut ActionContext) -> Result<(), Error> {
         // Flash 4-style variable
         let var_path = self.pop()?;
-        if let Some((node, var_name)) = Self::resolve_slash_path_variable(context.active_clip, context.root, var_path.as_string()?) {
+        if let Some((node, var_name)) = Self::resolve_slash_path_variable(
+            context.active_clip,
+            context.root,
+            var_path.as_string()?,
+        ) {
             if let Some(clip) = node.read().as_movie_clip() {
                 self.push(clip.get_variable(var_name));
             }
@@ -562,7 +570,11 @@ impl Avm1 {
                 if let Some(frame) = clip.frame_label_to_number(&frame_label) {
                     clip.goto_frame(scene_offset + frame, !set_playing)
                 } else {
-                    log::warn!("ActionGotoFrame2 failed: Movie clip {} does not contain frame label '{}'", clip.id(), frame_label);
+                    log::warn!(
+                        "ActionGotoFrame2 failed: Movie clip {} does not contain frame label '{}'",
+                        clip.id(),
+                        frame_label
+                    );
                 }
             }
             _ => return Err("Expected frame number or label".into()),
@@ -570,11 +582,7 @@ impl Avm1 {
         Ok(())
     }
 
-    fn action_goto_label(
-        &mut self,
-        context: &mut ActionContext,
-        label: &str,
-    ) -> Result<(), Error> {
+    fn action_goto_label(&mut self, context: &mut ActionContext, label: &str) -> Result<(), Error> {
         let mut display_object = context.active_clip.write(context.gc_context);
         if let Some(clip) = display_object.as_movie_clip_mut() {
             if let Some(frame) = clip.frame_label_to_number(label) {
@@ -617,7 +625,7 @@ impl Avm1 {
         }
 
         // TODO(Herschel)
-        unimplemented!("Action::InitArray");
+        Err("Unimplemented action: InitArray".into())
     }
 
     fn action_init_object(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
@@ -628,7 +636,7 @@ impl Avm1 {
         }
 
         // TODO(Herschel)
-        unimplemented!("Action::InitArray");
+        Err("Unimplemented action: InitObject".into())
     }
 
     fn action_jump(
@@ -738,7 +746,7 @@ impl Avm1 {
         let _num_args = self.pop()?.as_i64()?;
         self.push(Value::Undefined);
         // TODO(Herschel)
-        unimplemented!("Action::NewMethod");
+        Err("Unimplemented action: NewMethod".into())
     }
 
     fn action_new_object(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
@@ -749,7 +757,7 @@ impl Avm1 {
         }
         self.push(Value::Undefined);
         // TODO(Herschel)
-        unimplemented!("Action::NewObject");
+        Err("Unimplemented action: NewObject".into())
     }
 
     fn action_or(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
@@ -795,12 +803,19 @@ impl Avm1 {
                 SwfValue::Float(v) => Value::Number(f64::from(*v)),
                 SwfValue::Double(v) => Value::Number(*v),
                 SwfValue::Str(v) => Value::String(v.clone()),
-                SwfValue::Register(_v) => unimplemented!(),
+                SwfValue::Register(_v) => {
+                    log::error!("Register push unimplemented");
+                    Value::Undefined
+                }
                 SwfValue::ConstantPool(i) => {
                     if let Some(value) = self.constant_pool.get(*i as usize) {
                         Value::String(value.clone())
                     } else {
-                        log::warn!("ActionPush: Constant pool index {} out of range (len = {})", i, self.constant_pool.len());
+                        log::warn!(
+                            "ActionPush: Constant pool index {} out of range (len = {})",
+                            i,
+                            self.constant_pool.len()
+                        );
                         Value::Undefined
                     }
                 }
@@ -826,13 +841,13 @@ impl Avm1 {
     fn action_remove_sprite(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let _target = self.pop()?.into_string();
         // TODO(Herschel)
-        unimplemented!("Action::RemoveSprite");
+        Err("Unimplemented action: RemoveSprite".into())
     }
 
     fn action_return(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let _result = self.pop()?;
         // TODO(Herschel)
-        unimplemented!("Action::Return");
+        Err("Unimplemented action: Return".into())
     }
 
     fn action_set_member(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
@@ -840,7 +855,7 @@ impl Avm1 {
         let _name = self.pop()?;
         let _object = self.pop()?;
         // TODO(Herschel)
-        unimplemented!("Action::SetMember");
+        Err("Unimplemented action: SetMember".into())
     }
 
     fn action_set_property(&mut self, context: &mut ActionContext) -> Result<(), Error> {
@@ -848,9 +863,7 @@ impl Avm1 {
         let prop_index = self.pop()?.as_u32()? as usize;
         let clip_path = self.pop()?;
         let path = clip_path.as_string()?;
-        if let Some(clip) =
-            Avm1::resolve_slash_path(context.active_clip, context.root, path)
-        {
+        if let Some(clip) = Avm1::resolve_slash_path(context.active_clip, context.root, path) {
             if let Some(clip) = clip.write(context.gc_context).as_movie_clip_mut() {
                 match prop_index {
                     0 => clip.set_x(value),
@@ -858,7 +871,10 @@ impl Avm1 {
                     2 => clip.set_x_scale(value),
                     3 => clip.set_y_scale(value),
                     10 => clip.set_rotation(value),
-                    _ => log::warn!("ActionSetProperty: Unimplemented property index {}", prop_index),
+                    _ => log::error!(
+                        "ActionSetProperty: Unimplemented property index {}",
+                        prop_index
+                    ),
                 }
             }
         } else {
@@ -871,7 +887,11 @@ impl Avm1 {
         // Flash 4-style variable
         let value = self.pop()?;
         let var_path = self.pop()?;
-        if let Some((node, var_name)) = Self::resolve_slash_path_variable(context.active_clip, context.root, var_path.as_string()?) {
+        if let Some((node, var_name)) = Self::resolve_slash_path_variable(
+            context.active_clip,
+            context.root,
+            var_path.as_string()?,
+        ) {
             if let Some(clip) = node.write(context.gc_context).as_movie_clip_mut() {
                 clip.set_variable(var_name, value);
             }
@@ -906,8 +926,7 @@ impl Avm1 {
     }
 
     fn action_start_drag(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        // TODO(Herschel):
-        Ok(())
+        Err("Unimplemented action: StartDrag".into())
     }
 
     fn action_stop(&mut self, context: &mut ActionContext) -> Result<(), Error> {
@@ -918,8 +937,7 @@ impl Avm1 {
     }
 
     fn action_stop_sounds(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        // TODO(Herschel)
-        Ok(())
+        Err("Unimplemented action: StopSounds".into())
     }
 
     fn action_store_register(
@@ -929,7 +947,7 @@ impl Avm1 {
     ) -> Result<(), Error> {
         // Does NOT pop the value from the stack.
         let _val = self.stack.last().ok_or("Stack underflow")?;
-        unimplemented!("Action::StoreRegister");
+        Err("Unimplemented action: StoreRegister".into())
     }
 
     fn action_string_add(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
@@ -999,7 +1017,7 @@ impl Avm1 {
         // TODO(Herschel)
         let _clip = self.pop()?.as_object()?;
         self.push(Value::Undefined);
-        unimplemented!("Action::TargetPath");
+        Err("Unimplemented action: TargetPath".into())
     }
 
     fn toggle_quality(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
@@ -1084,7 +1102,7 @@ impl Avm1 {
 
     fn action_with(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let _object = self.pop()?.as_object()?;
-        unimplemented!("Action::With");
+        Err("Unimplemented action: With".into())
     }
 }
 
@@ -1121,7 +1139,10 @@ impl Value {
             Value::Bool(true) => 1.0,
             Value::Number(v) => v,
             Value::String(v) => v.parse().unwrap_or(NAN), // TODO(Herschel): Handle Infinity/etc.?
-            Value::Object(_object) => unimplemented!(),   // TODO(Herschel)
+            Value::Object(_object) => {
+                log::error!("Unimplemented: Object ToNumber");
+                0.0
+            }
         }
     }
 
