@@ -400,6 +400,8 @@ impl RenderBackend for WebCanvasRenderBackend {
             )
             .unwrap();
 
+        log::info!("{:?}", matrix);
+
         let color_transform = &transform.color_transform;
         if color_transform.r_mult == 1.0
             && color_transform.g_mult == 1.0
@@ -491,6 +493,8 @@ fn swf_shape_to_svg(
                 (shape.shape_bounds.y_max - shape.shape_bounds.y_min).get(),
             ),
         )
+        // preserveAspectRatio must be off or Firefox will fudge with the dimensions when we draw an image onto canvas.
+        .set("preserveAspectRatio", "none")
         .set("xmlns:xlink", "http://www.w3.org/1999/xlink");
 
     let width = (shape.shape_bounds.x_max - shape.shape_bounds.x_min).get() as f32;
