@@ -82,14 +82,18 @@ fn write_zlib_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
     use flate2::write::ZlibEncoder;
     use flate2::Compression;
     let mut encoder = ZlibEncoder::new(&mut output, Compression::best());
-    encoder.write_all(&swf_body)
+    encoder.write_all(&swf_body)?;
+    encoder.finish()?;
+    Ok(())
 }
 
 #[cfg(feature = "libflate")]
 fn write_zlib_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
     use libflate::zlib::Encoder;
     let mut encoder = Encoder::new(&mut output)?;
-    encoder.write_all(&swf_body)
+    encoder.write_all(&swf_body)?;
+    encoder.finish().into_result()?;
+    Ok(())
 }
 
 #[cfg(not(any(feature = "flate2", feature = "libflate")))]
