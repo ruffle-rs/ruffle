@@ -236,6 +236,18 @@ pub struct FileAttributes {
 
 #[derive(Debug, PartialEq)]
 pub struct FrameLabel {
+    pub label: String,
+    pub is_anchor: bool,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct DefineSceneAndFrameLabelData {
+    pub scenes: Vec<FrameLabelData>,
+    pub frame_labels: Vec<FrameLabelData>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct FrameLabelData {
     pub frame_num: u32,
     pub label: String,
 }
@@ -442,6 +454,7 @@ pub enum Tag {
 
     Protect(Option<String>),
     CsmTextSettings(CsmTextSettings),
+    DebugId(DebugId),
     DefineBinaryData {
         id: CharacterId,
         data: Vec<u8>,
@@ -489,7 +502,7 @@ pub enum Tag {
     DefineText(Box<Text>),
     DefineVideoStream(DefineVideoStream),
     DoAbc(DoAbc),
-    DoAction(Vec<u8>),
+    DoAction(DoAction),
     DoInitAction {
         id: CharacterId,
         action_data: Vec<u8>,
@@ -504,40 +517,30 @@ pub enum Tag {
         url: String,
         imports: Vec<ExportedAsset>,
     },
-    JpegTables(Vec<u8>),
-    SetBackgroundColor(Color),
+    JpegTables(JpegTables),
+    SetBackgroundColor(SetBackgroundColor),
     SetTabIndex {
         depth: Depth,
         tab_index: u16,
     },
-    SoundStreamBlock(Vec<u8>),
-    SoundStreamHead(Box<SoundStreamInfo>),
-    SoundStreamHead2(Box<SoundStreamInfo>),
-    StartSound {
-        id: CharacterId,
-        sound_info: Box<SoundInfo>,
-    },
+    SoundStreamBlock(SoundStreamBlock),
+    SoundStreamHead(Box<SoundStreamHead>),
+    SoundStreamHead2(Box<SoundStreamHead>),
+    StartSound(StartSound),
     StartSound2 {
         class_name: String,
         sound_info: Box<SoundInfo>,
     },
     SymbolClass(Vec<SymbolClassLink>),
     PlaceObject(Box<PlaceObject>),
-    RemoveObject {
-        depth: Depth,
-        character_id: Option<CharacterId>,
-    },
+    RemoveObject(RemoveObject),
     VideoFrame(VideoFrame),
     FileAttributes(FileAttributes),
 
-    FrameLabel {
-        label: String,
-        is_anchor: bool,
-    },
-    DefineSceneAndFrameLabelData {
-        scenes: Vec<FrameLabel>,
-        frame_labels: Vec<FrameLabel>,
-    },
+    FrameLabel(FrameLabel),
+    DefineSceneAndFrameLabelData(DefineSceneAndFrameLabelData),
+
+    ProductInfo(ProductInfo),
 
     Unknown {
         tag_code: u16,
@@ -550,6 +553,14 @@ pub struct ExportedAsset {
     pub id: CharacterId,
     pub name: String,
 }
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct RemoveObject {
+    pub depth: Depth,
+    pub character_id: Option<CharacterId>,
+}
+
+pub type SetBackgroundColor = Color;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct SymbolClassLink {
@@ -601,6 +612,12 @@ pub struct SoundEnvelopePoint {
     pub sample: u32,
     pub left_volume: f32,
     pub right_volume: f32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct StartSound {
+    pub id: CharacterId,
+    pub sound_info: Box<SoundInfo>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -750,12 +767,14 @@ pub struct SoundFormat {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct SoundStreamInfo {
+pub struct SoundStreamHead {
     pub stream_format: SoundFormat,
     pub playback_format: SoundFormat,
     pub num_samples_per_block: u16,
     pub latency_seek: i16,
 }
+
+pub type SoundStreamBlock = Vec<u8>;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Button {
@@ -1068,3 +1087,23 @@ pub struct DoAbc {
     pub is_lazy_initialize: bool,
     pub data: Vec<u8>,
 }
+
+pub type DoAction = Vec<u8>;
+
+pub type JpegTables = Vec<u8>;
+
+/// `ProductInfo` contains information about the software used to generate the SWF.
+/// Not documented in the SWF19 reference. Emitted by mxmlc.
+/// See http://wahlers.com.br/claus/blog/undocumented-swf-tags-written-by-mxmlc/
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ProductInfo {
+    pub product_id: u32,
+    pub edition: u32,
+    pub major_version: u8,
+    pub minor_version: u8,
+    pub build_number: u64,
+    pub compilation_date: u64,
+}
+
+/// `DebugId` is a UUID written to debug SWFs and used by the Flash Debugger.
+pub type DebugId = [u8; 16];

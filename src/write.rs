@@ -142,6 +142,10 @@ pub trait SwfWrite<W: Write> {
         self.get_inner().write_u32::<LittleEndian>(n)
     }
 
+    fn write_u64(&mut self, n: u64) -> Result<()> {
+        self.get_inner().write_u64::<LittleEndian>(n)
+    }
+
     fn write_i8(&mut self, n: i8) -> Result<()> {
         self.get_inner().write_i8(n)
     }
@@ -891,7 +895,7 @@ impl<W: Write> Writer<W> {
             // TODO: Allow clone of color.
             Tag::SetBackgroundColor(ref color) => {
                 self.write_tag_header(TagCode::SetBackgroundColor, 3)?;
-                self.write_rgb(color)?;
+                self.write_rgb(&color)?;
             }
 
             Tag::ScriptLimits {
@@ -922,17 +926,14 @@ impl<W: Write> Writer<W> {
                 }
             },
 
-            Tag::RemoveObject {
-                depth,
-                character_id,
-            } => {
-                if let Some(id) = character_id {
+            Tag::RemoveObject(ref remove_object) => {
+                if let Some(id) = remove_object.character_id {
                     self.write_tag_header(TagCode::RemoveObject, 4)?;
                     self.write_u16(id)?;
                 } else {
                     self.write_tag_header(TagCode::RemoveObject2, 2)?;
                 }
-                self.write_i16(depth)?;
+                self.write_i16(remove_object.depth)?;
             }
 
             Tag::SoundStreamBlock(ref data) => {
@@ -940,15 +941,16 @@ impl<W: Write> Writer<W> {
                 self.output.write_all(data)?;
             }
 
-            Tag::SoundStreamHead(ref sound_stream_info) => {
-                self.write_sound_stream_head(sound_stream_info, 1)?;
+            Tag::SoundStreamHead(ref sound_stream_head) => {
+                self.write_sound_stream_head(sound_stream_head, 1)?;
             }
 
-            Tag::SoundStreamHead2(ref sound_stream_info) => {
-                self.write_sound_stream_head(sound_stream_info, 2)?;
+            Tag::SoundStreamHead2(ref sound_stream_head) => {
+                self.write_sound_stream_head(sound_stream_head, 2)?;
             }
 
-            Tag::StartSound { id, ref sound_info } => {
+            Tag::StartSound(ref start_sound) => {
+                let sound_info = &start_sound.sound_info;
                 let length = 3
                     + if sound_info.in_sample.is_some() { 4 } else { 0 }
                     + if sound_info.out_sample.is_some() {
@@ -963,7 +965,7 @@ impl<W: Write> Writer<W> {
                         0
                     };
                 self.write_tag_header(TagCode::StartSound, length)?;
-                self.write_u16(id)?;
+                self.write_u16(start_sound.id)?;
                 self.write_sound_info(sound_info)?;
             }
 
@@ -1032,10 +1034,10 @@ impl<W: Write> Writer<W> {
                 self.write_u32(flags)?;
             }
 
-            Tag::FrameLabel {
+            Tag::FrameLabel(FrameLabel {
                 ref label,
                 is_anchor,
-            } => {
+            }) => {
                 // TODO: Assert proper version
                 let is_anchor = is_anchor && self.version >= 6;
                 let length = label.len() as u32 + if is_anchor { 2 } else { 1 };
@@ -1046,10 +1048,9 @@ impl<W: Write> Writer<W> {
                 }
             }
 
-            Tag::DefineSceneAndFrameLabelData {
-                ref scenes,
-                ref frame_labels,
-            } => self.write_define_scene_and_frame_label_data(scenes, frame_labels)?,
+            Tag::DefineSceneAndFrameLabelData(ref data) => self.write_define_scene_and_frame_label_data(data)?,
+            Tag::ProductInfo(ref product_info) => self.write_product_info(product_info)?,
+            Tag::DebugId(ref debug_id) => self.write_debug_id(debug_id)?,
 
             Tag::Unknown { tag_code, ref data } => {
                 self.write_tag_code_and_length(tag_code, data.len() as u32)?;
@@ -1492,19 +1493,18 @@ impl<W: Write> Writer<W> {
 
     fn write_define_scene_and_frame_label_data(
         &mut self,
-        scenes: &[FrameLabel],
-        frame_labels: &[FrameLabel],
+        data: &DefineSceneAndFrameLabelData,
     ) -> Result<()> {
-        let mut buf = Vec::with_capacity((scenes.len() + frame_labels.len()) * 4);
+        let mut buf = Vec::with_capacity((data.scenes.len() + data.frame_labels.len()) * 4);
         {
             let mut writer = Writer::new(&mut buf, self.version);
-            writer.write_encoded_u32(scenes.len() as u32)?;
-            for scene in scenes {
+            writer.write_encoded_u32(data.scenes.len() as u32)?;
+            for scene in &data.scenes {
                 writer.write_encoded_u32(scene.frame_num)?;
                 writer.write_c_string(&scene.label)?;
             }
-            writer.write_encoded_u32(frame_labels.len() as u32)?;
-            for frame_label in frame_labels {
+            writer.write_encoded_u32(data.frame_labels.len() as u32)?;
+            for frame_label in &data.frame_labels {
                 writer.write_encoded_u32(frame_label.frame_num)?;
                 writer.write_c_string(&frame_label.label)?;
             }
@@ -2261,7 +2261,7 @@ impl<W: Write> Writer<W> {
 
     fn write_sound_stream_head(
         &mut self,
-        stream_info: &SoundStreamInfo,
+        stream_head: &SoundStreamHead,
         version: u8,
     ) -> Result<()> {
         let tag_code = if version >= 2 {
@@ -2270,17 +2270,17 @@ impl<W: Write> Writer<W> {
             TagCode::SoundStreamHead
         };
         // MP3 compression has added latency seek field.
-        let length = if stream_info.stream_format.compression == AudioCompression::Mp3 {
+        let length = if stream_head.stream_format.compression == AudioCompression::Mp3 {
             6
         } else {
             4
         };
         self.write_tag_header(tag_code, length)?;
-        self.write_sound_format(&stream_info.playback_format)?;
-        self.write_sound_format(&stream_info.stream_format)?;
-        self.write_u16(stream_info.num_samples_per_block)?;
-        if stream_info.stream_format.compression == AudioCompression::Mp3 {
-            self.write_i16(stream_info.latency_seek)?;
+        self.write_sound_format(&stream_head.playback_format)?;
+        self.write_sound_format(&stream_head.stream_format)?;
+        self.write_u16(stream_head.num_samples_per_block)?;
+        if stream_head.stream_format.compression == AudioCompression::Mp3 {
+            self.write_i16(stream_head.latency_seek)?;
         }
         Ok(())
     }
@@ -2670,6 +2670,21 @@ impl<W: Write> Writer<W> {
             VideoCodec::VP6WithAlpha => 5,
         })?;
         Ok(())
+    }
+
+    fn write_product_info(&mut self, product_info: &ProductInfo) -> Result<()> {
+        self.write_tag_header(TagCode::ProductInfo, 26)?;
+        self.write_u32(product_info.product_id)?;
+        self.write_u32(product_info.edition)?;
+        self.write_u8(product_info.major_version)?;
+        self.write_u8(product_info.minor_version)?;
+        self.write_u64(product_info.build_number)?;
+        self.write_u64(product_info.compilation_date)?;
+        Ok(())
+    }
+
+    fn write_debug_id(&mut self, debug_id: &DebugId) -> Result<()> {
+        self.get_inner().write_all(debug_id)
     }
 
     fn write_tag_header(&mut self, tag_code: TagCode, length: u32) -> Result<()> {
