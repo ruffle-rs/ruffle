@@ -47,9 +47,19 @@ impl WebCanvasRenderBackend {
             .map_err(|_| "Expected CanvasRenderingContext2d")?;
 
         let document = web_sys::window().unwrap().document().unwrap();
+
+        // Create a color matrix filter to handle Flash color effects.
+        // Ensure a previous instance of the color matrix filter node doesn't exist.
+        // TODO: Remove it in player.destroy()? This is dangerous if the client page has something with this id...
+        if let Some(element) = document.get_element_by_id("_svgfilter") {
+            element.remove();
+        }
+
         let svg = document
             .create_element_ns(Some("http://www.w3.org/2000/svg"), "svg")
             .map_err(|_| "Couldn't make SVG")?;
+
+        svg.set_id("_svgfilter");
 
         svg.set_attribute("width", "0")
             .map_err(|_| "Couldn't make SVG")?;
@@ -64,18 +74,14 @@ impl WebCanvasRenderBackend {
         )
         .map_err(|_| "Couldn't make SVG")?;
 
-        // Ensure a previous instance of the color matrix filter node doesn't exist.
-        // TODO: Remove it in player.destroy()? This is dangerous if the client page has something with this id...
-        if let Some(element) = document.get_element_by_id("_cm") {
-            element.remove();
-        }
-
-        // Create a color matrix filter to handle Flash color effects.
         let filter = document
             .create_element_ns(Some("http://www.w3.org/2000/svg"), "filter")
             .map_err(|_| "Couldn't make SVG filter")?;
         filter
             .set_attribute("id", "_cm")
+            .map_err(|_| "Couldn't make SVG filter")?;
+        filter
+            .set_attribute("color-interpolation-filters", "sRGB")
             .map_err(|_| "Couldn't make SVG filter")?;
 
         let color_matrix = document
@@ -92,8 +98,11 @@ impl WebCanvasRenderBackend {
             .append_child(&color_matrix.clone())
             .map_err(|_| "append_child failed")?;
 
+        svg.append_child(&filter)
+            .map_err(|_| "append_child failed")?;
+
         canvas
-            .append_child(&filter)
+            .append_child(&svg)
             .map_err(|_| "append_child failed")?;
 
         let renderer = Self {
