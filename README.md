@@ -20,8 +20,10 @@ use std::fs::File;
 let file = File::open("file.swf").unwrap();
 let reader = BufReader::new(file);
 let swf = swf::read_swf(reader).unwrap();
-println!("The SWF has {} frames", swf.num_frames);
+println!("The SWF has {} frames", swf.header.num_frames);
 ```
+
+Try `cargo run --example reading` in this repository to run this example.
 
 ## Writing
 
@@ -47,6 +49,8 @@ let file = std::fs::File::create("file.swf").unwrap();
 let writer = std::io::BufWriter::new(file);
 swf::write_swf(&swf, writer).unwrap();
 ```
+
+Try `cargo run --example writing` in this repository to run this example.
 
 ## License
 
