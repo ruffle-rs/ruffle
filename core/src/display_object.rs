@@ -95,7 +95,12 @@ pub trait DisplayObject<'gc>: 'gc + Collect {
     fn run_post_frame(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
     fn render(&self, _context: &mut RenderContext<'_, 'gc>) {}
 
-    fn handle_click(&mut self, _pos: (f32, f32)) {}
+    fn as_button(&self) -> Option<&crate::button::Button<'gc>> {
+        None
+    }
+    fn as_button_mut(&mut self) -> Option<&mut crate::button::Button<'gc>> {
+        None
+    }
     fn as_movie_clip(&self) -> Option<&crate::movie_clip::MovieClip<'gc>> {
         None
     }
@@ -110,19 +115,16 @@ pub trait DisplayObject<'gc>: 'gc + Collect {
     }
     fn box_clone(&self) -> Box<dyn DisplayObject<'gc>>;
 
-    fn pick(&self, _: (Twips, Twips)) -> Option<DisplayNode<'gc>> {
-        None
-    }
-
     fn hit_test(&self, _: (Twips, Twips)) -> bool {
         false
     }
 
-    fn handle_event(
-        &mut self,
-        _context: &mut crate::player::UpdateContext<'_, 'gc, '_>,
-        _event: crate::event::ClipEvent,
-    ) {
+    fn mouse_pick(
+        &self,
+        _self_node: DisplayNode<'gc>,
+        _: (Twips, Twips),
+    ) -> Option<DisplayNode<'gc>> {
+        None
     }
 }
 

@@ -55,14 +55,17 @@ impl<'gc> MovieClip<'gc> {
     ) -> Self {
         Self {
             base: Default::default(),
-            static_data: Gc::allocate(gc_context, MovieClipStatic {
-                id,
-                tag_stream_start,
-                tag_stream_len,
-                total_frames: num_frames,
-                audio_stream_info: None,
-                frame_labels: HashMap::new(),
-            }),
+            static_data: Gc::allocate(
+                gc_context,
+                MovieClipStatic {
+                    id,
+                    tag_stream_start,
+                    tag_stream_len,
+                    total_frames: num_frames,
+                    audio_stream_info: None,
+                    frame_labels: HashMap::new(),
+                },
+            ),
             tag_stream_pos: 0,
             is_playing: true,
             goto_queue: Vec::new(),
@@ -170,7 +173,7 @@ impl<'gc> MovieClip<'gc> {
             c: scale_y * cos,
             d: -scale_y * sin,
             tx: matrix.tx,
-            ty: matrix.ty, 
+            ty: matrix.ty,
         };
     }
 
@@ -186,10 +189,7 @@ impl<'gc> MovieClip<'gc> {
             .find(|child| child.read().name() == name)
     }
 
-    pub fn frame_label_to_number(
-        &self,
-        frame_label: &str,
-    ) -> Option<FrameNumber> {
+    pub fn frame_label_to_number(&self, frame_label: &str) -> Option<FrameNumber> {
         self.static_data.frame_labels.get(frame_label).copied()
     }
 
@@ -224,7 +224,10 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn get_variable(&self, var_name: &str) -> avm1::Value {
         // TODO: Value should be Copy (and contain a Cow/GcCell for big objects)
-        self.variables.get(var_name).unwrap_or(&avm1::Value::Undefined).clone()
+        self.variables
+            .get(var_name)
+            .unwrap_or(&avm1::Value::Undefined)
+            .clone()
     }
 
     pub fn set_variable(&mut self, var_name: &str, value: avm1::Value) {
@@ -338,17 +341,31 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
             TagCode::DefineSound => self.define_sound(context, reader, tag_len),
             TagCode::DefineSprite => self.define_sprite(context, reader, tag_len),
             TagCode::DefineText => self.define_text(context, reader),
-            TagCode::FrameLabel => self.frame_label(context, reader, tag_len, cur_frame, &mut static_data),
+            TagCode::FrameLabel => {
+                self.frame_label(context, reader, tag_len, cur_frame, &mut static_data)
+            }
             TagCode::JpegTables => self.jpeg_tables(context, reader, tag_len),
-            TagCode::PlaceObject => self.preload_place_object(context, reader, tag_len, &mut ids, 1),
-            TagCode::PlaceObject2 => self.preload_place_object(context, reader, tag_len, &mut ids, 2),
-            TagCode::PlaceObject3 => self.preload_place_object(context, reader, tag_len, &mut ids, 3),
-            TagCode::PlaceObject4 => self.preload_place_object(context, reader, tag_len, &mut ids, 4),
+            TagCode::PlaceObject => {
+                self.preload_place_object(context, reader, tag_len, &mut ids, 1)
+            }
+            TagCode::PlaceObject2 => {
+                self.preload_place_object(context, reader, tag_len, &mut ids, 2)
+            }
+            TagCode::PlaceObject3 => {
+                self.preload_place_object(context, reader, tag_len, &mut ids, 3)
+            }
+            TagCode::PlaceObject4 => {
+                self.preload_place_object(context, reader, tag_len, &mut ids, 4)
+            }
             TagCode::RemoveObject => self.preload_remove_object(context, reader, &mut ids, 1),
             TagCode::RemoveObject2 => self.preload_remove_object(context, reader, &mut ids, 2),
             TagCode::ShowFrame => self.preload_show_frame(context, reader, &mut cur_frame),
-            TagCode::SoundStreamHead => self.preload_sound_stream_head(context, reader, &mut static_data, 1),
-            TagCode::SoundStreamHead2 => self.preload_sound_stream_head(context, reader, &mut static_data, 2),
+            TagCode::SoundStreamHead => {
+                self.preload_sound_stream_head(context, reader, &mut static_data, 1)
+            }
+            TagCode::SoundStreamHead2 => {
+                self.preload_sound_stream_head(context, reader, &mut static_data, 2)
+            }
             TagCode::SoundStreamBlock => self.preload_sound_stream_block(context, reader, tag_len),
             _ => Ok(()),
         };
@@ -391,19 +408,17 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
         context.transform_stack.pop();
     }
 
-    fn pick(&self, point: (Twips, Twips)) -> Option<DisplayNode<'gc>> {
-        //if self.world_bounds().contains(point) {
-        for child in self.children.values().rev() {
-            if child.read().hit_test(point) {
-                return Some(*child);
-            }
-
-            let button = child.read().pick(point);
-            if button.is_some() {
-                return button;
+    fn mouse_pick(
+        &self,
+        _self_node: DisplayNode<'gc>,
+        point: (Twips, Twips),
+    ) -> Option<DisplayNode<'gc>> {
+        for child in self.children.values() {
+            let result = child.read().mouse_pick(*child, point);
+            if result.is_some() {
+                return result;
             }
         }
-        //}
 
         None
     }
@@ -794,8 +809,13 @@ impl<'gc, 'a> MovieClip<'gc> {
     ) -> DecodeResult {
         let id = reader.read_character_id()?;
         let num_frames = reader.read_u16()?;
-        let mut movie_clip =
-            MovieClip::new_with_data(context.gc_context, id, reader.get_ref().position(), tag_len - 4, num_frames);
+        let mut movie_clip = MovieClip::new_with_data(
+            context.gc_context,
+            id,
+            reader.get_ref().position(),
+            tag_len - 4,
+            num_frames,
+        );
 
         movie_clip.preload(context);
 
@@ -830,7 +850,11 @@ impl<'gc, 'a> MovieClip<'gc> {
         static_data: &mut MovieClipStatic,
     ) -> DecodeResult {
         let frame_label = reader.read_frame_label(tag_len)?;
-        if static_data.frame_labels.insert(frame_label.label, cur_frame).is_some() {
+        if static_data
+            .frame_labels
+            .insert(frame_label.label, cur_frame)
+            .is_some()
+        {
             log::warn!("Movie clip {}: Duplicated frame label", self.id());
         }
         Ok(())
@@ -910,7 +934,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<&'a [u8]>,
-        tag_len: usize,        
+        tag_len: usize,
         version: u8,
     ) -> DecodeResult {
         let place_object = if version == 1 {
@@ -1007,7 +1031,7 @@ impl<'gc, 'a> MovieClip<'gc> {
     #[inline]
     fn remove_object(
         &mut self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<&'a [u8]>,
         version: u8,
     ) -> DecodeResult {
@@ -1016,7 +1040,9 @@ impl<'gc, 'a> MovieClip<'gc> {
         } else {
             reader.read_remove_object_2()
         }?;
-        self.children.remove(&remove_object.depth);
+        if let Some(child) = self.children.remove(&remove_object.depth) {
+            child.write(context.gc_context).set_parent(None);
+        }
         Ok(())
     }
 
@@ -1036,7 +1062,8 @@ impl<'gc, 'a> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         _reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
-        if let (Some(stream_info), None) = (&self.static_data.audio_stream_info, &self.audio_stream) {
+        if let (Some(stream_info), None) = (&self.static_data.audio_stream_info, &self.audio_stream)
+        {
             let slice = crate::tag_utils::SwfSlice {
                 data: std::sync::Arc::clone(context.swf_data),
                 start: self.tag_stream_start() as usize,
@@ -1062,7 +1089,6 @@ impl<'gc, 'a> MovieClip<'gc> {
         Ok(())
     }
 }
-
 
 /// Static data shared between all instances of a movie clip.
 #[allow(dead_code)]

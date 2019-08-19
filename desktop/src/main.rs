@@ -75,7 +75,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                     }
                     WindowEvent::CursorMoved { position, .. } => {
                         mouse_pos = position;
-                        let event = ruffle_core::Event::MouseMove {
+                        let event = ruffle_core::PlayerEvent::MouseMove {
                             x: Twips::from_pixels(position.x),
                             y: Twips::from_pixels(position.y),
                         };
@@ -87,12 +87,12 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                         ..
                     } => {
                         let event = if pressed == ElementState::Pressed {
-                            ruffle_core::Event::MouseDown {
+                            ruffle_core::PlayerEvent::MouseDown {
                                 x: Twips::from_pixels(mouse_pos.x),
                                 y: Twips::from_pixels(mouse_pos.y),
                             }
                         } else {
-                            ruffle_core::Event::MouseUp {
+                            ruffle_core::PlayerEvent::MouseUp {
                                 x: Twips::from_pixels(mouse_pos.x),
                                 y: Twips::from_pixels(mouse_pos.y),
                             }
@@ -100,7 +100,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                         player.handle_event(event);
                     }
                     WindowEvent::CursorLeft { .. } => {
-                        player.handle_event(ruffle_core::Event::MouseLeft)
+                        player.handle_event(ruffle_core::PlayerEvent::MouseLeft)
                     }
                     WindowEvent::CloseRequested => request_close = true,
                     _ => (),

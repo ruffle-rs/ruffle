@@ -162,6 +162,9 @@ impl Avm1 {
         root: DisplayNode<'gc>,
         mut path: &str,
     ) -> Option<DisplayNode<'gc>> {
+        if path == "/" {
+            log::warn!("ROOT");
+        }
         let mut cur_clip = if path.bytes().nth(0).unwrap_or(0) == b'/' {
             path = &path[1..];
             root
@@ -771,8 +774,11 @@ impl Avm1 {
 
     fn play(&mut self, context: &mut ActionContext) -> Result<(), Error> {
         let mut display_object = context.active_clip.write(context.gc_context);
-        let clip = display_object.as_movie_clip_mut().unwrap();
-        clip.play();
+        if let Some(clip) = display_object.as_movie_clip_mut() {
+            clip.play()
+        } else {
+            log::warn!("Play failed: Not a MovieClip");
+        }
         Ok(())
     }
 
@@ -909,6 +915,7 @@ impl Avm1 {
         } else if let Some(clip) =
             Avm1::resolve_slash_path(context.start_clip, context.root, target)
         {
+            log::warn!("Path: {}", target);
             context.active_clip = clip;
         } else {
             log::warn!("SetTarget failed: {} not found", target);
@@ -931,8 +938,15 @@ impl Avm1 {
 
     fn action_stop(&mut self, context: &mut ActionContext) -> Result<(), Error> {
         let mut display_object = context.active_clip.write(context.gc_context);
-        let clip = display_object.as_movie_clip_mut().unwrap();
-        clip.stop();
+        if let None = display_object.as_movie_clip_mut() {
+            log::warn!("NO");
+        }
+
+        if let Some(clip) = display_object.as_movie_clip_mut() {
+            clip.stop();
+        } else {
+            log::warn!("Stop failed: Not a MovieClip");
+        }
         Ok(())
     }
 

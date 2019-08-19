@@ -6,7 +6,7 @@ mod bounding_box;
 mod button;
 mod character;
 mod color_transform;
-mod event;
+mod events;
 mod font;
 mod graphic;
 mod library;
@@ -22,7 +22,7 @@ mod transform;
 
 pub mod backend;
 
-pub use event::Event;
+pub use events::PlayerEvent;
 pub use player::Player;
 pub use swf;
 pub use swf::Color;

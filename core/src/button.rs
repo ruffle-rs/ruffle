@@ -1,5 +1,5 @@
 use crate::display_object::{DisplayObject, DisplayObjectBase};
-use crate::event::ClipEvent;
+use crate::events::ButtonEvent;
 use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use std::collections::BTreeMap;
@@ -113,18 +113,53 @@ impl<'gc> Button<'gc> {
         self.children[i].values_mut()
     }
 
+    pub fn handle_button_event(
+        &mut self,
+        context: &mut crate::player::UpdateContext<'_, 'gc, '_>,
+        event: ButtonEvent,
+    ) {
+        let new_state = match event {
+            ButtonEvent::RollOut => ButtonState::Up,
+            ButtonEvent::RollOver => ButtonState::Over,
+            ButtonEvent::Press => ButtonState::Down,
+            ButtonEvent::Release => ButtonState::Over,
+            ButtonEvent::KeyPress(key) => {
+                self.run_actions(context, swf::ButtonActionCondition::KeyPress, Some(key));
+                self.state
+            }
+        };
+
+        match (self.state, new_state) {
+            (ButtonState::Up, ButtonState::Over) => {
+                self.run_actions(context, swf::ButtonActionCondition::IdleToOverUp, None);
+            }
+            (ButtonState::Over, ButtonState::Up) => {
+                self.run_actions(context, swf::ButtonActionCondition::OverUpToIdle, None);
+            }
+            (ButtonState::Over, ButtonState::Down) => {
+                self.run_actions(context, swf::ButtonActionCondition::OverUpToOverDown, None);
+            }
+            (ButtonState::Down, ButtonState::Over) => {
+                self.run_actions(context, swf::ButtonActionCondition::OverDownToOverUp, None);
+            }
+            _ => (),
+        }
+
+        self.state = new_state;
+    }
+
     fn run_actions(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         condition: swf::ButtonActionCondition,
         key_code: Option<u8>,
     ) {
-        for action in &self.static_data.actions {
-            if action.condition == condition && action.key_code == key_code {
-                // Note that AVM1 buttons run actions relative to their parent, not themselves.
-                context
-                    .actions
-                    .push((self.parent().unwrap(), action.action_data.clone()));
+        if let Some(parent) = self.parent() {
+            for action in &self.static_data.actions {
+                if action.condition == condition && action.key_code == key_code {
+                    // Note that AVM1 buttons run actions relative to their parent, not themselves.
+                    context.actions.push((parent, action.action_data.clone()));
+                }
             }
         }
     }
@@ -180,45 +215,29 @@ impl<'gc> DisplayObject<'gc> for Button<'gc> {
                 return true;
             }
         }
-        //}
 
         false
     }
 
-    fn handle_event(
-        &mut self,
-        context: &mut crate::player::UpdateContext<'_, 'gc, '_>,
-        event: ClipEvent,
-    ) {
-        let new_state = match event {
-            ClipEvent::RollOut => ButtonState::Up,
-            ClipEvent::RollOver => ButtonState::Over,
-            ClipEvent::Press => ButtonState::Down,
-            ClipEvent::Release => ButtonState::Over,
-            ClipEvent::KeyPress(key) => {
-                self.run_actions(context, swf::ButtonActionCondition::KeyPress, Some(key));
-                self.state
-            }
-            _ => self.state,
-        };
-
-        match (self.state, new_state) {
-            (ButtonState::Up, ButtonState::Over) => {
-                self.run_actions(context, swf::ButtonActionCondition::IdleToOverUp, None);
-            }
-            (ButtonState::Over, ButtonState::Up) => {
-                self.run_actions(context, swf::ButtonActionCondition::OverUpToIdle, None);
-            }
-            (ButtonState::Over, ButtonState::Down) => {
-                self.run_actions(context, swf::ButtonActionCondition::OverUpToOverDown, None);
-            }
-            (ButtonState::Down, ButtonState::Over) => {
-                self.run_actions(context, swf::ButtonActionCondition::OverDownToOverUp, None);
-            }
-            _ => (),
+    fn mouse_pick(
+        &self,
+        self_node: DisplayNode<'gc>,
+        point: (Twips, Twips),
+    ) -> Option<DisplayNode<'gc>> {
+        // The button is hovered if the mouse is over any child nodes.
+        if self.hit_test(point) {
+            Some(self_node)
+        } else {
+            None
         }
+    }
 
-        self.state = new_state;
+    fn as_button(&self) -> Option<&Self> {
+        Some(self)
+    }
+
+    fn as_button_mut(&mut self) -> Option<&mut Self> {
+        Some(self)
     }
 }
 
