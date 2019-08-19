@@ -370,7 +370,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
         self.update_roll_over();
 
         // GC
-        self.gc_arena.collect_all();
+        //self.gc_arena.collect_all();
     }
 
     pub fn render(&mut self) {

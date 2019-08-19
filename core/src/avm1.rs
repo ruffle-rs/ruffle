@@ -422,7 +422,8 @@ impl Avm1 {
 
     fn action_end_drag(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         // TODO(Herschel)
-        Err("Unimplemented action: EndDrag".into())
+        log::error!("Unimplemented action: EndDrag");
+        Ok(())
     }
 
     fn action_enumerate(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
@@ -933,15 +934,21 @@ impl Avm1 {
     }
 
     fn action_start_drag(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        Err("Unimplemented action: StartDrag".into())
+        let _target = self.pop()?;
+        let _lock_center = self.pop()?.as_bool();
+        let constrain = self.pop()?.as_bool();
+        if constrain {
+            let _y2 = self.pop()?;
+            let _x2 = self.pop()?;
+            let _y1 = self.pop()?;
+            let _x1 = self.pop()?;
+        }
+        log::error!("Unimplemented action: StartDrag");
+        Ok(())
     }
 
     fn action_stop(&mut self, context: &mut ActionContext) -> Result<(), Error> {
         let mut display_object = context.active_clip.write(context.gc_context);
-        if let None = display_object.as_movie_clip_mut() {
-            log::warn!("NO");
-        }
-
         if let Some(clip) = display_object.as_movie_clip_mut() {
             clip.stop();
         } else {
