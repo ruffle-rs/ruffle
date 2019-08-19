@@ -64,9 +64,8 @@ impl<'gc> DisplayObject<'gc> for Graphic<'gc> {
 }
 
 unsafe impl<'gc> gc_arena::Collect for Graphic<'gc> {
-    #[inline]
-    fn needs_trace() -> bool {
-        false
+    fn trace(&self, cc: gc_arena::CollectionContext) {
+        self.static_data.trace(cc);
     }
 }
 

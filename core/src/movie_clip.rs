@@ -438,6 +438,7 @@ unsafe impl<'gc> gc_arena::Collect for MovieClip<'gc> {
         for child in self.children.values() {
             child.trace(cc);
         }
+        self.static_data.trace(cc);
     }
 }
 

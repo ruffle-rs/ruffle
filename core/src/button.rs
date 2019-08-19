@@ -249,6 +249,7 @@ unsafe impl<'gc> gc_arena::Collect for Button<'gc> {
                 child.trace(cc);
             }
         }
+        self.static_data.trace(cc);
     }
 }
 
