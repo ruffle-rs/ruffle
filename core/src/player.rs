@@ -132,6 +132,8 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
             if needs_render {
                 self.render();
             }
+
+            self.audio.tick();
         }
     }
 
