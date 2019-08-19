@@ -413,7 +413,7 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
         _self_node: DisplayNode<'gc>,
         point: (Twips, Twips),
     ) -> Option<DisplayNode<'gc>> {
-        for child in self.children.values() {
+        for child in self.children.values().rev() {
             let result = child.read().mouse_pick(*child, point);
             if result.is_some() {
                 return result;
