@@ -2,7 +2,7 @@
  <a href="https://ruffle.rs"><img src="https://ruffle.rs/assets/logo.png" alt="Ruffle"></a>
 </p>
 <p align="center">
- <a href="https://travis-ci.org/ruffle-rs/ruffle">
+ <a href="https://circleci.com/gh/ruffle-rs/ruffle">
   <img src="https://img.shields.io/circleci/build/github/ruffle-rs/ruffle" alt="Travis Build Status">
  </a>
   <a href="https://discord.gg/J8hgCQN">
