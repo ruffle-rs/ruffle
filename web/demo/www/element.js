@@ -5,26 +5,20 @@ ruffle_tmpl.innerHTML = `
     <canvas id="player"></canvas>
 `;
 
-class RuffleObjectShadow {
-    constructor(elem) {
-        this.params = RuffleObjectShadow.params_of(elem);
-        this.oldelem = elem;
-        this.elem = document.createElement("div");
-        for (let attrib of this.oldelem.attributes) {
-            if (attrib.specified) {
-                this.elem.setAttribute(attrib.name, attrib.value);
-            }
-        }
+class RuffleObjectShadow extends HTMLElement {
+    constructor() {
+        super();
 
-        this.shadow = this.elem.attachShadow({mode: 'closed'});
+        this.params = RuffleObjectShadow.params_of(this);
+
+        this.shadow = this.attachShadow({mode: 'closed'});
         this.shadow.appendChild(ruffle_tmpl.content.cloneNode(true));
 
         this.canvas = this.shadow.getElementById("player");
         this.ruffle = null;
+    }
 
-        //Swap elements around.
-        elem.parentElement.replaceChild(this.elem, elem);
-
+    connected() {
         //Kick off the SWF download.
         if (this.params.movie) {
             fetch(this.params.movie).then(response => {
@@ -57,9 +51,36 @@ class RuffleObjectShadow {
     static wrap_tree(elem) {
         for (let node of elem.getElementsByTagName("object")) {
             if (node.type === "application/x-shockwave-flash") {
-                new RuffleObjectShadow(node);
+                RuffleObjectShadow.replace_native_object(node);
             }
         }
+    }
+
+    static replace_native_object(elem) {
+        var ruffle_obj = document.createElement("ruffle-object");
+        for (let attrib of elem.attributes) {
+            if (attrib.specified) {
+                ruffle_obj.setAttribute(attrib.name, attrib.value);
+            }
+        }
+
+        for (let node of elem.children) {
+            ruffle_obj.appendChild(node);
+        }
+
+        //TODO: Preserve event handlers.
+
+        //Swap elements around.
+        //
+        //Unfortunately, this isn't entirely transparent: Sites that have
+        //manually created a Flash tag and want to communicate with it might
+        //hold a reference to the old, disconnected object. We need to intercept
+        //that kind of usage somehow.
+        //
+        //If JS tries to grab the object from the DOM again, then we're fine,
+        //and we can present ourselves as a perfectly normal object tag in every
+        //way except `nodeName`.
+        elem.parentElement.replaceChild(ruffle_obj, elem);
     }
 }
 
@@ -73,3 +94,5 @@ const observer = new MutationObserver(function (mutationsList, observer) {
 
 RuffleObjectShadow.wrap_tree(document);
 observer.observe(document, { childList: true, subtree: true});
+
+window.customElements.define("ruffle-object", RuffleObjectShadow);
