@@ -32,8 +32,17 @@ struct BitmapData {
 
 impl WebCanvasRenderBackend {
     pub fn new(canvas: &HtmlCanvasElement) -> Result<Self, Box<dyn std::error::Error>> {
+        // Request the CanvasRenderingContext2d.
+        // Disable alpha for possible speedup.
+        // TODO: Allow user to enable transparent background (transparent wmode in legacy Flash).
+        let context_options = js_sys::Object::new();
+        let _ = js_sys::Reflect::set(
+            &context_options,
+            &"alpha".into(),
+            &wasm_bindgen::JsValue::FALSE,
+        );
         let context: CanvasRenderingContext2d = canvas
-            .get_context("2d")
+            .get_context_with_context_options("2d", &context_options)
             .map_err(|_| "Could not create context")?
             .ok_or("Could not create context")?
             .dyn_into()
