@@ -3,7 +3,6 @@ use std::io::Read;
 pub use swf;
 
 pub trait RenderBackend {
-    fn set_movie_dimensions(&mut self, width: u32, height: u32);
     fn set_viewport_dimensions(&mut self, width: u32, height: u32);
     fn register_shape(&mut self, shape: &swf::Shape) -> ShapeHandle;
     fn register_glyph_shape(&mut self, shape: &swf::Glyph) -> ShapeHandle;
@@ -27,6 +26,7 @@ pub trait RenderBackend {
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform);
     fn end_frame(&mut self);
     fn draw_pause_overlay(&mut self);
+    fn draw_letterbox(&mut self, letterbox: Letterbox);
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -35,10 +35,17 @@ pub struct ShapeHandle(pub usize);
 #[derive(Copy, Clone, Debug)]
 pub struct BitmapHandle(pub usize);
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum Letterbox {
+    None,
+    Letterbox(f32),
+    Pillarbox(f32)
+}
+
+
 pub struct NullRenderer;
 
 impl RenderBackend for NullRenderer {
-    fn set_movie_dimensions(&mut self, _width: u32, _height: u32) {}
     fn set_viewport_dimensions(&mut self, _width: u32, _height: u32) {}
     fn register_shape(&mut self, _shape: &swf::Shape) -> ShapeHandle {
         ShapeHandle(0)
@@ -73,6 +80,7 @@ impl RenderBackend for NullRenderer {
     fn clear(&mut self, _color: Color) {}
     fn render_shape(&mut self, _shape: ShapeHandle, _transform: &Transform) {}
     fn draw_pause_overlay(&mut self) {}
+    fn draw_letterbox(&mut self, _letterbox: Letterbox) {}
 }
 
 pub fn glue_swf_jpeg_to_tables(jpeg_tables: &[u8], jpeg_data: &[u8]) -> Vec<u8> {

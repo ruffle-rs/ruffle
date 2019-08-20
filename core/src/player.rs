@@ -1,5 +1,5 @@
 use crate::avm1::Avm1;
-use crate::backend::{audio::AudioBackend, render::RenderBackend};
+use crate::backend::{audio::AudioBackend, render::RenderBackend, render::Letterbox};
 use crate::events::{ButtonEvent, PlayerEvent};
 use crate::library::Library;
 use crate::movie_clip::MovieClip;
@@ -29,6 +29,7 @@ pub struct Player<Audio: AudioBackend, Renderer: RenderBackend> {
     audio: Audio,
     renderer: Renderer,
     transform_stack: TransformStack,
+    view_matrix: Matrix,
 
     gc_arena: GcArena,
     background_color: Color,
@@ -37,8 +38,11 @@ pub struct Player<Audio: AudioBackend, Renderer: RenderBackend> {
     frame_accumulator: f64,
     global_time: u64,
 
+    viewport_width: u32,
+    viewport_height: u32,
     movie_width: u32,
     movie_height: u32,
+    letterbox: Letterbox,
 
     mouse_pos: (Twips, Twips),
     is_mouse_down: bool,
@@ -46,7 +50,7 @@ pub struct Player<Audio: AudioBackend, Renderer: RenderBackend> {
 
 impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
     pub fn new(
-        mut renderer: Renderer,
+        renderer: Renderer,
         audio: Audio,
         swf_data: Vec<u8>,
     ) -> Result<Self, Box<dyn std::error::Error>> {
@@ -60,7 +64,6 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
 
         let movie_width = (header.stage_size.x_max - header.stage_size.x_min).to_pixels() as u32;
         let movie_height = (header.stage_size.y_max - header.stage_size.y_min).to_pixels() as u32;
-        renderer.set_movie_dimensions(movie_width, movie_height);
 
         let mut player = Player {
             swf_data: Arc::new(data),
@@ -79,6 +82,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                 a: 255,
             },
             transform_stack: TransformStack::new(),
+            view_matrix: Default::default(),
 
             gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| GcRoot {
                 library: GcCell::allocate(gc_context, Library::new()),
@@ -101,11 +105,15 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
 
             movie_width,
             movie_height,
+            viewport_width: movie_width,
+            viewport_height: movie_height,
+            letterbox: Letterbox::None,
 
             mouse_pos: (Twips::new(0), Twips::new(0)),
             is_mouse_down: false,
         };
 
+        player.build_matrices();
         player.preload();
 
         Ok(player)
@@ -155,6 +163,16 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
 
     pub fn movie_height(&self) -> u32 {
         self.movie_height
+    }
+
+    pub fn viewport_dimensions(&self) -> (u32, u32) {
+        (self.viewport_width, self.viewport_height)
+    }
+
+    pub fn set_viewport_dimensions(&mut self, width: u32, height: u32) {
+        self.viewport_width = width;
+        self.viewport_height = height;
+        self.build_matrices();
     }
 
     pub fn handle_event(&mut self, event: PlayerEvent) {
@@ -387,6 +405,11 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
         self.renderer.clear(self.background_color.clone());
 
         let (renderer, transform_stack) = (&mut self.renderer, &mut self.transform_stack);
+
+        transform_stack.push(&crate::transform::Transform {
+            matrix: self.view_matrix,
+            ..Default::default()
+        });
         self.gc_arena.mutate(|_gc_context, gc_root| {
             let mut render_context = RenderContext {
                 renderer,
@@ -396,11 +419,13 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
             };
             gc_root.root.read().render(&mut render_context);
         });
+        transform_stack.pop();
 
         if !self.is_playing() {
             self.renderer.draw_pause_overlay();
         }
 
+        self.renderer.draw_letterbox(self.letterbox);
         self.renderer.end_frame();
     }
 
@@ -444,6 +469,41 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
 
             actions = std::mem::replace(&mut update_context.actions, vec![]);
         }
+    }
+
+    fn build_matrices(&mut self) {
+        // Create  view matrix to scale stage into viewport area.
+        let (movie_width, movie_height) = (self.movie_width as f32, self.movie_height as f32);
+        let (viewport_width, viewport_height) =
+            (self.viewport_width as f32, self.viewport_height as f32);
+        let movie_aspect = movie_width / movie_height;
+        let viewport_aspect = viewport_width / viewport_height;
+        let (scale, margin_width, margin_height) = if viewport_aspect > movie_aspect {
+            let scale = viewport_height / movie_height;
+            (scale, (viewport_width - movie_width * scale) / 2.0, 0.0)
+        } else {
+            let scale = viewport_width / movie_width;
+            (scale, 0.0, (viewport_height - movie_height * scale) / 2.0)
+        };
+        self.view_matrix = Matrix {
+            a: scale,
+            b: 0.0,
+            c: 0.0,
+            d: scale,
+            tx: margin_width * 20.0,
+            ty: margin_height * 20.0,
+        };
+
+        // Calculate letterbox dimensions.
+        // TODO: Letterbox should be an option; the original Flash Player defaults to showing content
+        // in the extra margins.
+        self.letterbox = if margin_width > 0.0 {
+            Letterbox::Pillarbox(margin_width)
+        } else if margin_height > 0.0 {
+            Letterbox::Letterbox(margin_height)
+        } else {
+            Letterbox::None
+        };
     }
 }
 

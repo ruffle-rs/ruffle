@@ -54,8 +54,6 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         .gl_window()
         .resize(logical_size.to_physical(hidpi_factor));
 
-    dbg!((player.movie_width(), player.movie_height()));
-
     display.gl_window().set_inner_size(logical_size);
 
     let mut mouse_pos = LogicalPosition::new(0.0, 0.0);
@@ -68,10 +66,14 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                 match event {
                     WindowEvent::Resized(logical_size) => {
                         let size = logical_size.to_physical(hidpi_factor);
+                        player.set_viewport_dimensions(
+                            size.width.ceil() as u32,
+                            size.height.ceil() as u32,
+                        );
                         player.renderer_mut().set_viewport_dimensions(
                             size.width.ceil() as u32,
                             size.height.ceil() as u32,
-                        )
+                        );
                     }
                     WindowEvent::CursorMoved { position, .. } => {
                         mouse_pos = position;

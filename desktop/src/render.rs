@@ -8,7 +8,7 @@ use lyon::{
     path::PathEvent, tessellation, tessellation::FillTessellator, tessellation::StrokeTessellator,
 };
 use ruffle_core::backend::render::swf::{self, FillStyle};
-use ruffle_core::backend::render::{BitmapHandle, Color, RenderBackend, ShapeHandle, Transform};
+use ruffle_core::backend::render::{BitmapHandle, Color, Letterbox, RenderBackend, ShapeHandle, Transform};
 use ruffle_core::shape_utils::{DrawCommand, DrawPath};
 use swf::Twips;
 
@@ -20,12 +20,8 @@ pub struct GliumRenderBackend {
     bitmap_shader_program: glium::Program,
     meshes: Vec<Mesh>,
     textures: Vec<(swf::CharacterId, Texture)>,
-    movie_width: f32,
-    movie_height: f32,
     viewport_width: f32,
     viewport_height: f32,
-    margin_width: f32,
-    margin_height: f32,
     view_matrix: [[f32; 4]; 4],
 }
 
@@ -86,12 +82,8 @@ impl GliumRenderBackend {
             target: None,
             meshes: vec![],
             textures: vec![],
-            movie_width: 500.0,
-            movie_height: 500.0,
             viewport_width: 500.0,
             viewport_height: 500.0,
-            margin_width: 0.0,
-            margin_height: 0.0,
             view_matrix: [[0.0; 4]; 4],
         };
         renderer.build_matrices();
@@ -435,108 +427,16 @@ impl GliumRenderBackend {
     }
 
     fn build_matrices(&mut self) {
-        let movie_aspect = self.movie_width / self.movie_height;
-        let viewport_aspect = self.viewport_width / self.viewport_height;
-        let (scale_x, scale_y, margin_width, margin_height) = if viewport_aspect > movie_aspect {
-            let scale = self.viewport_height / self.movie_height;
-            (
-                self.movie_width / (self.movie_height * viewport_aspect),
-                1.0,
-                (self.viewport_width - self.movie_width * scale) / 2.0,
-                0.0,
-            )
-        } else {
-            let scale = self.viewport_width / self.movie_width;
-            (
-                1.0,
-                self.movie_height / (self.movie_width / viewport_aspect),
-                0.0,
-                (self.viewport_height - self.movie_height * scale) / 2.0,
-            )
-        };
-        self.margin_width = margin_width;
-        self.margin_height = margin_height;
         self.view_matrix = [
-            [scale_x / (self.movie_width as f32 / 2.0), 0.0, 0.0, 0.0],
-            [0.0, -scale_y / (self.movie_height as f32 / 2.0), 0.0, 0.0],
+            [1.0 / (self.viewport_width as f32 / 2.0), 0.0, 0.0, 0.0],
+            [0.0, -1.0 / (self.viewport_height as f32 / 2.0), 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0],
-            [
-                -1.0 + 2.0 * margin_width / self.viewport_width,
-                1.0 - 2.0 * margin_height / self.viewport_height,
-                0.0,
-                1.0,
-            ],
+            [-1.0, 1.0, 0.0, 1.0],
         ];
-    }
-
-    fn draw_letterbox(&mut self) {
-        let target = self.target.as_mut().unwrap();
-        let black = Some((0.0, 0.0, 0.0, 1.0));
-        let margin_width = self.margin_width as u32;
-        let margin_height = self.margin_height as u32;
-        let viewport_width = self.viewport_width as u32;
-        let viewport_height = self.viewport_height as u32;
-        if margin_width > 0 {
-            target.clear(
-                Some(&glium::Rect {
-                    left: 0,
-                    bottom: 0,
-                    width: margin_width,
-                    height: viewport_height,
-                }),
-                black,
-                true,
-                None,
-                None,
-            );
-            target.clear(
-                Some(&glium::Rect {
-                    left: viewport_width - margin_width,
-                    bottom: 0,
-                    width: margin_width,
-                    height: viewport_height,
-                }),
-                black,
-                true,
-                None,
-                None,
-            );
-        } else if margin_height > 0 {
-            target.clear(
-                Some(&glium::Rect {
-                    left: 0,
-                    bottom: 0,
-                    width: viewport_width,
-                    height: margin_height,
-                }),
-                black,
-                true,
-                None,
-                None,
-            );
-            target.clear(
-                Some(&glium::Rect {
-                    left: 0,
-                    bottom: viewport_height - margin_height,
-                    width: viewport_width,
-                    height: margin_height,
-                }),
-                black,
-                true,
-                None,
-                None,
-            );
-        }
     }
 }
 
 impl RenderBackend for GliumRenderBackend {
-    fn set_movie_dimensions(&mut self, width: u32, height: u32) {
-        self.movie_width = width as f32;
-        self.movie_height = height as f32;
-        self.build_matrices();
-    }
-
     fn set_viewport_dimensions(&mut self, width: u32, height: u32) {
         self.viewport_width = width as f32;
         self.viewport_height = height as f32;
@@ -670,8 +570,6 @@ impl RenderBackend for GliumRenderBackend {
     fn end_frame(&mut self) {
         assert!(self.target.is_some());
 
-        self.draw_letterbox();
-
         let target = self.target.take().unwrap();
         target.finish().unwrap();
     }
@@ -786,6 +684,66 @@ impl RenderBackend for GliumRenderBackend {
     }
 
     fn draw_pause_overlay(&mut self) {}
+
+    fn draw_letterbox(&mut self, letterbox: Letterbox) {
+        let target = self.target.as_mut().unwrap();
+        let black = Some((0.0, 0.0, 0.0, 1.0));
+        match letterbox {
+            Letterbox::None => (),
+            Letterbox::Letterbox(margin_height) => {
+                target.clear(
+                    Some(&glium::Rect {
+                        left: 0,
+                        bottom: 0,
+                        width: self.viewport_width as u32,
+                        height: margin_height as u32,
+                    }),
+                    black,
+                    true,
+                    None,
+                    None,
+                );
+                target.clear(
+                    Some(&glium::Rect {
+                        left: 0,
+                        bottom: (self.viewport_height - margin_height) as u32,
+                        width: self.viewport_width as u32,
+                        height: margin_height as u32,
+                    }),
+                    black,
+                    true,
+                    None,
+                    None,
+                );
+            }
+            Letterbox::Pillarbox(margin_width) => {
+                target.clear(
+                    Some(&glium::Rect {
+                        left: 0,
+                        bottom: 0,
+                        width: margin_width as u32,
+                        height: self.viewport_height as u32,
+                    }),
+                    black,
+                    true,
+                    None,
+                    None,
+                );
+                target.clear(
+                    Some(&glium::Rect {
+                        left: (self.viewport_width - margin_width) as u32,
+                        bottom: 0,
+                        width: margin_width as u32,
+                        height: self.viewport_height as u32,
+                    }),
+                    black,
+                    true,
+                    None,
+                    None,
+                );
+            }
+        }
+    }
 }
 
 struct Texture {

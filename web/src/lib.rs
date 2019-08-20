@@ -5,7 +5,7 @@ mod render;
 use crate::{audio::WebAudioBackend, render::WebCanvasRenderBackend};
 use generational_arena::{Arena, Index};
 use js_sys::Uint8Array;
-use ruffle_core::{swf::Twips, PlayerEvent};
+use ruffle_core::{backend::render::RenderBackend, swf::Twips, PlayerEvent};
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
 use web_sys::{Event, EventTarget, HtmlCanvasElement, MouseEvent};
@@ -21,6 +21,9 @@ type AnimationHandler = Closure<dyn FnMut(f64)>;
 
 struct RuffleInstance {
     core: ruffle_core::Player<WebAudioBackend, WebCanvasRenderBackend>,
+    canvas: HtmlCanvasElement,
+    canvas_width: i32,
+    canvas_height: i32,
     timestamp: f64,
     animation_handler: Option<AnimationHandler>, // requestAnimationFrame callback
     animation_handler_id: Option<NonZeroI32>,    // requestAnimationFrame id
@@ -80,14 +83,6 @@ impl Ruffle {
 
         let core = ruffle_core::Player::new(renderer, audio, data)?;
 
-        // let style = canvas.style();
-        // style
-        //     .set_property("width", &format!("{}px", canvas_width))
-        //     .map_err(|_| "Unable to set style")?;
-        // style
-        //     .set_property("height", &format!("{}px", canvas_height))
-        //     .map_err(|_| "Unable to set style")?;
-
         let timestamp = window
             .performance()
             .ok_or_else(|| "Expected performance")?
@@ -96,6 +91,9 @@ impl Ruffle {
         // Create instance.
         let instance = RuffleInstance {
             core,
+            canvas: canvas.clone(),
+            canvas_width: 0, // Intiailize canvas width and height to 0 to force an initial canvas resize.
+            canvas_height: 0,
             animation_handler: None,
             animation_handler_id: None,
             click_callback: None,
@@ -240,6 +238,35 @@ impl Ruffle {
                 instance.timestamp = timestamp;
 
                 instance.core.tick(dt);
+
+                // Check for canvas resize.
+                let canvas_width = instance.canvas.client_width();
+                let canvas_height = instance.canvas.client_height();
+                if instance.canvas_width != canvas_width || instance.canvas_height != canvas_height
+                {
+                    // If a canvas resizes, it's drawing context will get scaled. You must reset
+                    // the width and height attributes of the canvas element to recreate the context.
+                    // (NOT the CSS width/height!)
+                    instance.canvas_width = canvas_width;
+                    instance.canvas_height = canvas_height;
+                    let window = web_sys::window().ok_or_else(|| "Expected window").unwrap();
+                    let pixel_ratio = window.device_pixel_ratio() as f32;
+                    // The actual viewport is scaled by DPI, bigger than CSS pixels.
+                    let viewport_width = (canvas_width as f32 * pixel_ratio) as u32;
+                    let viewport_height = (canvas_height as f32 * pixel_ratio) as u32;
+                    instance.canvas.set_width(viewport_width);
+                    instance.canvas.set_height(viewport_height);
+                    instance
+                        .core
+                        .set_viewport_dimensions(viewport_width, viewport_height);
+                    instance
+                        .core
+                        .renderer_mut()
+                        .set_viewport_dimensions(viewport_width, viewport_height);
+
+                    // Force a re-render if we resize.
+                    instance.core.render();
+                }
 
                 // Request next animation frame.
                 if let Some(handler) = &instance.animation_handler {

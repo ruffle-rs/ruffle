@@ -1,5 +1,5 @@
 use ruffle_core::backend::render::{
-    swf, swf::CharacterId, BitmapHandle, Color, RenderBackend, ShapeHandle, Transform,
+    swf, swf::CharacterId, BitmapHandle, Color, Letterbox, RenderBackend, ShapeHandle, Transform,
 };
 use std::collections::HashMap;
 use wasm_bindgen::JsCast;
@@ -12,15 +12,8 @@ pub struct WebCanvasRenderBackend {
     shapes: Vec<ShapeData>,
     bitmaps: Vec<BitmapData>,
     id_to_bitmap: HashMap<CharacterId, BitmapHandle>,
-    canvas_width: u32,
-    canvas_height: u32,
     viewport_width: u32,
     viewport_height: u32,
-    movie_width: u32,
-    movie_height: u32,
-    view_matrix: ruffle_core::matrix::Matrix,
-    margin_width: u32,
-    margin_height: u32,
 }
 
 struct ShapeData {
@@ -112,90 +105,17 @@ impl WebCanvasRenderBackend {
             shapes: vec![],
             bitmaps: vec![],
             id_to_bitmap: HashMap::new(),
-            canvas_width: 0,
-            canvas_height: 0,
             viewport_width: 0,
             viewport_height: 0,
-            movie_width: 0,
-            movie_height: 0,
-            margin_width: 0,
-            margin_height: 0,
-            view_matrix: Default::default(),
         };
         Ok(renderer)
-    }
-
-    fn build_view_matrix(&mut self) {
-        // Create initial view matrix to scale content into canvas.
-        let (movie_width, movie_height) = (self.movie_width as f32, self.movie_height as f32);
-        let (viewport_width, viewport_height) =
-            (self.viewport_width as f32, self.viewport_height as f32);
-        let movie_aspect = movie_width / movie_height;
-        let viewport_aspect = viewport_width / viewport_height;
-        let (scale, margin_width, margin_height) = if viewport_aspect > movie_aspect {
-            let scale = viewport_height / movie_height;
-            (scale, (viewport_width - movie_width * scale) / 2.0, 0.0)
-        } else {
-            let scale = viewport_width / movie_width;
-            (scale, 0.0, (viewport_height - movie_height * scale) / 2.0)
-        };
-        self.view_matrix = ruffle_core::matrix::Matrix {
-            a: scale,
-            b: 0.0,
-            c: 0.0,
-            d: scale,
-            tx: margin_width * 20.0,
-            ty: margin_height * 20.0,
-        };
-        self.margin_width = margin_width as u32;
-        self.margin_height = margin_height as u32;
-    }
-
-    fn draw_letterbox(&mut self) {
-        self.context.reset_transform().unwrap();
-        self.context.set_fill_style(&"black".into());
-        if self.margin_width > 0 {
-            self.context.fill_rect(
-                0.0,
-                0.0,
-                self.margin_width.into(),
-                self.viewport_height.into(),
-            );
-            self.context.fill_rect(
-                (self.viewport_width - self.margin_width).into(),
-                0.0,
-                self.margin_width.into(),
-                self.viewport_height.into(),
-            );
-        } else if self.margin_height > 0 {
-            self.context.fill_rect(
-                0.0,
-                0.0,
-                self.viewport_width.into(),
-                self.margin_height.into(),
-            );
-            self.context.fill_rect(
-                0.0,
-                (self.viewport_height - self.margin_height).into(),
-                self.viewport_width.into(),
-                self.viewport_height.into(),
-            );
-        }
     }
 }
 
 impl RenderBackend for WebCanvasRenderBackend {
-    fn set_movie_dimensions(&mut self, width: u32, height: u32) {
-        self.movie_width = width;
-        self.movie_height = height;
-    }
-
     fn set_viewport_dimensions(&mut self, width: u32, height: u32) {
-        self.canvas.set_width(width);
-        self.canvas.set_height(height);
         self.viewport_width = width;
         self.viewport_height = height;
-        self.build_view_matrix();
     }
 
     fn register_shape(&mut self, shape: &swf::Shape) -> ShapeHandle {
@@ -344,28 +264,11 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn begin_frame(&mut self) {
-        // Check if the canvas has resized. We have to update the canvas element dimensions
-        // on resize to ensure we render at the proper resolution.
-        let canvas_element: &Element = self.canvas.unchecked_ref();
-        let canvas_width = canvas_element.client_width() as u32;
-        let canvas_height = canvas_element.client_height() as u32;
-        if self.canvas_width != canvas_width || self.canvas_height != canvas_height {
-            self.canvas_width = canvas_width;
-            self.canvas_height = canvas_height;
-            let window = web_sys::window().ok_or_else(|| "Expected window").unwrap();
-            let pixel_ratio = window.device_pixel_ratio() as f32;
-            self.set_viewport_dimensions(
-                (canvas_width as f32 * pixel_ratio) as u32,
-                (canvas_height as f32 * pixel_ratio) as u32,
-            );
-        }
-
         // Reset canvas transform in case it was left in a dirty state.
         self.context.reset_transform().unwrap();
     }
 
     fn end_frame(&mut self) {
-        self.draw_letterbox();
         // Noop
     }
 
@@ -387,7 +290,7 @@ impl RenderBackend for WebCanvasRenderBackend {
             return;
         };
 
-        let matrix = self.view_matrix * transform.matrix;
+        let matrix = transform.matrix; //self.view_matrix * transform.matrix;
 
         self.context
             .set_transform(
@@ -449,6 +352,35 @@ impl RenderBackend for WebCanvasRenderBackend {
         let _ = self
             .context
             .fill_text("Click to Play", width / 2.0, height / 2.0);
+    }
+
+    fn draw_letterbox(&mut self, letterbox: Letterbox) {
+        self.context.reset_transform().unwrap();
+        self.context.set_fill_style(&"black".into());
+
+        match letterbox {
+            Letterbox::None => (),
+            Letterbox::Letterbox(margin_height) => {
+                self.context
+                    .fill_rect(0.0, 0.0, self.viewport_width.into(), margin_height.into());
+                self.context.fill_rect(
+                    0.0,
+                    (self.viewport_height as f32 - margin_height).into(),
+                    self.viewport_width.into(),
+                    self.viewport_height.into(),
+                );
+            }
+            Letterbox::Pillarbox(margin_width) => {
+                self.context
+                    .fill_rect(0.0, 0.0, margin_width.into(), self.viewport_height.into());
+                self.context.fill_rect(
+                    (self.viewport_width as f32 - margin_width).into(),
+                    0.0,
+                    margin_width.into(),
+                    self.viewport_height.into(),
+                );
+            }
+        }
     }
 }
 
