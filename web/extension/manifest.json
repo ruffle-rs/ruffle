@@ -1,0 +1,12 @@
+{
+    "manifest_version": 2,
+    "name": "Ruffle",
+    "version": "0.1.0",
+    "description": "Puts Flash back on the web where it belongs.",
+    "content_scripts": [
+        {
+            "matches": ["*"],
+            "js": ["ruffle.js"]
+        }
+    ]
+}
