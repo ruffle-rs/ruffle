@@ -1,4 +1,5 @@
 import { Ruffle } from "../../pkg/ruffle";
+import "./element";
 
 let sampleFileInput = document.getElementById("sample-file");
 if (sampleFileInput) {
