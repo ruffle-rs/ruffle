@@ -10,6 +10,12 @@ class RuffleObjectShadow {
         this.params = RuffleObjectShadow.params_of(elem);
         this.oldelem = elem;
         this.elem = document.createElement("div");
+        for (let attrib of this.oldelem.attributes) {
+            if (attrib.specified) {
+                this.elem.setAttribute(attrib.name, attrib.value);
+            }
+        }
+
         this.shadow = this.elem.attachShadow({mode: 'closed'});
         this.shadow.appendChild(ruffle_tmpl.content.cloneNode(true));
 
