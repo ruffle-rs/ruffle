@@ -400,8 +400,6 @@ impl RenderBackend for WebCanvasRenderBackend {
             )
             .unwrap();
 
-        log::info!("{:?}", matrix);
-
         let color_transform = &transform.color_transform;
         if color_transform.r_mult == 1.0
             && color_transform.g_mult == 1.0
