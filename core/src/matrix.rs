@@ -10,6 +10,19 @@ pub struct Matrix {
     pub ty: f32,
 }
 
+impl Matrix {
+    pub fn invert(&mut self) {
+        let det = self.a * self.d - self.b * self.c;
+        let a = self.d / det;
+        let b = self.b / -det;
+        let c = self.c / -det;
+        let d = self.a / det;
+        let tx = (self.d * self.tx - self.c * self.ty) / -det;
+        let ty = (self.b * self.tx - self.a * self.ty) / det;
+        *self = Matrix { a, b, c, d, tx, ty };
+    }
+}
+
 impl From<swf::Matrix> for Matrix {
     fn from(matrix: swf::Matrix) -> Matrix {
         Matrix {

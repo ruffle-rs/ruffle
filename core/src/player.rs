@@ -1,5 +1,5 @@
 use crate::avm1::Avm1;
-use crate::backend::{audio::AudioBackend, render::RenderBackend, render::Letterbox};
+use crate::backend::{audio::AudioBackend, render::Letterbox, render::RenderBackend};
 use crate::events::{ButtonEvent, PlayerEvent};
 use crate::library::Library;
 use crate::movie_clip::MovieClip;
@@ -30,6 +30,7 @@ pub struct Player<Audio: AudioBackend, Renderer: RenderBackend> {
     renderer: Renderer,
     transform_stack: TransformStack,
     view_matrix: Matrix,
+    inverse_view_matrix: Matrix,
 
     gc_arena: GcArena,
     background_color: Color,
@@ -83,6 +84,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
             },
             transform_stack: TransformStack::new(),
             view_matrix: Default::default(),
+            inverse_view_matrix: Default::default(),
 
             gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| GcRoot {
                 library: GcCell::allocate(gc_context, Library::new()),
@@ -183,7 +185,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
         | PlayerEvent::MouseDown { x, y }
         | PlayerEvent::MouseUp { x, y } = event
         {
-            self.mouse_pos = (x, y);
+            self.mouse_pos = self.inverse_view_matrix * (Twips::from_pixels(x), Twips::from_pixels(y));
             if self.update_roll_over() {
                 needs_render = true;
             }
@@ -493,6 +495,8 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
             tx: margin_width * 20.0,
             ty: margin_height * 20.0,
         };
+        self.inverse_view_matrix = self.view_matrix;
+        self.inverse_view_matrix.invert();
 
         // Calculate letterbox dimensions.
         // TODO: Letterbox should be an option; the original Flash Player defaults to showing content

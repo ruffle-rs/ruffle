@@ -3,10 +3,10 @@ mod render;
 
 use crate::render::GliumRenderBackend;
 use glutin::{
-    dpi::{LogicalPosition, LogicalSize},
+    dpi::{LogicalSize, PhysicalPosition},
     ContextBuilder, ElementState, EventsLoop, MouseButton, WindowBuilder, WindowEvent,
 };
-use ruffle_core::{backend::render::RenderBackend, swf::Twips, Player};
+use ruffle_core::{backend::render::RenderBackend, Player};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
@@ -56,7 +56,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
 
     display.gl_window().set_inner_size(logical_size);
 
-    let mut mouse_pos = LogicalPosition::new(0.0, 0.0);
+    let mut mouse_pos = PhysicalPosition::new(0.0, 0.0);
     let mut time = Instant::now();
     loop {
         // Poll UI events
@@ -76,10 +76,11 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                         );
                     }
                     WindowEvent::CursorMoved { position, .. } => {
+                        let position = position.to_physical(hidpi_factor);
                         mouse_pos = position;
                         let event = ruffle_core::PlayerEvent::MouseMove {
-                            x: Twips::from_pixels(position.x),
-                            y: Twips::from_pixels(position.y),
+                            x: position.x,
+                            y: position.y,
                         };
                         player.handle_event(event);
                     }
@@ -90,13 +91,13 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                     } => {
                         let event = if pressed == ElementState::Pressed {
                             ruffle_core::PlayerEvent::MouseDown {
-                                x: Twips::from_pixels(mouse_pos.x),
-                                y: Twips::from_pixels(mouse_pos.y),
+                                x: mouse_pos.x,
+                                y: mouse_pos.y,
                             }
                         } else {
                             ruffle_core::PlayerEvent::MouseUp {
-                                x: Twips::from_pixels(mouse_pos.x),
-                                y: Twips::from_pixels(mouse_pos.y),
+                                x: mouse_pos.x,
+                                y: mouse_pos.y,
                             }
                         };
                         player.handle_event(event);

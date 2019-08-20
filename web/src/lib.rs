@@ -5,7 +5,7 @@ mod render;
 use crate::{audio::WebAudioBackend, render::WebCanvasRenderBackend};
 use generational_arena::{Arena, Index};
 use js_sys::Uint8Array;
-use ruffle_core::{backend::render::RenderBackend, swf::Twips, PlayerEvent};
+use ruffle_core::{backend::render::RenderBackend, PlayerEvent};
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
 use web_sys::{Event, EventTarget, HtmlCanvasElement, MouseEvent};
@@ -24,6 +24,7 @@ struct RuffleInstance {
     canvas: HtmlCanvasElement,
     canvas_width: i32,
     canvas_height: i32,
+    device_pixel_ratio: f64,
     timestamp: f64,
     animation_handler: Option<AnimationHandler>, // requestAnimationFrame callback
     animation_handler_id: Option<NonZeroI32>,    // requestAnimationFrame id
@@ -94,6 +95,7 @@ impl Ruffle {
             canvas: canvas.clone(),
             canvas_width: 0, // Intiailize canvas width and height to 0 to force an initial canvas resize.
             canvas_height: 0,
+            device_pixel_ratio: window.device_pixel_ratio(),
             animation_handler: None,
             animation_handler_id: None,
             click_callback: None,
@@ -126,8 +128,8 @@ impl Ruffle {
                         let mut instances = instances.borrow_mut();
                         if let Some(instance) = instances.get_mut(index) {
                             let event = PlayerEvent::MouseMove {
-                                x: Twips::from_pixels(js_event.client_x().into()),
-                                y: Twips::from_pixels(js_event.client_y().into()),
+                                x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
+                                y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
                             };
                             instance.core.handle_event(event);
                         }
@@ -152,8 +154,8 @@ impl Ruffle {
                         let mut instances = instances.borrow_mut();
                         if let Some(instance) = instances.get_mut(index) {
                             let event = PlayerEvent::MouseDown {
-                                x: Twips::from_pixels(js_event.client_x().into()),
-                                y: Twips::from_pixels(js_event.client_y().into()),
+                                x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
+                                y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
                             };
                             instance.core.handle_event(event);
                         }
@@ -178,8 +180,8 @@ impl Ruffle {
                         let mut instances = instances.borrow_mut();
                         if let Some(instance) = instances.get_mut(index) {
                             let event = PlayerEvent::MouseUp {
-                                x: Twips::from_pixels(js_event.client_x().into()),
-                                y: Twips::from_pixels(js_event.client_y().into()),
+                                x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
+                                y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
                             };
                             instance.core.handle_event(event);
                         }
@@ -249,11 +251,12 @@ impl Ruffle {
                     // (NOT the CSS width/height!)
                     instance.canvas_width = canvas_width;
                     instance.canvas_height = canvas_height;
-                    let window = web_sys::window().ok_or_else(|| "Expected window").unwrap();
-                    let pixel_ratio = window.device_pixel_ratio() as f32;
+
                     // The actual viewport is scaled by DPI, bigger than CSS pixels.
-                    let viewport_width = (canvas_width as f32 * pixel_ratio) as u32;
-                    let viewport_height = (canvas_height as f32 * pixel_ratio) as u32;
+                    let viewport_width =
+                        (f64::from(canvas_width) * instance.device_pixel_ratio) as u32;
+                    let viewport_height =
+                        (f64::from(canvas_height) * instance.device_pixel_ratio) as u32;
                     instance.canvas.set_width(viewport_width);
                     instance.canvas.set_height(viewport_height);
                     instance

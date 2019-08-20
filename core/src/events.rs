@@ -1,11 +1,9 @@
-use swf::Twips;
-
 #[allow(clippy::enum_variant_names)]
 #[derive(Debug)]
 pub enum PlayerEvent {
-    MouseMove { x: Twips, y: Twips },
-    MouseUp { x: Twips, y: Twips },
-    MouseDown { x: Twips, y: Twips },
+    MouseMove { x: f64, y: f64 },
+    MouseUp { x: f64, y: f64 },
+    MouseDown { x: f64, y: f64 },
     MouseLeft,
 }
 
