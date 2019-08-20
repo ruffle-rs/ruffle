@@ -185,7 +185,8 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
         | PlayerEvent::MouseDown { x, y }
         | PlayerEvent::MouseUp { x, y } = event
         {
-            self.mouse_pos = self.inverse_view_matrix * (Twips::from_pixels(x), Twips::from_pixels(y));
+            self.mouse_pos =
+                self.inverse_view_matrix * (Twips::from_pixels(x), Twips::from_pixels(y));
             if self.update_roll_over() {
                 needs_render = true;
             }
@@ -390,7 +391,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
         self.update_roll_over();
 
         // GC
-        //self.gc_arena.collect_all();
+        self.gc_arena.collect_debt();
     }
 
     pub fn render(&mut self) {
