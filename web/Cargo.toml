@@ -39,7 +39,7 @@ version = "0.3.25"
 features = [
     "AudioBuffer", "AudioBufferSourceNode", "AudioProcessingEvent", "AudioContext", "AudioDestinationNode", "AudioNode", 
     "CanvasRenderingContext2d", "CssStyleDeclaration", "Document", "Element", "Event", "EventTarget", "HtmlCanvasElement",
-    "HtmlElement", "HtmlImageElement", "Node", "Performance", "ScriptProcessorNode", "Window"]
+    "HtmlElement", "HtmlImageElement", "MouseEvent", "Node", "Performance", "ScriptProcessorNode", "Window"]
 
 [dev-dependencies]
 wasm-bindgen-test = "0.2.48"

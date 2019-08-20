@@ -366,7 +366,7 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
             TagCode::SoundStreamHead2 => {
                 self.preload_sound_stream_head(context, reader, &mut static_data, 2)
             }
-            TagCode::SoundStreamBlock => self.preload_sound_stream_block(context, reader, tag_len),
+            TagCode::SoundStreamBlock => self.preload_sound_stream_block(context, reader, &mut static_data, tag_len),
             _ => Ok(()),
         };
         let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End);
@@ -549,9 +549,10 @@ impl<'gc, 'a> MovieClip<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<&'a [u8]>,
+        static_data: &mut MovieClipStatic,
         tag_len: usize,
     ) -> DecodeResult {
-        if self.static_data.audio_stream_info.is_some() {
+        if static_data.audio_stream_info.is_some() {
             let pos = reader.get_ref().position() as usize;
             let data = reader.get_ref().get_ref();
             let data = &data[pos..pos + tag_len];

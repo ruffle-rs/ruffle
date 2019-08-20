@@ -366,8 +366,13 @@ impl AudioBackend for WebAudioBackend {
         _clip_data: ruffle_core::tag_utils::SwfSlice,
         _stream_info: &swf::SoundStreamHead,
     ) -> AudioStreamHandle {
-        let handle = *self.id_to_sound.get(&clip_id).unwrap();
-        self.play_sound_internal(handle)
+        if let Some(&handle) = self.id_to_sound.get(&clip_id) {
+            self.play_sound_internal(handle)
+        } else {
+            log::error!("Missing stream for clip {}", clip_id);
+            // TODO: Return dummy sound.
+            panic!();
+        }
     }
 
     fn is_loading_complete(&self) -> bool {
