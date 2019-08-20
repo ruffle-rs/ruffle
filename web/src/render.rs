@@ -119,6 +119,27 @@ impl WebCanvasRenderBackend {
         };
         Ok(renderer)
     }
+
+    /// Converts an RGBA image into a PNG encoded as a base64 data URI.
+    fn rgba_to_png_data_uri(
+        rgba: &[u8],
+        width: u32,
+        height: u32,
+    ) -> Result<String, Box<dyn std::error::Error>> {
+        use png::{Encoder, HasParameters};
+        let mut png_data: Vec<u8> = vec![];
+        {
+            let mut encoder = Encoder::new(&mut png_data, width, height);
+            encoder.set(png::ColorType::RGBA).set(png::BitDepth::Eight);
+            let mut writer = encoder.write_header()?;
+            writer.write_image_data(&rgba)?;
+        }
+
+        Ok(format!(
+            "data:image/png;base64,{}",
+            &base64::encode(&png_data[..])
+        ))
+    }
 }
 
 impl RenderBackend for WebCanvasRenderBackend {
@@ -229,44 +250,40 @@ impl RenderBackend for WebCanvasRenderBackend {
             ruffle_core::backend::render::define_bits_jpeg_to_rgba(jpeg_data, alpha_data)
                 .expect("Error decoding DefineBitsJPEG3");
 
+        let png = Self::rgba_to_png_data_uri(&rgba[..], width, height).unwrap();
+
         let image = HtmlImageElement::new().unwrap();
-        let jpeg_encoded = format!("data:image/jpeg;base64,{}", &base64::encode(&rgba[..]));
-        image.set_src(&jpeg_encoded);
+        image.set_src(&png);
 
         let handle = BitmapHandle(self.bitmaps.len());
         self.bitmaps.push(BitmapData {
             image,
             width,
             height,
-            data: jpeg_encoded,
+            data: png,
         });
+
         self.id_to_bitmap.insert(id, handle);
         handle
     }
 
     fn register_bitmap_png(&mut self, swf_tag: &swf::DefineBitsLossless) -> BitmapHandle {
-        let decoded_data = ruffle_core::backend::render::define_bits_lossless_to_rgba(swf_tag)
+        let rgba = ruffle_core::backend::render::define_bits_lossless_to_rgba(swf_tag)
             .expect("Error decoding DefineBitsLossless");
 
-        let mut out_png: Vec<u8> = vec![];
-        {
-            use png::{Encoder, HasParameters};
-            let mut encoder =
-                Encoder::new(&mut out_png, swf_tag.width.into(), swf_tag.height.into());
-            encoder.set(png::ColorType::RGBA).set(png::BitDepth::Eight);
-            let mut writer = encoder.write_header().unwrap();
-            writer.write_image_data(&decoded_data).unwrap();
-        }
+        let png =
+            Self::rgba_to_png_data_uri(&rgba[..], swf_tag.width.into(), swf_tag.height.into())
+                .unwrap();
 
         let image = HtmlImageElement::new().unwrap();
-        let png_encoded = format!("data:image/png;base64,{}", &base64::encode(&out_png[..]));
+        image.set_src(&png);
 
         let handle = BitmapHandle(self.bitmaps.len());
         self.bitmaps.push(BitmapData {
             image,
             width: swf_tag.width.into(),
             height: swf_tag.height.into(),
-            data: png_encoded,
+            data: png,
         });
         self.id_to_bitmap.insert(swf_tag.id, handle);
         handle
