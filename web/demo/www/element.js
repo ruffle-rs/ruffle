@@ -28,7 +28,8 @@ class RuffleObjectShadow extends HTMLElement {
         this.ruffle = null;
     }
 
-    connected() {
+    connectedCallback() {
+        console.log("Welcome to ruffle");
         //Kick off the SWF download.
         if (this.params.movie) {
             fetch(this.params.movie).then(response => {
@@ -94,7 +95,10 @@ class RuffleObjectShadow extends HTMLElement {
     }
 }
 
+window.customElements.define("ruffle-object", RuffleObjectShadow);
+
 const observer = new MutationObserver(function (mutationsList, observer) {
+    console.log(mutationsList);
     for (let mutation of mutationsList) {
         for (let node of mutation.addedNodes) {
             RuffleObjectShadow.wrap_tree(node);
@@ -102,7 +106,7 @@ const observer = new MutationObserver(function (mutationsList, observer) {
     }
 });
 
-RuffleObjectShadow.wrap_tree(document);
+document.addEventListener("DOMContentLoaded", function() {
+    RuffleObjectShadow.wrap_tree(document.getElementsByTagName("html")[0]);
+}, false);
 observer.observe(document, { childList: true, subtree: true});
-
-window.customElements.define("ruffle-object", RuffleObjectShadow);

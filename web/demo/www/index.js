@@ -1,5 +1,5 @@
 import { Ruffle } from "../../pkg/ruffle";
-import "./element";
+import { RuffleObjectShadow } from "./element";
 
 let sampleFileInput = document.getElementById("sample-file");
 if (sampleFileInput) {
@@ -55,13 +55,5 @@ let timestamp = 0;
 let animationHandler;
 
 function playSwf(swfData) {
-    if (ruffle) {
-        ruffle.destroy();
-        ruffle = null;
-    }
-
-    let canvas = document.getElementById("player");
-    if (swfData && canvas) {
-        ruffle = Ruffle.new(canvas, new Uint8Array(swfData));
-    }
+    document.getElementById("player").play_swf(swfData);
 }
