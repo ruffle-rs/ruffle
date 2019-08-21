@@ -29,7 +29,7 @@ class RuffleObjectShadow extends HTMLElement {
     }
 
     connectedCallback() {
-        console.log("Welcome to ruffle");
+        console.log("Loading SWF...");
         //Kick off the SWF download.
         if (this.params.movie) {
             fetch(this.params.movie).then(response => {
@@ -106,7 +106,6 @@ const observer = new MutationObserver(function (mutationsList, observer) {
     }
 });
 
-document.addEventListener("DOMContentLoaded", function() {
-    RuffleObjectShadow.wrap_tree(document.getElementsByTagName("html")[0]);
-}, false);
+RuffleObjectShadow.wrap_tree(document.getElementsByTagName("html")[0]);
 observer.observe(document, { childList: true, subtree: true});
+console.log("Welcome to ruffle");

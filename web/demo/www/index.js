@@ -1,5 +1,4 @@
-import { Ruffle } from "../../pkg/ruffle";
-import { RuffleObjectShadow } from "./element";
+import "./element";
 
 let sampleFileInput = document.getElementById("sample-file");
 if (sampleFileInput) {
@@ -10,8 +9,6 @@ let localFileInput = document.getElementById("local-file");
 if (localFileInput) {
     localFileInput.addEventListener("change", localFileSelected, false);
 }
-
-let ruffle;
 
 if (window.location.search && window.location.search != "") {
     let urlParams = new URLSearchParams(window.location.search);
