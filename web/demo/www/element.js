@@ -29,11 +29,15 @@ class RuffleObjectShadow extends HTMLElement {
     connectedCallback() {
         this.params = RuffleObjectShadow.params_of(this);
         
-        console.log("Loading SWF file " + this.params.movie);
         //Kick off the SWF download.
         if (this.params.movie) {
+            console.log("Loading SWF file " + this.params.movie);
             fetch(this.params.movie).then(response => {
-                response.arrayBuffer().then(data => this.play_swf(data))
+                if (response.ok) {
+                    response.arrayBuffer().then(data => this.play_swf(data))
+                } else {
+                    console.error("SWF load failed: " + response.status + " " + response.statusText + " for " + this.params.movie);
+                }
             });
         }
     }
