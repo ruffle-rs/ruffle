@@ -353,7 +353,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
         });
     }
 
-    fn run_frame(&mut self) {
+    pub fn run_frame(&mut self) {
         let (global_time, swf_data, swf_version, background_color, renderer, audio, avm) = (
             self.global_time,
             &mut self.swf_data,

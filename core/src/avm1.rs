@@ -1066,7 +1066,7 @@ impl Avm1 {
 
     fn action_trace(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let val = self.pop()?;
-        log::info!("{}", val.into_string());
+        log::info!(target: "avm_trace", "{}", val.into_string());
         Ok(())
     }
 
