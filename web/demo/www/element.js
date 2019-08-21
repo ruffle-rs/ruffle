@@ -19,8 +19,6 @@ class RuffleObjectShadow extends HTMLElement {
     constructor() {
         super();
 
-        this.params = RuffleObjectShadow.params_of(this);
-
         this.shadow = this.attachShadow({mode: 'closed'});
         this.shadow.appendChild(ruffle_tmpl.content.cloneNode(true));
 
@@ -29,7 +27,9 @@ class RuffleObjectShadow extends HTMLElement {
     }
 
     connectedCallback() {
-        console.log("Loading SWF...");
+        this.params = RuffleObjectShadow.params_of(this);
+        
+        console.log("Loading SWF file " + this.params.movie);
         //Kick off the SWF download.
         if (this.params.movie) {
             fetch(this.params.movie).then(response => {
@@ -50,7 +50,7 @@ class RuffleObjectShadow extends HTMLElement {
     static params_of(elem) {
         let params = {};
 
-        for (var param in elem.children) {
+        for (let param of elem.children) {
             if (param.constructor === HTMLParamElement) {
                 params[param.name] = param.value;
             }
@@ -106,6 +106,6 @@ const observer = new MutationObserver(function (mutationsList, observer) {
     }
 });
 
+console.log("Welcome to ruffle");
 RuffleObjectShadow.wrap_tree(document.getElementsByTagName("html")[0]);
 observer.observe(document, { childList: true, subtree: true});
-console.log("Welcome to ruffle");
