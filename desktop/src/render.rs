@@ -8,7 +8,9 @@ use lyon::{
     path::PathEvent, tessellation, tessellation::FillTessellator, tessellation::StrokeTessellator,
 };
 use ruffle_core::backend::render::swf::{self, FillStyle};
-use ruffle_core::backend::render::{BitmapHandle, Color, Letterbox, RenderBackend, ShapeHandle, Transform};
+use ruffle_core::backend::render::{
+    BitmapHandle, Color, Letterbox, RenderBackend, ShapeHandle, Transform,
+};
 use ruffle_core::shape_utils::{DrawCommand, DrawPath};
 use swf::Twips;
 
@@ -615,11 +617,6 @@ impl RenderBackend for GliumRenderBackend {
             transform.color_transform.a_add,
         ];
 
-        let draw_parameters = DrawParameters {
-            blend: glium::Blend::alpha_blending(),
-            ..Default::default()
-        };
-
         for draw in &mesh.draws {
             match &draw.draw_type {
                 DrawType::Color => {
@@ -629,7 +626,7 @@ impl RenderBackend for GliumRenderBackend {
                             &draw.index_buffer,
                             &self.shader_program,
                             &uniform! { view_matrix: self.view_matrix, world_matrix: world_matrix, mult_color: mult_color, add_color: add_color },
-                            &draw_parameters
+                            &color_draw_parameters()
                         )
                         .unwrap();
                 }
@@ -648,7 +645,7 @@ impl RenderBackend for GliumRenderBackend {
                             &draw.index_buffer,
                             &self.gradient_shader_program,
                             &uniforms,
-                            &draw_parameters,
+                            &color_draw_parameters(),
                         )
                         .unwrap();
                 }
@@ -675,7 +672,7 @@ impl RenderBackend for GliumRenderBackend {
                             &draw.index_buffer,
                             &self.bitmap_shader_program,
                             &uniforms,
-                            &draw_parameters,
+                            &bitmap_draw_parameters(),
                         )
                         .unwrap();
                 }
@@ -1089,4 +1086,33 @@ fn swf_bitmap_to_gl_matrix(m: swf::Matrix, bitmap_width: u32, bitmap_height: u32
     f /= bitmap_height;
 
     [[a, d, 0.0], [b, e, 0.0], [c, f, 1.0]]
+}
+
+/// Returns the drawing parameters for standard color/gradient fills.
+#[inline]
+fn color_draw_parameters() -> DrawParameters<'static> {
+    DrawParameters {
+        blend: glium::Blend::alpha_blending(),
+        ..Default::default()
+    }
+}
+
+/// Returns the drawing parameters for bitmaps with pre-multipled alpha.
+#[inline]
+fn bitmap_draw_parameters() -> DrawParameters<'static> {
+    use glium::{BlendingFunction, LinearBlendingFactor};
+    DrawParameters {
+        blend: glium::Blend {
+            color: BlendingFunction::Addition {
+                source: LinearBlendingFactor::One,
+                destination: LinearBlendingFactor::OneMinusSourceAlpha,
+            },
+            alpha: BlendingFunction::Addition {
+                source: LinearBlendingFactor::SourceAlpha,
+                destination: LinearBlendingFactor::OneMinusSourceAlpha,
+            },
+            ..Default::default()
+        },
+        ..Default::default()
+    }
 }

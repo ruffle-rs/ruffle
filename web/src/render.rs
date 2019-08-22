@@ -258,10 +258,11 @@ impl RenderBackend for WebCanvasRenderBackend {
         jpeg_data: &[u8],
         alpha_data: &[u8],
     ) -> BitmapHandle {
-        let (width, height, rgba) =
+        let (width, height, mut rgba) =
             ruffle_core::backend::render::define_bits_jpeg_to_rgba(jpeg_data, alpha_data)
                 .expect("Error decoding DefineBitsJPEG3");
 
+        ruffle_core::backend::render::unmultiply_alpha_rgba(&mut rgba[..]);
         let png = Self::rgba_to_png_data_uri(&rgba[..], width, height).unwrap();
 
         let image = HtmlImageElement::new().unwrap();
@@ -280,8 +281,10 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn register_bitmap_png(&mut self, swf_tag: &swf::DefineBitsLossless) -> BitmapHandle {
-        let rgba = ruffle_core::backend::render::define_bits_lossless_to_rgba(swf_tag)
+        let mut rgba = ruffle_core::backend::render::define_bits_lossless_to_rgba(swf_tag)
             .expect("Error decoding DefineBitsLossless");
+
+        ruffle_core::backend::render::unmultiply_alpha_rgba(&mut rgba[..]);
 
         let png =
             Self::rgba_to_png_data_uri(&rgba[..], swf_tag.width.into(), swf_tag.height.into())
