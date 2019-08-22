@@ -134,9 +134,19 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
             let frame_time = 1000.0 / self.frame_rate;
 
             let needs_render = self.frame_accumulator >= frame_time;
-            while self.frame_accumulator >= frame_time {
+
+            const MAX_FRAMES_PER_TICK: u32 = 5; // Sanity cap on frame tick.
+            let mut frame = 0;
+            while frame < MAX_FRAMES_PER_TICK && self.frame_accumulator >= frame_time {
                 self.frame_accumulator -= frame_time;
                 self.run_frame();
+                frame += 1;
+            }
+
+            // Sanity: If we had too many frames to tick, just reset the accumulator
+            // to prevent running at turbo speed.
+            if self.frame_accumulator >= frame_time {
+                self.frame_accumulator = 0.0;
             }
 
             if needs_render {
