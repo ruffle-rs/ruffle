@@ -37,7 +37,7 @@ impl<'gc> MovieClip<'gc> {
             base: Default::default(),
             static_data: Gc::allocate(gc_context, MovieClipStatic::default()),
             tag_stream_pos: 0,
-            is_playing: true,
+            is_playing: false,
             goto_queue: Vec::new(),
             current_frame: 0,
             audio_stream: None,
@@ -87,7 +87,10 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn play(&mut self) {
-        self.is_playing = true;
+        // Can only play clips with multiple frames.
+        if self.total_frames() > 1 {
+            self.is_playing = true;
+        }
     }
 
     pub fn prev_frame(&mut self) {
@@ -266,10 +269,13 @@ impl<'gc> MovieClip<'gc> {
         // Advance frame number.
         if self.current_frame() < self.total_frames() {
             self.current_frame += 1;
-        } else {
+        } else if self.total_frames() > 1 {
             self.current_frame = 1;
             self.children.clear();
             self.tag_stream_pos = 0;
+        } else {
+            // Single frame clips do not play.
+            self.stop();
         }
 
         let _tag_pos = self.tag_stream_pos;
@@ -366,7 +372,9 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
             TagCode::SoundStreamHead2 => {
                 self.preload_sound_stream_head(context, reader, &mut static_data, 2)
             }
-            TagCode::SoundStreamBlock => self.preload_sound_stream_block(context, reader, &mut static_data, tag_len),
+            TagCode::SoundStreamBlock => {
+                self.preload_sound_stream_block(context, reader, &mut static_data, tag_len)
+            }
             _ => Ok(()),
         };
         let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End);
