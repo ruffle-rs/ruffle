@@ -25,7 +25,7 @@ struct RuffleInstance {
     canvas_width: i32,
     canvas_height: i32,
     device_pixel_ratio: f64,
-    timestamp: f64,
+    timestamp: Option<f64>,
     animation_handler: Option<AnimationHandler>, // requestAnimationFrame callback
     animation_handler_id: Option<NonZeroI32>,    // requestAnimationFrame id
     #[allow(dead_code)]
@@ -84,11 +84,6 @@ impl Ruffle {
 
         let core = ruffle_core::Player::new(renderer, audio, data)?;
 
-        let timestamp = window
-            .performance()
-            .ok_or_else(|| "Expected performance")?
-            .now();
-
         // Create instance.
         let instance = RuffleInstance {
             core,
@@ -102,7 +97,7 @@ impl Ruffle {
             mouse_move_callback: None,
             mouse_down_callback: None,
             mouse_up_callback: None,
-            timestamp,
+            timestamp: None,
         };
 
         // Register the instance and create the animation frame closure.
@@ -226,8 +221,8 @@ impl Ruffle {
             ruffle
         });
 
-        // Do an initial tick to start the animation loop.
-        ruffle.tick(timestamp);
+        // Set initial timestamp and do initial tick to start animation loop.
+        ruffle.tick(0.0);
 
         Ok(ruffle)
     }
@@ -236,8 +231,18 @@ impl Ruffle {
         INSTANCES.with(|instances| {
             let mut instances = instances.borrow_mut();
             if let Some(instance) = instances.get_mut(self.0) {
-                let dt = timestamp - instance.timestamp;
-                instance.timestamp = timestamp;
+                // Calculate the dt from last tick.
+                let dt = if let Some(prev_timestamp) = instance.timestamp {
+                    instance.timestamp = Some(timestamp);
+                    timestamp - prev_timestamp
+                } else {
+                    // Store the timestamp from the initial tick.
+                    // (I tried to use Performance.now() to get the initial timestamp,
+                    // but this didn't seem to be accurate and caused negative dts on
+                    // Chrome.)
+                    instance.timestamp = Some(timestamp);
+                    0.0
+                };
 
                 instance.core.tick(dt);
 
