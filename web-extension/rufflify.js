@@ -20,8 +20,15 @@ function convertObject(object) {
     return;
   }
   log('Replacing flash content from', source);
-  const canvas = document.createElement('canvas');
-  object.parentElement.insertBefore(canvas, object);
+  const div = document.createElement('div');
+  {
+    div.style = 'background-color: #FFAD33; display: inline-block;';
+
+    const h1 = document.createElement('h1');
+    h1.appendChild(document.createTextNode('▶️ Click to play flash content in Ruffle'));
+    div.appendChild(h1);
+  }
+  object.parentElement.insertBefore(div, object);
   object.remove();
   fetch(new URL(source, window.location))
     .then((r) => r.arrayBuffer())
@@ -29,14 +36,11 @@ function convertObject(object) {
       return Ruffle.then((Player) => {
         const play = () => {
           log('Running', source);
+          const canvas = document.createElement('canvas');
+          div.appendChild(canvas);
           const r = Player.new(canvas, new Uint8Array(ab));
         };
-        canvas.addEventListener('click', play, { once: true });
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#FFAD33';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = 'black';
-        ctx.fillText('Click to run flash content in Ruffle', 10, 10);
+        div.addEventListener('click', play, { once: true });
       });
     }).catch(error);
 }
