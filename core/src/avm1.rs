@@ -162,9 +162,6 @@ impl Avm1 {
         root: DisplayNode<'gc>,
         mut path: &str,
     ) -> Option<DisplayNode<'gc>> {
-        if path == "/" {
-            log::warn!("ROOT");
-        }
         let mut cur_clip = if path.bytes().nth(0).unwrap_or(0) == b'/' {
             path = &path[1..];
             root
@@ -916,7 +913,6 @@ impl Avm1 {
         } else if let Some(clip) =
             Avm1::resolve_slash_path(context.start_clip, context.root, target)
         {
-            log::warn!("Path: {}", target);
             context.active_clip = clip;
         } else {
             log::warn!("SetTarget failed: {} not found", target);
