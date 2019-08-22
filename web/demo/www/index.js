@@ -1,4 +1,4 @@
-import "./element";
+import "../../js-src/element";
 
 let sampleFileInput = document.getElementById("sample-file");
 if (sampleFileInput) {
