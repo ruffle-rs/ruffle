@@ -5,8 +5,9 @@
     "description": "Puts Flash back on the web where it belongs.",
     "content_scripts": [
         {
-            "matches": ["*"],
-            "js": ["ruffle.js"]
+            "matches": ["<all_urls>"],
+            "js": ["dist/ruffle.js"]
         }
-    ]
+    ],
+    "web_accessible_resources": ["dist/*"]
 }
