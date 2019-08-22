@@ -1,0 +1,15 @@
+{
+  "manifest_version": 2,
+  "name": "Ruffle",
+  "version": "1.0",
+  "description": "Safely load flash content",
+  "icons": {
+    "48": "icons/48.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["rufflify.js"]
+    }
+  ]
+}
