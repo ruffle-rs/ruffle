@@ -14,6 +14,7 @@ pub struct WebCanvasRenderBackend {
     id_to_bitmap: HashMap<CharacterId, BitmapHandle>,
     viewport_width: u32,
     viewport_height: u32,
+    use_color_transform_hack: bool,
 }
 
 struct ShapeData {
@@ -48,7 +49,8 @@ impl WebCanvasRenderBackend {
             .dyn_into()
             .map_err(|_| "Expected CanvasRenderingContext2d")?;
 
-        let document = web_sys::window().unwrap().document().unwrap();
+        let window = web_sys::window().unwrap();
+        let document = window.document().unwrap();
 
         // Create a color matrix filter to handle Flash color effects.
         // Ensure a previous instance of the color matrix filter node doesn't exist.
@@ -107,6 +109,15 @@ impl WebCanvasRenderBackend {
             .append_child(&svg)
             .map_err(|_| "append_child failed")?;
 
+        // Check if we are on Firefox to use the color transform hack.
+        // TODO: We could turn this into a general util function to detect browser
+        // type, version, OS, etc.
+        let is_firefox = window
+            .navigator()
+            .user_agent()
+            .map(|s| s.contains("Firefox"))
+            .unwrap_or(false);
+
         let renderer = Self {
             canvas: canvas.clone(),
             color_matrix,
@@ -116,6 +127,7 @@ impl WebCanvasRenderBackend {
             id_to_bitmap: HashMap::new(),
             viewport_width: 0,
             viewport_height: 0,
+            use_color_transform_hack: is_firefox,
         };
         Ok(renderer)
     }
@@ -340,6 +352,14 @@ impl RenderBackend for WebCanvasRenderBackend {
         {
             self.context.set_global_alpha(color_transform.a_mult.into());
         } else {
+            // TODO HACK: Firefox is having issues with additive alpha in color transforms (see #38).
+            // Hack this away and just use multiplicative (not accurate in many cases, but won't look awful).
+            let (a_mult, a_add) = if self.use_color_transform_hack && color_transform.a_add != 0.0 {
+                (color_transform.a_mult + color_transform.a_add, 0.0)
+            } else {
+                (color_transform.a_mult, color_transform.a_add)
+            };
+
             let matrix_str = format!(
                 "{} 0 0 0 {} 0 {} 0 0 {} 0 0 {} 0 {} 0 0 0 {} {}",
                 color_transform.r_mult,
@@ -348,8 +368,8 @@ impl RenderBackend for WebCanvasRenderBackend {
                 color_transform.g_add,
                 color_transform.b_mult,
                 color_transform.b_add,
-                color_transform.a_mult,
-                color_transform.a_add
+                a_mult,
+                a_add
             );
             self.color_matrix
                 .set_attribute("values", &matrix_str)
