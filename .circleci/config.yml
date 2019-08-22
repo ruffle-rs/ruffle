@@ -10,6 +10,12 @@ jobs:
       - restore_cache:
           key: project-cache
       - run:
+          name: Tests
+          command: |
+            rustup toolchain install stable
+            rustup run stable rustc --version --verbose
+            rustup run stable cargo test --package=ruffle_core
+      - run:
           name: Desktop Build
           command: |
             sudo apt-get update
