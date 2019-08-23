@@ -15,6 +15,7 @@ pub struct WebCanvasRenderBackend {
     viewport_width: u32,
     viewport_height: u32,
     use_color_transform_hack: bool,
+    pixelated_property_value: &'static str,
 }
 
 struct ShapeData {
@@ -128,6 +129,14 @@ impl WebCanvasRenderBackend {
             viewport_width: 0,
             viewport_height: 0,
             use_color_transform_hack: is_firefox,
+
+            // For rendering non-smoothed bitmaps.
+            // crisp-edges works in Firefox, pixelated works in Chrome (and others)?
+            pixelated_property_value: if is_firefox {
+                "crisp-edges"
+            } else {
+                "pixelated"
+            },
         };
         Ok(renderer)
     }
@@ -175,7 +184,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         }
 
         use url::percent_encoding::{utf8_percent_encode, DEFAULT_ENCODE_SET};
-        let svg = swf_shape_to_svg(&shape, &bitmaps);
+        let svg = swf_shape_to_svg(&shape, &bitmaps, self.pixelated_property_value);
 
         let svg_encoded = format!(
             "data:image/svg+xml,{}",
@@ -436,6 +445,7 @@ impl RenderBackend for WebCanvasRenderBackend {
 fn swf_shape_to_svg(
     shape: &swf::Shape,
     bitmaps: &HashMap<CharacterId, (&str, u32, u32)>,
+    pixelated_property_value: &str,
 ) -> String {
     use fnv::FnvHashSet;
     use ruffle_core::matrix::Matrix;
@@ -642,22 +652,44 @@ fn swf_shape_to_svg(
                             num_defs += 1;
                             fill_id
                         }
-                        FillStyle::Bitmap { id, matrix, .. } => {
+                        FillStyle::Bitmap {
+                            id,
+                            matrix,
+                            is_smoothed,
+                            is_repeating,
+                        } => {
                             let (bitmap_data, bitmap_width, bitmap_height) =
                                 bitmaps.get(&id).unwrap_or(&("", 0, 0));
 
                             if !bitmap_defs.contains(&id) {
-                                let image = Image::new()
+                                let mut image = Image::new()
                                     .set("width", *bitmap_width)
                                     .set("height", *bitmap_height)
                                     .set("xlink:href", *bitmap_data);
 
-                                let bitmap_pattern = Pattern::new()
+                                if !*is_smoothed {
+                                    image = image.set("image-rendering", pixelated_property_value);
+                                }
+
+                                let mut bitmap_pattern = Pattern::new()
                                     .set("id", format!("b{}", id))
-                                    .set("width", *bitmap_width)
-                                    .set("height", *bitmap_height)
-                                    .set("patternUnits", "userSpaceOnUse")
-                                    .add(image);
+                                    .set("patternUnits", "userSpaceOnUse");
+
+                                if !*is_repeating {
+                                    bitmap_pattern = bitmap_pattern
+                                        .set("width", *bitmap_width)
+                                        .set("height", *bitmap_height);
+                                } else {
+                                    bitmap_pattern = bitmap_pattern
+                                        .set("width", *bitmap_width)
+                                        .set("height", *bitmap_height)
+                                        .set(
+                                            "viewBox",
+                                            format!("0 0 {} {}", bitmap_width, bitmap_height),
+                                        );
+                                }
+
+                                bitmap_pattern = bitmap_pattern.add(image);
 
                                 defs = defs.add(bitmap_pattern);
                                 bitmap_defs.insert(*id);
