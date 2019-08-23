@@ -405,7 +405,7 @@ impl<'gc> DisplayObject<'gc> for MorphShape<'gc> {
 
 unsafe impl<'gc> gc_arena::Collect for MorphShape<'gc> {
     #[inline]
-    fn needs_trace() -> bool {
-        false
+    fn trace(&self, cc: gc_arena::CollectionContext) {
+        self.base.trace(cc);
     }
 }
