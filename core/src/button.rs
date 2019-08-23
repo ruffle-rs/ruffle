@@ -32,23 +32,32 @@ impl<'gc> Button<'gc> {
             BTreeMap::new(),
         ];
         for record in &button.records {
-            let child = library
-                .instantiate_display_object(record.id, gc_context)
-                .unwrap();
-            child
-                .write(gc_context)
-                .set_matrix(&record.matrix.clone().into());
-            child
-                .write(gc_context)
-                .set_color_transform(&record.color_transform.clone().into());
-            for state in &record.states {
-                let i = match state {
-                    ButtonState::Up => UP_STATE,
-                    ButtonState::Over => OVER_STATE,
-                    ButtonState::Down => DOWN_STATE,
-                    ButtonState::HitTest => HIT_STATE,
-                };
-                children[i].insert(record.depth, child);
+            match library.instantiate_display_object(record.id, gc_context) {
+                Ok(child) => {
+                    child
+                        .write(gc_context)
+                        .set_matrix(&record.matrix.clone().into());
+                    child
+                        .write(gc_context)
+                        .set_color_transform(&record.color_transform.clone().into());
+                    for state in &record.states {
+                        let i = match state {
+                            ButtonState::Up => UP_STATE,
+                            ButtonState::Over => OVER_STATE,
+                            ButtonState::Down => DOWN_STATE,
+                            ButtonState::HitTest => HIT_STATE,
+                        };
+                        children[i].insert(record.depth, child);
+                    }
+                }
+                Err(error) => {
+                    log::error!(
+                        "Button ID {}: could not instantiate child ID {}: {}",
+                        button.id,
+                        record.id,
+                        error
+                    );
+                }
             }
         }
 

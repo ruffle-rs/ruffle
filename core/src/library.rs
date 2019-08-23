@@ -53,7 +53,10 @@ impl<'gc> Library<'gc> {
             Some(Character::Button(button)) => button.clone(),
             Some(Character::Text(text)) => text.clone(),
             Some(_) => return Err("Not a DisplayObject".into()),
-            None => return Err("Character id doesn't exist".into()),
+            None => {
+                log::error!("Tried to instantiate non-registered character ID {}", id);
+                return Err("Character id doesn't exist".into());
+            }
         };
         Ok(GcCell::allocate(gc_context, obj))
     }
