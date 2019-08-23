@@ -1,6 +1,6 @@
 #![allow(clippy::invalid_ref)]
 
-use glium::uniforms::{UniformValue, Uniforms};
+use glium::uniforms::{Sampler, UniformValue, Uniforms};
 use glium::{draw_parameters::DrawParameters, implement_vertex, uniform, Display, Frame, Surface};
 use glutin::WindowedContext;
 use lyon::tessellation::geometry_builder::{BuffersBuilder, VertexBuffers};
@@ -317,7 +317,12 @@ impl GliumRenderBackend {
                             &self.display,
                         );
                     }
-                    FillStyle::Bitmap { id, matrix, .. } => {
+                    FillStyle::Bitmap {
+                        id,
+                        matrix,
+                        is_smoothed,
+                        is_repeating,
+                    } => {
                         flush_draw(DrawType::Color, &mut mesh, &mut lyon_mesh, &self.display);
 
                         let vertex_ctor = move |vertex: tessellation::FillVertex| Vertex {
@@ -354,7 +359,11 @@ impl GliumRenderBackend {
                         };
 
                         flush_draw(
-                            DrawType::Bitmap(uniforms),
+                            DrawType::Bitmap {
+                                uniforms,
+                                is_smoothed: *is_smoothed,
+                                is_repeating: *is_repeating,
+                            },
                             &mut mesh,
                             &mut lyon_mesh,
                             &self.display,
@@ -649,21 +658,48 @@ impl RenderBackend for GliumRenderBackend {
                         )
                         .unwrap();
                 }
-                DrawType::Bitmap(bitmap_uniforms) => {
+                DrawType::Bitmap {
+                    uniforms,
+                    is_smoothed,
+                    is_repeating,
+                } => {
                     let texture = &self
                         .textures
                         .iter()
-                        .find(|(id, _tex)| *id == bitmap_uniforms.id)
+                        .find(|(id, _tex)| *id == uniforms.id)
                         .unwrap()
                         .1;
+
+                    // Set texture sampler smooth/repeat parameters.
+                    use glium::uniforms::{
+                        MagnifySamplerFilter, MinifySamplerFilter, SamplerWrapFunction,
+                    };
+                    let texture = &texture
+                        .texture
+                        .sampled()
+                        .magnify_filter(if *is_smoothed {
+                            MagnifySamplerFilter::Linear
+                        } else {
+                            MagnifySamplerFilter::Nearest
+                        })
+                        .minify_filter(if *is_smoothed {
+                            MinifySamplerFilter::LinearMipmapLinear
+                        } else {
+                            MinifySamplerFilter::Nearest
+                        })
+                        .wrap_function(if *is_repeating {
+                            SamplerWrapFunction::Repeat
+                        } else {
+                            SamplerWrapFunction::Clamp
+                        });
 
                     let uniforms = BitmapUniformsFull {
                         view_matrix: self.view_matrix,
                         world_matrix,
                         mult_color,
                         add_color,
-                        matrix: bitmap_uniforms.matrix,
-                        texture: &texture.texture,
+                        matrix: uniforms.matrix,
+                        texture,
                     };
 
                     target
@@ -829,17 +865,18 @@ struct BitmapUniformsFull<'a> {
     mult_color: [f32; 4],
     add_color: [f32; 4],
     matrix: [[f32; 3]; 3],
-    texture: &'a glium::Texture2d,
+    texture: &'a Sampler<'a, glium::Texture2d>,
 }
 
 impl<'a> Uniforms for BitmapUniformsFull<'a> {
     fn visit_values<'v, F: FnMut(&str, UniformValue<'v>)>(&'v self, mut visit: F) {
+        use glium::uniforms::AsUniformValue;
         visit("world_matrix", UniformValue::Mat4(self.world_matrix));
         visit("view_matrix", UniformValue::Mat4(self.view_matrix));
         visit("mult_color", UniformValue::Vec4(self.mult_color));
         visit("add_color", UniformValue::Vec4(self.add_color));
         visit("u_matrix", UniformValue::Mat3(self.matrix));
-        visit("u_texture", UniformValue::Texture2d(self.texture, None));
+        visit("u_texture", self.texture.as_uniform_value());
     }
 }
 
@@ -988,7 +1025,11 @@ struct Draw {
 enum DrawType {
     Color,
     Gradient(GradientUniforms),
-    Bitmap(BitmapUniforms),
+    Bitmap {
+        uniforms: BitmapUniforms,
+        is_smoothed: bool,
+        is_repeating: bool,
+    },
 }
 
 fn point(x: Twips, y: Twips) -> lyon::math::Point {
