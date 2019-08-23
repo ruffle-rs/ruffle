@@ -1,10 +1,12 @@
 use crate::display_object::{DisplayObject, DisplayObjectBase};
 use crate::player::{RenderContext, UpdateContext};
+use crate::prelude::*;
 use crate::transform::Transform;
 
 #[derive(Clone)]
 pub struct Text<'gc> {
     base: DisplayObjectBase<'gc>,
+    text_transform: Matrix,
     text_blocks: Vec<swf::TextRecord>,
 }
 
@@ -12,6 +14,7 @@ impl<'gc> Text<'gc> {
     pub fn from_swf_tag(tag: &swf::Text) -> Self {
         Self {
             base: Default::default(),
+            text_transform: tag.matrix.clone().into(),
             text_blocks: tag.records.clone(),
         }
     }
@@ -26,6 +29,10 @@ impl<'gc> DisplayObject<'gc> for Text<'gc> {
 
     fn render(&self, context: &mut RenderContext) {
         context.transform_stack.push(self.transform());
+        context.transform_stack.push(&Transform {
+            matrix: self.text_transform,
+            ..Default::default()
+        });
 
         let mut x = Default::default();
         let mut y = Default::default();
@@ -66,6 +73,7 @@ impl<'gc> DisplayObject<'gc> for Text<'gc> {
                 }
             }
         }
+        context.transform_stack.pop();
         context.transform_stack.pop();
     }
 }
