@@ -1,5 +1,4 @@
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
-const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
 const webpack = require('webpack');
 const path = require('path');
 
@@ -12,19 +11,12 @@ module.exports = (env, argv) => {
   console.log(`Building ${mode}...`);
 
   return {
-    entry: path.resolve(__dirname, "js/bootstrap.js"),
+    entry: path.resolve(__dirname, "js/index.js"),
     output: {
       path: path.resolve(__dirname, "dist"),
       filename: "ruffle.js",
     },
     mode: mode,
-    plugins: [
-      new CleanWebpackPlugin(),
-      new WasmPackPlugin({
-        crateDirectory: path.resolve(__dirname, ".."),
-        extraArgs: "--out-name=ruffle",
-        forceMode: mode,
-      })
-    ]
+    plugins: []
   }
 };

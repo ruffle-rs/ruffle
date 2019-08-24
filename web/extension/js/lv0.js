@@ -1,28 +1,28 @@
-/** 
- * This IIFE is *not touched by Webpack* and exists primarily to ensure Webpack
- * is loaded without extension privileges.
+(/**
+ * Pierce the extension sandbox by copying our code into window space.
  * 
- * Inside the IIFE, we do two things:
+ * The isolation extension content scripts get is neat, but it causes problems
+ * based on what browser you use:
  * 
- *  1. Use our fancy extension powers to generate an unprivileged script to set
- *     the webpack public path.
- *  2. Generate another unprivileged script with a link to the Ruffle extension
- *     resource.
+ * 1. On Chrome, you are explicitly banned from registering custom elements
+ * 2. On Firefox, you can register custom elements but they can't expose any
+ *    useful API surface, and can't even see their own methods.
  * 
- * This gives webpack the environment it expects, at the expense of breaking
- * literally every site that uses it's own webpack.
+ * This code exists to pierce the extension sandbox, while maintaining:
+ * 
+ * 1. The isolation of not interfering with the page's execution environment
+ *    unintentionally.
+ * 2. The ability to load extension resources such as .wasm files
  */
-(function () {
-    // Browser extensions are loaded from a dynamically-generated URL, we have to
-    // tell webpack about that.
-
-    var webpack_path_script = document.createElement('script');
-    webpack_path_script.appendChild(document.createTextNode("__webpack_public_path__ = \"" + browser.runtime.getURL("dist/0.ruffle.js").replace("0.ruffle.js", "") + "\""));
-    webpack_path_script.type = "text/javascript";
-    document.body.appendChild(webpack_path_script);
-
-    var script = document.createElement('script');
-    script.src = browser.runtime.getURL("dist/ruffle.js");
-    script.type = "text/javascript";
-    document.body.appendChild(script);
+async function() {
+    let ext_path = browser.runtime.getURL("dist/ruffle.js").replace("dist/ruffle.js", "");
+    let ruffle_src_resp = await fetch(ext_path + "dist/ruffle.js");
+    if (ruffle_src_resp.ok) {
+        let ruffle_src = "(function () { var runtime_path = \"" + ext_path + "\";\n" + await ruffle_src_resp.text() + "}())";
+        let scriptelem = document.createElement("script");
+        scriptelem.appendChild(document.createTextNode(ruffle_src));
+        document.head.appendChild(scriptelem);
+    } else {
+        console.error("Critical error loading Ruffle into page")
+    }
 }());

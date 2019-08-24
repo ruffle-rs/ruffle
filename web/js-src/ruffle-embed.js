@@ -8,7 +8,7 @@ export default class RuffleEmbed extends RufflePlayer {
     }
 
     connectedCallback() {
-        this.stream_swf_url(this.attributes.src.value);
+        super.stream_swf_url(this.attributes.src.value);
     }
 
     get src() {
@@ -24,8 +24,10 @@ export default class RuffleEmbed extends RufflePlayer {
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
+        //TODO: We get a double play if we just naively load this twice.
+        //Check if the element is connected before doing anything!
         if (name === "src") {
-            this.stream_swf_url(this.attributes.src.value);
+            //this.stream_swf_url(this.attributes.src.value);
         }
     }
 
