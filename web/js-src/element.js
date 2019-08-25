@@ -12,18 +12,22 @@ import RuffleEmbed from "./ruffle-embed";
  * The requirement to wait for WASM is a huge problem in practice.
  */
 function wrap_tree(elem) {
-    for (let node of elem.getElementsByTagName("object")) {
-        if (RuffleObject.is_interdictable(node)) {
-            let ruffle_obj = RuffleObject.from_native_object_element(node);
-            node.parentElement.replaceChild(ruffle_obj, node);
+    try {
+        for (let node of Array.from(elem.getElementsByTagName("object"))) {
+            if (RuffleObject.is_interdictable(node)) {
+                let ruffle_obj = RuffleObject.from_native_object_element(node);
+                node.parentElement.replaceChild(ruffle_obj, node);
+            }
         }
-    }
 
-    for (let node of elem.getElementsByTagName("embed")) {
-        if (RuffleEmbed.is_interdictable(node)) {
-            let ruffle_obj = RuffleEmbed.from_native_embed_element(node);
-            node.parentElement.replaceChild(ruffle_obj, node);
+        for (let node of Array.from(elem.getElementsByTagName("embed"))) {
+            if (RuffleEmbed.is_interdictable(node)) {
+                let ruffle_obj = RuffleEmbed.from_native_embed_element(node);
+                node.parentElement.replaceChild(ruffle_obj, node);
+            }
         }
+    } catch (err) {
+        console.err("Serious error encountered when interdicting native Flash elements: " + err);
     }
 }
 
