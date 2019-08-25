@@ -35,7 +35,7 @@ export default class RuffleEmbed extends RufflePlayer {
     }
 
     static is_interdictable(elem) {
-        return elem.type === "application/x-shockwave-flash";
+        return elem.type === "application/x-shockwave-flash" || elem.type === "application/futuresplash";
     }
 
     static from_native_embed_element(elem) {

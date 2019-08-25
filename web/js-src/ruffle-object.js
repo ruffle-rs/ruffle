@@ -17,7 +17,7 @@ export default class RuffleObject extends RufflePlayer {
     }
 
     static is_interdictable(elem) {
-        return elem.type === "application/x-shockwave-flash";
+        return elem.type === "application/x-shockwave-flash" || elem.type === "application/futuresplash";
     }
 
     static params_of(elem) {
