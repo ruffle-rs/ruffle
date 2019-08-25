@@ -6,6 +6,8 @@ export default class RuffleObject extends RufflePlayer {
     }
 
     connectedCallback() {
+        super.connectedCallback();
+        
         this.params = RuffleObject.params_of(this);
         
         //Kick off the SWF download.

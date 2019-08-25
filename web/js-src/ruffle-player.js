@@ -8,12 +8,37 @@ export default class RufflePlayer extends HTMLElement {
         self.shadow = self.attachShadow({mode: 'closed'});
         self.shadow.appendChild(ruffle_shadow_template.content.cloneNode(true));
 
+        self.dynamic_styles = self.shadow.getElementById("dynamic_styles");
         self.canvas = self.shadow.getElementById("player");
         self.instance = null;
 
         self.Ruffle = load_ruffle();
 
         return self;
+    }
+
+    connectedCallback() {
+        this.update_styles();
+    }
+
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (name === "width" || name === "height") {
+            this.update_styles();
+        }
+    }
+
+    update_styles() {
+        for (var i = 0; i < this.dynamic_styles.sheet.rules.length; i += 1) {
+            this.dynamic_styles.sheet.deleteRule(i);
+        }
+
+        if (!isNaN(parseInt(this.attributes.width.value))) {
+            this.dynamic_styles.sheet.insertRule(":host { width: " + this.attributes.width.value + "px; }");
+        }
+
+        if (!isNaN(parseInt(this.attributes.height.value))) {
+            this.dynamic_styles.sheet.insertRule(":host { height: " + this.attributes.height.value + "px; }");
+        }
     }
 
     async stream_swf_url(url) {

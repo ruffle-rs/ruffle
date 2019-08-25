@@ -10,6 +10,7 @@ ruffle_shadow_tmpl.innerHTML = `
             height: 100%;
         }
     </style>
+    <style id="dynamic_styles"></style>
     <canvas id="player"></canvas>
 `;
 
