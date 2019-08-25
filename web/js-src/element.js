@@ -1,5 +1,6 @@
 import RuffleObject from "./ruffle-object";
 import RuffleEmbed from "./ruffle-embed";
+import { install_plugin, FLASH_PLUGIN } from "./plugin-polyfill";
 
 /**
  * Interdict native elements with Ruffle equivalents.
@@ -47,3 +48,5 @@ const observer = new MutationObserver(function (mutationsList, observer) {
 });
 
 observer.observe(document, { childList: true, subtree: true});
+
+install_plugin(FLASH_PLUGIN);
