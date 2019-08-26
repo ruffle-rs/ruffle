@@ -2,7 +2,7 @@ let ruffle_shadow_tmpl = document.createElement("template");
 ruffle_shadow_tmpl.innerHTML = `
     <style>
         :host {
-            display: block;
+            display: inline-block;
         }
 
         #player {
