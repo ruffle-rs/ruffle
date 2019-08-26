@@ -1209,14 +1209,14 @@ impl Value {
     fn as_f64(&self) -> Result<f64, Error> {
         match *self {
             Value::Number(v) => Ok(v),
-            _ => Err("Expected Number".into()),
+            _ => Err(format!("Expected Number, found {:?}", self).into()),
         }
     }
 
     fn as_string(&self) -> Result<&String, Error> {
         match self {
             Value::String(s) => Ok(s),
-            _ => Err("Expected Number".into()),
+            _ => Err(format!("Expected String, found {:?}", self).into()),
         }
     }
 
@@ -1224,7 +1224,7 @@ impl Value {
         if let Value::Object(object) = self {
             Ok(object)
         } else {
-            Err("Expected Object".into())
+            Err(format!("Expected Object, found {:?}", self).into())
         }
     }
 }
