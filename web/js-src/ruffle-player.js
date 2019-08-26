@@ -1,7 +1,11 @@
 import load_ruffle from "./load-ruffle";
 import ruffle_shadow_template from "./shadow-template";
 
-export default class RufflePlayer extends HTMLElement {
+export let FLASH_MIMETYPE = "application/x-shockwave-flash";
+export let FUTURESPLASH_MIMETYPE = "application/futuresplash";
+export let FLASH_ACTIVEX_CLASSID = "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000";
+
+export class RufflePlayer extends HTMLElement {
     constructor(...args) {
         let self = super(...args);
 

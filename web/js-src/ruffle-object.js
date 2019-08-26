@@ -1,4 +1,4 @@
-import RufflePlayer from "./ruffle-player.js";
+import {FLASH_MIMETYPE, FUTURESPLASH_MIMETYPE, FLASH_ACTIVEX_CLASSID, RufflePlayer} from "./ruffle-player.js";
 
 export default class RuffleObject extends RufflePlayer {
     constructor(...args) {
@@ -17,7 +17,7 @@ export default class RuffleObject extends RufflePlayer {
     }
 
     static is_interdictable(elem) {
-        return elem.type === "application/x-shockwave-flash" || elem.type === "application/futuresplash";
+        return elem.type === FLASH_MIMETYPE || elem.type === FUTURESPLASH_MIMETYPE || elem.attributes.classid.value === FLASH_ACTIVEX_CLASSID;
     }
 
     static params_of(elem) {
