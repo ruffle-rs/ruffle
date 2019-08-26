@@ -407,7 +407,7 @@ impl<W: Write> Writer<W> {
             }
             Value::Int(v) => {
                 self.write_u8(7)?;
-                self.write_u32(v)?;
+                self.write_i32(v)?;
             }
             Value::ConstantPool(v) => {
                 if v < 256 {

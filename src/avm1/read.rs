@@ -236,7 +236,7 @@ impl<R: Read> Reader<R> {
             4 => Value::Register(self.read_u8()?),
             5 => Value::Bool(self.read_u8()? != 0),
             6 => Value::Double(self.read_f64()?),
-            7 => Value::Int(self.read_u32()?),
+            7 => Value::Int(self.read_i32()?),
             8 => Value::ConstantPool(self.read_u8()?.into()),
             9 => Value::ConstantPool(self.read_u16()?),
             _ => {

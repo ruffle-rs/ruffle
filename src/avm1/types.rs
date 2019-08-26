@@ -135,7 +135,7 @@ pub enum Value {
     Undefined,
     Null,
     Bool(bool),
-    Int(u32),
+    Int(i32),
     Float(f32),
     Double(f64),
     Str(String),

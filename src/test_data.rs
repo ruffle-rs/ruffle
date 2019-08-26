@@ -2440,6 +2440,11 @@ pub fn avm1_tests() -> Vec<Avm1TestData> {
         ),
         (
             5,
+            Action::Push(vec![Value::Int(-50)]),
+            vec![0x96, 5, 0, 7, 206, 255, 255, 255],
+        ),
+        (
+            5,
             Action::Push(vec![Value::ConstantPool(77)]),
             vec![0x96, 2, 0, 8, 77],
         ),
