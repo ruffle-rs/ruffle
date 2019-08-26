@@ -31,7 +31,10 @@ impl TransformStack {
         let cur_transform = self.transform();
         let matrix = cur_transform.matrix * transform.matrix;
         let color_transform = cur_transform.color_transform * transform.color_transform;
-        self.0.push(Transform { matrix, color_transform });
+        self.0.push(Transform {
+            matrix,
+            color_transform,
+        });
     }
 
     pub fn pop(&mut self) {
