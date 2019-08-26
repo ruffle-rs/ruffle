@@ -46,7 +46,7 @@ export default class RuffleEmbed extends RufflePlayer {
             }
         }
 
-        for (let node of elem.children) {
+        for (let node of Array.from(elem.children)) {
             ruffle_obj.appendChild(node);
         }
 

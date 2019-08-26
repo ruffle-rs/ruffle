@@ -40,7 +40,7 @@ export default class RuffleObject extends RufflePlayer {
             }
         }
 
-        for (let node of elem.children) {
+        for (let node of Array.from(elem.children)) {
             ruffle_obj.appendChild(node);
         }
 
