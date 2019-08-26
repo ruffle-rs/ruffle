@@ -31,6 +31,13 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
+    disconnectedCallback() {
+        if (this.instance) {
+            this.instance.destroy();
+            this.instance = null;
+        }
+    }
+
     update_styles() {
         for (var i = 0; i < this.dynamic_styles.sheet.rules.length; i += 1) {
             this.dynamic_styles.sheet.deleteRule(i);
@@ -45,20 +52,44 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
+    /**
+     * Determine if this element is the fallback content of another Ruffle
+     * player.
+     * 
+     * This heurustic assumes Ruffle objects will never use their fallback
+     * content. If this changes, then this code also needs to change.
+     */
+    is_unused_fallback_object() {
+        let parent = this.parentNode;
+        do {
+            if (parent.nodeName === "RUFFLE-OBJECT") {
+                return true;
+            }
+
+            parent = parent.parentNode;
+        } while (parent != document);
+
+        return false;
+    }
+
     async stream_swf_url(url) {
         //TODO: Actually stream files...
         try {
-            let abs_url = new URL(url, window.location.href).toString();
-            console.log("Loading SWF file " + url);
+            if (this.isConnected && !this.is_unused_fallback_object()) {
+                let abs_url = new URL(url, window.location.href).toString();
+                console.log("Loading SWF file " + url);
 
-            let response = await fetch(abs_url);
+                let response = await fetch(abs_url);
 
-            if (response.ok) {
-                let data = await response.arrayBuffer();
-                await this.play_swf_data(data);
-                console.log("Playing " + url);
+                if (response.ok) {
+                    let data = await response.arrayBuffer();
+                    await this.play_swf_data(data);
+                    console.log("Playing " + url);
+                } else {
+                    console.error("SWF load failed: " + response.status + " " + response.statusText + " for " + url);
+                }
             } else {
-                console.error("SWF load failed: " + response.status + " " + response.statusText + " for " + url);
+                console.warn("Ignoring attempt to play a disconnected or suspended Ruffle element");
             }
         } catch (err) {
             console.error("Serious error occured loading SWF file: " + err);
@@ -67,18 +98,22 @@ export class RufflePlayer extends HTMLElement {
     }
 
     async play_swf_data(data) {
-        console.log("Got SWF data");
+        if (this.isConnected && !this.is_unused_fallback_object()) {
+            console.log("Got SWF data");
 
-        if (this.instance) {
-            this.instance.destroy();
-            this.instance = null;
+            if (this.instance) {
+                this.instance.destroy();
+                this.instance = null;
+            }
+
+            let Ruffle = await this.Ruffle.catch(function (e) {
+                console.error("Serious error loading Ruffle: " + e);
+                throw e;
+            });
+            
+            this.instance = Ruffle.new(this.canvas, new Uint8Array(data));
+        } else {
+            console.warn("Ignoring attempt to play a disconnected or suspended Ruffle element");
         }
-
-        let Ruffle = await this.Ruffle.catch(function (e) {
-            console.error("Serious error loading Ruffle: " + e);
-            throw e;
-        });
-        
-        this.instance = Ruffle.new(this.canvas, new Uint8Array(data));
     }
 }

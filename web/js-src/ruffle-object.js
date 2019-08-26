@@ -12,7 +12,7 @@ export default class RuffleObject extends RufflePlayer {
         
         //Kick off the SWF download.
         if (this.params.movie) {
-            super.stream_swf_url(this.params.movie);
+            this.stream_swf_url(this.params.movie);
         }
     }
 
