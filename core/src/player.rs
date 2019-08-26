@@ -15,6 +15,7 @@ struct GcRoot<'gc> {
     library: GcCell<'gc, Library<'gc>>,
     root: DisplayNode<'gc>,
     mouse_hover_node: GcCell<'gc, Option<DisplayNode<'gc>>>, // TODO: Remove GcCell wrapped inside GcCell.
+    avm: GcCell<'gc, Avm1<'gc>>,
 }
 
 make_arena!(GcArena, GcRoot);
@@ -25,7 +26,6 @@ pub struct Player<Audio: AudioBackend, Renderer: RenderBackend> {
 
     is_playing: bool,
 
-    avm: Avm1,
     audio: Audio,
     renderer: Renderer,
     transform_stack: TransformStack,
@@ -72,7 +72,6 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
 
             is_playing: false,
 
-            avm: Avm1::new(header.version),
             renderer,
             audio,
 
@@ -99,6 +98,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                     )),
                 ),
                 mouse_hover_node: GcCell::allocate(gc_context, None),
+                avm: GcCell::allocate(gc_context, Avm1::new(gc_context, header.version)),
             }),
 
             frame_rate: header.frame_rate.into(),
@@ -202,23 +202,13 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
             }
         }
 
-        let (
-            global_time,
-            swf_data,
-            swf_version,
-            background_color,
-            renderer,
-            audio,
-            avm,
-            is_mouse_down,
-        ) = (
+        let (global_time, swf_data, swf_version, background_color, renderer, audio, is_mouse_down) = (
             self.global_time,
             &mut self.swf_data,
             self.swf_version,
             &mut self.background_color,
             &mut self.renderer,
             &mut self.audio,
-            &mut self.avm,
             &mut self.is_mouse_down,
         );
 
@@ -229,7 +219,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                 swf_version,
                 library: gc_root.library.write(gc_context),
                 background_color,
-                avm,
+                avm: gc_root.avm.write(gc_context),
                 renderer,
                 audio,
                 actions: vec![],
@@ -274,14 +264,13 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
             return false;
         }
 
-        let (global_time, swf_data, swf_version, background_color, renderer, audio, avm) = (
+        let (global_time, swf_data, swf_version, background_color, renderer, audio) = (
             self.global_time,
             &mut self.swf_data,
             self.swf_version,
             &mut self.background_color,
             &mut self.renderer,
             &mut self.audio,
-            &mut self.avm,
         );
 
         let mouse_pos = &self.mouse_pos;
@@ -299,7 +288,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                     swf_version,
                     library: gc_root.library.write(gc_context),
                     background_color,
-                    avm,
+                    avm: gc_root.avm.write(gc_context),
                     renderer,
                     audio,
                     actions: vec![],
@@ -334,14 +323,13 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
     }
 
     fn preload(&mut self) {
-        let (global_time, swf_data, swf_version, background_color, renderer, audio, avm) = (
+        let (global_time, swf_data, swf_version, background_color, renderer, audio) = (
             self.global_time,
             &mut self.swf_data,
             self.swf_version,
             &mut self.background_color,
             &mut self.renderer,
             &mut self.audio,
-            &mut self.avm,
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -351,7 +339,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                 swf_version,
                 library: gc_root.library.write(gc_context),
                 background_color,
-                avm,
+                avm: gc_root.avm.write(gc_context),
                 renderer,
                 audio,
                 actions: vec![],
@@ -364,14 +352,13 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
     }
 
     pub fn run_frame(&mut self) {
-        let (global_time, swf_data, swf_version, background_color, renderer, audio, avm) = (
+        let (global_time, swf_data, swf_version, background_color, renderer, audio) = (
             self.global_time,
             &mut self.swf_data,
             self.swf_version,
             &mut self.background_color,
             &mut self.renderer,
             &mut self.audio,
-            &mut self.avm,
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -381,7 +368,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                 swf_version,
                 library: gc_root.library.write(gc_context),
                 background_color,
-                avm,
+                avm: gc_root.avm.write(gc_context),
                 renderer,
                 audio,
                 actions: vec![],
@@ -529,7 +516,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub library: std::cell::RefMut<'a, Library<'gc>>,
     pub gc_context: MutationContext<'gc, 'gc_context>,
     pub background_color: &'a mut Color,
-    pub avm: &'a mut Avm1,
+    pub avm: std::cell::RefMut<'a, Avm1<'gc>>,
     pub renderer: &'a mut dyn RenderBackend,
     pub audio: &'a mut dyn AudioBackend,
     pub actions: Vec<(DisplayNode<'gc>, crate::tag_utils::SwfSlice)>,

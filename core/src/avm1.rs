@@ -1,6 +1,10 @@
+use crate::builtins::Object;
+use crate::builtins::{create_movie_clip, register_builtins};
 use crate::prelude::*;
+use gc_arena::{GcCell, MutationContext};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use std::collections::HashMap;
+use std::fmt;
 use std::io::Cursor;
 use swf::avm1::read::Reader;
 
@@ -13,28 +17,45 @@ pub struct ActionContext<'a, 'gc, 'gc_context> {
     pub audio: &'a mut dyn crate::backend::audio::AudioBackend,
 }
 
-pub struct Avm1 {
+pub struct Avm1<'gc> {
     swf_version: u8,
-    stack: Vec<Value>,
+    stack: Vec<Value<'gc>>,
     rng: SmallRng,
     constant_pool: Vec<String>,
-    locals: HashMap<String, Value>,
+    locals: HashMap<String, Value<'gc>>,
+    globals: HashMap<String, Value<'gc>>,
+}
+
+unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
+    #[inline]
+    fn trace(&self, cc: gc_arena::CollectionContext) {
+        self.stack.trace(cc);
+        self.locals.trace(cc);
+        self.globals.trace(cc);
+    }
 }
 
 type Error = Box<dyn std::error::Error>;
 
-impl Avm1 {
-    pub fn new(swf_version: u8) -> Self {
+impl<'gc> Avm1<'gc> {
+    pub fn new(gc_context: MutationContext<'gc, '_>, swf_version: u8) -> Self {
+        let mut globals = HashMap::new();
+        register_builtins(gc_context, &mut globals);
         Self {
             swf_version,
             stack: vec![],
             rng: SmallRng::from_seed([0u8; 16]), // TODO(Herschel): Get a proper seed on all platforms.
             constant_pool: vec![],
             locals: HashMap::new(),
+            globals,
         }
     }
 
-    pub fn do_action(&mut self, context: &mut ActionContext, code: &[u8]) -> Result<(), Error> {
+    pub fn do_action(
+        &mut self,
+        context: &mut ActionContext<'_, 'gc, '_>,
+        code: &[u8],
+    ) -> Result<(), Error> {
         let mut reader = Reader::new(Cursor::new(code), self.swf_version);
 
         while let Some(action) = reader.read_action()? {
@@ -157,11 +178,11 @@ impl Avm1 {
         Ok(())
     }
 
-    pub fn resolve_slash_path<'gc>(
-        start: DisplayNode<'gc>,
-        root: DisplayNode<'gc>,
+    pub fn resolve_slash_path<'dgc>(
+        start: DisplayNode<'dgc>,
+        root: DisplayNode<'dgc>,
         mut path: &str,
-    ) -> Option<DisplayNode<'gc>> {
+    ) -> Option<DisplayNode<'dgc>> {
         let mut cur_clip = if path.bytes().nth(0).unwrap_or(0) == b'/' {
             path = &path[1..];
             root
@@ -185,11 +206,11 @@ impl Avm1 {
         Some(cur_clip)
     }
 
-    pub fn resolve_slash_path_variable<'gc, 's>(
-        start: DisplayNode<'gc>,
-        root: DisplayNode<'gc>,
+    pub fn resolve_slash_path_variable<'dgc, 's>(
+        start: DisplayNode<'dgc>,
+        root: DisplayNode<'dgc>,
         path: &'s str,
-    ) -> Option<(DisplayNode<'gc>, &'s str)> {
+    ) -> Option<(DisplayNode<'dgc>, &'s str)> {
         if !path.is_empty() {
             let mut var_iter = path.splitn(2, ':');
             match (var_iter.next(), var_iter.next()) {
@@ -206,11 +227,11 @@ impl Avm1 {
         None
     }
 
-    fn push(&mut self, value: impl Into<Value>) {
+    fn push(&mut self, value: impl Into<Value<'gc>>) {
         self.stack.push(value.into());
     }
 
-    fn pop(&mut self) -> Result<Value, Error> {
+    fn pop(&mut self) -> Result<Value<'gc>, Error> {
         self.stack.pop().ok_or_else(|| "Stack underflow".into())
     }
 
@@ -338,17 +359,40 @@ impl Avm1 {
         Err("Unimplemented action: CallFunction".into())
     }
 
-    fn action_call_method(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        let _method_name = self.pop()?.as_string()?;
-        let _object = self.pop()?.as_object()?;
+    fn action_call_method(
+        &mut self,
+        _context: &mut ActionContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let method_name = self.pop()?;
+        let object = self.pop()?;
         let num_args = self.pop()?.as_i64()?; // TODO(Herschel): max arg count?
+        let mut args = Vec::new();
         for _ in 0..num_args {
-            self.pop()?;
+            args.push(self.pop()?);
         }
 
-        self.stack.push(Value::Undefined);
-        // TODO(Herschel)
-        Err("Unimplemented action: CallMethod".into())
+        match method_name {
+            Value::Undefined | Value::Null => {
+                self.stack.push(object.call(&args)?);
+            }
+            Value::String(name) => {
+                if name.is_empty() {
+                    self.stack.push(object.call(&args)?);
+                } else {
+                    self.stack
+                        .push(object.as_object()?.read().get(&name).call(&args)?);
+                }
+            }
+            _ => {
+                return Err(format!(
+                    "Invalid method name, expected string but found {:?}",
+                    method_name
+                )
+                .into())
+            }
+        }
+
+        Ok(())
     }
 
     fn action_constant_pool(
@@ -504,20 +548,41 @@ impl Avm1 {
         Ok(())
     }
 
-    fn action_get_variable(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_get_variable(
+        &mut self,
+        context: &mut ActionContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
         // Flash 4-style variable
         let var_path = self.pop()?;
-        if let Some((node, var_name)) = Self::resolve_slash_path_variable(
-            context.active_clip,
-            context.root,
-            var_path.as_string()?,
-        ) {
-            if let Some(clip) = node.read().as_movie_clip() {
-                self.push(clip.get_variable(var_name));
-            }
-        } else {
-            self.push(Value::Undefined);
+        let path = var_path.as_string()?;
+
+        // Special hardcoded variables
+        if path == "_root" {
+            // TODO: Attach this movie clip Object to an actual MovieClip. That's our root.
+            self.push(create_movie_clip(context.gc_context));
+            return Ok(());
         }
+
+        let mut result = self.locals.get(path).map(|v| v.to_owned());
+
+        if result.is_none() {
+            if let Some((node, var_name)) =
+                Self::resolve_slash_path_variable(context.active_clip, context.root, path)
+            {
+                if let Some(clip) = node.read().as_movie_clip() {
+                    if clip.has_variable(var_name) {
+                        result = Some(clip.get_variable(var_name));
+                    }
+                }
+            };
+        }
+
+        if result.is_none() {
+            if let Some(value) = self.globals.get(path) {
+                result = Some(value.clone());
+            }
+        }
+        self.push(result.unwrap_or(Value::Undefined));
         Ok(())
     }
 
@@ -887,15 +952,25 @@ impl Avm1 {
         Ok(())
     }
 
-    fn action_set_variable(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_set_variable(
+        &mut self,
+        context: &mut ActionContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
         // Flash 4-style variable
         let value = self.pop()?;
         let var_path = self.pop()?;
-        if let Some((node, var_name)) = Self::resolve_slash_path_variable(
-            context.active_clip,
-            context.root,
-            var_path.as_string()?,
-        ) {
+        self.set_variable(context, var_path.as_string()?, value)
+    }
+
+    pub fn set_variable(
+        &mut self,
+        context: &mut ActionContext<'_, 'gc, '_>,
+        var_path: &str,
+        value: Value<'gc>,
+    ) -> Result<(), Error> {
+        if let Some((node, var_name)) =
+            Self::resolve_slash_path_variable(context.active_clip, context.root, var_path)
+        {
             if let Some(clip) = node.write(context.gc_context).as_movie_clip_mut() {
                 clip.set_variable(var_name, value);
             }
@@ -1030,7 +1105,10 @@ impl Avm1 {
         Ok(())
     }
 
-    fn action_target_path(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_target_path(
+        &mut self,
+        _context: &mut ActionContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
         // TODO(Herschel)
         let _clip = self.pop()?.as_object()?;
         self.push(Value::Undefined);
@@ -1074,8 +1152,9 @@ impl Avm1 {
             Value::Bool(_) => "boolean",
             Value::String(_) => "string",
             Value::Object(_) => "object",
+            Value::NativeFunction(_) => "function",
         };
-        // TODO(Herschel): function, movieclip
+        // TODO(Herschel): movieclip
         Ok(())
     }
 
@@ -1123,20 +1202,41 @@ impl Avm1 {
     }
 }
 
-type ObjectPtr = std::marker::PhantomData<()>;
-
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 #[allow(dead_code)]
-pub enum Value {
+pub enum Value<'gc> {
     Undefined,
     Null,
     Bool(bool),
     Number(f64),
     String(String),
-    Object(ObjectPtr),
+    Object(GcCell<'gc, Object<'gc>>),
+    NativeFunction(fn(&[Value<'gc>]) -> Value<'gc>),
 }
 
-impl Value {
+unsafe impl<'gc> gc_arena::Collect for Value<'gc> {
+    fn trace(&self, cc: gc_arena::CollectionContext) {
+        if let Value::Object(object) = self {
+            object.trace(cc);
+        }
+    }
+}
+
+impl fmt::Debug for Value<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Value::Undefined => f.write_str("Undefined"),
+            Value::Null => f.write_str("Null"),
+            Value::Bool(value) => f.debug_tuple("Bool").field(value).finish(),
+            Value::Number(value) => f.debug_tuple("Number").field(value).finish(),
+            Value::String(value) => f.debug_tuple("String").field(value).finish(),
+            Value::Object(value) => f.debug_tuple("Object").field(value).finish(),
+            Value::NativeFunction(_) => f.write_str("NativeFunction"),
+        }
+    }
+}
+
+impl<'gc> Value<'gc> {
     fn into_number_v1(self) -> f64 {
         match self {
             Value::Bool(true) => 1.0,
@@ -1160,10 +1260,14 @@ impl Value {
                 log::error!("Unimplemented: Object ToNumber");
                 0.0
             }
+            Value::NativeFunction(_fn) => {
+                log::error!("Unimplemented: NativeFunction ToNumber");
+                0.0
+            }
         }
     }
 
-    fn from_bool_v1(value: bool, swf_version: u8) -> Value {
+    fn from_bool_v1(value: bool, swf_version: u8) -> Value<'gc> {
         // SWF version 4 did not have true bools and will push bools as 0 or 1.
         // e.g. SWF19 p. 72:
         // "If the numbers are equal, true is pushed to the stack for SWF 5 and later. For SWF 4, 1 is pushed to the stack."
@@ -1182,6 +1286,7 @@ impl Value {
             Value::Number(v) => v.to_string(), // TODO(Herschel): Rounding for int?
             Value::String(v) => v,
             Value::Object(_) => "[Object object]".to_string(), // TODO(Herschel):
+            Value::NativeFunction(_) => "[type Function]".to_string(),
         }
     }
 
@@ -1206,7 +1311,7 @@ impl Value {
         self.as_f64().map(|n| n as i64)
     }
 
-    fn as_f64(&self) -> Result<f64, Error> {
+    pub fn as_f64(&self) -> Result<f64, Error> {
         match *self {
             Value::Number(v) => Ok(v),
             _ => Err(format!("Expected Number, found {:?}", self).into()),
@@ -1220,11 +1325,19 @@ impl Value {
         }
     }
 
-    fn as_object(&self) -> Result<&ObjectPtr, Error> {
+    fn as_object(&self) -> Result<&GcCell<'gc, Object<'gc>>, Error> {
         if let Value::Object(object) = self {
             Ok(object)
         } else {
             Err(format!("Expected Object, found {:?}", self).into())
+        }
+    }
+
+    fn call(&self, args: &[Value<'gc>]) -> Result<Value<'gc>, Error> {
+        if let Value::NativeFunction(function) = self {
+            Ok(function(args))
+        } else {
+            Err(format!("Expected function, found {:?}", self).into())
         }
     }
 }

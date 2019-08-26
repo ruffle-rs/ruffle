@@ -28,7 +28,7 @@ pub struct MovieClip<'gc> {
     current_frame: FrameNumber,
     audio_stream: Option<AudioStreamHandle>,
     children: BTreeMap<Depth, DisplayNode<'gc>>,
-    variables: HashMap<String, avm1::Value>,
+    variables: HashMap<String, avm1::Value<'gc>>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -225,7 +225,11 @@ impl<'gc> MovieClip<'gc> {
         self.goto_queue.clear();
     }
 
-    pub fn get_variable(&self, var_name: &str) -> avm1::Value {
+    pub fn has_variable(&self, var_name: &str) -> bool {
+        self.variables.contains_key(var_name)
+    }
+
+    pub fn get_variable(&self, var_name: &str) -> avm1::Value<'gc> {
         // TODO: Value should be Copy (and contain a Cow/GcCell for big objects)
         self.variables
             .get(var_name)
@@ -233,7 +237,7 @@ impl<'gc> MovieClip<'gc> {
             .clone()
     }
 
-    pub fn set_variable(&mut self, var_name: &str, value: avm1::Value) {
+    pub fn set_variable(&mut self, var_name: &str, value: avm1::Value<'gc>) {
         // TODO: Cow for String values.
         self.variables.insert(var_name.to_owned(), value);
     }
