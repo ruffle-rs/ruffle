@@ -28,7 +28,7 @@ function wrap_tree(elem) {
             }
         }
     } catch (err) {
-        console.err("Serious error encountered when interdicting native Flash elements: " + err);
+        console.error("Serious error encountered when interdicting native Flash elements: " + err);
     }
 }
 
@@ -39,10 +39,13 @@ window.customElements.define("ruffle-embed", RuffleEmbed);
 wrap_tree(document.getElementsByTagName("html")[0]);
 
 const observer = new MutationObserver(function (mutationsList, observer) {
-    console.log(mutationsList);
     for (let mutation of mutationsList) {
         for (let node of mutation.addedNodes) {
-            wrap_tree(node);
+            if (node instanceof Element) {
+                wrap_tree(node);
+            } else {
+                console.error("Cannot process added node of type " + node.constructor.name);
+            }
         }
     }
 });
