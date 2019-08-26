@@ -11,9 +11,9 @@ module.exports = (env, argv) => {
   console.log(`Building ${mode}...`);
 
   return {
-    entry: path.resolve(__dirname, "extension/js/index.js"),
+    entry: path.resolve(__dirname, "js/index.js"),
     output: {
-      path: path.resolve(__dirname, "extension/dist"),
+      path: path.resolve(__dirname, "build/dist"),
       filename: "ruffle.js",
     },
     mode: mode,
