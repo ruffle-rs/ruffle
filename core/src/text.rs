@@ -34,8 +34,6 @@ impl<'gc> DisplayObject<'gc> for Text<'gc> {
             ..Default::default()
         });
 
-        let mut x = Default::default();
-        let mut y = Default::default();
         let mut color = swf::Color {
             r: 0,
             g: 0,
@@ -46,16 +44,18 @@ impl<'gc> DisplayObject<'gc> for Text<'gc> {
         let mut height = 0;
         let mut transform: Transform = Default::default();
         for block in &self.text_blocks {
-            x = block.x_offset.unwrap_or(x);
-            y = block.y_offset.unwrap_or(y);
-            color = block.color.as_ref().unwrap_or_else(|| &color).clone();
+            if let Some(x) = block.x_offset {
+                transform.matrix.tx = x.get() as f32;
+            }
+            if let Some(y) = block.y_offset {
+                transform.matrix.ty = y.get() as f32;
+            }
+            color = block.color.as_ref().unwrap_or(&color).clone();
             font_id = block.font_id.unwrap_or(font_id);
             height = block.height.unwrap_or(height);
             let scale = f32::from(height) / 1024.0;
             transform.matrix.a = scale;
             transform.matrix.d = scale;
-            transform.matrix.tx = x.get() as f32;
-            transform.matrix.ty = y.get() as f32;
             transform.color_transform.r_mult = f32::from(color.r) / 255.0;
             transform.color_transform.g_mult = f32::from(color.g) / 255.0;
             transform.color_transform.b_mult = f32::from(color.b) / 255.0;
