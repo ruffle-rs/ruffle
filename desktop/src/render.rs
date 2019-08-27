@@ -161,10 +161,9 @@ impl GliumRenderBackend {
                             &FillOptions::even_odd(),
                             &mut buffers_builder,
                         ) {
-                            println!("Failure");
+                            // This may just be a degenerate path; skip it.
                             log::error!("Tessellation failure: {:?}", e);
-                            self.meshes.push(mesh);
-                            return handle;
+                            continue;
                         }
                     }
                     FillStyle::LinearGradient(gradient) => {
@@ -181,10 +180,9 @@ impl GliumRenderBackend {
                             &FillOptions::even_odd(),
                             &mut buffers_builder,
                         ) {
-                            println!("Failure");
+                            // This may just be a degenerate path; skip it.
                             log::error!("Tessellation failure: {:?}", e);
-                            self.meshes.push(mesh);
-                            return handle;
+                            continue;
                         }
 
                         let mut colors: Vec<[f32; 4]> = Vec::with_capacity(8);
@@ -230,10 +228,9 @@ impl GliumRenderBackend {
                             &FillOptions::even_odd(),
                             &mut buffers_builder,
                         ) {
-                            println!("Failure");
+                            // This may just be a degenerate path; skip it.
                             log::error!("Tessellation failure: {:?}", e);
-                            self.meshes.push(mesh);
-                            return handle;
+                            continue;
                         }
 
                         let mut colors: Vec<[f32; 4]> = Vec::with_capacity(8);
@@ -282,10 +279,9 @@ impl GliumRenderBackend {
                             &FillOptions::even_odd(),
                             &mut buffers_builder,
                         ) {
-                            println!("Failure");
+                            // This may just be a degenerate path; skip it.
                             log::error!("Tessellation failure: {:?}", e);
-                            self.meshes.push(mesh);
-                            return handle;
+                            continue;
                         }
 
                         let mut colors: Vec<[f32; 4]> = Vec::with_capacity(8);
@@ -336,10 +332,9 @@ impl GliumRenderBackend {
                             &FillOptions::even_odd(),
                             &mut buffers_builder,
                         ) {
-                            println!("Failure");
+                            // This may just be a degenerate path; skip it.
                             log::error!("Tessellation failure: {:?}", e);
-                            self.meshes.push(mesh);
-                            return handle;
+                            continue;
                         }
 
                         let texture = &self
@@ -422,9 +417,9 @@ impl GliumRenderBackend {
                         &options,
                         &mut buffers_builder,
                     ) {
+                        // This may just be a degenerate path; skip it.
                         log::error!("Tessellation failure: {:?}", e);
-                        self.meshes.push(mesh);
-                        return handle;
+                        continue;
                     }
                 }
             }
