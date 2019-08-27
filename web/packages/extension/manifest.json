@@ -9,6 +9,7 @@
         "128": "icons/128.png",
         "180": "icons/180.png"
     },
+    "permissions": [ "storage" ],
     "content_scripts": [
         {
             "matches": ["<all_urls>"],
@@ -17,5 +18,10 @@
             "run_at": "document_start"
         }
     ],
-    "web_accessible_resources": ["dist/*"]
+    "web_accessible_resources": ["dist/*"],
+    "content_security_policy": "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'unsafe-inline'",
+    "browser_action": {
+        "default_popup": "popup.html",
+        "browser_style": true
+    }
 }
