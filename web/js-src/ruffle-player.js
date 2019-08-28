@@ -43,11 +43,11 @@ export class RufflePlayer extends HTMLElement {
             this.dynamic_styles.sheet.deleteRule(i);
         }
 
-        if (!isNaN(parseInt(this.attributes.width.value))) {
+        if (this.attributes.width && !isNaN(parseInt(this.attributes.width.value))) {
             this.dynamic_styles.sheet.insertRule(":host { width: " + this.attributes.width.value + "px; }");
         }
 
-        if (!isNaN(parseInt(this.attributes.height.value))) {
+        if (this.attributes.height && !isNaN(parseInt(this.attributes.height.value))) {
             this.dynamic_styles.sheet.insertRule(":host { height: " + this.attributes.height.value + "px; }");
         }
     }
