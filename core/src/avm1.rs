@@ -1,5 +1,6 @@
-use crate::builtins::Object;
-use crate::builtins::{create_movie_clip, register_builtins};
+use crate::avm1::builtins::register_builtins;
+use crate::avm1::movie_clip::create_movie_clip;
+use crate::avm1::object::Object;
 use crate::prelude::*;
 use gc_arena::{GcCell, MutationContext};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
@@ -7,6 +8,10 @@ use std::collections::HashMap;
 use std::fmt;
 use std::io::Cursor;
 use swf::avm1::read::Reader;
+
+mod builtins;
+mod movie_clip;
+mod object;
 
 pub struct ActionContext<'a, 'gc, 'gc_context> {
     pub gc_context: gc_arena::MutationContext<'gc, 'gc_context>,
@@ -178,11 +183,11 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    pub fn resolve_slash_path<'dgc>(
-        start: DisplayNode<'dgc>,
-        root: DisplayNode<'dgc>,
+    pub fn resolve_slash_path(
+        start: DisplayNode<'gc>,
+        root: DisplayNode<'gc>,
         mut path: &str,
-    ) -> Option<DisplayNode<'dgc>> {
+    ) -> Option<DisplayNode<'gc>> {
         let mut cur_clip = if path.bytes().nth(0).unwrap_or(0) == b'/' {
             path = &path[1..];
             root
@@ -206,11 +211,11 @@ impl<'gc> Avm1<'gc> {
         Some(cur_clip)
     }
 
-    pub fn resolve_slash_path_variable<'dgc, 's>(
-        start: DisplayNode<'dgc>,
-        root: DisplayNode<'dgc>,
+    pub fn resolve_slash_path_variable<'s>(
+        start: DisplayNode<'gc>,
+        root: DisplayNode<'gc>,
         path: &'s str,
-    ) -> Option<(DisplayNode<'dgc>, &'s str)> {
+    ) -> Option<(DisplayNode<'gc>, &'s str)> {
         if !path.is_empty() {
             let mut var_iter = path.splitn(2, ':');
             match (var_iter.next(), var_iter.next()) {
