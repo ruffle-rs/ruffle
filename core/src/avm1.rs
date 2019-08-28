@@ -1,17 +1,16 @@
 use crate::avm1::builtins::register_builtins;
-use crate::avm1::movie_clip::create_movie_clip;
 use crate::avm1::object::Object;
+
 use crate::prelude::*;
 use gc_arena::{GcCell, MutationContext};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use std::collections::HashMap;
-use std::fmt;
+
 use std::io::Cursor;
 use swf::avm1::read::Reader;
 
 mod builtins;
-mod movie_clip;
-mod object;
+pub mod object;
 
 pub struct ActionContext<'a, 'gc, 'gc_context> {
     pub gc_context: gc_arena::MutationContext<'gc, 'gc_context>,
@@ -378,14 +377,32 @@ impl<'gc> Avm1<'gc> {
 
         match method_name {
             Value::Undefined | Value::Null => {
-                self.stack.push(object.call(&args)?);
+                self.stack.push(
+                    object.call(
+                        _context.gc_context,
+                        _context
+                            .active_clip
+                            .read()
+                            .as_movie_clip()
+                            .unwrap()
+                            .object(),
+                        &args,
+                    )?,
+                );
             }
             Value::String(name) => {
                 if name.is_empty() {
-                    self.stack.push(object.call(&args)?);
+                    self.stack.push(object.call(
+                        _context.gc_context,
+                        object.as_object()?.to_owned(),
+                        &args,
+                    )?);
                 } else {
-                    self.stack
-                        .push(object.as_object()?.read().get(&name).call(&args)?);
+                    self.stack.push(object.as_object()?.read().get(&name).call(
+                        _context.gc_context,
+                        object.as_object()?.to_owned(),
+                        &args,
+                    )?);
                 }
             }
             _ => {
@@ -562,9 +579,14 @@ impl<'gc> Avm1<'gc> {
         let path = var_path.as_string()?;
 
         // Special hardcoded variables
-        if path == "_root" {
-            // TODO: Attach this movie clip Object to an actual MovieClip. That's our root.
-            self.push(create_movie_clip(context.gc_context));
+        if path == "_root" || path == "this" {
+            self.push(
+                context
+                    .start_clip
+                    .read()
+                    .as_movie_clip()
+                    .map_or(Value::Undefined, |clip| Value::Object(clip.object())),
+            );
             return Ok(());
         }
 
@@ -575,8 +597,9 @@ impl<'gc> Avm1<'gc> {
                 Self::resolve_slash_path_variable(context.active_clip, context.root, path)
             {
                 if let Some(clip) = node.read().as_movie_clip() {
-                    if clip.has_variable(var_name) {
-                        result = Some(clip.get_variable(var_name));
+                    let object = clip.object();
+                    if object.read().has_property(var_name) {
+                        result = Some(object.read().get(var_name));
                     }
                 }
             };
@@ -977,7 +1000,7 @@ impl<'gc> Avm1<'gc> {
             Self::resolve_slash_path_variable(context.active_clip, context.root, var_path)
         {
             if let Some(clip) = node.write(context.gc_context).as_movie_clip_mut() {
-                clip.set_variable(var_name, value);
+                clip.object().write(context.gc_context).set(var_name, value);
             }
         }
         Ok(())
@@ -1156,8 +1179,7 @@ impl<'gc> Avm1<'gc> {
             Value::Number(_) => "number",
             Value::Bool(_) => "boolean",
             Value::String(_) => "string",
-            Value::Object(_) => "object",
-            Value::NativeFunction(_) => "function",
+            Value::Object(_) => "object", // TODO: function if object is callable?
         };
         // TODO(Herschel): movieclip
         Ok(())
@@ -1207,7 +1229,7 @@ impl<'gc> Avm1<'gc> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 #[allow(dead_code)]
 pub enum Value<'gc> {
     Undefined,
@@ -1216,27 +1238,12 @@ pub enum Value<'gc> {
     Number(f64),
     String(String),
     Object(GcCell<'gc, Object<'gc>>),
-    NativeFunction(fn(&[Value<'gc>]) -> Value<'gc>),
 }
 
 unsafe impl<'gc> gc_arena::Collect for Value<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
         if let Value::Object(object) = self {
             object.trace(cc);
-        }
-    }
-}
-
-impl fmt::Debug for Value<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Value::Undefined => f.write_str("Undefined"),
-            Value::Null => f.write_str("Null"),
-            Value::Bool(value) => f.debug_tuple("Bool").field(value).finish(),
-            Value::Number(value) => f.debug_tuple("Number").field(value).finish(),
-            Value::String(value) => f.debug_tuple("String").field(value).finish(),
-            Value::Object(value) => f.debug_tuple("Object").field(value).finish(),
-            Value::NativeFunction(_) => f.write_str("NativeFunction"),
         }
     }
 }
@@ -1265,10 +1272,6 @@ impl<'gc> Value<'gc> {
                 log::error!("Unimplemented: Object ToNumber");
                 0.0
             }
-            Value::NativeFunction(_fn) => {
-                log::error!("Unimplemented: NativeFunction ToNumber");
-                0.0
-            }
         }
     }
 
@@ -1290,8 +1293,7 @@ impl<'gc> Value<'gc> {
             Value::Bool(v) => v.to_string(),
             Value::Number(v) => v.to_string(), // TODO(Herschel): Rounding for int?
             Value::String(v) => v,
-            Value::Object(_) => "[Object object]".to_string(), // TODO(Herschel):
-            Value::NativeFunction(_) => "[type Function]".to_string(),
+            Value::Object(_) => "[Object object]".to_string(), // TODO: object.toString()
         }
     }
 
@@ -1338,9 +1340,14 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    fn call(&self, args: &[Value<'gc>]) -> Result<Value<'gc>, Error> {
-        if let Value::NativeFunction(function) = self {
-            Ok(function(args))
+    fn call(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        this: GcCell<'gc, Object<'gc>>,
+        args: &[Value<'gc>],
+    ) -> Result<Value<'gc>, Error> {
+        if let Value::Object(object) = self {
+            Ok(object.read().call(gc_context, this, args))
         } else {
             Err(format!("Expected function, found {:?}", self).into())
         }

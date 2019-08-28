@@ -4,7 +4,7 @@ use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use std::collections::BTreeMap;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Button<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: gc_arena::Gc<'gc, ButtonStatic>,

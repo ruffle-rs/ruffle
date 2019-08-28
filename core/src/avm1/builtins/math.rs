@@ -1,12 +1,20 @@
 use crate::avm1::{Object, Value};
 use gc_arena::{GcCell, MutationContext};
 
-fn abs<'gc>(args: &[Value<'gc>]) -> Value<'gc> {
+fn abs<'gc>(
+    _gc_context: MutationContext<'gc, '_>,
+    _this: GcCell<'gc, Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Value<'gc> {
     let input = args.get(0).unwrap().as_f64().unwrap();
     Value::Number(input.abs())
 }
 
-fn round<'gc>(args: &[Value<'gc>]) -> Value<'gc> {
+fn round<'gc>(
+    _gc_context: MutationContext<'gc, '_>,
+    _this: GcCell<'gc, Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Value<'gc> {
     let input = args.get(0).unwrap().as_f64().unwrap();
     Value::Number(input.round())
 }
@@ -14,8 +22,14 @@ fn round<'gc>(args: &[Value<'gc>]) -> Value<'gc> {
 pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> Value<'gc> {
     let mut math = Object::new();
 
-    math.set("abs", Value::NativeFunction(abs));
-    math.set("round", Value::NativeFunction(round));
+    math.set(
+        "abs",
+        Value::Object(GcCell::allocate(gc_context, Object::function(abs))),
+    );
+    math.set(
+        "round",
+        Value::Object(GcCell::allocate(gc_context, Object::function(round))),
+    );
 
     Value::Object(GcCell::allocate(gc_context, math))
 }

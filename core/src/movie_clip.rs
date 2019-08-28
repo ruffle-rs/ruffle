@@ -1,4 +1,5 @@
-use crate::avm1;
+use crate::avm1::object::Object;
+use crate::avm1::Value;
 use crate::backend::audio::AudioStreamHandle;
 use crate::character::Character;
 use crate::color_transform::ColorTransform;
@@ -11,14 +12,14 @@ use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use crate::tag_utils::{self, DecodeResult, SwfStream};
 use crate::text::Text;
-use gc_arena::{Gc, MutationContext};
+use gc_arena::{Gc, GcCell, MutationContext};
 use std::collections::{BTreeMap, HashMap};
 use swf::read::SwfRead;
 
 type Depth = i16;
 type FrameNumber = u16;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct MovieClip<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: Gc<'gc, MovieClipStatic>,
@@ -28,11 +29,33 @@ pub struct MovieClip<'gc> {
     current_frame: FrameNumber,
     audio_stream: Option<AudioStreamHandle>,
     children: BTreeMap<Depth, DisplayNode<'gc>>,
-    variables: HashMap<String, avm1::Value<'gc>>,
+    object: GcCell<'gc, Object<'gc>>,
+}
+
+fn create_movie_object<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<'gc> {
+    let mut object = Object::new();
+
+    object.set(
+        "nextFrame",
+        Value::Object(GcCell::allocate(
+            gc_context,
+            Object::function(|gc_context, this, _args| {
+                if let Some(display_object) = this.read().display_node() {
+                    if let Some(movie_clip) = display_object.write(gc_context).as_movie_clip_mut() {
+                        movie_clip.next_frame();
+                    }
+                }
+                Value::Undefined
+            }),
+        )),
+    );
+
+    object
 }
 
 impl<'gc> MovieClip<'gc> {
     pub fn new(gc_context: MutationContext<'gc, '_>) -> Self {
+        let object = GcCell::allocate(gc_context, create_movie_object(gc_context));
         Self {
             base: Default::default(),
             static_data: Gc::allocate(gc_context, MovieClipStatic::default()),
@@ -42,7 +65,7 @@ impl<'gc> MovieClip<'gc> {
             current_frame: 0,
             audio_stream: None,
             children: BTreeMap::new(),
-            variables: HashMap::new(),
+            object,
         }
     }
 
@@ -53,6 +76,7 @@ impl<'gc> MovieClip<'gc> {
         tag_stream_len: usize,
         num_frames: u16,
     ) -> Self {
+        let object = GcCell::allocate(gc_context, create_movie_object(gc_context));
         Self {
             base: Default::default(),
             static_data: Gc::allocate(
@@ -72,7 +96,7 @@ impl<'gc> MovieClip<'gc> {
             current_frame: 0,
             audio_stream: None,
             children: BTreeMap::new(),
-            variables: HashMap::new(),
+            object,
         }
     }
 
@@ -225,25 +249,12 @@ impl<'gc> MovieClip<'gc> {
         self.goto_queue.clear();
     }
 
-    pub fn has_variable(&self, var_name: &str) -> bool {
-        self.variables.contains_key(var_name)
-    }
-
-    pub fn get_variable(&self, var_name: &str) -> avm1::Value<'gc> {
-        // TODO: Value should be Copy (and contain a Cow/GcCell for big objects)
-        self.variables
-            .get(var_name)
-            .unwrap_or(&avm1::Value::Undefined)
-            .clone()
-    }
-
-    pub fn set_variable(&mut self, var_name: &str, value: avm1::Value<'gc>) {
-        // TODO: Cow for String values.
-        self.variables.insert(var_name.to_owned(), value);
-    }
-
     pub fn id(&self) -> CharacterId {
         self.static_data.id
+    }
+
+    pub fn object(&self) -> GcCell<'gc, Object<'gc>> {
+        self.object
     }
 
     fn tag_stream_start(&self) -> u64 {
@@ -442,6 +453,15 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
     fn as_movie_clip_mut(&mut self) -> Option<&mut crate::movie_clip::MovieClip<'gc>> {
         Some(self)
     }
+
+    fn post_instantiation(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        display_object: &DisplayNode<'gc>,
+    ) {
+        let mut object = self.object.write(gc_context);
+        object.set_display_node(display_object.to_owned());
+    }
 }
 
 unsafe impl<'gc> gc_arena::Collect for MovieClip<'gc> {
@@ -452,6 +472,7 @@ unsafe impl<'gc> gc_arena::Collect for MovieClip<'gc> {
         }
         self.base.trace(cc);
         self.static_data.trace(cc);
+        self.object.trace(cc);
     }
 }
 

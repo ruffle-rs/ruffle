@@ -1,9 +1,12 @@
+use crate::avm1::object::Object;
+
 use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use crate::transform::Transform;
-use gc_arena::{Collect, GcCell};
+use gc_arena::{Collect, GcCell, MutationContext};
+use std::fmt::Debug;
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, Debug)]
 #[collect(empty_drop)]
 pub struct DisplayObjectBase<'gc> {
     parent: Option<DisplayNode<'gc>>,
@@ -68,7 +71,7 @@ impl<'gc> DisplayObject<'gc> for DisplayObjectBase<'gc> {
     }
 }
 
-pub trait DisplayObject<'gc>: 'gc + Collect {
+pub trait DisplayObject<'gc>: 'gc + Collect + Debug {
     fn local_bounds(&self) -> BoundingBox {
         BoundingBox::default()
     }
@@ -115,6 +118,10 @@ pub trait DisplayObject<'gc>: 'gc + Collect {
     }
     fn box_clone(&self) -> Box<dyn DisplayObject<'gc>>;
 
+    fn object(&self) -> Object<'gc> {
+        Object::new() // todo: impl for every type and delete this fallback
+    }
+
     fn hit_test(&self, _: (Twips, Twips)) -> bool {
         false
     }
@@ -125,6 +132,13 @@ pub trait DisplayObject<'gc>: 'gc + Collect {
         _: (Twips, Twips),
     ) -> Option<DisplayNode<'gc>> {
         None
+    }
+
+    fn post_instantiation(
+        &mut self,
+        _gc_context: MutationContext<'gc, '_>,
+        _display_object: &DisplayNode<'gc>,
+    ) {
     }
 }
 

@@ -4,7 +4,7 @@ use gc_arena::Collect;
 /// Represents the transform for a DisplayObject.
 /// This includes both the transformation matrix and the color transform.
 ///
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, Debug)]
 #[collect(require_static)]
 pub struct Transform {
     pub matrix: Matrix,

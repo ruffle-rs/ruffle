@@ -3,7 +3,7 @@ use crate::display_object::{DisplayObject, DisplayObjectBase};
 use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Graphic<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: gc_arena::Gc<'gc, GraphicStatic>,
