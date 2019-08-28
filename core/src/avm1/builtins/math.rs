@@ -1,5 +1,4 @@
-use crate::avm1::Value;
-use crate::builtins::Object;
+use crate::avm1::{Object, Value};
 use gc_arena::{GcCell, MutationContext};
 
 pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> Value<'gc> {

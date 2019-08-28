@@ -3,7 +3,6 @@ mod display_object;
 
 mod avm1;
 mod bounding_box;
-mod builtins;
 mod button;
 mod character;
 mod color_transform;

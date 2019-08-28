@@ -2,7 +2,7 @@ use crate::avm1::Value;
 use gc_arena::Collect;
 use std::collections::HashMap;
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Debug, Collect, Default)]
 #[collect(empty_drop)]
 pub struct Object<'gc> {
     values: HashMap<String, Value<'gc>>,
