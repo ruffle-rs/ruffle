@@ -1728,7 +1728,8 @@ impl<R: Read> Reader<R> {
             0x40..=0x43 => FillStyle::Bitmap {
                 id: self.read_u16()?,
                 matrix: self.read_matrix()?,
-                is_smoothed: (fill_style_type & 0b10) == 0,
+                // Bitmap smoothing only occurs in SWF version 8+.
+                is_smoothed: self.version >= 8 && (fill_style_type & 0b10) == 0,
                 is_repeating: (fill_style_type & 0b01) == 0,
             },
 

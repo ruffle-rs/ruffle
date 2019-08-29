@@ -1048,7 +1048,9 @@ impl<W: Write> Writer<W> {
                 }
             }
 
-            Tag::DefineSceneAndFrameLabelData(ref data) => self.write_define_scene_and_frame_label_data(data)?,
+            Tag::DefineSceneAndFrameLabelData(ref data) => {
+                self.write_define_scene_and_frame_label_data(data)?
+            }
             Tag::ProductInfo(ref product_info) => self.write_product_info(product_info)?,
             Tag::DebugId(ref debug_id) => self.write_debug_id(debug_id)?,
 
@@ -1806,7 +1808,9 @@ impl<W: Write> Writer<W> {
                 is_smoothed,
                 is_repeating,
             } => {
-                let fill_style_type = match (is_smoothed, is_repeating) {
+                // Bitmap smoothing only an option in SWF version 8+.
+                // Lower versions use 0x40 and 0x41 type even when unsmoothed.
+                let fill_style_type = match (is_smoothed || self.version < 8, is_repeating) {
                     (true, true) => 0x40,
                     (true, false) => 0x41,
                     (false, true) => 0x42,
