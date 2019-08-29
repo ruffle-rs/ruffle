@@ -25,8 +25,7 @@ url = "1.7.2"
 wasm-bindgen = "0.2.48"
 
 [dependencies.jpeg-decoder]
-git = "https://github.com/kaksmet/jpeg-decoder"
-rev = "e76f194"
+jpeg-decoder = "0.1.16"
 default-features = false # can't use rayon on web
 
 [dependencies.ruffle_core]
