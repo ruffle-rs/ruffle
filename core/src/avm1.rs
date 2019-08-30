@@ -10,6 +10,7 @@ use std::io::Cursor;
 use swf::avm1::read::Reader;
 
 mod builtins;
+pub mod movie_clip;
 pub mod object;
 
 pub struct ActionContext<'a, 'gc, 'gc_context> {

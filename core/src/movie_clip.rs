@@ -1,5 +1,5 @@
+use crate::avm1::movie_clip::create_movie_object;
 use crate::avm1::object::Object;
-use crate::avm1::Value;
 use crate::backend::audio::AudioStreamHandle;
 use crate::character::Character;
 use crate::color_transform::ColorTransform;
@@ -30,25 +30,6 @@ pub struct MovieClip<'gc> {
     audio_stream: Option<AudioStreamHandle>,
     children: BTreeMap<Depth, DisplayNode<'gc>>,
     object: GcCell<'gc, Object<'gc>>,
-}
-
-fn create_movie_object<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<'gc> {
-    let mut object = Object::new();
-
-    object.set_function(
-        "nextFrame",
-        |gc_context, this, _args| {
-            if let Some(display_object) = this.read().display_node() {
-                if let Some(movie_clip) = display_object.write(gc_context).as_movie_clip_mut() {
-                    movie_clip.next_frame();
-                }
-            }
-            Value::Undefined
-        },
-        gc_context,
-    );
-
-    object
 }
 
 impl<'gc> MovieClip<'gc> {
