@@ -155,6 +155,7 @@ impl fmt::Debug for Property<'_> {
 
 #[derive(Clone)]
 pub struct Object<'gc> {
+    prototype: Option<GcCell<'gc, Object<'gc>>>,
     display_node: Option<DisplayNode<'gc>>,
     values: HashMap<String, Property<'gc>>,
     function: Option<Executable<'gc>>,
@@ -163,6 +164,7 @@ pub struct Object<'gc> {
 
 unsafe impl<'gc> gc_arena::Collect for Object<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
+        self.prototype.trace(cc);
         self.display_node.trace(cc);
         self.values.trace(cc);
     }
@@ -171,6 +173,7 @@ unsafe impl<'gc> gc_arena::Collect for Object<'gc> {
 impl fmt::Debug for Object<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Object")
+            .field("prototype", &self.prototype)
             .field("display_node", &self.display_node)
             .field("values", &self.values)
             .field("function", &self.function.is_some())
@@ -181,6 +184,7 @@ impl fmt::Debug for Object<'_> {
 impl<'gc> Object<'gc> {
     pub fn object(gc_context: MutationContext<'gc, '_>) -> Self {
         let mut result = Self {
+            prototype: None, //TODO: Should be Object
             type_of: TYPE_OF_OBJECT,
             display_node: None,
             values: HashMap::new(),
@@ -204,6 +208,7 @@ impl<'gc> Object<'gc> {
     /// friends.
     pub fn bare_object() -> Self {
         Self {
+            prototype: None,
             type_of: TYPE_OF_OBJECT,
             display_node: None,
             values: HashMap::new(),
@@ -213,6 +218,7 @@ impl<'gc> Object<'gc> {
 
     pub fn native_function(function: NativeFunction<'gc>) -> Self {
         Self {
+            prototype: None, //TODO: Should be Function
             type_of: TYPE_OF_FUNCTION,
             function: Some(Executable::Native(function)),
             display_node: None,
@@ -222,6 +228,7 @@ impl<'gc> Object<'gc> {
 
     pub fn action_function(func: Avm1Function<'gc>) -> Self {
         Self {
+            prototype: None, //TODO: Should be Function
             type_of: TYPE_OF_FUNCTION,
             function: Some(Executable::Action(func)),
             display_node: None,
@@ -245,17 +252,23 @@ impl<'gc> Object<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
     ) -> Result<(), Error> {
-        match self.values.entry(name.to_owned()) {
-            Entry::Occupied(mut entry) => {
-                entry.get_mut().set(avm, context, this, value)?;
-                Ok(())
-            }
-            Entry::Vacant(entry) => {
-                entry.insert(Property::Stored {
-                    value: value.into(),
-                    attributes: Default::default(),
-                });
-                Ok(())
+        if name == "__proto__" {
+            self.prototype = value.into().as_object().ok().to_owned();
+
+            Ok(())
+        } else {
+            match self.values.entry(name.to_owned()) {
+                Entry::Occupied(mut entry) => {
+                    entry.get_mut().set(avm, context, this, value)?;
+                    Ok(())
+                }
+                Entry::Vacant(entry) => {
+                    entry.insert(Property::Stored {
+                        value: value.into(),
+                        attributes: Default::default(),
+                    });
+                    Ok(())
+                }
             }
         }
     }
@@ -321,11 +334,30 @@ impl<'gc> Object<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
     ) -> Result<ReturnValue<'gc>, Error> {
+        if name == "__proto__" {
+            return Ok(self
+                .prototype
+                .map_or(Value::Undefined, Value::Object)
+                .into());
+        }
+
         if let Some(value) = self.values.get(name) {
             return value.get(avm, context, this);
         }
 
-        Ok(Value::Undefined.into())
+        self.prototype
+            .as_ref()
+            .map_or(Ok(Value::Undefined.into()), |p| {
+                p.read().get(name, avm, context, this)
+            })
+    }
+
+    pub fn set_prototype(&mut self, prototype: GcCell<'gc, Object<'gc>>) {
+        self.prototype = Some(prototype);
+    }
+
+    pub fn prototype(&self) -> Option<&GcCell<'gc, Object<'gc>>> {
+        self.prototype.as_ref()
     }
 
     /// Delete a given value off the object.
@@ -341,10 +373,17 @@ impl<'gc> Object<'gc> {
     }
 
     pub fn has_property(&self, name: &str) -> bool {
-        self.values.contains_key(name)
+        self.has_own_property(name)
+            || self
+                .prototype
+                .as_ref()
+                .map_or(false, |p| p.read().has_property(name))
     }
 
     pub fn has_own_property(&self, name: &str) -> bool {
+        if name == "__proto__" {
+            return true;
+        }
         self.values.contains_key(name)
     }
 
