@@ -4,7 +4,6 @@ use core::fmt;
 use gc_arena::{GcCell, MutationContext};
 use std::collections::HashMap;
 
-
 pub type NativeFunction<'gc> =
     fn(MutationContext<'gc, '_>, GcCell<'gc, Object<'gc>>, &[Value<'gc>]) -> Value<'gc>;
 
@@ -54,6 +53,18 @@ impl<'gc> Object<'gc> {
 
     pub fn set(&mut self, name: &str, value: Value<'gc>) {
         self.values.insert(name.to_owned(), value);
+    }
+
+    pub fn set_function(
+        &mut self,
+        name: &str,
+        function: NativeFunction<'gc>,
+        gc_context: MutationContext<'gc, '_>,
+    ) {
+        self.set(
+            name,
+            Value::Object(GcCell::allocate(gc_context, Object::function(function))),
+        )
     }
 
     pub fn get(&self, name: &str) -> Value<'gc> {

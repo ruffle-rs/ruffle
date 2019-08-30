@@ -35,19 +35,17 @@ pub struct MovieClip<'gc> {
 fn create_movie_object<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<'gc> {
     let mut object = Object::new();
 
-    object.set(
+    object.set_function(
         "nextFrame",
-        Value::Object(GcCell::allocate(
-            gc_context,
-            Object::function(|gc_context, this, _args| {
-                if let Some(display_object) = this.read().display_node() {
-                    if let Some(movie_clip) = display_object.write(gc_context).as_movie_clip_mut() {
-                        movie_clip.next_frame();
-                    }
+        |gc_context, this, _args| {
+            if let Some(display_object) = this.read().display_node() {
+                if let Some(movie_clip) = display_object.write(gc_context).as_movie_clip_mut() {
+                    movie_clip.next_frame();
                 }
-                Value::Undefined
-            }),
-        )),
+            }
+            Value::Undefined
+        },
+        gc_context,
     );
 
     object

@@ -22,14 +22,8 @@ fn round<'gc>(
 pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> Value<'gc> {
     let mut math = Object::new();
 
-    math.set(
-        "abs",
-        Value::Object(GcCell::allocate(gc_context, Object::function(abs))),
-    );
-    math.set(
-        "round",
-        Value::Object(GcCell::allocate(gc_context, Object::function(round))),
-    );
+    math.set_function("abs", abs, gc_context);
+    math.set_function("round", round, gc_context);
 
     Value::Object(GcCell::allocate(gc_context, math))
 }
