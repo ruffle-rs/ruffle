@@ -20,7 +20,7 @@ fn round<'gc>(
 }
 
 pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> Value<'gc> {
-    let mut math = Object::object();
+    let mut math = Object::object(gc_context);
 
     math.set_function("abs", abs, gc_context);
     math.set_function("round", round, gc_context);

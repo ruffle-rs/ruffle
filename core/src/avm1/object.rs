@@ -11,6 +11,10 @@ pub const TYPE_OF_OBJECT: &str = "object";
 pub const TYPE_OF_FUNCTION: &str = "function";
 pub const TYPE_OF_MOVIE_CLIP: &str = "movieclip";
 
+fn default_to_string<'gc>(_: MutationContext<'gc, '_>, _: GcCell<'gc, Object<'gc>>, _: &[Value<'gc>]) -> Value<'gc> {
+    Value::String("[Object object]".to_string())
+}
+
 #[derive(Clone)]
 pub struct Object<'gc> {
     display_node: Option<DisplayNode<'gc>>,
@@ -37,13 +41,17 @@ impl fmt::Debug for Object<'_> {
 }
 
 impl<'gc> Object<'gc> {
-    pub fn object() -> Self {
-        Self {
+    pub fn object(gc_context: MutationContext<'gc, '_>) -> Self {
+        let mut result = Self {
             type_of: TYPE_OF_OBJECT,
             display_node: None,
             values: HashMap::new(),
             function: None,
-        }
+        };
+
+        result.set_function("toString", default_to_string, gc_context);
+
+        result
     }
 
     pub fn function(function: NativeFunction<'gc>) -> Self {

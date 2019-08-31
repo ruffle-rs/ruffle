@@ -1,10 +1,9 @@
-use crate::avm1::object::Object;
-
 use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use crate::transform::Transform;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt::Debug;
+use crate::avm1::Value;
 
 #[derive(Clone, Collect, Debug)]
 #[collect(empty_drop)]
@@ -118,8 +117,8 @@ pub trait DisplayObject<'gc>: 'gc + Collect + Debug {
     }
     fn box_clone(&self) -> Box<dyn DisplayObject<'gc>>;
 
-    fn object(&self) -> Object<'gc> {
-        Object::object() // todo: impl for every type and delete this fallback
+    fn object(&self) -> Value<'gc> {
+        Value::Undefined // todo: impl for every type and delete this fallback
     }
 
     fn hit_test(&self, _: (Twips, Twips)) -> bool {

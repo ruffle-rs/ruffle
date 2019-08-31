@@ -369,7 +369,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_call_method(
         &mut self,
-        _context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut ActionContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let method_name = self.pop()?;
         let object = self.pop()?;
@@ -383,13 +383,13 @@ impl<'gc> Avm1<'gc> {
             Value::Undefined | Value::Null => {
                 self.stack.push(
                     object.call(
-                        _context.gc_context,
-                        _context
+                        context.gc_context,
+                        context
                             .active_clip
                             .read()
-                            .as_movie_clip()
-                            .unwrap()
-                            .object(),
+                            .object()
+                            .as_object()?
+                            .to_owned(),
                         &args,
                     )?,
                 );
@@ -397,13 +397,13 @@ impl<'gc> Avm1<'gc> {
             Value::String(name) => {
                 if name.is_empty() {
                     self.stack.push(object.call(
-                        _context.gc_context,
+                        context.gc_context,
                         object.as_object()?.to_owned(),
                         &args,
                     )?);
                 } else {
                     self.stack.push(object.as_object()?.read().get(&name).call(
-                        _context.gc_context,
+                        context.gc_context,
                         object.as_object()?.to_owned(),
                         &args,
                     )?);
@@ -588,8 +588,7 @@ impl<'gc> Avm1<'gc> {
                 context
                     .start_clip
                     .read()
-                    .as_movie_clip()
-                    .map_or(Value::Undefined, |clip| Value::Object(clip.object())),
+                    .object()
             );
             return Ok(());
         }
@@ -601,7 +600,7 @@ impl<'gc> Avm1<'gc> {
                 Self::resolve_slash_path_variable(context.active_clip, context.root, path)
             {
                 if let Some(clip) = node.read().as_movie_clip() {
-                    let object = clip.object();
+                    let object = clip.object().as_object()?;
                     if object.read().has_property(var_name) {
                         result = Some(object.read().get(var_name));
                     }
@@ -1004,7 +1003,7 @@ impl<'gc> Avm1<'gc> {
             Self::resolve_slash_path_variable(context.active_clip, context.root, var_path)
         {
             if let Some(clip) = node.write(context.gc_context).as_movie_clip_mut() {
-                clip.object().write(context.gc_context).set(var_name, value);
+                clip.object().as_object()?.write(context.gc_context).set(var_name, value);
             }
         }
         Ok(())

@@ -15,6 +15,7 @@ use crate::text::Text;
 use gc_arena::{Gc, GcCell, MutationContext};
 use std::collections::{BTreeMap, HashMap};
 use swf::read::SwfRead;
+use crate::avm1::Value;
 
 type Depth = i16;
 type FrameNumber = u16;
@@ -34,7 +35,6 @@ pub struct MovieClip<'gc> {
 
 impl<'gc> MovieClip<'gc> {
     pub fn new(gc_context: MutationContext<'gc, '_>) -> Self {
-        let object = GcCell::allocate(gc_context, create_movie_object(gc_context));
         Self {
             base: Default::default(),
             static_data: Gc::allocate(gc_context, MovieClipStatic::default()),
@@ -44,7 +44,7 @@ impl<'gc> MovieClip<'gc> {
             current_frame: 0,
             audio_stream: None,
             children: BTreeMap::new(),
-            object,
+            object: GcCell::allocate(gc_context, create_movie_object(gc_context)),
         }
     }
 
@@ -55,7 +55,6 @@ impl<'gc> MovieClip<'gc> {
         tag_stream_len: usize,
         num_frames: u16,
     ) -> Self {
-        let object = GcCell::allocate(gc_context, create_movie_object(gc_context));
         Self {
             base: Default::default(),
             static_data: Gc::allocate(
@@ -75,7 +74,7 @@ impl<'gc> MovieClip<'gc> {
             current_frame: 0,
             audio_stream: None,
             children: BTreeMap::new(),
-            object,
+            object: GcCell::allocate(gc_context, create_movie_object(gc_context)),
         }
     }
 
@@ -230,10 +229,6 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn id(&self) -> CharacterId {
         self.static_data.id
-    }
-
-    pub fn object(&self) -> GcCell<'gc, Object<'gc>> {
-        self.object
     }
 
     fn tag_stream_start(&self) -> u64 {
@@ -441,6 +436,10 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
         let mut object = self.object.write(gc_context);
         object.set_display_node(display_object);
         object.set_type_of(TYPE_OF_MOVIE_CLIP);
+    }
+
+    fn object(&self) -> Value<'gc> {
+        Value::Object(self.object)
     }
 }
 

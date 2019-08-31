@@ -119,9 +119,9 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn as_object(&self) -> Result<&GcCell<'gc, Object<'gc>>, Error> {
+    pub fn as_object(&self) -> Result<GcCell<'gc, Object<'gc>>, Error> {
         if let Value::Object(object) = self {
-            Ok(object)
+            Ok(object.to_owned())
         } else {
             Err(format!("Expected Object, found {:?}", self).into())
         }
