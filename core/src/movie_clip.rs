@@ -1,5 +1,5 @@
 use crate::avm1::movie_clip::create_movie_object;
-use crate::avm1::object::Object;
+use crate::avm1::object::{Object, TYPE_OF_MOVIE_CLIP};
 use crate::backend::audio::AudioStreamHandle;
 use crate::character::Character;
 use crate::color_transform::ColorTransform;
@@ -436,10 +436,11 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
     fn post_instantiation(
         &mut self,
         gc_context: MutationContext<'gc, '_>,
-        display_object: &DisplayNode<'gc>,
+        display_object: DisplayNode<'gc>,
     ) {
         let mut object = self.object.write(gc_context);
-        object.set_display_node(display_object.to_owned());
+        object.set_display_node(display_object);
+        object.set_type_of(TYPE_OF_MOVIE_CLIP);
     }
 }
 

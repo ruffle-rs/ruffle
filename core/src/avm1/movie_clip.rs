@@ -42,7 +42,7 @@ macro_rules! with_movie_clip_mut {
 }
 
 pub fn create_movie_object<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<'gc> {
-    let mut object = Object::new();
+    let mut object = Object::object();
 
     with_movie_clip_mut!(
         gc_context,

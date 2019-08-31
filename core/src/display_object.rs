@@ -119,7 +119,7 @@ pub trait DisplayObject<'gc>: 'gc + Collect + Debug {
     fn box_clone(&self) -> Box<dyn DisplayObject<'gc>>;
 
     fn object(&self) -> Object<'gc> {
-        Object::new() // todo: impl for every type and delete this fallback
+        Object::object() // todo: impl for every type and delete this fallback
     }
 
     fn hit_test(&self, _: (Twips, Twips)) -> bool {
@@ -137,7 +137,7 @@ pub trait DisplayObject<'gc>: 'gc + Collect + Debug {
     fn post_instantiation(
         &mut self,
         _gc_context: MutationContext<'gc, '_>,
-        _display_object: &DisplayNode<'gc>,
+        _display_object: DisplayNode<'gc>,
     ) {
     }
 }

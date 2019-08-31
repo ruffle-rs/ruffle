@@ -7,11 +7,16 @@ use std::collections::HashMap;
 pub type NativeFunction<'gc> =
     fn(MutationContext<'gc, '_>, GcCell<'gc, Object<'gc>>, &[Value<'gc>]) -> Value<'gc>;
 
-#[derive(Clone, Default)]
+pub const TYPE_OF_OBJECT: &str = "object";
+pub const TYPE_OF_FUNCTION: &str = "function";
+pub const TYPE_OF_MOVIE_CLIP: &str = "movieclip";
+
+#[derive(Clone)]
 pub struct Object<'gc> {
     display_node: Option<DisplayNode<'gc>>,
     values: HashMap<String, Value<'gc>>,
     function: Option<NativeFunction<'gc>>,
+    type_of: &'static str,
 }
 
 unsafe impl<'gc> gc_arena::Collect for Object<'gc> {
@@ -32,14 +37,21 @@ impl fmt::Debug for Object<'_> {
 }
 
 impl<'gc> Object<'gc> {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn object() -> Self {
+        Self {
+            type_of: TYPE_OF_OBJECT,
+            display_node: None,
+            values: HashMap::new(),
+            function: None,
+        }
     }
 
     pub fn function(function: NativeFunction<'gc>) -> Self {
         Self {
+            type_of: TYPE_OF_FUNCTION,
             function: Some(function),
-            ..Default::default()
+            display_node: None,
+            values: HashMap::new(),
         }
     }
 
@@ -93,5 +105,13 @@ impl<'gc> Object<'gc> {
         } else {
             Value::Undefined
         }
+    }
+
+    pub fn set_type_of(&mut self, type_of: &'static str) {
+        self.type_of = type_of;
+    }
+
+    pub fn type_of(&self) -> &'static str {
+        self.type_of
     }
 }

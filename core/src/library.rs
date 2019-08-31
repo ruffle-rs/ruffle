@@ -61,7 +61,7 @@ impl<'gc> Library<'gc> {
         let result = GcCell::allocate(gc_context, obj);
         result
             .write(gc_context)
-            .post_instantiation(gc_context, &result);
+            .post_instantiation(gc_context, result);
         Ok(result)
     }
 

@@ -1174,15 +1174,8 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_type_of(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        let _type_str = match self.pop()? {
-            Value::Undefined => "undefined",
-            Value::Null => "null",
-            Value::Number(_) => "number",
-            Value::Bool(_) => "boolean",
-            Value::String(_) => "string",
-            Value::Object(_) => "object", // TODO: function if object is callable?
-        };
-        // TODO(Herschel): movieclip
+        let type_of = self.pop()?.type_of();
+        self.push(type_of);
         Ok(())
     }
 
@@ -1305,6 +1298,20 @@ impl<'gc> Value<'gc> {
             // TODO(Herschel): Value::String(v) => ??
             _ => false,
         }
+    }
+
+    fn type_of(&self) -> Value<'gc> {
+        Value::String(
+            match self {
+                Value::Undefined => "undefined",
+                Value::Null => "null",
+                Value::Number(_) => "number",
+                Value::Bool(_) => "boolean",
+                Value::String(_) => "string",
+                Value::Object(object) => object.read().type_of(),
+            }
+            .to_string(),
+        )
     }
 
     fn as_i32(&self) -> Result<i32, Error> {
