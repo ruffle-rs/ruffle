@@ -66,7 +66,7 @@ impl<'gc> Value<'gc> {
             Value::Bool(v) => v.to_string(),
             Value::Number(v) => v.to_string(), // TODO(Herschel): Rounding for int?
             Value::String(v) => v,
-            Value::Object(_) => "[Object object]".to_string(), // TODO: object.toString()
+            Value::Object(object) => object.read().as_string(),
         }
     }
 

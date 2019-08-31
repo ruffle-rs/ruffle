@@ -1,5 +1,6 @@
 use crate::avm1::movie_clip::create_movie_object;
 use crate::avm1::object::{Object, TYPE_OF_MOVIE_CLIP};
+use crate::avm1::Value;
 use crate::backend::audio::AudioStreamHandle;
 use crate::character::Character;
 use crate::color_transform::ColorTransform;
@@ -15,7 +16,6 @@ use crate::text::Text;
 use gc_arena::{Gc, GcCell, MutationContext};
 use std::collections::{BTreeMap, HashMap};
 use swf::read::SwfRead;
-use crate::avm1::Value;
 
 type Depth = i16;
 type FrameNumber = u16;

@@ -381,18 +381,11 @@ impl<'gc> Avm1<'gc> {
 
         match method_name {
             Value::Undefined | Value::Null => {
-                self.stack.push(
-                    object.call(
-                        context.gc_context,
-                        context
-                            .active_clip
-                            .read()
-                            .object()
-                            .as_object()?
-                            .to_owned(),
-                        &args,
-                    )?,
-                );
+                self.stack.push(object.call(
+                    context.gc_context,
+                    context.active_clip.read().object().as_object()?.to_owned(),
+                    &args,
+                )?);
             }
             Value::String(name) => {
                 if name.is_empty() {
@@ -584,12 +577,7 @@ impl<'gc> Avm1<'gc> {
 
         // Special hardcoded variables
         if path == "_root" || path == "this" {
-            self.push(
-                context
-                    .start_clip
-                    .read()
-                    .object()
-            );
+            self.push(context.start_clip.read().object());
             return Ok(());
         }
 
@@ -1003,7 +991,10 @@ impl<'gc> Avm1<'gc> {
             Self::resolve_slash_path_variable(context.active_clip, context.root, var_path)
         {
             if let Some(clip) = node.write(context.gc_context).as_movie_clip_mut() {
-                clip.object().as_object()?.write(context.gc_context).set(var_name, value);
+                clip.object()
+                    .as_object()?
+                    .write(context.gc_context)
+                    .set(var_name, value);
             }
         }
         Ok(())

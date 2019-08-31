@@ -11,7 +11,11 @@ pub const TYPE_OF_OBJECT: &str = "object";
 pub const TYPE_OF_FUNCTION: &str = "function";
 pub const TYPE_OF_MOVIE_CLIP: &str = "movieclip";
 
-fn default_to_string<'gc>(_: MutationContext<'gc, '_>, _: GcCell<'gc, Object<'gc>>, _: &[Value<'gc>]) -> Value<'gc> {
+fn default_to_string<'gc>(
+    _: MutationContext<'gc, '_>,
+    _: GcCell<'gc, Object<'gc>>,
+    _: &[Value<'gc>],
+) -> Value<'gc> {
     Value::String("[Object object]".to_string())
 }
 
@@ -112,6 +116,14 @@ impl<'gc> Object<'gc> {
             function(gc_context, this, args)
         } else {
             Value::Undefined
+        }
+    }
+
+    pub fn as_string(&self) -> String {
+        if self.function.is_some() {
+            "[type Function]".to_string()
+        } else {
+            "[object Object]".to_string()
         }
     }
 

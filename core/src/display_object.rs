@@ -1,9 +1,9 @@
+use crate::avm1::Value;
 use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use crate::transform::Transform;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt::Debug;
-use crate::avm1::Value;
 
 #[derive(Clone, Collect, Debug)]
 #[collect(empty_drop)]
