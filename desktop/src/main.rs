@@ -6,7 +6,7 @@ use glutin::{
     dpi::{LogicalSize, PhysicalPosition},
     ContextBuilder, ElementState, EventsLoop, MouseButton, WindowBuilder, WindowEvent,
 };
-use ruffle_core::{backend::render::RenderBackend, Player};
+use ruffle_core::{backend::render::RenderBackend, Player, backend::navigator::NullNavigatorBackend};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
@@ -44,8 +44,9 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         .build_windowed(window_builder, &events_loop)?;
     let audio = audio::RodioAudioBackend::new()?;
     let renderer = GliumRenderBackend::new(windowed_context)?;
+    let navigator = NullNavigatorBackend::new(); //TODO: actually implement this backend type
     let display = renderer.display().clone();
-    let mut player = Player::new(renderer, audio, swf_data)?;
+    let mut player = Player::new(renderer, audio, navigator, swf_data)?;
     player.set_is_playing(true); // Desktop player will auto-play.
 
     let logical_size: LogicalSize = (player.movie_width(), player.movie_height()).into();

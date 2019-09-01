@@ -22,6 +22,7 @@ pub struct ActionContext<'a, 'gc, 'gc_context> {
     pub start_clip: DisplayNode<'gc>,
     pub active_clip: DisplayNode<'gc>,
     pub audio: &'a mut dyn crate::backend::audio::AudioBackend,
+    pub navigator: &'a mut dyn crate::backend::navigator::NavigatorBackend
 }
 
 pub struct Avm1<'gc> {

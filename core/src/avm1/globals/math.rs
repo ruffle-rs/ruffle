@@ -74,6 +74,7 @@ mod tests {
     use super::*;
     use crate::avm1::Error;
     use crate::backend::audio::NullAudioBackend;
+    use crate::backend::navigator::NullNavigatorBackend;
     use crate::display_object::DisplayObject;
     use crate::movie_clip::MovieClip;
     use gc_arena::rootless_arena;
@@ -110,6 +111,7 @@ mod tests {
                 start_clip: root,
                 active_clip: root,
                 audio: &mut NullAudioBackend::new(),
+                navigator: &mut NullNavigatorBackend::new()
             };
             test(&mut context)
         })

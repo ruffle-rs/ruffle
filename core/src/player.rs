@@ -1,5 +1,5 @@
 use crate::avm1::Avm1;
-use crate::backend::{audio::AudioBackend, render::Letterbox, render::RenderBackend};
+use crate::backend::{audio::AudioBackend, render::Letterbox, render::RenderBackend, navigator::NavigatorBackend};
 use crate::events::{ButtonEvent, PlayerEvent};
 use crate::library::Library;
 use crate::movie_clip::MovieClip;
@@ -20,7 +20,7 @@ struct GcRoot<'gc> {
 
 make_arena!(GcArena, GcRoot);
 
-pub struct Player<Audio: AudioBackend, Renderer: RenderBackend> {
+pub struct Player<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend> {
     swf_data: Arc<Vec<u8>>,
     swf_version: u8,
 
@@ -28,6 +28,7 @@ pub struct Player<Audio: AudioBackend, Renderer: RenderBackend> {
 
     audio: Audio,
     renderer: Renderer,
+    navigator: Navigator,
     transform_stack: TransformStack,
     view_matrix: Matrix,
     inverse_view_matrix: Matrix,
@@ -49,10 +50,11 @@ pub struct Player<Audio: AudioBackend, Renderer: RenderBackend> {
     is_mouse_down: bool,
 }
 
-impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
+impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend> Player<Audio, Renderer, Navigator> {
     pub fn new(
         renderer: Renderer,
         audio: Audio,
+        navigator: Navigator,
         swf_data: Vec<u8>,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let (header, mut reader) = swf::read::read_swf_header(&swf_data[..]).unwrap();
@@ -74,6 +76,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
 
             renderer,
             audio,
+            navigator,
 
             background_color: Color {
                 r: 255,
@@ -202,13 +205,14 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
             }
         }
 
-        let (global_time, swf_data, swf_version, background_color, renderer, audio, is_mouse_down) = (
+        let (global_time, swf_data, swf_version, background_color, renderer, audio, navigator, is_mouse_down) = (
             self.global_time,
             &mut self.swf_data,
             self.swf_version,
             &mut self.background_color,
             &mut self.renderer,
             &mut self.audio,
+            &mut self.navigator,
             &mut self.is_mouse_down,
         );
 
@@ -222,6 +226,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                 avm: gc_root.avm.write(gc_context),
                 renderer,
                 audio,
+                navigator,
                 actions: vec![],
                 gc_context,
                 active_clip: gc_root.root,
@@ -264,13 +269,14 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
             return false;
         }
 
-        let (global_time, swf_data, swf_version, background_color, renderer, audio) = (
+        let (global_time, swf_data, swf_version, background_color, renderer, audio, navigator) = (
             self.global_time,
             &mut self.swf_data,
             self.swf_version,
             &mut self.background_color,
             &mut self.renderer,
             &mut self.audio,
+            &mut self.navigator
         );
 
         let mouse_pos = &self.mouse_pos;
@@ -291,6 +297,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                     avm: gc_root.avm.write(gc_context),
                     renderer,
                     audio,
+                    navigator,
                     actions: vec![],
                     gc_context,
                     active_clip: gc_root.root,
@@ -323,13 +330,14 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
     }
 
     fn preload(&mut self) {
-        let (global_time, swf_data, swf_version, background_color, renderer, audio) = (
+        let (global_time, swf_data, swf_version, background_color, renderer, audio, navigator) = (
             self.global_time,
             &mut self.swf_data,
             self.swf_version,
             &mut self.background_color,
             &mut self.renderer,
             &mut self.audio,
+            &mut self.navigator,
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -342,6 +350,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                 avm: gc_root.avm.write(gc_context),
                 renderer,
                 audio,
+                navigator,
                 actions: vec![],
                 gc_context,
                 active_clip: gc_root.root,
@@ -367,13 +376,14 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
     }
 
     pub fn run_frame(&mut self) {
-        let (global_time, swf_data, swf_version, background_color, renderer, audio) = (
+        let (global_time, swf_data, swf_version, background_color, renderer, audio, navigator) = (
             self.global_time,
             &mut self.swf_data,
             self.swf_version,
             &mut self.background_color,
             &mut self.renderer,
             &mut self.audio,
+            &mut self.navigator
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -386,6 +396,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                 avm: gc_root.avm.write(gc_context),
                 renderer,
                 audio,
+                navigator,
                 actions: vec![],
                 gc_context,
                 active_clip: gc_root.root,
@@ -468,6 +479,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                     start_clip: root,
                     active_clip: root,
                     audio: update_context.audio,
+                    navigator: update_context.navigator,
                 };
                 for (active_clip, action) in actions {
                     action_context.start_clip = active_clip;
@@ -535,6 +547,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub avm: std::cell::RefMut<'a, Avm1<'gc>>,
     pub renderer: &'a mut dyn RenderBackend,
     pub audio: &'a mut dyn AudioBackend,
+    pub navigator: &'a mut dyn NavigatorBackend,
     pub actions: Vec<(DisplayNode<'gc>, crate::tag_utils::SwfSlice)>,
     pub active_clip: DisplayNode<'gc>,
 }
