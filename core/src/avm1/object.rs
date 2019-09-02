@@ -79,6 +79,10 @@ impl<'gc> Object<'gc> {
         self.values.insert(name.to_owned(), value);
     }
 
+    pub fn set_object(&mut self, name: &str, object: GcCell<'gc, Object<'gc>>) {
+        self.values.insert(name.to_owned(), Value::Object(object));
+    }
+
     pub fn set_function(
         &mut self,
         name: &str,

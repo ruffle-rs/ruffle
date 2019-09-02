@@ -270,7 +270,7 @@ impl<'gc> Avm1<'gc> {
             b.push_str(&a.into_string());
             self.push(Value::String(b));
         } else {
-            self.push(Value::Number(b.into_number() + a.into_number()));
+            self.push(Value::Number(b.as_number() + a.as_number()));
         }
         Ok(())
     }
@@ -416,7 +416,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_decrement(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        let a = self.pop()?.into_number();
+        let a = self.pop()?.as_number();
         self.push(Value::Number(a - 1.0));
         Ok(())
     }
@@ -691,7 +691,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_increment(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        let a = self.pop()?.into_number();
+        let a = self.pop()?.as_number();
         self.push(Value::Number(a + 1.0));
         Ok(())
     }
@@ -747,7 +747,7 @@ impl<'gc> Avm1<'gc> {
 
         let result = match (a, b) {
             (Value::String(a), Value::String(b)) => b.to_string().bytes().lt(a.to_string().bytes()),
-            (a, b) => b.into_number() < a.into_number(),
+            (a, b) => b.as_number() < a.as_number(),
         };
 
         self.push(Value::Bool(result));
@@ -1143,7 +1143,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_to_number(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let val = self.pop()?;
-        self.push(Value::Number(val.into_number()));
+        self.push(Value::Number(val.as_number()));
         Ok(())
     }
 

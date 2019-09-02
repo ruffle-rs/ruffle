@@ -21,6 +21,39 @@ unsafe impl<'gc> gc_arena::Collect for Value<'gc> {
     }
 }
 
+impl PartialEq for Value<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        match self {
+            Value::Undefined => match other {
+                Value::Undefined => true,
+                _ => false,
+            },
+            Value::Null => match other {
+                Value::Null => true,
+                _ => false,
+            },
+            Value::Bool(value) => match other {
+                Value::Bool(other_value) => value == other_value,
+                _ => false,
+            },
+            Value::Number(value) => match other {
+                Value::Number(other_value) => {
+                    (value == other_value) || (value.is_nan() && other_value.is_nan())
+                }
+                _ => false,
+            },
+            Value::String(value) => match other {
+                Value::String(other_value) => value == other_value,
+                _ => false,
+            },
+            Value::Object(value) => match other {
+                Value::Object(other_value) => value.as_ptr() == other_value.as_ptr(),
+                _ => false,
+            },
+        }
+    }
+}
+
 impl<'gc> Value<'gc> {
     pub fn into_number_v1(self) -> f64 {
         match self {
@@ -31,7 +64,7 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn into_number(self) -> f64 {
+    pub fn as_number(&self) -> f64 {
         // ECMA-262 2nd edtion s. 9.3 ToNumber
         use std::f64::NAN;
         match self {
@@ -39,7 +72,7 @@ impl<'gc> Value<'gc> {
             Value::Null => NAN,
             Value::Bool(false) => 0.0,
             Value::Bool(true) => 1.0,
-            Value::Number(v) => v,
+            Value::Number(v) => *v,
             Value::String(v) => v.parse().unwrap_or(NAN), // TODO(Herschel): Handle Infinity/etc.?
             Value::Object(_object) => {
                 log::error!("Unimplemented: Object ToNumber");
