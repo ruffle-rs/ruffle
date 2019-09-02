@@ -35,6 +35,14 @@ fn atan2<'gc>(
     Value::Number(NAN)
 }
 
+pub fn random<'gc>(
+    _action_context: &mut ActionContext<'_, 'gc, '_>,
+    _this: GcCell<'gc, Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Value<'gc> {
+    Value::Number(0.4) //chosen by fair dice roll. guaranteed to be random.
+}
+
 pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Object<'gc>> {
     let mut math = Object::object(gc_context);
 
@@ -63,6 +71,7 @@ pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Object<'
     );
 
     math.set_function("atan2", atan2, gc_context);
+    math.set_function("random", random, gc_context);
 
     GcCell::allocate(gc_context, math)
 }
