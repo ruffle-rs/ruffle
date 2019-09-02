@@ -21,6 +21,7 @@ pub struct ActionContext<'a, 'gc, 'gc_context> {
     pub root: DisplayNode<'gc>,
     pub start_clip: DisplayNode<'gc>,
     pub active_clip: DisplayNode<'gc>,
+    pub rng: &'a mut SmallRng,
     pub audio: &'a mut dyn crate::backend::audio::AudioBackend,
     pub navigator: &'a mut dyn crate::backend::navigator::NavigatorBackend
 }
@@ -28,7 +29,6 @@ pub struct ActionContext<'a, 'gc, 'gc_context> {
 pub struct Avm1<'gc> {
     swf_version: u8,
     stack: Vec<Value<'gc>>,
-    rng: SmallRng,
     constant_pool: Vec<String>,
     locals: HashMap<String, Value<'gc>>,
     globals: GcCell<'gc, Object<'gc>>,
@@ -50,7 +50,6 @@ impl<'gc> Avm1<'gc> {
         Self {
             swf_version,
             stack: vec![],
-            rng: SmallRng::from_seed([0u8; 16]), // TODO(Herschel): Get a proper seed on all platforms.
             constant_pool: vec![],
             locals: HashMap::new(),
             globals: GcCell::allocate(gc_context, create_globals(gc_context)),
@@ -912,9 +911,9 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_random_number(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_random_number(&mut self, context: &mut ActionContext) -> Result<(), Error> {
         let max = self.pop()?.as_f64()? as u32;
-        let val = self.rng.gen_range(0, max);
+        let val = context.rng.gen_range(0, max);
         self.push(Value::Number(val.into()));
         Ok(())
     }

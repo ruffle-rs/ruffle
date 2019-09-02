@@ -1,6 +1,7 @@
 use crate::avm1::{ActionContext, Object, Value};
 use gc_arena::{GcCell, MutationContext};
 use std::f64::NAN;
+use rand::Rng;
 
 macro_rules! wrap_std {
     ( $object: ident, $gc_context: ident, $($name:expr => $std:path),* ) => {{
@@ -36,11 +37,11 @@ fn atan2<'gc>(
 }
 
 pub fn random<'gc>(
-    _action_context: &mut ActionContext<'_, 'gc, '_>,
+    action_context: &mut ActionContext<'_, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Value<'gc> {
-    Value::Number(0.4) //chosen by fair dice roll. guaranteed to be random.
+    Value::Number(action_context.rng.gen_range(0.0f64, 1.0f64))
 }
 
 pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Object<'gc>> {
@@ -87,6 +88,7 @@ mod tests {
     use crate::display_object::DisplayObject;
     use crate::movie_clip::MovieClip;
     use gc_arena::rootless_arena;
+    use rand::{rngs::SmallRng, SeedableRng};
 
     macro_rules! test_std {
     ( $test: ident, $name: expr, $($args: expr => $out: expr),* ) => {
@@ -119,6 +121,7 @@ mod tests {
                 root,
                 start_clip: root,
                 active_clip: root,
+                rng: &mut SmallRng::from_seed([0u8; 16]),
                 audio: &mut NullAudioBackend::new(),
                 navigator: &mut NullNavigatorBackend::new()
             };

@@ -5,6 +5,7 @@ use crate::library::Library;
 use crate::movie_clip::MovieClip;
 use crate::prelude::*;
 use crate::transform::TransformStack;
+use rand::{rngs::SmallRng, SeedableRng};
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell, MutationContext};
 use log::info;
 use std::sync::Arc;
@@ -32,6 +33,8 @@ pub struct Player<Audio: AudioBackend, Renderer: RenderBackend, Navigator: Navig
     transform_stack: TransformStack,
     view_matrix: Matrix,
     inverse_view_matrix: Matrix,
+
+    rng: SmallRng,
 
     gc_arena: GcArena,
     background_color: Color,
@@ -87,6 +90,8 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend> 
             transform_stack: TransformStack::new(),
             view_matrix: Default::default(),
             inverse_view_matrix: Default::default(),
+
+            rng: SmallRng::from_seed([0u8; 16]), // TODO(Herschel): Get a proper seed on all platforms.
 
             gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| GcRoot {
                 library: GcCell::allocate(gc_context, Library::new()),
@@ -205,7 +210,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend> 
             }
         }
 
-        let (global_time, swf_data, swf_version, background_color, renderer, audio, navigator, is_mouse_down) = (
+        let (global_time, swf_data, swf_version, background_color, renderer, audio, navigator, rng, is_mouse_down) = (
             self.global_time,
             &mut self.swf_data,
             self.swf_version,
@@ -213,6 +218,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend> 
             &mut self.renderer,
             &mut self.audio,
             &mut self.navigator,
+            &mut self.rng,
             &mut self.is_mouse_down,
         );
 
@@ -224,6 +230,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend> 
                 library: gc_root.library.write(gc_context),
                 background_color,
                 avm: gc_root.avm.write(gc_context),
+                rng,
                 renderer,
                 audio,
                 navigator,
@@ -269,14 +276,15 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend> 
             return false;
         }
 
-        let (global_time, swf_data, swf_version, background_color, renderer, audio, navigator) = (
+        let (global_time, swf_data, swf_version, background_color, renderer, audio, navigator, rng) = (
             self.global_time,
             &mut self.swf_data,
             self.swf_version,
             &mut self.background_color,
             &mut self.renderer,
             &mut self.audio,
-            &mut self.navigator
+            &mut self.navigator,
+            &mut self.rng
         );
 
         let mouse_pos = &self.mouse_pos;
@@ -295,6 +303,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend> 
                     library: gc_root.library.write(gc_context),
                     background_color,
                     avm: gc_root.avm.write(gc_context),
+                    rng,
                     renderer,
                     audio,
                     navigator,
@@ -330,7 +339,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend> 
     }
 
     fn preload(&mut self) {
-        let (global_time, swf_data, swf_version, background_color, renderer, audio, navigator) = (
+        let (global_time, swf_data, swf_version, background_color, renderer, audio, navigator, rng) = (
             self.global_time,
             &mut self.swf_data,
             self.swf_version,
@@ -338,6 +347,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend> 
             &mut self.renderer,
             &mut self.audio,
             &mut self.navigator,
+            &mut self.rng
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -348,6 +358,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend> 
                 library: gc_root.library.write(gc_context),
                 background_color,
                 avm: gc_root.avm.write(gc_context),
+                rng,
                 renderer,
                 audio,
                 navigator,
@@ -376,14 +387,15 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend> 
     }
 
     pub fn run_frame(&mut self) {
-        let (global_time, swf_data, swf_version, background_color, renderer, audio, navigator) = (
+        let (global_time, swf_data, swf_version, background_color, renderer, audio, navigator, rng) = (
             self.global_time,
             &mut self.swf_data,
             self.swf_version,
             &mut self.background_color,
             &mut self.renderer,
             &mut self.audio,
-            &mut self.navigator
+            &mut self.navigator,
+            &mut self.rng
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -394,6 +406,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend> 
                 library: gc_root.library.write(gc_context),
                 background_color,
                 avm: gc_root.avm.write(gc_context),
+                rng,
                 renderer,
                 audio,
                 navigator,
@@ -478,6 +491,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend> 
                     root,
                     start_clip: root,
                     active_clip: root,
+                    rng: update_context.rng,
                     audio: update_context.audio,
                     navigator: update_context.navigator,
                 };
@@ -548,6 +562,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub renderer: &'a mut dyn RenderBackend,
     pub audio: &'a mut dyn AudioBackend,
     pub navigator: &'a mut dyn NavigatorBackend,
+    pub rng: &'a mut SmallRng,
     pub actions: Vec<(DisplayNode<'gc>, crate::tag_utils::SwfSlice)>,
     pub active_clip: DisplayNode<'gc>,
 }

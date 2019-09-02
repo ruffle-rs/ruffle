@@ -1,5 +1,6 @@
 use crate::avm1::{Object, Value, ActionContext};
 use gc_arena::{MutationContext, GcCell};
+use rand::Rng;
 
 mod math;
 
@@ -27,11 +28,14 @@ pub fn getURL<'a, 'gc>(
 }
 
 pub fn random<'gc>(
-    _action_context: &mut ActionContext<'_, 'gc, '_>,
+    action_context: &mut ActionContext<'_, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Value<'gc> {
-    Value::Number(4.0) //chosen by fair dice roll. guaranteed to be random.
+    match args.get(0) {
+        Some(Value::Number(max)) => Value::Number(action_context.rng.gen_range(0.0f64, max).floor()),
+        _ => Value::Undefined //TODO: Shouldn't this be an error condition?
+    }
 }
 
 pub fn create_globals<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<'gc> {
