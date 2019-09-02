@@ -609,7 +609,12 @@ impl<'gc> Avm1<'gc> {
         url: &str,
         target: &str,
     ) -> Result<(), Error> {
-        //TODO: support `_level0`, `_level1`
+        //TODO: support `_level0` thru `_level9`
+        if target.starts_with("_level") {
+            log::warn!("Remote SWF loads into target {} not yet implemented", target);
+            return Ok(());
+        }
+
         context.navigator.navigate_to_url(url.to_owned(), Some(target.to_owned()), None);
 
         Ok(())
