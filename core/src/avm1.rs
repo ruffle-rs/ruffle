@@ -387,7 +387,13 @@ impl<'gc> Avm1<'gc> {
                     self.stack
                         .push(object.call(context, object.as_object()?.to_owned(), &args)?);
                 } else {
-                    self.stack.push(object.as_object()?.read().get(&name).call(
+                    let callable = object.as_object()?.read().get(&name);
+
+                    if let Value::Undefined = callable {
+                        return Err(format!("Object method {} is not defined", name).into());
+                    }
+
+                    self.stack.push(callable.call(
                         context,
                         object.as_object()?.to_owned(),
                         &args,
