@@ -1,15 +1,15 @@
-use crate::avm1::builtins::register_builtins;
+use crate::avm1::globals::create_globals;
 use crate::avm1::object::Object;
 
 use crate::prelude::*;
-use gc_arena::MutationContext;
+use gc_arena::{GcCell, MutationContext};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use std::collections::HashMap;
 
 use std::io::Cursor;
 use swf::avm1::read::Reader;
 
-mod builtins;
+mod globals;
 pub mod movie_clip;
 pub mod object;
 mod value;
@@ -31,7 +31,7 @@ pub struct Avm1<'gc> {
     rng: SmallRng,
     constant_pool: Vec<String>,
     locals: HashMap<String, Value<'gc>>,
-    globals: HashMap<String, Value<'gc>>,
+    globals: GcCell<'gc, Object<'gc>>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
@@ -47,15 +47,13 @@ type Error = Box<dyn std::error::Error>;
 
 impl<'gc> Avm1<'gc> {
     pub fn new(gc_context: MutationContext<'gc, '_>, swf_version: u8) -> Self {
-        let mut globals = HashMap::new();
-        register_builtins(gc_context, &mut globals);
         Self {
             swf_version,
             stack: vec![],
             rng: SmallRng::from_seed([0u8; 16]), // TODO(Herschel): Get a proper seed on all platforms.
             constant_pool: vec![],
             locals: HashMap::new(),
-            globals,
+            globals: GcCell::allocate(gc_context, create_globals(gc_context)),
         }
     }
 
@@ -573,6 +571,9 @@ impl<'gc> Avm1<'gc> {
         if path == "_root" || path == "this" {
             self.push(context.start_clip.read().object());
             return Ok(());
+        } else if path == "_global" {
+            self.push(Value::Object(self.globals));
+            return Ok(());
         }
 
         let mut result = self.locals.get(path).map(|v| v.to_owned());
@@ -590,10 +591,8 @@ impl<'gc> Avm1<'gc> {
             };
         }
 
-        if result.is_none() {
-            if let Some(value) = self.globals.get(path) {
-                result = Some(value.clone());
-            }
+        if result.is_none() && self.globals.read().has_property(path) {
+            result = Some(self.globals.read().get(path));
         }
         self.push(result.unwrap_or(Value::Undefined));
         Ok(())
