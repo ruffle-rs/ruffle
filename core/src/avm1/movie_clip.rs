@@ -8,7 +8,7 @@ macro_rules! with_movie_clip {
         $(
             $object.set_function(
                 $name,
-                |_gc_context, this, args| -> Value<'gc> {
+                |_context, this, args| -> Value<'gc> {
                     if let Some(display_object) = this.read().display_node() {
                         if let Some(movie_clip) = display_object.read().as_movie_clip() {
                             return $fn(movie_clip, args);
@@ -27,9 +27,9 @@ macro_rules! with_movie_clip_mut {
         $(
             $object.set_function(
                 $name,
-                |gc_context, this, args| -> Value<'gc> {
+                |context, this, args| -> Value<'gc> {
                     if let Some(display_object) = this.read().display_node() {
-                        if let Some(movie_clip) = display_object.write(gc_context).as_movie_clip_mut() {
+                        if let Some(movie_clip) = display_object.write(context.gc_context).as_movie_clip_mut() {
                             return $fn(movie_clip, args);
                         }
                     }

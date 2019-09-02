@@ -381,22 +381,16 @@ impl<'gc> Avm1<'gc> {
 
         match method_name {
             Value::Undefined | Value::Null => {
-                self.stack.push(object.call(
-                    context.gc_context,
-                    context.active_clip.read().object().as_object()?.to_owned(),
-                    &args,
-                )?);
+                let this = context.active_clip.read().object().as_object()?.to_owned();
+                self.stack.push(object.call(context, this, &args)?);
             }
             Value::String(name) => {
                 if name.is_empty() {
-                    self.stack.push(object.call(
-                        context.gc_context,
-                        object.as_object()?.to_owned(),
-                        &args,
-                    )?);
+                    self.stack
+                        .push(object.call(context, object.as_object()?.to_owned(), &args)?);
                 } else {
                     self.stack.push(object.as_object()?.read().get(&name).call(
-                        context.gc_context,
+                        context,
                         object.as_object()?.to_owned(),
                         &args,
                     )?);

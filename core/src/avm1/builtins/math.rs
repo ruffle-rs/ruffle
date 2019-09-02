@@ -1,8 +1,8 @@
-use crate::avm1::{Object, Value};
+use crate::avm1::{ActionContext, Object, Value};
 use gc_arena::{GcCell, MutationContext};
 
 fn abs<'gc>(
-    _gc_context: MutationContext<'gc, '_>,
+    _context: &mut ActionContext<'_, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Value<'gc> {
@@ -11,7 +11,7 @@ fn abs<'gc>(
 }
 
 fn round<'gc>(
-    _gc_context: MutationContext<'gc, '_>,
+    _context: &mut ActionContext<'_, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Value<'gc> {

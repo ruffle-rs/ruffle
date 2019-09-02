@@ -1,6 +1,6 @@
 use crate::avm1::object::Object;
-use crate::avm1::Error;
-use gc_arena::{GcCell, MutationContext};
+use crate::avm1::{ActionContext, Error};
+use gc_arena::GcCell;
 
 #[derive(Clone, Debug)]
 #[allow(dead_code)]
@@ -129,12 +129,12 @@ impl<'gc> Value<'gc> {
 
     pub fn call(
         &self,
-        gc_context: MutationContext<'gc, '_>,
+        context: &mut ActionContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error> {
         if let Value::Object(object) = self {
-            Ok(object.read().call(gc_context, this, args))
+            Ok(object.read().call(context, this, args))
         } else {
             Err(format!("Expected function, found {:?}", self).into())
         }
