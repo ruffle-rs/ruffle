@@ -605,25 +605,39 @@ impl<'gc> Avm1<'gc> {
 
     fn action_get_url(
         &mut self,
-        _context: &mut ActionContext,
-        _url: &str,
-        _target: &str,
+        context: &mut ActionContext,
+        url: &str,
+        target: &str,
     ) -> Result<(), Error> {
-        // TODO(Herschel): Noop for now. Need a UI/ActionScript/network backend
-        // to handle network requests appropriately for the platform.
+        //TODO: support `_level0`, `_level1`
+        context.navigator.navigate_to_url(url.to_owned(), Some(target.to_owned()), None);
+
         Ok(())
     }
 
     fn action_get_url_2(
         &mut self,
-        _context: &mut ActionContext,
+        context: &mut ActionContext,
         _method: swf::avm1::types::SendVarsMethod,
-        _is_target_sprite: bool,
-        _is_load_vars: bool,
+        is_target_sprite: bool,
+        is_load_vars: bool,
     ) -> Result<(), Error> {
-        // TODO(Herschel): Noop for now. Need a UI/ActionScript/network backend
-        // to handle network requests appropriately for the platform.
-        let _url = self.pop()?.into_string();
+        // TODO: Support `LoadVariablesFlag`, `LoadTargetFlag`
+        // TODO: What happens if there's only one string?
+        let target = self.pop()?.into_string();
+        let url = self.pop()?.into_string();
+
+        if is_target_sprite {
+            log::warn!("GetURL into target sprite is not yet implemented");
+            return Ok(()); //maybe error?
+        }
+
+        if is_load_vars {
+            log::warn!("Loading AVM locals into forms is not yet implemented");
+            return Ok(()); //maybe error?
+        }
+        
+        context.navigator.navigate_to_url(url, Some(target), None);
 
         Ok(())
     }
