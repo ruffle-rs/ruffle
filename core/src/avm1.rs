@@ -1319,6 +1319,11 @@ impl<'gc> Value<'gc> {
     pub fn as_f64(&self) -> Result<f64, Error> {
         match *self {
             Value::Number(v) => Ok(v),
+            Value::String(_) => {
+                let res = self.as_string()?;
+                let res: f64 = res.parse().unwrap_or(0.0);
+                Ok(res)
+            },
             _ => Err(format!("Expected Number, found {:?}", self).into()),
         }
     }
