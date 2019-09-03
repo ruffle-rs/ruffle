@@ -10,15 +10,16 @@
  * download.
  */
 async function fetch_ruffle() {
-    let ruffle_bindings_url = "ruffle_web.js";
-    let ruffle_wasm_url = "ruffle_web_bg.wasm";
-
-    //Detect if we are executiong in a webextension context.
-    //If so, download Ruffle from the URL the browser gives us.
-    if (runtime_path) {
-        ruffle_bindings_url = runtime_path + "dist/ruffle_web.js";
-        ruffle_wasm_url = runtime_path + "dist/ruffle_web_bg.wasm";
+    if (!window.runtime_path) {
+        //Executing on the demo site (which is fully webpack) so we can just use
+        //webpack to get the Ruffle chunk.
+        let ruffle_module = await import("../pkg/ruffle");
+        return ruffle_module.Ruffle;
     }
+    
+    //Download Ruffle from the URL the browser gives us.
+    let ruffle_bindings_url = window.runtime_path + "dist/ruffle_web.js";
+    let ruffle_wasm_url = window.runtime_path + "dist/ruffle_web_bg.wasm";
 
     //We load the wasm package early so that both requests are parallelized.
     //This won't be awaited by us at all.

@@ -52,5 +52,5 @@ let timestamp = 0;
 let animationHandler;
 
 function playSwf(swfData) {
-    document.getElementById("player").play_swf(swfData);
+    document.getElementById("player").play_swf_data(swfData);
 }
