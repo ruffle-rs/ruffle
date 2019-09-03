@@ -1,6 +1,7 @@
 //! Browser-related platform functions
 
 use std::collections::HashMap;
+use swf::avm1::types::SendVarsMethod;
 
 /// Enumerates all possible navigation methods.
 pub enum NavigationMethod {
@@ -9,6 +10,17 @@ pub enum NavigationMethod {
 
     /// Indicates that navigation should generate a POST request.
     POST
+}
+
+impl NavigationMethod {
+    /// Convert an SWF method enum into a NavigationMethod.
+    pub fn from_send_vars_method(s: SendVarsMethod) -> Option<Self> {
+        match s {
+            SendVarsMethod::None => None,
+            SendVarsMethod::Get => Some(Self::GET),
+            SendVarsMethod::Post => Some(Self::POST),
+        }
+    }
 }
 
 /// A backend interacting with a browser environment.

@@ -1,5 +1,6 @@
 use crate::avm1::globals::create_globals;
 use crate::avm1::object::Object;
+use crate::backend::navigator::NavigationMethod;
 
 use crate::prelude::*;
 use gc_arena::{GcCell, MutationContext};
@@ -54,6 +55,20 @@ impl<'gc> Avm1<'gc> {
             locals: HashMap::new(),
             globals: GcCell::allocate(gc_context, create_globals(gc_context)),
         }
+    }
+
+    /// Convert the current locals pool into a set of form values.
+    /// 
+    /// This is necessary to support form submission from Flash via a couple of
+    /// legacy methods, such as the `ActionGetURL2` opcode or `getURL` function.
+    pub fn locals_into_form_values(&self) -> HashMap<String, String> {
+        let mut form_values = HashMap::new();
+
+        for (k, v) in self.locals.iter() {
+            form_values.insert(k.clone(), v.clone().into_string());
+        }
+
+        form_values
     }
 
     pub fn do_action(
@@ -622,7 +637,7 @@ impl<'gc> Avm1<'gc> {
     fn action_get_url_2(
         &mut self,
         context: &mut ActionContext,
-        _method: swf::avm1::types::SendVarsMethod,
+        swf_method: swf::avm1::types::SendVarsMethod,
         is_target_sprite: bool,
         is_load_vars: bool,
     ) -> Result<(), Error> {
@@ -637,11 +652,16 @@ impl<'gc> Avm1<'gc> {
         }
 
         if is_load_vars {
-            log::warn!("Loading AVM locals into forms is not yet implemented");
+            log::warn!("Reading AVM locals from forms is not yet implemented");
             return Ok(()); //maybe error?
         }
         
-        context.navigator.navigate_to_url(url, Some(target), None);
+        let vars = match NavigationMethod::from_send_vars_method(swf_method) {
+            Some(method) => Some((method, self.locals_into_form_values())),
+            None => None
+        };
+
+        context.navigator.navigate_to_url(url, Some(target), vars);
 
         Ok(())
     }
