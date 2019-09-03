@@ -1,4 +1,4 @@
-use crate::avm1::{ActionContext, Object, Value};
+use crate::avm1::{ActionContext, Object, Value, Avm1};
 use gc_arena::{GcCell, MutationContext};
 use std::f64::NAN;
 use rand::Rng;
@@ -8,7 +8,7 @@ macro_rules! wrap_std {
         $(
             $object.set_function(
                 $name,
-                |_context, _this, args| -> Value<'gc> {
+                |_avm, _context, _this, args| -> Value<'gc> {
                     if let Some(input) = args.get(0) {
                         Value::Number($std(input.as_number()))
                     } else {
@@ -22,6 +22,7 @@ macro_rules! wrap_std {
 }
 
 fn atan2<'gc>(
+    _avm: &mut Avm1<'gc>,
     _context: &mut ActionContext<'_, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
@@ -37,6 +38,7 @@ fn atan2<'gc>(
 }
 
 pub fn random<'gc>(
+    _avm: &mut Avm1<'gc>,
     action_context: &mut ActionContext<'_, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     _args: &[Value<'gc>],
@@ -91,28 +93,29 @@ mod tests {
     use rand::{rngs::SmallRng, SeedableRng};
 
     macro_rules! test_std {
-    ( $test: ident, $name: expr, $($args: expr => $out: expr),* ) => {
-        #[test]
-        fn $test() -> Result<(), Error> {
-            with_avm(|context| {
-                let math = create(context.gc_context);
-                let function = math.read().get($name);
+        ( $test: ident, $name: expr, $($args: expr => $out: expr),* ) => {
+            #[test]
+            fn $test() -> Result<(), Error> {
+                with_avm(19, |avm, context| {
+                    let math = create(context.gc_context);
+                    let function = math.read().get($name);
 
-                $(
-                    assert_eq!(function.call(context, math, $args)?, $out);
-                )*
+                    $(
+                        assert_eq!(function.call(avm, context, math, $args)?, $out);
+                    )*
 
-                Ok(())
-            })
-        }
-    };
-}
+                    Ok(())
+                })
+            }
+        };
+    }
 
-    fn with_avm<F, R>(test: F) -> R
+    fn with_avm<F, R>(swf_version: u8, test: F) -> R
     where
-        F: FnOnce(&mut ActionContext) -> R,
+        F: for <'a, 'gc> FnOnce(&mut Avm1<'gc>, &mut ActionContext<'a, 'gc, '_>) -> R,
     {
         rootless_arena(|gc_context| {
+            let mut avm = Avm1::new(gc_context, swf_version);
             let movie_clip: Box<dyn DisplayObject> = Box::new(MovieClip::new(gc_context));
             let root = GcCell::allocate(gc_context, movie_clip);
             let mut context = ActionContext {
@@ -125,7 +128,8 @@ mod tests {
                 audio: &mut NullAudioBackend::new(),
                 navigator: &mut NullNavigatorBackend::new()
             };
-            test(&mut context)
+
+            test(&mut avm, &mut context)
         })
     }
 
@@ -216,15 +220,16 @@ mod tests {
 
     #[test]
     fn test_atan2_nan() {
-        with_avm(|context| {
+        with_avm(19, |avm, context| {
             let math = GcCell::allocate(context.gc_context, create(context.gc_context));
-            assert_eq!(atan2(context, *math.read(), &[]), Value::Number(NAN));
+            assert_eq!(atan2(avm, context, *math.read(), &[]), Value::Number(NAN));
             assert_eq!(
-                atan2(context, *math.read(), &[Value::Number(1.0), Value::Null]),
+                atan2(avm, context, *math.read(), &[Value::Number(1.0), Value::Null]),
                 Value::Number(NAN)
             );
             assert_eq!(
                 atan2(
+                    avm,
                     context,
                     *math.read(),
                     &[Value::Number(1.0), Value::Undefined]
@@ -233,6 +238,7 @@ mod tests {
             );
             assert_eq!(
                 atan2(
+                    avm,
                     context,
                     *math.read(),
                     &[Value::Undefined, Value::Number(1.0)]
@@ -244,14 +250,15 @@ mod tests {
 
     #[test]
     fn test_atan2_valid() {
-        with_avm(|context| {
+        with_avm(19, |avm, context| {
             let math = GcCell::allocate(context.gc_context, create(context.gc_context));
             assert_eq!(
-                atan2(context, *math.read(), &[Value::Number(10.0)]),
+                atan2(avm, context, *math.read(), &[Value::Number(10.0)]),
                 Value::Number(std::f64::consts::FRAC_PI_2)
             );
             assert_eq!(
                 atan2(
+                    avm,
                     context,
                     *math.read(),
                     &[Value::Number(1.0), Value::Number(2.0)]

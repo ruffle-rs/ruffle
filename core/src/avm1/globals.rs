@@ -1,4 +1,4 @@
-use crate::avm1::{Object, Value, ActionContext};
+use crate::avm1::{Object, Value, ActionContext, Avm1};
 use gc_arena::{MutationContext, GcCell};
 use rand::Rng;
 
@@ -6,6 +6,7 @@ mod math;
 
 #[allow(non_snake_case)]
 pub fn getURL<'a, 'gc>(
+    _avm: &mut Avm1<'gc>,
     context: &mut ActionContext<'a, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
@@ -28,6 +29,7 @@ pub fn getURL<'a, 'gc>(
 }
 
 pub fn random<'gc>(
+    _avm: &mut Avm1<'gc>,
     action_context: &mut ActionContext<'_, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],

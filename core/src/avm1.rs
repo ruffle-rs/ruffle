@@ -379,12 +379,13 @@ impl<'gc> Avm1<'gc> {
         match method_name {
             Value::Undefined | Value::Null => {
                 let this = context.active_clip.read().object().as_object()?.to_owned();
-                self.stack.push(object.call(context, this, &args)?);
+                let return_value = object.call(self, context, this, &args)?;
+                self.stack.push(return_value);
             }
             Value::String(name) => {
                 if name.is_empty() {
-                    self.stack
-                        .push(object.call(context, object.as_object()?.to_owned(), &args)?);
+                    let return_value = object.call(self, context, object.as_object()?.to_owned(), &args)?;
+                    self.stack.push(return_value);
                 } else {
                     let callable = object.as_object()?.read().get(&name);
 
@@ -392,11 +393,9 @@ impl<'gc> Avm1<'gc> {
                         return Err(format!("Object method {} is not defined", name).into());
                     }
 
-                    self.stack.push(callable.call(
-                        context,
-                        object.as_object()?.to_owned(),
-                        &args,
-                    )?);
+                    let return_value = callable.call(self, context, object.as_object()?.to_owned(), &args)?;
+
+                    self.stack.push(return_value);
                 }
             }
             _ => {
