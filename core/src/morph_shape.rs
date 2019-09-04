@@ -5,7 +5,7 @@ use crate::prelude::*;
 use std::collections::HashMap;
 use swf::Twips;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct MorphShape<'gc> {
     base: DisplayObjectBase<'gc>,
 

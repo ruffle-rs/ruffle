@@ -1,17 +1,20 @@
-use crate::avm1::builtins::register_builtins;
-use crate::avm1::movie_clip::create_movie_clip;
+use crate::avm1::globals::create_globals;
 use crate::avm1::object::Object;
+
 use crate::prelude::*;
 use gc_arena::{GcCell, MutationContext};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use std::collections::HashMap;
-use std::fmt;
+
 use std::io::Cursor;
 use swf::avm1::read::Reader;
 
-mod builtins;
-mod movie_clip;
-mod object;
+mod globals;
+pub mod movie_clip;
+pub mod object;
+mod value;
+
+pub use value::Value;
 
 pub struct ActionContext<'a, 'gc, 'gc_context> {
     pub gc_context: gc_arena::MutationContext<'gc, 'gc_context>,
@@ -28,7 +31,7 @@ pub struct Avm1<'gc> {
     rng: SmallRng,
     constant_pool: Vec<String>,
     locals: HashMap<String, Value<'gc>>,
-    globals: HashMap<String, Value<'gc>>,
+    globals: GcCell<'gc, Object<'gc>>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
@@ -44,15 +47,13 @@ type Error = Box<dyn std::error::Error>;
 
 impl<'gc> Avm1<'gc> {
     pub fn new(gc_context: MutationContext<'gc, '_>, swf_version: u8) -> Self {
-        let mut globals = HashMap::new();
-        register_builtins(gc_context, &mut globals);
         Self {
             swf_version,
             stack: vec![],
             rng: SmallRng::from_seed([0u8; 16]), // TODO(Herschel): Get a proper seed on all platforms.
             constant_pool: vec![],
             locals: HashMap::new(),
-            globals,
+            globals: GcCell::allocate(gc_context, create_globals(gc_context)),
         }
     }
 
@@ -269,7 +270,7 @@ impl<'gc> Avm1<'gc> {
             b.push_str(&a.into_string());
             self.push(Value::String(b));
         } else {
-            self.push(Value::Number(b.into_number() + a.into_number()));
+            self.push(Value::Number(b.as_number() + a.as_number()));
         }
         Ok(())
     }
@@ -366,7 +367,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_call_method(
         &mut self,
-        _context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut ActionContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let method_name = self.pop()?;
         let object = self.pop()?;
@@ -378,14 +379,19 @@ impl<'gc> Avm1<'gc> {
 
         match method_name {
             Value::Undefined | Value::Null => {
-                self.stack.push(object.call(&args)?);
+                let this = context.active_clip.read().object().as_object()?.to_owned();
+                self.stack.push(object.call(context, this, &args)?);
             }
             Value::String(name) => {
                 if name.is_empty() {
-                    self.stack.push(object.call(&args)?);
-                } else {
                     self.stack
-                        .push(object.as_object()?.read().get(&name).call(&args)?);
+                        .push(object.call(context, object.as_object()?.to_owned(), &args)?);
+                } else {
+                    self.stack.push(object.as_object()?.read().get(&name).call(
+                        context,
+                        object.as_object()?.to_owned(),
+                        &args,
+                    )?);
                 }
             }
             _ => {
@@ -410,7 +416,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_decrement(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        let a = self.pop()?.into_number();
+        let a = self.pop()?.as_number();
         self.push(Value::Number(a - 1.0));
         Ok(())
     }
@@ -562,9 +568,11 @@ impl<'gc> Avm1<'gc> {
         let path = var_path.as_string()?;
 
         // Special hardcoded variables
-        if path == "_root" {
-            // TODO: Attach this movie clip Object to an actual MovieClip. That's our root.
-            self.push(create_movie_clip(context.gc_context));
+        if path == "_root" || path == "this" {
+            self.push(context.start_clip.read().object());
+            return Ok(());
+        } else if path == "_global" {
+            self.push(Value::Object(self.globals));
             return Ok(());
         }
 
@@ -575,17 +583,16 @@ impl<'gc> Avm1<'gc> {
                 Self::resolve_slash_path_variable(context.active_clip, context.root, path)
             {
                 if let Some(clip) = node.read().as_movie_clip() {
-                    if clip.has_variable(var_name) {
-                        result = Some(clip.get_variable(var_name));
+                    let object = clip.object().as_object()?;
+                    if object.read().has_property(var_name) {
+                        result = Some(object.read().get(var_name));
                     }
                 }
             };
         }
 
-        if result.is_none() {
-            if let Some(value) = self.globals.get(path) {
-                result = Some(value.clone());
-            }
+        if result.is_none() && self.globals.read().has_property(path) {
+            result = Some(self.globals.read().get(path));
         }
         self.push(result.unwrap_or(Value::Undefined));
         Ok(())
@@ -684,7 +691,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_increment(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        let a = self.pop()?.into_number();
+        let a = self.pop()?.as_number();
         self.push(Value::Number(a + 1.0));
         Ok(())
     }
@@ -740,7 +747,7 @@ impl<'gc> Avm1<'gc> {
 
         let result = match (a, b) {
             (Value::String(a), Value::String(b)) => b.to_string().bytes().lt(a.to_string().bytes()),
-            (a, b) => b.into_number() < a.into_number(),
+            (a, b) => b.as_number() < a.as_number(),
         };
 
         self.push(Value::Bool(result));
@@ -977,7 +984,10 @@ impl<'gc> Avm1<'gc> {
             Self::resolve_slash_path_variable(context.active_clip, context.root, var_path)
         {
             if let Some(clip) = node.write(context.gc_context).as_movie_clip_mut() {
-                clip.set_variable(var_name, value);
+                clip.object()
+                    .as_object()?
+                    .write(context.gc_context)
+                    .set(var_name, value);
             }
         }
         Ok(())
@@ -1133,7 +1143,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_to_number(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let val = self.pop()?;
-        self.push(Value::Number(val.into_number()));
+        self.push(Value::Number(val.as_number()));
         Ok(())
     }
 
@@ -1150,16 +1160,8 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_type_of(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        let _type_str = match self.pop()? {
-            Value::Undefined => "undefined",
-            Value::Null => "null",
-            Value::Number(_) => "number",
-            Value::Bool(_) => "boolean",
-            Value::String(_) => "string",
-            Value::Object(_) => "object",
-            Value::NativeFunction(_) => "function",
-        };
-        // TODO(Herschel): movieclip
+        let type_of = self.pop()?.type_of();
+        self.push(type_of);
         Ok(())
     }
 
@@ -1204,145 +1206,5 @@ impl<'gc> Avm1<'gc> {
     fn action_with(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let _object = self.pop()?.as_object()?;
         Err("Unimplemented action: With".into())
-    }
-}
-
-#[derive(Clone)]
-#[allow(dead_code)]
-pub enum Value<'gc> {
-    Undefined,
-    Null,
-    Bool(bool),
-    Number(f64),
-    String(String),
-    Object(GcCell<'gc, Object<'gc>>),
-    NativeFunction(fn(&[Value<'gc>]) -> Value<'gc>),
-}
-
-unsafe impl<'gc> gc_arena::Collect for Value<'gc> {
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        if let Value::Object(object) = self {
-            object.trace(cc);
-        }
-    }
-}
-
-impl fmt::Debug for Value<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Value::Undefined => f.write_str("Undefined"),
-            Value::Null => f.write_str("Null"),
-            Value::Bool(value) => f.debug_tuple("Bool").field(value).finish(),
-            Value::Number(value) => f.debug_tuple("Number").field(value).finish(),
-            Value::String(value) => f.debug_tuple("String").field(value).finish(),
-            Value::Object(value) => f.debug_tuple("Object").field(value).finish(),
-            Value::NativeFunction(_) => f.write_str("NativeFunction"),
-        }
-    }
-}
-
-impl<'gc> Value<'gc> {
-    fn into_number_v1(self) -> f64 {
-        match self {
-            Value::Bool(true) => 1.0,
-            Value::Number(v) => v,
-            Value::String(v) => v.parse().unwrap_or(0.0),
-            _ => 0.0,
-        }
-    }
-
-    fn into_number(self) -> f64 {
-        // ECMA-262 2nd edtion s. 9.3 ToNumber
-        use std::f64::NAN;
-        match self {
-            Value::Undefined => NAN,
-            Value::Null => NAN,
-            Value::Bool(false) => 0.0,
-            Value::Bool(true) => 1.0,
-            Value::Number(v) => v,
-            Value::String(v) => v.parse().unwrap_or(NAN), // TODO(Herschel): Handle Infinity/etc.?
-            Value::Object(_object) => {
-                log::error!("Unimplemented: Object ToNumber");
-                0.0
-            }
-            Value::NativeFunction(_fn) => {
-                log::error!("Unimplemented: NativeFunction ToNumber");
-                0.0
-            }
-        }
-    }
-
-    fn from_bool_v1(value: bool, swf_version: u8) -> Value<'gc> {
-        // SWF version 4 did not have true bools and will push bools as 0 or 1.
-        // e.g. SWF19 p. 72:
-        // "If the numbers are equal, true is pushed to the stack for SWF 5 and later. For SWF 4, 1 is pushed to the stack."
-        if swf_version >= 5 {
-            Value::Bool(value)
-        } else {
-            Value::Number(if value { 1.0 } else { 0.0 })
-        }
-    }
-
-    fn into_string(self) -> String {
-        match self {
-            Value::Undefined => "undefined".to_string(),
-            Value::Null => "null".to_string(),
-            Value::Bool(v) => v.to_string(),
-            Value::Number(v) => v.to_string(), // TODO(Herschel): Rounding for int?
-            Value::String(v) => v,
-            Value::Object(_) => "[Object object]".to_string(), // TODO(Herschel):
-            Value::NativeFunction(_) => "[type Function]".to_string(),
-        }
-    }
-
-    fn as_bool(&self) -> bool {
-        match *self {
-            Value::Bool(v) => v,
-            Value::Number(v) => v != 0.0,
-            // TODO(Herschel): Value::String(v) => ??
-            _ => false,
-        }
-    }
-
-    fn as_i32(&self) -> Result<i32, Error> {
-        self.as_f64().map(|n| n as i32)
-    }
-
-    fn as_u32(&self) -> Result<u32, Error> {
-        self.as_f64().map(|n| n as u32)
-    }
-
-    fn as_i64(&self) -> Result<i64, Error> {
-        self.as_f64().map(|n| n as i64)
-    }
-
-    pub fn as_f64(&self) -> Result<f64, Error> {
-        match *self {
-            Value::Number(v) => Ok(v),
-            _ => Err(format!("Expected Number, found {:?}", self).into()),
-        }
-    }
-
-    fn as_string(&self) -> Result<&String, Error> {
-        match self {
-            Value::String(s) => Ok(s),
-            _ => Err(format!("Expected String, found {:?}", self).into()),
-        }
-    }
-
-    fn as_object(&self) -> Result<&GcCell<'gc, Object<'gc>>, Error> {
-        if let Value::Object(object) = self {
-            Ok(object)
-        } else {
-            Err(format!("Expected Object, found {:?}", self).into())
-        }
-    }
-
-    fn call(&self, args: &[Value<'gc>]) -> Result<Value<'gc>, Error> {
-        if let Value::NativeFunction(function) = self {
-            Ok(function(args))
-        } else {
-            Err(format!("Expected function, found {:?}", self).into())
-        }
     }
 }

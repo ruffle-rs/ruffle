@@ -58,7 +58,11 @@ impl<'gc> Library<'gc> {
                 return Err("Character id doesn't exist".into());
             }
         };
-        Ok(GcCell::allocate(gc_context, obj))
+        let result = GcCell::allocate(gc_context, obj);
+        result
+            .write(gc_context)
+            .post_instantiation(gc_context, result);
+        Ok(result)
     }
 
     pub fn get_font(&self, id: CharacterId) -> Option<&Font> {
