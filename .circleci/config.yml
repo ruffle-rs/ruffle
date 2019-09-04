@@ -16,6 +16,16 @@ jobs:
             rustup run stable rustc --version --verbose
             rustup run stable cargo test --package=ruffle_core
       - run:
+          name: Clippy + Format
+          command: |
+            rustup toolchain install stable
+            rustup component add --toolchain stable clippy
+            rustup run stable cargo clippy --version
+            rustup run stable cargo clippy --all --tests -- -D warnings
+            rustup component add --toolchain stable rustfmt
+            rustup run stable cargo fmt --version
+            rustup run stable cargo fmt --all -- --check
+      - run:
           name: Desktop Build
           command: |
             sudo apt-get update
