@@ -1,4 +1,4 @@
-import { Ruffle } from "../../pkg/ruffle";
+import "../../js-src/element";
 
 let sampleFileInput = document.getElementById("sample-file");
 if (sampleFileInput) {
@@ -9,8 +9,6 @@ let localFileInput = document.getElementById("local-file");
 if (localFileInput) {
     localFileInput.addEventListener("change", localFileSelected, false);
 }
-
-let ruffle;
 
 if (window.location.search && window.location.search != "") {
     let urlParams = new URLSearchParams(window.location.search);
@@ -54,13 +52,5 @@ let timestamp = 0;
 let animationHandler;
 
 function playSwf(swfData) {
-    if (ruffle) {
-        ruffle.destroy();
-        ruffle = null;
-    }
-
-    let canvas = document.getElementById("player");
-    if (swfData && canvas) {
-        ruffle = Ruffle.new(canvas, new Uint8Array(swfData));
-    }
+    document.getElementById("player").play_swf_data(swfData);
 }
