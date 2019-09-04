@@ -18,6 +18,8 @@ jobs:
       - run:
           name: Clippy + Format
           command: |
+            sudo apt-get update
+            sudo apt-get -y install libasound2-dev # Required for cpal crate on Linux
             rustup toolchain install stable
             rustup component add --toolchain stable clippy
             rustup run stable cargo clippy --version
