@@ -18,7 +18,7 @@ rand = "0.6.5"
 swf = { git = "https://github.com/ruffle-rs/swf-rs", rev = "1f85a77" }
 
 [dependencies.jpeg-decoder]
-jpeg-decoder = "0.1.16"
+version = "0.1.16"
 default-features = false # can't use rayon on web
 
 [features]
