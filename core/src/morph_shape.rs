@@ -2,37 +2,94 @@ use crate::backend::render::{RenderBackend, ShapeHandle};
 use crate::display_object::{DisplayObject, DisplayObjectBase};
 use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
-use std::collections::HashMap;
 use swf::Twips;
 
 #[derive(Clone, Debug)]
 pub struct MorphShape<'gc> {
     base: DisplayObjectBase<'gc>,
-
-    start: swf::MorphShape,
-
-    end: swf::MorphShape,
-
-    frames: HashMap<u16, ShapeHandle>,
-
+    static_data: gc_arena::Gc<'gc, MorphShapeStatic>,
     ratio: u16,
 }
 
 impl<'gc> MorphShape<'gc> {
-    pub fn from_swf_tag(swf_tag: &swf::DefineMorphShape, renderer: &mut dyn RenderBackend) -> Self {
-        // Convert the MorphShape into a normal Shape.
-        // TODO(Herschel): impl From in swf crate?
+    pub fn new(
+        gc_context: gc_arena::MutationContext<'gc, '_>,
+        static_data: MorphShapeStatic,
+    ) -> Self {
+        Self {
+            base: Default::default(),
+            static_data: gc_arena::Gc::allocate(gc_context, static_data),
+            ratio: 0,
+        }
+    }
+
+    pub fn ratio(&self) -> u16 {
+        self.ratio
+    }
+
+    pub fn set_ratio(&mut self, ratio: u16) {
+        self.ratio = ratio;
+    }
+}
+
+impl<'gc> DisplayObject<'gc> for MorphShape<'gc> {
+    impl_display_object!(base);
+
+    fn as_morph_shape(&self) -> Option<&Self> {
+        Some(self)
+    }
+
+    fn as_morph_shape_mut(&mut self) -> Option<&mut Self> {
+        Some(self)
+    }
+
+    fn run_frame(&mut self, _context: &mut UpdateContext) {
+        // Noop
+    }
+
+    fn render(&self, context: &mut RenderContext) {
+        context.transform_stack.push(self.transform());
+
+        if let Some(shape) = self.static_data.frames.get(&self.ratio) {
+            context
+                .renderer
+                .render_shape(*shape, context.transform_stack.transform());
+        } else {
+            log::warn!("Missing ratio for morph shape");
+        }
+
+        context.transform_stack.pop();
+    }
+}
+
+unsafe impl<'gc> gc_arena::Collect for MorphShape<'gc> {
+    #[inline]
+    fn trace(&self, cc: gc_arena::CollectionContext) {
+        self.base.trace(cc);
+        self.static_data.trace(cc);
+    }
+}
+
+/// Static data shared between all instances of a morph shape.
+#[allow(dead_code)]
+pub struct MorphShapeStatic {
+    id: CharacterId,
+    start: swf::MorphShape,
+    end: swf::MorphShape,
+    frames: fnv::FnvHashMap<u16, ShapeHandle>,
+}
+
+impl MorphShapeStatic {
+    pub fn from_swf_tag(renderer: &mut dyn RenderBackend, swf_tag: &swf::DefineMorphShape) -> Self {
         let mut morph_shape = Self {
+            id: swf_tag.id,
             start: swf_tag.start.clone(),
             end: swf_tag.end.clone(),
-            base: Default::default(),
-            frames: HashMap::new(),
-            ratio: 0,
+            frames: fnv::FnvHashMap::default(),
         };
-
+        // Pre-register the start and end states.
         morph_shape.register_ratio(renderer, 0);
         morph_shape.register_ratio(renderer, 65535);
-
         morph_shape
     }
 
@@ -361,51 +418,11 @@ impl<'gc> MorphShape<'gc> {
             _ => unreachable!("{:?} {:?}", start, end),
         }
     }
-
-    pub fn ratio(&self) -> u16 {
-        self.ratio
-    }
-
-    pub fn set_ratio(&mut self, ratio: u16) {
-        self.ratio = ratio;
-    }
 }
 
-impl<'gc> DisplayObject<'gc> for MorphShape<'gc> {
-    impl_display_object!(base);
-
-    fn as_morph_shape(&self) -> Option<&Self> {
-        Some(self)
-    }
-
-    fn as_morph_shape_mut(&mut self) -> Option<&mut Self> {
-        Some(self)
-    }
-
-    fn run_frame(&mut self, context: &mut UpdateContext) {
-        if !self.frames.contains_key(&self.ratio) {
-            self.register_ratio(context.renderer, self.ratio);
-        }
-    }
-
-    fn render(&self, context: &mut RenderContext) {
-        context.transform_stack.push(self.transform());
-
-        if let Some(shape) = self.frames.get(&self.ratio) {
-            context
-                .renderer
-                .render_shape(*shape, context.transform_stack.transform());
-        } else {
-            warn!("Missing ratio for morph shape");
-        }
-
-        context.transform_stack.pop();
-    }
-}
-
-unsafe impl<'gc> gc_arena::Collect for MorphShape<'gc> {
+unsafe impl<'gc> gc_arena::Collect for MorphShapeStatic {
     #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.base.trace(cc);
+    fn needs_trace() -> bool {
+        false
     }
 }

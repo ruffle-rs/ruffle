@@ -8,7 +8,7 @@ use crate::display_object::{DisplayObject, DisplayObjectBase};
 use crate::font::Font;
 use crate::graphic::Graphic;
 use crate::matrix::Matrix;
-use crate::morph_shape::MorphShape;
+use crate::morph_shape::MorphShapeStatic;
 use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use crate::tag_utils::{self, DecodeResult, SwfStream};
@@ -306,73 +306,6 @@ impl<'gc> MovieClip<'gc> {
 impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
     impl_display_object!(base);
 
-    fn preload(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        // TODO: Re-creating static data because preload step occurs after construction.
-        // Should be able to hoist this up somewhere, or use MaybeUnit.
-        let mut static_data = (&*self.static_data).clone();
-        use swf::TagCode;
-        let mut reader = self.reader(context);
-        let mut cur_frame = 1;
-        let mut ids = fnv::FnvHashMap::default();
-        let tag_callback = |reader: &mut _, tag_code, tag_len| match tag_code {
-            TagCode::DefineBits => self.define_bits(context, reader, tag_len),
-            TagCode::DefineBitsJpeg2 => self.define_bits_jpeg_2(context, reader, tag_len),
-            TagCode::DefineBitsJpeg3 => self.define_bits_jpeg_3(context, reader, tag_len),
-            TagCode::DefineBitsJpeg4 => self.define_bits_jpeg_4(context, reader, tag_len),
-            TagCode::DefineBitsLossless => self.define_bits_lossless(context, reader, 1),
-            TagCode::DefineBitsLossless2 => self.define_bits_lossless(context, reader, 2),
-            TagCode::DefineButton => self.define_button_1(context, reader),
-            TagCode::DefineButton2 => self.define_button_2(context, reader),
-            TagCode::DefineFont => self.define_font_1(context, reader),
-            TagCode::DefineFont2 => self.define_font_2(context, reader),
-            TagCode::DefineFont3 => self.define_font_3(context, reader),
-            TagCode::DefineFont4 => unimplemented!(),
-            TagCode::DefineMorphShape => self.define_morph_shape(context, reader, 1),
-            TagCode::DefineMorphShape2 => self.define_morph_shape(context, reader, 2),
-            TagCode::DefineShape => self.define_shape(context, reader, 1),
-            TagCode::DefineShape2 => self.define_shape(context, reader, 2),
-            TagCode::DefineShape3 => self.define_shape(context, reader, 3),
-            TagCode::DefineShape4 => self.define_shape(context, reader, 4),
-            TagCode::DefineSound => self.define_sound(context, reader, tag_len),
-            TagCode::DefineSprite => self.define_sprite(context, reader, tag_len),
-            TagCode::DefineText => self.define_text(context, reader),
-            TagCode::FrameLabel => {
-                self.frame_label(context, reader, tag_len, cur_frame, &mut static_data)
-            }
-            TagCode::JpegTables => self.jpeg_tables(context, reader, tag_len),
-            TagCode::PlaceObject => {
-                self.preload_place_object(context, reader, tag_len, &mut ids, 1)
-            }
-            TagCode::PlaceObject2 => {
-                self.preload_place_object(context, reader, tag_len, &mut ids, 2)
-            }
-            TagCode::PlaceObject3 => {
-                self.preload_place_object(context, reader, tag_len, &mut ids, 3)
-            }
-            TagCode::PlaceObject4 => {
-                self.preload_place_object(context, reader, tag_len, &mut ids, 4)
-            }
-            TagCode::RemoveObject => self.preload_remove_object(context, reader, &mut ids, 1),
-            TagCode::RemoveObject2 => self.preload_remove_object(context, reader, &mut ids, 2),
-            TagCode::ShowFrame => self.preload_show_frame(context, reader, &mut cur_frame),
-            TagCode::SoundStreamHead => {
-                self.preload_sound_stream_head(context, reader, &mut static_data, 1)
-            }
-            TagCode::SoundStreamHead2 => {
-                self.preload_sound_stream_head(context, reader, &mut static_data, 2)
-            }
-            TagCode::SoundStreamBlock => {
-                self.preload_sound_stream_block(context, reader, &mut static_data, tag_len)
-            }
-            _ => Ok(()),
-        };
-        let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End);
-        self.static_data = Gc::allocate(context.gc_context, static_data);
-        if self.static_data.audio_stream_info.is_some() {
-            context.audio.preload_sound_stream_end(self.id());
-        }
-    }
-
     fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if self.is_playing {
             self.run_frame_internal(context, false);
@@ -457,6 +390,79 @@ unsafe impl<'gc> gc_arena::Collect for MovieClip<'gc> {
 
 // Preloading of definition tags
 impl<'gc, 'a> MovieClip<'gc> {
+    pub fn preload(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        morph_shapes: &mut fnv::FnvHashMap<CharacterId, MorphShapeStatic>,
+    ) {
+        use swf::TagCode;
+        // TODO: Re-creating static data because preload step occurs after construction.
+        // Should be able to hoist this up somewhere, or use MaybeUninit.
+        let mut static_data = (&*self.static_data).clone();
+        let mut reader = self.reader(context);
+        let mut cur_frame = 1;
+        let mut ids = fnv::FnvHashMap::default();
+        let tag_callback = |reader: &mut _, tag_code, tag_len| match tag_code {
+            TagCode::DefineBits => self.define_bits(context, reader, tag_len),
+            TagCode::DefineBitsJpeg2 => self.define_bits_jpeg_2(context, reader, tag_len),
+            TagCode::DefineBitsJpeg3 => self.define_bits_jpeg_3(context, reader, tag_len),
+            TagCode::DefineBitsJpeg4 => self.define_bits_jpeg_4(context, reader, tag_len),
+            TagCode::DefineBitsLossless => self.define_bits_lossless(context, reader, 1),
+            TagCode::DefineBitsLossless2 => self.define_bits_lossless(context, reader, 2),
+            TagCode::DefineButton => self.define_button_1(context, reader),
+            TagCode::DefineButton2 => self.define_button_2(context, reader),
+            TagCode::DefineFont => self.define_font_1(context, reader),
+            TagCode::DefineFont2 => self.define_font_2(context, reader),
+            TagCode::DefineFont3 => self.define_font_3(context, reader),
+            TagCode::DefineFont4 => unimplemented!(),
+            TagCode::DefineMorphShape => self.define_morph_shape(context, reader, morph_shapes, 1),
+            TagCode::DefineMorphShape2 => self.define_morph_shape(context, reader, morph_shapes, 2),
+            TagCode::DefineShape => self.define_shape(context, reader, 1),
+            TagCode::DefineShape2 => self.define_shape(context, reader, 2),
+            TagCode::DefineShape3 => self.define_shape(context, reader, 3),
+            TagCode::DefineShape4 => self.define_shape(context, reader, 4),
+            TagCode::DefineSound => self.define_sound(context, reader, tag_len),
+            TagCode::DefineSprite => self.define_sprite(context, reader, tag_len, morph_shapes),
+            TagCode::DefineText => self.define_text(context, reader),
+            TagCode::FrameLabel => {
+                self.frame_label(context, reader, tag_len, cur_frame, &mut static_data)
+            }
+            TagCode::JpegTables => self.jpeg_tables(context, reader, tag_len),
+            TagCode::PlaceObject => {
+                self.preload_place_object(context, reader, tag_len, &mut ids, morph_shapes, 1)
+            }
+            TagCode::PlaceObject2 => {
+                self.preload_place_object(context, reader, tag_len, &mut ids, morph_shapes, 2)
+            }
+            TagCode::PlaceObject3 => {
+                self.preload_place_object(context, reader, tag_len, &mut ids, morph_shapes, 3)
+            }
+            TagCode::PlaceObject4 => {
+                self.preload_place_object(context, reader, tag_len, &mut ids, morph_shapes, 4)
+            }
+            TagCode::RemoveObject => self.preload_remove_object(context, reader, &mut ids, 1),
+            TagCode::RemoveObject2 => self.preload_remove_object(context, reader, &mut ids, 2),
+            TagCode::ShowFrame => self.preload_show_frame(context, reader, &mut cur_frame),
+            TagCode::SoundStreamHead => {
+                self.preload_sound_stream_head(context, reader, &mut static_data, 1)
+            }
+            TagCode::SoundStreamHead2 => {
+                self.preload_sound_stream_head(context, reader, &mut static_data, 2)
+            }
+            TagCode::SoundStreamBlock => {
+                self.preload_sound_stream_block(context, reader, &mut static_data, tag_len)
+            }
+            _ => Ok(()),
+        };
+        let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End);
+        self.static_data = Gc::allocate(context.gc_context, static_data);
+
+        // Finalize audio stream.
+        if self.static_data.audio_stream_info.is_some() {
+            context.audio.preload_sound_stream_end(self.id());
+        }
+    }
+
     #[inline]
     fn define_bits_lossless(
         &mut self,
@@ -477,13 +483,13 @@ impl<'gc, 'a> MovieClip<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<&'a [u8]>,
+        morph_shapes: &mut fnv::FnvHashMap<CharacterId, MorphShapeStatic>,
         version: u8,
     ) -> DecodeResult {
+        // Certain backends may have to preload morph shape frames, so defer registering until the end.
         let swf_shape = reader.read_define_morph_shape(version)?;
-        let morph_shape = MorphShape::from_swf_tag(&swf_shape, context.renderer);
-        context
-            .library
-            .register_character(swf_shape.id, Character::MorphShape(Box::new(morph_shape)));
+        let morph_shape = MorphShapeStatic::from_swf_tag(context.renderer, &swf_shape);
+        morph_shapes.insert(swf_shape.id, morph_shape);
         Ok(())
     }
 
@@ -509,6 +515,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
         tag_len: usize,
         ids: &mut fnv::FnvHashMap<Depth, CharacterId>,
+        morph_shapes: &mut fnv::FnvHashMap<CharacterId, MorphShapeStatic>,
         version: u8,
     ) -> DecodeResult {
         use swf::PlaceObjectAction;
@@ -519,9 +526,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         }?;
         match place_object.action {
             PlaceObjectAction::Place(id) => {
-                if let Some(Character::MorphShape(morph_shape)) =
-                    context.library.get_character_mut(id)
-                {
+                if let Some(morph_shape) = morph_shapes.get_mut(&id) {
                     ids.insert(place_object.depth, id);
                     if let Some(ratio) = place_object.ratio {
                         morph_shape.register_ratio(context.renderer, ratio);
@@ -530,9 +535,7 @@ impl<'gc, 'a> MovieClip<'gc> {
             }
             PlaceObjectAction::Modify => {
                 if let Some(&id) = ids.get(&place_object.depth) {
-                    if let Some(Character::MorphShape(morph_shape)) =
-                        context.library.get_character_mut(id)
-                    {
+                    if let Some(morph_shape) = morph_shapes.get_mut(&id) {
                         ids.insert(place_object.depth, id);
                         if let Some(ratio) = place_object.ratio {
                             morph_shape.register_ratio(context.renderer, ratio);
@@ -541,9 +544,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                 }
             }
             PlaceObjectAction::Replace(id) => {
-                if let Some(Character::MorphShape(morph_shape)) =
-                    context.library.get_character_mut(id)
-                {
+                if let Some(morph_shape) = morph_shapes.get_mut(&id) {
                     ids.insert(place_object.depth, id);
                     if let Some(ratio) = place_object.ratio {
                         morph_shape.register_ratio(context.renderer, ratio);
@@ -821,6 +822,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<&'a [u8]>,
         tag_len: usize,
+        morph_shapes: &mut fnv::FnvHashMap<CharacterId, MorphShapeStatic>,
     ) -> DecodeResult {
         let id = reader.read_character_id()?;
         let num_frames = reader.read_u16()?;
@@ -832,7 +834,7 @@ impl<'gc, 'a> MovieClip<'gc> {
             num_frames,
         );
 
-        movie_clip.preload(context);
+        movie_clip.preload(context, morph_shapes);
 
         context
             .library
@@ -848,7 +850,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
         let text = reader.read_define_text()?;
-        let text_object = Text::from_swf_tag(&text);
+        let text_object = Text::from_swf_tag(context, &text);
         context
             .library
             .register_character(text.id, Character::Text(Box::new(text_object)));

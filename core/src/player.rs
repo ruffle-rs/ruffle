@@ -347,7 +347,16 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                 active_clip: gc_root.root,
             };
 
-            gc_root.root.write(gc_context).preload(&mut update_context);
+            let mut morph_shapes = fnv::FnvHashMap::default();
+            gc_root.root.write(gc_context).as_movie_clip_mut().unwrap().preload(&mut update_context, &mut morph_shapes);
+
+            // Finalize morph shapes.
+            for (id, static_data) in morph_shapes {
+                let morph_shape = crate::morph_shape::MorphShape::new(gc_context, static_data);
+                update_context
+                    .library
+                    .register_character(id, crate::character::Character::MorphShape(Box::new(morph_shape)));
+            }
         });
     }
 

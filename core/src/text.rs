@@ -6,16 +6,18 @@ use crate::transform::Transform;
 #[derive(Clone, Debug)]
 pub struct Text<'gc> {
     base: DisplayObjectBase<'gc>,
-    text_transform: Matrix,
-    text_blocks: Vec<swf::TextRecord>,
+    static_data: gc_arena::Gc<'gc, TextStatic>,
 }
 
 impl<'gc> Text<'gc> {
-    pub fn from_swf_tag(tag: &swf::Text) -> Self {
+    pub fn from_swf_tag(context: &mut UpdateContext<'_, 'gc, '_>, tag: &swf::Text) -> Self {
         Self {
             base: Default::default(),
-            text_transform: tag.matrix.clone().into(),
-            text_blocks: tag.records.clone(),
+            static_data: gc_arena::Gc::allocate(context.gc_context, TextStatic {
+                id: tag.id,
+                text_transform: tag.matrix.clone().into(),
+                text_blocks: tag.records.clone(),
+            })
         }
     }
 }
@@ -30,7 +32,7 @@ impl<'gc> DisplayObject<'gc> for Text<'gc> {
     fn render(&self, context: &mut RenderContext) {
         context.transform_stack.push(self.transform());
         context.transform_stack.push(&Transform {
-            matrix: self.text_transform,
+            matrix: self.static_data.text_transform,
             ..Default::default()
         });
 
@@ -43,7 +45,7 @@ impl<'gc> DisplayObject<'gc> for Text<'gc> {
         let mut font_id = 0;
         let mut height = 0;
         let mut transform: Transform = Default::default();
-        for block in &self.text_blocks {
+        for block in &self.static_data.text_blocks {
             if let Some(x) = block.x_offset {
                 transform.matrix.tx = x.get() as f32;
             }
@@ -82,5 +84,22 @@ unsafe impl<'gc> gc_arena::Collect for Text<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
         self.base.trace(cc);
+        self.static_data.trace(cc);
+    }
+}
+
+/// Static data shared between all instances of a text object.
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+struct TextStatic {
+    id: CharacterId,
+    text_transform: Matrix,
+    text_blocks: Vec<swf::TextRecord>,
+}
+
+unsafe impl<'gc> gc_arena::Collect for TextStatic {
+    #[inline]
+    fn needs_trace() -> bool {
+        false
     }
 }

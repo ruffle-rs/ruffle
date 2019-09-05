@@ -92,7 +92,6 @@ pub trait DisplayObject<'gc>: 'gc + Collect + Debug {
     fn parent(&self) -> Option<DisplayNode<'gc>>;
     fn set_parent(&mut self, parent: Option<DisplayNode<'gc>>);
 
-    fn preload(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
     fn run_frame(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
     fn run_post_frame(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
     fn render(&self, _context: &mut RenderContext<'_, 'gc>) {}
