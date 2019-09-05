@@ -2,53 +2,240 @@ version: 2.1
 description: Ruffle - Flash Player emulator written in Rust
 
 jobs:
+  # General testing, linux + web build
   build:
     docker:
       - image: circleci/rust:1.37
     steps:
+      # Git checkout
       - checkout
+
+      # Restore cached assets (cargo registry)
       - restore_cache:
-          key: project-cache
+          keys:
+            - v1-cargo-cache-linux-{{ .Revision }}
+            - v1-cargo-cache-linux-
+
+      # Install dependencies
+      - run:
+          name: Setup
+          command: |
+            rustup toolchain install stable
+            rustup run stable rustc --version --verbose
+            rustup component add --toolchain stable clippy
+            rustup run stable cargo clippy --version
+            rustup component add --toolchain stable rustfmt
+            rustup run stable cargo fmt --version
+            sudo apt-get update
+            sudo apt-get -y install libasound2-dev # Required for cpal crate on Linux
+            curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            mkdir workspace
+      
+      # Run tests
       - run:
           name: Tests
           command: |
-            rustup toolchain install stable
-            rustup run stable rustc --version --verbose
             rustup run stable cargo test --package=ruffle_core
+
+      # Run cargo clippy and fmt
       - run:
           name: Clippy + Format
           command: |
-            sudo apt-get update
-            sudo apt-get -y install libasound2-dev # Required for cpal crate on Linux
-            rustup toolchain install stable
-            rustup component add --toolchain stable clippy
-            rustup run stable cargo clippy --version
             rustup run stable cargo clippy --all --tests -- -D warnings
-            rustup component add --toolchain stable rustfmt
-            rustup run stable cargo fmt --version
             rustup run stable cargo fmt --all -- --check
+
+      # Build the linux binary
       - run:
-          name: Desktop Build
+          name: Linux Build
           command: |
-            sudo apt-get update
-            sudo apt-get -y install libasound2-dev # Required for cpal crate on Linux
-            rustup toolchain install stable
-            rustup run stable rustc --version --verbose
-            rustup run stable cargo --version --verbose
-            rustup run stable cargo build --package ruffle_desktop
+            rustup run stable cargo build --package ruffle_desktop --release
+            mkdir linux
+            cp target/release/ruffle_desktop linux/ruffle
+            cp README.md LICENSE_APACHE LICENSE_MIT linux
+            cd linux
+            tar -czvf ../workspace/linux.tar.gz *
+
+      # Build the wasm binary
       - run:
           name: Web Build
           command: |
-            curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
-            sudo apt-get install -y nodejs
+            cd web/demo
+            npm install
+            npm run build -- --mode=production
+            cd ../..
+            mkdir -p workspace/web-demo
+            cp web/demo/dist/* workspace/web-demo
+
+      # Build the web extension
+      - run:
+          name: Extension Build
+          command: |
+            cd web/extension
+            npm install
+            wasm-pack build --release --target=no-modules --out-dir=extension/build/dist ..
+            npx webpack
+            cd build
+            cp ../../../README.md .
+            cp ../../../LICENSE_APACHE .
+            cp ../../../LICENSE_MIT .
+            zip -r extension.zip .
+            cd ../../..
+            cp web/extension/build/extension.zip workspace
+
+      # Save cached assets
+      - save_cache:
+          key: v1-cargo-cache-linux-{{ .Revision }}
+          paths:
+            - "/usr/local/cargo/registry"
+            - "./target"
+
+      # Persist build artifacts for deploy job
+      - persist_to_workspace:
+          root: workspace
+          paths:
+              - linux.tar.gz
+              - extension.zip
+              - web-demo
+
+  # OSX Build
+  build_osx:
+    macos:
+      xcode: "9.3.0"
+    steps:
+      # Git checkout
+      - checkout
+
+      # Restore cached assets (cargo registry)
+      - restore_cache:
+          keys:
+            - v1-cargo-cache-osx-{{ .Revision }}
+            - v1-cargo-cache-osx-
+      
+      # Install dependencies
+      - run:
+          name: Setup
+          command: |
+            # Install rustup
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+            source $HOME/.cargo/env
+
+            # Install stable rust toolchain
             rustup toolchain install stable
             rustup run stable rustc --version --verbose
             rustup run stable cargo --version --verbose
-            cd web/demo
-            npm install
-            npm run build
+
+            mkdir workspace
+
+      # Build the OSX binary
+      - run:
+          name: OSX Build
+          command: |
+            source $HOME/.cargo/env
+            rustup run stable cargo build --package ruffle_desktop --release
+            mkdir osx
+            cp target/release/ruffle_desktop osx/ruffle
+            cp README.md LICENSE_APACHE LICENSE_MIT osx
+            cd osx
+            tar -czvf ../workspace/osx.tar.gz *
+
+      # Save cached assets
       - save_cache:
-          key: project-cache
+          key: v1-cargo-cache-osx-{{ .Revision }}
           paths:
-            - "~/.cargo"
+            - "~/.cargo/registry"
             - "./target"
+
+      # Persist build artifacts for deploy job
+      - persist_to_workspace:
+          root: workspace
+          paths:
+              - osx.tar.gz
+
+  # Upload builds to S3
+  deploy:
+    docker:
+      - image: circleci/python:3.7-stretch
+    steps:
+      # Access build artifacts in workspace
+      - attach_workspace:
+          at: workspace
+      
+      # Set environment variables for nightly build name
+      - run:
+          name: Environment vars
+          command: |
+            echo 'export SHORT_GIT_HASH=$(echo $CIRCLE_SHA1 | cut -c -7)' >> $BASH_ENV
+            echo 'export BUILD_ID=$(date +"%Y-%m-%d")_${SHORT_GIT_HASH}' >> $BASH_ENV
+            echo 'export NUM_BUILDS=27' >> $BASH_ENV
+
+      # Install AWS CLI
+      - run:
+          name: Install awscli
+          command: sudo pip install awscli
+      
+      - run:
+          name: Sync with S3
+          command: |
+            mkdir -p builds
+            aws s3 sync s3://ruffle-rs/builds builds
+
+      - run:
+          name: Check if stale build
+          command: |
+            # Check if files exist with this Git commit ID.
+            # If so, this isn't a new commit, so cancel the deployment.
+            if ls builds/linux/*${SHORT_GIT_HASH}.tar.gz 1> /dev/null 2>&1; then
+              echo "No new commits; cancelling deploy"
+              circleci-agent step halt
+            fi
+
+      - run:
+          name: Deploy to S3
+          command: |
+            rm -f builds/web-demo/*.wasm
+            rm -f builds/web-demo/*.js
+            rm -f builds/web-demo/*.html
+            mkdir -p builds/linux
+            cp -f workspace/linux.tar.gz builds/linux/ruffle_linux_${BUILD_ID}.tar.gz
+            cp -f workspace/linux.tar.gz builds/linux/ruffle_linux_latest.tar.gz
+            touch builds/linux/ruffle_linux_latest.tar.gz
+            mkdir -p builds/osx
+            cp -f workspace/osx.tar.gz builds/osx/ruffle_osx_${BUILD_ID}.tar.gz
+            cp -f workspace/osx.tar.gz builds/osx/ruffle_osx_latest.tar.gz
+            touch builds/osx/ruffle_osx_latest.tar.gz
+            mkdir -p builds/windows
+            mkdir -p builds/extension
+            cp -f workspace/extension.zip builds/extension/ruffle_extension_${BUILD_ID}.zip
+            cp -f workspace/extension.zip builds/extension/ruffle_extension_latest.zip
+            touch builds/extension/ruffle_extension_latest.zip
+            cp -rf workspace/web-demo builds
+            ls -1t builds/linux/* | tail -n +${NUM_BUILDS} | xargs rm -f
+            ls -1t builds/osx/* | tail -n +${NUM_BUILDS} | xargs rm -f
+            ls -1t builds/extension/* | tail -n +${NUM_BUILDS} | xargs rm -f
+            aws s3 sync builds s3://ruffle-rs/builds --acl public-read --delete
+
+workflows:
+  version: 2
+
+  # Build on each push or pull request to the repo
+  commit_build:
+    jobs:
+      - build
+
+  # Nightly builds
+  nightly_build:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build
+      - build_osx
+      - deploy:
+          requires:
+            - build
+            - build_osx
