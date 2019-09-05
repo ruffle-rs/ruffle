@@ -9,58 +9,18 @@ pub struct Button<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: gc_arena::Gc<'gc, ButtonStatic>,
     state: ButtonState,
-    children: [BTreeMap<Depth, DisplayNode<'gc>>; 4],
+    hit_area: BTreeMap<Depth, DisplayNode<'gc>>,
+    children: BTreeMap<Depth, DisplayNode<'gc>>,
     tracking: ButtonTracking,
+    initialized: bool,
 }
-
-const UP_STATE: usize = 0;
-const OVER_STATE: usize = 1;
-const DOWN_STATE: usize = 2;
-const HIT_STATE: usize = 3;
 
 impl<'gc> Button<'gc> {
     pub fn from_swf_tag(
         button: &swf::Button,
-        library: &crate::library::Library<'gc>,
+        _library: &crate::library::Library<'gc>,
         gc_context: gc_arena::MutationContext<'gc, '_>,
     ) -> Self {
-        use swf::ButtonState;
-        let mut children = [
-            BTreeMap::new(),
-            BTreeMap::new(),
-            BTreeMap::new(),
-            BTreeMap::new(),
-        ];
-        for record in &button.records {
-            match library.instantiate_display_object(record.id, gc_context) {
-                Ok(child) => {
-                    child
-                        .write(gc_context)
-                        .set_matrix(&record.matrix.clone().into());
-                    child
-                        .write(gc_context)
-                        .set_color_transform(&record.color_transform.clone().into());
-                    for state in &record.states {
-                        let i = match state {
-                            ButtonState::Up => UP_STATE,
-                            ButtonState::Over => OVER_STATE,
-                            ButtonState::Down => DOWN_STATE,
-                            ButtonState::HitTest => HIT_STATE,
-                        };
-                        children[i].insert(record.depth, child);
-                    }
-                }
-                Err(error) => {
-                    log::error!(
-                        "Button ID {}: could not instantiate child ID {}: {}",
-                        button.id,
-                        record.id,
-                        error
-                    );
-                }
-            }
-        }
-
         let mut actions = vec![];
         for action in &button.actions {
             let action_data = crate::tag_utils::SwfSlice {
@@ -80,14 +40,17 @@ impl<'gc> Button<'gc> {
 
         let static_data = ButtonStatic {
             id: button.id,
+            records: button.records.clone(),
             actions,
         };
 
         Button {
             base: Default::default(),
             static_data: gc_arena::Gc::allocate(gc_context, static_data),
-            children,
+            children: BTreeMap::new(),
+            hit_area: BTreeMap::new(),
             state: self::ButtonState::Up,
+            initialized: false,
             tracking: if button.is_track_as_menu {
                 ButtonTracking::Menu
             } else {
@@ -96,30 +59,37 @@ impl<'gc> Button<'gc> {
         }
     }
 
-    fn children_in_state(
-        &self,
-        state: ButtonState,
-    ) -> impl std::iter::DoubleEndedIterator<Item = &DisplayNode<'gc>> {
-        let i = match state {
-            ButtonState::Up => UP_STATE,
-            ButtonState::Over => OVER_STATE,
-            ButtonState::Down => DOWN_STATE,
-            ButtonState::Hit => HIT_STATE,
-        };
-        self.children[i].values()
-    }
-
-    fn children_in_state_mut(
+    fn set_state(
         &mut self,
+        context: &mut crate::player::UpdateContext<'_, 'gc, '_>,
         state: ButtonState,
-    ) -> impl std::iter::DoubleEndedIterator<Item = &mut DisplayNode<'gc>> {
-        let i = match state {
-            ButtonState::Up => UP_STATE,
-            ButtonState::Over => OVER_STATE,
-            ButtonState::Down => DOWN_STATE,
-            ButtonState::Hit => HIT_STATE,
+    ) {
+        self.state = state;
+        let swf_state = match self.state {
+            ButtonState::Up => swf::ButtonState::Up,
+            ButtonState::Over => swf::ButtonState::Over,
+            ButtonState::Down => swf::ButtonState::Down,
         };
-        self.children[i].values_mut()
+        self.children.clear();
+        for record in &self.static_data.records {
+            if record.states.contains(&swf_state) {
+                if let Ok(child) = context
+                    .library
+                    .instantiate_display_object(record.id, context.gc_context)
+                {
+                    child
+                        .write(context.gc_context)
+                        .set_parent(Some(context.active_clip));
+                    child
+                        .write(context.gc_context)
+                        .set_matrix(&record.matrix.clone().into());
+                    child
+                        .write(context.gc_context)
+                        .set_color_transform(&record.color_transform.clone().into());
+                    self.children.insert(record.depth, child);
+                }
+            }
+        }
     }
 
     pub fn handle_button_event(
@@ -154,7 +124,7 @@ impl<'gc> Button<'gc> {
             _ => (),
         }
 
-        self.state = new_state;
+        self.set_state(context, new_state);
     }
 
     fn run_actions(
@@ -178,26 +148,47 @@ impl<'gc> DisplayObject<'gc> for Button<'gc> {
     impl_display_object!(base);
 
     fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        // TODO: Set parent for all children. Yuck... Do this on creation instead.
-        for state in &mut self.children {
-            for child in state.values_mut() {
-                child
-                    .write(context.gc_context)
-                    .set_parent(Some(context.active_clip));
+        // TODO: Move this to post_instantiation.
+        if !self.initialized {
+            self.initialized = true;
+            self.set_state(context, ButtonState::Up);
+
+            for record in &self.static_data.records {
+                if record.states.contains(&swf::ButtonState::HitTest) {
+                    match context
+                        .library
+                        .instantiate_display_object(record.id, context.gc_context)
+                    {
+                        Ok(child) => {
+                            {
+                                let mut child = child.write(context.gc_context);
+                                child
+                                    .set_matrix(&record.matrix.clone().into());
+                                child.set_parent(Some(context.active_clip));
+                            }
+                            self.hit_area.insert(record.depth, child);
+                        }
+                        Err(error) => {
+                            log::error!(
+                                "Button ID {}: could not instantiate child ID {}: {}",
+                                self.static_data.id,
+                                record.id,
+                                error
+                            );
+                        }
+                    }
+                }
             }
         }
 
-        for child in self.children_in_state_mut(self.state) {
-            child
-                .write(context.gc_context)
-                .set_parent(Some(context.active_clip));
+        for child in self.children.values_mut() {
             context.active_clip = *child;
             child.write(context.gc_context).run_frame(context);
         }
     }
 
     fn run_post_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        for child in self.children_in_state_mut(self.state) {
+        for child in self.children.values_mut() {
             context.active_clip = *child;
             child.write(context.gc_context).run_post_frame(context);
         }
@@ -206,20 +197,15 @@ impl<'gc> DisplayObject<'gc> for Button<'gc> {
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
         context.transform_stack.push(self.transform());
 
-        for child in self.children_in_state(self.state) {
+        for child in self.children.values() {
             child.read().render(context);
         }
+
         context.transform_stack.pop();
     }
 
     fn hit_test(&self, point: (Twips, Twips)) -> bool {
-        // Use hit state to determine hit area; otherwise use current state.
-        let hit_state = if !self.children[HIT_STATE].is_empty() {
-            ButtonState::Hit
-        } else {
-            self.state
-        };
-        for child in self.children_in_state(hit_state).rev() {
+        for child in self.hit_area.values().rev() {
             if child.read().world_bounds().contains(point) {
                 return true;
             }
@@ -253,10 +239,11 @@ impl<'gc> DisplayObject<'gc> for Button<'gc> {
 unsafe impl<'gc> gc_arena::Collect for Button<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
-        for state in &self.children {
-            for child in state.values() {
-                child.trace(cc);
-            }
+        for child in self.children.values() {
+            child.trace(cc);
+        }
+        for child in self.hit_area.values() {
+            child.trace(cc);
         }
         self.base.trace(cc);
         self.static_data.trace(cc);
@@ -269,7 +256,6 @@ enum ButtonState {
     Up,
     Over,
     Down,
-    Hit,
 }
 
 #[derive(Clone)]
@@ -290,10 +276,11 @@ enum ButtonTracking {
 #[derive(Clone)]
 struct ButtonStatic {
     id: CharacterId,
+    records: Vec<swf::ButtonRecord>,
     actions: Vec<ButtonAction>,
 }
 
-unsafe impl<'gc> gc_arena::Collect for ButtonStatic {
+unsafe impl gc_arena::Collect for ButtonStatic {
     #[inline]
     fn needs_trace() -> bool {
         false
