@@ -1,6 +1,12 @@
-import { define_legacy_elements, interdict_static_content, interdict_dynamic_content, falsify_plugin_detection } from "../../js-src/interdiction";
+import { interdict } from "../../js-src/interdiction";
+import { get_config_options, DEFAULT_CONFIG } from "../../js-src/config";
 
-define_legacy_elements();
-interdict_static_content();
-interdict_dynamic_content();
-falsify_plugin_detection();
+let html = document.getElementsByTagName("html")[0];
+let page_options = get_config_options(html);
+
+if (!page_options.optout) {
+    let interdictions = page_options.interdict || DEFAULT_CONFIG.interdict;
+    interdict(interdictions);
+} else {
+    console.log("WebExtension Ruffle execution prohibited by page");
+}

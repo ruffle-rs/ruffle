@@ -70,3 +70,21 @@ export function interdict_dynamic_content() {
 export function falsify_plugin_detection() {
     install_plugin(FLASH_PLUGIN);
 }
+
+export function interdict(interdiction_list) {
+    if (interdiction_list.indexOf("static-content") !== -1 || interdiction_list.indexOf("dynamic-content") !== -1) {
+        define_legacy_elements();
+    }
+
+    if (interdiction_list.indexOf("static-content") !== -1) {
+        interdict_static_content();
+    }
+
+    if (interdiction_list.indexOf("dynamic-content") !== -1) {
+        interdict_dynamic_content();
+    }
+
+    if (interdiction_list.indexOf("plugin-detect") !== -1) {
+        falsify_plugin_detection();
+    }
+}
