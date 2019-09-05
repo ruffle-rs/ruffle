@@ -2,5 +2,3 @@ import { define_legacy_elements, interdict_static_content, interdict_dynamic_con
 
 define_legacy_elements();
 interdict_static_content();
-interdict_dynamic_content();
-falsify_plugin_detection();

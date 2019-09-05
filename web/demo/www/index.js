@@ -1,4 +1,7 @@
-import "../../js-src/element";
+import { define_legacy_elements, interdict_static_content } from "../../js-src/interdiction";
+
+define_legacy_elements();
+interdict_static_content();
 
 let sampleFileInput = document.getElementById("sample-file");
 if (sampleFileInput) {

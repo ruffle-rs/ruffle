@@ -38,24 +38,35 @@ function wrap_tree(elem) {
     }
 }
 
-console.log("Welcome to ruffle");
+/**
+ * Defines Ruffle equivalents to legacy plugin elements such as `<object>` and
+ * `<embed>` tags.
+ */
+export function define_legacy_elements() {
+    window.customElements.define("ruffle-object", RuffleObject);
+    window.customElements.define("ruffle-embed", RuffleEmbed);
+}
 
-window.customElements.define("ruffle-object", RuffleObject);
-window.customElements.define("ruffle-embed", RuffleEmbed);
-wrap_tree(document.getElementsByTagName("html")[0]);
+export function interdict_static_content() {
+    wrap_tree(document.getElementsByTagName("html")[0]);
+}
 
-const observer = new MutationObserver(function (mutationsList, observer) {
-    for (let mutation of mutationsList) {
-        for (let node of mutation.addedNodes) {
-            if (node instanceof Element) {
-                wrap_tree(node);
-            } else {
-                console.error("Cannot process added node of type " + node.constructor.name);
+export function interdict_dynamic_content() {
+    const observer = new MutationObserver(function (mutationsList, observer) {
+        for (let mutation of mutationsList) {
+            for (let node of mutation.addedNodes) {
+                if (node instanceof Element) {
+                    wrap_tree(node);
+                } else {
+                    console.error("Cannot process added node of type " + node.constructor.name);
+                }
             }
         }
-    }
-});
+    });
 
-observer.observe(document, { childList: true, subtree: true});
+    observer.observe(document, { childList: true, subtree: true});
+}
 
-install_plugin(FLASH_PLUGIN);
+export function falsify_plugin_detection() {
+    install_plugin(FLASH_PLUGIN);
+}
