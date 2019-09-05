@@ -13,7 +13,7 @@ module.exports = (env, argv) => {
   console.log(`Building ${mode}...`);
 
   return {
-    entry: path.resolve(__dirname, "www/bootstrap.js"),
+    entry: path.resolve(__dirname, "www/index.js"),
     output: {
       path: path.resolve(__dirname, "dist"),
       filename: "index.js",
