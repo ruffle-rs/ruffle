@@ -9,7 +9,7 @@
       <img src="https://img.shields.io/discord/610531541889581066" alt="Ruffle Discord">
   </a>
   <br>
-  <strong><a href="https://ruffle.rs">website</a> | <a href="https://ruffle.rs/demo?file=heroes_of_cybertron.swf">demo</a> </strong>
+  <strong><a href="https://ruffle.rs">website</a> | <a href="http://ruffle-rs.s3-website-us-west-1.amazonaws.com/builds/web-demo/index.html?file=synj1.swf">demo</a> </strong>
 </p>
 
 # Ruffle
