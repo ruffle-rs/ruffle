@@ -249,7 +249,7 @@ jobs:
             # If so, this isn't a new commit, so cancel the deployment.
             if ls builds/linux/*${SHORT_GIT_HASH}.tar.gz 1> /dev/null 2>&1; then
               echo "No new commits; cancelling deploy"
-              #circleci-agent step halt
+              circleci-agent step halt
             fi
 
       - run:
@@ -259,21 +259,17 @@ jobs:
             rm -f builds/web-demo/*.js
             rm -f builds/web-demo/*.html
             mkdir -p builds/linux
-            cp -f workspace/linux.tar.gz builds/linux/ruffle_linux_${BUILD_ID}.tar.gz
             cp -f workspace/linux.tar.gz builds/linux/ruffle_linux_latest.tar.gz
-            touch builds/linux/ruffle_linux_latest.tar.gz
+            cp -f workspace/linux.tar.gz builds/linux/ruffle_linux_${BUILD_ID}.tar.gz
             mkdir -p builds/osx
-            cp -f workspace/osx.tar.gz builds/osx/ruffle_osx_${BUILD_ID}.tar.gz
             cp -f workspace/osx.tar.gz builds/osx/ruffle_osx_latest.tar.gz
-            touch builds/osx/ruffle_osx_latest.tar.gz
+            cp -f workspace/osx.tar.gz builds/osx/ruffle_osx_${BUILD_ID}.tar.gz
             mkdir -p builds/windows
-            cp -f workspace/windows.zip builds/windows/ruffle_windows_${BUILD_ID}.zip
             cp -f workspace/windows.zip builds/windows/ruffle_windows_latest.zip
-            touch builds/windows/ruffle_windows_latest.zip
+            cp -f workspace/windows.zip builds/windows/ruffle_windows_${BUILD_ID}.zip
             mkdir -p builds/extension
-            cp -f workspace/extension.zip builds/extension/ruffle_extension_${BUILD_ID}.zip
             cp -f workspace/extension.zip builds/extension/ruffle_extension_latest.zip
-            touch builds/extension/ruffle_extension_latest.zip
+            cp -f workspace/extension.zip builds/extension/ruffle_extension_${BUILD_ID}.zip
             cp -rf workspace/web-demo builds
             ls -1t builds/linux/* | tail -n +${NUM_BUILDS} | xargs rm -f
             ls -1t builds/osx/* | tail -n +${NUM_BUILDS} | xargs rm -f
