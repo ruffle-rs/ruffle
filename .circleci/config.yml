@@ -1,5 +1,7 @@
 version: 2.1
 description: Ruffle - Flash Player emulator written in Rust
+orbs:
+  win: circleci/windows@1.0.0
 
 jobs:
   # General testing, linux + web build
@@ -152,6 +154,66 @@ jobs:
           paths:
               - osx.tar.gz
 
+  # Windows build
+  build_windows:
+    executor:
+      name: win/vs2019
+      shell: powershell.exe
+    steps:
+      # Git checkout
+      - checkout
+
+      # Restore cached assets (cargo registry)
+      - restore_cache:
+          keys:
+            - v1-cargo-cache-windows-{{ .Revision }}
+            - v1-cargo-cache-windows-
+
+      # Install dependencies
+      - run:
+          name: Install dependencies
+          command: |
+            # Install rustup
+            $client = new-object System.Net.WebClient
+            $client.DownloadFile('https://win.rustup.rs', "$pwd\rustup-init.exe")
+            .\rustup-init.exe -y
+
+            mkdir workspace
+
+      # Build the Windows binary
+      - run:
+          name: Windows Build
+          command: |
+            # This is necessary because otherwise cargo fails when trying to use git?
+            mkdir .cargo
+            Add-Content .cargo\config "[net]`ngit-fetch-with-cli = true"
+
+            rustup run stable rustc --version --verbose
+            rustup run stable cargo --version --verbose
+            rustup run stable cargo build --package ruffle_desktop --release
+            mkdir windows
+            copy target\release\ruffle_desktop.exe windows\ruffle.exe
+            copy README.md windows
+            copy LICENSE_APACHE windows
+            copy LICENSE_MIT windows\
+            
+            # Have to turn off progress bar or CI explodes?!
+            $progressPreference = 'silentlyContinue'
+            Compress-Archive -Path windows\* -CompressionLevel Optimal -DestinationPath workspace\windows.zip
+
+      # Save cached assets
+      - save_cache:
+          key: v1-cargo-cache-windows-{{ .Revision }}
+          paths:
+            - c:\users\circleci\.cargo\registry
+            - target
+
+      # Persist build artifacts for deploy job
+      - persist_to_workspace:
+          root: workspace
+          paths:
+              - windows.zip
+
   # Upload builds to S3
   deploy:
     docker:
@@ -187,7 +249,7 @@ jobs:
             # If so, this isn't a new commit, so cancel the deployment.
             if ls builds/linux/*${SHORT_GIT_HASH}.tar.gz 1> /dev/null 2>&1; then
               echo "No new commits; cancelling deploy"
-              circleci-agent step halt
+              #circleci-agent step halt
             fi
 
       - run:
@@ -205,6 +267,9 @@ jobs:
             cp -f workspace/osx.tar.gz builds/osx/ruffle_osx_latest.tar.gz
             touch builds/osx/ruffle_osx_latest.tar.gz
             mkdir -p builds/windows
+            cp -f workspace/windows.zip builds/windows/ruffle_windows_${BUILD_ID}.zip
+            cp -f workspace/windows.zip builds/windows/ruffle_windows_latest.zip
+            touch builds/windows/ruffle_windows_latest.zip
             mkdir -p builds/extension
             cp -f workspace/extension.zip builds/extension/ruffle_extension_${BUILD_ID}.zip
             cp -f workspace/extension.zip builds/extension/ruffle_extension_latest.zip
@@ -212,13 +277,14 @@ jobs:
             cp -rf workspace/web-demo builds
             ls -1t builds/linux/* | tail -n +${NUM_BUILDS} | xargs rm -f
             ls -1t builds/osx/* | tail -n +${NUM_BUILDS} | xargs rm -f
+            ls -1t builds/windows/* | tail -n +${NUM_BUILDS} | xargs rm -f
             ls -1t builds/extension/* | tail -n +${NUM_BUILDS} | xargs rm -f
             aws s3 sync builds s3://ruffle-rs/builds --acl public-read --delete
 
 workflows:
   version: 2
 
-  # Build on each push or pull request to the repo
+  # Basic linux build on each push or pull request to the repo
   commit_build:
     jobs:
       - build
@@ -235,7 +301,9 @@ workflows:
     jobs:
       - build
       - build_osx
+      - build_windows
       - deploy:
           requires:
             - build
             - build_osx
+            - build_windows
