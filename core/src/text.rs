@@ -13,11 +13,14 @@ impl<'gc> Text<'gc> {
     pub fn from_swf_tag(context: &mut UpdateContext<'_, 'gc, '_>, tag: &swf::Text) -> Self {
         Self {
             base: Default::default(),
-            static_data: gc_arena::Gc::allocate(context.gc_context, TextStatic {
-                id: tag.id,
-                text_transform: tag.matrix.clone().into(),
-                text_blocks: tag.records.clone(),
-            })
+            static_data: gc_arena::Gc::allocate(
+                context.gc_context,
+                TextStatic {
+                    id: tag.id,
+                    text_transform: tag.matrix.clone().into(),
+                    text_blocks: tag.records.clone(),
+                },
+            ),
         }
     }
 }

@@ -162,8 +162,7 @@ impl<'gc> DisplayObject<'gc> for Button<'gc> {
                         Ok(child) => {
                             {
                                 let mut child = child.write(context.gc_context);
-                                child
-                                    .set_matrix(&record.matrix.clone().into());
+                                child.set_matrix(&record.matrix.clone().into());
                                 child.set_parent(Some(context.active_clip));
                             }
                             self.hit_area.insert(record.depth, child);
