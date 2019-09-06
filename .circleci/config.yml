@@ -270,12 +270,22 @@ jobs:
             mkdir -p builds/extension
             cp -f workspace/extension.zip builds/extension/ruffle_extension_latest.zip
             cp -f workspace/extension.zip builds/extension/ruffle_extension_${BUILD_ID}.zip
-            cp -rf workspace/web-demo builds
+
+            # Only keep a certain # of builds.
             ls -1t builds/linux/* | tail -n +${NUM_BUILDS} | xargs rm -f
             ls -1t builds/osx/* | tail -n +${NUM_BUILDS} | xargs rm -f
             ls -1t builds/windows/* | tail -n +${NUM_BUILDS} | xargs rm -f
             ls -1t builds/extension/* | tail -n +${NUM_BUILDS} | xargs rm -f
-            aws s3 sync builds s3://ruffle-rs/builds --acl public-read --delete
+
+            # Copy over web demo.
+            cp -rf workspace/web-demo builds
+
+            # Upload to S3.
+            # S3 currently gives .wasm files the wrong MIME type, so have to upload that separately.
+            aws s3 sync builds s3://ruffle-rs/builds --acl public-read --exclude '*.wasm' --delete
+            aws s3 sync builds s3://ruffle-rs/builds --acl public-read --exclude '*' --include '*.wasm' --delete --content-type 'application/wasm'
+
+            # By default, S3 serves 
 
 workflows:
   version: 2
