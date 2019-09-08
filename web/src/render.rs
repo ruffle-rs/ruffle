@@ -1,3 +1,4 @@
+use crate::utils::JsResult;
 use ruffle_core::backend::render::{
     swf, swf::CharacterId, BitmapHandle, Color, Letterbox, RenderBackend, ShapeHandle, Transform,
 };
@@ -8,6 +9,9 @@ use web_sys::{CanvasRenderingContext2d, Element, HtmlCanvasElement, HtmlImageEle
 pub struct WebCanvasRenderBackend {
     canvas: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
+    root_canvas: HtmlCanvasElement,
+    render_targets: Vec<(HtmlCanvasElement, CanvasRenderingContext2d)>,
+    cur_render_target: usize,
     color_matrix: Element,
     shapes: Vec<ShapeData>,
     bitmaps: Vec<BitmapData>,
@@ -45,7 +49,7 @@ impl WebCanvasRenderBackend {
         );
         let context: CanvasRenderingContext2d = canvas
             .get_context_with_context_options("2d", &context_options)
-            .map_err(|_| "Could not create context")?
+            .into_js_result()?
             .ok_or("Could not create context")?
             .dyn_into()
             .map_err(|_| "Expected CanvasRenderingContext2d")?;
@@ -119,8 +123,12 @@ impl WebCanvasRenderBackend {
             .map(|s| s.contains("Firefox"))
             .unwrap_or(false);
 
+        let render_targets = vec![(canvas.clone(), context.clone())];
         let renderer = Self {
             canvas: canvas.clone(),
+            root_canvas: canvas.clone(),
+            render_targets,
+            cur_render_target: 0,
             color_matrix,
             context,
             shapes: vec![],
@@ -160,6 +168,57 @@ impl WebCanvasRenderBackend {
             "data:image/png;base64,{}",
             &base64::encode(&png_data[..])
         ))
+    }
+
+    // Pushes a fresh canvas onto the stack to use as a render target.
+    fn push_render_target(&mut self) {
+        self.cur_render_target += 1;
+        if self.cur_render_target >= self.render_targets.len() {
+            // Create offscreen canvas to use as the render target.
+            let window = web_sys::window().unwrap();
+            let document = window.document().unwrap();
+            let canvas: HtmlCanvasElement = document
+                .create_element("canvas")
+                .unwrap()
+                .dyn_into()
+                .unwrap();
+            let context: CanvasRenderingContext2d = canvas
+                .get_context("2d")
+                .unwrap()
+                .unwrap()
+                .dyn_into()
+                .unwrap();
+            canvas
+                .style()
+                .set_property("display", "none")
+                .warn_on_error();
+            self.root_canvas.append_child(&canvas).warn_on_error();
+            self.render_targets.push((canvas, context));
+        }
+
+        let (canvas, context) = &self.render_targets[self.cur_render_target];
+        canvas.set_width(self.viewport_width);
+        canvas.set_height(self.viewport_height);
+        self.canvas = canvas.clone();
+        self.context = context.clone();
+        let width = self.canvas.width();
+        let height = self.canvas.height();
+        self.context
+            .clear_rect(0.0, 0.0, width.into(), height.into());
+    }
+
+    fn pop_render_target(&mut self) -> (HtmlCanvasElement, CanvasRenderingContext2d) {
+        if self.cur_render_target > 0 {
+            let out = (self.canvas.clone(), self.context.clone());
+            self.cur_render_target -= 1;
+            let (canvas, context) = &self.render_targets[self.cur_render_target];
+            self.canvas = canvas.clone();
+            self.context = context.clone();
+            out
+        } else {
+            log::error!("Render target stack underflow");
+            (self.canvas.clone(), self.context.clone())
+        }
     }
 }
 
@@ -441,9 +500,42 @@ impl RenderBackend for WebCanvasRenderBackend {
         }
     }
 
-    fn push_mask(&mut self) {}
-    fn activate_mask(&mut self) {}
-    fn pop_mask(&mut self) {}
+    fn push_mask(&mut self) {
+        // In the canvas backend, masks are implemented using two render targets.
+        // We render the masker clips to the first render target.
+        self.push_render_target();
+    }
+    fn activate_mask(&mut self) {
+        // We render the maskee clips to the second render target.
+        self.push_render_target();
+    }
+    fn pop_mask(&mut self) {
+        let (maskee_canvas, _maskee_context) = self.pop_render_target();
+        let (masker_canvas, masker_context) = self.pop_render_target();
+
+        // We have to be sure to reset the transforms here so that
+        // the texture is drawn starting from the upper-left corner.
+        masker_context.reset_transform().warn_on_error();
+        self.context.reset_transform().warn_on_error();
+
+        // We draw the maskee onto the masker using the "source-in" blend mode.
+        // This will draw the clips in pixels only where the masker alpha > 0.
+        masker_context
+            .set_global_composite_operation("source-in")
+            .unwrap();
+        masker_context
+            .draw_image_with_html_canvas_element(&maskee_canvas, 0.0, 0.0)
+            .unwrap();
+        masker_context
+            .set_global_composite_operation("source-over")
+            .unwrap();
+
+        // Finally, we draw the finalized masked onto the main canvas.
+        self.context.reset_transform().warn_on_error();
+        self.context
+            .draw_image_with_html_canvas_element(&masker_canvas, 0.0, 0.0)
+            .unwrap();
+    }
 }
 
 fn swf_shape_to_svg(

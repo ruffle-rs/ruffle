@@ -1,6 +1,7 @@
 //! Ruffle web frontend.
 mod audio;
 mod render;
+mod utils;
 
 use crate::{audio::WebAudioBackend, render::WebCanvasRenderBackend};
 use generational_arena::{Arena, Index};
