@@ -28,6 +28,9 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
 }
 
 impl<'gc> DisplayObject<'gc> for DisplayObjectBase<'gc> {
+    fn depth(&self) -> Depth {
+        self.depth
+    }
     fn transform(&self) -> &Transform {
         &self.transform
     }
@@ -71,6 +74,7 @@ impl<'gc> DisplayObject<'gc> for DisplayObjectBase<'gc> {
 }
 
 pub trait DisplayObject<'gc>: 'gc + Collect + Debug {
+    fn depth(&self) -> Depth;
     fn local_bounds(&self) -> BoundingBox {
         BoundingBox::default()
     }
@@ -148,6 +152,9 @@ impl<'gc> Clone for Box<dyn DisplayObject<'gc>> {
 
 macro_rules! impl_display_object {
     ($field:ident) => {
+        fn depth(&self) -> crate::prelude::Depth {
+            self.$field.depth()
+        }
         fn transform(&self) -> &crate::transform::Transform {
             self.$field.transform()
         }
@@ -188,6 +195,43 @@ macro_rules! impl_display_object {
             Box::new(self.clone())
         }
     };
+}
+
+/// Renders the children of a display object, taking masking into account.
+// TODO(Herschel): Move this into an IDisplayObject/IDisplayObjectContainer trait when
+// we figure out inheritance
+pub fn render_children<'gc>(
+    context: &mut RenderContext<'_, 'gc>,
+    children: &std::collections::BTreeMap<Depth, DisplayNode<'gc>>,
+) {
+    let mut clip_depth = 0;
+    let mut clip_depth_stack = vec![];
+    for (&depth, &child) in children {
+        // Check if we need to pop off a mask.
+        // This must be a while loop because multiple masks can be popped
+        // at the same dpeth.
+        while clip_depth > 0 && depth >= clip_depth {
+            context.renderer.pop_mask();
+            clip_depth = clip_depth_stack.pop().unwrap();
+        }
+        let child = child.read();
+        if child.clip_depth() > 0 {
+            // Push and render the mask.
+            clip_depth_stack.push(clip_depth);
+            clip_depth = child.clip_depth();
+            context.renderer.push_mask();
+            child.render(context);
+            context.renderer.activate_mask();
+        } else {
+            // Normal child.
+            child.render(context);
+        }
+    }
+
+    while !clip_depth_stack.is_empty() {
+        context.renderer.pop_mask();
+        clip_depth_stack.pop();
+    }
 }
 
 /// `DisplayNode` is the garbage-collected pointer between display objects.

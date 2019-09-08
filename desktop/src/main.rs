@@ -40,6 +40,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         .with_vsync(true)
         .with_multisampling(4)
         .with_srgb(true)
+        .with_stencil_buffer(8)
         .build_windowed(window_builder, &events_loop)?;
     let audio = audio::RodioAudioBackend::new()?;
     let renderer = GliumRenderBackend::new(windowed_context)?;

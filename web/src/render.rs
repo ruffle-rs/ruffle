@@ -440,6 +440,10 @@ impl RenderBackend for WebCanvasRenderBackend {
             }
         }
     }
+
+    fn push_mask(&mut self) {}
+    fn activate_mask(&mut self) {}
+    fn pop_mask(&mut self) {}
 }
 
 fn swf_shape_to_svg(

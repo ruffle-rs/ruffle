@@ -431,6 +431,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend> Player<Audio, Renderer> {
                 library: gc_root.library.read(),
                 transform_stack,
                 view_bounds,
+                clip_depth_stack: vec![],
             };
             gc_root.root.read().render(&mut render_context);
         });
@@ -543,4 +544,5 @@ pub struct RenderContext<'a, 'gc> {
     pub library: std::cell::Ref<'a, Library<'gc>>,
     pub transform_stack: &'a mut TransformStack,
     pub view_bounds: BoundingBox,
+    pub clip_depth_stack: Vec<Depth>,
 }
