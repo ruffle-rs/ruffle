@@ -27,6 +27,9 @@ pub trait RenderBackend {
     fn end_frame(&mut self);
     fn draw_pause_overlay(&mut self);
     fn draw_letterbox(&mut self, letterbox: Letterbox);
+    fn push_mask(&mut self);
+    fn activate_mask(&mut self);
+    fn pop_mask(&mut self);
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -80,6 +83,9 @@ impl RenderBackend for NullRenderer {
     fn render_shape(&mut self, _shape: ShapeHandle, _transform: &Transform) {}
     fn draw_pause_overlay(&mut self) {}
     fn draw_letterbox(&mut self, _letterbox: Letterbox) {}
+    fn push_mask(&mut self) {}
+    fn activate_mask(&mut self) {}
+    fn pop_mask(&mut self) {}
 }
 
 pub fn glue_swf_jpeg_to_tables(jpeg_tables: &[u8], jpeg_data: &[u8]) -> Vec<u8> {

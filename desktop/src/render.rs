@@ -22,6 +22,12 @@ pub struct GliumRenderBackend {
     bitmap_shader_program: glium::Program,
     meshes: Vec<Mesh>,
     textures: Vec<(swf::CharacterId, Texture)>,
+    num_masks: u32,
+    num_masks_active: u32,
+    write_stencil_mask: u32,
+    test_stencil_mask: u32,
+    next_stencil_mask: u32,
+    mask_stack: Vec<(u32, u32)>,
     viewport_width: f32,
     viewport_height: f32,
     view_matrix: [[f32; 4]; 4],
@@ -87,6 +93,12 @@ impl GliumRenderBackend {
             viewport_width: 500.0,
             viewport_height: 500.0,
             view_matrix: [[0.0; 4]; 4],
+            num_masks: 0,
+            num_masks_active: 0,
+            write_stencil_mask: 0,
+            test_stencil_mask: 0,
+            next_stencil_mask: 1,
+            mask_stack: vec![],
         };
         renderer.build_matrices();
         Ok(renderer)
@@ -103,9 +115,6 @@ impl GliumRenderBackend {
         use lyon::tessellation::{FillOptions, StrokeOptions};
 
         let mut mesh = Mesh { draws: vec![] };
-
-        //let mut vertices: Vec<Vertex> = vec![];
-        //let mut indices: Vec<u32> = vec![];
 
         let mut fill_tess = FillTessellator::new();
         let mut stroke_tess = StrokeTessellator::new();
@@ -571,22 +580,29 @@ impl RenderBackend for GliumRenderBackend {
     fn begin_frame(&mut self) {
         assert!(self.target.is_none());
         self.target = Some(self.display.draw());
+        self.num_masks = 0;
+        self.num_masks_active = 0;
+        self.write_stencil_mask = 0;
+        self.test_stencil_mask = 0;
+        self.next_stencil_mask = 1;
     }
 
     fn end_frame(&mut self) {
         assert!(self.target.is_some());
-
         let target = self.target.take().unwrap();
         target.finish().unwrap();
     }
 
     fn clear(&mut self, color: Color) {
         let target = self.target.as_mut().unwrap();
-        target.clear_color_srgb(
-            f32::from(color.r) / 255.0,
-            f32::from(color.g) / 255.0,
-            f32::from(color.b) / 255.0,
-            f32::from(color.a) / 255.0,
+        target.clear_color_srgb_and_stencil(
+            (
+                f32::from(color.r) / 255.0,
+                f32::from(color.g) / 255.0,
+                f32::from(color.b) / 255.0,
+                f32::from(color.a) / 255.0,
+            ),
+            0,
         );
     }
 
@@ -621,16 +637,27 @@ impl RenderBackend for GliumRenderBackend {
             transform.color_transform.a_add,
         ];
 
+        let mut draw_parameters = DrawParameters::default();
+        mask_draw_parameters(
+            &mut draw_parameters,
+            self.num_masks,
+            self.num_masks_active,
+            self.write_stencil_mask,
+            self.test_stencil_mask,
+        );
+
         for draw in &mesh.draws {
             match &draw.draw_type {
                 DrawType::Color => {
+                    draw_parameters.blend = color_blend();
+                    
                     target
                         .draw(
                             &draw.vertex_buffer,
                             &draw.index_buffer,
                             &self.shader_program,
                             &uniform! { view_matrix: self.view_matrix, world_matrix: world_matrix, mult_color: mult_color, add_color: add_color },
-                            &color_draw_parameters()
+                            &draw_parameters
                         )
                         .unwrap();
                 }
@@ -643,13 +670,15 @@ impl RenderBackend for GliumRenderBackend {
                         gradient: gradient_uniforms.clone(),
                     };
 
+                    draw_parameters.blend = color_blend();
+
                     target
                         .draw(
                             &draw.vertex_buffer,
                             &draw.index_buffer,
                             &self.gradient_shader_program,
                             &uniforms,
-                            &color_draw_parameters(),
+                            &draw_parameters,
                         )
                         .unwrap();
                 }
@@ -697,13 +726,15 @@ impl RenderBackend for GliumRenderBackend {
                         texture,
                     };
 
+                    draw_parameters.blend = bitmap_blend();
+                    
                     target
                         .draw(
                             &draw.vertex_buffer,
                             &draw.index_buffer,
                             &self.bitmap_shader_program,
                             &uniforms,
-                            &bitmap_draw_parameters(),
+                            &draw_parameters,
                         )
                         .unwrap();
                 }
@@ -770,6 +801,44 @@ impl RenderBackend for GliumRenderBackend {
                     None,
                 );
             }
+        }
+    }
+
+    fn push_mask(&mut self) {
+        // Desktop draws the masker to the stencil buffer, one bit per mask.
+        // Masks-within-masks are handled as a bitmask.
+        // This does unfortunately mean we are limited in the number of masks at once (usually 8 bits).
+        if self.next_stencil_mask == 0 {
+            // If we've reached the limit of masks, clear the stencil buffer and start over.
+            // But this may not be correct if there is still a mask active (mask-within-mask).
+            let target = self.target.as_mut().unwrap();
+            if self.test_stencil_mask != 0 {
+                log::warn!(
+                    "Too many masks active for stencil buffer; possibly inccorect rendering"
+                );
+            }
+            self.next_stencil_mask = 0;
+            target.clear_stencil(self.test_stencil_mask as i32);
+        }
+        self.num_masks += 1;
+        self.mask_stack
+            .push((self.write_stencil_mask, self.test_stencil_mask));
+        self.write_stencil_mask = self.next_stencil_mask;
+        self.test_stencil_mask |= self.next_stencil_mask;
+        self.next_stencil_mask <<= 1;
+    }
+    fn activate_mask(&mut self) {
+        self.num_masks_active += 1;
+    }
+    fn pop_mask(&mut self) {
+        if !self.mask_stack.is_empty() {
+            self.num_masks -= 1;
+            self.num_masks_active -= 1;
+            let (write, test) = self.mask_stack.pop().unwrap();
+            self.write_stencil_mask = write;
+            self.test_stencil_mask = test;
+        } else {
+            log::warn!("Mask stack underflow\n");
         }
     }
 }
@@ -1124,30 +1193,72 @@ fn swf_bitmap_to_gl_matrix(m: swf::Matrix, bitmap_width: u32, bitmap_height: u32
     [[a, d, 0.0], [b, e, 0.0], [c, f, 1.0]]
 }
 
+/// Returns the drawing parameters for masking.
+#[inline]
+fn mask_draw_parameters(
+    params: &mut DrawParameters,
+    num_masks: u32,
+    num_masks_active: u32,
+    write_stencil_mask: u32,
+    test_stencil_mask: u32,
+) {
+    use glium::draw_parameters::{Stencil, StencilOperation, StencilTest};
+    if num_masks > 0 {
+        let (value, test, pass_op, color_mask, write_mask) = if num_masks_active < num_masks {
+            (
+                write_stencil_mask as i32,
+                StencilTest::AlwaysPass,
+                StencilOperation::Replace,
+                (false, false, false, false),
+                write_stencil_mask,
+            )
+        } else {
+            (
+                test_stencil_mask as i32,
+                StencilTest::IfEqual {
+                    mask: test_stencil_mask,
+                },
+                StencilOperation::Keep,
+                (true, true, true, true),
+                test_stencil_mask,
+            )
+        };
+        params.color_mask = color_mask;
+        params.stencil = Stencil {
+            test_clockwise: test,
+            reference_value_clockwise: value,
+            write_mask_clockwise: write_mask,
+            fail_operation_clockwise: StencilOperation::Keep,
+            pass_depth_fail_operation_clockwise: StencilOperation::Keep,
+            depth_pass_operation_clockwise: pass_op,
+            test_counter_clockwise: test,
+            reference_value_counter_clockwise: value,
+            write_mask_counter_clockwise: write_mask,
+            fail_operation_counter_clockwise: StencilOperation::Keep,
+            pass_depth_fail_operation_counter_clockwise: StencilOperation::Keep,
+            depth_pass_operation_counter_clockwise: pass_op,
+        };
+    }
+}
+
 /// Returns the drawing parameters for standard color/gradient fills.
 #[inline]
-fn color_draw_parameters() -> DrawParameters<'static> {
-    DrawParameters {
-        blend: glium::Blend::alpha_blending(),
-        ..Default::default()
-    }
+fn color_blend() -> glium::Blend {
+    glium::Blend::alpha_blending()
 }
 
 /// Returns the drawing parameters for bitmaps with pre-multipled alpha.
 #[inline]
-fn bitmap_draw_parameters() -> DrawParameters<'static> {
+fn bitmap_blend() -> glium::Blend {
     use glium::{BlendingFunction, LinearBlendingFactor};
-    DrawParameters {
-        blend: glium::Blend {
-            color: BlendingFunction::Addition {
-                source: LinearBlendingFactor::One,
-                destination: LinearBlendingFactor::OneMinusSourceAlpha,
-            },
-            alpha: BlendingFunction::Addition {
-                source: LinearBlendingFactor::SourceAlpha,
-                destination: LinearBlendingFactor::OneMinusSourceAlpha,
-            },
-            ..Default::default()
+    glium::Blend {
+        color: BlendingFunction::Addition {
+            source: LinearBlendingFactor::One,
+            destination: LinearBlendingFactor::OneMinusSourceAlpha,
+        },
+        alpha: BlendingFunction::Addition {
+            source: LinearBlendingFactor::SourceAlpha,
+            destination: LinearBlendingFactor::OneMinusSourceAlpha,
         },
         ..Default::default()
     }

@@ -196,9 +196,7 @@ impl<'gc> DisplayObject<'gc> for Button<'gc> {
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
         context.transform_stack.push(self.transform());
 
-        for child in self.children.values() {
-            child.read().render(context);
-        }
+        crate::display_object::render_children(context, &self.children);
 
         context.transform_stack.pop();
     }

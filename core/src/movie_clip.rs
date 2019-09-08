@@ -330,11 +330,7 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
 
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
         context.transform_stack.push(self.transform());
-
-        for child in self.children.values() {
-            child.read().render(context);
-        }
-
+        crate::display_object::render_children(context, &self.children);
         context.transform_stack.pop();
     }
 
@@ -1008,6 +1004,9 @@ impl<'gc, 'a> MovieClip<'gc> {
                     character
                         .write(context.gc_context)
                         .set_color_transform(prev_character.read().color_transform());
+                    character
+                        .write(context.gc_context)
+                        .set_clip_depth(prev_character.read().clip_depth());
                 }
                 character
             }
