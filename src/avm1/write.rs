@@ -5,6 +5,7 @@ use crate::avm1::types::*;
 use crate::write::SwfWrite;
 use std::io::{Result, Write};
 
+#[allow(dead_code)]
 pub struct Writer<W: Write> {
     inner: W,
     version: u8,
@@ -19,14 +20,6 @@ impl<W: Write> SwfWrite<W> for Writer<W> {
 impl<W: Write> Writer<W> {
     pub fn new(inner: W, version: u8) -> Writer<W> {
         Writer { inner, version }
-    }
-
-    pub fn write_action_list(&mut self, actions: &[Action]) -> Result<()> {
-        for action in actions {
-            self.write_action(action)?;
-        }
-        self.write_u8(0)?; // End
-        Ok(())
     }
 
     pub fn write_action(&mut self, action: &Action) -> Result<()> {
@@ -61,32 +54,22 @@ impl<W: Write> Writer<W> {
                 ref params,
                 ref actions,
             } => {
-                let mut action_buf = vec![];
-                {
-                    let mut fn_writer = Writer::new(&mut action_buf, self.version);
-                    fn_writer.write_action_list(actions)?;
-                }
                 let len = name.len()
                     + 1
                     + 2
                     + params.iter().map(|p| p.len() + 1).sum::<usize>()
                     + 2
-                    + action_buf.len();
+                    + actions.len();
                 self.write_action_header(OpCode::DefineFunction, len)?;
                 self.write_c_string(name)?;
                 self.write_u16(params.len() as u16)?;
                 for param in params {
                     self.write_c_string(param)?;
                 }
-                self.write_u16(action_buf.len() as u16)?;
-                self.inner.write_all(&action_buf)?;
+                self.write_u16(actions.len() as u16)?;
+                self.inner.write_all(actions)?;
             }
             Action::DefineFunction2(ref function) => {
-                let mut action_buf = vec![];
-                {
-                    let mut fn_writer = Writer::new(&mut action_buf, self.version);
-                    fn_writer.write_action_list(&function.actions)?;
-                }
                 let len = function.name.len()
                     + 1
                     + 3
@@ -96,7 +79,7 @@ impl<W: Write> Writer<W> {
                         .map(|p| p.name.len() + 2)
                         .sum::<usize>()
                     + 4
-                    + action_buf.len();
+                    + function.actions.len();
                 let num_registers = function
                     .params
                     .iter()
@@ -134,8 +117,8 @@ impl<W: Write> Writer<W> {
                     })?;
                     self.write_c_string(&param.name)?;
                 }
-                self.write_u16(action_buf.len() as u16)?;
-                self.inner.write_all(&action_buf)?;
+                self.write_u16(function.actions.len() as u16)?;
+                self.inner.write_all(&function.actions)?;
             }
             Action::DefineLocal => self.write_action_header(OpCode::DefineLocal, 0)?,
             Action::DefineLocal2 => self.write_action_header(OpCode::DefineLocal2, 0)?,
@@ -290,17 +273,20 @@ impl<W: Write> Writer<W> {
                 let finally_length;
                 let mut action_buf = vec![];
                 {
-                    let mut fn_writer = Writer::new(&mut action_buf, self.version);
-                    fn_writer.write_action_list(&try_block.try_actions)?;
-                    try_length = fn_writer.inner.len();
-                    if let Some((_, ref catch)) = try_block.catch {
-                        fn_writer.write_action_list(catch)?;
-                    }
-                    catch_length = fn_writer.inner.len() - try_length;
-                    if let Some(ref finally) = try_block.finally {
-                        fn_writer.write_action_list(finally)?;
-                    }
-                    finally_length = fn_writer.inner.len() - (try_length + catch_length);
+                    action_buf.write_all(&try_block.try_actions)?;
+                    try_length = try_block.try_actions.len();
+                    catch_length = if let Some((_, ref catch)) = try_block.catch {
+                        action_buf.write_all(catch)?;
+                        catch.len()
+                    } else {
+                        0
+                    };
+                    finally_length = if let Some(ref finally) = try_block.finally {
+                        action_buf.write_all(finally)?;
+                        finally.len()
+                    } else {
+                        0
+                    };
                 }
                 let len = 7
                     + action_buf.len()
@@ -344,13 +330,8 @@ impl<W: Write> Writer<W> {
                 self.write_u8(num_actions_to_skip)?;
             }
             Action::With { ref actions } => {
-                let mut action_buf = vec![];
-                {
-                    let mut fn_writer = Writer::new(&mut action_buf, self.version);
-                    fn_writer.write_action_list(actions)?;
-                }
-                self.write_action_header(OpCode::With, action_buf.len())?;
-                self.inner.write_all(&action_buf)?;
+                self.write_action_header(OpCode::With, actions.len())?;
+                self.inner.write_all(&actions)?;
             }
             Action::Unknown { opcode, ref data } => {
                 self.write_opcode_and_length(opcode, data.len())?;

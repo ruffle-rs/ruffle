@@ -3,39 +3,72 @@
 use crate::avm1::opcode::OpCode;
 use crate::avm1::types::*;
 use crate::read::SwfRead;
-use std::io::{Error, ErrorKind, Read, Result};
+use std::io::{Cursor, Error, ErrorKind, Result};
 
-pub struct Reader<R: Read> {
-    inner: R,
+#[allow(dead_code)]
+pub struct Reader<'a> {
+    inner: Cursor<&'a [u8]>,
     version: u8,
 }
 
-impl<R: Read> SwfRead<R> for Reader<R> {
-    fn get_inner(&mut self) -> &mut R {
+impl<'a> SwfRead<Cursor<&'a [u8]>> for Reader<'a> {
+    fn get_inner(&mut self) -> &mut Cursor<&'a [u8]> {
         &mut self.inner
     }
 }
 
-impl<R: Read> Reader<R> {
-    pub fn new(inner: R, version: u8) -> Reader<R> {
-        Reader { inner, version }
-    }
-
-    pub fn read_action_list(&mut self) -> Result<Vec<Action>> {
-        let mut actions = Vec::new();
-        while let Some(action) = self.read_action()? {
-            actions.push(action);
+impl<'a> Reader<'a> {
+    pub fn new(input: &'a [u8], version: u8) -> Self {
+        Self {
+            inner: Cursor::new(input),
+            version,
         }
-        Ok(actions)
     }
 
-    pub fn read_action(&mut self) -> Result<Option<Action>> {
+    #[inline]
+    pub fn pos(&self) -> usize {
+        self.inner.position() as usize
+    }
+
+    #[inline]
+    pub fn seek(&mut self, relative_offset: isize) {
+        let new_pos = self.inner.position() as i64 + relative_offset as i64;
+        self.inner.set_position(new_pos as u64);
+    }
+
+    #[inline]
+    fn read_slice(&mut self, len: usize) -> &'a [u8] {
+        let pos = self.pos();
+        let slice = &self.inner.get_ref()[pos..pos + len];
+        self.inner.set_position(pos as u64 + len as u64);
+        slice
+    }
+
+    #[inline]
+    fn read_c_string(&mut self) -> Result<&'a str> {
+        // Find zero terminator.
+        let str_slice = {
+            let start_pos = self.pos();
+            loop {
+                let byte = self.read_u8()?;
+                if byte == 0 {
+                    break;
+                }
+            }
+            &self.inner.get_ref()[start_pos..self.pos() - 1]
+        };
+        // TODO: What does Flash do on invalid UTF8?
+        // Do we silently let it pass?
+        // TODO: Verify ANSI for SWF 5 and earlier.
+        std::str::from_utf8(str_slice)
+            .map_err(|_| Error::new(ErrorKind::InvalidData, "Invalid string data"))
+    }
+
+    #[inline]
+    pub fn read_action(&mut self) -> Result<Option<Action<'a>>> {
         use num_traits::FromPrimitive;
 
         let (opcode, length) = self.read_opcode_and_length()?;
-
-        let mut action_reader = Reader::new(self.inner.by_ref().take(length as u64), self.version);
-
         let action = if let Some(op) = OpCode::from_u8(opcode) {
             match op {
                 OpCode::End => return Ok(None),
@@ -58,14 +91,14 @@ impl<R: Read> Reader<R> {
                 OpCode::CloneSprite => Action::CloneSprite,
                 OpCode::ConstantPool => {
                     let mut constants = vec![];
-                    for _ in 0..action_reader.read_u16()? {
-                        constants.push(action_reader.read_c_string()?);
+                    for _ in 0..self.read_u16()? {
+                        constants.push(self.read_c_string()?);
                     }
                     Action::ConstantPool(constants)
                 }
                 OpCode::Decrement => Action::Decrement,
-                OpCode::DefineFunction => action_reader.read_define_function()?,
-                OpCode::DefineFunction2 => action_reader.read_define_function_2()?,
+                OpCode::DefineFunction => self.read_define_function()?,
+                OpCode::DefineFunction2 => self.read_define_function_2()?,
                 OpCode::DefineLocal => Action::DefineLocal,
                 OpCode::DefineLocal2 => Action::DefineLocal2,
                 OpCode::Delete => Action::Delete,
@@ -81,11 +114,11 @@ impl<R: Read> Reader<R> {
                 OpCode::GetProperty => Action::GetProperty,
                 OpCode::GetTime => Action::GetTime,
                 OpCode::GetUrl => Action::GetUrl {
-                    url: action_reader.read_c_string()?,
-                    target: action_reader.read_c_string()?,
+                    url: self.read_c_string()?,
+                    target: self.read_c_string()?,
                 },
                 OpCode::GetUrl2 => {
-                    let flags = action_reader.read_u8()?;
+                    let flags = self.read_u8()?;
                     Action::GetUrl2 {
                         is_target_sprite: flags & 0b10 != 0,
                         is_load_vars: flags & 0b1 != 0,
@@ -104,24 +137,24 @@ impl<R: Read> Reader<R> {
                 }
                 OpCode::GetVariable => Action::GetVariable,
                 OpCode::GotoFrame => {
-                    let frame = action_reader.read_u16()?;
+                    let frame = self.read_u16()?;
                     Action::GotoFrame(frame)
                 }
                 OpCode::GotoFrame2 => {
-                    let flags = action_reader.read_u8()?;
+                    let flags = self.read_u8()?;
                     Action::GotoFrame2 {
                         set_playing: flags & 0b1 != 0,
                         scene_offset: if flags & 0b10 != 0 {
-                            action_reader.read_u16()?
+                            self.read_u16()?
                         } else {
                             0
                         },
                     }
                 }
-                OpCode::GotoLabel => Action::GotoLabel(action_reader.read_c_string()?),
+                OpCode::GotoLabel => Action::GotoLabel(self.read_c_string()?),
                 OpCode::Greater => Action::Greater,
                 OpCode::If => Action::If {
-                    offset: action_reader.read_i16()?,
+                    offset: self.read_i16()?,
                 },
                 OpCode::ImplementsOp => Action::ImplementsOp,
                 OpCode::Increment => Action::Increment,
@@ -129,7 +162,7 @@ impl<R: Read> Reader<R> {
                 OpCode::InitObject => Action::InitObject,
                 OpCode::InstanceOf => Action::InstanceOf,
                 OpCode::Jump => Action::Jump {
-                    offset: action_reader.read_i16()?,
+                    offset: self.read_i16()?,
                 },
                 OpCode::Less => Action::Less,
                 OpCode::Less2 => Action::Less2,
@@ -148,27 +181,21 @@ impl<R: Read> Reader<R> {
                 OpCode::Pop => Action::Pop,
                 OpCode::PreviousFrame => Action::PreviousFrame,
                 // TODO: Verify correct version for complex types.
-                OpCode::Push => {
-                    let mut values = vec![];
-                    while let Ok(value) = action_reader.read_push_value() {
-                        values.push(value);
-                    }
-                    Action::Push(values)
-                }
+                OpCode::Push => self.read_push(length)?,
                 OpCode::PushDuplicate => Action::PushDuplicate,
                 OpCode::RandomNumber => Action::RandomNumber,
                 OpCode::RemoveSprite => Action::RemoveSprite,
                 OpCode::Return => Action::Return,
                 OpCode::SetMember => Action::SetMember,
                 OpCode::SetProperty => Action::SetProperty,
-                OpCode::SetTarget => Action::SetTarget(action_reader.read_c_string()?),
+                OpCode::SetTarget => Action::SetTarget(self.read_c_string()?),
                 OpCode::SetTarget2 => Action::SetTarget2,
                 OpCode::SetVariable => Action::SetVariable,
                 OpCode::StackSwap => Action::StackSwap,
                 OpCode::StartDrag => Action::StartDrag,
                 OpCode::Stop => Action::Stop,
                 OpCode::StopSounds => Action::StopSounds,
-                OpCode::StoreRegister => Action::StoreRegister(action_reader.read_u8()?),
+                OpCode::StoreRegister => Action::StoreRegister(self.read_u8()?),
                 OpCode::StrictEquals => Action::StrictEquals,
                 OpCode::StringAdd => Action::StringAdd,
                 OpCode::StringEquals => Action::StringEquals,
@@ -184,28 +211,24 @@ impl<R: Read> Reader<R> {
                 OpCode::ToNumber => Action::ToNumber,
                 OpCode::ToString => Action::ToString,
                 OpCode::Trace => Action::Trace,
-                OpCode::Try => action_reader.read_try()?,
+                OpCode::Try => self.read_try()?,
                 OpCode::TypeOf => Action::TypeOf,
                 OpCode::WaitForFrame => Action::WaitForFrame {
-                    frame: action_reader.read_u16()?,
-                    num_actions_to_skip: action_reader.read_u8()?,
+                    frame: self.read_u16()?,
+                    num_actions_to_skip: self.read_u8()?,
                 },
                 OpCode::With => {
-                    let code_length = action_reader.read_u16()?;
-                    let mut with_reader = Reader::new(
-                        (&mut action_reader.inner as &mut dyn Read).take(code_length.into()),
-                        self.version,
-                    );
+                    let code_length = self.read_u16()?;
                     Action::With {
-                        actions: with_reader.read_action_list()?,
+                        actions: self.read_slice(code_length.into()),
                     }
                 }
                 OpCode::WaitForFrame2 => Action::WaitForFrame2 {
-                    num_actions_to_skip: action_reader.read_u8()?,
+                    num_actions_to_skip: self.read_u8()?,
                 },
             }
         } else {
-            action_reader.read_unknown_action(opcode, length)?
+            self.read_unknown_action(opcode, length)?
         };
 
         Ok(Some(action))
@@ -221,13 +244,23 @@ impl<R: Read> Reader<R> {
         Ok((opcode, length))
     }
 
-    fn read_unknown_action(&mut self, opcode: u8, length: usize) -> Result<Action> {
-        let mut data = vec![0u8; length];
-        self.inner.read_exact(&mut data)?;
-        Ok(Action::Unknown { opcode, data })
+    fn read_unknown_action(&mut self, opcode: u8, length: usize) -> Result<Action<'a>> {
+        Ok(Action::Unknown {
+            opcode,
+            data: self.read_slice(length),
+        })
     }
 
-    fn read_push_value(&mut self) -> Result<Value> {
+    fn read_push(&mut self, length: usize) -> Result<Action<'a>> {
+        let end_pos = self.pos() + length;
+        let mut values = Vec::with_capacity(end_pos);
+        while self.pos() < end_pos {
+            values.push(self.read_push_value()?);
+        }
+        Ok(Action::Push(values))
+    }
+
+    fn read_push_value(&mut self) -> Result<Value<'a>> {
         let value = match self.read_u8()? {
             0 => Value::Str(self.read_c_string()?),
             1 => Value::Float(self.read_f32()?),
@@ -249,26 +282,23 @@ impl<R: Read> Reader<R> {
         Ok(value)
     }
 
-    fn read_define_function(&mut self) -> Result<Action> {
+    fn read_define_function(&mut self) -> Result<Action<'a>> {
         let name = self.read_c_string()?;
         let num_params = self.read_u16()?;
         let mut params = Vec::with_capacity(num_params as usize);
         for _ in 0..num_params {
             params.push(self.read_c_string()?);
         }
+        // code_length isn't included in the DefineFunction's action length.
         let code_length = self.read_u16()?;
-        let mut fn_reader = Reader::new(
-            (&mut self.inner as &mut dyn Read).take(code_length.into()),
-            self.version,
-        );
         Ok(Action::DefineFunction {
             name,
             params,
-            actions: fn_reader.read_action_list()?,
+            actions: self.read_slice(code_length.into()),
         })
     }
 
-    fn read_define_function_2(&mut self) -> Result<Action> {
+    fn read_define_function_2(&mut self) -> Result<Action<'a>> {
         let name = self.read_c_string()?;
         let num_params = self.read_u16()?;
         let num_registers = self.read_u8()?; // Number of registers
@@ -281,11 +311,8 @@ impl<R: Read> Reader<R> {
                 register_index: if register == 0 { None } else { Some(register) },
             });
         }
+        // code_length isn't included in the DefineFunction's length.
         let code_length = self.read_u16()?;
-        let mut fn_reader = Reader::new(
-            (&mut self.inner as &mut dyn Read).take(code_length.into()),
-            self.version,
-        );
         Ok(Action::DefineFunction2(Function {
             name,
             params,
@@ -298,11 +325,11 @@ impl<R: Read> Reader<R> {
             preload_arguments: flags & 0b100 != 0,
             suppress_this: flags & 0b10 != 0,
             preload_this: flags & 0b1 != 0,
-            actions: fn_reader.read_action_list()?,
+            actions: self.read_slice(code_length.into()),
         }))
     }
 
-    fn read_try(&mut self) -> Result<Action> {
+    fn read_try(&mut self) -> Result<Action<'a>> {
         let flags = self.read_u8()?;
         let try_length = self.read_u16()?;
         let catch_length = self.read_u16()?;
@@ -312,27 +339,9 @@ impl<R: Read> Reader<R> {
         } else {
             CatchVar::Register(self.read_u8()?)
         };
-        let try_actions = {
-            let mut fn_reader = Reader::new(
-                (&mut self.inner as &mut dyn Read).take(try_length.into()),
-                self.version,
-            );
-            fn_reader.read_action_list()?
-        };
-        let catch_actions = {
-            let mut fn_reader = Reader::new(
-                (&mut self.inner as &mut dyn Read).take(catch_length.into()),
-                self.version,
-            );
-            fn_reader.read_action_list()?
-        };
-        let finally_actions = {
-            let mut fn_reader = Reader::new(
-                (&mut self.inner as &mut dyn Read).take(finally_length.into()),
-                self.version,
-            );
-            fn_reader.read_action_list()?
-        };
+        let try_actions = self.read_slice(try_length.into());
+        let catch_actions = self.read_slice(catch_length.into());
+        let finally_actions = self.read_slice(finally_length.into());
         Ok(Action::Try(TryBlock {
             try_actions,
             catch: if flags & 0b1 != 0 {
@@ -367,5 +376,40 @@ pub mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn read_define_function() {
+        // Ensure we read a function properly along with the function data.
+        let action_bytes = vec![
+            0x9b, 0x08, 0x00, 0x66, 0x6f, 0x6f, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x96, 0x06, 0x00,
+            0x00, 0x74, 0x65, 0x73, 0x74, 0x00, 0x26, 0x00,
+        ];
+        let mut reader = Reader::new(&action_bytes[..], 5);
+        let action = reader.read_action().unwrap().unwrap();
+        assert_eq!(
+            action,
+            Action::DefineFunction {
+                name: "foo",
+                params: vec![],
+                actions: &[0x96, 0x06, 0x00, 0x00, 0x74, 0x65, 0x73, 0x74, 0x00, 0x26],
+            }
+        );
+
+        if let Action::DefineFunction { actions, .. } = action {
+            let mut reader = Reader::new(actions, 5);
+            let action = reader.read_action().unwrap().unwrap();
+            assert_eq!(action, Action::Push(vec![Value::Str("test")]));
+        }
+    }
+
+    #[test]
+    fn read_push_to_end_of_action() {
+        // ActionPush doesn't provide an explicit # of values, but instead reads values
+        // until the end of the action. Ensure we don't read extra values.
+        let action_bytes = [0x96, 2, 0, 2, 3, 3]; // Extra 3 at the end shouldn't be read.
+        let mut reader = Reader::new(&action_bytes[..], 5);
+        let action = reader.read_action().unwrap().unwrap();
+        assert_eq!(action, Action::Push(vec![Value::Null, Value::Undefined]));
     }
 }

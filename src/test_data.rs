@@ -21,7 +21,7 @@ pub fn echo_swf(filename: &str) {
 
 pub type TestData<T> = (u8, T, Vec<u8>);
 pub type TagTestData = TestData<Tag>;
-pub type Avm1TestData = TestData<Action>;
+pub type Avm1TestData = TestData<Action<'static>>;
 pub type Avm2TestData = TestData<AbcFile>;
 
 pub fn tag_tests() -> Vec<TagTestData> {
@@ -2339,8 +2339,8 @@ pub fn avm1_tests() -> Vec<Avm1TestData> {
         (
             3,
             Action::GetUrl {
-                url: String::from("a"),
-                target: String::from("b"),
+                url: "a",
+                target: "b",
             },
             vec![0x83, 4, 0, 97, 0, 98, 0],
         ),
@@ -2373,7 +2373,7 @@ pub fn avm1_tests() -> Vec<Avm1TestData> {
         ),
         (
             3,
-            Action::GotoLabel("testb".to_string()),
+            Action::GotoLabel("testb"),
             vec![0x8C, 6, 0, 116, 101, 115, 116, 98, 0],
         ),
         (4, Action::If { offset: 1 }, vec![0x9D, 2, 0, 1, 0]),
@@ -2393,7 +2393,7 @@ pub fn avm1_tests() -> Vec<Avm1TestData> {
         (3, Action::PreviousFrame, vec![0x05]),
         (
             4,
-            Action::Push(vec![Value::Str("test".to_string())]),
+            Action::Push(vec![Value::Str("test")]),
             vec![0x96, 6, 0, 0, 116, 101, 115, 116, 0],
         ),
         (
@@ -2456,7 +2456,7 @@ pub fn avm1_tests() -> Vec<Avm1TestData> {
         (4, Action::RandomNumber, vec![0x30]),
         (
             3,
-            Action::SetTarget("test".to_string()),
+            Action::SetTarget("test"),
             vec![0x8B, 5, 0, 116, 101, 115, 116, 0],
         ),
         (4, Action::SetVariable, vec![0x1D]),
@@ -2490,7 +2490,7 @@ pub fn avm1_tests() -> Vec<Avm1TestData> {
             1,
             Action::Unknown {
                 opcode: 0x79,
-                data: vec![],
+                data: &[],
             },
             vec![0x79],
         ),
@@ -2498,7 +2498,7 @@ pub fn avm1_tests() -> Vec<Avm1TestData> {
             1,
             Action::Unknown {
                 opcode: 0xA0,
-                data: vec![2, 3],
+                data: &[2, 3],
             },
             vec![0xA0, 2, 0, 2, 3],
         ),

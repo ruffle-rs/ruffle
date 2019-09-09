@@ -1,5 +1,5 @@
 #[derive(Clone, Debug, PartialEq)]
-pub enum Action {
+pub enum Action<'a> {
     Add,
     Add2,
     And,
@@ -16,14 +16,14 @@ pub enum Action {
     CastOp,
     CharToAscii,
     CloneSprite,
-    ConstantPool(Vec<String>),
+    ConstantPool(Vec<&'a str>),
     Decrement,
     DefineFunction {
-        name: String,
-        params: Vec<String>,
-        actions: Vec<Action>,
+        name: &'a str,
+        params: Vec<&'a str>,
+        actions: &'a [u8],
     },
-    DefineFunction2(Function),
+    DefineFunction2(Function<'a>),
     DefineLocal,
     DefineLocal2,
     Delete,
@@ -39,8 +39,8 @@ pub enum Action {
     GetProperty,
     GetTime,
     GetUrl {
-        url: String,
-        target: String,
+        url: &'a str,
+        target: &'a str,
     },
     GetUrl2 {
         send_vars_method: SendVarsMethod,
@@ -53,7 +53,7 @@ pub enum Action {
         set_playing: bool,
         scene_offset: u16,
     },
-    GotoLabel(String),
+    GotoLabel(&'a str),
     Greater,
     If {
         offset: i16,
@@ -82,14 +82,14 @@ pub enum Action {
     Play,
     Pop,
     PreviousFrame,
-    Push(Vec<Value>),
+    Push(Vec<Value<'a>>),
     PushDuplicate,
     RandomNumber,
     RemoveSprite,
     Return,
     SetMember,
     SetProperty,
-    SetTarget(String),
+    SetTarget(&'a str),
     SetTarget2,
     SetVariable,
     StackSwap,
@@ -112,7 +112,7 @@ pub enum Action {
     ToString,
     ToggleQuality,
     Trace,
-    Try(TryBlock),
+    Try(TryBlock<'a>),
     TypeOf,
     WaitForFrame {
         frame: u16,
@@ -122,23 +122,23 @@ pub enum Action {
         num_actions_to_skip: u8,
     },
     With {
-        actions: Vec<Action>,
+        actions: &'a [u8],
     },
     Unknown {
         opcode: u8,
-        data: Vec<u8>,
+        data: &'a [u8],
     },
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Value {
+pub enum Value<'a> {
     Undefined,
     Null,
     Bool(bool),
     Int(i32),
     Float(f32),
     Double(f64),
-    Str(String),
+    Str(&'a str),
     Register(u8),
     ConstantPool(u16),
 }
@@ -151,9 +151,9 @@ pub enum SendVarsMethod {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Function {
-    pub name: String,
-    pub params: Vec<FunctionParam>,
+pub struct Function<'a> {
+    pub name: &'a str,
+    pub params: Vec<FunctionParam<'a>>,
     pub preload_parent: bool,
     pub preload_root: bool,
     pub suppress_super: bool,
@@ -163,24 +163,24 @@ pub struct Function {
     pub suppress_this: bool,
     pub preload_this: bool,
     pub preload_global: bool,
-    pub actions: Vec<Action>,
+    pub actions: &'a [u8],
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct FunctionParam {
-    pub name: String,
+pub struct FunctionParam<'a> {
+    pub name: &'a str,
     pub register_index: Option<u8>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct TryBlock {
-    pub try_actions: Vec<Action>,
-    pub catch: Option<(CatchVar, Vec<Action>)>,
-    pub finally: Option<Vec<Action>>,
+pub struct TryBlock<'a> {
+    pub try_actions: &'a [u8],
+    pub catch: Option<(CatchVar<'a>, &'a [u8])>,
+    pub finally: Option<&'a [u8]>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum CatchVar {
-    Var(String),
+pub enum CatchVar<'a> {
+    Var(&'a str),
     Register(u8),
 }
