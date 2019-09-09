@@ -6,7 +6,6 @@ use gc_arena::{GcCell, MutationContext};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use std::collections::HashMap;
 
-use std::io::Cursor;
 use swf::avm1::read::Reader;
 
 mod globals;
@@ -62,7 +61,7 @@ impl<'gc> Avm1<'gc> {
         context: &mut ActionContext<'_, 'gc, '_>,
         code: &[u8],
     ) -> Result<(), Error> {
-        let mut reader = Reader::new(Cursor::new(code), self.swf_version);
+        let mut reader = Reader::new(code, self.swf_version);
 
         while let Some(action) = reader.read_action()? {
             use swf::avm1::types::Action;
@@ -89,7 +88,7 @@ impl<'gc> Avm1<'gc> {
                     name,
                     params,
                     actions,
-                } => self.action_define_function(context, &name, &params[..], &actions[..]),
+                } => self.action_define_function(context, &name, &params[..], actions),
                 Action::DefineLocal => self.action_define_local(context),
                 Action::DefineLocal2 => self.action_define_local_2(context),
                 Action::Delete => self.action_delete(context),
@@ -409,9 +408,9 @@ impl<'gc> Avm1<'gc> {
     fn action_constant_pool(
         &mut self,
         _context: &mut ActionContext,
-        constant_pool: &[String],
+        constant_pool: &[&str],
     ) -> Result<(), Error> {
-        self.constant_pool = constant_pool.to_vec();
+        self.constant_pool = constant_pool.iter().map(|s| s.to_string()).collect();
         Ok(())
     }
 
@@ -425,8 +424,8 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         _context: &mut ActionContext,
         _name: &str,
-        _params: &[String],
-        _actions: &[swf::avm1::types::Action],
+        _params: &[&str],
+        _actions: &[u8],
     ) -> Result<(), Error> {
         // TODO(Herschel)
         Err("Unimplemented action: DefineFunction".into())
@@ -678,14 +677,11 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         _context: &mut ActionContext,
         jump_offset: i16,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'_>,
     ) -> Result<(), Error> {
         let val = self.pop()?;
         if val.as_bool() {
-            use swf::read::SwfRead;
-            let pos = reader.get_inner().position();
-            let new_pos = ((pos as i64) + i64::from(jump_offset)) as u64;
-            reader.get_inner().set_position(new_pos);
+            reader.seek(jump_offset.into());
         }
         Ok(())
     }
@@ -721,13 +717,10 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         _context: &mut ActionContext,
         jump_offset: i16,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'_>,
     ) -> Result<(), Error> {
         // TODO(Herschel): Handle out-of-bounds.
-        use swf::read::SwfRead;
-        let pos = reader.get_inner().position();
-        let new_pos = ((pos as i64) + i64::from(jump_offset)) as u64;
-        reader.get_inner().set_position(new_pos);
+        reader.seek(jump_offset.into());
         Ok(())
     }
 
@@ -883,14 +876,14 @@ impl<'gc> Avm1<'gc> {
                 SwfValue::Int(v) => Value::Number(f64::from(*v)),
                 SwfValue::Float(v) => Value::Number(f64::from(*v)),
                 SwfValue::Double(v) => Value::Number(*v),
-                SwfValue::Str(v) => Value::String(v.clone()),
+                SwfValue::Str(v) => Value::String(v.to_string()),
                 SwfValue::Register(_v) => {
                     log::error!("Register push unimplemented");
                     Value::Undefined
                 }
                 SwfValue::ConstantPool(i) => {
                     if let Some(value) = self.constant_pool.get(*i as usize) {
-                        Value::String(value.clone())
+                        Value::String(value.to_string())
                     } else {
                         log::warn!(
                             "ActionPush: Constant pool index {} out of range (len = {})",
@@ -1170,7 +1163,7 @@ impl<'gc> Avm1<'gc> {
         _context: &mut ActionContext,
         _frame: u16,
         num_actions_to_skip: u8,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'_>,
     ) -> Result<(), Error> {
         // TODO(Herschel): Always true for now.
         let loaded = true;
@@ -1188,7 +1181,7 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         _context: &mut ActionContext,
         num_actions_to_skip: u8,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'_>,
     ) -> Result<(), Error> {
         // TODO(Herschel): Always true for now.
         let _frame_num = self.pop()?.as_f64()? as u16;
