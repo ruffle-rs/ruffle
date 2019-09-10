@@ -808,16 +808,16 @@ impl RenderBackend for GliumRenderBackend {
         // Desktop draws the masker to the stencil buffer, one bit per mask.
         // Masks-within-masks are handled as a bitmask.
         // This does unfortunately mean we are limited in the number of masks at once (usually 8 bits).
-        if self.next_stencil_mask == 0 {
+        if self.next_stencil_mask >= 0x100 {
             // If we've reached the limit of masks, clear the stencil buffer and start over.
             // But this may not be correct if there is still a mask active (mask-within-mask).
             let target = self.target.as_mut().unwrap();
             if self.test_stencil_mask != 0 {
                 log::warn!(
-                    "Too many masks active for stencil buffer; possibly inccorect rendering"
+                    "Too many masks active for stencil buffer; possibly incorrect rendering"
                 );
             }
-            self.next_stencil_mask = 0;
+            self.next_stencil_mask = 1;
             target.clear_stencil(self.test_stencil_mask as i32);
         }
         self.num_masks += 1;
