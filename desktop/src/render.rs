@@ -650,7 +650,7 @@ impl RenderBackend for GliumRenderBackend {
             match &draw.draw_type {
                 DrawType::Color => {
                     draw_parameters.blend = color_blend();
-                    
+
                     target
                         .draw(
                             &draw.vertex_buffer,
@@ -727,7 +727,7 @@ impl RenderBackend for GliumRenderBackend {
                     };
 
                     draw_parameters.blend = bitmap_blend();
-                    
+
                     target
                         .draw(
                             &draw.vertex_buffer,
