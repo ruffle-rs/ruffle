@@ -1049,6 +1049,7 @@ const GRADIENT_FRAGMENT_SHADER: &str = r#"
         }
         int i = 0;
         int j = 1;
+        t = clamp(t, u_ratios[0], u_ratios[last]);
         while( t > u_ratios[j] )
         {
             i = j;
