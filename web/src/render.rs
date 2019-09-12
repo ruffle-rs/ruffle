@@ -653,10 +653,10 @@ fn swf_shape_to_svg(
                         FillStyle::RadialGradient(gradient) => {
                             let matrix = Matrix::from(gradient.matrix.clone());
                             let shift = Matrix {
-                                a: 32768.0 / width,
-                                d: 32768.0 / height,
-                                tx: -16384.0,
-                                ty: -16384.0,
+                                a: 32768.0,
+                                d: 32768.0,
+                                tx: 0.0,
+                                ty: 0.0,
                                 ..Default::default()
                             };
                             let gradient_matrix = matrix * shift;
@@ -664,6 +664,9 @@ fn swf_shape_to_svg(
                             let mut svg_gradient = RadialGradient::new()
                                 .set("id", format!("f{}", num_defs))
                                 .set("gradientUnits", "userSpaceOnUse")
+                                .set("cx", "0")
+                                .set("cy", "0")
+                                .set("r", "0.5")
                                 .set(
                                     "gradientTransform",
                                     format!(
@@ -686,7 +689,7 @@ fn swf_shape_to_svg(
                                             record.color.r,
                                             record.color.g,
                                             record.color.b,
-                                            record.color.a
+                                            f32::from(record.color.a) / 255.0
                                         ),
                                     );
                                 svg_gradient = svg_gradient.add(stop);
@@ -703,18 +706,21 @@ fn swf_shape_to_svg(
                         } => {
                             let matrix = Matrix::from(gradient.matrix.clone());
                             let shift = Matrix {
-                                a: 32768.0 / width,
-                                d: 32768.0 / height,
-                                tx: -16384.0,
-                                ty: -16384.0,
+                                a: 32768.0,
+                                d: 32768.0,
+                                tx: 0.0,
+                                ty: 0.0,
                                 ..Default::default()
                             };
                             let gradient_matrix = matrix * shift;
 
                             let mut svg_gradient = RadialGradient::new()
                                 .set("id", format!("f{}", num_defs))
-                                .set("fx", -focal_point)
+                                .set("fx", focal_point / 2.0)
                                 .set("gradientUnits", "userSpaceOnUse")
+                                .set("cx", "0")
+                                .set("cy", "0")
+                                .set("r", "0.5")
                                 .set(
                                     "gradientTransform",
                                     format!(
@@ -737,7 +743,7 @@ fn swf_shape_to_svg(
                                             record.color.r,
                                             record.color.g,
                                             record.color.b,
-                                            record.color.a
+                                            f32::from(record.color.a) / 255.0
                                         ),
                                     );
                                 svg_gradient = svg_gradient.add(stop);
