@@ -100,124 +100,131 @@ impl<'gc> Avm1<'gc> {
         context: &mut ActionContext<'_, 'gc, '_>,
         code: &[u8],
     ) -> Result<(), Error> {
-        let mut reader = Reader::new(code, self.swf_version);
+        let mut pc_stack = vec![Reader::new(code, self.swf_version)];
 
-        while let Some(action) = reader.read_action()? {
-            use swf::avm1::types::Action;
-            let result = match action {
-                Action::Add => self.action_add(context),
-                Action::Add2 => self.action_add_2(context),
-                Action::And => self.action_and(context),
-                Action::AsciiToChar => self.action_ascii_to_char(context),
-                Action::BitAnd => self.action_bit_and(context),
-                Action::BitLShift => self.action_bit_lshift(context),
-                Action::BitOr => self.action_bit_or(context),
-                Action::BitRShift => self.action_bit_rshift(context),
-                Action::BitURShift => self.action_bit_urshift(context),
-                Action::BitXor => self.action_bit_xor(context),
-                Action::Call => self.action_call(context),
-                Action::CallFunction => self.action_call_function(context),
-                Action::CallMethod => self.action_call_method(context),
-                Action::CharToAscii => self.action_char_to_ascii(context),
-                Action::CloneSprite => self.action_clone_sprite(context),
-                Action::ConstantPool(constant_pool) => {
-                    self.action_constant_pool(context, &constant_pool[..])
+        while pc_stack.len() > 0 {
+            let mut reader = pc_stack.last_mut().unwrap();
+
+            if let Some(action) = reader.read_action()? {
+                use swf::avm1::types::Action;
+                let result = match action {
+                    Action::Add => self.action_add(context),
+                    Action::Add2 => self.action_add_2(context),
+                    Action::And => self.action_and(context),
+                    Action::AsciiToChar => self.action_ascii_to_char(context),
+                    Action::BitAnd => self.action_bit_and(context),
+                    Action::BitLShift => self.action_bit_lshift(context),
+                    Action::BitOr => self.action_bit_or(context),
+                    Action::BitRShift => self.action_bit_rshift(context),
+                    Action::BitURShift => self.action_bit_urshift(context),
+                    Action::BitXor => self.action_bit_xor(context),
+                    Action::Call => self.action_call(context),
+                    Action::CallFunction => self.action_call_function(context),
+                    Action::CallMethod => self.action_call_method(context),
+                    Action::CharToAscii => self.action_char_to_ascii(context),
+                    Action::CloneSprite => self.action_clone_sprite(context),
+                    Action::ConstantPool(constant_pool) => {
+                        self.action_constant_pool(context, &constant_pool[..])
+                    }
+                    Action::Decrement => self.action_decrement(context),
+                    Action::DefineFunction {
+                        name,
+                        params,
+                        actions,
+                    } => self.action_define_function(context, &name, &params[..], actions),
+                    Action::DefineLocal => self.action_define_local(context),
+                    Action::DefineLocal2 => self.action_define_local_2(context),
+                    Action::Delete => self.action_delete(context),
+                    Action::Delete2 => self.action_delete_2(context),
+                    Action::Divide => self.action_divide(context),
+                    Action::EndDrag => self.action_end_drag(context),
+                    Action::Enumerate => self.action_enumerate(context),
+                    Action::Equals => self.action_equals(context),
+                    Action::Equals2 => self.action_equals_2(context),
+                    Action::GetMember => self.action_get_member(context),
+                    Action::GetProperty => self.action_get_property(context),
+                    Action::GetTime => self.action_get_time(context),
+                    Action::GetVariable => self.action_get_variable(context),
+                    Action::GetUrl { url, target } => self.action_get_url(context, &url, &target),
+                    Action::GetUrl2 {
+                        send_vars_method,
+                        is_target_sprite,
+                        is_load_vars,
+                    } => {
+                        self.action_get_url_2(context, send_vars_method, is_target_sprite, is_load_vars)
+                    }
+                    Action::GotoFrame(frame) => self.action_goto_frame(context, frame),
+                    Action::GotoFrame2 {
+                        set_playing,
+                        scene_offset,
+                    } => self.action_goto_frame_2(context, set_playing, scene_offset),
+                    Action::GotoLabel(label) => self.action_goto_label(context, &label),
+                    Action::If { offset } => self.action_if(context, offset, &mut reader),
+                    Action::Increment => self.action_increment(context),
+                    Action::InitArray => self.action_init_array(context),
+                    Action::InitObject => self.action_init_object(context),
+                    Action::Jump { offset } => self.action_jump(context, offset, &mut reader),
+                    Action::Less => self.action_less(context),
+                    Action::Less2 => self.action_less_2(context),
+                    Action::MBAsciiToChar => self.action_mb_ascii_to_char(context),
+                    Action::MBCharToAscii => self.action_mb_char_to_ascii(context),
+                    Action::MBStringLength => self.action_mb_string_length(context),
+                    Action::MBStringExtract => self.action_mb_string_extract(context),
+                    Action::Modulo => self.action_modulo(context),
+                    Action::Multiply => self.action_multiply(context),
+                    Action::NextFrame => self.action_next_frame(context),
+                    Action::NewMethod => self.action_new_method(context),
+                    Action::NewObject => self.action_new_object(context),
+                    Action::Not => self.action_not(context),
+                    Action::Or => self.action_or(context),
+                    Action::Play => self.action_play(context),
+                    Action::Pop => self.action_pop(context),
+                    Action::PreviousFrame => self.action_prev_frame(context),
+                    Action::Push(values) => self.action_push(context, &values[..]),
+                    Action::PushDuplicate => self.action_push_duplicate(context),
+                    Action::RandomNumber => self.action_random_number(context),
+                    Action::RemoveSprite => self.action_remove_sprite(context),
+                    Action::Return => self.action_return(context),
+                    Action::SetMember => self.action_set_member(context),
+                    Action::SetProperty => self.action_set_property(context),
+                    Action::SetTarget(target) => self.action_set_target(context, &target),
+                    Action::SetTarget2 => self.action_set_target2(context),
+                    Action::SetVariable => self.action_set_variable(context),
+                    Action::StackSwap => self.action_stack_swap(context),
+                    Action::StartDrag => self.action_start_drag(context),
+                    Action::Stop => self.action_stop(context),
+                    Action::StopSounds => self.action_stop_sounds(context),
+                    Action::StoreRegister(register) => self.action_store_register(context, register),
+                    Action::StringAdd => self.action_string_add(context),
+                    Action::StringEquals => self.action_string_equals(context),
+                    Action::StringExtract => self.action_string_extract(context),
+                    Action::StringLength => self.action_string_length(context),
+                    Action::StringLess => self.action_string_less(context),
+                    Action::Subtract => self.action_subtract(context),
+                    Action::TargetPath => self.action_target_path(context),
+                    Action::ToggleQuality => self.toggle_quality(context),
+                    Action::ToInteger => self.action_to_integer(context),
+                    Action::ToNumber => self.action_to_number(context),
+                    Action::ToString => self.action_to_string(context),
+                    Action::Trace => self.action_trace(context),
+                    Action::TypeOf => self.action_type_of(context),
+                    Action::WaitForFrame {
+                        frame,
+                        num_actions_to_skip,
+                    } => self.action_wait_for_frame(context, frame, num_actions_to_skip, &mut reader),
+                    Action::WaitForFrame2 {
+                        num_actions_to_skip,
+                    } => self.action_wait_for_frame_2(context, num_actions_to_skip, &mut reader),
+                    Action::With { .. } => self.action_with(context),
+                    _ => self.unknown_op(context, action),
+                };
+                if let Err(ref e) = result {
+                    log::error!("AVM1 error: {}", e);
+                    return result;
                 }
-                Action::Decrement => self.action_decrement(context),
-                Action::DefineFunction {
-                    name,
-                    params,
-                    actions,
-                } => self.action_define_function(context, &name, &params[..], actions),
-                Action::DefineLocal => self.action_define_local(context),
-                Action::DefineLocal2 => self.action_define_local_2(context),
-                Action::Delete => self.action_delete(context),
-                Action::Delete2 => self.action_delete_2(context),
-                Action::Divide => self.action_divide(context),
-                Action::EndDrag => self.action_end_drag(context),
-                Action::Enumerate => self.action_enumerate(context),
-                Action::Equals => self.action_equals(context),
-                Action::Equals2 => self.action_equals_2(context),
-                Action::GetMember => self.action_get_member(context),
-                Action::GetProperty => self.action_get_property(context),
-                Action::GetTime => self.action_get_time(context),
-                Action::GetVariable => self.action_get_variable(context),
-                Action::GetUrl { url, target } => self.action_get_url(context, &url, &target),
-                Action::GetUrl2 {
-                    send_vars_method,
-                    is_target_sprite,
-                    is_load_vars,
-                } => {
-                    self.action_get_url_2(context, send_vars_method, is_target_sprite, is_load_vars)
-                }
-                Action::GotoFrame(frame) => self.action_goto_frame(context, frame),
-                Action::GotoFrame2 {
-                    set_playing,
-                    scene_offset,
-                } => self.action_goto_frame_2(context, set_playing, scene_offset),
-                Action::GotoLabel(label) => self.action_goto_label(context, &label),
-                Action::If { offset } => self.action_if(context, offset, &mut reader),
-                Action::Increment => self.action_increment(context),
-                Action::InitArray => self.action_init_array(context),
-                Action::InitObject => self.action_init_object(context),
-                Action::Jump { offset } => self.action_jump(context, offset, &mut reader),
-                Action::Less => self.action_less(context),
-                Action::Less2 => self.action_less_2(context),
-                Action::MBAsciiToChar => self.action_mb_ascii_to_char(context),
-                Action::MBCharToAscii => self.action_mb_char_to_ascii(context),
-                Action::MBStringLength => self.action_mb_string_length(context),
-                Action::MBStringExtract => self.action_mb_string_extract(context),
-                Action::Modulo => self.action_modulo(context),
-                Action::Multiply => self.action_multiply(context),
-                Action::NextFrame => self.action_next_frame(context),
-                Action::NewMethod => self.action_new_method(context),
-                Action::NewObject => self.action_new_object(context),
-                Action::Not => self.action_not(context),
-                Action::Or => self.action_or(context),
-                Action::Play => self.action_play(context),
-                Action::Pop => self.action_pop(context),
-                Action::PreviousFrame => self.action_prev_frame(context),
-                Action::Push(values) => self.action_push(context, &values[..]),
-                Action::PushDuplicate => self.action_push_duplicate(context),
-                Action::RandomNumber => self.action_random_number(context),
-                Action::RemoveSprite => self.action_remove_sprite(context),
-                Action::Return => self.action_return(context),
-                Action::SetMember => self.action_set_member(context),
-                Action::SetProperty => self.action_set_property(context),
-                Action::SetTarget(target) => self.action_set_target(context, &target),
-                Action::SetTarget2 => self.action_set_target2(context),
-                Action::SetVariable => self.action_set_variable(context),
-                Action::StackSwap => self.action_stack_swap(context),
-                Action::StartDrag => self.action_start_drag(context),
-                Action::Stop => self.action_stop(context),
-                Action::StopSounds => self.action_stop_sounds(context),
-                Action::StoreRegister(register) => self.action_store_register(context, register),
-                Action::StringAdd => self.action_string_add(context),
-                Action::StringEquals => self.action_string_equals(context),
-                Action::StringExtract => self.action_string_extract(context),
-                Action::StringLength => self.action_string_length(context),
-                Action::StringLess => self.action_string_less(context),
-                Action::Subtract => self.action_subtract(context),
-                Action::TargetPath => self.action_target_path(context),
-                Action::ToggleQuality => self.toggle_quality(context),
-                Action::ToInteger => self.action_to_integer(context),
-                Action::ToNumber => self.action_to_number(context),
-                Action::ToString => self.action_to_string(context),
-                Action::Trace => self.action_trace(context),
-                Action::TypeOf => self.action_type_of(context),
-                Action::WaitForFrame {
-                    frame,
-                    num_actions_to_skip,
-                } => self.action_wait_for_frame(context, frame, num_actions_to_skip, &mut reader),
-                Action::WaitForFrame2 {
-                    num_actions_to_skip,
-                } => self.action_wait_for_frame_2(context, num_actions_to_skip, &mut reader),
-                Action::With { .. } => self.action_with(context),
-                _ => self.unknown_op(context, action),
-            };
-            if let Err(ref e) = result {
-                log::error!("AVM1 error: {}", e);
-                return result;
+            } else {
+                //Out of code. Return to the parent function.
+                pc_stack.pop();
             }
         }
 
