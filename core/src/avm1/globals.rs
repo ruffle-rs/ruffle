@@ -1,4 +1,5 @@
 use crate::avm1::{Object, Value, ActionContext, Avm1};
+use crate::backend::navigator::NavigationMethod;
 use gc_arena::{MutationContext, GcCell};
 use rand::Rng;
 
@@ -6,7 +7,7 @@ mod math;
 
 #[allow(non_snake_case)]
 pub fn getURL<'a, 'gc>(
-    _avm: &mut Avm1<'gc>,
+    avm: &mut Avm1<'gc>,
     context: &mut ActionContext<'a, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
@@ -15,10 +16,14 @@ pub fn getURL<'a, 'gc>(
         Some(url_val) => {
             let url = url_val.clone().into_string();
             let window = args.get(1).map(|v| v.clone().into_string());
-            let method = args.get(2).map(|v| v.clone().into_string());
-
-            //TODO: Pull AVM1 locals into key-value storage
-            context.navigator.navigate_to_url(url, window, None);
+            let method = match args.get(2) {
+                Some(Value::String(s)) if s == "GET" => Some(NavigationMethod::GET),
+                Some(Value::String(s)) if s == "POST" => Some(NavigationMethod::POST),
+                _ => None
+            };
+            let vars_method = method.map(|m| (m, avm.locals_into_form_values()));
+            
+            context.navigator.navigate_to_url(url, window, vars_method);
         },
         None => {
             //TODO: Does AVM1 error out?
