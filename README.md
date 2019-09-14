@@ -9,7 +9,7 @@
       <img src="https://img.shields.io/discord/610531541889581066" alt="Ruffle Discord">
   </a>
   <br>
-  <strong><a href="https://ruffle.rs">website</a> | <a href="http://ruffle-rs.s3-website-us-west-1.amazonaws.com/builds/web-demo/index.html?file=synj1.swf">demo</a> </strong>
+  <strong><a href="https://ruffle.rs">website</a> | <a href="http://ruffle-rs.s3-website-us-west-1.amazonaws.com/builds/web-demo/index.html?file=synj1.swf">demo</a> | <a href="http://ruffle-rs.s3-website-us-west-1.amazonaws.com/">nightly builds</a> | <a href="https://github.com/ruffle-rs/ruffle/wiki">wiki</a></strong>
 </p>
 
 # Ruffle
@@ -20,7 +20,7 @@ Ruffle is an Adobe Flash Player emulator written in the Rust programming languag
 
 Ruffle is in the proof-of-concept stage and can currently run early Flash animations. ActionScript support is still forthcoming; for more info, read the [project roadmap](https://github.com/ruffle-rs/ruffle/wiki/Roadmap).
 
-## Building
+## Building from source
  
 [Follow the official guide](https://www.rust-lang.org/tools/install) to install Rust for your platform.
 
