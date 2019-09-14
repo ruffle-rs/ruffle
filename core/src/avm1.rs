@@ -4,7 +4,7 @@ use crate::backend::navigator::NavigationMethod;
 
 use crate::prelude::*;
 use gc_arena::{GcCell, MutationContext};
-use rand::{rngs::SmallRng, Rng, SeedableRng};
+use rand::{rngs::SmallRng, Rng};
 use std::collections::HashMap;
 
 use swf::avm1::read::Reader;

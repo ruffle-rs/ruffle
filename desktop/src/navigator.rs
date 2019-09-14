@@ -20,14 +20,14 @@ impl ExternalNavigatorBackend {
 }
 
 impl NavigatorBackend for ExternalNavigatorBackend {
-    fn navigate_to_url(&self, url: String, window_spec: Option<String>, _vars_method: Option<(NavigationMethod, HashMap<String, String>)>) {
+    fn navigate_to_url(&self, url: String, _window_spec: Option<String>, _vars_method: Option<(NavigationMethod, HashMap<String, String>)>) {
         //TODO: How does Flash interpret the target on desktop?
         //TODO: Explicitly reject relative URLs, since `webbrowser` sometimes loads them
         //TODO: Support `vars_method`
         //TODO: Should we return a result for failed opens? Does Flash care?
         
         match webbrowser::open(&url) {
-            Ok(output) => {},
+            Ok(_output) => {},
             Err(e) => log::error!("Could not open URL {}: {}", url, e)
         };
     }

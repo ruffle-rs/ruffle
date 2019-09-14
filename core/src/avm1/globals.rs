@@ -12,22 +12,18 @@ pub fn getURL<'a, 'gc>(
     _this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Value<'gc> {
-    match args.get(0) {
-        Some(url_val) => {
-            let url = url_val.clone().into_string();
-            let window = args.get(1).map(|v| v.clone().into_string());
-            let method = match args.get(2) {
-                Some(Value::String(s)) if s == "GET" => Some(NavigationMethod::GET),
-                Some(Value::String(s)) if s == "POST" => Some(NavigationMethod::POST),
-                _ => None
-            };
-            let vars_method = method.map(|m| (m, avm.locals_into_form_values()));
-            
-            context.navigator.navigate_to_url(url, window, vars_method);
-        },
-        None => {
-            //TODO: Does AVM1 error out?
-        }
+    //TODO: Error behavior if no arguments are present
+    if let Some(url_val) = args.get(0) {
+        let url = url_val.clone().into_string();
+        let window = args.get(1).map(|v| v.clone().into_string());
+        let method = match args.get(2) {
+            Some(Value::String(s)) if s == "GET" => Some(NavigationMethod::GET),
+            Some(Value::String(s)) if s == "POST" => Some(NavigationMethod::POST),
+            _ => None
+        };
+        let vars_method = method.map(|m| (m, avm.locals_into_form_values()));
+        
+        context.navigator.navigate_to_url(url, window, vars_method);
     }
 
     Value::Undefined
