@@ -13,11 +13,11 @@ export default class RuffleEmbed extends RufflePlayer {
     }
 
     get src() {
-        return self.attributes.src;
+        return this.attributes.src.value;
     }
 
     set src(srcval) {
-        self.attributes.src = srcval;
+        this.attributes.src = srcval;
     }
 
     static get observedAttributes() {

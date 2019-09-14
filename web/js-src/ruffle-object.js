@@ -11,9 +11,19 @@ export default class RuffleObject extends RufflePlayer {
         this.params = RuffleObject.params_of(this);
         
         //Kick off the SWF download.
-        if (this.params.movie) {
+        if (this.attributes.data) {
+            this.stream_swf_url(this.attributes.data.value);
+        } else if (this.params.movie) {
             this.stream_swf_url(this.params.movie);
         }
+    }
+
+    get data() {
+        return this.attributes.data.value;
+    }
+
+    set data(href) {
+        this.attributes.data = href;
     }
 
     static is_interdictable(elem) {
