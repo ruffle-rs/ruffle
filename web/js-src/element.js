@@ -9,22 +9,28 @@ import { install_plugin, FLASH_PLUGIN } from "./plugin-polyfill";
  * access to a pre-interdiction element, then this will break horribly. We can
  * keep native objects out of the DOM, and thus out of JavaScript's grubby
  * little hands, but only if we load first.
- * 
- * The requirement to wait for WASM is a huge problem in practice.
  */
 function wrap_tree(elem) {
     try {
-        for (let node of Array.from(elem.getElementsByTagName("object"))) {
-            if (RuffleObject.is_interdictable(node)) {
-                let ruffle_obj = RuffleObject.from_native_object_element(node);
-                node.parentElement.replaceChild(ruffle_obj, node);
+        if (elem.nodeName.toLowerCase() === "object" && RuffleObject.is_interdictable(elem)) {
+            let ruffle_obj = RuffleObject.from_native_object_element(elem);
+            elem.parentElement.replaceChild(ruffle_obj, elem);
+        } else if (elem.nodeName.toLowerCase() === "embed" && RuffleEmbed.is_interdictable(elem)) {
+            let ruffle_obj = RuffleEmbed.from_native_object_element(elem);
+            elem.parentElement.replaceChild(ruffle_obj, elem);
+        } else {
+            for (let node of Array.from(elem.getElementsByTagName("object"))) {
+                if (RuffleObject.is_interdictable(node)) {
+                    let ruffle_obj = RuffleObject.from_native_object_element(node);
+                    node.parentElement.replaceChild(ruffle_obj, node);
+                }
             }
-        }
 
-        for (let node of Array.from(elem.getElementsByTagName("embed"))) {
-            if (RuffleEmbed.is_interdictable(node)) {
-                let ruffle_obj = RuffleEmbed.from_native_embed_element(node);
-                node.parentElement.replaceChild(ruffle_obj, node);
+            for (let node of Array.from(elem.getElementsByTagName("embed"))) {
+                if (RuffleEmbed.is_interdictable(node)) {
+                    let ruffle_obj = RuffleEmbed.from_native_embed_element(node);
+                    node.parentElement.replaceChild(ruffle_obj, node);
+                }
             }
         }
     } catch (err) {
