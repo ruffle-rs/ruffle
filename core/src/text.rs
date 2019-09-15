@@ -31,7 +31,7 @@ impl<'gc> DisplayObject<'gc> for Text<'gc> {
     fn id(&self) -> CharacterId {
         self.static_data.id
     }
-    
+
     fn run_frame(&mut self, _context: &mut UpdateContext) {
         // Noop
     }
