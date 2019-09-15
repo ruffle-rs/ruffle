@@ -110,7 +110,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                     )),
                 ),
                 mouse_hover_node: GcCell::allocate(gc_context, None),
-                avm: GcCell::allocate(gc_context, Avm1::new(gc_context, header.version)),
+                avm: GcCell::allocate(gc_context, Avm1::new(gc_context)),
             }),
 
             frame_rate: header.frame_rate.into(),
@@ -515,9 +515,8 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                     action_context.start_clip = active_clip;
                     action_context.active_clip = active_clip;
                     action_context.target_clip = Some(active_clip);
-                    let _ = update_context
-                        .avm
-                        .do_action(&mut action_context, action.as_ref());
+                    update_context.avm.insert_stack_frame(update_context.swf_version, action.as_ref(), action_context.gc_context);
+                    let _ = update_context.avm.do_action(&mut action_context);
                 }
             }
 

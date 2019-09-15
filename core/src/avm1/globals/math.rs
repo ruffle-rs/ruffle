@@ -113,7 +113,7 @@ mod tests {
         F: for<'a, 'gc> FnOnce(&mut Avm1<'gc>, &mut ActionContext<'a, 'gc, '_>) -> R,
     {
         rootless_arena(|gc_context| {
-            let mut avm = Avm1::new(gc_context, swf_version);
+            let mut avm = Avm1::new(gc_context);
             let movie_clip: Box<dyn DisplayObject> = Box::new(MovieClip::new(gc_context));
             let root = GcCell::allocate(gc_context, movie_clip);
             let mut context = ActionContext {
