@@ -35,6 +35,10 @@ impl<'gc> MorphShape<'gc> {
 impl<'gc> DisplayObject<'gc> for MorphShape<'gc> {
     impl_display_object!(base);
 
+    fn id(&self) -> CharacterId {
+        self.static_data.id
+    }
+
     fn as_morph_shape(&self) -> Option<&Self> {
         Some(self)
     }

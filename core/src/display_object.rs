@@ -28,6 +28,9 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
 }
 
 impl<'gc> DisplayObject<'gc> for DisplayObjectBase<'gc> {
+    fn id(&self) -> CharacterId {
+        0
+    }
     fn depth(&self) -> Depth {
         self.depth
     }
@@ -74,6 +77,7 @@ impl<'gc> DisplayObject<'gc> for DisplayObjectBase<'gc> {
 }
 
 pub trait DisplayObject<'gc>: 'gc + Collect + Debug {
+    fn id(&self) -> CharacterId;
     fn depth(&self) -> Depth;
     fn local_bounds(&self) -> BoundingBox {
         BoundingBox::default()

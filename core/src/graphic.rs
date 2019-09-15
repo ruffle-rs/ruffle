@@ -26,6 +26,10 @@ impl<'gc> Graphic<'gc> {
 impl<'gc> DisplayObject<'gc> for Graphic<'gc> {
     impl_display_object!(base);
 
+    fn id(&self) -> CharacterId {
+        self.static_data.id
+    }
+
     fn local_bounds(&self) -> BoundingBox {
         self.static_data.bounds.clone()
     }

@@ -147,6 +147,10 @@ impl<'gc> Button<'gc> {
 impl<'gc> DisplayObject<'gc> for Button<'gc> {
     impl_display_object!(base);
 
+    fn id(&self) -> CharacterId {
+        self.static_data.id
+    }
+
     fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // TODO: Move this to post_instantiation.
         if !self.initialized {

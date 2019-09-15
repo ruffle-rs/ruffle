@@ -227,10 +227,6 @@ impl<'gc> MovieClip<'gc> {
         self.goto_queue.clear();
     }
 
-    pub fn id(&self) -> CharacterId {
-        self.static_data.id
-    }
-
     fn tag_stream_start(&self) -> u64 {
         self.static_data.tag_stream_start
     }
@@ -305,6 +301,10 @@ impl<'gc> MovieClip<'gc> {
 
 impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
     impl_display_object!(base);
+
+    fn id(&self) -> CharacterId {
+        self.static_data.id
+    }
 
     fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if self.is_playing {

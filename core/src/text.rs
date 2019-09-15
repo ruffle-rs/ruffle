@@ -28,6 +28,10 @@ impl<'gc> Text<'gc> {
 impl<'gc> DisplayObject<'gc> for Text<'gc> {
     impl_display_object!(base);
 
+    fn id(&self) -> CharacterId {
+        self.static_data.id
+    }
+    
     fn run_frame(&mut self, _context: &mut UpdateContext) {
         // Noop
     }
