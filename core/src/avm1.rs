@@ -3,12 +3,16 @@ use crate::avm1::object::Object;
 use crate::backend::navigator::NavigationMethod;
 
 use crate::prelude::*;
-use gc_arena::{Gc, GcCell, MutationContext};
+use gc_arena::{GcCell, MutationContext};
 use rand::{rngs::SmallRng, Rng};
-use std::slice;
+use std::convert::TryInto;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use swf::avm1::read::Reader;
+use swf::avm1::types::Action;
+
+use crate::tag_utils::SwfSlice;
 
 mod fscommand;
 mod globals;
@@ -62,11 +66,10 @@ pub struct Avm1StackFrame<'gc> {
     swf_version: u8,
 
     /// Action data being executed by the reader below.
-    data: Gc<'gc, Vec<u8>>,
+    data: SwfSlice,
 
-    /// Represents the current location of the instruction stream this stack
-    /// frame is executing.
-    pc: Reader<'gc>,
+    /// The current location of the instruction stream being executed.
+    pc: usize,
 
     /// The opcode stack values for the current stack frame.
     stack: Vec<Value<'gc>>,
@@ -78,26 +81,17 @@ pub struct Avm1StackFrame<'gc> {
 unsafe impl<'gc> gc_arena::Collect for Avm1StackFrame<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.data.trace(cc);
         self.stack.trace(cc);
         self.locals.trace(cc);
     }
 }
 
 impl<'gc> Avm1StackFrame<'gc> {
-    pub fn from_action(swf_version: u8, code: &[u8], mc: MutationContext<'gc, '_>) -> Avm1StackFrame<'gc> {
-        let data = Gc::allocate(mc, code.to_vec());
-
-        //TODO: Figure out how to get Reader to hold a GC pointer directly.
-        //If gc_arena moves data around this is completely unsound.
-        let evil_slice = unsafe {
-            slice::from_raw_parts(data.as_ptr(), data.len())
-        };
-
+    pub fn from_action(swf_version: u8, code: SwfSlice) -> Avm1StackFrame<'gc> {
         Avm1StackFrame {
             swf_version: swf_version,
-            data: data,
-            pc: Reader::new(evil_slice, swf_version),
+            data: code,
+            pc: 0,
             stack: Vec::new(),
             locals: HashMap::new()
         }
@@ -108,14 +102,25 @@ impl<'gc> Avm1StackFrame<'gc> {
         self.swf_version
     }
 
-    /// Returns the current ActionScript reader.
-    pub fn pc(&self) -> &Reader<'gc> {
-        &self.pc
+    /// Returns the data this stack frame executes from.
+    pub fn data(&self) -> SwfSlice {
+        self.data.clone()
     }
 
-    /// Returns the current ActionScript reader for mutation.
-    pub fn pc_mut(&mut self) -> &mut Reader<'gc> {
-        &mut self.pc
+    /// Determines if a stack frame references the same function as a given
+    /// SwfSlice.
+    pub fn is_identical_fn(&self, other: &SwfSlice) -> bool {
+        Arc::ptr_eq(&self.data.data, &other.data)
+    }
+
+    /// Returns a mutable reference to the current data offset.
+    pub fn pc(&self) -> usize {
+        self.pc
+    }
+    
+    /// Change the current PC.
+    pub fn set_pc(&mut self, new_pc: usize) {
+        self.pc = new_pc;
     }
 
     /// Returns the value stack.
@@ -163,7 +168,7 @@ impl<'gc> Avm1<'gc> {
             stack_frames: vec![],
         }
     }
-
+    
     /// Convert the current locals pool into a set of form values.
     ///
     /// This is necessary to support form submission from Flash via a couple of
@@ -178,11 +183,9 @@ impl<'gc> Avm1<'gc> {
         form_values
     }
 
-    /// Add a stack frame to the current AVM stack.
-    /// 
-    /// The code pointer given will be copied into the GC arena.
-    pub fn insert_stack_frame(&mut self, swf_version: u8, code: &[u8], mc: MutationContext<'gc, '_>) {
-        self.stack_frames.push(Avm1StackFrame::from_action(swf_version, code, mc));
+    /// Add a stack frame that executes code directly from a SwfSlice.
+    pub fn insert_stack_frame_from_action(&mut self, swf_version: u8, code: SwfSlice) {
+        self.stack_frames.push(Avm1StackFrame::from_action(swf_version, code));
     }
 
     /// Retrieve the current AVM execution frame.
@@ -204,9 +207,31 @@ impl<'gc> Avm1<'gc> {
         self.current_stack_frame().map(|sf| sf.swf_version())
     }
 
-    /// Get the current stack frame's action reader (PC), if there is one.
-    fn current_reader_mut(&mut self) -> Option<&mut Reader<'gc>> {
-        self.current_stack_frame_mut().map(|sf| sf.pc_mut())
+    /// Perform some action with the current stack frame's reader.
+    /// 
+    /// This function constructs a reader based off the current stack frame's
+    /// reader. You are permitted to mutate the stack frame as you wish. If the
+    /// stack frame we started with still exists in the same location on the
+    /// stack, it's PC will be updated to the Reader's current PC.
+    /// 
+    /// Stack frame identity (for the purpose of the above paragraph) is
+    /// determined by the data pointed to by the `SwfSlice` of a given frame.
+    fn with_current_reader_mut<F, R>(&mut self, func: F) -> Option<R> where F: FnOnce(&mut Self, &mut Reader<'_>) -> R {
+        let current_stack_id = self.stack_frames.len() - 1;
+        let (swf_version, data, pc) = self.stack_frames.last().map(|frame| (frame.swf_version(), frame.data(), frame.pc()))?;
+        let mut read = Reader::new(data.as_ref(), swf_version);
+        read.seek(pc.try_into().unwrap());
+
+        let r = func(self, &mut read);
+        
+        //this took an hour of fighting borrowck to figure out was necessary
+        if let Some(new_stack) = self.stack_frames.get_mut(current_stack_id) {
+            if new_stack.is_identical_fn(&data) {
+                new_stack.set_pc(read.pos());
+            }
+        }
+
+        Some(r)
     }
 
     /// Get the current locals, if there are any.
@@ -225,129 +250,134 @@ impl<'gc> Avm1<'gc> {
     }
 
     /// Execute the AVM stack until it is exhausted.
-    pub fn do_action(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+    pub fn run_stack_till_empty(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         while self.stack_frames.len() > 0 {
-            if let Some(action) = self.current_reader_mut().unwrap().read_action()? {
-                use swf::avm1::types::Action;
-                let result = match action {
-                    Action::Add => self.action_add(context),
-                    Action::Add2 => self.action_add_2(context),
-                    Action::And => self.action_and(context),
-                    Action::AsciiToChar => self.action_ascii_to_char(context),
-                    Action::BitAnd => self.action_bit_and(context),
-                    Action::BitLShift => self.action_bit_lshift(context),
-                    Action::BitOr => self.action_bit_or(context),
-                    Action::BitRShift => self.action_bit_rshift(context),
-                    Action::BitURShift => self.action_bit_urshift(context),
-                    Action::BitXor => self.action_bit_xor(context),
-                    Action::Call => self.action_call(context),
-                    Action::CallFunction => self.action_call_function(context),
-                    Action::CallMethod => self.action_call_method(context),
-                    Action::CharToAscii => self.action_char_to_ascii(context),
-                    Action::CloneSprite => self.action_clone_sprite(context),
-                    Action::ConstantPool(constant_pool) => {
-                        self.action_constant_pool(context, &constant_pool[..])
-                    }
-                    Action::Decrement => self.action_decrement(context),
-                    Action::DefineFunction {
-                        name,
-                        params,
-                        actions,
-                    } => self.action_define_function(context, &name, &params[..], actions),
-                    Action::DefineLocal => self.action_define_local(context),
-                    Action::DefineLocal2 => self.action_define_local_2(context),
-                    Action::Delete => self.action_delete(context),
-                    Action::Delete2 => self.action_delete_2(context),
-                    Action::Divide => self.action_divide(context),
-                    Action::EndDrag => self.action_end_drag(context),
-                    Action::Enumerate => self.action_enumerate(context),
-                    Action::Equals => self.action_equals(context),
-                    Action::Equals2 => self.action_equals_2(context),
-                    Action::GetMember => self.action_get_member(context),
-                    Action::GetProperty => self.action_get_property(context),
-                    Action::GetTime => self.action_get_time(context),
-                    Action::GetVariable => self.action_get_variable(context),
-                    Action::GetUrl { url, target } => self.action_get_url(context, &url, &target),
-                    Action::GetUrl2 {
-                        send_vars_method,
-                        is_target_sprite,
-                        is_load_vars,
-                    } => {
-                        self.action_get_url_2(context, send_vars_method, is_target_sprite, is_load_vars)
-                    }
-                    Action::GotoFrame(frame) => self.action_goto_frame(context, frame),
-                    Action::GotoFrame2 {
-                        set_playing,
-                        scene_offset,
-                    } => self.action_goto_frame_2(context, set_playing, scene_offset),
-                    Action::GotoLabel(label) => self.action_goto_label(context, &label),
-                    Action::If { offset } => self.action_if(context, offset),
-                    Action::Increment => self.action_increment(context),
-                    Action::InitArray => self.action_init_array(context),
-                    Action::InitObject => self.action_init_object(context),
-                    Action::Jump { offset } => self.action_jump(context, offset),
-                    Action::Less => self.action_less(context),
-                    Action::Less2 => self.action_less_2(context),
-                    Action::MBAsciiToChar => self.action_mb_ascii_to_char(context),
-                    Action::MBCharToAscii => self.action_mb_char_to_ascii(context),
-                    Action::MBStringLength => self.action_mb_string_length(context),
-                    Action::MBStringExtract => self.action_mb_string_extract(context),
-                    Action::Modulo => self.action_modulo(context),
-                    Action::Multiply => self.action_multiply(context),
-                    Action::NextFrame => self.action_next_frame(context),
-                    Action::NewMethod => self.action_new_method(context),
-                    Action::NewObject => self.action_new_object(context),
-                    Action::Not => self.action_not(context),
-                    Action::Or => self.action_or(context),
-                    Action::Play => self.action_play(context),
-                    Action::Pop => self.action_pop(context),
-                    Action::PreviousFrame => self.action_prev_frame(context),
-                    Action::Push(values) => self.action_push(context, &values[..]),
-                    Action::PushDuplicate => self.action_push_duplicate(context),
-                    Action::RandomNumber => self.action_random_number(context),
-                    Action::RemoveSprite => self.action_remove_sprite(context),
-                    Action::Return => self.action_return(context),
-                    Action::SetMember => self.action_set_member(context),
-                    Action::SetProperty => self.action_set_property(context),
-                    Action::SetTarget(target) => self.action_set_target(context, &target),
-                    Action::SetTarget2 => self.action_set_target2(context),
-                    Action::SetVariable => self.action_set_variable(context),
-                    Action::StackSwap => self.action_stack_swap(context),
-                    Action::StartDrag => self.action_start_drag(context),
-                    Action::Stop => self.action_stop(context),
-                    Action::StopSounds => self.action_stop_sounds(context),
-                    Action::StoreRegister(register) => self.action_store_register(context, register),
-                    Action::StringAdd => self.action_string_add(context),
-                    Action::StringEquals => self.action_string_equals(context),
-                    Action::StringExtract => self.action_string_extract(context),
-                    Action::StringLength => self.action_string_length(context),
-                    Action::StringLess => self.action_string_less(context),
-                    Action::Subtract => self.action_subtract(context),
-                    Action::TargetPath => self.action_target_path(context),
-                    Action::ToggleQuality => self.toggle_quality(context),
-                    Action::ToInteger => self.action_to_integer(context),
-                    Action::ToNumber => self.action_to_number(context),
-                    Action::ToString => self.action_to_string(context),
-                    Action::Trace => self.action_trace(context),
-                    Action::TypeOf => self.action_type_of(context),
-                    Action::WaitForFrame {
-                        frame,
-                        num_actions_to_skip,
-                    } => self.action_wait_for_frame(context, frame, num_actions_to_skip),
-                    Action::WaitForFrame2 {
-                        num_actions_to_skip,
-                    } => self.action_wait_for_frame_2(context, num_actions_to_skip),
-                    Action::With { .. } => self.action_with(context),
-                    _ => self.unknown_op(context, action),
-                };
-                if let Err(ref e) = result {
-                    log::error!("AVM1 error: {}", e);
-                    return result;
+            self.with_current_reader_mut(|this, r| this.do_next_action(context, r)).unwrap()?;
+        }
+
+        Ok(())
+    }
+
+    /// Run a single action from a given action reader.
+    fn do_next_action(&mut self, context: &mut ActionContext<'_, 'gc, '_>, reader: &mut Reader<'_>) -> Result<(), Error> {
+        if let Some(action) = reader.read_action()? {
+            let result = match action {
+                Action::Add => self.action_add(context),
+                Action::Add2 => self.action_add_2(context),
+                Action::And => self.action_and(context),
+                Action::AsciiToChar => self.action_ascii_to_char(context),
+                Action::BitAnd => self.action_bit_and(context),
+                Action::BitLShift => self.action_bit_lshift(context),
+                Action::BitOr => self.action_bit_or(context),
+                Action::BitRShift => self.action_bit_rshift(context),
+                Action::BitURShift => self.action_bit_urshift(context),
+                Action::BitXor => self.action_bit_xor(context),
+                Action::Call => self.action_call(context),
+                Action::CallFunction => self.action_call_function(context),
+                Action::CallMethod => self.action_call_method(context),
+                Action::CharToAscii => self.action_char_to_ascii(context),
+                Action::ConstantPool(constant_pool) => {
+                    self.action_constant_pool(context, &constant_pool[..])
                 }
-            } else {
-                //Out of code. Return to the parent function.
-                self.retire_stack_frame();
+                Action::Decrement => self.action_decrement(context),
+                Action::DefineFunction {
+                    name,
+                    params,
+                    actions,
+                } => self.action_define_function(context, &name, &params[..], actions),
+                Action::DefineLocal => self.action_define_local(context),
+                Action::DefineLocal2 => self.action_define_local_2(context),
+                Action::Delete => self.action_delete(context),
+                Action::Delete2 => self.action_delete_2(context),
+                Action::Divide => self.action_divide(context),
+                Action::EndDrag => self.action_end_drag(context),
+                Action::Enumerate => self.action_enumerate(context),
+                Action::Equals => self.action_equals(context),
+                Action::Equals2 => self.action_equals_2(context),
+                Action::GetMember => self.action_get_member(context),
+                Action::GetProperty => self.action_get_property(context),
+                Action::GetTime => self.action_get_time(context),
+                Action::GetVariable => self.action_get_variable(context),
+                Action::GetUrl { url, target } => self.action_get_url(context, &url, &target),
+                Action::GetUrl2 {
+                    send_vars_method,
+                    is_target_sprite,
+                    is_load_vars,
+                } => {
+                    self.action_get_url_2(context, send_vars_method, is_target_sprite, is_load_vars)
+                }
+                Action::GotoFrame(frame) => self.action_goto_frame(context, frame),
+                Action::GotoFrame2 {
+                    set_playing,
+                    scene_offset,
+                } => self.action_goto_frame_2(context, set_playing, scene_offset),
+                Action::GotoLabel(label) => self.action_goto_label(context, &label),
+                Action::If { offset } => self.action_if(context, offset),
+                Action::Increment => self.action_increment(context),
+                Action::InitArray => self.action_init_array(context),
+                Action::InitObject => self.action_init_object(context),
+                Action::Jump { offset } => self.action_jump(context, offset),
+                Action::Less => self.action_less(context),
+                Action::Less2 => self.action_less_2(context),
+                Action::MBAsciiToChar => self.action_mb_ascii_to_char(context),
+                Action::MBCharToAscii => self.action_mb_char_to_ascii(context),
+                Action::MBStringLength => self.action_mb_string_length(context),
+                Action::MBStringExtract => self.action_mb_string_extract(context),
+                Action::Modulo => self.action_modulo(context),
+                Action::Multiply => self.action_multiply(context),
+                Action::NextFrame => self.action_next_frame(context),
+                Action::NewMethod => self.action_new_method(context),
+                Action::NewObject => self.action_new_object(context),
+                Action::Not => self.action_not(context),
+                Action::Or => self.action_or(context),
+                Action::Play => self.action_play(context),
+                Action::Pop => self.action_pop(context),
+                Action::PreviousFrame => self.action_prev_frame(context),
+                Action::Push(values) => self.action_push(context, &values[..]),
+                Action::PushDuplicate => self.action_push_duplicate(context),
+                Action::RandomNumber => self.action_random_number(context),
+                Action::RemoveSprite => self.action_remove_sprite(context),
+                Action::Return => self.action_return(context),
+                Action::SetMember => self.action_set_member(context),
+                Action::SetProperty => self.action_set_property(context),
+                Action::SetTarget(target) => self.action_set_target(context, &target),
+                Action::SetTarget2 => self.action_set_target2(context),
+                Action::SetVariable => self.action_set_variable(context),
+                Action::StackSwap => self.action_stack_swap(context),
+                Action::StartDrag => self.action_start_drag(context),
+                Action::Stop => self.action_stop(context),
+                Action::StopSounds => self.action_stop_sounds(context),
+                Action::StoreRegister(register) => self.action_store_register(context, register),
+                Action::StringAdd => self.action_string_add(context),
+                Action::StringEquals => self.action_string_equals(context),
+                Action::StringExtract => self.action_string_extract(context),
+                Action::StringLength => self.action_string_length(context),
+                Action::StringLess => self.action_string_less(context),
+                Action::Subtract => self.action_subtract(context),
+                Action::TargetPath => self.action_target_path(context),
+                Action::ToggleQuality => self.toggle_quality(context),
+                Action::ToInteger => self.action_to_integer(context),
+                Action::ToNumber => self.action_to_number(context),
+                Action::ToString => self.action_to_string(context),
+                Action::Trace => self.action_trace(context),
+                Action::TypeOf => self.action_type_of(context),
+                Action::WaitForFrame {
+                    frame,
+                    num_actions_to_skip,
+                } => self.action_wait_for_frame(context, frame, num_actions_to_skip),
+                Action::WaitForFrame2 {
+                    num_actions_to_skip,
+                } => self.action_wait_for_frame_2(context, num_actions_to_skip),
+                Action::With { .. } => self.action_with(context),
+                _ => self.unknown_op(context, action),
+            };
+            if let Err(ref e) = result {
+                log::error!("AVM1 error: {}", e);
+                return result;
             }
+        } else {
+            //Out of code. Return to the parent function.
+            self.retire_stack_frame();
         }
 
         Ok(())
@@ -947,7 +977,7 @@ impl<'gc> Avm1<'gc> {
     ) -> Result<(), Error> {
         let val = self.pop()?;
         if val.as_bool() {
-            self.current_reader_mut().unwrap().seek(jump_offset.into());
+            self.with_current_reader_mut(|_this, r| r.seek(jump_offset.into()));
         }
         Ok(())
     }
@@ -985,7 +1015,7 @@ impl<'gc> Avm1<'gc> {
         jump_offset: i16
     ) -> Result<(), Error> {
         // TODO(Herschel): Handle out-of-bounds.
-        self.current_reader_mut().unwrap().seek(jump_offset.into());
+        self.with_current_reader_mut(|_this, r| r.seek(jump_offset.into()));
         Ok(())
     }
 
@@ -1485,10 +1515,7 @@ impl<'gc> Avm1<'gc> {
         if !loaded {
             // Note that the offset is given in # of actions, NOT in bytes.
             // Read the actions and toss them away.
-            let reader = self.current_reader_mut().unwrap();
-            for _ in 0..num_actions_to_skip {
-                reader.read_action()?;
-            }
+            self.with_current_reader_mut(|_this, r| skip_actions(r, num_actions_to_skip)).unwrap()?;
         }
         Ok(())
     }
@@ -1504,10 +1531,7 @@ impl<'gc> Avm1<'gc> {
         if !loaded {
             // Note that the offset is given in # of actions, NOT in bytes.
             // Read the actions and toss them away.
-            let reader = self.current_reader_mut().unwrap();
-            for _ in 0..num_actions_to_skip {
-                reader.read_action()?;
-            }
+            self.with_current_reader_mut(|_this, r| skip_actions(r, num_actions_to_skip)).unwrap()?;
         }
         Ok(())
     }
@@ -1516,4 +1540,14 @@ impl<'gc> Avm1<'gc> {
         let _object = self.pop()?.as_object()?;
         Err("Unimplemented action: With".into())
     }
+}
+
+/// Utility function used by `Avm1::action_wait_for_frame` and
+/// `Avm1::action_wait_for_frame_2`.
+fn skip_actions(reader: &mut Reader<'_>, num_actions_to_skip: u8) -> Result<(), Error> {
+    for _ in 0..num_actions_to_skip {
+        reader.read_action()?;
+    }
+
+    Ok(())
 }

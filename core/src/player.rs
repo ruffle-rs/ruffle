@@ -515,8 +515,8 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                     action_context.start_clip = active_clip;
                     action_context.active_clip = active_clip;
                     action_context.target_clip = Some(active_clip);
-                    update_context.avm.insert_stack_frame(update_context.swf_version, action.as_ref(), action_context.gc_context);
-                    let _ = update_context.avm.do_action(&mut action_context);
+                    update_context.avm.insert_stack_frame_from_action(update_context.swf_version, action);
+                    let _ = update_context.avm.run_stack_till_empty(&mut action_context);
                 }
             }
 
