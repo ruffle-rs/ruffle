@@ -14,15 +14,47 @@ pub type NativeFunction<'gc> = fn(
     &[Value<'gc>],
 ) -> Value<'gc>;
 
+/// Represents a function defined in the AVM1 runtime.
+#[derive(Clone)]
+struct Avm1Function {
+    /// The file format version of the SWF that generated this function.
+    swf_version: u8,
+
+    /// A reference to the underlying SWF data.
+    data: SwfSlice,
+    
+    /// The name of the function, if not anonymous.
+    name: Option<String>,
+
+    /// The names of the function parameters.
+    params: Vec<String>,
+}
+
+impl Avm1Function {
+    pub fn new(swf_version: u8, actions: SwfSlice, name: &str, params: &[&str]) -> Avm1Function {
+        let name = match name {
+            "" => None,
+            name => Some(name.to_string())
+        };
+
+        Avm1Function {
+            swf_version: swf_version,
+            data: actions,
+            name: name,
+            params: params.into_iter().map(|s| s.to_string()).collect()
+        }
+    }
+}
+
 /// Represents a function that can be defined in the Ruffle runtime or by the
 /// AVM1 bytecode itself.
 #[derive(Clone)]
-pub enum Executable<'gc> {
+enum Executable<'gc> {
     /// A function provided by the Ruffle runtime and implemented in Rust.
     Native(NativeFunction<'gc>),
 
     /// ActionScript data defined by a previous action.
-    ActionData
+    Action(Avm1Function)
 }
 
 impl<'gc> Executable<'gc> {
@@ -35,7 +67,7 @@ impl<'gc> Executable<'gc> {
     pub fn exec(&self, avm: &mut Avm1<'gc>, ac: &mut ActionContext<'_, 'gc, '_>, this: GcCell<'gc, Object<'gc>>, args: &[Value<'gc>]) -> Option<Value<'gc>> {
         match self {
             Executable::Native(nf) => Some(nf(avm, ac, this, args)),
-            Executable::ActionData => None
+            Executable::Action(af) => None
         }
     }
 }
@@ -171,6 +203,15 @@ impl<'gc> Object<'gc> {
             function: Some(Executable::Native(function)),
             display_node: None,
             values: HashMap::new(),
+        }
+    }
+
+    pub fn action_function(swf_version: u8, actions: SwfSlice, name: &str, params: &[&str]) -> Self {
+        Self {
+            type_of: TYPE_OF_FUNCTION,
+            function: Some(Executable::Action(Avm1Function::new(swf_version, actions, name, params))),
+            display_node: None,
+            values: HashMap::new()
         }
     }
 

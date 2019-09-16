@@ -648,13 +648,22 @@ impl<'gc> Avm1<'gc> {
 
     fn action_define_function(
         &mut self,
-        _context: &mut ActionContext,
-        _name: &str,
-        _params: &[&str],
-        _actions: &[u8],
+        context: &mut ActionContext<'_, 'gc, '_>,
+        name: &str,
+        params: &[&str],
+        actions: &[u8],
     ) -> Result<(), Error> {
-        // TODO(Herschel)
-        Err("Unimplemented action: DefineFunction".into())
+        let swf_version = self.current_stack_frame().unwrap().swf_version();
+        let func_data = self.current_stack_frame().unwrap().data().to_subslice(actions).unwrap();
+        let func = Value::Object(GcCell::allocate(context.gc_context, Object::action_function(swf_version, func_data, name, params)));
+        
+        if name == "" {
+            self.current_stack_frame_mut().unwrap().stack_mut().push(func);
+        } else {
+            self.current_stack_frame_mut().unwrap().locals_mut().insert(name.to_string(), func);
+        }
+
+        Ok(())
     }
 
     fn action_define_local(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
