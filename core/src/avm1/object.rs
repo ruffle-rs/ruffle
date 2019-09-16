@@ -67,7 +67,17 @@ impl<'gc> Executable<'gc> {
     pub fn exec(&self, avm: &mut Avm1<'gc>, ac: &mut ActionContext<'_, 'gc, '_>, this: GcCell<'gc, Object<'gc>>, args: &[Value<'gc>]) -> Option<Value<'gc>> {
         match self {
             Executable::Native(nf) => Some(nf(avm, ac, this, args)),
-            Executable::Action(af) => None
+            Executable::Action(af) => {
+                avm.insert_stack_frame_from_action(af.swf_version, af.data.clone());
+
+                for arg in args {
+                    avm.current_stack_frame_mut().unwrap().stack_mut().push(arg.clone());
+                }
+
+                avm.current_stack_frame_mut().unwrap().locals_mut().insert("this".to_string(), Value::Object(this));
+
+                None
+            }
         }
     }
 }

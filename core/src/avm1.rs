@@ -563,22 +563,24 @@ impl<'gc> Avm1<'gc> {
         Err("Unimplemented action: Call".into())
     }
 
-    fn action_call_function(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        let _fn_name = self.pop()?.as_string()?;
+    fn action_call_function(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let fn_name = self.pop()?;
+        let mut args = Vec::new();
         let num_args = self.pop()?.as_i64()?; // TODO(Herschel): max arg count?
         for _ in 0..num_args {
-            self.pop()?;
+            args.push(self.pop()?);
+        }
+        
+        let target_fn = self.current_stack_frame_mut().unwrap().locals_mut().get(fn_name.as_string()?).unwrap_or_else(|| &Value::Undefined).clone();
+        let return_value = target_fn.call(self, context, self.globals, &args)?;
+        if let Some(instant_return) = return_value {
+            self.current_stack_frame_mut().unwrap().stack_mut().push(instant_return);
         }
 
-        self.current_stack_frame_mut().unwrap().stack_mut().push(Value::Undefined);
-        // TODO(Herschel)
-        Err("Unimplemented action: CallFunction".into())
+        Ok(())
     }
 
-    fn action_call_method(
-        &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    fn action_call_method(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         let method_name = self.pop()?;
         let object = self.pop()?;
         let num_args = self.pop()?.as_i64()?; // TODO(Herschel): max arg count?
@@ -1247,9 +1249,14 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_return(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        let _result = self.pop()?;
-        // TODO(Herschel)
-        Err("Unimplemented action: Return".into())
+        let result = self.pop()?;
+
+        if self.stack_frames.len() > 1 {
+            self.retire_stack_frame();
+            self.current_stack_frame_mut().unwrap().stack_mut().push(result);
+        }
+
+        Ok(())
     }
 
     fn action_set_member(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
