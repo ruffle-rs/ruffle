@@ -32,6 +32,10 @@ macro_rules! swf_tests {
 swf_tests! {
     (single_frame, "avm1/single_frame", 2),
     (looping, "avm1/looping", 6),
+    (goto_advance1, "avm1/goto_advance1", 10),
+    (goto_advance2, "avm1/goto_advance2", 10),
+    (goto_rewind1, "avm1/goto_rewind1", 10),
+    (goto_rewind2, "avm1/goto_rewind2", 10),
 }
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.

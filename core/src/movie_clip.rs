@@ -202,25 +202,9 @@ impl<'gc> MovieClip<'gc> {
         let mut i = 0;
         while i < self.goto_queue.len() {
             let frame = self.goto_queue[i];
-            if frame >= self.current_frame {
-                // Advancing
-                while self.current_frame + 1 < frame {
-                    self.run_frame_internal(context, true);
-                }
-                self.run_frame_internal(context, false);
-            } else {
-                // Rewind
-                // Reset everything to blank, start from frame 1,
-                // and advance forward
-                self.children.clear();
-                self.tag_stream_pos = 0;
-                self.current_frame = 0;
-                while self.current_frame + 1 < frame {
-                    self.run_frame_internal(context, true);
-                }
-                self.run_frame_internal(context, false);
+            if self.current_frame != frame {
+                self.run_goto(context, frame);
             }
-
             i += 1;
         }
 
@@ -249,15 +233,16 @@ impl<'gc> MovieClip<'gc> {
     fn run_frame_internal(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        only_display_actions: bool,
+        run_display_actions: bool,
     ) {
         // Advance frame number.
         if self.current_frame() < self.total_frames() {
             self.current_frame += 1;
         } else if self.total_frames() > 1 {
-            self.current_frame = 1;
-            self.children.clear();
-            self.tag_stream_pos = 0;
+            // Looping acts exactly like a gotoAndPlay(1).
+            // Specifically, object that existed on frame 1 should not be destroyed
+            // and recreated.
+            self.run_goto(context, 1);
         } else {
             // Single frame clips do not play.
             self.stop();
@@ -267,35 +252,241 @@ impl<'gc> MovieClip<'gc> {
         let mut reader = self.reader(context);
 
         use swf::TagCode;
-        if only_display_actions {
-            let tag_callback = |reader: &mut _, tag_code, tag_len| match tag_code {
-                TagCode::PlaceObject => self.place_object(context, reader, tag_len, 1),
-                TagCode::PlaceObject2 => self.place_object(context, reader, tag_len, 2),
-                TagCode::PlaceObject3 => self.place_object(context, reader, tag_len, 3),
-                TagCode::PlaceObject4 => self.place_object(context, reader, tag_len, 4),
-                TagCode::RemoveObject => self.remove_object(context, reader, 1),
-                TagCode::RemoveObject2 => self.remove_object(context, reader, 2),
-                _ => Ok(()),
-            };
-            let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
+
+        let tag_callback = |reader: &mut _, tag_code, tag_len| match tag_code {
+            TagCode::DoAction => self.do_action(context, reader, tag_len),
+            TagCode::PlaceObject if run_display_actions => {
+                self.place_object(context, reader, tag_len, 1)
+            }
+            TagCode::PlaceObject2 if run_display_actions => {
+                self.place_object(context, reader, tag_len, 2)
+            }
+            TagCode::PlaceObject3 if run_display_actions => {
+                self.place_object(context, reader, tag_len, 3)
+            }
+            TagCode::PlaceObject4 if run_display_actions => {
+                self.place_object(context, reader, tag_len, 4)
+            }
+            TagCode::RemoveObject if run_display_actions => self.remove_object(context, reader, 1),
+            TagCode::RemoveObject2 if run_display_actions => self.remove_object(context, reader, 2),
+            TagCode::SetBackgroundColor => self.set_background_color(context, reader),
+            TagCode::StartSound => self.start_sound_1(context, reader),
+            TagCode::SoundStreamBlock => self.sound_stream_block(context, reader),
+            _ => Ok(()),
+        };
+        let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
+
+        self.tag_stream_pos = reader.get_ref().position();
+    }
+
+    fn instantiate_child(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        id: CharacterId,
+        depth: Depth,
+        copy_previous_properties: bool,
+    ) -> Option<DisplayNode<'gc>> {
+        if let Ok(child) = context
+            .library
+            .instantiate_display_object(id, context.gc_context)
+        {
+            let prev_child = self.children.insert(depth, child);
+            {
+                let mut child = child.write(context.gc_context);
+                child.set_parent(Some(context.active_clip));
+                child.set_place_frame(self.current_frame);
+                if copy_previous_properties {
+                    if let Some(prev_child) = prev_child {
+                        child.copy_display_properties_from(prev_child);
+                    }
+                }
+            }
+            Some(child)
         } else {
+            log::error!("Unable to instantiate display node id {}", id);
+            None
+        }
+    }
+
+    fn run_goto(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, frame: FrameNumber) {
+        // Flash gotos are tricky:
+        // 1) MovieClip timelines are stored as deltas from frame to frame,
+        //    so we have to step through the intermediate frames to goto a target frame.
+        //    For rewinds, this means starting from frame 1.
+        // 2) Objects that would persist over the goto should not be recreated and destroyed,
+        //    they should keep their properties.
+        //    Particularly for rewinds, the object should persist if it  was create
+        //      *before* the frame we are going to. (DisplayNode::place_frame).
+        // 3) We want to avoid creating objects just to destroy them if they aren't on
+        //    the goto frame, so we should instead aggregate the deltas into a list
+        //    of commands at the end of the goto, and THEN create the needed objects.
+
+        // This map will maintain a map of depth -> placement commands.
+        let mut goto_commands = fnv::FnvHashMap::default();
+
+        let is_rewind = if frame < self.current_frame() {
+            // Because we can only step forward, we have to start at frame 1
+            // when rewinding.
+            self.tag_stream_pos = 0;
+            self.current_frame = 0;
+            true
+        } else {
+            false
+        };
+
+        // Step through the intermediate frames, and aggregate the deltas of each frame.
+        let mut frame_pos = self.tag_stream_pos;
+        let mut reader = self.reader(context);
+        while self.current_frame < frame {
+            self.current_frame += 1;
+            frame_pos = reader.get_inner().position();
+
+            use swf::TagCode;
             let tag_callback = |reader: &mut _, tag_code, tag_len| match tag_code {
-                TagCode::DoAction => self.do_action(context, reader, tag_len),
-                TagCode::PlaceObject => self.place_object(context, reader, tag_len, 1),
-                TagCode::PlaceObject2 => self.place_object(context, reader, tag_len, 2),
-                TagCode::PlaceObject3 => self.place_object(context, reader, tag_len, 3),
-                TagCode::PlaceObject4 => self.place_object(context, reader, tag_len, 4),
-                TagCode::RemoveObject => self.remove_object(context, reader, 1),
-                TagCode::RemoveObject2 => self.remove_object(context, reader, 2),
-                TagCode::SetBackgroundColor => self.set_background_color(context, reader),
-                TagCode::StartSound => self.start_sound_1(context, reader),
-                TagCode::SoundStreamBlock => self.sound_stream_block(context, reader),
+                TagCode::PlaceObject => {
+                    self.goto_place_object(reader, tag_len, 1, &mut goto_commands)
+                }
+                TagCode::PlaceObject2 => {
+                    self.goto_place_object(reader, tag_len, 2, &mut goto_commands)
+                }
+                TagCode::PlaceObject3 => {
+                    self.goto_place_object(reader, tag_len, 3, &mut goto_commands)
+                }
+                TagCode::PlaceObject4 => {
+                    self.goto_place_object(reader, tag_len, 4, &mut goto_commands)
+                }
+                TagCode::RemoveObject => self.goto_remove_object(reader, 1, &mut goto_commands),
+                TagCode::RemoveObject2 => self.goto_remove_object(reader, 2, &mut goto_commands),
                 _ => Ok(()),
             };
             let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
         }
 
-        self.tag_stream_pos = reader.get_ref().position();
+        let prev_active_clip = context.active_clip;
+
+        // Run the final list of commands.
+        if is_rewind {
+            // TODO: We want to do something like self.children.retain here,
+            // but BTreeMap::retain does not exist.
+            let mut children = std::mem::replace(&mut self.children, BTreeMap::new());
+            goto_commands.into_iter().for_each(|(depth, params)| {
+                let (needs_run, child) = match children.get_mut(&depth).copied() {
+                    // For rewinds, if an object was created before the final frame,
+                    // it will exist on the final frame as well. Re-use this object
+                    // instead of recreating.
+                    Some(prev_child) if prev_child.read().place_frame() <= frame => {
+                        self.children.insert(depth, prev_child);
+                        (false, prev_child)
+                    }
+                    _ => {
+                        if let Some(child) =
+                            self.instantiate_child(context, params.id(), depth, false)
+                        {
+                            (true, child)
+                        } else {
+                            return;
+                        }
+                    }
+                };
+
+                // Apply final delta to display pamareters.
+                let child_node = child;
+                let mut child = child.write(context.gc_context);
+                child.apply_place_object(params);
+
+                // We must run newly created objects for one frame
+                // to ensure they place any children objects.
+                // TODO: This will probably move as our order-of-execution
+                // becomes more accurate.
+                if needs_run {
+                    context.active_clip = child_node;
+                    child.run_frame(context);
+                    context.active_clip = prev_active_clip;
+                }
+            });
+        } else {
+            goto_commands.into_iter().for_each(|(depth, params)| {
+                let id = params.id();
+                let child = if id != 0 {
+                    if let Some(child) =
+                        self.instantiate_child(context, id, depth, params.modifies_original_item())
+                    {
+                        child
+                    } else {
+                        return;
+                    }
+                } else if let Some(child) = self.children.get_mut(&depth) {
+                    *child
+                } else {
+                    return;
+                };
+
+                // Apply final delta to display pamareters.
+                let child_node = child;
+                let mut child = child.write(context.gc_context);
+                child.apply_place_object(params);
+
+                // We must run newly created objects for one frame
+                // to ensure they place any children objects.
+                // TODO: This will probably move as our order-of-execution
+                // becomes more accurate.
+                if id != 0 {
+                    context.active_clip = child_node;
+                    child.run_frame(context);
+                    context.active_clip = prev_active_clip;
+                }
+            });
+        }
+
+        // Re-run the final frame to run all other tags (DoAction, StartSound, etc.)
+        self.current_frame = frame - 1;
+        self.tag_stream_pos = frame_pos;
+        self.run_frame_internal(context, false);
+    }
+
+    /// Handles a PlaceObject tag when running a goto action.
+    #[inline]
+    fn goto_place_object<'a>(
+        &mut self,
+        reader: &mut SwfStream<&'a [u8]>,
+        tag_len: usize,
+        version: u8,
+        goto_commands: &mut fnv::FnvHashMap<Depth, swf::PlaceObject>,
+    ) -> DecodeResult {
+        let mut place_object = if version == 1 {
+            reader.read_place_object(tag_len)
+        } else {
+            reader.read_place_object_2_or_3(version)
+        }?;
+
+        // We merge the deltas from this PlaceObject with the previous command.
+        let depth = place_object.depth;
+        goto_commands
+            .entry(depth)
+            .and_modify(|prev_place| prev_place.merge(&mut place_object))
+            .or_insert(place_object);
+
+        Ok(())
+    }
+
+    /// Handle a RemoveObject tag when running a goto action.
+    #[inline]
+    fn goto_remove_object<'a>(
+        &mut self,
+        reader: &mut SwfStream<&'a [u8]>,
+        version: u8,
+        goto_commands: &mut fnv::FnvHashMap<Depth, swf::PlaceObject>,
+    ) -> DecodeResult {
+        let remove_object = if version == 1 {
+            reader.read_remove_object_1()
+        } else {
+            reader.read_remove_object_2()
+        }?;
+        // If this tag were to remove an object that existed before the goto,
+        // then we can remove that child right away.
+        goto_commands.remove(&remove_object.depth);
+        self.children.remove(&remove_object.depth);
+        Ok(())
     }
 }
 
@@ -308,7 +499,7 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
 
     fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if self.is_playing {
-            self.run_frame_internal(context, false);
+            self.run_frame_internal(context, true);
         }
 
         // TODO(Herschel): Verify order of execution for parent/children.
@@ -969,9 +1160,11 @@ impl<'gc, 'a> MovieClip<'gc> {
                 };
 
                 // TODO(Herschel): Behavior when depth is occupied? (I think it replaces)
-                character
-                    .write(context.gc_context)
-                    .set_parent(Some(context.active_clip));
+                {
+                    let mut character = character.write(context.gc_context);
+                    character.set_parent(Some(context.active_clip));
+                    character.set_place_frame(self.current_frame);
+                }
                 self.children.insert(place_object.depth, character);
                 self.children.get_mut(&place_object.depth).unwrap()
             }
@@ -992,9 +1185,11 @@ impl<'gc, 'a> MovieClip<'gc> {
                     return Ok(());
                 };
 
-                character
-                    .write(context.gc_context)
-                    .set_parent(Some(context.active_clip));
+                {
+                    let mut character = character.write(context.gc_context);
+                    character.set_parent(Some(context.active_clip));
+                    character.set_place_frame(self.current_frame);
+                }
                 let prev_character = self.children.insert(place_object.depth, character);
                 let character = self.children.get_mut(&place_object.depth).unwrap();
                 if let Some(prev_character) = prev_character {
@@ -1135,5 +1330,60 @@ unsafe impl<'gc> gc_arena::Collect for MovieClipStatic {
     #[inline]
     fn needs_trace() -> bool {
         false
+    }
+}
+
+pub trait PlaceObjectExt {
+    fn id(&self) -> CharacterId;
+    fn modifies_original_item(&self) -> bool;
+    fn merge(&mut self, next: &mut swf::PlaceObject);
+}
+
+impl PlaceObjectExt for swf::PlaceObject {
+    #[inline]
+    fn id(&self) -> CharacterId {
+        match &self.action {
+            swf::PlaceObjectAction::Place(id) | swf::PlaceObjectAction::Replace(id) => *id,
+            swf::PlaceObjectAction::Modify => 0,
+        }
+    }
+
+    #[inline]
+    fn modifies_original_item(&self) -> bool {
+        if let swf::PlaceObjectAction::Replace(_) = &self.action {
+            true
+        } else {
+            false
+        }
+    }
+
+    fn merge(&mut self, next: &mut swf::PlaceObject) {
+        use swf::PlaceObjectAction;
+        self.action = match (self.action, next.action) {
+            (prev, PlaceObjectAction::Modify) => prev,
+            (_, next) => next,
+        };
+        if next.matrix.is_some() {
+            self.matrix = next.matrix.take();
+        }
+        if next.color_transform.is_some() {
+            self.color_transform = next.color_transform.take();
+        }
+        if next.ratio.is_some() {
+            self.ratio = next.ratio.take();
+        }
+        if next.name.is_some() {
+            self.name = next.name.take();
+        }
+        if next.clip_depth.is_some() {
+            self.clip_depth = next.clip_depth.take();
+        }
+        if next.class_name.is_some() {
+            self.class_name = next.class_name.take();
+        }
+        if next.background_color.is_some() {
+            self.background_color = next.background_color.take();
+        }
+        // TODO: Other stuff.
     }
 }
