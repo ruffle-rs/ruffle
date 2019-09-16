@@ -376,8 +376,9 @@ impl<'gc> Avm1<'gc> {
                 return result;
             }
         } else {
-            //Out of code. Return to the parent function.
+            //Implicit return undefined
             self.retire_stack_frame();
+            self.current_stack_frame_mut().map(|sf| sf.stack_mut().push(Value::Undefined));
         }
 
         Ok(())
