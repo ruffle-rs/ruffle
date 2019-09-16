@@ -168,7 +168,7 @@ impl<'gc> Avm1<'gc> {
             stack_frames: vec![],
         }
     }
-    
+
     /// Convert the current locals pool into a set of form values.
     ///
     /// This is necessary to support form submission from Flash via a couple of
@@ -591,13 +591,16 @@ impl<'gc> Avm1<'gc> {
             Value::Undefined | Value::Null => {
                 let this = context.active_clip.read().object().as_object()?.to_owned();
                 let return_value = object.call(self, context, this, &args)?;
-                self.current_stack_frame_mut().unwrap().stack_mut().push(return_value);
+                if let Some(instant_return) = return_value {
+                    self.current_stack_frame_mut().unwrap().stack_mut().push(instant_return);
+                }
             }
             Value::String(name) => {
                 if name.is_empty() {
-                    let return_value =
-                        object.call(self, context, object.as_object()?.to_owned(), &args)?;
-                    self.current_stack_frame_mut().unwrap().stack_mut().push(return_value);
+                    let return_value = object.call(self, context, object.as_object()?.to_owned(), &args)?;
+                    if let Some(instant_return) = return_value {
+                        self.current_stack_frame_mut().unwrap().stack_mut().push(instant_return);
+                    }
                 } else {
                     let callable = object.as_object()?.read().get(
                         &name,
@@ -610,10 +613,10 @@ impl<'gc> Avm1<'gc> {
                         return Err(format!("Object method {} is not defined", name).into());
                     }
 
-                    let return_value =
-                        callable.call(self, context, object.as_object()?.to_owned(), &args)?;
-
-                    self.current_stack_frame_mut().unwrap().stack_mut().push(return_value);
+                    let return_value = callable.call(self, context, object.as_object()?.to_owned(), &args)?;
+                    if let Some(instant_return) = return_value {
+                        self.current_stack_frame_mut().unwrap().stack_mut().push(instant_return);
+                    }
                 }
             }
             _ => {

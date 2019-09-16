@@ -1,5 +1,6 @@
 use crate::avm1::{ActionContext, Avm1, Value};
 use crate::display_object::DisplayNode;
+use crate::tag_utils::SwfSlice;
 use core::fmt;
 use gc_arena::{GcCell, MutationContext};
 use std::collections::hash_map::Entry;
@@ -12,6 +13,32 @@ pub type NativeFunction<'gc> = fn(
     GcCell<'gc, Object<'gc>>,
     &[Value<'gc>],
 ) -> Value<'gc>;
+
+/// Represents a function that can be defined in the Ruffle runtime or by the
+/// AVM1 bytecode itself.
+#[derive(Clone)]
+pub enum Executable<'gc> {
+    /// A function provided by the Ruffle runtime and implemented in Rust.
+    Native(NativeFunction<'gc>),
+
+    /// ActionScript data defined by a previous action.
+    ActionData
+}
+
+impl<'gc> Executable<'gc> {
+    /// Execute the given code.
+    /// 
+    /// Execution is not guaranteed to have completed when this function
+    /// returns. If on-stack execution is possible, then this function returns
+    /// a return value you must push onto the stack. Otherwise, you must
+    /// create a new stack frame and execute the action data yourself.
+    pub fn exec(&self, avm: &mut Avm1<'gc>, ac: &mut ActionContext<'_, 'gc, '_>, this: GcCell<'gc, Object<'gc>>, args: &[Value<'gc>]) -> Option<Value<'gc>> {
+        match self {
+            Executable::Native(nf) => Some(nf(avm, ac, this, args)),
+            Executable::ActionData => None
+        }
+    }
+}
 
 pub const TYPE_OF_OBJECT: &str = "object";
 pub const TYPE_OF_FUNCTION: &str = "function";
@@ -103,7 +130,7 @@ impl fmt::Debug for Property<'_> {
 pub struct Object<'gc> {
     display_node: Option<DisplayNode<'gc>>,
     values: HashMap<String, Property<'gc>>,
-    function: Option<NativeFunction<'gc>>,
+    function: Option<Executable<'gc>>,
     type_of: &'static str,
 }
 
@@ -138,10 +165,10 @@ impl<'gc> Object<'gc> {
         result
     }
 
-    pub fn function(function: NativeFunction<'gc>) -> Self {
+    pub fn native_function(function: NativeFunction<'gc>) -> Self {
         Self {
             type_of: TYPE_OF_FUNCTION,
-            function: Some(function),
+            function: Some(Executable::Native(function)),
             display_node: None,
             values: HashMap::new(),
         }
@@ -188,7 +215,7 @@ impl<'gc> Object<'gc> {
             .insert(name.to_string(), Property::Stored { value });
     }
 
-    pub fn set_function(
+    pub fn set_native_function(
         &mut self,
         name: &str,
         function: NativeFunction<'gc>,
@@ -200,7 +227,7 @@ impl<'gc> Object<'gc> {
             name,
             Value::Object(GcCell::allocate(
                 context.gc_context,
-                Object::function(function),
+                Object::native_function(function),
             )),
             avm,
             context,
@@ -216,7 +243,7 @@ impl<'gc> Object<'gc> {
     ) {
         self.force_set(
             name,
-            Value::Object(GcCell::allocate(gc_context, Object::function(function))),
+            Value::Object(GcCell::allocate(gc_context, Object::native_function(function))),
         )
     }
 
@@ -247,11 +274,11 @@ impl<'gc> Object<'gc> {
         context: &mut ActionContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Value<'gc> {
-        if let Some(function) = self.function {
-            function(avm, context, this, args)
+    ) -> Option<Value<'gc>> {
+        if let Some(function) = &self.function {
+            function.exec(avm, context, this, args)
         } else {
-            Value::Undefined
+            Some(Value::Undefined)
         }
     }
 

@@ -166,7 +166,7 @@ impl<'gc> Value<'gc> {
         context: &mut ActionContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Option<Value<'gc>>, Error> {
         if let Value::Object(object) = self {
             Ok(object.read().call(avm, context, this, args))
         } else {

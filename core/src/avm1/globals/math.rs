@@ -99,7 +99,7 @@ mod tests {
                     let function = math.read().get($name, avm, context, math);
 
                     $(
-                        assert_eq!(function.call(avm, context, math, $args)?, $out);
+                        assert_eq!(function.call(avm, context, math, $args)?, Some($out));
                     )*
 
                     Ok(())
