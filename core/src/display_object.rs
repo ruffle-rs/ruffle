@@ -9,6 +9,7 @@ use std::fmt::Debug;
 #[collect(empty_drop)]
 pub struct DisplayObjectBase<'gc> {
     parent: Option<DisplayNode<'gc>>,
+    place_frame: u16,
     depth: Depth,
     transform: Transform,
     name: String,
@@ -19,6 +20,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
     fn default() -> Self {
         Self {
             parent: Default::default(),
+            place_frame: Default::default(),
             depth: Default::default(),
             transform: Default::default(),
             name: Default::default(),
@@ -33,6 +35,12 @@ impl<'gc> DisplayObject<'gc> for DisplayObjectBase<'gc> {
     }
     fn depth(&self) -> Depth {
         self.depth
+    }
+    fn place_frame(&self) -> u16 {
+        self.place_frame
+    }
+    fn set_place_frame(&mut self, frame: u16) {
+        self.place_frame = frame;
     }
     fn transform(&self) -> &Transform {
         &self.transform
@@ -86,6 +94,8 @@ pub trait DisplayObject<'gc>: 'gc + Collect + Debug {
     fn world_bounds(&self) -> BoundingBox {
         BoundingBox::default()
     }
+    fn place_frame(&self) -> u16;
+    fn set_place_frame(&mut self, frame: u16);
 
     fn transform(&self) -> &Transform;
     fn matrix(&self) -> &Matrix;
@@ -122,6 +132,39 @@ pub trait DisplayObject<'gc>: 'gc + Collect + Debug {
     fn as_morph_shape_mut(&mut self) -> Option<&mut crate::morph_shape::MorphShape<'gc>> {
         None
     }
+    fn apply_place_object(&mut self, place_object: swf::PlaceObject) {
+        if let Some(matrix) = place_object.matrix {
+            self.set_matrix(&matrix.into());
+        }
+        if let Some(color_transform) = place_object.color_transform {
+            self.set_color_transform(&color_transform.into());
+        }
+        if let Some(name) = place_object.name {
+            self.set_name(&name);
+        }
+        if let Some(clip_depth) = place_object.clip_depth {
+            self.set_clip_depth(clip_depth);
+        }
+        if let Some(ratio) = place_object.ratio {
+            if let Some(morph_shape) = self.as_morph_shape_mut() {
+                morph_shape.set_ratio(ratio);
+            }
+        }
+        // TODO: Others will go here eventually.
+    }
+
+    fn copy_display_properties_from(&mut self, other: DisplayNode<'gc>) {
+        let other = other.read();
+        self.set_matrix(other.matrix());
+        self.set_color_transform(other.color_transform());
+        self.set_clip_depth(other.clip_depth());
+        self.set_name(other.name());
+        if let (Some(me), Some(other)) = (self.as_morph_shape_mut(), other.as_morph_shape()) {
+            me.set_ratio(other.ratio());
+        }
+        // TODO: More in here eventually.
+    }
+
     fn box_clone(&self) -> Box<dyn DisplayObject<'gc>>;
 
     fn object(&self) -> Value<'gc> {
@@ -158,6 +201,12 @@ macro_rules! impl_display_object {
     ($field:ident) => {
         fn depth(&self) -> crate::prelude::Depth {
             self.$field.depth()
+        }
+        fn place_frame(&self) -> u16 {
+            self.$field.place_frame()
+        }
+        fn set_place_frame(&mut self, frame: u16) {
+            self.$field.set_place_frame(frame)
         }
         fn transform(&self) -> &crate::transform::Transform {
             self.$field.transform()
