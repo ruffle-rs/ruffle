@@ -3,7 +3,6 @@ use crate::avm1::object::{Object, TYPE_OF_MOVIE_CLIP};
 use crate::avm1::Value;
 use crate::backend::audio::AudioStreamHandle;
 use crate::character::Character;
-use crate::color_transform::ColorTransform;
 use crate::display_object::{DisplayObject, DisplayObjectBase};
 use crate::font::Font;
 use crate::graphic::Graphic;
@@ -437,7 +436,6 @@ impl<'gc> MovieClip<'gc> {
                 }
             });
         }
-
         // Re-run the final frame to run all other tags (DoAction, StartSound, etc.)
         self.current_frame = frame - 1;
         self.tag_stream_pos = frame_pos;
@@ -1147,94 +1145,33 @@ impl<'gc, 'a> MovieClip<'gc> {
             reader.read_place_object_2_or_3(version)
         }?;
         use swf::PlaceObjectAction;
-        let character = match place_object.action {
-            PlaceObjectAction::Place(id) => {
-                // TODO(Herschel): Behavior when character doesn't exist/isn't a DisplayObject?
-                let character = if let Ok(character) = context
-                    .library
-                    .instantiate_display_object(id, context.gc_context)
-                {
-                    character
-                } else {
-                    return Ok(());
-                };
-
-                // TODO(Herschel): Behavior when depth is occupied? (I think it replaces)
-                {
-                    let mut character = character.write(context.gc_context);
-                    character.set_parent(Some(context.active_clip));
-                    character.set_place_frame(self.current_frame);
-                }
-                self.children.insert(place_object.depth, character);
-                self.children.get_mut(&place_object.depth).unwrap()
-            }
-            PlaceObjectAction::Modify => {
-                if let Some(child) = self.children.get_mut(&place_object.depth) {
+        match place_object.action {
+            PlaceObjectAction::Place(id) | PlaceObjectAction::Replace(id) => {
+                if let Some(child) = self.instantiate_child(
+                    context,
+                    id,
+                    place_object.depth,
+                    place_object.modifies_original_item(),
+                ) {
+                    child
+                        .write(context.gc_context)
+                        .apply_place_object(place_object);
                     child
                 } else {
                     return Ok(());
                 }
             }
-            PlaceObjectAction::Replace(id) => {
-                let character = if let Ok(character) = context
-                    .library
-                    .instantiate_display_object(id, context.gc_context)
-                {
-                    character
+            PlaceObjectAction::Modify => {
+                if let Some(child) = self.children.get_mut(&place_object.depth) {
+                    child
+                        .write(context.gc_context)
+                        .apply_place_object(place_object);
+                    *child
                 } else {
                     return Ok(());
-                };
-
-                {
-                    let mut character = character.write(context.gc_context);
-                    character.set_parent(Some(context.active_clip));
-                    character.set_place_frame(self.current_frame);
                 }
-                let prev_character = self.children.insert(place_object.depth, character);
-                let character = self.children.get_mut(&place_object.depth).unwrap();
-                if let Some(prev_character) = prev_character {
-                    character
-                        .write(context.gc_context)
-                        .set_matrix(prev_character.read().matrix());
-                    character
-                        .write(context.gc_context)
-                        .set_color_transform(prev_character.read().color_transform());
-                    character
-                        .write(context.gc_context)
-                        .set_clip_depth(prev_character.read().clip_depth());
-                }
-                character
             }
         };
-
-        if let Some(matrix) = &place_object.matrix {
-            let m = matrix.clone();
-            character
-                .write(context.gc_context)
-                .set_matrix(&Matrix::from(m));
-        }
-
-        if let Some(color_transform) = &place_object.color_transform {
-            character
-                .write(context.gc_context)
-                .set_color_transform(&ColorTransform::from(color_transform.clone()));
-        }
-
-        if let Some(name) = &place_object.name {
-            character.write(context.gc_context).set_name(name);
-        }
-
-        if let Some(ratio) = &place_object.ratio {
-            if let Some(morph_shape) = character.write(context.gc_context).as_morph_shape_mut() {
-                morph_shape.set_ratio(*ratio);
-            }
-        }
-
-        if let Some(clip_depth) = &place_object.clip_depth {
-            character
-                .write(context.gc_context)
-                .set_clip_depth(*clip_depth);
-        }
 
         Ok(())
     }
