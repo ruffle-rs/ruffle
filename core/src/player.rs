@@ -505,6 +505,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                     root,
                     start_clip: root,
                     active_clip: root,
+                    target_clip: Some(root),
                     rng: update_context.rng,
                     audio: update_context.audio,
                     navigator: update_context.navigator,
@@ -512,6 +513,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 for (active_clip, action) in actions {
                     action_context.start_clip = active_clip;
                     action_context.active_clip = active_clip;
+                    action_context.target_clip = Some(active_clip);
                     let _ = update_context
                         .avm
                         .do_action(&mut action_context, action.as_ref());

@@ -19,9 +19,25 @@ pub use value::Value;
 pub struct ActionContext<'a, 'gc, 'gc_context> {
     pub gc_context: gc_arena::MutationContext<'gc, 'gc_context>,
     pub global_time: u64,
+
+    /// The root of the current timeline.
+    /// This will generally be `_level0`, except for loadMovie/loadMovieNum.
     pub root: DisplayNode<'gc>,
-    pub start_clip: DisplayNode<'gc>,
+
+    /// The object that this code is running in.
+    /// Used by `GetVariable`/`SetVariable`/`this`.
     pub active_clip: DisplayNode<'gc>,
+
+    /// The base clip for Flash 4-era actions.
+    /// Used by `Play`, `GetProperty`, etc.
+    pub start_clip: DisplayNode<'gc>,
+
+    /// The object targeted with `tellTarget`.
+    /// This is used for Flash 4-era actions, such as
+    /// `Play`, `GetProperty`, etc.
+    /// This will be `None` after an invalid tell target.
+    pub target_clip: Option<DisplayNode<'gc>>,
+
     pub rng: &'a mut SmallRng,
     pub audio: &'a mut dyn crate::backend::audio::AudioBackend,
     pub navigator: &'a mut dyn crate::backend::navigator::NavigatorBackend,
@@ -149,9 +165,9 @@ impl<'gc> Avm1<'gc> {
                 Action::NewObject => self.action_new_object(context),
                 Action::Not => self.action_not(context),
                 Action::Or => self.action_or(context),
-                Action::Play => self.play(context),
+                Action::Play => self.action_play(context),
                 Action::Pop => self.action_pop(context),
-                Action::PreviousFrame => self.prev_frame(context),
+                Action::PreviousFrame => self.action_prev_frame(context),
                 Action::Push(values) => self.action_push(context, &values[..]),
                 Action::PushDuplicate => self.action_push_duplicate(context),
                 Action::RandomNumber => self.action_random_number(context),
@@ -227,10 +243,12 @@ impl<'gc> Avm1<'gc> {
     }
 
     pub fn resolve_slash_path_variable<'s>(
-        start: DisplayNode<'gc>,
+        start: Option<DisplayNode<'gc>>,
         root: DisplayNode<'gc>,
         path: &'s str,
     ) -> Option<(DisplayNode<'gc>, &'s str)> {
+        // If the target clip is invalid, we default to root for the variable path.
+        let start = start.unwrap_or(root);
         if !path.is_empty() {
             let mut var_iter = path.splitn(2, ':');
             match (var_iter.next(), var_iter.next()) {
@@ -547,28 +565,34 @@ impl<'gc> Avm1<'gc> {
     fn action_get_property(&mut self, context: &mut ActionContext) -> Result<(), Error> {
         let prop_index = self.pop()?.as_u32()? as usize;
         let clip_path = self.pop()?;
-        let ret = if let Some(clip) =
-            Avm1::resolve_slash_path(context.active_clip, context.root, clip_path.as_string()?)
-        {
-            if let Some(clip) = clip.read().as_movie_clip() {
-                match prop_index {
-                    0 => Value::Number(f64::from(clip.x())),
-                    1 => Value::Number(f64::from(clip.y())),
-                    2 => Value::Number(f64::from(clip.x_scale())),
-                    3 => Value::Number(f64::from(clip.y_scale())),
-                    4 => Value::Number(f64::from(clip.current_frame())),
-                    5 => Value::Number(f64::from(clip.total_frames())),
-                    10 => Value::Number(f64::from(clip.rotation())),
-                    12 => Value::Number(f64::from(clip.frames_loaded())),
-                    _ => {
-                        log::error!("GetProperty: Unimplemented property index {}", prop_index);
-                        Value::Undefined
+        let path = clip_path.as_string()?;
+        let ret = if let Some(base_clip) = context.target_clip {
+            if let Some(clip) = Avm1::resolve_slash_path(base_clip, context.root, path) {
+                if let Some(clip) = clip.read().as_movie_clip() {
+                    match prop_index {
+                        0 => Value::Number(f64::from(clip.x())),
+                        1 => Value::Number(f64::from(clip.y())),
+                        2 => Value::Number(f64::from(clip.x_scale())),
+                        3 => Value::Number(f64::from(clip.y_scale())),
+                        4 => Value::Number(f64::from(clip.current_frame())),
+                        5 => Value::Number(f64::from(clip.total_frames())),
+                        10 => Value::Number(f64::from(clip.rotation())),
+                        12 => Value::Number(f64::from(clip.frames_loaded())),
+                        _ => {
+                            log::error!("GetProperty: Unimplemented property index {}", prop_index);
+                            Value::Undefined
+                        }
                     }
+                } else {
+                    log::warn!("GetProperty: Target is not a movieclip");
+                    Value::Undefined
                 }
             } else {
+                log::warn!("GetProperty: Invalid target {}", path);
                 Value::Undefined
             }
         } else {
+            log::warn!("GetProperty: Invalid base clip");
             Value::Undefined
         };
         self.push(ret);
@@ -601,7 +625,7 @@ impl<'gc> Avm1<'gc> {
 
         if result.is_none() {
             if let Some((node, var_name)) =
-                Self::resolve_slash_path_variable(context.active_clip, context.root, path)
+                Self::resolve_slash_path_variable(context.target_clip, context.root, path)
             {
                 if let Some(clip) = node.read().as_movie_clip() {
                     let object = clip.object().as_object()?;
@@ -674,9 +698,16 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_goto_frame(&mut self, context: &mut ActionContext, frame: u16) -> Result<(), Error> {
-        let mut display_object = context.active_clip.write(context.gc_context);
-        let clip = display_object.as_movie_clip_mut().unwrap();
-        clip.goto_frame(frame + 1, true);
+        if let Some(clip) = context.target_clip {
+            let mut display_object = clip.write(context.gc_context);
+            if let Some(clip) = display_object.as_movie_clip_mut() {
+                clip.goto_frame(frame + 1, true);
+            } else {
+                log::error!("GotoFrame failed: Target is not a MovieClip");
+            }
+        } else {
+            log::error!("GotoFrame failed: Invalid target");
+        }
         Ok(())
     }
 
@@ -688,38 +719,49 @@ impl<'gc> Avm1<'gc> {
     ) -> Result<(), Error> {
         // Version 4+ gotoAndPlay/gotoAndStop
         // Param can either be a frame number or a frame label.
-        let mut display_object = context.active_clip.write(context.gc_context);
-        let clip = display_object.as_movie_clip_mut().unwrap();
-        match self.pop()? {
-            Value::Number(frame) => {
-                clip.goto_frame(scene_offset + (frame as u16) + 1, !set_playing)
-            }
-            Value::String(frame_label) => {
-                if let Some(frame) = clip.frame_label_to_number(&frame_label) {
-                    clip.goto_frame(scene_offset + frame, !set_playing)
-                } else {
-                    log::warn!(
-                        "ActionGotoFrame2 failed: Movie clip {} does not contain frame label '{}'",
-                        clip.id(),
-                        frame_label
-                    );
+        if let Some(clip) = context.target_clip {
+            let mut display_object = clip.write(context.gc_context);
+            if let Some(clip) = display_object.as_movie_clip_mut() {
+                match self.pop()? {
+                    Value::Number(frame) => {
+                        clip.goto_frame(scene_offset + (frame as u16) + 1, !set_playing)
+                    }
+                    Value::String(frame_label) => {
+                        if let Some(frame) = clip.frame_label_to_number(&frame_label) {
+                            clip.goto_frame(scene_offset + frame, !set_playing)
+                        } else {
+                            log::warn!(
+                                "GotoFrame2: MovieClip {} does not contain frame label '{}'",
+                                clip.id(),
+                                frame_label
+                            );
+                        }
+                    }
+                    _ => log::warn!("GotoFrame2: Expected frame label or number"),
                 }
+            } else {
+                log::warn!("GotoFrame2: Target is not a MovieClip");
             }
-            _ => return Err("Expected frame number or label".into()),
+        } else {
+            log::warn!("GotoFrame2: Invalid target");
         }
         Ok(())
     }
 
     fn action_goto_label(&mut self, context: &mut ActionContext, label: &str) -> Result<(), Error> {
-        let mut display_object = context.active_clip.write(context.gc_context);
-        if let Some(clip) = display_object.as_movie_clip_mut() {
-            if let Some(frame) = clip.frame_label_to_number(label) {
-                clip.goto_frame(frame, true);
+        if let Some(clip) = context.target_clip {
+            let mut display_object = clip.write(context.gc_context);
+            if let Some(clip) = display_object.as_movie_clip_mut() {
+                if let Some(frame) = clip.frame_label_to_number(label) {
+                    clip.goto_frame(frame, true);
+                } else {
+                    log::warn!("GoToLabel: Frame label '{}' not found", label);
+                }
             } else {
-                log::warn!("ActionGoToLabel: Frame label '{}' not found", label);
+                log::warn!("GoToLabel: Target is not a MovieClip");
             }
         } else {
-            log::warn!("ActionGoToLabel: Expected movie clip");
+            log::warn!("GoToLabel: Invalid target");
         }
         Ok(())
     }
@@ -856,9 +898,16 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_next_frame(&mut self, context: &mut ActionContext) -> Result<(), Error> {
-        let mut display_object = context.active_clip.write(context.gc_context);
-        let clip = display_object.as_movie_clip_mut().unwrap();
-        clip.next_frame();
+        if let Some(clip) = context.target_clip {
+            let mut display_object = clip.write(context.gc_context);
+            if let Some(clip) = display_object.as_movie_clip_mut() {
+                clip.next_frame();
+            } else {
+                log::warn!("NextFrame: Target is not a MovieClip");
+            }
+        } else {
+            log::warn!("NextFrame: Invalid target");
+        }
         Ok(())
     }
 
@@ -891,20 +940,31 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn play(&mut self, context: &mut ActionContext) -> Result<(), Error> {
-        let mut display_object = context.active_clip.write(context.gc_context);
-        if let Some(clip) = display_object.as_movie_clip_mut() {
-            clip.play()
+    fn action_play(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+        if let Some(clip) = context.target_clip {
+            let mut display_object = clip.write(context.gc_context);
+            if let Some(clip) = display_object.as_movie_clip_mut() {
+                clip.play()
+            } else {
+                log::warn!("Play: Target is not a MovieClip");
+            }
         } else {
-            log::warn!("Play failed: Not a MovieClip");
+            log::warn!("Play: Invalid target");
         }
         Ok(())
     }
 
-    fn prev_frame(&mut self, context: &mut ActionContext) -> Result<(), Error> {
-        let mut display_object = context.active_clip.write(context.gc_context);
-        let clip = display_object.as_movie_clip_mut().unwrap();
-        clip.prev_frame();
+    fn action_prev_frame(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+        if let Some(clip) = context.target_clip {
+            let mut display_object = clip.write(context.gc_context);
+            if let Some(clip) = display_object.as_movie_clip_mut() {
+                clip.prev_frame();
+            } else {
+                log::warn!("PrevFrame: Target is not a MovieClip");
+            }
+        } else {
+            log::warn!("PrevFrame: Invalid target");
+        }
         Ok(())
     }
 
@@ -988,22 +1048,25 @@ impl<'gc> Avm1<'gc> {
         let prop_index = self.pop()?.as_u32()? as usize;
         let clip_path = self.pop()?;
         let path = clip_path.as_string()?;
-        if let Some(clip) = Avm1::resolve_slash_path(context.active_clip, context.root, path) {
-            if let Some(clip) = clip.write(context.gc_context).as_movie_clip_mut() {
-                match prop_index {
-                    0 => clip.set_x(value),
-                    1 => clip.set_y(value),
-                    2 => clip.set_x_scale(value),
-                    3 => clip.set_y_scale(value),
-                    10 => clip.set_rotation(value),
-                    _ => log::error!(
-                        "ActionSetProperty: Unimplemented property index {}",
-                        prop_index
-                    ),
+        if let Some(base_clip) = context.target_clip {
+            if let Some(clip) = Avm1::resolve_slash_path(base_clip, context.root, path) {
+                if let Some(clip) = clip.write(context.gc_context).as_movie_clip_mut() {
+                    match prop_index {
+                        0 => clip.set_x(value),
+                        1 => clip.set_y(value),
+                        2 => clip.set_x_scale(value),
+                        3 => clip.set_y_scale(value),
+                        10 => clip.set_rotation(value),
+                        _ => {
+                            log::error!("SetProperty: Unimplemented property index {}", prop_index)
+                        }
+                    }
                 }
+            } else {
+                log::warn!("SetProperty: Invalid target {}", path);
             }
         } else {
-            log::warn!("ActionSetProperty: Invalid path {}", path);
+            log::warn!("SetProperty: Invalid base clip");
         }
         Ok(())
     }
@@ -1025,7 +1088,7 @@ impl<'gc> Avm1<'gc> {
         value: Value<'gc>,
     ) -> Result<(), Error> {
         if let Some((node, var_name)) =
-            Self::resolve_slash_path_variable(context.active_clip, context.root, var_path)
+            Self::resolve_slash_path_variable(context.target_clip, context.root, var_path)
         {
             if let Some(clip) = node.write(context.gc_context).as_movie_clip_mut() {
                 clip.object()
@@ -1044,13 +1107,22 @@ impl<'gc> Avm1<'gc> {
     ) -> Result<(), Error> {
         if target.is_empty() {
             context.active_clip = context.start_clip;
+            context.target_clip = Some(context.start_clip);
         } else if let Some(clip) =
             Avm1::resolve_slash_path(context.start_clip, context.root, target)
         {
+            context.target_clip = Some(clip);
             context.active_clip = clip;
         } else {
             log::warn!("SetTarget failed: {} not found", target);
-            // TODO: Do we change active_clip to something? Undefined?
+            // TODO: Emulate AVM1 trace error message.
+            // log::info!(target: "avm_trace", "Target not found: Target=\"{}\" Base=\"{}\"", target, context.root.read().name());
+
+            // When SetTarget has an invalid target, subsequent GetVariables act
+            // as if they are targeting root, but subsequent Play/Stop/etc.
+            // fail silenty.
+            context.target_clip = None;
+            context.active_clip = context.root;
         }
         Ok(())
     }
@@ -1078,11 +1150,15 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_stop(&mut self, context: &mut ActionContext) -> Result<(), Error> {
-        let mut display_object = context.active_clip.write(context.gc_context);
-        if let Some(clip) = display_object.as_movie_clip_mut() {
-            clip.stop();
+        if let Some(clip) = context.target_clip {
+            let mut display_object = clip.write(context.gc_context);
+            if let Some(clip) = display_object.as_movie_clip_mut() {
+                clip.stop();
+            } else {
+                log::warn!("Stop: Target is not a MovieClip");
+            }
         } else {
-            log::warn!("Stop failed: Not a MovieClip");
+            log::warn!("Stop: Invalid target");
         }
         Ok(())
     }
