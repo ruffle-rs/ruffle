@@ -1,13 +1,15 @@
 use crate::avm1::Avm1;
-use crate::backend::{audio::AudioBackend, render::Letterbox, render::RenderBackend, navigator::NavigatorBackend};
+use crate::backend::{
+    audio::AudioBackend, navigator::NavigatorBackend, render::Letterbox, render::RenderBackend,
+};
 use crate::events::{ButtonEvent, PlayerEvent};
 use crate::library::Library;
 use crate::movie_clip::MovieClip;
 use crate::prelude::*;
 use crate::transform::TransformStack;
-use rand::{rngs::SmallRng, SeedableRng};
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell, MutationContext};
 use log::info;
+use rand::{rngs::SmallRng, SeedableRng};
 use std::sync::Arc;
 
 #[derive(Collect)]
@@ -53,7 +55,9 @@ pub struct Player<Audio: AudioBackend, Renderer: RenderBackend, Navigator: Navig
     is_mouse_down: bool,
 }
 
-impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend> Player<Audio, Renderer, Navigator> {
+impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
+    Player<Audio, Renderer, Navigator>
+{
     pub fn new(
         renderer: Renderer,
         audio: Audio,
@@ -210,7 +214,17 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend> 
             }
         }
 
-        let (global_time, swf_data, swf_version, background_color, renderer, audio, navigator, rng, is_mouse_down) = (
+        let (
+            global_time,
+            swf_data,
+            swf_version,
+            background_color,
+            renderer,
+            audio,
+            navigator,
+            rng,
+            is_mouse_down,
+        ) = (
             self.global_time,
             &mut self.swf_data,
             self.swf_version,
@@ -284,7 +298,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend> 
             &mut self.renderer,
             &mut self.audio,
             &mut self.navigator,
-            &mut self.rng
+            &mut self.rng,
         );
 
         let mouse_pos = &self.mouse_pos;
@@ -347,7 +361,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend> 
             &mut self.renderer,
             &mut self.audio,
             &mut self.navigator,
-            &mut self.rng
+            &mut self.rng,
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -395,7 +409,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend> 
             &mut self.renderer,
             &mut self.audio,
             &mut self.navigator,
-            &mut self.rng
+            &mut self.rng,
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {

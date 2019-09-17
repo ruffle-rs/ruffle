@@ -1,10 +1,12 @@
 //! Ruffle web frontend.
 mod audio;
-mod render;
 mod navigator;
+mod render;
 mod utils;
 
-use crate::{audio::WebAudioBackend, render::WebCanvasRenderBackend, navigator::WebNavigatorBackend};
+use crate::{
+    audio::WebAudioBackend, navigator::WebNavigatorBackend, render::WebCanvasRenderBackend,
+};
 use generational_arena::{Arena, Index};
 use js_sys::Uint8Array;
 use ruffle_core::{backend::render::RenderBackend, PlayerEvent};

@@ -3,7 +3,9 @@
 //! Trace output can be compared with correct output from the official Flash Payer.
 
 use log::{Metadata, Record};
-use ruffle_core::backend::{audio::NullAudioBackend, render::NullRenderer, navigator::NullNavigatorBackend};
+use ruffle_core::backend::{
+    audio::NullAudioBackend, navigator::NullNavigatorBackend, render::NullRenderer,
+};
 use ruffle_core::Player;
 use std::cell::RefCell;
 
@@ -45,7 +47,12 @@ fn test_swf(swf_path: &str, num_frames: u32, expected_output_path: &str) -> Resu
     let expected_output = std::fs::read_to_string(expected_output_path)?.replace("\r\n", "\n");
 
     let swf_data = std::fs::read(swf_path)?;
-    let mut player = Player::new(NullRenderer, NullAudioBackend::new(), NullNavigatorBackend::new(), swf_data)?;
+    let mut player = Player::new(
+        NullRenderer,
+        NullAudioBackend::new(),
+        NullNavigatorBackend::new(),
+        swf_data,
+    )?;
 
     for _ in 0..num_frames {
         player.run_frame();

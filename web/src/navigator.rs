@@ -1,24 +1,25 @@
 //! Navigator backend for web
 
+use ruffle_core::backend::navigator::{NavigationMethod, NavigatorBackend};
 use std::collections::HashMap;
-use web_sys::{window};
 use wasm_bindgen::JsCast;
-use ruffle_core::backend::navigator::{NavigatorBackend, NavigationMethod};
+use web_sys::window;
 
-pub struct WebNavigatorBackend {
-
-}
+pub struct WebNavigatorBackend {}
 
 impl WebNavigatorBackend {
     pub fn new() -> Self {
-        WebNavigatorBackend {
-
-        }
+        WebNavigatorBackend {}
     }
 }
 
 impl NavigatorBackend for WebNavigatorBackend {
-    fn navigate_to_url(&self, url: String, window_spec: Option<String>, vars_method: Option<(NavigationMethod, HashMap<String, String>)>) {
+    fn navigate_to_url(
+        &self,
+        url: String,
+        window_spec: Option<String>,
+        vars_method: Option<(NavigationMethod, HashMap<String, String>)>,
+    ) {
         if let Some(window) = window() {
             //TODO: Should we return a result for failed opens? Does Flash care?
             #[allow(unused_must_use)]
@@ -26,15 +27,22 @@ impl NavigatorBackend for WebNavigatorBackend {
                 (Some((navmethod, formvars)), window_spec) => {
                     let document = match window.document() {
                         Some(document) => document,
-                        None => return
+                        None => return,
                     };
 
-                    let form = document.create_element("form").unwrap().dyn_into::<web_sys::HtmlFormElement>().unwrap();
+                    let form = document
+                        .create_element("form")
+                        .unwrap()
+                        .dyn_into::<web_sys::HtmlFormElement>()
+                        .unwrap();
 
-                    form.set_attribute("method", match navmethod {
-                        NavigationMethod::GET => "get",
-                        NavigationMethod::POST => "post"
-                    });
+                    form.set_attribute(
+                        "method",
+                        match navmethod {
+                            NavigationMethod::GET => "get",
+                            NavigationMethod::POST => "post",
+                        },
+                    );
 
                     form.set_attribute("action", &url);
 
@@ -54,9 +62,13 @@ impl NavigatorBackend for WebNavigatorBackend {
 
                     document.body().unwrap().append_child(&form);
                     form.submit();
-                },
-                (_, Some(ref window_name)) if window_name != "" => { window.open_with_url_and_target(&url, window_name); },
-                _ => { window.location().assign(&url); }
+                }
+                (_, Some(ref window_name)) if window_name != "" => {
+                    window.open_with_url_and_target(&url, window_name);
+                }
+                _ => {
+                    window.location().assign(&url);
+                }
             };
         }
     }

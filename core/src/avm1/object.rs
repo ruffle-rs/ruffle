@@ -1,11 +1,15 @@
-use crate::avm1::{ActionContext, Value, Avm1};
+use crate::avm1::{ActionContext, Avm1, Value};
 use crate::display_object::DisplayNode;
 use core::fmt;
 use gc_arena::{GcCell, MutationContext};
 use std::collections::HashMap;
 
-pub type NativeFunction<'gc> =
-    fn(&mut Avm1<'gc>, &mut ActionContext<'_, 'gc, '_>, GcCell<'gc, Object<'gc>>, &[Value<'gc>]) -> Value<'gc>;
+pub type NativeFunction<'gc> = fn(
+    &mut Avm1<'gc>,
+    &mut ActionContext<'_, 'gc, '_>,
+    GcCell<'gc, Object<'gc>>,
+    &[Value<'gc>],
+) -> Value<'gc>;
 
 pub const TYPE_OF_OBJECT: &str = "object";
 pub const TYPE_OF_FUNCTION: &str = "function";

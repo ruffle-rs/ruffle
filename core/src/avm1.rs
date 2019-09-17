@@ -24,7 +24,7 @@ pub struct ActionContext<'a, 'gc, 'gc_context> {
     pub active_clip: DisplayNode<'gc>,
     pub rng: &'a mut SmallRng,
     pub audio: &'a mut dyn crate::backend::audio::AudioBackend,
-    pub navigator: &'a mut dyn crate::backend::navigator::NavigatorBackend
+    pub navigator: &'a mut dyn crate::backend::navigator::NavigatorBackend,
 }
 
 pub struct Avm1<'gc> {
@@ -58,7 +58,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     /// Convert the current locals pool into a set of form values.
-    /// 
+    ///
     /// This is necessary to support form submission from Flash via a couple of
     /// legacy methods, such as the `ActionGetURL2` opcode or `getURL` function.
     pub fn locals_into_form_values(&self) -> HashMap<String, String> {
@@ -399,7 +399,8 @@ impl<'gc> Avm1<'gc> {
             }
             Value::String(name) => {
                 if name.is_empty() {
-                    let return_value = object.call(self, context, object.as_object()?.to_owned(), &args)?;
+                    let return_value =
+                        object.call(self, context, object.as_object()?.to_owned(), &args)?;
                     self.stack.push(return_value);
                 } else {
                     let callable = object.as_object()?.read().get(&name);
@@ -408,7 +409,8 @@ impl<'gc> Avm1<'gc> {
                         return Err(format!("Object method {} is not defined", name).into());
                     }
 
-                    let return_value = callable.call(self, context, object.as_object()?.to_owned(), &args)?;
+                    let return_value =
+                        callable.call(self, context, object.as_object()?.to_owned(), &args)?;
 
                     self.stack.push(return_value);
                 }
@@ -625,11 +627,16 @@ impl<'gc> Avm1<'gc> {
     ) -> Result<(), Error> {
         //TODO: support `_level0` thru `_level9`
         if target.starts_with("_level") {
-            log::warn!("Remote SWF loads into target {} not yet implemented", target);
+            log::warn!(
+                "Remote SWF loads into target {} not yet implemented",
+                target
+            );
             return Ok(());
         }
 
-        context.navigator.navigate_to_url(url.to_owned(), Some(target.to_owned()), None);
+        context
+            .navigator
+            .navigate_to_url(url.to_owned(), Some(target.to_owned()), None);
 
         Ok(())
     }
@@ -655,10 +662,10 @@ impl<'gc> Avm1<'gc> {
             log::warn!("Reading AVM locals from forms is not yet implemented");
             return Ok(()); //maybe error?
         }
-        
+
         let vars = match NavigationMethod::from_send_vars_method(swf_method) {
             Some(method) => Some((method, self.locals_into_form_values())),
-            None => None
+            None => None,
         };
 
         context.navigator.navigate_to_url(url, Some(target), vars);

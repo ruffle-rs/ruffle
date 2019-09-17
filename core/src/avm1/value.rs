@@ -1,5 +1,5 @@
 use crate::avm1::object::Object;
-use crate::avm1::{ActionContext, Error, Avm1};
+use crate::avm1::{ActionContext, Avm1, Error};
 use gc_arena::GcCell;
 
 #[derive(Clone, Debug)]

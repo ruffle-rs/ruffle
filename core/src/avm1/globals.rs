@@ -1,6 +1,6 @@
-use crate::avm1::{Object, Value, ActionContext, Avm1};
+use crate::avm1::{ActionContext, Avm1, Object, Value};
 use crate::backend::navigator::NavigationMethod;
-use gc_arena::{MutationContext, GcCell};
+use gc_arena::{GcCell, MutationContext};
 use rand::Rng;
 
 mod math;
@@ -19,10 +19,10 @@ pub fn getURL<'a, 'gc>(
         let method = match args.get(2) {
             Some(Value::String(s)) if s == "GET" => Some(NavigationMethod::GET),
             Some(Value::String(s)) if s == "POST" => Some(NavigationMethod::POST),
-            _ => None
+            _ => None,
         };
         let vars_method = method.map(|m| (m, avm.locals_into_form_values()));
-        
+
         context.navigator.navigate_to_url(url, window, vars_method);
     }
 
@@ -36,8 +36,10 @@ pub fn random<'gc>(
     args: &[Value<'gc>],
 ) -> Value<'gc> {
     match args.get(0) {
-        Some(Value::Number(max)) => Value::Number(action_context.rng.gen_range(0.0f64, max).floor()),
-        _ => Value::Undefined //TODO: Shouldn't this be an error condition?
+        Some(Value::Number(max)) => {
+            Value::Number(action_context.rng.gen_range(0.0f64, max).floor())
+        }
+        _ => Value::Undefined, //TODO: Shouldn't this be an error condition?
     }
 }
 

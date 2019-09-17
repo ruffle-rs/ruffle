@@ -1,6 +1,6 @@
 mod audio;
-mod render;
 mod navigator;
+mod render;
 
 use crate::render::GliumRenderBackend;
 use glutin::{

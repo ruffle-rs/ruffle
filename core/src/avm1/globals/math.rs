@@ -1,7 +1,7 @@
-use crate::avm1::{ActionContext, Object, Value, Avm1};
+use crate::avm1::{ActionContext, Avm1, Object, Value};
 use gc_arena::{GcCell, MutationContext};
-use std::f64::NAN;
 use rand::Rng;
+use std::f64::NAN;
 
 macro_rules! wrap_std {
     ( $object: ident, $gc_context: ident, $($name:expr => $std:path),* ) => {{
@@ -112,7 +112,7 @@ mod tests {
 
     fn with_avm<F, R>(swf_version: u8, test: F) -> R
     where
-        F: for <'a, 'gc> FnOnce(&mut Avm1<'gc>, &mut ActionContext<'a, 'gc, '_>) -> R,
+        F: for<'a, 'gc> FnOnce(&mut Avm1<'gc>, &mut ActionContext<'a, 'gc, '_>) -> R,
     {
         rootless_arena(|gc_context| {
             let mut avm = Avm1::new(gc_context, swf_version);
@@ -126,7 +126,7 @@ mod tests {
                 active_clip: root,
                 rng: &mut SmallRng::from_seed([0u8; 16]),
                 audio: &mut NullAudioBackend::new(),
-                navigator: &mut NullNavigatorBackend::new()
+                navigator: &mut NullNavigatorBackend::new(),
             };
 
             test(&mut avm, &mut context)
@@ -224,7 +224,12 @@ mod tests {
             let math = GcCell::allocate(context.gc_context, create(context.gc_context));
             assert_eq!(atan2(avm, context, *math.read(), &[]), Value::Number(NAN));
             assert_eq!(
-                atan2(avm, context, *math.read(), &[Value::Number(1.0), Value::Null]),
+                atan2(
+                    avm,
+                    context,
+                    *math.read(),
+                    &[Value::Number(1.0), Value::Null]
+                ),
                 Value::Number(NAN)
             );
             assert_eq!(
