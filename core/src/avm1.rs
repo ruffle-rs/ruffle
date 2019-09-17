@@ -1,9 +1,10 @@
 use crate::avm1::globals::create_globals;
 use crate::avm1::object::Object;
+use crate::backend::navigator::NavigationMethod;
 
 use crate::prelude::*;
 use gc_arena::{GcCell, MutationContext};
-use rand::{rngs::SmallRng, Rng, SeedableRng};
+use rand::{rngs::SmallRng, Rng};
 use std::collections::HashMap;
 
 use swf::avm1::read::Reader;
@@ -21,13 +22,14 @@ pub struct ActionContext<'a, 'gc, 'gc_context> {
     pub root: DisplayNode<'gc>,
     pub start_clip: DisplayNode<'gc>,
     pub active_clip: DisplayNode<'gc>,
+    pub rng: &'a mut SmallRng,
     pub audio: &'a mut dyn crate::backend::audio::AudioBackend,
+    pub navigator: &'a mut dyn crate::backend::navigator::NavigatorBackend,
 }
 
 pub struct Avm1<'gc> {
     swf_version: u8,
     stack: Vec<Value<'gc>>,
-    rng: SmallRng,
     constant_pool: Vec<String>,
     locals: HashMap<String, Value<'gc>>,
     globals: GcCell<'gc, Object<'gc>>,
@@ -49,11 +51,24 @@ impl<'gc> Avm1<'gc> {
         Self {
             swf_version,
             stack: vec![],
-            rng: SmallRng::from_seed([0u8; 16]), // TODO(Herschel): Get a proper seed on all platforms.
             constant_pool: vec![],
             locals: HashMap::new(),
             globals: GcCell::allocate(gc_context, create_globals(gc_context)),
         }
+    }
+
+    /// Convert the current locals pool into a set of form values.
+    ///
+    /// This is necessary to support form submission from Flash via a couple of
+    /// legacy methods, such as the `ActionGetURL2` opcode or `getURL` function.
+    pub fn locals_into_form_values(&self) -> HashMap<String, String> {
+        let mut form_values = HashMap::new();
+
+        for (k, v) in self.locals.iter() {
+            form_values.insert(k.clone(), v.clone().into_string());
+        }
+
+        form_values
     }
 
     pub fn do_action(
@@ -379,18 +394,25 @@ impl<'gc> Avm1<'gc> {
         match method_name {
             Value::Undefined | Value::Null => {
                 let this = context.active_clip.read().object().as_object()?.to_owned();
-                self.stack.push(object.call(context, this, &args)?);
+                let return_value = object.call(self, context, this, &args)?;
+                self.stack.push(return_value);
             }
             Value::String(name) => {
                 if name.is_empty() {
-                    self.stack
-                        .push(object.call(context, object.as_object()?.to_owned(), &args)?);
+                    let return_value =
+                        object.call(self, context, object.as_object()?.to_owned(), &args)?;
+                    self.stack.push(return_value);
                 } else {
-                    self.stack.push(object.as_object()?.read().get(&name).call(
-                        context,
-                        object.as_object()?.to_owned(),
-                        &args,
-                    )?);
+                    let callable = object.as_object()?.read().get(&name);
+
+                    if let Value::Undefined = callable {
+                        return Err(format!("Object method {} is not defined", name).into());
+                    }
+
+                    let return_value =
+                        callable.call(self, context, object.as_object()?.to_owned(), &args)?;
+
+                    self.stack.push(return_value);
                 }
             }
             _ => {
@@ -599,25 +621,54 @@ impl<'gc> Avm1<'gc> {
 
     fn action_get_url(
         &mut self,
-        _context: &mut ActionContext,
-        _url: &str,
-        _target: &str,
+        context: &mut ActionContext,
+        url: &str,
+        target: &str,
     ) -> Result<(), Error> {
-        // TODO(Herschel): Noop for now. Need a UI/ActionScript/network backend
-        // to handle network requests appropriately for the platform.
+        //TODO: support `_level0` thru `_level9`
+        if target.starts_with("_level") {
+            log::warn!(
+                "Remote SWF loads into target {} not yet implemented",
+                target
+            );
+            return Ok(());
+        }
+
+        context
+            .navigator
+            .navigate_to_url(url.to_owned(), Some(target.to_owned()), None);
+
         Ok(())
     }
 
     fn action_get_url_2(
         &mut self,
-        _context: &mut ActionContext,
-        _method: swf::avm1::types::SendVarsMethod,
-        _is_target_sprite: bool,
-        _is_load_vars: bool,
+        context: &mut ActionContext,
+        swf_method: swf::avm1::types::SendVarsMethod,
+        is_target_sprite: bool,
+        is_load_vars: bool,
     ) -> Result<(), Error> {
-        // TODO(Herschel): Noop for now. Need a UI/ActionScript/network backend
-        // to handle network requests appropriately for the platform.
-        let _url = self.pop()?.into_string();
+        // TODO: Support `LoadVariablesFlag`, `LoadTargetFlag`
+        // TODO: What happens if there's only one string?
+        let target = self.pop()?.into_string();
+        let url = self.pop()?.into_string();
+
+        if is_target_sprite {
+            log::warn!("GetURL into target sprite is not yet implemented");
+            return Ok(()); //maybe error?
+        }
+
+        if is_load_vars {
+            log::warn!("Reading AVM locals from forms is not yet implemented");
+            return Ok(()); //maybe error?
+        }
+
+        let vars = match NavigationMethod::from_send_vars_method(swf_method) {
+            Some(method) => Some((method, self.locals_into_form_values())),
+            None => None,
+        };
+
+        context.navigator.navigate_to_url(url, Some(target), vars);
 
         Ok(())
     }
@@ -905,9 +956,9 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_random_number(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_random_number(&mut self, context: &mut ActionContext) -> Result<(), Error> {
         let max = self.pop()?.as_f64()? as u32;
-        let val = self.rng.gen_range(0, max);
+        let val = context.rng.gen_range(0, max);
         self.push(Value::Number(val.into()));
         Ok(())
     }

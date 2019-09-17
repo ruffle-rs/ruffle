@@ -1,17 +1,22 @@
-use crate::avm1::{ActionContext, Value};
+use crate::avm1::{ActionContext, Avm1, Value};
 use crate::display_object::DisplayNode;
 use core::fmt;
 use gc_arena::{GcCell, MutationContext};
 use std::collections::HashMap;
 
-pub type NativeFunction<'gc> =
-    fn(&mut ActionContext<'_, 'gc, '_>, GcCell<'gc, Object<'gc>>, &[Value<'gc>]) -> Value<'gc>;
+pub type NativeFunction<'gc> = fn(
+    &mut Avm1<'gc>,
+    &mut ActionContext<'_, 'gc, '_>,
+    GcCell<'gc, Object<'gc>>,
+    &[Value<'gc>],
+) -> Value<'gc>;
 
 pub const TYPE_OF_OBJECT: &str = "object";
 pub const TYPE_OF_FUNCTION: &str = "function";
 pub const TYPE_OF_MOVIE_CLIP: &str = "movieclip";
 
 fn default_to_string<'gc>(
+    _: &mut Avm1<'gc>,
     _: &mut ActionContext<'_, 'gc, '_>,
     _: GcCell<'gc, Object<'gc>>,
     _: &[Value<'gc>],
@@ -112,12 +117,13 @@ impl<'gc> Object<'gc> {
 
     pub fn call(
         &self,
+        avm: &mut Avm1<'gc>,
         context: &mut ActionContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Value<'gc> {
         if let Some(function) = self.function {
-            function(context, this, args)
+            function(avm, context, this, args)
         } else {
             Value::Undefined
         }

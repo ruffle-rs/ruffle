@@ -16,6 +16,8 @@ log = "0.4"
 lyon = "0.13.3"
 structopt = "0.2.15"
 winit = "0.19.1"
+webbrowser = "0.5.2"
+url = "2.1.0"
 
 [dependencies.rodio]
 version = "0.8.1"

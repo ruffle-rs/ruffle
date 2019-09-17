@@ -1,9 +1,12 @@
 //! Ruffle web frontend.
 mod audio;
+mod navigator;
 mod render;
 mod utils;
 
-use crate::{audio::WebAudioBackend, render::WebCanvasRenderBackend};
+use crate::{
+    audio::WebAudioBackend, navigator::WebNavigatorBackend, render::WebCanvasRenderBackend,
+};
 use generational_arena::{Arena, Index};
 use js_sys::Uint8Array;
 use ruffle_core::{backend::render::RenderBackend, PlayerEvent};
@@ -21,7 +24,7 @@ thread_local! {
 type AnimationHandler = Closure<dyn FnMut(f64)>;
 
 struct RuffleInstance {
-    core: ruffle_core::Player<WebAudioBackend, WebCanvasRenderBackend>,
+    core: ruffle_core::Player<WebAudioBackend, WebCanvasRenderBackend, WebNavigatorBackend>,
     canvas: HtmlCanvasElement,
     canvas_width: i32,
     canvas_height: i32,
@@ -82,8 +85,9 @@ impl Ruffle {
         let window = web_sys::window().ok_or_else(|| "Expected window")?;
         let renderer = WebCanvasRenderBackend::new(&canvas)?;
         let audio = WebAudioBackend::new()?;
+        let navigator = WebNavigatorBackend::new();
 
-        let core = ruffle_core::Player::new(renderer, audio, data)?;
+        let core = ruffle_core::Player::new(renderer, audio, navigator, data)?;
 
         // Create instance.
         let instance = RuffleInstance {

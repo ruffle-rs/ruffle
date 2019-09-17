@@ -1,4 +1,5 @@
 mod audio;
+mod navigator;
 mod render;
 
 use crate::render::GliumRenderBackend;
@@ -44,8 +45,9 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         .build_windowed(window_builder, &events_loop)?;
     let audio = audio::RodioAudioBackend::new()?;
     let renderer = GliumRenderBackend::new(windowed_context)?;
+    let navigator = navigator::ExternalNavigatorBackend::new(); //TODO: actually implement this backend type
     let display = renderer.display().clone();
-    let mut player = Player::new(renderer, audio, swf_data)?;
+    let mut player = Player::new(renderer, audio, navigator, swf_data)?;
     player.set_is_playing(true); // Desktop player will auto-play.
 
     let logical_size: LogicalSize = (player.movie_width(), player.movie_height()).into();
