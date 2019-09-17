@@ -71,7 +71,7 @@ impl<'gc> Executable<'gc> {
                 avm.insert_stack_frame_from_action(af.swf_version, af.data.clone(), ac.gc_context);
 
                 for arg in args {
-                    avm.current_stack_frame_mut().unwrap().stack_mut().push(arg.clone());
+                    avm.push(arg.clone());
                 }
 
                 avm.current_stack_frame_mut().unwrap().define("this", Value::Object(this), ac.gc_context);

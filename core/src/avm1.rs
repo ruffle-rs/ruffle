@@ -60,9 +60,17 @@ pub struct ActionContext<'a, 'gc, 'gc_context> {
 }
 
 pub struct Avm1<'gc> {
+    /// The currently installed constant pool.
     constant_pool: Vec<String>,
+
+    /// The global object.
     globals: GcCell<'gc, Object<'gc>>,
-    stack_frames: Vec<Activation<'gc>>
+
+    /// All activation records for the current execution context.
+    stack_frames: Vec<Activation<'gc>>,
+
+    /// The operand stack (shared across functions).
+    stack: Vec<Value<'gc>>
 }
 
 unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
@@ -70,6 +78,7 @@ unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
         self.globals.trace(cc);
         self.stack_frames.trace(cc);
+        self.stack.trace(cc);
     }
 }
 
@@ -81,6 +90,7 @@ impl<'gc> Avm1<'gc> {
             constant_pool: vec![],
             globals: GcCell::allocate(gc_context, create_globals(gc_context)),
             stack_frames: vec![],
+            stack: vec![]
         }
     }
 
@@ -284,7 +294,7 @@ impl<'gc> Avm1<'gc> {
         } else {
             //Implicit return undefined
             self.retire_stack_frame();
-            self.current_stack_frame_mut().map(|sf| sf.stack_mut().push(Value::Undefined));
+            self.push(Value::Undefined); //TODO: What if we don't have any more code?
         }
 
         Ok(())
@@ -342,11 +352,11 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn push(&mut self, value: impl Into<Value<'gc>>) {
-        self.current_stack_frame_mut().unwrap().stack_mut().push(value.into());
+        self.stack.push(value.into());
     }
 
     fn pop(&mut self) -> Result<Value<'gc>, Error> {
-        self.current_stack_frame_mut().unwrap().stack_mut().pop().ok_or_else(|| "Stack underflow".into())
+        self.stack.pop().ok_or_else(|| "Stack underflow".into())
     }
 
     fn unknown_op(
@@ -481,7 +491,7 @@ impl<'gc> Avm1<'gc> {
         let target_fn = self.current_stack_frame_mut().unwrap().resolve(fn_name.as_string()?);
         let return_value = target_fn.call(self, context, self.globals, &args)?;
         if let Some(instant_return) = return_value {
-            self.current_stack_frame_mut().unwrap().stack_mut().push(instant_return);
+            self.push(instant_return);
         }
 
         Ok(())
@@ -501,14 +511,14 @@ impl<'gc> Avm1<'gc> {
                 let this = context.active_clip.read().object().as_object()?.to_owned();
                 let return_value = object.call(self, context, this, &args)?;
                 if let Some(instant_return) = return_value {
-                    self.current_stack_frame_mut().unwrap().stack_mut().push(instant_return);
+                    self.push(instant_return);
                 }
             }
             Value::String(name) => {
                 if name.is_empty() {
                     let return_value = object.call(self, context, object.as_object()?.to_owned(), &args)?;
                     if let Some(instant_return) = return_value {
-                        self.current_stack_frame_mut().unwrap().stack_mut().push(instant_return);
+                        self.push(instant_return);
                     }
                 } else {
                     let callable = object.as_object()?.read().get(
@@ -524,7 +534,7 @@ impl<'gc> Avm1<'gc> {
 
                     let return_value = callable.call(self, context, object.as_object()?.to_owned(), &args)?;
                     if let Some(instant_return) = return_value {
-                        self.current_stack_frame_mut().unwrap().stack_mut().push(instant_return);
+                        self.push(instant_return);
                     }
                 }
             }
@@ -567,7 +577,7 @@ impl<'gc> Avm1<'gc> {
         let func = Value::Object(GcCell::allocate(context.gc_context, Object::action_function(swf_version, func_data, name, params)));
         
         if name == "" {
-            self.current_stack_frame_mut().unwrap().stack_mut().push(func);
+            self.push(func);
         } else {
             self.current_stack_frame_mut().unwrap().define(name, func, context.gc_context);
         }
@@ -713,7 +723,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_get_time(&mut self, context: &mut ActionContext) -> Result<(), Error> {
-        self.current_stack_frame_mut().unwrap().stack_mut().push(Value::Number(context.global_time as f64));
+        self.push(Value::Number(context.global_time as f64));
         Ok(())
     }
 
@@ -1134,7 +1144,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_push_duplicate(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        let val = self.current_stack_frame().unwrap().stack().last().ok_or("Stack underflow")?.clone();
+        let val = self.stack.last().ok_or("Stack underflow")?.clone();
         self.push(val);
         Ok(())
     }
@@ -1160,7 +1170,7 @@ impl<'gc> Avm1<'gc> {
 
         if self.stack_frames.len() > 1 {
             self.retire_stack_frame();
-            self.current_stack_frame_mut().unwrap().stack_mut().push(result);
+            self.push(result);
         }
 
         Ok(())
@@ -1318,7 +1328,7 @@ impl<'gc> Avm1<'gc> {
         _register: u8,
     ) -> Result<(), Error> {
         // Does NOT pop the value from the stack.
-        let _val = self.current_stack_frame().unwrap().stack().last().ok_or("Stack underflow")?;
+        let _val = self.stack.last().ok_or("Stack underflow")?;
         Err("Unimplemented action: StoreRegister".into())
     }
 

@@ -22,9 +22,6 @@ pub struct Activation<'gc> {
     /// The current location of the instruction stream being executed.
     pc: usize,
 
-    /// The opcode stack values for the current stack frame.
-    stack: Vec<Value<'gc>>,
-
     /// All defined local variables in this stack frame.
     scope: GcCell<'gc, Scope<'gc>>,
 }
@@ -32,7 +29,6 @@ pub struct Activation<'gc> {
 unsafe impl<'gc> gc_arena::Collect for Activation<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.stack.trace(cc);
         self.scope.trace(cc);
     }
 }
@@ -43,7 +39,6 @@ impl<'gc> Activation<'gc> {
             swf_version: swf_version,
             data: code,
             pc: 0,
-            stack: Vec::new(),
             scope: scope
         }
     }
@@ -72,16 +67,6 @@ impl<'gc> Activation<'gc> {
     /// Change the current PC.
     pub fn set_pc(&mut self, new_pc: usize) {
         self.pc = new_pc;
-    }
-
-    /// Returns the value stack.
-    pub fn stack(&self) -> &Vec<Value<'gc>> {
-        &self.stack
-    }
-
-    /// Returns the value stack for mutation.
-    pub fn stack_mut(&mut self) -> &mut Vec<Value<'gc>> {
-        &mut self.stack
     }
 
     /// Returns AVM local variable scope.
