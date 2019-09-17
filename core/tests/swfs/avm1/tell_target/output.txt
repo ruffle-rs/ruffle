@@ -1,0 +1,9 @@
+n: 1
+tellTarget('clip2') {
+  n: 2
+  tellTarget('INVALID') {
+    n: 9
+  }
+  n: 2
+}
+n: 1
