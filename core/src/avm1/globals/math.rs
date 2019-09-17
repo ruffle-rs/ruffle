@@ -124,6 +124,7 @@ mod tests {
                 root,
                 start_clip: root,
                 active_clip: root,
+                tell_target_clip: Some(root),
                 rng: &mut SmallRng::from_seed([0u8; 16]),
                 audio: &mut NullAudioBackend::new(),
                 navigator: &mut NullNavigatorBackend::new(),
