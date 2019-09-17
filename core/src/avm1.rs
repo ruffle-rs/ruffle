@@ -7,7 +7,6 @@ use gc_arena::{GcCell, MutationContext};
 use rand::{rngs::SmallRng, Rng};
 use std::convert::TryInto;
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use swf::avm1::read::Reader;
 use swf::avm1::types::Action;
@@ -15,12 +14,16 @@ use swf::avm1::types::Action;
 use crate::tag_utils::SwfSlice;
 
 mod fscommand;
+mod scope;
+mod activation;
 mod globals;
 pub mod movie_clip;
 pub mod object;
 mod value;
 
 pub use value::Value;
+use scope::Scope;
+use activation::Activation;
 
 pub struct ActionContext<'a, 'gc, 'gc_context> {
     pub gc_context: gc_arena::MutationContext<'gc, 'gc_context>,
@@ -56,98 +59,10 @@ pub struct ActionContext<'a, 'gc, 'gc_context> {
     pub navigator: &'a mut dyn crate::backend::navigator::NavigatorBackend,
 }
 
-/// Represents a single activation of a given AVM1 function or keyframe.
-pub struct Avm1StackFrame<'gc> {
-    /// Represents the SWF version of a given function.
-    /// 
-    /// Certain AVM1 operations change behavior based on the version of the SWF
-    /// file they were defined in. For example, case sensitivity changes based
-    /// on the SWF version.
-    swf_version: u8,
-
-    /// Action data being executed by the reader below.
-    data: SwfSlice,
-
-    /// The current location of the instruction stream being executed.
-    pc: usize,
-
-    /// The opcode stack values for the current stack frame.
-    stack: Vec<Value<'gc>>,
-
-    /// All defined local variables in this stack frame.
-    locals: HashMap<String, Value<'gc>>,
-}
-
-unsafe impl<'gc> gc_arena::Collect for Avm1StackFrame<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.stack.trace(cc);
-        self.locals.trace(cc);
-    }
-}
-
-impl<'gc> Avm1StackFrame<'gc> {
-    pub fn from_action(swf_version: u8, code: SwfSlice) -> Avm1StackFrame<'gc> {
-        Avm1StackFrame {
-            swf_version: swf_version,
-            data: code,
-            pc: 0,
-            stack: Vec::new(),
-            locals: HashMap::new()
-        }
-    }
-
-    /// Returns the SWF version of the action or function being executed.
-    pub fn swf_version(&self) -> u8 {
-        self.swf_version
-    }
-
-    /// Returns the data this stack frame executes from.
-    pub fn data(&self) -> SwfSlice {
-        self.data.clone()
-    }
-
-    /// Determines if a stack frame references the same function as a given
-    /// SwfSlice.
-    pub fn is_identical_fn(&self, other: &SwfSlice) -> bool {
-        Arc::ptr_eq(&self.data.data, &other.data)
-    }
-
-    /// Returns a mutable reference to the current data offset.
-    pub fn pc(&self) -> usize {
-        self.pc
-    }
-    
-    /// Change the current PC.
-    pub fn set_pc(&mut self, new_pc: usize) {
-        self.pc = new_pc;
-    }
-
-    /// Returns the value stack.
-    pub fn stack(&self) -> &Vec<Value<'gc>> {
-        &self.stack
-    }
-
-    /// Returns the value stack for mutation.
-    pub fn stack_mut(&mut self) -> &mut Vec<Value<'gc>> {
-        &mut self.stack
-    }
-
-    /// Returns AVM locals.
-    pub fn locals(&self) -> &HashMap<String, Value<'gc>> {
-        &self.locals
-    }
-
-    /// Returns AVM locals for mutation.
-    pub fn locals_mut(&mut self) -> &mut HashMap<String, Value<'gc>> {
-        &mut self.locals
-    }
-}
-
 pub struct Avm1<'gc> {
     constant_pool: Vec<String>,
     globals: GcCell<'gc, Object<'gc>>,
-    stack_frames: Vec<Avm1StackFrame<'gc>>
+    stack_frames: Vec<Activation<'gc>>
 }
 
 unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
@@ -176,7 +91,7 @@ impl<'gc> Avm1<'gc> {
     pub fn locals_into_form_values(&self) -> HashMap<String, String> {
         let mut form_values = HashMap::new();
 
-        for (k, v) in self.current_stack_frame().unwrap().locals().iter() {
+        for (k, v) in self.current_stack_frame().unwrap().scope().locals().iter_values() {
             form_values.insert(k.clone(), v.clone().into_string());
         }
 
@@ -184,21 +99,22 @@ impl<'gc> Avm1<'gc> {
     }
 
     /// Add a stack frame that executes code directly from a SwfSlice.
-    pub fn insert_stack_frame_from_action(&mut self, swf_version: u8, code: SwfSlice) {
-        self.stack_frames.push(Avm1StackFrame::from_action(swf_version, code));
+    pub fn insert_stack_frame_from_action(&mut self, swf_version: u8, code: SwfSlice, gc_context: MutationContext<'gc, '_>) {
+        let scope = GcCell::allocate(gc_context, Scope::from_global_object(self.globals));
+        self.stack_frames.push(Activation::from_action(swf_version, code, scope));
     }
 
     /// Retrieve the current AVM execution frame.
     /// 
     /// Yields None if there is no stack frame.
-    pub fn current_stack_frame(&self) -> Option<&Avm1StackFrame<'gc>> {
+    pub fn current_stack_frame(&self) -> Option<&Activation<'gc>> {
         self.stack_frames.last()
     }
 
     /// Retrieve the current AVM execution frame for mutation.
     /// 
     /// Yields None if there is no stack frame.
-    pub fn current_stack_frame_mut(&mut self) -> Option<&mut Avm1StackFrame<'gc>> {
+    pub fn current_stack_frame_mut(&mut self) -> Option<&mut Activation<'gc>> {
         self.stack_frames.last_mut()
     }
 
@@ -232,16 +148,6 @@ impl<'gc> Avm1<'gc> {
         }
 
         Some(r)
-    }
-
-    /// Get the current locals, if there are any.
-    fn current_locals(&self) -> Option<&HashMap<String, Value<'gc>>> {
-        self.current_stack_frame().map(|sf| sf.locals())
-    }
-
-    /// Get the current locals, for mutation, if there are any.
-    fn current_locals_mut(&mut self) -> Option<&mut HashMap<String, Value<'gc>>> {
-        self.current_stack_frame_mut().map(|sf| sf.locals_mut())
     }
 
     /// Destroy the current stack frame (if there is one).
@@ -572,7 +478,7 @@ impl<'gc> Avm1<'gc> {
             args.push(self.pop()?);
         }
         
-        let target_fn = self.current_stack_frame_mut().unwrap().locals_mut().get(fn_name.as_string()?).unwrap_or_else(|| &Value::Undefined).clone();
+        let target_fn = self.current_stack_frame_mut().unwrap().resolve(fn_name.as_string()?);
         let return_value = target_fn.call(self, context, self.globals, &args)?;
         if let Some(instant_return) = return_value {
             self.current_stack_frame_mut().unwrap().stack_mut().push(instant_return);
@@ -663,23 +569,22 @@ impl<'gc> Avm1<'gc> {
         if name == "" {
             self.current_stack_frame_mut().unwrap().stack_mut().push(func);
         } else {
-            self.current_stack_frame_mut().unwrap().locals_mut().insert(name.to_string(), func);
+            self.current_stack_frame_mut().unwrap().define(name, func, context.gc_context);
         }
 
         Ok(())
     }
 
-    fn action_define_local(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_define_local(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         let value = self.pop()?;
         let name = self.pop()?;
-        self.current_locals_mut().unwrap().insert(name.as_string()?.clone(), value);
+        self.current_stack_frame_mut().unwrap().define(name.as_string()?, value, context.gc_context);
         Ok(())
     }
 
-    fn action_define_local_2(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_define_local_2(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         let name = self.pop()?;
-        self.current_locals_mut().unwrap()
-            .insert(name.as_string()?.clone(), Value::Undefined);
+        self.current_stack_frame_mut().unwrap().define(name.as_string()?, Value::Undefined, context.gc_context);
         Ok(())
     }
 
@@ -830,9 +735,10 @@ impl<'gc> Avm1<'gc> {
             return Ok(());
         }
 
-        let mut result = self.current_locals().unwrap().get(path).map(|v| v.to_owned());
-
-        if result.is_none() {
+        let mut result = None;
+        if self.current_stack_frame().unwrap().is_defined(path) {
+            result = Some(self.current_stack_frame().unwrap().resolve(path));
+        } else {
             if let Some((node, var_name)) =
                 Self::resolve_slash_path_variable(context.target_clip, context.root, path)
             {

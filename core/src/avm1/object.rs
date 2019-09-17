@@ -68,13 +68,13 @@ impl<'gc> Executable<'gc> {
         match self {
             Executable::Native(nf) => Some(nf(avm, ac, this, args)),
             Executable::Action(af) => {
-                avm.insert_stack_frame_from_action(af.swf_version, af.data.clone());
+                avm.insert_stack_frame_from_action(af.swf_version, af.data.clone(), ac.gc_context);
 
                 for arg in args {
                     avm.current_stack_frame_mut().unwrap().stack_mut().push(arg.clone());
                 }
 
-                avm.current_stack_frame_mut().unwrap().locals_mut().insert("this".to_string(), Value::Object(this));
+                avm.current_stack_frame_mut().unwrap().define("this", Value::Object(this), ac.gc_context);
 
                 None
             }
@@ -207,6 +207,20 @@ impl<'gc> Object<'gc> {
         result
     }
 
+    /// Constructs an object with no values, not even builtins.
+    /// 
+    /// Intended for constructing scope chains, since they exclusively use the
+    /// object values, but can't just have a hashmap because of `with` and
+    /// friends.
+    pub fn bare_object() -> Self {
+        Self {
+            type_of: TYPE_OF_OBJECT,
+            display_node: None,
+            values: HashMap::new(),
+            function: None,
+        }
+    }
+
     pub fn native_function(function: NativeFunction<'gc>) -> Self {
         Self {
             type_of: TYPE_OF_FUNCTION,
@@ -317,6 +331,10 @@ impl<'gc> Object<'gc> {
 
     pub fn has_own_property(&self, name: &str) -> bool {
         self.values.contains_key(name)
+    }
+
+    pub fn iter_values(&self) -> impl Iterator<Item=(&String, &Value<'gc>)> {
+        self.values.iter()
     }
 
     pub fn call(
