@@ -38,6 +38,7 @@ swf_tests! {
     (goto_advance2, "avm1/goto_advance2", 10),
     (goto_rewind1, "avm1/goto_rewind1", 10),
     (goto_rewind2, "avm1/goto_rewind2", 10),
+    (tell_target, "avm1/tell_target", 3),
 }
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
