@@ -1,0 +1,3 @@
+child frame 1
+gotoAndPlay(5)
+gotoAndStop(3)

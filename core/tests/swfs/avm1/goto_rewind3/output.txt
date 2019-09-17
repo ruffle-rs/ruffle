@@ -1,0 +1,2 @@
+gotoAndPlay(4)
+child frame 1
