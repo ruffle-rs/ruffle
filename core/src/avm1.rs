@@ -38,6 +38,13 @@ pub struct ActionContext<'a, 'gc, 'gc_context> {
     /// This will be `None` after an invalid tell target.
     pub target_clip: Option<DisplayNode<'gc>>,
 
+    /// The last path string used by `tellTarget`.
+    /// Returned by `GetProperty`.
+    /// TODO: This should actually be built dynamically upon
+    /// request, but this requires us to implement auto-generated
+    /// _names ("instanceN" etc. for unnamed clips).
+    pub target_path: Value<'gc>,
+
     pub rng: &'a mut SmallRng,
     pub audio: &'a mut dyn crate::backend::audio::AudioBackend,
     pub navigator: &'a mut dyn crate::backend::navigator::NavigatorBackend,
@@ -176,6 +183,7 @@ impl<'gc> Avm1<'gc> {
                 Action::SetMember => self.action_set_member(context),
                 Action::SetProperty => self.action_set_property(context),
                 Action::SetTarget(target) => self.action_set_target(context, &target),
+                Action::SetTarget2 => self.action_set_target2(context),
                 Action::SetVariable => self.action_set_variable(context),
                 Action::StackSwap => self.action_stack_swap(context),
                 Action::StartDrag => self.action_start_drag(context),
@@ -562,7 +570,10 @@ impl<'gc> Avm1<'gc> {
         Err("Unimplemented action: GetMember".into())
     }
 
-    fn action_get_property(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_get_property(
+        &mut self,
+        context: &mut ActionContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
         let prop_index = self.pop()?.as_u32()? as usize;
         let clip_path = self.pop()?;
         let path = clip_path.as_string()?;
@@ -577,6 +588,13 @@ impl<'gc> Avm1<'gc> {
                         4 => Value::Number(f64::from(clip.current_frame())),
                         5 => Value::Number(f64::from(clip.total_frames())),
                         10 => Value::Number(f64::from(clip.rotation())),
+                        11 => {
+                            // _target
+                            // TODO: This string should be built dynamically
+                            // by traversing through parents. But this requires
+                            // _name to work accurately.
+                            context.target_path.clone()
+                        }
                         12 => Value::Number(f64::from(clip.frames_loaded())),
                         _ => {
                             log::error!("GetProperty: Unimplemented property index {}", prop_index);
@@ -1108,11 +1126,13 @@ impl<'gc> Avm1<'gc> {
         if target.is_empty() {
             context.active_clip = context.start_clip;
             context.target_clip = Some(context.start_clip);
+            context.target_path = Value::String(target.to_string());
         } else if let Some(clip) =
             Avm1::resolve_slash_path(context.start_clip, context.root, target)
         {
             context.target_clip = Some(clip);
             context.active_clip = clip;
+            context.target_path = Value::String(target.to_string());
         } else {
             log::warn!("SetTarget failed: {} not found", target);
             // TODO: Emulate AVM1 trace error message.
@@ -1123,6 +1143,17 @@ impl<'gc> Avm1<'gc> {
             // fail silenty.
             context.target_clip = None;
             context.active_clip = context.root;
+            context.target_path = Value::Undefined;
+        }
+        Ok(())
+    }
+
+    fn action_set_target2(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+        let target = self.pop()?;
+        if let Ok(target) = target.as_string() {
+            self.action_set_target(context, target)?;
+        } else {
+            log::error!("SetTarget2: Path must be a string");
         }
         Ok(())
     }

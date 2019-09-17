@@ -506,6 +506,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                     start_clip: root,
                     active_clip: root,
                     target_clip: Some(root),
+                    target_path: crate::avm1::Value::Undefined,
                     rng: update_context.rng,
                     audio: update_context.audio,
                     navigator: update_context.navigator,
