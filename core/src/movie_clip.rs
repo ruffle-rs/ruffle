@@ -354,8 +354,12 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::PlaceObject4 => {
                     self.goto_place_object(reader, tag_len, 4, &mut goto_commands)
                 }
-                TagCode::RemoveObject => self.goto_remove_object(reader, 1, &mut goto_commands),
-                TagCode::RemoveObject2 => self.goto_remove_object(reader, 2, &mut goto_commands),
+                TagCode::RemoveObject => {
+                    self.goto_remove_object(reader, 1, &mut goto_commands, is_rewind)
+                }
+                TagCode::RemoveObject2 => {
+                    self.goto_remove_object(reader, 2, &mut goto_commands, is_rewind)
+                }
                 _ => Ok(()),
             };
             let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
@@ -369,7 +373,7 @@ impl<'gc> MovieClip<'gc> {
             // but BTreeMap::retain does not exist.
             let mut children = std::mem::replace(&mut self.children, BTreeMap::new());
             goto_commands.into_iter().for_each(|(depth, params)| {
-                let (needs_run, child) = match children.get_mut(&depth).copied() {
+                let (was_instantiated, child) = match children.get_mut(&depth).copied() {
                     // For rewinds, if an object was created before the final frame,
                     // it will exist on the final frame as well. Re-use this object
                     // instead of recreating.
@@ -391,13 +395,15 @@ impl<'gc> MovieClip<'gc> {
                 // Apply final delta to display pamareters.
                 let child_node = child;
                 let mut child = child.write(context.gc_context);
-                child.apply_place_object(params);
-
-                // We must run newly created objects for one frame
-                // to ensure they place any children objects.
-                // TODO: This will probably move as our order-of-execution
-                // becomes more accurate.
-                if needs_run {
+                child.apply_place_object(params.place_object);
+                if was_instantiated {
+                    // Set the placement frame for the new object to the frame
+                    // it is actually created on.
+                    child.set_place_frame(params.frame);
+                    // We must run newly created objects for one frame
+                    // to ensure they place any children objects.
+                    // TODO: This will probably move as our order-of-execution
+                    // becomes more accurate.
                     context.active_clip = child_node;
                     child.run_frame(context);
                     context.active_clip = prev_active_clip;
@@ -423,13 +429,15 @@ impl<'gc> MovieClip<'gc> {
                 // Apply final delta to display pamareters.
                 let child_node = child;
                 let mut child = child.write(context.gc_context);
-                child.apply_place_object(params);
-
-                // We must run newly created objects for one frame
-                // to ensure they place any children objects.
-                // TODO: This will probably move as our order-of-execution
-                // becomes more accurate.
+                child.apply_place_object(params.place_object);
                 if id != 0 {
+                    // Set the placement frame for the new object to the frame
+                    // it is actually created on.
+                    child.set_place_frame(params.frame);
+                    // We must run newly created objects for one frame
+                    // to ensure they place any children objects.
+                    // TODO: This will probably move as our order-of-execution
+                    // becomes more accurate.
                     context.active_clip = child_node;
                     child.run_frame(context);
                     context.active_clip = prev_active_clip;
@@ -449,9 +457,9 @@ impl<'gc> MovieClip<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
         tag_len: usize,
         version: u8,
-        goto_commands: &mut fnv::FnvHashMap<Depth, swf::PlaceObject>,
+        goto_commands: &mut fnv::FnvHashMap<Depth, GotoPlaceObject>,
     ) -> DecodeResult {
-        let mut place_object = if version == 1 {
+        let place_object = if version == 1 {
             reader.read_place_object(tag_len)
         } else {
             reader.read_place_object_2_or_3(version)
@@ -459,10 +467,14 @@ impl<'gc> MovieClip<'gc> {
 
         // We merge the deltas from this PlaceObject with the previous command.
         let depth = place_object.depth;
+        let mut goto_place = GotoPlaceObject {
+            frame: self.current_frame,
+            place_object,
+        };
         goto_commands
             .entry(depth)
-            .and_modify(|prev_place| prev_place.merge(&mut place_object))
-            .or_insert(place_object);
+            .and_modify(|prev_place| prev_place.merge(&mut goto_place))
+            .or_insert(goto_place);
 
         Ok(())
     }
@@ -473,17 +485,23 @@ impl<'gc> MovieClip<'gc> {
         &mut self,
         reader: &mut SwfStream<&'a [u8]>,
         version: u8,
-        goto_commands: &mut fnv::FnvHashMap<Depth, swf::PlaceObject>,
+        goto_commands: &mut fnv::FnvHashMap<Depth, GotoPlaceObject>,
+        is_rewind: bool,
     ) -> DecodeResult {
         let remove_object = if version == 1 {
             reader.read_remove_object_1()
         } else {
             reader.read_remove_object_2()
         }?;
-        // If this tag were to remove an object that existed before the goto,
-        // then we can remove that child right away.
         goto_commands.remove(&remove_object.depth);
-        self.children.remove(&remove_object.depth);
+        if !is_rewind {
+            // For fast-forwards, if this tag were to remove an object
+            // that existed before the goto, then we can remove that child right away.
+            // Don't do this for rewinds, because they conceptually
+            // start from an empty display list, and we also want to examine
+            // the old children to decide if they persist (place_frame <= goto_frame).
+            self.children.remove(&remove_object.depth);
+        }
         Ok(())
     }
 }
@@ -1151,7 +1169,11 @@ impl<'gc, 'a> MovieClip<'gc> {
                     context,
                     id,
                     place_object.depth,
-                    place_object.modifies_original_item(),
+                    if let PlaceObjectAction::Replace(_) = place_object.action {
+                        true
+                    } else {
+                        false
+                    },
                 ) {
                     child
                         .write(context.gc_context)
@@ -1270,16 +1292,20 @@ unsafe impl<'gc> gc_arena::Collect for MovieClipStatic {
     }
 }
 
-pub trait PlaceObjectExt {
-    fn id(&self) -> CharacterId;
-    fn modifies_original_item(&self) -> bool;
-    fn merge(&mut self, next: &mut swf::PlaceObject);
+/// Stores the placement settings for display objects during a
+/// goto command.
+#[derive(Debug)]
+struct GotoPlaceObject {
+    /// The frame number that this character was first placed on.
+    frame: FrameNumber,
+    /// The display properties of the object.
+    place_object: swf::PlaceObject,
 }
 
-impl PlaceObjectExt for swf::PlaceObject {
+impl GotoPlaceObject {
     #[inline]
     fn id(&self) -> CharacterId {
-        match &self.action {
+        match &self.place_object.action {
             swf::PlaceObjectAction::Place(id) | swf::PlaceObjectAction::Replace(id) => *id,
             swf::PlaceObjectAction::Modify => 0,
         }
@@ -1287,39 +1313,46 @@ impl PlaceObjectExt for swf::PlaceObject {
 
     #[inline]
     fn modifies_original_item(&self) -> bool {
-        if let swf::PlaceObjectAction::Replace(_) = &self.action {
+        if let swf::PlaceObjectAction::Replace(_) = &self.place_object.action {
             true
         } else {
             false
         }
     }
 
-    fn merge(&mut self, next: &mut swf::PlaceObject) {
+    fn merge(&mut self, next: &mut GotoPlaceObject) {
         use swf::PlaceObjectAction;
-        self.action = match (self.action, next.action) {
-            (prev, PlaceObjectAction::Modify) => prev,
-            (_, next) => next,
+        let cur_place = &mut self.place_object;
+        let next_place = &mut next.place_object;
+        match (cur_place.action, next_place.action) {
+            (cur, PlaceObjectAction::Modify) => {
+                cur_place.action = cur;
+            }
+            (_, new) => {
+                cur_place.action = new;
+                self.frame = next.frame;
+            }
         };
-        if next.matrix.is_some() {
-            self.matrix = next.matrix.take();
+        if next_place.matrix.is_some() {
+            cur_place.matrix = next_place.matrix.take();
         }
-        if next.color_transform.is_some() {
-            self.color_transform = next.color_transform.take();
+        if next_place.color_transform.is_some() {
+            cur_place.color_transform = next_place.color_transform.take();
         }
-        if next.ratio.is_some() {
-            self.ratio = next.ratio.take();
+        if next_place.ratio.is_some() {
+            cur_place.ratio = next_place.ratio.take();
         }
-        if next.name.is_some() {
-            self.name = next.name.take();
+        if next_place.name.is_some() {
+            cur_place.name = next_place.name.take();
         }
-        if next.clip_depth.is_some() {
-            self.clip_depth = next.clip_depth.take();
+        if next_place.clip_depth.is_some() {
+            cur_place.clip_depth = next_place.clip_depth.take();
         }
-        if next.class_name.is_some() {
-            self.class_name = next.class_name.take();
+        if next_place.class_name.is_some() {
+            cur_place.class_name = next_place.class_name.take();
         }
-        if next.background_color.is_some() {
-            self.background_color = next.background_color.take();
+        if next_place.background_color.is_some() {
+            cur_place.background_color = next_place.background_color.take();
         }
         // TODO: Other stuff.
     }

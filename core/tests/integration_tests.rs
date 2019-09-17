@@ -36,8 +36,11 @@ swf_tests! {
     (looping, "avm1/looping", 6),
     (goto_advance1, "avm1/goto_advance1", 10),
     (goto_advance2, "avm1/goto_advance2", 10),
+    (goto_both_ways1, "avm1/goto_both_ways1", 10),
+    (goto_both_ways2, "avm1/goto_both_ways2", 10),
     (goto_rewind1, "avm1/goto_rewind1", 10),
     (goto_rewind2, "avm1/goto_rewind2", 10),
+    (goto_rewind3, "avm1/goto_rewind3", 10),
     (tell_target, "avm1/tell_target", 3),
 }
 

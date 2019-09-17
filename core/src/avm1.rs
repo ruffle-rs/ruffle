@@ -1195,7 +1195,8 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_stop_sounds(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        Err("Unimplemented action: StopSounds".into())
+        log::error!("Unimplemented action: StopSounds");
+        Ok(())
     }
 
     fn action_store_register(
