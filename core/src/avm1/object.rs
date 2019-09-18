@@ -70,8 +70,11 @@ impl<'gc> Executable<'gc> {
             Executable::Action(af) => {
                 avm.insert_stack_frame_from_action(af.swf_version, af.data.clone(), ac.gc_context);
 
-                for arg in args {
-                    avm.push(arg.clone());
+                for i in 0..args.len() {
+                    avm.push(args.get(i).unwrap().clone());
+                    if let Some(argname) = af.params.get(i) {
+                        avm.current_stack_frame_mut().unwrap().define(argname, args.get(i).unwrap().clone(), ac.gc_context);
+                    }
                 }
 
                 avm.current_stack_frame_mut().unwrap().define("this", Value::Object(this), ac.gc_context);
