@@ -242,6 +242,7 @@ impl<'gc> MovieClip<'gc> {
             // Specifically, object that existed on frame 1 should not be destroyed
             // and recreated.
             self.run_goto(context, 1);
+            return;
         } else {
             // Single frame clips do not play.
             self.stop();
