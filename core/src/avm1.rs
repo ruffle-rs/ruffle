@@ -176,7 +176,13 @@ impl<'gc> Avm1<'gc> {
 
     /// Run a single action from a given action reader.
     fn do_next_action(&mut self, context: &mut ActionContext<'_, 'gc, '_>, reader: &mut Reader<'_>) -> Result<(), Error> {
-        if let Some(action) = reader.read_action()? {
+        let data = self.current_stack_frame().unwrap().data();
+
+        if reader.pos() >= (data.end - data.start) {
+            //Executing beyond the end of a function constitutes an implicit return.
+            self.retire_stack_frame();
+            self.push(Value::Undefined);
+        } else if let Some(action) = reader.read_action()? {
             let result = match action {
                 Action::Add => self.action_add(context),
                 Action::Add2 => self.action_add_2(context),
@@ -292,9 +298,9 @@ impl<'gc> Avm1<'gc> {
                 return result;
             }
         } else {
-            //Implicit return undefined
+            //The explicit end opcode was encountered so return here
             self.retire_stack_frame();
-            self.push(Value::Undefined); //TODO: What if we don't have any more code?
+            self.push(Value::Undefined);
         }
 
         Ok(())
