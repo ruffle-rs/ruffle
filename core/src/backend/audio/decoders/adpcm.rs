@@ -1,6 +1,6 @@
-use super::Decoder;
+use super::{Decoder, SeekableDecoder};
 use bitstream_io::{BigEndian, BitReader};
-use std::io::Read;
+use std::io::{Cursor, Read};
 
 pub struct AdpcmDecoder<R: Read> {
     inner: BitReader<R, BigEndian>,
@@ -14,7 +14,6 @@ pub struct AdpcmDecoder<R: Read> {
     right_sample: i32,
     right_step_index: i16,
     right_step: i32,
-    cur_channel: u8,
 }
 
 impl<R: Read> AdpcmDecoder<R> {
@@ -56,13 +55,10 @@ impl<R: Read> AdpcmDecoder<R> {
             right_sample,
             right_step,
             right_step_index,
-            cur_channel: 2,
         })
     }
 
     pub fn next_sample(&mut self) -> Result<(), std::io::Error> {
-        self.cur_channel = 0;
-
         if self.sample_num == 0 {
             // The initial sample values are NOT byte-aligned.
             self.left_sample = self.inner.read_signed(16)?;
@@ -163,5 +159,18 @@ impl<R: std::io::Read> Decoder for AdpcmDecoder<R> {
     #[inline]
     fn sample_rate(&self) -> u16 {
         self.sample_rate
+    }
+}
+
+impl<R: AsRef<[u8]> + Default> SeekableDecoder for AdpcmDecoder<Cursor<R>> {
+    #[inline]
+    fn reset(&mut self) {
+        // TODO: This is funky.
+        // I want to reset the `BitStream` and `Cursor` to their initial positions,
+        // but have to work around the borrowing rules of Rust.
+        let bit_stream = std::mem::replace(&mut self.inner, BitReader::new(Default::default()));
+        let mut cursor = bit_stream.into_reader();
+        cursor.set_position(0);
+        *self = AdpcmDecoder::new(cursor, self.is_stereo, self.sample_rate()).unwrap();
     }
 }

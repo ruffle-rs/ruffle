@@ -74,7 +74,11 @@ impl WebAudioBackend {
         })
     }
 
-    fn play_sound_internal(&mut self, handle: SoundHandle) -> SoundHandle {
+    fn start_sound_internal(
+        &mut self,
+        handle: SoundHandle,
+        _settings: Option<&swf::SoundInfo>,
+    ) -> SoundHandle {
         let sound = self.sounds.get(handle).unwrap();
         match &sound.source {
             SoundSource::AudioBuffer(audio_buffer) => {
@@ -413,8 +417,8 @@ impl AudioBackend for WebAudioBackend {
         }
     }
 
-    fn play_sound(&mut self, sound: SoundHandle) {
-        self.play_sound_internal(sound);
+    fn start_sound(&mut self, sound: SoundHandle, sound_info: &swf::SoundInfo) {
+        self.start_sound_internal(sound, Some(sound_info));
     }
 
     fn start_stream(
@@ -424,7 +428,7 @@ impl AudioBackend for WebAudioBackend {
         _stream_info: &swf::SoundStreamHead,
     ) -> AudioStreamHandle {
         if let Some(&handle) = self.id_to_sound.get(&clip_id) {
-            self.play_sound_internal(handle)
+            self.start_sound_internal(handle, None)
         } else {
             log::error!("Missing stream for clip {}", clip_id);
             // TODO: Return dummy sound.

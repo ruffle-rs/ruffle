@@ -2,7 +2,9 @@ use generational_arena::{Arena, Index};
 
 pub mod decoders;
 pub mod swf {
-    pub use swf::{read, AudioCompression, CharacterId, Sound, SoundFormat, SoundStreamHead};
+    pub use swf::{
+        read, AudioCompression, CharacterId, Sound, SoundFormat, SoundInfo, SoundStreamHead,
+    };
 }
 
 pub type AudioStreamHandle = Index;
@@ -21,13 +23,17 @@ pub trait AudioBackend {
     }
     fn preload_sound_stream_block(&mut self, _clip_id: swf::CharacterId, _audio_data: &[u8]) {}
     fn preload_sound_stream_end(&mut self, _clip_id: swf::CharacterId) {}
-    fn play_sound(&mut self, sound: SoundHandle);
+
+    /// Starts playing a sound instance that is not tied to a MovieClip timeline.
+    /// In Flash, this is known as an "Event" sound.
+    fn start_sound(&mut self, sound: SoundHandle, settings: &swf::SoundInfo);
     fn start_stream(
         &mut self,
         clip_id: crate::prelude::CharacterId,
         clip_data: crate::tag_utils::SwfSlice,
         handle: &swf::SoundStreamHead,
     ) -> AudioStreamHandle;
+
     // TODO: Eventually remove this/move it to library.
     fn is_loading_complete(&self) -> bool {
         true
@@ -35,6 +41,7 @@ pub trait AudioBackend {
     fn tick(&mut self) {}
 }
 
+/// Audio backend that ignores all audio.
 pub struct NullAudioBackend {
     sounds: Arena<()>,
     streams: Arena<()>,
@@ -54,7 +61,7 @@ impl AudioBackend for NullAudioBackend {
         Ok(self.sounds.insert(()))
     }
 
-    fn play_sound(&mut self, _sound: SoundHandle) {}
+    fn start_sound(&mut self, _sound: SoundHandle, _sound_info: &swf::SoundInfo) {}
 
     fn start_stream(
         &mut self,
