@@ -5,6 +5,7 @@ authors = ["Mike Welsh <mwelsh@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+cpal = "0.10.0"
 ruffle_core = { path = "../core" }
 glium = "0.24"
 glutin = "0.20"
@@ -14,11 +15,8 @@ image = "0.21.1"
 jpeg-decoder = "0.1.16"
 log = "0.4"
 lyon = "0.13.3"
+sample = "0.10.0"
 structopt = "0.2.15"
 winit = "0.19.1"
 webbrowser = "0.5.2"
 url = "2.1.0"
-
-[dependencies.rodio]
-version = "0.8.1"
-features = ["mp3"]

@@ -139,19 +139,14 @@ impl<R: Read> AdpcmDecoder<R> {
 }
 
 impl<R: Read> Iterator for AdpcmDecoder<R> {
-    type Item = i16;
-    fn next(&mut self) -> Option<i16> {
-        if self.cur_channel >= if self.is_stereo { 2 } else { 1 } {
-            self.next_sample().ok()?;
-        }
-
-        let sample = if self.cur_channel == 0 {
-            self.left_sample
+    type Item = [i16; 2];
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next_sample().ok()?;
+        if self.is_stereo {
+            Some([self.left_sample as i16, self.right_sample as i16])
         } else {
-            self.right_sample
-        };
-        self.cur_channel += 1;
-        Some(sample as i16)
+            Some([self.left_sample as i16, self.left_sample as i16])
+        }
     }
 }
 

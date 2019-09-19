@@ -43,7 +43,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         .with_srgb(true)
         .with_stencil_buffer(8)
         .build_windowed(window_builder, &events_loop)?;
-    let audio = audio::RodioAudioBackend::new()?;
+    let audio = audio::CpalAudioBackend::new()?;
     let renderer = GliumRenderBackend::new(windowed_context)?;
     let navigator = navigator::ExternalNavigatorBackend::new(); //TODO: actually implement this backend type
     let display = renderer.display().clone();
