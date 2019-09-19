@@ -113,13 +113,13 @@ impl<'gc> Avm1<'gc> {
         let global_scope = GcCell::allocate(action_context.gc_context, Scope::from_global_object(self.globals));
         let clip_obj = action_context.active_clip.read().object().as_object().unwrap().to_owned();
         let child_scope = GcCell::allocate(action_context.gc_context, Scope::from_parent_scope_with_object(global_scope, clip_obj));
-        self.stack_frames.push(Activation::from_action(swf_version, code, child_scope));
+        self.stack_frames.push(Activation::from_action(swf_version, code, child_scope, clip_obj));
     }
 
     /// Add a stack frame that executes code in function scope
-    pub fn insert_stack_frame_for_function(&mut self, swf_version: u8, code: SwfSlice, gc_context: MutationContext<'gc, '_>) {
-        let scope = GcCell::allocate(gc_context, Scope::from_global_object(self.globals));
-        self.stack_frames.push(Activation::from_action(swf_version, code, scope));
+    pub fn insert_stack_frame_for_function(&mut self, swf_version: u8, code: SwfSlice, this: GcCell<'gc, Object<'gc>>, action_context: &mut ActionContext<'_, 'gc, '_>) {
+        let scope = GcCell::allocate(action_context.gc_context, Scope::from_global_object(self.globals));
+        self.stack_frames.push(Activation::from_action(swf_version, code, scope, this));
     }
 
     /// Retrieve the current AVM execution frame.
@@ -503,7 +503,8 @@ impl<'gc> Avm1<'gc> {
         }
         
         let target_fn = self.current_stack_frame_mut().unwrap().resolve(fn_name.as_string()?);
-        let return_value = target_fn.call(self, context, self.globals, &args)?;
+        let this = context.active_clip.read().object().as_object()?.to_owned();
+        let return_value = target_fn.call(self, context, this, &args)?;
         if let Some(instant_return) = return_value {
             self.push(instant_return);
         }
@@ -751,7 +752,7 @@ impl<'gc> Avm1<'gc> {
         let globals = self.globals;
 
         // Special hardcoded variables
-        if path == "_root" || path == "this" {
+        if path == "_root" {
             self.push(context.start_clip.read().object());
             return Ok(());
         } else if path == "_global" {

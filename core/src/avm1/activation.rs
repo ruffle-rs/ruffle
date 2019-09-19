@@ -5,6 +5,7 @@ use std::cell::{Ref, RefMut};
 use gc_arena::{GcCell, MutationContext};
 use crate::tag_utils::SwfSlice;
 use crate::avm1::scope::Scope;
+use crate::avm1::object::Object;
 use crate::avm1::Value;
 
 /// Represents a single activation of a given AVM1 function or keyframe.
@@ -24,6 +25,9 @@ pub struct Activation<'gc> {
 
     /// All defined local variables in this stack frame.
     scope: GcCell<'gc, Scope<'gc>>,
+
+    /// The immutable value of `this`.
+    this: GcCell<'gc, Object<'gc>>
 }
 
 unsafe impl<'gc> gc_arena::Collect for Activation<'gc> {
@@ -34,12 +38,13 @@ unsafe impl<'gc> gc_arena::Collect for Activation<'gc> {
 }
 
 impl<'gc> Activation<'gc> {
-    pub fn from_action(swf_version: u8, code: SwfSlice, scope: GcCell<'gc, Scope<'gc>>) -> Activation<'gc> {
+    pub fn from_action(swf_version: u8, code: SwfSlice, scope: GcCell<'gc, Scope<'gc>>, this: GcCell<'gc, Object<'gc>>) -> Activation<'gc> {
         Activation {
             swf_version: swf_version,
             data: code,
             pc: 0,
-            scope: scope
+            scope: scope,
+            this: this
         }
     }
 
@@ -81,11 +86,19 @@ impl<'gc> Activation<'gc> {
 
     /// Resolve a particular named local variable within this activation.
     pub fn resolve(&self, name: &str) -> Value<'gc> {
+        if name == "this" {
+            return Value::Object(self.this);
+        }
+
         self.scope().resolve(name)
     }
 
     /// Check if a particular property in the scope chain is defined.
     pub fn is_defined(&self, name: &str) -> bool {
+        if name == "this" {
+            return true;
+        }
+
         self.scope().is_defined(name)
     }
 
