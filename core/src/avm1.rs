@@ -1194,8 +1194,8 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_stop_sounds(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        log::error!("Unimplemented action: StopSounds");
+    fn action_stop_sounds(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+        context.audio.stop_all_sounds();
         Ok(())
     }
 

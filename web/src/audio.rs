@@ -482,6 +482,19 @@ impl AudioBackend for WebAudioBackend {
         // Allow audio to start playing after a user gesture.
         let _ = self.context.resume();
     }
+
+    fn stop_all_sounds(&mut self) {
+        STREAMS.with(|streams| {
+            let mut streams = streams.borrow_mut();
+            for (_, stream) in streams.iter() {
+                if let AudioStream::AudioBuffer { node } = stream {
+                    let _ = node.stop();
+                }
+                // TODO: Have to handle Decoder nodes. (These may just go into a different backend.)
+            }
+            streams.clear();
+        })
+    }
 }
 
 // Janky resmapling code.

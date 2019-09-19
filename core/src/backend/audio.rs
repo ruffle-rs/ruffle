@@ -34,6 +34,9 @@ pub trait AudioBackend {
         handle: &swf::SoundStreamHead,
     ) -> AudioStreamHandle;
 
+    /// Good ol' stopAllSounds() :-)
+    fn stop_all_sounds(&mut self);
+
     // TODO: Eventually remove this/move it to library.
     fn is_loading_complete(&self) -> bool {
         true
@@ -71,6 +74,8 @@ impl AudioBackend for NullAudioBackend {
     ) -> AudioStreamHandle {
         self.streams.insert(())
     }
+
+    fn stop_all_sounds(&mut self) {}
 }
 
 impl Default for NullAudioBackend {
