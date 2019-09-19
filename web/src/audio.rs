@@ -1,3 +1,4 @@
+use crate::utils::JsResult;
 use fnv::FnvHashMap;
 use generational_arena::Arena;
 use ruffle_core::backend::audio::decoders::{AdpcmDecoder, Mp3Decoder};
@@ -41,7 +42,9 @@ enum SoundSource {
     Decoder(Vec<u8>),
 }
 
+#[allow(dead_code)]
 struct Sound {
+    num_sample_frames: u32,
     format: swf::SoundFormat,
     source: SoundSource,
 }
@@ -77,7 +80,7 @@ impl WebAudioBackend {
     fn start_sound_internal(
         &mut self,
         handle: SoundHandle,
-        _settings: Option<&swf::SoundInfo>,
+        settings: Option<&swf::SoundInfo>,
     ) -> SoundHandle {
         let sound = self.sounds.get(handle).unwrap();
         match &sound.source {
@@ -86,8 +89,41 @@ impl WebAudioBackend {
                 let node = self.context.create_buffer_source().unwrap();
                 node.set_buffer(Some(&*audio_buffer));
                 node.connect_with_audio_node(&self.context.destination())
-                    .unwrap();
-                node.start().unwrap();
+                    .warn_on_error();
+
+                match settings {
+                    Some(settings)
+                        if settings.num_loops > 1
+                            || settings.in_sample.is_some()
+                            || settings.out_sample.is_some()
+                            || settings.envelope.is_some() =>
+                    {
+                        // Event sound with non-default parameters.
+                        // Note that start/end values are in 44.1kHZ samples regardless of the sound's sample rate.
+                        let start_sample_frame =
+                            f64::from(settings.in_sample.unwrap_or(0)) / 44100.0;
+                        node.set_loop(settings.num_loops > 1);
+                        node.set_loop_start(start_sample_frame);
+                        node.start_with_when_and_grain_offset(0.0, start_sample_frame)
+                            .warn_on_error();
+                        if let Some(out_sample) = settings.out_sample {
+                            let end_sample_frame = f64::from(out_sample) / 44100.0;
+                            // `AudioSourceBufferNode.loop` is a bool, so we have to stop the loop at the proper time.
+                            // `start_with_when_and_grain_offset_and_grain_duration` unfortunately doesn't work
+                            // as you might expect with loops, so we use `stop_with_when` to stop the loop.
+                            let total_len = (end_sample_frame - start_sample_frame)
+                                * f64::from(settings.num_loops);
+                            let current_time = self.context.current_time();
+                            node.set_loop_end(end_sample_frame);
+                            node.stop_with_when(current_time + total_len)
+                                .warn_on_error();
+                        }
+                    }
+                    _ => {
+                        // Default event sound or stream.
+                        node.start().warn_on_error();
+                    }
+                }
 
                 let audio_stream = AudioStream::AudioBuffer { node };
                 STREAMS.with(|streams| {
@@ -349,6 +385,7 @@ impl AudioBackend for WebAudioBackend {
         };
 
         let sound = Sound {
+            num_sample_frames: sound.num_samples,
             format: sound.format.clone(),
             source: SoundSource::AudioBuffer(self.decompress_to_audio_buffer(
                 &sound.format,
@@ -410,6 +447,7 @@ impl AudioBackend for WebAudioBackend {
                 );
                 let handle = self.sounds.insert(Sound {
                     format: stream.format,
+                    num_sample_frames: stream.num_sample_frames,
                     source: SoundSource::AudioBuffer(audio_buffer),
                 });
                 self.id_to_sound.insert(clip_id, handle);
