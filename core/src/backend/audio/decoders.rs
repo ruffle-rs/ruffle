@@ -1,10 +1,12 @@
 mod adpcm;
 mod mp3;
+mod pcm;
 
 pub use adpcm::AdpcmDecoder;
 pub use mp3::Mp3Decoder;
+pub use pcm::PcmDecoder;
 
-pub trait Decoder: Iterator<Item = i16> {
+pub trait Decoder: Iterator<Item = [i16; 2]> {
     fn num_channels(&self) -> u8;
     fn sample_rate(&self) -> u16;
 }

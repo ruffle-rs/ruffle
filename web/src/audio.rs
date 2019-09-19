@@ -46,7 +46,7 @@ struct Sound {
     source: SoundSource,
 }
 
-type Decoder = Box<dyn Iterator<Item = i16>>;
+type Decoder = Box<dyn Iterator<Item = [i16; 2]>>;
 
 #[allow(dead_code)]
 enum AudioStream {
@@ -115,7 +115,6 @@ impl WebAudioBackend {
                             decoder,
                             sound.format.sample_rate,
                             self.context.sample_rate() as u16,
-                            sound.format.is_stereo,
                         ))
                     } else {
                         decoder
@@ -205,12 +204,13 @@ impl WebAudioBackend {
                 let mut decoder =
                     AdpcmDecoder::new(audio_data, format.is_stereo, format.sample_rate).unwrap();
                 if format.is_stereo {
-                    while let (Some(l), Some(r)) = (decoder.next(), decoder.next()) {
+                    while let Some(frame) = decoder.next() {
+                        let (l, r) = (frame[0], frame[1]);
                         self.left_samples.push(f32::from(l) / 32767.0);
                         self.right_samples.push(f32::from(r) / 32767.0);
                     }
                 } else {
-                    self.left_samples = decoder.map(|n| f32::from(n) / 32767.0).collect();
+                    self.left_samples = decoder.map(|n| f32::from(n[0]) / 32767.0).collect();
                 }
             }
             _ => unimplemented!(),
@@ -310,7 +310,8 @@ impl WebAudioBackend {
             let num_frames = output_buffer.length() as usize;
 
             for _ in 0..num_frames {
-                if let (Some(l), Some(r)) = (decoder.next(), decoder.next()) {
+                if let Some(frame) = decoder.next() {
+                    let (l, r) = (frame[0], frame[1]);
                     left_samples.push(f32::from(l) / 32767.0);
                     if *is_stereo {
                         right_samples.push(f32::from(r) / 32767.0);
@@ -444,33 +445,25 @@ impl AudioBackend for WebAudioBackend {
 // Janky resmapling code.
 // TODO: Clean this up.
 fn resample(
-    mut input: impl Iterator<Item = i16>,
+    mut input: impl Iterator<Item = [i16; 2]>,
     input_sample_rate: u16,
     output_sample_rate: u16,
-    is_stereo: bool,
-) -> impl Iterator<Item = i16> {
-    let (mut left0, mut right0) = if is_stereo {
-        (input.next(), input.next())
+) -> impl Iterator<Item = [i16; 2]> {
+    let (mut left0, mut right0) = if let Some(frame) = input.next() {
+        (Some(frame[0]), Some(frame[1]))
     } else {
-        let sample = input.next();
-        (sample, sample)
+        (None, None)
     };
-    let (mut left1, mut right1) = if is_stereo {
-        (input.next(), input.next())
+    let (mut left1, mut right1) = if let Some(frame) = input.next() {
+        (Some(frame[0]), Some(frame[1]))
     } else {
-        let sample = input.next();
-        (sample, sample)
+        (None, None)
     };
     let (mut left, mut right) = (left0.unwrap(), right0.unwrap());
     let dt_input = 1.0 / f64::from(input_sample_rate);
     let dt_output = 1.0 / f64::from(output_sample_rate);
     let mut t = 0.0;
-    let mut cur_channel = 0;
     std::iter::from_fn(move || {
-        if cur_channel == 1 {
-            cur_channel = 0;
-            return Some(right);
-        }
         if let (Some(l0), Some(r0), Some(l1), Some(r1)) = (left0, right0, left1, right1) {
             let a = t / dt_input;
             let l0 = f64::from(l0);
@@ -484,15 +477,15 @@ fn resample(
                 t -= dt_input;
                 left0 = left1;
                 right0 = right1;
-                left1 = input.next();
-                if is_stereo {
-                    right1 = input.next();
+                if let Some(frame) = input.next() {
+                    left1 = Some(frame[0]);
+                    right1 = Some(frame[1]);
                 } else {
-                    right1 = left1;
+                    left1 = None;
+                    right1 = None;
                 }
             }
-            cur_channel = 1;
-            Some(left)
+            Some([left, right])
         } else {
             None
         }

@@ -35,18 +35,25 @@ impl<R: std::io::Read> Mp3Decoder<R> {
 
 #[cfg(feature = "minimp3")]
 impl<R: std::io::Read> Iterator for Mp3Decoder<R> {
-    type Item = i16;
+    type Item = [i16; 2];
 
     #[inline]
-    fn next(&mut self) -> Option<i16> {
+    fn next(&mut self) -> Option<Self::Item> {
         if self.cur_sample >= self.num_samples {
             self.next_frame();
         }
 
         if self.num_samples > 0 {
-            let sample = self.cur_frame.data[self.cur_sample];
-            self.cur_sample += 1;
-            Some(sample)
+            if self.num_channels == 2 {
+                let left = self.cur_frame.data[self.cur_sample];
+                let right = self.cur_frame.data[self.cur_sample + 1];
+                self.cur_sample += 2;
+                Some([left, right])
+            } else {
+                let sample = self.cur_frame.data[self.cur_sample];
+                self.cur_sample += 1;
+                Some([sample, sample])
+            }
         } else {
             None
         }
@@ -101,22 +108,28 @@ impl<R: std::io::Read> super::Decoder for Mp3Decoder<R> {
 
 #[cfg(all(feature = "puremp3", not(feature = "minimp3")))]
 impl<R: std::io::Read> Iterator for Mp3Decoder<R> {
-    type Item = i16;
+    type Item = [i16; 2];
 
     #[inline]
-    fn next(&mut self) -> Option<i16> {
+    fn next(&mut self) -> Option<Self::Item> {
         if self.cur_sample >= self.cur_frame.num_samples {
             self.next_frame();
         }
 
         if self.cur_frame.num_samples > 0 {
-            let sample = self.cur_frame.samples[self.cur_channel][self.cur_sample];
-            self.cur_channel += 1;
-            if self.cur_channel >= usize::from(self.num_channels) {
-                self.cur_channel = 0;
-                self.cur_sample += 1;
-            }
-            Some((sample * 32767.0) as i16)
+            let (left, right) = if self.num_channels == 1 {
+                (
+                    self.cur_frame.samples[0][self.cur_sample],
+                    self.cur_frame.samples[0][self.cur_sample],
+                )
+            } else {
+                (
+                    self.cur_frame.samples[0][self.cur_sample],
+                    self.cur_frame.samples[1][self.cur_sample],
+                )
+            };
+            self.cur_sample += 1;
+            Some([(left * 32767.0) as i16, (right * 32767.0) as i16])
         } else {
             None
         }
