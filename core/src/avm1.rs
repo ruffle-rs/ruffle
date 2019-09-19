@@ -108,8 +108,16 @@ impl<'gc> Avm1<'gc> {
         form_values
     }
 
-    /// Add a stack frame that executes code directly from a SwfSlice.
-    pub fn insert_stack_frame_from_action(&mut self, swf_version: u8, code: SwfSlice, gc_context: MutationContext<'gc, '_>) {
+    /// Add a stack frame that executes code in timeline scope
+    pub fn insert_stack_frame_for_action(&mut self, swf_version: u8, code: SwfSlice, action_context: &mut ActionContext<'_, 'gc, '_>) {
+        let global_scope = GcCell::allocate(action_context.gc_context, Scope::from_global_object(self.globals));
+        let clip_obj = action_context.active_clip.read().object().as_object().unwrap().to_owned();
+        let child_scope = GcCell::allocate(action_context.gc_context, Scope::from_parent_scope_with_object(global_scope, clip_obj));
+        self.stack_frames.push(Activation::from_action(swf_version, code, child_scope));
+    }
+
+    /// Add a stack frame that executes code in function scope
+    pub fn insert_stack_frame_for_function(&mut self, swf_version: u8, code: SwfSlice, gc_context: MutationContext<'gc, '_>) {
         let scope = GcCell::allocate(gc_context, Scope::from_global_object(self.globals));
         self.stack_frames.push(Activation::from_action(swf_version, code, scope));
     }

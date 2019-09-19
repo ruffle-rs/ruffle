@@ -68,7 +68,7 @@ impl<'gc> Executable<'gc> {
         match self {
             Executable::Native(nf) => Some(nf(avm, ac, this, args)),
             Executable::Action(af) => {
-                avm.insert_stack_frame_from_action(af.swf_version, af.data.clone(), ac.gc_context);
+                avm.insert_stack_frame_for_function(af.swf_version, af.data.clone(), ac.gc_context);
 
                 for i in 0..args.len() {
                     avm.push(args.get(i).unwrap().clone());

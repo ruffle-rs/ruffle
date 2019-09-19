@@ -27,11 +27,21 @@ impl<'gc> Scope<'gc> {
         }
     }
 
-    /// Construct a child scope (one with a parent).
+    /// Construct a child scope of another scope.
     pub fn from_parent_scope(parent: GcCell<'gc, Self>, mc: MutationContext<'gc, '_>) -> Scope<'gc> {
         Scope {
             parent: Some(parent.clone()),
             values: GcCell::allocate(mc, Object::bare_object())
+        }
+    }
+
+    /// Construct a child scope with a given object
+    /// 
+    /// Rejected titles: `from_oyako_scope`
+    pub fn from_parent_scope_with_object(parent: GcCell<'gc, Self>, with_object: GcCell<'gc, Object<'gc>>) -> Scope<'gc> {
+        Scope {
+            parent: Some(parent),
+            values: with_object
         }
     }
 
