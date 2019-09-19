@@ -346,6 +346,11 @@ impl AudioBackend for CpalAudioBackend {
         });
     }
 
+    fn stop_all_sounds(&mut self) {
+        let mut sound_instances = self.sound_instances.lock().unwrap();
+        sound_instances.clear();
+    }
+
     fn tick(&mut self) {}
 }
 
