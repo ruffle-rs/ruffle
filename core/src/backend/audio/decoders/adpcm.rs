@@ -88,8 +88,8 @@ impl<R: Read> AdpcmDecoder<R> {
         } else {
             self.left_sample += delta;
         }
-        if self.left_sample < -32768 {
-            self.left_sample = 32768;
+        if self.left_sample < -32767 {
+            self.left_sample = -32767;
         } else if self.left_sample > 32767 {
             self.left_sample = 32767;
         }
@@ -115,8 +115,8 @@ impl<R: Read> AdpcmDecoder<R> {
             } else {
                 self.right_sample += delta;
             }
-            if self.right_sample < -32768 {
-                self.right_sample = 32768;
+            if self.right_sample < -32767 {
+                self.right_sample = -32767;
             } else if self.right_sample > 32767 {
                 self.right_sample = 32767;
             }
