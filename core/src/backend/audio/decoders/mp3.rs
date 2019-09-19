@@ -1,6 +1,9 @@
+use super::{Decoder, SeekableDecoder};
+use std::io::{Cursor, Read};
+
 #[cfg(feature = "minimp3")]
 #[allow(dead_code)]
-pub struct Mp3Decoder<R: std::io::Read> {
+pub struct Mp3Decoder<R: Read> {
     decoder: minimp3::Decoder<R>,
     sample_rate: u32,
     num_channels: u16,
@@ -10,7 +13,7 @@ pub struct Mp3Decoder<R: std::io::Read> {
 }
 
 #[cfg(feature = "minimp3")]
-impl<R: std::io::Read> Mp3Decoder<R> {
+impl<R: Read> Mp3Decoder<R> {
     pub fn new(num_channels: u16, sample_rate: u32, reader: R) -> Self {
         Mp3Decoder {
             decoder: minimp3::Decoder::new(reader),
@@ -34,7 +37,7 @@ impl<R: std::io::Read> Mp3Decoder<R> {
 }
 
 #[cfg(feature = "minimp3")]
-impl<R: std::io::Read> Iterator for Mp3Decoder<R> {
+impl<R: Read> Iterator for Mp3Decoder<R> {
     type Item = [i16; 2];
 
     #[inline]
@@ -60,8 +63,21 @@ impl<R: std::io::Read> Iterator for Mp3Decoder<R> {
     }
 }
 
+#[cfg(feature = "minimp3")]
+impl<R: AsRef<[u8]> + Default> SeekableDecoder for Mp3Decoder<Cursor<R>> {
+    #[inline]
+    fn reset(&mut self) {
+        // TODO: This is funky.
+        // I want to reset the `BitStream` and `Cursor` to their initial positions,
+        // but have to work around the borrowing rules of Rust.
+        let mut cursor = std::mem::replace(self.decoder.reader_mut(), Default::default());
+        cursor.set_position(0);
+        *self = Mp3Decoder::new(self.num_channels, self.sample_rate, cursor);
+    }
+}
+
 #[cfg(all(feature = "puremp3", not(feature = "minimp3")))]
-pub struct Mp3Decoder<R: std::io::Read> {
+pub struct Mp3Decoder<R: Read> {
     decoder: puremp3::Mp3Decoder<R>,
     sample_rate: u32,
     num_channels: u16,
@@ -71,7 +87,7 @@ pub struct Mp3Decoder<R: std::io::Read> {
 }
 
 #[cfg(all(feature = "puremp3", not(feature = "minimp3")))]
-impl<R: std::io::Read> Mp3Decoder<R> {
+impl<R: Read> Mp3Decoder<R> {
     pub fn new(num_channels: u16, sample_rate: u32, reader: R) -> Self {
         Mp3Decoder {
             decoder: puremp3::Mp3Decoder::new(reader),
@@ -94,7 +110,7 @@ impl<R: std::io::Read> Mp3Decoder<R> {
     }
 }
 
-impl<R: std::io::Read> super::Decoder for Mp3Decoder<R> {
+impl<R: Read> Decoder for Mp3Decoder<R> {
     #[inline]
     fn num_channels(&self) -> u8 {
         self.num_channels as u8
@@ -107,7 +123,7 @@ impl<R: std::io::Read> super::Decoder for Mp3Decoder<R> {
 }
 
 #[cfg(all(feature = "puremp3", not(feature = "minimp3")))]
-impl<R: std::io::Read> Iterator for Mp3Decoder<R> {
+impl<R: Read> Iterator for Mp3Decoder<R> {
     type Item = [i16; 2];
 
     #[inline]
@@ -133,5 +149,18 @@ impl<R: std::io::Read> Iterator for Mp3Decoder<R> {
         } else {
             None
         }
+    }
+}
+
+#[cfg(all(feature = "puremp3", not(feature = "minimp3")))]
+impl<R: AsRef<[u8]> + Default> SeekableDecoder for Mp3Decoder<Cursor<R>> {
+    #[inline]
+    fn reset(&mut self) {
+        // TODO: This is funky.
+        // I want to reset the `BitStream` and `Cursor` to their initial positions,
+        // but have to work around the borrowing rules of Rust.
+        let mut cursor = std::mem::replace(self.decoder.get_mut(), Default::default());
+        cursor.set_position(0);
+        *self = Mp3Decoder::new(self.num_channels, self.sample_rate, cursor);
     }
 }

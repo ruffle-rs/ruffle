@@ -60,6 +60,23 @@ pub fn stream_tag_reader(
     IterRead(iter)
 }
 
+/// Adds seeking ability to decoders where the underline stream is `std::io::Seek`.
+pub trait SeekableDecoder: Decoder {
+    /// Resets the decoder to the beginning of the stream.
+    fn reset(&mut self);
+
+    /// Seeks to a specific sample frame.
+    fn seek_to_sample_frame(&mut self, frame: u32) {
+        // The default implementation simply resets the stream and steps through
+        // until the desired position.
+        // This will be slow for long sounds on heavy decoders.
+        self.reset();
+        for _ in 0..frame {
+            self.next();
+        }
+    }
+}
+
 pub struct IterRead<I: Iterator<Item = u8>>(I);
 
 impl<I: Iterator<Item = u8>> std::io::Read for IterRead<I> {

@@ -1255,7 +1255,7 @@ impl<'gc, 'a> MovieClip<'gc> {
     ) -> DecodeResult {
         let start_sound = reader.read_start_sound_1()?;
         if let Some(handle) = context.library.get_sound(start_sound.id) {
-            context.audio.play_sound(handle);
+            context.audio.start_sound(handle, &start_sound.sound_info);
         }
         Ok(())
     }
