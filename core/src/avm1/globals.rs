@@ -1,11 +1,12 @@
 use crate::avm1::{ActionContext, Avm1, Object, Value};
+use crate::avm1::fscommand;
 use crate::backend::navigator::NavigationMethod;
 use gc_arena::{GcCell, MutationContext};
 use rand::Rng;
 
 mod math;
 
-#[allow(non_snake_case)]
+#[allow(non_snake_case, unused_must_use)] //can't use errors yet
 pub fn getURL<'a, 'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut ActionContext<'a, 'gc, '_>,
@@ -15,6 +16,11 @@ pub fn getURL<'a, 'gc>(
     //TODO: Error behavior if no arguments are present
     if let Some(url_val) = args.get(0) {
         let url = url_val.clone().into_string();
+        if let Some(fscommand) = fscommand::parse(&url) {
+            fscommand::handle(fscommand, avm, context);
+            return Value::Undefined;
+        }
+        
         let window = args.get(1).map(|v| v.clone().into_string());
         let method = match args.get(2) {
             Some(Value::String(s)) if s == "GET" => Some(NavigationMethod::GET),

@@ -13,6 +13,7 @@ mod globals;
 pub mod movie_clip;
 pub mod object;
 mod value;
+mod fscommand;
 
 pub use value::Value;
 
@@ -674,6 +675,10 @@ impl<'gc> Avm1<'gc> {
                 target
             );
             return Ok(());
+        }
+
+        if let Some(fscommand) = fscommand::parse(url) {
+            return fscommand::handle(fscommand, self, context);
         }
 
         context
