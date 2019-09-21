@@ -14,6 +14,7 @@ use swf::avm1::types::Action;
 use crate::tag_utils::SwfSlice;
 
 mod fscommand;
+mod function;
 mod scope;
 mod activation;
 mod globals;
@@ -113,13 +114,13 @@ impl<'gc> Avm1<'gc> {
         let global_scope = GcCell::allocate(action_context.gc_context, Scope::from_global_object(self.globals));
         let clip_obj = action_context.active_clip.read().object().as_object().unwrap().to_owned();
         let child_scope = GcCell::allocate(action_context.gc_context, Scope::from_parent_scope_with_object(global_scope, clip_obj));
-        self.stack_frames.push(Activation::from_action(swf_version, code, child_scope, clip_obj));
+        self.stack_frames.push(Activation::from_action(swf_version, code, child_scope, clip_obj, None));
     }
 
     /// Add a stack frame that executes code in function scope
-    pub fn insert_stack_frame_for_function(&mut self, swf_version: u8, code: SwfSlice, this: GcCell<'gc, Object<'gc>>, action_context: &mut ActionContext<'_, 'gc, '_>) {
+    pub fn insert_stack_frame_for_function(&mut self, avm1func: &function::Avm1Function, this: GcCell<'gc, Object<'gc>>, args: GcCell<'gc, Object<'gc>>, action_context: &mut ActionContext<'_, 'gc, '_>) {
         let scope = GcCell::allocate(action_context.gc_context, Scope::from_global_object(self.globals));
-        self.stack_frames.push(Activation::from_action(swf_version, code, scope, this));
+        self.stack_frames.push(Activation::from_action(avm1func.swf_version(), avm1func.data(), scope, this, Some(args)));
     }
 
     /// Retrieve the current AVM execution frame.

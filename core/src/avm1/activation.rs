@@ -27,24 +27,30 @@ pub struct Activation<'gc> {
     scope: GcCell<'gc, Scope<'gc>>,
 
     /// The immutable value of `this`.
-    this: GcCell<'gc, Object<'gc>>
+    this: GcCell<'gc, Object<'gc>>,
+
+    /// The arguments this function was called by.
+    arguments: Option<GcCell<'gc, Object<'gc>>>
 }
 
 unsafe impl<'gc> gc_arena::Collect for Activation<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
         self.scope.trace(cc);
+        self.this.trace(cc);
+        self.arguments.trace(cc);
     }
 }
 
 impl<'gc> Activation<'gc> {
-    pub fn from_action(swf_version: u8, code: SwfSlice, scope: GcCell<'gc, Scope<'gc>>, this: GcCell<'gc, Object<'gc>>) -> Activation<'gc> {
+    pub fn from_action(swf_version: u8, code: SwfSlice, scope: GcCell<'gc, Scope<'gc>>, this: GcCell<'gc, Object<'gc>>, arguments: Option<GcCell<'gc, Object<'gc>>>) -> Activation<'gc> {
         Activation {
             swf_version: swf_version,
             data: code,
             pc: 0,
             scope: scope,
-            this: this
+            this: this,
+            arguments: arguments
         }
     }
 
@@ -90,12 +96,20 @@ impl<'gc> Activation<'gc> {
             return Value::Object(self.this);
         }
 
+        if name == "arguments" && self.arguments.is_some() {
+            return Value::Object(self.arguments.unwrap());
+        }
+
         self.scope().resolve(name)
     }
 
     /// Check if a particular property in the scope chain is defined.
     pub fn is_defined(&self, name: &str) -> bool {
         if name == "this" {
+            return true;
+        }
+
+        if name == "arguments" && self.arguments.is_some() {
             return true;
         }
 
