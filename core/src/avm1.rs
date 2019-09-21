@@ -700,6 +700,10 @@ impl<'gc> Avm1<'gc> {
         let target = self.pop()?.into_string();
         let url = self.pop()?.into_string();
 
+        if let Some(fscommand) = fscommand::parse(&url) {
+            return fscommand::handle(fscommand, self, context);
+        }
+
         if is_target_sprite {
             log::warn!("GetURL into target sprite is not yet implemented");
             return Ok(()); //maybe error?
