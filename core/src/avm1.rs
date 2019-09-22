@@ -320,6 +320,10 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
+    pub fn variable_name_is_slash_path<'s>(path: &'s str) -> bool {
+        path.contains(":") || path.contains("/")
+    }
+
     pub fn resolve_slash_path(
         start: DisplayNode<'gc>,
         root: DisplayNode<'gc>,
@@ -656,7 +660,6 @@ impl<'gc> Avm1<'gc> {
         let name = self.pop()?;
         let name = name.as_string()?;
         self.push(Value::Null); // Sentinel that indicates end of enumeration
-                                // TODO(Herschel): Push each property name onto the stack
         
         let ob = match self.current_stack_frame().unwrap().resolve(name) {
             Value::Object(ob) => ob,
@@ -667,7 +670,7 @@ impl<'gc> Avm1<'gc> {
             }
         };
 
-        for (k, v) in ob.read().iter_values() {
+        for (k, _) in ob.read().iter_values() {
             self.push(Value::String(k.to_owned()));
         }
 
@@ -768,7 +771,6 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut ActionContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        // Flash 4-style variable
         let var_path = self.pop()?;
         let path = var_path.as_string()?;
         let globals = self.globals;
@@ -782,10 +784,10 @@ impl<'gc> Avm1<'gc> {
             return Ok(());
         }
 
+        let is_slashpath = Self::variable_name_is_slash_path(path);
         let mut result = None;
-        if self.current_stack_frame().unwrap().is_defined(path) {
-            result = Some(self.current_stack_frame().unwrap().resolve(path));
-        } else {
+        
+        if is_slashpath {
             if let Some((node, var_name)) =
                 Self::resolve_slash_path_variable(context.target_clip, context.root, path)
             {
@@ -795,11 +797,18 @@ impl<'gc> Avm1<'gc> {
                         result = Some(object.read().get(var_name, self, context, object));
                     }
                 }
-            };
+            }
         }
-
-        if result.is_none() && globals.read().has_property(path) {
-            result = Some(globals.read().get(path, self, context, globals));
+        
+        if result.is_none() && self.current_stack_frame().unwrap().is_defined(path) {
+            result = Some(self.current_stack_frame().unwrap().resolve(path));
+        }
+        
+        //TODO: Is this necessary?
+        if result.is_none() && self.globals.read().has_property(path) {
+            let globcell0 = self.globals.clone();
+            let globcell1 = self.globals.clone();
+            result = Some(globcell0.read().get(path, self, context, globcell1));
         }
         self.push(result.unwrap_or(Value::Undefined));
         Ok(())
@@ -1266,8 +1275,10 @@ impl<'gc> Avm1<'gc> {
         value: Value<'gc>,
     ) -> Result<(), Error> {
         let this = self.current_stack_frame().unwrap().this_cell();
-        let unstored_value = self.current_stack_frame().unwrap().scope().overwrite(var_path, value, context.gc_context);
-        if let Some(value) = unstored_value {
+        let is_slashpath = Self::variable_name_is_slash_path(var_path);
+        let mut is_resolved = false;
+
+        if is_slashpath {
             if let Some((node, var_name)) =
                 Self::resolve_slash_path_variable(context.target_clip, context.root, var_path)
             {
@@ -1275,10 +1286,22 @@ impl<'gc> Avm1<'gc> {
                     clip.object()
                         .as_object()?
                         .write(context.gc_context)
-                        .set(var_name, value, self, context, this);
+                        .set(var_name, value.clone(), self, context, this);
+                    
+                    is_resolved = true;
                 }
             }
         }
+
+        if !is_resolved {
+            match self.current_stack_frame().unwrap().scope().overwrite(var_path, value, context.gc_context) {
+                None => {},
+                Some(value) => {
+                    self.current_stack_frame().unwrap().define(var_path, value, context.gc_context);
+                }
+            }
+        }
+
         Ok(())
     }
 
