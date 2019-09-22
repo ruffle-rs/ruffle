@@ -5,6 +5,7 @@ use crate::tag_utils::SwfSlice;
 use crate::avm1::{Avm1, ActionContext};
 use crate::avm1::object::Object;
 use crate::avm1::value::Value;
+use crate::avm1::scope::Scope;
 
 pub type NativeFunction<'gc> = fn(
     &mut Avm1<'gc>,
@@ -15,7 +16,7 @@ pub type NativeFunction<'gc> = fn(
 
 /// Represents a function defined in the AVM1 runtime.
 #[derive(Clone)]
-pub struct Avm1Function {
+pub struct Avm1Function<'gc> {
     /// The file format version of the SWF that generated this function.
     swf_version: u8,
 
@@ -27,10 +28,13 @@ pub struct Avm1Function {
 
     /// The names of the function parameters.
     params: Vec<String>,
+
+    /// The scope the function was born into.
+    scope: GcCell<'gc, Scope<'gc>>
 }
 
-impl Avm1Function {
-    pub fn new(swf_version: u8, actions: SwfSlice, name: &str, params: &[&str]) -> Avm1Function {
+impl<'gc> Avm1Function<'gc> {
+    pub fn new(swf_version: u8, actions: SwfSlice, name: &str, params: &[&str], scope: GcCell<'gc, Scope<'gc>>) -> Self {
         let name = match name {
             "" => None,
             name => Some(name.to_string())
@@ -40,7 +44,8 @@ impl Avm1Function {
             swf_version: swf_version,
             data: actions,
             name: name,
-            params: params.into_iter().map(|s| s.to_string()).collect()
+            params: params.into_iter().map(|s| s.to_string()).collect(),
+            scope: scope
         }
     }
 
@@ -50,6 +55,16 @@ impl Avm1Function {
 
     pub fn data(&self) -> SwfSlice {
         self.data.clone()
+    }
+
+    pub fn scope(&self) -> GcCell<'gc, Scope<'gc>> {
+        self.scope.clone()
+    }
+}
+
+unsafe impl<'gc> gc_arena::Collect for Avm1Function<'gc> {
+    fn trace(&self, cc: gc_arena::CollectionContext) {
+        self.scope.trace(cc);
     }
 }
 
@@ -61,7 +76,7 @@ pub enum Executable<'gc> {
     Native(NativeFunction<'gc>),
 
     /// ActionScript data defined by a previous action.
-    Action(Avm1Function)
+    Action(Avm1Function<'gc>)
 }
 
 impl<'gc> Executable<'gc> {
@@ -78,10 +93,10 @@ impl<'gc> Executable<'gc> {
                 let mut arguments = Object::object(ac.gc_context);
 
                 for i in 0..args.len() {
-                    arguments.set(&format!("{}", i), args.get(i).unwrap().clone())
+                    arguments.force_set(&format!("{}", i), args.get(i).unwrap().clone());
                 }
 
-                arguments.set("length", Value::Number(args.len() as f64));
+                arguments.force_set("length", Value::Number(args.len() as f64));
 
                 avm.insert_stack_frame_for_function(af, this, GcCell::allocate(ac.gc_context, arguments), ac);
 

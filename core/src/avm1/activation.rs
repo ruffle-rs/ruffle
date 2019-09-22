@@ -90,6 +90,11 @@ impl<'gc> Activation<'gc> {
         self.scope.write(mc)
     }
 
+    /// Returns AVM local variable scope for reference.
+    pub fn scope_cell(&self) -> GcCell<'gc, Scope<'gc>> {
+        self.scope.clone()
+    }
+
     /// Resolve a particular named local variable within this activation.
     pub fn resolve(&self, name: &str) -> Value<'gc> {
         if name == "this" {
@@ -119,5 +124,10 @@ impl<'gc> Activation<'gc> {
     /// Define a named local variable within this activation.
     pub fn define(&self, name: &str, value: Value<'gc>, mc: MutationContext<'gc, '_>) {
         self.scope().define(name, value, mc)
+    }
+
+    /// Returns value of `this` as a reference.
+    pub fn this_cell(&self) -> GcCell<'gc, Object<'gc>> {
+        self.this
     }
 }

@@ -1,6 +1,6 @@
 //! Represents AVM1 scope chain resolution.
 
-use std::cell::Ref;
+use std::cell::{Ref, RefMut};
 use gc_arena::{GcCell, MutationContext};
 use crate::avm1::{Object, Value};
 
@@ -51,6 +51,11 @@ impl<'gc> Scope<'gc> {
         self.values.read()
     }
 
+    /// Returns a reference to the current local scope object for mutation.
+    pub fn locals_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<Object<'gc>> {
+        self.values.write(mc)
+    }
+
     /// Returns a reference to the parent scope object.
     pub fn parent(&self) -> Option<Ref<Scope<'gc>>> {
         match self.parent {
@@ -62,7 +67,7 @@ impl<'gc> Scope<'gc> {
     /// Resolve a particular value in the scope chain.
     pub fn resolve(&self, name: &str) -> Value<'gc> {
         if self.locals().has_property(name) {
-            return self.locals().get(name);
+            return self.locals().force_get(name);
         }
         
         if let Some(scope) = self.parent() {
@@ -85,8 +90,29 @@ impl<'gc> Scope<'gc> {
         false
     }
 
-    /// Set a particular value in the current scope (and all child scopes)
+    /// Update a particular value in the scope chain, but only if it was
+    /// previously defined.
+    /// 
+    /// If the value is currently already defined in this scope, then it will
+    /// be overwritten. If it is not defined, then we traverse the scope chain
+    /// until we find a defined value to overwrite. If no value can be
+    /// overwritten, then we return the unwritten value so that it may be used
+    /// in some other way.
+    pub fn overwrite(&self, name: &str, value: Value<'gc>, mc: MutationContext<'gc, '_>) -> Option<Value<'gc>> {
+        if self.locals().has_property(name) {
+            self.locals_mut(mc).force_set(name, value);
+            return None;
+        }
+
+        if let Some(scope) = self.parent() {
+            return scope.overwrite(name, value, mc);
+        }
+
+        Some(value)
+    }
+
+    /// Set a particular value in the locals for this scope.
     pub fn define(&self, name: &str, value: Value<'gc>, mc: MutationContext<'gc, '_>) {
-        self.values.write(mc).set(name, value);
+        self.locals_mut(mc).force_set(name, value);
     }
 }

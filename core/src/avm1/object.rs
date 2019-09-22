@@ -1,5 +1,6 @@
 use crate::avm1::{ActionContext, Avm1, Value};
 use crate::avm1::function::{Executable, NativeFunction, Avm1Function};
+use crate::avm1::scope::Scope;
 use crate::display_object::DisplayNode;
 use crate::tag_utils::SwfSlice;
 use core::fmt;
@@ -156,10 +157,10 @@ impl<'gc> Object<'gc> {
         }
     }
 
-    pub fn action_function(swf_version: u8, actions: SwfSlice, name: &str, params: &[&str]) -> Self {
+    pub fn action_function(swf_version: u8, actions: SwfSlice, name: &str, params: &[&str], scope: GcCell<'gc, Scope<'gc>>) -> Self {
         Self {
             type_of: TYPE_OF_FUNCTION,
-            function: Some(Executable::Action(Avm1Function::new(swf_version, actions, name, params))),
+            function: Some(Executable::Action(Avm1Function::new(swf_version, actions, name, params, scope))),
             display_node: None,
             values: HashMap::new()
         }
@@ -251,6 +252,15 @@ impl<'gc> Object<'gc> {
         Value::Undefined
     }
 
+    /// Retrieve a value from an object if and only if the value in the object
+    /// property is non-virtual.
+    pub fn force_get(&self, name: &str) -> Value<'gc> {
+        if let Some(Property::Stored { value, .. }) = self.values.get(name) {
+            return value.to_owned();
+        }
+        Value::Undefined
+    }
+
     pub fn has_property(&self, name: &str) -> bool {
         self.values.contains_key(name)
     }
@@ -260,7 +270,10 @@ impl<'gc> Object<'gc> {
     }
 
     pub fn iter_values(&self) -> impl Iterator<Item=(&String, &Value<'gc>)> {
-        self.values.iter()
+        self.values.iter().filter_map(|(k, p)| match p {
+            Property::Virtual {..} => None,
+            Property::Stored { value, .. } => Some((k, value))
+        })
     }
 
     pub fn call(

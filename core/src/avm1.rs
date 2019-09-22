@@ -118,9 +118,14 @@ impl<'gc> Avm1<'gc> {
     }
 
     /// Add a stack frame that executes code in function scope
-    pub fn insert_stack_frame_for_function(&mut self, avm1func: &function::Avm1Function, this: GcCell<'gc, Object<'gc>>, args: GcCell<'gc, Object<'gc>>, action_context: &mut ActionContext<'_, 'gc, '_>) {
-        let scope = GcCell::allocate(action_context.gc_context, Scope::from_global_object(self.globals));
-        self.stack_frames.push(Activation::from_action(avm1func.swf_version(), avm1func.data(), scope, this, Some(args)));
+    pub fn insert_stack_frame_for_function(&mut self,
+            avm1func: &function::Avm1Function<'gc>,
+            this: GcCell<'gc, Object<'gc>>,
+            args: GcCell<'gc, Object<'gc>>,
+            action_context: &mut ActionContext<'_, 'gc, '_>) {
+        let locals = GcCell::allocate(action_context.gc_context, Object::bare_object());
+        let child_scope = GcCell::allocate(action_context.gc_context, Scope::from_parent_scope_with_object(avm1func.scope(), locals));
+        self.stack_frames.push(Activation::from_action(avm1func.swf_version(), avm1func.data(), child_scope, this, Some(args)));
     }
 
     /// Retrieve the current AVM execution frame.
@@ -590,7 +595,8 @@ impl<'gc> Avm1<'gc> {
     ) -> Result<(), Error> {
         let swf_version = self.current_stack_frame().unwrap().swf_version();
         let func_data = self.current_stack_frame().unwrap().data().to_subslice(actions).unwrap();
-        let func = Value::Object(GcCell::allocate(context.gc_context, Object::action_function(swf_version, func_data, name, params)));
+        let scope = self.current_stack_frame().unwrap().scope_cell();
+        let func = Value::Object(GcCell::allocate(context.gc_context, Object::action_function(swf_version, func_data, name, params, scope)));
         
         if name == "" {
             self.push(func);
@@ -1244,14 +1250,18 @@ impl<'gc> Avm1<'gc> {
         var_path: &str,
         value: Value<'gc>,
     ) -> Result<(), Error> {
-        if let Some((node, var_name)) =
-            Self::resolve_slash_path_variable(context.target_clip, context.root, var_path)
-        {
-            if let Some(clip) = node.write(context.gc_context).as_movie_clip_mut() {
-                let object = clip.object().as_object()?;
-                object
-                    .write(context.gc_context)
-                    .set(var_name, value, self, context, object);
+        let this = self.current_stack_frame().unwrap().this_cell();
+        let unstored_value = self.current_stack_frame().unwrap().scope().overwrite(var_path, value, context.gc_context);
+        if let Some(value) = unstored_value {
+            if let Some((node, var_name)) =
+                Self::resolve_slash_path_variable(context.target_clip, context.root, var_path)
+            {
+                if let Some(clip) = node.write(context.gc_context).as_movie_clip_mut() {
+                    clip.object()
+                        .as_object()?
+                        .write(context.gc_context)
+                        .set(var_name, value, self, context, this);
+                }
             }
         }
         Ok(())
