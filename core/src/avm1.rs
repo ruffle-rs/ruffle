@@ -653,10 +653,25 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_enumerate(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        let _name = self.pop()?.as_string()?;
+        let name = self.pop()?;
+        let name = name.as_string()?;
         self.push(Value::Null); // Sentinel that indicates end of enumeration
                                 // TODO(Herschel): Push each property name onto the stack
-        Err("Unimplemented action: Enumerate".into())
+        
+        let ob = match self.current_stack_frame().unwrap().resolve(name) {
+            Value::Object(ob) => ob,
+            _ => {
+                log::error!("Cannot enumerate properties of {}", name);
+
+                return Ok(()) //TODO: This is NOT OK(()).
+            }
+        };
+
+        for (k, v) in ob.read().iter_values() {
+            self.push(Value::String(k.to_owned()));
+        }
+
+        Ok(())
     }
 
     #[allow(clippy::float_cmp)]
