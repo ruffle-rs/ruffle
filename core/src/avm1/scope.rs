@@ -193,4 +193,15 @@ impl<'gc> Scope<'gc> {
     pub fn define(&self, name: &str, value: Value<'gc>, mc: MutationContext<'gc, '_>) {
         self.locals_mut(mc).force_set(name, value);
     }
+
+    /// Delete a value from scope
+    pub fn delete(&self, name: &str, mc: MutationContext<'gc, '_>) {
+        if self.locals().has_property(name) {
+            return self.locals_mut(mc).delete(name);
+        }
+
+        if let Some(scope) = self.parent() {
+            return scope.delete(name, mc);
+        }
+    }
 }

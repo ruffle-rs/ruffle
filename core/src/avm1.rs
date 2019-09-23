@@ -630,17 +630,22 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_delete(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        let _name = self.pop()?.as_string()?;
-        let _object = self.pop()?.as_object()?;
-        Err("Unimplemented action: Delete".into())
-        // TODO(Herschel)
+    fn action_delete(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let name_val = self.pop()?;
+        let name = name_val.as_string()?;
+        let object = self.pop()?.as_object()?;
+        
+        object.write(context.gc_context).delete(name);
+
+        Ok(())
     }
 
-    fn action_delete_2(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        let _name = self.pop()?.as_string()?;
-        Err("Unimplemented action: Delete2".into())
-        // TODO(Herschel)
+    fn action_delete_2(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let name_val = self.pop()?;
+        let name = name_val.as_string()?;
+        self.current_stack_frame().unwrap().scope().delete(name, context.gc_context);
+
+        Ok(())
     }
 
     fn action_divide(&mut self, _context: &mut ActionContext) -> Result<(), Error> {

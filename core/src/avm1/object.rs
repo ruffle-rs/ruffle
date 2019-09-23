@@ -261,6 +261,11 @@ impl<'gc> Object<'gc> {
         Value::Undefined
     }
 
+    /// Delete a given value off the object.
+    pub fn delete(&mut self, name: &str) {
+        self.values.remove(name);
+    }
+
     pub fn has_property(&self, name: &str) -> bool {
         self.values.contains_key(name)
     }
