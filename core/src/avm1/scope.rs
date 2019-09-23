@@ -92,6 +92,29 @@ impl<'gc> Scope<'gc> {
         }
     }
 
+    /// Construct a with scope to be used as the scope during a with block.
+    /// 
+    /// A with block inserts the values of a particular object into the scope
+    /// of currently running code, while still maintaining the same local
+    /// scope. This requires some scope chain juggling.
+    pub fn new_with_scope(locals: GcCell<'gc, Self>,
+            with_object: GcCell<'gc, Object<'gc>>,
+            mc: MutationContext<'gc, '_>) -> GcCell<'gc, Self> {
+        let parent_scope = locals.read().parent.clone();
+        let local_values = locals.read().values.clone();
+        let with_scope = GcCell::allocate(mc, Scope {
+            parent: parent_scope,
+            class: ScopeClass::With,
+            values: with_object
+        });
+
+        GcCell::allocate(mc, Scope {
+            parent: Some(with_scope),
+            class: ScopeClass::Local,
+            values: local_values
+        })
+    }
+
     /// Construct an arbitrary scope
     pub fn new(parent: GcCell<'gc, Self>, class: ScopeClass, with_object: GcCell<'gc, Object<'gc>>) -> Scope<'gc> {
         Scope {

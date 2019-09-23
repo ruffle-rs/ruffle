@@ -124,7 +124,7 @@ impl<'gc> Avm1<'gc> {
             args: GcCell<'gc, Object<'gc>>,
             action_context: &mut ActionContext<'_, 'gc, '_>) {
         let child_scope = GcCell::allocate(action_context.gc_context, Scope::new_local_scope(avm1func.scope(), action_context.gc_context));
-        self.stack_frames.push(Activation::from_action(avm1func.swf_version(), avm1func.data(), child_scope, this, Some(args)));
+        self.stack_frames.push(Activation::from_function(avm1func.swf_version(), avm1func.data(), child_scope, this, Some(args)));
     }
 
     /// Retrieve the current AVM execution frame.
@@ -193,8 +193,11 @@ impl<'gc> Avm1<'gc> {
 
         if reader.pos() >= (data.end - data.start) {
             //Executing beyond the end of a function constitutes an implicit return.
+            if self.current_stack_frame().unwrap().can_implicit_return() {
+                self.push(Value::Undefined);
+            }
+
             self.retire_stack_frame();
-            self.push(Value::Undefined);
         } else if let Some(action) = reader.read_action()? {
             let result = match action {
                 Action::Add => self.action_add(context),
@@ -312,8 +315,11 @@ impl<'gc> Avm1<'gc> {
             }
         } else {
             //The explicit end opcode was encountered so return here
+            if self.current_stack_frame().unwrap().can_implicit_return() {
+                self.push(Value::Undefined);
+            }
+
             self.retire_stack_frame();
-            self.push(Value::Undefined);
         }
 
         Ok(())
@@ -402,6 +408,7 @@ impl<'gc> Avm1<'gc> {
         // ECMA-262 s. 11.6.1
         let a = self.pop()?;
         let b = self.pop()?;
+
         // TODO(Herschel):
         if let Value::String(a) = a {
             let mut s = b.into_string();
@@ -1538,9 +1545,8 @@ impl<'gc> Avm1<'gc> {
     fn action_with(&mut self, context: &mut ActionContext<'_, 'gc, '_>, actions: &[u8]) -> Result<(), Error> {
         let object = self.pop()?.as_object()?;
         let block = self.current_stack_frame().unwrap().data().to_subslice(actions).unwrap();
-        let with_scope = Scope::new(self.current_stack_frame().unwrap().scope_cell(), scope::ScopeClass::With, object);
-        let scope_cell = GcCell::allocate(context.gc_context, with_scope);
-        let new_activation = self.current_stack_frame().unwrap().to_rescope(block, scope_cell);
+        let with_scope = Scope::new_with_scope(self.current_stack_frame().unwrap().scope_cell(), object, context.gc_context);
+        let new_activation = self.current_stack_frame().unwrap().to_rescope(block, with_scope);
         self.stack_frames.push(new_activation);
         Ok(())
     }

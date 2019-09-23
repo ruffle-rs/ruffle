@@ -31,7 +31,11 @@ pub struct Activation<'gc> {
     this: GcCell<'gc, Object<'gc>>,
 
     /// The arguments this function was called by.
-    arguments: Option<GcCell<'gc, Object<'gc>>>
+    arguments: Option<GcCell<'gc, Object<'gc>>>,
+
+    /// Indicates if this activation object represents a function or embedded
+    /// block (e.g. ActionWith).
+    is_function: bool
 }
 
 unsafe impl<'gc> gc_arena::Collect for Activation<'gc> {
@@ -51,7 +55,20 @@ impl<'gc> Activation<'gc> {
             pc: 0,
             scope: scope,
             this: this,
-            arguments: arguments
+            arguments: arguments,
+            is_function: false
+        }
+    }
+
+    pub fn from_function(swf_version: u8, code: SwfSlice, scope: GcCell<'gc, Scope<'gc>>, this: GcCell<'gc, Object<'gc>>, arguments: Option<GcCell<'gc, Object<'gc>>>) -> Activation<'gc> {
+        Activation {
+            swf_version: swf_version,
+            data: code,
+            pc: 0,
+            scope: scope,
+            this: this,
+            arguments: arguments,
+            is_function: true
         }
     }
 
@@ -63,7 +80,8 @@ impl<'gc> Activation<'gc> {
             pc: 0,
             scope: scope,
             this: self.this,
-            arguments: self.arguments
+            arguments: self.arguments,
+            is_function: false
         }
     }
 
@@ -111,6 +129,12 @@ impl<'gc> Activation<'gc> {
     /// Returns AVM local variable scope for reference.
     pub fn scope_cell(&self) -> GcCell<'gc, Scope<'gc>> {
         self.scope.clone()
+    }
+
+    /// Indicates whether or not the end of this scope should be handled as an
+    /// implicit function return or the end of a block.
+    pub fn can_implicit_return(&self) -> bool {
+        self.is_function
     }
 
     /// Resolve a particular named local variable within this activation.
