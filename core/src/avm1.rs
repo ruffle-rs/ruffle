@@ -113,7 +113,7 @@ impl<'gc> Avm1<'gc> {
     pub fn insert_stack_frame_for_action(&mut self, swf_version: u8, code: SwfSlice, action_context: &mut ActionContext<'_, 'gc, '_>) {
         let global_scope = GcCell::allocate(action_context.gc_context, Scope::from_global_object(self.globals));
         let clip_obj = action_context.active_clip.read().object().as_object().unwrap().to_owned();
-        let child_scope = GcCell::allocate(action_context.gc_context, Scope::from_parent_scope_with_object(global_scope, clip_obj));
+        let child_scope = GcCell::allocate(action_context.gc_context, Scope::new(global_scope, scope::ScopeClass::Global, clip_obj));
         self.stack_frames.push(Activation::from_action(swf_version, code, child_scope, clip_obj, None));
     }
 
@@ -123,8 +123,7 @@ impl<'gc> Avm1<'gc> {
             this: GcCell<'gc, Object<'gc>>,
             args: GcCell<'gc, Object<'gc>>,
             action_context: &mut ActionContext<'_, 'gc, '_>) {
-        let locals = GcCell::allocate(action_context.gc_context, Object::bare_object());
-        let child_scope = GcCell::allocate(action_context.gc_context, Scope::from_parent_scope_with_object(avm1func.scope(), locals));
+        let child_scope = GcCell::allocate(action_context.gc_context, Scope::new_local_scope(avm1func.scope(), action_context.gc_context));
         self.stack_frames.push(Activation::from_action(avm1func.swf_version(), avm1func.data(), child_scope, this, Some(args)));
     }
 
@@ -304,7 +303,7 @@ impl<'gc> Avm1<'gc> {
                 Action::WaitForFrame2 {
                     num_actions_to_skip,
                 } => self.action_wait_for_frame_2(context, num_actions_to_skip),
-                Action::With { .. } => self.action_with(context),
+                Action::With { actions } => self.action_with(context, actions),
                 _ => self.unknown_op(context, action),
             };
             if let Err(ref e) = result {
@@ -599,7 +598,7 @@ impl<'gc> Avm1<'gc> {
     ) -> Result<(), Error> {
         let swf_version = self.current_stack_frame().unwrap().swf_version();
         let func_data = self.current_stack_frame().unwrap().data().to_subslice(actions).unwrap();
-        let scope = self.current_stack_frame().unwrap().scope_cell();
+        let scope = Scope::new_closure_scope(self.current_stack_frame().unwrap().scope_cell(), context.gc_context);
         let func = Value::Object(GcCell::allocate(context.gc_context, Object::action_function(swf_version, func_data, name, params, scope)));
         
         if name == "" {
@@ -1536,9 +1535,14 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_with(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        let _object = self.pop()?.as_object()?;
-        Err("Unimplemented action: With".into())
+    fn action_with(&mut self, context: &mut ActionContext<'_, 'gc, '_>, actions: &[u8]) -> Result<(), Error> {
+        let object = self.pop()?.as_object()?;
+        let block = self.current_stack_frame().unwrap().data().to_subslice(actions).unwrap();
+        let with_scope = Scope::new(self.current_stack_frame().unwrap().scope_cell(), scope::ScopeClass::With, object);
+        let scope_cell = GcCell::allocate(context.gc_context, with_scope);
+        let new_activation = self.current_stack_frame().unwrap().to_rescope(block, scope_cell);
+        self.stack_frames.push(new_activation);
+        Ok(())
     }
 }
 

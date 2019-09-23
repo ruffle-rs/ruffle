@@ -9,6 +9,7 @@ use crate::avm1::object::Object;
 use crate::avm1::Value;
 
 /// Represents a single activation of a given AVM1 function or keyframe.
+#[derive(Clone)]
 pub struct Activation<'gc> {
     /// Represents the SWF version of a given function.
     /// 
@@ -54,6 +55,18 @@ impl<'gc> Activation<'gc> {
         }
     }
 
+    /// Create a new activation to run a block of code with a given scope.
+    pub fn to_rescope(&self, code: SwfSlice, scope: GcCell<'gc, Scope<'gc>>) -> Self {
+        Activation {
+            swf_version: self.swf_version,
+            data: code,
+            pc: 0,
+            scope: scope,
+            this: self.this,
+            arguments: self.arguments
+        }
+    }
+
     /// Returns the SWF version of the action or function being executed.
     pub fn swf_version(&self) -> u8 {
         self.swf_version
@@ -62,6 +75,11 @@ impl<'gc> Activation<'gc> {
     /// Returns the data this stack frame executes from.
     pub fn data(&self) -> SwfSlice {
         self.data.clone()
+    }
+
+    /// Change the data being executed.
+    pub fn set_data(&mut self, new_data: SwfSlice) {
+        self.data = new_data;
     }
 
     /// Determines if a stack frame references the same function as a given
