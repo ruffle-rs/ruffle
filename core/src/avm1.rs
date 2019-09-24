@@ -634,8 +634,13 @@ impl<'gc> Avm1<'gc> {
         let name_val = self.pop()?;
         let name = name_val.as_string()?;
         let object = self.pop()?.as_object()?;
+
+        //Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
+        //a boolean based on if the delete actually deleted something.
+        let did_exist = Value::Bool(object.read().has_property(name));
         
         object.write(context.gc_context).delete(name);
+        self.push(did_exist);
 
         Ok(())
     }
@@ -643,7 +648,13 @@ impl<'gc> Avm1<'gc> {
     fn action_delete_2(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         let name_val = self.pop()?;
         let name = name_val.as_string()?;
+
+        //Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
+        //a boolean based on if the delete actually deleted something.
+        let did_exist = Value::Bool(self.current_stack_frame().unwrap().is_defined(name));
+
         self.current_stack_frame().unwrap().scope().delete(name, context.gc_context);
+        self.push(did_exist);
 
         Ok(())
     }
