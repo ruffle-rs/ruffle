@@ -71,7 +71,11 @@ pub struct Avm1<'gc> {
     stack_frames: Vec<Activation<'gc>>,
 
     /// The operand stack (shared across functions).
-    stack: Vec<Value<'gc>>
+    stack: Vec<Value<'gc>>,
+
+    /// The register slots (also shared across functions).
+    /// `ActionDefineFunction2` defined functions do not use these slots.
+    registers: [Value<'gc>; 4]
 }
 
 unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
@@ -91,7 +95,8 @@ impl<'gc> Avm1<'gc> {
             constant_pool: vec![],
             globals: GcCell::allocate(gc_context, create_globals(gc_context)),
             stack_frames: vec![],
-            stack: vec![]
+            stack: vec![],
+            registers: [Value::Undefined, Value::Undefined, Value::Undefined, Value::Undefined]
         }
     }
 
@@ -386,6 +391,14 @@ impl<'gc> Avm1<'gc> {
 
     fn pop(&mut self) -> Result<Value<'gc>, Error> {
         self.stack.pop().ok_or_else(|| "Stack underflow".into())
+    }
+
+    fn global_register(&self, id: usize) -> Value<'gc> {
+        self.registers.get(id).map(|v| v.clone()).unwrap_or(Value::Undefined)
+    }
+
+    fn set_global_register(&mut self, id: usize, value: Value<'gc>) {
+        self.registers.get_mut(id).map(|v| *v = value);
     }
 
     fn unknown_op(
@@ -1181,10 +1194,7 @@ impl<'gc> Avm1<'gc> {
                 SwfValue::Float(v) => Value::Number(f64::from(*v)),
                 SwfValue::Double(v) => Value::Number(*v),
                 SwfValue::Str(v) => Value::String(v.to_string()),
-                SwfValue::Register(_v) => {
-                    log::error!("Register push unimplemented");
-                    Value::Undefined
-                }
+                SwfValue::Register(v) => self.global_register(*v as usize),
                 SwfValue::ConstantPool(i) => {
                     if let Some(value) = self.constant_pool.get(*i as usize) {
                         Value::String(value.to_string())
@@ -1398,11 +1408,14 @@ impl<'gc> Avm1<'gc> {
     fn action_store_register(
         &mut self,
         _context: &mut ActionContext,
-        _register: u8,
+        register: u8,
     ) -> Result<(), Error> {
         // Does NOT pop the value from the stack.
-        let _val = self.stack.last().ok_or("Stack underflow")?;
-        Err("Unimplemented action: StoreRegister".into())
+        let val = self.stack.last().ok_or("Stack underflow")?.clone();
+        
+        self.set_global_register(register as usize, val);
+
+        Ok(())
     }
 
     fn action_string_add(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
