@@ -326,7 +326,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     pub fn variable_name_is_slash_path<'s>(path: &'s str) -> bool {
-        path.contains(":") || path.contains("/")
+        path.contains(":") || path.contains(".")
     }
 
     pub fn resolve_slash_path(
@@ -820,18 +820,10 @@ impl<'gc> Avm1<'gc> {
                     }
                 }
             }
-        }
-        
-        if result.is_none() && self.current_stack_frame().unwrap().is_defined(path) {
+        } else if self.current_stack_frame().unwrap().is_defined(path) {
             result = Some(self.current_stack_frame().unwrap().resolve(path));
         }
-        
-        //TODO: Is this necessary?
-        if result.is_none() && self.globals.read().has_property(path) {
-            let globcell0 = self.globals.clone();
-            let globcell1 = self.globals.clone();
-            result = Some(globcell0.read().get(path, self, context, globcell1));
-        }
+
         self.push(result.unwrap_or(Value::Undefined));
         Ok(())
     }
@@ -1298,7 +1290,6 @@ impl<'gc> Avm1<'gc> {
     ) -> Result<(), Error> {
         let this = self.current_stack_frame().unwrap().this_cell();
         let is_slashpath = Self::variable_name_is_slash_path(var_path);
-        let mut is_resolved = false;
 
         if is_slashpath {
             if let Some((node, var_name)) =
@@ -1309,13 +1300,9 @@ impl<'gc> Avm1<'gc> {
                         .as_object()?
                         .write(context.gc_context)
                         .set(var_name, value.clone(), self, context, this);
-                    
-                    is_resolved = true;
                 }
             }
-        }
-
-        if !is_resolved {
+        } else {
             match self.current_stack_frame().unwrap().scope().overwrite(var_path, value, context.gc_context) {
                 None => {},
                 Some(value) => {
