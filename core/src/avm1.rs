@@ -1249,12 +1249,15 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_set_member(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        let _value = self.pop()?;
-        let _name = self.pop()?;
-        let _object = self.pop()?;
-        // TODO(Herschel)
-        Err("Unimplemented action: SetMember".into())
+    fn action_set_member(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let value = self.pop()?;
+        let name_val = self.pop()?;
+        let name = name_val.as_string()?;
+        let object = self.pop()?.as_object()?;
+        
+        object.write(context.gc_context).set(name, value);
+
+        Ok(())
     }
 
     fn action_set_property(&mut self, context: &mut ActionContext) -> Result<(), Error> {
