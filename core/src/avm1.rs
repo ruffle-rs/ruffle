@@ -255,11 +255,11 @@ impl<'gc> Avm1<'gc> {
                     scene_offset,
                 } => self.action_goto_frame_2(context, set_playing, scene_offset),
                 Action::GotoLabel(label) => self.action_goto_label(context, &label),
-                Action::If { offset } => self.action_if(context, offset),
+                Action::If { offset } => self.action_if(context, offset, reader),
                 Action::Increment => self.action_increment(context),
                 Action::InitArray => self.action_init_array(context),
                 Action::InitObject => self.action_init_object(context),
-                Action::Jump { offset } => self.action_jump(context, offset),
+                Action::Jump { offset } => self.action_jump(context, offset, reader),
                 Action::Less => self.action_less(context),
                 Action::Less2 => self.action_less_2(context),
                 Action::MBAsciiToChar => self.action_mb_ascii_to_char(context),
@@ -980,11 +980,12 @@ impl<'gc> Avm1<'gc> {
     fn action_if(
         &mut self,
         _context: &mut ActionContext,
-        jump_offset: i16
+        jump_offset: i16,
+        reader: &mut Reader<'_>
     ) -> Result<(), Error> {
         let val = self.pop()?;
         if val.as_bool() {
-            self.with_current_reader_mut(|_this, r| r.seek(jump_offset.into()));
+            reader.seek(jump_offset.into());
         }
         Ok(())
     }
@@ -1019,10 +1020,11 @@ impl<'gc> Avm1<'gc> {
     fn action_jump(
         &mut self,
         _context: &mut ActionContext,
-        jump_offset: i16
+        jump_offset: i16,
+        reader: &mut Reader<'_>
     ) -> Result<(), Error> {
         // TODO(Herschel): Handle out-of-bounds.
-        self.with_current_reader_mut(|_this, r| r.seek(jump_offset.into()));
+        reader.seek(jump_offset.into());
         Ok(())
     }
 
