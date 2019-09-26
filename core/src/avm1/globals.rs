@@ -1,5 +1,5 @@
-use crate::avm1::{ActionContext, Avm1, Object, Value};
 use crate::avm1::fscommand;
+use crate::avm1::{ActionContext, Avm1, Object, Value};
 use crate::backend::navigator::NavigationMethod;
 use gc_arena::{GcCell, MutationContext};
 use rand::Rng;
@@ -20,7 +20,7 @@ pub fn getURL<'a, 'gc>(
             fscommand::handle(fscommand, avm, context);
             return Value::Undefined;
         }
-        
+
         let window = args.get(1).map(|v| v.clone().into_string());
         let method = match args.get(2) {
             Some(Value::String(s)) if s == "GET" => Some(NavigationMethod::GET),

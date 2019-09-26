@@ -9,11 +9,11 @@ use std::collections::HashMap;
 
 use swf::avm1::read::Reader;
 
+mod fscommand;
 mod globals;
 pub mod movie_clip;
 pub mod object;
 mod value;
-mod fscommand;
 
 pub use value::Value;
 

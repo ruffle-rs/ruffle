@@ -1,6 +1,6 @@
 //! FSCommand handling
 
-use crate::avm1::{Avm1, ActionContext, Error};
+use crate::avm1::{ActionContext, Avm1, Error};
 
 /// Parse an FSCommand URL.
 pub fn parse(url: &str) -> Option<&str> {
