@@ -744,10 +744,13 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_get_member(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        let _name = self.pop()?.as_string()?;
-        let _object = self.pop()?.as_object()?;
-        // TODO(Herschel)
-        Err("Unimplemented action: GetMember".into())
+        let name_val = self.pop()?;
+        let name = name_val.as_string()?;
+        let object = self.pop()?.as_object()?;
+        let value = object.read().get(name);
+        self.push(value);
+
+        Ok(())
     }
 
     fn action_get_property(
