@@ -745,9 +745,9 @@ impl<'gc> Avm1<'gc> {
 
     fn action_get_member(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let name_val = self.pop()?;
-        let name = name_val.as_string()?;
+        let name = name_val.into_string();
         let object = self.pop()?.as_object()?;
-        let value = object.read().get(name);
+        let value = object.read().get(&name);
         self.push(value);
 
         Ok(())
