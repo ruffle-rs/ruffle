@@ -77,6 +77,5 @@ impl NavigatorBackend for NullNavigatorBackend {
         _window: Option<String>,
         _vars_method: Option<(NavigationMethod, HashMap<String, String>)>,
     ) {
-
     }
 }
