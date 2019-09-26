@@ -1,5 +1,3 @@
-#![allow(clippy::invalid_ref)]
-
 use glium::uniforms::{Sampler, UniformValue, Uniforms};
 use glium::{draw_parameters::DrawParameters, implement_vertex, uniform, Display, Frame, Surface};
 use glutin::WindowedContext;
