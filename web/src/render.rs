@@ -58,9 +58,8 @@ impl WebCanvasRenderBackend {
         let document = window.document().unwrap();
 
         // Create a color matrix filter to handle Flash color effects.
-        // Ensure a previous instance of the color matrix filter node doesn't exist.
-        // TODO: Remove it in player.destroy()? This is dangerous if the client page has something with this id...
-        if let Some(element) = document.get_element_by_id("_svgfilter") {
+        // We may have a previous instance if this canvas was re-used, so remove it.
+        if let Ok(Some(element)) = canvas.query_selector("#_svgfilter") {
             element.remove();
         }
 
