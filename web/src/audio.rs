@@ -19,7 +19,7 @@ pub struct WebAudioBackend {
 }
 
 thread_local! {
-    static STREAMS: RefCell<Arena<AudioStream>> = RefCell::new(Arena::new());
+    static SOUND_INSTANCES: RefCell<Arena<SoundInstance>> = RefCell::new(Arena::new());
     static NUM_SOUNDS_LOADING: Cell<u32> = Cell::new(0);
 }
 
@@ -51,17 +51,26 @@ struct Sound {
 
 type Decoder = Box<dyn Iterator<Item = [i16; 2]>>;
 
+/// An actively playing instance of a sound.
+/// This sound can be either an event sound (`StartSound`) or
+/// a stream sound (`SoundStreamBlock`).
+struct SoundInstance {
+    /// Handle to the sound clip.
+    handle: Option<SoundHandle>,
+
+    /// Format of the sound.
+    format: swf::SoundFormat,
+
+    /// On web, sounds can be played via different methods:
+    /// either decoded on the fly with Decoder, or pre-decoded
+    /// and played with and AudioBufferSourceNode.
+    instance_type: SoundInstanceType,
+}
+
 #[allow(dead_code)]
-enum AudioStream {
-    Decoder {
-        handle: SoundHandle,
-        decoder: Decoder,
-        is_stereo: bool,
-    }, // closure: Option<Closure<Box<FnMut(web_sys::AudioProcessingEvent)>>> } ,
-    AudioBuffer {
-        handle: SoundHandle,
-        node: web_sys::AudioBufferSourceNode,
-    },
+enum SoundInstanceType {
+    Decoder(Decoder),
+    AudioBuffer(web_sys::AudioBufferSourceNode),
 }
 
 type Error = Box<dyn std::error::Error>;
@@ -127,10 +136,14 @@ impl WebAudioBackend {
                     }
                 }
 
-                let audio_stream = AudioStream::AudioBuffer { node, handle };
-                STREAMS.with(|streams| {
-                    let mut streams = streams.borrow_mut();
-                    streams.insert(audio_stream)
+                let instance = SoundInstance {
+                    handle: Some(handle),
+                    format: sound.format.clone(),
+                    instance_type: SoundInstanceType::AudioBuffer(node),
+                };
+                SOUND_INSTANCES.with(|instances| {
+                    let mut instances = instances.borrow_mut();
+                    instances.insert(instance)
                 })
             }
             SoundSource::Decoder(audio_data) => {
@@ -162,24 +175,23 @@ impl WebAudioBackend {
                         decoder
                     };
 
-                let audio_stream = AudioStream::Decoder {
-                    handle,
-                    decoder,
-                    is_stereo: sound.format.is_stereo,
-                    //closure: None,
+                let instance = SoundInstance {
+                    handle: Some(handle),
+                    format: sound.format.clone(),
+                    instance_type: SoundInstanceType::Decoder(decoder),
                 };
-                STREAMS.with(|streams| {
-                    let mut streams = streams.borrow_mut();
-                    let stream_handle = streams.insert(audio_stream);
+                SOUND_INSTANCES.with(|instances| {
+                    let mut instances = instances.borrow_mut();
+                    let instance_handle = instances.insert(instance);
                     let script_processor_node = self.context.create_script_processor_with_buffer_size_and_number_of_input_channels_and_number_of_output_channels(4096, 0, if sound.format.is_stereo { 2 } else { 1 }).unwrap();
                     let script_node = script_processor_node.clone();
                     let closure = Closure::wrap(Box::new(move |event| {
-                            STREAMS.with(|streams| {
-                                let mut streams = streams.borrow_mut();
-                                let audio_stream = streams.get_mut(stream_handle).unwrap();
-                                let complete = WebAudioBackend::update_script_processor(audio_stream, event);
+                            SOUND_INSTANCES.with(|instances| {
+                                let mut instances = instances.borrow_mut();
+                                let instance = instances.get_mut(instance_handle).unwrap();
+                                let complete = WebAudioBackend::update_script_processor(instance, event);
                                 if complete {
-                                    streams.remove(stream_handle);
+                                    instances.remove(instance_handle);
                                     script_node.disconnect().unwrap();
                                 }
                             })
@@ -188,7 +200,7 @@ impl WebAudioBackend {
                         // TODO: This will leak memory per playing sound. Remember and properly drop the closure.
                         closure.forget();
 
-                    stream_handle
+                    instance_handle
                 })
             }
         }
@@ -339,16 +351,13 @@ impl WebAudioBackend {
     }
 
     fn update_script_processor(
-        audio_stream: &mut AudioStream,
+        instance: &mut SoundInstance,
         event: web_sys::AudioProcessingEvent,
     ) -> bool {
         let mut complete = false;
         let mut left_samples = vec![];
         let mut right_samples = vec![];
-        if let AudioStream::Decoder {
-            decoder, is_stereo, ..
-        } = audio_stream
-        {
+        if let SoundInstanceType::Decoder(ref mut decoder) = &mut instance.instance_type {
             let output_buffer = event.output_buffer().unwrap();
             let num_frames = output_buffer.length() as usize;
 
@@ -356,7 +365,7 @@ impl WebAudioBackend {
                 if let Some(frame) = decoder.next() {
                     let (l, r) = (frame[0], frame[1]);
                     left_samples.push(f32::from(l) / 32767.0);
-                    if *is_stereo {
+                    if instance.format.is_stereo {
                         right_samples.push(f32::from(r) / 32767.0);
                     }
                 } else {
@@ -367,7 +376,7 @@ impl WebAudioBackend {
             output_buffer
                 .copy_to_channel(&mut left_samples[..], 0)
                 .unwrap();
-            if *is_stereo {
+            if instance.format.is_stereo {
                 output_buffer
                     .copy_to_channel(&mut right_samples[..], 1)
                     .unwrap();
@@ -487,41 +496,33 @@ impl AudioBackend for WebAudioBackend {
     }
 
     fn stop_all_sounds(&mut self) {
-        STREAMS.with(|streams| {
-            let mut streams = streams.borrow_mut();
-            for (_, stream) in streams.iter() {
-                if let AudioStream::AudioBuffer { node, .. } = stream {
+        SOUND_INSTANCES.with(|instances| {
+            let mut instances = instances.borrow_mut();
+            instances.iter_mut().for_each(|(_, instance)| {
+                if let SoundInstanceType::AudioBuffer(ref mut node) = instance.instance_type {
                     let _ = node.stop();
                 }
                 // TODO: Have to handle Decoder nodes. (These may just go into a different backend.)
-            }
-            streams.clear();
+            });
+            instances.clear();
         })
     }
 
     fn stop_sounds_with_handle(&mut self, handle: SoundHandle) {
-        STREAMS.with(|streams| {
-            let mut streams = streams.borrow_mut();
-            streams.retain(|_, instance| {
-                let instance_handle = match instance {
-                    AudioStream::Decoder { handle, .. } => *handle,
-                    AudioStream::AudioBuffer { handle, .. } => *handle,
-                };
-                instance_handle == handle
-            });
+        SOUND_INSTANCES.with(|instances| {
+            let mut instances = instances.borrow_mut();
+            let handle = Some(handle);
+            instances.retain(|_, instance| instance.handle == handle);
         })
     }
 
     fn is_sound_playing_with_handle(&mut self, handle: SoundHandle) -> bool {
-        STREAMS.with(|streams| {
-            let streams = streams.borrow();
-            streams.iter().any(|(_, instance)| {
-                let instance_handle = match instance {
-                    AudioStream::Decoder { handle, .. } => *handle,
-                    AudioStream::AudioBuffer { handle, .. } => *handle,
-                };
-                instance_handle == handle
-            })
+        SOUND_INSTANCES.with(|instances| {
+            let instances = instances.borrow();
+            let handle = Some(handle);
+            instances
+                .iter()
+                .any(|(_, instance)| instance.handle == handle)
         })
     }
 }
