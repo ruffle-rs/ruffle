@@ -512,7 +512,7 @@ impl AudioBackend for WebAudioBackend {
         SOUND_INSTANCES.with(|instances| {
             let mut instances = instances.borrow_mut();
             let handle = Some(handle);
-            instances.retain(|_, instance| instance.handle == handle);
+            instances.retain(|_, instance| instance.handle != handle);
         })
     }
 

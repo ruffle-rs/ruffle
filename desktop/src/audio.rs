@@ -354,7 +354,7 @@ impl AudioBackend for CpalAudioBackend {
     fn stop_sounds_with_handle(&mut self, handle: SoundHandle) {
         let mut sound_instances = self.sound_instances.lock().unwrap();
         let handle = Some(handle);
-        sound_instances.retain(|_, instance| instance.handle == handle);
+        sound_instances.retain(|_, instance| instance.handle != handle);
     }
 
     fn is_sound_playing_with_handle(&mut self, handle: SoundHandle) -> bool {
