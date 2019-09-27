@@ -1255,7 +1255,22 @@ impl<'gc, 'a> MovieClip<'gc> {
     ) -> DecodeResult {
         let start_sound = reader.read_start_sound_1()?;
         if let Some(handle) = context.library.get_sound(start_sound.id) {
-            context.audio.start_sound(handle, &start_sound.sound_info);
+            use swf::SoundEvent;
+            // The sound event type is controlled by the "Sync" setting in the Flash IDE.
+            match start_sound.sound_info.event {
+                // "Event" sounds always play, independent of the timeline.
+                SoundEvent::Event => context.audio.start_sound(handle, &start_sound.sound_info),
+
+                // "Start" sounds only play if an instance of the same sound is not already playing.
+                SoundEvent::Start => {
+                    if !context.audio.is_sound_playing_with_handle(handle) {
+                        context.audio.start_sound(handle, &start_sound.sound_info);
+                    }
+                }
+
+                // "Stop" stops any active instances of a given sound.
+                SoundEvent::Stop => context.audio.stop_sounds_with_handle(handle),
+            }
         }
         Ok(())
     }

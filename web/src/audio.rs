@@ -54,10 +54,12 @@ type Decoder = Box<dyn Iterator<Item = [i16; 2]>>;
 #[allow(dead_code)]
 enum AudioStream {
     Decoder {
+        handle: SoundHandle,
         decoder: Decoder,
         is_stereo: bool,
     }, // closure: Option<Closure<Box<FnMut(web_sys::AudioProcessingEvent)>>> } ,
     AudioBuffer {
+        handle: SoundHandle,
         node: web_sys::AudioBufferSourceNode,
     },
 }
@@ -125,7 +127,7 @@ impl WebAudioBackend {
                     }
                 }
 
-                let audio_stream = AudioStream::AudioBuffer { node };
+                let audio_stream = AudioStream::AudioBuffer { node, handle };
                 STREAMS.with(|streams| {
                     let mut streams = streams.borrow_mut();
                     streams.insert(audio_stream)
@@ -161,6 +163,7 @@ impl WebAudioBackend {
                     };
 
                 let audio_stream = AudioStream::Decoder {
+                    handle,
                     decoder,
                     is_stereo: sound.format.is_stereo,
                     //closure: None,
@@ -487,12 +490,38 @@ impl AudioBackend for WebAudioBackend {
         STREAMS.with(|streams| {
             let mut streams = streams.borrow_mut();
             for (_, stream) in streams.iter() {
-                if let AudioStream::AudioBuffer { node } = stream {
+                if let AudioStream::AudioBuffer { node, .. } = stream {
                     let _ = node.stop();
                 }
                 // TODO: Have to handle Decoder nodes. (These may just go into a different backend.)
             }
             streams.clear();
+        })
+    }
+
+    fn stop_sounds_with_handle(&mut self, handle: SoundHandle) {
+        STREAMS.with(|streams| {
+            let mut streams = streams.borrow_mut();
+            streams.retain(|_, instance| {
+                let instance_handle = match instance {
+                    AudioStream::Decoder { handle, .. } => *handle,
+                    AudioStream::AudioBuffer { handle, .. } => *handle,
+                };
+                instance_handle == handle
+            });
+        })
+    }
+
+    fn is_sound_playing_with_handle(&mut self, handle: SoundHandle) -> bool {
+        STREAMS.with(|streams| {
+            let streams = streams.borrow();
+            streams.iter().any(|(_, instance)| {
+                let instance_handle = match instance {
+                    AudioStream::Decoder { handle, .. } => *handle,
+                    AudioStream::AudioBuffer { handle, .. } => *handle,
+                };
+                instance_handle == handle
+            })
         })
     }
 }

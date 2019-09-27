@@ -37,6 +37,15 @@ pub trait AudioBackend {
     /// Good ol' stopAllSounds() :-)
     fn stop_all_sounds(&mut self);
 
+    /// Stops all active sound instances of a particular sound.
+    /// Used by SWF `StartSound` tag with `SoundEvent::Stop`.
+    fn stop_sounds_with_handle(&mut self, handle: SoundHandle);
+
+    /// Returns wheter a sound clip is playing.
+    /// Used by SWF `StartSouynd` tag with `SoundEvent:Start`,
+    /// which only plays a sound if that sound is not already playing.
+    fn is_sound_playing_with_handle(&mut self, handle: SoundHandle) -> bool;
+
     // TODO: Eventually remove this/move it to library.
     fn is_loading_complete(&self) -> bool {
         true
@@ -74,8 +83,11 @@ impl AudioBackend for NullAudioBackend {
     ) -> AudioStreamHandle {
         self.streams.insert(())
     }
-
     fn stop_all_sounds(&mut self) {}
+    fn stop_sounds_with_handle(&mut self, _handle: SoundHandle) {}
+    fn is_sound_playing_with_handle(&mut self, _handle: SoundHandle) -> bool {
+        false
+    }
 }
 
 impl Default for NullAudioBackend {
