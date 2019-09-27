@@ -35,7 +35,20 @@ pub struct Activation<'gc> {
 
     /// Indicates if this activation object represents a function or embedded
     /// block (e.g. ActionWith).
-    is_function: bool
+    is_function: bool,
+
+    /// Local registers, if any.
+    /// 
+    /// None indicates a function executing out of the global register set.
+    /// Some indicates the existence of local registers, even if none exist.
+    /// i.e. None(Vec::new()) means no registers should exist at all.
+    /// 
+    /// Registers are numbered from 1; r0 does not exist. Therefore this vec,
+    /// while nominally starting from zero, actually starts from r1.
+    /// 
+    /// Registers are stored in a `GcCell` so that rescopes (e.g. with) use the
+    /// same register set.
+    local_registers: Option<GcCell<'gc, Vec<Value<'gc>>>>
 }
 
 unsafe impl<'gc> gc_arena::Collect for Activation<'gc> {
@@ -44,6 +57,7 @@ unsafe impl<'gc> gc_arena::Collect for Activation<'gc> {
         self.scope.trace(cc);
         self.this.trace(cc);
         self.arguments.trace(cc);
+        self.local_registers.trace(cc);
     }
 }
 
@@ -56,7 +70,8 @@ impl<'gc> Activation<'gc> {
             scope: scope,
             this: this,
             arguments: arguments,
-            is_function: false
+            is_function: false,
+            local_registers: None
         }
     }
 
@@ -68,7 +83,8 @@ impl<'gc> Activation<'gc> {
             scope: scope,
             this: this,
             arguments: arguments,
-            is_function: true
+            is_function: true,
+            local_registers: None
         }
     }
 
@@ -81,7 +97,8 @@ impl<'gc> Activation<'gc> {
             scope: scope,
             this: self.this,
             arguments: self.arguments,
-            is_function: false
+            is_function: false,
+            local_registers: self.local_registers.clone()
         }
     }
 
@@ -171,5 +188,26 @@ impl<'gc> Activation<'gc> {
     /// Returns value of `this` as a reference.
     pub fn this_cell(&self) -> GcCell<'gc, Object<'gc>> {
         self.this
+    }
+    
+    /// Returns true if this function was called with a local register set.
+    pub fn has_local_registers(&self) -> bool {
+        self.local_registers.is_some()
+    }
+
+    /// Retrieve a local register.
+    pub fn local_register(&self, id: u8) -> Value<'gc> {
+        if let Some(local_registers) = self.local_registers {
+            local_registers.read().get(id as usize).map(|v| v.clone()).unwrap_or(Value::Undefined)
+        } else {
+            Value::Undefined
+        }
+    }
+
+    /// Set a local register.
+    pub fn set_local_register(&mut self, id: u8, value: Value<'gc>, mc: MutationContext<'gc, '_>) {
+        if let Some(ref mut local_registers) = self.local_registers {
+            local_registers.write(mc).get_mut(id as usize).map(|r| *r = value);
+        }
     }
 }

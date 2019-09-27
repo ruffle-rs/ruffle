@@ -393,12 +393,20 @@ impl<'gc> Avm1<'gc> {
         self.stack.pop().ok_or_else(|| "Stack underflow".into())
     }
 
-    fn global_register(&self, id: usize) -> Value<'gc> {
-        self.registers.get(id).map(|v| v.clone()).unwrap_or(Value::Undefined)
+    fn current_register(&self, id: u8) -> Value<'gc> {
+        if self.current_stack_frame().map(|sf| sf.has_local_registers()).unwrap_or(false) {
+            self.current_stack_frame().unwrap().local_register(id)
+        } else {
+            self.registers.get(id as usize).map(|v| v.clone()).unwrap_or(Value::Undefined)
+        }
     }
 
-    fn set_global_register(&mut self, id: usize, value: Value<'gc>) {
-        self.registers.get_mut(id).map(|v| *v = value);
+    fn set_current_register(&mut self, id: u8, value: Value<'gc>, context: &mut ActionContext<'_, 'gc, '_>) {
+        if self.current_stack_frame().map(|sf| sf.has_local_registers()).unwrap_or(false) {
+            self.current_stack_frame_mut().unwrap().set_local_register(id, value, context.gc_context);
+        } else {
+            self.registers.get_mut(id as usize).map(|v| *v = value);
+        }
     }
 
     fn unknown_op(
@@ -743,11 +751,12 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_get_member(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_get_member(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         let name_val = self.pop()?;
         let name = name_val.into_string();
         let object = self.pop()?.as_object()?;
-        let value = object.read().get(&name);
+        let this = self.current_stack_frame().unwrap().this_cell();
+        let value = object.read().get(&name, self, context, this);
         self.push(value);
 
         Ok(())
@@ -1199,7 +1208,7 @@ impl<'gc> Avm1<'gc> {
                 SwfValue::Float(v) => Value::Number(f64::from(*v)),
                 SwfValue::Double(v) => Value::Number(*v),
                 SwfValue::Str(v) => Value::String(v.to_string()),
-                SwfValue::Register(v) => self.global_register(*v as usize),
+                SwfValue::Register(v) => self.current_register(*v),
                 SwfValue::ConstantPool(i) => {
                     if let Some(value) = self.constant_pool.get(*i as usize) {
                         Value::String(value.to_string())
@@ -1256,8 +1265,9 @@ impl<'gc> Avm1<'gc> {
         let name_val = self.pop()?;
         let name = name_val.as_string()?;
         let object = self.pop()?.as_object()?;
+        let this = self.current_stack_frame().unwrap().this_cell();
         
-        object.write(context.gc_context).set(name, value);
+        object.write(context.gc_context).set(name, value, self, context, this);
 
         Ok(())
     }
@@ -1415,13 +1425,13 @@ impl<'gc> Avm1<'gc> {
 
     fn action_store_register(
         &mut self,
-        _context: &mut ActionContext,
+        context: &mut ActionContext<'_, 'gc, '_>,
         register: u8,
     ) -> Result<(), Error> {
         // Does NOT pop the value from the stack.
         let val = self.stack.last().ok_or("Stack underflow")?.clone();
         
-        self.set_global_register(register as usize, val);
+        self.set_current_register(register, val, context);
 
         Ok(())
     }
