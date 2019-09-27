@@ -6,7 +6,7 @@ use gc_arena::MutationContext;
 macro_rules! with_movie_clip {
     ( $gc_context: ident, $object:ident, $($name:expr => $fn:expr),* ) => {{
         $(
-            $object.set_function(
+            $object.force_set_function(
                 $name,
                 |_avm, _context, this, args| -> Value<'gc> {
                     if let Some(display_object) = this.read().display_node() {
@@ -25,7 +25,7 @@ macro_rules! with_movie_clip {
 macro_rules! with_movie_clip_mut {
     ( $gc_context: ident, $object:ident, $($name:expr => $fn:expr),* ) => {{
         $(
-            $object.set_function(
+            $object.force_set_function(
                 $name,
                 |_avm, context, this, args| -> Value<'gc> {
                     if let Some(display_object) = this.read().display_node() {

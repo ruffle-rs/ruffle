@@ -440,7 +440,12 @@ impl<'gc> Avm1<'gc> {
                         object.call(self, context, object.as_object()?.to_owned(), &args)?;
                     self.stack.push(return_value);
                 } else {
-                    let callable = object.as_object()?.read().get(&name);
+                    let callable = object.as_object()?.read().get(
+                        &name,
+                        self,
+                        context,
+                        object.as_object()?.to_owned(),
+                    );
 
                     if let Value::Undefined = callable {
                         return Err(format!("Object method {} is not defined", name).into());
@@ -659,14 +664,19 @@ impl<'gc> Avm1<'gc> {
                 if let Some(clip) = node.read().as_movie_clip() {
                     let object = clip.object().as_object()?;
                     if object.read().has_property(var_name) {
-                        result = Some(object.read().get(var_name));
+                        result = Some(object.read().get(var_name, self, context, object));
                     }
                 }
             };
         }
 
         if result.is_none() && self.globals.read().has_property(path) {
-            result = Some(self.globals.read().get(path));
+            result = Some(
+                self.globals
+                    .clone()
+                    .read()
+                    .get(path, self, context, self.globals),
+            );
         }
         self.push(result.unwrap_or(Value::Undefined));
         Ok(())
@@ -1133,10 +1143,10 @@ impl<'gc> Avm1<'gc> {
             Self::resolve_slash_path_variable(context.target_clip, context.root, var_path)
         {
             if let Some(clip) = node.write(context.gc_context).as_movie_clip_mut() {
-                clip.object()
-                    .as_object()?
+                let object = clip.object().as_object()?;
+                object
                     .write(context.gc_context)
-                    .set(var_name, value);
+                    .set(var_name, value, self, context, object);
             }
         }
         Ok(())

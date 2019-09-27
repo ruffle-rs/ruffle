@@ -52,9 +52,9 @@ pub fn random<'gc>(
 pub fn create_globals<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<'gc> {
     let mut globals = Object::object(gc_context);
 
-    globals.set_object("Math", math::create(gc_context));
-    globals.set_function("getURL", getURL, gc_context);
-    globals.set_function("random", random, gc_context);
+    globals.force_set("Math", Value::Object(math::create(gc_context)));
+    globals.force_set_function("getURL", getURL, gc_context);
+    globals.force_set_function("random", random, gc_context);
 
     globals
 }
