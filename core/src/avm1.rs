@@ -524,7 +524,7 @@ impl<'gc> Avm1<'gc> {
 
         // TODO(Herschel): SWF19: "If A is zero, the result NaN, Infinity, or -Infinity is pushed to the in SWF 5 and later.
         // In SWF 4, the result is the string #ERROR#.""
-        // Seems to be unture for SWF v4, I get 1.#INF.
+        // Seems to be untrue for SWF v4, I get 1.#INF.
 
         self.push(Value::Number(b.into_number_v1() / a.into_number_v1()));
         Ok(())
