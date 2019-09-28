@@ -1288,7 +1288,7 @@ impl<'gc> Avm1<'gc> {
     fn action_subtract(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let a = self.pop()?;
         let b = self.pop()?;
-        self.push(Value::Number(a.into_number_v1() + b.into_number_v1()));
+        self.push(Value::Number(a.into_number_v1() - b.into_number_v1()));
         Ok(())
     }
 
