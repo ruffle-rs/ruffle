@@ -1056,7 +1056,9 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_random_number(&mut self, context: &mut ActionContext) -> Result<(), Error> {
-        let max = self.pop()?.as_f64()? as u32;
+        // A max value < 0 will always return 0,
+        // and the max value gets converted into an i32, so any number > 2^31 - 1 will return 0.
+        let max = self.pop()?.into_number_v1() as i32;
         let val = context.rng.gen_range(0, max);
         self.push(Value::Number(val.into()));
         Ok(())
