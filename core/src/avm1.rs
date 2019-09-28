@@ -575,7 +575,7 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut ActionContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let prop_index = self.pop()?.as_u32()? as usize;
+        let prop_index = self.pop()?.into_number_v1() as usize;
         let clip_path = self.pop()?;
         let path = clip_path.as_string()?;
         let ret = if let Some(base_clip) = context.target_clip {
