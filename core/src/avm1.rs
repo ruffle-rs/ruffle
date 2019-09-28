@@ -119,6 +119,7 @@ impl<'gc> Avm1<'gc> {
                 Action::CallFunction => self.action_call_function(context),
                 Action::CallMethod => self.action_call_method(context),
                 Action::CharToAscii => self.action_char_to_ascii(context),
+                Action::CloneSprite => self.action_clone_sprite(context),
                 Action::ConstantPool(constant_pool) => {
                     self.action_constant_pool(context, &constant_pool[..])
                 }
@@ -337,6 +338,15 @@ impl<'gc> Avm1<'gc> {
         let s = self.pop()?.into_string();
         let result = s.bytes().nth(0).unwrap_or(0);
         self.push(Value::Number(result.into()));
+        Ok(())
+    }
+
+    fn action_clone_sprite(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        // TODO(Herschel)
+        let _depth = self.pop()?;
+        let _target = self.pop()?;
+        let _source = self.pop()?;
+        log::error!("Unimplemented action: CloneSprite");
         Ok(())
     }
 
@@ -1053,7 +1063,8 @@ impl<'gc> Avm1<'gc> {
     fn action_remove_sprite(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let _target = self.pop()?.into_string();
         // TODO(Herschel)
-        Err("Unimplemented action: RemoveSprite".into())
+        log::error!("Unimplemented action: RemoveSprite");
+        Ok(())
     }
 
     fn action_return(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
