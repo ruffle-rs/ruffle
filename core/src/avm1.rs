@@ -738,6 +738,7 @@ impl<'gc> Avm1<'gc> {
         if let Some(clip) = context.target_clip {
             let mut display_object = clip.write(context.gc_context);
             if let Some(clip) = display_object.as_movie_clip_mut() {
+                // The frame on the stack is 0-based, not 1-based.
                 clip.goto_frame(frame + 1, true);
             } else {
                 log::error!("GotoFrame failed: Target is not a MovieClip");
@@ -761,7 +762,8 @@ impl<'gc> Avm1<'gc> {
             if let Some(clip) = display_object.as_movie_clip_mut() {
                 match self.pop()? {
                     Value::Number(frame) => {
-                        clip.goto_frame(scene_offset + (frame as u16) + 1, !set_playing)
+                        // The frame on the stack is 1-based, not 0-based.
+                        clip.goto_frame(scene_offset + (frame as u16), !set_playing)
                     }
                     Value::String(frame_label) => {
                         if let Some(frame) = clip.frame_label_to_number(&frame_label) {

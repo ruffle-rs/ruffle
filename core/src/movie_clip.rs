@@ -104,6 +104,8 @@ impl<'gc> MovieClip<'gc> {
         self.is_playing = false;
     }
 
+    /// Queues up a goto to the specified frame.
+    /// `frame` should be 1-based.
     pub fn goto_frame(&mut self, frame: FrameNumber, stop: bool) {
         if frame != self.current_frame {
             self.goto_queue.push(frame);
