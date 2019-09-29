@@ -195,6 +195,10 @@ impl<'gc> Activation<'gc> {
         self.local_registers.is_some()
     }
 
+    pub fn allocate_local_registers(&mut self, num: u8, mc: MutationContext<'gc, '_>) {
+        self.local_registers = Some(GcCell::allocate(mc, vec![Value::Undefined; num as usize]));
+    }
+
     /// Retrieve a local register.
     pub fn local_register(&self, id: u8) -> Value<'gc> {
         if let Some(local_registers) = self.local_registers {

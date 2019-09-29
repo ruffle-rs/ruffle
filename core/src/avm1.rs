@@ -1,5 +1,6 @@
 use crate::avm1::globals::create_globals;
 use crate::avm1::object::Object;
+use crate::avm1::function::Avm1Function2;
 use crate::backend::navigator::NavigationMethod;
 
 use crate::prelude::*;
@@ -9,7 +10,7 @@ use std::convert::TryInto;
 use std::collections::HashMap;
 
 use swf::avm1::read::Reader;
-use swf::avm1::types::Action;
+use swf::avm1::types::{Action, Function};
 
 use crate::tag_utils::SwfSlice;
 
@@ -123,6 +124,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     /// Add a stack frame that executes code in function scope
+    /// TODO: `function::Executable` should do this
     pub fn insert_stack_frame_for_function(&mut self,
             avm1func: &function::Avm1Function<'gc>,
             this: GcCell<'gc, Object<'gc>>,
@@ -130,6 +132,18 @@ impl<'gc> Avm1<'gc> {
             action_context: &mut ActionContext<'_, 'gc, '_>) {
         let child_scope = GcCell::allocate(action_context.gc_context, Scope::new_local_scope(avm1func.scope(), action_context.gc_context));
         self.stack_frames.push(Activation::from_function(avm1func.swf_version(), avm1func.data(), child_scope, this, Some(args)));
+    }
+
+    /// Add a stack frame that executes code in function scope
+    /// TODO: `function::Executable` should do this
+    pub fn insert_stack_frame_for_function2(&mut self,
+            avm1func: &function::Avm1Function2<'gc>,
+            this: GcCell<'gc, Object<'gc>>,
+            args: GcCell<'gc, Object<'gc>>,
+            action_context: &mut ActionContext<'_, 'gc, '_>) {
+        let child_scope = GcCell::allocate(action_context.gc_context, Scope::new_local_scope(avm1func.scope(), action_context.gc_context));
+        self.stack_frames.push(Activation::from_function(avm1func.swf_version(), avm1func.data(), child_scope, this, Some(args)));
+        self.stack_frames.last_mut().unwrap().allocate_local_registers(avm1func.register_count(), action_context.gc_context);
     }
 
     /// Retrieve the current AVM execution frame.
@@ -228,6 +242,7 @@ impl<'gc> Avm1<'gc> {
                     params,
                     actions,
                 } => self.action_define_function(context, &name, &params[..], actions),
+                Action::DefineFunction2(func) => self.action_define_function_2(context, &func),
                 Action::DefineLocal => self.action_define_local(context),
                 Action::DefineLocal2 => self.action_define_local_2(context),
                 Action::Delete => self.action_delete(context),
@@ -393,7 +408,20 @@ impl<'gc> Avm1<'gc> {
         self.stack.pop().ok_or_else(|| "Stack underflow".into())
     }
 
-    fn current_register(&self, id: u8) -> Value<'gc> {
+    /// Allocate a register set for the current stack frame.
+    /// 
+    /// The allocated register set replaces the current local register set, if
+    /// any, and remains until the current function returns. With registers
+    /// allocated, the global register set becomes inactive for the current
+    /// activation.
+    pub fn allocate_registers(&mut self, num: u8, context: &mut ActionContext<'_, 'gc, '_>) {
+    }
+
+    /// Retrieve a given register value.
+    /// 
+    /// If a given register does not exist, this function yields
+    /// Value::Undefined, which is also a valid register value.
+    pub fn current_register(&self, id: u8) -> Value<'gc> {
         if self.current_stack_frame().map(|sf| sf.has_local_registers()).unwrap_or(false) {
             self.current_stack_frame().unwrap().local_register(id)
         } else {
@@ -401,7 +429,10 @@ impl<'gc> Avm1<'gc> {
         }
     }
 
-    fn set_current_register(&mut self, id: u8, value: Value<'gc>, context: &mut ActionContext<'_, 'gc, '_>) {
+    /// Set a register to a given value.
+    /// 
+    /// If a given register does not exist, this function does nothing.
+    pub fn set_current_register(&mut self, id: u8, value: Value<'gc>, context: &mut ActionContext<'_, 'gc, '_>) {
         if self.current_stack_frame().map(|sf| sf.has_local_registers()).unwrap_or(false) {
             self.current_stack_frame_mut().unwrap().set_local_register(id, value, context.gc_context);
         } else {
@@ -633,6 +664,41 @@ impl<'gc> Avm1<'gc> {
             self.push(func);
         } else {
             self.current_stack_frame_mut().unwrap().define(name, func, context.gc_context);
+        }
+
+        Ok(())
+    }
+
+    fn action_define_function_2(
+        &mut self,
+        context: &mut ActionContext<'_, 'gc, '_>,
+        action_func: &Function
+    ) -> Result<(), Error> {
+        let swf_version = self.current_stack_frame().unwrap().swf_version();
+        let func_data = self.current_stack_frame().unwrap().data().to_subslice(action_func.actions).unwrap();
+        let scope = Scope::new_closure_scope(self.current_stack_frame().unwrap().scope_cell(), context.gc_context);
+        let func2 = Avm1Function2::new(
+            swf_version,
+            func_data,
+            action_func.name,
+            action_func.params.capacity() as u8, //TODO: this needs to be refactored
+            action_func.preload_parent,
+            action_func.preload_root,
+            action_func.suppress_super,
+            action_func.preload_super,
+            action_func.suppress_arguments,
+            action_func.preload_arguments,
+            action_func.suppress_this,
+            action_func.preload_this,
+            &action_func.params,
+            scope
+        );
+        let func_obj = Value::Object(GcCell::allocate(context.gc_context, Object::action_function2(func2)));
+        
+        if action_func.name == "" {
+            self.push(func_obj);
+        } else {
+            self.current_stack_frame_mut().unwrap().define(action_func.name, func_obj, context.gc_context);
         }
 
         Ok(())

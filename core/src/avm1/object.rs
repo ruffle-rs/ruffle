@@ -1,5 +1,5 @@
 use crate::avm1::{ActionContext, Avm1, Value};
-use crate::avm1::function::{Executable, NativeFunction, Avm1Function};
+use crate::avm1::function::{Executable, NativeFunction, Avm1Function, Avm1Function2};
 use crate::avm1::scope::Scope;
 use crate::display_object::DisplayNode;
 use crate::tag_utils::SwfSlice;
@@ -161,6 +161,15 @@ impl<'gc> Object<'gc> {
         Self {
             type_of: TYPE_OF_FUNCTION,
             function: Some(Executable::Action(Avm1Function::new(swf_version, actions, name, params, scope))),
+            display_node: None,
+            values: HashMap::new()
+        }
+    }
+
+    pub fn action_function2(func: Avm1Function2<'gc>) -> Self {
+        Self {
+            type_of: TYPE_OF_FUNCTION,
+            function: Some(Executable::Action2(func)),
             display_node: None,
             values: HashMap::new()
         }
