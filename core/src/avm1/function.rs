@@ -94,6 +94,7 @@ pub struct Avm1Function2<'gc> {
     preload_arguments: bool,
     supress_this: bool,
     preload_this: bool,
+    preload_global: bool,
 
     /// The names of the function parameters and their register mappings.
     /// r0 indicates that no register shall be written and the parameter stored
@@ -117,6 +118,7 @@ impl<'gc> Avm1Function2<'gc> {
         preload_arguments: bool,
         supress_this: bool,
         preload_this: bool,
+        preload_global: bool,
         params: &Vec<FunctionParam>,
         scope: GcCell<'gc, Scope<'gc>>) -> Self {
         
@@ -143,6 +145,7 @@ impl<'gc> Avm1Function2<'gc> {
             preload_arguments: preload_arguments,
             supress_this: supress_this,
             preload_this: preload_this,
+            preload_global: preload_global,
             params: owned_params,
             scope: scope
         }
@@ -212,20 +215,61 @@ impl<'gc> Executable<'gc> {
                 let mut arguments = Object::object(ac.gc_context);
                 if !af.supress_arguments {
                     for i in 0..args.len() {
-                        arguments.set(&format!("{}", i), args.get(i).unwrap().clone())
+                        arguments.force_set(&format!("{}", i), args.get(i).unwrap().clone())
                     }
 
-                    arguments.set("length", Value::Number(args.len() as f64));
+                    arguments.force_set("length", Value::Number(args.len() as f64));
+                }
+                let argcell = GcCell::allocate(ac.gc_context, arguments);
+
+                avm.insert_stack_frame_for_function2(af, this, argcell, ac);
+
+                let mut preload_r = 1;
+
+                if af.preload_this {
+                    //TODO: What happens if you specify both suppress and
+                    //preload for this?
+                    avm.set_current_register(preload_r, Value::Object(this), ac);
+                    preload_r += 1;
                 }
 
-                avm.insert_stack_frame_for_function2(af, this, GcCell::allocate(ac.gc_context, arguments), ac);
+                if af.preload_arguments {
+                    //TODO: What happens if you specify both suppress and
+                    //preload for arguments?
+                    avm.set_current_register(preload_r, Value::Object(argcell), ac);
+                    preload_r += 1;
+                }
 
+                if af.preload_super {
+                    //TODO: super not implemented
+                    log::warn!("Cannot preload super into register because it's not implemented");
+                    //TODO: What happens if you specify both suppress and
+                    //preload for super?
+                    preload_r += 1;
+                }
+
+                if af.preload_root {
+                    avm.set_current_register(preload_r, avm.root_object(ac), ac);
+                    preload_r += 1;
+                }
+
+                if af.preload_parent {
+                    //TODO: _parent not implemented
+                    log::warn!("Cannot preload parent into register because it's not implemented");
+                    preload_r += 1;
+                }
+
+                if af.preload_global {
+                    avm.set_current_register(preload_r, avm.global_object(ac), ac);
+                }
+
+                //TODO: What happens if the argument registers clash with the 
+                //preloaded registers? What gets done last?
                 for i in 0..args.len() {
                     match (args.get(i), af.params.get(i)) {
-                        (Some(arg), Some((Some(argreg), argname))) => avm.set_current_register(*argreg, arg.clone(), ac),
+                        (Some(arg), Some((Some(argreg), _argname))) => avm.set_current_register(*argreg, arg.clone(), ac),
                         (Some(arg), Some((None, argname))) => avm.current_stack_frame_mut().unwrap().define(argname, arg.clone(), ac.gc_context),
-                        (Some(arg), _) => {},
-                        _ => panic!("Missing argument value")
+                        _ => {}
                     }
                 }
 

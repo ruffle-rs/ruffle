@@ -687,6 +687,7 @@ impl<'gc> Avm1<'gc> {
             action_func.preload_arguments,
             action_func.suppress_this,
             action_func.preload_this,
+            action_func.preload_global,
             &action_func.params,
             scope
         );
@@ -877,20 +878,29 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
+    /// Obtain the value of `_root`.
+    pub fn root_object(&self, context: &mut ActionContext<'_, 'gc, '_>) -> Value<'gc> {
+        context.start_clip.read().object()
+    }
+
+    /// Obtain the value of `_global`.
+    pub fn global_object(&self, _context: &mut ActionContext<'_, 'gc, '_>) -> Value<'gc> {
+        Value::Object(self.globals)
+    }
+
     fn action_get_variable(
         &mut self,
         context: &mut ActionContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let var_path = self.pop()?;
         let path = var_path.as_string()?;
-        let globals = self.globals;
 
         // Special hardcoded variables
         if path == "_root" {
-            self.push(context.start_clip.read().object());
+            self.push(self.root_object(context));
             return Ok(());
         } else if path == "_global" {
-            self.push(Value::Object(globals));
+            self.push(self.global_object(context));
             return Ok(());
         }
 
