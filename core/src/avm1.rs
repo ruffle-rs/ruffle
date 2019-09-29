@@ -174,6 +174,12 @@ impl<'gc> Avm1<'gc> {
     /// 
     /// Stack frame identity (for the purpose of the above paragraph) is
     /// determined by the data pointed to by the `SwfSlice` of a given frame.
+    /// 
+    /// # Warnings
+    /// 
+    /// It is incorrect to call this function multiple times in the same stack.
+    /// Doing so will result in any changes in duplicate readers being ignored.
+    /// Always pass the borrowed reader into functions that need it.
     fn with_current_reader_mut<F, R>(&mut self, func: F) -> Option<R> where F: FnOnce(&mut Self, &mut Reader<'_>) -> R {
         let current_stack_id = self.stack_frames.len() - 1;
         let (swf_version, data, pc) = self.stack_frames.last().map(|frame| (frame.swf_version(), frame.data(), frame.pc()))?;
@@ -322,10 +328,10 @@ impl<'gc> Avm1<'gc> {
                 Action::WaitForFrame {
                     frame,
                     num_actions_to_skip,
-                } => self.action_wait_for_frame(context, frame, num_actions_to_skip),
+                } => self.action_wait_for_frame(context, frame, num_actions_to_skip, reader),
                 Action::WaitForFrame2 {
                     num_actions_to_skip,
-                } => self.action_wait_for_frame_2(context, num_actions_to_skip),
+                } => self.action_wait_for_frame_2(context, num_actions_to_skip, reader),
                 Action::With { actions } => self.action_with(context, actions),
                 _ => self.unknown_op(context, action),
             };
@@ -1614,14 +1620,15 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         _context: &mut ActionContext,
         _frame: u16,
-        num_actions_to_skip: u8
+        num_actions_to_skip: u8,
+        r: &mut Reader<'_>
     ) -> Result<(), Error> {
         // TODO(Herschel): Always true for now.
         let loaded = true;
         if !loaded {
             // Note that the offset is given in # of actions, NOT in bytes.
             // Read the actions and toss them away.
-            self.with_current_reader_mut(|_this, r| skip_actions(r, num_actions_to_skip)).unwrap()?;
+            skip_actions(r, num_actions_to_skip)?;
         }
         Ok(())
     }
@@ -1629,7 +1636,8 @@ impl<'gc> Avm1<'gc> {
     fn action_wait_for_frame_2(
         &mut self,
         _context: &mut ActionContext,
-        num_actions_to_skip: u8
+        num_actions_to_skip: u8,
+        r: &mut Reader<'_>
     ) -> Result<(), Error> {
         // TODO(Herschel): Always true for now.
         let _frame_num = self.pop()?.as_f64()? as u16;
@@ -1637,7 +1645,7 @@ impl<'gc> Avm1<'gc> {
         if !loaded {
             // Note that the offset is given in # of actions, NOT in bytes.
             // Read the actions and toss them away.
-            self.with_current_reader_mut(|_this, r| skip_actions(r, num_actions_to_skip)).unwrap()?;
+            skip_actions(r, num_actions_to_skip)?;
         }
         Ok(())
     }
