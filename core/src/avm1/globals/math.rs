@@ -89,6 +89,7 @@ mod tests {
     use crate::backend::navigator::NullNavigatorBackend;
     use crate::display_object::DisplayObject;
     use crate::movie_clip::MovieClip;
+    use approx::assert_ulps_eq;
     use gc_arena::rootless_arena;
     use rand::{rngs::SmallRng, SeedableRng};
 
@@ -101,7 +102,7 @@ mod tests {
                     let function = math.read().get($name);
 
                     $(
-                        assert_eq!(function.call(avm, context, math, $args)?, $out);
+                        assert_ulps_eq!(function.call(avm, context, math, $args)?, $out);
                     )*
 
                     Ok(())

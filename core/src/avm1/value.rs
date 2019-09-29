@@ -1,5 +1,6 @@
 use crate::avm1::object::Object;
 use crate::avm1::{ActionContext, Avm1, Error};
+use approx::{AbsDiffEq, UlpsEq};
 use gc_arena::GcCell;
 
 #[derive(Clone, Debug)]
@@ -50,6 +51,38 @@ impl PartialEq for Value<'_> {
                 Value::Object(other_value) => value.as_ptr() == other_value.as_ptr(),
                 _ => false,
             },
+        }
+    }
+}
+
+impl AbsDiffEq for Value<'_> {
+    type Epsilon = <f64 as AbsDiffEq>::Epsilon;
+    fn default_epsilon() -> Self::Epsilon {
+        f64::default_epsilon()
+    }
+    fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
+        match self {
+            Value::Number(value) => match other {
+                Value::Number(other_value) => value.abs_diff_eq(other_value, epsilon) || self == other,
+                _ =>  self == other
+            },
+            _ => self == other
+        }
+    }
+}
+
+impl UlpsEq for Value<'_> {
+    fn default_max_ulps() -> u32 {
+        f64::default_max_ulps()
+    }
+
+    fn ulps_eq(&self, other: &Self, epsilon: Self::Epsilon, max_ulps: u32) -> bool {
+        match self {
+            Value::Number(value) => match other {
+                Value::Number(other_value) => value.ulps_eq(other_value, epsilon, max_ulps) || self == other,
+                _ =>  self == other
+            },
+            _ => self == other
         }
     }
 }
