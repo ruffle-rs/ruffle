@@ -414,15 +414,6 @@ impl<'gc> Avm1<'gc> {
         self.stack.pop().ok_or_else(|| "Stack underflow".into())
     }
 
-    /// Allocate a register set for the current stack frame.
-    /// 
-    /// The allocated register set replaces the current local register set, if
-    /// any, and remains until the current function returns. With registers
-    /// allocated, the global register set becomes inactive for the current
-    /// activation.
-    pub fn allocate_registers(&mut self, num: u8, context: &mut ActionContext<'_, 'gc, '_>) {
-    }
-
     /// Retrieve a given register value.
     /// 
     /// If a given register does not exist, this function yields
