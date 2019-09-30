@@ -91,6 +91,7 @@ mod tests {
     use crate::movie_clip::MovieClip;
     use gc_arena::rootless_arena;
     use rand::{rngs::SmallRng, SeedableRng};
+    use std::f64::consts::{PI, FRAC_PI_2};
 
     macro_rules! test_std {
         ( $test: ident, $name: expr, $($args: expr => $out: expr),* ) => {
@@ -145,25 +146,25 @@ mod tests {
     test_std!(test_acos, "acos",
         &[] => Value::Number(NAN),
         &[Value::Null] => Value::Number(NAN),
-        &[Value::Number(-1.0)] => Value::Number(3.141592653589793),
-        &[Value::Number(0.0)] => Value::Number(1.5707963267948966),
-        &[Value::Number(1.0)] => Value::Number(0.0)
+        &[Value::Number(-1.0)] => Value::Number(f64::acos(-1.0)),
+        &[Value::Number(0.0)] => Value::Number(f64::acos(0.0)),
+        &[Value::Number(1.0)] => Value::Number(f64::acos(1.0))
     );
 
     test_std!(test_asin, "asin",
         &[] => Value::Number(NAN),
         &[Value::Null] => Value::Number(NAN),
-        &[Value::Number(-1.0)] => Value::Number(-1.5707963267948966),
-        &[Value::Number(0.0)] => Value::Number(0.0),
-        &[Value::Number(1.0)] => Value::Number(1.5707963267948966)
+        &[Value::Number(-1.0)] => Value::Number(f64::asin(-1.0)),
+        &[Value::Number(0.0)] => Value::Number(f64::asin(0.0)),
+        &[Value::Number(1.0)] => Value::Number(f64::asin(1.0))
     );
 
     test_std!(test_atan, "atan",
         &[] => Value::Number(NAN),
         &[Value::Null] => Value::Number(NAN),
-        &[Value::Number(-1.0)] => Value::Number(-0.7853981633974483),
-        &[Value::Number(0.0)] => Value::Number(0.0),
-        &[Value::Number(1.0)] => Value::Number(0.7853981633974483)
+        &[Value::Number(-1.0)] => Value::Number(f64::atan(-1.0)),
+        &[Value::Number(0.0)] => Value::Number(f64::atan(0.0)),
+        &[Value::Number(1.0)] => Value::Number(f64::atan(1.0))
     );
 
     test_std!(test_ceil, "ceil",
@@ -182,8 +183,8 @@ mod tests {
     test_std!(test_exp, "exp",
         &[] => Value::Number(NAN),
         &[Value::Null] => Value::Number(NAN),
-        &[Value::Number(1.0)] => Value::Number(2.718281828459045),
-        &[Value::Number(2.0)] => Value::Number(7.38905609893065)
+        &[Value::Number(1.0)] => Value::Number(f64::exp(1.0)),
+        &[Value::Number(2.0)] => Value::Number(f64::exp(2.0))
     );
 
     test_std!(test_floor, "floor",
@@ -209,15 +210,15 @@ mod tests {
     test_std!(test_sqrt, "sqrt",
         &[] => Value::Number(NAN),
         &[Value::Null] => Value::Number(NAN),
-        &[Value::Number(0.0)] => Value::Number(0.0),
-        &[Value::Number(5.0)] => Value::Number(2.23606797749979)
+        &[Value::Number(0.0)] => Value::Number(f64::sqrt(0.0)),
+        &[Value::Number(5.0)] => Value::Number(f64::sqrt(5.0))
     );
 
     test_std!(test_tan, "tan",
         &[] => Value::Number(NAN),
         &[Value::Null] => Value::Number(NAN),
-        &[Value::Number(0.0)] => Value::Number(0.0),
-        &[Value::Number(1.0)] => Value::Number(1.5574077246549023)
+        &[Value::Number(0.0)] => Value::Number(f64::tan(0.0)),
+        &[Value::Number(1.0)] => Value::Number(f64::tan(1.0))
     );
 
     #[test]
