@@ -91,7 +91,6 @@ mod tests {
     use crate::movie_clip::MovieClip;
     use gc_arena::rootless_arena;
     use rand::{rngs::SmallRng, SeedableRng};
-    use std::f64::consts::{PI, FRAC_PI_2};
 
     macro_rules! test_std {
         ( $test: ident, $name: expr, $($args: expr => $out: expr),* ) => {
@@ -177,7 +176,7 @@ mod tests {
         &[] => Value::Number(NAN),
         &[Value::Null] => Value::Number(NAN),
         &[Value::Number(0.0)] => Value::Number(1.0),
-        &[Value::Number(std::f64::consts::PI)] => Value::Number(-1.0)
+        &[Value::Number(std::f64::consts::PI)] => Value::Number(f64::cos(std::f64::consts::PI))
     );
 
     test_std!(test_exp, "exp",
@@ -203,8 +202,8 @@ mod tests {
     test_std!(test_sin, "sin",
         &[] => Value::Number(NAN),
         &[Value::Null] => Value::Number(NAN),
-        &[Value::Number(0.0)] => Value::Number(0.0),
-        &[Value::Number(std::f64::consts::PI / 2.0)] => Value::Number(1.0)
+        &[Value::Number(0.0)] => Value::Number(f64::sin(0.0)),
+        &[Value::Number(std::f64::consts::PI / 2.0)] => Value::Number(f64::sin(std::f64::consts::PI / 2.0))
     );
 
     test_std!(test_sqrt, "sqrt",
