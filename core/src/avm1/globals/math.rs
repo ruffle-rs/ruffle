@@ -80,8 +80,6 @@ pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Object<'
 }
 
 #[cfg(test)]
-#[allow(clippy::unreadable_literal)]
-#[allow(clippy::approx_constant)]
 mod tests {
     use super::*;
     use crate::avm1::Error;
@@ -270,7 +268,7 @@ mod tests {
                     *math.read(),
                     &[Value::Number(1.0), Value::Number(2.0)]
                 ),
-                Value::Number(0.4636476090008061)
+                Value::Number(f64::atan2(1.0, 2.0))
             );
         });
     }
