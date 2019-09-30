@@ -81,7 +81,9 @@ impl UlpsEq for Value<'_> {
     fn ulps_eq(&self, other: &Self, epsilon: Self::Epsilon, max_ulps: u32) -> bool {
         match self {
             Value::Number(value) => match other {
-                Value::Number(other_value) => value.ulps_eq(other_value, epsilon) || self == other,
+                Value::Number(other_value) => {
+                    value.ulps_eq(other_value, epsilon, max_ulps) || self == other
+                }
                 _ => self == other,
             },
             _ => self == other,
