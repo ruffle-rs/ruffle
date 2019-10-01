@@ -7,6 +7,7 @@ use crate::avm1::{Avm1, ActionContext};
 use crate::avm1::object::Object;
 use crate::avm1::value::Value;
 use crate::avm1::scope::Scope;
+use crate::avm1::activation::Activation;
 
 pub type NativeFunction<'gc> = fn(
     &mut Avm1<'gc>,
@@ -200,18 +201,23 @@ impl<'gc> Executable<'gc> {
                 }
 
                 arguments.force_set("length", Value::Number(args.len() as f64));
-
-                avm.insert_stack_frame_for_function(af, this, GcCell::allocate(ac.gc_context, arguments), ac);
+                
+                let argcell = GcCell::allocate(ac.gc_context, arguments);
+                let child_scope = GcCell::allocate(ac.gc_context, Scope::new_local_scope(af.scope(), ac.gc_context));
 
                 for i in 0..args.len() {
                     if let Some(argname) = af.params.get(i) {
-                        avm.current_stack_frame_mut().unwrap().define(argname, args.get(i).unwrap().clone(), ac.gc_context);
+                        child_scope.write(ac.gc_context).define(argname, args.get(i).unwrap().clone(), ac.gc_context);
                     }
                 }
+
+                let frame = Activation::from_function(af.swf_version(), af.data(), child_scope, this, Some(argcell));
+                avm.insert_stack_frame(frame);
 
                 None
             },
             Executable::Action2(af) => {
+                let child_scope = GcCell::allocate(ac.gc_context, Scope::new_local_scope(af.scope(), ac.gc_context));
                 let mut arguments = Object::object(ac.gc_context);
                 if !af.supress_arguments {
                     for i in 0..args.len() {
@@ -220,23 +226,22 @@ impl<'gc> Executable<'gc> {
 
                     arguments.force_set("length", Value::Number(args.len() as f64));
                 }
+
                 let argcell = GcCell::allocate(ac.gc_context, arguments);
-
-                avm.insert_stack_frame_for_function2(af, this, argcell, ac);
-
+                let mut frame = Activation::from_function(af.swf_version(), af.data(), child_scope, this, Some(argcell));
                 let mut preload_r = 1;
 
                 if af.preload_this {
                     //TODO: What happens if you specify both suppress and
                     //preload for this?
-                    avm.set_current_register(preload_r, Value::Object(this), ac);
+                    frame.set_local_register(preload_r, Value::Object(this), ac.gc_context);
                     preload_r += 1;
                 }
 
                 if af.preload_arguments {
                     //TODO: What happens if you specify both suppress and
                     //preload for arguments?
-                    avm.set_current_register(preload_r, Value::Object(argcell), ac);
+                    frame.set_local_register(preload_r, Value::Object(argcell), ac.gc_context);
                     preload_r += 1;
                 }
 
@@ -249,7 +254,7 @@ impl<'gc> Executable<'gc> {
                 }
 
                 if af.preload_root {
-                    avm.set_current_register(preload_r, avm.root_object(ac), ac);
+                    frame.set_local_register(preload_r, avm.root_object(ac), ac.gc_context);
                     preload_r += 1;
                 }
 
@@ -260,18 +265,21 @@ impl<'gc> Executable<'gc> {
                 }
 
                 if af.preload_global {
-                    avm.set_current_register(preload_r, avm.global_object(ac), ac);
+                    frame.set_local_register(preload_r, avm.global_object(ac), ac.gc_context);
                 }
 
                 //TODO: What happens if the argument registers clash with the 
                 //preloaded registers? What gets done last?
                 for i in 0..args.len() {
                     match (args.get(i), af.params.get(i)) {
-                        (Some(arg), Some((Some(argreg), _argname))) => avm.set_current_register(*argreg, arg.clone(), ac),
-                        (Some(arg), Some((None, argname))) => avm.current_stack_frame_mut().unwrap().define(argname, arg.clone(), ac.gc_context),
+                        (Some(arg), Some((Some(argreg), _argname))) => frame.set_local_register(*argreg, arg.clone(), ac.gc_context),
+                        (Some(arg), Some((None, argname))) => frame.define(argname, arg.clone(), ac.gc_context),
                         _ => {}
                     }
                 }
+                
+                frame.allocate_local_registers(af.register_count(), ac.gc_context);
+                avm.insert_stack_frame(frame);
 
                 None
             }

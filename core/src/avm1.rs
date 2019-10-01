@@ -123,27 +123,9 @@ impl<'gc> Avm1<'gc> {
         self.stack_frames.push(Activation::from_action(swf_version, code, child_scope, clip_obj, None));
     }
 
-    /// Add a stack frame that executes code in function scope
-    /// TODO: `function::Executable` should do this
-    pub fn insert_stack_frame_for_function(&mut self,
-            avm1func: &function::Avm1Function<'gc>,
-            this: GcCell<'gc, Object<'gc>>,
-            args: GcCell<'gc, Object<'gc>>,
-            action_context: &mut ActionContext<'_, 'gc, '_>) {
-        let child_scope = GcCell::allocate(action_context.gc_context, Scope::new_local_scope(avm1func.scope(), action_context.gc_context));
-        self.stack_frames.push(Activation::from_function(avm1func.swf_version(), avm1func.data(), child_scope, this, Some(args)));
-    }
-
-    /// Add a stack frame that executes code in function scope
-    /// TODO: `function::Executable` should do this
-    pub fn insert_stack_frame_for_function2(&mut self,
-            avm1func: &function::Avm1Function2<'gc>,
-            this: GcCell<'gc, Object<'gc>>,
-            args: GcCell<'gc, Object<'gc>>,
-            action_context: &mut ActionContext<'_, 'gc, '_>) {
-        let child_scope = GcCell::allocate(action_context.gc_context, Scope::new_local_scope(avm1func.scope(), action_context.gc_context));
-        self.stack_frames.push(Activation::from_function(avm1func.swf_version(), avm1func.data(), child_scope, this, Some(args)));
-        self.stack_frames.last_mut().unwrap().allocate_local_registers(avm1func.register_count(), action_context.gc_context);
+    /// Add a stack frame for any arbitrary code.
+    pub fn insert_stack_frame(&mut self, frame: Activation<'gc>) {
+        self.stack_frames.push(frame);
     }
 
     /// Retrieve the current AVM execution frame.
