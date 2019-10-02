@@ -76,7 +76,11 @@ pub struct Avm1<'gc> {
 
     /// The register slots (also shared across functions).
     /// `ActionDefineFunction2` defined functions do not use these slots.
-    registers: [Value<'gc>; 4]
+    registers: [Value<'gc>; 4],
+
+    /// Used to enforce the restriction that no more than one mutable current
+    /// reader be active at once.
+    is_reading: bool
 }
 
 unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
@@ -97,7 +101,8 @@ impl<'gc> Avm1<'gc> {
             globals: GcCell::allocate(gc_context, create_globals(gc_context)),
             stack_frames: vec![],
             stack: vec![],
-            registers: [Value::Undefined, Value::Undefined, Value::Undefined, Value::Undefined]
+            registers: [Value::Undefined, Value::Undefined, Value::Undefined, Value::Undefined],
+            is_reading: false
         }
     }
 
@@ -163,6 +168,12 @@ impl<'gc> Avm1<'gc> {
     /// Doing so will result in any changes in duplicate readers being ignored.
     /// Always pass the borrowed reader into functions that need it.
     fn with_current_reader_mut<F, R>(&mut self, func: F) -> Option<R> where F: FnOnce(&mut Self, &mut Reader<'_>) -> R {
+        if self.is_reading {
+            log::error!("Two mutable readers are open at the same time. Please correct this error.");
+        }
+
+        self.is_reading = true;
+        
         let current_stack_id = self.stack_frames.len() - 1;
         let (swf_version, data, pc) = self.stack_frames.last().map(|frame| (frame.swf_version(), frame.data(), frame.pc()))?;
         let mut read = Reader::new(data.as_ref(), swf_version);
@@ -176,6 +187,8 @@ impl<'gc> Avm1<'gc> {
                 new_stack.set_pc(read.pos());
             }
         }
+
+        self.is_reading = false;
 
         Some(r)
     }
