@@ -84,6 +84,7 @@ unsafe impl<'gc> gc_arena::Collect for Property<'gc> {
 }
 
 impl fmt::Debug for Property<'_> {
+    #[allow(clippy::unneeded_field_pattern)]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Property::Virtual { get: _, set } => f

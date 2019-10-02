@@ -645,13 +645,14 @@ impl<'gc> Avm1<'gc> {
         // Flash 4-style variable
         let var_path = self.pop()?;
         let path = var_path.as_string()?;
+        let globals = self.globals;
 
         // Special hardcoded variables
         if path == "_root" || path == "this" {
             self.push(context.start_clip.read().object());
             return Ok(());
         } else if path == "_global" {
-            self.push(Value::Object(self.globals));
+            self.push(Value::Object(globals));
             return Ok(());
         }
 
@@ -670,13 +671,8 @@ impl<'gc> Avm1<'gc> {
             };
         }
 
-        if result.is_none() && self.globals.read().has_property(path) {
-            result = Some(
-                self.globals
-                    .clone()
-                    .read()
-                    .get(path, self, context, self.globals),
-            );
+        if result.is_none() && globals.read().has_property(path) {
+            result = Some(globals.read().get(path, self, context, globals));
         }
         self.push(result.unwrap_or(Value::Undefined));
         Ok(())
