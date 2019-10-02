@@ -6,7 +6,7 @@ use std::f64::NAN;
 macro_rules! wrap_std {
     ( $object: ident, $gc_context: ident, $($name:expr => $std:path),* ) => {{
         $(
-            $object.set_function(
+            $object.force_set_function(
                 $name,
                 |_avm, _context, _this, args| -> Value<'gc> {
                     if let Some(input) = args.get(0) {
@@ -49,14 +49,14 @@ pub fn random<'gc>(
 pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Object<'gc>> {
     let mut math = Object::object(gc_context);
 
-    math.set("E", Value::Number(std::f64::consts::E));
-    math.set("LN10", Value::Number(std::f64::consts::LN_10));
-    math.set("LN2", Value::Number(std::f64::consts::LN_2));
-    math.set("LOG10E", Value::Number(std::f64::consts::LOG10_E));
-    math.set("LOG2E", Value::Number(std::f64::consts::LOG2_E));
-    math.set("PI", Value::Number(std::f64::consts::PI));
-    math.set("SQRT1_2", Value::Number(std::f64::consts::FRAC_1_SQRT_2));
-    math.set("SQRT2", Value::Number(std::f64::consts::SQRT_2));
+    math.force_set("E", Value::Number(std::f64::consts::E));
+    math.force_set("LN10", Value::Number(std::f64::consts::LN_10));
+    math.force_set("LN2", Value::Number(std::f64::consts::LN_2));
+    math.force_set("LOG10E", Value::Number(std::f64::consts::LOG10_E));
+    math.force_set("LOG2E", Value::Number(std::f64::consts::LOG2_E));
+    math.force_set("PI", Value::Number(std::f64::consts::PI));
+    math.force_set("SQRT1_2", Value::Number(std::f64::consts::FRAC_1_SQRT_2));
+    math.force_set("SQRT2", Value::Number(std::f64::consts::SQRT_2));
 
     wrap_std!(math, gc_context,
         "abs" => f64::abs,
@@ -73,8 +73,8 @@ pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Object<'
         "tan" => f64::tan
     );
 
-    math.set_function("atan2", atan2, gc_context);
-    math.set_function("random", random, gc_context);
+    math.force_set_function("atan2", atan2, gc_context);
+    math.force_set_function("random", random, gc_context);
 
     GcCell::allocate(gc_context, math)
 }
@@ -96,7 +96,7 @@ mod tests {
             fn $test() -> Result<(), Error> {
                 with_avm(19, |avm, context| {
                     let math = create(context.gc_context);
-                    let function = math.read().get($name);
+                    let function = math.read().get($name, avm, context, math);
 
                     $(
                         assert_eq!(function.call(avm, context, math, $args)?, $out);
