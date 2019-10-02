@@ -5,7 +5,6 @@ authors = ["Mike Welsh <mwelsh@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-approx = "0.3.2"
 bitstream-io = "0.8.2"
 fnv = "1.0.3"
 gc-arena = "0.1.1"
@@ -21,6 +20,9 @@ swf = { git = "https://github.com/ruffle-rs/swf-rs", rev = "f5db446" }
 [dependencies.jpeg-decoder]
 version = "0.1.16"
 default-features = false # can't use rayon on web
+
+[dev-dependencies]
+approx = "0.3.2"
 
 [features]
 default = ["minimp3"]

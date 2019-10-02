@@ -1,4 +1,3 @@
-use approx::{AbsDiffEq, UlpsEq};
 use swf::Twips;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -87,43 +86,10 @@ impl std::ops::MulAssign for Matrix {
     }
 }
 
-impl AbsDiffEq for Matrix {
-    type Epsilon = <f32 as AbsDiffEq>::Epsilon;
-    fn default_epsilon() -> Self::Epsilon {
-        f32::default_epsilon()
-    }
-
-    fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
-        (self.a.abs_diff_eq(&other.a, epsilon) || (self.a.is_nan() && self.a.is_nan()))
-            && (self.b.abs_diff_eq(&other.b, epsilon) || (self.b.is_nan() && self.b.is_nan()))
-            && (self.c.abs_diff_eq(&other.c, epsilon) || (self.c.is_nan() && self.c.is_nan()))
-            && (self.d.abs_diff_eq(&other.d, epsilon) || (self.d.is_nan() && self.d.is_nan()))
-            && (self.tx.abs_diff_eq(&other.tx, epsilon) || (self.tx.is_nan() && self.tx.is_nan()))
-            && (self.ty.abs_diff_eq(&other.ty, epsilon) || (self.ty.is_nan() && self.ty.is_nan()))
-    }
-}
-
-impl UlpsEq for Matrix {
-    fn default_max_ulps() -> u32 {
-        f32::default_max_ulps()
-    }
-
-    fn ulps_eq(&self, other: &Self, epsilon: Self::Epsilon, max_ulps: u32) -> bool {
-        (self.a.ulps_eq(&other.a, epsilon, max_ulps) || (self.a.is_nan() && self.a.is_nan()))
-            && (self.b.ulps_eq(&other.b, epsilon, max_ulps) || (self.b.is_nan() && self.b.is_nan()))
-            && (self.c.ulps_eq(&other.c, epsilon, max_ulps) || (self.c.is_nan() && self.c.is_nan()))
-            && (self.d.ulps_eq(&other.d, epsilon, max_ulps) || (self.d.is_nan() && self.d.is_nan()))
-            && (self.tx.ulps_eq(&other.tx, epsilon, max_ulps)
-                || (self.tx.is_nan() && self.tx.is_nan()))
-            && (self.ty.ulps_eq(&other.ty, epsilon, max_ulps)
-                || (self.ty.is_nan() && self.ty.is_nan()))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::assert_ulps_eq;
+    use approx::{AbsDiffEq, UlpsEq, assert_ulps_eq};
 
     macro_rules! test_invert {
         ( $test: ident, $($args: expr),* ) => {
@@ -162,51 +128,41 @@ mod tests {
         };
     }
 
+    impl AbsDiffEq for Matrix {
+        type Epsilon = <f32 as AbsDiffEq>::Epsilon;
+        fn default_epsilon() -> Self::Epsilon {
+            f32::default_epsilon()
+        }
+
+        fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
+            self.a.abs_diff_eq(&other.a, epsilon)
+                && self.b.abs_diff_eq(&other.b, epsilon)
+                && self.c.abs_diff_eq(&other.c, epsilon)
+                && self.d.abs_diff_eq(&other.d, epsilon)
+                && self.tx.abs_diff_eq(&other.tx, epsilon)
+                && self.ty.abs_diff_eq(&other.ty, epsilon)
+        }
+    }
+
+    impl UlpsEq for Matrix {
+        fn default_max_ulps() -> u32 {
+            f32::default_max_ulps()
+        }
+
+        fn ulps_eq(&self, other: &Self, epsilon: Self::Epsilon, max_ulps: u32) -> bool {
+            self.a.ulps_eq(&other.a, epsilon, max_ulps)
+                && self.b.ulps_eq(&other.b, epsilon, max_ulps)
+                && self.c.ulps_eq(&other.c, epsilon, max_ulps)
+                && self.d.ulps_eq(&other.d, epsilon, max_ulps)
+                && self.tx.ulps_eq(&other.tx, epsilon, max_ulps)
+                && self.ty.ulps_eq(&other.ty, epsilon, max_ulps)
+        }
+    }
+
     // Identity matrix inverted should be unchanged
     test_invert!(
         invert_identity_matrix,
         (Matrix::default(), Matrix::default())
-    );
-
-    // Inverting matrix where no inverted matrix exists (such that A*A-1 = I)
-    test_invert!(
-        invert_not_possible,
-        (
-            Matrix {
-                a: 0.0,
-                b: 0.0,
-                c: 0.0,
-                d: 0.0,
-                tx: 0.0,
-                ty: 0.0
-            },
-            Matrix {
-                a: std::f32::NAN,
-                b: std::f32::NAN,
-                c: std::f32::NAN,
-                d: std::f32::NAN,
-                tx: std::f32::NAN,
-                ty: std::f32::NAN
-            }
-        ),
-        (
-            Matrix {
-                a: 5.0,
-                b: 10.0,
-                c: 1.0,
-                d: 2.0,
-                tx: 1.0,
-                ty: 1.0
-            },
-            Matrix {
-                a: std::f32::INFINITY,
-                b: std::f32::NEG_INFINITY,
-                c: std::f32::NEG_INFINITY,
-                d: std::f32::INFINITY,
-                tx: std::f32::NEG_INFINITY,
-                ty: std::f32::INFINITY
-            }
-        )
     );
 
     // Standard test cases; there's nothing special about these matrices
