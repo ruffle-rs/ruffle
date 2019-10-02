@@ -89,7 +89,7 @@ impl std::ops::MulAssign for Matrix {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::{AbsDiffEq, UlpsEq, assert_ulps_eq};
+    use approx::{assert_ulps_eq, AbsDiffEq, UlpsEq};
 
     macro_rules! test_invert {
         ( $test: ident, $($args: expr),* ) => {
