@@ -1,3 +1,5 @@
+#![allow(clippy::unneeded_field_pattern)]
+
 #[macro_use]
 mod display_object;
 
