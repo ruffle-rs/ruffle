@@ -2,7 +2,7 @@
 
 use std::cell::{Ref, RefMut};
 use gc_arena::{GcCell, MutationContext};
-use crate::avm1::{Object, Value};
+use crate::avm1::{Avm1, ActionContext, Object, Value};
 
 /// Indicates what kind of scope a scope is.
 #[derive(Copy, Clone, 
@@ -173,23 +173,33 @@ impl<'gc> Scope<'gc> {
     /// 
     /// If the value is currently already defined in this scope, then it will
     /// be overwritten. If it is not defined, then we traverse the scope chain
-    /// until we find a defined value to overwrite. If no value can be
-    /// overwritten, then we return the unwritten value so that it may be used
-    /// in some other way.
-    pub fn overwrite(&self, name: &str, value: Value<'gc>, mc: MutationContext<'gc, '_>) -> Option<Value<'gc>> {
+    /// until we find a defined value to overwrite. We do not define a property
+    /// if it is not already defined somewhere in the scope chain, and instead
+    /// return it so that the caller may manually define the property itself.
+    pub fn overwrite(&self,
+        name: &str,
+        value: Value<'gc>, 
+        avm: &mut Avm1<'gc>,
+        context: &mut ActionContext<'_, 'gc, '_>,
+        this: GcCell<'gc, Object<'gc>>) -> Option<Value<'gc>> {
         if self.locals().has_property(name) {
-            self.locals_mut(mc).force_set(name, value);
+            self.locals_mut(context.gc_context).set(name, value, avm, context, this);
             return None;
         }
 
         if let Some(scope) = self.parent() {
-            return scope.overwrite(name, value, mc);
+            return scope.overwrite(name, value, avm, context, this);
         }
 
         Some(value)
     }
 
     /// Set a particular value in the locals for this scope.
+    /// 
+    /// By convention, the locals for a given function are always defined as
+    /// stored (e.g. not virtual) properties on the lowest object in the scope
+    /// chain. As a result, this function always force sets a property on the
+    /// local object and does not traverse the scope chain.
     pub fn define(&self, name: &str, value: Value<'gc>, mc: MutationContext<'gc, '_>) {
         self.locals_mut(mc).force_set(name, value);
     }

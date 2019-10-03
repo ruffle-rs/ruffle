@@ -1399,11 +1399,11 @@ impl<'gc> Avm1<'gc> {
                 }
             }
         } else {
-            match self.current_stack_frame().unwrap().scope().overwrite(var_path, value, context.gc_context) {
-                None => {},
-                Some(value) => {
-                    self.current_stack_frame().unwrap().define(var_path, value, context.gc_context);
-                }
+            let this = self.current_stack_frame().unwrap().this_cell();
+            let scope = self.current_stack_frame().unwrap().scope_cell();
+            let unused_value = scope.read().overwrite(var_path, value, self, context, this);
+            if let Some(value) = unused_value {
+                self.current_stack_frame().unwrap().define(var_path, value, context.gc_context);
             }
         }
 
