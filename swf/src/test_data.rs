@@ -1399,7 +1399,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     },
                 ],
             }),
-            read_tag_bytes_from_file("tests/swfs/defineshape3.swf", TagCode::DefineShape3),
+            read_tag_bytes_from_file("tests/swfs/DefineShape3.swf", TagCode::DefineShape3),
         ),
         (
             8,
@@ -2125,7 +2125,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         (
             5, // Password supported in SWF version 5 or later.
             Tag::Protect(Some("$1$d/$yMscKH17OJ0paJT.e67iz0".to_string())),
-            read_tag_bytes_from_file("tests/swfs/protect.swf", TagCode::Protect),
+            read_tag_bytes_from_file("tests/swfs/Protect.swf", TagCode::Protect),
         ),
         (
             1,
