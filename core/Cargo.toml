@@ -21,5 +21,8 @@ swf = { path = "../swf" }
 version = "0.1.16"
 default-features = false # can't use rayon on web
 
+[dev-dependencies]
+approx = "0.3.2"
+
 [features]
 default = ["minimp3"]
