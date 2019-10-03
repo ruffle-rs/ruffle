@@ -1,8 +1,10 @@
 //! Activation records
 
+use crate::avm1::function::NativeFunction;
 use crate::avm1::object::Object;
 use crate::avm1::scope::Scope;
-use crate::avm1::{Avm1, UpdateContext, Value};
+use crate::avm1::{Avm1, Value};
+use crate::context::UpdateContext;
 use crate::tag_utils::SwfSlice;
 use gc_arena::{GcCell, MutationContext};
 use smallvec::SmallVec;
@@ -88,6 +90,12 @@ pub struct Activation<'gc> {
     /// Registers are stored in a `GcCell` so that rescopes (e.g. with) use the
     /// same register set.
     local_registers: Option<GcCell<'gc, RegisterSet<'gc>>>,
+
+    /// Native code to execute when the given activation frame returns.
+    ///
+    /// This facility exists primarily to allow native code to handle the result
+    /// of an AVM function call.
+    then_func: Option<NativeFunction<'gc>>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for Activation<'gc> {
@@ -117,6 +125,7 @@ impl<'gc> Activation<'gc> {
             arguments,
             is_function: false,
             local_registers: None,
+            then_func: None,
         }
     }
 
@@ -136,6 +145,7 @@ impl<'gc> Activation<'gc> {
             arguments,
             is_function: true,
             local_registers: None,
+            then_func: None,
         }
     }
 
@@ -166,6 +176,7 @@ impl<'gc> Activation<'gc> {
             arguments: None,
             is_function: false,
             local_registers: None,
+            then_func: None,
         }
     }
 
@@ -180,6 +191,7 @@ impl<'gc> Activation<'gc> {
             arguments: self.arguments,
             is_function: false,
             local_registers: self.local_registers,
+            then_func: None,
         }
     }
 
@@ -315,5 +327,17 @@ impl<'gc> Activation<'gc> {
                 *r = value.into();
             }
         }
+    }
+
+    /// Return the function scheduled to be executed, if any.
+    pub fn get_then_func(&self) -> Option<NativeFunction<'gc>> {
+        self.then_func
+    }
+
+    /// Schedule a native function to execute when this stack frame returns.
+    ///
+    /// Only one native function may be scheduled per activation.
+    pub fn and_then(&mut self, func: NativeFunction<'gc>) {
+        self.then_func = Some(func);
     }
 }

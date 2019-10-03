@@ -244,7 +244,19 @@ impl<'gc> Avm1<'gc> {
     }
 
     /// Destroy the current stack frame (if there is one).
-    fn retire_stack_frame(&mut self) {
+    ///
+    /// This function will run functions scheduled on the current stack frame's
+    /// `and_then` field. This is intended to allow the runtime to act on the
+    /// results of AVM code to implement things like custom getters/setters.
+    fn retire_stack_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        if let Some(frame) = self.current_stack_frame() {
+            let this = frame.read().this_cell();
+            if let Some(func) = frame.read().get_then_func() {
+                let ret_args = vec![self.stack.last().unwrap().to_owned()];
+                func(self, context, this, &ret_args);
+            }
+        }
+
         self.stack_frames.pop();
     }
 
@@ -282,7 +294,7 @@ impl<'gc> Avm1<'gc> {
                 self.push(Value::Undefined);
             }
 
-            self.retire_stack_frame();
+            self.retire_stack_frame(context);
         } else if let Some(action) = reader.read_action()? {
             let result = match action {
                 Action::Add => self.action_add(context),
@@ -415,7 +427,7 @@ impl<'gc> Avm1<'gc> {
                 self.push(Value::Undefined);
             }
 
-            self.retire_stack_frame();
+            self.retire_stack_frame(context);
         }
 
         Ok(())
@@ -1486,12 +1498,12 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_return(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn action_return(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let result = self.pop()?;
 
         if self.stack_frames.len() > 1 {
-            self.retire_stack_frame();
             self.push(result);
+            self.retire_stack_frame(context);
         }
 
         Ok(())
