@@ -842,6 +842,15 @@ fn swf_shape_to_svg(
                 commands,
                 is_closed,
             } => {
+                // Flash always renders strokes with a minimum width of 1 pixel (20 twips).
+                // Additionally, many SWFs use the "hairline" stroke setting, which sets the stroke's width
+                // to 1 twip. Because of the minimum, this will effectively make the stroke nearly-always render
+                // as 1 pixel wide.
+                // SVG doesn't have a minimum and can render strokes at fractional widths, so these hairline
+                // strokes end up rendering very faintly if we use the actual width of 1 twip.
+                // Therefore, we clamp the stroke width to 1 pixel (20 twips). This won't be 100% accurate
+                // if the shape is scaled, but it looks much closer to the Flash Player.
+                let stroke_width = std::cmp::max(style.width.get(), 20);
                 let mut svg_path = SvgPath::new();
                 svg_path = svg_path
                     .set("fill", "none")
@@ -852,7 +861,7 @@ fn swf_shape_to_svg(
                             style.color.r, style.color.g, style.color.b, style.color.a
                         ),
                     )
-                    .set("stroke-width", style.width.get())
+                    .set("stroke-width", stroke_width)
                     .set(
                         "stroke-linecap",
                         match style.start_cap {
