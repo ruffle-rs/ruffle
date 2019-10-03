@@ -117,8 +117,14 @@ impl WebAudioBackend {
                         node.set_loop_start(start_sample_frame);
                         node.start_with_when_and_grain_offset(0.0, start_sample_frame)
                             .warn_on_error();
-                        if let Some(out_sample) = settings.out_sample {
-                            let end_sample_frame = f64::from(out_sample) / 44100.0;
+                        // If we are looping or have a custom end point, we have to manually stop the sound.
+                        if settings.out_sample.is_some() || settings.num_loops > 1 {
+                            let end_sample_frame = if let Some(out_sample) = settings.out_sample {
+                                f64::from(out_sample) / 44100.0
+                            } else {
+                                f64::from(sound.num_sample_frames)
+                                    / f64::from(sound.format.sample_rate)
+                            };
                             // `AudioSourceBufferNode.loop` is a bool, so we have to stop the loop at the proper time.
                             // `start_with_when_and_grain_offset_and_grain_duration` unfortunately doesn't work
                             // as you might expect with loops, so we use `stop_with_when` to stop the loop.
