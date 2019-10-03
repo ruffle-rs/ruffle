@@ -56,7 +56,8 @@ impl<W: Write> Writer<W> {
             } => {
                 // 1 zero byte for string name, 1 zero byte per param, 2 bytes for # of params,
                 // 2 bytes for code length
-                let len = name.len() + 1 + 2 + params.iter().map(|p| p.len() + 1).sum::<usize>() + 2;
+                let len =
+                    name.len() + 1 + 2 + params.iter().map(|p| p.len() + 1).sum::<usize>() + 2;
                 self.write_action_header(OpCode::DefineFunction, len)?;
                 self.write_c_string(name)?;
                 self.write_u16(params.len() as u16)?;

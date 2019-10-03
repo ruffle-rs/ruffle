@@ -1,5 +1,5 @@
-use std::io::BufReader;
 use std::fs::File;
+use std::io::BufReader;
 
 fn main() {
     let file = File::open("tests/swfs/SimpleRedBackground.swf").unwrap();
