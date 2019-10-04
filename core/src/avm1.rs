@@ -124,7 +124,7 @@ impl<'gc> Avm1<'gc> {
     pub fn insert_stack_frame_for_action(&mut self, swf_version: u8, code: SwfSlice, action_context: &mut ActionContext<'_, 'gc, '_>) {
         let global_scope = GcCell::allocate(action_context.gc_context, Scope::from_global_object(self.globals));
         let clip_obj = action_context.active_clip.read().object().as_object().unwrap().to_owned();
-        let child_scope = GcCell::allocate(action_context.gc_context, Scope::new(global_scope, scope::ScopeClass::Global, clip_obj));
+        let child_scope = GcCell::allocate(action_context.gc_context, Scope::new(global_scope, scope::ScopeClass::Target, clip_obj));
         self.stack_frames.push(Activation::from_action(swf_version, code, child_scope, clip_obj, None));
     }
 
@@ -1417,7 +1417,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_set_target(
         &mut self,
-        context: &mut ActionContext,
+        context: &mut ActionContext<'_, 'gc, '_>,
         target: &str,
     ) -> Result<(), Error> {
         if target.is_empty() {
@@ -1442,10 +1442,15 @@ impl<'gc> Avm1<'gc> {
             context.active_clip = context.root;
             context.target_path = Value::Undefined;
         }
+
+        let scope = self.current_stack_frame().unwrap().scope_cell();
+        let clip_obj = context.active_clip.read().object().as_object().unwrap().to_owned();
+
+        self.current_stack_frame_mut().unwrap().set_scope(Scope::new_target_scope(scope, clip_obj, context.gc_context));
         Ok(())
     }
 
-    fn action_set_target2(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_set_target2(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         let target = self.pop()?;
         if let Ok(target) = target.as_string() {
             self.action_set_target(context, target)?;

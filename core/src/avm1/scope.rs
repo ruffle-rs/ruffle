@@ -11,6 +11,11 @@ pub enum ScopeClass {
     /// Scope represents global scope.
     Global,
 
+    /// Target represents timeline scope. All timeline actions execute with
+    /// the current clip object in lieu of a local scope, and the timeline scope
+    /// can be changed via `tellTarget`.
+    Target,
+
     /// Scope represents local scope and is inherited when a closure is defined.
     Local,
 
@@ -74,6 +79,51 @@ impl<'gc> Scope<'gc> {
 
         let mut parent_scope = None;
         for scope in closure_scope_list.iter().rev() {
+            parent_scope = Some(GcCell::allocate(mc, Scope {
+                parent: parent_scope,
+                class: scope.read().class,
+                values: scope.read().values.clone()
+            }));
+        }
+
+        if let Some(parent_scope) = parent_scope {
+            parent_scope
+        } else {
+            GcCell::allocate(mc, Scope {
+                parent: None,
+                class: ScopeClass::Global,
+                values: GcCell::allocate(mc, Object::bare_object())
+            })
+        }
+    }
+
+    /// Construct a scope for use with `tellTarget` code where the timeline
+    /// scope has been replaced with another given object.
+    pub fn new_target_scope(mut parent: GcCell<'gc, Self>, clip: GcCell<'gc, Object<'gc>>, mc: MutationContext<'gc, '_>) -> GcCell<'gc, Self> {
+        let mut timeline_scope_list = Vec::new();
+
+        loop {
+            if parent.read().class != ScopeClass::Target {
+                timeline_scope_list.push(parent.clone());
+            } else {
+                let new_scope = Self {
+                    parent: None,
+                    class: ScopeClass::Target,
+                    values: clip
+                };
+                timeline_scope_list.push(GcCell::allocate(mc, new_scope));
+            }
+
+            let grandparent = parent.read().parent.clone();
+            if let Some(grandparent) = grandparent {
+                parent = grandparent;
+            } else {
+                break;
+            }
+        }
+
+        let mut parent_scope = None;
+        for scope in timeline_scope_list.iter().rev() {
             parent_scope = Some(GcCell::allocate(mc, Scope {
                 parent: parent_scope,
                 class: scope.read().class,

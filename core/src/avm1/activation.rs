@@ -174,6 +174,11 @@ impl<'gc> Activation<'gc> {
         self.scope.clone()
     }
 
+    /// Completely replace the current scope with a new one.
+    pub fn set_scope(&mut self, scope: GcCell<'gc, Scope<'gc>>) {
+        self.scope = scope;
+    }
+
     /// Indicates whether or not the end of this scope should be handled as an
     /// implicit function return or the end of a block.
     pub fn can_implicit_return(&self) -> bool {
