@@ -329,6 +329,7 @@ mod tests {
     use crate::backend::navigator::NullNavigatorBackend;
     use crate::display_object::DisplayObject;
     use crate::movie_clip::MovieClip;
+    use crate::avm1::activation::Activation;
     use gc_arena::rootless_arena;
     use rand::{rngs::SmallRng, SeedableRng};
 
@@ -341,7 +342,7 @@ mod tests {
         ) -> R,
     {
         rootless_arena(|gc_context| {
-            let mut avm = Avm1::new(gc_context, swf_version);
+            let mut avm = Avm1::new(gc_context);
             let movie_clip: Box<dyn DisplayObject> = Box::new(MovieClip::new(gc_context));
             let root = GcCell::allocate(gc_context, movie_clip);
             let mut context = ActionContext {
@@ -357,6 +358,9 @@ mod tests {
                 navigator: &mut NullNavigatorBackend::new(),
             };
             let object = GcCell::allocate(gc_context, Object::object(gc_context));
+
+            let globals = avm.global_object_cell();
+            avm.insert_stack_frame(Activation::from_nothing(swf_version, globals, gc_context));
 
             test(&mut avm, &mut context, object)
         })

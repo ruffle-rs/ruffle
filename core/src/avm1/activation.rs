@@ -88,6 +88,32 @@ impl<'gc> Activation<'gc> {
         }
     }
 
+    /// Construct an empty stack frame with no code.
+    /// 
+    /// This is primarily intended for testing purposes: the activation given
+    /// will prevent the AVM from panicking without a current activation.
+    /// We construct a single scope chain from a global object, and that's about
+    /// it.
+    pub fn from_nothing(swf_version: u8, globals: GcCell<'gc, Object<'gc>>, mc: MutationContext<'gc, '_>) -> Activation<'gc> {
+        let global_scope = GcCell::allocate(mc, Scope::from_global_object(globals));
+        let child_scope = GcCell::allocate(mc, Scope::new_local_scope(global_scope, mc));
+
+        Activation {
+            swf_version: swf_version,
+            data: SwfSlice {
+                data: Arc::new(Vec::new()),
+                start: 0,
+                end: 0
+            },
+            pc: 0,
+            scope: child_scope,
+            this: globals,
+            arguments: None,
+            is_function: false,
+            local_registers: None
+        }
+    }
+
     /// Create a new activation to run a block of code with a given scope.
     pub fn to_rescope(&self, code: SwfSlice, scope: GcCell<'gc, Scope<'gc>>) -> Self {
         Activation {

@@ -83,6 +83,7 @@ pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Object<'
 mod tests {
     use super::*;
     use crate::avm1::Error;
+    use crate::avm1::activation::Activation;
     use crate::backend::audio::NullAudioBackend;
     use crate::backend::navigator::NullNavigatorBackend;
     use crate::display_object::DisplayObject;
@@ -128,6 +129,9 @@ mod tests {
                 audio: &mut NullAudioBackend::new(),
                 navigator: &mut NullNavigatorBackend::new(),
             };
+
+            let globals = avm.global_object_cell();
+            avm.insert_stack_frame(Activation::from_nothing(swf_version, globals, gc_context));
 
             test(&mut avm, &mut context)
         })

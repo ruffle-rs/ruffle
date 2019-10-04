@@ -883,6 +883,11 @@ impl<'gc> Avm1<'gc> {
         Value::Object(self.globals)
     }
 
+    /// Obtain a reference to `_global`.
+    pub fn global_object_cell(&self) -> GcCell<'gc, Object<'gc>> {
+        self.globals
+    }
+
     fn action_get_variable(
         &mut self,
         context: &mut ActionContext<'_, 'gc, '_>,
