@@ -400,8 +400,12 @@ impl<R: Read> Reader<R> {
             Some(TagCode::DefineSound) => {
                 Tag::DefineSound(Box::new(tag_reader.read_define_sound()?))
             }
-            Some(TagCode::DefineText) => Tag::DefineText(Box::new(tag_reader.read_define_text()?)),
-            Some(TagCode::DefineText2) => Tag::DefineText(Box::new(tag_reader.read_define_text2()?)),
+            Some(TagCode::DefineText) => {
+                Tag::DefineText(Box::new(tag_reader.read_define_text_1()?))
+            }
+            Some(TagCode::DefineText2) => {
+                Tag::DefineText(Box::new(tag_reader.read_define_text_2()?))
+            }
             Some(TagCode::DefineVideoStream) => tag_reader.read_define_video_stream()?,
             Some(TagCode::EnableTelemetry) => {
                 tag_reader.read_u16()?; // Reserved
@@ -2428,7 +2432,7 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    pub fn read_define_text(&mut self) -> Result<Text> {
+    pub fn read_define_text_1(&mut self) -> Result<Text> {
         let id = self.read_character_id()?;
         let bounds = self.read_rectangle()?;
         let matrix = self.read_matrix()?;
@@ -2436,7 +2440,7 @@ impl<R: Read> Reader<R> {
         let num_advance_bits = self.read_u8()?;
 
         let mut records = vec![];
-        while let Some(record) = self.read_text_record(num_glyph_bits, num_advance_bits)? {
+        while let Some(record) = self.read_text_record_1(num_glyph_bits, num_advance_bits)? {
             records.push(record);
         }
 
@@ -2448,7 +2452,7 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    pub fn read_define_text2(&mut self) -> Result<Text> {
+    pub fn read_define_text_2(&mut self) -> Result<Text> {
         let id = self.read_character_id()?;
         let bounds = self.read_rectangle()?;
         let matrix = self.read_matrix()?;
@@ -2456,7 +2460,7 @@ impl<R: Read> Reader<R> {
         let num_advance_bits = self.read_u8()?;
 
         let mut records = vec![];
-        while let Some(record) = self.read_text_record2(num_glyph_bits, num_advance_bits)? {
+        while let Some(record) = self.read_text_record_2(num_glyph_bits, num_advance_bits)? {
             records.push(record);
         }
 
@@ -2468,7 +2472,7 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    fn read_text_record(
+    fn read_text_record_1(
         &mut self,
         num_glyph_bits: u8,
         num_advance_bits: u8,
@@ -2525,7 +2529,7 @@ impl<R: Read> Reader<R> {
         }))
     }
 
-    fn read_text_record2(
+    fn read_text_record_2(
         &mut self,
         num_glyph_bits: u8,
         num_advance_bits: u8,
