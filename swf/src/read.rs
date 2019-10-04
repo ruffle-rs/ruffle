@@ -401,6 +401,7 @@ impl<R: Read> Reader<R> {
                 Tag::DefineSound(Box::new(tag_reader.read_define_sound()?))
             }
             Some(TagCode::DefineText) => Tag::DefineText(Box::new(tag_reader.read_define_text()?)),
+            Some(TagCode::DefineText2) => Tag::DefineText(Box::new(tag_reader.read_define_text2()?)),
             Some(TagCode::DefineVideoStream) => tag_reader.read_define_video_stream()?,
             Some(TagCode::EnableTelemetry) => {
                 tag_reader.read_u16()?; // Reserved
@@ -2447,6 +2448,26 @@ impl<R: Read> Reader<R> {
         })
     }
 
+    pub fn read_define_text2(&mut self) -> Result<Text> {
+        let id = self.read_character_id()?;
+        let bounds = self.read_rectangle()?;
+        let matrix = self.read_matrix()?;
+        let num_glyph_bits = self.read_u8()?;
+        let num_advance_bits = self.read_u8()?;
+
+        let mut records = vec![];
+        while let Some(record) = self.read_text_record2(num_glyph_bits, num_advance_bits)? {
+            records.push(record);
+        }
+
+        Ok(Text {
+            id,
+            bounds,
+            matrix,
+            records,
+        })
+    }
+
     fn read_text_record(
         &mut self,
         num_glyph_bits: u8,
@@ -2466,6 +2487,63 @@ impl<R: Read> Reader<R> {
         };
         let color = if flags & 0b100 != 0 {
             Some(self.read_rgb()?)
+        } else {
+            None
+        };
+        let x_offset = if flags & 0b1 != 0 {
+            Some(Twips::new(self.read_i16()?))
+        } else {
+            None
+        };
+        let y_offset = if flags & 0b10 != 0 {
+            Some(Twips::new(self.read_i16()?))
+        } else {
+            None
+        };
+        let height = if flags & 0b1000 != 0 {
+            Some(self.read_u16()?)
+        } else {
+            None
+        };
+        // TODO(Herschel): font_id and height are tied together. Merge them into a struct?
+        let num_glyphs = self.read_u8()?;
+        let mut glyphs = Vec::with_capacity(num_glyphs as usize);
+        for _ in 0..num_glyphs {
+            glyphs.push(GlyphEntry {
+                index: self.read_ubits(num_glyph_bits as usize)?,
+                advance: self.read_sbits(num_advance_bits as usize)?,
+            });
+        }
+
+        Ok(Some(TextRecord {
+            font_id,
+            color,
+            x_offset,
+            y_offset,
+            height,
+            glyphs,
+        }))
+    }
+
+    fn read_text_record2(
+        &mut self,
+        num_glyph_bits: u8,
+        num_advance_bits: u8,
+    ) -> Result<Option<TextRecord>> {
+        let flags = self.read_u8()?;
+
+        if flags == 0 {
+            // End of text records.
+            return Ok(None);
+        }
+
+        let font_id = if flags & 0b1000 != 0 {
+            Some(self.read_character_id()?)
+        } else {
+            None
+        };
+        let color = if flags & 0b100 != 0 {
+            Some(self.read_rgba()?)
         } else {
             None
         };
