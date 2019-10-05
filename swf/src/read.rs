@@ -400,7 +400,10 @@ impl<R: Read> Reader<R> {
             Some(TagCode::DefineSound) => {
                 Tag::DefineSound(Box::new(tag_reader.read_define_sound()?))
             }
-            Some(TagCode::DefineText) => Tag::DefineText(Box::new(tag_reader.read_define_text()?)),
+            Some(TagCode::DefineText) => Tag::DefineText(Box::new(tag_reader.read_define_text(1)?)),
+            Some(TagCode::DefineText2) => {
+                Tag::DefineText(Box::new(tag_reader.read_define_text(2)?))
+            }
             Some(TagCode::DefineVideoStream) => tag_reader.read_define_video_stream()?,
             Some(TagCode::EnableTelemetry) => {
                 tag_reader.read_u16()?; // Reserved
@@ -2427,7 +2430,7 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    pub fn read_define_text(&mut self) -> Result<Text> {
+    pub fn read_define_text(&mut self, version: u8) -> Result<Text> {
         let id = self.read_character_id()?;
         let bounds = self.read_rectangle()?;
         let matrix = self.read_matrix()?;
@@ -2435,7 +2438,7 @@ impl<R: Read> Reader<R> {
         let num_advance_bits = self.read_u8()?;
 
         let mut records = vec![];
-        while let Some(record) = self.read_text_record(num_glyph_bits, num_advance_bits)? {
+        while let Some(record) = self.read_text_record(num_glyph_bits, num_advance_bits, version)? {
             records.push(record);
         }
 
@@ -2451,6 +2454,7 @@ impl<R: Read> Reader<R> {
         &mut self,
         num_glyph_bits: u8,
         num_advance_bits: u8,
+        version: u8,
     ) -> Result<Option<TextRecord>> {
         let flags = self.read_u8()?;
 
@@ -2465,7 +2469,11 @@ impl<R: Read> Reader<R> {
             None
         };
         let color = if flags & 0b100 != 0 {
-            Some(self.read_rgb()?)
+            if version == 1 {
+                Some(self.read_rgb()?)
+            } else {
+                Some(self.read_rgba()?)
+            }
         } else {
             None
         };
