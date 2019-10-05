@@ -629,8 +629,8 @@ impl<'gc, 'a> MovieClip<'gc> {
             TagCode::DefineShape4 => self.define_shape(context, reader, 4),
             TagCode::DefineSound => self.define_sound(context, reader, tag_len),
             TagCode::DefineSprite => self.define_sprite(context, reader, tag_len, morph_shapes),
-            TagCode::DefineText => self.define_text_1(context, reader),
-            TagCode::DefineText2 => self.define_text_2(context, reader),
+            TagCode::DefineText => self.define_text(context, reader, 1),
+            TagCode::DefineText2 => self.define_text(context, reader, 2),
             TagCode::FrameLabel => {
                 self.frame_label(context, reader, tag_len, cur_frame, &mut static_data)
             }
@@ -1051,26 +1051,13 @@ impl<'gc, 'a> MovieClip<'gc> {
     }
 
     #[inline]
-    fn define_text_1(
+    fn define_text(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<&'a [u8]>,
+        version: u8,
     ) -> DecodeResult {
-        let text = reader.read_define_text_1()?;
-        let text_object = Text::from_swf_tag(context, &text);
-        context
-            .library
-            .register_character(text.id, Character::Text(Box::new(text_object)));
-        Ok(())
-    }
-
-    #[inline]
-    fn define_text_2(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<&'a [u8]>,
-    ) -> DecodeResult {
-        let text = reader.read_define_text_2()?;
+        let text = reader.read_define_text(version)?;
         let text_object = Text::from_swf_tag(context, &text);
         context
             .library
