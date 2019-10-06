@@ -1,13 +1,13 @@
 //! Code relating to executable functions + calling conventions.
 
+use crate::avm1::activation::Activation;
+use crate::avm1::object::Object;
+use crate::avm1::scope::Scope;
+use crate::avm1::value::Value;
+use crate::avm1::{ActionContext, Avm1};
+use crate::tag_utils::SwfSlice;
 use gc_arena::GcCell;
 use swf::avm1::types::FunctionParam;
-use crate::tag_utils::SwfSlice;
-use crate::avm1::{Avm1, ActionContext};
-use crate::avm1::object::Object;
-use crate::avm1::value::Value;
-use crate::avm1::scope::Scope;
-use crate::avm1::activation::Activation;
 
 pub type NativeFunction<'gc> = fn(
     &mut Avm1<'gc>,
@@ -24,7 +24,6 @@ pub struct Avm1Function<'gc> {
 
     /// A reference to the underlying SWF data.
     data: SwfSlice,
-    
     /// The name of the function, if not anonymous.
     name: Option<String>,
 
@@ -32,22 +31,28 @@ pub struct Avm1Function<'gc> {
     params: Vec<String>,
 
     /// The scope the function was born into.
-    scope: GcCell<'gc, Scope<'gc>>
+    scope: GcCell<'gc, Scope<'gc>>,
 }
 
 impl<'gc> Avm1Function<'gc> {
-    pub fn new(swf_version: u8, actions: SwfSlice, name: &str, params: &[&str], scope: GcCell<'gc, Scope<'gc>>) -> Self {
+    pub fn new(
+        swf_version: u8,
+        actions: SwfSlice,
+        name: &str,
+        params: &[&str],
+        scope: GcCell<'gc, Scope<'gc>>,
+    ) -> Self {
         let name = match name {
             "" => None,
-            name => Some(name.to_string())
+            name => Some(name.to_string()),
         };
 
         Avm1Function {
-            swf_version: swf_version,
+            swf_version,
             data: actions,
-            name: name,
-            params: params.into_iter().map(|s| s.to_string()).collect(),
-            scope: scope
+            name,
+            params: params.iter().map(|s| s.to_string()).collect(),
+            scope,
         }
     }
 
@@ -60,7 +65,7 @@ impl<'gc> Avm1Function<'gc> {
     }
 
     pub fn scope(&self) -> GcCell<'gc, Scope<'gc>> {
-        self.scope.clone()
+        self.scope
     }
 }
 
@@ -79,7 +84,6 @@ pub struct Avm1Function2<'gc> {
 
     /// A reference to the underlying SWF data.
     data: SwfSlice,
-    
     /// The name of the function, if not anonymous.
     name: Option<String>,
 
@@ -103,52 +107,46 @@ pub struct Avm1Function2<'gc> {
     params: Vec<(Option<u8>, String)>,
 
     /// The scope the function was born into.
-    scope: GcCell<'gc, Scope<'gc>>
+    scope: GcCell<'gc, Scope<'gc>>,
 }
 
 impl<'gc> Avm1Function2<'gc> {
-    pub fn new(swf_version: u8,
+    pub fn new(
+        swf_version: u8,
         actions: SwfSlice,
-        name: &str,
-        register_count: u8,
-        preload_parent: bool,
-        preload_root: bool,
-        supress_super: bool,
-        preload_super: bool,
-        supress_arguments: bool,
-        preload_arguments: bool,
-        supress_this: bool,
-        preload_this: bool,
-        preload_global: bool,
-        params: &Vec<FunctionParam>,
-        scope: GcCell<'gc, Scope<'gc>>) -> Self {
-        
-        let name = match name {
+        swf_function: &swf::avm1::types::Function,
+        scope: GcCell<'gc, Scope<'gc>>,
+    ) -> Self {
+        let name = match swf_function.name {
             "" => None,
-            name => Some(name.to_string())
+            name => Some(name.to_string()),
         };
 
         let mut owned_params = Vec::new();
-        for FunctionParam{name: s, register_index: r} in params.into_iter() {
-            owned_params.push((r.clone(), s.to_string()))
+        for FunctionParam {
+            name: s,
+            register_index: r,
+        } in &swf_function.params
+        {
+            owned_params.push((*r, s.to_string()))
         }
 
         Avm1Function2 {
-            swf_version: swf_version,
+            swf_version,
             data: actions,
-            name: name,
-            register_count: register_count,
-            preload_parent: preload_parent,
-            preload_root: preload_root,
-            supress_super: supress_super,
-            preload_super: preload_super,
-            supress_arguments: supress_arguments,
-            preload_arguments: preload_arguments,
-            supress_this: supress_this,
-            preload_this: preload_this,
-            preload_global: preload_global,
+            name,
+            register_count: swf_function.params.capacity() as u8,
+            preload_parent: swf_function.preload_parent,
+            preload_root: swf_function.preload_root,
+            supress_super: swf_function.suppress_super,
+            preload_super: swf_function.preload_super,
+            supress_arguments: swf_function.suppress_super,
+            preload_arguments: swf_function.preload_arguments,
+            supress_this: swf_function.suppress_this,
+            preload_this: swf_function.preload_this,
+            preload_global: swf_function.preload_global,
             params: owned_params,
-            scope: scope
+            scope,
         }
     }
 
@@ -161,7 +159,7 @@ impl<'gc> Avm1Function2<'gc> {
     }
 
     pub fn scope(&self) -> GcCell<'gc, Scope<'gc>> {
-        self.scope.clone()
+        self.scope
     }
 
     pub fn register_count(&self) -> u8 {
@@ -180,17 +178,23 @@ pub enum Executable<'gc> {
     Action(Avm1Function<'gc>),
 
     /// ActionScript data defined by a previous `DefineFunction2` action.
-    Action2(Avm1Function2<'gc>)
+    Action2(Avm1Function2<'gc>),
 }
 
 impl<'gc> Executable<'gc> {
     /// Execute the given code.
-    /// 
+    ///
     /// Execution is not guaranteed to have completed when this function
     /// returns. If on-stack execution is possible, then this function returns
     /// a return value you must push onto the stack. Otherwise, you must
     /// create a new stack frame and execute the action data yourself.
-    pub fn exec(&self, avm: &mut Avm1<'gc>, ac: &mut ActionContext<'_, 'gc, '_>, this: GcCell<'gc, Object<'gc>>, args: &[Value<'gc>]) -> Option<Value<'gc>> {
+    pub fn exec(
+        &self,
+        avm: &mut Avm1<'gc>,
+        ac: &mut ActionContext<'_, 'gc, '_>,
+        this: GcCell<'gc, Object<'gc>>,
+        args: &[Value<'gc>],
+    ) -> Option<Value<'gc>> {
         match self {
             Executable::Native(nf) => Some(nf(avm, ac, this, args)),
             Executable::Action(af) => {
@@ -201,23 +205,38 @@ impl<'gc> Executable<'gc> {
                 }
 
                 arguments.force_set("length", Value::Number(args.len() as f64));
-                
                 let argcell = GcCell::allocate(ac.gc_context, arguments);
-                let child_scope = GcCell::allocate(ac.gc_context, Scope::new_local_scope(af.scope(), ac.gc_context));
+                let child_scope = GcCell::allocate(
+                    ac.gc_context,
+                    Scope::new_local_scope(af.scope(), ac.gc_context),
+                );
 
                 for i in 0..args.len() {
                     if let Some(argname) = af.params.get(i) {
-                        child_scope.write(ac.gc_context).define(argname, args.get(i).unwrap().clone(), ac.gc_context);
+                        child_scope.write(ac.gc_context).define(
+                            argname,
+                            args.get(i).unwrap().clone(),
+                            ac.gc_context,
+                        );
                     }
                 }
 
-                let frame = Activation::from_function(af.swf_version(), af.data(), child_scope, this, Some(argcell));
+                let frame = Activation::from_function(
+                    af.swf_version(),
+                    af.data(),
+                    child_scope,
+                    this,
+                    Some(argcell),
+                );
                 avm.insert_stack_frame(frame);
 
                 None
-            },
+            }
             Executable::Action2(af) => {
-                let child_scope = GcCell::allocate(ac.gc_context, Scope::new_local_scope(af.scope(), ac.gc_context));
+                let child_scope = GcCell::allocate(
+                    ac.gc_context,
+                    Scope::new_local_scope(af.scope(), ac.gc_context),
+                );
                 let mut arguments = Object::object(ac.gc_context);
                 if !af.supress_arguments {
                     for i in 0..args.len() {
@@ -228,7 +247,13 @@ impl<'gc> Executable<'gc> {
                 }
 
                 let argcell = GcCell::allocate(ac.gc_context, arguments);
-                let mut frame = Activation::from_function(af.swf_version(), af.data(), child_scope, this, Some(argcell));
+                let mut frame = Activation::from_function(
+                    af.swf_version(),
+                    af.data(),
+                    child_scope,
+                    this,
+                    Some(argcell),
+                );
                 let mut preload_r = 1;
 
                 if af.preload_this {
@@ -268,16 +293,19 @@ impl<'gc> Executable<'gc> {
                     frame.set_local_register(preload_r, avm.global_object(ac), ac.gc_context);
                 }
 
-                //TODO: What happens if the argument registers clash with the 
+                //TODO: What happens if the argument registers clash with the
                 //preloaded registers? What gets done last?
                 for i in 0..args.len() {
                     match (args.get(i), af.params.get(i)) {
-                        (Some(arg), Some((Some(argreg), _argname))) => frame.set_local_register(*argreg, arg.clone(), ac.gc_context),
-                        (Some(arg), Some((None, argname))) => frame.define(argname, arg.clone(), ac.gc_context),
+                        (Some(arg), Some((Some(argreg), _argname))) => {
+                            frame.set_local_register(*argreg, arg.clone(), ac.gc_context)
+                        }
+                        (Some(arg), Some((None, argname))) => {
+                            frame.define(argname, arg.clone(), ac.gc_context)
+                        }
                         _ => {}
                     }
                 }
-                
                 frame.allocate_local_registers(af.register_count(), ac.gc_context);
                 avm.insert_stack_frame(frame);
 
