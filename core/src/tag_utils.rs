@@ -19,7 +19,7 @@ impl AsRef<[u8]> for SwfSlice {
 
 impl SwfSlice {
     /// Construct a new SwfSlice from a regular slice.
-    /// 
+    ///
     /// This function returns None if the given slice is not a subslice of the
     /// current slice.
     pub fn to_subslice(&self, slice: &[u8]) -> Option<SwfSlice> {
@@ -30,7 +30,7 @@ impl SwfSlice {
             Some(SwfSlice {
                 data: self.data.clone(),
                 start: slice_pval - self_pval,
-                end: (slice_pval - self_pval) + slice.len()
+                end: (slice_pval - self_pval) + slice.len(),
             })
         } else {
             None

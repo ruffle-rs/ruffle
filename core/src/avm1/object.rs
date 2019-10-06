@@ -1,6 +1,6 @@
-use crate::avm1::{ActionContext, Avm1, Value};
-use crate::avm1::function::{Executable, NativeFunction, Avm1Function, Avm1Function2};
+use crate::avm1::function::{Avm1Function, Avm1Function2, Executable, NativeFunction};
 use crate::avm1::scope::Scope;
+use crate::avm1::{ActionContext, Avm1, Value};
 use crate::display_object::DisplayNode;
 use crate::tag_utils::SwfSlice;
 use core::fmt;
@@ -135,7 +135,7 @@ impl<'gc> Object<'gc> {
     }
 
     /// Constructs an object with no values, not even builtins.
-    /// 
+    ///
     /// Intended for constructing scope chains, since they exclusively use the
     /// object values, but can't just have a hashmap because of `with` and
     /// friends.
@@ -157,12 +157,24 @@ impl<'gc> Object<'gc> {
         }
     }
 
-    pub fn action_function(swf_version: u8, actions: SwfSlice, name: &str, params: &[&str], scope: GcCell<'gc, Scope<'gc>>) -> Self {
+    pub fn action_function(
+        swf_version: u8,
+        actions: SwfSlice,
+        name: &str,
+        params: &[&str],
+        scope: GcCell<'gc, Scope<'gc>>,
+    ) -> Self {
         Self {
             type_of: TYPE_OF_FUNCTION,
-            function: Some(Executable::Action(Avm1Function::new(swf_version, actions, name, params, scope))),
+            function: Some(Executable::Action(Avm1Function::new(
+                swf_version,
+                actions,
+                name,
+                params,
+                scope,
+            ))),
             display_node: None,
-            values: HashMap::new()
+            values: HashMap::new(),
         }
     }
 
@@ -171,7 +183,7 @@ impl<'gc> Object<'gc> {
             type_of: TYPE_OF_FUNCTION,
             function: Some(Executable::Action2(func)),
             display_node: None,
-            values: HashMap::new()
+            values: HashMap::new(),
         }
     }
 
@@ -244,7 +256,10 @@ impl<'gc> Object<'gc> {
     ) {
         self.force_set(
             name,
-            Value::Object(GcCell::allocate(gc_context, Object::native_function(function))),
+            Value::Object(GcCell::allocate(
+                gc_context,
+                Object::native_function(function),
+            )),
         )
     }
 
@@ -283,10 +298,10 @@ impl<'gc> Object<'gc> {
         self.values.contains_key(name)
     }
 
-    pub fn iter_values(&self) -> impl Iterator<Item=(&String, &Value<'gc>)> {
+    pub fn iter_values(&self) -> impl Iterator<Item = (&String, &Value<'gc>)> {
         self.values.iter().filter_map(|(k, p)| match p {
-            Property::Virtual {..} => None,
-            Property::Stored { value, .. } => Some((k, value))
+            Property::Virtual { .. } => None,
+            Property::Stored { value, .. } => Some((k, value)),
         })
     }
 
@@ -325,11 +340,11 @@ impl<'gc> Object<'gc> {
 mod tests {
     use super::*;
 
+    use crate::avm1::activation::Activation;
     use crate::backend::audio::NullAudioBackend;
     use crate::backend::navigator::NullNavigatorBackend;
     use crate::display_object::DisplayObject;
     use crate::movie_clip::MovieClip;
-    use crate::avm1::activation::Activation;
     use gc_arena::rootless_arena;
     use rand::{rngs::SmallRng, SeedableRng};
 

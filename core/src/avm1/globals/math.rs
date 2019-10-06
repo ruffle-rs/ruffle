@@ -82,8 +82,8 @@ pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Object<'
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::avm1::Error;
     use crate::avm1::activation::Activation;
+    use crate::avm1::Error;
     use crate::backend::audio::NullAudioBackend;
     use crate::backend::navigator::NullNavigatorBackend;
     use crate::display_object::DisplayObject;
