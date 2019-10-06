@@ -93,11 +93,11 @@ pub struct Avm1Function2<'gc> {
 
     preload_parent: bool,
     preload_root: bool,
-    supress_super: bool,
+    suppress_super: bool,
     preload_super: bool,
-    supress_arguments: bool,
+    suppress_arguments: bool,
     preload_arguments: bool,
-    supress_this: bool,
+    suppress_this: bool,
     preload_this: bool,
     preload_global: bool,
 
@@ -138,11 +138,11 @@ impl<'gc> Avm1Function2<'gc> {
             register_count: swf_function.params.capacity() as u8,
             preload_parent: swf_function.preload_parent,
             preload_root: swf_function.preload_root,
-            supress_super: swf_function.suppress_super,
+            suppress_super: swf_function.suppress_super,
             preload_super: swf_function.preload_super,
-            supress_arguments: swf_function.suppress_super,
+            suppress_arguments: swf_function.suppress_super,
             preload_arguments: swf_function.preload_arguments,
-            supress_this: swf_function.suppress_this,
+            suppress_this: swf_function.suppress_this,
             preload_this: swf_function.preload_this,
             preload_global: swf_function.preload_global,
             params: owned_params,
@@ -238,7 +238,7 @@ impl<'gc> Executable<'gc> {
                     Scope::new_local_scope(af.scope(), ac.gc_context),
                 );
                 let mut arguments = Object::object(ac.gc_context);
-                if !af.supress_arguments {
+                if !af.suppress_arguments {
                     for i in 0..args.len() {
                         arguments.force_set(&format!("{}", i), args.get(i).unwrap().clone())
                     }
