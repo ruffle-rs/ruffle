@@ -1,5 +1,3 @@
-import detect_flash from "../../js-src/detect-native-flash";
-
 function bind_boolean_setting(checkbox_elem) {
     let name = checkbox_elem.name,
         default_val = checkbox_elem.checked,
@@ -22,21 +20,103 @@ function bind_boolean_setting(checkbox_elem) {
     });
 }
 
-document.addEventListener("DOMContentLoaded", function (e) {
-    bind_boolean_setting(document.getElementById("ruffle_enable"));
+/**
+ * Promise-based version of `chrome.tabs.query`.
+ * 
+ * Mozilla does this by default in `browser.tabs` but Chrome is behind on this
+ * sort of thing. Chrome won't even let us check if we're running in 
+ */
+function tab_query() {
+    let my_args = arguments;
 
-    //Flash detect (not working yet)
-    let current_flash_version = document.getElementById("current_flash_version");
-    if (current_flash_version === null) {
+    if (window.browser && browser.tabs && browser.tabs.query) {
+        return browser.tabs.query.apply(this, arguments);
+    }
+
+    return new Promise(function (resolve, reject) {
+        let new_arguments = Array.prototype.slice.call(my_args);
+        new_arguments.push(resolve);
+        chrome.tabs.query.apply(this, new_arguments);
+    });
+}
+
+/**
+ * Promise-based version of `chrome.tabs.sendMessage`.
+ */
+function tab_sendmessage() {
+    let my_args = arguments;
+
+    if (window.browser && browser.tabs && browser.tabs.sendMessage) {
+        return browser.tabs.sendMessage.apply(this, arguments);
+    }
+
+    return new Promise(function (resolve, reject) {
+        let new_arguments = Array.prototype.slice.call(my_args);
+        new_arguments.push(function (response) {
+            if (chrome.runtime.lastError !== undefined) {
+                reject(chrome.runtime.lastError.message);
+            }
+            
+            resolve(response);
+        });
+        chrome.tabs.sendMessage.apply(this, new_arguments);
+    });
+}
+
+document.addEventListener("DOMContentLoaded", async function (e) {
+    bind_boolean_setting(document.getElementById("ruffle_enable"));
+    
+    let ruffle_status = document.getElementById("ruffle_status");
+    if (ruffle_status === null) {
         debugger;
     }
-    let detect_result = detect_flash();
-    let has_flash = detect_result[0];
-    let version = detect_result[1];
+    
+    ruffle_status.textContent = "Reading current tab...";
+    let tabs = null;
 
-    if (!has_flash) {
-        current_flash_version.textContent = "No native Flash installed."
-    } else {
-        current_flash_version.textContent = "Flash Plugin detected, version " + version.join(".");
+    try {
+        tabs = await tab_query({
+            "currentWindow": true,
+            "active": true
+        });
+
+        if (tabs.length < 1) {
+            ruffle_status.textContent = "There is no active tab.";
+            return;
+        }
+
+        if (tabs.length > 1) {
+            console.warn("Got " + tabs.length + " tabs in response to active tab query");
+        }
+    } catch (e) {
+        ruffle_status.textContent = "An error occured when looking up the current tab.";
+        throw e;
+    }
+
+    try {
+        let active_tab = tabs[0];
+
+        ruffle_status.textContent = "Checking Ruffle status on current tab...";
+
+        let resp = await tab_sendmessage(active_tab.id, {"action": "get_page_options"});
+        console.log(resp);
+        if (resp !== undefined && resp.hasOwnProperty("page_options") && resp.page_options !== undefined) {
+            if (resp.page_options.hasOwnProperty("optout") && resp.page_options.optout === true) {
+                ruffle_status.textContent = "The current tab has opted out of Ruffle.";
+            } else if (resp.page_options.hasOwnProperty("interdict") && resp.page_options.interdict.indexOf !== undefined) {
+                if (resp.page_options.interdict.indexOf("static-content") !== -1) {
+                    ruffle_status.textContent = "Ruffle is loaded and running Flash content on the current tab.";
+                } else {
+                    ruffle_status.textContent = "The current tab has disabled automatic Flash content playback.";
+                }
+            } else {
+                ruffle_enable.textContent = "Current tab responded with invalid data.";
+            }
+        } else {
+            ruffle_status.textContent = "Current tab responded with invalid data.";
+        }
+    } catch (e) {
+        ruffle_status.textContent = "Ruffle is not loaded on the current tab.";
+        throw e;
     }
 });
