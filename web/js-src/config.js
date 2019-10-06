@@ -28,16 +28,18 @@
  * Defaults mentioned above are not applied by this function.
  */
 export function get_config_options(elem) {
-    let values = {};
+    let values = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
 
-    values.optout = elem.dataset.ruffle-optout !== undefined;
-    if (elem.dataset.ruffle-version !== undefined) {
-        values.version = elem.dataset.ruffle-version;
+    values.optout = elem.dataset.ruffleOptout !== undefined;
+    if (elem.dataset.ruffleVersion !== undefined) {
+        values.version = elem.dataset.ruffleVersion;
     }
 
-    if (elem.dataset.ruffle-interdict !== undefined) {
-        values.interdict = elem.dataset.ruffle-interdict.split(",").map((v) => v.trim());
+    if (elem.dataset.ruffleInterdict !== undefined) {
+        values.interdict = elem.dataset.ruffleInterdict.split(",").map((v) => v.trim());
     }
+
+    return values;
 }
 
 export const DEFAULT_CONFIG = {
