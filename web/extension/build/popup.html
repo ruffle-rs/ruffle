@@ -2,24 +2,55 @@
 <title>Ruffle Settings</title>
 <script type="text/javascript" src="dist/popup.js"></script>
 <style>
-    body {
-        margin: 12px;
-        text-align: center;
+    *, *:before, *:after {
+        box-sizing: border-box;
     }
 
-    img {
+    body {
         text-align: center;
-        margin: 8px 4px;
+        margin: 0;
+        padding: 0;
+    }
+
+    .RufflePopup {
+        width: 240px;
+        background: #F7F7F7;
+    }
+
+    .RufflePopup-logo {
+        text-align: center;
+        padding: 15px 14px 8px;
+
+        background: #184778;
+        width: 100%;
+    }
+
+    .RufflePopup-logo img {
+        max-width: 100%;
+    }
+
+    .RufflePopup-status_band {
+        text-align: center;
+        background: white;
+        padding: 15px;
+        margin: 0;
+    }
+
+    .RufflePopup-user_settings {
+        text-align: left;
+        padding: 12px;
     }
 </style>
 
-<img src="logo/328.png" alt="Ruffle" width="200">
+<div class="RufflePopup">
+    <div class="RufflePopup-logo"><img src="logo/328.png" alt="Ruffle" width="200"></div>
 
-<p><span id="ruffle_status">Loading...</span></p>
+    <p class="RufflePopup-status_band"><span id="ruffle_status">Loading...</span></p>
 
-<form>
-    <label>
-        <input type="checkbox" checked name="ruffle_enable" id="ruffle_enable">
-        Play Flash content in Ruffle
-    </label>
-</form>
+    <form class="RufflePopup-user_settings">
+        <label>
+            <input type="checkbox" checked name="ruffle_enable" id="ruffle_enable">
+            Play Flash content in Ruffle
+        </label>
+    </form>
+</div>
