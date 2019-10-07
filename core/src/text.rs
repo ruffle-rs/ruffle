@@ -62,14 +62,14 @@ impl<'gc> DisplayObject<'gc> for Text<'gc> {
             color = block.color.as_ref().unwrap_or(&color).clone();
             font_id = block.font_id.unwrap_or(font_id);
             height = block.height.unwrap_or(height);
-            let scale = f32::from(height) / 1024.0;
-            transform.matrix.a = scale;
-            transform.matrix.d = scale;
-            transform.color_transform.r_mult = f32::from(color.r) / 255.0;
-            transform.color_transform.g_mult = f32::from(color.g) / 255.0;
-            transform.color_transform.b_mult = f32::from(color.b) / 255.0;
-            transform.color_transform.a_mult = f32::from(color.a) / 255.0;
             if let Some(font) = context.library.get_font(font_id) {
+                let scale = f32::from(height) / font.scale();
+                transform.matrix.a = scale;
+                transform.matrix.d = scale;
+                transform.color_transform.r_mult = f32::from(color.r) / 255.0;
+                transform.color_transform.g_mult = f32::from(color.g) / 255.0;
+                transform.color_transform.b_mult = f32::from(color.b) / 255.0;
+                transform.color_transform.a_mult = f32::from(color.a) / 255.0;
                 for c in &block.glyphs {
                     if let Some(glyph) = font.get_glyph(c.index as usize) {
                         context.transform_stack.push(&transform);
