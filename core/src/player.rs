@@ -127,6 +127,13 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             is_mouse_down: false,
         };
 
+        player.gc_arena.mutate(|gc_context, gc_root| {
+            gc_root
+                .root
+                .write(gc_context)
+                .post_instantiation(gc_context, gc_root.root)
+        });
+
         player.build_matrices();
         player.preload();
 

@@ -986,7 +986,7 @@ impl<'gc> Avm1<'gc> {
 
     /// Obtain the value of `_root`.
     pub fn root_object(&self, context: &mut ActionContext<'_, 'gc, '_>) -> Value<'gc> {
-        context.start_clip.read().object()
+        context.root.read().object()
     }
 
     /// Obtain the value of `_global`.
