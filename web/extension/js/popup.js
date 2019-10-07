@@ -100,17 +100,11 @@ document.addEventListener("DOMContentLoaded", async function (e) {
 
         let resp = await tab_sendmessage(active_tab.id, {"action": "get_page_options"});
         console.log(resp);
-        if (resp !== undefined && resp.hasOwnProperty("page_options") && resp.page_options !== undefined) {
-            if (resp.page_options.hasOwnProperty("optout") && resp.page_options.optout === true) {
+        if (resp !== undefined && resp.hasOwnProperty("page_options") && resp.page_options !== undefined && resp.page_options.hasOwnProperty("optout")) {
+            if (resp.page_options.optout === true) {
                 ruffle_status.textContent = "The current tab has opted out of Ruffle.";
-            } else if (resp.page_options.hasOwnProperty("interdict") && resp.page_options.interdict.indexOf !== undefined) {
-                if (resp.page_options.interdict.indexOf("static-content") !== -1) {
-                    ruffle_status.textContent = "Ruffle is loaded and running Flash content on the current tab.";
-                } else {
-                    ruffle_status.textContent = "The current tab has disabled automatic Flash content playback.";
-                }
             } else {
-                ruffle_enable.textContent = "Current tab responded with invalid data.";
+                ruffle_status.textContent = "Ruffle is loaded and running Flash content on the current tab.";
             }
         } else {
             ruffle_status.textContent = "Current tab responded with invalid data.";
