@@ -82,6 +82,7 @@ pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Object<'
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::avm1::activation::Activation;
     use crate::avm1::Error;
     use crate::backend::audio::NullAudioBackend;
     use crate::backend::navigator::NullNavigatorBackend;
@@ -99,7 +100,7 @@ mod tests {
                     let function = math.read().get($name, avm, context, math);
 
                     $(
-                        assert_eq!(function.call(avm, context, math, $args)?, $out);
+                        assert_eq!(function.call(avm, context, math, $args)?, Some($out));
                     )*
 
                     Ok(())
@@ -113,7 +114,7 @@ mod tests {
         F: for<'a, 'gc> FnOnce(&mut Avm1<'gc>, &mut ActionContext<'a, 'gc, '_>) -> R,
     {
         rootless_arena(|gc_context| {
-            let mut avm = Avm1::new(gc_context, swf_version);
+            let mut avm = Avm1::new(gc_context);
             let movie_clip: Box<dyn DisplayObject> = Box::new(MovieClip::new(gc_context));
             let root = GcCell::allocate(gc_context, movie_clip);
             let mut context = ActionContext {
@@ -128,6 +129,9 @@ mod tests {
                 audio: &mut NullAudioBackend::new(),
                 navigator: &mut NullNavigatorBackend::new(),
             };
+
+            let globals = avm.global_object_cell();
+            avm.insert_stack_frame(Activation::from_nothing(swf_version, globals, gc_context));
 
             test(&mut avm, &mut context)
         })

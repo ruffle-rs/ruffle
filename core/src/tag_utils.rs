@@ -3,6 +3,7 @@ use swf::TagCode;
 pub type DecodeResult = Result<(), Box<dyn std::error::Error>>;
 pub type SwfStream<R> = swf::read::Reader<std::io::Cursor<R>>;
 
+/// A shared-ownership reference to some portion of an immutable datastream.
 #[derive(Debug, Clone)]
 pub struct SwfSlice {
     pub data: std::sync::Arc<Vec<u8>>,
@@ -13,6 +14,27 @@ pub struct SwfSlice {
 impl AsRef<[u8]> for SwfSlice {
     fn as_ref(&self) -> &[u8] {
         &self.data[self.start..self.end]
+    }
+}
+
+impl SwfSlice {
+    /// Construct a new SwfSlice from a regular slice.
+    ///
+    /// This function returns None if the given slice is not a subslice of the
+    /// current slice.
+    pub fn to_subslice(&self, slice: &[u8]) -> Option<SwfSlice> {
+        let self_pval = self.data.as_ptr() as usize;
+        let slice_pval = slice.as_ptr() as usize;
+
+        if (self_pval + self.start) <= slice_pval && slice_pval < (self_pval + self.end) {
+            Some(SwfSlice {
+                data: self.data.clone(),
+                start: slice_pval - self_pval,
+                end: (slice_pval - self_pval) + slice.len(),
+            })
+        } else {
+            None
+        }
     }
 }
 

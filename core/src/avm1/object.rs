@@ -1,17 +1,13 @@
+use crate::avm1::function::{Avm1Function, Avm1Function2, Executable, NativeFunction};
+use crate::avm1::scope::Scope;
 use crate::avm1::{ActionContext, Avm1, Value};
 use crate::display_object::DisplayNode;
+use crate::tag_utils::SwfSlice;
 use core::fmt;
 use gc_arena::{GcCell, MutationContext};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::mem::replace;
-
-pub type NativeFunction<'gc> = fn(
-    &mut Avm1<'gc>,
-    &mut ActionContext<'_, 'gc, '_>,
-    GcCell<'gc, Object<'gc>>,
-    &[Value<'gc>],
-) -> Value<'gc>;
 
 pub const TYPE_OF_OBJECT: &str = "object";
 pub const TYPE_OF_FUNCTION: &str = "function";
@@ -103,7 +99,7 @@ impl fmt::Debug for Property<'_> {
 pub struct Object<'gc> {
     display_node: Option<DisplayNode<'gc>>,
     values: HashMap<String, Property<'gc>>,
-    function: Option<NativeFunction<'gc>>,
+    function: Option<Executable<'gc>>,
     type_of: &'static str,
 }
 
@@ -138,10 +134,54 @@ impl<'gc> Object<'gc> {
         result
     }
 
-    pub fn function(function: NativeFunction<'gc>) -> Self {
+    /// Constructs an object with no values, not even builtins.
+    ///
+    /// Intended for constructing scope chains, since they exclusively use the
+    /// object values, but can't just have a hashmap because of `with` and
+    /// friends.
+    pub fn bare_object() -> Self {
+        Self {
+            type_of: TYPE_OF_OBJECT,
+            display_node: None,
+            values: HashMap::new(),
+            function: None,
+        }
+    }
+
+    pub fn native_function(function: NativeFunction<'gc>) -> Self {
         Self {
             type_of: TYPE_OF_FUNCTION,
-            function: Some(function),
+            function: Some(Executable::Native(function)),
+            display_node: None,
+            values: HashMap::new(),
+        }
+    }
+
+    pub fn action_function(
+        swf_version: u8,
+        actions: SwfSlice,
+        name: &str,
+        params: &[&str],
+        scope: GcCell<'gc, Scope<'gc>>,
+    ) -> Self {
+        Self {
+            type_of: TYPE_OF_FUNCTION,
+            function: Some(Executable::Action(Avm1Function::new(
+                swf_version,
+                actions,
+                name,
+                params,
+                scope,
+            ))),
+            display_node: None,
+            values: HashMap::new(),
+        }
+    }
+
+    pub fn action_function2(func: Avm1Function2<'gc>) -> Self {
+        Self {
+            type_of: TYPE_OF_FUNCTION,
+            function: Some(Executable::Action2(func)),
             display_node: None,
             values: HashMap::new(),
         }
@@ -188,7 +228,7 @@ impl<'gc> Object<'gc> {
             .insert(name.to_string(), Property::Stored { value });
     }
 
-    pub fn set_function(
+    pub fn set_native_function(
         &mut self,
         name: &str,
         function: NativeFunction<'gc>,
@@ -200,7 +240,7 @@ impl<'gc> Object<'gc> {
             name,
             Value::Object(GcCell::allocate(
                 context.gc_context,
-                Object::function(function),
+                Object::native_function(function),
             )),
             avm,
             context,
@@ -216,7 +256,10 @@ impl<'gc> Object<'gc> {
     ) {
         self.force_set(
             name,
-            Value::Object(GcCell::allocate(gc_context, Object::function(function))),
+            Value::Object(GcCell::allocate(
+                gc_context,
+                Object::native_function(function),
+            )),
         )
     }
 
@@ -233,6 +276,20 @@ impl<'gc> Object<'gc> {
         Value::Undefined
     }
 
+    /// Retrieve a value from an object if and only if the value in the object
+    /// property is non-virtual.
+    pub fn force_get(&self, name: &str) -> Value<'gc> {
+        if let Some(Property::Stored { value, .. }) = self.values.get(name) {
+            return value.to_owned();
+        }
+        Value::Undefined
+    }
+
+    /// Delete a given value off the object.
+    pub fn delete(&mut self, name: &str) {
+        self.values.remove(name);
+    }
+
     pub fn has_property(&self, name: &str) -> bool {
         self.values.contains_key(name)
     }
@@ -241,17 +298,24 @@ impl<'gc> Object<'gc> {
         self.values.contains_key(name)
     }
 
+    pub fn iter_values(&self) -> impl Iterator<Item = (&String, &Value<'gc>)> {
+        self.values.iter().filter_map(|(k, p)| match p {
+            Property::Virtual { .. } => None,
+            Property::Stored { value, .. } => Some((k, value)),
+        })
+    }
+
     pub fn call(
         &self,
         avm: &mut Avm1<'gc>,
         context: &mut ActionContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Value<'gc> {
-        if let Some(function) = self.function {
-            function(avm, context, this, args)
+    ) -> Option<Value<'gc>> {
+        if let Some(function) = &self.function {
+            function.exec(avm, context, this, args)
         } else {
-            Value::Undefined
+            Some(Value::Undefined)
         }
     }
 
@@ -276,6 +340,7 @@ impl<'gc> Object<'gc> {
 mod tests {
     use super::*;
 
+    use crate::avm1::activation::Activation;
     use crate::backend::audio::NullAudioBackend;
     use crate::backend::navigator::NullNavigatorBackend;
     use crate::display_object::DisplayObject;
@@ -292,7 +357,7 @@ mod tests {
         ) -> R,
     {
         rootless_arena(|gc_context| {
-            let mut avm = Avm1::new(gc_context, swf_version);
+            let mut avm = Avm1::new(gc_context);
             let movie_clip: Box<dyn DisplayObject> = Box::new(MovieClip::new(gc_context));
             let root = GcCell::allocate(gc_context, movie_clip);
             let mut context = ActionContext {
@@ -308,6 +373,9 @@ mod tests {
                 navigator: &mut NullNavigatorBackend::new(),
             };
             let object = GcCell::allocate(gc_context, Object::object(gc_context));
+
+            let globals = avm.global_object_cell();
+            avm.insert_stack_frame(Activation::from_nothing(swf_version, globals, gc_context));
 
             test(&mut avm, &mut context, object)
         })
