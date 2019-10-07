@@ -70,11 +70,11 @@ pub fn create_movie_object<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<
         object,
         "getBytesLoaded" => |_movie_clip: &MovieClip, _args| {
             // TODO find a correct value
-            Value::Number(0.0)
+            Value::Number(1.0)
         },
         "getBytesTotal" => |_movie_clip: &MovieClip, _args| {
             // TODO find a correct value
-            Value::Number(0.0)
+            Value::Number(1.0)
         }
     );
 
