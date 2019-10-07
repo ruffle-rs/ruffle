@@ -12,18 +12,6 @@
  *    self-hosted version of Ruffle.
  *  * data-ruffle-version - Indicates that this page self-hosts Ruffle, and
  *    optionally indicates the version of Ruffle present on the page.
- *  * data-ruffle-interdict - Indicates what legacy content interdictions are
- *    allowed. This setting is respected by both WebExtension and self-hosted
- *    Ruffle identically. The default of `static-content,plugin-detect` will be
- *    provided if not specified. The following are valid interdictions:
- *     * static-content - Replace static `<object>` and `<embed>` elements.
- *       Enabled by default.
- *     * dynamic-content - Replace dynamically-added `<object>` and `<embed>`
- *       elements using a `MutationObserver`. Not enabled by default, as this
- *       interdiction is expensive.
- *     * plugin-detect - Alter the `window` in order to fool plugin detects. You
- *       will not be able to detect the native version of Flash dynamically if
- *       enabled.
  * 
  * Defaults mentioned above are not applied by this function.
  */
@@ -35,14 +23,9 @@ export function get_config_options(elem) {
         values.version = elem.dataset.ruffleVersion;
     }
 
-    if (elem.dataset.ruffleInterdict !== undefined) {
-        values.interdict = elem.dataset.ruffleInterdict.split(",").map((v) => v.trim());
-    }
-
     return values;
 }
 
 export const DEFAULT_CONFIG = {
-    "optout": false,
-    "interdict": ["static-content", "plugin-detect"]
+    "optout": false
 };
