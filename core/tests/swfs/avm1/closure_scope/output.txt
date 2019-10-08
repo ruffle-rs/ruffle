@@ -1,0 +1,7 @@
+hello 1 times, Kaitlin
+hello 2 times, Josh
+goodbye 1 times, Phil
+hello 3 times, Emily
+goodbye 2 times, Steve
+timeline frame 1
+child frame 1
