@@ -8,6 +8,7 @@ mod bounding_box;
 mod button;
 mod character;
 mod color_transform;
+mod edit_text;
 mod events;
 mod font;
 mod graphic;

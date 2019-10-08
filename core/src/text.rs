@@ -75,7 +75,7 @@ impl<'gc> DisplayObject<'gc> for Text<'gc> {
                         context.transform_stack.push(&transform);
                         context
                             .renderer
-                            .render_shape(glyph, context.transform_stack.transform());
+                            .render_shape(glyph.shape, context.transform_stack.transform());
                         context.transform_stack.pop();
                         transform.matrix.tx += c.advance as f32;
                     }
