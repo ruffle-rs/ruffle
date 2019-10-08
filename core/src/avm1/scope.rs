@@ -1,6 +1,7 @@
 //! Represents AVM1 scope chain resolution.
 
 use crate::avm1::{ActionContext, Avm1, Object, Value};
+use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
@@ -283,11 +284,11 @@ impl<'gc> Scope<'gc> {
     /// chain. As a result, this function always force sets a property on the
     /// local object and does not traverse the scope chain.
     pub fn define(&self, name: &str, value: Value<'gc>, mc: MutationContext<'gc, '_>) {
-        self.locals_mut(mc).force_set(name, value);
+        self.locals_mut(mc).force_set(name, value, EnumSet::empty());
     }
 
     /// Delete a value from scope
-    pub fn delete(&self, name: &str, mc: MutationContext<'gc, '_>) {
+    pub fn delete(&self, name: &str, mc: MutationContext<'gc, '_>) -> bool {
         if self.locals().has_property(name) {
             return self.locals_mut(mc).delete(name);
         }
@@ -295,5 +296,7 @@ impl<'gc> Scope<'gc> {
         if let Some(scope) = self.parent() {
             return scope.delete(name, mc);
         }
+
+        false
     }
 }

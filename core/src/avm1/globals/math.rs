@@ -1,3 +1,4 @@
+use crate::avm1::object::Attribute;
 use crate::avm1::{ActionContext, Avm1, Object, Value};
 use gc_arena::{GcCell, MutationContext};
 use rand::Rng;
@@ -16,6 +17,7 @@ macro_rules! wrap_std {
                     }
                 },
                 $gc_context,
+                Attribute::DontDelete,
             );
         )*
     }};
@@ -49,14 +51,46 @@ pub fn random<'gc>(
 pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Object<'gc>> {
     let mut math = Object::object(gc_context);
 
-    math.force_set("E", Value::Number(std::f64::consts::E));
-    math.force_set("LN10", Value::Number(std::f64::consts::LN_10));
-    math.force_set("LN2", Value::Number(std::f64::consts::LN_2));
-    math.force_set("LOG10E", Value::Number(std::f64::consts::LOG10_E));
-    math.force_set("LOG2E", Value::Number(std::f64::consts::LOG2_E));
-    math.force_set("PI", Value::Number(std::f64::consts::PI));
-    math.force_set("SQRT1_2", Value::Number(std::f64::consts::FRAC_1_SQRT_2));
-    math.force_set("SQRT2", Value::Number(std::f64::consts::SQRT_2));
+    math.force_set(
+        "E",
+        Value::Number(std::f64::consts::E),
+        Attribute::DontDelete,
+    );
+    math.force_set(
+        "LN10",
+        Value::Number(std::f64::consts::LN_10),
+        Attribute::DontDelete,
+    );
+    math.force_set(
+        "LN2",
+        Value::Number(std::f64::consts::LN_2),
+        Attribute::DontDelete,
+    );
+    math.force_set(
+        "LOG10E",
+        Value::Number(std::f64::consts::LOG10_E),
+        Attribute::DontDelete,
+    );
+    math.force_set(
+        "LOG2E",
+        Value::Number(std::f64::consts::LOG2_E),
+        Attribute::DontDelete,
+    );
+    math.force_set(
+        "PI",
+        Value::Number(std::f64::consts::PI),
+        Attribute::DontDelete,
+    );
+    math.force_set(
+        "SQRT1_2",
+        Value::Number(std::f64::consts::FRAC_1_SQRT_2),
+        Attribute::DontDelete,
+    );
+    math.force_set(
+        "SQRT2",
+        Value::Number(std::f64::consts::SQRT_2),
+        Attribute::DontDelete,
+    );
 
     wrap_std!(math, gc_context,
         "abs" => f64::abs,
@@ -73,8 +107,8 @@ pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Object<'
         "tan" => f64::tan
     );
 
-    math.force_set_function("atan2", atan2, gc_context);
-    math.force_set_function("random", random, gc_context);
+    math.force_set_function("atan2", atan2, gc_context, Attribute::DontDelete);
+    math.force_set_function("random", random, gc_context, Attribute::DontDelete);
 
     GcCell::allocate(gc_context, math)
 }

@@ -822,11 +822,8 @@ impl<'gc> Avm1<'gc> {
         let name = name_val.as_string()?;
         let object = self.pop()?.as_object()?;
 
-        //Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
-        //a boolean based on if the delete actually deleted something.
-        let did_exist = Value::Bool(object.read().has_property(name));
-        object.write(context.gc_context).delete(name);
-        self.push(did_exist);
+        let success = object.write(context.gc_context).delete(name);
+        self.push(Value::Bool(success));
 
         Ok(())
     }

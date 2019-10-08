@@ -4,6 +4,7 @@ use crate::avm1::{ActionContext, Avm1, Value};
 use crate::display_object::DisplayNode;
 use crate::tag_utils::SwfSlice;
 use core::fmt;
+use enumset::{EnumSet, EnumSetType};
 use gc_arena::{GcCell, MutationContext};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -22,15 +23,23 @@ fn default_to_string<'gc>(
     Value::String("[Object object]".to_string())
 }
 
+#[derive(EnumSetType, Debug)]
+pub enum Attribute {
+    DontDelete,
+    // DontEnum,
+    // ReadOnly,
+}
+
 #[derive(Clone)]
 pub enum Property<'gc> {
     Virtual {
         get: NativeFunction<'gc>,
         set: Option<NativeFunction<'gc>>,
+        attributes: EnumSet<Attribute>,
     },
     Stored {
         value: Value<'gc>,
-        // TODO: attributes
+        attributes: EnumSet<Attribute>,
     },
 }
 
@@ -65,12 +74,19 @@ impl<'gc> Property<'gc> {
             }
         }
     }
+
+    pub fn can_delete(&self) -> bool {
+        match self {
+            Property::Virtual { attributes, .. } => !attributes.contains(Attribute::DontDelete),
+            Property::Stored { attributes, .. } => !attributes.contains(Attribute::DontDelete),
+        }
+    }
 }
 
 unsafe impl<'gc> gc_arena::Collect for Property<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
         match self {
-            Property::Virtual { get, set } => {
+            Property::Virtual { get, set, .. } => {
                 get.trace(cc);
                 set.trace(cc);
             }
@@ -82,14 +98,20 @@ unsafe impl<'gc> gc_arena::Collect for Property<'gc> {
 impl fmt::Debug for Property<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Property::Virtual { get: _, set } => f
+            Property::Virtual {
+                get: _,
+                set,
+                attributes,
+            } => f
                 .debug_struct("Property::Virtual")
                 .field("get", &true)
                 .field("set", &set.is_some())
+                .field("attributes", &attributes)
                 .finish(),
-            Property::Stored { value } => f
+            Property::Stored { value, attributes } => f
                 .debug_struct("Property::Stored")
                 .field("value", &value)
+                .field("attributes", &attributes)
                 .finish(),
         }
     }
@@ -129,7 +151,12 @@ impl<'gc> Object<'gc> {
             function: None,
         };
 
-        result.force_set_function("toString", default_to_string, gc_context);
+        result.force_set_function(
+            "toString",
+            default_to_string,
+            gc_context,
+            Attribute::DontDelete,
+        );
 
         result
     }
@@ -208,58 +235,62 @@ impl<'gc> Object<'gc> {
                 entry.get_mut().set(avm, context, this, value);
             }
             Entry::Vacant(entry) => {
-                entry.insert(Property::Stored { value });
+                entry.insert(Property::Stored {
+                    value,
+                    attributes: Default::default(),
+                });
             }
         }
     }
 
-    pub fn force_set_virtual(
+    pub fn force_set_virtual<A>(
         &mut self,
         name: &str,
         get: NativeFunction<'gc>,
         set: Option<NativeFunction<'gc>>,
-    ) {
-        self.values
-            .insert(name.to_owned(), Property::Virtual { get, set });
+        attributes: A,
+    ) where
+        A: Into<EnumSet<Attribute>>,
+    {
+        self.values.insert(
+            name.to_owned(),
+            Property::Virtual {
+                get,
+                set,
+                attributes: attributes.into(),
+            },
+        );
     }
 
-    pub fn force_set(&mut self, name: &str, value: Value<'gc>) {
-        self.values
-            .insert(name.to_string(), Property::Stored { value });
+    pub fn force_set<A>(&mut self, name: &str, value: Value<'gc>, attributes: A)
+    where
+        A: Into<EnumSet<Attribute>>,
+    {
+        self.values.insert(
+            name.to_string(),
+            Property::Stored {
+                value,
+                attributes: attributes.into(),
+            },
+        );
     }
 
-    pub fn set_native_function(
-        &mut self,
-        name: &str,
-        function: NativeFunction<'gc>,
-        avm: &mut Avm1<'gc>,
-        context: &mut ActionContext<'_, 'gc, '_>,
-        this: GcCell<'gc, Object<'gc>>,
-    ) {
-        self.set(
-            name,
-            Value::Object(GcCell::allocate(
-                context.gc_context,
-                Object::native_function(function),
-            )),
-            avm,
-            context,
-            this,
-        )
-    }
-
-    pub fn force_set_function(
+    pub fn force_set_function<A>(
         &mut self,
         name: &str,
         function: NativeFunction<'gc>,
         gc_context: MutationContext<'gc, '_>,
-    ) {
+        attributes: A,
+    ) where
+        A: Into<EnumSet<Attribute>>,
+    {
         self.force_set(
             name,
             Value::Object(GcCell::allocate(
                 gc_context,
                 Object::native_function(function),
             )),
+            attributes,
         )
     }
 
@@ -286,8 +317,15 @@ impl<'gc> Object<'gc> {
     }
 
     /// Delete a given value off the object.
-    pub fn delete(&mut self, name: &str) {
-        self.values.remove(name);
+    pub fn delete(&mut self, name: &str) -> bool {
+        if let Some(prop) = self.values.get(name) {
+            if prop.can_delete() {
+                self.values.remove(name);
+                return true;
+            }
+        }
+
+        false
     }
 
     pub fn has_property(&self, name: &str) -> bool {
@@ -394,9 +432,11 @@ mod tests {
     #[test]
     fn test_set_get() {
         with_object(0, |avm, context, object| {
-            object
-                .write(context.gc_context)
-                .force_set("forced", Value::String("forced".to_string()));
+            object.write(context.gc_context).force_set(
+                "forced",
+                Value::String("forced".to_string()),
+                EnumSet::empty(),
+            );
             object.write(context.gc_context).set(
                 "natural",
                 Value::String("natural".to_string()),
@@ -421,9 +461,12 @@ mod tests {
         with_object(0, |avm, context, object| {
             let getter: NativeFunction =
                 |_avm, _context, _this, _args| Value::String("Virtual!".to_string());
-            object
-                .write(context.gc_context)
-                .force_set_virtual("test", getter, None);
+            object.write(context.gc_context).force_set_virtual(
+                "test",
+                getter,
+                None,
+                EnumSet::empty(),
+            );
 
             assert_eq!(
                 object.read().get("test", avm, context, object),
@@ -441,6 +484,59 @@ mod tests {
             assert_eq!(
                 object.read().get("test", avm, context, object),
                 Value::String("Virtual!".to_string())
+            );
+        })
+    }
+
+    #[test]
+    fn test_delete() {
+        with_object(0, |avm, context, object| {
+            let getter: NativeFunction =
+                |_avm, _context, _this, _args| Value::String("Virtual!".to_string());
+
+            object.write(context.gc_context).force_set_virtual(
+                "virtual",
+                getter,
+                None,
+                EnumSet::empty(),
+            );
+            object.write(context.gc_context).force_set_virtual(
+                "virtual_un",
+                getter,
+                None,
+                Attribute::DontDelete,
+            );
+            object.write(context.gc_context).force_set(
+                "stored",
+                Value::String("Stored!".to_string()),
+                EnumSet::empty(),
+            );
+            object.write(context.gc_context).force_set(
+                "stored_un",
+                Value::String("Stored!".to_string()),
+                Attribute::DontDelete,
+            );
+
+            assert_eq!(object.write(context.gc_context).delete("virtual"), true);
+            assert_eq!(object.write(context.gc_context).delete("virtual_un"), false);
+            assert_eq!(object.write(context.gc_context).delete("stored"), true);
+            assert_eq!(object.write(context.gc_context).delete("stored_un"), false);
+
+            assert_eq!(
+                object.read().get("virtual", avm, context, object),
+                Value::Undefined
+            );
+            assert_eq!(
+                object.read().get("virtual_un", avm, context, object),
+                Value::String("Virtual!".to_string())
+            );
+            assert_eq!(
+                object.read().get("stored", avm, context, object),
+                Value::Undefined
+            );
+            assert_eq!(
+                object.read().get("stored_un", avm, context, object),
+                Value::String("Stored!".to_string())
             );
         })
     }
