@@ -54,6 +54,13 @@ impl Font {
         })
     }
 
+    /// Returns whether this font contains glyph shapes.
+    /// If not, this font should be rendered as a device font.
+    #[inline]
+    pub fn has_glyphs(&self) -> bool {
+        !self.glyphs.is_empty()
+    }
+
     /// Returns a glyph entry by index.
     /// Used by `Text` display objects.
     pub fn get_glyph(&self, i: usize) -> Option<Glyph> {
