@@ -1,4 +1,4 @@
-use crate::avm1::object::{Attribute, Object};
+use crate::avm1::object::{Attribute::*, Object};
 use crate::avm1::Value;
 use crate::movie_clip::MovieClip;
 use gc_arena::MutationContext;
@@ -17,7 +17,7 @@ macro_rules! with_movie_clip {
                     Value::Undefined
                 },
                 $gc_context,
-                Attribute::DontDelete | Attribute::ReadOnly | Attribute::DontEnum,
+                DontDelete | ReadOnly | DontEnum,
             );
         )*
     }};
@@ -37,7 +37,7 @@ macro_rules! with_movie_clip_mut {
                     Value::Undefined
                 },
                 $gc_context,
-                Attribute::DontDelete | Attribute::ReadOnly | Attribute::DontEnum,
+                DontDelete | ReadOnly | DontEnum,
             );
         )*
     }};

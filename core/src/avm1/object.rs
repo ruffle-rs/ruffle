@@ -1,3 +1,4 @@
+use self::Attribute::*;
 use crate::avm1::function::{Avm1Function, Avm1Function2, Executable, NativeFunction};
 use crate::avm1::scope::Scope;
 use crate::avm1::{ActionContext, Avm1, Value};
@@ -72,7 +73,7 @@ impl<'gc> Property<'gc> {
             Property::Stored {
                 value, attributes, ..
             } => {
-                if !attributes.contains(Attribute::ReadOnly) {
+                if !attributes.contains(ReadOnly) {
                     replace::<Value<'gc>>(value, new_value);
                 }
             }
@@ -81,15 +82,15 @@ impl<'gc> Property<'gc> {
 
     pub fn can_delete(&self) -> bool {
         match self {
-            Property::Virtual { attributes, .. } => !attributes.contains(Attribute::DontDelete),
-            Property::Stored { attributes, .. } => !attributes.contains(Attribute::DontDelete),
+            Property::Virtual { attributes, .. } => !attributes.contains(DontDelete),
+            Property::Stored { attributes, .. } => !attributes.contains(DontDelete),
         }
     }
 
     pub fn is_enumerable(&self) -> bool {
         match self {
-            Property::Virtual { attributes, .. } => !attributes.contains(Attribute::DontEnum),
-            Property::Stored { attributes, .. } => !attributes.contains(Attribute::DontEnum),
+            Property::Virtual { attributes, .. } => !attributes.contains(DontEnum),
+            Property::Stored { attributes, .. } => !attributes.contains(DontEnum),
         }
     }
 }
@@ -166,7 +167,7 @@ impl<'gc> Object<'gc> {
             "toString",
             default_to_string,
             gc_context,
-            Attribute::DontDelete | Attribute::DontEnum,
+            DontDelete | DontEnum,
         );
 
         result
@@ -484,7 +485,7 @@ mod tests {
             object.write(context.gc_context).force_set(
                 "readonly",
                 Value::String("initial".to_string()),
-                Attribute::ReadOnly,
+                ReadOnly,
             );
 
             object.write(context.gc_context).set(
@@ -519,7 +520,7 @@ mod tests {
             object.write(context.gc_context).force_set(
                 "test",
                 Value::String("initial".to_string()),
-                Attribute::DontDelete,
+                DontDelete,
             );
 
             assert_eq!(object.write(context.gc_context).delete("test"), false);
@@ -592,7 +593,7 @@ mod tests {
                 "virtual_un",
                 getter,
                 None,
-                Attribute::DontDelete,
+                DontDelete,
             );
             object.write(context.gc_context).force_set(
                 "stored",
@@ -602,7 +603,7 @@ mod tests {
             object.write(context.gc_context).force_set(
                 "stored_un",
                 Value::String("Stored!".to_string()),
-                Attribute::DontDelete,
+                DontDelete,
             );
 
             assert_eq!(object.write(context.gc_context).delete("virtual"), true);
@@ -641,11 +642,9 @@ mod tests {
             object
                 .write(context.gc_context)
                 .force_set("stored", Value::Null, EnumSet::empty());
-            object.write(context.gc_context).force_set(
-                "stored_hidden",
-                Value::Null,
-                Attribute::DontEnum,
-            );
+            object
+                .write(context.gc_context)
+                .force_set("stored_hidden", Value::Null, DontEnum);
             object.write(context.gc_context).force_set_virtual(
                 "virtual",
                 getter,
@@ -656,7 +655,7 @@ mod tests {
                 "virtual_hidden",
                 getter,
                 None,
-                Attribute::DontEnum,
+                DontEnum,
             );
 
             let keys = object.read().get_keys();

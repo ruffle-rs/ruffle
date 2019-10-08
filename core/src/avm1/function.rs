@@ -1,7 +1,7 @@
 //! Code relating to executable functions + calling conventions.
 
 use crate::avm1::activation::Activation;
-use crate::avm1::object::{Attribute, Object};
+use crate::avm1::object::{Attribute::*, Object};
 use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
 use crate::avm1::{ActionContext, Avm1};
@@ -204,14 +204,14 @@ impl<'gc> Executable<'gc> {
                     arguments.force_set(
                         &format!("{}", i),
                         args.get(i).unwrap().clone(),
-                        Attribute::DontDelete,
+                        DontDelete,
                     );
                 }
 
                 arguments.force_set(
                     "length",
                     Value::Number(args.len() as f64),
-                    Attribute::DontDelete | Attribute::DontEnum,
+                    DontDelete | DontEnum,
                 );
                 let argcell = GcCell::allocate(ac.gc_context, arguments);
                 let child_scope = GcCell::allocate(
@@ -251,14 +251,14 @@ impl<'gc> Executable<'gc> {
                         arguments.force_set(
                             &format!("{}", i),
                             args.get(i).unwrap().clone(),
-                            Attribute::DontDelete,
+                            DontDelete,
                         )
                     }
 
                     arguments.force_set(
                         "length",
                         Value::Number(args.len() as f64),
-                        Attribute::DontDelete | Attribute::DontEnum,
+                        DontDelete | DontEnum,
                     );
                 }
 
