@@ -26,7 +26,7 @@ fn default_to_string<'gc>(
 #[derive(EnumSetType, Debug)]
 pub enum Attribute {
     DontDelete,
-    // DontEnum,
+    DontEnum,
     ReadOnly,
 }
 
@@ -69,7 +69,9 @@ impl<'gc> Property<'gc> {
                     function(avm, context, this, &[new_value]);
                 }
             }
-            Property::Stored { value, attributes, .. } => {
+            Property::Stored {
+                value, attributes, ..
+            } => {
                 if !attributes.contains(Attribute::ReadOnly) {
                     replace::<Value<'gc>>(value, new_value);
                 }
@@ -81,6 +83,13 @@ impl<'gc> Property<'gc> {
         match self {
             Property::Virtual { attributes, .. } => !attributes.contains(Attribute::DontDelete),
             Property::Stored { attributes, .. } => !attributes.contains(Attribute::DontDelete),
+        }
+    }
+
+    pub fn is_enumerable(&self) -> bool {
+        match self {
+            Property::Virtual { attributes, .. } => !attributes.contains(Attribute::DontEnum),
+            Property::Stored { attributes, .. } => !attributes.contains(Attribute::DontEnum),
         }
     }
 }
@@ -157,7 +166,7 @@ impl<'gc> Object<'gc> {
             "toString",
             default_to_string,
             gc_context,
-            Attribute::DontDelete,
+            Attribute::DontDelete | Attribute::DontEnum,
         );
 
         result
@@ -338,11 +347,17 @@ impl<'gc> Object<'gc> {
         self.values.contains_key(name)
     }
 
-    pub fn iter_values(&self) -> impl Iterator<Item = (&String, &Value<'gc>)> {
-        self.values.iter().filter_map(|(k, p)| match p {
-            Property::Virtual { .. } => None,
-            Property::Stored { value, .. } => Some((k, value)),
-        })
+    pub fn get_keys(&self) -> Vec<String> {
+        self.values
+            .iter()
+            .filter_map(|(k, p)| {
+                if p.is_enumerable() {
+                    Some(k.to_string())
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     pub fn call(
@@ -472,8 +487,20 @@ mod tests {
                 Attribute::ReadOnly,
             );
 
-            object.write(context.gc_context).set("normal", Value::String("replaced".to_string()), avm, context, object);
-            object.write(context.gc_context).set("readonly", Value::String("replaced".to_string()), avm, context, object);
+            object.write(context.gc_context).set(
+                "normal",
+                Value::String("replaced".to_string()),
+                avm,
+                context,
+                object,
+            );
+            object.write(context.gc_context).set(
+                "readonly",
+                Value::String("replaced".to_string()),
+                avm,
+                context,
+                object,
+            );
 
             assert_eq!(
                 object.read().get("normal", avm, context, object),
@@ -501,7 +528,13 @@ mod tests {
                 Value::String("initial".to_string())
             );
 
-            object.write(context.gc_context).set("test", Value::String("replaced".to_string()), avm, context, object);
+            object.write(context.gc_context).set(
+                "test",
+                Value::String("replaced".to_string()),
+                avm,
+                context,
+                object,
+            );
 
             assert_eq!(object.write(context.gc_context).delete("test"), false);
             assert_eq!(
@@ -576,7 +609,10 @@ mod tests {
             assert_eq!(object.write(context.gc_context).delete("virtual_un"), false);
             assert_eq!(object.write(context.gc_context).delete("stored"), true);
             assert_eq!(object.write(context.gc_context).delete("stored_un"), false);
-            assert_eq!(object.write(context.gc_context).delete("non_existent"), false);
+            assert_eq!(
+                object.write(context.gc_context).delete("non_existent"),
+                false
+            );
 
             assert_eq!(
                 object.read().get("virtual", avm, context, object),
@@ -594,6 +630,41 @@ mod tests {
                 object.read().get("stored_un", avm, context, object),
                 Value::String("Stored!".to_string())
             );
+        })
+    }
+
+    #[test]
+    fn test_iter_values() {
+        with_object(0, |_avm, context, object| {
+            let getter: NativeFunction = |_avm, _context, _this, _args| Value::Null;
+
+            object
+                .write(context.gc_context)
+                .force_set("stored", Value::Null, EnumSet::empty());
+            object.write(context.gc_context).force_set(
+                "stored_hidden",
+                Value::Null,
+                Attribute::DontEnum,
+            );
+            object.write(context.gc_context).force_set_virtual(
+                "virtual",
+                getter,
+                None,
+                EnumSet::empty(),
+            );
+            object.write(context.gc_context).force_set_virtual(
+                "virtual_hidden",
+                getter,
+                None,
+                Attribute::DontEnum,
+            );
+
+            let keys = object.read().get_keys();
+            assert_eq!(keys.len(), 2);
+            assert_eq!(keys.contains(&"stored".to_string()), true);
+            assert_eq!(keys.contains(&"stored_hidden".to_string()), false);
+            assert_eq!(keys.contains(&"virtual".to_string()), true);
+            assert_eq!(keys.contains(&"virtual_hidden".to_string()), false);
         })
     }
 }

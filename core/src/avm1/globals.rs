@@ -28,7 +28,7 @@ pub fn getURL<'a, 'gc>(
             Some(Value::String(s)) if s == "POST" => Some(NavigationMethod::POST),
             _ => None,
         };
-        let vars_method = method.map(|m| (m, avm.locals_into_form_values()));
+        let vars_method = method.map(|m| (m, avm.locals_into_form_values(context)));
 
         context.navigator.navigate_to_url(url, window, vars_method);
     }

@@ -210,6 +210,11 @@ impl<'gc> Scope<'gc> {
         self.values.read()
     }
 
+    /// Returns a gc cell of the current local scope object.
+    pub fn locals_cell(&self) -> GcCell<'gc, Object<'gc>> {
+        self.values.to_owned()
+    }
+
     /// Returns a reference to the current local scope object for mutation.
     pub fn locals_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<Object<'gc>> {
         self.values.write(mc)

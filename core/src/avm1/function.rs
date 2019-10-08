@@ -211,7 +211,7 @@ impl<'gc> Executable<'gc> {
                 arguments.force_set(
                     "length",
                     Value::Number(args.len() as f64),
-                    Attribute::DontDelete,
+                    Attribute::DontDelete | Attribute::DontEnum,
                 );
                 let argcell = GcCell::allocate(ac.gc_context, arguments);
                 let child_scope = GcCell::allocate(
@@ -258,7 +258,7 @@ impl<'gc> Executable<'gc> {
                     arguments.force_set(
                         "length",
                         Value::Number(args.len() as f64),
-                        Attribute::DontDelete,
+                        Attribute::DontDelete | Attribute::DontEnum,
                     );
                 }
 
