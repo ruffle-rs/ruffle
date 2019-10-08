@@ -319,6 +319,7 @@ impl<'gc> Avm1<'gc> {
                     set_playing,
                     scene_offset,
                 } => self.action_goto_frame_2(context, set_playing, scene_offset),
+                Action::Greater => self.action_greater(context),
                 Action::GotoLabel(label) => self.action_goto_label(context, &label),
                 Action::If { offset } => self.action_if(context, offset, reader),
                 Action::Increment => self.action_increment(context),
@@ -356,9 +357,11 @@ impl<'gc> Avm1<'gc> {
                 Action::Stop => self.action_stop(context),
                 Action::StopSounds => self.action_stop_sounds(context),
                 Action::StoreRegister(register) => self.action_store_register(context, register),
+                Action::StrictEquals => self.action_strict_equals(context),
                 Action::StringAdd => self.action_string_add(context),
                 Action::StringEquals => self.action_string_equals(context),
                 Action::StringExtract => self.action_string_extract(context),
+                Action::StringGreater => self.action_string_greater(context),
                 Action::StringLength => self.action_string_length(context),
                 Action::StringLess => self.action_string_less(context),
                 Action::Subtract => self.action_subtract(context),
@@ -1246,6 +1249,18 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
+    fn action_greater(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        // AS1 less than
+        let a = self.pop()?;
+        let b = self.pop()?;
+        let result = b.into_number_v1() > a.into_number_v1();
+        self.push(Value::from_bool_v1(
+            result,
+            self.current_swf_version().unwrap(),
+        ));
+        Ok(())
+    }
+
     fn action_mb_ascii_to_char(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         // TODO(Herschel): Results on incorrect operands?
         use std::convert::TryFrom;
@@ -1503,6 +1518,26 @@ impl<'gc> Avm1<'gc> {
         self.set_variable(context, var_path.as_string()?, value)
     }
 
+
+
+    // #[allow(clippy::float_cmp)]
+    fn action_strict_equals(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        // TODO(wb) what about booleans?
+        // The same as normal equality but types must match
+        let a = self.pop()?;
+        let b = self.pop()?;
+        let result = match (b, a) {
+            (Value::Undefined, Value::Undefined) => true,
+            (Value::Null, Value::Null) => true,
+            (Value::Number(a), Value::Number(b)) => a == b,
+            (Value::String(a), Value::String(b)) => a == b,
+            (Value::Object(_a), Value::Object(_b)) => false, // TODO(Herschel)
+            _ => false,
+        };
+        self.push(Value::Bool(result));
+        Ok(())
+    }
+
     pub fn set_variable(
         &mut self,
         context: &mut ActionContext<'_, 'gc, '_>,
@@ -1686,6 +1721,19 @@ impl<'gc> Avm1<'gc> {
             .map(|c| c as char)
             .collect::<String>();
         self.push(Value::String(result));
+        Ok(())
+    }
+
+    fn action_string_greater(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+        // AS1 strcmp
+        let a = self.pop()?;
+        let b = self.pop()?;
+        // This is specifically a non-UTF8 aware comparison.
+        let result = b.into_string().bytes().gt(a.into_string().bytes());
+        self.push(Value::from_bool_v1(
+            result,
+            self.current_swf_version().unwrap(),
+        ));
         Ok(())
     }
 
