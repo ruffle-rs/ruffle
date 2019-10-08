@@ -121,19 +121,32 @@ impl<'gc> Scope<'gc> {
         clip: GcCell<'gc, Object<'gc>>,
         mc: MutationContext<'gc, '_>,
     ) -> GcCell<'gc, Self> {
-        let mut timeline_scope_list = Vec::new();
+        let mut bottom_scope = None;
+        let mut top_scope: Option<GcCell<'gc, Self>> = None;
 
         loop {
-            if parent.read().class != ScopeClass::Target {
-                timeline_scope_list.push(parent);
-            } else {
-                let new_scope = Self {
+            let next_scope = GcCell::allocate(
+                mc,
+                Self {
                     parent: None,
-                    class: ScopeClass::Target,
-                    values: clip,
-                };
-                timeline_scope_list.push(GcCell::allocate(mc, new_scope));
+                    class: parent.read().class,
+                    values: parent.read().values,
+                },
+            );
+
+            if parent.read().class == ScopeClass::Target {
+                next_scope.write(mc).values = clip;
             }
+
+            if let None = bottom_scope {
+                bottom_scope = Some(next_scope);
+            }
+
+            if let Some(ref scope) = top_scope {
+                scope.write(mc).parent = Some(next_scope);
+            }
+
+            top_scope = Some(next_scope);
 
             let grandparent = parent.read().parent;
             if let Some(grandparent) = grandparent {
@@ -143,30 +156,16 @@ impl<'gc> Scope<'gc> {
             }
         }
 
-        let mut parent_scope = None;
-        for scope in timeline_scope_list.iter().rev() {
-            parent_scope = Some(GcCell::allocate(
-                mc,
-                Scope {
-                    parent: parent_scope,
-                    class: scope.read().class,
-                    values: scope.read().values,
-                },
-            ));
-        }
-
-        if let Some(parent_scope) = parent_scope {
-            parent_scope
-        } else {
+        bottom_scope.unwrap_or_else(|| {
             GcCell::allocate(
                 mc,
-                Scope {
+                Self {
                     parent: None,
                     class: ScopeClass::Global,
                     values: GcCell::allocate(mc, Object::bare_object()),
                 },
             )
-        }
+        })
     }
 
     /// Construct a with scope to be used as the scope during a with block.
