@@ -1522,7 +1522,6 @@ impl<'gc> Avm1<'gc> {
 
     // #[allow(clippy::float_cmp)]
     fn action_strict_equals(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
-        // TODO(wb) what about booleans?
         // The same as normal equality but types must match
         let a = self.pop()?;
         let b = self.pop()?;
@@ -1531,7 +1530,8 @@ impl<'gc> Avm1<'gc> {
             (Value::Null, Value::Null) => true,
             (Value::Number(a), Value::Number(b)) => a == b,
             (Value::String(a), Value::String(b)) => a == b,
-            (Value::Object(_a), Value::Object(_b)) => false, // TODO(Herschel)
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::Object(_a), Value::Object(_b)) => false, // TODO
             _ => false,
         };
         self.push(Value::Bool(result));
