@@ -17,7 +17,7 @@ macro_rules! with_movie_clip {
                     Value::Undefined
                 },
                 $gc_context,
-                Attribute::DontDelete,
+                Attribute::DontDelete | Attribute::ReadOnly,
             );
         )*
     }};
@@ -37,7 +37,7 @@ macro_rules! with_movie_clip_mut {
                     Value::Undefined
                 },
                 $gc_context,
-                Attribute::DontDelete,
+                Attribute::DontDelete | Attribute::ReadOnly,
             );
         )*
     }};

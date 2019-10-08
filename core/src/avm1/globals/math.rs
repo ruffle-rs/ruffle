@@ -17,7 +17,7 @@ macro_rules! wrap_std {
                     }
                 },
                 $gc_context,
-                Attribute::DontDelete,
+                Attribute::DontDelete | Attribute::ReadOnly,
             );
         )*
     }};
@@ -54,42 +54,42 @@ pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Object<'
     math.force_set(
         "E",
         Value::Number(std::f64::consts::E),
-        Attribute::DontDelete,
+        Attribute::DontDelete | Attribute::ReadOnly,
     );
     math.force_set(
         "LN10",
         Value::Number(std::f64::consts::LN_10),
-        Attribute::DontDelete,
+        Attribute::DontDelete | Attribute::ReadOnly,
     );
     math.force_set(
         "LN2",
         Value::Number(std::f64::consts::LN_2),
-        Attribute::DontDelete,
+        Attribute::DontDelete | Attribute::ReadOnly,
     );
     math.force_set(
         "LOG10E",
         Value::Number(std::f64::consts::LOG10_E),
-        Attribute::DontDelete,
+        Attribute::DontDelete | Attribute::ReadOnly,
     );
     math.force_set(
         "LOG2E",
         Value::Number(std::f64::consts::LOG2_E),
-        Attribute::DontDelete,
+        Attribute::DontDelete | Attribute::ReadOnly,
     );
     math.force_set(
         "PI",
         Value::Number(std::f64::consts::PI),
-        Attribute::DontDelete,
+        Attribute::DontDelete | Attribute::ReadOnly,
     );
     math.force_set(
         "SQRT1_2",
         Value::Number(std::f64::consts::FRAC_1_SQRT_2),
-        Attribute::DontDelete,
+        Attribute::DontDelete | Attribute::ReadOnly,
     );
     math.force_set(
         "SQRT2",
         Value::Number(std::f64::consts::SQRT_2),
-        Attribute::DontDelete,
+        Attribute::DontDelete | Attribute::ReadOnly,
     );
 
     wrap_std!(math, gc_context,
@@ -107,8 +107,8 @@ pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Object<'
         "tan" => f64::tan
     );
 
-    math.force_set_function("atan2", atan2, gc_context, Attribute::DontDelete);
-    math.force_set_function("random", random, gc_context, Attribute::DontDelete);
+    math.force_set_function("atan2", atan2, gc_context, Attribute::DontDelete | Attribute::ReadOnly);
+    math.force_set_function("random", random, gc_context, Attribute::DontDelete | Attribute::ReadOnly);
 
     GcCell::allocate(gc_context, math)
 }

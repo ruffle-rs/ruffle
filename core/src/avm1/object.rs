@@ -27,7 +27,7 @@ fn default_to_string<'gc>(
 pub enum Attribute {
     DontDelete,
     // DontEnum,
-    // ReadOnly,
+    ReadOnly,
 }
 
 #[derive(Clone)]
@@ -69,8 +69,10 @@ impl<'gc> Property<'gc> {
                     function(avm, context, this, &[new_value]);
                 }
             }
-            Property::Stored { value, .. } => {
-                replace::<Value<'gc>>(value, new_value);
+            Property::Stored { value, attributes, .. } => {
+                if !attributes.contains(Attribute::ReadOnly) {
+                    replace::<Value<'gc>>(value, new_value);
+                }
             }
         }
     }
@@ -457,6 +459,59 @@ mod tests {
     }
 
     #[test]
+    fn test_set_readonly() {
+        with_object(0, |avm, context, object| {
+            object.write(context.gc_context).force_set(
+                "normal",
+                Value::String("initial".to_string()),
+                EnumSet::empty(),
+            );
+            object.write(context.gc_context).force_set(
+                "readonly",
+                Value::String("initial".to_string()),
+                Attribute::ReadOnly,
+            );
+
+            object.write(context.gc_context).set("normal", Value::String("replaced".to_string()), avm, context, object);
+            object.write(context.gc_context).set("readonly", Value::String("replaced".to_string()), avm, context, object);
+
+            assert_eq!(
+                object.read().get("normal", avm, context, object),
+                Value::String("replaced".to_string())
+            );
+            assert_eq!(
+                object.read().get("readonly", avm, context, object),
+                Value::String("initial".to_string())
+            );
+        })
+    }
+
+    #[test]
+    fn test_deletable_not_readonly() {
+        with_object(0, |avm, context, object| {
+            object.write(context.gc_context).force_set(
+                "test",
+                Value::String("initial".to_string()),
+                Attribute::DontDelete,
+            );
+
+            assert_eq!(object.write(context.gc_context).delete("test"), false);
+            assert_eq!(
+                object.read().get("test", avm, context, object),
+                Value::String("initial".to_string())
+            );
+
+            object.write(context.gc_context).set("test", Value::String("replaced".to_string()), avm, context, object);
+
+            assert_eq!(object.write(context.gc_context).delete("test"), false);
+            assert_eq!(
+                object.read().get("test", avm, context, object),
+                Value::String("replaced".to_string())
+            );
+        })
+    }
+
+    #[test]
     fn test_virtual_get() {
         with_object(0, |avm, context, object| {
             let getter: NativeFunction =
@@ -521,6 +576,7 @@ mod tests {
             assert_eq!(object.write(context.gc_context).delete("virtual_un"), false);
             assert_eq!(object.write(context.gc_context).delete("stored"), true);
             assert_eq!(object.write(context.gc_context).delete("stored_un"), false);
+            assert_eq!(object.write(context.gc_context).delete("non_existent"), false);
 
             assert_eq!(
                 object.read().get("virtual", avm, context, object),
