@@ -617,6 +617,7 @@ impl<'gc, 'a> MovieClip<'gc> {
             TagCode::DefineBitsLossless2 => self.define_bits_lossless(context, reader, 2),
             TagCode::DefineButton => self.define_button_1(context, reader),
             TagCode::DefineButton2 => self.define_button_2(context, reader),
+            TagCode::DefineEditText => self.define_edit_text(context, reader),
             TagCode::DefineFont => self.define_font_1(context, reader),
             TagCode::DefineFont2 => self.define_font_2(context, reader),
             TagCode::DefineFont3 => self.define_font_3(context, reader),
@@ -935,6 +936,21 @@ impl<'gc, 'a> MovieClip<'gc> {
         context
             .library
             .register_character(swf_button.id, Character::Button(Box::new(button)));
+        Ok(())
+    }
+
+    /// Defines a dynamic text field character.
+    #[inline]
+    fn define_edit_text(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        reader: &mut SwfStream<&'a [u8]>,
+    ) -> DecodeResult {
+        let swf_edit_text = reader.read_define_edit_text()?;
+        let edit_text = crate::edit_text::EditText::from_swf_tag(context, swf_edit_text);
+        context
+            .library
+            .register_character(edit_text.id(), Character::EditText(Box::new(edit_text)));
         Ok(())
     }
 

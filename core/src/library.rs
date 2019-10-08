@@ -47,6 +47,7 @@ impl<'gc> Library<'gc> {
         gc_context: MutationContext<'gc, '_>,
     ) -> Result<DisplayNode<'gc>, Box<dyn std::error::Error>> {
         let obj: Box<dyn DisplayObject<'gc>> = match self.characters.get(&id) {
+            Some(Character::EditText(edit_text)) => edit_text.clone(),
             Some(Character::Graphic(graphic)) => graphic.clone(),
             Some(Character::MorphShape(morph_shape)) => morph_shape.clone(),
             Some(Character::MovieClip(movie_clip)) => movie_clip.clone(),

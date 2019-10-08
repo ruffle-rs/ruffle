@@ -1,4 +1,5 @@
 pub enum Character<'gc> {
+    EditText(Box<crate::edit_text::EditText<'gc>>),
     Graphic(Box<crate::graphic::Graphic<'gc>>),
     MovieClip(Box<crate::movie_clip::MovieClip<'gc>>),
     Bitmap(crate::backend::render::BitmapHandle),
@@ -13,6 +14,7 @@ unsafe impl<'gc> gc_arena::Collect for Character<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
         match self {
+            Character::EditText(c) => c.trace(cc),
             Character::Graphic(c) => c.trace(cc),
             Character::MovieClip(c) => c.trace(cc),
             Character::Bitmap(c) => c.trace(cc),
