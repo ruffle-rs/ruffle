@@ -1518,9 +1518,7 @@ impl<'gc> Avm1<'gc> {
         self.set_variable(context, var_path.as_string()?, value)
     }
 
-
-
-    // #[allow(clippy::float_cmp)]
+    #[allow(clippy::float_cmp)]
     fn action_strict_equals(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         // The same as normal equality but types must match
         let a = self.pop()?;
