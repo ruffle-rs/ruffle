@@ -1523,7 +1523,7 @@ impl<'gc> Avm1<'gc> {
         // The same as normal equality but types must match
         let a = self.pop()?;
         let b = self.pop()?;
-        let result = a == b; 
+        let result = a == b;
         self.push(Value::Bool(result));
         Ok(())
     }
