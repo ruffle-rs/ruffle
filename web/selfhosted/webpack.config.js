@@ -3,7 +3,7 @@ const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
 const path = require('path');
 
 module.exports = (env, argv) => {
-  let mode = "development";
+  let mode = "production";
   if (argv && argv.mode) {
     mode = argv.mode;
   }
@@ -15,7 +15,8 @@ module.exports = (env, argv) => {
     output: {
       path: path.resolve(__dirname, "dist"),
       filename: "ruffle.js",
-      chunkFilename: "core.ruffle.js"
+      chunkFilename: "core.ruffle.js",
+      jsonpFunction: "RufflePlayerLoader",
     },
     mode: mode,
     plugins: [
