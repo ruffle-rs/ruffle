@@ -1523,15 +1523,7 @@ impl<'gc> Avm1<'gc> {
         // The same as normal equality but types must match
         let a = self.pop()?;
         let b = self.pop()?;
-        let result = match (b, a) {
-            (Value::Undefined, Value::Undefined) => true,
-            (Value::Null, Value::Null) => true,
-            (Value::Number(a), Value::Number(b)) => a == b || (a.is_nan() && b.is_nan()),
-            (Value::String(a), Value::String(b)) => a == b,
-            (Value::Bool(a), Value::Bool(b)) => a == b,
-            (Value::Object(_a), Value::Object(_b)) => false, // TODO
-            _ => false,
-        };
+        let result = a == b; 
         self.push(Value::Bool(result));
         Ok(())
     }
