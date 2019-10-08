@@ -1903,6 +1903,36 @@ pub fn tag_tests() -> Vec<TagTestData> {
             read_tag_bytes_from_file("tests/swfs/DefineShape.swf", TagCode::PlaceObject2),
         ),
         (
+            5, // Specifically test for SWFv5 ClipActions.
+            Tag::PlaceObject(Box::new(PlaceObject {
+                version: 2,
+                action: PlaceObjectAction::Place(2),
+                depth: 1,
+                matrix: Some(Matrix::new()),
+                color_transform: None,
+                ratio: None,
+                name: None,
+                clip_depth: None,
+                class_name: None,
+                filters: vec![],
+                background_color: None,
+                blend_mode: BlendMode::Normal,
+                clip_actions: vec![ClipAction {
+                    events: vec![ClipEvent::EnterFrame].into_iter().collect(),
+                    key_code: None,
+                    action_data: vec![150, 6, 0, 0, 99, 108, 105, 112, 0, 38, 0],
+                }],
+                is_image: false,
+                is_bitmap_cached: false,
+                is_visible: true,
+                amf_data: None,
+            })),
+            read_tag_bytes_from_file(
+                "tests/swfs/PlaceObject2-ClipActionsV5-CS6.swf",
+                TagCode::PlaceObject2,
+            ),
+        ),
+        (
             6, // ClipActions added in SWF version 5-6.
             Tag::PlaceObject(Box::new(PlaceObject {
                 version: 2,

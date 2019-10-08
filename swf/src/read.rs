@@ -2174,7 +2174,9 @@ impl<R: Read> Reader<R> {
             event_list.insert(ClipEvent::Load);
         }
         if self.version < 6 {
-            self.read_u16()?;
+            // SWF19 pp. 48-50: For SWFv5, the ClipEventFlags only had 2 bytes of flags,
+            // with the 2nd byte reserved (all 0).
+            // This was expanded to 4 bytes in SWFv6.
             self.read_u8()?;
         } else {
             if self.read_bit()? {
