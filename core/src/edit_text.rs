@@ -89,7 +89,15 @@ impl<'gc> DisplayObject<'gc> for EditText<'gc> {
         let mut chars = self.text.chars().peekable();
         let has_kerning_info = font.has_kerning_info();
         while let Some(c) = chars.next() {
-            if let Some(glyph) = font.get_glyph_for_char(c) {
+            // TODO: SWF text fields can contain a limited subset of HTML (and often do in SWF versions >6).
+            // This is a quicky-and-dirty way to skip the HTML tags. This is obviously not correct
+            // and we will need to properly parse and handle the HTML at some point.
+            // See SWF19 pp. 173-174 for supported HTML tags.
+            if self.static_data.0.is_html && c == '<' {
+                // Skip characters until we see a close bracket.
+                chars.by_ref().skip_while(|&x| x != '>').next();
+            } else if let Some(glyph) = font.get_glyph_for_char(c) {
+                // Render glyph.
                 context.transform_stack.push(&transform);
                 context
                     .renderer
