@@ -1,4 +1,4 @@
-use crate::avm1::function::Avm1Function2;
+use crate::avm1::function::Avm1Function;
 use crate::avm1::globals::create_globals;
 use crate::avm1::object::Object;
 use crate::backend::navigator::NavigationMethod;
@@ -749,16 +749,17 @@ impl<'gc> Avm1<'gc> {
             self.current_stack_frame().unwrap().scope_cell(),
             context.gc_context,
         );
-        let func = Value::Object(GcCell::allocate(
+        let func = Avm1Function::from_df1(swf_version, func_data, name, params, scope);
+        let func_obj = Value::Object(GcCell::allocate(
             context.gc_context,
-            Object::action_function(swf_version, func_data, name, params, scope),
+            Object::action_function(func),
         ));
         if name == "" {
-            self.push(func);
+            self.push(func_obj);
         } else {
             self.current_stack_frame_mut()
                 .unwrap()
-                .define(name, func, context.gc_context);
+                .define(name, func_obj, context.gc_context);
         }
 
         Ok(())
@@ -780,10 +781,10 @@ impl<'gc> Avm1<'gc> {
             self.current_stack_frame().unwrap().scope_cell(),
             context.gc_context,
         );
-        let func2 = Avm1Function2::new(swf_version, func_data, action_func, scope);
+        let func = Avm1Function::from_df2(swf_version, func_data, action_func, scope);
         let func_obj = Value::Object(GcCell::allocate(
             context.gc_context,
-            Object::action_function2(func2),
+            Object::action_function(func),
         ));
         if action_func.name == "" {
             self.push(func_obj);

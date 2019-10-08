@@ -1,9 +1,7 @@
 use self::Attribute::*;
-use crate::avm1::function::{Avm1Function, Avm1Function2, Executable, NativeFunction};
-use crate::avm1::scope::Scope;
+use crate::avm1::function::{Avm1Function, Executable, NativeFunction};
 use crate::avm1::{ActionContext, Avm1, Value};
 use crate::display_object::DisplayNode;
-use crate::tag_utils::SwfSlice;
 use core::fmt;
 use enumset::{EnumSet, EnumSetType};
 use gc_arena::{GcCell, MutationContext};
@@ -196,31 +194,10 @@ impl<'gc> Object<'gc> {
         }
     }
 
-    pub fn action_function(
-        swf_version: u8,
-        actions: SwfSlice,
-        name: &str,
-        params: &[&str],
-        scope: GcCell<'gc, Scope<'gc>>,
-    ) -> Self {
+    pub fn action_function(func: Avm1Function<'gc>) -> Self {
         Self {
             type_of: TYPE_OF_FUNCTION,
-            function: Some(Executable::Action(Avm1Function::new(
-                swf_version,
-                actions,
-                name,
-                params,
-                scope,
-            ))),
-            display_node: None,
-            values: HashMap::new(),
-        }
-    }
-
-    pub fn action_function2(func: Avm1Function2<'gc>) -> Self {
-        Self {
-            type_of: TYPE_OF_FUNCTION,
-            function: Some(Executable::Action2(func)),
+            function: Some(Executable::Action(func)),
             display_node: None,
             values: HashMap::new(),
         }
