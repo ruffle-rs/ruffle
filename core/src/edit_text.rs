@@ -65,39 +65,46 @@ impl<'gc> DisplayObject<'gc> for EditText<'gc> {
         transform.color_transform.g_mult = f32::from(color.g) / 255.0;
         transform.color_transform.b_mult = f32::from(color.b) / 255.0;
         transform.color_transform.a_mult = f32::from(color.a) / 255.0;
-        if let Some(font) = context.library.get_font(font_id) {
-            let scale = if let Some(height) = static_data.height {
-                transform.matrix.ty += f32::from(height);
-                f32::from(height) / font.scale()
-            } else {
-                1.0
-            };
-            if let Some(layout) = &static_data.layout {
-                transform.matrix.ty -= layout.leading.get() as f32;
-            }
-            transform.matrix.a = scale;
-            transform.matrix.d = scale;
-            let mut chars = self.text.chars().peekable();
-            let has_kerning_info = font.has_kerning_info();
-            while let Some(c) = chars.next() {
-                if let Some(glyph) = font.get_glyph_for_char(c) {
-                    context.transform_stack.push(&transform);
-                    context
-                        .renderer
-                        .render_shape(glyph.shape, context.transform_stack.transform());
-                    context.transform_stack.pop();
-                    // Step horizontally.
-                    let mut advance = f32::from(glyph.advance);
-                    if has_kerning_info {
-                        advance += font
-                            .get_kerning_offset(c, chars.peek().cloned().unwrap_or('\0'))
-                            .get() as f32;
-                    }
-                    transform.matrix.tx += advance * scale;
+        let device_font = context.library.device_font();
+        // If the font can't be found or has no glyph information, use the "device font" instead.
+        // We're cheating a bit and not actually rendering text using the OS/web.
+        // Instead, we embed an SWF version of Noto Sans to use as the "device font", and render
+        // it the same as any other SWF outline text.
+        let font = context
+            .library
+            .get_font(font_id)
+            .filter(|font| font.has_glyphs())
+            .unwrap_or(device_font);
+        let scale = if let Some(height) = static_data.height {
+            transform.matrix.ty += f32::from(height);
+            f32::from(height) / font.scale()
+        } else {
+            1.0
+        };
+        if let Some(layout) = &static_data.layout {
+            transform.matrix.ty -= layout.leading.get() as f32;
+        }
+        transform.matrix.a = scale;
+        transform.matrix.d = scale;
+        let mut chars = self.text.chars().peekable();
+        let has_kerning_info = font.has_kerning_info();
+        while let Some(c) = chars.next() {
+            if let Some(glyph) = font.get_glyph_for_char(c) {
+                context.transform_stack.push(&transform);
+                context
+                    .renderer
+                    .render_shape(glyph.shape, context.transform_stack.transform());
+                context.transform_stack.pop();
+                // Step horizontally.
+                let mut advance = f32::from(glyph.advance);
+                if has_kerning_info {
+                    advance += font
+                        .get_kerning_offset(c, chars.peek().cloned().unwrap_or('\0'))
+                        .get() as f32;
                 }
+                transform.matrix.tx += advance * scale;
             }
         }
-        // context.transform_stack.pop();
         context.transform_stack.pop();
     }
 }

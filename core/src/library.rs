@@ -10,13 +10,15 @@ use swf::CharacterId;
 pub struct Library<'gc> {
     characters: HashMap<CharacterId, Character<'gc>>,
     jpeg_tables: Option<Vec<u8>>,
+    device_font: Box<Font>,
 }
 
 impl<'gc> Library<'gc> {
-    pub fn new() -> Self {
+    pub fn new(device_font: Box<Font>) -> Self {
         Library {
             characters: HashMap::new(),
             jpeg_tables: None,
+            device_font,
         }
     }
 
@@ -90,11 +92,10 @@ impl<'gc> Library<'gc> {
     pub fn jpeg_tables(&self) -> Option<&[u8]> {
         self.jpeg_tables.as_ref().map(|data| &data[..])
     }
-}
 
-impl Default for Library<'_> {
-    fn default() -> Self {
-        Library::new()
+    /// Returns the device font for use when a font is unavailable.
+    pub fn device_font(&self) -> &Font {
+        &*self.device_font
     }
 }
 

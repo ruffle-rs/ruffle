@@ -12,6 +12,8 @@ use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
 use std::sync::Arc;
 
+static DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
+
 #[derive(Collect)]
 #[collect(empty_drop)]
 struct GcRoot<'gc> {
@@ -20,6 +22,8 @@ struct GcRoot<'gc> {
     mouse_hover_node: GcCell<'gc, Option<DisplayNode<'gc>>>, // TODO: Remove GcCell wrapped inside GcCell.
     avm: GcCell<'gc, Avm1<'gc>>,
 }
+
+type Error = Box<dyn std::error::Error>;
 
 make_arena!(GcArena, GcRoot);
 
@@ -59,11 +63,11 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
     Player<Audio, Renderer, Navigator>
 {
     pub fn new(
-        renderer: Renderer,
+        mut renderer: Renderer,
         audio: Audio,
         navigator: Navigator,
         swf_data: Vec<u8>,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    ) -> Result<Self, Error> {
         let (header, mut reader) = swf::read::read_swf_header(&swf_data[..]).unwrap();
         // Decompress the entire SWF in memory.
         let mut data = Vec::new();
@@ -75,6 +79,10 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         let movie_width = (header.stage_size.x_max - header.stage_size.x_min).to_pixels() as u32;
         let movie_height = (header.stage_size.y_max - header.stage_size.y_min).to_pixels() as u32;
 
+        // Load and parse the device font.
+        // TODO: We could use lazy_static here.
+        let device_font = Self::load_device_font(DEVICE_FONT_TAG, &mut renderer)
+            .expect("Unable to load device font");
         let mut player = Player {
             swf_data: Arc::new(data),
             swf_version: header.version,
@@ -98,7 +106,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             rng: SmallRng::from_seed([0u8; 16]), // TODO(Herschel): Get a proper seed on all platforms.
 
             gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| GcRoot {
-                library: GcCell::allocate(gc_context, Library::new()),
+                library: GcCell::allocate(gc_context, Library::new(device_font)),
                 root: GcCell::allocate(
                     gc_context,
                     Box::new(MovieClip::new_with_data(
@@ -575,6 +583,21 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         } else {
             Letterbox::None
         };
+    }
+
+    /// Loads font data from the given buffer.
+    /// The buffer should be the `DefineFont3` info for the tag.
+    /// The tag header should not be included.
+    fn load_device_font(
+        data: &[u8],
+        renderer: &mut Renderer,
+    ) -> Result<Box<crate::font::Font>, Error> {
+        let mut reader = swf::read::Reader::new(data, 8);
+        let device_font = Box::new(crate::font::Font::from_swf_tag(
+            renderer,
+            &reader.read_define_font_2(3)?,
+        )?);
+        Ok(device_font)
     }
 }
 
