@@ -913,7 +913,7 @@ impl<'gc> Avm1<'gc> {
             (Value::Null, Value::Null) => true,
             (Value::Null, Value::Undefined) => true,
             (Value::Undefined, Value::Null) => true,
-            (Value::Number(a), Value::Number(b)) => a == b,
+            (Value::Number(a), Value::Number(b)) => a == b || (a.is_nan() && b.is_nan()),
             (Value::String(a), Value::String(b)) => a == b,
             (Value::Object(_a), Value::Object(_b)) => false, // TODO(Herschel)
             (Value::String(a), Value::Number(b)) => a.parse().unwrap_or(std::f64::NAN) == b,
@@ -1528,7 +1528,7 @@ impl<'gc> Avm1<'gc> {
         let result = match (b, a) {
             (Value::Undefined, Value::Undefined) => true,
             (Value::Null, Value::Null) => true,
-            (Value::Number(a), Value::Number(b)) => a == b,
+            (Value::Number(a), Value::Number(b)) => a == b || (a.is_nan() && b.is_nan()),
             (Value::String(a), Value::String(b)) => a == b,
             (Value::Bool(a), Value::Bool(b)) => a == b,
             (Value::Object(_a), Value::Object(_b)) => false, // TODO
