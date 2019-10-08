@@ -372,7 +372,9 @@ impl<R: Read> Reader<R> {
                     down_to_over_sound,
                 }))
             }
-            Some(TagCode::DefineEditText) => tag_reader.read_define_edit_text()?,
+            Some(TagCode::DefineEditText) => {
+                Tag::DefineEditText(Box::new(tag_reader.read_define_edit_text()?))
+            }
             Some(TagCode::DefineFont) => {
                 Tag::DefineFont(Box::new(tag_reader.read_define_font_1()?))
             }
@@ -2512,7 +2514,7 @@ impl<R: Read> Reader<R> {
         }))
     }
 
-    fn read_define_edit_text(&mut self) -> Result<Tag> {
+    pub fn read_define_edit_text(&mut self) -> Result<EditText> {
         let id = self.read_character_id()?;
         let bounds = self.read_rectangle()?;
         let flags = self.read_u8()?;
@@ -2570,7 +2572,7 @@ impl<R: Read> Reader<R> {
         } else {
             None
         };
-        Ok(Tag::DefineEditText(Box::new(EditText {
+        Ok(EditText {
             id,
             bounds,
             font_id,
@@ -2591,7 +2593,7 @@ impl<R: Read> Reader<R> {
             was_static: flags2 & 0b100 != 0,
             is_html: flags2 & 0b10 != 0,
             is_device_font: flags2 & 0b1 == 0,
-        })))
+        })
     }
 
     fn read_define_video_stream(&mut self) -> Result<Tag> {
