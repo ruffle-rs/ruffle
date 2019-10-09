@@ -14,6 +14,10 @@ use std::sync::Arc;
 
 static DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
 
+/// The newest known Flash Player version, serves as a default to
+/// `player_version`.
+const NEWEST_PLAYER_VERSION: u8 = 32;
+
 #[derive(Collect)]
 #[collect(empty_drop)]
 struct GcRoot<'gc> {
@@ -28,6 +32,18 @@ type Error = Box<dyn std::error::Error>;
 make_arena!(GcArena, GcRoot);
 
 pub struct Player<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend> {
+    /// The version of the player we're emulating.
+    ///
+    /// This serves a few purposes, primarily for compatibility:
+    ///
+    /// * ActionScript can query the player version, ostensibly for graceful
+    ///   degradation on older platforms. Certain SWF files broke with the
+    ///   release of Flash Player 10 because the version string contains two
+    ///   digits. This allows the user to play those old files.
+    /// * Player-specific behavior that was not properly versioned in Flash
+    ///   Player can be enabled by setting a particular player version.
+    player_version: u8,
+
     swf_data: Arc<Vec<u8>>,
     swf_version: u8,
 
@@ -104,6 +120,8 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         let device_font = Self::load_device_font(DEVICE_FONT_TAG, &mut renderer)
             .expect("Unable to load device font");
         let mut player = Player {
+            player_version: NEWEST_PLAYER_VERSION,
+
             swf_data: Arc::new(data),
             swf_version: header.version,
 
@@ -236,6 +254,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
 
     pub fn handle_event(&mut self, event: PlayerEvent) {
         let mut needs_render = false;
+        let player_version = self.player_version;
 
         // Update mouse position from mouse events.
         if let PlayerEvent::MouseMove { x, y }
@@ -273,6 +292,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
 
         self.gc_arena.mutate(|gc_context, gc_root| {
             let mut update_context = UpdateContext {
+                player_version,
                 global_time,
                 swf_data,
                 swf_version,
@@ -320,6 +340,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
     }
 
     fn update_roll_over(&mut self) -> bool {
+        let player_version = self.player_version;
         // TODO: While the mouse is down, maintain the hovered node.
         if self.is_mouse_down {
             return false;
@@ -346,6 +367,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             let mut cur_hover_node = gc_root.mouse_hover_node.write(gc_context);
             if cur_hover_node.map(GcCell::as_ptr) != new_hover_node.map(GcCell::as_ptr) {
                 let mut update_context = UpdateContext {
+                    player_version: player_version,
                     global_time,
                     swf_data,
                     swf_version,
@@ -388,7 +410,18 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
     }
 
     fn preload(&mut self) {
-        let (global_time, swf_data, swf_version, background_color, renderer, audio, navigator, rng) = (
+        let (
+            player_version,
+            global_time,
+            swf_data,
+            swf_version,
+            background_color,
+            renderer,
+            audio,
+            navigator,
+            rng,
+        ) = (
+            self.player_version,
             self.global_time,
             &mut self.swf_data,
             self.swf_version,
@@ -401,6 +434,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
 
         self.gc_arena.mutate(|gc_context, gc_root| {
             let mut update_context = UpdateContext {
+                player_version: player_version,
                 global_time,
                 swf_data,
                 swf_version,
@@ -436,7 +470,18 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
     }
 
     pub fn run_frame(&mut self) {
-        let (global_time, swf_data, swf_version, background_color, renderer, audio, navigator, rng) = (
+        let (
+            player_version,
+            global_time,
+            swf_data,
+            swf_version,
+            background_color,
+            renderer,
+            audio,
+            navigator,
+            rng,
+        ) = (
+            self.player_version,
             self.global_time,
             &mut self.swf_data,
             self.swf_version,
@@ -449,6 +494,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
 
         self.gc_arena.mutate(|gc_context, gc_root| {
             let mut update_context = UpdateContext {
+                player_version: player_version,
                 global_time,
                 swf_data,
                 swf_version,
@@ -538,6 +584,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                     gc_context: update_context.gc_context,
                     global_time: update_context.global_time,
                     root,
+                    player_version: update_context.player_version,
                     start_clip: root,
                     active_clip: root,
                     target_clip: Some(root),
@@ -622,6 +669,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
 }
 
 pub struct UpdateContext<'a, 'gc, 'gc_context> {
+    pub player_version: u8,
     pub swf_version: u8,
     pub swf_data: &'a Arc<Vec<u8>>,
     pub global_time: u64,

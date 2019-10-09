@@ -31,6 +31,9 @@ pub struct ActionContext<'a, 'gc, 'gc_context> {
     pub gc_context: gc_arena::MutationContext<'gc, 'gc_context>,
     pub global_time: u64,
 
+    /// The particular version of Flash Player being emulated.
+    pub player_version: u8,
+
     /// The root of the current timeline.
     /// This will generally be `_level0`, except for loadMovie/loadMovieNum.
     pub root: DisplayNode<'gc>,

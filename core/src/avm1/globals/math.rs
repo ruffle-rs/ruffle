@@ -159,6 +159,7 @@ mod tests {
             let mut context = ActionContext {
                 gc_context,
                 global_time: 0,
+                player_version: 32,
                 root,
                 start_clip: root,
                 active_clip: root,
