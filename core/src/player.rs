@@ -16,7 +16,7 @@ static DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.
 
 /// The newest known Flash Player version, serves as a default to
 /// `player_version`.
-const NEWEST_PLAYER_VERSION: u8 = 32;
+pub const NEWEST_PLAYER_VERSION: u8 = 32;
 
 #[derive(Collect)]
 #[collect(empty_drop)]
@@ -148,6 +148,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 root: GcCell::allocate(
                     gc_context,
                     Box::new(MovieClip::new_with_data(
+                        header.version,
                         gc_context,
                         0,
                         0,
@@ -460,7 +461,8 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
 
             // Finalize morph shapes.
             for (id, static_data) in morph_shapes {
-                let morph_shape = crate::morph_shape::MorphShape::new(gc_context, static_data);
+                let morph_shape =
+                    crate::morph_shape::MorphShape::new(swf_version, gc_context, static_data);
                 update_context.library.register_character(
                     id,
                     crate::character::Character::MorphShape(Box::new(morph_shape)),

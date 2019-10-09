@@ -12,7 +12,7 @@ pub struct Text<'gc> {
 impl<'gc> Text<'gc> {
     pub fn from_swf_tag(context: &mut UpdateContext<'_, 'gc, '_>, tag: &swf::Text) -> Self {
         Self {
-            base: Default::default(),
+            base: DisplayObjectBase::new(context.swf_version),
             static_data: gc_arena::Gc::allocate(
                 context.gc_context,
                 TextStatic {

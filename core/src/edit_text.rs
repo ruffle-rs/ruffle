@@ -29,7 +29,7 @@ impl<'gc> EditText<'gc> {
     /// Creates a new `EditText` from an SWF `DefineEditText` tag.
     pub fn from_swf_tag(context: &mut UpdateContext<'_, 'gc, '_>, swf_tag: swf::EditText) -> Self {
         Self {
-            base: Default::default(),
+            base: DisplayObjectBase::new(context.swf_version),
             text: swf_tag.initial_text.clone().unwrap_or_default(),
             static_data: gc_arena::Gc::allocate(context.gc_context, EditTextStatic(swf_tag)),
         }

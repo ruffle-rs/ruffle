@@ -14,10 +14,13 @@ pub struct DisplayObjectBase<'gc> {
     transform: Transform,
     name: String,
     clip_depth: Depth,
+
+    ///The version of the SWF that created this display object.
+    swf_version: u8,
 }
 
-impl<'gc> Default for DisplayObjectBase<'gc> {
-    fn default() -> Self {
+impl<'gc> DisplayObjectBase<'gc> {
+    pub fn new(swf_version: u8) -> Self {
         Self {
             parent: Default::default(),
             place_frame: Default::default(),
@@ -25,6 +28,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             transform: Default::default(),
             name: Default::default(),
             clip_depth: Default::default(),
+            swf_version: swf_version,
         }
     }
 }
@@ -81,6 +85,9 @@ impl<'gc> DisplayObject<'gc> for DisplayObjectBase<'gc> {
     }
     fn box_clone(&self) -> Box<dyn DisplayObject<'gc>> {
         Box::new(self.clone())
+    }
+    fn swf_version(&self) -> u8 {
+        self.swf_version
     }
 }
 
@@ -189,6 +196,9 @@ pub trait DisplayObject<'gc>: 'gc + Collect + Debug {
         _display_object: DisplayNode<'gc>,
     ) {
     }
+
+    /// Return the version of the SWF that created this movie clip.
+    fn swf_version(&self) -> u8;
 }
 
 impl<'gc> Clone for Box<dyn DisplayObject<'gc>> {
@@ -246,6 +256,9 @@ macro_rules! impl_display_object {
         }
         fn box_clone(&self) -> Box<dyn crate::display_object::DisplayObject<'gc>> {
             Box::new(self.clone())
+        }
+        fn swf_version(&self) -> u8 {
+            self.$field.swf_version()
         }
     };
 }

@@ -33,9 +33,9 @@ pub struct MovieClip<'gc> {
 }
 
 impl<'gc> MovieClip<'gc> {
-    pub fn new(gc_context: MutationContext<'gc, '_>) -> Self {
+    pub fn new(swf_version: u8, gc_context: MutationContext<'gc, '_>) -> Self {
         Self {
-            base: Default::default(),
+            base: DisplayObjectBase::new(swf_version),
             static_data: Gc::allocate(gc_context, MovieClipStatic::default()),
             tag_stream_pos: 0,
             is_playing: false,
@@ -48,6 +48,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn new_with_data(
+        swf_version: u8,
         gc_context: MutationContext<'gc, '_>,
         id: CharacterId,
         tag_stream_start: u64,
@@ -55,7 +56,7 @@ impl<'gc> MovieClip<'gc> {
         num_frames: u16,
     ) -> Self {
         Self {
-            base: Default::default(),
+            base: DisplayObjectBase::new(swf_version),
             static_data: Gc::allocate(
                 gc_context,
                 MovieClipStatic {
@@ -951,8 +952,12 @@ impl<'gc, 'a> MovieClip<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
         let swf_button = reader.read_define_button_1()?;
-        let button =
-            crate::button::Button::from_swf_tag(&swf_button, &context.library, context.gc_context);
+        let button = crate::button::Button::from_swf_tag(
+            context.swf_version,
+            &swf_button,
+            &context.library,
+            context.gc_context,
+        );
         context
             .library
             .register_character(swf_button.id, Character::Button(Box::new(button)));
@@ -966,8 +971,12 @@ impl<'gc, 'a> MovieClip<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
         let swf_button = reader.read_define_button_2()?;
-        let button =
-            crate::button::Button::from_swf_tag(&swf_button, &context.library, context.gc_context);
+        let button = crate::button::Button::from_swf_tag(
+            context.swf_version,
+            &swf_button,
+            &context.library,
+            context.gc_context,
+        );
         context
             .library
             .register_character(swf_button.id, Character::Button(Box::new(button)));
@@ -1085,6 +1094,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         let id = reader.read_character_id()?;
         let num_frames = reader.read_u16()?;
         let mut movie_clip = MovieClip::new_with_data(
+            context.swf_version,
             context.gc_context,
             id,
             reader.get_ref().position(),

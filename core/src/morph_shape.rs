@@ -13,11 +13,12 @@ pub struct MorphShape<'gc> {
 
 impl<'gc> MorphShape<'gc> {
     pub fn new(
+        swf_version: u8,
         gc_context: gc_arena::MutationContext<'gc, '_>,
         static_data: MorphShapeStatic,
     ) -> Self {
         Self {
-            base: Default::default(),
+            base: DisplayObjectBase::new(swf_version),
             static_data: gc_arena::Gc::allocate(gc_context, static_data),
             ratio: 0,
         }
