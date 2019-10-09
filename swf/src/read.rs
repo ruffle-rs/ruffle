@@ -4,10 +4,11 @@
     clippy::unreadable_literal
 )]
 
+use crate::error::{Error, Result};
 use crate::types::*;
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::collections::HashSet;
-use std::io::{Error, ErrorKind, Read, Result};
+use std::io::{self, Read};
 
 /// Convenience method to parse an SWF.
 ///
@@ -91,8 +92,7 @@ fn make_zlib_reader<'a, R: Read + 'a>(input: R) -> Result<Box<dyn Read + 'a>> {
 
 #[cfg(not(any(feature = "flate2", feature = "libflate")))]
 fn make_zlib_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<dyn Read + 'a>> {
-    Err(Error::new(
-        ErrorKind::InvalidData,
+    Err(Error::unsupported(
         "Support for Zlib compressed SWFs is not enabled.",
     ))
 }
@@ -117,56 +117,55 @@ fn make_lzma_reader<'a, R: Read + 'a>(mut input: R) -> Result<Box<dyn Read + 'a>
 
 #[cfg(not(feature = "lzma-support"))]
 fn make_lzma_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<dyn Read + 'a>> {
-    Err(Error::new(
-        ErrorKind::InvalidData,
-        "Support for LZMA compressed SWFs is not enabled.",
+    Err(Error::unsupported(
+        "Support for Zlib compressed SWFs is not enabled.",
     ))
 }
 
 pub trait SwfRead<R: Read> {
     fn get_inner(&mut self) -> &mut R;
 
-    fn read_u8(&mut self) -> Result<u8> {
+    fn read_u8(&mut self) -> io::Result<u8> {
         self.get_inner().read_u8()
     }
 
-    fn read_u16(&mut self) -> Result<u16> {
+    fn read_u16(&mut self) -> io::Result<u16> {
         self.get_inner().read_u16::<LittleEndian>()
     }
 
-    fn read_u32(&mut self) -> Result<u32> {
+    fn read_u32(&mut self) -> io::Result<u32> {
         self.get_inner().read_u32::<LittleEndian>()
     }
 
-    fn read_u64(&mut self) -> Result<u64> {
+    fn read_u64(&mut self) -> io::Result<u64> {
         self.get_inner().read_u64::<LittleEndian>()
     }
 
-    fn read_i8(&mut self) -> Result<i8> {
+    fn read_i8(&mut self) -> io::Result<i8> {
         self.get_inner().read_i8()
     }
 
-    fn read_i16(&mut self) -> Result<i16> {
+    fn read_i16(&mut self) -> io::Result<i16> {
         self.get_inner().read_i16::<LittleEndian>()
     }
 
-    fn read_i32(&mut self) -> Result<i32> {
+    fn read_i32(&mut self) -> io::Result<i32> {
         self.get_inner().read_i32::<LittleEndian>()
     }
 
-    fn read_fixed8(&mut self) -> Result<f32> {
+    fn read_fixed8(&mut self) -> io::Result<f32> {
         self.read_i16().map(|n| f32::from(n) / 256f32)
     }
 
-    fn read_fixed16(&mut self) -> Result<f64> {
+    fn read_fixed16(&mut self) -> io::Result<f64> {
         self.read_i32().map(|n| f64::from(n) / 65536f64)
     }
 
-    fn read_f32(&mut self) -> Result<f32> {
+    fn read_f32(&mut self) -> io::Result<f32> {
         self.get_inner().read_f32::<LittleEndian>()
     }
 
-    fn read_f64(&mut self) -> Result<f64> {
+    fn read_f64(&mut self) -> io::Result<f64> {
         // Flash weirdly stores f64 as two LE 32-bit chunks.
         // First word is the hi-word, second word is the lo-word.
         let mut num = [0u8; 8];
@@ -189,8 +188,7 @@ pub trait SwfRead<R: Read> {
         }
         // TODO: There is probably a better way to do this.
         // TODO: Verify ANSI for SWF 5 and earlier.
-        String::from_utf8(bytes)
-            .map_err(|_| Error::new(ErrorKind::InvalidData, "Invalid string data"))
+        String::from_utf8(bytes).map_err(|_| Error::invalid_data("Invalid string data"))
     }
 }
 
@@ -210,42 +208,42 @@ impl<R: Read> SwfRead<R> for Reader<R> {
         &mut self.input
     }
 
-    fn read_u8(&mut self) -> Result<u8> {
+    fn read_u8(&mut self) -> io::Result<u8> {
         self.byte_align();
         self.input.read_u8()
     }
 
-    fn read_u16(&mut self) -> Result<u16> {
+    fn read_u16(&mut self) -> io::Result<u16> {
         self.byte_align();
         self.input.read_u16::<LittleEndian>()
     }
 
-    fn read_u32(&mut self) -> Result<u32> {
+    fn read_u32(&mut self) -> io::Result<u32> {
         self.byte_align();
         self.input.read_u32::<LittleEndian>()
     }
 
-    fn read_i8(&mut self) -> Result<i8> {
+    fn read_i8(&mut self) -> io::Result<i8> {
         self.byte_align();
         self.input.read_i8()
     }
 
-    fn read_i16(&mut self) -> Result<i16> {
+    fn read_i16(&mut self) -> io::Result<i16> {
         self.byte_align();
         self.input.read_i16::<LittleEndian>()
     }
 
-    fn read_i32(&mut self) -> Result<i32> {
+    fn read_i32(&mut self) -> io::Result<i32> {
         self.byte_align();
         self.input.read_i32::<LittleEndian>()
     }
 
-    fn read_f32(&mut self) -> Result<f32> {
+    fn read_f32(&mut self) -> io::Result<f32> {
         self.byte_align();
         self.input.read_f32::<LittleEndian>()
     }
 
-    fn read_f64(&mut self) -> Result<f64> {
+    fn read_f64(&mut self) -> io::Result<f64> {
         self.byte_align();
         self.input.read_f64::<LittleEndian>()
     }
@@ -286,7 +284,16 @@ impl<R: Read> Reader<R> {
     /// ```
     pub fn read_tag(&mut self) -> Result<Tag> {
         let (tag_code, length) = self.read_tag_code_and_length()?;
+        let tag = self.read_tag_with_code(tag_code, length);
 
+        if let Err(e) = tag {
+            return Err(Error::swf_parse_error_with_source(tag_code, e));
+        }
+
+        tag
+    }
+
+    fn read_tag_with_code(&mut self, tag_code: u16, length: usize) -> Result<Tag> {
         let mut tag_reader = Reader::new(self.input.by_ref().take(length as u64), self.version);
         use crate::tag_code::TagCode;
         let tag = match TagCode::from_u16(tag_code) {
@@ -634,7 +641,7 @@ impl<R: Read> Reader<R> {
             b"FWS" => Compression::None,
             b"CWS" => Compression::Zlib,
             b"ZWS" => Compression::Lzma,
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid SWF")),
+            _ => return Err(Error::invalid_data("Invalid SWF")),
         };
         Ok(compression)
     }
@@ -703,7 +710,8 @@ impl<R: Read> Reader<R> {
     }
 
     pub fn read_character_id(&mut self) -> Result<CharacterId> {
-        self.read_u16()
+        let id = self.read_u16()?;
+        Ok(id)
     }
 
     pub fn read_rgb(&mut self) -> Result<Color> {
@@ -809,7 +817,7 @@ impl<R: Read> Reader<R> {
             3 => Language::Korean,
             4 => Language::SimplifiedChinese,
             5 => Language::TraditionalChinese,
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid language code.")),
+            _ => return Err(Error::invalid_data("Invalid language code")),
         })
     }
 
@@ -821,11 +829,6 @@ impl<R: Read> Reader<R> {
                 Ok(tag) => tags.push(tag),
                 Err(err) => {
                     // We screwed up reading this tag in some way.
-                    // TODO: We could recover more gracefully in some way.
-                    // Simply throw away this tag, but keep going.
-                    if cfg!(debug_assertions) {
-                        panic!("Error reading tag");
-                    }
                     return Err(err);
                 }
             }
@@ -1011,12 +1014,7 @@ impl<R: Read> Reader<R> {
                 0b00_000 => TextGridFit::None,
                 0b01_000 => TextGridFit::Pixel,
                 0b10_000 => TextGridFit::SubPixel,
-                _ => {
-                    return Err(Error::new(
-                        ErrorKind::InvalidData,
-                        "Invalid text grid fitting",
-                    ))
-                }
+                _ => return Err(Error::invalid_data("Invalid text grid fitting")),
             },
             thickness,
             sharpness,
@@ -1239,12 +1237,7 @@ impl<R: Read> Reader<R> {
             0b00_000000 => FontThickness::Thin,
             0b01_000000 => FontThickness::Medium,
             0b10_000000 => FontThickness::Thick,
-            _ => {
-                return Err(Error::new(
-                    ErrorKind::InvalidData,
-                    "Invalid font thickness type.",
-                ))
-            }
+            _ => return Err(Error::invalid_data("Invalid font thickness type.")),
         };
         let mut zones = vec![];
         while let Ok(zone) = self.read_font_align_zone() {
@@ -1427,7 +1420,7 @@ impl<R: Read> Reader<R> {
                 0 => LineCapStyle::Round,
                 1 => LineCapStyle::None,
                 2 => LineCapStyle::Square,
-                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid line cap type.")),
+                _ => return Err(Error::invalid_data("Invalid line cap type.")),
             };
             let join_style_id = self.read_ubits(2)?;
             let has_fill = self.read_bit()?;
@@ -1440,13 +1433,13 @@ impl<R: Read> Reader<R> {
                 0 => LineCapStyle::Round,
                 1 => LineCapStyle::None,
                 2 => LineCapStyle::Square,
-                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid line cap type.")),
+                _ => return Err(Error::invalid_data("Invalid line cap type.")),
             };
             let join_style = match join_style_id {
                 0 => LineJoinStyle::Round,
                 1 => LineJoinStyle::Bevel,
                 2 => LineJoinStyle::Miter(self.read_fixed8()?),
-                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid line cap type.")),
+                _ => return Err(Error::invalid_data("Invalid line cap type.")),
             };
             let (start_color, end_color) = if !has_fill {
                 (self.read_rgba()?, self.read_rgba()?)
@@ -1528,8 +1521,7 @@ impl<R: Read> Reader<R> {
 
             0x13 => {
                 if self.version < 8 || shape_version < 2 {
-                    return Err(Error::new(
-                        ErrorKind::InvalidData,
+                    return Err(Error::invalid_data(
                         "Focal gradients are only supported in SWF version 8 \
                          or higher.",
                     ));
@@ -1568,7 +1560,7 @@ impl<R: Read> Reader<R> {
                 )
             }
 
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid fill style.")),
+            _ => return Err(Error::invalid_data("Invalid fill style.")),
         };
         Ok(fill_style)
     }
@@ -1718,8 +1710,7 @@ impl<R: Read> Reader<R> {
 
             0x13 => {
                 if self.version < 8 || shape_version < 4 {
-                    return Err(Error::new(
-                        ErrorKind::InvalidData,
+                    return Err(Error::invalid_data(
                         "Focal gradients are only supported in SWF version 8 \
                          or higher.",
                     ));
@@ -1738,7 +1729,7 @@ impl<R: Read> Reader<R> {
                 is_repeating: (fill_style_type & 0b01) == 0,
             },
 
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid fill style.")),
+            _ => return Err(Error::invalid_data("Invalid fill style.")),
         };
         Ok(fill_style)
     }
@@ -1761,7 +1752,7 @@ impl<R: Read> Reader<R> {
                 0 => LineCapStyle::Round,
                 1 => LineCapStyle::None,
                 2 => LineCapStyle::Square,
-                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid line cap type.")),
+                _ => return Err(Error::invalid_data("Invalid line cap type.")),
             };
             let join_style_id = self.read_ubits(2)?;
             let has_fill = self.read_bit()?;
@@ -1774,13 +1765,13 @@ impl<R: Read> Reader<R> {
                 0 => LineCapStyle::Round,
                 1 => LineCapStyle::None,
                 2 => LineCapStyle::Square,
-                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid line cap type.")),
+                _ => return Err(Error::invalid_data("Invalid line cap type.")),
             };
             let join_style = match join_style_id {
                 0 => LineJoinStyle::Round,
                 1 => LineJoinStyle::Bevel,
                 2 => LineJoinStyle::Miter(self.read_fixed8()?),
-                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid line cap type.")),
+                _ => return Err(Error::invalid_data("Invalid line cap type.")),
             };
             let color = if !has_fill {
                 self.read_rgba()?
@@ -1819,22 +1810,12 @@ impl<R: Read> Reader<R> {
             0 => GradientSpread::Pad,
             1 => GradientSpread::Reflect,
             2 => GradientSpread::Repeat,
-            _ => {
-                return Err(Error::new(
-                    ErrorKind::InvalidData,
-                    "Invalid gradient spread mode.",
-                ))
-            }
+            _ => return Err(Error::invalid_data("Invalid gradient spread mode.")),
         };
         let interpolation = match self.read_ubits(2)? {
             0 => GradientInterpolation::RGB,
             1 => GradientInterpolation::LinearRGB,
-            _ => {
-                return Err(Error::new(
-                    ErrorKind::InvalidData,
-                    "Invalid gradient interpolation mode.",
-                ))
-            }
+            _ => return Err(Error::invalid_data("Invalid gradient interpolation mode.")),
         };
         let num_records = self.read_ubits(4)? as usize;
         let mut records = Vec::with_capacity(num_records);
@@ -1990,12 +1971,7 @@ impl<R: Read> Reader<R> {
             0b01 => PlaceObjectAction::Modify,
             0b10 => PlaceObjectAction::Place(self.read_u16()?),
             0b11 => PlaceObjectAction::Replace(self.read_u16()?),
-            _ => {
-                return Err(Error::new(
-                    ErrorKind::InvalidData,
-                    "Invalid PlaceObject type",
-                ))
-            }
+            _ => return Err(Error::invalid_data("Invalid PlaceObject type")),
         };
         let matrix = if (flags & 0b100) != 0 {
             Some(self.read_matrix()?)
@@ -2107,7 +2083,7 @@ impl<R: Read> Reader<R> {
             12 => BlendMode::Erase,
             13 => BlendMode::Overlay,
             14 => BlendMode::HardLight,
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid blend mode")),
+            _ => return Err(Error::invalid_data("Invalid blend mode")),
         })
     }
 
@@ -2345,7 +2321,7 @@ impl<R: Read> Reader<R> {
                     num_passes: self.read_ubits(4)? as u8 & 0b011111,
                 }))
             }
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid filter type")),
+            _ => return Err(Error::invalid_data("Invalid filter type")),
         };
         self.byte_align();
         Ok(filter)
@@ -2362,7 +2338,7 @@ impl<R: Read> Reader<R> {
             5 => AudioCompression::Nellymoser8Khz,
             6 => AudioCompression::Nellymoser,
             11 => AudioCompression::Speex,
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid audio format.")),
+            _ => return Err(Error::invalid_data("Invalid audio format.")),
         };
         let sample_rate = match (flags & 0b11_00) >> 2 {
             0 => 5512,
@@ -2553,12 +2529,7 @@ impl<R: Read> Reader<R> {
                     1 => TextAlign::Right,
                     2 => TextAlign::Center,
                     3 => TextAlign::Justify,
-                    _ => {
-                        return Err(Error::new(
-                            ErrorKind::InvalidData,
-                            "Invalid edit text alignment",
-                        ))
-                    }
+                    _ => return Err(Error::invalid_data("Invalid edit text alignment")),
                 },
                 left_margin: Twips::new(self.read_u16()?),
                 right_margin: Twips::new(self.read_u16()?),
@@ -2610,7 +2581,7 @@ impl<R: Read> Reader<R> {
             3 => VideoCodec::ScreenVideo,
             4 => VideoCodec::VP6,
             5 => VideoCodec::VP6WithAlpha,
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid video codec.")),
+            _ => return Err(Error::invalid_data("Invalid video codec.")),
         };
         Ok(Tag::DefineVideoStream(DefineVideoStream {
             id,
@@ -2626,12 +2597,7 @@ impl<R: Read> Reader<R> {
                 0b011_0 => VideoDeblocking::Level2,
                 0b100_0 => VideoDeblocking::Level3,
                 0b101_0 => VideoDeblocking::Level4,
-                _ => {
-                    return Err(Error::new(
-                        ErrorKind::InvalidData,
-                        "Invalid video deblocking value.",
-                    ))
-                }
+                _ => return Err(Error::invalid_data("Invalid video deblocking value.")),
             },
         }))
     }
@@ -2676,7 +2642,7 @@ impl<R: Read> Reader<R> {
             3 => BitmapFormat::ColorMap8,
             4 if version == 1 => BitmapFormat::Rgb15,
             5 => BitmapFormat::Rgb32,
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid bitmap format.")),
+            _ => return Err(Error::invalid_data("Invalid bitmap format.")),
         };
         let width = self.read_u16()?;
         let height = self.read_u16()?;
@@ -3142,7 +3108,10 @@ pub mod tests {
     fn read_tags() {
         for (swf_version, expected_tag, tag_bytes) in test_data::tag_tests() {
             let mut reader = Reader::new(&tag_bytes[..], swf_version);
-            let parsed_tag = reader.read_tag().unwrap();
+            let parsed_tag = match reader.read_tag() {
+                Ok(tag) => tag,
+                Err(e) => panic!("Error parsing tag: {}", e),
+            };
             if parsed_tag != expected_tag {
                 // Failed, result doesn't match.
                 panic!(

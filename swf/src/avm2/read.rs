@@ -1,6 +1,7 @@
 use crate::avm2::types::*;
+use crate::error::{Error, Result};
 use crate::read::SwfRead;
-use std::io::{Error, ErrorKind, Read, Result};
+use std::io::Read;
 
 pub struct Reader<R: Read> {
     inner: R,
@@ -138,7 +139,7 @@ impl<R: Read> Reader<R> {
             0x18 => Namespace::Protected(name),
             0x19 => Namespace::Explicit(name),
             0x1a => Namespace::StaticProtected(name),
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid namespace kind")),
+            _ => return Err(Error::invalid_data("Invalid namespace kind")),
         })
     }
 
@@ -184,7 +185,7 @@ impl<R: Read> Reader<R> {
             0x1c => Multiname::MultinameLA {
                 namespace_set: self.read_index()?,
             },
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid multiname kind")),
+            _ => return Err(Error::invalid_data("Invalid multiname kind")),
         })
     }
 
@@ -314,7 +315,7 @@ impl<R: Read> Reader<R> {
             0x18 => DefaultValue::Protected(Index::new(index)),
             0x19 => DefaultValue::Explicit(Index::new(index)),
             0x1a => DefaultValue::StaticProtected(Index::new(index)),
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid default value")),
+            _ => return Err(Error::invalid_data("Invalid default value")),
         })
     }
 
@@ -339,7 +340,7 @@ impl<R: Read> Reader<R> {
                 0x18 => DefaultValue::Protected(Index::new(index)),
                 0x19 => DefaultValue::Explicit(Index::new(index)),
                 0x1a => DefaultValue::StaticProtected(Index::new(index)),
-                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid default value")),
+                _ => return Err(Error::invalid_data("Invalid default value")),
             }))
         }
     }
@@ -455,7 +456,7 @@ impl<R: Read> Reader<R> {
                 type_name: self.read_index()?,
                 value: self.read_optional_value()?,
             },
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid trait kind")),
+            _ => return Err(Error::invalid_data("Invalid trait kind")),
         };
 
         let mut metadata = vec![];
@@ -522,7 +523,7 @@ impl<R: Read> Reader<R> {
 
         let opcode = match OpCode::from_u8(self.read_u8()?) {
             Some(o) => o,
-            None => return Err(Error::new(ErrorKind::InvalidData, "Invalid opcode")),
+            None => return Err(Error::invalid_data("Invalid opcode")),
         };
 
         let op = match opcode {

@@ -2,8 +2,9 @@
 
 use crate::avm1::opcode::OpCode;
 use crate::avm1::types::*;
+use crate::error::{Error, Result};
 use crate::read::SwfRead;
-use std::io::{Cursor, Error, ErrorKind, Result};
+use std::io::Cursor;
 
 #[allow(dead_code)]
 pub struct Reader<'a> {
@@ -37,11 +38,13 @@ impl<'a> Reader<'a> {
     }
 
     #[inline]
-    fn read_slice(&mut self, len: usize) -> &'a [u8] {
+    fn read_slice(&mut self, len: usize) -> Result<&'a [u8]> {
         let pos = self.pos();
-        let slice = &self.inner.get_ref()[pos..pos + len];
         self.inner.set_position(pos as u64 + len as u64);
-        slice
+        let slice = self.inner.get_ref().get(pos..pos + len).ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::UnexpectedEof, "Buffer underrun")
+        })?;
+        Ok(slice)
     }
 
     #[inline]
@@ -60,15 +63,50 @@ impl<'a> Reader<'a> {
         // TODO: What does Flash do on invalid UTF8?
         // Do we silently let it pass?
         // TODO: Verify ANSI for SWF 5 and earlier.
-        std::str::from_utf8(str_slice)
-            .map_err(|_| Error::new(ErrorKind::InvalidData, "Invalid string data"))
+        std::str::from_utf8(str_slice).map_err(|_| Error::invalid_data("Invalid string data"))
     }
 
     #[inline]
     pub fn read_action(&mut self) -> Result<Option<Action<'a>>> {
-        use num_traits::FromPrimitive;
+        let (opcode, mut length) = self.read_opcode_and_length()?;
 
-        let (opcode, length) = self.read_opcode_and_length()?;
+        let start_pos = self.pos();
+        let action = self.read_op(opcode, &mut length);
+        if let Err(e) = action {
+            return Err(Error::avm1_parse_error_with_source(opcode, e));
+        }
+
+        // Verify that we parsed the correct amount of data.
+        let end_pos = start_pos + length;
+        let pos = self.pos();
+        if pos != end_pos {
+            // We incorrectly parsed this action.
+            // Re-sync to the expected end of the action and throw an error.
+            use std::convert::TryInto;
+            self.inner.set_position(end_pos.try_into().unwrap());
+            return Err(Error::avm1_parse_error(opcode));
+        }
+        action
+    }
+
+    pub fn read_opcode_and_length(&mut self) -> Result<(u8, usize)> {
+        let opcode = self.read_u8()?;
+        let length = if opcode >= 0x80 {
+            self.read_u16()? as usize
+        } else {
+            0
+        };
+        Ok((opcode, length))
+    }
+
+    /// Reads an action with the given opcode.
+    /// `length` is an in-out parameter and will be modified in the case of instructions
+    /// that contain sub-blocks of code, such as `DefineFunction`.
+    /// The `length` passed in should be the length excluding any sub-blocks.
+    /// The final `length` returned will be total length of the action, including sub-blocks.
+    #[inline]
+    fn read_op(&mut self, opcode: u8, length: &mut usize) -> Result<Option<Action<'a>>> {
+        use num_traits::FromPrimitive;
         let action = if let Some(op) = OpCode::from_u8(opcode) {
             match op {
                 OpCode::End => return Ok(None),
@@ -97,8 +135,8 @@ impl<'a> Reader<'a> {
                     Action::ConstantPool(constants)
                 }
                 OpCode::Decrement => Action::Decrement,
-                OpCode::DefineFunction => self.read_define_function()?,
-                OpCode::DefineFunction2 => self.read_define_function_2()?,
+                OpCode::DefineFunction => self.read_define_function(length)?,
+                OpCode::DefineFunction2 => self.read_define_function_2(length)?,
                 OpCode::DefineLocal => Action::DefineLocal,
                 OpCode::DefineLocal2 => Action::DefineLocal2,
                 OpCode::Delete => Action::Delete,
@@ -127,10 +165,9 @@ impl<'a> Reader<'a> {
                             1 => SendVarsMethod::Get,
                             2 => SendVarsMethod::Post,
                             _ => {
-                                return Err(Error::new(
-                                    ErrorKind::InvalidData,
+                                return Err(Error::invalid_data(
                                     "Invalid HTTP method in ActionGetUrl2",
-                                ))
+                                ));
                             }
                         },
                     }
@@ -181,7 +218,7 @@ impl<'a> Reader<'a> {
                 OpCode::Pop => Action::Pop,
                 OpCode::PreviousFrame => Action::PreviousFrame,
                 // TODO: Verify correct version for complex types.
-                OpCode::Push => self.read_push(length)?,
+                OpCode::Push => self.read_push(*length)?,
                 OpCode::PushDuplicate => Action::PushDuplicate,
                 OpCode::RandomNumber => Action::RandomNumber,
                 OpCode::RemoveSprite => Action::RemoveSprite,
@@ -211,16 +248,17 @@ impl<'a> Reader<'a> {
                 OpCode::ToNumber => Action::ToNumber,
                 OpCode::ToString => Action::ToString,
                 OpCode::Trace => Action::Trace,
-                OpCode::Try => self.read_try()?,
+                OpCode::Try => self.read_try(length)?,
                 OpCode::TypeOf => Action::TypeOf,
                 OpCode::WaitForFrame => Action::WaitForFrame {
                     frame: self.read_u16()?,
                     num_actions_to_skip: self.read_u8()?,
                 },
                 OpCode::With => {
-                    let code_length = self.read_u16()?;
+                    let code_length = usize::from(self.read_u16()?);
+                    *length += code_length;
                     Action::With {
-                        actions: self.read_slice(code_length.into()),
+                        actions: self.read_slice(code_length)?,
                     }
                 }
                 OpCode::WaitForFrame2 => Action::WaitForFrame2 {
@@ -228,26 +266,16 @@ impl<'a> Reader<'a> {
                 },
             }
         } else {
-            self.read_unknown_action(opcode, length)?
+            self.read_unknown_action(opcode, *length)?
         };
 
         Ok(Some(action))
     }
 
-    pub fn read_opcode_and_length(&mut self) -> Result<(u8, usize)> {
-        let opcode = self.read_u8()?;
-        let length = if opcode >= 0x80 {
-            self.read_u16()? as usize
-        } else {
-            0
-        };
-        Ok((opcode, length))
-    }
-
     fn read_unknown_action(&mut self, opcode: u8, length: usize) -> Result<Action<'a>> {
         Ok(Action::Unknown {
             opcode,
-            data: self.read_slice(length),
+            data: self.read_slice(length)?,
         })
     }
 
@@ -272,17 +300,12 @@ impl<'a> Reader<'a> {
             7 => Value::Int(self.read_i32()?),
             8 => Value::ConstantPool(self.read_u8()?.into()),
             9 => Value::ConstantPool(self.read_u16()?),
-            _ => {
-                return Err(Error::new(
-                    ErrorKind::InvalidData,
-                    "Invalid value type in ActionPush",
-                ))
-            }
+            _ => return Err(Error::invalid_data("Invalid value type in ActionPush")),
         };
         Ok(value)
     }
 
-    fn read_define_function(&mut self) -> Result<Action<'a>> {
+    fn read_define_function(&mut self, action_length: &mut usize) -> Result<Action<'a>> {
         let name = self.read_c_string()?;
         let num_params = self.read_u16()?;
         let mut params = Vec::with_capacity(num_params as usize);
@@ -290,15 +313,16 @@ impl<'a> Reader<'a> {
             params.push(self.read_c_string()?);
         }
         // code_length isn't included in the DefineFunction's action length.
-        let code_length = self.read_u16()?;
+        let code_length = usize::from(self.read_u16()?);
+        *action_length += code_length;
         Ok(Action::DefineFunction {
             name,
             params,
-            actions: self.read_slice(code_length.into()),
+            actions: self.read_slice(code_length)?,
         })
     }
 
-    fn read_define_function_2(&mut self) -> Result<Action<'a>> {
+    fn read_define_function_2(&mut self, action_length: &mut usize) -> Result<Action<'a>> {
         let name = self.read_c_string()?;
         let num_params = self.read_u16()?;
         let num_registers = self.read_u8()?; // Number of registers
@@ -312,7 +336,8 @@ impl<'a> Reader<'a> {
             });
         }
         // code_length isn't included in the DefineFunction's length.
-        let code_length = self.read_u16()?;
+        let code_length = usize::from(self.read_u16()?);
+        *action_length += code_length;
         Ok(Action::DefineFunction2(Function {
             name,
             params,
@@ -325,23 +350,24 @@ impl<'a> Reader<'a> {
             preload_arguments: flags & 0b100 != 0,
             suppress_this: flags & 0b10 != 0,
             preload_this: flags & 0b1 != 0,
-            actions: self.read_slice(code_length.into()),
+            actions: self.read_slice(code_length)?,
         }))
     }
 
-    fn read_try(&mut self) -> Result<Action<'a>> {
+    fn read_try(&mut self, length: &mut usize) -> Result<Action<'a>> {
         let flags = self.read_u8()?;
-        let try_length = self.read_u16()?;
-        let catch_length = self.read_u16()?;
-        let finally_length = self.read_u16()?;
+        let try_length = usize::from(self.read_u16()?);
+        let catch_length = usize::from(self.read_u16()?);
+        let finally_length = usize::from(self.read_u16()?);
+        *length += try_length + catch_length + finally_length;
         let catch_var = if flags & 0b100 != 0 {
             CatchVar::Var(self.read_c_string()?)
         } else {
             CatchVar::Register(self.read_u8()?)
         };
-        let try_actions = self.read_slice(try_length.into());
-        let catch_actions = self.read_slice(catch_length.into());
-        let finally_actions = self.read_slice(finally_length.into());
+        let try_actions = self.read_slice(try_length)?;
+        let catch_actions = self.read_slice(catch_length)?;
+        let finally_actions = self.read_slice(finally_length)?;
         Ok(Action::Try(TryBlock {
             try_actions,
             catch: if flags & 0b1 != 0 {

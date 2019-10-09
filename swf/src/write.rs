@@ -5,12 +5,13 @@
     clippy::unreadable_literal
 )]
 
+use crate::error::{Error, Result};
 use crate::tag_code::TagCode;
 use crate::types::*;
 use byteorder::{LittleEndian, WriteBytesExt};
 use std::cmp::max;
 use std::collections::HashSet;
-use std::io::{Error, ErrorKind, Result, Write};
+use std::io::{self, Write};
 
 /// Writes an SWF file to an output stream.
 /// # Example
@@ -98,8 +99,7 @@ fn write_zlib_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
 
 #[cfg(not(any(feature = "flate2", feature = "libflate")))]
 fn write_zlib_swf<W: Write>(_output: W, _swf_body: &[u8]) -> Result<()> {
-    Err(Error::new(
-        ErrorKind::InvalidData,
+    Err(Error::unsupported(
         "Support for Zlib compressed SWFs is not enabled.",
     ))
 }
@@ -121,8 +121,7 @@ fn write_lzma_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
 
 #[cfg(not(feature = "lzma-support"))]
 fn write_lzma_swf<W: Write>(_output: W, _swf_body: &[u8]) -> Result<()> {
-    Err(Error::new(
-        ErrorKind::InvalidData,
+    Err(Error::unsupported(
         "Support for LZMA compressed SWFs is not enabled.",
     ))
 }
@@ -130,47 +129,47 @@ fn write_lzma_swf<W: Write>(_output: W, _swf_body: &[u8]) -> Result<()> {
 pub trait SwfWrite<W: Write> {
     fn get_inner(&mut self) -> &mut W;
 
-    fn write_u8(&mut self, n: u8) -> Result<()> {
+    fn write_u8(&mut self, n: u8) -> io::Result<()> {
         self.get_inner().write_u8(n)
     }
 
-    fn write_u16(&mut self, n: u16) -> Result<()> {
+    fn write_u16(&mut self, n: u16) -> io::Result<()> {
         self.get_inner().write_u16::<LittleEndian>(n)
     }
 
-    fn write_u32(&mut self, n: u32) -> Result<()> {
+    fn write_u32(&mut self, n: u32) -> io::Result<()> {
         self.get_inner().write_u32::<LittleEndian>(n)
     }
 
-    fn write_u64(&mut self, n: u64) -> Result<()> {
+    fn write_u64(&mut self, n: u64) -> io::Result<()> {
         self.get_inner().write_u64::<LittleEndian>(n)
     }
 
-    fn write_i8(&mut self, n: i8) -> Result<()> {
+    fn write_i8(&mut self, n: i8) -> io::Result<()> {
         self.get_inner().write_i8(n)
     }
 
-    fn write_i16(&mut self, n: i16) -> Result<()> {
+    fn write_i16(&mut self, n: i16) -> io::Result<()> {
         self.get_inner().write_i16::<LittleEndian>(n)
     }
 
-    fn write_i32(&mut self, n: i32) -> Result<()> {
+    fn write_i32(&mut self, n: i32) -> io::Result<()> {
         self.get_inner().write_i32::<LittleEndian>(n)
     }
 
-    fn write_fixed8(&mut self, n: f32) -> Result<()> {
+    fn write_fixed8(&mut self, n: f32) -> io::Result<()> {
         self.write_i16((n * 256f32) as i16)
     }
 
-    fn write_fixed16(&mut self, n: f64) -> Result<()> {
+    fn write_fixed16(&mut self, n: f64) -> io::Result<()> {
         self.write_i32((n * 65536f64) as i32)
     }
 
-    fn write_f32(&mut self, n: f32) -> Result<()> {
+    fn write_f32(&mut self, n: f32) -> io::Result<()> {
         self.get_inner().write_f32::<LittleEndian>(n)
     }
 
-    fn write_f64(&mut self, n: f64) -> Result<()> {
+    fn write_f64(&mut self, n: f64) -> io::Result<()> {
         // Flash weirdly stores f64 as two LE 32-bit chunks.
         // First word is the hi-word, second word is the lo-word.
         let mut num = [0u8; 8];
@@ -182,7 +181,7 @@ pub trait SwfWrite<W: Write> {
         self.get_inner().write_all(&num)
     }
 
-    fn write_c_string(&mut self, s: &str) -> Result<()> {
+    fn write_c_string(&mut self, s: &str) -> io::Result<()> {
         self.get_inner().write_all(s.as_bytes())?;
         self.write_u8(0)
     }
@@ -202,47 +201,47 @@ impl<W: Write> SwfWrite<W> for Writer<W> {
         &mut self.output
     }
 
-    fn write_u8(&mut self, n: u8) -> Result<()> {
+    fn write_u8(&mut self, n: u8) -> io::Result<()> {
         self.flush_bits()?;
         self.output.write_u8(n)
     }
 
-    fn write_u16(&mut self, n: u16) -> Result<()> {
+    fn write_u16(&mut self, n: u16) -> io::Result<()> {
         self.flush_bits()?;
         self.output.write_u16::<LittleEndian>(n)
     }
 
-    fn write_u32(&mut self, n: u32) -> Result<()> {
+    fn write_u32(&mut self, n: u32) -> io::Result<()> {
         self.flush_bits()?;
         self.output.write_u32::<LittleEndian>(n)
     }
 
-    fn write_i8(&mut self, n: i8) -> Result<()> {
+    fn write_i8(&mut self, n: i8) -> io::Result<()> {
         self.flush_bits()?;
         self.output.write_i8(n)
     }
 
-    fn write_i16(&mut self, n: i16) -> Result<()> {
+    fn write_i16(&mut self, n: i16) -> io::Result<()> {
         self.flush_bits()?;
         self.output.write_i16::<LittleEndian>(n)
     }
 
-    fn write_i32(&mut self, n: i32) -> Result<()> {
+    fn write_i32(&mut self, n: i32) -> io::Result<()> {
         self.flush_bits()?;
         self.output.write_i32::<LittleEndian>(n)
     }
 
-    fn write_f32(&mut self, n: f32) -> Result<()> {
+    fn write_f32(&mut self, n: f32) -> io::Result<()> {
         self.flush_bits()?;
         self.output.write_f32::<LittleEndian>(n)
     }
 
-    fn write_f64(&mut self, n: f64) -> Result<()> {
+    fn write_f64(&mut self, n: f64) -> io::Result<()> {
         self.flush_bits()?;
         self.output.write_f64::<LittleEndian>(n)
     }
 
-    fn write_c_string(&mut self, s: &str) -> Result<()> {
+    fn write_c_string(&mut self, s: &str) -> io::Result<()> {
         self.flush_bits()?;
         self.get_inner().write_all(s.as_bytes())?;
         self.write_u8(0)
@@ -277,7 +276,7 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn flush_bits(&mut self) -> Result<()> {
+    fn flush_bits(&mut self) -> io::Result<()> {
         if self.bit_index != 8 {
             self.output.write_u8(self.byte)?;
             self.bit_index = 8;
@@ -341,7 +340,8 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_character_id(&mut self, id: CharacterId) -> Result<()> {
-        self.write_u16(id)
+        self.write_u16(id)?;
+        Ok(())
     }
 
     fn write_rgb(&mut self, color: &Color) -> Result<()> {
@@ -509,7 +509,8 @@ impl<W: Write> Writer<W> {
             Language::Korean => 3,
             Language::SimplifiedChinese => 4,
             Language::TraditionalChinese => 5,
-        })
+        })?;
+        Ok(())
     }
 
     fn write_tag(&mut self, tag: &Tag) -> Result<()> {
@@ -918,12 +919,7 @@ impl<W: Write> Writer<W> {
                 2 => self.write_place_object_2_or_3(place_object, 2)?,
                 3 => self.write_place_object_2_or_3(place_object, 3)?,
                 4 => self.write_place_object_2_or_3(place_object, 4)?,
-                _ => {
-                    return Err(Error::new(
-                        ErrorKind::InvalidData,
-                        "Invalid PlaceObject version.",
-                    ))
-                }
+                _ => return Err(Error::invalid_data("Invalid PlaceObject version.")),
             },
 
             Tag::RemoveObject(ref remove_object) => {
@@ -1191,8 +1187,7 @@ impl<W: Write> Writer<W> {
         if data.start.fill_styles.len() != data.end.fill_styles.len()
             || data.start.line_styles.len() != data.end.line_styles.len()
         {
-            return Err(Error::new(
-                ErrorKind::InvalidData,
+            return Err(Error::invalid_data(
                 "Start and end state of a morph shape must have the same number of styles.",
             ));
         }
@@ -1337,8 +1332,7 @@ impl<W: Write> Writer<W> {
                 },
             ) => {
                 if self.version < 8 || shape_version < 2 {
-                    return Err(Error::new(
-                        ErrorKind::InvalidData,
+                    return Err(Error::invalid_data(
                         "Focal gradients are only support in SWF version 8 \
                          and higher.",
                     ));
@@ -1379,8 +1373,7 @@ impl<W: Write> Writer<W> {
             }
 
             _ => {
-                return Err(Error::new(
-                    ErrorKind::InvalidData,
+                return Err(Error::invalid_data(
                     "Morph start and end fill styles must be the same variant.",
                 ))
             }
@@ -1392,8 +1385,7 @@ impl<W: Write> Writer<W> {
         self.write_matrix(&start.matrix)?;
         self.write_matrix(&end.matrix)?;
         if start.records.len() != end.records.len() {
-            return Err(Error::new(
-                ErrorKind::InvalidData,
+            return Err(Error::invalid_data(
                 "Morph start and end gradient must have the same amount of records.",
             ));
         }
@@ -1428,8 +1420,7 @@ impl<W: Write> Writer<W> {
                 || start.allow_close != end.allow_close
                 || start.end_cap != end.end_cap
             {
-                return Err(Error::new(
-                    ErrorKind::InvalidData,
+                return Err(Error::invalid_data(
                     "Morph start and end line styles must have the same join parameters.",
                 ));
             }
@@ -1483,8 +1474,7 @@ impl<W: Write> Writer<W> {
                 }
 
                 _ => {
-                    return Err(Error::new(
-                        ErrorKind::InvalidData,
+                    return Err(Error::invalid_data(
                         "Morph start and end line styles must both have fill styles.",
                     ))
                 }
@@ -1553,12 +1543,7 @@ impl<W: Write> Writer<W> {
             2 => TagCode::DefineShape2,
             3 => TagCode::DefineShape3,
             4 => TagCode::DefineShape4,
-            _ => {
-                return Err(Error::new(
-                    ErrorKind::InvalidData,
-                    "Invalid DefineShape version.",
-                ))
-            }
+            _ => return Err(Error::invalid_data("Invalid DefineShape version.")),
         };
         self.write_tag_header(tag_code, buf.len() as u32)?;
         self.output.write_all(&buf)?;
@@ -1649,7 +1634,8 @@ impl<W: Write> Writer<W> {
             BlendMode::Erase => 12,
             BlendMode::Overlay => 13,
             BlendMode::HardLight => 14,
-        })
+        })?;
+        Ok(())
     }
 
     fn write_shape_styles(&mut self, styles: &ShapeStyles, shape_version: u8) -> Result<()> {
@@ -1752,8 +1738,7 @@ impl<W: Write> Writer<W> {
                 }
                 if let Some(ref new_styles) = style_change.new_styles {
                     if shape_version < 2 {
-                        return Err(Error::new(
-                            ErrorKind::InvalidData,
+                        return Err(Error::invalid_data(
                             "Only DefineShape2 and higher may change styles.",
                         ));
                     }
@@ -1790,8 +1775,7 @@ impl<W: Write> Writer<W> {
                 focal_point,
             } => {
                 if self.version < 8 {
-                    return Err(Error::new(
-                        ErrorKind::InvalidData,
+                    return Err(Error::invalid_data(
                         "Focal gradients are only support in SWF version 8 \
                          and higher.",
                     ));
@@ -1911,8 +1895,7 @@ impl<W: Write> Writer<W> {
             if let PlaceObjectAction::Place(character_id) = place_object.action {
                 writer.write_u16(character_id)?;
             } else {
-                return Err(Error::new(
-                    ErrorKind::InvalidData,
+                return Err(Error::invalid_data(
                     "PlaceObject version 1 can only use a Place action.",
                 ));
             }
@@ -2074,12 +2057,7 @@ impl<W: Write> Writer<W> {
             2 => TagCode::PlaceObject2,
             3 => TagCode::PlaceObject3,
             4 => TagCode::PlaceObject4,
-            _ => {
-                return Err(Error::new(
-                    ErrorKind::InvalidData,
-                    "Invalid PlaceObject version.",
-                ))
-            }
+            _ => return Err(Error::invalid_data("Invalid PlaceObject version.")),
         };
         self.write_tag_header(tag_code, buf.len() as u32)?;
         self.output.write_all(&buf)?;
@@ -2310,7 +2288,7 @@ impl<W: Write> Writer<W> {
                 11025 => 1,
                 22050 => 2,
                 44100 => 3,
-                _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid sample rate.")),
+                _ => return Err(Error::invalid_data("Invalid sample rate.")),
             },
         )?;
         self.write_bit(sound_format.is_16_bit)?;
@@ -2447,14 +2425,19 @@ impl<W: Write> Writer<W> {
                 writer.write_u16(layout.descent)?;
                 writer.write_i16(layout.leading)?;
                 for glyph in &font.glyphs {
-                    writer.write_i16(glyph.advance.ok_or_else(|| {
-                        Error::new(ErrorKind::InvalidData, "glyph.advance cannot be None")
-                    })?)?;
+                    writer.write_i16(
+                        glyph
+                            .advance
+                            .ok_or_else(|| Error::invalid_data("glyph.advance cannot be None"))?,
+                    )?;
                 }
                 for glyph in &font.glyphs {
-                    writer.write_rectangle(glyph.bounds.as_ref().ok_or_else(|| {
-                        Error::new(ErrorKind::InvalidData, "glyph.bounds cannot be None")
-                    })?)?;
+                    writer.write_rectangle(
+                        glyph
+                            .bounds
+                            .as_ref()
+                            .ok_or_else(|| Error::invalid_data("glyph.bounds cannot be None"))?,
+                    )?;
                 }
                 writer.write_u16(layout.kerning.len() as u16)?;
                 for kerning_record in &layout.kerning {
@@ -2688,7 +2671,8 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_debug_id(&mut self, debug_id: &DebugId) -> Result<()> {
-        self.get_inner().write_all(debug_id)
+        self.get_inner().write_all(debug_id)?;
+        Ok(())
     }
 
     fn write_tag_header(&mut self, tag_code: TagCode, length: u32) -> Result<()> {
@@ -2700,12 +2684,13 @@ impl<W: Write> Writer<W> {
         let mut tag_code_and_length: u16 = tag_code << 6;
         if length < 0b111111 {
             tag_code_and_length |= length as u16;
-            self.write_u16(tag_code_and_length)
+            self.write_u16(tag_code_and_length)?;
         } else {
             tag_code_and_length |= 0b111111;
             self.write_u16(tag_code_and_length)?;
-            self.write_u32(length)
+            self.write_u32(length)?;
         }
+        Ok(())
     }
 
     fn write_tag_list(&mut self, tags: &[Tag]) -> Result<()> {
@@ -2762,7 +2747,6 @@ mod tests {
     use super::Writer;
     use super::*;
     use crate::test_data;
-    use std::io::Result;
 
     fn new_swf() -> Swf {
         Swf {
@@ -2788,7 +2772,8 @@ mod tests {
             let mut buf = Vec::new();
             let mut swf = new_swf();
             swf.header.compression = compression;
-            write_swf(&swf, &mut buf)
+            write_swf(&swf, &mut buf)?;
+            Ok(())
         }
         assert!(
             write_dummy_swf(Compression::None).is_ok(),
