@@ -20,6 +20,7 @@ extern crate xz2;
 
 pub mod avm1;
 pub mod avm2;
+pub mod error;
 pub mod read;
 mod tag_code;
 mod types;
