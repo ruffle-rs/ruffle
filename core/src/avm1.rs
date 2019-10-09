@@ -913,6 +913,8 @@ impl<'gc> Avm1<'gc> {
             (Value::Null, Value::Null) => true,
             (Value::Null, Value::Undefined) => true,
             (Value::Undefined, Value::Null) => true,
+            // The result of NaN equality appears to change depending on flash player version (not swf version).
+            // This comparison might need to be conditional on targeted version.
             (Value::Number(a), Value::Number(b)) => a == b || (a.is_nan() && b.is_nan()),
             (Value::String(a), Value::String(b)) => a == b,
             (Value::Object(_a), Value::Object(_b)) => false, // TODO(Herschel)
