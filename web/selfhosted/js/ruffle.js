@@ -1,17 +1,11 @@
-import { interdict } from "../../js-src/interdiction";
+import { construct_public_api } from "../../js-src/public-api";
 import { get_config_options } from "../../js-src/config";
 
 let html = document.getElementsByTagName("html")[0];
 let page_options = get_config_options(html);
 
 window.RufflePlayer = window.RufflePlayer || {};
-window.RufflePlayer.local = {
-    "version": "0.1.0",
-    "init": function (interdictions) {
-        window.RufflePlayer.invoked = true;
-        interdict(interdictions);
-    }
-};
+window.RufflePlayer.local = construct_public_api();
 
 //TODO: proper version negotiation
 if (window.RufflePlayer.init === undefined) {

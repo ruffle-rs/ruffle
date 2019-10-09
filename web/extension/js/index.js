@@ -1,4 +1,4 @@
-import { interdict } from "../../js-src/interdiction";
+import { construct_public_api } from "../../js-src/public-api";
 import { get_config_options } from "../../js-src/config";
 
 let html = document.getElementsByTagName("html")[0];
@@ -6,13 +6,7 @@ let page_options = get_config_options(html);
 
 if (!page_options.optout) {
     window.RufflePlayer = window.RufflePlayer || {};
-    window.RufflePlayer.extension = {
-        "version": "0.1.0",
-        "init": function (interdictions) {
-            window.RufflePlayer.invoked = true;
-            interdict(interdictions);
-        }
-    };
+    window.RufflePlayer.extension = construct_public_api();
 
     //TODO: proper version negotiation
     if (window.RufflePlayer.init === undefined) {
@@ -26,7 +20,7 @@ if (!page_options.optout) {
         if (!window.RufflePlayer.invoked) {
             window.RufflePlayer.init(["plugin-detect", "static-content"]);
         }
-    })
+    });
 } else {
     console.log("WebExtension Ruffle execution prohibited by page");
 }
