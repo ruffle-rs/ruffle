@@ -16,6 +16,7 @@ minimp3 = { version = "0.3.3", optional = true }
 puremp3 = { version = "0.1", optional = true }
 rand = "0.6.5"
 swf = { path = "../swf" }
+enumset = "0.4.2"
 
 [dependencies.jpeg-decoder]
 version = "0.1.16"

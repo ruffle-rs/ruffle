@@ -1,6 +1,7 @@
 use crate::avm1::fscommand;
 use crate::avm1::{ActionContext, Avm1, Object, Value};
 use crate::backend::navigator::NavigationMethod;
+use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
 use rand::Rng;
 
@@ -27,7 +28,7 @@ pub fn getURL<'a, 'gc>(
             Some(Value::String(s)) if s == "POST" => Some(NavigationMethod::POST),
             _ => None,
         };
-        let vars_method = method.map(|m| (m, avm.locals_into_form_values()));
+        let vars_method = method.map(|m| (m, avm.locals_into_form_values(context)));
 
         context.navigator.navigate_to_url(url, window, vars_method);
     }
@@ -52,11 +53,19 @@ pub fn random<'gc>(
 pub fn create_globals<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<'gc> {
     let mut globals = Object::object(gc_context);
 
-    globals.force_set("Math", Value::Object(math::create(gc_context)));
-    globals.force_set_function("getURL", getURL, gc_context);
-    globals.force_set_function("random", random, gc_context);
-    globals.force_set("NaN", Value::Number(std::f64::NAN));
-    globals.force_set("Infinity", Value::Number(std::f64::INFINITY));
+    globals.force_set(
+        "Math",
+        Value::Object(math::create(gc_context)),
+        EnumSet::empty(),
+    );
+    globals.force_set_function("getURL", getURL, gc_context, EnumSet::empty());
+    globals.force_set_function("random", random, gc_context, EnumSet::empty());
+    globals.force_set("NaN", Value::Number(std::f64::NAN), EnumSet::empty());
+    globals.force_set(
+        "Infinity",
+        Value::Number(std::f64::INFINITY),
+        EnumSet::empty(),
+    );
 
     globals
 }

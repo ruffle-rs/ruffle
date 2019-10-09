@@ -115,17 +115,22 @@ impl<'gc> Avm1<'gc> {
     ///
     /// This is necessary to support form submission from Flash via a couple of
     /// legacy methods, such as the `ActionGetURL2` opcode or `getURL` function.
-    pub fn locals_into_form_values(&self) -> HashMap<String, String> {
+    pub fn locals_into_form_values(
+        &mut self,
+        context: &mut ActionContext<'_, 'gc, '_>,
+    ) -> HashMap<String, String> {
         let mut form_values = HashMap::new();
-
-        for (k, v) in self
-            .current_stack_frame()
+        let locals = self
+            .current_stack_frame_mut()
             .unwrap()
-            .scope()
-            .locals()
-            .iter_values()
-        {
-            form_values.insert(k.clone(), v.clone().into_string());
+            .scope_mut(context.gc_context)
+            .locals_cell();
+
+        for k in locals.read().get_keys() {
+            let v = locals
+                .write(context.gc_context)
+                .get(&k, self, context, locals);
+            form_values.insert(k, v.clone().into_string());
         }
 
         form_values
@@ -825,11 +830,8 @@ impl<'gc> Avm1<'gc> {
         let name = name_val.as_string()?;
         let object = self.pop()?.as_object()?;
 
-        //Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
-        //a boolean based on if the delete actually deleted something.
-        let did_exist = Value::Bool(object.read().has_property(name));
-        object.write(context.gc_context).delete(name);
-        self.push(did_exist);
+        let success = object.write(context.gc_context).delete(name);
+        self.push(Value::Bool(success));
 
         Ok(())
     }
@@ -883,8 +885,8 @@ impl<'gc> Avm1<'gc> {
             }
         };
 
-        for (k, _) in ob.read().iter_values() {
-            self.push(Value::String(k.to_owned()));
+        for k in ob.read().get_keys() {
+            self.push(Value::String(k));
         }
 
         Ok(())
@@ -1069,7 +1071,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_get_url_2(
         &mut self,
-        context: &mut ActionContext,
+        context: &mut ActionContext<'_, 'gc, '_>,
         swf_method: swf::avm1::types::SendVarsMethod,
         is_target_sprite: bool,
         is_load_vars: bool,
@@ -1094,7 +1096,7 @@ impl<'gc> Avm1<'gc> {
         }
 
         let vars = match NavigationMethod::from_send_vars_method(swf_method) {
-            Some(method) => Some((method, self.locals_into_form_values())),
+            Some(method) => Some((method, self.locals_into_form_values(context))),
             None => None,
         };
 
