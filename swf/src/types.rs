@@ -13,6 +13,14 @@ pub struct Swf {
     pub tags: Vec<Tag>,
 }
 
+/// Returned by `read::read_swf_header`. Includes the decompress
+/// stream as well as the uncompressed data length.
+pub struct SwfStream<'a> {
+    pub header: Header,
+    pub uncompressed_length: usize,
+    pub reader: crate::read::Reader<Box<dyn std::io::Read + 'a>>,
+}
+
 /// The header of an SWF file.
 ///
 /// Notably contains the compression format used by the rest of the SWF data.
