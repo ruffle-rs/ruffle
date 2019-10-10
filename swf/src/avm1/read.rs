@@ -404,6 +404,19 @@ pub mod tests {
         }
     }
 
+    /// Ensure that we return an error on invalid data.
+    #[test]
+    fn read_parse_error() {
+        let action_bytes = [0xff, 0xff, 0xff, 0x00, 0x00];
+        let mut reader = Reader::new(&action_bytes[..], 5);
+        match reader.read_action() {
+            Err(crate::error::Error::Avm1ParseError { .. }) => (),
+            result => {
+                panic!("Expected Avm1ParseError, got {:?}", result);
+            }
+        }
+    }
+
     #[test]
     fn read_define_function() {
         // Ensure we read a function properly along with the function data.
