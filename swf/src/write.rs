@@ -2391,32 +2391,35 @@ impl<W: Write> Writer<W> {
             writer.output.write_all(font.name.as_bytes())?;
             writer.write_u16(num_glyphs as u16)?;
 
-            // OffsetTable
-            for offset in offsets {
-                if has_wide_offsets {
-                    writer.write_u32(offset as u32)?;
-                } else {
-                    writer.write_u16(offset as u16)?;
+            // If there are no glyphs, then the following tables are omitted.
+            if num_glyphs > 0 {
+                // OffsetTable
+                for offset in offsets {
+                    if has_wide_offsets {
+                        writer.write_u32(offset as u32)?;
+                    } else {
+                        writer.write_u16(offset as u16)?;
+                    }
                 }
-            }
 
-            // CodeTableOffset
-            let code_table_offset =
-                (num_glyphs + 1) * if has_wide_offsets { 4 } else { 2 } + shape_buf.len();
-            if has_wide_offsets {
-                writer.write_u32(code_table_offset as u32)?;
-            } else {
-                writer.write_u16(code_table_offset as u16)?;
-            }
-
-            writer.output.write_all(&shape_buf)?;
-
-            // CodeTable
-            for glyph in &font.glyphs {
-                if has_wide_codes {
-                    writer.write_u16(glyph.code)?;
+                // CodeTableOffset
+                let code_table_offset =
+                    (num_glyphs + 1) * if has_wide_offsets { 4 } else { 2 } + shape_buf.len();
+                if has_wide_offsets {
+                    writer.write_u32(code_table_offset as u32)?;
                 } else {
-                    writer.write_u8(glyph.code as u8)?;
+                    writer.write_u16(code_table_offset as u16)?;
+                }
+
+                writer.output.write_all(&shape_buf)?;
+
+                // CodeTable
+                for glyph in &font.glyphs {
+                    if has_wide_codes {
+                        writer.write_u16(glyph.code)?;
+                    } else {
+                        writer.write_u8(glyph.code as u8)?;
+                    }
                 }
             }
 

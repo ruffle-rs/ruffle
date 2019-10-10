@@ -1143,6 +1143,9 @@ impl<R: Read> Reader<R> {
             .by_ref()
             .take(name_len.into())
             .read_to_string(&mut name)?;
+        // TODO: SWF19 states that the font name should not have a terminating null byte,
+        // but it often does (depends on Flash IDE version?)
+        // We should probably strip anything past the first null.
 
         let num_glyphs = self.read_u16()? as usize;
         let mut glyphs = Vec::with_capacity(num_glyphs);
@@ -1156,42 +1159,56 @@ impl<R: Read> Reader<R> {
             },
         );
 
-        // OffsetTable
-        // We are throwing these away.
-        for _ in &mut glyphs {
+        // SWF19 p. 164 doesn't make it super clear: If there are no glyphs,
+        // then the following tables are omitted. But the table offset values
+        // may or may not be written... (depending on Flash IDE version that was used?)
+        if num_glyphs == 0 {
+            // Try to read the CodeTableOffset. It may or may not be present,
+            // so just dump any error.
+            if has_wide_offsets {
+                let _ = self.read_u32();
+            } else {
+                let _ = self.read_u16();
+            }
+        } else {
+            // OffsetTable
+            // We are throwing these away.
+            for _ in &mut glyphs {
+                if has_wide_offsets {
+                    self.read_u32()?;
+                } else {
+                    u32::from(self.read_u16()?);
+                };
+            }
+
+            // CodeTableOffset
             if has_wide_offsets {
                 self.read_u32()?;
             } else {
                 u32::from(self.read_u16()?);
-            };
-        }
-
-        // CodeTableOffset
-        if has_wide_offsets {
-            self.read_u32()?;
-        } else {
-            u32::from(self.read_u16()?);
-        }
-
-        // ShapeTable
-        for glyph in &mut glyphs {
-            self.num_fill_bits = self.read_ubits(4)? as u8;
-            self.num_line_bits = self.read_ubits(4)? as u8;
-            while let Some(record) = self.read_shape_record(1)? {
-                glyph.shape_records.push(record);
             }
-            self.byte_align();
+
+            // ShapeTable
+            for glyph in &mut glyphs {
+                self.num_fill_bits = self.read_ubits(4)? as u8;
+                self.num_line_bits = self.read_ubits(4)? as u8;
+                while let Some(record) = self.read_shape_record(1)? {
+                    glyph.shape_records.push(record);
+                }
+                self.byte_align();
+            }
+
+            // CodeTable
+            for glyph in &mut glyphs {
+                glyph.code = if has_wide_codes {
+                    self.read_u16()?
+                } else {
+                    u16::from(self.read_u8()?)
+                };
+            }
         }
 
-        // CodeTable
-        for glyph in &mut glyphs {
-            glyph.code = if has_wide_codes {
-                self.read_u16()?
-            } else {
-                u16::from(self.read_u8()?)
-            };
-        }
-
+        // TODO: Is it possible to have a layout when there are no glyphs?
         let layout = if has_layout {
             let ascent = self.read_u16()?;
             let descent = self.read_u16()?;
