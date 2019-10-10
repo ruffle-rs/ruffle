@@ -63,9 +63,16 @@ impl<'gc> Property<'gc> {
         new_value: Value<'gc>,
     ) {
         match self {
-            Property::Virtual { set, .. } => {
+            Property::Virtual {
+                set, attributes, ..
+            } => {
                 if let Some(function) = set {
                     function(avm, context, this, &[new_value]);
+                } else if !attributes.contains(ReadOnly) {
+                    *self = Property::Stored {
+                        value: new_value,
+                        attributes: *attributes,
+                    };
                 }
             }
             Property::Stored {
