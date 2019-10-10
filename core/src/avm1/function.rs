@@ -241,9 +241,10 @@ impl<'gc> Executable<'gc> {
                     }
 
                     if af.preload_parent {
-                        //TODO: _parent not implemented
-                        log::warn!(
-                            "Cannot preload parent into register because it's not implemented"
+                        frame.set_local_register(
+                            preload_r,
+                            child_scope.read().resolve("_parent"),
+                            ac.gc_context,
                         );
                         preload_r += 1;
                     }
