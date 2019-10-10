@@ -3136,4 +3136,17 @@ pub mod tests {
             assert_eq!(reader.read_tag_list().unwrap(), [Tag::ShowFrame]);
         }
     }
+
+    /// Ensure that we return an error on invalid data.
+    #[test]
+    fn read_invalid_tag() {
+        let tag_bytes = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
+        let mut reader = Reader::new(&tag_bytes[..], 5);
+        match reader.read_tag() {
+            Err(crate::error::Error::SwfParseError { .. }) => (),
+            result => {
+                panic!("Expected SwfParseError, got {:?}", result);
+            }
+        }
+    }
 }
