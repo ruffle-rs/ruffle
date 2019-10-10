@@ -8,6 +8,7 @@ use crate::error::{Error, Result};
 use crate::types::*;
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::collections::HashSet;
+use std::convert::TryInto;
 use std::io::{self, Read};
 
 /// Convenience method to parse an SWF.
@@ -23,12 +24,25 @@ use std::io::{self, Read};
 /// println!("Number of frames: {}", swf.header.num_frames);
 /// ```
 pub fn read_swf<R: Read>(input: R) -> Result<Swf> {
-    let (header, mut reader) = read_swf_header(input)?;
+    let swf_stream = read_swf_header(input)?;
+    let header = swf_stream.header;
+    let mut reader = swf_stream.reader;
 
     // Decompress all of SWF into memory at once.
-    let mut data = Vec::new();
-    let version = reader.version;
-    reader.get_mut().read_to_end(&mut data)?;
+    let mut data = Vec::with_capacity(swf_stream.uncompressed_length);
+    let version = header.version;
+
+    // Some SWF streams may not be compressed correctly,
+    // (e.g. incorrect data length in the stream), so decompressing
+    // may throw an error even though the data otherwise comes
+    // through the stream.
+    // We'll still try to parse what we get if the full decompression fails.
+    if let Err(e) = reader.get_mut().read_to_end(&mut data) {
+        log::warn!("Error decompressing SWF stream, may be corrupt: {}", e);
+    }
+    if data.len() != swf_stream.uncompressed_length {
+        log::warn!("SWF length doesn't match header, may be corrupt");
+    }
     let mut reader = Reader::new(&data[..], version);
 
     Ok(Swf {
@@ -45,22 +59,36 @@ pub fn read_swf<R: Read>(input: R) -> Result<Swf> {
 /// # Example
 /// ```
 /// let data = std::fs::read("tests/swfs/DefineSprite.swf").unwrap();
-/// let (header, _reader) = swf::read_swf_header(&data[..]).unwrap();
-/// println!("FPS: {}", header.frame_rate);
+/// let swf_stream = swf::read_swf_header(&data[..]).unwrap();
+/// println!("FPS: {}", swf_stream.header.frame_rate);
 /// ```
-pub fn read_swf_header<'a, R: Read + 'a>(
-    mut input: R,
-) -> Result<(Header, Reader<Box<dyn Read + 'a>>)> {
+pub fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<SwfStream<'a>> {
     // Read SWF header.
     let compression = Reader::read_compression_type(&mut input)?;
     let version = input.read_u8()?;
-    let _uncompressed_length = input.read_u32::<LittleEndian>()?;
+    let uncompressed_length = input.read_u32::<LittleEndian>()?;
 
     // Now the SWF switches to a compressed stream.
     let decompressed_input: Box<dyn Read> = match compression {
         Compression::None => Box::new(input),
-        Compression::Zlib => make_zlib_reader(input)?,
-        Compression::Lzma => make_lzma_reader(input)?,
+        Compression::Zlib => {
+            if version < 6 {
+                log::warn!(
+                    "zlib compressed SWF is version {} but minimum version is 6",
+                    version
+                );
+            }
+            make_zlib_reader(input)?
+        }
+        Compression::Lzma => {
+            if version < 13 {
+                log::warn!(
+                    "LZMA compressed SWF is version {} but minimum version is 13",
+                    version
+                );
+            }
+            make_lzma_reader(input)?
+        }
     };
 
     let mut reader = Reader::new(decompressed_input, version);
@@ -74,7 +102,11 @@ pub fn read_swf_header<'a, R: Read + 'a>(
         frame_rate,
         num_frames,
     };
-    Ok((header, reader))
+    Ok(SwfStream {
+        header,
+        uncompressed_length: uncompressed_length.try_into().unwrap(),
+        reader,
+    })
 }
 
 #[cfg(feature = "flate2")]
@@ -277,8 +309,8 @@ impl<R: Read> Reader<R> {
     /// # Example
     /// ```
     /// let data = std::fs::read("tests/swfs/DefineSprite.swf").unwrap();
-    /// let (header, mut reader) = swf::read_swf_header(&data[..]).unwrap();
-    /// while let Ok(tag) = reader.read_tag() {
+    /// let mut swf_stream = swf::read_swf_header(&data[..]).unwrap();
+    /// while let Ok(tag) = swf_stream.reader.read_tag() {
     ///     println!("Tag: {:?}", tag);
     /// }
     /// ```
@@ -2721,7 +2753,8 @@ pub mod tests {
         file.read_to_end(&mut data).unwrap();
 
         // Halfway parse the SWF file until we find the tag we're searching for.
-        let (swf, mut reader) = super::read_swf_header(&data[..]).unwrap();
+        let swf_stream = super::read_swf_header(&data[..]).unwrap();
+        let mut reader = swf_stream.reader;
 
         let mut data = Vec::new();
         reader.input.read_to_end(&mut data).unwrap();
@@ -2729,7 +2762,7 @@ pub mod tests {
         loop {
             let pos = cursor.position();
             let (swf_tag_code, length) = {
-                let mut tag_reader = Reader::new(&mut cursor, swf.version);
+                let mut tag_reader = Reader::new(&mut cursor, swf_stream.header.version);
                 tag_reader.read_tag_code_and_length().unwrap()
             };
             let tag_header_length = cursor.position() - pos;

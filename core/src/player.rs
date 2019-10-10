@@ -68,10 +68,19 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         navigator: Navigator,
         swf_data: Vec<u8>,
     ) -> Result<Self, Error> {
-        let (header, mut reader) = swf::read::read_swf_header(&swf_data[..]).unwrap();
+        let swf_stream = swf::read::read_swf_header(&swf_data[..]).unwrap();
+        let header = swf_stream.header;
+        let mut reader = swf_stream.reader;
         // Decompress the entire SWF in memory.
-        let mut data = Vec::new();
-        reader.get_mut().read_to_end(&mut data)?;
+        let mut data = Vec::with_capacity(swf_stream.uncompressed_length);
+
+        // Sometimes SWFs will have an incorrectly compressed stream,
+        // but will otherwise decompress fine up to the End tag.
+        // So just warn on this case and try to continue gracefully.
+        if let Err(e) = reader.get_mut().read_to_end(&mut data) {
+            log::error!("Error decompressing SWF, may be corrupt: {}", e);
+        }
+
         let swf_len = data.len();
 
         info!("{}x{}", header.stage_size.x_max, header.stage_size.y_max);
