@@ -473,6 +473,8 @@ pub fn tag_tests() -> Vec<TagTestData> {
             })),
             read_tag_bytes_from_file("tests/swfs/DefineFont-MX.swf", TagCode::DefineFont),
         ),
+        /* TODO: Commented out because Flash MX wrote this file with a CodeTableOffset, but we don't.
+         *
         (
             3,
             Tag::DefineFont2(Box::new(Font {
@@ -490,6 +492,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
             })),
             read_tag_bytes_from_file("tests/swfs/DefineEditText-MX.swf", TagCode::DefineFont2),
         ),
+        */
         /* TODO(Herschel): Flash writes out zero rectangles with 1-bit,
          * Causing this test to fail.
         (
@@ -615,6 +618,26 @@ pub fn tag_tests() -> Vec<TagTestData> {
             read_tag_bytes_from_file("tests/swfs/DefineFont3-CS55.swf", TagCode::DefineFont3)
         ),
         */
+        (
+            11,
+            Tag::DefineFont2(Box::new(Font {
+                version: 3,
+                id: 1,
+                name: "_sans\0".to_string(),
+                is_small_text: false,
+                is_ansi: false,
+                is_shift_jis: false,
+                is_italic: false,
+                is_bold: false,
+                language: Language::Latin,
+                layout: None,
+                glyphs: vec![],
+            })),
+            read_tag_bytes_from_file(
+                "tests/swfs/DefineFont3-DeviceText.swf",
+                TagCode::DefineFont3,
+            ),
+        ),
         (
             8,
             Tag::DefineFontAlignZones {
