@@ -95,4 +95,12 @@ impl TagCode {
     pub fn from_u16(n: u16) -> Option<Self> {
         num_traits::FromPrimitive::from_u16(n)
     }
+
+    pub fn name(n: u16) -> String {
+        if let Some(n) = TagCode::from_u16(n) {
+            format!("{:?}", n)
+        } else {
+            format!("Unknown({})", n)
+        }
+    }
 }

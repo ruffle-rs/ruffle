@@ -657,10 +657,20 @@ impl<R: Read> Reader<R> {
             }
         };
 
-        if cfg!(debug_assertions) && tag_reader.read_u8().is_ok() {
+        if tag_reader.read_u8().is_ok() {
             // There should be no data remaining in the tag if we read it correctly.
-            // If there is data remaining, we probably screwed up, so panic in debug builds.
-            panic!("Error reading tag {:?}", tag_code);
+            // If there is data remaining, the most likely scenario is we screwed up parsing.
+            // But sometimes tools will export SWF tags that are larger than they should be.
+            // TODO: It might be worthwhile to have a "strict mode" to determine
+            // whether this should error or not.
+            log::warn!(
+                "Data remaining in buffer when parsing {} ({})",
+                TagCode::name(tag_code),
+                tag_code
+            );
+
+            // Discard the rest of the data.
+            let _ = std::io::copy(&mut tag_reader.get_mut(), &mut io::sink());
         }
 
         Ok(tag)
