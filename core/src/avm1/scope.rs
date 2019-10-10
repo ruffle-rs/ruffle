@@ -236,12 +236,18 @@ impl<'gc> Scope<'gc> {
     }
 
     /// Resolve a particular value in the scope chain.
-    pub fn resolve(&self, name: &str) -> Value<'gc> {
+    pub fn resolve(
+        &self,
+        name: &str,
+        avm: &mut Avm1<'gc>,
+        context: &mut ActionContext<'_, 'gc, '_>,
+        this: GcCell<'gc, Object<'gc>>,
+    ) -> Value<'gc> {
         if self.locals().has_property(name) {
-            return self.locals().force_get(name);
+            return self.locals().get(name, avm, context, this);
         }
         if let Some(scope) = self.parent() {
-            return scope.resolve(name);
+            return scope.resolve(name, avm, context, this);
         }
 
         Value::Undefined

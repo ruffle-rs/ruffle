@@ -72,7 +72,7 @@ pub struct Avm1<'gc> {
     globals: GcCell<'gc, Object<'gc>>,
 
     /// All activation records for the current execution context.
-    stack_frames: Vec<Activation<'gc>>,
+    stack_frames: Vec<GcCell<'gc, Activation<'gc>>>,
 
     /// The operand stack (shared across functions).
     stack: Vec<Value<'gc>>,
@@ -124,9 +124,10 @@ impl<'gc> Avm1<'gc> {
     ) -> HashMap<String, String> {
         let mut form_values = HashMap::new();
         let locals = self
-            .current_stack_frame_mut()
+            .current_stack_frame()
             .unwrap()
-            .scope_mut(context.gc_context)
+            .read()
+            .scope()
             .locals_cell();
 
         for k in locals.read().get_keys() {
@@ -161,37 +162,32 @@ impl<'gc> Avm1<'gc> {
             action_context.gc_context,
             Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
         );
-        self.stack_frames.push(Activation::from_action(
-            swf_version,
-            code,
-            child_scope,
-            clip_obj,
-            None,
+        self.stack_frames.push(GcCell::allocate(
+            action_context.gc_context,
+            Activation::from_action(swf_version, code, child_scope, clip_obj, None),
         ));
     }
 
     /// Add a stack frame for any arbitrary code.
-    pub fn insert_stack_frame(&mut self, frame: Activation<'gc>) {
-        self.stack_frames.push(frame);
+    pub fn insert_stack_frame(
+        &mut self,
+        frame: Activation<'gc>,
+        context: &mut ActionContext<'_, 'gc, '_>,
+    ) {
+        self.stack_frames
+            .push(GcCell::allocate(context.gc_context, frame));
     }
 
     /// Retrieve the current AVM execution frame.
     ///
     /// Yields None if there is no stack frame.
-    pub fn current_stack_frame(&self) -> Option<&Activation<'gc>> {
-        self.stack_frames.last()
-    }
-
-    /// Retrieve the current AVM execution frame for mutation.
-    ///
-    /// Yields None if there is no stack frame.
-    pub fn current_stack_frame_mut(&mut self) -> Option<&mut Activation<'gc>> {
-        self.stack_frames.last_mut()
+    pub fn current_stack_frame(&self) -> Option<GcCell<'gc, Activation<'gc>>> {
+        self.stack_frames.last().map(|ac| ac.clone())
     }
 
     /// Get the currently executing SWF version, if there is one.
     fn current_swf_version(&self) -> Option<u8> {
-        self.current_stack_frame().map(|sf| sf.swf_version())
+        self.current_stack_frame().map(|sf| sf.read().swf_version())
     }
 
     /// Perform some action with the current stack frame's reader.
@@ -209,9 +205,13 @@ impl<'gc> Avm1<'gc> {
     /// It is incorrect to call this function multiple times in the same stack.
     /// Doing so will result in any changes in duplicate readers being ignored.
     /// Always pass the borrowed reader into functions that need it.
-    fn with_current_reader_mut<F, R>(&mut self, func: F) -> Option<R>
+    fn with_current_reader_mut<F, R>(
+        &mut self,
+        context: &mut ActionContext<'_, 'gc, '_>,
+        func: F,
+    ) -> Option<R>
     where
-        F: FnOnce(&mut Self, &mut Reader<'_>) -> R,
+        F: FnOnce(&mut Self, &mut Reader<'_>, &mut ActionContext<'_, 'gc, '_>) -> R,
     {
         if self.is_reading {
             log::error!(
@@ -220,21 +220,19 @@ impl<'gc> Avm1<'gc> {
         }
 
         self.is_reading = true;
-        let current_stack_id = self.stack_frames.len() - 1;
-        let (swf_version, data, pc) = self
-            .stack_frames
-            .last()
-            .map(|frame| (frame.swf_version(), frame.data(), frame.pc()))?;
+        let (frame_cell, swf_version, data, pc) = self.stack_frames.last().map(|frame| {
+            (
+                frame.clone(),
+                frame.read().swf_version(),
+                frame.read().data(),
+                frame.read().pc(),
+            )
+        })?;
         let mut read = Reader::new(data.as_ref(), swf_version);
         read.seek(pc.try_into().unwrap());
 
-        let r = func(self, &mut read);
-        //this took an hour of fighting borrowck to figure out was necessary
-        if let Some(new_stack) = self.stack_frames.get_mut(current_stack_id) {
-            if new_stack.is_identical_fn(&data) {
-                new_stack.set_pc(read.pos());
-            }
-        }
+        let r = func(self, &mut read, context);
+        frame_cell.write(context.gc_context).set_pc(read.pos());
 
         self.is_reading = false;
 
@@ -252,8 +250,10 @@ impl<'gc> Avm1<'gc> {
         context: &mut ActionContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         while !self.stack_frames.is_empty() {
-            self.with_current_reader_mut(|this, r| this.do_next_action(context, r))
-                .unwrap()?;
+            self.with_current_reader_mut(context, |this, r, context| {
+                this.do_next_action(context, r)
+            })
+            .unwrap()?;
         }
 
         Ok(())
@@ -265,11 +265,16 @@ impl<'gc> Avm1<'gc> {
         context: &mut ActionContext<'_, 'gc, '_>,
         reader: &mut Reader<'_>,
     ) -> Result<(), Error> {
-        let data = self.current_stack_frame().unwrap().data();
+        let data = self.current_stack_frame().unwrap().read().data();
 
         if reader.pos() >= (data.end - data.start) {
             //Executing beyond the end of a function constitutes an implicit return.
-            if self.current_stack_frame().unwrap().can_implicit_return() {
+            if self
+                .current_stack_frame()
+                .unwrap()
+                .read()
+                .can_implicit_return()
+            {
                 self.push(Value::Undefined);
             }
 
@@ -396,7 +401,12 @@ impl<'gc> Avm1<'gc> {
             }
         } else {
             //The explicit end opcode was encountered so return here
-            if self.current_stack_frame().unwrap().can_implicit_return() {
+            if self
+                .current_stack_frame()
+                .unwrap()
+                .read()
+                .can_implicit_return()
+            {
                 self.push(Value::Undefined);
             }
 
@@ -476,10 +486,13 @@ impl<'gc> Avm1<'gc> {
     pub fn current_register(&self, id: u8) -> Value<'gc> {
         if self
             .current_stack_frame()
-            .map(|sf| sf.has_local_registers())
+            .map(|sf| sf.read().has_local_registers())
             .unwrap_or(false)
         {
-            self.current_stack_frame().unwrap().local_register(id)
+            self.current_stack_frame()
+                .unwrap()
+                .read()
+                .local_register(id)
         } else {
             self.registers
                 .get(id as usize)
@@ -499,14 +512,13 @@ impl<'gc> Avm1<'gc> {
     ) {
         if self
             .current_stack_frame()
-            .map(|sf| sf.has_local_registers())
+            .map(|sf| sf.read().has_local_registers())
             .unwrap_or(false)
         {
-            self.current_stack_frame_mut().unwrap().set_local_register(
-                id,
-                value,
-                context.gc_context,
-            );
+            self.current_stack_frame()
+                .unwrap()
+                .write(context.gc_context)
+                .set_local_register(id, value, context.gc_context);
         } else if let Some(v) = self.registers.get_mut(id as usize) {
             *v = value;
         }
@@ -648,10 +660,11 @@ impl<'gc> Avm1<'gc> {
             args.push(self.pop()?);
         }
 
-        let target_fn = self
-            .current_stack_frame_mut()
-            .unwrap()
-            .resolve(fn_name.as_string()?);
+        let target_fn = self.stack_frames.last().unwrap().clone().read().resolve(
+            fn_name.as_string()?,
+            self,
+            context,
+        );
         let this = context.active_clip.read().object().as_object()?.to_owned();
         let return_value = target_fn.call(self, context, this, &args)?;
         if let Some(instant_return) = return_value {
@@ -741,15 +754,16 @@ impl<'gc> Avm1<'gc> {
         params: &[&str],
         actions: &[u8],
     ) -> Result<(), Error> {
-        let swf_version = self.current_stack_frame().unwrap().swf_version();
+        let swf_version = self.current_stack_frame().unwrap().read().swf_version();
         let func_data = self
             .current_stack_frame()
             .unwrap()
+            .read()
             .data()
             .to_subslice(actions)
             .unwrap();
         let scope = Scope::new_closure_scope(
-            self.current_stack_frame().unwrap().scope_cell(),
+            self.current_stack_frame().unwrap().read().scope_cell(),
             context.gc_context,
         );
         let func = Avm1Function::from_df1(swf_version, func_data, name, params, scope);
@@ -760,8 +774,9 @@ impl<'gc> Avm1<'gc> {
         if name == "" {
             self.push(func_obj);
         } else {
-            self.current_stack_frame_mut()
+            self.current_stack_frame()
                 .unwrap()
+                .read()
                 .define(name, func_obj, context.gc_context);
         }
 
@@ -773,15 +788,16 @@ impl<'gc> Avm1<'gc> {
         context: &mut ActionContext<'_, 'gc, '_>,
         action_func: &Function,
     ) -> Result<(), Error> {
-        let swf_version = self.current_stack_frame().unwrap().swf_version();
+        let swf_version = self.current_stack_frame().unwrap().read().swf_version();
         let func_data = self
             .current_stack_frame()
             .unwrap()
+            .read()
             .data()
             .to_subslice(action_func.actions)
             .unwrap();
         let scope = Scope::new_closure_scope(
-            self.current_stack_frame().unwrap().scope_cell(),
+            self.current_stack_frame().unwrap().read().scope_cell(),
             context.gc_context,
         );
         let func = Avm1Function::from_df2(swf_version, func_data, action_func, scope);
@@ -792,7 +808,7 @@ impl<'gc> Avm1<'gc> {
         if action_func.name == "" {
             self.push(func_obj);
         } else {
-            self.current_stack_frame_mut().unwrap().define(
+            self.current_stack_frame().unwrap().read().define(
                 action_func.name,
                 func_obj,
                 context.gc_context,
@@ -808,7 +824,7 @@ impl<'gc> Avm1<'gc> {
     ) -> Result<(), Error> {
         let value = self.pop()?;
         let name = self.pop()?;
-        self.current_stack_frame_mut().unwrap().define(
+        self.current_stack_frame().unwrap().read().define(
             name.as_string()?,
             value,
             context.gc_context,
@@ -821,7 +837,7 @@ impl<'gc> Avm1<'gc> {
         context: &mut ActionContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let name = self.pop()?;
-        self.current_stack_frame_mut().unwrap().define(
+        self.current_stack_frame().unwrap().read().define(
             name.as_string()?,
             Value::Undefined,
             context.gc_context,
@@ -846,10 +862,11 @@ impl<'gc> Avm1<'gc> {
 
         //Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
         //a boolean based on if the delete actually deleted something.
-        let did_exist = Value::Bool(self.current_stack_frame().unwrap().is_defined(name));
+        let did_exist = Value::Bool(self.current_stack_frame().unwrap().read().is_defined(name));
 
         self.current_stack_frame()
             .unwrap()
+            .read()
             .scope()
             .delete(name, context.gc_context);
         self.push(did_exist);
@@ -876,11 +893,16 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_enumerate(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_enumerate(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         let name = self.pop()?;
         let name = name.as_string()?;
         self.push(Value::Null); // Sentinel that indicates end of enumeration
-        let ob = match self.current_stack_frame().unwrap().resolve(name) {
+        let ob = match self
+            .current_stack_frame()
+            .unwrap()
+            .read()
+            .resolve(name, self, context)
+        {
             Value::Object(ob) => ob,
             _ => {
                 log::error!("Cannot enumerate properties of {}", name);
@@ -936,7 +958,7 @@ impl<'gc> Avm1<'gc> {
         let name_val = self.pop()?;
         let name = name_val.into_string();
         let object = self.pop()?.as_object()?;
-        let this = self.current_stack_frame().unwrap().this_cell();
+        let this = self.current_stack_frame().unwrap().read().this_cell();
         let value = object.read().get(&name, self, context, this);
         self.push(value);
 
@@ -1030,8 +1052,13 @@ impl<'gc> Avm1<'gc> {
                     }
                 }
             }
-        } else if self.current_stack_frame().unwrap().is_defined(path) {
-            result = Some(self.current_stack_frame().unwrap().resolve(path));
+        } else if self.current_stack_frame().unwrap().read().is_defined(path) {
+            result = Some(
+                self.current_stack_frame()
+                    .unwrap()
+                    .read()
+                    .resolve(path, self, context),
+            );
         }
 
         self.push(result.unwrap_or(Value::Undefined));
@@ -1455,7 +1482,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_return(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_return(&mut self, _context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         let result = self.pop()?;
 
         if self.stack_frames.len() > 1 {
@@ -1471,7 +1498,7 @@ impl<'gc> Avm1<'gc> {
         let name_val = self.pop()?;
         let name = name_val.as_string()?;
         let object = self.pop()?.as_object()?;
-        let this = self.current_stack_frame().unwrap().this_cell();
+        let this = self.current_stack_frame().unwrap().read().this_cell();
 
         object
             .write(context.gc_context)
@@ -1533,7 +1560,7 @@ impl<'gc> Avm1<'gc> {
         var_path: &str,
         value: Value<'gc>,
     ) -> Result<(), Error> {
-        let this = self.current_stack_frame().unwrap().this_cell();
+        let this = self.current_stack_frame().unwrap().read().this_cell();
         let is_slashpath = Self::variable_name_is_slash_path(var_path);
 
         if is_slashpath {
@@ -1551,13 +1578,15 @@ impl<'gc> Avm1<'gc> {
                 }
             }
         } else {
-            let this = self.current_stack_frame().unwrap().this_cell();
-            let scope = self.current_stack_frame().unwrap().scope_cell();
+            let this = self.current_stack_frame().unwrap().read().this_cell();
+            let scope = self.current_stack_frame().unwrap().read().scope_cell();
             let unused_value = scope.read().overwrite(var_path, value, self, context, this);
             if let Some(value) = unused_value {
-                self.current_stack_frame()
-                    .unwrap()
-                    .define(var_path, value, context.gc_context);
+                self.current_stack_frame().unwrap().read().define(
+                    var_path,
+                    value,
+                    context.gc_context,
+                );
             }
         }
 
@@ -1592,7 +1621,7 @@ impl<'gc> Avm1<'gc> {
             context.target_path = Value::Undefined;
         }
 
-        let scope = self.current_stack_frame().unwrap().scope_cell();
+        let scope = self.current_stack_frame().unwrap().read().scope_cell();
         let clip_obj = context
             .active_clip
             .read()
@@ -1601,8 +1630,9 @@ impl<'gc> Avm1<'gc> {
             .unwrap()
             .to_owned();
 
-        self.current_stack_frame_mut()
+        self.current_stack_frame()
             .unwrap()
+            .write(context.gc_context)
             .set_scope(Scope::new_target_scope(scope, clip_obj, context.gc_context));
         Ok(())
     }
@@ -1843,19 +1873,22 @@ impl<'gc> Avm1<'gc> {
         let block = self
             .current_stack_frame()
             .unwrap()
+            .read()
             .data()
             .to_subslice(actions)
             .unwrap();
         let with_scope = Scope::new_with_scope(
-            self.current_stack_frame().unwrap().scope_cell(),
+            self.current_stack_frame().unwrap().read().scope_cell(),
             object,
             context.gc_context,
         );
         let new_activation = self
             .current_stack_frame()
             .unwrap()
+            .read()
             .to_rescope(block, with_scope);
-        self.stack_frames.push(new_activation);
+        self.stack_frames
+            .push(GcCell::allocate(context.gc_context, new_activation));
         Ok(())
     }
 }

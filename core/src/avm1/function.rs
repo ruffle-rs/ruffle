@@ -243,7 +243,7 @@ impl<'gc> Executable<'gc> {
                     if af.preload_parent {
                         frame.set_local_register(
                             preload_r,
-                            child_scope.read().resolve("_parent"),
+                            child_scope.read().resolve("_parent", avm, ac, this),
                             ac.gc_context,
                         );
                         preload_r += 1;
@@ -267,7 +267,7 @@ impl<'gc> Executable<'gc> {
                         _ => {}
                     }
                 }
-                avm.insert_stack_frame(frame);
+                avm.insert_stack_frame(frame, ac);
 
                 None
             }

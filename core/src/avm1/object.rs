@@ -417,7 +417,10 @@ mod tests {
             let object = GcCell::allocate(gc_context, Object::object(gc_context));
 
             let globals = avm.global_object_cell();
-            avm.insert_stack_frame(Activation::from_nothing(swf_version, globals, gc_context));
+            avm.insert_stack_frame(
+                Activation::from_nothing(swf_version, globals, gc_context),
+                &mut context,
+            );
 
             test(&mut avm, &mut context, object)
         })

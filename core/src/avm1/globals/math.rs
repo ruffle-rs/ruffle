@@ -172,7 +172,10 @@ mod tests {
             };
 
             let globals = avm.global_object_cell();
-            avm.insert_stack_frame(Activation::from_nothing(swf_version, globals, gc_context));
+            avm.insert_stack_frame(
+                Activation::from_nothing(swf_version, globals, gc_context),
+                &mut context,
+            );
 
             test(&mut avm, &mut context)
         })

@@ -2,7 +2,7 @@
 
 use crate::avm1::object::Object;
 use crate::avm1::scope::Scope;
-use crate::avm1::Value;
+use crate::avm1::{ActionContext, Avm1, Value};
 use crate::tag_utils::SwfSlice;
 use gc_arena::{GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
@@ -201,7 +201,12 @@ impl<'gc> Activation<'gc> {
     }
 
     /// Resolve a particular named local variable within this activation.
-    pub fn resolve(&self, name: &str) -> Value<'gc> {
+    pub fn resolve(
+        &self,
+        name: &str,
+        avm: &mut Avm1<'gc>,
+        context: &mut ActionContext<'_, 'gc, '_>,
+    ) -> Value<'gc> {
         if name == "this" {
             return Value::Object(self.this);
         }
@@ -210,7 +215,7 @@ impl<'gc> Activation<'gc> {
             return Value::Object(self.arguments.unwrap());
         }
 
-        self.scope().resolve(name)
+        self.scope().resolve(name, avm, context, self.this)
     }
 
     /// Check if a particular property in the scope chain is defined.
