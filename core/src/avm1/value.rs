@@ -103,11 +103,18 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn as_bool(&self) -> bool {
-        match *self {
-            Value::Bool(v) => v,
-            Value::Number(v) => v != 0.0,
-            // TODO(Herschel): Value::String(v) => ??
+    pub fn as_bool(&self, swf_version: u8) -> bool {
+        match self {
+            Value::Bool(v) => *v,
+            Value::Number(v) => !v.is_nan() && *v != 0.0,
+            Value::String(v) => {
+                if swf_version >= 7 {
+                    !v.is_empty()
+                } else {
+                    let num = v.parse().unwrap_or(0.0);
+                    num != 0.0
+                }
+            }
             _ => false,
         }
     }

@@ -1207,7 +1207,7 @@ impl<'gc> Avm1<'gc> {
         reader: &mut Reader<'_>,
     ) -> Result<(), Error> {
         let val = self.pop()?;
-        if val.as_bool() {
+        if val.as_bool(self.current_swf_version()) {
             reader.seek(jump_offset.into());
         }
         Ok(())
@@ -1650,8 +1650,8 @@ impl<'gc> Avm1<'gc> {
 
     fn action_start_drag(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let _target = self.pop()?;
-        let _lock_center = self.pop()?.as_bool();
-        let constrain = self.pop()?.as_bool();
+        let _lock_center = self.pop()?.as_bool(self.current_swf_version());
+        let constrain = self.pop()?.as_bool(self.current_swf_version());
         if constrain {
             let _y2 = self.pop()?;
             let _x2 = self.pop()?;
