@@ -1,8 +1,8 @@
 use crate::avm1::object::{Attribute::*, Object};
-use crate::avm1::Value;
+use crate::avm1::{ActionContext, Avm1, Value};
 use crate::movie_clip::MovieClip;
 use enumset::EnumSet;
-use gc_arena::MutationContext;
+use gc_arena::{GcCell, MutationContext};
 
 macro_rules! with_movie_clip {
     ( $gc_context: ident, $object:ident, $($name:expr => $fn:expr),* ) => {{
@@ -42,6 +42,38 @@ macro_rules! with_movie_clip_mut {
             );
         )*
     }};
+}
+
+pub fn overwrite_root<'gc>(
+    _avm: &mut Avm1<'gc>,
+    ac: &mut ActionContext<'_, 'gc, '_>,
+    this: GcCell<'gc, Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Value<'gc> {
+    let new_val = args
+        .get(0)
+        .map(|v| v.to_owned())
+        .unwrap_or(Value::Undefined);
+    this.write(ac.gc_context)
+        .force_set("_root", new_val, EnumSet::new());
+
+    Value::Undefined
+}
+
+pub fn overwrite_global<'gc>(
+    _avm: &mut Avm1<'gc>,
+    ac: &mut ActionContext<'_, 'gc, '_>,
+    this: GcCell<'gc, Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Value<'gc> {
+    let new_val = args
+        .get(0)
+        .map(|v| v.to_owned())
+        .unwrap_or(Value::Undefined);
+    this.write(ac.gc_context)
+        .force_set("_global", new_val, EnumSet::new());
+
+    Value::Undefined
 }
 
 pub fn create_movie_object<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<'gc> {
@@ -84,14 +116,14 @@ pub fn create_movie_object<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<
     object.force_set_virtual(
         "_global",
         |avm, context, _this, _args| avm.global_object(context),
-        None,
+        Some(overwrite_global),
         EnumSet::new(),
     );
 
     object.force_set_virtual(
         "_root",
         |avm, context, _this, _args| avm.root_object(context),
-        None,
+        Some(overwrite_root),
         EnumSet::new(),
     );
 
