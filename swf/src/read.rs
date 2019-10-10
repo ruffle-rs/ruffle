@@ -1710,8 +1710,11 @@ impl<R: Read> Reader<R> {
         let stream_format = self.read_sound_format()?;
         let num_samples_per_block = self.read_u16()?;
         let latency_seek = if stream_format.compression == AudioCompression::Mp3 {
-            // Specs say this is i16, not u16. How are negative values used?
-            self.read_i16()?
+            // SWF19 says latency seek is i16, not u16. Is this wrong> How are negative values used?
+            // Some software creates SWF files that incorrectly omit this value.
+            // Fail silently if it's missing.
+            // TODO: What is Flash's behavior in this case? Does it read the value from the following bytes?
+            self.read_i16().unwrap_or(0)
         } else {
             0
         };
