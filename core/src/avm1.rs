@@ -1017,15 +1017,6 @@ impl<'gc> Avm1<'gc> {
         let var_path = self.pop()?;
         let path = var_path.as_string()?;
 
-        // Special hardcoded variables
-        if path == "_root" {
-            self.push(self.root_object(context));
-            return Ok(());
-        } else if path == "_global" {
-            self.push(self.global_object(context));
-            return Ok(());
-        }
-
         let is_slashpath = Self::variable_name_is_slash_path(path);
         let mut result = None;
         if is_slashpath {

@@ -1,6 +1,7 @@
 use crate::avm1::object::{Attribute::*, Object};
 use crate::avm1::Value;
 use crate::movie_clip::MovieClip;
+use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 macro_rules! with_movie_clip {
@@ -78,6 +79,34 @@ pub fn create_movie_object<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<
             // TODO find a correct value
             Value::Number(1.0)
         }
+    );
+
+    object.force_set_virtual(
+        "_global",
+        |avm, context, _this, _args| avm.global_object(context),
+        None,
+        EnumSet::new(),
+    );
+
+    object.force_set_virtual(
+        "_root",
+        |avm, context, _this, _args| avm.root_object(context),
+        None,
+        EnumSet::new(),
+    );
+
+    object.force_set_virtual(
+        "_parent",
+        |_avm, _context, this, _args| {
+            this.read()
+                .display_node()
+                .and_then(|mc| mc.read().parent())
+                .and_then(|dn| dn.read().object().as_object().ok())
+                .map(|o| Value::Object(o.to_owned()))
+                .unwrap_or(Value::Undefined)
+        },
+        None,
+        EnumSet::new(),
     );
 
     object
