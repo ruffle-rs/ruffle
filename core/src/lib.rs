@@ -4,6 +4,7 @@
 mod display_object;
 
 mod avm1;
+mod bitmap;
 mod bounding_box;
 mod button;
 mod character;

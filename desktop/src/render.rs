@@ -7,10 +7,13 @@ use lyon::{
 };
 use ruffle_core::backend::render::swf::{self, FillStyle};
 use ruffle_core::backend::render::{
-    BitmapHandle, Color, Letterbox, RenderBackend, ShapeHandle, Transform,
+    BitmapHandle, BitmapInfo, Color, Letterbox, RenderBackend, ShapeHandle, Transform,
 };
 use ruffle_core::shape_utils::{DrawCommand, DrawPath};
+use std::convert::TryInto;
 use swf::Twips;
+
+type Error = Box<dyn std::error::Error>;
 
 pub struct GliumRenderBackend {
     display: Display,
@@ -19,6 +22,7 @@ pub struct GliumRenderBackend {
     gradient_shader_program: glium::Program,
     bitmap_shader_program: glium::Program,
     meshes: Vec<Mesh>,
+    quad_shape: ShapeHandle,
     textures: Vec<(swf::CharacterId, Texture)>,
     num_masks: u32,
     num_masks_active: u32,
@@ -32,9 +36,7 @@ pub struct GliumRenderBackend {
 }
 
 impl GliumRenderBackend {
-    pub fn new(
-        windowed_context: WindowedContext,
-    ) -> Result<GliumRenderBackend, Box<dyn std::error::Error>> {
+    pub fn new(windowed_context: WindowedContext) -> Result<GliumRenderBackend, Error> {
         let display = Display::from_gl_window(windowed_context)?;
 
         use glium::program::ProgramCreationInput;
@@ -80,13 +82,17 @@ impl GliumRenderBackend {
             },
         )?;
 
+        let quad_mesh = Self::build_quad_mesh(&display)?;
+        let quad_shape = ShapeHandle(0);
+
         let mut renderer = GliumRenderBackend {
             display,
             shader_program,
             gradient_shader_program,
             bitmap_shader_program,
             target: None,
-            meshes: vec![],
+            meshes: vec![quad_mesh],
+            quad_shape,
             textures: vec![],
             viewport_width: 500.0,
             viewport_height: 500.0,
@@ -100,6 +106,53 @@ impl GliumRenderBackend {
         };
         renderer.build_matrices();
         Ok(renderer)
+    }
+
+    // Builds the quad mesh that is used for rendering bitmap display objects.
+    fn build_quad_mesh(display: &Display) -> Result<Mesh, Error> {
+        let vertex_buffer = glium::VertexBuffer::new(
+            display,
+            &[
+                Vertex {
+                    position: [0.0, 0.0],
+                    color: [1.0, 1.0, 1.0, 1.0],
+                },
+                Vertex {
+                    position: [1.0, 0.0],
+                    color: [1.0, 1.0, 1.0, 1.0],
+                },
+                Vertex {
+                    position: [1.0, 1.0],
+                    color: [1.0, 1.0, 1.0, 1.0],
+                },
+                Vertex {
+                    position: [0.0, 1.0],
+                    color: [1.0, 1.0, 1.0, 1.0],
+                },
+            ],
+        )?;
+
+        let index_buffer = glium::IndexBuffer::new(
+            display,
+            glium::index::PrimitiveType::TrianglesList,
+            &[0, 1, 2, 0, 2, 3],
+        )?;
+
+        let quad_mesh = Mesh {
+            draws: vec![Draw {
+                draw_type: DrawType::Bitmap {
+                    uniforms: BitmapUniforms {
+                        matrix: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+                        id: 0,
+                    },
+                    is_smoothed: true,
+                    is_repeating: false,
+                },
+                vertex_buffer,
+                index_buffer,
+            }],
+        };
+        Ok(quad_mesh)
     }
 
     pub fn display(&self) -> &Display {
@@ -488,7 +541,7 @@ impl RenderBackend for GliumRenderBackend {
         id: swf::CharacterId,
         data: &[u8],
         jpeg_tables: &[u8],
-    ) -> BitmapHandle {
+    ) -> BitmapInfo {
         if !jpeg_tables.is_empty() {
             let mut full_jpeg = jpeg_tables[..jpeg_tables.len() - 2].to_vec();
             full_jpeg.extend_from_slice(&data[2..]);
@@ -499,7 +552,7 @@ impl RenderBackend for GliumRenderBackend {
         }
     }
 
-    fn register_bitmap_jpeg_2(&mut self, id: swf::CharacterId, data: &[u8]) -> BitmapHandle {
+    fn register_bitmap_jpeg_2(&mut self, id: swf::CharacterId, data: &[u8]) -> BitmapInfo {
         let data = ruffle_core::backend::render::remove_invalid_jpeg_data(data);
 
         let mut decoder = jpeg_decoder::Decoder::new(&data[..]);
@@ -523,7 +576,11 @@ impl RenderBackend for GliumRenderBackend {
             },
         ));
 
-        handle
+        BitmapInfo {
+            handle,
+            width: metadata.width,
+            height: metadata.height,
+        }
     }
 
     fn register_bitmap_jpeg_3(
@@ -531,7 +588,7 @@ impl RenderBackend for GliumRenderBackend {
         id: swf::CharacterId,
         jpeg_data: &[u8],
         alpha_data: &[u8],
-    ) -> BitmapHandle {
+    ) -> BitmapInfo {
         let (width, height, rgba) =
             ruffle_core::backend::render::define_bits_jpeg_to_rgba(jpeg_data, alpha_data)
                 .expect("Error decoding DefineBitsJPEG3");
@@ -548,10 +605,14 @@ impl RenderBackend for GliumRenderBackend {
             },
         ));
 
-        handle
+        BitmapInfo {
+            handle,
+            width: width.try_into().unwrap(),
+            height: height.try_into().unwrap(),
+        }
     }
 
-    fn register_bitmap_png(&mut self, swf_tag: &swf::DefineBitsLossless) -> BitmapHandle {
+    fn register_bitmap_png(&mut self, swf_tag: &swf::DefineBitsLossless) -> BitmapInfo {
         let decoded_data = ruffle_core::backend::render::define_bits_lossless_to_rgba(swf_tag)
             .expect("Error decoding DefineBitsLossless");
 
@@ -572,7 +633,11 @@ impl RenderBackend for GliumRenderBackend {
             },
         ));
 
-        handle
+        BitmapInfo {
+            handle,
+            width: swf_tag.width,
+            height: swf_tag.height,
+        }
     }
 
     fn begin_frame(&mut self) {
@@ -602,6 +667,41 @@ impl RenderBackend for GliumRenderBackend {
             ),
             0,
         );
+    }
+
+    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform) {
+        // TODO: Might be better to make this separate code to render the bitmap
+        // instead of going through render_shape. But render_shape already handles
+        // masking etc.
+        if let Some((id, bitmap)) = self.textures.get(bitmap.0) {
+            // Adjust the quad draw to use the target bitmap.
+            let mesh = &mut self.meshes[self.quad_shape.0];
+            let draw = &mut mesh.draws[0];
+            let width = bitmap.width as f32;
+            let height = bitmap.height as f32;
+            if let DrawType::Bitmap {
+                uniforms: BitmapUniforms { id: draw_id, .. },
+                ..
+            } = &mut draw.draw_type
+            {
+                *draw_id = *id;
+            }
+
+            // Scale the quad to the bitmap's dimensions.
+            use ruffle_core::matrix::Matrix;
+            let scale_transform = Transform {
+                matrix: transform.matrix
+                    * Matrix {
+                        a: width,
+                        d: height,
+                        ..Default::default()
+                    },
+                ..*transform
+            };
+
+            // Render the quad.
+            self.render_shape(self.quad_shape, &scale_transform);
+        }
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {

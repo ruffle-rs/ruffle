@@ -11,18 +11,19 @@ pub trait RenderBackend {
         id: swf::CharacterId,
         data: &[u8],
         jpeg_tables: &[u8],
-    ) -> BitmapHandle;
-    fn register_bitmap_jpeg_2(&mut self, id: swf::CharacterId, data: &[u8]) -> BitmapHandle;
+    ) -> BitmapInfo;
+    fn register_bitmap_jpeg_2(&mut self, id: swf::CharacterId, data: &[u8]) -> BitmapInfo;
     fn register_bitmap_jpeg_3(
         &mut self,
         id: swf::CharacterId,
         jpeg_data: &[u8],
         alpha_data: &[u8],
-    ) -> BitmapHandle;
-    fn register_bitmap_png(&mut self, swf_tag: &swf::DefineBitsLossless) -> BitmapHandle;
+    ) -> BitmapInfo;
+    fn register_bitmap_png(&mut self, swf_tag: &swf::DefineBitsLossless) -> BitmapInfo;
 
     fn begin_frame(&mut self);
     fn clear(&mut self, color: Color);
+    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform);
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform);
     fn end_frame(&mut self);
     fn draw_pause_overlay(&mut self);
@@ -37,6 +38,14 @@ pub struct ShapeHandle(pub usize);
 
 #[derive(Copy, Clone, Debug)]
 pub struct BitmapHandle(pub usize);
+
+/// Info returned by the `register_bitmap` methods.
+#[derive(Copy, Clone, Debug)]
+pub struct BitmapInfo {
+    pub handle: BitmapHandle,
+    pub width: u16,
+    pub height: u16,
+}
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Letterbox {
@@ -60,26 +69,43 @@ impl RenderBackend for NullRenderer {
         _id: swf::CharacterId,
         _data: &[u8],
         _jpeg_tables: &[u8],
-    ) -> BitmapHandle {
-        BitmapHandle(0)
+    ) -> BitmapInfo {
+        BitmapInfo {
+            handle: BitmapHandle(0),
+            width: 0,
+            height: 0,
+        }
     }
-    fn register_bitmap_jpeg_2(&mut self, _id: swf::CharacterId, _data: &[u8]) -> BitmapHandle {
-        BitmapHandle(0)
+    fn register_bitmap_jpeg_2(&mut self, _id: swf::CharacterId, _data: &[u8]) -> BitmapInfo {
+        BitmapInfo {
+            handle: BitmapHandle(0),
+            width: 0,
+            height: 0,
+        }
     }
     fn register_bitmap_jpeg_3(
         &mut self,
         _id: swf::CharacterId,
         _data: &[u8],
         _alpha_data: &[u8],
-    ) -> BitmapHandle {
-        BitmapHandle(0)
+    ) -> BitmapInfo {
+        BitmapInfo {
+            handle: BitmapHandle(0),
+            width: 0,
+            height: 0,
+        }
     }
-    fn register_bitmap_png(&mut self, _swf_tag: &swf::DefineBitsLossless) -> BitmapHandle {
-        BitmapHandle(0)
+    fn register_bitmap_png(&mut self, _swf_tag: &swf::DefineBitsLossless) -> BitmapInfo {
+        BitmapInfo {
+            handle: BitmapHandle(0),
+            width: 0,
+            height: 0,
+        }
     }
     fn begin_frame(&mut self) {}
     fn end_frame(&mut self) {}
     fn clear(&mut self, _color: Color) {}
+    fn render_bitmap(&mut self, _bitmap: BitmapHandle, _transform: &Transform) {}
     fn render_shape(&mut self, _shape: ShapeHandle, _transform: &Transform) {}
     fn draw_pause_overlay(&mut self) {}
     fn draw_letterbox(&mut self, _letterbox: Letterbox) {}
