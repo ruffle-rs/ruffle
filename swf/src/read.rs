@@ -1627,7 +1627,7 @@ impl<R: Read> Reader<R> {
     fn read_morph_gradient(&mut self) -> Result<(Gradient, Gradient)> {
         let start_matrix = self.read_matrix()?;
         let end_matrix = self.read_matrix()?;
-        let num_records = self.read_u8()? as usize;
+        let (num_records, spread, interpolation) = self.read_gradient_flags()?;
         let mut start_records = Vec::with_capacity(num_records);
         let mut end_records = Vec::with_capacity(num_records);
         for _ in 0..num_records {
@@ -1643,14 +1643,14 @@ impl<R: Read> Reader<R> {
         Ok((
             Gradient {
                 matrix: start_matrix,
-                spread: GradientSpread::Pad, // TODO(Herschel): What are the defaults?
-                interpolation: GradientInterpolation::RGB,
+                spread,
+                interpolation,
                 records: start_records,
             },
             Gradient {
                 matrix: end_matrix,
-                spread: GradientSpread::Pad, // TODO(Herschel): What are the defaults?
-                interpolation: GradientInterpolation::RGB,
+                spread,
+                interpolation,
                 records: end_records,
             },
         ))
@@ -1868,18 +1868,7 @@ impl<R: Read> Reader<R> {
     fn read_gradient(&mut self, shape_version: u8) -> Result<Gradient> {
         let matrix = self.read_matrix()?;
         self.byte_align();
-        let spread = match self.read_ubits(2)? {
-            0 => GradientSpread::Pad,
-            1 => GradientSpread::Reflect,
-            2 => GradientSpread::Repeat,
-            _ => return Err(Error::invalid_data("Invalid gradient spread mode.")),
-        };
-        let interpolation = match self.read_ubits(2)? {
-            0 => GradientInterpolation::RGB,
-            1 => GradientInterpolation::LinearRGB,
-            _ => return Err(Error::invalid_data("Invalid gradient interpolation mode.")),
-        };
-        let num_records = self.read_ubits(4)? as usize;
+        let (num_records, spread, interpolation) = self.read_gradient_flags()?;
         let mut records = Vec::with_capacity(num_records);
         for _ in 0..num_records {
             records.push(GradientRecord {
@@ -1897,6 +1886,23 @@ impl<R: Read> Reader<R> {
             interpolation,
             records,
         })
+    }
+
+    fn read_gradient_flags(&mut self) -> Result<(usize, GradientSpread, GradientInterpolation)> {
+        let flags = self.read_u8()?;
+        let spread = match flags & 0b1100_0000 {
+            0b0000_0000 => GradientSpread::Pad,
+            0b0100_0000 => GradientSpread::Reflect,
+            0b1000_0000 => GradientSpread::Repeat,
+            _ => return Err(Error::invalid_data("Invalid gradient spread mode")),
+        };
+        let interpolation = match flags & 0b11_0000 {
+            0b00_0000 => GradientInterpolation::RGB,
+            0b01_0000 => GradientInterpolation::LinearRGB,
+            _ => return Err(Error::invalid_data("Invalid gradient interpolation mode")),
+        };
+        let num_records = usize::from(flags & 0b1111);
+        Ok((num_records, spread, interpolation))
     }
 
     fn read_shape_record(&mut self, shape_version: u8) -> Result<Option<ShapeRecord>> {
