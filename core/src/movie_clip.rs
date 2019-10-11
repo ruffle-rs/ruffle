@@ -679,10 +679,17 @@ impl<'gc, 'a> MovieClip<'gc> {
         version: u8,
     ) -> DecodeResult {
         let define_bits_lossless = reader.read_define_bits_lossless(version)?;
-        let handle = context.renderer.register_bitmap_png(&define_bits_lossless);
+        let bitmap_info = context.renderer.register_bitmap_png(&define_bits_lossless);
+        let bitmap = crate::bitmap::Bitmap::new(
+            context,
+            define_bits_lossless.id,
+            bitmap_info.handle,
+            bitmap_info.width,
+            bitmap_info.height,
+        );
         context
             .library
-            .register_character(define_bits_lossless.id, Character::Bitmap(handle));
+            .register_character(define_bits_lossless.id, Character::Bitmap(Box::new(bitmap)));
         Ok(())
     }
 
@@ -815,14 +822,21 @@ impl<'gc, 'a> MovieClip<'gc> {
             .get_mut()
             .take(data_len as u64)
             .read_to_end(&mut jpeg_data)?;
-        let handle = context.renderer.register_bitmap_jpeg(
+        let bitmap_info = context.renderer.register_bitmap_jpeg(
             id,
             &jpeg_data,
             context.library.jpeg_tables().unwrap(),
         );
+        let bitmap = crate::bitmap::Bitmap::new(
+            context,
+            id,
+            bitmap_info.handle,
+            bitmap_info.width,
+            bitmap_info.height,
+        );
         context
             .library
-            .register_character(id, Character::Bitmap(handle));
+            .register_character(id, Character::Bitmap(Box::new(bitmap)));
         Ok(())
     }
 
@@ -841,10 +855,17 @@ impl<'gc, 'a> MovieClip<'gc> {
             .get_mut()
             .take(data_len as u64)
             .read_to_end(&mut jpeg_data)?;
-        let handle = context.renderer.register_bitmap_jpeg_2(id, &jpeg_data);
+        let bitmap_info = context.renderer.register_bitmap_jpeg_2(id, &jpeg_data);
+        let bitmap = crate::bitmap::Bitmap::new(
+            context,
+            id,
+            bitmap_info.handle,
+            bitmap_info.width,
+            bitmap_info.height,
+        );
         context
             .library
-            .register_character(id, Character::Bitmap(handle));
+            .register_character(id, Character::Bitmap(Box::new(bitmap)));
         Ok(())
     }
 
@@ -869,12 +890,19 @@ impl<'gc, 'a> MovieClip<'gc> {
             .get_mut()
             .take(alpha_len as u64)
             .read_to_end(&mut alpha_data)?;
-        let handle = context
+        let bitmap_info = context
             .renderer
             .register_bitmap_jpeg_3(id, &jpeg_data, &alpha_data);
+        let bitmap = crate::bitmap::Bitmap::new(
+            context,
+            id,
+            bitmap_info.handle,
+            bitmap_info.width,
+            bitmap_info.height,
+        );
         context
             .library
-            .register_character(id, Character::Bitmap(handle));
+            .register_character(id, Character::Bitmap(Box::new(bitmap)));
         Ok(())
     }
 
@@ -900,12 +928,19 @@ impl<'gc, 'a> MovieClip<'gc> {
             .get_mut()
             .take(alpha_len as u64)
             .read_to_end(&mut alpha_data)?;
-        let handle = context
+        let bitmap_info = context
             .renderer
             .register_bitmap_jpeg_3(id, &jpeg_data, &alpha_data);
+        let bitmap = crate::bitmap::Bitmap::new(
+            context,
+            id,
+            bitmap_info.handle,
+            bitmap_info.width,
+            bitmap_info.height,
+        );
         context
             .library
-            .register_character(id, Character::Bitmap(handle));
+            .register_character(id, Character::Bitmap(Box::new(bitmap)));
         Ok(())
     }
 

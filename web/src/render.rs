@@ -1,8 +1,10 @@
 use crate::utils::JsResult;
 use ruffle_core::backend::render::{
-    swf, swf::CharacterId, BitmapHandle, Color, Letterbox, RenderBackend, ShapeHandle, Transform,
+    swf, swf::CharacterId, BitmapHandle, BitmapInfo, Color, Letterbox, RenderBackend, ShapeHandle,
+    Transform,
 };
 use std::collections::HashMap;
+use std::convert::TryInto;
 use wasm_bindgen::JsCast;
 use web_sys::{CanvasRenderingContext2d, Element, HtmlCanvasElement, HtmlImageElement};
 
@@ -219,6 +221,66 @@ impl WebCanvasRenderBackend {
             (self.canvas.clone(), self.context.clone())
         }
     }
+
+    #[allow(clippy::float_cmp)]
+    #[inline]
+    fn set_transform(&mut self, transform: &Transform) {
+        let matrix = transform.matrix;
+
+        self.context
+            .set_transform(
+                matrix.a.into(),
+                matrix.b.into(),
+                matrix.c.into(),
+                matrix.d.into(),
+                f64::from(matrix.tx) / 20.0,
+                f64::from(matrix.ty) / 20.0,
+            )
+            .unwrap();
+
+        let color_transform = &transform.color_transform;
+        if color_transform.r_mult == 1.0
+            && color_transform.g_mult == 1.0
+            && color_transform.b_mult == 1.0
+            && color_transform.r_add == 0.0
+            && color_transform.g_add == 0.0
+            && color_transform.b_add == 0.0
+            && color_transform.a_add == 0.0
+        {
+            self.context.set_global_alpha(color_transform.a_mult.into());
+        } else {
+            // TODO HACK: Firefox is having issues with additive alpha in color transforms (see #38).
+            // Hack this away and just use multiplicative (not accurate in many cases, but won't look awful).
+            let (a_mult, a_add) = if self.use_color_transform_hack && color_transform.a_add != 0.0 {
+                (color_transform.a_mult + color_transform.a_add, 0.0)
+            } else {
+                (color_transform.a_mult, color_transform.a_add)
+            };
+
+            let matrix_str = format!(
+                "{} 0 0 0 {} 0 {} 0 0 {} 0 0 {} 0 {} 0 0 0 {} {}",
+                color_transform.r_mult,
+                color_transform.r_add,
+                color_transform.g_mult,
+                color_transform.g_add,
+                color_transform.b_mult,
+                color_transform.b_add,
+                a_mult,
+                a_add
+            );
+            self.color_matrix
+                .set_attribute("values", &matrix_str)
+                .unwrap();
+
+            self.context.set_filter("url('#_cm')");
+        }
+    }
+
+    #[inline]
+    fn clear_transform(&mut self) {
+        self.context.set_filter("none");
+        self.context.set_global_alpha(1.0);
+    }
 }
 
 impl RenderBackend for WebCanvasRenderBackend {
@@ -299,14 +361,14 @@ impl RenderBackend for WebCanvasRenderBackend {
         id: CharacterId,
         data: &[u8],
         jpeg_tables: &[u8],
-    ) -> BitmapHandle {
+    ) -> BitmapInfo {
         let mut full_jpeg = jpeg_tables[..jpeg_tables.len() - 2].to_vec();
         full_jpeg.extend_from_slice(&data[2..]);
 
         self.register_bitmap_jpeg_2(id, &full_jpeg[..])
     }
 
-    fn register_bitmap_jpeg_2(&mut self, id: CharacterId, data: &[u8]) -> BitmapHandle {
+    fn register_bitmap_jpeg_2(&mut self, id: CharacterId, data: &[u8]) -> BitmapInfo {
         let data = ruffle_core::backend::render::remove_invalid_jpeg_data(data);
         let mut decoder = jpeg_decoder::Decoder::new(&data[..]);
         decoder.read_info().unwrap();
@@ -324,7 +386,11 @@ impl RenderBackend for WebCanvasRenderBackend {
             data: jpeg_encoded,
         });
         self.id_to_bitmap.insert(id, handle);
-        handle
+        BitmapInfo {
+            handle,
+            width: metadata.width,
+            height: metadata.height,
+        }
     }
 
     fn register_bitmap_jpeg_3(
@@ -332,7 +398,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         id: swf::CharacterId,
         jpeg_data: &[u8],
         alpha_data: &[u8],
-    ) -> BitmapHandle {
+    ) -> BitmapInfo {
         let (width, height, mut rgba) =
             ruffle_core::backend::render::define_bits_jpeg_to_rgba(jpeg_data, alpha_data)
                 .expect("Error decoding DefineBitsJPEG3");
@@ -352,10 +418,14 @@ impl RenderBackend for WebCanvasRenderBackend {
         });
 
         self.id_to_bitmap.insert(id, handle);
-        handle
+        BitmapInfo {
+            handle,
+            width: width.try_into().expect("JPEG dimensions too large"),
+            height: height.try_into().expect("JPEG dimensions too large"),
+        }
     }
 
-    fn register_bitmap_png(&mut self, swf_tag: &swf::DefineBitsLossless) -> BitmapHandle {
+    fn register_bitmap_png(&mut self, swf_tag: &swf::DefineBitsLossless) -> BitmapInfo {
         let mut rgba = ruffle_core::backend::render::define_bits_lossless_to_rgba(swf_tag)
             .expect("Error decoding DefineBitsLossless");
 
@@ -376,7 +446,11 @@ impl RenderBackend for WebCanvasRenderBackend {
             data: png,
         });
         self.id_to_bitmap.insert(swf_tag.id, handle);
-        handle
+        BitmapInfo {
+            handle,
+            width: swf_tag.width,
+            height: swf_tag.height,
+        }
     }
 
     fn begin_frame(&mut self) {
@@ -398,70 +472,26 @@ impl RenderBackend for WebCanvasRenderBackend {
             .fill_rect(0.0, 0.0, width.into(), height.into());
     }
 
-    #[allow(clippy::float_cmp)]
-    fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
-        let shape = if let Some(shape) = self.shapes.get(shape.0) {
-            shape
-        } else {
-            return;
-        };
-
-        let matrix = transform.matrix; //self.view_matrix * transform.matrix;
-
-        self.context
-            .set_transform(
-                matrix.a.into(),
-                matrix.b.into(),
-                matrix.c.into(),
-                matrix.d.into(),
-                f64::from(matrix.tx) / 20.0,
-                f64::from(matrix.ty) / 20.0,
-            )
-            .unwrap();
-
-        let color_transform = &transform.color_transform;
-        if color_transform.r_mult == 1.0
-            && color_transform.g_mult == 1.0
-            && color_transform.b_mult == 1.0
-            && color_transform.r_add == 0.0
-            && color_transform.g_add == 0.0
-            && color_transform.b_add == 0.0
-            && color_transform.a_add == 0.0
-        {
-            self.context.set_global_alpha(color_transform.a_mult.into());
-        } else {
-            // TODO HACK: Firefox is having issues with additive alpha in color transforms (see #38).
-            // Hack this away and just use multiplicative (not accurate in many cases, but won't look awful).
-            let (a_mult, a_add) = if self.use_color_transform_hack && color_transform.a_add != 0.0 {
-                (color_transform.a_mult + color_transform.a_add, 0.0)
-            } else {
-                (color_transform.a_mult, color_transform.a_add)
-            };
-
-            let matrix_str = format!(
-                "{} 0 0 0 {} 0 {} 0 0 {} 0 0 {} 0 {} 0 0 0 {} {}",
-                color_transform.r_mult,
-                color_transform.r_add,
-                color_transform.g_mult,
-                color_transform.g_add,
-                color_transform.b_mult,
-                color_transform.b_add,
-                a_mult,
-                a_add
-            );
-            self.color_matrix
-                .set_attribute("values", &matrix_str)
-                .unwrap();
-
-            self.context.set_filter("url('#_cm')");
+    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform) {
+        self.set_transform(transform);
+        if let Some(bitmap) = self.bitmaps.get(bitmap.0) {
+            let _ = self
+                .context
+                .draw_image_with_html_image_element(&bitmap.image, 0.0, 0.0);
         }
+        self.clear_transform();
+    }
 
-        self.context
-            .draw_image_with_html_image_element(&shape.image, shape.x_min, shape.y_min)
-            .unwrap();
-
-        self.context.set_filter("none");
-        self.context.set_global_alpha(1.0);
+    fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
+        self.set_transform(transform);
+        if let Some(shape) = self.shapes.get(shape.0) {
+            let _ = self.context.draw_image_with_html_image_element(
+                &shape.image,
+                shape.x_min,
+                shape.y_min,
+            );
+        }
+        self.clear_transform();
     }
 
     fn draw_pause_overlay(&mut self) {

@@ -2,7 +2,7 @@ pub enum Character<'gc> {
     EditText(Box<crate::edit_text::EditText<'gc>>),
     Graphic(Box<crate::graphic::Graphic<'gc>>),
     MovieClip(Box<crate::movie_clip::MovieClip<'gc>>),
-    Bitmap(crate::backend::render::BitmapHandle),
+    Bitmap(Box<crate::bitmap::Bitmap<'gc>>),
     Button(Box<crate::button::Button<'gc>>),
     Font(Box<crate::font::Font>),
     MorphShape(Box<crate::morph_shape::MorphShape<'gc>>),
