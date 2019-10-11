@@ -373,43 +373,7 @@ impl<R: Read> Reader<R> {
                 }
             }
             Some(TagCode::DefineButtonSound) => {
-                let button_id = tag_reader.read_u16()?;
-
-                let sound_id = tag_reader.read_u16()?;
-                let over_to_up_sound = if sound_id != 0 {
-                    Some((sound_id, tag_reader.read_sound_info()?))
-                } else {
-                    None
-                };
-
-                let sound_id = tag_reader.read_u16()?;
-                let up_to_over_sound = if sound_id != 0 {
-                    Some((sound_id, tag_reader.read_sound_info()?))
-                } else {
-                    None
-                };
-
-                let sound_id = tag_reader.read_u16()?;
-                let over_to_down_sound = if sound_id != 0 {
-                    Some((sound_id, tag_reader.read_sound_info()?))
-                } else {
-                    None
-                };
-
-                let sound_id = tag_reader.read_u16()?;
-                let down_to_over_sound = if sound_id != 0 {
-                    Some((sound_id, tag_reader.read_sound_info()?))
-                } else {
-                    None
-                };
-
-                Tag::DefineButtonSound(Box::new(ButtonSounds {
-                    id: button_id,
-                    over_to_up_sound,
-                    up_to_over_sound,
-                    over_to_down_sound,
-                    down_to_over_sound,
-                }))
+                Tag::DefineButtonSound(Box::new(tag_reader.read_define_button_sound()?))
             }
             Some(TagCode::DefineEditText) => {
                 Tag::DefineEditText(Box::new(tag_reader.read_define_edit_text()?))
@@ -938,6 +902,40 @@ impl<R: Read> Reader<R> {
             is_track_as_menu,
             records,
             actions,
+        })
+    }
+
+    fn read_define_button_sound(&mut self) -> Result<ButtonSounds> {
+        let button_id = self.read_u16()?;
+
+        // Some SWFs (third-party soundboard creator?) create SWFs with a malformed
+        // DefineButtonSound tag that has fewer than all 4 sound IDs.
+        let over_to_up_sound = match self.read_u16() {
+            Ok(sound_id) if sound_id != 0 => Some((sound_id, self.read_sound_info()?)),
+            _ => None,
+        };
+
+        let up_to_over_sound = match self.read_u16() {
+            Ok(sound_id) if sound_id != 0 => Some((sound_id, self.read_sound_info()?)),
+            _ => None,
+        };
+
+        let over_to_down_sound = match self.read_u16() {
+            Ok(sound_id) if sound_id != 0 => Some((sound_id, self.read_sound_info()?)),
+            _ => None,
+        };
+
+        let down_to_over_sound = match self.read_u16() {
+            Ok(sound_id) if sound_id != 0 => Some((sound_id, self.read_sound_info()?)),
+            _ => None,
+        };
+
+        Ok(ButtonSounds {
+            id: button_id,
+            over_to_up_sound,
+            up_to_over_sound,
+            over_to_down_sound,
+            down_to_over_sound,
         })
     }
 
