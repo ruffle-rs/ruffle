@@ -3,5 +3,6 @@ members = [
     "core",
     "desktop",
     "swf",
-    "web"
+    "web",
+    "scanner",
 ]

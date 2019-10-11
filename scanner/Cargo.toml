@@ -1,0 +1,16 @@
+[package]
+name = "ruffle_scanner"
+version = "0.1.0"
+authors = ["Nathan Adams <dinnerbone@dinnerbone.com>"]
+edition = "2018"
+
+[dependencies]
+ruffle_core = { path = "../core" }
+env_logger = "0.6.1"
+log = "0.4"
+structopt = "0.2.15"
+walkdir = "2.2.9"
+serde = { version = "1.0", features = ["derive"] }
+csv = "1.1"
+indicatif = "0.12"
+path-slash = "0.1.1"
