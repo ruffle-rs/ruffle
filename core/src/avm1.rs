@@ -185,9 +185,11 @@ impl<'gc> Avm1<'gc> {
         self.stack_frames.last().map(|ac| ac.clone())
     }
 
-    /// Get the currently executing SWF version, if there is one.
-    fn current_swf_version(&self) -> Option<u8> {
-        self.current_stack_frame().map(|sf| sf.read().swf_version())
+    /// Get the currently executing SWF version.
+    pub fn current_swf_version(&self, context: &mut ActionContext<'_, 'gc, '_>) -> u8 {
+        self.current_stack_frame()
+            .map(|sf| sf.read().swf_version())
+            .unwrap_or(context.player_version)
     }
 
     /// Perform some action with the current stack frame's reader.
@@ -559,14 +561,14 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_and(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_and(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         // AS1 logical and
         let a = self.pop()?;
         let b = self.pop()?;
         let result = b.into_number_v1() != 0.0 && a.into_number_v1() != 0.0;
         self.push(Value::from_bool_v1(
             result,
-            self.current_swf_version().unwrap(),
+            self.current_swf_version(context),
         ));
         Ok(())
     }
@@ -919,14 +921,14 @@ impl<'gc> Avm1<'gc> {
     }
 
     #[allow(clippy::float_cmp)]
-    fn action_equals(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_equals(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         // AS1 equality
         let a = self.pop()?;
         let b = self.pop()?;
         let result = b.into_number_v1() == a.into_number_v1();
         self.push(Value::from_bool_v1(
             result,
-            self.current_swf_version().unwrap(),
+            self.current_swf_version(context),
         ));
         Ok(())
     }
@@ -1249,14 +1251,14 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_less(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_less(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         // AS1 less than
         let a = self.pop()?;
         let b = self.pop()?;
         let result = b.into_number_v1() < a.into_number_v1();
         self.push(Value::from_bool_v1(
             result,
-            self.current_swf_version().unwrap(),
+            self.current_swf_version(context),
         ));
         Ok(())
     }
@@ -1275,14 +1277,14 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_greater(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_greater(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         // AS1 less than
         let a = self.pop()?;
         let b = self.pop()?;
         let result = b.into_number_v1() > a.into_number_v1();
         self.push(Value::from_bool_v1(
             result,
-            self.current_swf_version().unwrap(),
+            self.current_swf_version(context),
         ));
         Ok(())
     }
@@ -1336,13 +1338,13 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_not(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_not(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         // AS1 logical not
         let val = self.pop()?;
         let result = val.into_number_v1() == 0.0;
         self.push(Value::from_bool_v1(
             result,
-            self.current_swf_version().unwrap(),
+            self.current_swf_version(context),
         ));
         Ok(())
     }
@@ -1381,14 +1383,14 @@ impl<'gc> Avm1<'gc> {
         Err("Unimplemented action: NewObject".into())
     }
 
-    fn action_or(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_or(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         // AS1 logical or
         let a = self.pop()?;
         let b = self.pop()?;
         let result = b.into_number_v1() != 0.0 || a.into_number_v1() != 0.0;
         self.push(Value::from_bool_v1(
             result,
-            self.current_swf_version().unwrap(),
+            self.current_swf_version(context),
         ));
         Ok(())
     }
@@ -1713,14 +1715,17 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_string_equals(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_string_equals(
+        &mut self,
+        context: &mut ActionContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
         // AS1 strcmp
         let a = self.pop()?;
         let b = self.pop()?;
         let result = b.into_string() == a.into_string();
         self.push(Value::from_bool_v1(
             result,
-            self.current_swf_version().unwrap(),
+            self.current_swf_version(context),
         ));
         Ok(())
     }
@@ -1743,7 +1748,10 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_string_greater(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_string_greater(
+        &mut self,
+        context: &mut ActionContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
         // AS1 strcmp
         let a = self.pop()?;
         let b = self.pop()?;
@@ -1751,7 +1759,7 @@ impl<'gc> Avm1<'gc> {
         let result = b.into_string().bytes().gt(a.into_string().bytes());
         self.push(Value::from_bool_v1(
             result,
-            self.current_swf_version().unwrap(),
+            self.current_swf_version(context),
         ));
         Ok(())
     }
@@ -1765,7 +1773,10 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_string_less(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_string_less(
+        &mut self,
+        context: &mut ActionContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
         // AS1 strcmp
         let a = self.pop()?;
         let b = self.pop()?;
@@ -1773,7 +1784,7 @@ impl<'gc> Avm1<'gc> {
         let result = b.into_string().bytes().lt(a.into_string().bytes());
         self.push(Value::from_bool_v1(
             result,
-            self.current_swf_version().unwrap(),
+            self.current_swf_version(context),
         ));
         Ok(())
     }
