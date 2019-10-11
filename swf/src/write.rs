@@ -1389,7 +1389,7 @@ impl<W: Write> Writer<W> {
                 "Morph start and end gradient must have the same amount of records.",
             ));
         }
-        self.write_u8(start.records.len() as u8)?;
+        self.write_gradient_flags(start)?;
         for (start_record, end_record) in start.records.iter().zip(end.records.iter()) {
             self.write_u8(start_record.ratio)?;
             self.write_rgba(&start_record.color)?;
@@ -1863,19 +1863,7 @@ impl<W: Write> Writer<W> {
     fn write_gradient(&mut self, gradient: &Gradient, shape_version: u8) -> Result<()> {
         self.write_matrix(&gradient.matrix)?;
         self.flush_bits()?;
-        let spread_bits = match gradient.spread {
-            GradientSpread::Pad => 0,
-            GradientSpread::Reflect => 1,
-            GradientSpread::Repeat => 2,
-        };
-        self.write_ubits(2, spread_bits)?;
-        let interpolation_bits = match gradient.interpolation {
-            GradientInterpolation::RGB => 0,
-            GradientInterpolation::LinearRGB => 1,
-        };
-        self.write_ubits(2, interpolation_bits)?;
-        // TODO: Check overflow.
-        self.write_ubits(4, gradient.records.len() as u32)?;
+        self.write_gradient_flags(gradient)?;
         for record in &gradient.records {
             self.write_u8(record.ratio)?;
             if shape_version >= 3 {
@@ -1884,6 +1872,24 @@ impl<W: Write> Writer<W> {
                 self.write_rgb(&record.color)?;
             }
         }
+        Ok(())
+    }
+
+    fn write_gradient_flags(&mut self, gradient: &Gradient) -> Result<()> {
+        let mut flags = 0;
+        flags |= match &gradient.spread {
+            GradientSpread::Pad => 0,
+            GradientSpread::Reflect => 0b0100_0000,
+            GradientSpread::Repeat => 0b1000_0000,
+        };
+
+        flags |= match &gradient.interpolation {
+            GradientInterpolation::RGB => 0b00_0000,
+            GradientInterpolation::LinearRGB => 0b_01_0000,
+        };
+
+        flags |= (gradient.records.len() as u8) & 0b1111;
+        self.write_u8(flags)?;
         Ok(())
     }
 
