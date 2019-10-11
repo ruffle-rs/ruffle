@@ -454,7 +454,13 @@ impl<R: Read> Reader<R> {
                 Tag::JpegTables(data)
             }
 
-            Some(TagCode::Metadata) => Tag::Metadata(tag_reader.read_c_string()?),
+            Some(TagCode::Metadata) => {
+                let mut s = String::with_capacity(length);
+                tag_reader.get_mut().read_to_string(&mut s)?;
+                // Remove trailing null bytes. There may or may not be a null byte.
+                s = s.trim_end_matches(char::from(0)).to_string();
+                Tag::Metadata(s)
+            }
 
             Some(TagCode::SetBackgroundColor) => Tag::SetBackgroundColor(tag_reader.read_rgb()?),
 
