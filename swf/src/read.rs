@@ -3189,7 +3189,7 @@ pub mod tests {
             if parsed_tag != expected_tag {
                 // Failed, result doesn't match.
                 panic!(
-                    "Incorrectly parsed tag.\nRead:\n{:?}\n\nExpected:\n{:?}",
+                    "Incorrectly parsed tag.\nRead:\n{:#?}\n\nExpected:\n{:#?}",
                     parsed_tag, expected_tag
                 );
             }
