@@ -3,6 +3,7 @@ name = "ruffle_desktop"
 version = "0.1.0"
 authors = ["Mike Welsh <mwelsh@gmail.com>"]
 edition = "2018"
+default-run = "ruffle_desktop"
 
 [dependencies]
 cpal = "0.10.0"

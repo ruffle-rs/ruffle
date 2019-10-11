@@ -45,11 +45,20 @@ Ruffle is in the proof-of-concept stage and can currently run early Flash animat
 * `cd web`
 * `wasm-pack build`
 
+### Scanner
+
+If you have a collection of "real world" SWFs to test against, the scanner may be used to benchmark
+ruffle's parsing capabilities. Provided with a folder and an output filename, it will attempt to read
+all of the flash files and report on the success of such a task.
+
+* `cargo run --package=ruffle_scanner -- folder/with/swfs/ results.csv`
+
 ## Structure
 
 - `core` contains the core emulator and common code
 - `desktop` contains the desktop client (uses `glium`)
 - `web` contains the web client (uses `wasm-bindgen`)
+- `scanner` contains a utility to bulk parse swf files
 
 ## License
 
