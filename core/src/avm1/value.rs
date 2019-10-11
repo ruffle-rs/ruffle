@@ -73,7 +73,18 @@ impl<'gc> Value<'gc> {
             Value::Bool(false) => 0.0,
             Value::Bool(true) => 1.0,
             Value::Number(v) => *v,
-            Value::String(v) => v.parse().unwrap_or(NAN), // TODO(Herschel): Handle Infinity/etc.?
+            Value::String(v) => match v.as_str() {
+                v if v.starts_with("0x") => {
+                    let parsed = i64::from_str_radix(&v[2..], 16);
+                    if parsed.is_ok() {
+                        parsed.unwrap_or_default() as f64
+                    } else {
+                        std::f64::NAN
+                    }
+                }
+                "" => 0.0,
+                _ => v.parse().unwrap_or(NAN),
+            },
             Value::Object(_object) => {
                 log::error!("Unimplemented: Object ToNumber");
                 0.0
