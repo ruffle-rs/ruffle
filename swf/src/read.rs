@@ -2028,7 +2028,12 @@ impl<R: Read> Reader<R> {
 
         // PlaceObject3
         let is_image = (flags & 0b10000_00000000) != 0;
-        let has_class_name = (flags & 0b1000_00000000) != 0 || (is_image && (flags & 0b10) != 0);
+        // SWF19 p.40 incorrectly says class name if (HasClassNameFlag || (HasImage && HasCharacterID))
+        // I think this should be if (HasClassNameFlag || (HasImage && !HasCharacterID)),
+        // you use the class name only if a character ID isn't present.
+        // But what is the case where we'd have an image without either HasCharacterID or HasClassName set?
+        let has_character_id = (flags & 0b10) != 0;
+        let has_class_name = (flags & 0b1000_00000000) != 0 || (is_image && !has_character_id);
         let class_name = if has_class_name {
             Some(self.read_c_string()?)
         } else {
