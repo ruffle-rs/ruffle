@@ -1031,7 +1031,7 @@ impl<R: Read> Reader<R> {
             conditions.insert(ButtonActionCondition::KeyPress);
         }
         let mut action_data = Vec::with_capacity(length as usize);
-        if length > 4 {
+        if length >= 4 {
             action_data.resize(length as usize - 4, 0);
             self.input.read_exact(&mut action_data)?;
         } else if length == 0 {
