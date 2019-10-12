@@ -15,7 +15,7 @@ extern crate libflate;
 #[macro_use]
 extern crate num_derive;
 extern crate num_traits;
-#[cfg(feature = "lzma-support")]
+#[cfg(feature = "lzma")]
 extern crate xz2;
 
 pub mod avm1;

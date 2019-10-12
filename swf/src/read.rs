@@ -29,7 +29,21 @@ pub fn read_swf<R: Read>(input: R) -> Result<Swf> {
     let mut reader = swf_stream.reader;
 
     // Decompress all of SWF into memory at once.
-    let mut data = Vec::with_capacity(swf_stream.uncompressed_length);
+    let mut data = if header.compression == Compression::Lzma {
+        // TODO: The LZMA decoder is still funky.
+        // It always errors, and doesn't return all the data if you use read_to_end,
+        // but read_exact at least returns the data... why?
+        // Does the decoder need to be flushed somehow?
+        let mut data = vec![0u8; swf_stream.uncompressed_length];
+        let _ = reader.get_mut().read_exact(&mut data);
+        data
+    } else {
+        let mut data = Vec::with_capacity(swf_stream.uncompressed_length);
+        if let Err(e) = reader.get_mut().read_to_end(&mut data) {
+            log::error!("Error decompressing SWF, may be corrupt: {}", e);
+        }
+        data
+    };
     let version = header.version;
 
     // Some SWF streams may not be compressed correctly,
@@ -66,7 +80,10 @@ pub fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<SwfStream<'a>> 
     // Read SWF header.
     let compression = Reader::read_compression_type(&mut input)?;
     let version = input.read_u8()?;
-    let uncompressed_length = input.read_u32::<LittleEndian>()?;
+
+    // Uncompressed length includes the 4-byte header and 4-byte uncompressed length itself,
+    // subtract it here.
+    let uncompressed_length = input.read_u32::<LittleEndian>()? - 8;
 
     // Now the SWF switches to a compressed stream.
     let decompressed_input: Box<dyn Read> = match compression {
@@ -87,7 +104,7 @@ pub fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<SwfStream<'a>> 
                     version
                 );
             }
-            make_lzma_reader(input)?
+            make_lzma_reader(input, uncompressed_length)?
         }
     };
 
@@ -129,26 +146,57 @@ fn make_zlib_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<dyn Read + 'a>> {
     ))
 }
 
-#[cfg(feature = "lzma-support")]
-fn make_lzma_reader<'a, R: Read + 'a>(mut input: R) -> Result<Box<dyn Read + 'a>> {
-    // Flash uses a mangled LZMA header, so we have to massage it into the normal
-    // format.
+#[cfg(feature = "lzma")]
+fn make_lzma_reader<'a, R: Read + 'a>(
+    mut input: R,
+    uncompressed_length: u32,
+) -> Result<Box<dyn Read + 'a>> {
     use byteorder::WriteBytesExt;
     use std::io::{Cursor, Write};
-    use xz2::stream::{Action, Stream};
-    input.read_u32::<LittleEndian>()?; // Compressed length
+    use xz2::{
+        read::XzDecoder,
+        stream::{Action, Stream},
+    };
+    // Flash uses a mangled LZMA header, so we have to massage it into the normal format.
+    // https://helpx.adobe.com/flash-player/kb/exception-thrown-you-decompress-lzma-compressed.html
+    // LZMA SWF header:
+    // Bytes 0..3: ZWS header
+    // Byte 3: SWF version
+    // Bytes 4..8: Uncompressed length
+    // Bytes 8..12: Compressed length
+    // Bytes 12..17: LZMA properties
+    //
+    // LZMA standard header
+    // Bytes 0..5: LZMA properties
+    // Bytes 5..13: Uncompressed length
+
+    // Read compressed length
+    let _ = input.read_u32::<LittleEndian>()?;
+
+    // Read LZMA propreties to decoder
     let mut lzma_properties = [0u8; 5];
     input.read_exact(&mut lzma_properties)?;
+
+    // Rearrange above into LZMA format
     let mut lzma_header = Cursor::new(Vec::with_capacity(13));
     lzma_header.write_all(&lzma_properties)?;
-    lzma_header.write_u64::<LittleEndian>(uncompressed_length as u64)?;
-    let mut lzma_stream = Stream::new_lzma_decoder(u64::max_value())?;
-    lzma_stream.process(&lzma_header.into_inner(), &mut [0u8; 1], Action::Run)?;
+    lzma_header.write_u64::<LittleEndian>(uncompressed_length.into())?;
+
+    // Create LZMA decoder stream and write header
+    let mut lzma_stream = Stream::new_lzma_decoder(u64::max_value()).unwrap();
+    lzma_stream
+        .process(&lzma_header.into_inner(), &mut [0u8; 1], Action::Run)
+        .unwrap();
+
+    // Decoder is ready
     Ok(Box::new(XzDecoder::new_stream(input, lzma_stream)))
 }
 
-#[cfg(not(feature = "lzma-support"))]
-fn make_lzma_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<dyn Read + 'a>> {
+#[cfg(not(feature = "lzma"))]
+fn make_lzma_reader<'a, R: Read + 'a>(
+    _input: R,
+    _uncompressed_length: u32,
+) -> Result<Box<dyn Read + 'a>> {
     Err(Error::unsupported(
         "Support for Zlib compressed SWFs is not enabled.",
     ))
@@ -2862,7 +2910,7 @@ pub mod tests {
             read_from_file("tests/swfs/zlib.swf").header.compression,
             Compression::Zlib
         );
-        if cfg!(feature = "lzma-support") {
+        if cfg!(feature = "lzma") {
             assert_eq!(
                 read_from_file("tests/swfs/lzma.swf").header.compression,
                 Compression::Lzma
