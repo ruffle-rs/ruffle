@@ -26,5 +26,5 @@ default-features = false # can't use rayon on web
 approx = "0.3.2"
 
 [features]
-default = ["minimp3", "lzma"]
+default = ["minimp3"]
 lzma = ["swf/lzma"]
