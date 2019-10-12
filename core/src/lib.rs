@@ -3,6 +3,9 @@
 #[macro_use]
 mod display_object;
 
+#[macro_use]
+extern crate smallvec;
+
 mod avm1;
 mod bitmap;
 mod bounding_box;
