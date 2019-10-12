@@ -71,15 +71,26 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         let swf_stream = swf::read::read_swf_header(&swf_data[..]).unwrap();
         let header = swf_stream.header;
         let mut reader = swf_stream.reader;
-        // Decompress the entire SWF in memory.
-        let mut data = Vec::with_capacity(swf_stream.uncompressed_length);
 
+        // Decompress the entire SWF in memory.
         // Sometimes SWFs will have an incorrectly compressed stream,
         // but will otherwise decompress fine up to the End tag.
         // So just warn on this case and try to continue gracefully.
-        if let Err(e) = reader.get_mut().read_to_end(&mut data) {
-            log::error!("Error decompressing SWF, may be corrupt: {}", e);
-        }
+        let data = if header.compression == swf::Compression::Lzma {
+            // TODO: The LZMA decoder is still funky.
+            // It always errors, and doesn't return all the data if you use read_to_end,
+            // but read_exact at least returns the data... why?
+            // Does the decoder need to be flushed somehow?
+            let mut data = vec![0u8; swf_stream.uncompressed_length];
+            let _ = reader.get_mut().read_exact(&mut data);
+            data
+        } else {
+            let mut data = Vec::with_capacity(swf_stream.uncompressed_length);
+            if let Err(e) = reader.get_mut().read_to_end(&mut data) {
+                log::error!("Error decompressing SWF, may be corrupt: {}", e);
+            }
+            data
+        };
 
         let swf_len = data.len();
 

@@ -104,13 +104,15 @@ fn write_zlib_swf<W: Write>(_output: W, _swf_body: &[u8]) -> Result<()> {
     ))
 }
 
-#[cfg(feature = "lzma-support")]
+#[cfg(feature = "lzma")]
 fn write_lzma_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
-    use xz2::stream::{Action, LzmaOptions, Stream};
-    use xz2::write::XzEncoder;
-    let mut stream = Stream::new_lzma_encoder(&LzmaOptions::new_preset(9)?)?;
+    use xz2::{
+        stream::{Action, LzmaOptions, Stream},
+        write::XzEncoder,
+    };
+    let mut stream = Stream::new_lzma_encoder(&LzmaOptions::new_preset(9).unwrap()).unwrap();
     let mut lzma_header = [0; 13];
-    stream.process(&[], &mut lzma_header, Action::Run)?;
+    stream.process(&[], &mut lzma_header, Action::Run).unwrap();
     // Compressed length. We just write out a dummy value.
     output.write_u32::<LittleEndian>(0xffffffff)?;
     output.write_all(&lzma_header[0..5])?; // LZMA property bytes.
@@ -119,7 +121,7 @@ fn write_lzma_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
     Ok(())
 }
 
-#[cfg(not(feature = "lzma-support"))]
+#[cfg(not(feature = "lzma"))]
 fn write_lzma_swf<W: Write>(_output: W, _swf_body: &[u8]) -> Result<()> {
     Err(Error::unsupported(
         "Support for LZMA compressed SWFs is not enabled.",
@@ -2792,7 +2794,7 @@ mod tests {
             write_dummy_swf(Compression::Zlib).is_ok(),
             "Failed to write zlib SWF."
         );
-        if cfg!(feature = "lzma-support") {
+        if cfg!(feature = "lzma") {
             assert!(
                 write_dummy_swf(Compression::Lzma).is_ok(),
                 "Failed to write LZMA SWF."
