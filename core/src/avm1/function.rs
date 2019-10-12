@@ -198,8 +198,17 @@ impl<'gc> Executable<'gc> {
                 }
 
                 let argcell = GcCell::allocate(ac.gc_context, arguments);
+                let mut effective_ver = af.swf_version();
+                if avm.current_swf_version(ac) <= 5 {
+                    effective_ver = this
+                        .read()
+                        .display_node()
+                        .map(|dn| dn.read().swf_version())
+                        .unwrap_or(ac.player_version);
+                }
+
                 let mut frame = Activation::from_function(
-                    af.swf_version(),
+                    effective_ver,
                     af.data(),
                     child_scope,
                     this,

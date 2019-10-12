@@ -5,15 +5,15 @@ use crate::avm1::scope::Scope;
 use crate::avm1::{ActionContext, Avm1, Value};
 use crate::tag_utils::SwfSlice;
 use gc_arena::{GcCell, MutationContext};
+use smallvec::SmallVec;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
-use smallvec::SmallVec;
 
 /// Represents a particular register set.
-/// 
+///
 /// This type exists primarily because SmallVec isn't garbage-collectable.
 #[derive(Clone)]
-pub struct RegisterSet<'gc> (SmallVec<[Value<'gc>; 8]>);
+pub struct RegisterSet<'gc>(SmallVec<[Value<'gc>; 8]>);
 
 unsafe impl<'gc> gc_arena::Collect for RegisterSet<'gc> {
     #[inline]
@@ -26,7 +26,7 @@ unsafe impl<'gc> gc_arena::Collect for RegisterSet<'gc> {
 
 impl<'gc> RegisterSet<'gc> {
     /// Create a new register set with a given number of specified registers.
-    /// 
+    ///
     /// The given registers will be set to `undefined`.
     pub fn new(num: u8) -> Self {
         Self(smallvec![Value::Undefined; num as usize])
