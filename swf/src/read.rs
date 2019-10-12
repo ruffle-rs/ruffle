@@ -198,7 +198,7 @@ fn make_lzma_reader<'a, R: Read + 'a>(
     _uncompressed_length: u32,
 ) -> Result<Box<dyn Read + 'a>> {
     Err(Error::unsupported(
-        "Support for Zlib compressed SWFs is not enabled.",
+        "Support for LZMA compressed SWFs is not enabled.",
     ))
 }
 
