@@ -1031,11 +1031,17 @@ impl<R: Read> Reader<R> {
             conditions.insert(ButtonActionCondition::KeyPress);
         }
         let mut action_data = Vec::with_capacity(length as usize);
-        if length > 0 {
+        if length > 4 {
             action_data.resize(length as usize - 4, 0);
             self.input.read_exact(&mut action_data)?;
-        } else {
+        } else if length == 0 {
+            // Last action, read to end.
             self.input.read_to_end(&mut action_data)?;
+        } else {
+            // Some SWFs have phantom action records with an invalid length.
+            // See 401799_pre_Scene_1.swf
+            // TODO: How does Flash handle this?
+            return Err(Error::invalid_data("Button action length is too short"));
         }
         Ok((
             ButtonAction {
