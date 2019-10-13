@@ -390,7 +390,7 @@ mod tests {
         ) -> R,
     {
         rootless_arena(|gc_context| {
-            let mut avm = Avm1::new(gc_context);
+            let mut avm = Avm1::new(gc_context, swf_version);
             let movie_clip: Box<dyn DisplayObject> =
                 Box::new(MovieClip::new(swf_version, gc_context));
             let root = GcCell::allocate(gc_context, movie_clip);

@@ -195,7 +195,7 @@ impl<'gc> Executable<'gc> {
                 }
 
                 let argcell = GcCell::allocate(ac.gc_context, arguments);
-                let effective_ver = if avm.current_swf_version(ac) > 5 {
+                let effective_ver = if avm.current_swf_version() > 5 {
                     af.swf_version()
                 } else {
                     this.read()

@@ -65,6 +65,9 @@ pub struct ActionContext<'a, 'gc, 'gc_context> {
 }
 
 pub struct Avm1<'gc> {
+    /// The Flash Player version we're emulating.
+    player_version: u8,
+
     /// The currently installed constant pool.
     constant_pool: Vec<String>,
 
@@ -98,8 +101,9 @@ unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
 type Error = Box<dyn std::error::Error>;
 
 impl<'gc> Avm1<'gc> {
-    pub fn new(gc_context: MutationContext<'gc, '_>) -> Self {
+    pub fn new(gc_context: MutationContext<'gc, '_>, player_version: u8) -> Self {
         Self {
+            player_version,
             constant_pool: vec![],
             globals: GcCell::allocate(gc_context, create_globals(gc_context)),
             stack_frames: vec![],
@@ -186,10 +190,10 @@ impl<'gc> Avm1<'gc> {
     }
 
     /// Get the currently executing SWF version.
-    pub fn current_swf_version(&self, context: &mut ActionContext<'_, 'gc, '_>) -> u8 {
+    pub fn current_swf_version(&self) -> u8 {
         self.current_stack_frame()
             .map(|sf| sf.read().swf_version())
-            .unwrap_or(context.player_version)
+            .unwrap_or(self.player_version)
     }
 
     /// Perform some action with the current stack frame's reader.
@@ -563,15 +567,12 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_and(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn action_and(&mut self, _context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         // AS1 logical and
         let a = self.pop()?;
         let b = self.pop()?;
         let result = b.into_number_v1() != 0.0 && a.into_number_v1() != 0.0;
-        self.push(Value::from_bool_v1(
-            result,
-            self.current_swf_version(context),
-        ));
+        self.push(Value::from_bool_v1(result, self.current_swf_version()));
         Ok(())
     }
 
@@ -923,15 +924,12 @@ impl<'gc> Avm1<'gc> {
     }
 
     #[allow(clippy::float_cmp)]
-    fn action_equals(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn action_equals(&mut self, _context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         // AS1 equality
         let a = self.pop()?;
         let b = self.pop()?;
         let result = b.into_number_v1() == a.into_number_v1();
-        self.push(Value::from_bool_v1(
-            result,
-            self.current_swf_version(context),
-        ));
+        self.push(Value::from_bool_v1(result, self.current_swf_version()));
         Ok(())
     }
 
@@ -1253,15 +1251,12 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_less(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn action_less(&mut self, _context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         // AS1 less than
         let a = self.pop()?;
         let b = self.pop()?;
         let result = b.into_number_v1() < a.into_number_v1();
-        self.push(Value::from_bool_v1(
-            result,
-            self.current_swf_version(context),
-        ));
+        self.push(Value::from_bool_v1(result, self.current_swf_version()));
         Ok(())
     }
 
@@ -1279,15 +1274,12 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_greater(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn action_greater(&mut self, _context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         // AS1 less than
         let a = self.pop()?;
         let b = self.pop()?;
         let result = b.into_number_v1() > a.into_number_v1();
-        self.push(Value::from_bool_v1(
-            result,
-            self.current_swf_version(context),
-        ));
+        self.push(Value::from_bool_v1(result, self.current_swf_version()));
         Ok(())
     }
 
@@ -1340,14 +1332,11 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_not(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn action_not(&mut self, _context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         // AS1 logical not
         let val = self.pop()?;
         let result = val.into_number_v1() == 0.0;
-        self.push(Value::from_bool_v1(
-            result,
-            self.current_swf_version(context),
-        ));
+        self.push(Value::from_bool_v1(result, self.current_swf_version()));
         Ok(())
     }
 
@@ -1385,15 +1374,12 @@ impl<'gc> Avm1<'gc> {
         Err("Unimplemented action: NewObject".into())
     }
 
-    fn action_or(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn action_or(&mut self, _context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         // AS1 logical or
         let a = self.pop()?;
         let b = self.pop()?;
         let result = b.into_number_v1() != 0.0 || a.into_number_v1() != 0.0;
-        self.push(Value::from_bool_v1(
-            result,
-            self.current_swf_version(context),
-        ));
+        self.push(Value::from_bool_v1(result, self.current_swf_version()));
         Ok(())
     }
 
@@ -1719,16 +1705,13 @@ impl<'gc> Avm1<'gc> {
 
     fn action_string_equals(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        _context: &mut ActionContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         // AS1 strcmp
         let a = self.pop()?;
         let b = self.pop()?;
         let result = b.into_string() == a.into_string();
-        self.push(Value::from_bool_v1(
-            result,
-            self.current_swf_version(context),
-        ));
+        self.push(Value::from_bool_v1(result, self.current_swf_version()));
         Ok(())
     }
 
@@ -1752,17 +1735,14 @@ impl<'gc> Avm1<'gc> {
 
     fn action_string_greater(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        _context: &mut ActionContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         // AS1 strcmp
         let a = self.pop()?;
         let b = self.pop()?;
         // This is specifically a non-UTF8 aware comparison.
         let result = b.into_string().bytes().gt(a.into_string().bytes());
-        self.push(Value::from_bool_v1(
-            result,
-            self.current_swf_version(context),
-        ));
+        self.push(Value::from_bool_v1(result, self.current_swf_version()));
         Ok(())
     }
 
@@ -1777,17 +1757,14 @@ impl<'gc> Avm1<'gc> {
 
     fn action_string_less(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        _context: &mut ActionContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         // AS1 strcmp
         let a = self.pop()?;
         let b = self.pop()?;
         // This is specifically a non-UTF8 aware comparison.
         let result = b.into_string().bytes().lt(a.into_string().bytes());
-        self.push(Value::from_bool_v1(
-            result,
-            self.current_swf_version(context),
-        ));
+        self.push(Value::from_bool_v1(result, self.current_swf_version()));
         Ok(())
     }
 

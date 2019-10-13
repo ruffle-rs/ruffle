@@ -157,7 +157,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                     )),
                 ),
                 mouse_hover_node: GcCell::allocate(gc_context, None),
-                avm: GcCell::allocate(gc_context, Avm1::new(gc_context)),
+                avm: GcCell::allocate(gc_context, Avm1::new(gc_context, NEWEST_PLAYER_VERSION)),
             }),
 
             frame_rate: header.frame_rate.into(),
