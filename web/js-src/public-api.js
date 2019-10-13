@@ -57,7 +57,7 @@ export class PublicAPI {
      * of `SourceAPI`.
      */
     install_source(name, api) {
-
+        this.sources[name] = api;
     }
 
     /**
