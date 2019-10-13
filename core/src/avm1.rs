@@ -223,11 +223,12 @@ impl<'gc> Avm1<'gc> {
 
         self.is_reading = true;
         let (frame_cell, swf_version, data, pc) = self.stack_frames.last().map(|frame| {
+            let frame_ref = frame.read();
             (
                 frame.clone(),
-                frame.read().swf_version(),
-                frame.read().data(),
-                frame.read().pc(),
+                frame_ref.swf_version(),
+                frame_ref.data(),
+                frame_ref.pc(),
             )
         })?;
         let mut read = Reader::new(data.as_ref(), swf_version);
