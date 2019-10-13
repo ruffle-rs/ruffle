@@ -41,6 +41,10 @@ impl<'gc> RegisterSet<'gc> {
     pub fn get_mut(&mut self, num: u8) -> Option<&mut Value<'gc>> {
         self.0.get_mut(num as usize)
     }
+
+    pub fn len(&self) -> u8 {
+        self.0.len() as u8
+    }
 }
 
 /// Represents a single activation of a given AVM1 function or keyframe.
@@ -275,25 +279,27 @@ impl<'gc> Activation<'gc> {
     pub fn this_cell(&self) -> GcCell<'gc, Object<'gc>> {
         self.this
     }
-    /// Returns true if this function was called with a local register set.
-    pub fn has_local_registers(&self) -> bool {
-        self.local_registers.is_some()
+
+    /// Returns true if this activation has a given local register ID.
+    pub fn has_local_register(&self, id: u8) -> bool {
+        self.local_registers
+            .map(|rs| id < rs.read().len() - 1)
+            .unwrap_or(false)
     }
 
     pub fn allocate_local_registers(&mut self, num: u8, mc: MutationContext<'gc, '_>) {
-        self.local_registers = Some(GcCell::allocate(mc, RegisterSet::new(num)));
+        self.local_registers = match num {
+            0 => None,
+            num => Some(GcCell::allocate(mc, RegisterSet::new(num))),
+        };
     }
 
     /// Retrieve a local register.
-    pub fn local_register(&self, id: u8) -> Value<'gc> {
+    pub fn local_register(&self, id: u8) -> Option<Value<'gc>> {
         if let Some(local_registers) = self.local_registers {
-            local_registers
-                .read()
-                .get(id)
-                .cloned()
-                .unwrap_or(Value::Undefined)
+            local_registers.read().get(id).cloned()
         } else {
-            Value::Undefined
+            None
         }
     }
 

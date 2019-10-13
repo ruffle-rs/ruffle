@@ -489,13 +489,14 @@ impl<'gc> Avm1<'gc> {
     pub fn current_register(&self, id: u8) -> Value<'gc> {
         if self
             .current_stack_frame()
-            .map(|sf| sf.read().has_local_registers())
+            .map(|sf| sf.read().has_local_register(id))
             .unwrap_or(false)
         {
             self.current_stack_frame()
                 .unwrap()
                 .read()
                 .local_register(id)
+                .unwrap_or(Value::Undefined)
         } else {
             self.registers
                 .get(id as usize)
@@ -515,7 +516,7 @@ impl<'gc> Avm1<'gc> {
     ) {
         if self
             .current_stack_frame()
-            .map(|sf| sf.read().has_local_registers())
+            .map(|sf| sf.read().has_local_register(id))
             .unwrap_or(false)
         {
             self.current_stack_frame()

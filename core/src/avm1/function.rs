@@ -29,11 +29,8 @@ pub struct Avm1Function<'gc> {
     name: Option<String>,
 
     /// The number of registers to allocate for this function's private register
-    /// set.
-    ///
-    /// If None, then no register set will be allocated and the preload options
-    /// have no effect.
-    register_count: Option<u8>,
+    /// set. Any register beyond this ID will be served from the global one.
+    register_count: u8,
 
     preload_parent: bool,
     preload_root: bool,
@@ -75,7 +72,7 @@ impl<'gc> Avm1Function<'gc> {
             swf_version,
             data: actions,
             name,
-            register_count: None,
+            register_count: 0,
             preload_parent: false,
             preload_root: false,
             suppress_super: false,
@@ -115,7 +112,7 @@ impl<'gc> Avm1Function<'gc> {
             swf_version,
             data: actions,
             name,
-            register_count: Some(swf_function.params.capacity() as u8),
+            register_count: swf_function.params.capacity() as u8,
             preload_parent: swf_function.preload_parent,
             preload_root: swf_function.preload_root,
             suppress_super: swf_function.suppress_super,
@@ -142,7 +139,7 @@ impl<'gc> Avm1Function<'gc> {
         self.scope
     }
 
-    pub fn register_count(&self) -> Option<u8> {
+    pub fn register_count(&self) -> u8 {
         self.register_count
     }
 }
@@ -215,52 +212,48 @@ impl<'gc> Executable<'gc> {
                     Some(argcell),
                 );
 
-                if let Some(register_count) = af.register_count() {
-                    frame.allocate_local_registers(register_count, ac.gc_context);
+                frame.allocate_local_registers(af.register_count(), ac.gc_context);
 
-                    let mut preload_r = 1;
+                let mut preload_r = 1;
 
-                    if af.preload_this {
-                        //TODO: What happens if you specify both suppress and
-                        //preload for this?
-                        frame.set_local_register(preload_r, Value::Object(this), ac.gc_context);
-                        preload_r += 1;
-                    }
+                if af.preload_this {
+                    //TODO: What happens if you specify both suppress and
+                    //preload for this?
+                    frame.set_local_register(preload_r, Value::Object(this), ac.gc_context);
+                    preload_r += 1;
+                }
 
-                    if af.preload_arguments {
-                        //TODO: What happens if you specify both suppress and
-                        //preload for arguments?
-                        frame.set_local_register(preload_r, Value::Object(argcell), ac.gc_context);
-                        preload_r += 1;
-                    }
+                if af.preload_arguments {
+                    //TODO: What happens if you specify both suppress and
+                    //preload for arguments?
+                    frame.set_local_register(preload_r, Value::Object(argcell), ac.gc_context);
+                    preload_r += 1;
+                }
 
-                    if af.preload_super {
-                        //TODO: super not implemented
-                        log::warn!(
-                            "Cannot preload super into register because it's not implemented"
-                        );
-                        //TODO: What happens if you specify both suppress and
-                        //preload for super?
-                        preload_r += 1;
-                    }
+                if af.preload_super {
+                    //TODO: super not implemented
+                    log::warn!("Cannot preload super into register because it's not implemented");
+                    //TODO: What happens if you specify both suppress and
+                    //preload for super?
+                    preload_r += 1;
+                }
 
-                    if af.preload_root {
-                        frame.set_local_register(preload_r, avm.root_object(ac), ac.gc_context);
-                        preload_r += 1;
-                    }
+                if af.preload_root {
+                    frame.set_local_register(preload_r, avm.root_object(ac), ac.gc_context);
+                    preload_r += 1;
+                }
 
-                    if af.preload_parent {
-                        frame.set_local_register(
-                            preload_r,
-                            child_scope.read().resolve("_parent", avm, ac, this),
-                            ac.gc_context,
-                        );
-                        preload_r += 1;
-                    }
+                if af.preload_parent {
+                    frame.set_local_register(
+                        preload_r,
+                        child_scope.read().resolve("_parent", avm, ac, this),
+                        ac.gc_context,
+                    );
+                    preload_r += 1;
+                }
 
-                    if af.preload_global {
-                        frame.set_local_register(preload_r, avm.global_object(ac), ac.gc_context);
-                    }
+                if af.preload_global {
+                    frame.set_local_register(preload_r, avm.global_object(ac), ac.gc_context);
                 }
 
                 //TODO: What happens if the argument registers clash with the
