@@ -368,7 +368,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             let mut cur_hover_node = gc_root.mouse_hover_node.write(gc_context);
             if cur_hover_node.map(GcCell::as_ptr) != new_hover_node.map(GcCell::as_ptr) {
                 let mut update_context = UpdateContext {
-                    player_version: player_version,
+                    player_version,
                     global_time,
                     swf_data,
                     swf_version,
@@ -435,7 +435,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
 
         self.gc_arena.mutate(|gc_context, gc_root| {
             let mut update_context = UpdateContext {
-                player_version: player_version,
+                player_version,
                 global_time,
                 swf_data,
                 swf_version,
@@ -495,7 +495,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
 
         self.gc_arena.mutate(|gc_context, gc_root| {
             let mut update_context = UpdateContext {
-                player_version: player_version,
+                player_version,
                 global_time,
                 swf_data,
                 swf_version,

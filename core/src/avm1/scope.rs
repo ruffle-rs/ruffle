@@ -83,7 +83,7 @@ impl<'gc> Scope<'gc> {
                     },
                 );
 
-                if let None = bottom_scope {
+                if bottom_scope.is_none() {
                     bottom_scope = Some(next_scope);
                 }
 
@@ -138,7 +138,7 @@ impl<'gc> Scope<'gc> {
                 next_scope.write(mc).values = clip;
             }
 
-            if let None = bottom_scope {
+            if bottom_scope.is_none() {
                 bottom_scope = Some(next_scope);
             }
 

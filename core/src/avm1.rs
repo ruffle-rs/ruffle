@@ -182,7 +182,7 @@ impl<'gc> Avm1<'gc> {
     ///
     /// Yields None if there is no stack frame.
     pub fn current_stack_frame(&self) -> Option<GcCell<'gc, Activation<'gc>>> {
-        self.stack_frames.last().map(|ac| ac.clone())
+        self.stack_frames.last().copied()
     }
 
     /// Get the currently executing SWF version.
@@ -225,7 +225,7 @@ impl<'gc> Avm1<'gc> {
         let (frame_cell, swf_version, data, pc) = self.stack_frames.last().map(|frame| {
             let frame_ref = frame.read();
             (
-                frame.clone(),
+                *frame,
                 frame_ref.swf_version(),
                 frame_ref.data(),
                 frame_ref.pc(),
