@@ -17,7 +17,7 @@ impl<'gc> Graphic<'gc> {
             bounds: swf_shape.shape_bounds.clone().into(),
         };
         Graphic {
-            base: DisplayObjectBase::new(context.swf_version),
+            base: Default::default(),
             static_data: gc_arena::Gc::allocate(context.gc_context, static_data),
         }
     }

@@ -461,8 +461,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
 
             // Finalize morph shapes.
             for (id, static_data) in morph_shapes {
-                let morph_shape =
-                    crate::morph_shape::MorphShape::new(swf_version, gc_context, static_data);
+                let morph_shape = crate::morph_shape::MorphShape::new(gc_context, static_data);
                 update_context.library.register_character(
                     id,
                     crate::character::Character::MorphShape(Box::new(morph_shape)),

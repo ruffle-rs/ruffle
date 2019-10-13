@@ -17,7 +17,6 @@ pub struct Button<'gc> {
 
 impl<'gc> Button<'gc> {
     pub fn from_swf_tag(
-        swf_version: u8,
         button: &swf::Button,
         _library: &crate::library::Library<'gc>,
         gc_context: gc_arena::MutationContext<'gc, '_>,
@@ -46,7 +45,7 @@ impl<'gc> Button<'gc> {
         };
 
         Button {
-            base: DisplayObjectBase::new(swf_version),
+            base: Default::default(),
             static_data: gc_arena::Gc::allocate(gc_context, static_data),
             children: BTreeMap::new(),
             hit_area: BTreeMap::new(),

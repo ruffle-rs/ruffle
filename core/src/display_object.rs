@@ -1,5 +1,5 @@
 use crate::avm1::Value;
-use crate::player::{RenderContext, UpdateContext};
+use crate::player::{RenderContext, UpdateContext, NEWEST_PLAYER_VERSION};
 use crate::prelude::*;
 use crate::transform::Transform;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -14,13 +14,10 @@ pub struct DisplayObjectBase<'gc> {
     transform: Transform,
     name: String,
     clip_depth: Depth,
-
-    ///The version of the SWF that created this display object.
-    swf_version: u8,
 }
 
-impl<'gc> DisplayObjectBase<'gc> {
-    pub fn new(swf_version: u8) -> Self {
+impl<'gc> Default for DisplayObjectBase<'gc> {
+    fn default() -> Self {
         Self {
             parent: Default::default(),
             place_frame: Default::default(),
@@ -28,7 +25,6 @@ impl<'gc> DisplayObjectBase<'gc> {
             transform: Default::default(),
             name: Default::default(),
             clip_depth: Default::default(),
-            swf_version: swf_version,
         }
     }
 }
@@ -85,9 +81,6 @@ impl<'gc> DisplayObject<'gc> for DisplayObjectBase<'gc> {
     }
     fn box_clone(&self) -> Box<dyn DisplayObject<'gc>> {
         Box::new(self.clone())
-    }
-    fn swf_version(&self) -> u8 {
-        self.swf_version
     }
 }
 
@@ -198,7 +191,11 @@ pub trait DisplayObject<'gc>: 'gc + Collect + Debug {
     }
 
     /// Return the version of the SWF that created this movie clip.
-    fn swf_version(&self) -> u8;
+    fn swf_version(&self) -> u8 {
+        self.parent()
+            .map(|p| p.read().swf_version())
+            .unwrap_or(NEWEST_PLAYER_VERSION)
+    }
 }
 
 impl<'gc> Clone for Box<dyn DisplayObject<'gc>> {

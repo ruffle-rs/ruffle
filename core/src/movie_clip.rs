@@ -22,6 +22,7 @@ type FrameNumber = u16;
 #[derive(Clone, Debug)]
 pub struct MovieClip<'gc> {
     base: DisplayObjectBase<'gc>,
+    swf_version: u8,
     static_data: Gc<'gc, MovieClipStatic>,
     tag_stream_pos: u64,
     is_playing: bool,
@@ -35,7 +36,8 @@ pub struct MovieClip<'gc> {
 impl<'gc> MovieClip<'gc> {
     pub fn new(swf_version: u8, gc_context: MutationContext<'gc, '_>) -> Self {
         Self {
-            base: DisplayObjectBase::new(swf_version),
+            base: Default::default(),
+            swf_version,
             static_data: Gc::allocate(gc_context, MovieClipStatic::default()),
             tag_stream_pos: 0,
             is_playing: false,
@@ -56,7 +58,8 @@ impl<'gc> MovieClip<'gc> {
         num_frames: u16,
     ) -> Self {
         Self {
-            base: DisplayObjectBase::new(swf_version),
+            base: Default::default(),
+            swf_version,
             static_data: Gc::allocate(
                 gc_context,
                 MovieClipStatic {
@@ -952,12 +955,8 @@ impl<'gc, 'a> MovieClip<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
         let swf_button = reader.read_define_button_1()?;
-        let button = crate::button::Button::from_swf_tag(
-            context.swf_version,
-            &swf_button,
-            &context.library,
-            context.gc_context,
-        );
+        let button =
+            crate::button::Button::from_swf_tag(&swf_button, &context.library, context.gc_context);
         context
             .library
             .register_character(swf_button.id, Character::Button(Box::new(button)));
@@ -971,12 +970,8 @@ impl<'gc, 'a> MovieClip<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
         let swf_button = reader.read_define_button_2()?;
-        let button = crate::button::Button::from_swf_tag(
-            context.swf_version,
-            &swf_button,
-            &context.library,
-            context.gc_context,
-        );
+        let button =
+            crate::button::Button::from_swf_tag(&swf_button, &context.library, context.gc_context);
         context
             .library
             .register_character(swf_button.id, Character::Button(Box::new(button)));
