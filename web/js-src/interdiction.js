@@ -42,16 +42,18 @@ function wrap_tree(elem) {
  * Defines Ruffle equivalents to legacy plugin elements such as `<object>` and
  * `<embed>` tags.
  */
-export function define_legacy_elements() {
+function define_legacy_elements() {
     window.customElements.define("ruffle-object", RuffleObject);
     window.customElements.define("ruffle-embed", RuffleEmbed);
 }
 
-export function interdict_static_content() {
+function interdict_static_content() {
     wrap_tree(document.getElementsByTagName("html")[0]);
 }
 
-export function interdict_dynamic_content() {
+interdict_static_content.dependencies = ["legacy-elements"];
+
+function interdict_dynamic_content() {
     const observer = new MutationObserver(function (mutationsList, observer) {
         for (let mutation of mutationsList) {
             for (let node of mutation.addedNodes) {
@@ -67,24 +69,36 @@ export function interdict_dynamic_content() {
     observer.observe(document, { childList: true, subtree: true});
 }
 
-export function falsify_plugin_detection() {
+interdict_dynamic_content.dependencies = ["legacy-elements"];
+
+function falsify_plugin_detection() {
     install_plugin(FLASH_PLUGIN);
 }
 
+var running_interdictions = [];
+var interdictions = {
+    "legacy-elements": define_legacy_elements,
+    "static-content": interdict_static_content,
+    "dynamic-content": interdict_dynamic_content,
+    "plugin-detect": falsify_plugin_detection
+};
+
 export function interdict(interdiction_list) {
-    if (interdiction_list.indexOf("static-content") !== -1 || interdiction_list.indexOf("dynamic-content") !== -1) {
-        define_legacy_elements();
-    }
+    for (var i = 0; i < interdiction_list.length; i += 1) {
+        if (running_interdictions.indexOf(interdiction_list[i]) !== -1) {
+            continue;
+        }
 
-    if (interdiction_list.indexOf("static-content") !== -1) {
-        interdict_static_content();
-    }
+        if (!interdictions.hasOwnProperty(interdiction_list[i])) {
+            throw new Error("Requested nonexistent interdiction: " + interdiction_list[i]);
+        }
 
-    if (interdiction_list.indexOf("dynamic-content") !== -1) {
-        interdict_dynamic_content();
-    }
+        running_interdictions.push(interdiction_list[i]);
 
-    if (interdiction_list.indexOf("plugin-detect") !== -1) {
-        falsify_plugin_detection();
+        if (running_interdictions.dependencies !== undefined) {
+            interdict(running_interdictions.dependencies);
+        }
+
+        interdiction_list[i]();
     }
 }
