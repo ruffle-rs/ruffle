@@ -12,9 +12,7 @@ if (!page_options.optout) {
     //If the page calls Ruffle before DOMContentLoaded, then we hold off on the
     //standard set of interdictions.
     window.addEventListener("DOMContentLoaded", function () {
-        if (!window.RufflePlayer.invoked) {
-            window.RufflePlayer.init(["plugin-detect", "static-content"]);
-        }
+        window.RufflePlayer.init();
     });
 } else {
     console.log("WebExtension Ruffle execution prohibited by page");

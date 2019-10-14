@@ -4,17 +4,12 @@ import { Version } from "./version.js";
  * Represents the Ruffle public API.
  * 
  * The public API exists primarily to allow multiple installs of Ruffle on a
- * page (e.g. an extension install and a local one) to cooperate. The first to
- * load "wins" and installs it's Public API class, and then all other Ruffle
- * sources register themselves with the Public API.
+ * page (e.g. an extension install and a local one) to cooperate. In an ideal
+ * situation, all Ruffle sources on the page install themselves into a single
+ * public API, and then the public API picks the newest version by default.
  * 
- * As a result, this class's functionality needs to be backwards and forwards
- * compatible, so it is very minimal. Any proposed change to the class must be
- * tested against previous self-hosted versions of Ruffle. We also allow target
- * pages to construct a minimally useful version of this class to declare
- * configuration before Ruffle has actually had a chance to load. Thus, this
- * class's constructor specifically allows a previous version of the Public API
- * to be upgraded from.
+ * This API *is* versioned, in case we need to upgrade it. However, it must be
+ * backwards- and forwards-compatible with all known sources.
  */
 export class PublicAPI {
     /**
@@ -43,6 +38,8 @@ export class PublicAPI {
                 this.invoked = prev.invoked;
                 this.conflict = prev.conflict;
                 this.newest_name = prev.newest_name;
+
+                prev.superceded();
             } else if (prev.constructor === Object && prev.interdictions !== undefined) {
                 /// We're the first, install user configuration
                 this.config = prev;
@@ -51,6 +48,20 @@ export class PublicAPI {
                 this.conflict = prev;
             }
         }
+
+        window.addEventListener("DOMContentLoaded", this.init.bind(this));
+    }
+
+    /**
+     * The version of the public API.
+     * 
+     * This allows a page with an old version of the Public API to be upgraded
+     * to a new version of the API. The public API is intended to be changed
+     * very infrequently, if at all, but this provides an escape mechanism for
+     * newer Ruffle sources to upgrade older installations.
+     */
+    get version() {
+        return "0.1.0";
     }
 
     /**
@@ -62,7 +73,6 @@ export class PublicAPI {
      */
     register_source(name, api) {
         this.sources[name] = api;
-        this.newest_name = this.newest_source_name();
     }
     
     /**
@@ -89,17 +99,35 @@ export class PublicAPI {
 
     /**
      * Negotiate and start Ruffle.
-     * 
-     * @param {array} interdictions The list of interdictions to configure.
      */
-    init(interdictions) {
-        window.RufflePlayer.invoked = true;
+    init() {
+        if (!this.invoked) {
+            this.invoked = true;
+            this.newest_name = this.newest_source_name();
 
-        if (this.newest_name === false) {
-            throw new Error("No registered Ruffle source!");
+            if (this.newest_name === false) {
+                throw new Error("No registered Ruffle source!");
+            }
+
+            let interdictions = this.config.interdictions;
+            if (interdictions === undefined) {
+                interdictions = ["plugin-detect", "static-content"];
+            }
+            
+            this.sources[this.newest_name].init(interdictions);
         }
-        
-        this.sources[this.newest_name].init(interdictions);
+    }
+
+    /**
+     * Indicates that this version of the public API has been superceded by a
+     * newer version.
+     * 
+     * This should only be called by a newer version of the Public API.
+     * Identical versions of the Public API should not supercede older versions
+     * of that same API.
+     */
+    superceded() {
+        this.invoked = true;
     }
 
     /**
@@ -112,6 +140,9 @@ export class PublicAPI {
      * conflicting object. If this is conflicting, then a new public API will
      * be constructed (see the constructor information for what happens to
      * `prev_ruffle`).
+     * 
+     * Note that Public API upgrades are deliberately not enabled in this
+     * version of Ruffle, since there is no Public API to upgrade from.
      * 
      * @param {string|undefined} source_name The name of this particular
      * Ruffle source.
