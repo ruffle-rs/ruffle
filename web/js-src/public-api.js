@@ -1,10 +1,12 @@
+import { Version } from "./version.js";
+
 /**
  * Represents the Ruffle public API.
  * 
  * The public API exists primarily to allow multiple installs of Ruffle on a
  * page (e.g. an extension install and a local one) to cooperate. The first to
  * load "wins" and installs it's Public API class, and then all other Ruffle
- * sources install their sources into the Public API.
+ * sources register themselves with the Public API.
  * 
  * As a result, this class's functionality needs to be backwards and forwards
  * compatible, so it is very minimal. Any proposed change to the class must be
@@ -19,7 +21,7 @@ export class PublicAPI {
      * Construct the Ruffle public API.
      * 
      * Do not use this function to negotiate a public API. Instead, use
-     * `public_api` to install your Ruffle source into an existing public API
+     * `public_api` to register your Ruffle source with an existing public API
      * if it exists.
      * 
      * @param {object} prev What used to be in the public API slot.
@@ -31,6 +33,7 @@ export class PublicAPI {
         this.sources = {};
         this.config = {};
         this.invoked = false;
+        this.newest_name = false;
 
         if (prev !== undefined) {
             if (prev.constructor.name === PublicAPI.name) {
@@ -39,6 +42,7 @@ export class PublicAPI {
                 this.config = prev.config;
                 this.invoked = prev.invoked;
                 this.conflict = prev.conflict;
+                this.newest_name = prev.newest_name;
             } else if (prev.constructor === Object && prev.interdictions !== undefined) {
                 /// We're the first, install user configuration
                 this.config = prev;
@@ -50,14 +54,37 @@ export class PublicAPI {
     }
 
     /**
-     * Install a given source into the Ruffle Public API.
+     * Register a given source with the Ruffle Public API.
      * 
      * @param {string} name The name of the source.
      * @param {object} api The public API object. This must conform to the shape
      * of `SourceAPI`.
      */
-    install_source(name, api) {
+    register_source(name, api) {
         this.sources[name] = api;
+        this.newest_name = this.newest_source_name();
+    }
+    
+    /**
+     * Determine the name of the newest registered source in the Public API.
+     * 
+     * @returns {(string|bool)} The name of the source, or `false` if no source
+     * has yet to be registered.
+     */
+    newest_source_name() {
+        let newest_name = false, newest_version = Version.from_semver("0.0.0");
+
+        for (let k in this.sources) {
+            if (this.sources.hasOwnProperty(k)) {
+                let k_version = Version.from_semver(this.sources[k].version);
+                if (k_version.has_precedence_over(newest_version)) {
+                    newest_name = k;
+                    newest_version = k_version;
+                }
+            }
+        }
+
+        return newest_name;
     }
 
     /**
@@ -67,12 +94,12 @@ export class PublicAPI {
      */
     init(interdictions) {
         window.RufflePlayer.invoked = true;
-        
-        for (var key in this.sources) {
-            if (this.sources.hasOwnProperty(key)) {
-                return this.sources[key].init(interdictions)
-            }
+
+        if (this.newest_name === false) {
+            throw new Error("No registered Ruffle source!");
         }
+        
+        this.sources[this.newest_name].init(interdictions);
     }
 
     /**
@@ -92,7 +119,7 @@ export class PublicAPI {
      * @param {object|undefined} source_api The Ruffle source to add.
      * 
      * If both parameters are provided they will be used to define a new Ruffle
-     * source to install into the public API.
+     * source to register with the public API.
      * 
      * @returns {object} The Ruffle Public API.
      */
@@ -105,7 +132,7 @@ export class PublicAPI {
         }
         
         if (source_name !== undefined && source_api !== undefined) {
-            public_api.install_source(source_name, source_api);
+            public_api.register_source(source_name, source_api);
         }
 
         return public_api;
