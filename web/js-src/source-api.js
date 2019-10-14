@@ -13,7 +13,17 @@ export class SourceAPI {
         return "0.1.0";
     }
     
-    init(interdictions) {
+    /**
+     * Start up a particular set of interdictions.
+     * 
+     * Interdictions, once enabled, may not be disabled. However, this function
+     * may be called again with a different list to enable further
+     * interdictions.
+     * 
+     * @param {array} interdictions A list of interdictions. See the
+     * `interdiction` module for a list of allowable strings.
+     */
+    interdict(interdictions) {
         interdict(interdictions);
     }
 }

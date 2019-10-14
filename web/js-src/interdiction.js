@@ -99,6 +99,6 @@ export function interdict(interdiction_list) {
             interdict(running_interdictions.dependencies);
         }
 
-        interdiction_list[i]();
+        interdictions[interdiction_list[i]]();
     }
 }

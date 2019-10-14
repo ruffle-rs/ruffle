@@ -40,9 +40,9 @@ export class PublicAPI {
                 this.newest_name = prev.newest_name;
 
                 prev.superceded();
-            } else if (prev.constructor === Object && prev.interdictions !== undefined) {
+            } else if (prev.constructor === Object && prev.config !== undefined) {
                 /// We're the first, install user configuration
-                this.config = prev;
+                this.config = prev.config;
             } else {
                 /// We're the first, but conflicting with someone else.
                 this.conflict = prev;
@@ -99,6 +99,11 @@ export class PublicAPI {
 
     /**
      * Negotiate and start Ruffle.
+     * 
+     * This function reads the config parameter to determine which
+     * interdictions should be enabled. If the configuration parameter is
+     * missing, then we use a built-in set of defaults sufficient to fool sites
+     * with static content and weak plugin detection.
      */
     init() {
         if (!this.invoked) {
@@ -114,7 +119,7 @@ export class PublicAPI {
                 interdictions = ["plugin-detect", "static-content"];
             }
             
-            this.sources[this.newest_name].init(interdictions);
+            this.sources[this.newest_name].interdict(interdictions);
         }
     }
 
