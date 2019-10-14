@@ -114,6 +114,7 @@ pub fn create_globals<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<'gc> 
 }
 
 #[cfg(test)]
+#[allow(clippy::unreadable_literal)]
 mod tests {
     use super::*;
     use crate::avm1::activation::Activation;
@@ -225,6 +226,8 @@ mod tests {
         &[Value::String("100a".to_string())] => Value::Bool(true),
         &[Value::String("0x10".to_string())] => Value::Bool(false),
         &[Value::String("0xhello".to_string())] => Value::Bool(true),
+        &[Value::String("0x1999999981ffffff".to_string())] => Value::Bool(false),
+        &[Value::String("0xUIXUIDFKHJDF012345678".to_string())] => Value::Bool(true),
         &[Value::String("123e-1".to_string())] => Value::Bool(false),
         &[] => Value::Bool(true)
     );
@@ -248,7 +251,8 @@ mod tests {
         &[Value::String("0x10".to_string())] => Value::Number(16.0),
         &[Value::String("0xhello".to_string())] => Value::Number(std::f64::NAN),
         &[Value::String("123e-1".to_string())] => Value::Number(12.3),
+        &[Value::String("0x1999999981ffffff".to_string())] => Value::Number(-2113929217.0),
+        &[Value::String("0xUIXUIDFKHJDF012345678".to_string())] => Value::Number(std::f64::NAN),
         &[] => Value::Number(0.0)
     );
-
 }

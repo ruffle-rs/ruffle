@@ -75,12 +75,30 @@ impl<'gc> Value<'gc> {
             Value::Number(v) => *v,
             Value::String(v) => match v.as_str() {
                 v if v.starts_with("0x") => {
-                    let parsed = i64::from_str_radix(&v[2..], 16);
-                    if parsed.is_ok() {
-                        parsed.unwrap_or_default() as f64
-                    } else {
-                        std::f64::NAN
+                    let mut n: u32 = 0;
+                    for c in v[2..].bytes() {
+                        n = n.wrapping_shl(4);
+                        n |= match c {
+                            b'0' => 0,
+                            b'1' => 1,
+                            b'2' => 2,
+                            b'3' => 3,
+                            b'4' => 4,
+                            b'5' => 5,
+                            b'6' => 6,
+                            b'7' => 7,
+                            b'8' => 8,
+                            b'9' => 9,
+                            b'a' | b'A' => 10,
+                            b'b' | b'B' => 11,
+                            b'c' | b'C' => 12,
+                            b'd' | b'D' => 13,
+                            b'e' | b'E' => 14,
+                            b'f' | b'F' => 15,
+                            _ => return NAN,
+                        }
                     }
+                    f64::from(n as i32)
                 }
                 "" => 0.0,
                 _ => v.parse().unwrap_or(NAN),
