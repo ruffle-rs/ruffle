@@ -19,6 +19,9 @@ export class PublicAPI {
      * `public_api` to register your Ruffle source with an existing public API
      * if it exists.
      * 
+     * Constructing a Public API will also trigger it to initialize Ruffle once
+     * the page loads, if the API has not already been superceded.
+     * 
      * @param {object} prev What used to be in the public API slot.
      * 
      * This is used to upgrade from a prior version of the public API, or from
@@ -49,7 +52,11 @@ export class PublicAPI {
             }
         }
 
-        window.addEventListener("DOMContentLoaded", this.init.bind(this));
+        if (document.readyState === "loading") {
+            window.addEventListener("DOMContentLoaded", this.init.bind(this));
+        } else {
+            window.setTimeout(this.init.bind(this), 0);
+        }
     }
 
     /**
@@ -130,6 +137,9 @@ export class PublicAPI {
      * This should only be called by a newer version of the Public API.
      * Identical versions of the Public API should not supercede older versions
      * of that same API.
+     * 
+     * Unfortunately, we can't disable interdictions after-the-fact, so this
+     * only lets you disable the init event...
      */
     superceded() {
         this.invoked = true;
