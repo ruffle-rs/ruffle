@@ -21,6 +21,8 @@ mod globals;
 pub mod movie_clip;
 pub mod object;
 mod scope;
+#[cfg(test)]
+mod test_utils;
 mod value;
 
 use activation::Activation;
