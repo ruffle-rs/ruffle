@@ -1,0 +1,59 @@
+/**
+ * A mapping between internal element IDs and DOM element IDs.
+ */
+var private_registry = {};
+
+/**
+ * Register a custom element.
+ * 
+ * This function is designed to be tolerant of naming conflicts. If
+ * registration fails, we modify the name, and try again. As a result, this
+ * function returns the real element name to use.
+ * 
+ * Calling this function multiple times will *not* register multiple elements.
+ * We store a private registry mapping internal element names to DOM names.
+ * Thus, the proper way to use this function is to call it every time you are
+ * about to work with custom element names.
+ * 
+ * @param {string} element_name The internal name of the element.
+ * @param {function} element_class The class of the element.
+ * 
+ * You must call this function with the same class every time.
+ * 
+ * @returns {string} The actual element name.
+ * @throws Throws an error if two different elements were registered with the
+ * same internal name.
+ */
+export function register_element(element_name, element_class) {
+    if (private_registry[element_name] !== undefined) {
+        if (private_registry[element_name].class !== element_class) {
+            throw new Error("Internal naming conflict on " + element_name);
+        } else {
+            return private_registry[element_name].name;
+        }
+    }
+
+    let tries = 0;
+
+    while (true) {
+        try {
+            let external_name = element_name;
+            if (tries > 0) {
+                external_name = external_name + "-" + tries;
+            }
+
+            window.customElements.define(external_name, element_class);
+            private_registry[element_name] = {
+                "class": element_class,
+                "name": external_name,
+                "internal_name": element_name
+            };
+
+            return external_name;
+        } catch (e) {
+            if (e instanceof NotSupportedError) {
+                tries += 1;
+            }
+        }
+    }
+}

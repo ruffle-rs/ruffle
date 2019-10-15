@@ -1,6 +1,7 @@
 import RuffleObject from "./ruffle-object";
 import RuffleEmbed from "./ruffle-embed";
 import { install_plugin, FLASH_PLUGIN } from "./plugin-polyfill";
+import register_element from "./register-element";
 
 /**
  * Interdict native elements with Ruffle equivalents.
@@ -38,15 +39,6 @@ function wrap_tree(elem) {
     }
 }
 
-/**
- * Defines Ruffle equivalents to legacy plugin elements such as `<object>` and
- * `<embed>` tags.
- */
-function define_legacy_elements() {
-    window.customElements.define("ruffle-object", RuffleObject);
-    window.customElements.define("ruffle-embed", RuffleEmbed);
-}
-
 function interdict_static_content() {
     wrap_tree(document.getElementsByTagName("html")[0]);
 }
@@ -77,7 +69,6 @@ function falsify_plugin_detection() {
 
 var running_interdictions = [];
 var interdictions = {
-    "legacy-elements": define_legacy_elements,
     "static-content": interdict_static_content,
     "dynamic-content": interdict_dynamic_content,
     "plugin-detect": falsify_plugin_detection

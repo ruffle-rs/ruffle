@@ -1,4 +1,5 @@
 import {FLASH_MIMETYPE, FUTURESPLASH_MIMETYPE, FLASH_ACTIVEX_CLASSID, RufflePlayer} from "./ruffle-player.js";
+import register_element from "./register-element";
 
 export default class RuffleObject extends RufflePlayer {
     constructor(...args) {
@@ -43,7 +44,8 @@ export default class RuffleObject extends RufflePlayer {
     }
 
     static from_native_object_element(elem) {
-        var ruffle_obj = document.createElement("ruffle-object");
+        let external_name = register_element("ruffle-object", RuffleObject);
+        let ruffle_obj = document.createElement(external_name);
         for (let attrib of elem.attributes) {
             if (attrib.specified) {
                 ruffle_obj.setAttribute(attrib.name, attrib.value);
