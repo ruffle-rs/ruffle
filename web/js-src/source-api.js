@@ -9,6 +9,15 @@ import { interdict } from "./interdiction";
  * how to control it.
  */
 export class SourceAPI {
+    /**
+     * Construct a Source API.
+     * 
+     * @param {string} source_name The name of this particular source.
+     */
+    constructor(source_name) {
+        this.name = name;
+    }
+
     get version() {
         return "0.1.0";
     }
