@@ -95,10 +95,12 @@ export function interdict(interdiction_list) {
 
         running_interdictions.push(interdiction_list[i]);
 
-        if (running_interdictions.dependencies !== undefined) {
-            interdict(running_interdictions.dependencies);
+        var interdiction = interdictions[interdiction_list[i]];
+
+        if (interdiction.dependencies !== undefined) {
+            interdict(interdiction.dependencies);
         }
 
-        interdictions[interdiction_list[i]]();
+        interdiction();
     }
 }
