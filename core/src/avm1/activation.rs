@@ -283,7 +283,7 @@ impl<'gc> Activation<'gc> {
     /// Returns true if this activation has a given local register ID.
     pub fn has_local_register(&self, id: u8) -> bool {
         self.local_registers
-            .map(|rs| id < rs.read().len() - 1)
+            .map(|rs| id < rs.read().len())
             .unwrap_or(false)
     }
 
