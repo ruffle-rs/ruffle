@@ -77,15 +77,10 @@ impl<W: Write> Writer<W> {
                         .map(|p| p.name.len() + 2)
                         .sum::<usize>()
                     + 4;
-                let num_registers = function
-                    .params
-                    .iter()
-                    .map(|p| if p.register_index.is_none() { 1 } else { 0 })
-                    .sum();
                 self.write_action_header(OpCode::DefineFunction2, len)?;
                 self.write_c_string(&function.name)?;
                 self.write_u16(function.params.len() as u16)?;
-                self.write_u8(num_registers)?;
+                self.write_u8(function.register_count)?;
                 let flags = if function.preload_global {
                     0b1_00000000
                 } else {

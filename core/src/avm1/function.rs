@@ -112,7 +112,7 @@ impl<'gc> Avm1Function<'gc> {
             swf_version,
             data: actions,
             name,
-            register_count: swf_function.params.capacity() as u8,
+            register_count: swf_function.register_count,
             preload_parent: swf_function.preload_parent,
             preload_root: swf_function.preload_root,
             suppress_super: swf_function.suppress_super,
