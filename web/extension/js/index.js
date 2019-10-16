@@ -7,13 +7,6 @@ let page_options = get_config_options(html);
 
 if (!page_options.optout) {
     window.RufflePlayer = PublicAPI.negotiate(window.RufflePlayer, "extension", new SourceAPI());
-
-    //This is intended for sites that don't configure Ruffle themselves.
-    //If the page calls Ruffle before DOMContentLoaded, then we hold off on the
-    //standard set of interdictions.
-    window.addEventListener("DOMContentLoaded", function () {
-        window.RufflePlayer.init();
-    });
 } else {
     console.log("WebExtension Ruffle execution prohibited by page");
 }

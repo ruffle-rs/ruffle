@@ -1,4 +1,4 @@
-import { interdict } from "./interdiction";
+import { polyfill } from "./polyfills";
 
 /**
  * Represents this particular version of Ruffle.
@@ -23,16 +23,15 @@ export class SourceAPI {
     }
     
     /**
-     * Start up a particular set of interdictions.
+     * Start up a particular set of polyfills.
      * 
-     * Interdictions, once enabled, may not be disabled. However, this function
-     * may be called again with a different list to enable further
-     * interdictions.
+     * Polyfills, once enabled, may not be disabled. However, this function may
+     * be called again with a different list to enable further polyfills.
      * 
-     * @param {array} interdictions A list of interdictions. See the
-     * `interdiction` module for a list of allowable strings.
+     * @param {array} polyfills A list of polyfills. See the `polyfills` module
+     * for a list of allowable strings.
      */
-    interdict(interdictions) {
-        interdict(interdictions);
+    polyfill(polyfills) {
+        polyfill(polyfills);
     }
 }

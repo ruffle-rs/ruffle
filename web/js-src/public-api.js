@@ -107,10 +107,10 @@ export class PublicAPI {
     /**
      * Negotiate and start Ruffle.
      * 
-     * This function reads the config parameter to determine which
-     * interdictions should be enabled. If the configuration parameter is
-     * missing, then we use a built-in set of defaults sufficient to fool sites
-     * with static content and weak plugin detection.
+     * This function reads the config parameter to determine which polyfills
+     * should be enabled. If the configuration parameter is missing, then we
+     * use a built-in set of defaults sufficient to fool sites with static
+     * content and weak plugin detection.
      */
     init() {
         if (!this.invoked) {
@@ -121,12 +121,12 @@ export class PublicAPI {
                 throw new Error("No registered Ruffle source!");
             }
 
-            let interdictions = this.config.interdictions;
-            if (interdictions === undefined) {
-                interdictions = ["plugin-detect", "static-content"];
+            let polyfills = this.config.polyfills;
+            if (polyfills === undefined) {
+                polyfills = ["plugin-detect", "static-content"];
             }
             
-            this.sources[this.newest_name].interdict(interdictions);
+            this.sources[this.newest_name].polyfill(polyfills);
         }
     }
 
@@ -138,7 +138,7 @@ export class PublicAPI {
      * Identical versions of the Public API should not supercede older versions
      * of that same API.
      * 
-     * Unfortunately, we can't disable interdictions after-the-fact, so this
+     * Unfortunately, we can't disable polyfills after-the-fact, so this
      * only lets you disable the init event...
      */
     superceded() {

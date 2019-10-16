@@ -1,5 +1,5 @@
 import {FLASH_MIMETYPE, FUTURESPLASH_MIMETYPE, RufflePlayer} from "./ruffle-player.js";
-import register_element from "./register-element";
+import {register_element} from "./register-element";
 
 export default class RuffleEmbed extends RufflePlayer {
     constructor(...args) {
