@@ -325,9 +325,9 @@ impl<'a> Reader<'a> {
     fn read_define_function_2(&mut self, action_length: &mut usize) -> Result<Action<'a>> {
         let name = self.read_c_string()?;
         let num_params = self.read_u16()?;
-        let num_registers = self.read_u8()?; // Number of registers
+        let register_count = self.read_u8()?; // Number of registers
         let flags = self.read_u16()?;
-        let mut params = Vec::with_capacity(num_params as usize + num_registers as usize);
+        let mut params = Vec::with_capacity(num_params as usize);
         for _ in 0..num_params {
             let register = self.read_u8()?;
             params.push(FunctionParam {
@@ -341,6 +341,7 @@ impl<'a> Reader<'a> {
         Ok(Action::DefineFunction2(Function {
             name,
             params,
+            register_count,
             preload_global: flags & 0b1_00000000 != 0,
             preload_parent: flags & 0b10000000 != 0,
             preload_root: flags & 0b1000000 != 0,

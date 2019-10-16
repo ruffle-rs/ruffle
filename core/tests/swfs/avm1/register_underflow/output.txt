@@ -1,0 +1,15 @@
+global reg 0: 0
+global reg 1: 1
+global reg 2: 2
+global reg 3: 3
+Function start f(a), RegisterCount = 3, a => register2
+Function reg 0: undefined
+Function reg 1: undefined
+Function reg 2: 66
+Function reg 3: 3
+Changing registers to 9.
+Function end
+global reg 0: 0
+global reg 1: 1
+global reg 2: 2
+global reg 3: 9

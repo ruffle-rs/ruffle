@@ -153,6 +153,7 @@ pub enum SendVarsMethod {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Function<'a> {
     pub name: &'a str,
+    pub register_count: u8,
     pub params: Vec<FunctionParam<'a>>,
     pub preload_parent: bool,
     pub preload_root: bool,

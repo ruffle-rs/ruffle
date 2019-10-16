@@ -47,6 +47,13 @@ swf_tests! {
     (tell_target, "avm1/tell_target", 3),
     (typeofs, "avm1/typeof", 1),
     (typeof_globals, "avm1/typeof_globals", 1),
+    (closure_scope, "avm1/closure_scope", 1),
+    (variable_args, "avm1/variable_args", 1),
+    (custom_clip_methods, "avm1/custom_clip_methods", 3),
+    (delete, "avm1/delete", 3),
+    (timeline_function_def, "avm1/timeline_function_def", 3),
+    (root_global_parent, "avm1/root_global_parent", 3),
+    (register_underflow, "avm1/register_underflow", 1),
 }
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.

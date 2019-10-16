@@ -61,15 +61,37 @@ impl<'gc> Scope<'gc> {
 
     /// Construct a closure scope to be used as the parent of all local scopes
     /// when invoking a function.
+    ///
+    /// This function filters With scopes from the scope chain. If all scopes
+    /// are filtered (somehow), this function constructs and returns a new,
+    /// single global scope with a bare object.
     pub fn new_closure_scope(
         mut parent: GcCell<'gc, Self>,
         mc: MutationContext<'gc, '_>,
     ) -> GcCell<'gc, Self> {
-        let mut closure_scope_list = Vec::new();
+        let mut bottom_scope = None;
+        let mut top_scope: Option<GcCell<'gc, Self>> = None;
 
         loop {
             if parent.read().class != ScopeClass::With {
-                closure_scope_list.push(parent);
+                let next_scope = GcCell::allocate(
+                    mc,
+                    Self {
+                        parent: None,
+                        class: parent.read().class,
+                        values: parent.read().values,
+                    },
+                );
+
+                if bottom_scope.is_none() {
+                    bottom_scope = Some(next_scope);
+                }
+
+                if let Some(ref scope) = top_scope {
+                    scope.write(mc).parent = Some(next_scope);
+                }
+
+                top_scope = Some(next_scope);
             }
 
             let grandparent = parent.read().parent;
@@ -80,30 +102,16 @@ impl<'gc> Scope<'gc> {
             }
         }
 
-        let mut parent_scope = None;
-        for scope in closure_scope_list.iter().rev() {
-            parent_scope = Some(GcCell::allocate(
-                mc,
-                Scope {
-                    parent: parent_scope,
-                    class: scope.read().class,
-                    values: scope.read().values,
-                },
-            ));
-        }
-
-        if let Some(parent_scope) = parent_scope {
-            parent_scope
-        } else {
+        bottom_scope.unwrap_or_else(|| {
             GcCell::allocate(
                 mc,
-                Scope {
+                Self {
                     parent: None,
                     class: ScopeClass::Global,
                     values: GcCell::allocate(mc, Object::bare_object()),
                 },
             )
-        }
+        })
     }
 
     /// Construct a scope for use with `tellTarget` code where the timeline
@@ -113,19 +121,32 @@ impl<'gc> Scope<'gc> {
         clip: GcCell<'gc, Object<'gc>>,
         mc: MutationContext<'gc, '_>,
     ) -> GcCell<'gc, Self> {
-        let mut timeline_scope_list = Vec::new();
+        let mut bottom_scope = None;
+        let mut top_scope: Option<GcCell<'gc, Self>> = None;
 
         loop {
-            if parent.read().class != ScopeClass::Target {
-                timeline_scope_list.push(parent);
-            } else {
-                let new_scope = Self {
+            let next_scope = GcCell::allocate(
+                mc,
+                Self {
                     parent: None,
-                    class: ScopeClass::Target,
-                    values: clip,
-                };
-                timeline_scope_list.push(GcCell::allocate(mc, new_scope));
+                    class: parent.read().class,
+                    values: parent.read().values,
+                },
+            );
+
+            if parent.read().class == ScopeClass::Target {
+                next_scope.write(mc).values = clip;
             }
+
+            if bottom_scope.is_none() {
+                bottom_scope = Some(next_scope);
+            }
+
+            if let Some(ref scope) = top_scope {
+                scope.write(mc).parent = Some(next_scope);
+            }
+
+            top_scope = Some(next_scope);
 
             let grandparent = parent.read().parent;
             if let Some(grandparent) = grandparent {
@@ -135,30 +156,16 @@ impl<'gc> Scope<'gc> {
             }
         }
 
-        let mut parent_scope = None;
-        for scope in timeline_scope_list.iter().rev() {
-            parent_scope = Some(GcCell::allocate(
-                mc,
-                Scope {
-                    parent: parent_scope,
-                    class: scope.read().class,
-                    values: scope.read().values,
-                },
-            ));
-        }
-
-        if let Some(parent_scope) = parent_scope {
-            parent_scope
-        } else {
+        bottom_scope.unwrap_or_else(|| {
             GcCell::allocate(
                 mc,
-                Scope {
+                Self {
                     parent: None,
                     class: ScopeClass::Global,
                     values: GcCell::allocate(mc, Object::bare_object()),
                 },
             )
-        }
+        })
     }
 
     /// Construct a with scope to be used as the scope during a with block.
@@ -229,12 +236,18 @@ impl<'gc> Scope<'gc> {
     }
 
     /// Resolve a particular value in the scope chain.
-    pub fn resolve(&self, name: &str) -> Value<'gc> {
+    pub fn resolve(
+        &self,
+        name: &str,
+        avm: &mut Avm1<'gc>,
+        context: &mut ActionContext<'_, 'gc, '_>,
+        this: GcCell<'gc, Object<'gc>>,
+    ) -> Value<'gc> {
         if self.locals().has_property(name) {
-            return self.locals().force_get(name);
+            return self.locals().get(name, avm, context, this);
         }
         if let Some(scope) = self.parent() {
-            return scope.resolve(name);
+            return scope.resolve(name, avm, context, this);
         }
 
         Value::Undefined

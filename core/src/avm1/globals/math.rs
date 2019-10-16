@@ -153,12 +153,14 @@ mod tests {
         F: for<'a, 'gc> FnOnce(&mut Avm1<'gc>, &mut ActionContext<'a, 'gc, '_>) -> R,
     {
         rootless_arena(|gc_context| {
-            let mut avm = Avm1::new(gc_context);
-            let movie_clip: Box<dyn DisplayObject> = Box::new(MovieClip::new(gc_context));
+            let mut avm = Avm1::new(gc_context, swf_version);
+            let movie_clip: Box<dyn DisplayObject> =
+                Box::new(MovieClip::new(swf_version, gc_context));
             let root = GcCell::allocate(gc_context, movie_clip);
             let mut context = ActionContext {
                 gc_context,
                 global_time: 0,
+                player_version: 32,
                 root,
                 start_clip: root,
                 active_clip: root,
@@ -170,7 +172,10 @@ mod tests {
             };
 
             let globals = avm.global_object_cell();
-            avm.insert_stack_frame(Activation::from_nothing(swf_version, globals, gc_context));
+            avm.insert_stack_frame(
+                Activation::from_nothing(swf_version, globals, gc_context),
+                &mut context,
+            );
 
             test(&mut avm, &mut context)
         })

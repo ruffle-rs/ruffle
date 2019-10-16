@@ -2,11 +2,50 @@
 
 use crate::avm1::object::Object;
 use crate::avm1::scope::Scope;
-use crate::avm1::Value;
+use crate::avm1::{ActionContext, Avm1, Value};
 use crate::tag_utils::SwfSlice;
 use gc_arena::{GcCell, MutationContext};
+use smallvec::SmallVec;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
+
+/// Represents a particular register set.
+///
+/// This type exists primarily because SmallVec isn't garbage-collectable.
+#[derive(Clone)]
+pub struct RegisterSet<'gc>(SmallVec<[Value<'gc>; 8]>);
+
+unsafe impl<'gc> gc_arena::Collect for RegisterSet<'gc> {
+    #[inline]
+    fn trace(&self, cc: gc_arena::CollectionContext) {
+        for register in &self.0 {
+            register.trace(cc);
+        }
+    }
+}
+
+impl<'gc> RegisterSet<'gc> {
+    /// Create a new register set with a given number of specified registers.
+    ///
+    /// The given registers will be set to `undefined`.
+    pub fn new(num: u8) -> Self {
+        Self(smallvec![Value::Undefined; num as usize])
+    }
+
+    /// Return a reference to a given register, if it exists.
+    pub fn get(&self, num: u8) -> Option<&Value<'gc>> {
+        self.0.get(num as usize)
+    }
+
+    /// Return a mutable reference to a given register, if it exists.
+    pub fn get_mut(&mut self, num: u8) -> Option<&mut Value<'gc>> {
+        self.0.get_mut(num as usize)
+    }
+
+    pub fn len(&self) -> u8 {
+        self.0.len() as u8
+    }
+}
 
 /// Represents a single activation of a given AVM1 function or keyframe.
 #[derive(Clone)]
@@ -48,7 +87,7 @@ pub struct Activation<'gc> {
     ///
     /// Registers are stored in a `GcCell` so that rescopes (e.g. with) use the
     /// same register set.
-    local_registers: Option<GcCell<'gc, Vec<Value<'gc>>>>,
+    local_registers: Option<GcCell<'gc, RegisterSet<'gc>>>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for Activation<'gc> {
@@ -201,7 +240,12 @@ impl<'gc> Activation<'gc> {
     }
 
     /// Resolve a particular named local variable within this activation.
-    pub fn resolve(&self, name: &str) -> Value<'gc> {
+    pub fn resolve(
+        &self,
+        name: &str,
+        avm: &mut Avm1<'gc>,
+        context: &mut ActionContext<'_, 'gc, '_>,
+    ) -> Value<'gc> {
         if name == "this" {
             return Value::Object(self.this);
         }
@@ -210,7 +254,7 @@ impl<'gc> Activation<'gc> {
             return Value::Object(self.arguments.unwrap());
         }
 
-        self.scope().resolve(name)
+        self.scope().resolve(name, avm, context, self.this)
     }
 
     /// Check if a particular property in the scope chain is defined.
@@ -235,32 +279,34 @@ impl<'gc> Activation<'gc> {
     pub fn this_cell(&self) -> GcCell<'gc, Object<'gc>> {
         self.this
     }
-    /// Returns true if this function was called with a local register set.
-    pub fn has_local_registers(&self) -> bool {
-        self.local_registers.is_some()
+
+    /// Returns true if this activation has a given local register ID.
+    pub fn has_local_register(&self, id: u8) -> bool {
+        self.local_registers
+            .map(|rs| id < rs.read().len())
+            .unwrap_or(false)
     }
 
     pub fn allocate_local_registers(&mut self, num: u8, mc: MutationContext<'gc, '_>) {
-        self.local_registers = Some(GcCell::allocate(mc, vec![Value::Undefined; num as usize]));
+        self.local_registers = match num {
+            0 => None,
+            num => Some(GcCell::allocate(mc, RegisterSet::new(num))),
+        };
     }
 
     /// Retrieve a local register.
-    pub fn local_register(&self, id: u8) -> Value<'gc> {
+    pub fn local_register(&self, id: u8) -> Option<Value<'gc>> {
         if let Some(local_registers) = self.local_registers {
-            local_registers
-                .read()
-                .get(id as usize)
-                .cloned()
-                .unwrap_or(Value::Undefined)
+            local_registers.read().get(id).cloned()
         } else {
-            Value::Undefined
+            None
         }
     }
 
     /// Set a local register.
     pub fn set_local_register(&mut self, id: u8, value: Value<'gc>, mc: MutationContext<'gc, '_>) {
         if let Some(ref mut local_registers) = self.local_registers {
-            if let Some(r) = local_registers.write(mc).get_mut(id as usize) {
+            if let Some(r) = local_registers.write(mc).get_mut(id) {
                 *r = value;
             }
         }

@@ -1,0 +1,7 @@
+timeline frame 1
+timeline frame 2
+timeline frame 3
+Global function call
+just called global function
+Global trace called: traced from frame 3!
+just called local function

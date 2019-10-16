@@ -22,6 +22,7 @@ type FrameNumber = u16;
 #[derive(Clone, Debug)]
 pub struct MovieClip<'gc> {
     base: DisplayObjectBase<'gc>,
+    swf_version: u8,
     static_data: Gc<'gc, MovieClipStatic>,
     tag_stream_pos: u64,
     is_playing: bool,
@@ -33,9 +34,10 @@ pub struct MovieClip<'gc> {
 }
 
 impl<'gc> MovieClip<'gc> {
-    pub fn new(gc_context: MutationContext<'gc, '_>) -> Self {
+    pub fn new(swf_version: u8, gc_context: MutationContext<'gc, '_>) -> Self {
         Self {
             base: Default::default(),
+            swf_version,
             static_data: Gc::allocate(gc_context, MovieClipStatic::default()),
             tag_stream_pos: 0,
             is_playing: false,
@@ -48,6 +50,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn new_with_data(
+        swf_version: u8,
         gc_context: MutationContext<'gc, '_>,
         id: CharacterId,
         tag_stream_start: u64,
@@ -56,6 +59,7 @@ impl<'gc> MovieClip<'gc> {
     ) -> Self {
         Self {
             base: Default::default(),
+            swf_version,
             static_data: Gc::allocate(
                 gc_context,
                 MovieClipStatic {
@@ -1085,6 +1089,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         let id = reader.read_character_id()?;
         let num_frames = reader.read_u16()?;
         let mut movie_clip = MovieClip::new_with_data(
+            context.swf_version,
             context.gc_context,
             id,
             reader.get_ref().position(),

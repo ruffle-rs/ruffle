@@ -1,5 +1,5 @@
 use crate::avm1::Value;
-use crate::player::{RenderContext, UpdateContext};
+use crate::player::{RenderContext, UpdateContext, NEWEST_PLAYER_VERSION};
 use crate::prelude::*;
 use crate::transform::Transform;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -189,6 +189,13 @@ pub trait DisplayObject<'gc>: 'gc + Collect + Debug {
         _display_object: DisplayNode<'gc>,
     ) {
     }
+
+    /// Return the version of the SWF that created this movie clip.
+    fn swf_version(&self) -> u8 {
+        self.parent()
+            .map(|p| p.read().swf_version())
+            .unwrap_or(NEWEST_PLAYER_VERSION)
+    }
 }
 
 impl<'gc> Clone for Box<dyn DisplayObject<'gc>> {
@@ -246,6 +253,9 @@ macro_rules! impl_display_object {
         }
         fn box_clone(&self) -> Box<dyn crate::display_object::DisplayObject<'gc>> {
             Box::new(self.clone())
+        }
+        fn swf_version(&self) -> u8 {
+            self.$field.swf_version()
         }
     };
 }
