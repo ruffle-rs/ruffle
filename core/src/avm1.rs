@@ -1422,24 +1422,72 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_new_method(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let _name = self.pop()?.as_string()?;
-        let _object = self.pop()?.as_object()?;
-        let _num_args = self.pop()?.as_i64()?;
-        self.push(Value::Undefined);
-        // TODO(Herschel)
-        Err("Unimplemented action: NewMethod".into())
+    fn action_new_method(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let method_name = self.pop()?;
+        let object = self.pop()?.as_object()?;
+        let num_args = self.pop()?.as_i64()?;
+        let mut args = Vec::new();
+        for _ in 0..num_args {
+            args.push(self.pop()?);
+        }
+
+        let constructor = object
+            .read()
+            .get(&method_name.as_string()?, self, context, object.to_owned())
+            .as_object()?;
+        let proto = constructor
+            .read()
+            .get("prototype", self, context, constructor.to_owned());
+        let this = GcCell::allocate(
+            context.gc_context,
+            Object::object(
+                context.gc_context,
+                Some(proto.as_object().unwrap_or(self.prototypes.object)),
+            ),
+        );
+
+        //TODO: What happens if you `ActionNewMethod` without a method name?
+        constructor.read().call(self, context, this, &args);
+
+        //TODO: The SWF docs are really cagey about what the hell happens with
+        //user defined constructors... do we need stack continuations?!
+        self.push(Value::Object(this));
+
+        Ok(())
     }
 
-    fn action_new_object(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let _object = self.pop()?.as_string()?;
+    fn action_new_object(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let fn_name = self.pop()?;
         let num_args = self.pop()?.as_i64()?;
+        let mut args = Vec::new();
         for _ in 0..num_args {
-            let _arg = self.pop()?;
+            args.push(self.pop()?);
         }
+
+        let constructor = self
+            .stack_frames
+            .last()
+            .unwrap()
+            .clone()
+            .read()
+            .resolve(fn_name.as_string()?, self, context)
+            .as_object()?;
+        let proto = constructor
+            .read()
+            .get("prototype", self, context, constructor.to_owned());
+        let this = GcCell::allocate(
+            context.gc_context,
+            Object::object(
+                context.gc_context,
+                Some(proto.as_object().unwrap_or(self.prototypes.object)),
+            ),
+        );
+
+        constructor.read().call(self, context, this, &args);
+
         self.push(Value::Undefined);
-        // TODO(Herschel)
-        Err("Unimplemented action: NewObject".into())
+
+        Ok(())
     }
 
     fn action_or(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
