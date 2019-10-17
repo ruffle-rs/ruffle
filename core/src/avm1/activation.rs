@@ -1,8 +1,8 @@
 //! Activation records
 
-use crate::avm1::function::NativeFunction;
 use crate::avm1::object::Object;
 use crate::avm1::scope::Scope;
+use crate::avm1::scope_continuation::ScopeContinuation;
 use crate::avm1::{Avm1, Value};
 use crate::context::UpdateContext;
 use crate::tag_utils::SwfSlice;
@@ -95,7 +95,7 @@ pub struct Activation<'gc> {
     ///
     /// This facility exists primarily to allow native code to handle the result
     /// of an AVM function call.
-    then_func: Option<NativeFunction<'gc>>,
+    then_func: Option<ScopeContinuation<'gc>>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for Activation<'gc> {
@@ -330,14 +330,14 @@ impl<'gc> Activation<'gc> {
     }
 
     /// Return the function scheduled to be executed, if any.
-    pub fn get_then_func(&self) -> Option<NativeFunction<'gc>> {
+    pub fn get_then_func(&self) -> Option<ScopeContinuation<'gc>> {
         self.then_func
     }
 
     /// Schedule a native function to execute when this stack frame returns.
     ///
     /// Only one native function may be scheduled per activation.
-    pub fn and_then(&mut self, func: NativeFunction<'gc>) {
+    pub fn and_then(&mut self, func: ScopeContinuation<'gc>) {
         self.then_func = Some(func);
     }
 }
