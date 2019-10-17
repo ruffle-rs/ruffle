@@ -6,7 +6,7 @@ use rand::Rng;
 use std::f64::NAN;
 
 macro_rules! wrap_std {
-    ( $object: ident, $gc_context: ident, $($name:expr => $std:path),* ) => {{
+    ( $object: ident, $gc_context: ident, $proto: ident, $($name:expr => $std:path),* ) => {{
         $(
             $object.force_set_function(
                 $name,
@@ -19,6 +19,7 @@ macro_rules! wrap_std {
                 },
                 $gc_context,
                 DontDelete | ReadOnly | DontEnum,
+                $proto
             );
         )*
     }};
@@ -49,8 +50,12 @@ pub fn random<'gc>(
     Ok(action_context.rng.gen_range(0.0f64, 1.0f64).into())
 }
 
-pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Object<'gc>> {
-    let mut math = Object::object(gc_context);
+pub fn create<'gc>(
+    gc_context: MutationContext<'gc, '_>,
+    proto: Option<GcCell<'gc, Object<'gc>>>,
+    fn_proto: Option<GcCell<'gc, Object<'gc>>>,
+) -> GcCell<'gc, Object<'gc>> {
+    let mut math = Object::object(gc_context, proto);
 
     math.force_set(
         "E",
@@ -93,7 +98,7 @@ pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Object<'
         DontDelete | ReadOnly | DontEnum,
     );
 
-    wrap_std!(math, gc_context,
+    wrap_std!(math, gc_context, fn_proto,
         "abs" => f64::abs,
         "acos" => f64::acos,
         "asin" => f64::asin,
@@ -108,12 +113,19 @@ pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Object<'
         "tan" => f64::tan
     );
 
-    math.force_set_function("atan2", atan2, gc_context, DontDelete | ReadOnly | DontEnum);
+    math.force_set_function(
+        "atan2",
+        atan2,
+        gc_context,
+        DontDelete | ReadOnly | DontEnum,
+        fn_proto,
+    );
     math.force_set_function(
         "random",
         random,
         gc_context,
         DontDelete | ReadOnly | DontEnum,
+        fn_proto,
     );
 
     GcCell::allocate(gc_context, math)
@@ -130,7 +142,7 @@ mod tests {
             #[test]
             fn $test() -> Result<(), Error> {
                 with_avm(19, |avm, context, _root| {
-                    let math = create(context.gc_context);
+                    let math = create(context.gc_context, Some(avm.prototypes().object), Some(avm.prototypes().function));
                     let function = math.read().get($name, avm, context, math)?.unwrap_immediate();
 
                     $(
@@ -236,7 +248,15 @@ mod tests {
     #[test]
     fn test_atan2_nan() {
         with_avm(19, |avm, context, _root| {
-            let math = GcCell::allocate(context.gc_context, create(context.gc_context));
+            let math = GcCell::allocate(
+                context.gc_context,
+                create(
+                    context.gc_context,
+                    Some(avm.prototypes().object),
+                    Some(avm.prototypes().function),
+                ),
+            );
+
             assert_eq!(atan2(avm, context, *math.read(), &[]).unwrap(), NAN.into());
             assert_eq!(
                 atan2(avm, context, *math.read(), &[1.0.into(), Value::Null]).unwrap(),
@@ -256,7 +276,15 @@ mod tests {
     #[test]
     fn test_atan2_valid() {
         with_avm(19, |avm, context, _root| {
-            let math = GcCell::allocate(context.gc_context, create(context.gc_context));
+            let math = GcCell::allocate(
+                context.gc_context,
+                create(
+                    context.gc_context,
+                    Some(avm.prototypes().object),
+                    Some(avm.prototypes().function),
+                ),
+            );
+
             assert_eq!(
                 atan2(avm, context, *math.read(), &[10.0.into()]).unwrap(),
                 std::f64::consts::FRAC_PI_2.into()

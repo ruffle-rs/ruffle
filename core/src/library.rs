@@ -1,3 +1,5 @@
+use crate::avm1::globals::SystemPrototypes;
+use crate::avm1::object::Object;
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
 use crate::display_object::DisplayObject;
@@ -47,15 +49,19 @@ impl<'gc> Library<'gc> {
         &self,
         id: CharacterId,
         gc_context: MutationContext<'gc, '_>,
+        prototypes: &SystemPrototypes<'gc>,
     ) -> Result<DisplayNode<'gc>, Box<dyn std::error::Error>> {
-        let obj: Box<dyn DisplayObject<'gc>> = match self.characters.get(&id) {
-            Some(Character::Bitmap(bitmap)) => bitmap.clone(),
-            Some(Character::EditText(edit_text)) => edit_text.clone(),
-            Some(Character::Graphic(graphic)) => graphic.clone(),
-            Some(Character::MorphShape(morph_shape)) => morph_shape.clone(),
-            Some(Character::MovieClip(movie_clip)) => movie_clip.clone(),
-            Some(Character::Button(button)) => button.clone(),
-            Some(Character::Text(text)) => text.clone(),
+        let (obj, proto): (Box<dyn DisplayObject<'gc>>, GcCell<'gc, Object<'gc>>) = match self
+            .characters
+            .get(&id)
+        {
+            Some(Character::Bitmap(bitmap)) => (bitmap.clone(), prototypes.object),
+            Some(Character::EditText(edit_text)) => (edit_text.clone(), prototypes.object),
+            Some(Character::Graphic(graphic)) => (graphic.clone(), prototypes.object),
+            Some(Character::MorphShape(morph_shape)) => (morph_shape.clone(), prototypes.object),
+            Some(Character::MovieClip(movie_clip)) => (movie_clip.clone(), prototypes.movie_clip),
+            Some(Character::Button(button)) => (button.clone(), prototypes.object),
+            Some(Character::Text(text)) => (text.clone(), prototypes.object),
             Some(_) => return Err("Not a DisplayObject".into()),
             None => {
                 log::error!("Tried to instantiate non-registered character ID {}", id);
@@ -65,7 +71,7 @@ impl<'gc> Library<'gc> {
         let result = GcCell::allocate(gc_context, obj);
         result
             .write(gc_context)
-            .post_instantiation(gc_context, result);
+            .post_instantiation(gc_context, result, proto);
         Ok(result)
     }
 

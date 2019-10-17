@@ -7,7 +7,7 @@ use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
 
 macro_rules! with_movie_clip {
-    ( $gc_context: ident, $object:ident, $($name:expr => $fn:expr),* ) => {{
+    ( $gc_context: ident, $object:ident, $fn_proto: expr, $($name:expr => $fn:expr),* ) => {{
         $(
             $object.force_set_function(
                 $name,
@@ -21,13 +21,14 @@ macro_rules! with_movie_clip {
                 },
                 $gc_context,
                 DontDelete | ReadOnly | DontEnum,
+                $fn_proto
             );
         )*
     }};
 }
 
 macro_rules! with_movie_clip_mut {
-    ( $gc_context: ident, $object:ident, $($name:expr => $fn:expr),* ) => {{
+    ( $gc_context: ident, $object:ident, $fn_proto: expr, $($name:expr => $fn:expr),* ) => {{
         $(
             $object.force_set_function(
                 $name,
@@ -41,6 +42,7 @@ macro_rules! with_movie_clip_mut {
                 } as crate::avm1::function::NativeFunction<'gc>,
                 $gc_context,
                 DontDelete | ReadOnly | DontEnum,
+                $fn_proto
             );
         )*
     }};
@@ -78,12 +80,17 @@ pub fn overwrite_global<'gc>(
     Ok(Value::Undefined.into())
 }
 
-pub fn create_movie_object<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<'gc> {
-    let mut object = Object::object(gc_context);
+pub fn create_proto<'gc>(
+    gc_context: MutationContext<'gc, '_>,
+    proto: GcCell<'gc, Object<'gc>>,
+    fn_proto: GcCell<'gc, Object<'gc>>,
+) -> GcCell<'gc, Object<'gc>> {
+    let mut object = Object::object(gc_context, Some(proto));
 
     with_movie_clip_mut!(
         gc_context,
         object,
+        Some(fn_proto),
         "nextFrame" => |movie_clip: &mut MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
             movie_clip.next_frame(context);
             Value::Undefined
@@ -105,6 +112,7 @@ pub fn create_movie_object<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<
     with_movie_clip!(
         gc_context,
         object,
+        Some(fn_proto),
         "getBytesLoaded" => |_movie_clip: &MovieClip<'gc>, _args| {
             // TODO find a correct value
             1.0.into()
@@ -148,5 +156,5 @@ pub fn create_movie_object<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<
         EnumSet::new(),
     );
 
-    object
+    GcCell::allocate(gc_context, object)
 }

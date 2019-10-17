@@ -188,10 +188,11 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         };
 
         player.gc_arena.mutate(|gc_context, gc_root| {
-            gc_root
-                .root
-                .write(gc_context)
-                .post_instantiation(gc_context, gc_root.root)
+            gc_root.root.write(gc_context).post_instantiation(
+                gc_context,
+                gc_root.root,
+                gc_root.avm.read().prototypes().movie_clip,
+            )
         });
 
         player.build_matrices();
@@ -337,6 +338,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 target_clip: Some(gc_root.root),
                 root: gc_root.root,
                 target_path: avm1::Value::Undefined,
+                system_prototypes: gc_root.avm.read().prototypes().clone(),
             };
 
             if let Some(node) = &*gc_root.mouse_hover_node.read() {
@@ -415,6 +417,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                     target_clip: Some(gc_root.root),
                     root: gc_root.root,
                     target_path: avm1::Value::Undefined,
+                    system_prototypes: gc_root.avm.read().prototypes().clone(),
                 };
 
                 // RollOut of previous node.
@@ -485,6 +488,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 target_clip: Some(gc_root.root),
                 root: gc_root.root,
                 target_path: avm1::Value::Undefined,
+                system_prototypes: gc_root.avm.read().prototypes().clone(),
             };
 
             let mut morph_shapes = fnv::FnvHashMap::default();
@@ -548,6 +552,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 target_clip: Some(gc_root.root),
                 root: gc_root.root,
                 target_path: avm1::Value::Undefined,
+                system_prototypes: gc_root.avm.read().prototypes().clone(),
             };
 
             gc_root

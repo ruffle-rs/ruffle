@@ -46,6 +46,7 @@ where
             navigator: &mut NullNavigatorBackend::new(),
             renderer: &mut NullRenderer::new(),
             swf_data: &mut Arc::new(vec![]),
+            system_prototypes: avm.prototypes().clone(),
         };
 
         let globals = avm.global_object_cell();

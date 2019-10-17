@@ -14,15 +14,6 @@ pub const TYPE_OF_OBJECT: &str = "object";
 pub const TYPE_OF_FUNCTION: &str = "function";
 pub const TYPE_OF_MOVIE_CLIP: &str = "movieclip";
 
-fn default_to_string<'gc>(
-    _: &mut Avm1<'gc>,
-    _: &mut UpdateContext<'_, 'gc, '_>,
-    _: GcCell<'gc, Object<'gc>>,
-    _: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
-    Ok(ReturnValue::Immediate("[Object object]".into()))
-}
-
 #[derive(EnumSetType, Debug)]
 pub enum Attribute {
     DontDelete,
@@ -182,23 +173,17 @@ impl fmt::Debug for Object<'_> {
 }
 
 impl<'gc> Object<'gc> {
-    pub fn object(gc_context: MutationContext<'gc, '_>) -> Self {
-        let mut result = Self {
-            prototype: None, //TODO: Should be Object
+    pub fn object(
+        _gc_context: MutationContext<'gc, '_>,
+        proto: Option<GcCell<'gc, Object<'gc>>>,
+    ) -> Self {
+        Self {
+            prototype: proto, //TODO: Should be Object
             type_of: TYPE_OF_OBJECT,
             display_node: None,
             values: HashMap::new(),
             function: None,
-        };
-
-        result.force_set_function(
-            "toString",
-            default_to_string,
-            gc_context,
-            DontDelete | DontEnum,
-        );
-
-        result
+        }
     }
 
     /// Constructs an object with no values, not even builtins.
@@ -216,9 +201,12 @@ impl<'gc> Object<'gc> {
         }
     }
 
-    pub fn native_function(function: NativeFunction<'gc>) -> Self {
+    pub fn native_function(
+        function: NativeFunction<'gc>,
+        proto: Option<GcCell<'gc, Object<'gc>>>,
+    ) -> Self {
         Self {
-            prototype: None, //TODO: Should be Function
+            prototype: proto,
             type_of: TYPE_OF_FUNCTION,
             function: Some(Executable::Native(function)),
             display_node: None,
@@ -226,9 +214,12 @@ impl<'gc> Object<'gc> {
         }
     }
 
-    pub fn action_function(func: Avm1Function<'gc>) -> Self {
+    pub fn action_function(
+        func: Avm1Function<'gc>,
+        proto: Option<GcCell<'gc, Object<'gc>>>,
+    ) -> Self {
         Self {
-            prototype: None, //TODO: Should be Function
+            prototype: proto,
             type_of: TYPE_OF_FUNCTION,
             function: Some(Executable::Action(func)),
             display_node: None,
@@ -311,12 +302,16 @@ impl<'gc> Object<'gc> {
         function: NativeFunction<'gc>,
         gc_context: MutationContext<'gc, '_>,
         attributes: A,
+        proto: Option<GcCell<'gc, Object<'gc>>>,
     ) where
         A: Into<EnumSet<Attribute>>,
     {
         self.force_set(
             name,
-            GcCell::allocate(gc_context, Object::native_function(function)),
+            Value::Object(GcCell::allocate(
+                gc_context,
+                Object::native_function(function, proto),
+            )),
             attributes,
         )
     }
@@ -489,9 +484,13 @@ mod tests {
                 navigator: &mut NullNavigatorBackend::new(),
                 renderer: &mut NullRenderer::new(),
                 swf_data: &mut Arc::new(vec![]),
+                system_prototypes: avm.prototypes().clone(),
             };
 
-            let object = GcCell::allocate(gc_context, Object::object(gc_context));
+            let object = GcCell::allocate(
+                gc_context,
+                Object::object(gc_context, Some(avm.prototypes().object)),
+            );
 
             let globals = avm.global_object_cell();
             avm.insert_stack_frame(GcCell::allocate(

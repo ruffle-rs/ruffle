@@ -17,8 +17,7 @@ use crate::tag_utils::SwfSlice;
 mod activation;
 mod fscommand;
 mod function;
-mod globals;
-pub mod movie_clip;
+pub mod globals;
 pub mod object;
 mod return_value;
 mod scope;
@@ -31,6 +30,7 @@ mod test_utils;
 mod tests;
 
 use activation::Activation;
+pub use globals::SystemPrototypes;
 use scope::Scope;
 pub use value::Value;
 
@@ -43,6 +43,9 @@ pub struct Avm1<'gc> {
 
     /// The global object.
     globals: GcCell<'gc, Object<'gc>>,
+
+    /// System builtins that we use internally to construct new objects.
+    prototypes: globals::SystemPrototypes<'gc>,
 
     /// All activation records for the current execution context.
     stack_frames: Vec<GcCell<'gc, Activation<'gc>>>,
@@ -59,8 +62,13 @@ unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
         self.globals.trace(cc);
+        self.prototypes.trace(cc);
         self.stack_frames.trace(cc);
         self.stack.trace(cc);
+
+        for register in &self.registers {
+            register.trace(cc);
+        }
     }
 }
 
@@ -68,10 +76,13 @@ type Error = Box<dyn std::error::Error>;
 
 impl<'gc> Avm1<'gc> {
     pub fn new(gc_context: MutationContext<'gc, '_>, player_version: u8) -> Self {
+        let (prototypes, globals) = create_globals(gc_context);
+
         Self {
             player_version,
             constant_pool: vec![],
-            globals: GcCell::allocate(gc_context, create_globals(gc_context)),
+            globals: GcCell::allocate(gc_context, globals),
+            prototypes,
             stack_frames: vec![],
             stack: vec![],
             registers: [
@@ -799,7 +810,10 @@ impl<'gc> Avm1<'gc> {
             context.gc_context,
         );
         let func = Avm1Function::from_df1(swf_version, func_data, name, params, scope);
-        let func_obj = GcCell::allocate(context.gc_context, Object::action_function(func));
+        let func_obj = Value::Object(GcCell::allocate(
+            context.gc_context,
+            Object::action_function(func, Some(self.prototypes.function)),
+        ));
         if name == "" {
             self.push(func_obj);
         } else {
@@ -830,7 +844,10 @@ impl<'gc> Avm1<'gc> {
             context.gc_context,
         );
         let func = Avm1Function::from_df2(swf_version, func_data, action_func, scope);
-        let func_obj = GcCell::allocate(context.gc_context, Object::action_function(func));
+        let func_obj = Value::Object(GcCell::allocate(
+            context.gc_context,
+            Object::action_function(func, Some(self.prototypes.function)),
+        ));
         if action_func.name == "" {
             self.push(func_obj);
         } else {
@@ -1064,6 +1081,11 @@ impl<'gc> Avm1<'gc> {
     /// Obtain a reference to `_global`.
     pub fn global_object_cell(&self) -> GcCell<'gc, Object<'gc>> {
         self.globals
+    }
+
+    /// Obtain system built-in prototypes for this instance.
+    pub fn prototypes(&self) -> &globals::SystemPrototypes<'gc> {
+        &self.prototypes
     }
 
     fn action_get_variable(

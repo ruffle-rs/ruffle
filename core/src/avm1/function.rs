@@ -192,7 +192,7 @@ impl<'gc> Executable<'gc> {
                     ac.gc_context,
                     Scope::new_local_scope(af.scope(), ac.gc_context),
                 );
-                let mut arguments = Object::object(ac.gc_context);
+                let mut arguments = Object::object(ac.gc_context, Some(avm.prototypes().object));
                 if !af.suppress_arguments {
                     for i in 0..args.len() {
                         arguments.force_set(
