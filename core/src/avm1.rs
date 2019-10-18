@@ -23,12 +23,14 @@ pub mod object;
 mod scope;
 mod value;
 
-mod scope_continuation;
 #[cfg(test)]
 mod test_utils;
 
 #[cfg(test)]
 mod tests;
+
+#[macro_use]
+mod stack_continuation;
 
 use activation::Activation;
 use scope::Scope;
@@ -249,23 +251,28 @@ impl<'gc> Avm1<'gc> {
     /// This function will run functions scheduled on the current stack frame's
     /// `and_then` field. This is intended to allow the runtime to act on the
     /// results of AVM code to implement things like custom getters/setters.
-    /// Due to this, this function is given the intended return value and may
-    /// return a different one.
+    /// If there is a continuation set for this frame, then no return value
+    /// will be pushed to the stack.
     fn retire_stack_frame(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        mut return_value: Value<'gc>,
-    ) -> Result<Value<'gc>, Error> {
+        return_value: Value<'gc>,
+    ) -> Result<(), Error> {
         if let Some(frame) = self.current_stack_frame() {
             let this = frame.read().this_cell();
-            if let Some(func) = frame.read().get_then_func() {
-                return_value = func(self, context, this, return_value)?;
+
+            self.stack_frames.pop();
+
+            let can_return = !self.stack_frames.is_empty();
+
+            if let Some(func) = frame.write(context.gc_context).get_then_func() {
+                func.returned(self, context, this, return_value)?;
+            } else if can_return {
+                self.stack.push(return_value);
             }
         }
 
-        self.stack_frames.pop();
-
-        Ok(return_value)
+        Ok(())
     }
 
     /// Execute the AVM stack until it is exhausted.
@@ -293,15 +300,7 @@ impl<'gc> Avm1<'gc> {
 
         if reader.pos() >= (data.end - data.start) {
             //Executing beyond the end of a function constitutes an implicit return.
-            let impl_return = self
-                .current_stack_frame()
-                .unwrap()
-                .read()
-                .can_implicit_return();
-            let return_value = self.retire_stack_frame(context, Value::Undefined)?;
-            if impl_return {
-                self.push(return_value);
-            }
+            self.retire_stack_frame(context, Value::Undefined)?;
         } else if let Some(action) = reader.read_action()? {
             let result = match action {
                 Action::Add => self.action_add(context),
@@ -425,15 +424,7 @@ impl<'gc> Avm1<'gc> {
             }
         } else {
             //The explicit end opcode was encountered so return here
-            let impl_return = self
-                .current_stack_frame()
-                .unwrap()
-                .read()
-                .can_implicit_return();
-            let return_value = self.retire_stack_frame(context, Value::Undefined)?;
-            if impl_return {
-                self.push(return_value);
-            }
+            self.retire_stack_frame(context, Value::Undefined)?;
         }
 
         Ok(())
@@ -1506,11 +1497,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_return(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let return_value = self.pop()?;
-        let return_value = self.retire_stack_frame(context, return_value)?;
-
-        if !self.stack_frames.is_empty() {
-            self.push(return_value);
-        }
+        self.retire_stack_frame(context, return_value)?;
 
         Ok(())
     }
