@@ -62,6 +62,7 @@ pub struct ActionContext<'a, 'gc, 'gc_context> {
     pub target_path: Value<'gc>,
 
     pub rng: &'a mut SmallRng,
+    pub action_queue: &'a mut crate::player::ActionQueue<'gc>,
     pub audio: &'a mut dyn crate::backend::audio::AudioBackend,
     pub navigator: &'a mut dyn crate::backend::navigator::NavigatorBackend,
 }
@@ -1130,7 +1131,12 @@ impl<'gc> Avm1<'gc> {
             let mut display_object = clip.write(context.gc_context);
             if let Some(clip) = display_object.as_movie_clip_mut() {
                 // The frame on the stack is 0-based, not 1-based.
-                clip.goto_frame(frame + 1, true);
+                clip.goto_frame(
+                    context.active_clip,
+                    &mut context.action_queue,
+                    frame + 1,
+                    true,
+                );
             } else {
                 log::error!("GotoFrame failed: Target is not a MovieClip");
             }
@@ -1154,11 +1160,21 @@ impl<'gc> Avm1<'gc> {
                 match self.pop()? {
                     Value::Number(frame) => {
                         // The frame on the stack is 1-based, not 0-based.
-                        clip.goto_frame(scene_offset + (frame as u16), !set_playing)
+                        clip.goto_frame(
+                            context.active_clip,
+                            &mut context.action_queue,
+                            scene_offset + (frame as u16),
+                            !set_playing,
+                        )
                     }
                     Value::String(frame_label) => {
                         if let Some(frame) = clip.frame_label_to_number(&frame_label) {
-                            clip.goto_frame(scene_offset + frame, !set_playing)
+                            clip.goto_frame(
+                                context.active_clip,
+                                &mut context.action_queue,
+                                scene_offset + frame,
+                                !set_playing,
+                            )
                         } else {
                             log::warn!(
                                 "GotoFrame2: MovieClip {} does not contain frame label '{}'",
@@ -1183,7 +1199,7 @@ impl<'gc> Avm1<'gc> {
             let mut display_object = clip.write(context.gc_context);
             if let Some(clip) = display_object.as_movie_clip_mut() {
                 if let Some(frame) = clip.frame_label_to_number(label) {
-                    clip.goto_frame(frame, true);
+                    clip.goto_frame(context.active_clip, &mut context.action_queue, frame, true);
                 } else {
                     log::warn!("GoToLabel: Frame label '{}' not found", label);
                 }
@@ -1340,7 +1356,7 @@ impl<'gc> Avm1<'gc> {
         if let Some(clip) = context.target_clip {
             let mut display_object = clip.write(context.gc_context);
             if let Some(clip) = display_object.as_movie_clip_mut() {
-                clip.next_frame();
+                clip.next_frame(context.active_clip, context.action_queue);
             } else {
                 log::warn!("NextFrame: Target is not a MovieClip");
             }
@@ -1397,7 +1413,7 @@ impl<'gc> Avm1<'gc> {
         if let Some(clip) = context.target_clip {
             let mut display_object = clip.write(context.gc_context);
             if let Some(clip) = display_object.as_movie_clip_mut() {
-                clip.prev_frame();
+                clip.prev_frame(context.active_clip, context.action_queue);
             } else {
                 log::warn!("PrevFrame: Target is not a MovieClip");
             }

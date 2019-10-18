@@ -6,6 +6,7 @@ use crate::events::{ButtonEvent, PlayerEvent};
 use crate::library::Library;
 use crate::movie_clip::MovieClip;
 use crate::prelude::*;
+use crate::tag_utils::SwfSlice;
 use crate::transform::TransformStack;
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell, MutationContext};
 use log::info;
@@ -25,6 +26,7 @@ struct GcRoot<'gc> {
     root: DisplayNode<'gc>,
     mouse_hover_node: GcCell<'gc, Option<DisplayNode<'gc>>>, // TODO: Remove GcCell wrapped inside GcCell.
     avm: GcCell<'gc, Avm1<'gc>>,
+    action_queue: GcCell<'gc, ActionQueue<'gc>>,
 }
 
 type Error = Box<dyn std::error::Error>;
@@ -158,6 +160,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 ),
                 mouse_hover_node: GcCell::allocate(gc_context, None),
                 avm: GcCell::allocate(gc_context, Avm1::new(gc_context, NEWEST_PLAYER_VERSION)),
+                action_queue: GcCell::allocate(gc_context, ActionQueue::new()),
             }),
 
             frame_rate: header.frame_rate.into(),
@@ -304,7 +307,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 renderer,
                 audio,
                 navigator,
-                actions: vec![],
+                action_queue: gc_root.action_queue.write(gc_context),
                 gc_context,
                 active_clip: gc_root.root,
             };
@@ -379,7 +382,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                     renderer,
                     audio,
                     navigator,
-                    actions: vec![],
+                    action_queue: gc_root.action_queue.write(gc_context),
                     gc_context,
                     active_clip: gc_root.root,
                 };
@@ -446,7 +449,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 renderer,
                 audio,
                 navigator,
-                actions: vec![],
+                action_queue: gc_root.action_queue.write(gc_context),
                 gc_context,
                 active_clip: gc_root.root,
             };
@@ -506,7 +509,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 renderer,
                 audio,
                 navigator,
-                actions: vec![],
+                action_queue: gc_root.action_queue.write(gc_context),
                 gc_context,
                 active_clip: gc_root.root,
             };
@@ -578,26 +581,33 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         // I think this will eventually be cleaned up;
         // Need to figure out the proper order of operations between ticking a clip
         // and running the actions.
-        let mut actions = std::mem::replace(&mut update_context.actions, vec![]);
-        while !actions.is_empty() {
-            {
-                let mut action_context = crate::avm1::ActionContext {
-                    gc_context: update_context.gc_context,
-                    global_time: update_context.global_time,
-                    root,
-                    player_version: update_context.player_version,
-                    start_clip: root,
-                    active_clip: root,
-                    target_clip: Some(root),
-                    target_path: crate::avm1::Value::Undefined,
-                    rng: update_context.rng,
-                    audio: update_context.audio,
-                    navigator: update_context.navigator,
-                };
-                for (active_clip, action) in actions {
-                    action_context.start_clip = active_clip;
-                    action_context.active_clip = active_clip;
-                    action_context.target_clip = Some(active_clip);
+        while let Some(clip_action) = update_context.action_queue.pop() {
+            match clip_action {
+                Action::Action {
+                    clip,
+                    actions: action,
+                } => {
+                    // We don't run the action f the clip was removed after it queued the action.
+                    if clip.read().removed() {
+                        continue;
+                    }
+                    let mut action_context = crate::avm1::ActionContext {
+                        gc_context: update_context.gc_context,
+                        global_time: update_context.global_time,
+                        root,
+                        player_version: update_context.player_version,
+                        start_clip: root,
+                        active_clip: root,
+                        target_clip: Some(root),
+                        target_path: crate::avm1::Value::Undefined,
+                        action_queue: &mut update_context.action_queue,
+                        rng: update_context.rng,
+                        audio: update_context.audio,
+                        navigator: update_context.navigator,
+                    };
+                    action_context.start_clip = clip;
+                    action_context.active_clip = clip;
+                    action_context.target_clip = Some(clip);
                     update_context.avm.insert_stack_frame_for_action(
                         update_context.swf_version,
                         action,
@@ -605,14 +615,19 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                     );
                     let _ = update_context.avm.run_stack_till_empty(&mut action_context);
                 }
+
+                Action::Goto { clip, frame } => {
+                    update_context.active_clip = clip;
+                    let mut clip = clip.write(update_context.gc_context);
+                    // We don't run the action if the clip was removed after it queued the action.
+                    if clip.removed() {
+                        continue;
+                    }
+                    if let Some(movie_clip) = clip.as_movie_clip_mut() {
+                        movie_clip.run_goto(update_context, frame);
+                    }
+                }
             }
-
-            // Run goto queues.
-            update_context.active_clip = root;
-            root.write(update_context.gc_context)
-                .run_post_frame(update_context);
-
-            actions = std::mem::replace(&mut update_context.actions, vec![]);
         }
     }
 
@@ -682,7 +697,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub audio: &'a mut dyn AudioBackend,
     pub navigator: &'a mut dyn NavigatorBackend,
     pub rng: &'a mut SmallRng,
-    pub actions: Vec<(DisplayNode<'gc>, crate::tag_utils::SwfSlice)>,
+    pub action_queue: std::cell::RefMut<'a, ActionQueue<'gc>>,
     pub active_clip: DisplayNode<'gc>,
 }
 
@@ -692,4 +707,55 @@ pub struct RenderContext<'a, 'gc> {
     pub transform_stack: &'a mut TransformStack,
     pub view_bounds: BoundingBox,
     pub clip_depth_stack: Vec<Depth>,
+}
+
+pub enum Action<'gc> {
+    Action {
+        clip: DisplayNode<'gc>,
+        actions: SwfSlice,
+    },
+    Goto {
+        clip: DisplayNode<'gc>,
+        frame: u16,
+    },
+}
+
+/// Action and gotos need to be queued up to execute at the end of the frame.
+pub struct ActionQueue<'gc> {
+    queue: std::collections::VecDeque<Action<'gc>>,
+}
+
+impl<'gc> ActionQueue<'gc> {
+    const DEFAULT_CAPACITY: usize = 32;
+
+    pub fn new() -> Self {
+        Self {
+            queue: std::collections::VecDeque::with_capacity(Self::DEFAULT_CAPACITY),
+        }
+    }
+
+    pub fn queue_actions(&mut self, clip: DisplayNode<'gc>, actions: SwfSlice) {
+        self.queue.push_back(Action::Action { clip, actions })
+    }
+
+    pub fn queue_goto(&mut self, clip: DisplayNode<'gc>, frame: u16) {
+        self.queue.push_back(Action::Goto { clip, frame })
+    }
+
+    pub fn pop(&mut self) -> Option<Action<'gc>> {
+        self.queue.pop_front()
+    }
+}
+
+impl<'gc> Default for ActionQueue<'gc> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+unsafe impl<'gc> Collect for ActionQueue<'gc> {
+    #[inline]
+    fn trace(&self, cc: gc_arena::CollectionContext) {
+        self.queue.iter().for_each(|o| o.trace(cc));
+    }
 }

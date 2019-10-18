@@ -401,6 +401,7 @@ mod tests {
                 target_clip: Some(root),
                 target_path: Value::Undefined,
                 rng: &mut SmallRng::from_seed([0u8; 16]),
+                action_queue: &mut crate::player::ActionQueue::new(),
                 audio: &mut NullAudioBackend::new(),
                 navigator: &mut NullNavigatorBackend::new(),
             };

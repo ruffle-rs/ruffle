@@ -8,7 +8,7 @@ use crate::font::Font;
 use crate::graphic::Graphic;
 use crate::matrix::Matrix;
 use crate::morph_shape::MorphShapeStatic;
-use crate::player::{RenderContext, UpdateContext};
+use crate::player::{ActionQueue, RenderContext, UpdateContext};
 use crate::prelude::*;
 use crate::tag_utils::{self, DecodeResult, SwfStream};
 use crate::text::Text;
@@ -26,7 +26,6 @@ pub struct MovieClip<'gc> {
     static_data: Gc<'gc, MovieClipStatic>,
     tag_stream_pos: u64,
     is_playing: bool,
-    goto_queue: Vec<FrameNumber>,
     current_frame: FrameNumber,
     audio_stream: Option<AudioStreamHandle>,
     children: BTreeMap<Depth, DisplayNode<'gc>>,
@@ -41,7 +40,6 @@ impl<'gc> MovieClip<'gc> {
             static_data: Gc::allocate(gc_context, MovieClipStatic::default()),
             tag_stream_pos: 0,
             is_playing: false,
-            goto_queue: Vec::new(),
             current_frame: 0,
             audio_stream: None,
             children: BTreeMap::new(),
@@ -73,7 +71,6 @@ impl<'gc> MovieClip<'gc> {
             ),
             tag_stream_pos: 0,
             is_playing: true,
-            goto_queue: Vec::new(),
             current_frame: 0,
             audio_stream: None,
             children: BTreeMap::new(),
@@ -85,9 +82,9 @@ impl<'gc> MovieClip<'gc> {
         self.is_playing
     }
 
-    pub fn next_frame(&mut self) {
+    pub fn next_frame(&mut self, self_cell: DisplayNode<'gc>, action_queue: &mut ActionQueue<'gc>) {
         if self.current_frame() < self.total_frames() {
-            self.goto_frame(self.current_frame + 1, true);
+            self.goto_frame(self_cell, action_queue, self.current_frame + 1, true);
         }
     }
 
@@ -98,9 +95,9 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
-    pub fn prev_frame(&mut self) {
+    pub fn prev_frame(&mut self, self_cell: DisplayNode<'gc>, action_queue: &mut ActionQueue<'gc>) {
         if self.current_frame > 1 {
-            self.goto_frame(self.current_frame - 1, true);
+            self.goto_frame(self_cell, action_queue, self.current_frame - 1, true);
         }
     }
 
@@ -110,9 +107,15 @@ impl<'gc> MovieClip<'gc> {
 
     /// Queues up a goto to the specified frame.
     /// `frame` should be 1-based.
-    pub fn goto_frame(&mut self, frame: FrameNumber, stop: bool) {
+    pub fn goto_frame(
+        &mut self,
+        self_cell: DisplayNode<'gc>,
+        action_queue: &mut ActionQueue<'gc>,
+        frame: FrameNumber,
+        stop: bool,
+    ) {
         if frame != self.current_frame {
-            self.goto_queue.push(frame);
+            action_queue.queue_goto(self_cell, frame);
         }
 
         if stop {
@@ -203,19 +206,6 @@ impl<'gc> MovieClip<'gc> {
         self.static_data.frame_labels.get(frame_label).copied()
     }
 
-    pub fn run_goto_queue(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let mut i = 0;
-        while i < self.goto_queue.len() {
-            let frame = self.goto_queue[i];
-            if self.current_frame != frame {
-                self.run_goto(context, frame);
-            }
-            i += 1;
-        }
-
-        self.goto_queue.clear();
-    }
-
     fn tag_stream_start(&self) -> u64 {
         self.static_data.tag_stream_start
     }
@@ -235,6 +225,7 @@ impl<'gc> MovieClip<'gc> {
         cursor.set_position(self.tag_stream_pos);
         swf::read::Reader::new(cursor, context.swf_version)
     }
+
     fn run_frame_internal(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -292,13 +283,20 @@ impl<'gc> MovieClip<'gc> {
         depth: Depth,
         copy_previous_properties: bool,
     ) -> Option<DisplayNode<'gc>> {
-        if let Ok(child) = context
+        if let Ok(child_cell) = context
             .library
             .instantiate_display_object(id, context.gc_context)
         {
-            let prev_child = self.children.insert(depth, child);
+            // Remove previous child from children list,
+            // and add new childonto front of the list.
+            let prev_child = self.children.insert(depth, child_cell);
+            if let Some(prev_child) = prev_child {
+                self.remove_child_from_exec_list(context.gc_context, prev_child);
+            }
+            self.add_child_to_exec_list(context.gc_context, child_cell);
             {
-                let mut child = child.write(context.gc_context);
+                let mut child = child_cell.write(context.gc_context);
+                // Set initial properties for child.
                 child.set_parent(Some(context.active_clip));
                 child.set_place_frame(self.current_frame);
                 if copy_previous_properties {
@@ -306,28 +304,72 @@ impl<'gc> MovieClip<'gc> {
                         child.copy_display_properties_from(prev_child);
                     }
                 }
+                let prev_clip = context.active_clip;
+                // Run first frame.
+                context.active_clip = child_cell;
+                child.run_frame(context);
+                context.active_clip = prev_clip;
             }
-            Some(child)
+            Some(child_cell)
         } else {
             log::error!("Unable to instantiate display node id {}", id);
             None
         }
     }
-
-    fn run_goto(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, frame: FrameNumber) {
+    /// Adds a child to the front of the execution list.
+    /// This does not affect the render list.
+    fn add_child_to_exec_list(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        child_cell: DisplayNode<'gc>,
+    ) {
+        if let Some(head) = self.first_child() {
+            head.write(gc_context).set_prev_sibling(Some(child_cell));
+            child_cell.write(gc_context).set_next_sibling(Some(head));
+        }
+        self.set_first_child(Some(child_cell));
+    }
+    /// Removes a child from the execution list.
+    /// This does not affect the render list.
+    fn remove_child_from_exec_list(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        child_cell: DisplayNode<'gc>,
+    ) {
+        let mut child = child_cell.write(gc_context);
+        // Remove from children linked list.
+        let prev = child.prev_sibling();
+        let next = child.next_sibling();
+        if let Some(prev) = prev {
+            prev.write(gc_context).set_next_sibling(next);
+        }
+        if let Some(next) = next {
+            next.write(gc_context).set_prev_sibling(prev);
+        }
+        if let Some(head) = self.first_child() {
+            if GcCell::ptr_eq(head, child_cell) {
+                self.set_first_child(next);
+            }
+        }
+        // Flag child as removed.
+        child.set_removed(true);
+    }
+    pub fn run_goto(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, frame: FrameNumber) {
         // Flash gotos are tricky:
-        // 1) MovieClip timelines are stored as deltas from frame to frame,
-        //    so we have to step through the intermediate frames to goto a target frame.
-        //    For rewinds, this means starting from frame 1.
-        // 2) Objects that would persist over the goto should not be recreated and destroyed,
-        //    they should keep their properties.
-        //    Particularly for rewinds, the object should persist if it  was create
+        // 1) Conceptually, a goto should act like the playhead is advancing forward or
+        //    backward to a frame.
+        // 2) However, MovieClip timelines are stored as deltas from frame to frame,
+        //    so for rewinds, we must restart to frame 1 and play forward.
+        // 3) Objects that would persist over the goto conceptually should not be
+        //    destroyed and recreated; they should keep their properties.
+        //    Particularly for rewinds, the object should persist if it was created
         //      *before* the frame we are going to. (DisplayNode::place_frame).
-        // 3) We want to avoid creating objects just to destroy them if they aren't on
-        //    the goto frame, so we should instead aggregate the deltas into a list
-        //    of commands at the end of the goto, and THEN create the needed objects.
+        // 4) We want to avoid creating objects just to destroy them if they aren't on
+        //    the goto frame, so we should instead aggregate the deltas into a final list
+        //    of commands, and THEN modify the children as necessary.
 
         // This map will maintain a map of depth -> placement commands.
+        // TODO: Move this to UpdateContext to avoid allocations.
         let mut goto_commands = fnv::FnvHashMap::default();
 
         let is_rewind = if frame < self.current_frame() {
@@ -335,6 +377,25 @@ impl<'gc> MovieClip<'gc> {
             // when rewinding.
             self.tag_stream_pos = 0;
             self.current_frame = 0;
+
+            // Remove all display objects that were created after the desination frame.
+            // TODO: We want to do something like self.children.retain here,
+            // but BTreeMap::retain does not exist.
+            let children: smallvec::SmallVec<[_; 16]> = self
+                .children
+                .iter()
+                .filter_map(|(depth, clip)| {
+                    if clip.read().place_frame() > frame {
+                        Some((*depth, *clip))
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            for (depth, child) in children {
+                self.children.remove(&depth);
+                self.remove_child_from_exec_list(context.gc_context, child);
+            }
             true
         } else {
             false
@@ -343,6 +404,7 @@ impl<'gc> MovieClip<'gc> {
         // Step through the intermediate frames, and aggregate the deltas of each frame.
         let mut frame_pos = self.tag_stream_pos;
         let mut reader = self.reader(context);
+        let gc_context = context.gc_context;
         while self.current_frame < frame {
             self.current_frame += 1;
             frame_pos = reader.get_inner().position();
@@ -362,36 +424,33 @@ impl<'gc> MovieClip<'gc> {
                     self.goto_place_object(reader, tag_len, 4, &mut goto_commands)
                 }
                 TagCode::RemoveObject => {
-                    self.goto_remove_object(reader, 1, &mut goto_commands, is_rewind)
+                    self.goto_remove_object(reader, 1, gc_context, &mut goto_commands, is_rewind)
                 }
                 TagCode::RemoveObject2 => {
-                    self.goto_remove_object(reader, 2, &mut goto_commands, is_rewind)
+                    self.goto_remove_object(reader, 2, gc_context, &mut goto_commands, is_rewind)
                 }
                 _ => Ok(()),
             };
             let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
         }
 
-        let prev_active_clip = context.active_clip;
-
-        // Run the final list of commands.
-        if is_rewind {
-            // TODO: We want to do something like self.children.retain here,
-            // but BTreeMap::retain does not exist.
-            let mut children = std::mem::replace(&mut self.children, BTreeMap::new());
-            goto_commands.into_iter().for_each(|(depth, params)| {
-                let (was_instantiated, child) = match children.get_mut(&depth).copied() {
+        // Run the list of goto commands to actually create and update the display objects.
+        let run_goto_command =
+            |clip: &mut MovieClip<'gc>,
+             context: &mut UpdateContext<'_, 'gc, '_>,
+             (&depth, params): (&Depth, &GotoPlaceObject)| {
+                let (was_instantiated, child) = match clip.children.get_mut(&depth).copied() {
                     // For rewinds, if an object was created before the final frame,
                     // it will exist on the final frame as well. Re-use this object
                     // instead of recreating.
-                    Some(prev_child) if prev_child.read().place_frame() <= frame => {
-                        self.children.insert(depth, prev_child);
-                        (false, prev_child)
-                    }
-                    _ => {
-                        if let Some(child) =
-                            self.instantiate_child(context, params.id(), depth, false)
-                        {
+                    Some(prev_child) => (false, prev_child),
+                    None => {
+                        if let Some(child) = clip.instantiate_child(
+                            context,
+                            params.id(),
+                            depth,
+                            params.modifies_original_item(),
+                        ) {
                             (true, child)
                         } else {
                             return;
@@ -400,61 +459,34 @@ impl<'gc> MovieClip<'gc> {
                 };
 
                 // Apply final delta to display pamareters.
-                let child_node = child;
                 let mut child = child.write(context.gc_context);
-                child.apply_place_object(params.place_object);
+                child.apply_place_object(&params.place_object);
                 if was_instantiated {
                     // Set the placement frame for the new object to the frame
                     // it is actually created on.
                     child.set_place_frame(params.frame);
-                    // We must run newly created objects for one frame
-                    // to ensure they place any children objects.
-                    // TODO: This will probably move as our order-of-execution
-                    // becomes more accurate.
-                    context.active_clip = child_node;
-                    child.run_frame(context);
-                    context.active_clip = prev_active_clip;
                 }
-            });
-        } else {
-            goto_commands.into_iter().for_each(|(depth, params)| {
-                let id = params.id();
-                let child = if id != 0 {
-                    if let Some(child) =
-                        self.instantiate_child(context, id, depth, params.modifies_original_item())
-                    {
-                        child
-                    } else {
-                        return;
-                    }
-                } else if let Some(child) = self.children.get_mut(&depth) {
-                    *child
-                } else {
-                    return;
-                };
+            };
 
-                // Apply final delta to display pamareters.
-                let child_node = child;
-                let mut child = child.write(context.gc_context);
-                child.apply_place_object(params.place_object);
-                if id != 0 {
-                    // Set the placement frame for the new object to the frame
-                    // it is actually created on.
-                    child.set_place_frame(params.frame);
-                    // We must run newly created objects for one frame
-                    // to ensure they place any children objects.
-                    // TODO: This will probably move as our order-of-execution
-                    // becomes more accurate.
-                    context.active_clip = child_node;
-                    child.run_frame(context);
-                    context.active_clip = prev_active_clip;
-                }
-            });
-        }
-        // Re-run the final frame to run all other tags (DoAction, StartSound, etc.)
+        // We have to be sure that queued actions are generated in the same order
+        // as if the playhead had reached this frame normally.
+        // First, run frames for children that were created before this frame.
+        goto_commands
+            .iter()
+            .filter(|(_, params)| params.frame < frame)
+            .for_each(|goto| run_goto_command(self, context, goto));
+
+        // Next, run the final frame for the parent clip.
+        // Re-run the final frame without display tags (DoAction, StartSound, etc.)
         self.current_frame = frame - 1;
         self.tag_stream_pos = frame_pos;
         self.run_frame_internal(context, false);
+
+        // Finally, run frames for children that are placed on this frame.
+        goto_commands
+            .iter()
+            .filter(|(_, params)| params.frame >= frame)
+            .for_each(|goto| run_goto_command(self, context, goto));
     }
 
     /// Handles a PlaceObject tag when running a goto action.
@@ -492,6 +524,7 @@ impl<'gc> MovieClip<'gc> {
         &mut self,
         reader: &mut SwfStream<&'a [u8]>,
         version: u8,
+        gc_context: MutationContext<'gc, '_>,
         goto_commands: &mut fnv::FnvHashMap<Depth, GotoPlaceObject>,
         is_rewind: bool,
     ) -> DecodeResult {
@@ -507,7 +540,9 @@ impl<'gc> MovieClip<'gc> {
             // Don't do this for rewinds, because they conceptually
             // start from an empty display list, and we also want to examine
             // the old children to decide if they persist (place_frame <= goto_frame).
-            self.children.remove(&remove_object.depth);
+            if let Some(child) = self.children.remove(&remove_object.depth) {
+                self.remove_child_from_exec_list(gc_context, child);
+            }
         }
         Ok(())
     }
@@ -521,24 +556,17 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        if self.is_playing {
-            self.run_frame_internal(context, true);
-        }
-
-        // TODO(Herschel): Verify order of execution for parent/children.
-        // Parent first? Children first? Sorted by depth?
-        for child in self.children.values_mut() {
-            context.active_clip = *child;
+        // Children must run first.
+        let prev_clip = context.active_clip;
+        for child in self.children() {
+            context.active_clip = child;
             child.write(context.gc_context).run_frame(context);
         }
-    }
+        context.active_clip = prev_clip;
 
-    fn run_post_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.run_goto_queue(context);
-
-        for child in self.children.values() {
-            context.active_clip = *child;
-            child.write(context.gc_context).run_post_frame(context);
+        // Run myself.
+        if self.is_playing {
+            self.run_frame_internal(context, true);
         }
     }
 
@@ -1207,7 +1235,9 @@ impl<'gc, 'a> MovieClip<'gc> {
             start,
             end,
         };
-        context.actions.push((context.active_clip, slice));
+        context
+            .action_queue
+            .queue_actions(context.active_clip, slice);
         Ok(())
     }
 
@@ -1238,7 +1268,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                 ) {
                     child
                         .write(context.gc_context)
-                        .apply_place_object(place_object);
+                        .apply_place_object(&place_object);
                     child
                 } else {
                     return Ok(());
@@ -1248,7 +1278,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                 if let Some(child) = self.children.get_mut(&place_object.depth) {
                     child
                         .write(context.gc_context)
-                        .apply_place_object(place_object);
+                        .apply_place_object(&place_object);
                     *child
                 } else {
                     return Ok(());
@@ -1272,7 +1302,7 @@ impl<'gc, 'a> MovieClip<'gc> {
             reader.read_remove_object_2()
         }?;
         if let Some(child) = self.children.remove(&remove_object.depth) {
-            child.write(context.gc_context).set_parent(None);
+            self.remove_child_from_exec_list(context.gc_context, child);
         }
         Ok(())
     }

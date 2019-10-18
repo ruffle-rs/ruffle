@@ -30,6 +30,7 @@ where
             target_path: Value::Undefined,
             rng: &mut SmallRng::from_seed([0u8; 16]),
             audio: &mut NullAudioBackend::new(),
+            action_queue: &mut crate::player::ActionQueue::new(),
             navigator: &mut NullNavigatorBackend::new(),
         };
 

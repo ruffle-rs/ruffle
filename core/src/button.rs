@@ -137,7 +137,9 @@ impl<'gc> Button<'gc> {
             for action in &self.static_data.actions {
                 if action.condition == condition && action.key_code == key_code {
                     // Note that AVM1 buttons run actions relative to their parent, not themselves.
-                    context.actions.push((parent, action.action_data.clone()));
+                    context
+                        .action_queue
+                        .queue_actions(parent, action.action_data.clone());
                 }
             }
         }
@@ -187,13 +189,6 @@ impl<'gc> DisplayObject<'gc> for Button<'gc> {
         for child in self.children.values_mut() {
             context.active_clip = *child;
             child.write(context.gc_context).run_frame(context);
-        }
-    }
-
-    fn run_post_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        for child in self.children.values_mut() {
-            context.active_clip = *child;
-            child.write(context.gc_context).run_post_frame(context);
         }
     }
 
