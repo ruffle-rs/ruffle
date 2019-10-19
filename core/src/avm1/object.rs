@@ -431,6 +431,14 @@ impl<'gc> Object<'gc> {
     pub fn type_of(&self) -> &'static str {
         self.type_of
     }
+
+    /// Returns a copy of a given function.
+    ///
+    /// TODO: We have to clone here because of how executables are stored on
+    /// objects. This might not be a good idea for performance.
+    pub fn as_executable(&self) -> Option<Executable<'gc>> {
+        self.function.clone()
+    }
 }
 
 #[cfg(test)]

@@ -6,6 +6,46 @@ use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
 
+/// Implements `Object.prototype.addProperty`
+pub fn add_property<'gc>(
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: GcCell<'gc, Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Value<'gc> {
+    let name = args.get(0).unwrap_or(&Value::Undefined);
+    let getter = args.get(1).unwrap_or(&Value::Undefined);
+    let setter = args.get(2).unwrap_or(&Value::Undefined);
+
+    match (name, getter) {
+        (Value::String(name), Value::Object(get)) if !name.is_empty() => {
+            if let Some(get_func) = get.read().as_executable() {
+                if let Value::Object(set) = setter {
+                    if let Some(set_func) = set.read().as_executable() {
+                        this.write(context.gc_context).force_set_virtual(
+                            name,
+                            get_func,
+                            Some(set_func),
+                            EnumSet::empty(),
+                        );
+                    } else {
+                        return Value::Bool(false);
+                    }
+                } else if let Value::Null = setter {
+                    this.write(context.gc_context)
+                        .force_set_virtual(name, get_func, None, ReadOnly);
+                } else {
+                    return Value::Bool(false);
+                }
+            }
+
+            Value::Bool(false)
+        }
+        _ => Value::Bool(false),
+    }
+}
+
+/// Implements `Object.prototype.hasOwnProperty`
 pub fn has_own_property<'gc>(
     _avm: &mut Avm1<'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
@@ -18,6 +58,7 @@ pub fn has_own_property<'gc>(
     }
 }
 
+/// Implements `Object.prototype.toString`
 fn to_string<'gc>(
     _: &mut Avm1<'gc>,
     _: &mut UpdateContext<'_, 'gc, '_>,
@@ -43,6 +84,13 @@ pub fn fill_proto<'gc>(
 ) {
     let mut ob_proto_write = object_proto.write(gc_context);
 
+    ob_proto_write.force_set_function(
+        "addProperty",
+        add_property,
+        gc_context,
+        EnumSet::empty(),
+        Some(fn_proto),
+    );
     ob_proto_write.force_set_function(
         "hasOwnProperty",
         has_own_property,
