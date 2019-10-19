@@ -33,7 +33,7 @@ macro_rules! swf_tests {
 // The test folder is a relative to core/tests/swfs
 // Inside the folder is expected to be "test.swf" and "output.txt" with the correct output.
 swf_tests! {
-    #[ignore] (execution_order, "avm1/execution_order", 3),
+    (execution_order, "avm1/execution_order", 3),
     (single_frame, "avm1/single_frame", 2),
     (looping, "avm1/looping", 6),
     (goto_advance1, "avm1/goto_advance1", 10),
