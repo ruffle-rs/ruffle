@@ -32,8 +32,8 @@ pub enum Attribute {
 #[derive(Clone)]
 pub enum Property<'gc> {
     Virtual {
-        get: NativeFunction<'gc>,
-        set: Option<NativeFunction<'gc>>,
+        get: Executable<'gc>,
+        set: Option<Executable<'gc>>,
         attributes: EnumSet<Attribute>,
     },
     Stored {
@@ -43,29 +43,43 @@ pub enum Property<'gc> {
 }
 
 impl<'gc> Property<'gc> {
+    /// Get the value of a property slot.
+    ///
+    /// This function yields `None` if the value is being determined on the AVM
+    /// stack. Otherwise, if the value can be determined on the Rust stack,
+    /// then this function returns the value.
     pub fn get(
         &self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
-    ) -> Value<'gc> {
+    ) -> Option<Value<'gc>> {
         match self {
-            Property::Virtual { get, .. } => get(avm, context, this, &[]),
-            Property::Stored { value, .. } => value.to_owned(),
+            Property::Virtual { get, .. } => get.exec(avm, context, this, &[]),
+            Property::Stored { value, .. } => Some(value.to_owned()),
         }
     }
 
+    /// Set a property slot.
+    ///
+    /// This function returns `true` if the set has completed, or `false` if
+    /// it has not yet occured. If `false`, and you need to run code after the
+    /// set has occured, you must register a stack continuation as ActionScript
+    /// code is being called to service the `set`.
     pub fn set(
         &mut self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
         new_value: impl Into<Value<'gc>>,
-    ) {
+    ) -> bool {
         match self {
             Property::Virtual { set, .. } => {
                 if let Some(function) = set {
-                    function(avm, context, this, &[new_value.into()]);
+                    let return_value = function.exec(avm, context, this, &[new_value.into()]);
+                    return_value.is_some()
+                } else {
+                    true
                 }
             }
             Property::Stored {
@@ -74,6 +88,8 @@ impl<'gc> Property<'gc> {
                 if !attributes.contains(ReadOnly) {
                     replace::<Value<'gc>>(value, new_value.into());
                 }
+
+                true
             }
         }
     }
@@ -235,8 +251,8 @@ impl<'gc> Object<'gc> {
     pub fn force_set_virtual<A>(
         &mut self,
         name: &str,
-        get: NativeFunction<'gc>,
-        set: Option<NativeFunction<'gc>>,
+        get: Executable<'gc>,
+        set: Option<Executable<'gc>>,
         attributes: A,
     ) where
         A: Into<EnumSet<Attribute>>,
@@ -280,21 +296,31 @@ impl<'gc> Object<'gc> {
         )
     }
 
+    /// Get the value of a particular property on this object.
+    ///
+    /// The `avm`, `context`, and `this` parameters exist so that this object
+    /// can call virtual properties. Furthermore, since some virtual properties
+    /// may resolve on the AVM stack, this function may return `None` instead
+    /// of a `Value`. *This is not equivalent to `undefined`.* Instead, it is a
+    /// signal that your value will be returned on the ActionScript stack, and
+    /// that you should register a stack continuation in order to get it.
     pub fn get(
         &self,
         name: &str,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
-    ) -> Value<'gc> {
+    ) -> Option<Value<'gc>> {
         if let Some(value) = self.values.get(name) {
             return value.get(avm, context, this);
         }
-        Value::Undefined
+        Some(Value::Undefined)
     }
 
     /// Retrieve a value from an object if and only if the value in the object
     /// property is non-virtual.
+    ///
+    /// This is deprecated and will be removed soon.
     pub fn force_get(&self, name: &str) -> Value<'gc> {
         if let Some(Property::Stored { value, .. }) = self.values.get(name) {
             return value.to_owned();
@@ -436,7 +462,7 @@ mod tests {
         with_object(0, |avm, context, object| {
             assert_eq!(
                 object.read().get("not_defined", avm, context, object),
-                Value::Undefined
+                Some(Value::Undefined)
             );
         })
     }
@@ -453,11 +479,11 @@ mod tests {
 
             assert_eq!(
                 object.read().get("forced", avm, context, object),
-                "forced".into()
+                Some("forced".into())
             );
             assert_eq!(
                 object.read().get("natural", avm, context, object),
-                "natural".into()
+                Some("natural".into())
             );
         })
     }
@@ -481,11 +507,11 @@ mod tests {
 
             assert_eq!(
                 object.read().get("normal", avm, context, object),
-                "replaced".into()
+                Some("replaced".into())
             );
             assert_eq!(
                 object.read().get("readonly", avm, context, object),
-                "initial".into()
+                Some("initial".into())
             );
         })
     }
@@ -500,7 +526,7 @@ mod tests {
             assert_eq!(object.write(context.gc_context).delete("test"), false);
             assert_eq!(
                 object.read().get("test", avm, context, object),
-                "initial".into()
+                Some("initial".into())
             );
 
             object
@@ -510,7 +536,7 @@ mod tests {
             assert_eq!(object.write(context.gc_context).delete("test"), false);
             assert_eq!(
                 object.read().get("test", avm, context, object),
-                "replaced".into()
+                Some("replaced".into())
             );
         })
     }
@@ -518,7 +544,8 @@ mod tests {
     #[test]
     fn test_virtual_get() {
         with_object(0, |avm, context, object| {
-            let getter: NativeFunction = |_avm, _context, _this, _args| "Virtual!".into();
+            let getter = Executable::Native(|_avm, _context, _this, _args| "Virtual!".into());
+
             object.write(context.gc_context).force_set_virtual(
                 "test",
                 getter,
@@ -528,7 +555,7 @@ mod tests {
 
             assert_eq!(
                 object.read().get("test", avm, context, object),
-                "Virtual!".into()
+                Some("Virtual!".into())
             );
 
             // This set should do nothing
@@ -537,7 +564,7 @@ mod tests {
                 .set("test", "Ignored!", avm, context, object);
             assert_eq!(
                 object.read().get("test", avm, context, object),
-                "Virtual!".into()
+                Some("Virtual!".into())
             );
         })
     }
@@ -545,11 +572,11 @@ mod tests {
     #[test]
     fn test_delete() {
         with_object(0, |avm, context, object| {
-            let getter: NativeFunction = |_avm, _context, _this, _args| "Virtual!".into();
+            let getter = Executable::Native(|_avm, _context, _this, _args| "Virtual!".into());
 
             object.write(context.gc_context).force_set_virtual(
                 "virtual",
-                getter,
+                getter.clone(),
                 None,
                 EnumSet::empty(),
             );
@@ -577,19 +604,19 @@ mod tests {
 
             assert_eq!(
                 object.read().get("virtual", avm, context, object),
-                Value::Undefined
+                Some(Value::Undefined)
             );
             assert_eq!(
                 object.read().get("virtual_un", avm, context, object),
-                "Virtual!".into()
+                Some("Virtual!".into())
             );
             assert_eq!(
                 object.read().get("stored", avm, context, object),
-                Value::Undefined
+                Some(Value::Undefined)
             );
             assert_eq!(
                 object.read().get("stored_un", avm, context, object),
-                "Stored!".into()
+                Some("Stored!".into())
             );
         })
     }
@@ -597,7 +624,7 @@ mod tests {
     #[test]
     fn test_iter_values() {
         with_object(0, |_avm, context, object| {
-            let getter: NativeFunction = |_avm, _context, _this, _args| Value::Null;
+            let getter = Executable::Native(|_avm, _context, _this, _args| Value::Null);
 
             object
                 .write(context.gc_context)
@@ -607,7 +634,7 @@ mod tests {
                 .force_set("stored_hidden", Value::Null, DontEnum);
             object.write(context.gc_context).force_set_virtual(
                 "virtual",
-                getter,
+                getter.clone(),
                 None,
                 EnumSet::empty(),
             );

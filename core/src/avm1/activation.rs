@@ -251,18 +251,22 @@ impl<'gc> Activation<'gc> {
     }
 
     /// Resolve a particular named local variable within this activation.
+    ///
+    /// Because scopes are object chains, the same rules for `Object::get`
+    /// still apply here. This function is allowed to yield `None` to indicate
+    /// that the result will be calculated on the AVM stack.
     pub fn resolve(
         &self,
         name: &str,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Value<'gc> {
+    ) -> Option<Value<'gc>> {
         if name == "this" {
-            return Value::Object(self.this);
+            return Some(Value::Object(self.this));
         }
 
         if name == "arguments" && self.arguments.is_some() {
-            return Value::Object(self.arguments.unwrap());
+            return Some(Value::Object(self.arguments.unwrap()));
         }
 
         self.scope().resolve(name, avm, context, self.this)

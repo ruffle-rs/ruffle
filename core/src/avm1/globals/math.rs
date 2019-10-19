@@ -130,7 +130,7 @@ mod tests {
             fn $test() -> Result<(), Error> {
                 with_avm(19, |avm, context, _root| {
                     let math = create(context.gc_context);
-                    let function = math.read().get($name, avm, context, math);
+                    let function = math.read().get($name, avm, context, math).unwrap();
 
                     $(
                         #[allow(unused_mut)]

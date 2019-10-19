@@ -236,13 +236,17 @@ impl<'gc> Scope<'gc> {
     }
 
     /// Resolve a particular value in the scope chain.
+    ///
+    /// Because scopes are object chains, the same rules for `Object::get`
+    /// still apply here. This function is allowed to yield `None` to indicate
+    /// that the result will be calculated on the AVM stack.
     pub fn resolve(
         &self,
         name: &str,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
-    ) -> Value<'gc> {
+    ) -> Option<Value<'gc>> {
         if self.locals().has_property(name) {
             return self.locals().get(name, avm, context, this);
         }
@@ -250,7 +254,7 @@ impl<'gc> Scope<'gc> {
             return scope.resolve(name, avm, context, this);
         }
 
-        Value::Undefined
+        Some(Value::Undefined)
     }
 
     /// Check if a particular property in the scope chain is defined.

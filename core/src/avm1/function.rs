@@ -244,11 +244,12 @@ impl<'gc> Executable<'gc> {
                 }
 
                 if af.preload_parent {
-                    frame.set_local_register(
-                        preload_r,
-                        child_scope.read().resolve("_parent", avm, ac, this),
-                        ac.gc_context,
-                    );
+                    let parent = child_scope.read().resolve("_parent", avm, ac, this);
+                    if let Some(instant_parent) = parent {
+                        frame.set_local_register(preload_r, instant_parent, ac.gc_context);
+                    } else {
+                        log::error!("User-defined virtual _parent is NOT supported!");
+                    }
                     preload_r += 1;
                 }
 

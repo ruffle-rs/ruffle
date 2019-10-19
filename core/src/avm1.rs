@@ -94,6 +94,8 @@ impl<'gc> Avm1<'gc> {
     ///
     /// This is necessary to support form submission from Flash via a couple of
     /// legacy methods, such as the `ActionGetURL2` opcode or `getURL` function.
+    ///
+    /// WARNING: This does not support user defined virtual properties!
     pub fn locals_into_form_values(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -109,7 +111,9 @@ impl<'gc> Avm1<'gc> {
 
         for k in keys {
             let v = locals.read().get(&k, self, context, locals);
-            form_values.insert(k, v.clone().into_string());
+            if let Some(instant_value) = v {
+                form_values.insert(k, instant_value.clone().into_string());
+            }
         }
 
         form_values
@@ -678,9 +682,29 @@ impl<'gc> Avm1<'gc> {
             context,
         );
         let this = context.active_clip.read().object().as_object()?.to_owned();
-        let return_value = target_fn.call(self, context, this, &args)?;
-        if let Some(instant_return) = return_value {
-            self.push(instant_return);
+
+        if let Some(target_fn) = target_fn {
+            let return_value = target_fn.call(self, context, this, &args)?;
+            if let Some(instant_return) = return_value {
+                self.push(instant_return);
+            }
+        } else {
+            self.stack_frames
+                .last()
+                .unwrap()
+                .write(context.gc_context)
+                .and_then(stack_continuation!(
+                    this: GcCell<'gc, Object<'gc>>,
+                    args: Vec<Value<'gc>>,
+                    |avm, context, _this, target_fn| {
+                        let return_value = target_fn.call(avm, context, *this, &args)?;
+                        if let Some(instant_return) = return_value {
+                            avm.push(instant_return);
+                        }
+
+                        Ok(())
+                    }
+                ))
         }
 
         Ok(())
@@ -721,14 +745,48 @@ impl<'gc> Avm1<'gc> {
                         object.as_object()?.to_owned(),
                     );
 
-                    if let Value::Undefined = callable {
+                    if let Some(Value::Undefined) = callable {
                         return Err(format!("Object method {} is not defined", name).into());
-                    }
+                    } else if let Some(instant_fn) = callable {
+                        let return_value = instant_fn.call(
+                            self,
+                            context,
+                            object.as_object()?.to_owned(),
+                            &args,
+                        )?;
+                        if let Some(instant_return) = return_value {
+                            self.push(instant_return);
+                        }
+                    } else {
+                        self.stack_frames
+                            .last()
+                            .unwrap()
+                            .write(context.gc_context)
+                            .and_then(stack_continuation!(
+                                args: Vec<Value<'gc>>,
+                                name: String,
+                                object: Value<'gc>,
+                                |avm, context, _this, callable| {
+                                    if let Value::Undefined = callable {
+                                        return Err(format!(
+                                            "Object method {} is not defined",
+                                            name
+                                        )
+                                        .into());
+                                    }
 
-                    let return_value =
-                        callable.call(self, context, object.as_object()?.to_owned(), &args)?;
-                    if let Some(instant_return) = return_value {
-                        self.push(instant_return);
+                                    let return_value = callable.call(
+                                        avm,
+                                        context,
+                                        object.as_object()?.to_owned(),
+                                        &args,
+                                    )?;
+                                    if let Some(instant_return) = return_value {
+                                        avm.push(instant_return)
+                                    }
+                                    Ok(())
+                                }
+                            ));
                     }
                 }
             }
@@ -900,26 +958,51 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_enumerate(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        let name = self.pop()?;
-        let name = name.as_string()?;
+        let name_value = self.pop()?;
+        let name = name_value.as_string()?;
         self.push(Value::Null); // Sentinel that indicates end of enumeration
-        let ob = match self
+        match self
             .current_stack_frame()
             .unwrap()
             .read()
             .resolve(name, self, context)
         {
-            Value::Object(ob) => ob,
-            _ => {
+            Some(Value::Object(ob)) => {
+                for k in ob.read().get_keys() {
+                    self.push(Value::String(k));
+                }
+            }
+            Some(_) => {
                 log::error!("Cannot enumerate properties of {}", name);
 
                 return Ok(()); //TODO: This is NOT OK(()).
             }
-        };
+            None => self
+                .stack_frames
+                .last()
+                .unwrap()
+                .write(context.gc_context)
+                .and_then(stack_continuation!(
+                    name_value: Value<'gc>,
+                    |avm, _ctxt, _this, return_value| {
+                        match return_value {
+                            Value::Object(ob) => {
+                                for k in ob.read().get_keys() {
+                                    avm.push(Value::String(k));
+                                }
+                            }
+                            _ => {
+                                log::error!(
+                                    "Cannot enumerate properties of {}",
+                                    name_value.as_string()?
+                                );
+                            }
+                        }
 
-        for k in ob.read().get_keys() {
-            self.push(k);
-        }
+                        Ok(())
+                    }
+                )),
+        };
 
         Ok(())
     }
@@ -977,7 +1060,9 @@ impl<'gc> Avm1<'gc> {
         let object = self.pop()?.as_object()?;
         let this = self.current_stack_frame().unwrap().read().this_cell();
         let value = object.read().get(&name, self, context, this);
-        self.push(value);
+        if let Some(value) = value {
+            self.push(value);
+        }
 
         Ok(())
     }
@@ -1057,7 +1142,6 @@ impl<'gc> Avm1<'gc> {
         let path = var_path.as_string()?;
 
         let is_slashpath = Self::variable_name_is_slash_path(path);
-        let mut result = None;
         if is_slashpath {
             if let Some((node, var_name)) =
                 Self::resolve_slash_path_variable(context.target_clip, context.root, path)
@@ -1065,20 +1149,30 @@ impl<'gc> Avm1<'gc> {
                 if let Some(clip) = node.read().as_movie_clip() {
                     let object = clip.object().as_object()?;
                     if object.read().has_property(var_name) {
-                        result = Some(object.read().get(var_name, self, context, object));
+                        let result = object.read().get(var_name, self, context, object);
+                        if let Some(value) = result {
+                            self.push(value);
+                        } //NOTE: Natural return is sufficient for custom get
+                    } else {
+                        self.push(Value::Undefined);
                     }
+                } else {
+                    self.push(Value::Undefined);
                 }
             }
         } else if self.current_stack_frame().unwrap().read().is_defined(path) {
-            result = Some(
-                self.current_stack_frame()
-                    .unwrap()
-                    .read()
-                    .resolve(path, self, context),
-            );
+            let result = self
+                .current_stack_frame()
+                .unwrap()
+                .read()
+                .resolve(path, self, context);
+            if let Some(value) = result {
+                self.push(value);
+            } //NOTE: Natural return is sufficient for custom get
+        } else {
+            self.push(Value::Undefined);
         }
 
-        self.push(result.unwrap_or(Value::Undefined));
         Ok(())
     }
 

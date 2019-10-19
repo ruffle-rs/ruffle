@@ -38,7 +38,7 @@ macro_rules! stack_continuation {
 
             struct MyCont<'gc> {
                 $(
-                    pub $name: $type,
+                    pub $name: $type
                 ),*
             };
 
@@ -47,13 +47,16 @@ macro_rules! stack_continuation {
                 fn trace(&self, cc: gc_arena::CollectionContext) {
                     $(
                         self.$name.trace(cc);
-                    ),*
+                    )*
                 }
             }
 
             impl<'gc> StackContinuation<'gc> for MyCont<'gc> {
+                #[allow(unused_parens)]
                 fn returned(&mut self, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, this: GcCell<'gc, Object<'gc>>, return_value: Value<'gc>) -> Result<(), Error> {
-                    let $($name),* = $(self.$name),*;
+                    $(
+                        let $name = &mut self.$name;
+                    )*
                     let $avmname = avm;
                     let $ctxtname = context;
                     let $thisname = this;
@@ -66,6 +69,31 @@ macro_rules! stack_continuation {
             let cont = MyCont{$($name),*};
 
             Box::new(cont)
+        }
+    };
+}
+
+/// Wait for the result of a `get` to be ready, then call the continuation.
+#[allow(unused_macros)]
+macro_rules! and_then {
+    ( $value:expr, $avm:expr, $context:expr, $this:expr, $cont:expr) => {
+        #[allow(unused_imports)]
+        use crate::avm1::stack_continuation::StackContinuation;
+
+        let value = $value;
+        let mut continuation = $cont;
+        let avm = $avm;
+        let context = $context;
+        let this = $this;
+
+        if let Some(instant_value) = value {
+            continuation.returned(avm, context, this, instant_value)?;
+        } else {
+            avm.stack_frames
+                .last()
+                .unwrap()
+                .write(context.gc_context)
+                .and_then(continuation);
         }
     };
 }
