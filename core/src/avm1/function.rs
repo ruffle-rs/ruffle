@@ -9,12 +9,26 @@ use crate::tag_utils::SwfSlice;
 use gc_arena::GcCell;
 use swf::avm1::types::FunctionParam;
 
+/// Represents a function defined in Ruffle's code.
+///
+/// Parameters are as follows:
+///
+///  * The AVM1 runtime
+///  * The action context
+///  * The current `this` object
+///  * The arguments this function was called with
+///
+/// Native functions are allowed to return a value or `None`. `None` indicates
+/// that the given value will not be returned on the stack and instead will
+/// resolve on the AVM stack, as if you had called a non-native function. If
+/// your function yields `None`, you must ensure that the top-most activation
+/// in the AVM1 runtime will return with the value of this function.
 pub type NativeFunction<'gc> = fn(
     &mut Avm1<'gc>,
     &mut UpdateContext<'_, 'gc, '_>,
     GcCell<'gc, Object<'gc>>,
     &[Value<'gc>],
-) -> Value<'gc>;
+) -> Option<Value<'gc>>;
 
 /// Represents a function defined in the AVM1 runtime, either through
 /// `DefineFunction` or `DefineFunction2`.
@@ -171,7 +185,7 @@ impl<'gc> Executable<'gc> {
         args: &[Value<'gc>],
     ) -> Option<Value<'gc>> {
         match self {
-            Executable::Native(nf) => Some(nf(avm, ac, this, args)),
+            Executable::Native(nf) => nf(avm, ac, this, args),
             Executable::Action(af) => {
                 let child_scope = GcCell::allocate(
                     ac.gc_context,

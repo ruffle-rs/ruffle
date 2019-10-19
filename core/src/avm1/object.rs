@@ -18,8 +18,8 @@ fn default_to_string<'gc>(
     _: &mut UpdateContext<'_, 'gc, '_>,
     _: GcCell<'gc, Object<'gc>>,
     _: &[Value<'gc>],
-) -> Value<'gc> {
-    "[Object object]".into()
+) -> Option<Value<'gc>> {
+    Some("[Object object]".into())
 }
 
 #[derive(EnumSetType, Debug)]
@@ -544,7 +544,7 @@ mod tests {
     #[test]
     fn test_virtual_get() {
         with_object(0, |avm, context, object| {
-            let getter = Executable::Native(|_avm, _context, _this, _args| "Virtual!".into());
+            let getter = Executable::Native(|_avm, _context, _this, _args| Some("Virtual!".into()));
 
             object.write(context.gc_context).force_set_virtual(
                 "test",
@@ -572,7 +572,7 @@ mod tests {
     #[test]
     fn test_delete() {
         with_object(0, |avm, context, object| {
-            let getter = Executable::Native(|_avm, _context, _this, _args| "Virtual!".into());
+            let getter = Executable::Native(|_avm, _context, _this, _args| Some("Virtual!".into()));
 
             object.write(context.gc_context).force_set_virtual(
                 "virtual",
@@ -624,7 +624,7 @@ mod tests {
     #[test]
     fn test_iter_values() {
         with_object(0, |_avm, context, object| {
-            let getter = Executable::Native(|_avm, _context, _this, _args| Value::Null);
+            let getter = Executable::Native(|_avm, _context, _this, _args| Some(Value::Null));
 
             object
                 .write(context.gc_context)

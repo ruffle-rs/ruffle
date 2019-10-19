@@ -9,11 +9,11 @@ macro_rules! wrap_std {
         $(
             $object.force_set_function(
                 $name,
-                |_avm, _context, _this, args| -> Value<'gc> {
+                |_avm, _context, _this, args| -> Option<Value<'gc>> {
                     if let Some(input) = args.get(0) {
-                        Value::Number($std(input.as_number()))
+                        Some(Value::Number($std(input.as_number())))
                     } else {
-                        Value::Number(NAN)
+                        Some(Value::Number(NAN))
                     }
                 },
                 $gc_context,
@@ -28,15 +28,15 @@ fn atan2<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
-) -> Value<'gc> {
+) -> Option<Value<'gc>> {
     if let Some(y) = args.get(0) {
         if let Some(x) = args.get(1) {
-            return Value::Number(y.as_number().atan2(x.as_number()));
+            return Some(Value::Number(y.as_number().atan2(x.as_number())));
         } else {
-            return Value::Number(y.as_number().atan2(0.0));
+            return Some(Value::Number(y.as_number().atan2(0.0)));
         }
     }
-    Value::Number(NAN)
+    Some(Value::Number(NAN))
 }
 
 pub fn random<'gc>(
@@ -44,8 +44,8 @@ pub fn random<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Value<'gc> {
-    Value::Number(action_context.rng.gen_range(0.0f64, 1.0f64))
+) -> Option<Value<'gc>> {
+    Some(Value::Number(action_context.rng.gen_range(0.0f64, 1.0f64)))
 }
 
 pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Object<'gc>> {
@@ -236,7 +236,10 @@ mod tests {
     fn test_atan2_nan() {
         with_avm(19, |avm, context, _root| {
             let math = GcCell::allocate(context.gc_context, create(context.gc_context));
-            assert_eq!(atan2(avm, context, *math.read(), &[]), Value::Number(NAN));
+            assert_eq!(
+                atan2(avm, context, *math.read(), &[]),
+                Some(Value::Number(NAN))
+            );
             assert_eq!(
                 atan2(
                     avm,
@@ -244,7 +247,7 @@ mod tests {
                     *math.read(),
                     &[Value::Number(1.0), Value::Null]
                 ),
-                Value::Number(NAN)
+                Some(Value::Number(NAN))
             );
             assert_eq!(
                 atan2(
@@ -253,7 +256,7 @@ mod tests {
                     *math.read(),
                     &[Value::Number(1.0), Value::Undefined]
                 ),
-                Value::Number(NAN)
+                Some(Value::Number(NAN))
             );
             assert_eq!(
                 atan2(
@@ -262,7 +265,7 @@ mod tests {
                     *math.read(),
                     &[Value::Undefined, Value::Number(1.0)]
                 ),
-                Value::Number(NAN)
+                Some(Value::Number(NAN))
             );
         });
     }
@@ -273,7 +276,7 @@ mod tests {
             let math = GcCell::allocate(context.gc_context, create(context.gc_context));
             assert_eq!(
                 atan2(avm, context, *math.read(), &[Value::Number(10.0)]),
-                Value::Number(std::f64::consts::FRAC_PI_2)
+                Some(Value::Number(std::f64::consts::FRAC_PI_2))
             );
             assert_eq!(
                 atan2(
@@ -282,7 +285,7 @@ mod tests {
                     *math.read(),
                     &[Value::Number(1.0), Value::Number(2.0)]
                 ),
-                Value::Number(f64::atan2(1.0, 2.0))
+                Some(Value::Number(f64::atan2(1.0, 2.0)))
             );
         });
     }

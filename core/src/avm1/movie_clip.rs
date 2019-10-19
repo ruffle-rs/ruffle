@@ -10,13 +10,13 @@ macro_rules! with_movie_clip {
         $(
             $object.force_set_function(
                 $name,
-                |_avm, _context, this, args| -> Value<'gc> {
+                |_avm, _context, this, args| -> Option<Value<'gc>> {
                     if let Some(display_object) = this.read().display_node() {
                         if let Some(movie_clip) = display_object.read().as_movie_clip() {
-                            return $fn(movie_clip, args);
+                            return Some($fn(movie_clip, args));
                         }
                     }
-                    Value::Undefined
+                    Some(Value::Undefined)
                 },
                 $gc_context,
                 DontDelete | ReadOnly | DontEnum,
@@ -30,13 +30,13 @@ macro_rules! with_movie_clip_mut {
         $(
             $object.force_set_function(
                 $name,
-                |_avm, context: &mut UpdateContext<'_, 'gc, '_>, this, args| -> Value<'gc> {
+                |_avm, context: &mut UpdateContext<'_, 'gc, '_>, this, args| -> Option<Value<'gc>> {
                     if let Some(display_object) = this.read().display_node() {
                         if let Some(movie_clip) = display_object.write(context.gc_context).as_movie_clip_mut() {
-                            return $fn(movie_clip, context, display_object, args);
+                            return Some($fn(movie_clip, context, display_object, args));
                         }
                     }
-                    Value::Undefined
+                    Some(Value::Undefined)
                 } as crate::avm1::function::NativeFunction<'gc>,
                 $gc_context,
                 DontDelete | ReadOnly | DontEnum,
@@ -50,7 +50,7 @@ pub fn overwrite_root<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
-) -> Value<'gc> {
+) -> Option<Value<'gc>> {
     let new_val = args
         .get(0)
         .map(|v| v.to_owned())
@@ -58,7 +58,7 @@ pub fn overwrite_root<'gc>(
     this.write(ac.gc_context)
         .force_set("_root", new_val, EnumSet::new());
 
-    Value::Undefined
+    Some(Value::Undefined)
 }
 
 pub fn overwrite_global<'gc>(
@@ -66,7 +66,7 @@ pub fn overwrite_global<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
-) -> Value<'gc> {
+) -> Option<Value<'gc>> {
     let new_val = args
         .get(0)
         .map(|v| v.to_owned())
@@ -74,7 +74,7 @@ pub fn overwrite_global<'gc>(
     this.write(ac.gc_context)
         .force_set("_global", new_val, EnumSet::new());
 
-    Value::Undefined
+    Some(Value::Undefined)
 }
 
 pub fn create_movie_object<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<'gc> {
@@ -116,14 +116,14 @@ pub fn create_movie_object<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<
 
     object.force_set_virtual(
         "_global",
-        Executable::Native(|avm, context, _this, _args| avm.global_object(context)),
+        Executable::Native(|avm, context, _this, _args| Some(avm.global_object(context))),
         Some(Executable::Native(overwrite_global)),
         EnumSet::new(),
     );
 
     object.force_set_virtual(
         "_root",
-        Executable::Native(|avm, context, _this, _args| avm.root_object(context)),
+        Executable::Native(|avm, context, _this, _args| Some(avm.root_object(context))),
         Some(Executable::Native(overwrite_root)),
         EnumSet::new(),
     );
@@ -131,12 +131,14 @@ pub fn create_movie_object<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<
     object.force_set_virtual(
         "_parent",
         Executable::Native(|_avm, _context, this, _args| {
-            this.read()
-                .display_node()
-                .and_then(|mc| mc.read().parent())
-                .and_then(|dn| dn.read().object().as_object().ok())
-                .map(|o| Value::Object(o.to_owned()))
-                .unwrap_or(Value::Undefined)
+            Some(
+                this.read()
+                    .display_node()
+                    .and_then(|mc| mc.read().parent())
+                    .and_then(|dn| dn.read().object().as_object().ok())
+                    .map(|o| Value::Object(o.to_owned()))
+                    .unwrap_or(Value::Undefined),
+            )
         }),
         None,
         EnumSet::new(),
