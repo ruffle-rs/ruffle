@@ -12,7 +12,7 @@ pub fn add_property<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
-) -> Value<'gc> {
+) -> Result<ReturnValue<'gc>, Error> {
     let name = args.get(0).unwrap_or(&Value::Undefined);
     let getter = args.get(1).unwrap_or(&Value::Undefined);
     let setter = args.get(2).unwrap_or(&Value::Undefined);
@@ -29,19 +29,19 @@ pub fn add_property<'gc>(
                             EnumSet::empty(),
                         );
                     } else {
-                        return Value::Bool(false);
+                        return Ok(false.into());
                     }
                 } else if let Value::Null = setter {
                     this.write(context.gc_context)
                         .force_set_virtual(name, get_func, None, ReadOnly);
                 } else {
-                    return Value::Bool(false);
+                    return Ok(false.into());
                 }
             }
 
-            Value::Bool(false)
+            Ok(false.into())
         }
-        _ => Value::Bool(false),
+        _ => Ok(false.into()),
     }
 }
 
@@ -68,6 +68,46 @@ fn to_string<'gc>(
     Ok(ReturnValue::Immediate("[Object object]".into()))
 }
 
+/// Implements `Object.prototype.isPropertyEnumerable`
+fn is_property_enumerable<'gc>(
+    _: &mut Avm1<'gc>,
+    _: &mut UpdateContext<'_, 'gc, '_>,
+    this: GcCell<'gc, Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    match args.get(0) {
+        Some(Value::String(name)) => {
+            Ok(Value::Bool(this.read().is_property_enumerable(name)).into())
+        }
+        _ => Ok(Value::Bool(false).into()),
+    }
+}
+
+/// Implements `Object.prototype.isPrototypeOf`
+fn is_prototype_of<'gc>(
+    _: &mut Avm1<'gc>,
+    _: &mut UpdateContext<'_, 'gc, '_>,
+    this: GcCell<'gc, Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    match args.get(0) {
+        Some(Value::Object(ob)) => {
+            let mut proto = ob.read().prototype().cloned();
+
+            while let Some(proto_ob) = proto {
+                if GcCell::ptr_eq(this, proto_ob) {
+                    return Ok(Value::Bool(true).into());
+                }
+
+                proto = proto_ob.read().prototype().cloned();
+            }
+
+            Ok(Value::Bool(false).into())
+        }
+        _ => Ok(Value::Bool(false).into()),
+    }
+}
+
 /// Partially construct `Object.prototype`.
 ///
 /// `__proto__` and other cross-linked properties of this object will *not*
@@ -88,14 +128,28 @@ pub fn fill_proto<'gc>(
         "addProperty",
         add_property,
         gc_context,
-        EnumSet::empty(),
+        DontDelete | DontEnum,
         Some(fn_proto),
     );
     ob_proto_write.force_set_function(
         "hasOwnProperty",
         has_own_property,
         gc_context,
-        EnumSet::empty(),
+        DontDelete | DontEnum,
+        Some(fn_proto),
+    );
+    ob_proto_write.force_set_function(
+        "isPropertyEnumerable",
+        is_property_enumerable,
+        gc_context,
+        DontDelete | DontEnum,
+        Some(fn_proto),
+    );
+    ob_proto_write.force_set_function(
+        "isPrototypeOf",
+        is_prototype_of,
+        gc_context,
+        DontDelete | DontEnum,
         Some(fn_proto),
     );
     ob_proto_write.force_set_function(

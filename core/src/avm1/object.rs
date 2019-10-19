@@ -389,6 +389,14 @@ impl<'gc> Object<'gc> {
             .unwrap_or(false)
     }
 
+    pub fn is_property_enumerable(&self, name: &str) -> bool {
+        if let Some(prop) = self.values.get(name) {
+            prop.is_enumerable()
+        } else {
+            false
+        }
+    }
+
     pub fn get_keys(&self) -> Vec<String> {
         self.values
             .iter()
@@ -435,7 +443,7 @@ impl<'gc> Object<'gc> {
     /// Returns a copy of a given function.
     ///
     /// TODO: We have to clone here because of how executables are stored on
-    /// objects. This might not be a good idea for performance.
+    /// objects directly. This might not be a good idea for performance.
     pub fn as_executable(&self) -> Option<Executable<'gc>> {
         self.function.clone()
     }

@@ -1433,11 +1433,13 @@ impl<'gc> Avm1<'gc> {
 
         let constructor = object
             .read()
-            .get(&method_name.as_string()?, self, context, object.to_owned())
+            .get(&method_name.as_string()?, self, context, object.to_owned())?
+            .resolve(self, context)?
             .as_object()?;
         let proto = constructor
             .read()
-            .get("prototype", self, context, constructor.to_owned());
+            .get("prototype", self, context, constructor.to_owned())?
+            .resolve(self, context)?;
         let this = GcCell::allocate(
             context.gc_context,
             Object::object(
@@ -1447,7 +1449,10 @@ impl<'gc> Avm1<'gc> {
         );
 
         //TODO: What happens if you `ActionNewMethod` without a method name?
-        constructor.read().call(self, context, this, &args);
+        constructor
+            .read()
+            .call(self, context, this, &args)?
+            .ignore();
 
         //TODO: The SWF docs are really cagey about what the hell happens with
         //user defined constructors... do we need stack continuations?!
@@ -1470,11 +1475,13 @@ impl<'gc> Avm1<'gc> {
             .unwrap()
             .clone()
             .read()
-            .resolve(fn_name.as_string()?, self, context)
+            .resolve(fn_name.as_string()?, self, context)?
+            .resolve(self, context)?
             .as_object()?;
         let proto = constructor
             .read()
-            .get("prototype", self, context, constructor.to_owned());
+            .get("prototype", self, context, constructor.to_owned())?
+            .resolve(self, context)?;
         let this = GcCell::allocate(
             context.gc_context,
             Object::object(
@@ -1483,7 +1490,10 @@ impl<'gc> Avm1<'gc> {
             ),
         );
 
-        constructor.read().call(self, context, this, &args);
+        constructor
+            .read()
+            .call(self, context, this, &args)?
+            .ignore();
 
         self.push(Value::Undefined);
 
