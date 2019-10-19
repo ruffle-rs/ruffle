@@ -263,14 +263,12 @@ impl<'gc> Avm1<'gc> {
         return_value: Value<'gc>,
     ) -> Result<(), Error> {
         if let Some(frame) = self.current_stack_frame() {
-            let this = frame.read().this_cell();
-
             self.stack_frames.pop();
 
             let can_return = !self.stack_frames.is_empty();
 
             if let Some(func) = frame.write(context.gc_context).get_then_func() {
-                func.returned(self, context, this, return_value)?;
+                func.returned(self, context, return_value)?;
             } else if can_return {
                 self.stack.push(return_value);
             }
@@ -696,7 +694,7 @@ impl<'gc> Avm1<'gc> {
                 .and_then(stack_continuation!(
                     this: GcCell<'gc, Object<'gc>>,
                     args: Vec<Value<'gc>>,
-                    |avm, context, _this, target_fn| {
+                    |avm, context, target_fn| {
                         let return_value = target_fn.call(avm, context, *this, &args)?;
                         if let Some(instant_return) = return_value {
                             avm.push(instant_return);
@@ -766,7 +764,7 @@ impl<'gc> Avm1<'gc> {
                                 args: Vec<Value<'gc>>,
                                 name: String,
                                 object: Value<'gc>,
-                                |avm, context, _this, callable| {
+                                |avm, context, callable| {
                                     if let Value::Undefined = callable {
                                         return Err(format!(
                                             "Object method {} is not defined",
@@ -984,7 +982,7 @@ impl<'gc> Avm1<'gc> {
                 .write(context.gc_context)
                 .and_then(stack_continuation!(
                     name_value: Value<'gc>,
-                    |avm, _ctxt, _this, return_value| {
+                    |avm, _ctxt, return_value| {
                         match return_value {
                             Value::Object(ob) => {
                                 for k in ob.read().get_keys() {
