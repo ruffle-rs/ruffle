@@ -257,6 +257,13 @@ impl<'gc> Avm1<'gc> {
     /// results of AVM code to implement things like custom getters/setters.
     /// If there is a continuation set for this frame, then no return value
     /// will be pushed to the stack.
+    ///
+    /// A stack continuation can also return `true` to indicate that it wants
+    /// to be run again on the next stack frame. This allows iteration and
+    /// loops on the same continuation.
+    ///
+    /// See the `stack_continuation!` and `and_then!` macros for a cleaner way
+    /// to write stack continuations.
     fn retire_stack_frame(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -268,7 +275,13 @@ impl<'gc> Avm1<'gc> {
             let can_return = !self.stack_frames.is_empty();
 
             if let Some(func) = frame.write(context.gc_context).get_then_func() {
-                func.returned(self, context, return_value)?;
+                let is_continuing = func.returned(self, context, return_value)?;
+                if is_continuing {
+                    if let Some(fr) = self.current_stack_frame() {
+                        fr.write(context.gc_context)
+                            .and_again(frame, context.gc_context);
+                    }
+                }
             } else if can_return {
                 self.stack.push(return_value);
             }

@@ -9,6 +9,7 @@ use crate::tag_utils::SwfSlice;
 use gc_arena::{GcCell, MutationContext};
 use smallvec::SmallVec;
 use std::cell::{Ref, RefMut};
+use std::mem::swap;
 use std::sync::Arc;
 
 /// Represents a particular register set.
@@ -347,5 +348,21 @@ impl<'gc> Activation<'gc> {
     /// perform any necessary AVM action.
     pub fn and_then(&mut self, func: Box<dyn StackContinuation<'gc>>) {
         self.then_func = Some(func);
+    }
+
+    /// Reschedule an already-queued native function from an existing frame.
+    ///
+    /// The existing advice listed in `and_then` applies here. The previous
+    /// activation's continuation will be set to `None`.
+    pub fn and_again(
+        &mut self,
+        previous_activation: GcCell<'gc, Activation<'gc>>,
+        context: MutationContext<'gc, '_>,
+    ) {
+        self.then_func = None;
+        swap(
+            &mut self.then_func,
+            &mut previous_activation.write(context).then_func,
+        );
     }
 }
