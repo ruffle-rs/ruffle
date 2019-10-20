@@ -4,6 +4,32 @@
 var private_registry = {};
 
 /**
+ * Lookup a previously registered custom element.
+ * 
+ * @param {string} element_name The internal element name, previously used to
+ * register the element with the private registry.
+ * 
+ * @returns {object|null} The element data in the registry, or null if there is
+ * no such element name registered.
+ * 
+ * The returned object will have `name`, `class`, and `internal_name`
+ * properties listing the external name, implementing class, and internal name
+ * respectively.
+ */
+export function lookup_element(element_name) {
+    let data = private_registry[element_name];
+    if (data !== undefined) {
+        return {
+            "internal_name": element_name,
+            "name": data.name,
+            "class": data.class
+        };
+    } else {
+        return null;
+    }
+}
+
+/**
  * Register a custom element.
  * 
  * This function is designed to be tolerant of naming conflicts. If
