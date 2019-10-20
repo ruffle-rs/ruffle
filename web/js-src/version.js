@@ -70,6 +70,9 @@ export class Version {
      * version number, or if both minor versions are zero, the same nonzero
      * patch version number.
      * 
+     * This implements the ^ operator in npm's semver package, with the
+     * exception of the prerelease exclusion rule.
+     * 
      * @param {Version} fver The other version to test against
      * @return {bool}
      */
@@ -83,7 +86,9 @@ export class Version {
      * Returns true if this version has precedence over (is newer than) another
      * version.
      * 
-     * Precedence is defined as in the Semver 2 spec.
+     * Precedence is defined as in the Semver 2 spec. This implements the >
+     * operator in npm's semver package, with the exception of the prerelease
+     * exclusion rule.
      * 
      * @param {Version} fver The other version to test against
      * @return {bool} True if this version has precedence over the other one.
@@ -135,5 +140,42 @@ export class Version {
         }
 
         return false;
+    }
+
+    /**
+     * Tests if a given version is equivalent to this one.
+     * 
+     * Build and prerelease tags are ignored.
+     * 
+     * @param {Version} fver The other version to test against
+     * @return {bool} True if the given version is equivalent.
+     */
+    is_equal(fver) {
+        return this.major === fver.major &&
+            this.minor === fver.minor &&
+            this.patch === fver.patch;
+    }
+
+    /**
+     * Tests if a given version is stable or a compatible prerelease for this
+     * version.
+     * 
+     * This implements the prerelease exclusion rule of NPM semver: a
+     * prerelease version can only pass this check if the major/minor/patch
+     * components of both versions are the same. Otherwise, the prerelease
+     * version always fails.
+     * 
+     * @param {Version} fver The other version to test against
+     * @return {bool} True if the given version is either stable, or a
+     * prerelease in the same series as this one.
+     */
+    is_stable_or_compatible_prerelease(fver) {
+        if (fver.pr_ident === undefined) {
+            return true;
+        } else {
+            return this.major === fver.major &&
+                this.minor === fver.minor &&
+                this.patch === fver.patch;
+        }
     }
 }
