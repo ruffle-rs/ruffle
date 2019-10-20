@@ -76,7 +76,14 @@ fn test_swf(swf_path: &str, num_frames: u32, expected_output_path: &str) -> Resu
         player.run_frame();
     }
 
-    assert_eq!(trace_log(), expected_output);
+    let trace_log = trace_log();
+    if trace_log != expected_output {
+        println!(
+            "Ruffle output:\n{}\nExpected output:\n{}",
+            trace_log, expected_output
+        );
+        panic!("Ruffle output did not match expected output.");
+    }
 
     Ok(())
 }
