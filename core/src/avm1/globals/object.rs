@@ -1,4 +1,4 @@
-//! Object global impls
+//! Object prototype
 use crate::avm1::object::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, Value};

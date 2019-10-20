@@ -1,3 +1,5 @@
+//! MovieClip prototype
+
 use crate::avm1::function::Executable;
 use crate::avm1::object::{Attribute::*, Object};
 use crate::avm1::return_value::ReturnValue;
