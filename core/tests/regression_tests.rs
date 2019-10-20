@@ -34,6 +34,8 @@ macro_rules! swf_tests {
 // Inside the folder is expected to be "test.swf" and "output.txt" with the correct output.
 swf_tests! {
     (execution_order, "avm1/execution_order", 3),
+    (execution_order2, "avm1/execution_order2", 15),
+    (execution_order3, "avm1/execution_order3", 5),
     (single_frame, "avm1/single_frame", 2),
     (looping, "avm1/looping", 6),
     (goto_advance1, "avm1/goto_advance1", 10),
@@ -43,6 +45,7 @@ swf_tests! {
     (goto_rewind1, "avm1/goto_rewind1", 10),
     (goto_rewind2, "avm1/goto_rewind2", 10),
     (goto_rewind3, "avm1/goto_rewind3", 10),
+    (goto_execution_order, "avm1/goto_execution_order", 3),
     (greaterthan_swf5, "avm1/greaterthan_swf5", 1),
     (greaterthan_swf8, "avm1/greaterthan_swf8", 1),
     (strictly_equals, "avm1/strictly_equals", 1),
