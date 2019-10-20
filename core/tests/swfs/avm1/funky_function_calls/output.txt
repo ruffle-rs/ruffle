@@ -1,0 +1,44 @@
+_level0.childinst
+Is it the global object: false
+Argument 0: Natural function call
+Argument 1: undefined
+[type Object]
+Is it the global object: true
+Argument 0: Apply w/ Undefined
+Argument 1: undefined
+[type Object]
+Is it the global object: true
+Argument 0: Apply w/ Global
+Argument 1: 3
+_level0
+Is it the global object: false
+Argument 0: Apply w/ Parent
+Argument 1: undefined
+_level0
+Is it the global object: false
+Argument 0: Apply w/ Root
+Argument 1: undefined
+[type Object]
+Is it the global object: true
+Argument 0: Call w/ Undefined
+Argument 1: undefined
+[type Object]
+Is it the global object: true
+Argument 0: Call w/ Global
+Argument 1: undefined
+_level0
+Is it the global object: false
+Argument 0: Call w/ Parent
+Argument 1: undefined
+_level0
+Is it the global object: false
+Argument 0: Call w/ Root
+Argument 1: 2
+[type Object]
+Is it the global object: true
+Argument 0: Fake arguments object
+Argument 1: 5
+Let's try some things that don't work
+undefined
+undefined
+Those do NOT generate errors on FP7/AS2.
