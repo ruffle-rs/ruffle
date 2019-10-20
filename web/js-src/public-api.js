@@ -1,4 +1,6 @@
 import { Version } from "./version.js";
+import { VersionRange } from "./version-range.js";
+import { RufflePlayer } from "./ruffle-player.js";
 
 /**
  * Represents the Ruffle public API.
@@ -128,6 +130,42 @@ export class PublicAPI {
             
             this.sources[this.newest_name].polyfill(polyfills);
         }
+    }
+
+    /**
+     * Look up the newest Ruffle source and return it's API.
+     * 
+     * @returns {SourceAPI} An instance of the Source API.
+     */
+    newest() {
+        this.sources[this.newest_source_name()];
+    }
+
+    /**
+     * Look up a specific Ruffle version (or any version satisfying a given set
+     * of requirements) and return it's API.
+     * 
+     * @param {string} ver_requirement A set of semantic version requirement
+     * strings that the player version must satisfy.
+     * 
+     * @returns {SourceAPI|null} An instance of the Source API, if one or more
+     * sources satisfied the requirement.
+     */
+    satisfying(ver_requirement) {
+        let requirement = VersionRange.from_requirement_string(ver_requirement);
+        let valid_source = null;
+
+        for (let k in this.sources) {
+            if (this.sources.hasOwnProperty(k)) {
+                let version = Version.from_semver(this.sources[k].version);
+
+                if (requirement.satisfied_by(version)) {
+                    valid_source = this.sources[k]
+                }
+            }
+        }
+
+        return valid_source;
     }
 
     /**
