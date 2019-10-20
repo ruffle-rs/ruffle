@@ -317,17 +317,6 @@ impl<'gc> Object<'gc> {
         Some(Value::Undefined)
     }
 
-    /// Retrieve a value from an object if and only if the value in the object
-    /// property is non-virtual.
-    ///
-    /// This is deprecated and will be removed soon.
-    pub fn force_get(&self, name: &str) -> Value<'gc> {
-        if let Some(Property::Stored { value, .. }) = self.values.get(name) {
-            return value.to_owned();
-        }
-        Value::Undefined
-    }
-
     /// Delete a given value off the object.
     pub fn delete(&mut self, name: &str) -> bool {
         if let Some(prop) = self.values.get(name) {
