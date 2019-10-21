@@ -271,7 +271,7 @@ impl<'gc> Activation<'gc> {
     }
 
     /// Define a named local variable within this activation.
-    pub fn define(&self, name: &str, value: Value<'gc>, mc: MutationContext<'gc, '_>) {
+    pub fn define(&self, name: &str, value: impl Into<Value<'gc>>, mc: MutationContext<'gc, '_>) {
         self.scope().define(name, value, mc)
     }
 
@@ -304,10 +304,15 @@ impl<'gc> Activation<'gc> {
     }
 
     /// Set a local register.
-    pub fn set_local_register(&mut self, id: u8, value: Value<'gc>, mc: MutationContext<'gc, '_>) {
+    pub fn set_local_register(
+        &mut self,
+        id: u8,
+        value: impl Into<Value<'gc>>,
+        mc: MutationContext<'gc, '_>,
+    ) {
         if let Some(ref mut local_registers) = self.local_registers {
             if let Some(r) = local_registers.write(mc).get_mut(id) {
-                *r = value;
+                *r = value.into();
             }
         }
     }

@@ -94,11 +94,7 @@ pub fn create_globals<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<'gc> 
 
     globals.force_set_function("isNaN", is_nan, gc_context, EnumSet::empty());
     globals.force_set_function("Boolean", boolean, gc_context, EnumSet::empty());
-    globals.force_set(
-        "Math",
-        Value::Object(math::create(gc_context)),
-        EnumSet::empty(),
-    );
+    globals.force_set("Math", math::create(gc_context), EnumSet::empty());
     globals.force_set_function("getURL", getURL, gc_context, EnumSet::empty());
     globals.force_set_function("Number", number, gc_context, EnumSet::empty());
     globals.force_set_function("random", random, gc_context, EnumSet::empty());

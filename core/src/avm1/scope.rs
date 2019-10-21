@@ -301,7 +301,7 @@ impl<'gc> Scope<'gc> {
     /// stored (e.g. not virtual) properties on the lowest object in the scope
     /// chain. As a result, this function always force sets a property on the
     /// local object and does not traverse the scope chain.
-    pub fn define(&self, name: &str, value: Value<'gc>, mc: MutationContext<'gc, '_>) {
+    pub fn define(&self, name: &str, value: impl Into<Value<'gc>>, mc: MutationContext<'gc, '_>) {
         self.locals_mut(mc).force_set(name, value, EnumSet::empty());
     }
 

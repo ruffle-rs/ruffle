@@ -31,6 +31,12 @@ impl<'gc> From<bool> for Value<'gc> {
     }
 }
 
+impl<'gc> From<GcCell<'gc, Object<'gc>>> for Value<'gc> {
+    fn from(object: GcCell<'gc, Object<'gc>>) -> Self {
+        Value::Object(object)
+    }
+}
+
 unsafe impl<'gc> gc_arena::Collect for Value<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
         if let Value::Object(object) = self {

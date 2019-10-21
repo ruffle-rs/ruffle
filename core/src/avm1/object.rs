@@ -275,10 +275,7 @@ impl<'gc> Object<'gc> {
     {
         self.force_set(
             name,
-            Value::Object(GcCell::allocate(
-                gc_context,
-                Object::native_function(function),
-            )),
+            GcCell::allocate(gc_context, Object::native_function(function)),
             attributes,
         )
     }
