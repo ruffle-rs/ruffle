@@ -1593,13 +1593,13 @@ impl<'gc> Avm1<'gc> {
         if target.is_empty() {
             context.active_clip = context.start_clip;
             context.target_clip = Some(context.start_clip);
-            context.target_path = target.to_string().into();
+            context.target_path = target.into();
         } else if let Some(clip) =
             Avm1::resolve_slash_path(context.start_clip, context.root, target)
         {
             context.target_clip = Some(clip);
             context.active_clip = clip;
-            context.target_path = target.to_string().into();
+            context.target_path = target.into();
         } else {
             log::warn!("SetTarget failed: {} not found", target);
             // TODO: Emulate AVM1 trace error message.

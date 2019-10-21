@@ -19,6 +19,12 @@ impl<'gc> From<String> for Value<'gc> {
     }
 }
 
+impl<'gc> From<&str> for Value<'gc> {
+    fn from(string: &str) -> Self {
+        Value::String(string.to_owned())
+    }
+}
+
 unsafe impl<'gc> gc_arena::Collect for Value<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
         if let Value::Object(object) = self {
