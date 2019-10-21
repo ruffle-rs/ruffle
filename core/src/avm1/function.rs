@@ -2,6 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::object::{Attribute::*, Object};
+use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
 use crate::avm1::{Avm1, UpdateContext};
@@ -28,7 +29,7 @@ pub type NativeFunction<'gc> = fn(
     &mut UpdateContext<'_, 'gc, '_>,
     GcCell<'gc, Object<'gc>>,
     &[Value<'gc>],
-) -> Option<Value<'gc>>;
+) -> ReturnValue<'gc>;
 
 /// Represents a function defined in the AVM1 runtime, either through
 /// `DefineFunction` or `DefineFunction2`.
@@ -183,7 +184,7 @@ impl<'gc> Executable<'gc> {
         ac: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Option<Value<'gc>> {
+    ) -> ReturnValue<'gc> {
         match self {
             Executable::Native(nf) => nf(avm, ac, this, args),
             Executable::Action(af) => {
@@ -218,13 +219,17 @@ impl<'gc> Executable<'gc> {
                         .unwrap_or(ac.player_version)
                 };
 
-                let mut frame = Activation::from_function(
-                    effective_ver,
-                    af.data(),
-                    child_scope,
-                    this,
-                    Some(argcell),
+                let frame_cell = GcCell::allocate(
+                    ac.gc_context,
+                    Activation::from_function(
+                        effective_ver,
+                        af.data(),
+                        child_scope,
+                        this,
+                        Some(argcell),
+                    ),
                 );
+                let mut frame = frame_cell.write(ac.gc_context);
 
                 frame.allocate_local_registers(af.register_count(), ac.gc_context);
 
@@ -258,12 +263,31 @@ impl<'gc> Executable<'gc> {
                 }
 
                 if af.preload_parent {
-                    let parent = child_scope.read().resolve("_parent", avm, ac, this);
-                    if let Some(instant_parent) = parent {
-                        frame.set_local_register(preload_r, instant_parent, ac.gc_context);
-                    } else {
-                        log::error!("User-defined virtual _parent is NOT supported!");
-                    }
+                    let parent_preload_r = preload_r;
+
+                    child_scope
+                        .read()
+                        .resolve("_parent", avm, ac, this)
+                        .and_then(
+                            avm,
+                            ac,
+                            stack_continuation!(
+                                frame_cell: GcCell<'gc, Activation<'gc>>,
+                                parent_preload_r: u8,
+                                |_avm, ac, parent| {
+                                    frame_cell.write(ac.gc_context).set_local_register(
+                                        *parent_preload_r,
+                                        parent,
+                                        ac.gc_context,
+                                    );
+
+                                    Ok(ReturnValue::NoResult)
+                                }
+                            ),
+                        )
+                        .unwrap()
+                        .ignore();
+
                     preload_r += 1;
                 }
 
@@ -284,9 +308,9 @@ impl<'gc> Executable<'gc> {
                         _ => {}
                     }
                 }
-                avm.insert_stack_frame(frame, ac);
+                avm.insert_stack_frame(frame_cell);
 
-                None
+                ReturnValue::ResultOf(frame_cell)
             }
         }
     }

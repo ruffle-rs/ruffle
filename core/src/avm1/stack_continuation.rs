@@ -1,5 +1,6 @@
 //! GC-compatible scope continuations
 
+use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Value};
 use crate::context::UpdateContext;
 use gc_arena::Collect;
@@ -14,12 +15,16 @@ pub trait StackContinuation<'gc>: 'gc + Collect {
     /// You are free to use it as you please. In general, however, if you intend
     /// to return to the previous activation frame, then you should push this
     /// return value on the stack.
+    ///
+    /// This function returns another ReturnValue, which can be used to signal
+    /// that the given continuation should be run again, to replace the current
+    /// return value, or to suppress the return value.
     fn returned(
         &mut self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         return_value: Value<'gc>,
-    ) -> Result<(), Error>;
+    ) -> Result<ReturnValue<'gc>, Error>;
 }
 
 /// Generate a continuation from some set of garbage-collected values.
@@ -31,7 +36,9 @@ pub trait StackContinuation<'gc>: 'gc + Collect {
 macro_rules! stack_continuation {
     ($( $name:ident: $type:ty ),*, | $avmname:ident, $ctxtname:ident, $retvalname:ident | $code:block) => {
         {
+            use crate::avm1::return_value::ReturnValue;
             use crate::avm1::stack_continuation::StackContinuation;
+            use crate::avm1::Error;
 
             struct MyCont<'gc> {
                 $(
@@ -50,7 +57,7 @@ macro_rules! stack_continuation {
 
             impl<'gc> StackContinuation<'gc> for MyCont<'gc> {
                 #[allow(unused_parens)]
-                fn returned(&mut self, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, return_value: Value<'gc>) -> Result<(), Error> {
+                fn returned(&mut self, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, return_value: Value<'gc>) -> Result<ReturnValue<'gc>, Error> {
                     $(
                         let $name = &mut self.$name;
                     )*
@@ -62,33 +69,7 @@ macro_rules! stack_continuation {
                 }
             }
 
-            let cont = MyCont{$($name),*};
-
-            Box::new(cont)
-        }
-    };
-}
-
-/// Wait for the result of a `get` to be ready, then call the continuation.
-#[allow(unused_macros)]
-macro_rules! and_then {
-    ( $value:expr, $avm:expr, $context:expr, $cont:expr) => {
-        #[allow(unused_imports)]
-        use crate::avm1::stack_continuation::StackContinuation;
-
-        let value = $value;
-        let mut continuation = $cont;
-        let avm = $avm;
-        let context = $context;
-
-        if let Some(instant_value) = value {
-            continuation.returned(avm, context, instant_value)?;
-        } else {
-            avm.stack_frames
-                .last()
-                .unwrap()
-                .write(context.gc_context)
-                .and_then(continuation);
+            MyCont{$($name),*}
         }
     };
 }

@@ -1,6 +1,7 @@
 use crate::avm1::function::Avm1Function;
 use crate::avm1::globals::create_globals;
 use crate::avm1::object::Object;
+use crate::avm1::return_value::ReturnValue::*;
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
 use crate::prelude::*;
@@ -14,12 +15,15 @@ use swf::avm1::types::{Action, Function};
 
 use crate::tag_utils::SwfSlice;
 
+#[macro_use]
+mod stack_continuation;
 mod activation;
 mod fscommand;
 mod function;
 mod globals;
 pub mod movie_clip;
 pub mod object;
+mod return_value;
 mod scope;
 mod value;
 
@@ -28,9 +32,6 @@ mod test_utils;
 
 #[cfg(test)]
 mod tests;
-
-#[macro_use]
-mod stack_continuation;
 
 use activation::Activation;
 use scope::Scope;
@@ -111,7 +112,9 @@ impl<'gc> Avm1<'gc> {
 
         for k in keys {
             let v = locals.read().get(&k, self, context, locals);
-            if let Some(instant_value) = v {
+
+            //TODO: Support on-stack properties
+            if let Immediate(instant_value) = v {
                 form_values.insert(k, instant_value.clone().into_string());
             }
         }
@@ -177,13 +180,8 @@ impl<'gc> Avm1<'gc> {
     }
 
     /// Add a stack frame for any arbitrary code.
-    pub fn insert_stack_frame(
-        &mut self,
-        frame: Activation<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) {
-        self.stack_frames
-            .push(GcCell::allocate(context.gc_context, frame));
+    pub fn insert_stack_frame(&mut self, frame: GcCell<'gc, Activation<'gc>>) {
+        self.stack_frames.push(frame);
     }
 
     /// Retrieve the current AVM execution frame.
@@ -275,12 +273,14 @@ impl<'gc> Avm1<'gc> {
             let can_return = !self.stack_frames.is_empty();
 
             if let Some(func) = frame.write(context.gc_context).get_then_func() {
-                let is_continuing = func.returned(self, context, return_value)?;
-                if is_continuing {
-                    if let Some(fr) = self.current_stack_frame() {
-                        fr.write(context.gc_context)
+                match func.returned(self, context, return_value)? {
+                    Immediate(val) => self.stack.push(val),
+                    ResultOf(new_frame) => {
+                        new_frame
+                            .write(context.gc_context)
                             .and_again(frame, context.gc_context);
                     }
+                    NoResult => {}
                 }
             } else if can_return {
                 self.stack.push(return_value);
@@ -694,29 +694,17 @@ impl<'gc> Avm1<'gc> {
         );
         let this = context.active_clip.read().object().as_object()?.to_owned();
 
-        if let Some(target_fn) = target_fn {
-            let return_value = target_fn.call(self, context, this, &args)?;
-            if let Some(instant_return) = return_value {
-                self.push(instant_return);
-            }
-        } else {
-            self.stack_frames
-                .last()
-                .unwrap()
-                .write(context.gc_context)
-                .and_then(stack_continuation!(
+        target_fn
+            .and_then(
+                self,
+                context,
+                stack_continuation!(
                     this: GcCell<'gc, Object<'gc>>,
                     args: Vec<Value<'gc>>,
-                    |avm, context, target_fn| {
-                        let return_value = target_fn.call(avm, context, *this, &args)?;
-                        if let Some(instant_return) = return_value {
-                            avm.push(instant_return);
-                        }
-
-                        Ok(())
-                    }
-                ))
-        }
+                    |avm, context, target_fn| { target_fn.call(avm, context, *this, &args) }
+                ),
+            )?
+            .push(self);
 
         Ok(())
     }
@@ -736,47 +724,26 @@ impl<'gc> Avm1<'gc> {
         match method_name {
             Value::Undefined | Value::Null => {
                 let this = context.active_clip.read().object().as_object()?.to_owned();
-                let return_value = object.call(self, context, this, &args)?;
-                if let Some(instant_return) = return_value {
-                    self.push(instant_return);
-                }
+                object.call(self, context, this, &args)?.push(self);
             }
             Value::String(name) => {
                 if name.is_empty() {
-                    let return_value =
-                        object.call(self, context, object.as_object()?.to_owned(), &args)?;
-                    if let Some(instant_return) = return_value {
-                        self.push(instant_return);
-                    }
+                    object
+                        .call(self, context, object.as_object()?.to_owned(), &args)?
+                        .push(self);
                 } else {
-                    let callable = object.as_object()?.read().get(
-                        &name,
-                        self,
-                        context,
-                        object.as_object()?.to_owned(),
-                    );
-
-                    if let Some(Value::Undefined) = callable {
-                        return Err(format!("Object method {} is not defined", name).into());
-                    } else if let Some(instant_fn) = callable {
-                        let return_value = instant_fn.call(
+                    let target = object.as_object()?.to_owned();
+                    object
+                        .as_object()?
+                        .read()
+                        .get(&name, self, context, target)
+                        .and_then(
                             self,
                             context,
-                            object.as_object()?.to_owned(),
-                            &args,
-                        )?;
-                        if let Some(instant_return) = return_value {
-                            self.push(instant_return);
-                        }
-                    } else {
-                        self.stack_frames
-                            .last()
-                            .unwrap()
-                            .write(context.gc_context)
-                            .and_then(stack_continuation!(
-                                args: Vec<Value<'gc>>,
+                            stack_continuation!(
+                                target: GcCell<'gc, Object<'gc>>,
                                 name: String,
-                                object: Value<'gc>,
+                                args: Vec<Value<'gc>>,
                                 |avm, context, callable| {
                                     if let Value::Undefined = callable {
                                         return Err(format!(
@@ -786,19 +753,11 @@ impl<'gc> Avm1<'gc> {
                                         .into());
                                     }
 
-                                    let return_value = callable.call(
-                                        avm,
-                                        context,
-                                        object.as_object()?.to_owned(),
-                                        &args,
-                                    )?;
-                                    if let Some(instant_return) = return_value {
-                                        avm.push(instant_return)
-                                    }
-                                    Ok(())
+                                    callable.call(avm, context, *target, &args)
                                 }
-                            ));
-                    }
+                            ),
+                        )?
+                        .push(self);
                 }
             }
             _ => {
@@ -972,48 +931,30 @@ impl<'gc> Avm1<'gc> {
         let name_value = self.pop()?;
         let name = name_value.as_string()?;
         self.push(Value::Null); // Sentinel that indicates end of enumeration
-        match self
-            .current_stack_frame()
+        self.current_stack_frame()
             .unwrap()
             .read()
             .resolve(name, self, context)
-        {
-            Some(Value::Object(ob)) => {
-                for k in ob.read().get_keys() {
-                    self.push(Value::String(k));
-                }
-            }
-            Some(_) => {
-                log::error!("Cannot enumerate properties of {}", name);
-
-                return Ok(()); //TODO: This is NOT OK(()).
-            }
-            None => self
-                .stack_frames
-                .last()
-                .unwrap()
-                .write(context.gc_context)
-                .and_then(stack_continuation!(
-                    name_value: Value<'gc>,
-                    |avm, _ctxt, return_value| {
-                        match return_value {
-                            Value::Object(ob) => {
-                                for k in ob.read().get_keys() {
-                                    avm.push(Value::String(k));
-                                }
-                            }
-                            _ => {
-                                log::error!(
-                                    "Cannot enumerate properties of {}",
-                                    name_value.as_string()?
-                                );
+            .and_then(
+                self,
+                context,
+                stack_continuation!(name_value: Value<'gc>, |avm, _context, object| {
+                    match object {
+                        Value::Object(ob) => {
+                            for k in ob.read().get_keys() {
+                                avm.push(Value::String(k));
                             }
                         }
+                        _ => log::error!(
+                            "Cannot enumerate properties of {}",
+                            name_value.as_string()?
+                        ),
+                    };
 
-                        Ok(())
-                    }
-                )),
-        };
+                    Ok(ReturnValue::NoResult)
+                }),
+            )?
+            .ignore();
 
         Ok(())
     }
@@ -1070,10 +1011,7 @@ impl<'gc> Avm1<'gc> {
         let name = name_val.into_string();
         let object = self.pop()?.as_object()?;
         let this = self.current_stack_frame().unwrap().read().this_cell();
-        let value = object.read().get(&name, self, context, this);
-        if let Some(value) = value {
-            self.push(value);
-        }
+        object.read().get(&name, self, context, this).push(self);
 
         Ok(())
     }
@@ -1160,10 +1098,10 @@ impl<'gc> Avm1<'gc> {
                 if let Some(clip) = node.read().as_movie_clip() {
                     let object = clip.object().as_object()?;
                     if object.read().has_property(var_name) {
-                        let result = object.read().get(var_name, self, context, object);
-                        if let Some(value) = result {
-                            self.push(value);
-                        } //NOTE: Natural return is sufficient for custom get
+                        object
+                            .read()
+                            .get(var_name, self, context, object)
+                            .push(self);
                     } else {
                         self.push(Value::Undefined);
                     }
@@ -1172,14 +1110,11 @@ impl<'gc> Avm1<'gc> {
                 }
             }
         } else if self.current_stack_frame().unwrap().read().is_defined(path) {
-            let result = self
-                .current_stack_frame()
+            self.current_stack_frame()
                 .unwrap()
                 .read()
-                .resolve(path, self, context);
-            if let Some(value) = result {
-                self.push(value);
-            } //NOTE: Natural return is sufficient for custom get
+                .resolve(path, self, context)
+                .push(self);
         } else {
             self.push(Value::Undefined);
         }

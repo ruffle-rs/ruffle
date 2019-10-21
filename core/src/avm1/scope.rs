@@ -1,5 +1,6 @@
 //! Represents AVM1 scope chain resolution.
 
+use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Object, UpdateContext, Value};
 use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
@@ -246,7 +247,7 @@ impl<'gc> Scope<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
-    ) -> Option<Value<'gc>> {
+    ) -> ReturnValue<'gc> {
         if self.locals().has_property(name) {
             return self.locals().get(name, avm, context, this);
         }
@@ -254,7 +255,7 @@ impl<'gc> Scope<'gc> {
             return scope.resolve(name, avm, context, this);
         }
 
-        Some(Value::Undefined)
+        ReturnValue::Immediate(Value::Undefined)
     }
 
     /// Check if a particular property in the scope chain is defined.

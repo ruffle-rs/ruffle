@@ -1,6 +1,7 @@
 //! Activation records
 
 use crate::avm1::object::Object;
+use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
 use crate::avm1::stack_continuation::StackContinuation;
 use crate::avm1::{Avm1, Value};
@@ -261,13 +262,13 @@ impl<'gc> Activation<'gc> {
         name: &str,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Option<Value<'gc>> {
+    ) -> ReturnValue<'gc> {
         if name == "this" {
-            return Some(Value::Object(self.this));
+            return ReturnValue::Immediate(Value::Object(self.this));
         }
 
         if name == "arguments" && self.arguments.is_some() {
-            return Some(Value::Object(self.arguments.unwrap()));
+            return ReturnValue::Immediate(Value::Object(self.arguments.unwrap()));
         }
 
         self.scope().resolve(name, avm, context, self.this)
