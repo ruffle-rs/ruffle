@@ -26,7 +26,12 @@ pub fn call<'gc>(
         Some(Value::Object(this)) => *this,
         _ => avm.globals,
     };
-    let args = &myargs[1..];
+    let empty = [];
+    let args = match myargs.len() {
+        0 => &empty,
+        1 => &empty,
+        _ => &myargs[1..],
+    };
 
     match func.as_executable() {
         Some(exec) => exec.exec(avm, action_context, this, args),
