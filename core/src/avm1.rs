@@ -3,6 +3,7 @@ use crate::avm1::globals::create_globals;
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
 use crate::prelude::*;
+use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
 use rand::Rng;
 use std::collections::HashMap;
@@ -1315,14 +1316,30 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_init_array(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
+    fn action_init_array(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let num_elements = self.pop()?.as_i64()?;
+        let mut args = Vec::new();
         for _ in 0..num_elements {
-            let _value = self.pop()?;
+            args.push(self.pop()?);
         }
 
-        // TODO(Herschel)
-        Err("Unimplemented action: InitArray".into())
+        let mut array = ScriptObject::object(context.gc_context, Some(self.prototypes.array));
+        array.define_value("length", args.len().into(), EnumSet::empty());
+
+        for i in 0..num_elements {
+            array.define_value(
+                &format!("{}", i),
+                args[i as usize].clone(),
+                EnumSet::empty(),
+            );
+        }
+
+        self.push(Value::Object(GcCell::allocate(
+            context.gc_context,
+            Box::new(array),
+        )));
+
+        Ok(())
     }
 
     fn action_init_object(

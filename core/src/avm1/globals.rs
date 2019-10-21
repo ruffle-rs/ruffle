@@ -8,6 +8,7 @@ use gc_arena::{GcCell, MutationContext};
 use rand::Rng;
 use std::f64;
 
+mod array;
 mod function;
 mod math;
 mod movie_clip;
@@ -126,6 +127,7 @@ pub fn get_nan<'gc>(
 pub struct SystemPrototypes<'gc> {
     pub object: ObjectCell<'gc>,
     pub function: ObjectCell<'gc>,
+    pub array: ObjectCell<'gc>,
     pub movie_clip: ObjectCell<'gc>,
 }
 
@@ -134,6 +136,7 @@ unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
         self.object.trace(cc);
         self.function.trace(cc);
+        self.array.trace(cc);
         self.movie_clip.trace(cc);
     }
 }
@@ -150,6 +153,8 @@ pub fn create_globals<'gc>(
 
     object::fill_proto(gc_context, object_proto, function_proto);
 
+    let array_proto: ObjectCell<'gc> =
+        array::create_proto(gc_context, object_proto, function_proto);
     let movie_clip_proto: ObjectCell<'gc> =
         movie_clip::create_proto(gc_context, object_proto, function_proto);
 
@@ -167,6 +172,14 @@ pub fn create_globals<'gc>(
         Some(function_proto),
         Some(function_proto),
     );
+
+    let array = ScriptObject::function(
+        gc_context,
+        Executable::Native(array::constructor),
+        Some(function_proto),
+        Some(array_proto),
+    );
+
     let movie_clip = ScriptObject::function(
         gc_context,
         Executable::Native(movie_clip::constructor),
@@ -177,6 +190,7 @@ pub fn create_globals<'gc>(
     let mut globals = ScriptObject::bare_object();
     globals.define_value("Object", object.into(), EnumSet::empty());
     globals.define_value("Function", function.into(), EnumSet::empty());
+    globals.define_value("Array", array.into(), EnumSet::empty());
     globals.define_value("MovieClip", movie_clip.into(), EnumSet::empty());
     globals.force_set_function(
         "Number",
@@ -234,6 +248,7 @@ pub fn create_globals<'gc>(
         SystemPrototypes {
             object: object_proto,
             function: function_proto,
+            array: array_proto,
             movie_clip: movie_clip_proto,
         },
         GcCell::allocate(gc_context, Box::new(globals)),
