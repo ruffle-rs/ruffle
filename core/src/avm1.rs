@@ -1297,15 +1297,23 @@ impl<'gc> Avm1<'gc> {
         Err("Unimplemented action: InitArray".into())
     }
 
-    fn action_init_object(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
+    fn action_init_object(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
         let num_props = self.pop()?.as_i64()?;
+        let mut object = Object::object(context.gc_context, Some(self.prototypes.object));
         for _ in 0..num_props {
-            let _value = self.pop()?;
-            let _name = self.pop()?;
+            let value = self.pop()?;
+            let name = self.pop()?.into_string();
+            let this = self.current_stack_frame().unwrap().read().this_cell();
+
+            object.set(&name, value, self, context, this);
         }
 
-        // TODO(Herschel)
-        Err("Unimplemented action: InitObject".into())
+        self.push(Value::Object(GcCell::allocate(context.gc_context, object)));
+
+        Ok(())
     }
 
     fn action_jump(
