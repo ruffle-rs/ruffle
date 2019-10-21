@@ -37,6 +37,36 @@ impl<'gc> From<GcCell<'gc, Object<'gc>>> for Value<'gc> {
     }
 }
 
+impl<'gc> From<f64> for Value<'gc> {
+    fn from(value: f64) -> Self {
+        Value::Number(value)
+    }
+}
+
+impl<'gc> From<f32> for Value<'gc> {
+    fn from(value: f32) -> Self {
+        Value::Number(f64::from(value))
+    }
+}
+
+impl<'gc> From<u8> for Value<'gc> {
+    fn from(value: u8) -> Self {
+        Value::Number(f64::from(value))
+    }
+}
+
+impl<'gc> From<i32> for Value<'gc> {
+    fn from(value: i32) -> Self {
+        Value::Number(f64::from(value))
+    }
+}
+
+impl<'gc> From<u32> for Value<'gc> {
+    fn from(value: u32) -> Self {
+        Value::Number(f64::from(value))
+    }
+}
+
 unsafe impl<'gc> gc_arena::Collect for Value<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
         if let Value::Object(object) = self {

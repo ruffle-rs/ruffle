@@ -546,7 +546,7 @@ impl<'gc> Avm1<'gc> {
     fn action_add(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let a = self.pop()?;
         let b = self.pop()?;
-        self.push(Value::Number(b.into_number_v1() + a.into_number_v1()));
+        self.push(b.into_number_v1() + a.into_number_v1());
         Ok(())
     }
 
@@ -564,7 +564,7 @@ impl<'gc> Avm1<'gc> {
             b.push_str(&a.into_string());
             self.push(b);
         } else {
-            self.push(Value::Number(b.as_number() + a.as_number()));
+            self.push(b.as_number() + a.as_number());
         }
         Ok(())
     }
@@ -589,7 +589,7 @@ impl<'gc> Avm1<'gc> {
         // TODO(Herschel): Results on incorrect operands?
         let s = self.pop()?.into_string();
         let result = s.bytes().nth(0).unwrap_or(0);
-        self.push(Value::Number(result.into()));
+        self.push(result);
         Ok(())
     }
 
@@ -606,7 +606,7 @@ impl<'gc> Avm1<'gc> {
         let a = self.pop()?.as_u32()?;
         let b = self.pop()?.as_u32()?;
         let result = a & b;
-        self.push(Value::Number(result.into()));
+        self.push(result);
         Ok(())
     }
 
@@ -614,7 +614,7 @@ impl<'gc> Avm1<'gc> {
         let a = self.pop()?.as_i32()? & 0b11111; // Only 5 bits used for shift count
         let b = self.pop()?.as_i32()?;
         let result = b << a;
-        self.push(Value::Number(result.into()));
+        self.push(result);
         Ok(())
     }
 
@@ -622,7 +622,7 @@ impl<'gc> Avm1<'gc> {
         let a = self.pop()?.as_u32()?;
         let b = self.pop()?.as_u32()?;
         let result = a | b;
-        self.push(Value::Number(result.into()));
+        self.push(result);
         Ok(())
     }
 
@@ -630,7 +630,7 @@ impl<'gc> Avm1<'gc> {
         let a = self.pop()?.as_i32()? & 0b11111; // Only 5 bits used for shift count
         let b = self.pop()?.as_i32()?;
         let result = b >> a;
-        self.push(Value::Number(result.into()));
+        self.push(result);
         Ok(())
     }
 
@@ -638,7 +638,7 @@ impl<'gc> Avm1<'gc> {
         let a = self.pop()?.as_u32()? & 0b11111; // Only 5 bits used for shift count
         let b = self.pop()?.as_u32()?;
         let result = b >> a;
-        self.push(Value::Number(result.into()));
+        self.push(result);
         Ok(())
     }
 
@@ -646,7 +646,7 @@ impl<'gc> Avm1<'gc> {
         let a = self.pop()?.as_u32()?;
         let b = self.pop()?.as_u32()?;
         let result = b ^ a;
-        self.push(Value::Number(result.into()));
+        self.push(result);
         Ok(())
     }
 
@@ -750,7 +750,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_decrement(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let a = self.pop()?.as_number();
-        self.push(Value::Number(a - 1.0));
+        self.push(a - 1.0);
         Ok(())
     }
 
@@ -884,7 +884,7 @@ impl<'gc> Avm1<'gc> {
         // In SWF 4, the result is the string #ERROR#.""
         // Seems to be untrue for SWF v4, I get 1.#INF.
 
-        self.push(Value::Number(b.into_number_v1() / a.into_number_v1()));
+        self.push(b.into_number_v1() / a.into_number_v1());
         Ok(())
     }
 
@@ -1011,7 +1011,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_get_time(&mut self, context: &mut ActionContext) -> Result<(), Error> {
-        self.push(Value::Number(context.global_time as f64));
+        self.push(context.global_time as f64);
         Ok(())
     }
 
@@ -1211,7 +1211,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_increment(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let a = self.pop()?.as_number();
-        self.push(Value::Number(a + 1.0));
+        self.push(a + 1.0);
         Ok(())
     }
 
@@ -1291,7 +1291,7 @@ impl<'gc> Avm1<'gc> {
         // TODO(Herschel): Results on incorrect operands?
         let s = self.pop()?.into_string();
         let result = s.chars().nth(0).unwrap_or('\0') as u32;
-        self.push(Value::Number(result.into()));
+        self.push(result);
         Ok(())
     }
 
@@ -1308,7 +1308,7 @@ impl<'gc> Avm1<'gc> {
     fn action_mb_string_length(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         // TODO(Herschel): Result with non-string operands?
         let val = self.pop()?.into_string().len();
-        self.push(Value::Number(val as f64));
+        self.push(val as f64);
         Ok(())
     }
 
@@ -1316,7 +1316,7 @@ impl<'gc> Avm1<'gc> {
         // AS1 multiply
         let a = self.pop()?;
         let b = self.pop()?;
-        self.push(Value::Number(a.into_number_v1() * b.into_number_v1()));
+        self.push(a.into_number_v1() * b.into_number_v1());
         Ok(())
     }
 
@@ -1324,7 +1324,7 @@ impl<'gc> Avm1<'gc> {
         // TODO: Wrong operands?
         let a = self.pop()?.as_f64()?;
         let b = self.pop()?.as_f64()?;
-        self.push(Value::Number(a % b));
+        self.push(a % b);
         Ok(())
     }
 
@@ -1457,7 +1457,7 @@ impl<'gc> Avm1<'gc> {
         // and the max value gets converted into an i32, so any number > 2^31 - 1 will return 0.
         let max = self.pop()?.into_number_v1() as i32;
         let val = context.rng.gen_range(0, max);
-        self.push(Value::Number(val.into()));
+        self.push(val);
         Ok(())
     }
 
@@ -1747,7 +1747,7 @@ impl<'gc> Avm1<'gc> {
         // Only returns byte length.
         // TODO(Herschel): Result with non-string operands?
         let val = self.pop()?.into_string().bytes().len() as f64;
-        self.push(Value::Number(val));
+        self.push(val);
         Ok(())
     }
 
@@ -1767,7 +1767,7 @@ impl<'gc> Avm1<'gc> {
     fn action_subtract(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let a = self.pop()?;
         let b = self.pop()?;
-        self.push(Value::Number(b.into_number_v1() - a.into_number_v1()));
+        self.push(b.into_number_v1() - a.into_number_v1());
         Ok(())
     }
 
@@ -1788,13 +1788,13 @@ impl<'gc> Avm1<'gc> {
 
     fn action_to_integer(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let val = self.pop()?;
-        self.push(Value::Number(val.into_number_v1().trunc()));
+        self.push(val.into_number_v1().trunc());
         Ok(())
     }
 
     fn action_to_number(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let val = self.pop()?;
-        self.push(Value::Number(val.as_number()));
+        self.push(val.as_number());
         Ok(())
     }
 
