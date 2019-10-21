@@ -144,7 +144,7 @@ impl<'gc> Value<'gc> {
                     num != 0.0
                 }
             }
-            Value::Object(v) => true,
+            Value::Object(_) => true,
             _ => false,
         }
     }
