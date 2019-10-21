@@ -94,11 +94,7 @@ pub fn create_globals<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<'gc> 
 
     globals.force_set_function("isNaN", is_nan, gc_context, EnumSet::empty());
     globals.force_set_function("Boolean", boolean, gc_context, EnumSet::empty());
-    globals.force_set(
-        "Math",
-        Value::Object(math::create(gc_context)),
-        EnumSet::empty(),
-    );
+    globals.force_set("Math", math::create(gc_context), EnumSet::empty());
     globals.force_set_function("getURL", getURL, gc_context, EnumSet::empty());
     globals.force_set_function("Number", number, gc_context, EnumSet::empty());
     globals.force_set_function("random", random, gc_context, EnumSet::empty());
@@ -121,13 +117,18 @@ mod tests {
     use crate::avm1::Error;
 
     macro_rules! test_std {
-        ( $test: ident, $fun: expr, $version: expr, $($args: expr => $out: expr),* ) => {
+        ( $test: ident, $fun: expr, $version: expr, $([$($arg: expr),*] => $out: expr),* ) => {
             #[test]
             fn $test() -> Result<(), Error> {
                 with_avm($version, |avm, context, this| {
 
                     $(
-                        assert_eq!($fun(avm, context, this, $args), $out);
+                        #[allow(unused_mut)]
+                        let mut args: Vec<Value> = Vec::new();
+                        $(
+                            args.push($arg.into());
+                        )*
+                        assert_eq!($fun(avm, context, this, &args), $out.into());
                     )*
 
                     Ok(())
@@ -137,82 +138,82 @@ mod tests {
     }
 
     test_std!(boolean_function, boolean, 19,
-        &[Value::Bool(true)] => Value::Bool(true),
-        &[Value::Bool(false)] => Value::Bool(false),
-        &[Value::Number(10.0)] => Value::Bool(true),
-        &[Value::Number(-10.0)] => Value::Bool(true),
-        &[Value::Number(0.0)] => Value::Bool(false),
-        &[Value::Number(std::f64::INFINITY)] => Value::Bool(true),
-        &[Value::Number(std::f64::NAN)] => Value::Bool(false),
-        &[Value::String("".to_string())] => Value::Bool(false),
-        &[Value::String("Hello".to_string())] => Value::Bool(true),
-        &[Value::String(" ".to_string())] => Value::Bool(true),
-        &[Value::String("0".to_string())] => Value::Bool(true),
-        &[Value::String("1".to_string())] => Value::Bool(true),
-        &[] => Value::Bool(false)
+        [true] => true,
+        [false] => false,
+        [10.0] => true,
+        [-10.0] => true,
+        [0.0] => false,
+        [std::f64::INFINITY] => true,
+        [std::f64::NAN] => false,
+        [""] => false,
+        ["Hello"] => true,
+        [" "] => true,
+        ["0"] => true,
+        ["1"] => true,
+        [] => false
     );
 
     test_std!(boolean_function_swf6, boolean, 6,
-        &[Value::Bool(true)] => Value::Bool(true),
-        &[Value::Bool(false)] => Value::Bool(false),
-        &[Value::Number(10.0)] => Value::Bool(true),
-        &[Value::Number(-10.0)] => Value::Bool(true),
-        &[Value::Number(0.0)] => Value::Bool(false),
-        &[Value::Number(std::f64::INFINITY)] => Value::Bool(true),
-        &[Value::Number(std::f64::NAN)] => Value::Bool(false),
-        &[Value::String("".to_string())] => Value::Bool(false),
-        &[Value::String("Hello".to_string())] => Value::Bool(false),
-        &[Value::String(" ".to_string())] => Value::Bool(false),
-        &[Value::String("0".to_string())] => Value::Bool(false),
-        &[Value::String("1".to_string())] => Value::Bool(true),
-        &[] => Value::Bool(false)
+        [true] => true,
+        [false] => false,
+        [10.0] => true,
+        [-10.0] => true,
+        [0.0] => false,
+        [std::f64::INFINITY] => true,
+        [std::f64::NAN] => false,
+        [""] => false,
+        ["Hello"] => false,
+        [" "] => false,
+        ["0"] => false,
+        ["1"] => true,
+        [] => false
     );
 
     test_std!(is_nan_function, is_nan, 19,
-        &[Value::Bool(true)] => Value::Bool(false),
-        &[Value::Bool(false)] => Value::Bool(false),
-        &[Value::Number(10.0)] => Value::Bool(false),
-        &[Value::Number(-10.0)] => Value::Bool(false),
-        &[Value::Number(0.0)] => Value::Bool(false),
-        &[Value::Number(std::f64::INFINITY)] => Value::Bool(false),
-        &[Value::Number(std::f64::NAN)] => Value::Bool(true),
-        &[Value::String("".to_string())] => Value::Bool(false),
-        &[Value::String("Hello".to_string())] => Value::Bool(true),
-        &[Value::String(" ".to_string())] => Value::Bool(true),
-        &[Value::String("  5  ".to_string())] => Value::Bool(true),
-        &[Value::String("0".to_string())] => Value::Bool(false),
-        &[Value::String("1".to_string())] => Value::Bool(false),
-        &[Value::String("Infinity".to_string())] => Value::Bool(true),
-        &[Value::String("100a".to_string())] => Value::Bool(true),
-        &[Value::String("0x10".to_string())] => Value::Bool(false),
-        &[Value::String("0xhello".to_string())] => Value::Bool(true),
-        &[Value::String("0x1999999981ffffff".to_string())] => Value::Bool(false),
-        &[Value::String("0xUIXUIDFKHJDF012345678".to_string())] => Value::Bool(true),
-        &[Value::String("123e-1".to_string())] => Value::Bool(false),
-        &[] => Value::Bool(true)
+        [true] => false,
+        [false] => false,
+        [10.0] => false,
+        [-10.0] => false,
+        [0.0] => false,
+        [std::f64::INFINITY] => false,
+        [std::f64::NAN] => true,
+        [""] => false,
+        ["Hello"] => true,
+        [" "] => true,
+        ["  5  "] => true,
+        ["0"] => false,
+        ["1"] => false,
+        ["Infinity"] => true,
+        ["100a"] => true,
+        ["0x10"] => false,
+        ["0xhello"] => true,
+        ["0x1999999981ffffff"] => false,
+        ["0xUIXUIDFKHJDF012345678"] => true,
+        ["123e-1"] => false,
+        [] => true
     );
 
     test_std!(number_function, number, 19,
-        &[Value::Bool(true)] => Value::Number(1.0),
-        &[Value::Bool(false)] => Value::Number(0.0),
-        &[Value::Number(10.0)] => Value::Number(10.0),
-        &[Value::Number(-10.0)] => Value::Number(-10.0),
-        &[Value::Number(0.0)] => Value::Number(0.0),
-        &[Value::Number(std::f64::INFINITY)] => Value::Number(std::f64::INFINITY),
-        &[Value::Number(std::f64::NAN)] => Value::Number(std::f64::NAN),
-        &[Value::String("".to_string())] => Value::Number(0.0),
-        &[Value::String("Hello".to_string())] => Value::Number(std::f64::NAN),
-        &[Value::String(" ".to_string())] => Value::Number(std::f64::NAN),
-        &[Value::String("  5  ".to_string())] => Value::Number(std::f64::NAN),
-        &[Value::String("0".to_string())] => Value::Number(0.0),
-        &[Value::String("1".to_string())] => Value::Number(1.0),
-        &[Value::String("Infinity".to_string())] => Value::Number(std::f64::NAN),
-        &[Value::String("100a".to_string())] => Value::Number(std::f64::NAN),
-        &[Value::String("0x10".to_string())] => Value::Number(16.0),
-        &[Value::String("0xhello".to_string())] => Value::Number(std::f64::NAN),
-        &[Value::String("123e-1".to_string())] => Value::Number(12.3),
-        &[Value::String("0x1999999981ffffff".to_string())] => Value::Number(-2113929217.0),
-        &[Value::String("0xUIXUIDFKHJDF012345678".to_string())] => Value::Number(std::f64::NAN),
-        &[] => Value::Number(0.0)
+        [true] => 1.0,
+        [false] => 0.0,
+        [10.0] => 10.0,
+        [-10.0] => -10.0,
+        [0.0] => 0.0,
+        [std::f64::INFINITY] => std::f64::INFINITY,
+        [std::f64::NAN] => std::f64::NAN,
+        [""] => 0.0,
+        ["Hello"] => std::f64::NAN,
+        [" "] => std::f64::NAN,
+        ["  5  "] => std::f64::NAN,
+        ["0"] => 0.0,
+        ["1"] => 1.0,
+        ["Infinity"] => std::f64::NAN,
+        ["100a"] => std::f64::NAN,
+        ["0x10"] => 16.0,
+        ["0xhello"] => std::f64::NAN,
+        ["123e-1"] => 12.3,
+        ["0x1999999981ffffff"] => -2113929217.0,
+        ["0xUIXUIDFKHJDF012345678"] => std::f64::NAN,
+        [] => 0.0
     );
 }

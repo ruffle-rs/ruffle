@@ -219,14 +219,14 @@ impl<'gc> Executable<'gc> {
                 if af.preload_this {
                     //TODO: What happens if you specify both suppress and
                     //preload for this?
-                    frame.set_local_register(preload_r, Value::Object(this), ac.gc_context);
+                    frame.set_local_register(preload_r, this, ac.gc_context);
                     preload_r += 1;
                 }
 
                 if af.preload_arguments {
                     //TODO: What happens if you specify both suppress and
                     //preload for arguments?
-                    frame.set_local_register(preload_r, Value::Object(argcell), ac.gc_context);
+                    frame.set_local_register(preload_r, argcell, ac.gc_context);
                     preload_r += 1;
                 }
 
