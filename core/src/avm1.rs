@@ -559,10 +559,10 @@ impl<'gc> Avm1<'gc> {
         if let Value::String(a) = a {
             let mut s = b.into_string();
             s.push_str(&a);
-            self.push(Value::String(s));
+            self.push(s);
         } else if let Value::String(mut b) = b {
             b.push_str(&a.into_string());
-            self.push(Value::String(b));
+            self.push(b);
         } else {
             self.push(Value::Number(b.as_number() + a.as_number()));
         }
@@ -581,7 +581,7 @@ impl<'gc> Avm1<'gc> {
     fn action_ascii_to_char(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         // TODO(Herschel): Results on incorrect operands?
         let val = (self.pop()?.as_f64()? as u8) as char;
-        self.push(Value::String(val.to_string()));
+        self.push(val.to_string());
         Ok(())
     }
 
@@ -919,7 +919,7 @@ impl<'gc> Avm1<'gc> {
         };
 
         for k in ob.read().get_keys() {
-            self.push(Value::String(k));
+            self.push(k);
         }
 
         Ok(())
@@ -1289,7 +1289,7 @@ impl<'gc> Avm1<'gc> {
         // TODO(Herschel): Results on incorrect operands?
         use std::convert::TryFrom;
         let val = char::try_from(self.pop()?.as_f64()? as u32)?;
-        self.push(Value::String(val.to_string()));
+        self.push(val.to_string());
         Ok(())
     }
 
@@ -1307,7 +1307,7 @@ impl<'gc> Avm1<'gc> {
         let start = self.pop()?.as_f64()? as usize;
         let s = self.pop()?.into_string();
         let result = s[len..len + start].to_string(); // TODO(Herschel): Flash uses UTF-16 internally.
-        self.push(Value::String(result));
+        self.push(result);
         Ok(())
     }
 
@@ -1432,11 +1432,11 @@ impl<'gc> Avm1<'gc> {
                 SwfValue::Int(v) => Value::Number(f64::from(*v)),
                 SwfValue::Float(v) => Value::Number(f64::from(*v)),
                 SwfValue::Double(v) => Value::Number(*v),
-                SwfValue::Str(v) => Value::String(v.to_string()),
+                SwfValue::Str(v) => v.to_string().into(),
                 SwfValue::Register(v) => self.current_register(*v),
                 SwfValue::ConstantPool(i) => {
                     if let Some(value) = self.constant_pool.get(*i as usize) {
-                        Value::String(value.to_string())
+                        value.to_string().into()
                     } else {
                         log::warn!(
                             "ActionPush: Constant pool index {} out of range (len = {})",
@@ -1593,13 +1593,13 @@ impl<'gc> Avm1<'gc> {
         if target.is_empty() {
             context.active_clip = context.start_clip;
             context.target_clip = Some(context.start_clip);
-            context.target_path = Value::String(target.to_string());
+            context.target_path = target.to_string().into();
         } else if let Some(clip) =
             Avm1::resolve_slash_path(context.start_clip, context.root, target)
         {
             context.target_clip = Some(clip);
             context.active_clip = clip;
-            context.target_path = Value::String(target.to_string());
+            context.target_path = target.to_string().into();
         } else {
             log::warn!("SetTarget failed: {} not found", target);
             // TODO: Emulate AVM1 trace error message.
@@ -1701,7 +1701,7 @@ impl<'gc> Avm1<'gc> {
         let a = self.pop()?.into_string();
         let mut b = self.pop()?.into_string();
         b.push_str(&a);
-        self.push(Value::String(b));
+        self.push(b);
         Ok(())
     }
 
@@ -1731,7 +1731,7 @@ impl<'gc> Avm1<'gc> {
             .take(len)
             .map(|c| c as char)
             .collect::<String>();
-        self.push(Value::String(result));
+        self.push(result);
         Ok(())
     }
 
@@ -1806,7 +1806,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_to_string(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
         let val = self.pop()?;
-        self.push(Value::String(val.into_string()));
+        self.push(val.into_string());
         Ok(())
     }
 

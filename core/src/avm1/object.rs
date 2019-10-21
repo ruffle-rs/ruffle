@@ -19,7 +19,7 @@ fn default_to_string<'gc>(
     _: GcCell<'gc, Object<'gc>>,
     _: &[Value<'gc>],
 ) -> Value<'gc> {
-    Value::String("[Object object]".to_string())
+    "[Object object]".to_string().into()
 }
 
 #[derive(EnumSetType, Debug)]
@@ -434,12 +434,12 @@ mod tests {
         with_object(0, |avm, context, object| {
             object.write(context.gc_context).force_set(
                 "forced",
-                Value::String("forced".to_string()),
+                "forced".to_string().into(),
                 EnumSet::empty(),
             );
             object.write(context.gc_context).set(
                 "natural",
-                Value::String("natural".to_string()),
+                "natural".to_string().into(),
                 avm,
                 context,
                 object,
@@ -447,11 +447,11 @@ mod tests {
 
             assert_eq!(
                 object.read().get("forced", avm, context, object),
-                Value::String("forced".to_string())
+                "forced".to_string().into()
             );
             assert_eq!(
                 object.read().get("natural", avm, context, object),
-                Value::String("natural".to_string())
+                "natural".to_string().into()
             );
         })
     }
@@ -461,25 +461,25 @@ mod tests {
         with_object(0, |avm, context, object| {
             object.write(context.gc_context).force_set(
                 "normal",
-                Value::String("initial".to_string()),
+                "initial".to_string().into(),
                 EnumSet::empty(),
             );
             object.write(context.gc_context).force_set(
                 "readonly",
-                Value::String("initial".to_string()),
+                "initial".to_string().into(),
                 ReadOnly,
             );
 
             object.write(context.gc_context).set(
                 "normal",
-                Value::String("replaced".to_string()),
+                "replaced".to_string().into(),
                 avm,
                 context,
                 object,
             );
             object.write(context.gc_context).set(
                 "readonly",
-                Value::String("replaced".to_string()),
+                "replaced".to_string().into(),
                 avm,
                 context,
                 object,
@@ -487,11 +487,11 @@ mod tests {
 
             assert_eq!(
                 object.read().get("normal", avm, context, object),
-                Value::String("replaced".to_string())
+                "replaced".to_string().into()
             );
             assert_eq!(
                 object.read().get("readonly", avm, context, object),
-                Value::String("initial".to_string())
+                "initial".to_string().into()
             );
         })
     }
@@ -501,19 +501,19 @@ mod tests {
         with_object(0, |avm, context, object| {
             object.write(context.gc_context).force_set(
                 "test",
-                Value::String("initial".to_string()),
+                "initial".to_string().into(),
                 DontDelete,
             );
 
             assert_eq!(object.write(context.gc_context).delete("test"), false);
             assert_eq!(
                 object.read().get("test", avm, context, object),
-                Value::String("initial".to_string())
+                "initial".to_string().into()
             );
 
             object.write(context.gc_context).set(
                 "test",
-                Value::String("replaced".to_string()),
+                "replaced".to_string().into(),
                 avm,
                 context,
                 object,
@@ -522,7 +522,7 @@ mod tests {
             assert_eq!(object.write(context.gc_context).delete("test"), false);
             assert_eq!(
                 object.read().get("test", avm, context, object),
-                Value::String("replaced".to_string())
+                "replaced".to_string().into()
             );
         })
     }
@@ -531,7 +531,7 @@ mod tests {
     fn test_virtual_get() {
         with_object(0, |avm, context, object| {
             let getter: NativeFunction =
-                |_avm, _context, _this, _args| Value::String("Virtual!".to_string());
+                |_avm, _context, _this, _args| "Virtual!".to_string().into();
             object.write(context.gc_context).force_set_virtual(
                 "test",
                 getter,
@@ -541,20 +541,20 @@ mod tests {
 
             assert_eq!(
                 object.read().get("test", avm, context, object),
-                Value::String("Virtual!".to_string())
+                "Virtual!".to_string().into()
             );
 
             // This set should do nothing
             object.write(context.gc_context).set(
                 "test",
-                Value::String("Ignored!".to_string()),
+                "Ignored!".to_string().into(),
                 avm,
                 context,
                 object,
             );
             assert_eq!(
                 object.read().get("test", avm, context, object),
-                Value::String("Virtual!".to_string())
+                "Virtual!".to_string().into()
             );
         })
     }
@@ -563,7 +563,7 @@ mod tests {
     fn test_delete() {
         with_object(0, |avm, context, object| {
             let getter: NativeFunction =
-                |_avm, _context, _this, _args| Value::String("Virtual!".to_string());
+                |_avm, _context, _this, _args| "Virtual!".to_string().into();
 
             object.write(context.gc_context).force_set_virtual(
                 "virtual",
@@ -579,12 +579,12 @@ mod tests {
             );
             object.write(context.gc_context).force_set(
                 "stored",
-                Value::String("Stored!".to_string()),
+                "Stored!".to_string().into(),
                 EnumSet::empty(),
             );
             object.write(context.gc_context).force_set(
                 "stored_un",
-                Value::String("Stored!".to_string()),
+                "Stored!".to_string().into(),
                 DontDelete,
             );
 
@@ -603,7 +603,7 @@ mod tests {
             );
             assert_eq!(
                 object.read().get("virtual_un", avm, context, object),
-                Value::String("Virtual!".to_string())
+                "Virtual!".to_string().into()
             );
             assert_eq!(
                 object.read().get("stored", avm, context, object),
@@ -611,7 +611,7 @@ mod tests {
             );
             assert_eq!(
                 object.read().get("stored_un", avm, context, object),
-                Value::String("Stored!".to_string())
+                "Stored!".to_string().into()
             );
         })
     }

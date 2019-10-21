@@ -13,6 +13,12 @@ pub enum Value<'gc> {
     Object(GcCell<'gc, Object<'gc>>),
 }
 
+impl<'gc> From<String> for Value<'gc> {
+    fn from(string: String) -> Self {
+        Value::String(string)
+    }
+}
+
 unsafe impl<'gc> gc_arena::Collect for Value<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
         if let Value::Object(object) = self {
