@@ -25,6 +25,12 @@ impl<'gc> From<&str> for Value<'gc> {
     }
 }
 
+impl<'gc> From<bool> for Value<'gc> {
+    fn from(value: bool) -> Self {
+        Value::Bool(value)
+    }
+}
+
 unsafe impl<'gc> gc_arena::Collect for Value<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
         if let Value::Object(object) = self {

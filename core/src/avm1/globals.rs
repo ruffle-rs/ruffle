@@ -142,8 +142,8 @@ mod tests {
     }
 
     test_std!(boolean_function, boolean, 19,
-        [Value::Bool(true)] => Value::Bool(true),
-        [Value::Bool(false)] => Value::Bool(false),
+        [true] => Value::Bool(true),
+        [false] => Value::Bool(false),
         [Value::Number(10.0)] => Value::Bool(true),
         [Value::Number(-10.0)] => Value::Bool(true),
         [Value::Number(0.0)] => Value::Bool(false),
@@ -158,8 +158,8 @@ mod tests {
     );
 
     test_std!(boolean_function_swf6, boolean, 6,
-        [Value::Bool(true)] => Value::Bool(true),
-        [Value::Bool(false)] => Value::Bool(false),
+        [true] => Value::Bool(true),
+        [false] => Value::Bool(false),
         [Value::Number(10.0)] => Value::Bool(true),
         [Value::Number(-10.0)] => Value::Bool(true),
         [Value::Number(0.0)] => Value::Bool(false),
@@ -174,8 +174,8 @@ mod tests {
     );
 
     test_std!(is_nan_function, is_nan, 19,
-        [Value::Bool(true)] => Value::Bool(false),
-        [Value::Bool(false)] => Value::Bool(false),
+        [true] => Value::Bool(false),
+        [false] => Value::Bool(false),
         [Value::Number(10.0)] => Value::Bool(false),
         [Value::Number(-10.0)] => Value::Bool(false),
         [Value::Number(0.0)] => Value::Bool(false),
@@ -198,8 +198,8 @@ mod tests {
     );
 
     test_std!(number_function, number, 19,
-        [Value::Bool(true)] => Value::Number(1.0),
-        [Value::Bool(false)] => Value::Number(0.0),
+        [true] => Value::Number(1.0),
+        [false] => Value::Number(0.0),
         [Value::Number(10.0)] => Value::Number(10.0),
         [Value::Number(-10.0)] => Value::Number(-10.0),
         [Value::Number(0.0)] => Value::Number(0.0),

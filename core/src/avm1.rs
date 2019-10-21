@@ -858,7 +858,7 @@ impl<'gc> Avm1<'gc> {
         let object = self.pop()?.as_object()?;
 
         let success = object.write(context.gc_context).delete(name);
-        self.push(Value::Bool(success));
+        self.push(success);
 
         Ok(())
     }
@@ -869,7 +869,7 @@ impl<'gc> Avm1<'gc> {
 
         //Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
         //a boolean based on if the delete actually deleted something.
-        let did_exist = Value::Bool(self.current_stack_frame().unwrap().read().is_defined(name));
+        let did_exist = self.current_stack_frame().unwrap().read().is_defined(name);
 
         self.current_stack_frame()
             .unwrap()
@@ -954,7 +954,7 @@ impl<'gc> Avm1<'gc> {
             (Value::Number(a), Value::String(b)) => a == b.parse().unwrap_or(std::f64::NAN),
             _ => false,
         };
-        self.push(Value::Bool(result));
+        self.push(result);
         Ok(())
     }
 
@@ -1272,7 +1272,7 @@ impl<'gc> Avm1<'gc> {
             (a, b) => b.as_number() < a.as_number(),
         };
 
-        self.push(Value::Bool(result));
+        self.push(result);
         Ok(())
     }
 
@@ -1542,7 +1542,7 @@ impl<'gc> Avm1<'gc> {
         let a = self.pop()?;
         let b = self.pop()?;
         let result = a == b;
-        self.push(Value::Bool(result));
+        self.push(result);
         Ok(())
     }
 
