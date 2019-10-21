@@ -125,7 +125,7 @@ mod tests {
     use crate::avm1::Error;
 
     macro_rules! test_std {
-        ( $test: ident, $name: expr, $($args: expr => $out: expr),* ) => {
+        ( $test: ident, $name: expr, $([$($arg: expr),*] => $out: expr),* ) => {
             #[test]
             fn $test() -> Result<(), Error> {
                 with_avm(19, |avm, context, _root| {
@@ -133,7 +133,12 @@ mod tests {
                     let function = math.read().get($name, avm, context, math);
 
                     $(
-                        assert_eq!(function.call(avm, context, math, $args)?, Some($out));
+                        #[allow(unused_mut)]
+                        let mut args: Vec<Value> = Vec::new();
+                        $(
+                            args.push($arg.into());
+                        )*
+                        assert_eq!(function.call(avm, context, math, &args)?, Some($out));
                     )*
 
                     Ok(())
@@ -143,88 +148,88 @@ mod tests {
     }
 
     test_std!(test_abs, "abs",
-        &[] => Value::Number(NAN),
-        &[Value::Null] => Value::Number(NAN),
-        &[Value::Number(-50.0)] => Value::Number(50.0),
-        &[Value::Number(25.0)] => Value::Number(25.0)
+        [] => Value::Number(NAN),
+        [Value::Null] => Value::Number(NAN),
+        [Value::Number(-50.0)] => Value::Number(50.0),
+        [Value::Number(25.0)] => Value::Number(25.0)
     );
 
     test_std!(test_acos, "acos",
-        &[] => Value::Number(NAN),
-        &[Value::Null] => Value::Number(NAN),
-        &[Value::Number(-1.0)] => Value::Number(f64::acos(-1.0)),
-        &[Value::Number(0.0)] => Value::Number(f64::acos(0.0)),
-        &[Value::Number(1.0)] => Value::Number(f64::acos(1.0))
+        [] => Value::Number(NAN),
+        [Value::Null] => Value::Number(NAN),
+        [Value::Number(-1.0)] => Value::Number(f64::acos(-1.0)),
+        [Value::Number(0.0)] => Value::Number(f64::acos(0.0)),
+        [Value::Number(1.0)] => Value::Number(f64::acos(1.0))
     );
 
     test_std!(test_asin, "asin",
-        &[] => Value::Number(NAN),
-        &[Value::Null] => Value::Number(NAN),
-        &[Value::Number(-1.0)] => Value::Number(f64::asin(-1.0)),
-        &[Value::Number(0.0)] => Value::Number(f64::asin(0.0)),
-        &[Value::Number(1.0)] => Value::Number(f64::asin(1.0))
+        [] => Value::Number(NAN),
+        [Value::Null] => Value::Number(NAN),
+        [Value::Number(-1.0)] => Value::Number(f64::asin(-1.0)),
+        [Value::Number(0.0)] => Value::Number(f64::asin(0.0)),
+        [Value::Number(1.0)] => Value::Number(f64::asin(1.0))
     );
 
     test_std!(test_atan, "atan",
-        &[] => Value::Number(NAN),
-        &[Value::Null] => Value::Number(NAN),
-        &[Value::Number(-1.0)] => Value::Number(f64::atan(-1.0)),
-        &[Value::Number(0.0)] => Value::Number(f64::atan(0.0)),
-        &[Value::Number(1.0)] => Value::Number(f64::atan(1.0))
+        [] => Value::Number(NAN),
+        [Value::Null] => Value::Number(NAN),
+        [Value::Number(-1.0)] => Value::Number(f64::atan(-1.0)),
+        [Value::Number(0.0)] => Value::Number(f64::atan(0.0)),
+        [Value::Number(1.0)] => Value::Number(f64::atan(1.0))
     );
 
     test_std!(test_ceil, "ceil",
-        &[] => Value::Number(NAN),
-        &[Value::Null] => Value::Number(NAN),
-        &[Value::Number(12.5)] => Value::Number(13.0)
+        [] => Value::Number(NAN),
+        [Value::Null] => Value::Number(NAN),
+        [Value::Number(12.5)] => Value::Number(13.0)
     );
 
     test_std!(test_cos, "cos",
-        &[] => Value::Number(NAN),
-        &[Value::Null] => Value::Number(NAN),
-        &[Value::Number(0.0)] => Value::Number(1.0),
-        &[Value::Number(std::f64::consts::PI)] => Value::Number(f64::cos(std::f64::consts::PI))
+        [] => Value::Number(NAN),
+        [Value::Null] => Value::Number(NAN),
+        [Value::Number(0.0)] => Value::Number(1.0),
+        [Value::Number(std::f64::consts::PI)] => Value::Number(f64::cos(std::f64::consts::PI))
     );
 
     test_std!(test_exp, "exp",
-        &[] => Value::Number(NAN),
-        &[Value::Null] => Value::Number(NAN),
-        &[Value::Number(1.0)] => Value::Number(f64::exp(1.0)),
-        &[Value::Number(2.0)] => Value::Number(f64::exp(2.0))
+        [] => Value::Number(NAN),
+        [Value::Null] => Value::Number(NAN),
+        [Value::Number(1.0)] => Value::Number(f64::exp(1.0)),
+        [Value::Number(2.0)] => Value::Number(f64::exp(2.0))
     );
 
     test_std!(test_floor, "floor",
-        &[] => Value::Number(NAN),
-        &[Value::Null] => Value::Number(NAN),
-        &[Value::Number(12.5)] => Value::Number(12.0)
+        [] => Value::Number(NAN),
+        [Value::Null] => Value::Number(NAN),
+        [Value::Number(12.5)] => Value::Number(12.0)
     );
 
     test_std!(test_round, "round",
-        &[] => Value::Number(NAN),
-        &[Value::Null] => Value::Number(NAN),
-        &[Value::Number(12.5)] => Value::Number(13.0),
-        &[Value::Number(23.2)] => Value::Number(23.0)
+        [] => Value::Number(NAN),
+        [Value::Null] => Value::Number(NAN),
+        [Value::Number(12.5)] => Value::Number(13.0),
+        [Value::Number(23.2)] => Value::Number(23.0)
     );
 
     test_std!(test_sin, "sin",
-        &[] => Value::Number(NAN),
-        &[Value::Null] => Value::Number(NAN),
-        &[Value::Number(0.0)] => Value::Number(f64::sin(0.0)),
-        &[Value::Number(std::f64::consts::PI / 2.0)] => Value::Number(f64::sin(std::f64::consts::PI / 2.0))
+        [] => Value::Number(NAN),
+        [Value::Null] => Value::Number(NAN),
+        [Value::Number(0.0)] => Value::Number(f64::sin(0.0)),
+        [Value::Number(std::f64::consts::PI / 2.0)] => Value::Number(f64::sin(std::f64::consts::PI / 2.0))
     );
 
     test_std!(test_sqrt, "sqrt",
-        &[] => Value::Number(NAN),
-        &[Value::Null] => Value::Number(NAN),
-        &[Value::Number(0.0)] => Value::Number(f64::sqrt(0.0)),
-        &[Value::Number(5.0)] => Value::Number(f64::sqrt(5.0))
+        [] => Value::Number(NAN),
+        [Value::Null] => Value::Number(NAN),
+        [Value::Number(0.0)] => Value::Number(f64::sqrt(0.0)),
+        [Value::Number(5.0)] => Value::Number(f64::sqrt(5.0))
     );
 
     test_std!(test_tan, "tan",
-        &[] => Value::Number(NAN),
-        &[Value::Null] => Value::Number(NAN),
-        &[Value::Number(0.0)] => Value::Number(f64::tan(0.0)),
-        &[Value::Number(1.0)] => Value::Number(f64::tan(1.0))
+        [] => Value::Number(NAN),
+        [Value::Null] => Value::Number(NAN),
+        [Value::Number(0.0)] => Value::Number(f64::tan(0.0)),
+        [Value::Number(1.0)] => Value::Number(f64::tan(1.0))
     );
 
     #[test]

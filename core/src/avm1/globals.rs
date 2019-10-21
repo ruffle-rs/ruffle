@@ -121,13 +121,18 @@ mod tests {
     use crate::avm1::Error;
 
     macro_rules! test_std {
-        ( $test: ident, $fun: expr, $version: expr, $($args: expr => $out: expr),* ) => {
+        ( $test: ident, $fun: expr, $version: expr, $([$($arg: expr),*] => $out: expr),* ) => {
             #[test]
             fn $test() -> Result<(), Error> {
                 with_avm($version, |avm, context, this| {
 
                     $(
-                        assert_eq!($fun(avm, context, this, $args), $out);
+                        #[allow(unused_mut)]
+                        let mut args: Vec<Value> = Vec::new();
+                        $(
+                            args.push($arg.into());
+                        )*
+                        assert_eq!($fun(avm, context, this, &args), $out);
                     )*
 
                     Ok(())
@@ -137,82 +142,82 @@ mod tests {
     }
 
     test_std!(boolean_function, boolean, 19,
-        &[Value::Bool(true)] => Value::Bool(true),
-        &[Value::Bool(false)] => Value::Bool(false),
-        &[Value::Number(10.0)] => Value::Bool(true),
-        &[Value::Number(-10.0)] => Value::Bool(true),
-        &[Value::Number(0.0)] => Value::Bool(false),
-        &[Value::Number(std::f64::INFINITY)] => Value::Bool(true),
-        &[Value::Number(std::f64::NAN)] => Value::Bool(false),
-        &["".into()] => Value::Bool(false),
-        &["Hello".into()] => Value::Bool(true),
-        &[" ".into()] => Value::Bool(true),
-        &["0".into()] => Value::Bool(true),
-        &["1".into()] => Value::Bool(true),
-        &[] => Value::Bool(false)
+        [Value::Bool(true)] => Value::Bool(true),
+        [Value::Bool(false)] => Value::Bool(false),
+        [Value::Number(10.0)] => Value::Bool(true),
+        [Value::Number(-10.0)] => Value::Bool(true),
+        [Value::Number(0.0)] => Value::Bool(false),
+        [Value::Number(std::f64::INFINITY)] => Value::Bool(true),
+        [Value::Number(std::f64::NAN)] => Value::Bool(false),
+        [""] => Value::Bool(false),
+        ["Hello"] => Value::Bool(true),
+        [" "] => Value::Bool(true),
+        ["0"] => Value::Bool(true),
+        ["1"] => Value::Bool(true),
+        [] => Value::Bool(false)
     );
 
     test_std!(boolean_function_swf6, boolean, 6,
-        &[Value::Bool(true)] => Value::Bool(true),
-        &[Value::Bool(false)] => Value::Bool(false),
-        &[Value::Number(10.0)] => Value::Bool(true),
-        &[Value::Number(-10.0)] => Value::Bool(true),
-        &[Value::Number(0.0)] => Value::Bool(false),
-        &[Value::Number(std::f64::INFINITY)] => Value::Bool(true),
-        &[Value::Number(std::f64::NAN)] => Value::Bool(false),
-        &["".into()] => Value::Bool(false),
-        &["Hello".into()] => Value::Bool(false),
-        &[" ".into()] => Value::Bool(false),
-        &["0".into()] => Value::Bool(false),
-        &["1".into()] => Value::Bool(true),
-        &[] => Value::Bool(false)
+        [Value::Bool(true)] => Value::Bool(true),
+        [Value::Bool(false)] => Value::Bool(false),
+        [Value::Number(10.0)] => Value::Bool(true),
+        [Value::Number(-10.0)] => Value::Bool(true),
+        [Value::Number(0.0)] => Value::Bool(false),
+        [Value::Number(std::f64::INFINITY)] => Value::Bool(true),
+        [Value::Number(std::f64::NAN)] => Value::Bool(false),
+        [""] => Value::Bool(false),
+        ["Hello"] => Value::Bool(false),
+        [" "] => Value::Bool(false),
+        ["0"] => Value::Bool(false),
+        ["1"] => Value::Bool(true),
+        [] => Value::Bool(false)
     );
 
     test_std!(is_nan_function, is_nan, 19,
-        &[Value::Bool(true)] => Value::Bool(false),
-        &[Value::Bool(false)] => Value::Bool(false),
-        &[Value::Number(10.0)] => Value::Bool(false),
-        &[Value::Number(-10.0)] => Value::Bool(false),
-        &[Value::Number(0.0)] => Value::Bool(false),
-        &[Value::Number(std::f64::INFINITY)] => Value::Bool(false),
-        &[Value::Number(std::f64::NAN)] => Value::Bool(true),
-        &["".into()] => Value::Bool(false),
-        &["Hello".into()] => Value::Bool(true),
-        &[" ".into()] => Value::Bool(true),
-        &["  5  ".into()] => Value::Bool(true),
-        &["0".into()] => Value::Bool(false),
-        &["1".into()] => Value::Bool(false),
-        &["Infinity".into()] => Value::Bool(true),
-        &["100a".into()] => Value::Bool(true),
-        &["0x10".into()] => Value::Bool(false),
-        &["0xhello".into()] => Value::Bool(true),
-        &["0x1999999981ffffff".into()] => Value::Bool(false),
-        &["0xUIXUIDFKHJDF012345678".into()] => Value::Bool(true),
-        &["123e-1".into()] => Value::Bool(false),
-        &[] => Value::Bool(true)
+        [Value::Bool(true)] => Value::Bool(false),
+        [Value::Bool(false)] => Value::Bool(false),
+        [Value::Number(10.0)] => Value::Bool(false),
+        [Value::Number(-10.0)] => Value::Bool(false),
+        [Value::Number(0.0)] => Value::Bool(false),
+        [Value::Number(std::f64::INFINITY)] => Value::Bool(false),
+        [Value::Number(std::f64::NAN)] => Value::Bool(true),
+        [""] => Value::Bool(false),
+        ["Hello"] => Value::Bool(true),
+        [" "] => Value::Bool(true),
+        ["  5  "] => Value::Bool(true),
+        ["0"] => Value::Bool(false),
+        ["1"] => Value::Bool(false),
+        ["Infinity"] => Value::Bool(true),
+        ["100a"] => Value::Bool(true),
+        ["0x10"] => Value::Bool(false),
+        ["0xhello"] => Value::Bool(true),
+        ["0x1999999981ffffff"] => Value::Bool(false),
+        ["0xUIXUIDFKHJDF012345678"] => Value::Bool(true),
+        ["123e-1"] => Value::Bool(false),
+        [] => Value::Bool(true)
     );
 
     test_std!(number_function, number, 19,
-        &[Value::Bool(true)] => Value::Number(1.0),
-        &[Value::Bool(false)] => Value::Number(0.0),
-        &[Value::Number(10.0)] => Value::Number(10.0),
-        &[Value::Number(-10.0)] => Value::Number(-10.0),
-        &[Value::Number(0.0)] => Value::Number(0.0),
-        &[Value::Number(std::f64::INFINITY)] => Value::Number(std::f64::INFINITY),
-        &[Value::Number(std::f64::NAN)] => Value::Number(std::f64::NAN),
-        &["".into()] => Value::Number(0.0),
-        &["Hello".into()] => Value::Number(std::f64::NAN),
-        &[" ".into()] => Value::Number(std::f64::NAN),
-        &["  5  ".into()] => Value::Number(std::f64::NAN),
-        &["0".into()] => Value::Number(0.0),
-        &["1".into()] => Value::Number(1.0),
-        &["Infinity".into()] => Value::Number(std::f64::NAN),
-        &["100a".into()] => Value::Number(std::f64::NAN),
-        &["0x10".into()] => Value::Number(16.0),
-        &["0xhello".into()] => Value::Number(std::f64::NAN),
-        &["123e-1".into()] => Value::Number(12.3),
-        &["0x1999999981ffffff".into()] => Value::Number(-2113929217.0),
-        &["0xUIXUIDFKHJDF012345678".into()] => Value::Number(std::f64::NAN),
-        &[] => Value::Number(0.0)
+        [Value::Bool(true)] => Value::Number(1.0),
+        [Value::Bool(false)] => Value::Number(0.0),
+        [Value::Number(10.0)] => Value::Number(10.0),
+        [Value::Number(-10.0)] => Value::Number(-10.0),
+        [Value::Number(0.0)] => Value::Number(0.0),
+        [Value::Number(std::f64::INFINITY)] => Value::Number(std::f64::INFINITY),
+        [Value::Number(std::f64::NAN)] => Value::Number(std::f64::NAN),
+        [""] => Value::Number(0.0),
+        ["Hello"] => Value::Number(std::f64::NAN),
+        [" "] => Value::Number(std::f64::NAN),
+        ["  5  "] => Value::Number(std::f64::NAN),
+        ["0"] => Value::Number(0.0),
+        ["1"] => Value::Number(1.0),
+        ["Infinity"] => Value::Number(std::f64::NAN),
+        ["100a"] => Value::Number(std::f64::NAN),
+        ["0x10"] => Value::Number(16.0),
+        ["0xhello"] => Value::Number(std::f64::NAN),
+        ["123e-1"] => Value::Number(12.3),
+        ["0x1999999981ffffff"] => Value::Number(-2113929217.0),
+        ["0xUIXUIDFKHJDF012345678"] => Value::Number(std::f64::NAN),
+        [] => Value::Number(0.0)
     );
 }
