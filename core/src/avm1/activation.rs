@@ -348,6 +348,10 @@ impl<'gc> Activation<'gc> {
     /// called in lieu of pushing the return value onto the stack, and may
     /// perform any necessary AVM action.
     pub fn and_then(&mut self, func: Box<dyn StackContinuation<'gc>>) {
+        if self.then_func.is_some() {
+            log::error!("Attaching two continuations to the same stack frame is not supported. The previous continuation will be discarded.");
+        }
+
         self.then_func = Some(func);
     }
 
