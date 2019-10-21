@@ -1308,7 +1308,7 @@ impl<'gc> Avm1<'gc> {
             let name = self.pop()?.into_string();
             let this = self.current_stack_frame().unwrap().read().this_cell();
 
-            object.set(&name, value, self, context, this);
+            object.set(&name, value, self, context, this)?;
         }
 
         self.push(Value::Object(GcCell::allocate(context.gc_context, object)));
@@ -1616,7 +1616,7 @@ impl<'gc> Avm1<'gc> {
     fn action_set_member(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let value = self.pop()?;
         let name_val = self.pop()?;
-        let name = name_val.as_string()?;
+        let name = name_val.into_string();
         let object = self.pop()?.as_object()?;
         let this = self.current_stack_frame().unwrap().read().this_cell();
 
