@@ -236,6 +236,10 @@ impl<'gc> Value<'gc> {
         self.as_f64().map(|n| n as i64)
     }
 
+    pub fn as_usize(&self) -> Result<usize, Error> {
+        self.as_f64().map(|n| n as usize)
+    }
+
     pub fn as_f64(&self) -> Result<f64, Error> {
         match *self {
             Value::Number(v) => Ok(v),
