@@ -68,6 +68,12 @@ impl<'gc> From<u32> for Value<'gc> {
     }
 }
 
+impl<'gc> From<usize> for Value<'gc> {
+    fn from(value: usize) -> Self {
+        Value::Number(value as f64)
+    }
+}
+
 unsafe impl<'gc> gc_arena::Collect for Value<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
         if let Value::Object(object) = self {
