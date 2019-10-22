@@ -279,7 +279,11 @@ impl<'gc> Avm1<'gc> {
                     }
                     NoResult => {}
                 }
-            } else if can_return {
+
+                return Ok(());
+            }
+
+            if can_return {
                 frame
                     .write(context.gc_context)
                     .set_return_value(return_value.clone());
