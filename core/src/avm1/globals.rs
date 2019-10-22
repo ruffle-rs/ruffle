@@ -144,9 +144,9 @@ pub fn create_globals<'gc>(
     );
 
     let mut globals = Object::object(gc_context, Some(object_proto));
-    globals.force_set("Object", Value::Object(object), EnumSet::empty());
-    globals.force_set("Function", Value::Object(function), EnumSet::empty());
-    globals.force_set("MovieClip", Value::Object(movie_clip), EnumSet::empty());
+    globals.force_set("Object", object, EnumSet::empty());
+    globals.force_set("Function", function, EnumSet::empty());
+    globals.force_set("MovieClip", movie_clip, EnumSet::empty());
     globals.force_set_function(
         "Number",
         number,
