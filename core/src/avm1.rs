@@ -56,10 +56,6 @@ pub struct Avm1<'gc> {
     /// The register slots (also shared across functions).
     /// `ActionDefineFunction2` defined functions do not use these slots.
     registers: [Value<'gc>; 4],
-
-    /// Used to enforce the restriction that no more than one mutable current
-    /// reader be active at once.
-    is_reading: bool,
 }
 
 unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
@@ -87,7 +83,6 @@ impl<'gc> Avm1<'gc> {
                 Value::Undefined,
                 Value::Undefined,
             ],
-            is_reading: false,
         }
     }
 
@@ -221,15 +216,10 @@ impl<'gc> Avm1<'gc> {
     where
         F: FnOnce(&mut Self, &mut Reader<'_>, &mut UpdateContext<'_, 'gc, '_>) -> R,
     {
-        if self.is_reading {
-            log::error!(
-                "Two mutable readers are open at the same time. Please correct this error."
-            );
-        }
-
-        self.is_reading = true;
         let (frame_cell, swf_version, data, pc) = self.stack_frames.last().map(|frame| {
-            let frame_ref = frame.read();
+            let mut frame_ref = frame.write(context.gc_context);
+            frame_ref.lock_or_panic();
+
             (
                 *frame,
                 frame_ref.swf_version(),
@@ -237,13 +227,15 @@ impl<'gc> Avm1<'gc> {
                 frame_ref.pc(),
             )
         })?;
+
         let mut read = Reader::new(data.as_ref(), swf_version);
         read.seek(pc.try_into().unwrap());
 
         let r = func(self, &mut read, context);
-        frame_cell.write(context.gc_context).set_pc(read.pos());
 
-        self.is_reading = false;
+        let mut frame_ref = frame_cell.write(context.gc_context);
+        frame_ref.unlock_execution();
+        frame_ref.set_pc(read.pos());
 
         Some(r)
     }
@@ -296,6 +288,29 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         while !self.stack_frames.is_empty() {
+            self.with_current_reader_mut(context, |this, r, context| {
+                this.do_next_action(context, r)
+            })
+            .unwrap()?;
+        }
+
+        Ok(())
+    }
+
+    /// Execute the AVM stack until the topmost stack value returns.
+    pub fn run_current_frame(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let stop_frame = *self.stack_frames.last().unwrap();
+        let stop_frame_id = self.stack_frames.len() - 1;
+
+        while self
+            .stack_frames
+            .get(stop_frame_id)
+            .map(|fr| GcCell::ptr_eq(stop_frame, *fr))
+            .unwrap_or(false)
+        {
             self.with_current_reader_mut(context, |this, r, context| {
                 this.do_next_action(context, r)
             })

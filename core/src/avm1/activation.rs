@@ -97,6 +97,11 @@ pub struct Activation<'gc> {
     /// This facility exists primarily to allow native code to handle the result
     /// of an AVM function call.
     then_func: Option<Box<dyn StackContinuation<'gc>>>,
+
+    /// Flags that the current activation frame is being executed and has a
+    /// reader object copied from it. Taking out two readers on the same
+    /// activation frame is a programming error.
+    is_executing: bool,
 }
 
 unsafe impl<'gc> gc_arena::Collect for Activation<'gc> {
@@ -127,6 +132,7 @@ impl<'gc> Activation<'gc> {
             is_function: false,
             local_registers: None,
             then_func: None,
+            is_executing: false,
         }
     }
 
@@ -147,6 +153,7 @@ impl<'gc> Activation<'gc> {
             is_function: true,
             local_registers: None,
             then_func: None,
+            is_executing: false,
         }
     }
 
@@ -178,6 +185,7 @@ impl<'gc> Activation<'gc> {
             is_function: false,
             local_registers: None,
             then_func: None,
+            is_executing: false,
         }
     }
 
@@ -193,6 +201,7 @@ impl<'gc> Activation<'gc> {
             is_function: false,
             local_registers: self.local_registers,
             then_func: None,
+            is_executing: false,
         }
     }
 
@@ -369,5 +378,23 @@ impl<'gc> Activation<'gc> {
             &mut self.then_func,
             &mut previous_activation.write(context).then_func,
         );
+    }
+
+    /// Attempts to lock the activation frame for execution.
+    ///
+    /// If this frame is already executing, that is an error condition that we
+    /// panic out of.
+    pub fn lock_or_panic(&mut self) {
+        if self.is_executing {
+            panic!("Attempted to execute the same frame twice");
+        }
+
+        self.is_executing = true;
+    }
+
+    /// Unlock the activation object. This allows future execution to run on it
+    /// again.
+    pub fn unlock_execution(&mut self) {
+        self.is_executing = false;
     }
 }
