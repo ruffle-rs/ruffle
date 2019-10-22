@@ -109,6 +109,26 @@ impl<'gc> ReturnValue<'gc> {
         };
     }
 
+    /// Force a return value to resolve on the Rust stack by recursing back
+    /// into the AVM.
+    pub fn resolve(
+        self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        use ReturnValue::*;
+
+        match self {
+            Immediate(val) => Ok(val),
+            ResultOf(frame) => {
+                avm.run_current_frame(context, frame)?;
+
+                avm.pop()
+            }
+            NoResult => Err("Attempted to resolve a no-result return value".into()),
+        }
+    }
+
     /// Consumes the given return value.
     ///
     /// This exists primarily so that users of return values can indicate that

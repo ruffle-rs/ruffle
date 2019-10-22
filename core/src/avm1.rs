@@ -301,23 +301,32 @@ impl<'gc> Avm1<'gc> {
     pub fn run_current_frame(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
+        stop_frame: GcCell<'gc, Activation<'gc>>,
     ) -> Result<(), Error> {
-        let stop_frame = *self.stack_frames.last().unwrap();
-        let stop_frame_id = self.stack_frames.len() - 1;
-
-        while self
-            .stack_frames
-            .get(stop_frame_id)
-            .map(|fr| GcCell::ptr_eq(stop_frame, *fr))
-            .unwrap_or(false)
-        {
-            self.with_current_reader_mut(context, |this, r, context| {
-                this.do_next_action(context, r)
-            })
-            .unwrap()?;
+        let mut stop_frame_id = None;
+        for (index, frame) in self.stack_frames.iter().enumerate() {
+            if GcCell::ptr_eq(stop_frame, *frame) {
+                stop_frame_id = Some(index);
+            }
         }
 
-        Ok(())
+        if let Some(stop_frame_id) = stop_frame_id {
+            while self
+                .stack_frames
+                .get(stop_frame_id)
+                .map(|fr| GcCell::ptr_eq(stop_frame, *fr))
+                .unwrap_or(false)
+            {
+                self.with_current_reader_mut(context, |this, r, context| {
+                    this.do_next_action(context, r)
+                })
+                .unwrap()?;
+            }
+
+            Ok(())
+        } else {
+            Err("Attempted to run a frame not on the current interpreter stack".into())
+        }
     }
 
     /// Run a single action from a given action reader.
