@@ -8,6 +8,16 @@ use crate::display_object::{DisplayNode, DisplayObject, MovieClip};
 use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
 
+/// Implements `MovieClip`
+pub fn constructor<'gc>(
+    _avm: &mut Avm1<'gc>,
+    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: GcCell<'gc, Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    Ok(Value::Undefined.into())
+}
+
 macro_rules! with_movie_clip {
     ( $gc_context: ident, $object:ident, $fn_proto: expr, $($name:expr => $fn:expr),* ) => {{
         $(

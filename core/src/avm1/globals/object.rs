@@ -6,6 +6,16 @@ use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
 
+/// Implements `Object`
+pub fn constructor<'gc>(
+    _avm: &mut Avm1<'gc>,
+    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: GcCell<'gc, Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    Ok(Value::Undefined.into())
+}
+
 /// Implements `Object.prototype.addProperty`
 pub fn add_property<'gc>(
     _avm: &mut Avm1<'gc>,

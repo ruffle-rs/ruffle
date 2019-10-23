@@ -1,4 +1,5 @@
 use crate::avm1::fscommand;
+use crate::avm1::function::Executable;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, UpdateContext, Value};
 use crate::backend::navigator::NavigationMethod;
@@ -121,26 +122,25 @@ pub fn create_globals<'gc>(
 
     let movie_clip_proto = movie_clip::create_proto(gc_context, object_proto, function_proto);
 
-    let object = GcCell::allocate(
+    //TODO: These need to be constructors and should also set `.prototype` on each one
+    let object = Object::function(
         gc_context,
-        Object::native_function(
-            |_, _, _, _| Ok(Value::Undefined.into()),
-            Some(function_proto),
-        ),
+        Executable::Native(object::constructor),
+        Some(function_proto),
+        Some(object_proto),
     );
-    let function = GcCell::allocate(
+
+    let function = Object::function(
         gc_context,
-        Object::native_function(
-            |_, _, _, _| Ok(Value::Undefined.into()),
-            Some(function_proto),
-        ),
+        Executable::Native(function::constructor),
+        Some(function_proto),
+        Some(function_proto),
     );
-    let movie_clip = GcCell::allocate(
+    let movie_clip = Object::function(
         gc_context,
-        Object::native_function(
-            |_, _, _, _| Ok(Value::Undefined.into()),
-            Some(movie_clip_proto),
-        ),
+        Executable::Native(movie_clip::constructor),
+        Some(function_proto),
+        Some(movie_clip_proto),
     );
 
     let mut globals = Object::object(gc_context, Some(object_proto));

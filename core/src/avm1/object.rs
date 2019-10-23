@@ -1,5 +1,5 @@
 use self::Attribute::*;
-use crate::avm1::function::{Avm1Function, Executable, NativeFunction};
+use crate::avm1::function::{Executable, NativeFunction};
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, UpdateContext, Value};
 use crate::display_object::DisplayNode;
@@ -201,30 +201,45 @@ impl<'gc> Object<'gc> {
         }
     }
 
-    pub fn native_function(
-        function: NativeFunction<'gc>,
-        proto: Option<GcCell<'gc, Object<'gc>>>,
+    /// Construct a function sans prototype.
+    pub fn bare_function(
+        function: impl Into<Executable<'gc>>,
+        fn_proto: Option<GcCell<'gc, Object<'gc>>>,
     ) -> Self {
         Self {
-            prototype: proto,
+            prototype: fn_proto,
             type_of: TYPE_OF_FUNCTION,
-            function: Some(Executable::Native(function)),
+            function: Some(function.into()),
             display_node: None,
             values: HashMap::new(),
         }
     }
 
-    pub fn action_function(
-        func: Avm1Function<'gc>,
-        proto: Option<GcCell<'gc, Object<'gc>>>,
-    ) -> Self {
-        Self {
-            prototype: proto,
-            type_of: TYPE_OF_FUNCTION,
-            function: Some(Executable::Action(func)),
-            display_node: None,
-            values: HashMap::new(),
+    /// Construct a function from an executable and associated protos.
+    ///
+    /// Since prototypes need to link back to themselves, this function builds
+    /// both objects itself and returns the function to you, fully allocated.
+    ///
+    /// `fn_proto` refers to the implicit proto of the function object, and the
+    /// `prototype` refers to the explicit prototype of the function. If
+    /// provided, the function and it's prototype will be linked to each other.
+    pub fn function(
+        gc_context: MutationContext<'gc, '_>,
+        function: impl Into<Executable<'gc>>,
+        fn_proto: Option<GcCell<'gc, Object<'gc>>>,
+        prototype: Option<GcCell<'gc, Object<'gc>>>,
+    ) -> GcCell<'gc, Object<'gc>> {
+        let function = GcCell::allocate(gc_context, Self::bare_function(function, fn_proto));
+
+        if let Some(p) = prototype {
+            p.write(gc_context)
+                .force_set("constructor", function, EnumSet::empty());
+            function
+                .write(gc_context)
+                .force_set("prototype", p, EnumSet::empty());
         }
+
+        function
     }
 
     pub fn set_display_node(&mut self, display_node: DisplayNode<'gc>) {
@@ -296,22 +311,26 @@ impl<'gc> Object<'gc> {
         );
     }
 
+    /// Declare a native function on the current object.
+    ///
+    /// This is intended for use with defining host object prototypes. Notably,
+    /// this creates a function object without an explicit `prototype`, which
+    /// is only possible when defining host functions. User-defined functions
+    /// always get a fresh explicit prototype, so you should never force set a
+    /// user-defined function.
     pub fn force_set_function<A>(
         &mut self,
         name: &str,
         function: NativeFunction<'gc>,
         gc_context: MutationContext<'gc, '_>,
         attributes: A,
-        proto: Option<GcCell<'gc, Object<'gc>>>,
+        fn_proto: Option<GcCell<'gc, Object<'gc>>>,
     ) where
         A: Into<EnumSet<Attribute>>,
     {
         self.force_set(
             name,
-            Value::Object(GcCell::allocate(
-                gc_context,
-                Object::native_function(function, proto),
-            )),
+            Value::Object(Object::function(gc_context, function, fn_proto, None)),
             attributes,
         )
     }

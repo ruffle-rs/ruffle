@@ -810,10 +810,16 @@ impl<'gc> Avm1<'gc> {
             context.gc_context,
         );
         let func = Avm1Function::from_df1(swf_version, func_data, name, params, scope);
-        let func_obj = Value::Object(GcCell::allocate(
+        let prototype = GcCell::allocate(
             context.gc_context,
-            Object::action_function(func, Some(self.prototypes.function)),
-        ));
+            Object::object(context.gc_context, Some(self.prototypes.object)),
+        );
+        let func_obj = Object::function(
+            context.gc_context,
+            func,
+            Some(self.prototypes.function),
+            Some(prototype),
+        );
         if name == "" {
             self.push(func_obj);
         } else {
@@ -844,10 +850,16 @@ impl<'gc> Avm1<'gc> {
             context.gc_context,
         );
         let func = Avm1Function::from_df2(swf_version, func_data, action_func, scope);
-        let func_obj = Value::Object(GcCell::allocate(
+        let prototype = GcCell::allocate(
             context.gc_context,
-            Object::action_function(func, Some(self.prototypes.function)),
-        ));
+            Object::object(context.gc_context, Some(self.prototypes.object)),
+        );
+        let func_obj = Object::function(
+            context.gc_context,
+            func,
+            Some(self.prototypes.function),
+            Some(prototype),
+        );
         if action_func.name == "" {
             self.push(func_obj);
         } else {

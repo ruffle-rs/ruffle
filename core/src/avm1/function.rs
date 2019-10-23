@@ -301,3 +301,15 @@ impl<'gc> Executable<'gc> {
         }
     }
 }
+
+impl<'gc> From<NativeFunction<'gc>> for Executable<'gc> {
+    fn from(nf: NativeFunction<'gc>) -> Self {
+        Executable::Native(nf)
+    }
+}
+
+impl<'gc> From<Avm1Function<'gc>> for Executable<'gc> {
+    fn from(af: Avm1Function<'gc>) -> Self {
+        Executable::Action(af)
+    }
+}
