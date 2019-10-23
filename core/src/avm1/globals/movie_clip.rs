@@ -1,7 +1,8 @@
 //! MovieClip prototype
 
 use crate::avm1::function::Executable;
-use crate::avm1::object::{Attribute::*, Object};
+use crate::avm1::object::Object;
+use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, UpdateContext, Value};
 use crate::display_object::{DisplayNode, DisplayObject, MovieClip};

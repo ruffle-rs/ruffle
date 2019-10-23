@@ -19,6 +19,7 @@ mod fscommand;
 mod function;
 pub mod globals;
 pub mod object;
+mod property;
 mod return_value;
 mod scope;
 mod value;

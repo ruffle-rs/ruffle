@@ -1,5 +1,5 @@
 //! Object prototype
-use crate::avm1::object::Attribute::*;
+use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, Value};
 use crate::context::UpdateContext;

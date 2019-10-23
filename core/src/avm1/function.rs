@@ -1,7 +1,8 @@
 //! Code relating to executable functions + calling conventions.
 
 use crate::avm1::activation::Activation;
-use crate::avm1::object::{Attribute::*, Object};
+use crate::avm1::object::Object;
+use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
