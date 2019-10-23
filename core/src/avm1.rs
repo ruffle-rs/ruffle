@@ -723,24 +723,16 @@ impl<'gc> Avm1<'gc> {
             args.push(self.pop()?);
         }
 
-        let target_fn = self.stack_frames.last().unwrap().clone().read().resolve(
-            fn_name.as_string()?,
-            self,
-            context,
-        );
+        let target_fn = self
+            .stack_frames
+            .last()
+            .unwrap()
+            .clone()
+            .read()
+            .resolve(fn_name.as_string()?, self, context)
+            .resolve(self, context)?;
         let this = context.active_clip.read().object().as_object()?.to_owned();
-
-        target_fn
-            .and_then(
-                self,
-                context,
-                stack_continuation!(
-                    this: GcCell<'gc, Object<'gc>>,
-                    args: Vec<Value<'gc>>,
-                    |avm, context, target_fn| { target_fn.call(avm, context, *this, &args) }
-                ),
-            )?
-            .push(self);
+        target_fn.call(self, context, this, &args)?.push(self);
 
         Ok(())
     }
@@ -769,31 +761,17 @@ impl<'gc> Avm1<'gc> {
                         .push(self);
                 } else {
                     let target = object.as_object()?.to_owned();
-                    object
+                    let callable = object
                         .as_object()?
                         .read()
                         .get(&name, self, context, target)
-                        .and_then(
-                            self,
-                            context,
-                            stack_continuation!(
-                                target: GcCell<'gc, Object<'gc>>,
-                                name: String,
-                                args: Vec<Value<'gc>>,
-                                |avm, context, callable| {
-                                    if let Value::Undefined = callable {
-                                        return Err(format!(
-                                            "Object method {} is not defined",
-                                            name
-                                        )
-                                        .into());
-                                    }
+                        .resolve(self, context)?;
 
-                                    callable.call(avm, context, *target, &args)
-                                }
-                            ),
-                        )?
-                        .push(self);
+                    if let Value::Undefined = callable {
+                        return Err(format!("Object method {} is not defined", name).into());
+                    }
+
+                    callable.call(self, context, target, &args)?.push(self);
                 }
             }
             _ => {
@@ -967,30 +945,21 @@ impl<'gc> Avm1<'gc> {
         let name_value = self.pop()?;
         let name = name_value.as_string()?;
         self.push(Value::Null); // Sentinel that indicates end of enumeration
-        self.current_stack_frame()
+        let object = self
+            .current_stack_frame()
             .unwrap()
             .read()
             .resolve(name, self, context)
-            .and_then(
-                self,
-                context,
-                stack_continuation!(name_value: Value<'gc>, |avm, _context, object| {
-                    match object {
-                        Value::Object(ob) => {
-                            for k in ob.read().get_keys() {
-                                avm.push(Value::String(k));
-                            }
-                        }
-                        _ => log::error!(
-                            "Cannot enumerate properties of {}",
-                            name_value.as_string()?
-                        ),
-                    };
+            .resolve(self, context)?;
 
-                    Ok(ReturnValue::NoResult)
-                }),
-            )?
-            .ignore();
+        match object {
+            Value::Object(ob) => {
+                for k in ob.read().get_keys() {
+                    self.push(k);
+                }
+            }
+            _ => log::error!("Cannot enumerate properties of {}", name_value.as_string()?),
+        };
 
         Ok(())
     }

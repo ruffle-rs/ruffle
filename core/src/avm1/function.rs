@@ -263,30 +263,17 @@ impl<'gc> Executable<'gc> {
                 }
 
                 if af.preload_parent {
-                    let parent_preload_r = preload_r;
-
-                    child_scope
+                    let parent = child_scope
                         .read()
                         .resolve("_parent", avm, ac, this)
-                        .and_then(
-                            avm,
-                            ac,
-                            stack_continuation!(
-                                frame_cell: GcCell<'gc, Activation<'gc>>,
-                                parent_preload_r: u8,
-                                |_avm, ac, parent| {
-                                    frame_cell.write(ac.gc_context).set_local_register(
-                                        *parent_preload_r,
-                                        parent,
-                                        ac.gc_context,
-                                    );
+                        .resolve(avm, ac)
+                        .unwrap();
 
-                                    Ok(ReturnValue::NoResult)
-                                }
-                            ),
-                        )
-                        .unwrap()
-                        .ignore();
+                    frame_cell.write(ac.gc_context).set_local_register(
+                        preload_r,
+                        parent,
+                        ac.gc_context,
+                    );
 
                     preload_r += 1;
                 }
