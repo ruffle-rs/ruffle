@@ -3,7 +3,7 @@
 use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, ObjectCell, ScriptObject, UpdateContext, Value};
+use crate::avm1::{Avm1, Error, Object, ObjectCell, ScriptObject, UpdateContext, Value};
 use crate::display_object::{DisplayNode, DisplayObject, MovieClip};
 use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
@@ -71,9 +71,7 @@ pub fn overwrite_root<'gc>(
         .map(|v| v.to_owned())
         .unwrap_or(Value::Undefined);
     this.write(ac.gc_context)
-        .as_script_object_mut()
-        .unwrap()
-        .force_set("_root", new_val, EnumSet::new());
+        .define_value("_root", new_val, EnumSet::new());
 
     Ok(Value::Undefined.into())
 }
@@ -89,9 +87,7 @@ pub fn overwrite_global<'gc>(
         .map(|v| v.to_owned())
         .unwrap_or(Value::Undefined);
     this.write(ac.gc_context)
-        .as_script_object_mut()
-        .unwrap()
-        .force_set("_global", new_val, EnumSet::new());
+        .define_value("_global", new_val, EnumSet::new());
 
     Ok(Value::Undefined.into())
 }
@@ -142,21 +138,21 @@ pub fn create_proto<'gc>(
         }
     );
 
-    object.force_set_virtual(
+    object.add_property(
         "_global",
         Executable::Native(|avm, context, _this, _args| Ok(avm.global_object(context).into())),
         Some(Executable::Native(overwrite_global)),
         EnumSet::new(),
     );
 
-    object.force_set_virtual(
+    object.add_property(
         "_root",
         Executable::Native(|avm, context, _this, _args| Ok(avm.root_object(context).into())),
         Some(Executable::Native(overwrite_root)),
         EnumSet::new(),
     );
 
-    object.force_set_virtual(
+    object.add_property(
         "_parent",
         Executable::Native(|_avm, _context, this, _args| {
             Ok(this

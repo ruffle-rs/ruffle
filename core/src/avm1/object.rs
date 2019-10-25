@@ -1,9 +1,11 @@
 //! Object trait to expose objects to AVM
 
 use crate::avm1::function::Executable;
+use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, ScriptObject, UpdateContext, Value};
 use crate::display_object::DisplayNode;
+use enumset::EnumSet;
 use gc_arena::{Collect, GcCell};
 use std::fmt::Debug;
 
@@ -81,6 +83,37 @@ pub trait Object<'gc>: 'gc + Collect + Debug {
     /// multiple objects. It should also be accessible as `__proto__` from
     /// `get`.
     fn proto(&self) -> Option<ObjectCell<'gc>>;
+
+    /// Define a value on an object.
+    ///
+    /// Unlike setting a value, this function is intended to replace any
+    /// existing virtual or built-in properties already installed on a given
+    /// object. As such, this should not run any setters; the resulting name
+    /// slot should either be completely replaced with the value or completely
+    /// untouched.
+    ///
+    /// It is not guaranteed that all objects accept value definitions,
+    /// especially if a property name conflicts with a built-in property, such
+    /// as `__proto__`.
+    fn define_value(&mut self, name: &str, value: Value<'gc>, attributes: EnumSet<Attribute>);
+
+    /// Define a virtual property onto a given object.
+    ///
+    /// A virtual property is a set of get/set functions that are called when a
+    /// given named property is retrieved or stored on an object. These
+    /// functions are then responsible for providing or accepting the value
+    /// that is given to or taken from the AVM.
+    ///
+    /// It is not guaranteed that all objects accept virtual properties,
+    /// especially if a property name conflicts with a built-in property, such
+    /// as `__proto__`.
+    fn add_property(
+        &mut self,
+        name: &str,
+        get: Executable<'gc>,
+        set: Option<Executable<'gc>>,
+        attributes: EnumSet<Attribute>,
+    );
 
     /// Checks if the object has a given named property.
     fn has_property(&self, name: &str) -> bool;

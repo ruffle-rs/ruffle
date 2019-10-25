@@ -196,18 +196,14 @@ impl<'gc> Executable<'gc> {
                     ScriptObject::object(ac.gc_context, Some(avm.prototypes().object));
                 if !af.suppress_arguments {
                     for i in 0..args.len() {
-                        arguments.force_set(
+                        arguments.define_value(
                             &format!("{}", i),
                             args.get(i).unwrap().clone(),
-                            DontDelete,
+                            DontDelete.into(),
                         )
                     }
 
-                    arguments.force_set(
-                        "length",
-                        Value::Number(args.len() as f64),
-                        DontDelete | DontEnum,
-                    );
+                    arguments.define_value("length", args.len().into(), DontDelete | DontEnum);
                 }
 
                 let argcell = GcCell::allocate(

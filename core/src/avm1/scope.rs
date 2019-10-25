@@ -309,9 +309,7 @@ impl<'gc> Scope<'gc> {
     /// local object and does not traverse the scope chain.
     pub fn define(&self, name: &str, value: impl Into<Value<'gc>>, mc: MutationContext<'gc, '_>) {
         self.locals_mut(mc)
-            .as_script_object_mut()
-            .unwrap()
-            .force_set(name, value, EnumSet::empty());
+            .define_value(name, value.into(), EnumSet::empty());
     }
 
     /// Delete a value from scope

@@ -1,6 +1,6 @@
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, ObjectCell, ScriptObject, UpdateContext, Value};
+use crate::avm1::{Avm1, Error, Object, ObjectCell, ScriptObject, UpdateContext, Value};
 use gc_arena::{GcCell, MutationContext};
 use rand::Rng;
 use std::f64::NAN;
@@ -57,44 +57,44 @@ pub fn create<'gc>(
 ) -> ObjectCell<'gc> {
     let mut math = ScriptObject::object(gc_context, proto);
 
-    math.force_set(
+    math.define_value(
         "E",
-        Value::Number(std::f64::consts::E),
+        std::f64::consts::E.into(),
         DontDelete | ReadOnly | DontEnum,
     );
-    math.force_set(
+    math.define_value(
         "LN10",
-        Value::Number(std::f64::consts::LN_10),
+        std::f64::consts::LN_10.into(),
         DontDelete | ReadOnly | DontEnum,
     );
-    math.force_set(
+    math.define_value(
         "LN2",
-        Value::Number(std::f64::consts::LN_2),
+        std::f64::consts::LN_2.into(),
         DontDelete | ReadOnly | DontEnum,
     );
-    math.force_set(
+    math.define_value(
         "LOG10E",
-        Value::Number(std::f64::consts::LOG10_E),
+        std::f64::consts::LOG10_E.into(),
         DontDelete | ReadOnly | DontEnum,
     );
-    math.force_set(
+    math.define_value(
         "LOG2E",
-        Value::Number(std::f64::consts::LOG2_E),
+        std::f64::consts::LOG2_E.into(),
         DontDelete | ReadOnly | DontEnum,
     );
-    math.force_set(
+    math.define_value(
         "PI",
-        Value::Number(std::f64::consts::PI),
+        std::f64::consts::PI.into(),
         DontDelete | ReadOnly | DontEnum,
     );
-    math.force_set(
+    math.define_value(
         "SQRT1_2",
-        Value::Number(std::f64::consts::FRAC_1_SQRT_2),
+        std::f64::consts::FRAC_1_SQRT_2.into(),
         DontDelete | ReadOnly | DontEnum,
     );
-    math.force_set(
+    math.define_value(
         "SQRT2",
-        Value::Number(std::f64::consts::SQRT_2),
+        std::f64::consts::SQRT_2.into(),
         DontDelete | ReadOnly | DontEnum,
     );
 

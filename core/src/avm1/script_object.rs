@@ -122,15 +122,14 @@ impl<'gc> ScriptObject<'gc> {
 
         //TODO: Can we make these proper sets or no?
         if let Some(p) = prototype {
-            p.write(gc_context)
-                .as_script_object_mut()
-                .unwrap()
-                .force_set("constructor", Value::Object(function), EnumSet::empty());
+            p.write(gc_context).define_value(
+                "constructor",
+                Value::Object(function),
+                EnumSet::empty(),
+            );
             function
                 .write(gc_context)
-                .as_script_object_mut()
-                .unwrap()
-                .force_set("prototype", p, EnumSet::empty());
+                .define_value("prototype", p.into(), EnumSet::empty());
         }
 
         function
@@ -142,38 +141,6 @@ impl<'gc> ScriptObject<'gc> {
 
     pub fn display_node(&self) -> Option<DisplayNode<'gc>> {
         self.display_node
-    }
-
-    pub fn force_set_virtual<A>(
-        &mut self,
-        name: &str,
-        get: Executable<'gc>,
-        set: Option<Executable<'gc>>,
-        attributes: A,
-    ) where
-        A: Into<EnumSet<Attribute>>,
-    {
-        self.values.insert(
-            name.to_owned(),
-            Property::Virtual {
-                get,
-                set,
-                attributes: attributes.into(),
-            },
-        );
-    }
-
-    pub fn force_set<A>(&mut self, name: &str, value: impl Into<Value<'gc>>, attributes: A)
-    where
-        A: Into<EnumSet<Attribute>>,
-    {
-        self.values.insert(
-            name.to_string(),
-            Property::Stored {
-                value: value.into(),
-                attributes: attributes.into(),
-            },
-        );
     }
 
     /// Declare a native function on the current object.
@@ -193,10 +160,10 @@ impl<'gc> ScriptObject<'gc> {
     ) where
         A: Into<EnumSet<Attribute>>,
     {
-        self.force_set(
+        self.define_value(
             name,
             Value::Object(ScriptObject::function(gc_context, function, fn_proto, None)),
-            attributes,
+            attributes.into(),
         )
     }
 
@@ -326,6 +293,28 @@ impl<'gc> Object<'gc> for ScriptObject<'gc> {
         }
 
         false
+    }
+
+    fn add_property(
+        &mut self,
+        name: &str,
+        get: Executable<'gc>,
+        set: Option<Executable<'gc>>,
+        attributes: EnumSet<Attribute>,
+    ) {
+        self.values.insert(
+            name.to_owned(),
+            Property::Virtual {
+                get,
+                set,
+                attributes,
+            },
+        );
+    }
+
+    fn define_value(&mut self, name: &str, value: Value<'gc>, attributes: EnumSet<Attribute>) {
+        self.values
+            .insert(name.to_string(), Property::Stored { value, attributes });
     }
 
     fn proto(&self) -> Option<ObjectCell<'gc>> {
@@ -507,7 +496,7 @@ mod tests {
                 .write(context.gc_context)
                 .as_script_object_mut()
                 .unwrap()
-                .force_set("forced", "forced", EnumSet::empty());
+                .define_value("forced", "forced".into(), EnumSet::empty());
             object
                 .write(context.gc_context)
                 .set("natural", "natural".into(), avm, context, object)
@@ -531,12 +520,12 @@ mod tests {
                 .write(context.gc_context)
                 .as_script_object_mut()
                 .unwrap()
-                .force_set("normal", "initial", EnumSet::empty());
+                .define_value("normal", "initial".into(), EnumSet::empty());
             object
                 .write(context.gc_context)
                 .as_script_object_mut()
                 .unwrap()
-                .force_set("readonly", "initial", ReadOnly);
+                .define_value("readonly", "initial".into(), ReadOnly.into());
 
             object
                 .write(context.gc_context)
@@ -565,7 +554,7 @@ mod tests {
                 .write(context.gc_context)
                 .as_script_object_mut()
                 .unwrap()
-                .force_set("test", "initial", DontDelete);
+                .define_value("test", "initial".into(), DontDelete.into());
 
             assert_eq!(object.write(context.gc_context).delete("test"), false);
             assert_eq!(
@@ -599,7 +588,7 @@ mod tests {
                 .write(context.gc_context)
                 .as_script_object_mut()
                 .unwrap()
-                .force_set_virtual("test", getter, None, EnumSet::empty());
+                .add_property("test", getter, None, EnumSet::empty());
 
             assert_eq!(
                 object.read().get("test", avm, context, object).unwrap(),
@@ -629,22 +618,22 @@ mod tests {
                 .write(context.gc_context)
                 .as_script_object_mut()
                 .unwrap()
-                .force_set_virtual("virtual", getter.clone(), None, EnumSet::empty());
+                .add_property("virtual", getter.clone(), None, EnumSet::empty());
             object
                 .write(context.gc_context)
                 .as_script_object_mut()
                 .unwrap()
-                .force_set_virtual("virtual_un", getter, None, DontDelete);
+                .add_property("virtual_un", getter, None, DontDelete.into());
             object
                 .write(context.gc_context)
                 .as_script_object_mut()
                 .unwrap()
-                .force_set("stored", "Stored!", EnumSet::empty());
+                .define_value("stored", "Stored!".into(), EnumSet::empty());
             object
                 .write(context.gc_context)
                 .as_script_object_mut()
                 .unwrap()
-                .force_set("stored_un", "Stored!", DontDelete);
+                .define_value("stored_un", "Stored!".into(), DontDelete.into());
 
             assert_eq!(object.write(context.gc_context).delete("virtual"), true);
             assert_eq!(object.write(context.gc_context).delete("virtual_un"), false);
@@ -691,22 +680,22 @@ mod tests {
                 .write(context.gc_context)
                 .as_script_object_mut()
                 .unwrap()
-                .force_set("stored", Value::Null, EnumSet::empty());
+                .define_value("stored", Value::Null, EnumSet::empty());
             object
                 .write(context.gc_context)
                 .as_script_object_mut()
                 .unwrap()
-                .force_set("stored_hidden", Value::Null, DontEnum);
+                .define_value("stored_hidden", Value::Null, DontEnum.into());
             object
                 .write(context.gc_context)
                 .as_script_object_mut()
                 .unwrap()
-                .force_set_virtual("virtual", getter.clone(), None, EnumSet::empty());
+                .add_property("virtual", getter.clone(), None, EnumSet::empty());
             object
                 .write(context.gc_context)
                 .as_script_object_mut()
                 .unwrap()
-                .force_set_virtual("virtual_hidden", getter, None, DontEnum);
+                .add_property("virtual_hidden", getter, None, DontEnum.into());
 
             let keys = object.read().get_keys();
             assert_eq!(keys.len(), 2);

@@ -145,9 +145,9 @@ pub fn create_globals<'gc>(
     );
 
     let mut globals = ScriptObject::object(gc_context, Some(object_proto));
-    globals.force_set("Object", object, EnumSet::empty());
-    globals.force_set("Function", function, EnumSet::empty());
-    globals.force_set("MovieClip", movie_clip, EnumSet::empty());
+    globals.define_value("Object", object.into(), EnumSet::empty());
+    globals.define_value("Function", function.into(), EnumSet::empty());
+    globals.define_value("MovieClip", movie_clip.into(), EnumSet::empty());
     globals.force_set_function(
         "Number",
         number,
@@ -162,7 +162,7 @@ pub fn create_globals<'gc>(
         EnumSet::empty(),
         Some(function_proto),
     );
-    globals.force_set(
+    globals.define_value(
         "Math",
         Value::Object(math::create(
             gc_context,
@@ -192,8 +192,8 @@ pub fn create_globals<'gc>(
         EnumSet::empty(),
         Some(function_proto),
     );
-    globals.force_set("NaN", Value::Number(std::f64::NAN), EnumSet::empty());
-    globals.force_set(
+    globals.define_value("NaN", Value::Number(std::f64::NAN), EnumSet::empty());
+    globals.define_value(
         "Infinity",
         Value::Number(std::f64::INFINITY),
         EnumSet::empty(),

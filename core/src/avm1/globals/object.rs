@@ -31,18 +31,22 @@ pub fn add_property<'gc>(
             if let Some(get_func) = get.read().as_executable() {
                 if let Value::Object(set) = setter {
                     if let Some(set_func) = set.read().as_executable() {
-                        this.write(context.gc_context)
-                            .as_script_object_mut()
-                            .unwrap()
-                            .force_set_virtual(name, get_func, Some(set_func), EnumSet::empty());
+                        this.write(context.gc_context).add_property(
+                            name,
+                            get_func,
+                            Some(set_func),
+                            EnumSet::empty(),
+                        );
                     } else {
                         return Ok(false.into());
                     }
                 } else if let Value::Null = setter {
-                    this.write(context.gc_context)
-                        .as_script_object_mut()
-                        .unwrap()
-                        .force_set_virtual(name, get_func, None, ReadOnly);
+                    this.write(context.gc_context).add_property(
+                        name,
+                        get_func,
+                        None,
+                        ReadOnly.into(),
+                    );
                 } else {
                     return Ok(false.into());
                 }
