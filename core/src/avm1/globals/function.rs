@@ -1,16 +1,15 @@
 //! Function prototype
 
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, Object, Value};
-use crate::context::UpdateContext;
+use crate::avm1::{Avm1, Error, ObjectCell, ScriptObject, UpdateContext, Value};
 use enumset::EnumSet;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::MutationContext;
 
 /// Implements `Function`
 pub fn constructor<'gc>(
     _avm: &mut Avm1<'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: GcCell<'gc, Object<'gc>>,
+    _this: ObjectCell<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     Ok(Value::Undefined.into())
@@ -19,7 +18,7 @@ pub fn constructor<'gc>(
 pub fn call<'gc>(
     _avm: &mut Avm1<'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: GcCell<'gc, Object<'gc>>,
+    _this: ObjectCell<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     Ok(Value::Undefined.into())
@@ -28,7 +27,7 @@ pub fn call<'gc>(
 pub fn apply<'gc>(
     _avm: &mut Avm1<'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: GcCell<'gc, Object<'gc>>,
+    _this: ObjectCell<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     Ok(Value::Undefined.into())
@@ -43,24 +42,32 @@ pub fn apply<'gc>(
 /// the prototype of `Object`.
 pub fn create_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    proto: GcCell<'gc, Object<'gc>>,
-) -> GcCell<'gc, Object<'gc>> {
-    let function_proto = GcCell::allocate(gc_context, Object::object(gc_context, Some(proto)));
+    proto: ObjectCell<'gc>,
+) -> ObjectCell<'gc> {
+    let function_proto = ScriptObject::object_cell(gc_context, Some(proto));
 
-    function_proto.write(gc_context).force_set_function(
-        "call",
-        call,
-        gc_context,
-        EnumSet::empty(),
-        Some(function_proto),
-    );
-    function_proto.write(gc_context).force_set_function(
-        "apply",
-        apply,
-        gc_context,
-        EnumSet::empty(),
-        Some(function_proto),
-    );
+    function_proto
+        .write(gc_context)
+        .as_script_object_mut()
+        .unwrap()
+        .force_set_function(
+            "call",
+            call,
+            gc_context,
+            EnumSet::empty(),
+            Some(function_proto),
+        );
+    function_proto
+        .write(gc_context)
+        .as_script_object_mut()
+        .unwrap()
+        .force_set_function(
+            "apply",
+            apply,
+            gc_context,
+            EnumSet::empty(),
+            Some(function_proto),
+        );
 
     function_proto
 }

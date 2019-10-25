@@ -1,6 +1,5 @@
 use crate::avm1::function::Avm1Function;
 use crate::avm1::globals::create_globals;
-use crate::avm1::object::Object;
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
 use crate::prelude::*;
@@ -22,6 +21,7 @@ pub mod object;
 mod property;
 mod return_value;
 mod scope;
+pub mod script_object;
 mod value;
 
 #[cfg(test)]
@@ -32,7 +32,9 @@ mod tests;
 
 use activation::Activation;
 pub use globals::SystemPrototypes;
+pub use object::{Object, ObjectCell};
 use scope::Scope;
+pub use script_object::ScriptObject;
 pub use value::Value;
 
 pub struct Avm1<'gc> {
@@ -43,7 +45,7 @@ pub struct Avm1<'gc> {
     constant_pool: Vec<String>,
 
     /// The global object.
-    globals: GcCell<'gc, Object<'gc>>,
+    globals: ObjectCell<'gc>,
 
     /// System builtins that we use internally to construct new objects.
     prototypes: globals::SystemPrototypes<'gc>,
@@ -813,9 +815,12 @@ impl<'gc> Avm1<'gc> {
         let func = Avm1Function::from_df1(swf_version, func_data, name, params, scope);
         let prototype = GcCell::allocate(
             context.gc_context,
-            Object::object(context.gc_context, Some(self.prototypes.object)),
+            Box::new(ScriptObject::object(
+                context.gc_context,
+                Some(self.prototypes.object),
+            )) as Box<dyn Object<'gc>>,
         );
-        let func_obj = Object::function(
+        let func_obj = ScriptObject::function(
             context.gc_context,
             func,
             Some(self.prototypes.function),
@@ -853,9 +858,12 @@ impl<'gc> Avm1<'gc> {
         let func = Avm1Function::from_df2(swf_version, func_data, action_func, scope);
         let prototype = GcCell::allocate(
             context.gc_context,
-            Object::object(context.gc_context, Some(self.prototypes.object)),
+            Box::new(ScriptObject::object(
+                context.gc_context,
+                Some(self.prototypes.object),
+            )) as Box<dyn Object<'gc>>,
         );
-        let func_obj = Object::function(
+        let func_obj = ScriptObject::function(
             context.gc_context,
             func,
             Some(self.prototypes.function),
@@ -1092,7 +1100,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     /// Obtain a reference to `_global`.
-    pub fn global_object_cell(&self) -> GcCell<'gc, Object<'gc>> {
+    pub fn global_object_cell(&self) -> ObjectCell<'gc> {
         self.globals
     }
 
@@ -1315,7 +1323,7 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let num_props = self.pop()?.as_i64()?;
-        let mut object = Object::object(context.gc_context, Some(self.prototypes.object));
+        let mut object = ScriptObject::object(context.gc_context, Some(self.prototypes.object));
         for _ in 0..num_props {
             let value = self.pop()?;
             let name = self.pop()?.into_string();
@@ -1324,7 +1332,10 @@ impl<'gc> Avm1<'gc> {
             object.set(&name, value, self, context, this)?;
         }
 
-        self.push(Value::Object(GcCell::allocate(context.gc_context, object)));
+        self.push(Value::Object(GcCell::allocate(
+            context.gc_context,
+            Box::new(object),
+        )));
 
         Ok(())
     }
@@ -1460,13 +1471,14 @@ impl<'gc> Avm1<'gc> {
         let proto = constructor
             .read()
             .get("prototype", self, context, constructor.to_owned())?
-            .resolve(self, context)?;
+            .resolve(self, context)?
+            .as_object()
+            .unwrap_or(self.prototypes.object);
+
+        //TODO: What about native objects?
         let this = GcCell::allocate(
             context.gc_context,
-            Object::object(
-                context.gc_context,
-                Some(proto.as_object().unwrap_or(self.prototypes.object)),
-            ),
+            Box::new(ScriptObject::object(context.gc_context, Some(proto))) as Box<dyn Object<'gc>>,
         );
 
         //TODO: What happens if you `ActionNewMethod` without a method name?
@@ -1502,13 +1514,13 @@ impl<'gc> Avm1<'gc> {
         let proto = constructor
             .read()
             .get("prototype", self, context, constructor.to_owned())?
-            .resolve(self, context)?;
+            .resolve(self, context)?
+            .as_object()
+            .unwrap_or(self.prototypes.object);
+
         let this = GcCell::allocate(
             context.gc_context,
-            Object::object(
-                context.gc_context,
-                Some(proto.as_object().unwrap_or(self.prototypes.object)),
-            ),
+            Box::new(ScriptObject::object(context.gc_context, Some(proto))) as Box<dyn Object<'gc>>,
         );
 
         constructor

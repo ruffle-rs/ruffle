@@ -1,7 +1,7 @@
 //! Return value enum
 
 use crate::avm1::activation::Activation;
-use crate::avm1::{Avm1, Error, Object, Value};
+use crate::avm1::{Avm1, Error, ObjectCell, Value};
 use crate::context::UpdateContext;
 use gc_arena::{Collect, GcCell};
 use std::fmt;
@@ -152,8 +152,8 @@ impl<'gc> From<bool> for ReturnValue<'gc> {
     }
 }
 
-impl<'gc> From<GcCell<'gc, Object<'gc>>> for ReturnValue<'gc> {
-    fn from(object: GcCell<'gc, Object<'gc>>) -> Self {
+impl<'gc> From<ObjectCell<'gc>> for ReturnValue<'gc> {
+    fn from(object: ObjectCell<'gc>) -> Self {
         ReturnValue::Immediate(Value::Object(object))
     }
 }

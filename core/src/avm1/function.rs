@@ -1,12 +1,11 @@
 //! Code relating to executable functions + calling conventions.
 
 use crate::avm1::activation::Activation;
-use crate::avm1::object::Object;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
-use crate::avm1::{Avm1, Error, UpdateContext};
+use crate::avm1::{Avm1, Error, Object, ObjectCell, ScriptObject, UpdateContext};
 use crate::tag_utils::SwfSlice;
 use gc_arena::GcCell;
 use swf::avm1::types::FunctionParam;
@@ -28,7 +27,7 @@ use swf::avm1::types::FunctionParam;
 pub type NativeFunction<'gc> = fn(
     &mut Avm1<'gc>,
     &mut UpdateContext<'_, 'gc, '_>,
-    GcCell<'gc, Object<'gc>>,
+    ObjectCell<'gc>,
     &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error>;
 
@@ -183,7 +182,7 @@ impl<'gc> Executable<'gc> {
         &self,
         avm: &mut Avm1<'gc>,
         ac: &mut UpdateContext<'_, 'gc, '_>,
-        this: GcCell<'gc, Object<'gc>>,
+        this: ObjectCell<'gc>,
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
@@ -193,7 +192,8 @@ impl<'gc> Executable<'gc> {
                     ac.gc_context,
                     Scope::new_local_scope(af.scope(), ac.gc_context),
                 );
-                let mut arguments = Object::object(ac.gc_context, Some(avm.prototypes().object));
+                let mut arguments =
+                    ScriptObject::object(ac.gc_context, Some(avm.prototypes().object));
                 if !af.suppress_arguments {
                     for i in 0..args.len() {
                         arguments.force_set(
@@ -210,12 +210,15 @@ impl<'gc> Executable<'gc> {
                     );
                 }
 
-                let argcell = GcCell::allocate(ac.gc_context, arguments);
+                let argcell = GcCell::allocate(
+                    ac.gc_context,
+                    Box::new(arguments) as Box<dyn Object<'gc> + 'gc>,
+                );
                 let effective_ver = if avm.current_swf_version() > 5 {
                     af.swf_version()
                 } else {
                     this.read()
-                        .display_node()
+                        .as_display_node()
                         .map(|dn| dn.read().swf_version())
                         .unwrap_or(ac.player_version)
                 };

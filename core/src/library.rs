@@ -1,5 +1,5 @@
 use crate::avm1::globals::SystemPrototypes;
-use crate::avm1::object::Object;
+use crate::avm1::ObjectCell;
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
 use crate::display_object::DisplayObject;
@@ -51,7 +51,7 @@ impl<'gc> Library<'gc> {
         gc_context: MutationContext<'gc, '_>,
         prototypes: &SystemPrototypes<'gc>,
     ) -> Result<DisplayNode<'gc>, Box<dyn std::error::Error>> {
-        let (obj, proto): (Box<dyn DisplayObject<'gc>>, GcCell<'gc, Object<'gc>>) = match self
+        let (obj, proto): (Box<dyn DisplayObject<'gc>>, ObjectCell<'gc>) = match self
             .characters
             .get(&id)
         {

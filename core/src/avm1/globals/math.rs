@@ -1,6 +1,6 @@
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, Object, UpdateContext, Value};
+use crate::avm1::{Avm1, Error, ObjectCell, ScriptObject, UpdateContext, Value};
 use gc_arena::{GcCell, MutationContext};
 use rand::Rng;
 use std::f64::NAN;
@@ -28,7 +28,7 @@ macro_rules! wrap_std {
 fn atan2<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: GcCell<'gc, Object<'gc>>,
+    _this: ObjectCell<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(y) = args.get(0) {
@@ -44,7 +44,7 @@ fn atan2<'gc>(
 pub fn random<'gc>(
     _avm: &mut Avm1<'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: GcCell<'gc, Object<'gc>>,
+    _this: ObjectCell<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     Ok(action_context.rng.gen_range(0.0f64, 1.0f64).into())
@@ -52,10 +52,10 @@ pub fn random<'gc>(
 
 pub fn create<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    proto: Option<GcCell<'gc, Object<'gc>>>,
-    fn_proto: Option<GcCell<'gc, Object<'gc>>>,
-) -> GcCell<'gc, Object<'gc>> {
-    let mut math = Object::object(gc_context, proto);
+    proto: Option<ObjectCell<'gc>>,
+    fn_proto: Option<ObjectCell<'gc>>,
+) -> ObjectCell<'gc> {
+    let mut math = ScriptObject::object(gc_context, proto);
 
     math.force_set(
         "E",
@@ -128,7 +128,7 @@ pub fn create<'gc>(
         fn_proto,
     );
 
-    GcCell::allocate(gc_context, math)
+    GcCell::allocate(gc_context, Box::new(math))
 }
 
 #[cfg(test)]
