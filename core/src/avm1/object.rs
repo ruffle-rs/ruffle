@@ -52,6 +52,24 @@ pub trait Object<'gc>: 'gc + Collect + Debug {
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error>;
 
+    /// Construct a host object of some kind and return it's cell.
+    ///
+    /// This is called on constructor functions to obtain a given host object.
+    /// The returned object will then be passed to `call` in order to run
+    /// initialization code. This function cannot be user-defined (and thus,
+    /// does not yield a ReturnValue).
+    ///
+    /// The arguments passed to the constructor are provided here; however, all
+    /// object construction should happen in `call`, not `new`. `new` exists
+    /// purely so that host objects can be constructed by the VM.
+    fn new(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        this: ObjectCell<'gc>,
+        args: &[Value<'gc>],
+    ) -> Result<ObjectCell<'gc>, Error>;
+
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.

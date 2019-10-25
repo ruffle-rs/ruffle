@@ -1468,18 +1468,8 @@ impl<'gc> Avm1<'gc> {
             .get(&method_name.as_string()?, self, context, object.to_owned())?
             .resolve(self, context)?
             .as_object()?;
-        let proto = constructor
-            .read()
-            .get("prototype", self, context, constructor.to_owned())?
-            .resolve(self, context)?
-            .as_object()
-            .unwrap_or(self.prototypes.object);
 
-        //TODO: What about native objects?
-        let this = GcCell::allocate(
-            context.gc_context,
-            Box::new(ScriptObject::object(context.gc_context, Some(proto))) as Box<dyn Object<'gc>>,
-        );
+        let this = constructor.read().new(self, context, constructor, &args)?;
 
         //TODO: What happens if you `ActionNewMethod` without a method name?
         constructor
@@ -1511,17 +1501,8 @@ impl<'gc> Avm1<'gc> {
             .resolve(fn_name.as_string()?, self, context)?
             .resolve(self, context)?
             .as_object()?;
-        let proto = constructor
-            .read()
-            .get("prototype", self, context, constructor.to_owned())?
-            .resolve(self, context)?
-            .as_object()
-            .unwrap_or(self.prototypes.object);
 
-        let this = GcCell::allocate(
-            context.gc_context,
-            Box::new(ScriptObject::object(context.gc_context, Some(proto))) as Box<dyn Object<'gc>>,
-        );
+        let this = constructor.read().new(self, context, constructor, &args)?;
 
         constructor
             .read()
