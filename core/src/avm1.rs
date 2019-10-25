@@ -392,6 +392,7 @@ impl<'gc> Avm1<'gc> {
                 Action::Enumerate2 => self.action_enumerate_2(context),
                 Action::Equals => self.action_equals(context),
                 Action::Equals2 => self.action_equals_2(context),
+                Action::Extends => self.action_extends(context),
                 Action::GetMember => self.action_get_member(context),
                 Action::GetProperty => self.action_get_property(context),
                 Action::GetTime => self.action_get_time(context),
@@ -1031,6 +1032,38 @@ impl<'gc> Avm1<'gc> {
         let b = self.pop()?;
         let result = b.abstract_eq(a, self, context, false)?;
         self.push(result);
+        Ok(())
+    }
+
+    fn action_extends(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let superclass = self.pop()?.as_object()?;
+        let subclass = self.pop()?.as_object()?;
+
+        //TODO: What happens if we try to extend an object which has no `__proto__`?
+        //e.g. `class Whatever extends Object.prototype`
+        let super_proto = superclass.read().proto().unwrap_or(self.prototypes.object);
+
+        let sub_prototype = GcCell::allocate(
+            context.gc_context,
+            Box::new(ScriptObject::object(context.gc_context, Some(super_proto)))
+                as Box<dyn Object<'gc>>,
+        );
+
+        sub_prototype.write(context.gc_context).set(
+            "constructor",
+            superclass.into(),
+            self,
+            context,
+            sub_prototype,
+        )?;
+        subclass.write(context.gc_context).set(
+            "prototype",
+            sub_prototype.into(),
+            self,
+            context,
+            subclass,
+        )?;
+
         Ok(())
     }
 
