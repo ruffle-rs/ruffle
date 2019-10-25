@@ -75,6 +75,13 @@ pub trait Object<'gc>: 'gc + Collect + Debug {
     /// Returns false if the property cannot be deleted.
     fn delete(&mut self, name: &str) -> bool;
 
+    /// Retrieve the `__proto__` of a given object.
+    ///
+    /// The proto is another object used to resolve methods across a class of
+    /// multiple objects. It should also be accessible as `__proto__` from
+    /// `get`.
+    fn proto(&self) -> Option<ObjectCell<'gc>>;
+
     /// Checks if the object has a given named property.
     fn has_property(&self, name: &str) -> bool;
 

@@ -204,10 +204,6 @@ impl<'gc> ScriptObject<'gc> {
         self.prototype = Some(prototype);
     }
 
-    pub fn prototype(&self) -> Option<&ObjectCell<'gc>> {
-        self.prototype.as_ref()
-    }
-
     pub fn set_type_of(&mut self, type_of: &'static str) {
         self.type_of = type_of;
     }
@@ -330,6 +326,10 @@ impl<'gc> Object<'gc> for ScriptObject<'gc> {
         }
 
         false
+    }
+
+    fn proto(&self) -> Option<ObjectCell<'gc>> {
+        self.prototype
     }
 
     /// Checks if the object has a given named property.

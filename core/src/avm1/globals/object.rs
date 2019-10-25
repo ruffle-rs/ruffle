@@ -105,19 +105,14 @@ fn is_prototype_of<'gc>(
                 Ok(ob) => ob,
                 Err(_) => return Ok(Value::Bool(false).into()),
             };
-            let mut proto = ob.read().as_script_object().unwrap().prototype().cloned();
+            let mut proto = ob.read().proto();
 
             while let Some(proto_ob) = proto {
                 if GcCell::ptr_eq(this, proto_ob) {
                     return Ok(Value::Bool(true).into());
                 }
 
-                proto = proto_ob
-                    .read()
-                    .as_script_object()
-                    .unwrap()
-                    .prototype()
-                    .cloned();
+                proto = proto_ob.read().proto();
             }
 
             Ok(Value::Bool(false).into())
