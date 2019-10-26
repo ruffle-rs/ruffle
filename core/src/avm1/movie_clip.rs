@@ -1,7 +1,6 @@
 use crate::avm1::object::{Attribute::*, Object};
 use crate::avm1::{ActionContext, Avm1, Value};
-use crate::display_object::DisplayNode;
-use crate::movie_clip::MovieClip;
+use crate::display_object::{DisplayNode, MovieClip};
 use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
 

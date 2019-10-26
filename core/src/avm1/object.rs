@@ -374,9 +374,8 @@ mod tests {
     use crate::backend::audio::NullAudioBackend;
     use crate::backend::navigator::NullNavigatorBackend;
     use crate::backend::render::NullRenderer;
-    use crate::display_object::DisplayObject;
+    use crate::display_object::{DisplayObject, MovieClip};
     use crate::library::Library;
-    use crate::movie_clip::MovieClip;
     use crate::prelude::*;
     use gc_arena::rootless_arena;
     use rand::{rngs::SmallRng, SeedableRng};

@@ -3,15 +3,14 @@ use crate::avm1::object::{Object, TYPE_OF_MOVIE_CLIP};
 use crate::avm1::Value;
 use crate::backend::audio::AudioStreamHandle;
 use crate::character::Character;
-use crate::display_object::{DisplayObject, DisplayObjectBase};
+use crate::display_object::{
+    Bitmap, Button, DisplayObject, DisplayObjectBase, EditText, Graphic, MorphShapeStatic, Text,
+};
 use crate::font::Font;
-use crate::graphic::Graphic;
 use crate::matrix::Matrix;
-use crate::morph_shape::MorphShapeStatic;
 use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use crate::tag_utils::{self, DecodeResult, SwfStream};
-use crate::text::Text;
 use gc_arena::{Gc, GcCell, MutationContext};
 use std::collections::{BTreeMap, HashMap};
 use swf::read::SwfRead;
@@ -590,11 +589,11 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
         None
     }
 
-    fn as_movie_clip(&self) -> Option<&crate::movie_clip::MovieClip<'gc>> {
+    fn as_movie_clip(&self) -> Option<&MovieClip<'gc>> {
         Some(self)
     }
 
-    fn as_movie_clip_mut(&mut self) -> Option<&mut crate::movie_clip::MovieClip<'gc>> {
+    fn as_movie_clip_mut(&mut self) -> Option<&mut MovieClip<'gc>> {
         Some(self)
     }
 
@@ -711,7 +710,7 @@ impl<'gc, 'a> MovieClip<'gc> {
     ) -> DecodeResult {
         let define_bits_lossless = reader.read_define_bits_lossless(version)?;
         let bitmap_info = context.renderer.register_bitmap_png(&define_bits_lossless);
-        let bitmap = crate::bitmap::Bitmap::new(
+        let bitmap = crate::display_object::Bitmap::new(
             context,
             define_bits_lossless.id,
             bitmap_info.handle,
@@ -858,7 +857,7 @@ impl<'gc, 'a> MovieClip<'gc> {
             &jpeg_data,
             context.library.jpeg_tables().unwrap(),
         );
-        let bitmap = crate::bitmap::Bitmap::new(
+        let bitmap = crate::display_object::Bitmap::new(
             context,
             id,
             bitmap_info.handle,
@@ -887,7 +886,7 @@ impl<'gc, 'a> MovieClip<'gc> {
             .take(data_len as u64)
             .read_to_end(&mut jpeg_data)?;
         let bitmap_info = context.renderer.register_bitmap_jpeg_2(id, &jpeg_data);
-        let bitmap = crate::bitmap::Bitmap::new(
+        let bitmap = crate::display_object::Bitmap::new(
             context,
             id,
             bitmap_info.handle,
@@ -924,7 +923,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         let bitmap_info = context
             .renderer
             .register_bitmap_jpeg_3(id, &jpeg_data, &alpha_data);
-        let bitmap = crate::bitmap::Bitmap::new(
+        let bitmap = Bitmap::new(
             context,
             id,
             bitmap_info.handle,
@@ -962,7 +961,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         let bitmap_info = context
             .renderer
             .register_bitmap_jpeg_3(id, &jpeg_data, &alpha_data);
-        let bitmap = crate::bitmap::Bitmap::new(
+        let bitmap = Bitmap::new(
             context,
             id,
             bitmap_info.handle,
@@ -982,8 +981,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
         let swf_button = reader.read_define_button_1()?;
-        let button =
-            crate::button::Button::from_swf_tag(&swf_button, &context.library, context.gc_context);
+        let button = Button::from_swf_tag(&swf_button, &context.library, context.gc_context);
         context
             .library
             .register_character(swf_button.id, Character::Button(Box::new(button)));
@@ -997,8 +995,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
         let swf_button = reader.read_define_button_2()?;
-        let button =
-            crate::button::Button::from_swf_tag(&swf_button, &context.library, context.gc_context);
+        let button = Button::from_swf_tag(&swf_button, &context.library, context.gc_context);
         context
             .library
             .register_character(swf_button.id, Character::Button(Box::new(button)));
@@ -1013,7 +1010,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
         let swf_edit_text = reader.read_define_edit_text()?;
-        let edit_text = crate::edit_text::EditText::from_swf_tag(context, swf_edit_text);
+        let edit_text = EditText::from_swf_tag(context, swf_edit_text);
         context
             .library
             .register_character(edit_text.id(), Character::EditText(Box::new(edit_text)));

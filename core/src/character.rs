@@ -1,13 +1,17 @@
+use crate::backend::audio::SoundHandle;
+use crate::display_object::{Bitmap, Button, EditText, Graphic, MorphShape, MovieClip, Text};
+use crate::font::Font;
+
 pub enum Character<'gc> {
-    EditText(Box<crate::edit_text::EditText<'gc>>),
-    Graphic(Box<crate::graphic::Graphic<'gc>>),
-    MovieClip(Box<crate::movie_clip::MovieClip<'gc>>),
-    Bitmap(Box<crate::bitmap::Bitmap<'gc>>),
-    Button(Box<crate::button::Button<'gc>>),
-    Font(Box<crate::font::Font>),
-    MorphShape(Box<crate::morph_shape::MorphShape<'gc>>),
-    Text(Box<crate::text::Text<'gc>>),
-    Sound(crate::backend::audio::SoundHandle),
+    EditText(Box<EditText<'gc>>),
+    Graphic(Box<Graphic<'gc>>),
+    MovieClip(Box<MovieClip<'gc>>),
+    Bitmap(Box<Bitmap<'gc>>),
+    Button(Box<Button<'gc>>),
+    Font(Box<Font>),
+    MorphShape(Box<MorphShape<'gc>>),
+    Text(Box<Text<'gc>>),
+    Sound(SoundHandle),
 }
 
 unsafe impl<'gc> gc_arena::Collect for Character<'gc> {

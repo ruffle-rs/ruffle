@@ -5,6 +5,22 @@ use crate::transform::Transform;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt::Debug;
 
+mod bitmap;
+mod button;
+mod edit_text;
+mod graphic;
+mod morph_shape;
+mod movie_clip;
+mod text;
+
+pub use bitmap::Bitmap;
+pub use button::Button;
+pub use edit_text::EditText;
+pub use graphic::Graphic;
+pub use morph_shape::{MorphShape, MorphShapeStatic};
+pub use movie_clip::MovieClip;
+pub use text::Text;
+
 #[derive(Clone, Collect, Debug)]
 #[collect(empty_drop)]
 pub struct DisplayObjectBase<'gc> {
@@ -169,22 +185,22 @@ pub trait DisplayObject<'gc>: 'gc + Collect + Debug {
     fn run_frame(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
     fn render(&self, _context: &mut RenderContext<'_, 'gc>) {}
 
-    fn as_button(&self) -> Option<&crate::button::Button<'gc>> {
+    fn as_button(&self) -> Option<&Button<'gc>> {
         None
     }
-    fn as_button_mut(&mut self) -> Option<&mut crate::button::Button<'gc>> {
+    fn as_button_mut(&mut self) -> Option<&mut Button<'gc>> {
         None
     }
-    fn as_movie_clip(&self) -> Option<&crate::movie_clip::MovieClip<'gc>> {
+    fn as_movie_clip(&self) -> Option<&MovieClip<'gc>> {
         None
     }
-    fn as_movie_clip_mut(&mut self) -> Option<&mut crate::movie_clip::MovieClip<'gc>> {
+    fn as_movie_clip_mut(&mut self) -> Option<&mut MovieClip<'gc>> {
         None
     }
-    fn as_morph_shape(&self) -> Option<&crate::morph_shape::MorphShape<'gc>> {
+    fn as_morph_shape(&self) -> Option<&MorphShape<'gc>> {
         None
     }
-    fn as_morph_shape_mut(&mut self) -> Option<&mut crate::morph_shape::MorphShape<'gc>> {
+    fn as_morph_shape_mut(&mut self) -> Option<&mut MorphShape<'gc>> {
         None
     }
     fn apply_place_object(&mut self, place_object: &swf::PlaceObject) {
@@ -259,6 +275,8 @@ impl<'gc> Clone for Box<dyn DisplayObject<'gc>> {
     }
 }
 
+// To use this macro: `use crate::impl_display_object;` or `use crate::prelude::*;`
+#[macro_export]
 macro_rules! impl_display_object {
     ($field:ident) => {
         fn depth(&self) -> crate::prelude::Depth {
