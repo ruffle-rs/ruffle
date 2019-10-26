@@ -312,7 +312,6 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 swf_version,
                 library: &mut *gc_root.library.write(gc_context),
                 background_color,
-                avm: &mut *gc_root.avm.write(gc_context),
                 rng,
                 renderer,
                 audio,
@@ -344,7 +343,11 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 }
             }
 
-            Self::run_actions(&mut update_context, gc_root.root);
+            Self::run_actions(
+                &mut *gc_root.avm.write(gc_context),
+                &mut update_context,
+                gc_root.root,
+            );
         });
 
         if needs_render {
@@ -387,7 +390,6 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                     swf_version,
                     library: &mut *gc_root.library.write(gc_context),
                     background_color,
-                    avm: &mut *gc_root.avm.write(gc_context),
                     rng,
                     renderer,
                     audio,
@@ -415,7 +417,11 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
 
                 *cur_hover_node = new_hover_node;
 
-                Self::run_actions(&mut update_context, gc_root.root);
+                Self::run_actions(
+                    &mut *gc_root.avm.write(gc_context),
+                    &mut update_context,
+                    gc_root.root,
+                );
                 true
             } else {
                 false
@@ -454,7 +460,6 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 swf_version,
                 library: &mut *gc_root.library.write(gc_context),
                 background_color,
-                avm: &mut *gc_root.avm.write(gc_context),
                 rng,
                 renderer,
                 audio,
@@ -514,7 +519,6 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 swf_version,
                 library: &mut *gc_root.library.write(gc_context),
                 background_color,
-                avm: &mut *gc_root.avm.write(gc_context),
                 rng,
                 renderer,
                 audio,
@@ -529,7 +533,11 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 .write(gc_context)
                 .run_frame(&mut update_context);
 
-            Self::run_actions(&mut update_context, gc_root.root);
+            Self::run_actions(
+                &mut *gc_root.avm.write(gc_context),
+                &mut update_context,
+                gc_root.root,
+            );
         });
 
         // Update mouse state (check for new hovered button, etc.)
@@ -586,7 +594,11 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         &mut self.renderer
     }
 
-    fn run_actions<'gc>(update_context: &mut UpdateContext<'_, 'gc, '_>, root: DisplayNode<'gc>) {
+    fn run_actions<'gc>(
+        avm: &mut Avm1<'gc>,
+        update_context: &mut UpdateContext<'_, 'gc, '_>,
+        root: DisplayNode<'gc>,
+    ) {
         // TODO: Loop here because goto-ing a frame can queue up for actions.
         // I think this will eventually be cleaned up;
         // Need to figure out the proper order of operations between ticking a clip
@@ -623,12 +635,12 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                     action_context.start_clip = clip;
                     action_context.active_clip = clip;
                     action_context.target_clip = Some(clip);
-                    update_context.avm.insert_stack_frame_for_action(
+                    avm.insert_stack_frame_for_action(
                         update_context.swf_version,
                         action,
                         &mut action_context,
                     );
-                    let _ = update_context.avm.run_stack_till_empty(&mut action_context);
+                    let _ = avm.run_stack_till_empty(&mut action_context);
                 }
 
                 Action::Goto { clip, frame } => {
@@ -707,7 +719,6 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub library: &'a mut Library<'gc>,
     pub gc_context: MutationContext<'gc, 'gc_context>,
     pub background_color: &'a mut Color,
-    pub avm: &'a mut Avm1<'gc>,
     pub renderer: &'a mut dyn RenderBackend,
     pub audio: &'a mut dyn AudioBackend,
     pub navigator: &'a mut dyn NavigatorBackend,
