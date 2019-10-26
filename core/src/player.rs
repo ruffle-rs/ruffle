@@ -6,6 +6,7 @@ use crate::events::{ButtonEvent, PlayerEvent};
 use crate::library::Library;
 use crate::movie_clip::MovieClip;
 use crate::prelude::*;
+use crate::tag_utils::SwfSlice;
 use crate::transform::TransformStack;
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell, MutationContext};
 use log::info;
@@ -25,6 +26,7 @@ struct GcRoot<'gc> {
     root: DisplayNode<'gc>,
     mouse_hover_node: GcCell<'gc, Option<DisplayNode<'gc>>>, // TODO: Remove GcCell wrapped inside GcCell.
     avm: GcCell<'gc, Avm1<'gc>>,
+    action_queue: GcCell<'gc, ActionQueue<'gc>>,
 }
 
 type Error = Box<dyn std::error::Error>;
@@ -117,8 +119,14 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
 
         // Load and parse the device font.
         // TODO: We could use lazy_static here.
-        let device_font = Self::load_device_font(DEVICE_FONT_TAG, &mut renderer)
-            .expect("Unable to load device font");
+        let device_font = match Self::load_device_font(DEVICE_FONT_TAG, &mut renderer) {
+            Ok(font) => Some(font),
+            Err(e) => {
+                log::error!("Unable to load device font: {}", e);
+                None
+            }
+        };
+
         let mut player = Player {
             player_version: NEWEST_PLAYER_VERSION,
 
@@ -143,21 +151,26 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
 
             rng: SmallRng::from_seed([0u8; 16]), // TODO(Herschel): Get a proper seed on all platforms.
 
-            gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| GcRoot {
-                library: GcCell::allocate(gc_context, Library::new(device_font)),
-                root: GcCell::allocate(
-                    gc_context,
-                    Box::new(MovieClip::new_with_data(
-                        header.version,
+            gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| {
+                let mut library = Library::new();
+                library.set_device_font(device_font);
+                GcRoot {
+                    library: GcCell::allocate(gc_context, library),
+                    root: GcCell::allocate(
                         gc_context,
-                        0,
-                        0,
-                        swf_len,
-                        header.num_frames,
-                    )),
-                ),
-                mouse_hover_node: GcCell::allocate(gc_context, None),
-                avm: GcCell::allocate(gc_context, Avm1::new(gc_context, NEWEST_PLAYER_VERSION)),
+                        Box::new(MovieClip::new_with_data(
+                            header.version,
+                            gc_context,
+                            0,
+                            0,
+                            swf_len,
+                            header.num_frames,
+                        )),
+                    ),
+                    mouse_hover_node: GcCell::allocate(gc_context, None),
+                    avm: GcCell::allocate(gc_context, Avm1::new(gc_context, NEWEST_PLAYER_VERSION)),
+                    action_queue: GcCell::allocate(gc_context, ActionQueue::new()),
+                }
             }),
 
             frame_rate: header.frame_rate.into(),
@@ -297,14 +310,13 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 global_time,
                 swf_data,
                 swf_version,
-                library: gc_root.library.write(gc_context),
+                library: &mut *gc_root.library.write(gc_context),
                 background_color,
-                avm: gc_root.avm.write(gc_context),
                 rng,
                 renderer,
                 audio,
                 navigator,
-                actions: vec![],
+                action_queue: &mut *gc_root.action_queue.write(gc_context),
                 gc_context,
                 active_clip: gc_root.root,
             };
@@ -331,7 +343,11 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 }
             }
 
-            Self::run_actions(&mut update_context, gc_root.root);
+            Self::run_actions(
+                &mut *gc_root.avm.write(gc_context),
+                &mut update_context,
+                gc_root.root,
+            );
         });
 
         if needs_render {
@@ -372,14 +388,13 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                     global_time,
                     swf_data,
                     swf_version,
-                    library: gc_root.library.write(gc_context),
+                    library: &mut *gc_root.library.write(gc_context),
                     background_color,
-                    avm: gc_root.avm.write(gc_context),
                     rng,
                     renderer,
                     audio,
                     navigator,
-                    actions: vec![],
+                    action_queue: &mut *gc_root.action_queue.write(gc_context),
                     gc_context,
                     active_clip: gc_root.root,
                 };
@@ -402,7 +417,11 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
 
                 *cur_hover_node = new_hover_node;
 
-                Self::run_actions(&mut update_context, gc_root.root);
+                Self::run_actions(
+                    &mut *gc_root.avm.write(gc_context),
+                    &mut update_context,
+                    gc_root.root,
+                );
                 true
             } else {
                 false
@@ -439,14 +458,13 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 global_time,
                 swf_data,
                 swf_version,
-                library: gc_root.library.write(gc_context),
+                library: &mut *gc_root.library.write(gc_context),
                 background_color,
-                avm: gc_root.avm.write(gc_context),
                 rng,
                 renderer,
                 audio,
                 navigator,
-                actions: vec![],
+                action_queue: &mut *gc_root.action_queue.write(gc_context),
                 gc_context,
                 active_clip: gc_root.root,
             };
@@ -499,14 +517,13 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 global_time,
                 swf_data,
                 swf_version,
-                library: gc_root.library.write(gc_context),
+                library: &mut *gc_root.library.write(gc_context),
                 background_color,
-                avm: gc_root.avm.write(gc_context),
                 rng,
                 renderer,
                 audio,
                 navigator,
-                actions: vec![],
+                action_queue: &mut *gc_root.action_queue.write(gc_context),
                 gc_context,
                 active_clip: gc_root.root,
             };
@@ -516,7 +533,11 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 .write(gc_context)
                 .run_frame(&mut update_context);
 
-            Self::run_actions(&mut update_context, gc_root.root);
+            Self::run_actions(
+                &mut *gc_root.avm.write(gc_context),
+                &mut update_context,
+                gc_root.root,
+            );
         });
 
         // Update mouse state (check for new hovered button, etc.)
@@ -548,7 +569,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         self.gc_arena.mutate(|_gc_context, gc_root| {
             let mut render_context = RenderContext {
                 renderer,
-                library: gc_root.library.read(),
+                library: &*gc_root.library.read(),
                 transform_stack,
                 view_bounds,
                 clip_depth_stack: vec![],
@@ -573,46 +594,48 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         &mut self.renderer
     }
 
-    fn run_actions<'gc>(update_context: &mut UpdateContext<'_, 'gc, '_>, root: DisplayNode<'gc>) {
+    fn run_actions<'gc>(
+        avm: &mut Avm1<'gc>,
+        update_context: &mut UpdateContext<'_, 'gc, '_>,
+        root: DisplayNode<'gc>,
+    ) {
         // TODO: Loop here because goto-ing a frame can queue up for actions.
         // I think this will eventually be cleaned up;
         // Need to figure out the proper order of operations between ticking a clip
         // and running the actions.
-        let mut actions = std::mem::replace(&mut update_context.actions, vec![]);
-        while !actions.is_empty() {
-            {
-                let mut action_context = crate::avm1::ActionContext {
-                    gc_context: update_context.gc_context,
-                    global_time: update_context.global_time,
-                    root,
-                    player_version: update_context.player_version,
-                    start_clip: root,
-                    active_clip: root,
-                    target_clip: Some(root),
-                    target_path: crate::avm1::Value::Undefined,
-                    rng: update_context.rng,
-                    audio: update_context.audio,
-                    navigator: update_context.navigator,
-                };
-                for (active_clip, action) in actions {
-                    action_context.start_clip = active_clip;
-                    action_context.active_clip = active_clip;
-                    action_context.target_clip = Some(active_clip);
-                    update_context.avm.insert_stack_frame_for_action(
-                        update_context.swf_version,
-                        action,
-                        &mut action_context,
-                    );
-                    let _ = update_context.avm.run_stack_till_empty(&mut action_context);
-                }
+        while let Some(actions) = update_context.action_queue.pop() {
+            // We don't run the action f the clip was removed after it queued the action.
+            if actions.clip.read().removed() {
+                continue;
             }
+            let mut action_context = crate::avm1::ActionContext {
+                gc_context: update_context.gc_context,
+                global_time: update_context.global_time,
+                root,
+                player_version: update_context.player_version,
+                start_clip: root,
+                active_clip: root,
+                target_clip: Some(root),
+                target_path: crate::avm1::Value::Undefined,
+                action_queue: &mut update_context.action_queue,
+                rng: update_context.rng,
+                audio: update_context.audio,
+                background_color: update_context.background_color,
+                library: update_context.library,
+                navigator: update_context.navigator,
+                renderer: update_context.renderer,
+                swf_data: update_context.swf_data,
+            };
 
-            // Run goto queues.
-            update_context.active_clip = root;
-            root.write(update_context.gc_context)
-                .run_post_frame(update_context);
-
-            actions = std::mem::replace(&mut update_context.actions, vec![]);
+            action_context.start_clip = actions.clip;
+            action_context.active_clip = actions.clip;
+            action_context.target_clip = Some(actions.clip);
+            avm.insert_stack_frame_for_action(
+                update_context.swf_version,
+                actions.actions,
+                &mut action_context,
+            );
+            let _ = avm.run_stack_till_empty(&mut action_context);
         }
     }
 
@@ -674,22 +697,62 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub swf_version: u8,
     pub swf_data: &'a Arc<Vec<u8>>,
     pub global_time: u64,
-    pub library: std::cell::RefMut<'a, Library<'gc>>,
+    pub library: &'a mut Library<'gc>,
     pub gc_context: MutationContext<'gc, 'gc_context>,
     pub background_color: &'a mut Color,
-    pub avm: std::cell::RefMut<'a, Avm1<'gc>>,
     pub renderer: &'a mut dyn RenderBackend,
     pub audio: &'a mut dyn AudioBackend,
     pub navigator: &'a mut dyn NavigatorBackend,
     pub rng: &'a mut SmallRng,
-    pub actions: Vec<(DisplayNode<'gc>, crate::tag_utils::SwfSlice)>,
+    pub action_queue: &'a mut ActionQueue<'gc>,
     pub active_clip: DisplayNode<'gc>,
 }
 
 pub struct RenderContext<'a, 'gc> {
     pub renderer: &'a mut dyn RenderBackend,
-    pub library: std::cell::Ref<'a, Library<'gc>>,
+    pub library: &'a Library<'gc>,
     pub transform_stack: &'a mut TransformStack,
     pub view_bounds: BoundingBox,
     pub clip_depth_stack: Vec<Depth>,
+}
+
+pub struct QueuedActions<'gc> {
+    clip: DisplayNode<'gc>,
+    actions: SwfSlice,
+}
+
+/// Action and gotos need to be queued up to execute at the end of the frame.
+pub struct ActionQueue<'gc> {
+    queue: std::collections::VecDeque<QueuedActions<'gc>>,
+}
+
+impl<'gc> ActionQueue<'gc> {
+    const DEFAULT_CAPACITY: usize = 32;
+
+    pub fn new() -> Self {
+        Self {
+            queue: std::collections::VecDeque::with_capacity(Self::DEFAULT_CAPACITY),
+        }
+    }
+
+    pub fn queue_actions(&mut self, clip: DisplayNode<'gc>, actions: SwfSlice) {
+        self.queue.push_back(QueuedActions { clip, actions })
+    }
+
+    pub fn pop(&mut self) -> Option<QueuedActions<'gc>> {
+        self.queue.pop_front()
+    }
+}
+
+impl<'gc> Default for ActionQueue<'gc> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+unsafe impl<'gc> Collect for ActionQueue<'gc> {
+    #[inline]
+    fn trace(&self, cc: gc_arena::CollectionContext) {
+        self.queue.iter().for_each(|o| o.trace(cc));
+    }
 }

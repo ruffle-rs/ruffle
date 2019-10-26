@@ -1,0 +1,7 @@
+root frame 1
+gotoAndPlay(2)
+root 2
+childA frame 1
+childB frame 1
+childB frame 2
+childA frame 2

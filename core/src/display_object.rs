@@ -14,6 +14,20 @@ pub struct DisplayObjectBase<'gc> {
     transform: Transform,
     name: String,
     clip_depth: Depth,
+
+    /// The first child of this display object in order of execution.
+    /// This is differen than render order.
+    first_child: Option<DisplayNode<'gc>>,
+
+    /// The previous sibling of this display object in order of execution.
+    prev_sibling: Option<DisplayNode<'gc>>,
+
+    /// The next sibling of this display object in order of execution.
+    next_sibling: Option<DisplayNode<'gc>>,
+
+    /// Whether this child has been removed from the display list.
+    /// Necessary in AVM1 to throw away queued actions from removed movie clips.
+    removed: bool,
 }
 
 impl<'gc> Default for DisplayObjectBase<'gc> {
@@ -25,6 +39,10 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             transform: Default::default(),
             name: Default::default(),
             clip_depth: Default::default(),
+            first_child: None,
+            prev_sibling: None,
+            next_sibling: None,
+            removed: false,
         }
     }
 }
@@ -79,6 +97,30 @@ impl<'gc> DisplayObject<'gc> for DisplayObjectBase<'gc> {
     fn set_parent(&mut self, parent: Option<DisplayNode<'gc>>) {
         self.parent = parent;
     }
+    fn first_child(&self) -> Option<DisplayNode<'gc>> {
+        self.first_child
+    }
+    fn set_first_child(&mut self, node: Option<DisplayNode<'gc>>) {
+        self.first_child = node;
+    }
+    fn prev_sibling(&self) -> Option<DisplayNode<'gc>> {
+        self.prev_sibling
+    }
+    fn set_prev_sibling(&mut self, node: Option<DisplayNode<'gc>>) {
+        self.prev_sibling = node;
+    }
+    fn next_sibling(&self) -> Option<DisplayNode<'gc>> {
+        self.next_sibling
+    }
+    fn set_next_sibling(&mut self, node: Option<DisplayNode<'gc>>) {
+        self.next_sibling = node;
+    }
+    fn removed(&self) -> bool {
+        self.removed
+    }
+    fn set_removed(&mut self, removed: bool) {
+        self.removed = removed;
+    }
     fn box_clone(&self) -> Box<dyn DisplayObject<'gc>> {
         Box::new(self.clone())
     }
@@ -109,9 +151,22 @@ pub trait DisplayObject<'gc>: 'gc + Collect + Debug {
     fn set_clip_depth(&mut self, depth: Depth);
     fn parent(&self) -> Option<DisplayNode<'gc>>;
     fn set_parent(&mut self, parent: Option<DisplayNode<'gc>>);
-
+    fn first_child(&self) -> Option<DisplayNode<'gc>>;
+    fn set_first_child(&mut self, node: Option<DisplayNode<'gc>>);
+    fn prev_sibling(&self) -> Option<DisplayNode<'gc>>;
+    fn set_prev_sibling(&mut self, node: Option<DisplayNode<'gc>>);
+    fn next_sibling(&self) -> Option<DisplayNode<'gc>>;
+    fn set_next_sibling(&mut self, node: Option<DisplayNode<'gc>>);
+    /// Iterates over the children of this display object in execution order.
+    /// This is different than render order.
+    fn children(&self) -> ChildIter<'gc> {
+        ChildIter {
+            cur_child: self.first_child(),
+        }
+    }
+    fn removed(&self) -> bool;
+    fn set_removed(&mut self, removed: bool);
     fn run_frame(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
-    fn run_post_frame(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
     fn render(&self, _context: &mut RenderContext<'_, 'gc>) {}
 
     fn as_button(&self) -> Option<&crate::button::Button<'gc>> {
@@ -132,15 +187,15 @@ pub trait DisplayObject<'gc>: 'gc + Collect + Debug {
     fn as_morph_shape_mut(&mut self) -> Option<&mut crate::morph_shape::MorphShape<'gc>> {
         None
     }
-    fn apply_place_object(&mut self, place_object: swf::PlaceObject) {
-        if let Some(matrix) = place_object.matrix {
-            self.set_matrix(&matrix.into());
+    fn apply_place_object(&mut self, place_object: &swf::PlaceObject) {
+        if let Some(matrix) = &place_object.matrix {
+            self.set_matrix(&matrix.clone().into());
         }
-        if let Some(color_transform) = place_object.color_transform {
-            self.set_color_transform(&color_transform.into());
+        if let Some(color_transform) = &place_object.color_transform {
+            self.set_color_transform(&color_transform.clone().into());
         }
-        if let Some(name) = place_object.name {
-            self.set_name(&name);
+        if let Some(name) = &place_object.name {
+            self.set_name(name);
         }
         if let Some(clip_depth) = place_object.clip_depth {
             self.set_clip_depth(clip_depth);
@@ -251,6 +306,30 @@ macro_rules! impl_display_object {
         fn set_parent(&mut self, parent: Option<crate::display_object::DisplayNode<'gc>>) {
             self.$field.set_parent(parent)
         }
+        fn first_child(&self) -> Option<DisplayNode<'gc>> {
+            self.$field.first_child()
+        }
+        fn set_first_child(&mut self, node: Option<DisplayNode<'gc>>) {
+            self.$field.set_first_child(node);
+        }
+        fn prev_sibling(&self) -> Option<DisplayNode<'gc>> {
+            self.$field.prev_sibling()
+        }
+        fn set_prev_sibling(&mut self, node: Option<DisplayNode<'gc>>) {
+            self.$field.set_prev_sibling(node);
+        }
+        fn next_sibling(&self) -> Option<DisplayNode<'gc>> {
+            self.$field.next_sibling()
+        }
+        fn set_next_sibling(&mut self, node: Option<DisplayNode<'gc>>) {
+            self.$field.set_next_sibling(node);
+        }
+        fn removed(&self) -> bool {
+            self.$field.removed()
+        }
+        fn set_removed(&mut self, value: bool) {
+            self.$field.set_removed(value)
+        }
         fn box_clone(&self) -> Box<dyn crate::display_object::DisplayObject<'gc>> {
             Box::new(self.clone())
         }
@@ -301,3 +380,18 @@ pub fn render_children<'gc>(
 /// TODO(Herschel): The extra Box here is necessary to hold the trait object inside a GC pointer,
 /// but this is an extra allocation... Can we avoid this, maybe with a DST?
 pub type DisplayNode<'gc> = GcCell<'gc, Box<dyn DisplayObject<'gc>>>;
+
+pub struct ChildIter<'gc> {
+    cur_child: Option<DisplayNode<'gc>>,
+}
+
+impl<'gc> Iterator for ChildIter<'gc> {
+    type Item = DisplayNode<'gc>;
+    fn next(&mut self) -> Option<Self::Item> {
+        let cur = self.cur_child;
+        self.cur_child = self
+            .cur_child
+            .and_then(|display_cell| display_cell.read().next_sibling());
+        cur
+    }
+}

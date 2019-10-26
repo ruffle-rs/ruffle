@@ -1,5 +1,6 @@
 use crate::avm1::object::{Attribute::*, Object};
 use crate::avm1::{ActionContext, Avm1, Value};
+use crate::display_object::DisplayNode;
 use crate::movie_clip::MovieClip;
 use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
@@ -29,14 +30,14 @@ macro_rules! with_movie_clip_mut {
         $(
             $object.force_set_function(
                 $name,
-                |_avm, context, this, args| -> Value<'gc> {
+                |avm, context: &mut ActionContext<'_, 'gc, '_>, this, args| -> Value<'gc> {
                     if let Some(display_object) = this.read().display_node() {
                         if let Some(movie_clip) = display_object.write(context.gc_context).as_movie_clip_mut() {
-                            return $fn(movie_clip, args);
+                            return $fn(movie_clip, avm, context, display_object, args);
                         }
                     }
                     Value::Undefined
-                },
+                } as crate::avm1::function::NativeFunction<'gc>,
                 $gc_context,
                 DontDelete | ReadOnly | DontEnum,
             );
@@ -82,19 +83,21 @@ pub fn create_movie_object<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<
     with_movie_clip_mut!(
         gc_context,
         object,
-        "nextFrame" => |movie_clip: &mut MovieClip, _args| {
-            movie_clip.next_frame();
+        "nextFrame" => |movie_clip: &mut MovieClip<'gc>, avm: &mut Avm1<'gc>, context: &mut ActionContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
+            let mut update_context = avm.update_context(context);
+            movie_clip.next_frame(&mut update_context);
             Value::Undefined
         },
-        "prevFrame" => |movie_clip: &mut MovieClip, _args| {
-            movie_clip.prev_frame();
+        "prevFrame" =>  |movie_clip: &mut MovieClip<'gc>, avm: &mut Avm1<'gc>, context: &mut ActionContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
+            let mut update_context = avm.update_context(context);
+            movie_clip.prev_frame(&mut update_context);
             Value::Undefined
         },
-        "play" => |movie_clip: &mut MovieClip, _args| {
+        "play" => |movie_clip: &mut MovieClip<'gc>, _avm: &mut Avm1<'gc>, _context: &mut ActionContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
             movie_clip.play();
             Value::Undefined
         },
-        "stop" => |movie_clip: &mut MovieClip, _args| {
+        "stop" => |movie_clip: &mut MovieClip<'gc>, _avm: &mut Avm1<'gc>, _context: &mut ActionContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
             movie_clip.stop();
             Value::Undefined
         }
@@ -103,11 +106,11 @@ pub fn create_movie_object<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<
     with_movie_clip!(
         gc_context,
         object,
-        "getBytesLoaded" => |_movie_clip: &MovieClip, _args| {
+        "getBytesLoaded" => |_movie_clip: &MovieClip<'gc>, _args| {
             // TODO find a correct value
             Value::Number(1.0)
         },
-        "getBytesTotal" => |_movie_clip: &MovieClip, _args| {
+        "getBytesTotal" => |_movie_clip: &MovieClip<'gc>, _args| {
             // TODO find a correct value
             Value::Number(1.0)
         }

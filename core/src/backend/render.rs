@@ -56,6 +56,18 @@ pub enum Letterbox {
 
 pub struct NullRenderer;
 
+impl NullRenderer {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl Default for NullRenderer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RenderBackend for NullRenderer {
     fn set_viewport_dimensions(&mut self, _width: u32, _height: u32) {}
     fn register_shape(&mut self, _shape: &swf::Shape) -> ShapeHandle {

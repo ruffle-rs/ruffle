@@ -2,10 +2,15 @@ use crate::avm1::activation::Activation;
 use crate::avm1::{ActionContext, Avm1, Object, Value};
 use crate::backend::audio::NullAudioBackend;
 use crate::backend::navigator::NullNavigatorBackend;
+use crate::backend::render::NullRenderer;
 use crate::display_object::DisplayObject;
+use crate::library::Library;
 use crate::movie_clip::MovieClip;
+use crate::player::ActionQueue;
+use crate::prelude::*;
 use gc_arena::{rootless_arena, GcCell};
 use rand::{rngs::SmallRng, SeedableRng};
+use std::sync::Arc;
 
 pub fn with_avm<F, R>(swf_version: u8, test: F) -> R
 where
@@ -30,7 +35,17 @@ where
             target_path: Value::Undefined,
             rng: &mut SmallRng::from_seed([0u8; 16]),
             audio: &mut NullAudioBackend::new(),
+            action_queue: &mut ActionQueue::new(),
+            background_color: &mut Color {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 0,
+            },
+            library: &mut Library::new(),
             navigator: &mut NullNavigatorBackend::new(),
+            renderer: &mut NullRenderer::new(),
+            swf_data: &mut Arc::new(vec![]),
         };
 
         let globals = avm.global_object_cell();
