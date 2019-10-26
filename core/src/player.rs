@@ -2,9 +2,9 @@ use crate::avm1::Avm1;
 use crate::backend::{
     audio::AudioBackend, navigator::NavigatorBackend, render::Letterbox, render::RenderBackend,
 };
+use crate::display_object::{MorphShape, MovieClip};
 use crate::events::{ButtonEvent, PlayerEvent};
 use crate::library::Library;
-use crate::movie_clip::MovieClip;
 use crate::prelude::*;
 use crate::tag_utils::SwfSlice;
 use crate::transform::TransformStack;
@@ -479,7 +479,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
 
             // Finalize morph shapes.
             for (id, static_data) in morph_shapes {
-                let morph_shape = crate::morph_shape::MorphShape::new(gc_context, static_data);
+                let morph_shape = MorphShape::new(gc_context, static_data);
                 update_context.library.register_character(
                     id,
                     crate::character::Character::MorphShape(Box::new(morph_shape)),
