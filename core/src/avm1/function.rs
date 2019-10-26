@@ -5,7 +5,7 @@ use crate::avm1::object::{Attribute::*, Object};
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
-use crate::avm1::{Avm1, UpdateContext};
+use crate::avm1::{Avm1, Error, UpdateContext};
 use crate::tag_utils::SwfSlice;
 use gc_arena::GcCell;
 use swf::avm1::types::FunctionParam;
@@ -29,7 +29,7 @@ pub type NativeFunction<'gc> = fn(
     &mut UpdateContext<'_, 'gc, '_>,
     GcCell<'gc, Object<'gc>>,
     &[Value<'gc>],
-) -> ReturnValue<'gc>;
+) -> Result<ReturnValue<'gc>, Error>;
 
 /// Represents a function defined in the AVM1 runtime, either through
 /// `DefineFunction` or `DefineFunction2`.
@@ -184,7 +184,7 @@ impl<'gc> Executable<'gc> {
         ac: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> ReturnValue<'gc> {
+    ) -> Result<ReturnValue<'gc>, Error> {
         match self {
             Executable::Native(nf) => nf(avm, ac, this, args),
             Executable::Action(af) => {
@@ -265,9 +265,8 @@ impl<'gc> Executable<'gc> {
                 if af.preload_parent {
                     let parent = child_scope
                         .read()
-                        .resolve("_parent", avm, ac, this)
-                        .resolve(avm, ac)
-                        .unwrap();
+                        .resolve("_parent", avm, ac, this)?
+                        .resolve(avm, ac)?;
 
                     frame_cell.write(ac.gc_context).set_local_register(
                         preload_r,
@@ -297,7 +296,7 @@ impl<'gc> Executable<'gc> {
                 }
                 avm.insert_stack_frame(frame_cell);
 
-                ReturnValue::ResultOf(frame_cell)
+                Ok(ReturnValue::ResultOf(frame_cell))
             }
         }
     }

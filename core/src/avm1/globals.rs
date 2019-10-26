@@ -1,6 +1,6 @@
 use crate::avm1::fscommand;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Object, UpdateContext, Value};
+use crate::avm1::{Avm1, Error, Object, UpdateContext, Value};
 use crate::backend::navigator::NavigationMethod;
 use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
@@ -14,13 +14,13 @@ pub fn getURL<'a, 'gc>(
     context: &mut UpdateContext<'a, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
-) -> ReturnValue<'gc> {
+) -> Result<ReturnValue<'gc>, Error> {
     //TODO: Error behavior if no arguments are present
     if let Some(url_val) = args.get(0) {
         let url = url_val.clone().into_string();
         if let Some(fscommand) = fscommand::parse(&url) {
             fscommand::handle(fscommand, avm, context);
-            return ReturnValue::Immediate(Value::Undefined);
+            return Ok(ReturnValue::Immediate(Value::Undefined));
         }
 
         let window = args.get(1).map(|v| v.clone().into_string());
@@ -34,7 +34,7 @@ pub fn getURL<'a, 'gc>(
         context.navigator.navigate_to_url(url, window, vars_method);
     }
 
-    ReturnValue::Immediate(Value::Undefined)
+    Ok(ReturnValue::Immediate(Value::Undefined))
 }
 
 pub fn random<'gc>(
@@ -42,12 +42,12 @@ pub fn random<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
-) -> ReturnValue<'gc> {
+) -> Result<ReturnValue<'gc>, Error> {
     match args.get(0) {
-        Some(Value::Number(max)) => ReturnValue::Immediate(Value::Number(
+        Some(Value::Number(max)) => Ok(ReturnValue::Immediate(Value::Number(
             action_context.rng.gen_range(0.0f64, max).floor(),
-        )),
-        _ => ReturnValue::Immediate(Value::Undefined), //TODO: Shouldn't this be an error condition?
+        ))),
+        _ => Ok(ReturnValue::Immediate(Value::Undefined)), //TODO: Shouldn't this be an error condition?
     }
 }
 
@@ -56,11 +56,13 @@ pub fn boolean<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
-) -> ReturnValue<'gc> {
+) -> Result<ReturnValue<'gc>, Error> {
     if let Some(val) = args.get(0) {
-        ReturnValue::Immediate(Value::Bool(val.as_bool(avm.current_swf_version())))
+        Ok(ReturnValue::Immediate(Value::Bool(
+            val.as_bool(avm.current_swf_version()),
+        )))
     } else {
-        ReturnValue::Immediate(Value::Bool(false))
+        Ok(ReturnValue::Immediate(Value::Bool(false)))
     }
 }
 
@@ -69,11 +71,11 @@ pub fn number<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
-) -> ReturnValue<'gc> {
+) -> Result<ReturnValue<'gc>, Error> {
     if let Some(val) = args.get(0) {
-        ReturnValue::Immediate(Value::Number(val.as_number()))
+        Ok(ReturnValue::Immediate(Value::Number(val.as_number())))
     } else {
-        ReturnValue::Immediate(Value::Number(0.0))
+        Ok(ReturnValue::Immediate(Value::Number(0.0)))
     }
 }
 
@@ -82,11 +84,13 @@ pub fn is_nan<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
-) -> ReturnValue<'gc> {
+) -> Result<ReturnValue<'gc>, Error> {
     if let Some(val) = args.get(0) {
-        ReturnValue::Immediate(Value::Bool(val.as_number().is_nan()))
+        Ok(ReturnValue::Immediate(Value::Bool(
+            val.as_number().is_nan(),
+        )))
     } else {
-        ReturnValue::Immediate(Value::Bool(true))
+        Ok(ReturnValue::Immediate(Value::Bool(true)))
     }
 }
 
@@ -129,7 +133,7 @@ mod tests {
                         $(
                             args.push($arg.into());
                         )*
-                        assert_eq!($fun(avm, context, this, &args), ReturnValue::Immediate($out.into()));
+                        assert_eq!($fun(avm, context, this, &args).unwrap(), ReturnValue::Immediate($out.into()));
                     )*
 
                     Ok(())

@@ -1,6 +1,7 @@
 use crate::avm1::function::Avm1Function;
 use crate::avm1::globals::create_globals;
 use crate::avm1::object::Object;
+use crate::avm1::return_value::ReturnValue;
 use crate::avm1::return_value::ReturnValue::*;
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
@@ -108,10 +109,17 @@ impl<'gc> Avm1<'gc> {
         for k in keys {
             let v = locals.read().get(&k, self, context, locals);
 
-            //TODO: Support on-stack properties
-            if let Immediate(instant_value) = v {
-                form_values.insert(k, instant_value.clone().into_string());
-            }
+            //TODO: What happens if an error occurs inside a virtual property?
+            form_values.insert(
+                k,
+                v.ok()
+                    .unwrap_or(ReturnValue::Immediate(Value::Undefined))
+                    .resolve(self, context)
+                    .ok()
+                    .unwrap_or(Value::Undefined)
+                    .clone()
+                    .into_string(),
+            );
         }
 
         form_values
@@ -729,7 +737,7 @@ impl<'gc> Avm1<'gc> {
             .unwrap()
             .clone()
             .read()
-            .resolve(fn_name.as_string()?, self, context)
+            .resolve(fn_name.as_string()?, self, context)?
             .resolve(self, context)?;
         let this = context.active_clip.read().object().as_object()?.to_owned();
         target_fn.call(self, context, this, &args)?.push(self);
@@ -764,7 +772,7 @@ impl<'gc> Avm1<'gc> {
                     let callable = object
                         .as_object()?
                         .read()
-                        .get(&name, self, context, target)
+                        .get(&name, self, context, target)?
                         .resolve(self, context)?;
 
                     if let Value::Undefined = callable {
@@ -949,7 +957,7 @@ impl<'gc> Avm1<'gc> {
             .current_stack_frame()
             .unwrap()
             .read()
-            .resolve(name, self, context)
+            .resolve(name, self, context)?
             .resolve(self, context)?;
 
         match object {
@@ -1016,7 +1024,7 @@ impl<'gc> Avm1<'gc> {
         let name = name_val.into_string();
         let object = self.pop()?.as_object()?;
         let this = self.current_stack_frame().unwrap().read().this_cell();
-        object.read().get(&name, self, context, this).push(self);
+        object.read().get(&name, self, context, this)?.push(self);
 
         Ok(())
     }
@@ -1105,7 +1113,7 @@ impl<'gc> Avm1<'gc> {
                     if object.read().has_property(var_name) {
                         object
                             .read()
-                            .get(var_name, self, context, object)
+                            .get(var_name, self, context, object)?
                             .push(self);
                     } else {
                         self.push(Value::Undefined);
@@ -1118,7 +1126,7 @@ impl<'gc> Avm1<'gc> {
             self.current_stack_frame()
                 .unwrap()
                 .read()
-                .resolve(path, self, context)
+                .resolve(path, self, context)?
                 .push(self);
         } else {
             self.push(Value::Undefined);
@@ -1556,7 +1564,7 @@ impl<'gc> Avm1<'gc> {
 
         object
             .write(context.gc_context)
-            .set(name, value, self, context, this);
+            .set(&name, value, self, context, this)?;
         Ok(())
     }
 
@@ -1628,13 +1636,15 @@ impl<'gc> Avm1<'gc> {
                         self,
                         context,
                         this,
-                    );
+                    )?;
                 }
             }
         } else {
             let this = self.current_stack_frame().unwrap().read().this_cell();
             let scope = self.current_stack_frame().unwrap().read().scope_cell();
-            let unused_value = scope.read().overwrite(var_path, value, self, context, this);
+            let unused_value = scope
+                .read()
+                .overwrite(var_path, value, self, context, this)?;
             if let Some(value) = unused_value {
                 self.current_stack_frame().unwrap().read().define(
                     var_path,

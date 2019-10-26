@@ -4,7 +4,7 @@ use crate::avm1::object::Object;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
 use crate::avm1::stack_continuation::StackContinuation;
-use crate::avm1::{Avm1, Value};
+use crate::avm1::{Avm1, Error, Value};
 use crate::context::UpdateContext;
 use crate::tag_utils::SwfSlice;
 use gc_arena::{GcCell, MutationContext};
@@ -273,20 +273,21 @@ impl<'gc> Activation<'gc> {
     /// Resolve a particular named local variable within this activation.
     ///
     /// Because scopes are object chains, the same rules for `Object::get`
-    /// still apply here. This function is allowed to yield `None` to indicate
-    /// that the result will be calculated on the AVM stack.
+    /// still apply here.
     pub fn resolve(
         &self,
         name: &str,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> ReturnValue<'gc> {
+    ) -> Result<ReturnValue<'gc>, Error> {
         if name == "this" {
-            return ReturnValue::Immediate(Value::Object(self.this));
+            return Ok(ReturnValue::Immediate(Value::Object(self.this)));
         }
 
         if name == "arguments" && self.arguments.is_some() {
-            return ReturnValue::Immediate(Value::Object(self.arguments.unwrap()));
+            return Ok(ReturnValue::Immediate(Value::Object(
+                self.arguments.unwrap(),
+            )));
         }
 
         self.scope().resolve(name, avm, context, self.this)

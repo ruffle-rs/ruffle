@@ -11,10 +11,12 @@ fn locals_into_form_values() {
 
         my_locals
             .write(context.gc_context)
-            .set("value1", "string", avm, context, my_locals);
+            .set("value1", "string", avm, context, my_locals)
+            .unwrap();
         my_locals
             .write(context.gc_context)
-            .set("value2", 2.0, avm, context, my_locals);
+            .set("value2", 2.0, avm, context, my_locals)
+            .unwrap();
 
         avm.insert_stack_frame(GcCell::allocate(context.gc_context, my_activation));
 

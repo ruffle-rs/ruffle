@@ -260,7 +260,7 @@ impl<'gc> Value<'gc> {
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
         if let Value::Object(object) = self {
-            Ok(object.read().call(avm, context, this, args))
+            object.read().call(avm, context, this, args)
         } else {
             Err(format!("Expected function, found {:?}", self).into())
         }

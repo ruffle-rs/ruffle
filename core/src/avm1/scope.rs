@@ -1,7 +1,7 @@
 //! Represents AVM1 scope chain resolution.
 
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Object, UpdateContext, Value};
+use crate::avm1::{Avm1, Error, Object, UpdateContext, Value};
 use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
@@ -247,7 +247,7 @@ impl<'gc> Scope<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
-    ) -> ReturnValue<'gc> {
+    ) -> Result<ReturnValue<'gc>, Error> {
         if self.locals().has_property(name) {
             return self.locals().get(name, avm, context, this);
         }
@@ -255,7 +255,8 @@ impl<'gc> Scope<'gc> {
             return scope.resolve(name, avm, context, this);
         }
 
-        ReturnValue::Immediate(Value::Undefined)
+        //TODO: Should undefined variables halt execution?
+        Ok(ReturnValue::Immediate(Value::Undefined))
     }
 
     /// Check if a particular property in the scope chain is defined.
@@ -286,18 +287,18 @@ impl<'gc> Scope<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
-    ) -> Option<Value<'gc>> {
+    ) -> Result<Option<Value<'gc>>, Error> {
         if self.locals().has_property(name) {
             self.locals_mut(context.gc_context)
-                .set(name, value, avm, context, this);
-            return None;
+                .set(name, value, avm, context, this)?;
+            return Ok(None);
         }
 
         if let Some(scope) = self.parent() {
             return scope.overwrite(name, value, avm, context, this);
         }
 
-        Some(value)
+        Ok(Some(value))
     }
 
     /// Set a particular value in the locals for this scope.
