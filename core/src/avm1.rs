@@ -314,6 +314,7 @@ impl<'gc> Avm1<'gc> {
                 Action::Divide => self.action_divide(context),
                 Action::EndDrag => self.action_end_drag(context),
                 Action::Enumerate => self.action_enumerate(context),
+                Action::Enumerate2 => self.action_enumerate_2(context),
                 Action::Equals => self.action_equals(context),
                 Action::Equals2 => self.action_equals_2(context),
                 Action::GetMember => self.action_get_member(context),
@@ -905,6 +906,20 @@ impl<'gc> Avm1<'gc> {
         };
 
         for k in ob.read().get_keys() {
+            self.push(k);
+        }
+
+        Ok(())
+    }
+
+    fn action_enumerate_2(
+        &mut self,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let object = self.pop()?.as_object()?;
+
+        self.push(Value::Null); // Sentinel that indicates end of enumeration
+        for k in object.read().get_keys() {
             self.push(k);
         }
 
