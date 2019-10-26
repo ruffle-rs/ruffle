@@ -125,6 +125,29 @@ impl<'gc> Avm1<'gc> {
         }
     }
 
+    /// Makes an `UpdateContext` from an `ActionContext`.
+    /// TODO: The Contexts should probably be merged.
+    fn update_context<'a, 'gc_context, 'b>(
+        &self,
+        context: &'b mut ActionContext<'a, 'gc, 'gc_context>,
+    ) -> crate::player::UpdateContext<'b, 'gc, 'gc_context> {
+        crate::player::UpdateContext {
+            player_version: context.player_version,
+            global_time: context.global_time,
+            swf_data: context.swf_data,
+            swf_version: self.current_swf_version(),
+            library: context.library,
+            background_color: context.background_color,
+            rng: context.rng,
+            renderer: context.renderer,
+            audio: context.audio,
+            navigator: context.navigator,
+            action_queue: context.action_queue,
+            gc_context: context.gc_context,
+            active_clip: context.active_clip,
+        }
+    }
+
     /// Convert the current locals pool into a set of form values.
     ///
     /// This is necessary to support form submission from Flash via a couple of
@@ -1130,17 +1153,17 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_goto_frame(&mut self, context: &mut ActionContext, frame: u16) -> Result<(), Error> {
+    fn action_goto_frame(
+        &mut self,
+        context: &mut ActionContext<'_, 'gc, '_>,
+        frame: u16,
+    ) -> Result<(), Error> {
         if let Some(clip) = context.target_clip {
             let mut display_object = clip.write(context.gc_context);
             if let Some(clip) = display_object.as_movie_clip_mut() {
+                let mut update_context = self.update_context(context);
                 // The frame on the stack is 0-based, not 1-based.
-                clip.goto_frame(
-                    context.active_clip,
-                    &mut context.action_queue,
-                    frame + 1,
-                    true,
-                );
+                clip.goto_frame(&mut update_context, frame + 1, true);
             } else {
                 log::error!("GotoFrame failed: Target is not a MovieClip");
             }
@@ -1152,7 +1175,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_goto_frame_2(
         &mut self,
-        context: &mut ActionContext,
+        context: &mut ActionContext<'_, 'gc, '_>,
         set_playing: bool,
         scene_offset: u16,
     ) -> Result<(), Error> {
@@ -1161,24 +1184,19 @@ impl<'gc> Avm1<'gc> {
         if let Some(clip) = context.target_clip {
             let mut display_object = clip.write(context.gc_context);
             if let Some(clip) = display_object.as_movie_clip_mut() {
+                let mut update_context = self.update_context(context);
                 match self.pop()? {
                     Value::Number(frame) => {
                         // The frame on the stack is 1-based, not 0-based.
                         clip.goto_frame(
-                            context.active_clip,
-                            &mut context.action_queue,
+                            &mut update_context,
                             scene_offset + (frame as u16),
                             !set_playing,
                         )
                     }
                     Value::String(frame_label) => {
                         if let Some(frame) = clip.frame_label_to_number(&frame_label) {
-                            clip.goto_frame(
-                                context.active_clip,
-                                &mut context.action_queue,
-                                scene_offset + frame,
-                                !set_playing,
-                            )
+                            clip.goto_frame(&mut update_context, scene_offset + frame, !set_playing)
                         } else {
                             log::warn!(
                                 "GotoFrame2: MovieClip {} does not contain frame label '{}'",
@@ -1198,12 +1216,17 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_goto_label(&mut self, context: &mut ActionContext, label: &str) -> Result<(), Error> {
+    fn action_goto_label(
+        &mut self,
+        context: &mut ActionContext<'_, 'gc, '_>,
+        label: &str,
+    ) -> Result<(), Error> {
         if let Some(clip) = context.target_clip {
             let mut display_object = clip.write(context.gc_context);
             if let Some(clip) = display_object.as_movie_clip_mut() {
                 if let Some(frame) = clip.frame_label_to_number(label) {
-                    clip.goto_frame(context.active_clip, &mut context.action_queue, frame, true);
+                    let mut update_context = self.update_context(context);
+                    clip.goto_frame(&mut update_context, frame, true);
                 } else {
                     log::warn!("GoToLabel: Frame label '{}' not found", label);
                 }
@@ -1356,11 +1379,12 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_next_frame(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_next_frame(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         if let Some(clip) = context.target_clip {
             let mut display_object = clip.write(context.gc_context);
             if let Some(clip) = display_object.as_movie_clip_mut() {
-                clip.next_frame(context.active_clip, context.action_queue);
+                let mut update_context = self.update_context(context);
+                clip.next_frame(&mut update_context);
             } else {
                 log::warn!("NextFrame: Target is not a MovieClip");
             }
@@ -1413,11 +1437,12 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_prev_frame(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_prev_frame(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
         if let Some(clip) = context.target_clip {
             let mut display_object = clip.write(context.gc_context);
             if let Some(clip) = display_object.as_movie_clip_mut() {
-                clip.prev_frame(context.active_clip, context.action_queue);
+                let mut update_context = self.update_context(context);
+                clip.prev_frame(&mut update_context);
             } else {
                 log::warn!("PrevFrame: Target is not a MovieClip");
             }

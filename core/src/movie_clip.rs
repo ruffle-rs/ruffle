@@ -8,7 +8,7 @@ use crate::font::Font;
 use crate::graphic::Graphic;
 use crate::matrix::Matrix;
 use crate::morph_shape::MorphShapeStatic;
-use crate::player::{ActionQueue, RenderContext, UpdateContext};
+use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use crate::tag_utils::{self, DecodeResult, SwfStream};
 use crate::text::Text;
@@ -82,9 +82,9 @@ impl<'gc> MovieClip<'gc> {
         self.is_playing
     }
 
-    pub fn next_frame(&mut self, self_cell: DisplayNode<'gc>, action_queue: &mut ActionQueue<'gc>) {
+    pub fn next_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if self.current_frame() < self.total_frames() {
-            self.goto_frame(self_cell, action_queue, self.current_frame + 1, true);
+            self.goto_frame(context, self.current_frame + 1, true);
         }
     }
 
@@ -95,9 +95,9 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
-    pub fn prev_frame(&mut self, self_cell: DisplayNode<'gc>, action_queue: &mut ActionQueue<'gc>) {
+    pub fn prev_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if self.current_frame > 1 {
-            self.goto_frame(self_cell, action_queue, self.current_frame - 1, true);
+            self.goto_frame(context, self.current_frame - 1, true);
         }
     }
 
@@ -109,13 +109,12 @@ impl<'gc> MovieClip<'gc> {
     /// `frame` should be 1-based.
     pub fn goto_frame(
         &mut self,
-        self_cell: DisplayNode<'gc>,
-        action_queue: &mut ActionQueue<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         frame: FrameNumber,
         stop: bool,
     ) {
         if frame != self.current_frame {
-            action_queue.queue_goto(self_cell, frame);
+            self.run_goto(context, frame);
         }
 
         if stop {

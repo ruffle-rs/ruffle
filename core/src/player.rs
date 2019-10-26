@@ -603,58 +603,39 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         // I think this will eventually be cleaned up;
         // Need to figure out the proper order of operations between ticking a clip
         // and running the actions.
-        while let Some(clip_action) = update_context.action_queue.pop() {
-            match clip_action {
-                Action::Action {
-                    clip,
-                    actions: action,
-                } => {
-                    // We don't run the action f the clip was removed after it queued the action.
-                    if clip.read().removed() {
-                        continue;
-                    }
-                    let mut action_context = crate::avm1::ActionContext {
-                        gc_context: update_context.gc_context,
-                        global_time: update_context.global_time,
-                        root,
-                        player_version: update_context.player_version,
-                        start_clip: root,
-                        active_clip: root,
-                        target_clip: Some(root),
-                        target_path: crate::avm1::Value::Undefined,
-                        action_queue: &mut update_context.action_queue,
-                        rng: update_context.rng,
-                        audio: update_context.audio,
-                        background_color: update_context.background_color,
-                        library: update_context.library,
-                        navigator: update_context.navigator,
-                        renderer: update_context.renderer,
-                        swf_data: update_context.swf_data,
-                    };
-
-                    action_context.start_clip = clip;
-                    action_context.active_clip = clip;
-                    action_context.target_clip = Some(clip);
-                    avm.insert_stack_frame_for_action(
-                        update_context.swf_version,
-                        action,
-                        &mut action_context,
-                    );
-                    let _ = avm.run_stack_till_empty(&mut action_context);
-                }
-
-                Action::Goto { clip, frame } => {
-                    update_context.active_clip = clip;
-                    let mut clip = clip.write(update_context.gc_context);
-                    // We don't run the action if the clip was removed after it queued the action.
-                    if clip.removed() {
-                        continue;
-                    }
-                    if let Some(movie_clip) = clip.as_movie_clip_mut() {
-                        movie_clip.run_goto(update_context, frame);
-                    }
-                }
+        while let Some(actions) = update_context.action_queue.pop() {
+            // We don't run the action f the clip was removed after it queued the action.
+            if actions.clip.read().removed() {
+                continue;
             }
+            let mut action_context = crate::avm1::ActionContext {
+                gc_context: update_context.gc_context,
+                global_time: update_context.global_time,
+                root,
+                player_version: update_context.player_version,
+                start_clip: root,
+                active_clip: root,
+                target_clip: Some(root),
+                target_path: crate::avm1::Value::Undefined,
+                action_queue: &mut update_context.action_queue,
+                rng: update_context.rng,
+                audio: update_context.audio,
+                background_color: update_context.background_color,
+                library: update_context.library,
+                navigator: update_context.navigator,
+                renderer: update_context.renderer,
+                swf_data: update_context.swf_data,
+            };
+
+            action_context.start_clip = actions.clip;
+            action_context.active_clip = actions.clip;
+            action_context.target_clip = Some(actions.clip);
+            avm.insert_stack_frame_for_action(
+                update_context.swf_version,
+                actions.actions,
+                &mut action_context,
+            );
+            let _ = avm.run_stack_till_empty(&mut action_context);
         }
     }
 
@@ -735,20 +716,14 @@ pub struct RenderContext<'a, 'gc> {
     pub clip_depth_stack: Vec<Depth>,
 }
 
-pub enum Action<'gc> {
-    Action {
-        clip: DisplayNode<'gc>,
-        actions: SwfSlice,
-    },
-    Goto {
-        clip: DisplayNode<'gc>,
-        frame: u16,
-    },
+pub struct QueuedActions<'gc> {
+    clip: DisplayNode<'gc>,
+    actions: SwfSlice,
 }
 
 /// Action and gotos need to be queued up to execute at the end of the frame.
 pub struct ActionQueue<'gc> {
-    queue: std::collections::VecDeque<Action<'gc>>,
+    queue: std::collections::VecDeque<QueuedActions<'gc>>,
 }
 
 impl<'gc> ActionQueue<'gc> {
@@ -761,14 +736,10 @@ impl<'gc> ActionQueue<'gc> {
     }
 
     pub fn queue_actions(&mut self, clip: DisplayNode<'gc>, actions: SwfSlice) {
-        self.queue.push_back(Action::Action { clip, actions })
+        self.queue.push_back(QueuedActions { clip, actions })
     }
 
-    pub fn queue_goto(&mut self, clip: DisplayNode<'gc>, frame: u16) {
-        self.queue.push_back(Action::Goto { clip, frame })
-    }
-
-    pub fn pop(&mut self) -> Option<Action<'gc>> {
+    pub fn pop(&mut self) -> Option<QueuedActions<'gc>> {
         self.queue.pop_front()
     }
 }
