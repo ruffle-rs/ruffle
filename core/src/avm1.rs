@@ -61,10 +61,14 @@ pub struct ActionContext<'a, 'gc, 'gc_context> {
     /// _names ("instanceN" etc. for unnamed clips).
     pub target_path: Value<'gc>,
 
+    pub background_color: &'a mut Color,
     pub rng: &'a mut SmallRng,
     pub action_queue: &'a mut crate::player::ActionQueue<'gc>,
     pub audio: &'a mut dyn crate::backend::audio::AudioBackend,
+    pub library: &'a mut crate::library::Library<'gc>,
     pub navigator: &'a mut dyn crate::backend::navigator::NavigatorBackend,
+    pub renderer: &'a mut dyn crate::backend::render::RenderBackend,
+    pub swf_data: &'a std::sync::Arc<Vec<u8>>,
 }
 
 pub struct Avm1<'gc> {

@@ -373,10 +373,14 @@ mod tests {
     use crate::avm1::activation::Activation;
     use crate::backend::audio::NullAudioBackend;
     use crate::backend::navigator::NullNavigatorBackend;
+    use crate::backend::render::NullRenderer;
     use crate::display_object::DisplayObject;
+    use crate::library::Library;
     use crate::movie_clip::MovieClip;
+    use crate::prelude::*;
     use gc_arena::rootless_arena;
     use rand::{rngs::SmallRng, SeedableRng};
+    use std::sync::Arc;
 
     fn with_object<F, R>(swf_version: u8, test: F) -> R
     where
@@ -403,8 +407,18 @@ mod tests {
                 rng: &mut SmallRng::from_seed([0u8; 16]),
                 action_queue: &mut crate::player::ActionQueue::new(),
                 audio: &mut NullAudioBackend::new(),
+                background_color: &mut Color {
+                    r: 0,
+                    g: 0,
+                    b: 0,
+                    a: 0,
+                },
+                library: &mut Library::new(),
                 navigator: &mut NullNavigatorBackend::new(),
+                renderer: &mut NullRenderer::new(),
+                swf_data: &mut Arc::new(vec![]),
             };
+
             let object = GcCell::allocate(gc_context, Object::object(gc_context));
 
             let globals = avm.global_object_cell();

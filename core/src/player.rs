@@ -613,8 +613,13 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                         action_queue: &mut update_context.action_queue,
                         rng: update_context.rng,
                         audio: update_context.audio,
+                        background_color: update_context.background_color,
+                        library: update_context.library,
                         navigator: update_context.navigator,
+                        renderer: update_context.renderer,
+                        swf_data: update_context.swf_data,
                     };
+
                     action_context.start_clip = clip;
                     action_context.active_clip = clip;
                     action_context.target_clip = Some(clip);
