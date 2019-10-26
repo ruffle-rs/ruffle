@@ -10,15 +10,15 @@ use swf::CharacterId;
 pub struct Library<'gc> {
     characters: HashMap<CharacterId, Character<'gc>>,
     jpeg_tables: Option<Vec<u8>>,
-    device_font: Box<Font>,
+    device_font: Option<Box<Font>>,
 }
 
 impl<'gc> Library<'gc> {
-    pub fn new(device_font: Box<Font>) -> Self {
+    pub fn new() -> Self {
         Library {
             characters: HashMap::new(),
             jpeg_tables: None,
-            device_font,
+            device_font: None,
         }
     }
 
@@ -95,8 +95,13 @@ impl<'gc> Library<'gc> {
     }
 
     /// Returns the device font for use when a font is unavailable.
-    pub fn device_font(&self) -> &Font {
-        &*self.device_font
+    pub fn device_font(&self) -> Option<&Font> {
+        self.device_font.as_ref().map(AsRef::as_ref)
+    }
+
+    /// Sets the device font.
+    pub fn set_device_font(&mut self, font: Option<Box<Font>>) {
+        self.device_font = font;
     }
 }
 
@@ -106,5 +111,11 @@ unsafe impl<'gc> gc_arena::Collect for Library<'gc> {
         for character in self.characters.values() {
             character.trace(cc);
         }
+    }
+}
+
+impl Default for Library<'_> {
+    fn default() -> Self {
+        Self::new()
     }
 }

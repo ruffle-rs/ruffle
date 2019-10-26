@@ -119,8 +119,14 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
 
         // Load and parse the device font.
         // TODO: We could use lazy_static here.
-        let device_font = Self::load_device_font(DEVICE_FONT_TAG, &mut renderer)
-            .expect("Unable to load device font");
+        let device_font = match Self::load_device_font(DEVICE_FONT_TAG, &mut renderer) {
+            Ok(font) => Some(font),
+            Err(e) => {
+                log::error!("Unable to load device font: {}", e);
+                None
+            }
+        };
+
         let mut player = Player {
             player_version: NEWEST_PLAYER_VERSION,
 
@@ -145,22 +151,26 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
 
             rng: SmallRng::from_seed([0u8; 16]), // TODO(Herschel): Get a proper seed on all platforms.
 
-            gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| GcRoot {
-                library: GcCell::allocate(gc_context, Library::new(device_font)),
-                root: GcCell::allocate(
-                    gc_context,
-                    Box::new(MovieClip::new_with_data(
-                        header.version,
+            gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| {
+                let mut library = Library::new();
+                library.set_device_font(device_font);
+                GcRoot {
+                    library: GcCell::allocate(gc_context, library),
+                    root: GcCell::allocate(
                         gc_context,
-                        0,
-                        0,
-                        swf_len,
-                        header.num_frames,
-                    )),
-                ),
-                mouse_hover_node: GcCell::allocate(gc_context, None),
-                avm: GcCell::allocate(gc_context, Avm1::new(gc_context, NEWEST_PLAYER_VERSION)),
-                action_queue: GcCell::allocate(gc_context, ActionQueue::new()),
+                        Box::new(MovieClip::new_with_data(
+                            header.version,
+                            gc_context,
+                            0,
+                            0,
+                            swf_len,
+                            header.num_frames,
+                        )),
+                    ),
+                    mouse_hover_node: GcCell::allocate(gc_context, None),
+                    avm: GcCell::allocate(gc_context, Avm1::new(gc_context, NEWEST_PLAYER_VERSION)),
+                    action_queue: GcCell::allocate(gc_context, ActionQueue::new()),
+                }
             }),
 
             frame_rate: header.frame_rate.into(),
