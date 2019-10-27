@@ -2,13 +2,13 @@ use crate::avm1::{self, Avm1};
 use crate::backend::{
     audio::AudioBackend, navigator::NavigatorBackend, render::Letterbox, render::RenderBackend,
 };
+use crate::context::{ActionQueue, RenderContext, UpdateContext};
 use crate::display_object::{MorphShape, MovieClip};
 use crate::events::{ButtonEvent, PlayerEvent};
 use crate::library::Library;
 use crate::prelude::*;
-use crate::tag_utils::SwfSlice;
 use crate::transform::TransformStack;
-use gc_arena::{make_arena, ArenaParameters, Collect, GcCell, MutationContext};
+use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
 use std::sync::Arc;
@@ -663,95 +663,5 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             &reader.read_define_font_2(3)?,
         )?);
         Ok(device_font)
-    }
-}
-
-pub struct UpdateContext<'a, 'gc, 'gc_context> {
-    pub action_queue: &'a mut ActionQueue<'gc>,
-    pub background_color: &'a mut Color,
-    pub gc_context: MutationContext<'gc, 'gc_context>,
-    pub global_time: u64,
-    pub library: &'a mut Library<'gc>,
-    pub player_version: u8,
-    pub swf_data: &'a Arc<Vec<u8>>,
-    pub swf_version: u8,
-
-    pub audio: &'a mut dyn AudioBackend,
-    pub navigator: &'a mut dyn NavigatorBackend,
-    pub renderer: &'a mut dyn RenderBackend,
-    pub rng: &'a mut SmallRng,
-
-    /// The `DisplayNode` that this code is running in.
-    /// Used by all `DisplayObject` methods and AVM1 `GetVariable`/`SetVariable`/`this`.
-    pub active_clip: DisplayNode<'gc>,
-
-    /// The root of the current timeline.
-    /// This will generally be `_level0`, except for loadMovie/loadMovieNum.
-    pub root: DisplayNode<'gc>,
-
-    /// The base clip for Flash 4-era actions.
-    /// Used by `Play`, `GetProperty`, etc.
-    pub start_clip: DisplayNode<'gc>,
-
-    /// The object targeted with `tellTarget`.
-    /// This is used for Flash 4-era actions, such as
-    /// `Play`, `GetProperty`, etc.
-    /// This will be `None` after an invalid tell target.
-    pub target_clip: Option<DisplayNode<'gc>>,
-
-    /// The last path string used by `tellTarget`.
-    /// Returned by `GetProperty`.
-    /// TODO: This should actually be built dynamically upon
-    /// request, but this requires us to implement auto-generated
-    /// _names ("instanceN" etc. for unnamed clips).
-    pub target_path: avm1::Value<'gc>,
-}
-
-pub struct RenderContext<'a, 'gc> {
-    pub renderer: &'a mut dyn RenderBackend,
-    pub library: &'a Library<'gc>,
-    pub transform_stack: &'a mut TransformStack,
-    pub view_bounds: BoundingBox,
-    pub clip_depth_stack: Vec<Depth>,
-}
-
-pub struct QueuedActions<'gc> {
-    clip: DisplayNode<'gc>,
-    actions: SwfSlice,
-}
-
-/// Action and gotos need to be queued up to execute at the end of the frame.
-pub struct ActionQueue<'gc> {
-    queue: std::collections::VecDeque<QueuedActions<'gc>>,
-}
-
-impl<'gc> ActionQueue<'gc> {
-    const DEFAULT_CAPACITY: usize = 32;
-
-    pub fn new() -> Self {
-        Self {
-            queue: std::collections::VecDeque::with_capacity(Self::DEFAULT_CAPACITY),
-        }
-    }
-
-    pub fn queue_actions(&mut self, clip: DisplayNode<'gc>, actions: SwfSlice) {
-        self.queue.push_back(QueuedActions { clip, actions })
-    }
-
-    pub fn pop(&mut self) -> Option<QueuedActions<'gc>> {
-        self.queue.pop_front()
-    }
-}
-
-impl<'gc> Default for ActionQueue<'gc> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-unsafe impl<'gc> Collect for ActionQueue<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.queue.iter().for_each(|o| o.trace(cc));
     }
 }

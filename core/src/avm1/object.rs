@@ -405,7 +405,7 @@ mod tests {
                 target_clip: Some(root),
                 target_path: Value::Undefined,
                 rng: &mut SmallRng::from_seed([0u8; 16]),
-                action_queue: &mut crate::player::ActionQueue::new(),
+                action_queue: &mut crate::context::ActionQueue::new(),
                 audio: &mut NullAudioBackend::new(),
                 background_color: &mut Color {
                     r: 0,

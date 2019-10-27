@@ -10,6 +10,7 @@ mod avm1;
 mod bounding_box;
 mod character;
 mod color_transform;
+mod context;
 mod events;
 mod font;
 mod library;

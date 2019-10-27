@@ -3,12 +3,12 @@ use crate::avm1::object::{Object, TYPE_OF_MOVIE_CLIP};
 use crate::avm1::Value;
 use crate::backend::audio::AudioStreamHandle;
 use crate::character::Character;
+use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{
     Bitmap, Button, DisplayObject, DisplayObjectBase, EditText, Graphic, MorphShapeStatic, Text,
 };
 use crate::font::Font;
 use crate::matrix::Matrix;
-use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use crate::tag_utils::{self, DecodeResult, SwfStream};
 use gc_arena::{Gc, GcCell, MutationContext};
