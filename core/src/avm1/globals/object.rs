@@ -78,7 +78,7 @@ fn to_string<'gc>(
     _: ObjectCell<'gc>,
     _: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    Ok(ReturnValue::Immediate("[Object object]".into()))
+    Ok(ReturnValue::Immediate("[object Object]".into()))
 }
 
 /// Implements `Object.prototype.isPropertyEnumerable`
@@ -123,6 +123,16 @@ fn is_prototype_of<'gc>(
         }
         _ => Ok(Value::Bool(false).into()),
     }
+}
+
+/// Implements `Object.prototype.valueOf`
+fn value_of<'gc>(
+    _: &mut Avm1<'gc>,
+    _: &mut UpdateContext<'_, 'gc, '_>,
+    this: ObjectCell<'gc>,
+    _: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    Ok(ReturnValue::Immediate(this.into()))
 }
 
 /// Partially construct `Object.prototype`.
@@ -187,6 +197,16 @@ pub fn fill_proto<'gc>(
         .force_set_function(
             "toString",
             to_string,
+            gc_context,
+            DontDelete | DontEnum,
+            Some(fn_proto),
+        );
+    ob_proto_write
+        .as_script_object_mut()
+        .unwrap()
+        .force_set_function(
+            "valueOf",
+            value_of,
             gc_context,
             DontDelete | DontEnum,
             Some(fn_proto),
