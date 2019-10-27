@@ -2,10 +2,10 @@ use crate::avm1::function::Avm1Function;
 use crate::avm1::globals::create_globals;
 use crate::avm1::object::Object;
 use crate::backend::navigator::NavigationMethod;
-
+use crate::player::UpdateContext;
 use crate::prelude::*;
 use gc_arena::{GcCell, MutationContext};
-use rand::{rngs::SmallRng, Rng};
+use rand::Rng;
 use std::collections::HashMap;
 use std::convert::TryInto;
 
@@ -28,48 +28,6 @@ mod value;
 use activation::Activation;
 use scope::Scope;
 pub use value::Value;
-
-pub struct ActionContext<'a, 'gc, 'gc_context> {
-    pub gc_context: gc_arena::MutationContext<'gc, 'gc_context>,
-    pub global_time: u64,
-
-    /// The particular version of Flash Player being emulated.
-    pub player_version: u8,
-
-    /// The root of the current timeline.
-    /// This will generally be `_level0`, except for loadMovie/loadMovieNum.
-    pub root: DisplayNode<'gc>,
-
-    /// The object that this code is running in.
-    /// Used by `GetVariable`/`SetVariable`/`this`.
-    pub active_clip: DisplayNode<'gc>,
-
-    /// The base clip for Flash 4-era actions.
-    /// Used by `Play`, `GetProperty`, etc.
-    pub start_clip: DisplayNode<'gc>,
-
-    /// The object targeted with `tellTarget`.
-    /// This is used for Flash 4-era actions, such as
-    /// `Play`, `GetProperty`, etc.
-    /// This will be `None` after an invalid tell target.
-    pub target_clip: Option<DisplayNode<'gc>>,
-
-    /// The last path string used by `tellTarget`.
-    /// Returned by `GetProperty`.
-    /// TODO: This should actually be built dynamically upon
-    /// request, but this requires us to implement auto-generated
-    /// _names ("instanceN" etc. for unnamed clips).
-    pub target_path: Value<'gc>,
-
-    pub background_color: &'a mut Color,
-    pub rng: &'a mut SmallRng,
-    pub action_queue: &'a mut crate::player::ActionQueue<'gc>,
-    pub audio: &'a mut dyn crate::backend::audio::AudioBackend,
-    pub library: &'a mut crate::library::Library<'gc>,
-    pub navigator: &'a mut dyn crate::backend::navigator::NavigatorBackend,
-    pub renderer: &'a mut dyn crate::backend::render::RenderBackend,
-    pub swf_data: &'a std::sync::Arc<Vec<u8>>,
-}
 
 pub struct Avm1<'gc> {
     /// The Flash Player version we're emulating.
@@ -125,36 +83,13 @@ impl<'gc> Avm1<'gc> {
         }
     }
 
-    /// Makes an `UpdateContext` from an `ActionContext`.
-    /// TODO: The Contexts should probably be merged.
-    fn update_context<'a, 'gc_context, 'b>(
-        &self,
-        context: &'b mut ActionContext<'a, 'gc, 'gc_context>,
-    ) -> crate::player::UpdateContext<'b, 'gc, 'gc_context> {
-        crate::player::UpdateContext {
-            player_version: context.player_version,
-            global_time: context.global_time,
-            swf_data: context.swf_data,
-            swf_version: self.current_swf_version(),
-            library: context.library,
-            background_color: context.background_color,
-            rng: context.rng,
-            renderer: context.renderer,
-            audio: context.audio,
-            navigator: context.navigator,
-            action_queue: context.action_queue,
-            gc_context: context.gc_context,
-            active_clip: context.active_clip,
-        }
-    }
-
     /// Convert the current locals pool into a set of form values.
     ///
     /// This is necessary to support form submission from Flash via a couple of
     /// legacy methods, such as the `ActionGetURL2` opcode or `getURL` function.
     pub fn locals_into_form_values(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> HashMap<String, String> {
         let mut form_values = HashMap::new();
         let locals = self
@@ -179,7 +114,7 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         swf_version: u8,
         code: SwfSlice,
-        action_context: &mut ActionContext<'_, 'gc, '_>,
+        action_context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         let global_scope = GcCell::allocate(
             action_context.gc_context,
@@ -206,7 +141,7 @@ impl<'gc> Avm1<'gc> {
     pub fn insert_stack_frame(
         &mut self,
         frame: Activation<'gc>,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         self.stack_frames
             .push(GcCell::allocate(context.gc_context, frame));
@@ -243,11 +178,11 @@ impl<'gc> Avm1<'gc> {
     /// Always pass the borrowed reader into functions that need it.
     fn with_current_reader_mut<F, R>(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         func: F,
     ) -> Option<R>
     where
-        F: FnOnce(&mut Self, &mut Reader<'_>, &mut ActionContext<'_, 'gc, '_>) -> R,
+        F: FnOnce(&mut Self, &mut Reader<'_>, &mut UpdateContext<'_, 'gc, '_>) -> R,
     {
         if self.is_reading {
             log::error!(
@@ -284,7 +219,7 @@ impl<'gc> Avm1<'gc> {
     /// Execute the AVM stack until it is exhausted.
     pub fn run_stack_till_empty(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         while !self.stack_frames.is_empty() {
             self.with_current_reader_mut(context, |this, r, context| {
@@ -299,7 +234,7 @@ impl<'gc> Avm1<'gc> {
     /// Run a single action from a given action reader.
     fn do_next_action(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut Reader<'_>,
     ) -> Result<(), Error> {
         let data = self.current_stack_frame().unwrap().read().data();
@@ -546,7 +481,7 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         id: u8,
         value: Value<'gc>,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         if self
             .current_stack_frame()
@@ -564,21 +499,21 @@ impl<'gc> Avm1<'gc> {
 
     fn unknown_op(
         &mut self,
-        _context: &mut ActionContext,
+        _context: &mut UpdateContext,
         action: swf::avm1::types::Action,
     ) -> Result<(), Error> {
         log::error!("Unknown AVM1 opcode: {:?}", action);
         Err("Unknown op".into())
     }
 
-    fn action_add(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_add(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let a = self.pop()?;
         let b = self.pop()?;
         self.push(b.into_number_v1() + a.into_number_v1());
         Ok(())
     }
 
-    fn action_add_2(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_add_2(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // ECMA-262 s. 11.6.1
         let a = self.pop()?;
         let b = self.pop()?;
@@ -597,7 +532,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_and(&mut self, _context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn action_and(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         // AS1 logical and
         let a = self.pop()?;
         let b = self.pop()?;
@@ -606,14 +541,14 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_ascii_to_char(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_ascii_to_char(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // TODO(Herschel): Results on incorrect operands?
         let val = (self.pop()?.as_f64()? as u8) as char;
         self.push(val.to_string());
         Ok(())
     }
 
-    fn action_char_to_ascii(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_char_to_ascii(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // TODO(Herschel): Results on incorrect operands?
         let s = self.pop()?.into_string();
         let result = s.bytes().nth(0).unwrap_or(0);
@@ -621,7 +556,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_clone_sprite(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_clone_sprite(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // TODO(Herschel)
         let _depth = self.pop()?;
         let _target = self.pop()?;
@@ -630,7 +565,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_bit_and(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_bit_and(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let a = self.pop()?.as_u32()?;
         let b = self.pop()?.as_u32()?;
         let result = a & b;
@@ -638,7 +573,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_bit_lshift(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_bit_lshift(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let a = self.pop()?.as_i32()? & 0b11111; // Only 5 bits used for shift count
         let b = self.pop()?.as_i32()?;
         let result = b << a;
@@ -646,7 +581,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_bit_or(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_bit_or(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let a = self.pop()?.as_u32()?;
         let b = self.pop()?.as_u32()?;
         let result = a | b;
@@ -654,7 +589,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_bit_rshift(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_bit_rshift(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let a = self.pop()?.as_i32()? & 0b11111; // Only 5 bits used for shift count
         let b = self.pop()?.as_i32()?;
         let result = b >> a;
@@ -662,7 +597,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_bit_urshift(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_bit_urshift(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let a = self.pop()?.as_u32()? & 0b11111; // Only 5 bits used for shift count
         let b = self.pop()?.as_u32()?;
         let result = b >> a;
@@ -670,7 +605,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_bit_xor(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_bit_xor(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let a = self.pop()?.as_u32()?;
         let b = self.pop()?.as_u32()?;
         let result = b ^ a;
@@ -678,7 +613,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_call(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_call(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let _val = self.pop()?;
         // TODO(Herschel)
         Err("Unimplemented action: Call".into())
@@ -686,7 +621,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_call_function(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let fn_name = self.pop()?;
         let mut args = Vec::new();
@@ -711,7 +646,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_call_method(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let method_name = self.pop()?;
         let object = self.pop()?;
@@ -769,14 +704,14 @@ impl<'gc> Avm1<'gc> {
 
     fn action_constant_pool(
         &mut self,
-        _context: &mut ActionContext,
+        _context: &mut UpdateContext,
         constant_pool: &[&str],
     ) -> Result<(), Error> {
         self.constant_pool = constant_pool.iter().map(|s| s.to_string()).collect();
         Ok(())
     }
 
-    fn action_decrement(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_decrement(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let a = self.pop()?.as_number();
         self.push(a - 1.0);
         Ok(())
@@ -784,7 +719,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_define_function(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
         params: &[&str],
         actions: &[u8],
@@ -817,7 +752,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_define_function_2(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         action_func: &Function,
     ) -> Result<(), Error> {
         let swf_version = self.current_stack_frame().unwrap().read().swf_version();
@@ -849,7 +784,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_define_local(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let value = self.pop()?;
         let name = self.pop()?;
@@ -863,7 +798,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_define_local_2(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let name = self.pop()?;
         self.current_stack_frame().unwrap().read().define(
@@ -874,7 +809,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_delete(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn action_delete(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let name_val = self.pop()?;
         let name = name_val.as_string()?;
         let object = self.pop()?.as_object()?;
@@ -885,7 +820,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_delete_2(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn action_delete_2(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let name_val = self.pop()?;
         let name = name_val.as_string()?;
 
@@ -903,7 +838,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_divide(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_divide(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // AS1 divide
         let a = self.pop()?;
         let b = self.pop()?;
@@ -916,13 +851,13 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_end_drag(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_end_drag(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // TODO(Herschel)
         log::error!("Unimplemented action: EndDrag");
         Ok(())
     }
 
-    fn action_enumerate(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn action_enumerate(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let name = self.pop()?;
         let name = name.as_string()?;
         self.push(Value::Null); // Sentinel that indicates end of enumeration
@@ -948,7 +883,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     #[allow(clippy::float_cmp)]
-    fn action_equals(&mut self, _context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn action_equals(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         // AS1 equality
         let a = self.pop()?;
         let b = self.pop()?;
@@ -958,7 +893,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     #[allow(clippy::float_cmp)]
-    fn action_equals_2(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_equals_2(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // Version >=5 equality
         let a = self.pop()?;
         let b = self.pop()?;
@@ -980,7 +915,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_get_member(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn action_get_member(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let name_val = self.pop()?;
         let name = name_val.into_string();
         let object = self.pop()?.as_object()?;
@@ -993,7 +928,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_get_property(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let prop_index = self.pop()?.into_number_v1() as usize;
         let clip_path = self.pop()?;
@@ -1038,18 +973,18 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_get_time(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_get_time(&mut self, context: &mut UpdateContext) -> Result<(), Error> {
         self.push(context.global_time as f64);
         Ok(())
     }
 
     /// Obtain the value of `_root`.
-    pub fn root_object(&self, context: &mut ActionContext<'_, 'gc, '_>) -> Value<'gc> {
+    pub fn root_object(&self, context: &mut UpdateContext<'_, 'gc, '_>) -> Value<'gc> {
         context.root.read().object()
     }
 
     /// Obtain the value of `_global`.
-    pub fn global_object(&self, _context: &mut ActionContext<'_, 'gc, '_>) -> Value<'gc> {
+    pub fn global_object(&self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Value<'gc> {
         Value::Object(self.globals)
     }
 
@@ -1060,7 +995,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_get_variable(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let var_path = self.pop()?;
         let path = var_path.as_string()?;
@@ -1093,7 +1028,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_get_url(
         &mut self,
-        context: &mut ActionContext,
+        context: &mut UpdateContext,
         url: &str,
         target: &str,
     ) -> Result<(), Error> {
@@ -1119,7 +1054,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_get_url_2(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         swf_method: swf::avm1::types::SendVarsMethod,
         is_target_sprite: bool,
         is_load_vars: bool,
@@ -1155,15 +1090,14 @@ impl<'gc> Avm1<'gc> {
 
     fn action_goto_frame(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         frame: u16,
     ) -> Result<(), Error> {
         if let Some(clip) = context.target_clip {
             let mut display_object = clip.write(context.gc_context);
             if let Some(clip) = display_object.as_movie_clip_mut() {
-                let mut update_context = self.update_context(context);
                 // The frame on the stack is 0-based, not 1-based.
-                clip.goto_frame(&mut update_context, frame + 1, true);
+                clip.goto_frame(context, frame + 1, true);
             } else {
                 log::error!("GotoFrame failed: Target is not a MovieClip");
             }
@@ -1175,7 +1109,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_goto_frame_2(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         set_playing: bool,
         scene_offset: u16,
     ) -> Result<(), Error> {
@@ -1184,19 +1118,14 @@ impl<'gc> Avm1<'gc> {
         if let Some(clip) = context.target_clip {
             let mut display_object = clip.write(context.gc_context);
             if let Some(clip) = display_object.as_movie_clip_mut() {
-                let mut update_context = self.update_context(context);
                 match self.pop()? {
                     Value::Number(frame) => {
                         // The frame on the stack is 1-based, not 0-based.
-                        clip.goto_frame(
-                            &mut update_context,
-                            scene_offset + (frame as u16),
-                            !set_playing,
-                        )
+                        clip.goto_frame(context, scene_offset + (frame as u16), !set_playing)
                     }
                     Value::String(frame_label) => {
                         if let Some(frame) = clip.frame_label_to_number(&frame_label) {
-                            clip.goto_frame(&mut update_context, scene_offset + frame, !set_playing)
+                            clip.goto_frame(context, scene_offset + frame, !set_playing)
                         } else {
                             log::warn!(
                                 "GotoFrame2: MovieClip {} does not contain frame label '{}'",
@@ -1218,15 +1147,14 @@ impl<'gc> Avm1<'gc> {
 
     fn action_goto_label(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         label: &str,
     ) -> Result<(), Error> {
         if let Some(clip) = context.target_clip {
             let mut display_object = clip.write(context.gc_context);
             if let Some(clip) = display_object.as_movie_clip_mut() {
                 if let Some(frame) = clip.frame_label_to_number(label) {
-                    let mut update_context = self.update_context(context);
-                    clip.goto_frame(&mut update_context, frame, true);
+                    clip.goto_frame(context, frame, true);
                 } else {
                     log::warn!("GoToLabel: Frame label '{}' not found", label);
                 }
@@ -1241,7 +1169,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_if(
         &mut self,
-        _context: &mut ActionContext,
+        _context: &mut UpdateContext,
         jump_offset: i16,
         reader: &mut Reader<'_>,
     ) -> Result<(), Error> {
@@ -1252,13 +1180,13 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_increment(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_increment(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let a = self.pop()?.as_number();
         self.push(a + 1.0);
         Ok(())
     }
 
-    fn action_init_array(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_init_array(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let num_elements = self.pop()?.as_i64()?;
         for _ in 0..num_elements {
             let _value = self.pop()?;
@@ -1268,7 +1196,7 @@ impl<'gc> Avm1<'gc> {
         Err("Unimplemented action: InitArray".into())
     }
 
-    fn action_init_object(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_init_object(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let num_props = self.pop()?.as_i64()?;
         for _ in 0..num_props {
             let _value = self.pop()?;
@@ -1281,7 +1209,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_jump(
         &mut self,
-        _context: &mut ActionContext,
+        _context: &mut UpdateContext,
         jump_offset: i16,
         reader: &mut Reader<'_>,
     ) -> Result<(), Error> {
@@ -1290,7 +1218,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_less(&mut self, _context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn action_less(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         // AS1 less than
         let a = self.pop()?;
         let b = self.pop()?;
@@ -1299,7 +1227,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_less_2(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_less_2(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // ECMA-262 s. 11.8.5
         let a = self.pop()?;
         let b = self.pop()?;
@@ -1313,7 +1241,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_greater(&mut self, _context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn action_greater(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         // AS1 less than
         let a = self.pop()?;
         let b = self.pop()?;
@@ -1322,7 +1250,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_mb_ascii_to_char(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_mb_ascii_to_char(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // TODO(Herschel): Results on incorrect operands?
         use std::convert::TryFrom;
         let val = char::try_from(self.pop()?.as_f64()? as u32)?;
@@ -1330,7 +1258,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_mb_char_to_ascii(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_mb_char_to_ascii(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // TODO(Herschel): Results on incorrect operands?
         let s = self.pop()?.into_string();
         let result = s.chars().nth(0).unwrap_or('\0') as u32;
@@ -1338,7 +1266,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_mb_string_extract(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_mb_string_extract(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // TODO(Herschel): Result with incorrect operands?
         let len = self.pop()?.as_f64()? as usize;
         let start = self.pop()?.as_f64()? as usize;
@@ -1348,14 +1276,14 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_mb_string_length(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_mb_string_length(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // TODO(Herschel): Result with non-string operands?
         let val = self.pop()?.into_string().len();
         self.push(val as f64);
         Ok(())
     }
 
-    fn action_multiply(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_multiply(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // AS1 multiply
         let a = self.pop()?;
         let b = self.pop()?;
@@ -1363,7 +1291,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_modulo(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_modulo(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // TODO: Wrong operands?
         let a = self.pop()?.as_f64()?;
         let b = self.pop()?.as_f64()?;
@@ -1371,7 +1299,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_not(&mut self, _context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn action_not(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         // AS1 logical not
         let val = self.pop()?;
         let result = val.into_number_v1() == 0.0;
@@ -1379,12 +1307,11 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_next_frame(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn action_next_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         if let Some(clip) = context.target_clip {
             let mut display_object = clip.write(context.gc_context);
             if let Some(clip) = display_object.as_movie_clip_mut() {
-                let mut update_context = self.update_context(context);
-                clip.next_frame(&mut update_context);
+                clip.next_frame(context);
             } else {
                 log::warn!("NextFrame: Target is not a MovieClip");
             }
@@ -1394,7 +1321,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_new_method(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_new_method(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let _name = self.pop()?.as_string()?;
         let _object = self.pop()?.as_object()?;
         let _num_args = self.pop()?.as_i64()?;
@@ -1403,7 +1330,7 @@ impl<'gc> Avm1<'gc> {
         Err("Unimplemented action: NewMethod".into())
     }
 
-    fn action_new_object(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_new_object(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let _object = self.pop()?.as_string()?;
         let num_args = self.pop()?.as_i64()?;
         for _ in 0..num_args {
@@ -1414,7 +1341,7 @@ impl<'gc> Avm1<'gc> {
         Err("Unimplemented action: NewObject".into())
     }
 
-    fn action_or(&mut self, _context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn action_or(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         // AS1 logical or
         let a = self.pop()?;
         let b = self.pop()?;
@@ -1423,7 +1350,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_play(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_play(&mut self, context: &mut UpdateContext) -> Result<(), Error> {
         if let Some(clip) = context.target_clip {
             let mut display_object = clip.write(context.gc_context);
             if let Some(clip) = display_object.as_movie_clip_mut() {
@@ -1437,12 +1364,11 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_prev_frame(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn action_prev_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         if let Some(clip) = context.target_clip {
             let mut display_object = clip.write(context.gc_context);
             if let Some(clip) = display_object.as_movie_clip_mut() {
-                let mut update_context = self.update_context(context);
-                clip.prev_frame(&mut update_context);
+                clip.prev_frame(context);
             } else {
                 log::warn!("PrevFrame: Target is not a MovieClip");
             }
@@ -1452,14 +1378,14 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_pop(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_pop(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         self.pop()?;
         Ok(())
     }
 
     fn action_push(
         &mut self,
-        _context: &mut ActionContext,
+        _context: &mut UpdateContext,
         values: &[swf::avm1::types::Value],
     ) -> Result<(), Error> {
         for value in values {
@@ -1491,13 +1417,13 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_push_duplicate(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_push_duplicate(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let val = self.stack.last().ok_or("Stack underflow")?.clone();
         self.push(val);
         Ok(())
     }
 
-    fn action_random_number(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_random_number(&mut self, context: &mut UpdateContext) -> Result<(), Error> {
         // A max value < 0 will always return 0,
         // and the max value gets converted into an i32, so any number > 2^31 - 1 will return 0.
         let max = self.pop()?.into_number_v1() as i32;
@@ -1506,14 +1432,14 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_remove_sprite(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_remove_sprite(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let _target = self.pop()?.into_string();
         // TODO(Herschel)
         log::error!("Unimplemented action: RemoveSprite");
         Ok(())
     }
 
-    fn action_return(&mut self, _context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn action_return(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let result = self.pop()?;
 
         if self.stack_frames.len() > 1 {
@@ -1524,7 +1450,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_set_member(&mut self, context: &mut ActionContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn action_set_member(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let value = self.pop()?;
         let name_val = self.pop()?;
         let name = name_val.as_string()?;
@@ -1537,7 +1463,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_set_property(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_set_property(&mut self, context: &mut UpdateContext) -> Result<(), Error> {
         let value = self.pop()?.into_number_v1() as f32;
         let prop_index = self.pop()?.as_u32()? as usize;
         let clip_path = self.pop()?;
@@ -1567,7 +1493,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_set_variable(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         // Flash 4-style variable
         let value = self.pop()?;
@@ -1576,7 +1502,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     #[allow(clippy::float_cmp)]
-    fn action_strict_equals(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_strict_equals(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // The same as normal equality but types must match
         let a = self.pop()?;
         let b = self.pop()?;
@@ -1587,7 +1513,7 @@ impl<'gc> Avm1<'gc> {
 
     pub fn set_variable(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         var_path: &str,
         value: Value<'gc>,
     ) -> Result<(), Error> {
@@ -1626,7 +1552,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_set_target(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         target: &str,
     ) -> Result<(), Error> {
         if target.is_empty() {
@@ -1670,7 +1596,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_set_target2(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let target = self.pop()?;
         if let Ok(target) = target.as_string() {
@@ -1681,7 +1607,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_stack_swap(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_stack_swap(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let a = self.pop()?;
         let b = self.pop()?;
         self.push(a);
@@ -1689,7 +1615,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_start_drag(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_start_drag(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let _target = self.pop()?;
         let _lock_center = self.pop()?.as_bool(self.current_swf_version());
         let constrain = self.pop()?.as_bool(self.current_swf_version());
@@ -1703,7 +1629,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_stop(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_stop(&mut self, context: &mut UpdateContext) -> Result<(), Error> {
         if let Some(clip) = context.target_clip {
             let mut display_object = clip.write(context.gc_context);
             if let Some(clip) = display_object.as_movie_clip_mut() {
@@ -1717,14 +1643,14 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_stop_sounds(&mut self, context: &mut ActionContext) -> Result<(), Error> {
+    fn action_stop_sounds(&mut self, context: &mut UpdateContext) -> Result<(), Error> {
         context.audio.stop_all_sounds();
         Ok(())
     }
 
     fn action_store_register(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         register: u8,
     ) -> Result<(), Error> {
         // Does NOT pop the value from the stack.
@@ -1734,7 +1660,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_string_add(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_string_add(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // SWFv4 string concatenation
         // TODO(Herschel): Result with non-string operands?
         let a = self.pop()?.into_string();
@@ -1746,7 +1672,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_string_equals(
         &mut self,
-        _context: &mut ActionContext<'_, 'gc, '_>,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         // AS1 strcmp
         let a = self.pop()?;
@@ -1756,7 +1682,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_string_extract(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_string_extract(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // SWFv4 substring
         // TODO(Herschel): Result with incorrect operands?
         let len = self.pop()?.as_f64()? as usize;
@@ -1776,7 +1702,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_string_greater(
         &mut self,
-        _context: &mut ActionContext<'_, 'gc, '_>,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         // AS1 strcmp
         let a = self.pop()?;
@@ -1787,7 +1713,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_string_length(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_string_length(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // AS1 strlen
         // Only returns byte length.
         // TODO(Herschel): Result with non-string operands?
@@ -1798,7 +1724,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_string_less(
         &mut self,
-        _context: &mut ActionContext<'_, 'gc, '_>,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         // AS1 strcmp
         let a = self.pop()?;
@@ -1809,7 +1735,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_subtract(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_subtract(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let a = self.pop()?;
         let b = self.pop()?;
         self.push(b.into_number_v1() - a.into_number_v1());
@@ -1818,7 +1744,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_target_path(
         &mut self,
-        _context: &mut ActionContext<'_, 'gc, '_>,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         // TODO(Herschel)
         let _clip = self.pop()?.as_object()?;
@@ -1826,36 +1752,36 @@ impl<'gc> Avm1<'gc> {
         Err("Unimplemented action: TargetPath".into())
     }
 
-    fn toggle_quality(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn toggle_quality(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // TODO(Herschel): Noop for now? Could chang anti-aliasing on render backend.
         Ok(())
     }
 
-    fn action_to_integer(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_to_integer(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let val = self.pop()?;
         self.push(val.into_number_v1().trunc());
         Ok(())
     }
 
-    fn action_to_number(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_to_number(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let val = self.pop()?;
         self.push(val.as_number());
         Ok(())
     }
 
-    fn action_to_string(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_to_string(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let val = self.pop()?;
         self.push(val.into_string());
         Ok(())
     }
 
-    fn action_trace(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_trace(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let val = self.pop()?;
         log::info!(target: "avm_trace", "{}", val.into_string());
         Ok(())
     }
 
-    fn action_type_of(&mut self, _context: &mut ActionContext) -> Result<(), Error> {
+    fn action_type_of(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         let type_of = self.pop()?.type_of();
         self.push(type_of);
         Ok(())
@@ -1863,7 +1789,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_wait_for_frame(
         &mut self,
-        _context: &mut ActionContext,
+        _context: &mut UpdateContext,
         _frame: u16,
         num_actions_to_skip: u8,
         r: &mut Reader<'_>,
@@ -1880,7 +1806,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_wait_for_frame_2(
         &mut self,
-        _context: &mut ActionContext,
+        _context: &mut UpdateContext,
         num_actions_to_skip: u8,
         r: &mut Reader<'_>,
     ) -> Result<(), Error> {
@@ -1897,7 +1823,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_with(
         &mut self,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         actions: &[u8],
     ) -> Result<(), Error> {
         let object = self.pop()?.as_object()?;

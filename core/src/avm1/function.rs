@@ -4,14 +4,14 @@ use crate::avm1::activation::Activation;
 use crate::avm1::object::{Attribute::*, Object};
 use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
-use crate::avm1::{ActionContext, Avm1};
+use crate::avm1::{Avm1, UpdateContext};
 use crate::tag_utils::SwfSlice;
 use gc_arena::GcCell;
 use swf::avm1::types::FunctionParam;
 
 pub type NativeFunction<'gc> = fn(
     &mut Avm1<'gc>,
-    &mut ActionContext<'_, 'gc, '_>,
+    &mut UpdateContext<'_, 'gc, '_>,
     GcCell<'gc, Object<'gc>>,
     &[Value<'gc>],
 ) -> Value<'gc>;
@@ -166,7 +166,7 @@ impl<'gc> Executable<'gc> {
     pub fn exec(
         &self,
         avm: &mut Avm1<'gc>,
-        ac: &mut ActionContext<'_, 'gc, '_>,
+        ac: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Option<Value<'gc>> {

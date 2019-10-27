@@ -1,5 +1,5 @@
 use crate::avm1::activation::Activation;
-use crate::avm1::{ActionContext, Avm1, Object, Value};
+use crate::avm1::{Avm1, Object, UpdateContext, Value};
 use crate::backend::audio::NullAudioBackend;
 use crate::backend::navigator::NullNavigatorBackend;
 use crate::backend::render::NullRenderer;
@@ -15,7 +15,7 @@ pub fn with_avm<F, R>(swf_version: u8, test: F) -> R
 where
     F: for<'a, 'gc> FnOnce(
         &mut Avm1<'gc>,
-        &mut ActionContext<'a, 'gc, '_>,
+        &mut UpdateContext<'a, 'gc, '_>,
         GcCell<'gc, Object<'gc>>,
     ) -> R,
 {
@@ -23,10 +23,11 @@ where
         let mut avm = Avm1::new(gc_context, swf_version);
         let movie_clip: Box<dyn DisplayObject> = Box::new(MovieClip::new(swf_version, gc_context));
         let root = GcCell::allocate(gc_context, movie_clip);
-        let mut context = ActionContext {
+        let mut context = UpdateContext {
             gc_context,
             global_time: 0,
             player_version: 32,
+            swf_version,
             root,
             start_clip: root,
             active_clip: root,

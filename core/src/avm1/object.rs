@@ -1,6 +1,6 @@
 use self::Attribute::*;
 use crate::avm1::function::{Avm1Function, Executable, NativeFunction};
-use crate::avm1::{ActionContext, Avm1, Value};
+use crate::avm1::{Avm1, UpdateContext, Value};
 use crate::display_object::DisplayNode;
 use core::fmt;
 use enumset::{EnumSet, EnumSetType};
@@ -15,7 +15,7 @@ pub const TYPE_OF_MOVIE_CLIP: &str = "movieclip";
 
 fn default_to_string<'gc>(
     _: &mut Avm1<'gc>,
-    _: &mut ActionContext<'_, 'gc, '_>,
+    _: &mut UpdateContext<'_, 'gc, '_>,
     _: GcCell<'gc, Object<'gc>>,
     _: &[Value<'gc>],
 ) -> Value<'gc> {
@@ -46,7 +46,7 @@ impl<'gc> Property<'gc> {
     pub fn get(
         &self,
         avm: &mut Avm1<'gc>,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
     ) -> Value<'gc> {
         match self {
@@ -58,7 +58,7 @@ impl<'gc> Property<'gc> {
     pub fn set(
         &mut self,
         avm: &mut Avm1<'gc>,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
         new_value: impl Into<Value<'gc>>,
     ) {
@@ -216,7 +216,7 @@ impl<'gc> Object<'gc> {
         name: &str,
         value: impl Into<Value<'gc>>,
         avm: &mut Avm1<'gc>,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
     ) {
         match self.values.entry(name.to_owned()) {
@@ -284,7 +284,7 @@ impl<'gc> Object<'gc> {
         &self,
         name: &str,
         avm: &mut Avm1<'gc>,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
     ) -> Value<'gc> {
         if let Some(value) = self.values.get(name) {
@@ -338,7 +338,7 @@ impl<'gc> Object<'gc> {
     pub fn call(
         &self,
         avm: &mut Avm1<'gc>,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Option<Value<'gc>> {
@@ -385,7 +385,7 @@ mod tests {
     where
         F: for<'a, 'gc> FnOnce(
             &mut Avm1<'gc>,
-            &mut ActionContext<'a, 'gc, '_>,
+            &mut UpdateContext<'a, 'gc, '_>,
             GcCell<'gc, Object<'gc>>,
         ) -> R,
     {
@@ -394,10 +394,11 @@ mod tests {
             let movie_clip: Box<dyn DisplayObject> =
                 Box::new(MovieClip::new(swf_version, gc_context));
             let root = GcCell::allocate(gc_context, movie_clip);
-            let mut context = ActionContext {
+            let mut context = UpdateContext {
                 gc_context,
                 global_time: 0,
                 player_version: 32,
+                swf_version,
                 root,
                 start_clip: root,
                 active_clip: root,
