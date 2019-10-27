@@ -66,6 +66,7 @@ swf_tests! {
     (has_own_property, "avm1/has_own_property", 1),
     #[ignore] (extends_chain, "avm1/extends_chain", 1),
     (is_prototype_of, "avm1/is_prototype_of", 1),
+    #[ignore] (string_coercion, "avm1/string_coercion", 1),
 }
 
 #[test]
