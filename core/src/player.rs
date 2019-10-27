@@ -1,4 +1,4 @@
-use crate::avm1::Avm1;
+use crate::avm1::{self, Avm1};
 use crate::backend::{
     audio::AudioBackend, navigator::NavigatorBackend, render::Letterbox, render::RenderBackend,
 };
@@ -319,6 +319,10 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 action_queue: &mut *gc_root.action_queue.write(gc_context),
                 gc_context,
                 active_clip: gc_root.root,
+                start_clip: gc_root.root,
+                target_clip: Some(gc_root.root),
+                root: gc_root.root,
+                target_path: avm1::Value::Undefined,
             };
 
             if let Some(node) = &*gc_root.mouse_hover_node.read() {
@@ -343,11 +347,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 }
             }
 
-            Self::run_actions(
-                &mut *gc_root.avm.write(gc_context),
-                &mut update_context,
-                gc_root.root,
-            );
+            Self::run_actions(&mut *gc_root.avm.write(gc_context), &mut update_context);
         });
 
         if needs_render {
@@ -397,6 +397,10 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                     action_queue: &mut *gc_root.action_queue.write(gc_context),
                     gc_context,
                     active_clip: gc_root.root,
+                    start_clip: gc_root.root,
+                    target_clip: Some(gc_root.root),
+                    root: gc_root.root,
+                    target_path: avm1::Value::Undefined,
                 };
 
                 // RollOut of previous node.
@@ -417,11 +421,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
 
                 *cur_hover_node = new_hover_node;
 
-                Self::run_actions(
-                    &mut *gc_root.avm.write(gc_context),
-                    &mut update_context,
-                    gc_root.root,
-                );
+                Self::run_actions(&mut *gc_root.avm.write(gc_context), &mut update_context);
                 true
             } else {
                 false
@@ -467,6 +467,10 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 action_queue: &mut *gc_root.action_queue.write(gc_context),
                 gc_context,
                 active_clip: gc_root.root,
+                start_clip: gc_root.root,
+                target_clip: Some(gc_root.root),
+                root: gc_root.root,
+                target_path: avm1::Value::Undefined,
             };
 
             let mut morph_shapes = fnv::FnvHashMap::default();
@@ -526,6 +530,10 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 action_queue: &mut *gc_root.action_queue.write(gc_context),
                 gc_context,
                 active_clip: gc_root.root,
+                start_clip: gc_root.root,
+                target_clip: Some(gc_root.root),
+                root: gc_root.root,
+                target_path: avm1::Value::Undefined,
             };
 
             gc_root
@@ -533,11 +541,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 .write(gc_context)
                 .run_frame(&mut update_context);
 
-            Self::run_actions(
-                &mut *gc_root.avm.write(gc_context),
-                &mut update_context,
-                gc_root.root,
-            );
+            Self::run_actions(&mut *gc_root.avm.write(gc_context), &mut update_context);
         });
 
         // Update mouse state (check for new hovered button, etc.)
@@ -594,48 +598,18 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         &mut self.renderer
     }
 
-    fn run_actions<'gc>(
-        avm: &mut Avm1<'gc>,
-        update_context: &mut UpdateContext<'_, 'gc, '_>,
-        root: DisplayNode<'gc>,
-    ) {
-        // TODO: Loop here because goto-ing a frame can queue up for actions.
-        // I think this will eventually be cleaned up;
-        // Need to figure out the proper order of operations between ticking a clip
-        // and running the actions.
-        while let Some(actions) = update_context.action_queue.pop() {
+    fn run_actions<'gc>(avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) {
+        while let Some(actions) = context.action_queue.pop() {
             // We don't run the action f the clip was removed after it queued the action.
             if actions.clip.read().removed() {
                 continue;
             }
-            let mut action_context = crate::avm1::ActionContext {
-                gc_context: update_context.gc_context,
-                global_time: update_context.global_time,
-                root,
-                player_version: update_context.player_version,
-                start_clip: root,
-                active_clip: root,
-                target_clip: Some(root),
-                target_path: crate::avm1::Value::Undefined,
-                action_queue: &mut update_context.action_queue,
-                rng: update_context.rng,
-                audio: update_context.audio,
-                background_color: update_context.background_color,
-                library: update_context.library,
-                navigator: update_context.navigator,
-                renderer: update_context.renderer,
-                swf_data: update_context.swf_data,
-            };
 
-            action_context.start_clip = actions.clip;
-            action_context.active_clip = actions.clip;
-            action_context.target_clip = Some(actions.clip);
-            avm.insert_stack_frame_for_action(
-                update_context.swf_version,
-                actions.actions,
-                &mut action_context,
-            );
-            let _ = avm.run_stack_till_empty(&mut action_context);
+            context.start_clip = actions.clip;
+            context.active_clip = actions.clip;
+            context.target_clip = Some(actions.clip);
+            avm.insert_stack_frame_for_action(context.swf_version, actions.actions, context);
+            let _ = avm.run_stack_till_empty(context);
         }
     }
 
@@ -693,19 +667,44 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
 }
 
 pub struct UpdateContext<'a, 'gc, 'gc_context> {
-    pub player_version: u8,
-    pub swf_version: u8,
-    pub swf_data: &'a Arc<Vec<u8>>,
+    pub action_queue: &'a mut ActionQueue<'gc>,
+    pub background_color: &'a mut Color,
+    pub gc_context: MutationContext<'gc, 'gc_context>,
     pub global_time: u64,
     pub library: &'a mut Library<'gc>,
-    pub gc_context: MutationContext<'gc, 'gc_context>,
-    pub background_color: &'a mut Color,
-    pub renderer: &'a mut dyn RenderBackend,
+    pub player_version: u8,
+    pub swf_data: &'a Arc<Vec<u8>>,
+    pub swf_version: u8,
+
     pub audio: &'a mut dyn AudioBackend,
     pub navigator: &'a mut dyn NavigatorBackend,
+    pub renderer: &'a mut dyn RenderBackend,
     pub rng: &'a mut SmallRng,
-    pub action_queue: &'a mut ActionQueue<'gc>,
+
+    /// The `DisplayNode` that this code is running in.
+    /// Used by all `DisplayObject` methods and AVM1 `GetVariable`/`SetVariable`/`this`.
     pub active_clip: DisplayNode<'gc>,
+
+    /// The root of the current timeline.
+    /// This will generally be `_level0`, except for loadMovie/loadMovieNum.
+    pub root: DisplayNode<'gc>,
+
+    /// The base clip for Flash 4-era actions.
+    /// Used by `Play`, `GetProperty`, etc.
+    pub start_clip: DisplayNode<'gc>,
+
+    /// The object targeted with `tellTarget`.
+    /// This is used for Flash 4-era actions, such as
+    /// `Play`, `GetProperty`, etc.
+    /// This will be `None` after an invalid tell target.
+    pub target_clip: Option<DisplayNode<'gc>>,
+
+    /// The last path string used by `tellTarget`.
+    /// Returned by `GetProperty`.
+    /// TODO: This should actually be built dynamically upon
+    /// request, but this requires us to implement auto-generated
+    /// _names ("instanceN" etc. for unnamed clips).
+    pub target_path: avm1::Value<'gc>,
 }
 
 pub struct RenderContext<'a, 'gc> {

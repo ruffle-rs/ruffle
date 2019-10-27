@@ -2,7 +2,7 @@
 
 use crate::avm1::object::Object;
 use crate::avm1::scope::Scope;
-use crate::avm1::{ActionContext, Avm1, Value};
+use crate::avm1::{Avm1, UpdateContext, Value};
 use crate::tag_utils::SwfSlice;
 use gc_arena::{GcCell, MutationContext};
 use smallvec::SmallVec;
@@ -244,7 +244,7 @@ impl<'gc> Activation<'gc> {
         &self,
         name: &str,
         avm: &mut Avm1<'gc>,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Value<'gc> {
         if name == "this" {
             return Value::Object(self.this);

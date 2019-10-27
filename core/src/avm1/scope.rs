@@ -1,6 +1,6 @@
 //! Represents AVM1 scope chain resolution.
 
-use crate::avm1::{ActionContext, Avm1, Object, Value};
+use crate::avm1::{Avm1, Object, UpdateContext, Value};
 use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
@@ -240,7 +240,7 @@ impl<'gc> Scope<'gc> {
         &self,
         name: &str,
         avm: &mut Avm1<'gc>,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
     ) -> Value<'gc> {
         if self.locals().has_property(name) {
@@ -279,7 +279,7 @@ impl<'gc> Scope<'gc> {
         name: &str,
         value: Value<'gc>,
         avm: &mut Avm1<'gc>,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
     ) -> Option<Value<'gc>> {
         if self.locals().has_property(name) {

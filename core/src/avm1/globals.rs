@@ -1,5 +1,5 @@
 use crate::avm1::fscommand;
-use crate::avm1::{ActionContext, Avm1, Object, Value};
+use crate::avm1::{Avm1, Object, UpdateContext, Value};
 use crate::backend::navigator::NavigationMethod;
 use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
@@ -10,7 +10,7 @@ mod math;
 #[allow(non_snake_case, unused_must_use)] //can't use errors yet
 pub fn getURL<'a, 'gc>(
     avm: &mut Avm1<'gc>,
-    context: &mut ActionContext<'a, 'gc, '_>,
+    context: &mut UpdateContext<'a, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Value<'gc> {
@@ -38,7 +38,7 @@ pub fn getURL<'a, 'gc>(
 
 pub fn random<'gc>(
     _avm: &mut Avm1<'gc>,
-    action_context: &mut ActionContext<'_, 'gc, '_>,
+    action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Value<'gc> {
@@ -52,7 +52,7 @@ pub fn random<'gc>(
 
 pub fn boolean<'gc>(
     avm: &mut Avm1<'gc>,
-    _action_context: &mut ActionContext<'_, 'gc, '_>,
+    _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Value<'gc> {
@@ -65,7 +65,7 @@ pub fn boolean<'gc>(
 
 pub fn number<'gc>(
     _avm: &mut Avm1<'gc>,
-    _action_context: &mut ActionContext<'_, 'gc, '_>,
+    _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Value<'gc> {
@@ -78,7 +78,7 @@ pub fn number<'gc>(
 
 pub fn is_nan<'gc>(
     _avm: &mut Avm1<'gc>,
-    _action_context: &mut ActionContext<'_, 'gc, '_>,
+    _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Value<'gc> {

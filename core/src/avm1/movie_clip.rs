@@ -1,5 +1,5 @@
 use crate::avm1::object::{Attribute::*, Object};
-use crate::avm1::{ActionContext, Avm1, Value};
+use crate::avm1::{Avm1, UpdateContext, Value};
 use crate::display_object::{DisplayNode, MovieClip};
 use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
@@ -29,10 +29,10 @@ macro_rules! with_movie_clip_mut {
         $(
             $object.force_set_function(
                 $name,
-                |avm, context: &mut ActionContext<'_, 'gc, '_>, this, args| -> Value<'gc> {
+                |_avm, context: &mut UpdateContext<'_, 'gc, '_>, this, args| -> Value<'gc> {
                     if let Some(display_object) = this.read().display_node() {
                         if let Some(movie_clip) = display_object.write(context.gc_context).as_movie_clip_mut() {
-                            return $fn(movie_clip, avm, context, display_object, args);
+                            return $fn(movie_clip, context, display_object, args);
                         }
                     }
                     Value::Undefined
@@ -46,7 +46,7 @@ macro_rules! with_movie_clip_mut {
 
 pub fn overwrite_root<'gc>(
     _avm: &mut Avm1<'gc>,
-    ac: &mut ActionContext<'_, 'gc, '_>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
     this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Value<'gc> {
@@ -62,7 +62,7 @@ pub fn overwrite_root<'gc>(
 
 pub fn overwrite_global<'gc>(
     _avm: &mut Avm1<'gc>,
-    ac: &mut ActionContext<'_, 'gc, '_>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
     this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Value<'gc> {
@@ -82,21 +82,19 @@ pub fn create_movie_object<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<
     with_movie_clip_mut!(
         gc_context,
         object,
-        "nextFrame" => |movie_clip: &mut MovieClip<'gc>, avm: &mut Avm1<'gc>, context: &mut ActionContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
-            let mut update_context = avm.update_context(context);
-            movie_clip.next_frame(&mut update_context);
+        "nextFrame" => |movie_clip: &mut MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
+            movie_clip.next_frame(context);
             Value::Undefined
         },
-        "prevFrame" =>  |movie_clip: &mut MovieClip<'gc>, avm: &mut Avm1<'gc>, context: &mut ActionContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
-            let mut update_context = avm.update_context(context);
-            movie_clip.prev_frame(&mut update_context);
+        "prevFrame" =>  |movie_clip: &mut MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
+            movie_clip.prev_frame(context);
             Value::Undefined
         },
-        "play" => |movie_clip: &mut MovieClip<'gc>, _avm: &mut Avm1<'gc>, _context: &mut ActionContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
+        "play" => |movie_clip: &mut MovieClip<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
             movie_clip.play();
             Value::Undefined
         },
-        "stop" => |movie_clip: &mut MovieClip<'gc>, _avm: &mut Avm1<'gc>, _context: &mut ActionContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
+        "stop" => |movie_clip: &mut MovieClip<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
             movie_clip.stop();
             Value::Undefined
         }

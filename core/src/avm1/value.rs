@@ -1,5 +1,5 @@
 use crate::avm1::object::Object;
-use crate::avm1::{ActionContext, Avm1, Error};
+use crate::avm1::{Avm1, Error, UpdateContext};
 use gc_arena::GcCell;
 
 #[derive(Clone, Debug)]
@@ -254,7 +254,7 @@ impl<'gc> Value<'gc> {
     pub fn call(
         &self,
         avm: &mut Avm1<'gc>,
-        context: &mut ActionContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<Option<Value<'gc>>, Error> {
