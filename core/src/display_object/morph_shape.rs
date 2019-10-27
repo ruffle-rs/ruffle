@@ -1,6 +1,6 @@
 use crate::backend::render::{RenderBackend, ShapeHandle};
+use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObject, DisplayObjectBase};
-use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use swf::Twips;
 

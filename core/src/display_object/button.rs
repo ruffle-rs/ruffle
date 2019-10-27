@@ -1,6 +1,6 @@
+use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObject, DisplayObjectBase};
 use crate::events::ButtonEvent;
-use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use std::collections::BTreeMap;
 
@@ -61,7 +61,7 @@ impl<'gc> Button<'gc> {
 
     fn set_state(
         &mut self,
-        context: &mut crate::player::UpdateContext<'_, 'gc, '_>,
+        context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
         state: ButtonState,
     ) {
         self.state = state;
@@ -94,7 +94,7 @@ impl<'gc> Button<'gc> {
 
     pub fn handle_button_event(
         &mut self,
-        context: &mut crate::player::UpdateContext<'_, 'gc, '_>,
+        context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
         event: ButtonEvent,
     ) {
         let new_state = match event {

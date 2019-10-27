@@ -2,7 +2,7 @@ use crate::avm1::function::Avm1Function;
 use crate::avm1::globals::create_globals;
 use crate::avm1::object::Object;
 use crate::backend::navigator::NavigationMethod;
-use crate::player::UpdateContext;
+use crate::context::UpdateContext;
 use crate::prelude::*;
 use gc_arena::{GcCell, MutationContext};
 use rand::Rng;

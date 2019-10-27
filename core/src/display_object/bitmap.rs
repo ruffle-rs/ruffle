@@ -1,8 +1,8 @@
 //! Bitmap display object
 
 use crate::backend::render::BitmapHandle;
+use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObject, DisplayObjectBase};
-use crate::player::{RenderContext, UpdateContext};
 use crate::prelude::*;
 use gc_arena::Gc;
 

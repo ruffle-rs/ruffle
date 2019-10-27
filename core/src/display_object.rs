@@ -1,5 +1,6 @@
 use crate::avm1::Value;
-use crate::player::{RenderContext, UpdateContext, NEWEST_PLAYER_VERSION};
+use crate::context::{RenderContext, UpdateContext};
+use crate::player::NEWEST_PLAYER_VERSION;
 use crate::prelude::*;
 use crate::transform::Transform;
 use gc_arena::{Collect, GcCell, MutationContext};
