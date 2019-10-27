@@ -15,6 +15,7 @@ pub fn constructor<'gc>(
     Ok(Value::Undefined.into())
 }
 
+/// Implements `Function.prototype.call`
 pub fn call<'gc>(
     _avm: &mut Avm1<'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
@@ -24,6 +25,7 @@ pub fn call<'gc>(
     Ok(Value::Undefined.into())
 }
 
+/// Implements `Function.prototype.apply`
 pub fn apply<'gc>(
     _avm: &mut Avm1<'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
@@ -31,6 +33,16 @@ pub fn apply<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     Ok(Value::Undefined.into())
+}
+
+/// Implements `Function.prototype.toString`
+fn to_string<'gc>(
+    _: &mut Avm1<'gc>,
+    _: &mut UpdateContext<'_, 'gc, '_>,
+    _: Object<'gc>,
+    _: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    Ok(ReturnValue::Immediate("[type Function]".into()))
 }
 
 /// Partially construct `Function.prototype`.
@@ -51,6 +63,10 @@ pub fn create_proto<'gc>(gc_context: MutationContext<'gc, '_>, proto: Object<'gc
         .as_script_object()
         .unwrap()
         .force_set_function("apply", apply, gc_context, EnumSet::empty(), this);
+    function_proto
+        .as_script_object()
+        .unwrap()
+        .force_set_function("toString", to_string, gc_context, EnumSet::empty(), this);
 
     function_proto
 }
