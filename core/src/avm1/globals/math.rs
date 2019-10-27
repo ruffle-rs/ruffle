@@ -1,6 +1,7 @@
+use crate::avm1::object::ObjectCell;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, Object, ObjectCell, ScriptObject, UpdateContext, Value};
+use crate::avm1::{Avm1, Error, Object, ScriptObject, UpdateContext, Value};
 use gc_arena::{GcCell, MutationContext};
 use rand::Rng;
 use std::f64::NAN;
@@ -10,9 +11,9 @@ macro_rules! wrap_std {
         $(
             $object.force_set_function(
                 $name,
-                |_avm, _context, _this, args| -> Result<ReturnValue<'gc>, Error> {
+                |avm, context, _this, args| -> Result<ReturnValue<'gc>, Error> {
                     if let Some(input) = args.get(0) {
-                        Ok($std(input.as_number()).into())
+                        Ok($std(input.as_number(avm, context)?).into())
                     } else {
                         Ok(NAN.into())
                     }
@@ -26,16 +27,19 @@ macro_rules! wrap_std {
 }
 
 fn atan2<'gc>(
-    _avm: &mut Avm1<'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
     _this: ObjectCell<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(y) = args.get(0) {
         if let Some(x) = args.get(1) {
-            return Ok(y.as_number().atan2(x.as_number()).into());
+            return Ok(y
+                .as_number(avm, context)?
+                .atan2(x.as_number(avm, context)?)
+                .into());
         } else {
-            return Ok(y.as_number().atan2(0.0).into());
+            return Ok(y.as_number(avm, context)?.atan2(0.0).into());
         }
     }
     Ok(NAN.into())

@@ -67,26 +67,26 @@ pub fn boolean<'gc>(
 }
 
 pub fn number<'gc>(
-    _avm: &mut Avm1<'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    avm: &mut Avm1<'gc>,
+    action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: ObjectCell<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(val) = args.get(0) {
-        Ok(val.as_number().into())
+        Ok(val.as_number(avm, action_context)?.into())
     } else {
         Ok(0.0.into())
     }
 }
 
 pub fn is_nan<'gc>(
-    _avm: &mut Avm1<'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    avm: &mut Avm1<'gc>,
+    action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: ObjectCell<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(val) = args.get(0) {
-        Ok(val.as_number().is_nan().into())
+        Ok(val.as_number(avm, action_context)?.is_nan().into())
     } else {
         Ok(true.into())
     }

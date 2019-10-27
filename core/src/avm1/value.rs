@@ -1,5 +1,7 @@
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, ObjectCell, UpdateContext};
+use gc_arena::GcCell;
+use std::f64::NAN;
 
 #[derive(Clone, Debug)]
 #[allow(dead_code)]
@@ -123,9 +125,8 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn as_number(&self) -> f64 {
-        // ECMA-262 2nd edtion s. 9.3 ToNumber
-        use std::f64::NAN;
+    /// ECMA-262 2nd edtion s. 9.3 ToNumber (after calling `to_primitive_num`)
+    fn primitive_as_number(&self) -> f64 {
         match self {
             Value::Undefined => NAN,
             Value::Null => NAN,
@@ -162,10 +163,167 @@ impl<'gc> Value<'gc> {
                 "" => 0.0,
                 _ => v.parse().unwrap_or(NAN),
             },
-            Value::Object(_object) => {
-                log::error!("Unimplemented: Object ToNumber");
-                0.0
+            Value::Object(_) => NAN,
+        }
+    }
+
+    /// ECMA-262 2nd edition s. 9.3 ToNumber
+    pub fn as_number(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<f64, Error> {
+        Ok(match self {
+            Value::Object(_) => self.to_primitive_num(avm, context)?.primitive_as_number(),
+            val => val.primitive_as_number(),
+        })
+    }
+
+    /// ECMA-262 2nd edition s. 9.1 ToPrimitive (hint: Number)
+    ///
+    /// NOTE: This deliberately omits the part of the spec where you're
+    /// supposed to fall back to `toString`, because Flash did the same thing.
+    pub fn to_primitive_num(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        Ok(match self {
+            Value::Object(object) => {
+                let value_of_impl = object
+                    .read()
+                    .get("valueOf", avm, context, *object)?
+                    .resolve(avm, context)?;
+                if let Value::Object(value_of_impl) = value_of_impl {
+                    let fake_args = Vec::new();
+                    value_of_impl
+                        .read()
+                        .call(avm, context, *object, &fake_args)?
+                        .resolve(avm, context)?
+                } else {
+                    self.to_owned()
+                }
             }
+            val => val.to_owned(),
+        })
+    }
+
+    /// ECMA-262 2nd edition s. 11.8.5 Abstract relational comparison algorithm
+    #[allow(clippy::float_cmp)]
+    pub fn abstract_lt(
+        &self,
+        other: Value<'gc>,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        let prim_self = self.to_primitive_num(avm, context)?;
+        let prim_other = other.to_primitive_num(avm, context)?;
+
+        if let (Value::String(a), Value::String(b)) = (&prim_self, &prim_other) {
+            return Ok(a.to_string().bytes().lt(b.to_string().bytes()).into());
+        }
+
+        let num_self = prim_self.primitive_as_number();
+        let num_other = prim_other.primitive_as_number();
+
+        if num_self.is_nan() || num_other.is_nan() {
+            return Ok(Value::Undefined);
+        }
+
+        if num_self == num_other
+            || num_self == 0.0 && num_other == -0.0
+            || num_self == -0.0 && num_other == 0.0
+            || num_self.is_infinite() && num_self.is_sign_positive()
+            || num_other.is_infinite() && num_other.is_sign_negative()
+        {
+            return Ok(false.into());
+        }
+
+        if num_self.is_infinite() && num_self.is_sign_negative()
+            || num_other.is_infinite() && num_other.is_sign_positive()
+        {
+            return Ok(true.into());
+        }
+
+        Ok((num_self < num_other).into())
+    }
+
+    /// ECMA-262 2nd edition s. 11.9.3 Abstract equality comparison algorithm
+    pub fn abstract_eq(
+        &self,
+        other: Value<'gc>,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        match (self, &other) {
+            (Value::Undefined, Value::Undefined) => Ok(true.into()),
+            (Value::Null, Value::Null) => Ok(true.into()),
+            (Value::Number(a), Value::Number(b)) => {
+                if a.is_nan() || b.is_nan() {
+                    return Ok(false.into());
+                }
+
+                if a == b {
+                    return Ok(true.into());
+                }
+
+                if *a == 0.0 && *b == -0.0 || *a == -0.0 && *b == 0.0 {
+                    return Ok(true.into());
+                }
+
+                Ok(false.into())
+            }
+            (Value::String(a), Value::String(b)) => Ok((a == b).into()),
+            (Value::Bool(a), Value::Bool(b)) => Ok((a == b).into()),
+            (Value::Object(a), Value::Object(b)) => Ok(GcCell::ptr_eq(*a, *b).into()),
+            (Value::Undefined, Value::Null) => Ok(true.into()),
+            (Value::Null, Value::Undefined) => Ok(true.into()),
+            (Value::Number(_), Value::String(_)) => {
+                Ok(self.abstract_eq(Value::Number(other.as_number(avm, context)?), avm, context)?)
+            }
+            (Value::String(_), Value::Number(_)) => Ok(Value::Number(
+                self.as_number(avm, context)?,
+            )
+            .abstract_eq(other, avm, context)?),
+            (Value::Bool(_), _) => Ok(
+                Value::Number(self.as_number(avm, context)?).abstract_eq(other, avm, context)?
+            ),
+            (_, Value::Bool(_)) => {
+                Ok(self.abstract_eq(Value::Number(other.as_number(avm, context)?), avm, context)?)
+            }
+            (Value::String(_), Value::Object(_)) => {
+                let non_obj_other = other.to_primitive_num(avm, context)?;
+                if let Value::Object(_) = non_obj_other {
+                    return Ok(false.into());
+                }
+
+                Ok(self.abstract_eq(non_obj_other, avm, context)?)
+            }
+            (Value::Number(_), Value::Object(_)) => {
+                let non_obj_other = other.to_primitive_num(avm, context)?;
+                if let Value::Object(_) = non_obj_other {
+                    return Ok(false.into());
+                }
+
+                Ok(self.abstract_eq(non_obj_other, avm, context)?)
+            }
+            (Value::Object(_), Value::String(_)) => {
+                let non_obj_self = self.to_primitive_num(avm, context)?;
+                if let Value::Object(_) = non_obj_self {
+                    return Ok(false.into());
+                }
+
+                Ok(non_obj_self.abstract_eq(other, avm, context)?)
+            }
+            (Value::Object(_), Value::Number(_)) => {
+                let non_obj_self = self.to_primitive_num(avm, context)?;
+                if let Value::Object(_) = non_obj_self {
+                    return Ok(false.into());
+                }
+
+                Ok(non_obj_self.abstract_eq(other, avm, context)?)
+            }
+            _ => Ok(false.into()),
         }
     }
 
@@ -180,6 +338,7 @@ impl<'gc> Value<'gc> {
         }
     }
 
+    /// Coerce a value to a string without calling object methods.
     pub fn into_string(self) -> String {
         match self {
             Value::Undefined => "undefined".to_string(),
@@ -189,6 +348,31 @@ impl<'gc> Value<'gc> {
             Value::String(v) => v,
             Value::Object(object) => object.read().as_string(),
         }
+    }
+
+    /// Coerce a value to a string.
+    pub fn coerce_to_string(
+        self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<String, Error> {
+        Ok(match self {
+            Value::Object(object) => {
+                let to_string_impl = object
+                    .read()
+                    .get("toString", avm, context, object)?
+                    .resolve(avm, context)?;
+                let fake_args = Vec::new();
+                match to_string_impl
+                    .call(avm, context, object, &fake_args)?
+                    .resolve(avm, context)?
+                {
+                    Value::String(s) => s,
+                    _ => "[type Object]".to_string(),
+                }
+            }
+            _ => self.into_string(),
+        })
     }
 
     pub fn as_bool(&self, swf_version: u8) -> bool {
@@ -272,5 +456,97 @@ impl<'gc> Value<'gc> {
         } else {
             Err(format!("Expected function, found {:?}", self).into())
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::avm1::test_utils::with_avm;
+    use crate::avm1::Value;
+    use std::f64::{INFINITY, NAN, NEG_INFINITY};
+
+    #[test]
+    fn abstract_lt_num() {
+        with_avm(8, |avm, context, _this| {
+            let a = Value::Number(1.0);
+            let b = Value::Number(2.0);
+
+            assert_eq!(a.abstract_lt(b, avm, context).unwrap(), Value::Bool(true));
+
+            let nan = Value::Number(NAN);
+            assert_eq!(a.abstract_lt(nan, avm, context).unwrap(), Value::Undefined);
+
+            let inf = Value::Number(INFINITY);
+            assert_eq!(a.abstract_lt(inf, avm, context).unwrap(), Value::Bool(true));
+
+            let neg_inf = Value::Number(NEG_INFINITY);
+            assert_eq!(
+                a.abstract_lt(neg_inf, avm, context).unwrap(),
+                Value::Bool(false)
+            );
+
+            let zero = Value::Number(0.0);
+            assert_eq!(
+                a.abstract_lt(zero, avm, context).unwrap(),
+                Value::Bool(false)
+            );
+        });
+    }
+
+    #[test]
+    fn abstract_gt_num() {
+        with_avm(8, |avm, context, _this| {
+            let a = Value::Number(1.0);
+            let b = Value::Number(2.0);
+
+            assert_eq!(
+                b.abstract_lt(a.clone(), avm, context).unwrap(),
+                Value::Bool(false)
+            );
+
+            let nan = Value::Number(NAN);
+            assert_eq!(
+                nan.abstract_lt(a.clone(), avm, context).unwrap(),
+                Value::Undefined
+            );
+
+            let inf = Value::Number(INFINITY);
+            assert_eq!(
+                inf.abstract_lt(a.clone(), avm, context).unwrap(),
+                Value::Bool(false)
+            );
+
+            let neg_inf = Value::Number(NEG_INFINITY);
+            assert_eq!(
+                neg_inf.abstract_lt(a.clone(), avm, context).unwrap(),
+                Value::Bool(true)
+            );
+
+            let zero = Value::Number(0.0);
+            assert_eq!(
+                zero.abstract_lt(a, avm, context).unwrap(),
+                Value::Bool(true)
+            );
+        });
+    }
+
+    #[test]
+    fn abstract_lt_str() {
+        with_avm(8, |avm, context, _this| {
+            let a = Value::String("a".to_owned());
+            let b = Value::String("b".to_owned());
+
+            assert_eq!(a.abstract_lt(b, avm, context).unwrap(), Value::Bool(true))
+        })
+    }
+
+    #[test]
+    fn abstract_gt_str() {
+        with_avm(8, |avm, context, _this| {
+            let a = Value::String("a".to_owned());
+            let b = Value::String("b".to_owned());
+
+            assert_eq!(b.abstract_lt(a, avm, context).unwrap(), Value::Bool(false))
+        })
     }
 }

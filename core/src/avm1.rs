@@ -599,21 +599,22 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_add_2(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
+    fn action_add_2(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         // ECMA-262 s. 11.6.1
         let a = self.pop()?;
         let b = self.pop()?;
 
         // TODO(Herschel):
         if let Value::String(a) = a {
-            let mut s = b.into_string();
+            let mut s = b.coerce_to_string(self, context)?;
             s.push_str(&a);
             self.push(s);
         } else if let Value::String(mut b) = b {
-            b.push_str(&a.into_string());
+            b.push_str(&a.coerce_to_string(self, context)?);
             self.push(b);
         } else {
-            self.push(b.as_number() + a.as_number());
+            let result = b.as_number(self, context)? + a.as_number(self, context)?;
+            self.push(result);
         }
         Ok(())
     }
@@ -788,8 +789,8 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_decrement(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let a = self.pop()?.as_number();
+    fn action_decrement(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let a = self.pop()?.as_number(self, context)?;
         self.push(a - 1.0);
         Ok(())
     }
@@ -1006,31 +1007,18 @@ impl<'gc> Avm1<'gc> {
     }
 
     #[allow(clippy::float_cmp)]
-    fn action_equals_2(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
+    fn action_equals_2(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         // Version >=5 equality
         let a = self.pop()?;
         let b = self.pop()?;
-        let result = match (b, a) {
-            (Value::Undefined, Value::Undefined) => true,
-            (Value::Null, Value::Null) => true,
-            (Value::Null, Value::Undefined) => true,
-            (Value::Undefined, Value::Null) => true,
-            // The result of NaN equality appears to change depending on flash player version (not swf version).
-            // This comparison might need to be conditional on targeted version.
-            (Value::Number(a), Value::Number(b)) => a == b || (a.is_nan() && b.is_nan()),
-            (Value::String(a), Value::String(b)) => a == b,
-            (Value::Object(_a), Value::Object(_b)) => false, // TODO(Herschel)
-            (Value::String(a), Value::Number(b)) => a.parse().unwrap_or(std::f64::NAN) == b,
-            (Value::Number(a), Value::String(b)) => a == b.parse().unwrap_or(std::f64::NAN),
-            _ => false,
-        };
+        let result = b.abstract_eq(a, self, context)?;
         self.push(result);
         Ok(())
     }
 
     fn action_get_member(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let name_val = self.pop()?;
-        let name = name_val.into_string();
+        let name = name_val.coerce_to_string(self, context)?;
         let object = self.pop()?.as_object()?;
         let this = self.current_stack_frame().unwrap().read().this_cell();
         object.read().get(&name, self, context, this)?.push(self);
@@ -1303,8 +1291,8 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_increment(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let a = self.pop()?.as_number();
+    fn action_increment(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let a = self.pop()?.as_number(self, context)?;
         self.push(a + 1.0);
         Ok(())
     }
@@ -1389,26 +1377,31 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_less_2(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        // ECMA-262 s. 11.8.5
+    fn action_less_2(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        // ECMA-262 s. 11.8.1
         let a = self.pop()?;
         let b = self.pop()?;
 
-        let result = match (a, b) {
-            (Value::String(a), Value::String(b)) => b.to_string().bytes().lt(a.to_string().bytes()),
-            (a, b) => b.as_number() < a.as_number(),
+        let result = match b.abstract_lt(a, self, context)? {
+            Value::Bool(b) => b,
+            _ => false,
         };
 
         self.push(result);
         Ok(())
     }
 
-    fn action_greater(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        // AS1 less than
+    fn action_greater(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        // ECMA-262 s. 11.8.2
         let a = self.pop()?;
         let b = self.pop()?;
-        let result = b.into_number_v1() > a.into_number_v1();
-        self.push(Value::from_bool_v1(result, self.current_swf_version()));
+
+        let result = match a.abstract_lt(b, self, context)? {
+            Value::Bool(b) => b,
+            _ => false,
+        };
+
+        self.push(result);
         Ok(())
     }
 
@@ -1659,7 +1652,7 @@ impl<'gc> Avm1<'gc> {
     fn action_set_member(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let value = self.pop()?;
         let name_val = self.pop()?;
-        let name = name_val.into_string();
+        let name = name_val.coerce_to_string(self, context)?;
         let object = self.pop()?.as_object()?;
         let this = self.current_stack_frame().unwrap().read().this_cell();
 
@@ -1880,12 +1873,12 @@ impl<'gc> Avm1<'gc> {
 
     fn action_string_equals(
         &mut self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         // AS1 strcmp
         let a = self.pop()?;
         let b = self.pop()?;
-        let result = b.into_string() == a.into_string();
+        let result = b.coerce_to_string(self, context)? == a.coerce_to_string(self, context)?;
         self.push(Value::from_bool_v1(result, self.current_swf_version()));
         Ok(())
     }
@@ -1910,13 +1903,16 @@ impl<'gc> Avm1<'gc> {
 
     fn action_string_greater(
         &mut self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         // AS1 strcmp
         let a = self.pop()?;
         let b = self.pop()?;
         // This is specifically a non-UTF8 aware comparison.
-        let result = b.into_string().bytes().gt(a.into_string().bytes());
+        let result = b
+            .coerce_to_string(self, context)?
+            .bytes()
+            .gt(a.coerce_to_string(self, context)?.bytes());
         self.push(Value::from_bool_v1(result, self.current_swf_version()));
         Ok(())
     }
@@ -1932,13 +1928,16 @@ impl<'gc> Avm1<'gc> {
 
     fn action_string_less(
         &mut self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         // AS1 strcmp
         let a = self.pop()?;
         let b = self.pop()?;
         // This is specifically a non-UTF8 aware comparison.
-        let result = b.into_string().bytes().lt(a.into_string().bytes());
+        let result = b
+            .coerce_to_string(self, context)?
+            .bytes()
+            .lt(a.coerce_to_string(self, context)?.bytes());
         self.push(Value::from_bool_v1(result, self.current_swf_version()));
         Ok(())
     }
@@ -1971,21 +1970,21 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_to_number(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let val = self.pop()?;
-        self.push(val.as_number());
+    fn action_to_number(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let val = self.pop()?.as_number(self, context)?;
+        self.push(val);
         Ok(())
     }
 
-    fn action_to_string(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let val = self.pop()?;
-        self.push(val.into_string());
+    fn action_to_string(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let val = self.pop()?.coerce_to_string(self, context)?;
+        self.push(val);
         Ok(())
     }
 
-    fn action_trace(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let val = self.pop()?;
-        log::info!(target: "avm_trace", "{}", val.into_string());
+    fn action_trace(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let val = self.pop()?.coerce_to_string(self, context)?;
+        log::info!(target: "avm_trace", "{}", val);
         Ok(())
     }
 
