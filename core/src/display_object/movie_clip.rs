@@ -441,8 +441,11 @@ impl<'gc> MovieClip<'gc> {
                     // For rewinds, if an object was created before the final frame,
                     // it will exist on the final frame as well. Re-use this object
                     // instead of recreating.
-                    Some(prev_child) => (false, prev_child),
-                    None => {
+                    // If the ID is 0, we are modifying a previous child. Otherwise, we're replacing it.
+                    // If it's a rewind, we removed any dead children above, so we always
+                    // modify the previous child.
+                    Some(prev_child) if is_rewind || params.id() == 0 => (false, prev_child),
+                    _ => {
                         if let Some(child) = clip.instantiate_child(
                             context,
                             params.id(),
