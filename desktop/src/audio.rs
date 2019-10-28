@@ -1,10 +1,11 @@
 use cpal::traits::{DeviceTrait, EventLoopTrait, HostTrait};
 use generational_arena::Arena;
 use ruffle_core::backend::audio::decoders::{
-    stream_tag_reader, AdpcmDecoder, Decoder, Mp3Decoder, PcmDecoder, SeekableDecoder,
+    self, AdpcmDecoder, Mp3Decoder, PcmDecoder, SeekableDecoder,
 };
 use ruffle_core::backend::audio::{swf, AudioBackend, AudioStreamHandle, SoundHandle};
-use std::io::{Cursor, Read};
+use ruffle_core::tag_utils::SwfSlice;
+use std::io::Cursor;
 use std::sync::{Arc, Mutex};
 
 #[allow(dead_code)]
@@ -126,37 +127,6 @@ impl CpalAudioBackend {
         })
     }
 
-    /// Instantiate a decoder for the compression that the sound data uses.
-    fn make_decoder<'a, R: 'a + Send + Read>(
-        format: &swf::SoundFormat,
-        data: R,
-    ) -> Box<dyn 'a + Send + Decoder> {
-        use swf::AudioCompression;
-        match format.compression {
-            AudioCompression::Uncompressed => Box::new(PcmDecoder::new(
-                data,
-                format.is_stereo,
-                format.sample_rate,
-                format.is_16_bit,
-            )),
-            AudioCompression::Adpcm => {
-                Box::new(AdpcmDecoder::new(data, format.is_stereo, format.sample_rate).unwrap())
-            }
-            AudioCompression::Mp3 => Box::new(Mp3Decoder::new(
-                if format.is_stereo { 2 } else { 1 },
-                format.sample_rate.into(),
-                data,
-            )),
-            _ => {
-                log::error!(
-                    "start_stream: Unhandled audio compression {:?}",
-                    format.compression
-                );
-                unimplemented!()
-            }
-        }
-    }
-
     /// Instantiate a seeabkle decoder for the compression that the sound data uses.
     fn make_seekable_decoder(
         format: &swf::SoundFormat,
@@ -170,9 +140,11 @@ impl CpalAudioBackend {
                 format.sample_rate,
                 format.is_16_bit,
             )),
-            AudioCompression::Adpcm => {
-                Box::new(AdpcmDecoder::new(data, format.is_stereo, format.sample_rate).unwrap())
-            }
+            AudioCompression::Adpcm => Box::new(AdpcmDecoder::new(
+                data,
+                format.is_stereo,
+                format.sample_rate,
+            )),
             AudioCompression::Mp3 => Box::new(Mp3Decoder::new(
                 if format.is_stereo { 2 } else { 1 },
                 format.sample_rate.into(),
@@ -224,15 +196,32 @@ impl CpalAudioBackend {
         Box::new(signal)
     }
 
+    /// Creates a `sample::signal::Signal` that decodes and resamples a "stream" sound.
+    fn make_signal_from_stream<'a>(
+        &self,
+        format: &swf::SoundFormat,
+        data_stream: SwfSlice,
+        swf_version: u8,
+    ) -> Box<dyn 'a + Send + sample::signal::Signal<Frame = [i16; 2]>> {
+        // Instantiate a decoder for the compression that the sound data uses.
+        let clip_stream_decoder = decoders::make_stream_decoder(format, data_stream, swf_version);
+
+        // Convert the `Decoder` to a `Signal`, and resample it the the output
+        // sample rate.
+        let signal = sample::signal::from_iter(clip_stream_decoder);
+        let signal = Box::new(self.make_resampler(format, signal));
+        Box::new(signal)
+    }
+
     /// Creates a `sample::signal::Signal` that decodes and resamples the audio stream
     /// to the output format.
-    fn make_signal_from_stream<'a, R: 'a + std::io::Read + Send>(
+    fn make_signal_from_simple_event_sound<'a, R: 'a + std::io::Read + Send>(
         &self,
         format: &swf::SoundFormat,
         data_stream: R,
     ) -> Box<dyn 'a + Send + sample::signal::Signal<Frame = [i16; 2]>> {
         // Instantiate a decoder for the compression that the sound data uses.
-        let decoder = Self::make_decoder(format, data_stream);
+        let decoder = decoders::make_decoder(format, data_stream);
 
         // Convert the `Decoder` to a `Signal`, and resample it the the output
         // sample rate.
@@ -299,7 +288,7 @@ impl AudioBackend for CpalAudioBackend {
     fn start_stream(
         &mut self,
         clip_id: swf::CharacterId,
-        clip_data: ruffle_core::tag_utils::SwfSlice,
+        clip_data: SwfSlice,
         stream_info: &swf::SoundStreamHead,
     ) -> AudioStreamHandle {
         let format = &stream_info.stream_format;
@@ -307,9 +296,8 @@ impl AudioBackend for CpalAudioBackend {
         // The audio data for stream sounds is distributed among the frames of a
         // movie clip. The stream tag reader will parse through the SWF and
         // feed the decoder audio data on the fly.
-        let clip_stream_reader = stream_tag_reader(clip_data);
-        // Create a signal that decodes and resamples the stream.
-        let signal = self.make_signal_from_stream(format, clip_stream_reader);
+        // TODO: Use actual SWF version here (would only matter for SWF <3...)
+        let signal = self.make_signal_from_stream(format, clip_data, 8);
 
         let mut sound_instances = self.sound_instances.lock().unwrap();
         sound_instances.insert(SoundInstance {
@@ -330,7 +318,7 @@ impl AudioBackend for CpalAudioBackend {
             && settings.envelope.is_none()
         {
             // For simple event sounds, just use the same signal as streams.
-            self.make_signal_from_stream(&sound.format, data)
+            self.make_signal_from_simple_event_sound(&sound.format, data)
         } else {
             // For event sounds with envelopes/other properties, wrap it in `EventSoundSignal`.
             self.make_signal_from_event_sound(&sound.format, settings, data)

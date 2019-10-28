@@ -154,14 +154,11 @@ impl WebAudioBackend {
             }
             SoundSource::Decoder(audio_data) => {
                 let decoder: Decoder = match sound.format.compression {
-                    AudioCompression::Adpcm => Box::new(
-                        AdpcmDecoder::new(
-                            std::io::Cursor::new(audio_data.to_vec()),
-                            sound.format.is_stereo,
-                            sound.format.sample_rate,
-                        )
-                        .unwrap(),
-                    ),
+                    AudioCompression::Adpcm => Box::new(AdpcmDecoder::new(
+                        std::io::Cursor::new(audio_data.to_vec()),
+                        sound.format.is_stereo,
+                        sound.format.sample_rate,
+                    )),
                     AudioCompression::Mp3 => Box::new(Mp3Decoder::new(
                         if sound.format.is_stereo { 2 } else { 1 },
                         sound.format.sample_rate.into(),
@@ -263,7 +260,7 @@ impl WebAudioBackend {
             }
             AudioCompression::Adpcm => {
                 let mut decoder =
-                    AdpcmDecoder::new(audio_data, format.is_stereo, format.sample_rate).unwrap();
+                    AdpcmDecoder::new(audio_data, format.is_stereo, format.sample_rate);
                 if format.is_stereo {
                     while let Some(frame) = decoder.next() {
                         let (l, r) = (frame[0], frame[1]);

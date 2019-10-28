@@ -33,9 +33,13 @@ impl<R: Read> AdpcmDecoder<R> {
         29794, 32767,
     ];
 
-    pub fn new(inner: R, is_stereo: bool, sample_rate: u16) -> Result<Self, std::io::Error> {
+    pub fn new(inner: R, is_stereo: bool, sample_rate: u16) -> Self {
         let mut reader = BitReader::new(inner);
-        let bits_per_sample = reader.read::<u8>(2)? as usize + 2;
+        let bits_per_sample = reader.read::<u8>(2).unwrap_or_else(|e| {
+            log::warn!("Invalid ADPCM stream: {}", e);
+            0
+        }) as usize
+            + 2;
 
         let left_sample = 0;
         let left_step_index = 0;
@@ -43,7 +47,7 @@ impl<R: Read> AdpcmDecoder<R> {
         let right_sample = 0;
         let right_step_index = 0;
         let right_step = 0;
-        Ok(Self {
+        Self {
             inner: reader,
             sample_rate,
             is_stereo,
@@ -55,7 +59,7 @@ impl<R: Read> AdpcmDecoder<R> {
             right_sample,
             right_step,
             right_step_index,
-        })
+        }
     }
 
     pub fn next_sample(&mut self) -> Result<(), std::io::Error> {
@@ -171,6 +175,6 @@ impl<R: AsRef<[u8]> + Default> SeekableDecoder for AdpcmDecoder<Cursor<R>> {
         let bit_stream = std::mem::replace(&mut self.inner, BitReader::new(Default::default()));
         let mut cursor = bit_stream.into_reader();
         cursor.set_position(0);
-        *self = AdpcmDecoder::new(cursor, self.is_stereo, self.sample_rate()).unwrap();
+        *self = AdpcmDecoder::new(cursor, self.is_stereo, self.sample_rate());
     }
 }
