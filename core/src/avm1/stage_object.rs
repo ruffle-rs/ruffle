@@ -228,6 +228,14 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.base.delete_array_element(index, gc_context)
     }
 
+    fn interfaces(&self) -> Vec<Object<'gc>> {
+        self.base.interfaces()
+    }
+
+    fn set_interfaces(&mut self, context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
+        self.base.set_interfaces(context, iface_list)
+    }
+
     fn as_string(&self) -> String {
         self.display_object.path()
     }

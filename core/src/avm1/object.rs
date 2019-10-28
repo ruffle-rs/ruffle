@@ -165,6 +165,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Get the object's type string.
     fn type_of(&self) -> &'static str;
 
+    /// Enumerate all interfaces implemented by this object.
+    fn interfaces(&self) -> Vec<Object<'gc>>;
+
+    /// Set the interface list for this object. (Only useful for prototypes.)
+    fn set_interfaces(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        iface_list: Vec<Object<'gc>>,
+    );
+
     /// Get the underlying script object, if it exists.
     fn as_script_object(&self) -> Option<ScriptObject<'gc>>;
 

@@ -1041,28 +1041,13 @@ impl<'gc> Avm1<'gc> {
 
         //TODO: What happens if we try to extend an object which has no `__proto__`?
         //e.g. `class Whatever extends Object.prototype`
-        let super_proto = superclass.read().proto().unwrap_or(self.prototypes.object);
+        let super_proto = superclass.proto().unwrap_or(self.prototypes.object);
 
-        let sub_prototype = GcCell::allocate(
-            context.gc_context,
-            Box::new(ScriptObject::object(context.gc_context, Some(super_proto)))
-                as Box<dyn Object<'gc>>,
-        );
+        let sub_prototype: Object<'gc> =
+            ScriptObject::object(context.gc_context, Some(super_proto)).into();
 
-        sub_prototype.write(context.gc_context).set(
-            "constructor",
-            superclass.into(),
-            self,
-            context,
-            sub_prototype,
-        )?;
-        subclass.write(context.gc_context).set(
-            "prototype",
-            sub_prototype.into(),
-            self,
-            context,
-            subclass,
-        )?;
+        sub_prototype.set("constructor", superclass.into(), self, context)?;
+        subclass.set("prototype", sub_prototype.into(), self, context)?;
 
         Ok(())
     }
@@ -1364,7 +1349,6 @@ impl<'gc> Avm1<'gc> {
         let constr = self.pop()?.as_object()?;
         let obj = self.pop()?.as_object()?;
 
-        //TODO: Interface detection on SWF7
         let prototype = constr
             .get("prototype", self, context)?
             .resolve(self, context)?
@@ -1375,6 +1359,15 @@ impl<'gc> Avm1<'gc> {
             if Object::ptr_eq(this_proto, prototype) {
                 self.push(true);
                 return Ok(());
+            }
+
+            if self.current_swf_version() >= 7 {
+                for interface in constr.interfaces() {
+                    if Object::ptr_eq(interface, constr) {
+                        self.push(true);
+                        return Ok(());
+                    }
+                }
             }
 
             proto = this_proto.proto();
