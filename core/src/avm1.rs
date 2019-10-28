@@ -370,6 +370,7 @@ impl<'gc> Avm1<'gc> {
                 Action::Call => self.action_call(context),
                 Action::CallFunction => self.action_call_function(context),
                 Action::CallMethod => self.action_call_method(context),
+                Action::CastOp => self.action_cast_op(context),
                 Action::CharToAscii => self.action_char_to_ascii(context),
                 Action::CloneSprite => self.action_clone_sprite(context),
                 Action::ConstantPool(constant_pool) => {
@@ -805,6 +806,24 @@ impl<'gc> Avm1<'gc> {
                 )
                 .into())
             }
+        }
+
+        Ok(())
+    }
+
+    fn action_cast_op(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let obj = self.pop()?.as_object()?;
+        let constr = self.pop()?.as_object()?;
+
+        let prototype = constr
+            .get("prototype", self, context)?
+            .resolve(self, context)?
+            .as_object()?;
+
+        if obj.is_instance_of(self, constr, prototype) {
+            self.push(obj);
+        } else {
+            self.push(Value::Null);
         }
 
         Ok(())
@@ -1347,7 +1366,7 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let constr = self.pop()?.as_object()?;
+        let mut constr = self.pop()?.as_object()?;
         let count = self.pop()?.as_i64()?; //TODO: Is this coercion actually performed by Flash?
         let mut interfaces = vec![];
 
@@ -1357,7 +1376,7 @@ impl<'gc> Avm1<'gc> {
             interfaces.push(self.pop()?.as_object()?);
         }
 
-        constr.write(context.gc_context).set_interfaces(interfaces);
+        constr.set_interfaces(context.gc_context, interfaces);
 
         Ok(())
     }
@@ -1373,27 +1392,8 @@ impl<'gc> Avm1<'gc> {
             .get("prototype", self, context)?
             .resolve(self, context)?
             .as_object()?;
-        let mut proto = obj.proto();
 
-        while let Some(this_proto) = proto {
-            if Object::ptr_eq(this_proto, prototype) {
-                self.push(true);
-                return Ok(());
-            }
-
-            if self.current_swf_version() >= 7 {
-                for interface in constr.interfaces() {
-                    if Object::ptr_eq(interface, constr) {
-                        self.push(true);
-                        return Ok(());
-                    }
-                }
-            }
-
-            proto = this_proto.proto();
-        }
-
-        self.push(false);
+        self.push(obj.is_instance_of(self, constr, prototype));
         Ok(())
     }
 

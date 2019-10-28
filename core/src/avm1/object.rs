@@ -175,6 +175,38 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         iface_list: Vec<Object<'gc>>,
     );
 
+    /// Determine if this object is an instance of a class.
+    ///
+    /// The class is provided in the form of it's constructor function and the
+    /// explicit prototype of that constructor function. It is assumed that
+    /// they are already linked.
+    fn is_instance_of(
+        &self,
+        avm: &Avm1<'gc>,
+        constructor: Object<'gc>,
+        prototype: Object<'gc>,
+    ) -> bool {
+        let mut proto = self.proto();
+
+        while let Some(this_proto) = proto {
+            if Object::ptr_eq(this_proto, prototype) {
+                return true;
+            }
+
+            if avm.current_swf_version() >= 7 {
+                for interface in constructor.interfaces() {
+                    if Object::ptr_eq(interface, constructor) {
+                        return true;
+                    }
+                }
+            }
+
+            proto = this_proto.proto();
+        }
+
+        false
+    }
+
     /// Get the underlying script object, if it exists.
     fn as_script_object(&self) -> Option<ScriptObject<'gc>>;
 
