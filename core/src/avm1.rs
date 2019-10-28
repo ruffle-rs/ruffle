@@ -416,6 +416,7 @@ impl<'gc> Avm1<'gc> {
                 Action::Increment => self.action_increment(context),
                 Action::InitArray => self.action_init_array(context),
                 Action::InitObject => self.action_init_object(context),
+                Action::ImplementsOp => self.action_implements_op(context),
                 Action::InstanceOf => self.action_instance_of(context),
                 Action::Jump { offset } => self.action_jump(context, offset, reader),
                 Action::Less => self.action_less(context),
@@ -1338,6 +1339,25 @@ impl<'gc> Avm1<'gc> {
         }
 
         self.push(Value::Object(object.into()));
+
+        Ok(())
+    }
+
+    fn action_implements_op(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let constr = self.pop()?.as_object()?;
+        let count = self.pop()?.as_i64()?; //TODO: Is this coercion actually performed by Flash?
+        let mut interfaces = vec![];
+
+        //TODO: If one of the interfaces is not an object, do we leave the
+        //whole stack dirty, or...?
+        for _ in 0..count {
+            interfaces.push(self.pop()?.as_object()?);
+        }
+
+        constr.write(context.gc_context).set_interfaces(interfaces);
 
         Ok(())
     }
