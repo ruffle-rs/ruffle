@@ -28,6 +28,7 @@ struct StreamData {
     audio_data: Vec<u8>,
     num_sample_frames: u32,
     samples_per_block: u32,
+    adpcm_block_offsets: Vec<usize>,
 }
 
 type AudioBufferPtr = Rc<RefCell<web_sys::AudioBuffer>>;
@@ -214,30 +215,11 @@ impl WebAudioBackend {
         format: &swf::SoundFormat,
         audio_data: &[u8],
         num_sample_frames: u32,
+        adpcm_block_offsets: Option<&[usize]>,
     ) -> AudioBufferPtr {
         if format.compression == AudioCompression::Mp3 {
             return self.decompress_mp3_to_audio_buffer(format, audio_data, num_sample_frames);
         }
-
-        // This sucks. Firefox doesn't like 5512Hz sample rate, so manually double up the samples.
-        // 5512Hz should be relatively rare.
-        let audio_buffer = if format.sample_rate > 5512 {
-            self.context
-                .create_buffer(
-                    if format.is_stereo { 2 } else { 1 },
-                    num_sample_frames,
-                    f32::from(format.sample_rate),
-                )
-                .unwrap()
-        } else {
-            self.context
-                .create_buffer(
-                    if format.is_stereo { 2 } else { 1 },
-                    num_sample_frames * 2,
-                    11025.0,
-                )
-                .unwrap()
-        };
 
         match format.compression {
             AudioCompression::Uncompressed => {
@@ -259,16 +241,31 @@ impl WebAudioBackend {
                 }
             }
             AudioCompression::Adpcm => {
-                let mut decoder =
-                    AdpcmDecoder::new(audio_data, format.is_stereo, format.sample_rate);
-                if format.is_stereo {
-                    while let Some(frame) = decoder.next() {
-                        let (l, r) = (frame[0], frame[1]);
-                        self.left_samples.push(f32::from(l) / 32767.0);
-                        self.right_samples.push(f32::from(r) / 32767.0);
+                // For stream sounds, the ADPCM header is included in each block,
+                // so we must recreate the decoder for each block.
+                // Event sounds don't have this issue.
+                let full = [0, audio_data.len()];
+                let adpcm_block_offsets = adpcm_block_offsets.unwrap_or(&full);
+                self.left_samples.clear();
+                self.right_samples.clear();
+                for block in adpcm_block_offsets.windows(2) {
+                    let start = block[0];
+                    let end = block[1];
+                    let mut decoder = AdpcmDecoder::new(
+                        &audio_data[start..end],
+                        format.is_stereo,
+                        format.sample_rate,
+                    );
+                    if format.is_stereo {
+                        while let Some(frame) = decoder.next() {
+                            let (l, r) = (frame[0], frame[1]);
+                            self.left_samples.push(f32::from(l) / 32767.0);
+                            self.right_samples.push(f32::from(r) / 32767.0);
+                        }
+                    } else {
+                        self.left_samples
+                            .extend(decoder.map(|n| f32::from(n[0]) / 32767.0));
                     }
-                } else {
-                    self.left_samples = decoder.map(|n| f32::from(n[0]) / 32767.0).collect();
                 }
             }
             _ => unimplemented!(),
@@ -292,6 +289,27 @@ impl WebAudioBackend {
                 self.right_samples = samples;
             }
         }
+
+        // This sucks. Firefox doesn't like 5512Hz sample rate, so manually double up the samples.
+        // 5512Hz should be relatively rare.
+        let num_sample_frames = self.left_samples.len() as u32;
+        let audio_buffer = if format.sample_rate > 5512 {
+            self.context
+                .create_buffer(
+                    if format.is_stereo { 2 } else { 1 },
+                    num_sample_frames,
+                    f32::from(format.sample_rate),
+                )
+                .unwrap()
+        } else {
+            self.context
+                .create_buffer(
+                    if format.is_stereo { 2 } else { 1 },
+                    num_sample_frames * 2,
+                    11025.0,
+                )
+                .unwrap()
+        };
 
         audio_buffer
             .copy_to_channel(&mut self.left_samples, 0)
@@ -406,6 +424,7 @@ impl AudioBackend for WebAudioBackend {
                 &sound.format,
                 data,
                 sound.num_samples,
+                None,
             )),
         };
         Ok(self.sounds.insert(sound))
@@ -423,6 +442,7 @@ impl AudioBackend for WebAudioBackend {
                 audio_data: vec![],
                 num_sample_frames: 0,
                 samples_per_block: stream_info.num_samples_per_block.into(),
+                adpcm_block_offsets: vec![],
             });
     }
 
@@ -444,6 +464,13 @@ impl AudioBackend for WebAudioBackend {
                     // Second two bytes = 'latency seek' (amount to skip when seeking to this frame)
                     stream.audio_data.extend_from_slice(&audio_data[4..]);
                 }
+                AudioCompression::Adpcm => {
+                    // For ADPCM data, we must keep track of where each block starts,
+                    // so that we read the header in each block.
+                    stream.num_sample_frames += stream.samples_per_block;
+                    stream.adpcm_block_offsets.push(stream.audio_data.len());
+                    stream.audio_data.extend_from_slice(audio_data);
+                }
                 _ => {
                     // TODO: This is a guess and will vary slightly from block to block!
                     stream.num_sample_frames += stream.samples_per_block;
@@ -453,12 +480,18 @@ impl AudioBackend for WebAudioBackend {
     }
 
     fn preload_sound_stream_end(&mut self, clip_id: swf::CharacterId) {
-        if let Some(stream) = self.stream_data.remove(&clip_id) {
+        if let Some(mut stream) = self.stream_data.remove(&clip_id) {
             if !stream.audio_data.is_empty() {
                 let audio_buffer = self.decompress_to_audio_buffer(
                     &stream.format,
                     &stream.audio_data[..],
                     stream.num_sample_frames,
+                    if stream.format.compression == AudioCompression::Adpcm {
+                        stream.adpcm_block_offsets.push(stream.audio_data.len());
+                        Some(&stream.adpcm_block_offsets[..])
+                    } else {
+                        None
+                    },
                 );
                 let handle = self.sounds.insert(Sound {
                     format: stream.format,
