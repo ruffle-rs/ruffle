@@ -404,6 +404,7 @@ impl<'gc> Avm1<'gc> {
                 Action::Increment => self.action_increment(context),
                 Action::InitArray => self.action_init_array(context),
                 Action::InitObject => self.action_init_object(context),
+                Action::InstanceOf => self.action_instance_of(context),
                 Action::Jump { offset } => self.action_jump(context, offset, reader),
                 Action::Less => self.action_less(context),
                 Action::Less2 => self.action_less_2(context),
@@ -1337,6 +1338,34 @@ impl<'gc> Avm1<'gc> {
             Box::new(object),
         )));
 
+        Ok(())
+    }
+
+    fn action_instance_of(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let constr = self.pop()?.as_object()?;
+        let obj = self.pop()?.as_object()?;
+
+        //TODO: Interface detection on SWF7
+        let prototype = constr
+            .read()
+            .get("prototype", self, context, constr)?
+            .resolve(self, context)?
+            .as_object()?;
+        let mut proto = obj.read().proto();
+
+        while let Some(this_proto) = proto {
+            if GcCell::ptr_eq(this_proto, prototype) {
+                self.push(true);
+                return Ok(());
+            }
+
+            proto = this_proto.read().proto();
+        }
+
+        self.push(false);
         Ok(())
     }
 
