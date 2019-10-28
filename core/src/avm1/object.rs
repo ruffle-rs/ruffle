@@ -56,10 +56,11 @@ pub trait Object<'gc>: 'gc + Collect + Debug {
 
     /// Construct a host object of some kind and return it's cell.
     ///
-    /// This is called on constructor functions to obtain a given host object.
-    /// The returned object will then be passed to `call` in order to run
-    /// initialization code. This function cannot be user-defined (and thus,
-    /// does not yield a ReturnValue).
+    /// As the first step in object construction, the `new` method is called on
+    /// the prototype to initialize an object. The prototype may construct any
+    /// object implementation it wants, with itself as the new object's proto.
+    /// Then, the constructor is `call`ed with the new object as `this` to
+    /// initialize the object.
     ///
     /// The arguments passed to the constructor are provided here; however, all
     /// object construction should happen in `call`, not `new`. `new` exists

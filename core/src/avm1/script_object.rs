@@ -264,20 +264,14 @@ impl<'gc> Object<'gc> for ScriptObject<'gc> {
     #[allow(clippy::new_ret_no_self)]
     fn new(
         &self,
-        avm: &mut Avm1<'gc>,
+        _avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: ObjectCell<'gc>,
         _args: &[Value<'gc>],
     ) -> Result<ObjectCell<'gc>, Error> {
-        let proto = self
-            .get("prototype", avm, context, this)?
-            .resolve(avm, context)?
-            .as_object()
-            .unwrap_or(avm.prototypes.object);
-
         Ok(GcCell::allocate(
             context.gc_context,
-            Box::new(ScriptObject::object(context.gc_context, Some(proto))) as Box<dyn Object<'gc>>,
+            Box::new(ScriptObject::object(context.gc_context, Some(this))) as Box<dyn Object<'gc>>,
         ))
     }
 

@@ -1468,8 +1468,13 @@ impl<'gc> Avm1<'gc> {
             .get(&method_name.as_string()?, self, context, object.to_owned())?
             .resolve(self, context)?
             .as_object()?;
+        let prototype = constructor
+            .read()
+            .get("prototype", self, context, constructor)?
+            .resolve(self, context)?
+            .as_object()?;
 
-        let this = constructor.read().new(self, context, constructor, &args)?;
+        let this = prototype.read().new(self, context, prototype, &args)?;
 
         //TODO: What happens if you `ActionNewMethod` without a method name?
         constructor
@@ -1501,8 +1506,13 @@ impl<'gc> Avm1<'gc> {
             .resolve(fn_name.as_string()?, self, context)?
             .resolve(self, context)?
             .as_object()?;
+        let prototype = constructor
+            .read()
+            .get("prototype", self, context, constructor)?
+            .resolve(self, context)?
+            .as_object()?;
 
-        let this = constructor.read().new(self, context, constructor, &args)?;
+        let this = prototype.read().new(self, context, prototype, &args)?;
 
         constructor
             .read()
