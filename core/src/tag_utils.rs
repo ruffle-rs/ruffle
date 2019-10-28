@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use swf::TagCode;
 
 pub type DecodeResult = Result<(), Box<dyn std::error::Error>>;
@@ -6,18 +7,28 @@ pub type SwfStream<R> = swf::read::Reader<std::io::Cursor<R>>;
 /// A shared-ownership reference to some portion of an immutable datastream.
 #[derive(Debug, Clone)]
 pub struct SwfSlice {
-    pub data: std::sync::Arc<Vec<u8>>,
+    pub data: Arc<Vec<u8>>,
     pub start: usize,
     pub end: usize,
 }
 
 impl AsRef<[u8]> for SwfSlice {
+    #[inline]
     fn as_ref(&self) -> &[u8] {
         &self.data[self.start..self.end]
     }
 }
 
 impl SwfSlice {
+    /// Creates an empty SwfSlice.
+    #[inline]
+    pub fn empty() -> Self {
+        Self {
+            data: Arc::new(vec![]),
+            start: 0,
+            end: 0,
+        }
+    }
     /// Construct a new SwfSlice from a regular slice.
     ///
     /// This function returns None if the given slice is not a subslice of the
@@ -47,6 +58,7 @@ where
     R: 'a + AsRef<[u8]>,
     F: FnMut(&mut SwfStream<R>, TagCode, usize) -> DecodeResult,
 {
+    use std::io::{Seek, SeekFrom};
     loop {
         let (tag_code, tag_len) = reader.read_tag_code_and_length()?;
         let end_pos = reader.get_ref().position() + tag_len as u64;
@@ -60,13 +72,13 @@ where
             }
 
             if stop_tag == tag {
+                reader.get_mut().seek(SeekFrom::Start(end_pos))?;
                 break;
             }
         } else {
             log::warn!("Unknown tag code: {:?}", tag_code);
         }
 
-        use std::io::{Seek, SeekFrom};
         reader.get_mut().seek(SeekFrom::Start(end_pos))?;
     }
 
