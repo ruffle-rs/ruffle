@@ -250,7 +250,7 @@ impl<'gc> MovieClip<'gc> {
 
         let _tag_pos = self.tag_stream_pos;
         let mut reader = self.reader(context);
-
+        let mut has_stream_block = false;
         use swf::TagCode;
 
         let tag_callback = |reader: &mut _, tag_code, tag_len| match tag_code {
@@ -271,12 +271,23 @@ impl<'gc> MovieClip<'gc> {
             TagCode::RemoveObject2 if run_display_actions => self.remove_object(context, reader, 2),
             TagCode::SetBackgroundColor => self.set_background_color(context, reader),
             TagCode::StartSound => self.start_sound_1(context, reader),
-            TagCode::SoundStreamBlock => self.sound_stream_block(context, reader),
+            TagCode::SoundStreamBlock => {
+                has_stream_block = true;
+                self.sound_stream_block(context, reader)
+            }
             _ => Ok(()),
         };
         let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
 
         self.tag_stream_pos = reader.get_ref().position();
+
+        // If we are playing a streaming sound, there should(?) be a `SoundStreamBlock` on each frame.
+        if let Some(audio_stream) = self.audio_stream {
+            if !has_stream_block {
+                context.audio.stop_stream(audio_stream);
+                self.audio_stream = None;
+            }
+        }
     }
 
     fn instantiate_child(
