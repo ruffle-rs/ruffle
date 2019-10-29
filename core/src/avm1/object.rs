@@ -194,7 +194,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             }
 
             if avm.current_swf_version() >= 7 {
-                for interface in constructor.interfaces() {
+                for interface in this_proto.interfaces() {
                     if Object::ptr_eq(interface, constructor) {
                         return true;
                     }

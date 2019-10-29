@@ -1366,7 +1366,7 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let mut constr = self.pop()?.as_object()?;
+        let constr = self.pop()?.as_object()?;
         let count = self.pop()?.as_i64()?; //TODO: Is this coercion actually performed by Flash?
         let mut interfaces = vec![];
 
@@ -1376,7 +1376,12 @@ impl<'gc> Avm1<'gc> {
             interfaces.push(self.pop()?.as_object()?);
         }
 
-        constr.set_interfaces(context.gc_context, interfaces);
+        let mut prototype = constr
+            .get("prototype", self, context)?
+            .resolve(self, context)?
+            .as_object()?;
+
+        prototype.set_interfaces(context.gc_context, interfaces);
 
         Ok(())
     }
