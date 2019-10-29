@@ -94,8 +94,8 @@ pub fn create_movie_object<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<
             movie_clip.play();
             Value::Undefined
         },
-        "stop" => |movie_clip: &mut MovieClip<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
-            movie_clip.stop();
+        "stop" => |movie_clip: &mut MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
+            movie_clip.stop(context);
             Value::Undefined
         }
     );

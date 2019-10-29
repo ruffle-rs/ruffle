@@ -3,7 +3,8 @@ use generational_arena::{Arena, Index};
 pub mod decoders;
 pub mod swf {
     pub use swf::{
-        read, AudioCompression, CharacterId, Sound, SoundFormat, SoundInfo, SoundStreamHead,
+        read, AudioCompression, CharacterId, Sound, SoundEvent, SoundFormat, SoundInfo,
+        SoundStreamHead,
     };
 }
 
@@ -18,6 +19,7 @@ pub trait AudioBackend {
     fn preload_sound_stream_head(
         &mut self,
         _clip_id: swf::CharacterId,
+        _clip_frame: u16,
         _stream_info: &swf::SoundStreamHead,
     ) {
     }
@@ -30,9 +32,14 @@ pub trait AudioBackend {
     fn start_stream(
         &mut self,
         clip_id: crate::prelude::CharacterId,
+        clip_frame: u16,
         clip_data: crate::tag_utils::SwfSlice,
         handle: &swf::SoundStreamHead,
     ) -> AudioStreamHandle;
+
+    /// Stops a playing stream souund.
+    /// Should be called whenever a MovieClip timeline stops playing or seeks to a new frame.
+    fn stop_stream(&mut self, stream: AudioStreamHandle);
 
     /// Good ol' stopAllSounds() :-)
     fn stop_all_sounds(&mut self);
@@ -78,10 +85,14 @@ impl AudioBackend for NullAudioBackend {
     fn start_stream(
         &mut self,
         _clip_id: crate::prelude::CharacterId,
+        _stream_start_frame: u16,
         _clip_data: crate::tag_utils::SwfSlice,
         _handle: &swf::SoundStreamHead,
     ) -> AudioStreamHandle {
         self.streams.insert(())
+    }
+    fn stop_stream(&mut self, stream: AudioStreamHandle) {
+        self.streams.remove(stream);
     }
     fn stop_all_sounds(&mut self) {}
     fn stop_sounds_with_handle(&mut self, _handle: SoundHandle) {}

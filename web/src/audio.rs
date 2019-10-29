@@ -23,9 +23,11 @@ thread_local! {
     static NUM_SOUNDS_LOADING: Cell<u32> = Cell::new(0);
 }
 
+#[derive(Clone)]
 struct StreamData {
     format: swf::SoundFormat,
     audio_data: Vec<u8>,
+    stream_start_frame: u16,
     num_sample_frames: u32,
     samples_per_block: u32,
     adpcm_block_offsets: Vec<usize>,
@@ -433,6 +435,7 @@ impl AudioBackend for WebAudioBackend {
     fn preload_sound_stream_head(
         &mut self,
         clip_id: swf::CharacterId,
+        stream_start_frame: u16,
         stream_info: &swf::SoundStreamHead,
     ) {
         self.stream_data
@@ -440,6 +443,7 @@ impl AudioBackend for WebAudioBackend {
             .or_insert_with(|| StreamData {
                 format: stream_info.stream_format.clone(),
                 audio_data: vec![],
+                stream_start_frame,
                 num_sample_frames: 0,
                 samples_per_block: stream_info.num_samples_per_block.into(),
                 adpcm_block_offsets: vec![],
@@ -480,26 +484,28 @@ impl AudioBackend for WebAudioBackend {
     }
 
     fn preload_sound_stream_end(&mut self, clip_id: swf::CharacterId) {
-        if let Some(mut stream) = self.stream_data.remove(&clip_id) {
-            if !stream.audio_data.is_empty() {
-                let audio_buffer = self.decompress_to_audio_buffer(
-                    &stream.format,
-                    &stream.audio_data[..],
-                    stream.num_sample_frames,
-                    if stream.format.compression == AudioCompression::Adpcm {
-                        stream.adpcm_block_offsets.push(stream.audio_data.len());
-                        Some(&stream.adpcm_block_offsets[..])
-                    } else {
-                        None
-                    },
-                );
-                let handle = self.sounds.insert(Sound {
-                    format: stream.format,
-                    num_sample_frames: stream.num_sample_frames,
-                    source: SoundSource::AudioBuffer(audio_buffer),
-                });
-                self.id_to_sound.insert(clip_id, handle);
-            }
+        let stream_data = self.stream_data.remove(&clip_id);
+
+        if let Some(mut stream) = stream_data {
+            let audio_buffer = self.decompress_to_audio_buffer(
+                &stream.format,
+                &stream.audio_data[..],
+                stream.num_sample_frames,
+                if stream.format.compression == AudioCompression::Adpcm {
+                    stream.adpcm_block_offsets.push(stream.audio_data.len());
+                    Some(&stream.adpcm_block_offsets[..])
+                } else {
+                    None
+                },
+            );
+            stream.audio_data = vec![];
+            self.stream_data.insert(clip_id, stream.clone());
+            let handle = self.sounds.insert(Sound {
+                format: stream.format,
+                num_sample_frames: stream.num_sample_frames,
+                source: SoundSource::AudioBuffer(audio_buffer),
+            });
+            self.id_to_sound.insert(clip_id, handle);
         }
     }
 
@@ -510,16 +516,45 @@ impl AudioBackend for WebAudioBackend {
     fn start_stream(
         &mut self,
         clip_id: swf::CharacterId,
+        clip_frame: u16,
         _clip_data: ruffle_core::tag_utils::SwfSlice,
         _stream_info: &swf::SoundStreamHead,
     ) -> AudioStreamHandle {
         if let Some(&handle) = self.id_to_sound.get(&clip_id) {
-            self.start_sound_internal(handle, None)
+            let mut sound_info = None;
+            if clip_frame > 1 {
+                if let Some(stream_data) = self.stream_data.get(&clip_id) {
+                    let frames_skipped =
+                        u16::saturating_sub(clip_frame, stream_data.stream_start_frame);
+                    let start_pos = stream_data.samples_per_block
+                        * u32::from(frames_skipped)
+                        * u32::from(44100 / stream_data.format.sample_rate);
+                    sound_info = Some(swf::SoundInfo {
+                        event: swf::SoundEvent::Event,
+                        in_sample: Some(start_pos),
+                        out_sample: None,
+                        num_loops: 1,
+                        envelope: None,
+                    });
+                }
+            }
+            self.start_sound_internal(handle, sound_info.as_ref())
         } else {
             log::error!("Missing stream for clip {}", clip_id);
             // TODO: Return dummy sound.
             panic!();
         }
+    }
+
+    fn stop_stream(&mut self, stream: AudioStreamHandle) {
+        SOUND_INSTANCES.with(|instances| {
+            let mut instances = instances.borrow_mut();
+            if let Some(mut instance) = instances.remove(stream) {
+                if let SoundInstanceType::AudioBuffer(ref mut node) = instance.instance_type {
+                    let _ = node.stop();
+                }
+            }
+        })
     }
 
     fn is_loading_complete(&self) -> bool {
