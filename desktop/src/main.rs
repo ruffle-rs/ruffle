@@ -9,7 +9,7 @@ use glutin::{
 };
 use ruffle_core::{backend::render::RenderBackend, Player};
 use std::path::PathBuf;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -119,12 +119,13 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         }
 
         let new_time = Instant::now();
-        let dt = new_time.duration_since(time).as_millis();
-        time = new_time;
+        let dt = new_time.duration_since(time).as_micros();
+        if dt > 0 {
+            time = new_time;
+            player.tick(dt as f64 / 1000.0);
+        }
 
-        player.tick(dt as f64);
-
-        std::thread::sleep(Duration::from_millis(1000 / 60));
+        std::thread::sleep(player.time_til_next_frame());
     }
     Ok(())
 }
