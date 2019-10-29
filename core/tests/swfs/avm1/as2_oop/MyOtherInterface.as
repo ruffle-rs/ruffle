@@ -1,0 +1,3 @@
+﻿interface MyOtherInterface {
+	function b();
+}
