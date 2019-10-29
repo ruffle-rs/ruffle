@@ -155,7 +155,7 @@ pub fn remove_invalid_jpeg_data(mut data: &[u8]) -> std::borrow::Cow<[u8]> {
 }
 
 /// Decodes a JPEG with optional alpha data.
-///
+/// The JPEG data will already be pre-multiplied by the alpha.
 pub fn define_bits_jpeg_to_rgba(
     jpeg_data: &[u8],
     alpha_data: &[u8],

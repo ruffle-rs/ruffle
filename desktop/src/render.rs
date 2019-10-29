@@ -1170,8 +1170,16 @@ const BITMAP_FRAGMENT_SHADER: &str = r#"
     uniform sampler2D u_texture;
 
     void main() {
+
         vec4 color = texture(u_texture, frag_uv);
-        out_color = mult_color * color + add_color;
+        // Unmultiply alpha before apply color transform.
+        if( color.a > 0 ) {
+            color.rgb /= color.a;
+            color = mult_color * color + add_color;
+            color.rgb *= color.a;
+        }
+
+        out_color = color;
     }
 "#;
 
