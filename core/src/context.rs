@@ -90,6 +90,9 @@ pub struct QueuedActions<'gc> {
 
     /// The ActionScript bytecode.
     pub actions: SwfSlice,
+
+    /// If this queued action is an init action
+    pub is_init: bool,
 }
 
 /// Action and gotos need to be queued up to execute at the end of the frame.
@@ -110,8 +113,12 @@ impl<'gc> ActionQueue<'gc> {
     /// Queues ActionScript to run for the given movie clip.
     /// `actions` is the slice of ActionScript bytecode to run.
     /// The actions will be skipped if the clip is removed before the actions run.
-    pub fn queue_actions(&mut self, clip: DisplayNode<'gc>, actions: SwfSlice) {
-        self.queue.push_back(QueuedActions { clip, actions })
+    pub fn queue_actions(&mut self, clip: DisplayNode<'gc>, actions: SwfSlice, is_init: bool) {
+        self.queue.push_back(QueuedActions {
+            clip,
+            actions,
+            is_init,
+        })
     }
 
     /// Pops the next actions off of the queue.

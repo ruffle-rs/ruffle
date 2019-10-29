@@ -665,6 +665,7 @@ impl<'gc, 'a> MovieClip<'gc> {
             TagCode::DefineSprite => self.define_sprite(context, reader, tag_len, morph_shapes),
             TagCode::DefineText => self.define_text(context, reader, 1),
             TagCode::DefineText2 => self.define_text(context, reader, 2),
+            TagCode::DoInitAction => self.do_init_action(context, reader, tag_len),
             TagCode::FrameLabel => {
                 self.frame_label(context, reader, tag_len, cur_frame, &mut static_data)
             }
@@ -1236,7 +1237,36 @@ impl<'gc, 'a> MovieClip<'gc> {
         };
         context
             .action_queue
-            .queue_actions(context.active_clip, slice);
+            .queue_actions(context.active_clip, slice, false);
+        Ok(())
+    }
+
+    #[inline]
+    fn do_init_action(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        reader: &mut SwfStream<&'a [u8]>,
+        tag_len: usize,
+    ) -> DecodeResult {
+        // Queue the init actions.
+
+        // TODO: Init actions are supposed to be executed once, and it gives a
+        // sprite ID... how does that work?
+        let sprite_id = reader.read_u16()?;
+        log::info!("Init Action sprite ID {}", sprite_id);
+
+        // TODO: The reader is actually reading the tag slice at this point (tag_stream.take()),
+        // so make sure to get the proper offsets. This feels kind of bad.
+        let start = (self.tag_stream_start() + reader.get_ref().position()) as usize;
+        let end = start + tag_len;
+        let slice = crate::tag_utils::SwfSlice {
+            data: std::sync::Arc::clone(context.swf_data),
+            start,
+            end,
+        };
+        context
+            .action_queue
+            .queue_actions(context.active_clip, slice, true);
         Ok(())
     }
 
