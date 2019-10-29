@@ -137,6 +137,35 @@ impl<'gc> Avm1<'gc> {
         ));
     }
 
+    /// Add a stack frame that executes code in initializer scope
+    pub fn insert_stack_frame_for_init_action(
+        &mut self,
+        swf_version: u8,
+        code: SwfSlice,
+        action_context: &mut UpdateContext<'_, 'gc, '_>,
+    ) {
+        let global_scope = GcCell::allocate(
+            action_context.gc_context,
+            Scope::from_global_object(self.globals),
+        );
+        let clip_obj = action_context
+            .active_clip
+            .read()
+            .object()
+            .as_object()
+            .unwrap()
+            .to_owned();
+        let child_scope = GcCell::allocate(
+            action_context.gc_context,
+            Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
+        );
+        self.push(Value::Undefined);
+        self.stack_frames.push(GcCell::allocate(
+            action_context.gc_context,
+            Activation::from_action(swf_version, code, child_scope, clip_obj, None),
+        ));
+    }
+
     /// Add a stack frame for any arbitrary code.
     pub fn insert_stack_frame(
         &mut self,

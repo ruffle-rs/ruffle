@@ -622,7 +622,16 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             context.start_clip = actions.clip;
             context.active_clip = actions.clip;
             context.target_clip = Some(actions.clip);
-            avm.insert_stack_frame_for_action(context.swf_version, actions.actions, context);
+
+            if actions.is_init {
+                avm.insert_stack_frame_for_init_action(
+                    context.swf_version,
+                    actions.actions,
+                    context,
+                );
+            } else {
+                avm.insert_stack_frame_for_action(context.swf_version, actions.actions, context);
+            }
             let _ = avm.run_stack_till_empty(context);
         }
     }
