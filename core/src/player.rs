@@ -236,6 +236,20 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         }
     }
 
+    /// Returns the approximate duration of time until the next frame is due to run.
+    /// This is only an approximation to be used for sleep durations.
+    pub fn time_til_next_frame(&self) -> std::time::Duration {
+        let frame_time = 1000.0 / self.frame_rate;
+        let dt = if self.frame_accumulator <= 0.0 {
+            frame_time
+        } else if self.frame_accumulator >= frame_time {
+            0.0
+        } else {
+            frame_time - self.frame_accumulator
+        };
+        std::time::Duration::from_micros(dt as u64 * 1000)
+    }
+
     pub fn is_playing(&self) -> bool {
         self.is_playing
     }
