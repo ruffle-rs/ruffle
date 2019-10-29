@@ -1662,7 +1662,7 @@ impl<'gc> Avm1<'gc> {
         if let Some(clip) = context.target_clip {
             let mut display_object = clip.write(context.gc_context);
             if let Some(clip) = display_object.as_movie_clip_mut() {
-                clip.stop();
+                clip.stop(context);
             } else {
                 log::warn!("Stop: Target is not a MovieClip");
             }

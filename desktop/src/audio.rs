@@ -288,6 +288,7 @@ impl AudioBackend for CpalAudioBackend {
     fn start_stream(
         &mut self,
         clip_id: swf::CharacterId,
+        _clip_frame: u16,
         clip_data: SwfSlice,
         stream_info: &swf::SoundStreamHead,
     ) -> AudioStreamHandle {
@@ -306,6 +307,11 @@ impl AudioBackend for CpalAudioBackend {
             signal,
             active: true,
         })
+    }
+
+    fn stop_stream(&mut self, stream: AudioStreamHandle) {
+        let mut sound_instances = self.sound_instances.lock().unwrap();
+        sound_instances.remove(stream);
     }
 
     fn start_sound(&mut self, sound_handle: SoundHandle, settings: &swf::SoundInfo) {

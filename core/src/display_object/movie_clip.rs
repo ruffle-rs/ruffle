@@ -100,8 +100,12 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
-    pub fn stop(&mut self) {
+    pub fn stop(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         self.is_playing = false;
+        // Stop audio stream if one is playing.
+        if let Some(audio_stream) = self.audio_stream.take() {
+            context.audio.stop_stream(audio_stream);
+        }
     }
 
     /// Queues up a goto to the specified frame.
@@ -112,14 +116,15 @@ impl<'gc> MovieClip<'gc> {
         frame: FrameNumber,
         stop: bool,
     ) {
-        if frame != self.current_frame {
-            self.run_goto(context, frame);
-        }
-
+        // Stop first, in case we need to kill and restart the stream sound.
         if stop {
-            self.stop();
+            self.stop(context);
         } else {
             self.play();
+        }
+
+        if frame != self.current_frame {
+            self.run_goto(context, frame);
         }
     }
 
@@ -240,7 +245,7 @@ impl<'gc> MovieClip<'gc> {
             return;
         } else {
             // Single frame clips do not play.
-            self.stop();
+            self.stop(context);
         }
 
         let _tag_pos = self.tag_stream_pos;
@@ -686,10 +691,10 @@ impl<'gc, 'a> MovieClip<'gc> {
             TagCode::RemoveObject2 => self.preload_remove_object(context, reader, &mut ids, 2),
             TagCode::ShowFrame => self.preload_show_frame(context, reader, &mut cur_frame),
             TagCode::SoundStreamHead => {
-                self.preload_sound_stream_head(context, reader, &mut static_data, 1)
+                self.preload_sound_stream_head(context, reader, cur_frame, &mut static_data, 1)
             }
             TagCode::SoundStreamHead2 => {
-                self.preload_sound_stream_head(context, reader, &mut static_data, 2)
+                self.preload_sound_stream_head(context, reader, cur_frame, &mut static_data, 2)
             }
             TagCode::SoundStreamBlock => {
                 self.preload_sound_stream_block(context, reader, &mut static_data, tag_len)
@@ -830,13 +835,14 @@ impl<'gc, 'a> MovieClip<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<&'a [u8]>,
+        cur_frame: FrameNumber,
         static_data: &mut MovieClipStatic,
         _version: u8,
     ) -> DecodeResult {
         let audio_stream_info = reader.read_sound_stream_head()?;
         context
             .audio
-            .preload_sound_stream_head(self.id(), &audio_stream_info);
+            .preload_sound_stream_head(self.id(), cur_frame, &audio_stream_info);
         static_data.audio_stream_info = Some(audio_stream_info);
         Ok(())
     }
@@ -1354,12 +1360,16 @@ impl<'gc, 'a> MovieClip<'gc> {
     ) -> DecodeResult {
         if let (Some(stream_info), None) = (&self.static_data.audio_stream_info, &self.audio_stream)
         {
+            let pos = self.tag_stream_start() + self.tag_stream_pos;
             let slice = crate::tag_utils::SwfSlice {
                 data: std::sync::Arc::clone(context.swf_data),
-                start: self.tag_stream_start() as usize,
+                start: pos as usize,
                 end: self.tag_stream_start() as usize + self.tag_stream_len(),
             };
-            let audio_stream = context.audio.start_stream(self.id(), slice, stream_info);
+            let audio_stream =
+                context
+                    .audio
+                    .start_stream(self.id(), self.current_frame() + 1, slice, stream_info);
             self.audio_stream = Some(audio_stream);
         }
 
