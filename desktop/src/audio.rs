@@ -7,6 +7,7 @@ use ruffle_core::backend::audio::{swf, AudioBackend, AudioStreamHandle, SoundHan
 use ruffle_core::tag_utils::SwfSlice;
 use std::io::Cursor;
 use std::sync::{Arc, Mutex};
+use swf::AudioCompression;
 
 #[allow(dead_code)]
 pub struct CpalAudioBackend {
@@ -25,6 +26,12 @@ type Signal = Box<dyn Send + sample::signal::Signal<Frame = [i16; 2]>>;
 struct Sound {
     format: swf::SoundFormat,
     data: Arc<Vec<u8>>,
+    /// Number of samples in this audio.
+    /// This does not include the skip_sample_frames.
+    num_sample_frames: u32,
+
+    /// Number of samples to skip encoder delay.
+    skip_sample_frames: u16,
 }
 
 /// An actively playing instance of a sound.
@@ -132,7 +139,6 @@ impl CpalAudioBackend {
         format: &swf::SoundFormat,
         data: Cursor<VecAsRef>,
     ) -> Box<dyn Send + SeekableDecoder> {
-        use swf::AudioCompression;
         match format.compression {
             AudioCompression::Uncompressed => Box::new(PcmDecoder::new(
                 data,
@@ -181,18 +187,23 @@ impl CpalAudioBackend {
     /// to the output format.
     fn make_signal_from_event_sound(
         &self,
-        format: &swf::SoundFormat,
+        sound: &Sound,
         settings: &swf::SoundInfo,
         data: Cursor<VecAsRef>,
     ) -> Box<dyn Send + sample::signal::Signal<Frame = [i16; 2]>> {
         // Instantiate a decoder for the compression that the sound data uses.
-        let decoder = Self::make_seekable_decoder(format, data);
+        let decoder = Self::make_seekable_decoder(&sound.format, data);
 
         // Wrap the decoder in the event sound signal (controls looping/envelope)
-        let signal = EventSoundSignal::new_with_settings(decoder, settings);
+        let signal = EventSoundSignal::new_with_settings(
+            decoder,
+            settings,
+            sound.num_sample_frames,
+            sound.skip_sample_frames,
+        );
         // Convert the `Decoder` to a `Signal`, and resample it the the output
         // sample rate.
-        let signal = self.make_resampler(format, signal);
+        let signal = self.make_resampler(&sound.format, signal);
         Box::new(signal)
     }
 
@@ -278,9 +289,20 @@ impl AudioBackend for CpalAudioBackend {
         &mut self,
         swf_sound: &swf::Sound,
     ) -> Result<SoundHandle, Box<dyn std::error::Error>> {
+        // Slice off latency seek for MP3 data.
+        let (skip_sample_frames, data) = if swf_sound.format.compression == AudioCompression::Mp3 {
+            let skip_sample_frames =
+                u16::from(swf_sound.data[0]) | (u16::from(swf_sound.data[1]) << 8);
+            (skip_sample_frames, &swf_sound.data[2..])
+        } else {
+            (0, &swf_sound.data[..])
+        };
+
         let sound = Sound {
             format: swf_sound.format.clone(),
-            data: Arc::new(swf_sound.data.clone()),
+            data: Arc::new(data.to_vec()),
+            num_sample_frames: swf_sound.num_samples,
+            skip_sample_frames,
         };
         Ok(self.sounds.insert(sound))
     }
@@ -318,7 +340,8 @@ impl AudioBackend for CpalAudioBackend {
         let sound = &self.sounds[sound_handle];
         let data = Cursor::new(VecAsRef(Arc::clone(&sound.data)));
         // Create a signal that decodes and resamples the sound.
-        let signal = if settings.in_sample.is_none()
+        let signal = if sound.skip_sample_frames == 0
+            && settings.in_sample.is_none()
             && settings.out_sample.is_none()
             && settings.num_loops <= 1
             && settings.envelope.is_none()
@@ -327,7 +350,7 @@ impl AudioBackend for CpalAudioBackend {
             self.make_signal_from_simple_event_sound(&sound.format, data)
         } else {
             // For event sounds with envelopes/other properties, wrap it in `EventSoundSignal`.
-            self.make_signal_from_event_sound(&sound.format, settings, data)
+            self.make_signal_from_event_sound(&sound, settings, data)
         };
 
         // Add sound instance to active list.
@@ -393,14 +416,23 @@ impl EventSoundSignal {
     fn new_with_settings(
         decoder: Box<dyn SeekableDecoder + Send>,
         settings: &swf::SoundInfo,
+        num_sample_frames: u32,
+        skip_sample_frames: u16,
     ) -> Self {
+        let skip_sample_frames = u32::from(skip_sample_frames);
         let sample_divisor = 44100 / u32::from(decoder.sample_rate());
-        let start_sample_frame = settings.in_sample.unwrap_or(0) / sample_divisor;
+        let start_sample_frame =
+            settings.in_sample.unwrap_or(0) / sample_divisor + skip_sample_frames;
+        let end_sample_frame = settings
+            .out_sample
+            .map(|n| n / sample_divisor)
+            .unwrap_or(num_sample_frames)
+            + skip_sample_frames;
         let mut signal = Self {
             decoder,
             num_loops: settings.num_loops,
             start_sample_frame,
-            end_sample_frame: settings.out_sample.map(|n| n / sample_divisor),
+            end_sample_frame: Some(end_sample_frame),
             cur_sample_frame: start_sample_frame,
             is_exhausted: false,
         };
