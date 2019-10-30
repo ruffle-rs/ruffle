@@ -604,6 +604,19 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         self.renderer.end_frame();
     }
 
+    pub fn audio(&self) -> &Audio {
+        &self.audio
+    }
+
+    pub fn audio_mut(&mut self) -> &mut Audio {
+        &mut self.audio
+    }
+
+    // The frame rate of the current movie in FPS.
+    pub fn frame_rate(&self) -> f64 {
+        self.frame_rate
+    }
+
     pub fn renderer(&self) -> &Renderer {
         &self.renderer
     }
