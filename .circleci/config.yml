@@ -15,8 +15,8 @@ jobs:
       # Restore cached assets (cargo registry)
       - restore_cache:
           keys:
-            - v1-cargo-cache-linux-{{ .Revision }}
-            - v1-cargo-cache-linux-
+            - v2-cargo-cache-linux-{{ .Revision }}
+            - v2-cargo-cache-linux-
 
       # Install dependencies
       - run:
@@ -87,7 +87,7 @@ jobs:
 
       # Save cached assets
       - save_cache:
-          key: v1-cargo-cache-linux-{{ .Revision }}
+          key: v2-cargo-cache-linux-{{ .Revision }}
           paths:
             - "/usr/local/cargo/registry"
             - "./target"
@@ -111,8 +111,8 @@ jobs:
       # Restore cached assets (cargo registry)
       - restore_cache:
           keys:
-            - v1-cargo-cache-osx-{{ .Revision }}
-            - v1-cargo-cache-osx-
+            - v2-cargo-cache-osx-{{ .Revision }}
+            - v2-cargo-cache-osx-
       
       # Install dependencies
       - run:
@@ -143,7 +143,7 @@ jobs:
 
       # Save cached assets
       - save_cache:
-          key: v1-cargo-cache-osx-{{ .Revision }}
+          key: v2-cargo-cache-osx-{{ .Revision }}
           paths:
             - "~/.cargo/registry"
             - "./target"
@@ -166,8 +166,8 @@ jobs:
       # Restore cached assets (cargo registry)
       - restore_cache:
           keys:
-            - v1-cargo-cache-windows-{{ .Revision }}
-            - v1-cargo-cache-windows-
+            - v2-cargo-cache-windows-{{ .Revision }}
+            - v2-cargo-cache-windows-
 
       # Install dependencies
       - run:
@@ -203,7 +203,7 @@ jobs:
 
       # Save cached assets
       - save_cache:
-          key: v1-cargo-cache-windows-{{ .Revision }}
+          key: v2-cargo-cache-windows-{{ .Revision }}
           paths:
             - c:\users\circleci\.cargo\registry
             - target
