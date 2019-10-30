@@ -1,3 +1,4 @@
+//! `MovieClip` display object and support code.
 use crate::avm1::movie_clip::create_movie_object;
 use crate::avm1::object::{Object, TYPE_OF_MOVIE_CLIP};
 use crate::avm1::Value;
@@ -18,6 +19,11 @@ use swf::read::SwfRead;
 type Depth = i16;
 type FrameNumber = u16;
 
+/// A movie clip is a display object with its own timeline that runs independently of the root timeline.
+/// The SWF19 spec calls this "Sprite" and the SWF tag defines it is "DefineSprite".
+/// However, in AVM2, Sprite is a separate display object, and MovieClip is a subclass of Sprite.
+///
+/// (SWF19 pp. 201-203)
 #[derive(Clone, Debug)]
 pub struct MovieClip<'gc> {
     base: DisplayObjectBase<'gc>,
