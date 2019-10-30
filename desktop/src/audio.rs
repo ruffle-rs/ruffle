@@ -406,6 +406,7 @@ impl Default for VecAsRef {
 struct EventSoundSignal {
     decoder: Box<dyn SeekableDecoder + Send>,
     num_loops: u16,
+    envelope_signal: Option<EnvelopeSignal>,
     start_sample_frame: u32,
     end_sample_frame: Option<u32>,
     cur_sample_frame: u32,
@@ -428,9 +429,17 @@ impl EventSoundSignal {
             .map(|n| n / sample_divisor)
             .unwrap_or(num_sample_frames)
             + skip_sample_frames;
+
+        let envelope_signal = if let Some(envelope) = &settings.envelope {
+            Some(EnvelopeSignal::new(envelope.clone()))
+        } else {
+            None
+        };
+
         let mut signal = Self {
             decoder,
             num_loops: settings.num_loops,
+            envelope_signal,
             start_sample_frame,
             end_sample_frame: Some(end_sample_frame),
             cur_sample_frame: start_sample_frame,
@@ -460,7 +469,7 @@ impl sample::signal::Signal for EventSoundSignal {
     fn next(&mut self) -> Self::Frame {
         // Loop the sound if necessary, and get the next frame.
         if !self.is_exhausted {
-            if let Some(frame) = self.decoder.next() {
+            let frame = if let Some(frame) = self.decoder.next() {
                 self.cur_sample_frame += 1;
                 if let Some(end) = self.end_sample_frame {
                     if self.cur_sample_frame > end {
@@ -471,6 +480,12 @@ impl sample::signal::Signal for EventSoundSignal {
             } else {
                 self.next_loop();
                 self.next()
+            };
+            if let Some(envelope) = &mut self.envelope_signal {
+                use sample::frame::Frame;
+                frame.mul_amp(envelope.next())
+            } else {
+                frame
             }
         } else {
             [0, 0]
@@ -479,5 +494,90 @@ impl sample::signal::Signal for EventSoundSignal {
 
     fn is_exhausted(&self) -> bool {
         self.is_exhausted
+    }
+}
+
+/// A signal that represents the sound envelope for an event sound.
+/// The sound signal gets multiplied by the envelope for volume/panning effects.
+struct EnvelopeSignal {
+    /// Iterator through the envelope points specified in the SWWF file.
+    envelope: std::vec::IntoIter<swf::SoundEnvelopePoint>,
+
+    /// The starting envelope point.
+    prev_point: swf::SoundEnvelopePoint,
+
+    /// The ending envelope point.
+    next_point: swf::SoundEnvelopePoint,
+
+    /// The current sample index.
+    cur_sample: u32,
+}
+
+impl EnvelopeSignal {
+    fn new(envelope: swf::SoundEnvelope) -> Self {
+        // TODO: This maybe can be done more clever using the `sample` crate.
+        let mut envelope = envelope.into_iter();
+        let first_point = envelope.next().unwrap_or_else(|| swf::SoundEnvelopePoint {
+            sample: 0,
+            left_volume: 1.0,
+            right_volume: 1.0,
+        });
+        Self {
+            // The initial volume is the first point's volume.
+            prev_point: swf::SoundEnvelopePoint {
+                sample: 0,
+                left_volume: first_point.left_volume,
+                right_volume: first_point.right_volume,
+            },
+            next_point: first_point,
+            cur_sample: 0,
+            envelope,
+        }
+    }
+}
+impl sample::signal::Signal for EnvelopeSignal {
+    type Frame = [f32; 2];
+
+    fn next(&mut self) -> Self::Frame {
+        // Calculate interpolated volume.
+        let out = if self.prev_point.sample < self.next_point.sample {
+            let a = f64::from(self.cur_sample - self.prev_point.sample);
+            let b = f64::from(self.next_point.sample - self.prev_point.sample);
+            let lerp = a / b;
+            let interpolator = sample::interpolate::Linear::new(
+                [self.prev_point.left_volume, self.prev_point.right_volume],
+                [self.next_point.left_volume, self.next_point.right_volume],
+            );
+            use sample::interpolate::Interpolator;
+            interpolator.interpolate(lerp)
+        } else {
+            [self.next_point.left_volume, self.next_point.right_volume]
+        };
+
+        // Update envelope endpoints.
+        self.cur_sample = self.cur_sample.saturating_add(1);
+        while self.cur_sample > self.next_point.sample {
+            self.prev_point = self.next_point.clone();
+            self.next_point =
+                self.envelope
+                    .next()
+                    .clone()
+                    .unwrap_or_else(|| swf::SoundEnvelopePoint {
+                        sample: std::u32::MAX,
+                        left_volume: self.prev_point.left_volume,
+                        right_volume: self.prev_point.right_volume,
+                    });
+
+            if self.prev_point.sample > self.next_point.sample {
+                self.next_point.sample = self.prev_point.sample;
+                log::error!("Invalid sound envelope; sample indices are out of order");
+            }
+        }
+
+        out
+    }
+
+    fn is_exhausted(&self) -> bool {
+        false
     }
 }
