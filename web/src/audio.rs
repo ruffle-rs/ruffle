@@ -30,6 +30,7 @@ struct StreamData {
     audio_data: Vec<u8>,
     num_sample_frames: u32,
     samples_per_block: u32,
+    skip_sample_frames: u16,
     adpcm_block_offsets: Vec<usize>,
 
     /// List of stream segments. Contains the frame they start on and the starting sample.
@@ -54,9 +55,16 @@ enum SoundSource {
 
 #[allow(dead_code)]
 struct Sound {
-    num_sample_frames: u32,
     format: swf::SoundFormat,
     source: SoundSource,
+
+    /// Number of samples in this audio.
+    /// This may be shorter than the actual length of the audio data to allow for seamless looping.
+    /// For example, MP3 encoder adds gaps from encoder delay.
+    num_sample_frames: u32,
+
+    /// Number of samples to skip encoder delay.
+    skip_sample_frames: u16,
 }
 
 type Decoder = Box<dyn Iterator<Item = [i16; 2]>>;
@@ -117,17 +125,20 @@ impl WebAudioBackend {
                 node.connect_with_audio_node(&self.context.destination())
                     .warn_on_error();
 
+                let sound_sample_rate = f64::from(sound.format.sample_rate);
                 match settings {
                     Some(settings)
-                        if settings.num_loops > 1
+                        if sound.skip_sample_frames > 0
+                            || settings.num_loops > 1
                             || settings.in_sample.is_some()
                             || settings.out_sample.is_some()
                             || settings.envelope.is_some() =>
                     {
                         // Event sound with non-default parameters.
                         // Note that start/end values are in 44.1kHZ samples regardless of the sound's sample rate.
-                        let start_sample_frame =
-                            f64::from(settings.in_sample.unwrap_or(0)) / 44100.0;
+                        let start_sample_frame = f64::from(settings.in_sample.unwrap_or(0))
+                            / 44100.0
+                            + f64::from(sound.skip_sample_frames) / sound_sample_rate;
                         node.set_loop(settings.num_loops > 1);
                         node.set_loop_start(start_sample_frame);
                         node.start_with_when_and_grain_offset(0.0, start_sample_frame)
@@ -137,8 +148,9 @@ impl WebAudioBackend {
                             let end_sample_frame = if let Some(out_sample) = settings.out_sample {
                                 f64::from(out_sample) / 44100.0
                             } else {
-                                f64::from(sound.num_sample_frames)
-                                    / f64::from(sound.format.sample_rate)
+                                f64::from(
+                                    sound.num_sample_frames + u32::from(sound.skip_sample_frames),
+                                ) / sound_sample_rate
                             };
                             // `AudioSourceBufferNode.loop` is a bool, so we have to stop the loop at the proper time.
                             // `start_with_when_and_grain_offset_and_grain_duration` unfortunately doesn't work
@@ -236,7 +248,7 @@ impl WebAudioBackend {
         }
 
         match format.compression {
-            AudioCompression::Uncompressed => {
+            AudioCompression::Uncompressed | AudioCompression::UncompressedUnknownEndian => {
                 // TODO: Check for is_16_bit.
                 self.left_samples = audio_data
                     .iter()
@@ -282,7 +294,7 @@ impl WebAudioBackend {
                     }
                 }
             }
-            _ => unimplemented!(),
+            _ => unimplemented!("{:?}", format.compression),
         }
 
         // Double up samples for 5512Hz audio to satisfy Firefox.
@@ -425,14 +437,14 @@ impl WebAudioBackend {
 impl AudioBackend for WebAudioBackend {
     fn register_sound(&mut self, sound: &swf::Sound) -> Result<SoundHandle, Error> {
         // Slice off latency seek for MP3 data.
-        let data = if sound.format.compression == AudioCompression::Mp3 {
-            &sound.data[2..]
+        let (skip_sample_frames, data) = if sound.format.compression == AudioCompression::Mp3 {
+            let skip_sample_frames = u16::from(sound.data[0]) | (u16::from(sound.data[1]) << 8);
+            (skip_sample_frames, &sound.data[2..])
         } else {
-            &sound.data[..]
+            (0, &sound.data[..])
         };
 
         let sound = Sound {
-            num_sample_frames: sound.num_samples,
             format: sound.format.clone(),
             source: SoundSource::AudioBuffer(self.decompress_to_audio_buffer(
                 &sound.format,
@@ -440,6 +452,8 @@ impl AudioBackend for WebAudioBackend {
                 sound.num_samples,
                 None,
             )),
+            num_sample_frames: sound.num_samples,
+            skip_sample_frames,
         };
         Ok(self.sounds.insert(sound))
     }
@@ -457,6 +471,7 @@ impl AudioBackend for WebAudioBackend {
                 audio_data: vec![],
                 num_sample_frames: 0,
                 samples_per_block: stream_info.num_samples_per_block.into(),
+                skip_sample_frames: stream_info.latency_seek as u16,
                 adpcm_block_offsets: vec![],
                 stream_segments: vec![],
                 last_clip_frame: 0,
@@ -513,7 +528,6 @@ impl AudioBackend for WebAudioBackend {
         let stream_data = self.stream_data.remove(&clip_id);
 
         if let Some(mut stream) = stream_data {
-            // Only worry about streams that actually have data.
             if !stream.audio_data.is_empty() {
                 let audio_buffer = self.decompress_to_audio_buffer(
                     &stream.format,
@@ -530,8 +544,9 @@ impl AudioBackend for WebAudioBackend {
                 self.stream_data.insert(clip_id, stream.clone());
                 let handle = self.sounds.insert(Sound {
                     format: stream.format,
-                    num_sample_frames: stream.num_sample_frames,
                     source: SoundSource::AudioBuffer(audio_buffer),
+                    num_sample_frames: stream.num_sample_frames,
+                    skip_sample_frames: stream.skip_sample_frames,
                 });
                 self.id_to_sound.insert(clip_id, handle);
             }
