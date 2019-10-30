@@ -23,7 +23,13 @@ pub trait AudioBackend {
         _stream_info: &swf::SoundStreamHead,
     ) {
     }
-    fn preload_sound_stream_block(&mut self, _clip_id: swf::CharacterId, _audio_data: &[u8]) {}
+    fn preload_sound_stream_block(
+        &mut self,
+        _clip_id: swf::CharacterId,
+        _clip_frame: u16,
+        _audio_data: &[u8],
+    ) {
+    }
     fn preload_sound_stream_end(&mut self, _clip_id: swf::CharacterId) {}
 
     /// Starts playing a sound instance that is not tied to a MovieClip timeline.
