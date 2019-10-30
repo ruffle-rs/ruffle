@@ -88,7 +88,7 @@ struct SoundInstance {
 #[allow(dead_code)]
 enum SoundInstanceType {
     Decoder(Decoder),
-    AudioBuffer(web_sys::AudioBufferSourceNode),
+    AudioBuffer(web_sys::AudioNode),
 }
 
 type Error = Box<dyn std::error::Error>;
@@ -122,11 +122,9 @@ impl WebAudioBackend {
                 let audio_buffer = audio_buffer.borrow();
                 let node = self.context.create_buffer_source().unwrap();
                 node.set_buffer(Some(&*audio_buffer));
-                node.connect_with_audio_node(&self.context.destination())
-                    .warn_on_error();
 
                 let sound_sample_rate = f64::from(sound.format.sample_rate);
-                match settings {
+                let node: web_sys::AudioNode = match settings {
                     Some(settings)
                         if sound.skip_sample_frames > 0
                             || settings.num_loops > 1
@@ -162,12 +160,23 @@ impl WebAudioBackend {
                             node.stop_with_when(current_time + total_len)
                                 .warn_on_error();
                         }
+
+                        // For envelopes, we rig the node up to some splitter/gain nodes.
+                        if let Some(envelope) = &settings.envelope {
+                            self.create_sound_envelope(node.into(), envelope).unwrap()
+                        } else {
+                            node.into()
+                        }
                     }
                     _ => {
                         // Default event sound or stream.
                         node.start().warn_on_error();
+                        node.into()
                     }
-                }
+                };
+
+                node.connect_with_audio_node(&self.context.destination())
+                    .warn_on_error();
 
                 let instance = SoundInstance {
                     handle: Some(handle),
@@ -234,6 +243,71 @@ impl WebAudioBackend {
                 })
             }
         }
+    }
+
+    /// Wires up the envelope for Flash event sounds using `ChannelSplitter`, `Gain`, and `ChannelMerger` nodes.
+    fn create_sound_envelope(
+        &self,
+        node: web_sys::AudioNode,
+        envelope: &[swf::SoundEnvelopePoint],
+    ) -> Result<web_sys::AudioNode, Box<dyn std::error::Error>> {
+        // Split the left and right channels.
+        let splitter = self
+            .context
+            .create_channel_splitter_with_number_of_outputs(2)
+            .into_js_result()?;
+
+        // Create the envelope gain nodes for the left and right channels.
+        let left_gain = self.context.create_gain().into_js_result()?;
+        let right_gain = self.context.create_gain().into_js_result()?;
+
+        // Initial volume is clamped to first envelope point.
+        if let Some(point) = envelope.get(0) {
+            left_gain
+                .gain()
+                .set_value_at_time(point.left_volume, 0.0)
+                .warn_on_error();
+            right_gain
+                .gain()
+                .set_value_at_time(point.right_volume, 0.0)
+                .warn_on_error();
+        }
+
+        // Add volume lerps for envelope points.
+        for point in envelope {
+            left_gain
+                .gain()
+                .linear_ramp_to_value_at_time(point.left_volume, f64::from(point.sample) / 44100.0)
+                .warn_on_error();
+            right_gain
+                .gain()
+                .linear_ramp_to_value_at_time(point.right_volume, f64::from(point.sample) / 44100.0)
+                .warn_on_error();
+        }
+
+        // Merge the channels back together.
+        let merger: web_sys::AudioNode = self
+            .context
+            .create_channel_merger_with_number_of_inputs(2)
+            .into_js_result()?
+            .into();
+
+        // Wire up the nodes.
+        node.connect_with_audio_node(&splitter).into_js_result()?;
+        splitter
+            .connect_with_audio_node_and_output(&left_gain, 0)
+            .into_js_result()?;
+        splitter
+            .connect_with_audio_node_and_output(&right_gain, 1)
+            .into_js_result()?;
+        left_gain
+            .connect_with_audio_node_and_output_and_input(&merger, 0, 0)
+            .into_js_result()?;
+        right_gain
+            .connect_with_audio_node_and_output_and_input(&merger, 0, 1)
+            .into_js_result()?;
+
+        Ok(merger)
     }
 
     fn decompress_to_audio_buffer(
@@ -609,7 +683,7 @@ impl AudioBackend for WebAudioBackend {
             let mut instances = instances.borrow_mut();
             if let Some(mut instance) = instances.remove(stream) {
                 if let SoundInstanceType::AudioBuffer(ref mut node) = instance.instance_type {
-                    let _ = node.stop();
+                    let _ = node.disconnect();
                 }
             }
         })
@@ -628,8 +702,8 @@ impl AudioBackend for WebAudioBackend {
         SOUND_INSTANCES.with(|instances| {
             let mut instances = instances.borrow_mut();
             instances.iter_mut().for_each(|(_, instance)| {
-                if let SoundInstanceType::AudioBuffer(ref mut node) = instance.instance_type {
-                    let _ = node.stop();
+                if let SoundInstanceType::AudioBuffer(ref node) = instance.instance_type {
+                    let _ = node.disconnect();
                 }
                 // TODO: Have to handle Decoder nodes. (These may just go into a different backend.)
             });
@@ -641,7 +715,12 @@ impl AudioBackend for WebAudioBackend {
         SOUND_INSTANCES.with(|instances| {
             let mut instances = instances.borrow_mut();
             let handle = Some(handle);
-            instances.retain(|_, instance| instance.handle != handle);
+            instances.retain(|_, instance| {
+                if let SoundInstanceType::AudioBuffer(ref node) = instance.instance_type {
+                    let _ = node.disconnect();
+                }
+                instance.handle != handle
+            });
         })
     }
 

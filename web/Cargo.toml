@@ -36,10 +36,10 @@ features = ["puremp3"]
 [dependencies.web-sys]
 version = "0.3.25"
 features = [
-    "AudioBuffer", "AudioBufferSourceNode", "AudioProcessingEvent", "AudioContext", "AudioDestinationNode", "AudioNode", 
-    "CanvasRenderingContext2d", "CssStyleDeclaration", "Document", "Element", "Event", "EventTarget", "HtmlCanvasElement",
-    "HtmlElement", "HtmlImageElement", "MouseEvent", "Navigator", "Node", "Performance", "ScriptProcessorNode", "Window",
-    "Location", "HtmlFormElement"]
+    "AudioBuffer", "AudioBufferSourceNode", "AudioParam", "AudioProcessingEvent", "AudioContext", "AudioDestinationNode", 
+    "AudioNode", "CanvasRenderingContext2d", "ChannelMergerNode", "ChannelSplitterNode", "CssStyleDeclaration", "Document",
+    "Element", "Event", "EventTarget", "GainNode", "HtmlCanvasElement", "HtmlElement", "HtmlImageElement", "MouseEvent",
+    "Navigator", "Node", "Performance", "ScriptProcessorNode", "Window", "Location", "HtmlFormElement"]
 
 [dev-dependencies]
 wasm-bindgen-test = "0.2.48"
