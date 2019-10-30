@@ -266,7 +266,12 @@ impl<'gc> Avm1<'gc> {
 
             if let Some(func) = frame.write(context.gc_context).get_then_func() {
                 match func.returned(self, context, return_value)? {
-                    Immediate(val) => self.stack.push(val),
+                    Immediate(val) => {
+                        frame
+                            .write(context.gc_context)
+                            .set_return_value(val.clone());
+                        self.stack.push(val)
+                    }
                     ResultOf(new_frame) => {
                         new_frame
                             .write(context.gc_context)
@@ -275,6 +280,9 @@ impl<'gc> Avm1<'gc> {
                     NoResult => {}
                 }
             } else if can_return {
+                frame
+                    .write(context.gc_context)
+                    .set_return_value(return_value.clone());
                 self.stack.push(return_value);
             }
         }
