@@ -87,8 +87,9 @@ impl Ruffle {
         let audio = WebAudioBackend::new()?;
         let navigator = WebNavigatorBackend::new();
 
-        let core = ruffle_core::Player::new(renderer, audio, navigator, data)?;
-
+        let mut core = ruffle_core::Player::new(renderer, audio, navigator, data)?;
+        let frame_rate = core.frame_rate();
+        core.audio_mut().set_frame_rate(frame_rate);
         // Create instance.
         let instance = RuffleInstance {
             core,
