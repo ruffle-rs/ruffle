@@ -3,8 +3,8 @@ use generational_arena::{Arena, Index};
 pub mod decoders;
 pub mod swf {
     pub use swf::{
-        read, AudioCompression, CharacterId, Sound, SoundEvent, SoundFormat, SoundInfo,
-        SoundStreamHead,
+        read, AudioCompression, CharacterId, Sound, SoundEnvelope, SoundEnvelopePoint, SoundEvent,
+        SoundFormat, SoundInfo, SoundStreamHead,
     };
 }
 
