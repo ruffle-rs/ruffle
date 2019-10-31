@@ -3,14 +3,12 @@
 use crate::avm1::object::Object;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
-use crate::avm1::stack_continuation::StackContinuation;
 use crate::avm1::{Avm1, Error, Value};
 use crate::context::UpdateContext;
 use crate::tag_utils::SwfSlice;
 use gc_arena::{GcCell, MutationContext};
 use smallvec::SmallVec;
 use std::cell::{Ref, RefMut};
-use std::mem::swap;
 use std::sync::Arc;
 
 /// Represents a particular register set.
@@ -95,12 +93,6 @@ pub struct Activation<'gc> {
     /// same register set.
     local_registers: Option<GcCell<'gc, RegisterSet<'gc>>>,
 
-    /// Native code to execute when the given activation frame returns.
-    ///
-    /// This facility exists primarily to allow native code to handle the result
-    /// of an AVM function call.
-    then_func: Option<Box<dyn StackContinuation<'gc>>>,
-
     /// Flags that the current activation frame is being executed and has a
     /// reader object copied from it. Taking out two readers on the same
     /// activation frame is a programming error.
@@ -115,7 +107,6 @@ unsafe impl<'gc> gc_arena::Collect for Activation<'gc> {
         self.arguments.trace(cc);
         self.return_value.trace(cc);
         self.local_registers.trace(cc);
-        self.then_func.trace(cc);
     }
 }
 
@@ -137,7 +128,6 @@ impl<'gc> Activation<'gc> {
             return_value: None,
             is_function: false,
             local_registers: None,
-            then_func: None,
             is_executing: false,
         }
     }
@@ -159,7 +149,6 @@ impl<'gc> Activation<'gc> {
             return_value: None,
             is_function: true,
             local_registers: None,
-            then_func: None,
             is_executing: false,
         }
     }
@@ -192,7 +181,6 @@ impl<'gc> Activation<'gc> {
             return_value: None,
             is_function: false,
             local_registers: None,
-            then_func: None,
             is_executing: false,
         }
     }
@@ -209,7 +197,6 @@ impl<'gc> Activation<'gc> {
             return_value: None,
             is_function: false,
             local_registers: self.local_registers,
-            then_func: None,
             is_executing: false,
         }
     }
@@ -351,43 +338,6 @@ impl<'gc> Activation<'gc> {
                 *r = value.into();
             }
         }
-    }
-
-    /// Return the function scheduled to be executed, if any.
-    pub fn get_then_func(&mut self) -> Option<&mut dyn StackContinuation<'gc>> {
-        match &mut self.then_func {
-            Some(f) => Some(f.as_mut()),
-            None => None,
-        }
-    }
-
-    /// Schedule a native function to execute when this stack frame returns.
-    ///
-    /// Only one native function may be scheduled per activation. It will be
-    /// called in lieu of pushing the return value onto the stack, and may
-    /// perform any necessary AVM action.
-    pub fn and_then(&mut self, func: Box<dyn StackContinuation<'gc>>) {
-        if self.then_func.is_some() {
-            log::error!("Attaching two continuations to the same stack frame is not supported. The previous continuation will be discarded.");
-        }
-
-        self.then_func = Some(func);
-    }
-
-    /// Reschedule an already-queued native function from an existing frame.
-    ///
-    /// The existing advice listed in `and_then` applies here. The previous
-    /// activation's continuation will be set to `None`.
-    pub fn and_again(
-        &mut self,
-        previous_activation: GcCell<'gc, Activation<'gc>>,
-        context: MutationContext<'gc, '_>,
-    ) {
-        self.then_func = None;
-        swap(
-            &mut self.then_func,
-            &mut previous_activation.write(context).then_func,
-        );
     }
 
     /// Attempts to lock the activation frame for execution.

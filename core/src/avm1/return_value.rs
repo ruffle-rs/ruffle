@@ -1,7 +1,6 @@
 //! Return value enum
 
 use crate::avm1::activation::Activation;
-use crate::avm1::stack_continuation::StackContinuation;
 use crate::avm1::{Avm1, Error, Value};
 use crate::context::UpdateContext;
 use gc_arena::{Collect, GcCell};
@@ -64,37 +63,6 @@ impl fmt::Debug for ReturnValue<'_> {
 }
 
 impl<'gc> ReturnValue<'gc> {
-    /// Run the return value through a stack continuation.
-    ///
-    /// If the return value is instant, we call the continuation immediately;
-    /// else we schedule it on the AVM stack. We return a new return value
-    /// representing the most up-to-date state of the computation in question.
-    /// This means it's possible to chain `and_then` functions across multiple
-    /// AVM stack frames.
-    pub fn and_then<F>(
-        self,
-        avm: &mut Avm1<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        mut cont: F,
-    ) -> Result<ReturnValue<'gc>, Error>
-    where
-        F: StackContinuation<'gc>,
-    {
-        use ReturnValue::*;
-
-        match self {
-            Immediate(val) => cont.returned(avm, context, val),
-            ResultOf(frame) => {
-                frame.write(context.gc_context).and_then(Box::new(cont));
-
-                //WARNING: This isn't exactly chainable, only one continuation
-                //can run at once.
-                Ok(ResultOf(frame))
-            }
-            NoResult => Ok(NoResult),
-        }
-    }
-
     /// Mark a given return value as intended to be pushed onto the stack.
     ///
     /// The natural result of a stack frame retiring is to be pushed, so this

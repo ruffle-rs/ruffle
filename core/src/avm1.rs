@@ -2,7 +2,6 @@ use crate::avm1::function::Avm1Function;
 use crate::avm1::globals::create_globals;
 use crate::avm1::object::Object;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::return_value::ReturnValue::*;
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
 use crate::prelude::*;
@@ -16,8 +15,6 @@ use swf::avm1::types::{Action, Function};
 
 use crate::tag_utils::SwfSlice;
 
-#[macro_use]
-mod stack_continuation;
 mod activation;
 mod fscommand;
 mod function;
@@ -271,26 +268,6 @@ impl<'gc> Avm1<'gc> {
             self.stack_frames.pop();
 
             let can_return = !self.stack_frames.is_empty();
-
-            if let Some(func) = frame.write(context.gc_context).get_then_func() {
-                match func.returned(self, context, return_value)? {
-                    Immediate(val) => {
-                        frame
-                            .write(context.gc_context)
-                            .set_return_value(val.clone());
-                        self.stack.push(val)
-                    }
-                    ResultOf(new_frame) => {
-                        new_frame
-                            .write(context.gc_context)
-                            .and_again(frame, context.gc_context);
-                    }
-                    NoResult => {}
-                }
-
-                return Ok(());
-            }
-
             if can_return {
                 frame
                     .write(context.gc_context)
