@@ -20,7 +20,7 @@ pub fn getURL<'a, 'gc>(
         let url = url_val.clone().into_string();
         if let Some(fscommand) = fscommand::parse(&url) {
             fscommand::handle(fscommand, avm, context);
-            return Ok(ReturnValue::Immediate(Value::Undefined));
+            return Ok(Value::Undefined.into());
         }
 
         let window = args.get(1).map(|v| v.clone().into_string());
@@ -34,7 +34,7 @@ pub fn getURL<'a, 'gc>(
         context.navigator.navigate_to_url(url, window, vars_method);
     }
 
-    Ok(ReturnValue::Immediate(Value::Undefined))
+    Ok(Value::Undefined.into())
 }
 
 pub fn random<'gc>(
@@ -44,10 +44,10 @@ pub fn random<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     match args.get(0) {
-        Some(Value::Number(max)) => Ok(ReturnValue::Immediate(Value::Number(
-            action_context.rng.gen_range(0.0f64, max).floor(),
-        ))),
-        _ => Ok(ReturnValue::Immediate(Value::Undefined)), //TODO: Shouldn't this be an error condition?
+        Some(Value::Number(max)) => {
+            Ok(Value::Number(action_context.rng.gen_range(0.0f64, max).floor()).into())
+        }
+        _ => Ok(Value::Undefined.into()), //TODO: Shouldn't this be an error condition?
     }
 }
 
@@ -58,11 +58,9 @@ pub fn boolean<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(val) = args.get(0) {
-        Ok(ReturnValue::Immediate(Value::Bool(
-            val.as_bool(avm.current_swf_version()),
-        )))
+        Ok(Value::Bool(val.as_bool(avm.current_swf_version())).into())
     } else {
-        Ok(ReturnValue::Immediate(Value::Bool(false)))
+        Ok(Value::Bool(false).into())
     }
 }
 
@@ -73,9 +71,9 @@ pub fn number<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(val) = args.get(0) {
-        Ok(ReturnValue::Immediate(Value::Number(val.as_number())))
+        Ok(Value::Number(val.as_number()).into())
     } else {
-        Ok(ReturnValue::Immediate(Value::Number(0.0)))
+        Ok(Value::Number(0.0).into())
     }
 }
 
@@ -86,11 +84,9 @@ pub fn is_nan<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(val) = args.get(0) {
-        Ok(ReturnValue::Immediate(Value::Bool(
-            val.as_number().is_nan(),
-        )))
+        Ok(Value::Bool(val.as_number().is_nan()).into())
     } else {
-        Ok(ReturnValue::Immediate(Value::Bool(true)))
+        Ok(Value::Bool(true).into())
     }
 }
 

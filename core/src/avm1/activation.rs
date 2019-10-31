@@ -268,13 +268,11 @@ impl<'gc> Activation<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
         if name == "this" {
-            return Ok(ReturnValue::Immediate(Value::Object(self.this)));
+            return Ok(Value::Object(self.this).into());
         }
 
         if name == "arguments" && self.arguments.is_some() {
-            return Ok(ReturnValue::Immediate(Value::Object(
-                self.arguments.unwrap(),
-            )));
+            return Ok(Value::Object(self.arguments.unwrap()).into());
         }
 
         self.scope().resolve(name, avm, context, self.this)

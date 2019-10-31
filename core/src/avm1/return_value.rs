@@ -6,14 +6,28 @@ use crate::context::UpdateContext;
 use gc_arena::{Collect, GcCell};
 use std::fmt;
 
-/// Represents a value which can be returned immediately or at a later time.
+/// Represents the return value of a function call.
+///
+/// Since function calls can result in invoking native code or adding a new
+/// activation onto the AVM stack, you need another type to represent how the
+/// return value will be delivered to you.
+///
+/// This function contains a handful of utility methods for deciding what to do
+/// with a given value regardless of how it is delivered to the calling
+/// function.
+///
+/// It is `must_use` - failing to use a return value is a compiler warning. We
+/// provide a helper function specifically to indicate that you aren't
+/// interested in the result of a call.
 #[must_use = "Return values must be used"]
 #[derive(Clone)]
 pub enum ReturnValue<'gc> {
     /// Indicates that the return value is available immediately.
     Immediate(Value<'gc>),
 
-    /// Indicates that the return value will be calculated on the stack.
+    /// Indicates that the return value is the result of a given user-defined
+    /// function call. The activation record returned is the frame that needs
+    /// to return to get your value.
     ResultOf(GcCell<'gc, Activation<'gc>>),
 
     /// Indicates that there is no value to return.
@@ -123,5 +137,17 @@ impl<'gc> ReturnValue<'gc> {
             Immediate(val) => val,
             _ => panic!("Unwrapped a non-immediate return value"),
         }
+    }
+}
+
+impl<'gc> From<Value<'gc>> for ReturnValue<'gc> {
+    fn from(val: Value<'gc>) -> Self {
+        ReturnValue::Immediate(val)
+    }
+}
+
+impl<'gc> From<GcCell<'gc, Activation<'gc>>> for ReturnValue<'gc> {
+    fn from(frame: GcCell<'gc, Activation<'gc>>) -> Self {
+        ReturnValue::ResultOf(frame)
     }
 }

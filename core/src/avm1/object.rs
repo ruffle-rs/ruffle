@@ -57,7 +57,7 @@ impl<'gc> Property<'gc> {
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
             Property::Virtual { get, .. } => get.exec(avm, context, this, &[]),
-            Property::Stored { value, .. } => Ok(ReturnValue::Immediate(value.to_owned())),
+            Property::Stored { value, .. } => Ok(value.to_owned().into()),
         }
     }
 
@@ -318,7 +318,7 @@ impl<'gc> Object<'gc> {
             return value.get(avm, context, this);
         }
 
-        Ok(ReturnValue::Immediate(Value::Undefined))
+        Ok(Value::Undefined.into())
     }
 
     /// Delete a given value off the object.
@@ -364,7 +364,7 @@ impl<'gc> Object<'gc> {
         if let Some(function) = &self.function {
             function.exec(avm, context, this, args)
         } else {
-            Ok(ReturnValue::Immediate(Value::Undefined))
+            Ok(Value::Undefined.into())
         }
     }
 
@@ -458,7 +458,7 @@ mod tests {
                     .read()
                     .get("not_defined", avm, context, object)
                     .unwrap(),
-                ReturnValue::Immediate(Value::Undefined)
+                Value::Undefined.into()
             );
         })
     }
@@ -609,7 +609,7 @@ mod tests {
 
             assert_eq!(
                 object.read().get("virtual", avm, context, object).unwrap(),
-                ReturnValue::Immediate(Value::Undefined)
+                Value::Undefined.into()
             );
             assert_eq!(
                 object
@@ -620,7 +620,7 @@ mod tests {
             );
             assert_eq!(
                 object.read().get("stored", avm, context, object).unwrap(),
-                ReturnValue::Immediate(Value::Undefined)
+                Value::Undefined.into()
             );
             assert_eq!(
                 object
@@ -635,9 +635,7 @@ mod tests {
     #[test]
     fn test_iter_values() {
         with_object(0, |_avm, context, object| {
-            let getter = Executable::Native(|_avm, _context, _this, _args| {
-                Ok(ReturnValue::Immediate(Value::Null))
-            });
+            let getter = Executable::Native(|_avm, _context, _this, _args| Ok(Value::Null.into()));
 
             object
                 .write(context.gc_context)

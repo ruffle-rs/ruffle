@@ -1,7 +1,6 @@
 use crate::avm1::function::Avm1Function;
 use crate::avm1::globals::create_globals;
 use crate::avm1::object::Object;
-use crate::avm1::return_value::ReturnValue;
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
 use crate::prelude::*;
@@ -110,7 +109,7 @@ impl<'gc> Avm1<'gc> {
             form_values.insert(
                 k,
                 v.ok()
-                    .unwrap_or(ReturnValue::Immediate(Value::Undefined))
+                    .unwrap_or_else(|| Value::Undefined.into())
                     .resolve(self, context)
                     .ok()
                     .unwrap_or(Value::Undefined)

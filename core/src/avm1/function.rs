@@ -296,7 +296,7 @@ impl<'gc> Executable<'gc> {
                 }
                 avm.insert_stack_frame(frame_cell);
 
-                Ok(ReturnValue::ResultOf(frame_cell))
+                Ok(frame_cell.into())
             }
         }
     }
