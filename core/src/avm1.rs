@@ -246,18 +246,13 @@ impl<'gc> Avm1<'gc> {
 
     /// Destroy the current stack frame (if there is one).
     ///
-    /// This function will run functions scheduled on the current stack frame's
-    /// `and_then` field. This is intended to allow the runtime to act on the
-    /// results of AVM code to implement things like custom getters/setters.
-    /// If there is a continuation set for this frame, then no return value
-    /// will be pushed to the stack.
+    /// The given return value will be pushed on the stack if there is a
+    /// function to return it to. Otherwise, it will be discarded.
     ///
-    /// A stack continuation can also return `true` to indicate that it wants
-    /// to be run again on the next stack frame. This allows iteration and
-    /// loops on the same continuation.
-    ///
-    /// See the `stack_continuation!` and `and_then!` macros for a cleaner way
-    /// to write stack continuations.
+    /// NOTE: This means that if you are starting a brand new AVM stack just to
+    /// get it's return value, you won't get that value. Instead, retain a cell
+    /// referencing the oldest activation frame and use that to retrieve the
+    /// return value.
     fn retire_stack_frame(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -293,7 +288,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    /// Execute the AVM stack until the topmost stack value returns.
+    /// Execute the AVM stack until a given activation returns.
     pub fn run_current_frame(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,

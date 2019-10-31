@@ -65,8 +65,8 @@ impl<'gc> Property<'gc> {
     ///
     /// This function returns `true` if the set has completed, or `false` if
     /// it has not yet occured. If `false`, and you need to run code after the
-    /// set has occured, you must register a stack continuation as ActionScript
-    /// code is being called to service the `set`.
+    /// set has occured, you must recursively execute the top-most frame via
+    /// `run_current_frame`.
     pub fn set(
         &mut self,
         avm: &mut Avm1<'gc>,
@@ -302,11 +302,9 @@ impl<'gc> Object<'gc> {
     /// Get the value of a particular property on this object.
     ///
     /// The `avm`, `context`, and `this` parameters exist so that this object
-    /// can call virtual properties. Furthermore, since some virtual properties
-    /// may resolve on the AVM stack, this function may return `None` instead
-    /// of a `Value`. *This is not equivalent to `undefined`.* Instead, it is a
-    /// signal that your value will be returned on the ActionScript stack, and
-    /// that you should register a stack continuation in order to get it.
+    /// can call virtual properties. Likewise, this function returns a
+    /// `ReturnValue` which allows pulling data from the return values of user
+    /// functions.
     pub fn get(
         &self,
         name: &str,
