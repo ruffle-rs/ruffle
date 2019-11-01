@@ -103,12 +103,10 @@ document.addEventListener("DOMContentLoaded", async function (e) {
 
         let resp = await tab_sendmessage(active_tab.id, {"action": "get_page_options"});
         console.log(resp);
-        if (resp !== undefined && resp.hasOwnProperty("page_options") && resp.page_options !== undefined && resp.page_options.hasOwnProperty("optout")) {
-            if (resp.page_options.optout === true) {
-                ruffle_status.textContent = "The current tab has opted out of Ruffle.";
-            } else {
-                ruffle_status.textContent = "Ruffle is loaded and running Flash content on the current tab.";
-            }
+        if (resp !== undefined && resp.loaded) {
+            ruffle_status.textContent = "Ruffle is loaded and running Flash content on the current tab.";
+        } else if (resp !== undefined && !resp.loaded) {
+            ruffle_status.textContent = "Ruffle is not loaded because the current page has marked itself as incompatible.";
         } else {
             ruffle_status.textContent = "Current tab responded with invalid data.";
         }
