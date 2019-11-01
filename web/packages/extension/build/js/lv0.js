@@ -19,7 +19,7 @@
  * prefix that is only shared within the injected closure. This isn't entirely
  * foolproof, but is designed to 
  */
-async function() {
+chrome.storage.sync.get(['ruffle_enable'], async function (data) {
     let page_optout = document.documentElement.hasAttribute("data-ruffle-optout");
     try {
         if (
@@ -36,7 +36,7 @@ async function() {
     } catch (e) {
         console.log("Unable to check top-level optout: " + e.message);
     }
-
+    
     let obfuscated_event_prefix = "rufEvent" + Math.floor(Math.random() * 100000000000);
     let next_response_promise = null;
     let next_response_promise_resolve = null;
@@ -107,7 +107,7 @@ async function() {
             .getURL("dist/ruffle.js")
             .replace("dist/ruffle.js", "");
     }
-    if (!(page_optout || window.RufflePlayer)) {
+    if (data.ruffle_enable === "on" && !(page_optout || window.RufflePlayer)) {
         let setup_scriptelem = document.createElement("script");
         let setup_src =
             'var runtime_path = "' +
