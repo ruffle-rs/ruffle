@@ -42,7 +42,6 @@ function polyfill_static_content() {
     wrap_tree(document.getElementsByTagName("html")[0]);
 }
 
-polyfill_static_content.dependencies = ["legacy-elements"];
 
 function polyfill_dynamic_content() {
     const observer = new MutationObserver(function (mutationsList, observer) {
@@ -59,8 +58,6 @@ function polyfill_dynamic_content() {
 
     observer.observe(document, { childList: true, subtree: true});
 }
-
-polyfill_dynamic_content.dependencies = ["legacy-elements"];
 
 function falsify_plugin_detection() {
     install_plugin(FLASH_PLUGIN);
