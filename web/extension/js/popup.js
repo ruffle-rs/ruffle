@@ -6,17 +6,20 @@ function bind_boolean_setting(checkbox_elem) {
     get_obj[name] = default_val;
 
     chrome.storage.sync.get(get_obj, function (items) {
-        ruffle_enable.checked = items.ruffle_enable === true;
+        checkbox_elem.checked = items[name] === checkbox_elem.value;
     });
 
     chrome.storage.onChanged.addListener(function (changes, namespace) {
         if (changes.hasOwnProperty(name)) {
-            checkbox_elem.checked = changes[name] === true;
+            checkbox_elem.checked = changes[name].newValue === checkbox_elem.value;
         }
     });
 
-    ruffle_enable.addEventListener("click", function (e) {
-        chrome.storage.sync.set(name, ruffle_enable.checked);
+    checkbox_elem.addEventListener("click", function (e) {
+        let setting = {};
+        setting[name] = checkbox_elem.checked ? checkbox_elem.value : "";
+
+        chrome.storage.sync.set(setting);
     });
 }
 

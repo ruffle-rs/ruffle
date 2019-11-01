@@ -23,5 +23,10 @@
     "browser_action": {
         "default_popup": "popup.html",
         "browser_style": true
+    },
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "ruffle-player-extension@ruffle.rs"
+        }
     }
 }
