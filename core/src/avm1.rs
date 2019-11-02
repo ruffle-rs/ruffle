@@ -102,11 +102,10 @@ impl<'gc> Avm1<'gc> {
             .read()
             .scope()
             .locals_cell();
+        let keys = locals.read().get_keys();
 
-        for k in locals.read().get_keys() {
-            let v = locals
-                .write(context.gc_context)
-                .get(&k, self, context, locals);
+        for k in keys {
+            let v = locals.read().get(&k, self, context, locals);
             form_values.insert(k, v.clone().into_string());
         }
 
