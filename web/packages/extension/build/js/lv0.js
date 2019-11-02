@@ -92,7 +92,7 @@ chrome.storage.sync.get(['ruffle_enable', 'ignore_optout'], async function (data
             response_promise.then(function (response) {
                 response_callback({
                     "loaded": true,
-                    "data": data,
+                    "tab_settings": data,
                     "optout": page_optout,
                     "untrusted_response": response
                 });
@@ -105,7 +105,7 @@ chrome.storage.sync.get(['ruffle_enable', 'ignore_optout'], async function (data
         } else {
             response_callback({
                 "loaded": false,
-                "data": data,
+                "tab_settings": data,
                 "optout": page_optout
             });
 

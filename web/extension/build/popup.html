@@ -88,8 +88,33 @@
     .RufflePopup-checkbox_with_slider:checked ~ .RufflePopup-checkbox_slider:after {
         left: 100%;
     }
+    
+    .RufflePopup-reload_button {
+        display: block;
+        overflow: hidden;
 
-    /*FFAD33*/
+        background-color: #FFAD33;
+        color: black;
+
+        width: 100%;
+        border-width: 0px;
+        font-weight: bold;
+        line-height: 14px;
+
+        transition: 0.1s;
+    }
+
+    .RufflePopup-reload_button:disabled {
+        max-height: 0px;
+        padding: 0px 10px;
+        line-height: 0px;
+    }
+
+    .RufflePopup-reload_button:enabled {
+        max-height: 35px;
+        padding: 10px 10px;
+        line-height: 15px;
+    }
 </style>
 
 <div class="RufflePopup">
@@ -109,4 +134,6 @@
             <div class="RufflePopup-checkbox_slider"></div>
         </label>
     </form>
+
+    <button type="button" id="reload" class="RufflePopup-reload_button"></button>
 </div>

@@ -1,3 +1,35 @@
+let settings_dict = {}, tab_settings = {}, reload_button, active_tab;
+
+function dict_equality(dict1, dict2) {
+    let is_equal = true;
+
+    for (var k in dict1) {
+        if (dict1.hasOwnProperty(k)) {
+            is_equal = is_equal && dict1[k] === dict2[k];
+        }
+    }
+
+    for (let k in dict2) {
+        if (dict2.hasOwnProperty(k)) {
+            is_equal = is_equal && dict1[k] === dict2[k];
+        }
+    }
+
+    return is_equal;
+}
+
+function on_settings_change_intent() {
+    let is_different = !dict_equality(settings_dict, tab_settings);
+
+    console.log(settings_dict);
+    console.log(tab_settings);
+    console.log(is_different);
+
+    if (reload_button !== undefined) {
+        reload_button.disabled = !is_different;
+    }
+}
+
 function bind_boolean_setting(checkbox_elem) {
     let name = checkbox_elem.name,
         default_val = checkbox_elem.checked,
@@ -10,20 +42,39 @@ function bind_boolean_setting(checkbox_elem) {
 
     chrome.storage.sync.get(get_obj, function (items) {
         checkbox_elem.checked = items[name] === checkbox_elem.value;
+        settings_dict[name] = items[name];
+        on_settings_change_intent();
     });
 
     chrome.storage.onChanged.addListener(function (changes, namespace) {
         if (changes.hasOwnProperty(name)) {
             checkbox_elem.checked = changes[name].newValue === checkbox_elem.value;
+            settings_dict[name] = changes[name].newValue;
+            on_settings_change_intent();
         }
     });
 
     checkbox_elem.addEventListener("click", function (e) {
         let setting = {};
         setting[name] = checkbox_elem.checked ? checkbox_elem.value : "";
+        settings_dict[name] = setting[name];
+        on_settings_change_intent();
 
         chrome.storage.sync.set(setting);
     });
+}
+
+function bind_settings_apply_button(elem) {
+    elem.textContent = chrome.i18n.getMessage("action_" + elem.id);
+    elem.disabled = true;
+
+    elem.addEventListener("click", function (e) {
+        chrome.tabs.reload(active_tab.id, function () {
+            window.setTimeout(query_current_tab, 1000);
+        });
+    });
+    
+    reload_button = elem;
 }
 
 /**
@@ -69,10 +120,7 @@ function tab_sendmessage() {
     });
 }
 
-document.addEventListener("DOMContentLoaded", async function (e) {
-    bind_boolean_setting(document.getElementById("ruffle_enable"));
-    bind_boolean_setting(document.getElementById("ignore_optout"));
-    
+async function query_current_tab() {
     let ruffle_status = document.getElementById("ruffle_status");
     if (ruffle_status === null) {
         debugger;
@@ -101,12 +149,16 @@ document.addEventListener("DOMContentLoaded", async function (e) {
     }
 
     try {
-        let active_tab = tabs[0];
+        active_tab = tabs[0];
 
         ruffle_status.textContent = chrome.i18n.getMessage("status_message_init");
 
         let resp = await tab_sendmessage(active_tab.id, {"action": "get_page_options"});
         console.log(resp);
+
+        tab_settings = resp.tab_settings;
+        on_settings_change_intent();
+
         if (resp !== undefined && resp.loaded) {
             ruffle_status.textContent = chrome.i18n.getMessage("status_result_running");
         } else if (resp !== undefined && !resp.loaded) {
@@ -118,4 +170,12 @@ document.addEventListener("DOMContentLoaded", async function (e) {
         ruffle_status.textContent = chrome.i18n.getMessage("status_result_protected");
         throw e;
     }
+}
+
+document.addEventListener("DOMContentLoaded", function (e) {
+    bind_boolean_setting(document.getElementById("ruffle_enable"));
+    bind_boolean_setting(document.getElementById("ignore_optout"));
+    bind_settings_apply_button(document.getElementById("reload"));
+
+    query_current_tab();
 });

@@ -28,5 +28,8 @@
     },
     "status_result_protected": {
         "message": "Ruffle cannot load on protected browser pages."
+    },
+    "action_reload": {
+        "message": "Reload tab to apply changes"
     }
 }
