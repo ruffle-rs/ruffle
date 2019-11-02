@@ -23,6 +23,9 @@
     "status_result_optout": {
         "message": "Ruffle is not loaded because the current page has marked itself as incompatible."
     },
+    "status_result_disabled": {
+        "message": "Ruffle is not loaded because it was disabled by the user."
+    },
     "status_result_error": {
         "message": "An error occured when querying the current tab's instance of Ruffle."
     },

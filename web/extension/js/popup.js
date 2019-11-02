@@ -162,7 +162,11 @@ async function query_current_tab() {
         if (resp !== undefined && resp.loaded) {
             ruffle_status.textContent = chrome.i18n.getMessage("status_result_running");
         } else if (resp !== undefined && !resp.loaded) {
-            ruffle_status.textContent = chrome.i18n.getMessage("status_result_optout");
+            if (tab_settings.ruffle_enable === "on") {
+                ruffle_status.textContent = chrome.i18n.getMessage("status_result_optout");
+            } else {
+                ruffle_status.textContent = chrome.i18n.getMessage("status_result_disabled");
+            }
         } else {
             ruffle_status.textContent = chrome.i18n.getMessage("status_result_error");
         }
