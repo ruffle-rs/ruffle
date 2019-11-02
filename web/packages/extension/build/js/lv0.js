@@ -19,7 +19,7 @@
  * prefix that is only shared within the injected closure. This isn't entirely
  * foolproof, but is designed to 
  */
-chrome.storage.sync.get(['ruffle_enable'], async function (data) {
+chrome.storage.sync.get(['ruffle_enable', 'ignore_optout'], async function (data) {
     let page_optout = document.documentElement.hasAttribute("data-ruffle-optout");
     try {
         if (
@@ -37,7 +37,7 @@ chrome.storage.sync.get(['ruffle_enable'], async function (data) {
         console.log("Unable to check top-level optout: " + e.message);
     }
     
-    let should_load_untrusted_world = data.ruffle_enable === "on" && !(page_optout || window.RufflePlayer);
+    let should_load_untrusted_world = data.ruffle_enable === "on" && !(page_optout || data.ignore_optout === "on" || window.RufflePlayer);
     let obfuscated_event_prefix = "rufEvent" + Math.floor(Math.random() * 100000000000);
     let next_response_promise = null;
     let next_response_promise_resolve = null;
@@ -93,6 +93,7 @@ chrome.storage.sync.get(['ruffle_enable'], async function (data) {
                 response_callback({
                     "loaded": true,
                     "data": data,
+                    "optout": page_optout,
                     "untrusted_response": response
                 });
             }).catch(function(e) {
@@ -100,12 +101,15 @@ chrome.storage.sync.get(['ruffle_enable'], async function (data) {
                 throw e;
             });
 
-            return response_promise;
+            return true;
         } else {
             response_callback({
                 "loaded": false,
-                "data": data
+                "data": data,
+                "optout": page_optout
             });
+
+            return false;
         }
     });
 
@@ -119,7 +123,7 @@ chrome.storage.sync.get(['ruffle_enable'], async function (data) {
             .getURL("dist/ruffle.js")
             .replace("dist/ruffle.js", "");
     }
-    
+
     if (should_load_untrusted_world) {
         let setup_scriptelem = document.createElement("script");
         let setup_src =

@@ -68,6 +68,7 @@ function tab_sendmessage() {
 
 document.addEventListener("DOMContentLoaded", async function (e) {
     bind_boolean_setting(document.getElementById("ruffle_enable"));
+    bind_boolean_setting(document.getElementById("ignore_optout"));
     
     let ruffle_status = document.getElementById("ruffle_status");
     if (ruffle_status === null) {

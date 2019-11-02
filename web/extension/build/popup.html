@@ -58,12 +58,13 @@
     .RufflePopup-checkbox_slider {
         display: inline-block;
         position: relative;
-        vertical-align: middle;
+        flex-grow: 0;
+        flex-shrink: 0;
 
         width: 30px;
         height: 7px;
         border-radius: 5px;
-        margin: auto 7px;
+        margin: 4px 7px auto 15px;
 
         background-color: #966214;
     }
@@ -100,6 +101,11 @@
         <label class="RufflePopup-user_setting" for="ruffle_enable">
             <input class="RufflePopup-checkbox_with_slider" type="checkbox" checked name="ruffle_enable" id="ruffle_enable">
             <span class="RufflePopup-user_setting_text">Play Flash content in Ruffle</span>
+            <div class="RufflePopup-checkbox_slider"></div>
+        </label>
+        <label class="RufflePopup-user_setting" for="ignore_optout">
+            <input class="RufflePopup-checkbox_with_slider" type="checkbox" name="ignore_optout" id="ignore_optout">
+            <span class="RufflePopup-user_setting_text">Do not allow websites to disable Ruffle</span>
             <div class="RufflePopup-checkbox_slider"></div>
         </label>
     </form>
