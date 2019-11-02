@@ -15,7 +15,7 @@ pub fn constructor<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     let mut this_mutref = this.write(context.gc_context);
 
-    if let Value::Number(num) = args[0] {
+    if let Some(Value::Number(num)) = args.get(0) {
         if args.len() == 1 {
             //TODO: Error out on noninteger num
             let true_length = num.floor();
