@@ -38,8 +38,57 @@
 
     .RufflePopup-user_settings {
         text-align: left;
+    }
+
+    .RufflePopup-user_setting {
+        display: flex;
+        width: 100%;
         padding: 12px;
     }
+
+    .RufflePopup-checkbox_with_slider {
+        display: none;
+    }
+
+    .RufflePopup-user_setting_text {
+        flex-grow: 1;
+        vertical-align: middle;
+    }
+
+    .RufflePopup-checkbox_slider {
+        display: inline-block;
+        position: relative;
+        vertical-align: middle;
+
+        width: 30px;
+        height: 7px;
+        border-radius: 5px;
+        margin: auto 7px;
+
+        background-color: #966214;
+    }
+
+    .RufflePopup-checkbox_slider:after {
+        content: "";
+        display: block;
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translate(-50%, -50%);
+
+        background-color: #FFAD33;
+        width: 15px;
+        height: 15px;
+        border-radius: 100%;
+
+        transition: left 0.1s;
+    }
+
+    .RufflePopup-checkbox_with_slider:checked ~ .RufflePopup-checkbox_slider:after {
+        left: 100%;
+    }
+
+    /*FFAD33*/
 </style>
 
 <div class="RufflePopup">
@@ -48,9 +97,10 @@
     <p class="RufflePopup-status_band"><span id="ruffle_status">Loading...</span></p>
 
     <form class="RufflePopup-user_settings">
-        <label>
-            <input type="checkbox" checked name="ruffle_enable" id="ruffle_enable">
-            Play Flash content in Ruffle
+        <label class="RufflePopup-user_setting" for="ruffle_enable">
+            <input class="RufflePopup-checkbox_with_slider" type="checkbox" checked name="ruffle_enable" id="ruffle_enable">
+            <span class="RufflePopup-user_setting_text">Play Flash content in Ruffle</span>
+            <div class="RufflePopup-checkbox_slider"></div>
         </label>
     </form>
 </div>
