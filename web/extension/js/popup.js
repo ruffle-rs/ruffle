@@ -1,7 +1,10 @@
 function bind_boolean_setting(checkbox_elem) {
     let name = checkbox_elem.name,
         default_val = checkbox_elem.checked,
-        get_obj = {};
+        get_obj = {},
+        label = checkbox_elem.nextSibling;
+    
+    label.textContent = chrome.i18n.getMessage("settings_" + name);
     
     get_obj[name] = default_val;
 
@@ -75,7 +78,7 @@ document.addEventListener("DOMContentLoaded", async function (e) {
         debugger;
     }
     
-    ruffle_status.textContent = "Reading current tab...";
+    ruffle_status.textContent = chrome.i18n.getMessage("status_init");
     let tabs = null;
 
     try {
@@ -85,7 +88,7 @@ document.addEventListener("DOMContentLoaded", async function (e) {
         });
 
         if (tabs.length < 1) {
-            ruffle_status.textContent = "There is no active tab.";
+            ruffle_status.textContent = chrome.i18n.getMessage("status_no_tabs");
             return;
         }
 
@@ -93,26 +96,26 @@ document.addEventListener("DOMContentLoaded", async function (e) {
             console.warn("Got " + tabs.length + " tabs in response to active tab query");
         }
     } catch (e) {
-        ruffle_status.textContent = "An error occured when looking up the current tab.";
+        ruffle_status.textContent = chrome.i18n.getMessage("status_tabs_error");
         throw e;
     }
 
     try {
         let active_tab = tabs[0];
 
-        ruffle_status.textContent = "Checking Ruffle status on current tab...";
+        ruffle_status.textContent = chrome.i18n.getMessage("status_message_init");
 
         let resp = await tab_sendmessage(active_tab.id, {"action": "get_page_options"});
         console.log(resp);
         if (resp !== undefined && resp.loaded) {
-            ruffle_status.textContent = "Ruffle is loaded and running Flash content on the current tab.";
+            ruffle_status.textContent = chrome.i18n.getMessage("status_result_running");
         } else if (resp !== undefined && !resp.loaded) {
-            ruffle_status.textContent = "Ruffle is not loaded because the current page has marked itself as incompatible.";
+            ruffle_status.textContent = chrome.i18n.getMessage("status_result_optout");
         } else {
-            ruffle_status.textContent = "Current tab responded with invalid data.";
+            ruffle_status.textContent = chrome.i18n.getMessage("status_result_error");
         }
     } catch (e) {
-        ruffle_status.textContent = "Ruffle is not loaded on the current tab.";
+        ruffle_status.textContent = chrome.i18n.getMessage("status_result_protected");
         throw e;
     }
 });
