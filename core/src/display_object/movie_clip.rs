@@ -1,6 +1,5 @@
 //! `MovieClip` display object and support code.
-use crate::avm1::script_object::TYPE_OF_MOVIE_CLIP;
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{Object, StageObject, Value};
 use crate::backend::audio::AudioStreamHandle;
 use crate::character::Character;
 use crate::context::{RenderContext, UpdateContext};
@@ -37,7 +36,7 @@ pub struct MovieClipData<'gc> {
     current_frame: FrameNumber,
     audio_stream: Option<AudioStreamHandle>,
     children: BTreeMap<Depth, DisplayObject<'gc>>,
-    object: Object<'gc>,
+    object: Option<Object<'gc>>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -54,7 +53,7 @@ impl<'gc> MovieClip<'gc> {
                 current_frame: 0,
                 audio_stream: None,
                 children: BTreeMap::new(),
-                object: ScriptObject::bare_object(gc_context).into(),
+                object: None,
             },
         ))
     }
@@ -88,7 +87,7 @@ impl<'gc> MovieClip<'gc> {
                 current_frame: 0,
                 audio_stream: None,
                 children: BTreeMap::new(),
-                object: ScriptObject::bare_object(gc_context).into(),
+                object: None,
             },
         ))
     }
@@ -281,15 +280,19 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         display_object: DisplayObject<'gc>,
         proto: Object<'gc>,
     ) {
-        let mc = self.0.write(gc_context);
-        let mut object = mc.object.as_script_object().unwrap();
-        object.set_display_object(gc_context, display_object);
-        object.set_type_of(gc_context, TYPE_OF_MOVIE_CLIP);
-        object.set_prototype(gc_context, proto);
+        let mut mc = self.0.write(gc_context);
+        if mc.object.is_none() {
+            let object = StageObject::for_display_object(gc_context, display_object, Some(proto));
+            mc.object = Some(object.into());
+        }
     }
 
     fn object(&self) -> Value<'gc> {
-        Value::Object(self.0.read().object)
+        self.0
+            .read()
+            .object
+            .map(Value::from)
+            .unwrap_or(Value::Undefined)
     }
 }
 

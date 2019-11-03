@@ -146,14 +146,6 @@ impl<'gc> ScriptObject<'gc> {
         function
     }
 
-    pub fn set_display_object(
-        self,
-        gc_context: MutationContext<'gc, '_>,
-        display_object: DisplayObject<'gc>,
-    ) {
-        self.0.write(gc_context).display_object = Some(display_object);
-    }
-
     #[allow(dead_code)]
     pub fn display_object(self) -> Option<DisplayObject<'gc>> {
         self.0.read().display_object
@@ -182,10 +174,6 @@ impl<'gc> ScriptObject<'gc> {
             Value::Object(ScriptObject::function(gc_context, function, fn_proto, None)),
             attributes.into(),
         )
-    }
-
-    pub fn set_prototype(&mut self, gc_context: MutationContext<'gc, '_>, prototype: Object<'gc>) {
-        self.0.write(gc_context).prototype = Some(prototype);
     }
 
     pub fn set_type_of(&mut self, gc_context: MutationContext<'gc, '_>, type_of: &'static str) {
