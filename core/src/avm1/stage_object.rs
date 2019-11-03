@@ -3,16 +3,16 @@
 use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, Object, ObjectCell, ScriptObject, Value};
+use crate::avm1::{Avm1, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
-use crate::display_object::DisplayNode;
+use crate::display_object::DisplayObject;
 use enumset::EnumSet;
-use gc_arena;
+use gc_arena::{Collect, CollectionContext, MutationContext};
 use std::collections::HashSet;
 use std::fmt;
 
 /// A ScriptObject that is inherently tied to a display node.
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct StageObject<'gc> {
     /// The underlying script object.
     ///
@@ -21,11 +21,11 @@ pub struct StageObject<'gc> {
     base: ScriptObject<'gc>,
 
     /// The display node this stage object
-    display_node: DisplayNode<'gc>,
+    display_node: DisplayObject<'gc>,
 }
 
-unsafe impl<'gc> gc_arena::Collect for StageObject<'gc> {
-    fn trace(&self, cc: gc_arena::CollectionContext) {
+unsafe impl<'gc> Collect for StageObject<'gc> {
+    fn trace(&self, cc: CollectionContext) {
         self.base.trace(cc);
         self.display_node.trace(cc);
     }
@@ -40,23 +40,23 @@ impl fmt::Debug for StageObject<'_> {
     }
 }
 
-impl<'gc> Object<'gc> for StageObject<'gc> {
+impl<'gc> TObject<'gc> for StageObject<'gc> {
     fn get_local(
         &self,
         name: &str,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: ObjectCell<'gc>,
+        this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error> {
         self.base.get_local(name, avm, context, this)
     }
     fn set(
-        &mut self,
+        &self,
         name: &str,
         value: Value<'gc>,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: ObjectCell<'gc>,
+        this: Object<'gc>,
     ) -> Result<(), Error> {
         self.base.set(name, value, avm, context, this)
     }
@@ -64,7 +64,7 @@ impl<'gc> Object<'gc> for StageObject<'gc> {
         &self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: ObjectCell<'gc>,
+        this: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
         self.base.call(avm, context, this, args)
@@ -74,29 +74,37 @@ impl<'gc> Object<'gc> for StageObject<'gc> {
         &self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: ObjectCell<'gc>,
+        this: Object<'gc>,
         args: &[Value<'gc>],
-    ) -> Result<ObjectCell<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error> {
         //TODO: Create a StageObject of some kind
         self.base.new(avm, context, this, args)
     }
-    fn delete(&mut self, name: &str) -> bool {
-        self.base.delete(name)
+    fn delete(&self, gc_context: MutationContext<'gc, '_>, name: &str) -> bool {
+        self.base.delete(gc_context, name)
     }
-    fn proto(&self) -> Option<ObjectCell<'gc>> {
+    fn proto(&self) -> Option<Object<'gc>> {
         self.base.proto()
     }
-    fn define_value(&mut self, name: &str, value: Value<'gc>, attributes: EnumSet<Attribute>) {
-        self.base.define_value(name, value, attributes)
+    fn define_value(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        name: &str,
+        value: Value<'gc>,
+        attributes: EnumSet<Attribute>,
+    ) {
+        self.base.define_value(gc_context, name, value, attributes)
     }
     fn add_property(
-        &mut self,
+        &self,
+        gc_context: MutationContext<'gc, '_>,
         name: &str,
         get: Executable<'gc>,
         set: Option<Executable<'gc>>,
         attributes: EnumSet<Attribute>,
     ) {
-        self.base.add_property(name, get, set, attributes)
+        self.base
+            .add_property(gc_context, name, get, set, attributes)
     }
 
     fn has_property(&self, name: &str) -> bool {
@@ -122,17 +130,18 @@ impl<'gc> Object<'gc> for StageObject<'gc> {
     fn type_of(&self) -> &'static str {
         self.base.type_of()
     }
-    fn as_script_object(&self) -> Option<&ScriptObject<'gc>> {
-        Some(&self.base)
+    fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
+        Some(self.base)
     }
 
-    fn as_script_object_mut(&mut self) -> Option<&mut ScriptObject<'gc>> {
-        Some(&mut self.base)
-    }
-    fn as_display_node(&self) -> Option<DisplayNode<'gc>> {
+    fn as_display_node(&self) -> Option<DisplayObject<'gc>> {
         Some(self.display_node)
     }
     fn as_executable(&self) -> Option<Executable<'gc>> {
         None
+    }
+
+    fn as_ptr(&self) -> *const ObjectPtr {
+        self.base.as_ptr() as *const ObjectPtr
     }
 }

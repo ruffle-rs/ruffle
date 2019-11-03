@@ -20,7 +20,9 @@ where
         F: for<'a> FnOnce(&mut Avm1<'gc>, &mut UpdateContext<'a, 'gc, '_>, Object<'gc>) -> R,
     {
         let mut avm = Avm1::new(gc_context, swf_version);
-        let root = MovieClip::new(swf_version, gc_context).into();
+        let mut root: DisplayObject<'_> = MovieClip::new(swf_version, gc_context).into();
+        root.post_instantiation(gc_context, root, avm.prototypes().movie_clip);
+
         let mut context = UpdateContext {
             gc_context,
             global_time: 0,
