@@ -51,8 +51,9 @@ pub struct Avm1<'gc> {
     /// The Flash Player version we're emulating.
     player_version: u8,
 
-    /// The currently installed constant pool.
-    constant_pool: Vec<String>,
+    /// The constant pool to use for new activations from code sources that
+    /// don't close over the constant pool they were defined with.
+    constant_pool: GcCell<'gc, Vec<String>>,
 
     /// The global object.
     globals: Object<'gc>,
@@ -78,6 +79,7 @@ unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
         self.globals.trace(cc);
+        self.constant_pool.trace(cc);
         self.prototypes.trace(cc);
         self.display_properties.trace(cc);
         self.stack_frames.trace(cc);
@@ -97,7 +99,7 @@ impl<'gc> Avm1<'gc> {
 
         Self {
             player_version,
-            constant_pool: vec![],
+            constant_pool: GcCell::allocate(gc_context, vec![]),
             globals,
             prototypes,
             display_properties: stage_object::DisplayPropertyMap::new(gc_context),
@@ -170,7 +172,14 @@ impl<'gc> Avm1<'gc> {
         );
         self.stack_frames.push(GcCell::allocate(
             action_context.gc_context,
-            Activation::from_action(swf_version, code, child_scope, clip_obj, None),
+            Activation::from_action(
+                swf_version,
+                code,
+                child_scope,
+                self.constant_pool,
+                clip_obj,
+                None,
+            ),
         ));
     }
 
@@ -197,7 +206,14 @@ impl<'gc> Avm1<'gc> {
         self.push(Value::Undefined);
         self.stack_frames.push(GcCell::allocate(
             action_context.gc_context,
-            Activation::from_action(swf_version, code, child_scope, clip_obj, None),
+            Activation::from_action(
+                swf_version,
+                code,
+                child_scope,
+                self.constant_pool,
+                clip_obj,
+                None,
+            ),
         ));
     }
 
@@ -831,10 +847,18 @@ impl<'gc> Avm1<'gc> {
 
     fn action_constant_pool(
         &mut self,
-        _context: &mut UpdateContext,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         constant_pool: &[&str],
     ) -> Result<(), Error> {
-        self.constant_pool = constant_pool.iter().map(|s| s.to_string()).collect();
+        self.constant_pool = GcCell::allocate(
+            context.gc_context,
+            constant_pool.iter().map(|s| s.to_string()).collect(),
+        );
+        self.current_stack_frame()
+            .unwrap()
+            .write(context.gc_context)
+            .set_constant_pool(self.constant_pool);
+
         Ok(())
     }
 
@@ -863,7 +887,9 @@ impl<'gc> Avm1<'gc> {
             self.current_stack_frame().unwrap().read().scope_cell(),
             context.gc_context,
         );
-        let func = Avm1Function::from_df1(swf_version, func_data, name, params, scope);
+        let constant_pool = self.current_stack_frame().unwrap().read().constant_pool();
+        let func =
+            Avm1Function::from_df1(swf_version, func_data, name, params, scope, constant_pool);
         let prototype =
             ScriptObject::object(context.gc_context, Some(self.prototypes.object)).into();
         let func_obj = ScriptObject::function(
@@ -901,7 +927,9 @@ impl<'gc> Avm1<'gc> {
             self.current_stack_frame().unwrap().read().scope_cell(),
             context.gc_context,
         );
-        let func = Avm1Function::from_df2(swf_version, func_data, action_func, scope);
+        let constant_pool = self.current_stack_frame().unwrap().read().constant_pool();
+        let func =
+            Avm1Function::from_df2(swf_version, func_data, action_func, scope, constant_pool);
         let prototype =
             ScriptObject::object(context.gc_context, Some(self.prototypes.object)).into();
         let func_obj = ScriptObject::function(
@@ -1634,13 +1662,25 @@ impl<'gc> Avm1<'gc> {
                 SwfValue::Str(v) => v.to_string().into(),
                 SwfValue::Register(v) => self.current_register(*v),
                 SwfValue::ConstantPool(i) => {
-                    if let Some(value) = self.constant_pool.get(*i as usize) {
+                    if let Some(value) = self
+                        .current_stack_frame()
+                        .unwrap()
+                        .read()
+                        .constant_pool()
+                        .read()
+                        .get(*i as usize)
+                    {
                         value.to_string().into()
                     } else {
                         log::warn!(
                             "ActionPush: Constant pool index {} out of range (len = {})",
                             i,
-                            self.constant_pool.len()
+                            self.current_stack_frame()
+                                .unwrap()
+                                .read()
+                                .constant_pool()
+                                .read()
+                                .len()
                         );
                         Value::Undefined
                     }

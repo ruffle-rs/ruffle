@@ -66,6 +66,9 @@ pub struct Avm1Function<'gc> {
 
     /// The scope the function was born into.
     scope: GcCell<'gc, Scope<'gc>>,
+
+    /// The constant pool the function executes with.
+    constant_pool: GcCell<'gc, Vec<String>>,
 }
 
 impl<'gc> Avm1Function<'gc> {
@@ -79,6 +82,7 @@ impl<'gc> Avm1Function<'gc> {
         name: &str,
         params: &[&str],
         scope: GcCell<'gc, Scope<'gc>>,
+        constant_pool: GcCell<'gc, Vec<String>>,
     ) -> Self {
         let name = match name {
             "" => None,
@@ -101,6 +105,7 @@ impl<'gc> Avm1Function<'gc> {
             preload_global: false,
             params: params.iter().map(|s| (None, s.to_string())).collect(),
             scope,
+            constant_pool,
         }
     }
 
@@ -110,6 +115,7 @@ impl<'gc> Avm1Function<'gc> {
         actions: SwfSlice,
         swf_function: &swf::avm1::types::Function,
         scope: GcCell<'gc, Scope<'gc>>,
+        constant_pool: GcCell<'gc, Vec<String>>,
     ) -> Self {
         let name = match swf_function.name {
             "" => None,
@@ -141,6 +147,7 @@ impl<'gc> Avm1Function<'gc> {
             preload_global: swf_function.preload_global,
             params: owned_params,
             scope,
+            constant_pool,
         }
     }
 
@@ -237,6 +244,7 @@ impl<'gc> Executable<'gc> {
                         effective_ver,
                         af.data(),
                         child_scope,
+                        af.constant_pool,
                         this,
                         Some(argcell),
                     ),
