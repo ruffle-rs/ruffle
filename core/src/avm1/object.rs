@@ -124,6 +124,21 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         attributes: EnumSet<Attribute>,
     );
 
+    /// Set the attributes of a given property.
+    ///
+    /// Leaving `name` unspecified allows setting all properties on a given
+    /// object to the same set of properties.
+    ///
+    /// Attributes can be set, cleared, or left as-is using the pairs of `set_`
+    /// and `clear_attributes` parameters.
+    fn set_attributes(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        name: Option<&str>,
+        set_attributes: EnumSet<Attribute>,
+        clear_attributes: EnumSet<Attribute>,
+    );
+
     /// Define a virtual property onto a given object.
     ///
     /// A virtual property is a set of get/set functions that are called when a

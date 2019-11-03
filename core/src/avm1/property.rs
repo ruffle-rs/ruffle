@@ -79,6 +79,26 @@ impl<'gc> Property<'gc> {
         }
     }
 
+    /// List this property's attributes.
+    pub fn attributes(&self) -> EnumSet<Attribute> {
+        match self {
+            Property::Virtual { attributes, .. } => *attributes,
+            Property::Stored { attributes, .. } => *attributes,
+        }
+    }
+
+    /// Re-define this property's attributes.
+    pub fn set_attributes(&mut self, new_attributes: EnumSet<Attribute>) {
+        match self {
+            Property::Virtual {
+                ref mut attributes, ..
+            } => *attributes = new_attributes,
+            Property::Stored {
+                ref mut attributes, ..
+            } => *attributes = new_attributes,
+        }
+    }
+
     pub fn can_delete(&self) -> bool {
         match self {
             Property::Virtual { attributes, .. } => !attributes.contains(DontDelete),

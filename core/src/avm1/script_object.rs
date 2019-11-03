@@ -398,6 +398,30 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .insert(name.to_string(), Property::Stored { value, attributes });
     }
 
+    fn set_attributes(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        name: Option<&str>,
+        set_attributes: EnumSet<Attribute>,
+        clear_attributes: EnumSet<Attribute>,
+    ) {
+        match name {
+            None => {
+                // Change *all* attributes.
+                for (_name, prop) in self.0.write(gc_context).values.iter_mut() {
+                    let new_atts = (prop.attributes() - clear_attributes) | set_attributes;
+                    prop.set_attributes(new_atts);
+                }
+            }
+            Some(name) => {
+                if let Some(prop) = self.0.write(gc_context).values.get_mut(name) {
+                    let new_atts = (prop.attributes() - clear_attributes) | set_attributes;
+                    prop.set_attributes(new_atts);
+                }
+            }
+        }
+    }
+
     fn proto(&self) -> Option<Object<'gc>> {
         self.0.read().prototype
     }
