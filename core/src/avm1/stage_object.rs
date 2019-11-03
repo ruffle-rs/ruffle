@@ -3,7 +3,6 @@
 use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::script_object::TYPE_OF_MOVIE_CLIP;
 use crate::avm1::{Avm1, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
@@ -11,6 +10,9 @@ use enumset::EnumSet;
 use gc_arena::{Collect, MutationContext};
 use std::collections::HashSet;
 use std::fmt;
+
+/// The type string for MovieClip objects.
+pub const TYPE_OF_MOVIE_CLIP: &str = "movieclip";
 
 /// A ScriptObject that is inherently tied to a display node.
 #[derive(Clone, Copy, Collect)]

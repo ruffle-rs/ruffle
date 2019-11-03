@@ -11,7 +11,6 @@ use std::collections::{HashMap, HashSet};
 
 pub const TYPE_OF_OBJECT: &str = "object";
 pub const TYPE_OF_FUNCTION: &str = "function";
-pub const TYPE_OF_MOVIE_CLIP: &str = "movieclip";
 
 #[derive(Debug, Copy, Clone, Collect)]
 #[collect(no_drop)]
@@ -19,7 +18,6 @@ pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
 
 pub struct ScriptObjectData<'gc> {
     prototype: Option<Object<'gc>>,
-    display_object: Option<DisplayObject<'gc>>,
     values: HashMap<String, Property<'gc>>,
     function: Option<Executable<'gc>>,
     type_of: &'static str,
@@ -28,7 +26,6 @@ pub struct ScriptObjectData<'gc> {
 unsafe impl<'gc> Collect for ScriptObjectData<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
         self.prototype.trace(cc);
-        self.display_object.trace(cc);
         self.values.trace(cc);
         self.function.trace(cc);
     }
@@ -38,7 +35,6 @@ impl fmt::Debug for ScriptObjectData<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Object")
             .field("prototype", &self.prototype)
-            .field("display_object", &self.display_object)
             .field("values", &self.values)
             .field("function", &self.function.is_some())
             .finish()
@@ -55,7 +51,6 @@ impl<'gc> ScriptObject<'gc> {
             ScriptObjectData {
                 prototype: proto,
                 type_of: TYPE_OF_OBJECT,
-                display_object: None,
                 values: HashMap::new(),
                 function: None,
             },
@@ -72,7 +67,6 @@ impl<'gc> ScriptObject<'gc> {
             ScriptObjectData {
                 prototype: proto,
                 type_of: TYPE_OF_OBJECT,
-                display_object: None,
                 values: HashMap::new(),
                 function: None,
             },
@@ -91,7 +85,6 @@ impl<'gc> ScriptObject<'gc> {
             ScriptObjectData {
                 prototype: None,
                 type_of: TYPE_OF_OBJECT,
-                display_object: None,
                 values: HashMap::new(),
                 function: None,
             },
@@ -110,7 +103,6 @@ impl<'gc> ScriptObject<'gc> {
                 prototype: fn_proto,
                 type_of: TYPE_OF_FUNCTION,
                 function: Some(function.into()),
-                display_object: None,
                 values: HashMap::new(),
             },
         ))
@@ -144,11 +136,6 @@ impl<'gc> ScriptObject<'gc> {
         }
 
         function
-    }
-
-    #[allow(dead_code)]
-    pub fn display_object(self) -> Option<DisplayObject<'gc>> {
-        self.0.read().display_object
     }
 
     /// Declare a native function on the current object.
@@ -399,7 +386,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
     /// Get the underlying display node for this object, if it exists.
     fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
-        self.0.read().display_object
+        None
     }
 
     /// Returns a copy of a given function.
