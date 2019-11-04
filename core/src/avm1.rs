@@ -27,6 +27,7 @@ mod return_value;
 mod scope;
 pub mod script_object;
 mod stage_object;
+mod super_object;
 mod value;
 
 #[cfg(test)]

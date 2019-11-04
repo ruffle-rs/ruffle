@@ -150,6 +150,17 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.base.define_value(gc_context, name, value, attributes)
     }
 
+    fn set_attributes(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        name: Option<&str>,
+        set_attributes: EnumSet<Attribute>,
+        clear_attributes: EnumSet<Attribute>,
+    ) {
+        self.base
+            .set_attributes(gc_context, name, set_attributes, clear_attributes)
+    }
+
     fn add_property(
         &self,
         gc_context: MutationContext<'gc, '_>,

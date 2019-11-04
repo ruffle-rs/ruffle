@@ -3,6 +3,7 @@
 use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
+use crate::avm1::super_object::SuperObject;
 use crate::avm1::{Avm1, Error, ScriptObject, StageObject, UpdateContext, Value};
 use crate::display_object::DisplayObject;
 use enumset::EnumSet;
@@ -19,6 +20,7 @@ use std::fmt::Debug;
     pub enum Object<'gc> {
         ScriptObject(ScriptObject<'gc>),
         StageObject(StageObject<'gc>),
+        SuperObject(SuperObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {

@@ -4,6 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
+use crate::avm1::super_object::SuperObject;
 use crate::avm1::value::Value;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext};
 use crate::display_object::TDisplayObject;
@@ -230,6 +231,12 @@ impl<'gc> Executable<'gc> {
                 }
 
                 let argcell = arguments.into();
+                let super_object: Option<Object<'gc>> = if !af.suppress_super {
+                    Some(SuperObject::from_child_object(this, avm, ac)?.into())
+                } else {
+                    None
+                };
+
                 let effective_ver = if avm.current_swf_version() > 5 {
                     af.swf_version()
                 } else {
@@ -269,12 +276,15 @@ impl<'gc> Executable<'gc> {
                     preload_r += 1;
                 }
 
-                if af.preload_super {
-                    //TODO: super not implemented
-                    log::warn!("Cannot preload super into register because it's not implemented");
-                    //TODO: What happens if you specify both suppress and
-                    //preload for super?
-                    preload_r += 1;
+                if let Some(super_object) = super_object {
+                    if af.preload_super {
+                        frame.set_local_register(preload_r, super_object, ac.gc_context);
+                        //TODO: What happens if you specify both suppress and
+                        //preload for super?
+                        preload_r += 1;
+                    } else {
+                        frame.define("super", super_object, ac.gc_context);
+                    }
                 }
 
                 if af.preload_root {
