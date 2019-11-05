@@ -169,6 +169,30 @@ export class PublicAPI {
     }
 
     /**
+     * Look up the newest Ruffle version compatible with the `local` source, if
+     * it's installed. Otherwise, use the latest version.
+     */
+    local_compatible() {
+        if (this.sources.local !== undefined) {
+            this.satisfying("^" + this.sources.local.version);
+        } else {
+            this.newest();
+        }
+    }
+
+    /**
+     * Look up the newest Ruffle version with the exact same version as the
+     * `local` source, if it's installed. Otherwise, use the latest version.
+     */
+    local() {
+        if (this.sources.local !== undefined) {
+            this.satisfying("=" + this.sources.local.version);
+        } else {
+            this.newest();
+        }
+    }
+
+    /**
      * Indicates that this version of the public API has been superceded by a
      * newer version.
      * 
