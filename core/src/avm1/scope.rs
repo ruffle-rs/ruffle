@@ -256,7 +256,7 @@ impl<'gc> Scope<'gc> {
         }
 
         //TODO: Should undefined variables halt execution?
-        Ok(ReturnValue::Immediate(Value::Undefined))
+        Ok(Value::Undefined.into())
     }
 
     /// Check if a particular property in the scope chain is defined.

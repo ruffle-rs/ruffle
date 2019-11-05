@@ -44,9 +44,7 @@ pub fn random<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     match args.get(0) {
-        Some(Value::Number(max)) => {
-            Ok(Value::Number(action_context.rng.gen_range(0.0f64, max).floor()).into())
-        }
+        Some(Value::Number(max)) => Ok(action_context.rng.gen_range(0.0f64, max).floor().into()),
         _ => Ok(Value::Undefined.into()), //TODO: Shouldn't this be an error condition?
     }
 }
@@ -58,9 +56,9 @@ pub fn boolean<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(val) = args.get(0) {
-        Ok(Value::Bool(val.as_bool(avm.current_swf_version())).into())
+        Ok(val.as_bool(avm.current_swf_version()).into())
     } else {
-        Ok(Value::Bool(false).into())
+        Ok(false.into())
     }
 }
 
@@ -71,9 +69,9 @@ pub fn number<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(val) = args.get(0) {
-        Ok(Value::Number(val.as_number()).into())
+        Ok(val.as_number().into())
     } else {
-        Ok(Value::Number(0.0).into())
+        Ok(0.0.into())
     }
 }
 
@@ -84,9 +82,9 @@ pub fn is_nan<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(val) = args.get(0) {
-        Ok(Value::Bool(val.as_number().is_nan()).into())
+        Ok(val.as_number().is_nan().into())
     } else {
-        Ok(Value::Bool(true).into())
+        Ok(true.into())
     }
 }
 

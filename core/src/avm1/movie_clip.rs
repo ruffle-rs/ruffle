@@ -14,7 +14,7 @@ macro_rules! with_movie_clip {
                 |_avm, _context, this, args| -> Result<ReturnValue<'gc>, Error> {
                     if let Some(display_object) = this.read().display_node() {
                         if let Some(movie_clip) = display_object.read().as_movie_clip() {
-                            return Ok($fn(movie_clip, args).into());
+                            return Ok($fn(movie_clip, args));
                         }
                     }
                     Ok(Value::Undefined.into())
@@ -107,14 +107,14 @@ pub fn create_movie_object<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<
         object,
         "getBytesLoaded" => |_movie_clip: &MovieClip<'gc>, _args| {
             // TODO find a correct value
-            Value::Number(1.0)
+            1.0.into()
         },
         "getBytesTotal" => |_movie_clip: &MovieClip<'gc>, _args| {
             // TODO find a correct value
-            Value::Number(1.0)
+            1.0.into()
         },
         "toString" => |movie_clip: &MovieClip, _args| {
-            Value::String(movie_clip.name().to_string())
+            movie_clip.name().to_string().into()
         }
     );
 

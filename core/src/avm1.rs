@@ -1011,13 +1011,13 @@ impl<'gc> Avm1<'gc> {
             if let Some(clip) = Avm1::resolve_slash_path(base_clip, context.root, path) {
                 if let Some(clip) = clip.read().as_movie_clip() {
                     match prop_index {
-                        0 => Value::Number(f64::from(clip.x())),
-                        1 => Value::Number(f64::from(clip.y())),
-                        2 => Value::Number(f64::from(clip.x_scale())),
-                        3 => Value::Number(f64::from(clip.y_scale())),
-                        4 => Value::Number(f64::from(clip.current_frame())),
-                        5 => Value::Number(f64::from(clip.total_frames())),
-                        10 => Value::Number(f64::from(clip.rotation())),
+                        0 => f64::from(clip.x()).into(),
+                        1 => f64::from(clip.y()).into(),
+                        2 => f64::from(clip.x_scale()).into(),
+                        3 => f64::from(clip.y_scale()).into(),
+                        4 => f64::from(clip.current_frame()).into(),
+                        5 => f64::from(clip.total_frames()).into(),
+                        10 => f64::from(clip.rotation()).into(),
                         11 => {
                             // _target
                             // TODO: This string should be built dynamically
@@ -1025,7 +1025,7 @@ impl<'gc> Avm1<'gc> {
                             // _name to work accurately.
                             context.target_path.clone()
                         }
-                        12 => Value::Number(f64::from(clip.frames_loaded())),
+                        12 => f64::from(clip.frames_loaded()).into(),
                         _ => {
                             log::error!("GetProperty: Unimplemented property index {}", prop_index);
                             Value::Undefined
@@ -1474,9 +1474,9 @@ impl<'gc> Avm1<'gc> {
                 SwfValue::Undefined => Value::Undefined,
                 SwfValue::Null => Value::Null,
                 SwfValue::Bool(v) => Value::Bool(*v),
-                SwfValue::Int(v) => Value::Number(f64::from(*v)),
-                SwfValue::Float(v) => Value::Number(f64::from(*v)),
-                SwfValue::Double(v) => Value::Number(*v),
+                SwfValue::Int(v) => f64::from(*v).into(),
+                SwfValue::Float(v) => f64::from(*v).into(),
+                SwfValue::Double(v) => (*v).into(),
                 SwfValue::Str(v) => v.to_string().into(),
                 SwfValue::Register(v) => self.current_register(*v),
                 SwfValue::ConstantPool(i) => {

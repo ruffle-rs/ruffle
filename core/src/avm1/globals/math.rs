@@ -12,9 +12,9 @@ macro_rules! wrap_std {
                 $name,
                 |_avm, _context, _this, args| -> Result<ReturnValue<'gc>, Error> {
                     if let Some(input) = args.get(0) {
-                        Ok(Value::Number($std(input.as_number())).into())
+                        Ok($std(input.as_number()).into())
                     } else {
-                        Ok(Value::Number(NAN).into())
+                        Ok(NAN.into())
                     }
                 },
                 $gc_context,
@@ -32,12 +32,12 @@ fn atan2<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(y) = args.get(0) {
         if let Some(x) = args.get(1) {
-            return Ok(Value::Number(y.as_number().atan2(x.as_number())).into());
+            return Ok(y.as_number().atan2(x.as_number()).into());
         } else {
-            return Ok(Value::Number(y.as_number().atan2(0.0)).into());
+            return Ok(y.as_number().atan2(0.0).into());
         }
     }
-    Ok(Value::Number(NAN).into())
+    Ok(NAN.into())
 }
 
 pub fn random<'gc>(
@@ -46,7 +46,7 @@ pub fn random<'gc>(
     _this: GcCell<'gc, Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    Ok(Value::Number(action_context.rng.gen_range(0.0f64, 1.0f64)).into())
+    Ok(action_context.rng.gen_range(0.0f64, 1.0f64).into())
 }
 
 pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Object<'gc>> {
@@ -237,39 +237,18 @@ mod tests {
     fn test_atan2_nan() {
         with_avm(19, |avm, context, _root| {
             let math = GcCell::allocate(context.gc_context, create(context.gc_context));
+            assert_eq!(atan2(avm, context, *math.read(), &[]).unwrap(), NAN.into());
             assert_eq!(
-                atan2(avm, context, *math.read(), &[]).unwrap(),
-                Value::Number(NAN).into()
+                atan2(avm, context, *math.read(), &[1.0.into(), Value::Null]).unwrap(),
+                NAN.into()
             );
             assert_eq!(
-                atan2(
-                    avm,
-                    context,
-                    *math.read(),
-                    &[Value::Number(1.0), Value::Null]
-                )
-                .unwrap(),
-                Value::Number(NAN).into()
+                atan2(avm, context, *math.read(), &[1.0.into(), Value::Undefined]).unwrap(),
+                NAN.into()
             );
             assert_eq!(
-                atan2(
-                    avm,
-                    context,
-                    *math.read(),
-                    &[Value::Number(1.0), Value::Undefined]
-                )
-                .unwrap(),
-                Value::Number(NAN).into()
-            );
-            assert_eq!(
-                atan2(
-                    avm,
-                    context,
-                    *math.read(),
-                    &[Value::Undefined, Value::Number(1.0)]
-                )
-                .unwrap(),
-                Value::Number(NAN).into()
+                atan2(avm, context, *math.read(), &[Value::Undefined, 1.0.into()]).unwrap(),
+                NAN.into()
             );
         });
     }
@@ -279,18 +258,12 @@ mod tests {
         with_avm(19, |avm, context, _root| {
             let math = GcCell::allocate(context.gc_context, create(context.gc_context));
             assert_eq!(
-                atan2(avm, context, *math.read(), &[Value::Number(10.0)]).unwrap(),
-                Value::Number(std::f64::consts::FRAC_PI_2).into()
+                atan2(avm, context, *math.read(), &[10.0.into()]).unwrap(),
+                std::f64::consts::FRAC_PI_2.into()
             );
             assert_eq!(
-                atan2(
-                    avm,
-                    context,
-                    *math.read(),
-                    &[Value::Number(1.0), Value::Number(2.0)]
-                )
-                .unwrap(),
-                Value::Number(f64::atan2(1.0, 2.0)).into()
+                atan2(avm, context, *math.read(), &[1.0.into(), 2.0.into()]).unwrap(),
+                f64::atan2(1.0, 2.0).into()
             );
         });
     }

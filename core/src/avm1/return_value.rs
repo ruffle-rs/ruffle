@@ -1,7 +1,7 @@
 //! Return value enum
 
 use crate::avm1::activation::Activation;
-use crate::avm1::{Avm1, Error, Value};
+use crate::avm1::{Avm1, Error, Object, Value};
 use crate::context::UpdateContext;
 use gc_arena::{Collect, GcCell};
 use std::fmt;
@@ -143,6 +143,60 @@ impl<'gc> ReturnValue<'gc> {
 impl<'gc> From<Value<'gc>> for ReturnValue<'gc> {
     fn from(val: Value<'gc>) -> Self {
         ReturnValue::Immediate(val)
+    }
+}
+
+impl<'gc> From<String> for ReturnValue<'gc> {
+    fn from(string: String) -> Self {
+        ReturnValue::Immediate(Value::String(string))
+    }
+}
+
+impl<'gc> From<&str> for ReturnValue<'gc> {
+    fn from(string: &str) -> Self {
+        ReturnValue::Immediate(Value::String(string.to_owned()))
+    }
+}
+
+impl<'gc> From<bool> for ReturnValue<'gc> {
+    fn from(value: bool) -> Self {
+        ReturnValue::Immediate(Value::Bool(value))
+    }
+}
+
+impl<'gc> From<GcCell<'gc, Object<'gc>>> for ReturnValue<'gc> {
+    fn from(object: GcCell<'gc, Object<'gc>>) -> Self {
+        ReturnValue::Immediate(Value::Object(object))
+    }
+}
+
+impl<'gc> From<f64> for ReturnValue<'gc> {
+    fn from(value: f64) -> Self {
+        ReturnValue::Immediate(Value::Number(value))
+    }
+}
+
+impl<'gc> From<f32> for ReturnValue<'gc> {
+    fn from(value: f32) -> Self {
+        ReturnValue::Immediate(Value::Number(f64::from(value)))
+    }
+}
+
+impl<'gc> From<u8> for ReturnValue<'gc> {
+    fn from(value: u8) -> Self {
+        ReturnValue::Immediate(Value::Number(f64::from(value)))
+    }
+}
+
+impl<'gc> From<i32> for ReturnValue<'gc> {
+    fn from(value: i32) -> Self {
+        ReturnValue::Immediate(Value::Number(f64::from(value)))
+    }
+}
+
+impl<'gc> From<u32> for ReturnValue<'gc> {
+    fn from(value: u32) -> Self {
+        ReturnValue::Immediate(Value::Number(f64::from(value)))
     }
 }
 
