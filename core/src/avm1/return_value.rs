@@ -29,13 +29,6 @@ pub enum ReturnValue<'gc> {
     /// function call. The activation record returned is the frame that needs
     /// to return to get your value.
     ResultOf(GcCell<'gc, Activation<'gc>>),
-
-    /// Indicates that there is no value to return.
-    ///
-    /// This is primarily intended to signal to the AVM that a given stack
-    /// frame should not cause a value to be pushed to the stack when it
-    /// returns.
-    NoResult,
 }
 
 unsafe impl<'gc> Collect for ReturnValue<'gc> {
@@ -46,7 +39,6 @@ unsafe impl<'gc> Collect for ReturnValue<'gc> {
         match self {
             Immediate(value) => value.trace(cc),
             ResultOf(frame) => frame.trace(cc),
-            NoResult => {}
         }
     }
 }
@@ -58,7 +50,6 @@ impl PartialEq for ReturnValue<'_> {
         match (self, other) {
             (Immediate(val1), Immediate(val2)) => val1 == val2,
             (ResultOf(frame1), ResultOf(frame2)) => GcCell::ptr_eq(*frame1, *frame2),
-            (NoResult, NoResult) => true,
             _ => false,
         }
     }
@@ -71,7 +62,6 @@ impl fmt::Debug for ReturnValue<'_> {
         match self {
             Immediate(val) => write!(f, "Immediate({:?})", val),
             ResultOf(_frame) => write!(f, "ResultOf(<activation frame>)"),
-            NoResult => write!(f, "NoResult"),
         }
     }
 }
@@ -87,7 +77,6 @@ impl<'gc> ReturnValue<'gc> {
         match self {
             Immediate(val) => avm.push(val),
             ResultOf(_frame) => {}
-            NoResult => {}
         };
     }
 
@@ -107,7 +96,6 @@ impl<'gc> ReturnValue<'gc> {
 
                 avm.pop()
             }
-            NoResult => Err("Attempted to resolve a no-result return value".into()),
         }
     }
 
