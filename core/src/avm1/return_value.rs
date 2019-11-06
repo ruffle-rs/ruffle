@@ -182,6 +182,12 @@ impl<'gc> From<u32> for ReturnValue<'gc> {
     }
 }
 
+impl<'gc> From<usize> for ReturnValue<'gc> {
+    fn from(value: usize) -> Self {
+        ReturnValue::Immediate(Value::Number(value as f64))
+    }
+}
+
 impl<'gc> From<GcCell<'gc, Activation<'gc>>> for ReturnValue<'gc> {
     fn from(frame: GcCell<'gc, Activation<'gc>>) -> Self {
         ReturnValue::ResultOf(frame)
