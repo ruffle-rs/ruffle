@@ -173,6 +173,59 @@ pub trait Object<'gc>: 'gc + Collect + Debug {
     /// Get the object's type string.
     fn type_of(&self) -> &'static str;
 
+    /// Iterate array-like objects.
+    fn iterate_array<'a>(
+        &'a self,
+        avm: &'a mut Avm1<'gc>,
+        context: &'a mut UpdateContext<'_, 'gc, '_>,
+        this: ObjectCell<'gc>,
+    ) -> Result<Box<dyn Iterator<Item = Result<Value<'gc>, Error>> + 'a>, Error> {
+        struct ArrayIterator<'a, 'p, 'gc, 'gc_root> {
+            object: ObjectCell<'gc>,
+            avm: &'a mut Avm1<'gc>,
+            context: &'a mut UpdateContext<'p, 'gc, 'gc_root>,
+            length: usize,
+            cur: usize,
+        };
+
+        impl<'a, 'p, 'gc, 'gc_root> Iterator for ArrayIterator<'a, 'p, 'gc, 'gc_root> {
+            type Item = Result<Value<'gc>, Error>;
+
+            fn next(&mut self) -> Option<Self::Item> {
+                if self.cur == self.length {
+                    None
+                } else {
+                    let get_result = self.object.read().get(
+                        &format!("{}", self.cur),
+                        self.avm,
+                        self.context,
+                        self.object,
+                    );
+                    self.cur += 1;
+
+                    if let Ok(rval) = get_result {
+                        Some(rval.resolve(self.avm, self.context))
+                    } else {
+                        Some(get_result.map(|_| unreachable!()))
+                    }
+                }
+            }
+        }
+
+        let length = self
+            .get("length", avm, context, this)?
+            .resolve(avm, context)?
+            .as_usize()?;
+
+        Ok(Box::new(ArrayIterator {
+            object: this,
+            avm,
+            context,
+            length,
+            cur: 0,
+        }))
+    }
+
     /// Get the underlying script object, if it exists.
     fn as_script_object(&self) -> Option<&ScriptObject<'gc>>;
 
