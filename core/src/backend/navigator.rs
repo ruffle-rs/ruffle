@@ -1,7 +1,10 @@
 //! Browser-related platform functions
 
 use std::collections::HashMap;
+use std::future::Future;
 use swf::avm1::types::SendVarsMethod;
+
+pub type Error = Box<dyn std::error::Error>;
 
 /// Enumerates all possible navigation methods.
 pub enum NavigationMethod {
@@ -53,6 +56,19 @@ pub trait NavigatorBackend {
         window: Option<String>,
         vars_method: Option<(NavigationMethod, HashMap<String, String>)>,
     );
+
+    /// Fetch data at a given URL and return it some time in the future.
+    fn fetch(&self, url: String) -> Box<dyn Future<Output = Result<Vec<u8>, Error>>>;
+
+    /// Arrange for a future to be run at some point in the... well, future.
+    ///
+    /// This function must be called to ensure a future is actually computed.
+    /// The future must output an empty value and not hold any stack references
+    /// which would cause it to become invalidated.
+    ///
+    /// TODO: For some reason, `wasm_bindgen_futures` wants unpinnable futures.
+    /// This seems highly limiting.
+    fn spawn_future(&mut self, future: Box<dyn Future<Output = ()> + Unpin + 'static>);
 }
 
 /// A null implementation for platforms that do not live in a web browser.
@@ -78,4 +94,10 @@ impl NavigatorBackend for NullNavigatorBackend {
         _vars_method: Option<(NavigationMethod, HashMap<String, String>)>,
     ) {
     }
+
+    fn fetch(&self, _url: String) -> Box<dyn Future<Output = Result<Vec<u8>, Error>>> {
+        Box::new(async { Err("Fetch IO not implemented".into()) })
+    }
+
+    fn spawn_future(&mut self, _future: Box<dyn Future<Output = ()> + Unpin + 'static>) {}
 }

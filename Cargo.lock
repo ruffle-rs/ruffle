@@ -1640,6 +1640,7 @@ dependencies = [
  "svg 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 2.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen 0.2.57 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wasm-bindgen-futures 0.4.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen-test 0.3.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "web-sys 0.3.34 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

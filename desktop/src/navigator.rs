@@ -1,8 +1,9 @@
 //! Navigator backend for web
 
 use log;
-use ruffle_core::backend::navigator::{NavigationMethod, NavigatorBackend};
+use ruffle_core::backend::navigator::{Error, NavigationMethod, NavigatorBackend};
 use std::collections::HashMap;
+use std::future::Future;
 use url::Url;
 use webbrowser;
 
@@ -59,5 +60,13 @@ impl NavigatorBackend for ExternalNavigatorBackend {
             Ok(_output) => {}
             Err(e) => log::error!("Could not open URL {}: {}", modified_url, e),
         };
+    }
+
+    fn fetch(&self, _url: String) -> Box<dyn Future<Output = Result<Vec<u8>, Error>>> {
+        Box::new(async { Err("Fetch not implemented on desktop!".into()) })
+    }
+
+    fn spawn_future(&mut self, _future: Box<dyn Future<Output = ()> + Unpin + 'static>) {
+        unimplemented!();
     }
 }

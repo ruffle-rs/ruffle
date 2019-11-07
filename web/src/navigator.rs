@@ -1,8 +1,10 @@
 //! Navigator backend for web
 
-use ruffle_core::backend::navigator::{NavigationMethod, NavigatorBackend};
+use ruffle_core::backend::navigator::{Error, NavigationMethod, NavigatorBackend};
 use std::collections::HashMap;
+use std::future::Future;
 use wasm_bindgen::JsCast;
+use wasm_bindgen_futures::spawn_local;
 use web_sys::window;
 
 pub struct WebNavigatorBackend {}
@@ -71,5 +73,13 @@ impl NavigatorBackend for WebNavigatorBackend {
                 }
             };
         }
+    }
+
+    fn fetch(&self, _url: String) -> Box<dyn Future<Output = Result<Vec<u8>, Error>>> {
+        Box::new(async { Ok(Vec::new()) })
+    }
+
+    fn spawn_future(&mut self, future: Box<dyn Future<Output = ()> + Unpin + 'static>) {
+        spawn_local(future)
     }
 }
