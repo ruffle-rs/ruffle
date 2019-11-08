@@ -123,10 +123,6 @@ impl WebAudioBackend {
         })
     }
 
-    pub fn set_frame_rate(&mut self, frame_rate: f64) {
-        self.frame_rate = frame_rate
-    }
-
     fn start_sound_internal(
         &mut self,
         handle: SoundHandle,
@@ -542,6 +538,10 @@ impl WebAudioBackend {
 }
 
 impl AudioBackend for WebAudioBackend {
+    fn set_frame_rate(&mut self, frame_rate: f64) {
+        self.frame_rate = frame_rate
+    }
+
     fn register_sound(&mut self, sound: &swf::Sound) -> Result<SoundHandle, Error> {
         // Slice off latency seek for MP3 data.
         let (skip_sample_frames, data) = if sound.format.compression == AudioCompression::Mp3 {

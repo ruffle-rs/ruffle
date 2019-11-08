@@ -76,6 +76,13 @@ pub trait AudioBackend {
         true
     }
     fn tick(&mut self) {}
+
+    /// Inform the audio backend of the current stage frame rate.
+    ///
+    /// This is only necessary if your particular audio backend needs to know
+    /// what the stage frame rate is. Otherwise, you are free to avoid
+    /// implementing it.
+    fn set_frame_rate(&mut self, frame_rate: f64) {}
 }
 
 /// Rust does not auto-impl a Trait for Box<Trait> or Deref<Target=Trait>

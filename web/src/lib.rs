@@ -11,7 +11,7 @@ use crate::{
 };
 use generational_arena::{Arena, Index};
 use js_sys::Uint8Array;
-use ruffle_core::{backend::render::RenderBackend, PlayerEvent};
+use ruffle_core::{backend::audio::AudioBackend, backend::render::RenderBackend, PlayerEvent};
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
 use web_sys::{Element, EventTarget, HtmlCanvasElement, KeyboardEvent, PointerEvent};
