@@ -49,6 +49,7 @@ where
             mouse_position: &(Twips::new(0), Twips::new(0)),
             drag_object: &mut None,
             stage_size: (Twips::from_pixels(550.0), Twips::from_pixels(400.0)),
+            player: None,
         };
 
         let globals = avm.global_object_cell();

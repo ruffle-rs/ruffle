@@ -610,6 +610,7 @@ mod tests {
                 mouse_position: &(Twips::new(0), Twips::new(0)),
                 drag_object: &mut None,
                 stage_size: (Twips::from_pixels(550.0), Twips::from_pixels(400.0)),
+                player: None,
             };
 
             let object = ScriptObject::object(gc_context, Some(avm.prototypes().object)).into();

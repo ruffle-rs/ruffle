@@ -6,13 +6,14 @@ use crate::avm1::Value;
 use crate::backend::input::InputBackend;
 use crate::backend::{audio::AudioBackend, navigator::NavigatorBackend, render::RenderBackend};
 use crate::library::Library;
+use crate::player::Player;
 use crate::prelude::*;
 use crate::tag_utils::SwfSlice;
 use crate::transform::TransformStack;
 use core::fmt;
 use gc_arena::{Collect, MutationContext};
 use rand::rngs::SmallRng;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, Weak};
 
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
 /// `Player` crates this when it begins a tick and passes it through the call stack to
@@ -51,13 +52,13 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub swf_data: &'a Arc<Vec<u8>>,
 
     /// The audio backend, used by display objects and AVM to play audio.
-    pub audio: &'a mut dyn AudioBackend,
+    pub audio: &'a mut (dyn AudioBackend + 'a),
 
     /// The navigator backend, used by the AVM to make HTTP requests and visit webpages.
-    pub navigator: &'a mut dyn NavigatorBackend,
+    pub navigator: &'a mut (dyn NavigatorBackend + 'a),
 
     /// The renderer, used by the display objects to draw themselves.
-    pub renderer: &'a mut dyn RenderBackend,
+    pub renderer: &'a mut (dyn RenderBackend + 'a),
 
     /// The input backend, used to detect user interactions.
     pub input: &'a mut dyn InputBackend,
@@ -84,6 +85,12 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The dimensions of the stage.
     pub stage_size: (Twips, Twips),
+
+    /// Weak reference to the player.
+    ///
+    /// Recipients of an update context may upgrade the reference to ensure
+    /// that the player lives across I/O boundaries.
+    pub player: Option<Weak<Mutex<Player>>>,
 }
 
 /// A queued ActionScript call.

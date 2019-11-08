@@ -11,7 +11,9 @@ use crate::{
 };
 use generational_arena::{Arena, Index};
 use js_sys::Uint8Array;
-use ruffle_core::{backend::audio::AudioBackend, backend::render::RenderBackend, PlayerEvent};
+use ruffle_core::PlayerEvent;
+use std::mem::drop;
+use std::sync::{Arc, Mutex};
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
 use web_sys::{Element, EventTarget, HtmlCanvasElement, KeyboardEvent, PointerEvent};
@@ -26,12 +28,7 @@ thread_local! {
 type AnimationHandler = Closure<dyn FnMut(f64)>;
 
 struct RuffleInstance {
-    core: ruffle_core::Player<
-        WebAudioBackend,
-        WebCanvasRenderBackend,
-        WebNavigatorBackend,
-        WebInputBackend,
-    >,
+    core: Arc<Mutex<ruffle_core::Player>>,
     canvas: HtmlCanvasElement,
     canvas_width: i32,
     canvas_height: i32,
@@ -93,14 +90,17 @@ impl Ruffle {
         swf_data.copy_to(&mut data[..]);
 
         let window = web_sys::window().ok_or_else(|| "Expected window")?;
-        let renderer = WebCanvasRenderBackend::new(&canvas)?;
-        let audio = WebAudioBackend::new()?;
-        let navigator = WebNavigatorBackend::new();
-        let input = WebInputBackend::new(&canvas);
+        let renderer = Box::new(WebCanvasRenderBackend::new(&canvas)?);
+        let audio = Box::new(WebAudioBackend::new()?);
+        let navigator = Box::new(WebNavigatorBackend::new());
+        let input = Box::new(WebInputBackend::new(&canvas));
 
-        let mut core = ruffle_core::Player::new(renderer, audio, navigator, input, data)?;
-        let frame_rate = core.frame_rate();
-        core.audio_mut().set_frame_rate(frame_rate);
+        let core = ruffle_core::Player::new(renderer, audio, navigator, input, data)?;
+        let mut core_lock = core.lock().unwrap();
+        let frame_rate = core_lock.frame_rate();
+        core_lock.audio_mut().set_frame_rate(frame_rate);
+        drop(core_lock);
+
         // Create instance.
         let instance = RuffleInstance {
             core,
@@ -149,7 +149,7 @@ impl Ruffle {
                                 x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
                                 y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
                             };
-                            instance.core.handle_event(event);
+                            instance.core.lock().unwrap().handle_event(event);
                             if instance.has_focus {
                                 js_event.prevent_default();
                             }
@@ -175,7 +175,7 @@ impl Ruffle {
                         let mut instances = instances.borrow_mut();
                         if let Some(instance) = instances.get_mut(index) {
                             instance.has_focus = true;
-                            instance.core.set_is_playing(true);
+                            instance.core.lock().unwrap().set_is_playing(true);
                             if let Some(target) = js_event.current_target() {
                                 let _ = target
                                     .unchecked_ref::<Element>()
@@ -185,7 +185,7 @@ impl Ruffle {
                                 x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
                                 y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
                             };
-                            instance.core.handle_event(event);
+                            instance.core.lock().unwrap().handle_event(event);
                             js_event.prevent_default();
                         }
                     });
@@ -242,7 +242,7 @@ impl Ruffle {
                                 x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
                                 y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
                             };
-                            instance.core.handle_event(event);
+                            instance.core.lock().unwrap().handle_event(event);
                             if instance.has_focus {
                                 js_event.prevent_default();
                             }
@@ -267,7 +267,7 @@ impl Ruffle {
             //         INSTANCES.with(move |instances| {
             //             let mut instances = instances.borrow_mut();
             //             if let Some(instance) = instances.get_mut(index) {
-            //                 instance.core.set_is_playing(true);
+            //                 instance.core.lock().unwrap().set_is_playing(true);
             //             }
             //         });
             //     }) as Box<dyn FnMut(Event)>);
@@ -292,19 +292,30 @@ impl Ruffle {
                         if let Some(instance) = instances.borrow_mut().get_mut(index) {
                             if instance.has_focus {
                                 let code = js_event.code();
-                                instance.core.input_mut().keydown(code.clone());
+                                instance
+                                    .core
+                                    .lock()
+                                    .unwrap()
+                                    .input_mut()
+                                    .downcast_mut::<WebInputBackend>()
+                                    .unwrap()
+                                    .keydown(code.clone());
 
                                 if let Some(codepoint) =
                                     input::web_key_to_codepoint(&js_event.key())
                                 {
                                     instance
                                         .core
+                                        .lock()
+                                        .unwrap()
                                         .handle_event(PlayerEvent::TextInput { codepoint });
                                 }
 
                                 if let Some(key_code) = input::web_to_ruffle_key_code(&code) {
                                     instance
                                         .core
+                                        .lock()
+                                        .unwrap()
                                         .handle_event(PlayerEvent::KeyDown { key_code });
                                 }
 
@@ -331,7 +342,14 @@ impl Ruffle {
                     INSTANCES.with(|instances| {
                         if let Some(instance) = instances.borrow_mut().get_mut(index) {
                             if instance.has_focus {
-                                instance.core.input_mut().keyup(js_event.code());
+                                instance
+                                    .core
+                                    .lock()
+                                    .unwrap()
+                                    .input_mut()
+                                    .downcast_mut::<WebInputBackend>()
+                                    .unwrap()
+                                    .keyup(js_event.code());
                                 js_event.prevent_default();
                             }
                         }
@@ -376,7 +394,7 @@ impl Ruffle {
                     0.0
                 };
 
-                instance.core.tick(dt);
+                instance.core.lock().unwrap().tick(dt);
 
                 // Check for canvas resize.
                 let canvas_width = instance.canvas.client_width();
@@ -400,16 +418,17 @@ impl Ruffle {
                         (f64::from(canvas_height) * instance.device_pixel_ratio) as u32;
                     instance.canvas.set_width(viewport_width);
                     instance.canvas.set_height(viewport_height);
-                    instance
-                        .core
-                        .set_viewport_dimensions(viewport_width, viewport_height);
-                    instance
-                        .core
+
+                    let mut core_lock = instance.core.lock().unwrap();
+                    core_lock.set_viewport_dimensions(viewport_width, viewport_height);
+                    core_lock
                         .renderer_mut()
                         .set_viewport_dimensions(viewport_width, viewport_height);
 
                     // Force a re-render if we resize.
-                    instance.core.render();
+                    core_lock.render();
+
+                    drop(core_lock);
                 }
 
                 // Request next animation frame.

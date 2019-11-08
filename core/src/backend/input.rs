@@ -1,6 +1,7 @@
 use crate::events::KeyCode;
+use downcast_rs::Downcast;
 
-pub trait InputBackend {
+pub trait InputBackend: Downcast {
     fn is_key_down(&self, key: KeyCode) -> bool;
 
     fn get_last_key_code(&self) -> KeyCode;
@@ -11,6 +12,7 @@ pub trait InputBackend {
 
     fn show_mouse(&mut self);
 }
+impl_downcast!(InputBackend);
 
 /// Input backend that does nothing
 pub struct NullInputBackend {}

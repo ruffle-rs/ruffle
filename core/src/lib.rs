@@ -6,6 +6,9 @@ mod display_object;
 #[macro_use]
 extern crate smallvec;
 
+#[macro_use]
+extern crate downcast_rs;
+
 mod avm1;
 mod bounding_box;
 mod character;

@@ -15,7 +15,6 @@ use glutin::{
 };
 use ruffle_core::{
     backend::audio::{AudioBackend, NullAudioBackend},
-    backend::render::RenderBackend,
     Player,
 };
 use std::path::PathBuf;
@@ -63,14 +62,18 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
             Box::new(NullAudioBackend::new())
         }
     };
-    let renderer = GliumRenderBackend::new(windowed_context)?;
-    let navigator = navigator::ExternalNavigatorBackend::new(); //TODO: actually implement this backend type
+    let renderer = Box::new(GliumRenderBackend::new(windowed_context)?);
+    let navigator = Box::new(navigator::ExternalNavigatorBackend::new()); //TODO: actually implement this backend type
     let display = renderer.display().clone();
-    let input = input::WinitInputBackend::new(display.clone());
-    let mut player = Player::new(renderer, audio, navigator, input, swf_data)?;
-    player.set_is_playing(true); // Desktop player will auto-play.
+    let input = Box::new(input::WinitInputBackend::new(display.clone()));
+    let player = Player::new(renderer, audio, navigator, input, swf_data)?;
 
-    let logical_size: LogicalSize<u32> = (player.movie_width(), player.movie_height()).into();
+    let logical_size: LogicalSize<u32> = {
+        let mut player_lock = player.lock().unwrap();
+        player_lock.set_is_playing(true); // Desktop player will auto-play.
+
+        (player_lock.movie_width(), player_lock.movie_height()).into()
+    };
     let scale_factor = display.gl_window().window().scale_factor();
 
     // Set initial size to movie dimensions.
@@ -89,24 +92,27 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                 glutin::event::Event::LoopDestroyed => return,
                 glutin::event::Event::WindowEvent { event, .. } => match event {
                     WindowEvent::Resized(size) => {
-                        player.set_viewport_dimensions(size.width, size.height);
-                        player
+                        let mut player_lock = player.lock().unwrap();
+                        player_lock.set_viewport_dimensions(size.width, size.height);
+                        player_lock
                             .renderer_mut()
                             .set_viewport_dimensions(size.width, size.height);
                     }
                     WindowEvent::CursorMoved { position, .. } => {
+                        let mut player_lock = player.lock().unwrap();
                         mouse_pos = position;
                         let event = ruffle_core::PlayerEvent::MouseMove {
                             x: position.x,
                             y: position.y,
                         };
-                        player.handle_event(event);
+                        player_lock.handle_event(event);
                     }
                     WindowEvent::MouseInput {
                         button: MouseButton::Left,
                         state: pressed,
                         ..
                     } => {
+                        let mut player_lock = player.lock().unwrap();
                         let event = if pressed == ElementState::Pressed {
                             ruffle_core::PlayerEvent::MouseDown {
                                 x: mouse_pos.x,
@@ -118,15 +124,22 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                                 y: mouse_pos.y,
                             }
                         };
-                        player.handle_event(event);
+                        player_lock.handle_event(event);
                     }
                     WindowEvent::CursorLeft { .. } => {
-                        player.handle_event(ruffle_core::PlayerEvent::MouseLeft)
+                        let mut player_lock = player.lock().unwrap();
+                        player_lock.handle_event(ruffle_core::PlayerEvent::MouseLeft)
                     }
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                     WindowEvent::KeyboardInput { .. } | WindowEvent::ReceivedCharacter(_) => {
-                        if let Some(event) = player.input_mut().handle_event(event) {
-                            player.handle_event(event);
+                        let mut player_lock = player.lock().unwrap();
+                        if let Some(event) = player_lock
+                            .input_mut()
+                            .downcast_mut::<input::WinitInputBackend>()
+                            .unwrap()
+                            .handle_event(event)
+                        {
+                            player_lock.handle_event(event);
                         }
                     }
                     _ => (),
@@ -140,10 +153,11 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                 let dt = new_time.duration_since(time).as_micros();
                 if dt > 0 {
                     time = new_time;
-                    player.tick(dt as f64 / 1000.0);
+                    player.lock().unwrap().tick(dt as f64 / 1000.0);
                 }
 
-                *control_flow = ControlFlow::WaitUntil(new_time + player.time_til_next_frame());
+                *control_flow =
+                    ControlFlow::WaitUntil(new_time + player.lock().unwrap().time_til_next_frame());
             }
         });
     }

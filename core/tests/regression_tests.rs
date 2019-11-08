@@ -271,16 +271,16 @@ fn run_swf(swf_path: &str, num_frames: u32) -> Result<String, Error> {
     let _ = log::set_logger(&TRACE_LOGGER).map(|()| log::set_max_level(log::LevelFilter::Info));
 
     let swf_data = std::fs::read(swf_path)?;
-    let mut player = Player::new(
-        NullRenderer,
-        NullAudioBackend::new(),
-        NullNavigatorBackend::new(),
-        NullInputBackend::new(),
+    let player = Player::new(
+        Box::new(NullRenderer),
+        Box::new(NullAudioBackend::new()),
+        Box::new(NullNavigatorBackend::new()),
+        Box::new(NullInputBackend::new()),
         swf_data,
     )?;
 
     for _ in 0..num_frames {
-        player.run_frame();
+        player.lock().unwrap().run_frame();
     }
 
     Ok(trace_log())

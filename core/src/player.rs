@@ -14,7 +14,8 @@ use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
 use std::convert::TryFrom;
-use std::sync::Arc;
+use std::ops::DerefMut;
+use std::sync::{Arc, Mutex, Weak};
 
 static DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
 
@@ -65,12 +66,12 @@ type Error = Box<dyn std::error::Error>;
 
 make_arena!(GcArena, GcRoot);
 
-pub struct Player<
-    Audio: AudioBackend,
-    Renderer: RenderBackend,
-    Navigator: NavigatorBackend,
-    Input: InputBackend,
-> {
+type Audio = Box<dyn AudioBackend>;
+type Navigator = Box<dyn NavigatorBackend>;
+type Renderer = Box<dyn RenderBackend>;
+type Input = Box<dyn InputBackend>;
+
+pub struct Player {
     /// The version of the player we're emulating.
     ///
     /// This serves a few purposes, primarily for compatibility:
@@ -90,7 +91,7 @@ pub struct Player<
 
     audio: Audio,
     renderer: Renderer,
-    navigator: Navigator,
+    pub navigator: Navigator,
     input: Input,
     transform_stack: TransformStack,
     view_matrix: Matrix,
@@ -113,22 +114,23 @@ pub struct Player<
 
     mouse_pos: (Twips, Twips),
     is_mouse_down: bool,
+
+    /// Self-reference to ourselves.
+    ///
+    /// This is a weak reference that is upgraded and handed out in various
+    /// contexts to other parts of the player. It can be used to ensure the
+    /// player lives across `await` calls in async code.
+    self_reference: Option<Weak<Mutex<Self>>>,
 }
 
-impl<
-        Audio: AudioBackend,
-        Renderer: RenderBackend,
-        Navigator: NavigatorBackend,
-        Input: InputBackend,
-    > Player<Audio, Renderer, Navigator, Input>
-{
+impl Player {
     pub fn new(
         mut renderer: Renderer,
         audio: Audio,
         navigator: Navigator,
         input: Input,
         swf_data: Vec<u8>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Arc<Mutex<Self>>, Error> {
         let swf_stream = swf::read::read_swf_header(&swf_data[..]).unwrap();
         let header = swf_stream.header;
         let mut reader = swf_stream.reader;
@@ -231,6 +233,7 @@ impl<
             audio,
             navigator,
             input,
+            self_reference: None,
         };
 
         player.gc_arena.mutate(|gc_context, gc_root| {
@@ -242,7 +245,12 @@ impl<
         player.build_matrices();
         player.preload();
 
-        Ok(player)
+        let player_box = Arc::new(Mutex::new(player));
+        let mut player_lock = player_box.lock().unwrap();
+        player_lock.self_reference = Some(Arc::downgrade(&player_box));
+        std::mem::drop(player_lock);
+
+        Ok(player_box)
     }
 
     pub fn tick(&mut self, dt: f64) {
@@ -554,7 +562,7 @@ impl<
         self.gc_arena.mutate(|_gc_context, gc_root| {
             let root_data = gc_root.0.read();
             let mut render_context = RenderContext {
-                renderer,
+                renderer: renderer.deref_mut(),
                 library: &root_data.library,
                 transform_stack,
                 view_bounds,
@@ -597,8 +605,8 @@ impl<
         &self.input
     }
 
-    pub fn input_mut(&mut self) -> &mut Input {
-        &mut self.input
+    pub fn input_mut(&mut self) -> &mut dyn InputBackend {
+        self.input.deref_mut()
     }
 
     fn run_actions<'gc>(avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) {
@@ -719,20 +727,22 @@ impl<
             mouse_position,
             stage_width,
             stage_height,
+            player,
         ) = (
             self.player_version,
             self.global_time,
             &mut self.swf_data,
             self.swf_version,
             &mut self.background_color,
-            &mut self.renderer,
-            &mut self.audio,
-            &mut self.navigator,
-            &mut self.input,
+            self.renderer.deref_mut(),
+            self.audio.deref_mut(),
+            self.navigator.deref_mut(),
+            self.input.deref_mut(),
             &mut self.rng,
             &self.mouse_pos,
             Twips::from_pixels(self.movie_width.into()),
             Twips::from_pixels(self.movie_height.into()),
+            self.self_reference.clone(),
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -759,6 +769,7 @@ impl<
                 mouse_position,
                 drag_object,
                 stage_size: (stage_width, stage_height),
+                player,
             };
 
             let ret = f(avm, &mut update_context);
@@ -778,8 +789,11 @@ impl<
         renderer: &mut Renderer,
     ) -> Result<crate::font::Font<'gc>, Error> {
         let mut reader = swf::read::Reader::new(data, 8);
-        let device_font =
-            crate::font::Font::from_swf_tag(gc_context, renderer, &reader.read_define_font_2(3)?)?;
+        let device_font = crate::font::Font::from_swf_tag(
+            gc_context,
+            renderer.deref_mut(),
+            &reader.read_define_font_2(3)?,
+        )?;
         Ok(device_font)
     }
 
