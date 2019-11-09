@@ -1,12 +1,13 @@
 //! Navigator backend for web
 
+use js_sys::{ArrayBuffer, Uint8Array};
 use ruffle_core::backend::navigator::{Error, NavigationMethod, NavigatorBackend};
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 use wasm_bindgen::JsCast;
-use wasm_bindgen_futures::spawn_local;
-use web_sys::window;
+use wasm_bindgen_futures::{spawn_local, JsFuture};
+use web_sys::{window, Response};
 
 pub struct WebNavigatorBackend {}
 
@@ -76,8 +77,26 @@ impl NavigatorBackend for WebNavigatorBackend {
         }
     }
 
-    fn fetch(&self, _url: String) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>> {
-        Box::pin(async { Ok(Vec::new()) })
+    fn fetch(&self, url: String) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>> {
+        Box::pin(async move {
+            let window = web_sys::window().unwrap();
+            let fetchval = JsFuture::from(window.fetch_with_str(&url)).await;
+            if fetchval.is_err() {
+                return Err("Could not fetch, got JS Error".into());
+            }
+
+            let resp: Response = fetchval.unwrap().dyn_into().unwrap();
+            let data: ArrayBuffer = JsFuture::from(resp.array_buffer().unwrap())
+                .await
+                .unwrap()
+                .dyn_into()
+                .unwrap();
+            let jsarray = Uint8Array::new(&data);
+            let mut rust_array = vec![0; jsarray.length() as usize];
+            jsarray.copy_to(&mut rust_array);
+
+            Ok(rust_array)
+        })
     }
 
     fn spawn_future(&mut self, future: Pin<Box<dyn Future<Output = ()> + 'static>>) {
