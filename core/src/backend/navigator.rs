@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 use std::future::Future;
+use std::pin::Pin;
 use swf::avm1::types::SendVarsMethod;
 
 pub type Error = Box<dyn std::error::Error>;
@@ -58,7 +59,7 @@ pub trait NavigatorBackend {
     );
 
     /// Fetch data at a given URL and return it some time in the future.
-    fn fetch(&self, url: String) -> Box<dyn Future<Output = Result<Vec<u8>, Error>>>;
+    fn fetch(&self, url: String) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>>;
 
     /// Arrange for a future to be run at some point in the... well, future.
     ///
@@ -68,7 +69,7 @@ pub trait NavigatorBackend {
     ///
     /// TODO: For some reason, `wasm_bindgen_futures` wants unpinnable futures.
     /// This seems highly limiting.
-    fn spawn_future(&mut self, future: Box<dyn Future<Output = ()> + Unpin + 'static>);
+    fn spawn_future(&mut self, future: Pin<Box<dyn Future<Output = ()> + 'static>>);
 }
 
 /// A null implementation for platforms that do not live in a web browser.
@@ -95,9 +96,9 @@ impl NavigatorBackend for NullNavigatorBackend {
     ) {
     }
 
-    fn fetch(&self, _url: String) -> Box<dyn Future<Output = Result<Vec<u8>, Error>>> {
-        Box::new(async { Err("Fetch IO not implemented".into()) })
+    fn fetch(&self, _url: String) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>> {
+        Box::pin(async { Err("Fetch IO not implemented".into()) })
     }
 
-    fn spawn_future(&mut self, _future: Box<dyn Future<Output = ()> + Unpin + 'static>) {}
+    fn spawn_future(&mut self, _future: Pin<Box<dyn Future<Output = ()> + 'static>>) {}
 }

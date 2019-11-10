@@ -3,6 +3,7 @@
 use ruffle_core::backend::navigator::{Error, NavigationMethod, NavigatorBackend};
 use std::collections::HashMap;
 use std::future::Future;
+use std::pin::Pin;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::window;
@@ -75,11 +76,11 @@ impl NavigatorBackend for WebNavigatorBackend {
         }
     }
 
-    fn fetch(&self, _url: String) -> Box<dyn Future<Output = Result<Vec<u8>, Error>>> {
-        Box::new(async { Ok(Vec::new()) })
+    fn fetch(&self, _url: String) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>> {
+        Box::pin(async { Ok(Vec::new()) })
     }
 
-    fn spawn_future(&mut self, future: Box<dyn Future<Output = ()> + Unpin + 'static>) {
+    fn spawn_future(&mut self, future: Pin<Box<dyn Future<Output = ()> + 'static>>) {
         spawn_local(future)
     }
 }
