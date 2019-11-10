@@ -461,6 +461,8 @@ impl<
         });
     }
 
+    /// Checks to see if a recent update has caused the current mouse hover
+    /// node to change.
     fn update_roll_over(&mut self) -> bool {
         // TODO: While the mouse is down, maintain the hovered node.
         if self.is_mouse_down {
@@ -779,6 +781,35 @@ impl<
         let device_font =
             crate::font::Font::from_swf_tag(gc_context, renderer, &reader.read_define_font_2(3)?)?;
         Ok(device_font)
+    }
+
+    /// Update the current state of the player.
+    ///
+    /// The given function will be called with the current stage root, current
+    /// mouse hover node, AVM, and an update context.
+    ///
+    /// This particular function runs necessary post-update bookkeeping, such
+    /// as executing any actions queued on the update context, keeping the
+    /// hover state up to date, and running garbage collection.
+    pub fn update<F, R>(&mut self, func: F) -> R
+    where
+        F: for<'a, 'gc> FnOnce(&mut Avm1<'gc>, &mut UpdateContext<'a, 'gc, '_>) -> R,
+    {
+        let rval = self.mutate_with_update_context(|avm, context| {
+            let rval = func(avm, context);
+
+            Self::run_actions(avm, context);
+
+            rval
+        });
+
+        // Update mouse state (check for new hovered button, etc.)
+        self.update_roll_over();
+
+        // GC
+        self.gc_arena.collect_debt();
+
+        rval
     }
 }
 
