@@ -542,16 +542,10 @@ impl RenderBackend for GliumRenderBackend {
         &mut self,
         id: swf::CharacterId,
         data: &[u8],
-        jpeg_tables: &[u8],
+        jpeg_tables: Option<&[u8]>,
     ) -> BitmapInfo {
-        if !jpeg_tables.is_empty() {
-            let mut full_jpeg = jpeg_tables[..jpeg_tables.len() - 2].to_vec();
-            full_jpeg.extend_from_slice(&data[2..]);
-
-            self.register_bitmap_jpeg_2(id, &full_jpeg[..])
-        } else {
-            self.register_bitmap_jpeg_2(id, &data[..])
-        }
+        let data = ruffle_core::backend::render::glue_tables_to_jpeg(data, jpeg_tables);
+        self.register_bitmap_jpeg_2(id, &data[..])
     }
 
     fn register_bitmap_jpeg_2(&mut self, id: swf::CharacterId, data: &[u8]) -> BitmapInfo {

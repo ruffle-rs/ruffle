@@ -86,8 +86,19 @@ impl<'gc> Library<'gc> {
     }
 
     pub fn set_jpeg_tables(&mut self, data: Vec<u8>) {
-        let data = crate::backend::render::remove_invalid_jpeg_data(&data[..]).to_vec();
-        self.jpeg_tables = Some(data);
+        if self.jpeg_tables.is_some() {
+            // SWF spec says there should only be one JPEGTables tag.
+            // TODO: What is the behavior when there are multiples?
+            log::warn!("SWF contains multiple JPEGTables tags");
+            return;
+        }
+        // Some SWFs have a JPEGTables tag with 0 length; ignore these.
+        // (Does this happen when there is only a single DefineBits tag?)
+        self.jpeg_tables = if data.is_empty() {
+            None
+        } else {
+            Some(crate::backend::render::remove_invalid_jpeg_data(&data[..]).to_vec())
+        }
     }
 
     pub fn jpeg_tables(&self) -> Option<&[u8]> {
