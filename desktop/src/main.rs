@@ -5,7 +5,10 @@ mod render;
 use crate::render::GliumRenderBackend;
 use glutin::{
     dpi::{LogicalSize, PhysicalPosition},
-    ContextBuilder, ElementState, EventsLoop, MouseButton, WindowBuilder, WindowEvent,
+    event::{ElementState, MouseButton, WindowEvent},
+    event_loop::{ControlFlow, EventLoop},
+    window::WindowBuilder,
+    ContextBuilder,
 };
 use ruffle_core::{backend::render::RenderBackend, Player};
 use std::path::PathBuf;
@@ -35,14 +38,14 @@ fn main() {
 fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     let swf_data = std::fs::read(input_path)?;
 
-    let mut events_loop = EventsLoop::new();
+    let event_loop = EventLoop::new();
     let window_builder = WindowBuilder::new().with_title("Ruffle");
     let windowed_context = ContextBuilder::new()
         .with_vsync(true)
         .with_multisampling(4)
         .with_srgb(true)
         .with_stencil_buffer(8)
-        .build_windowed(window_builder, &events_loop)?;
+        .build_windowed(window_builder, &event_loop)?;
     let audio = audio::CpalAudioBackend::new()?;
     let renderer = GliumRenderBackend::new(windowed_context)?;
     let navigator = navigator::ExternalNavigatorBackend::new(); //TODO: actually implement this backend type
@@ -51,22 +54,21 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     player.set_is_playing(true); // Desktop player will auto-play.
 
     let logical_size: LogicalSize = (player.movie_width(), player.movie_height()).into();
-    let hidpi_factor = display.gl_window().get_hidpi_factor();
+    let hidpi_factor = display.gl_window().window().hidpi_factor();
 
     display
         .gl_window()
         .resize(logical_size.to_physical(hidpi_factor));
 
-    display.gl_window().set_inner_size(logical_size);
-
     let mut mouse_pos = PhysicalPosition::new(0.0, 0.0);
     let mut time = Instant::now();
     loop {
         // Poll UI events
-        let mut request_close = false;
-        events_loop.poll_events(|event| {
-            if let glutin::Event::WindowEvent { event, .. } = event {
-                match event {
+        event_loop.run(move |event, _window_target, control_flow| {
+            *control_flow = ControlFlow::Poll;
+            match event {
+                glutin::event::Event::LoopDestroyed => return,
+                glutin::event::Event::WindowEvent { event, .. } => match event {
                     WindowEvent::Resized(logical_size) => {
                         let size = logical_size.to_physical(hidpi_factor);
                         player.set_viewport_dimensions(
@@ -108,24 +110,20 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                     WindowEvent::CursorLeft { .. } => {
                         player.handle_event(ruffle_core::PlayerEvent::MouseLeft)
                     }
-                    WindowEvent::CloseRequested => request_close = true,
+                    WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                     _ => (),
-                }
+                },
+                _ => (),
             }
+
+            let new_time = Instant::now();
+            let dt = new_time.duration_since(time).as_micros();
+            if dt > 0 {
+                time = new_time;
+                player.tick(dt as f64 / 1000.0);
+            }
+
+            std::thread::sleep(player.time_til_next_frame());
         });
-
-        if request_close {
-            break;
-        }
-
-        let new_time = Instant::now();
-        let dt = new_time.duration_since(time).as_micros();
-        if dt > 0 {
-            time = new_time;
-            player.tick(dt as f64 / 1000.0);
-        }
-
-        std::thread::sleep(player.time_til_next_frame());
     }
-    Ok(())
 }

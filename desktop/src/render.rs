@@ -36,7 +36,9 @@ pub struct GliumRenderBackend {
 }
 
 impl GliumRenderBackend {
-    pub fn new(windowed_context: WindowedContext) -> Result<GliumRenderBackend, Error> {
+    pub fn new<T: glutin::ContextCurrentState>(
+        windowed_context: WindowedContext<T>,
+    ) -> Result<GliumRenderBackend, Error> {
         let display = Display::from_gl_window(windowed_context)?;
 
         use glium::program::ProgramCreationInput;
