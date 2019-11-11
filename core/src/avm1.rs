@@ -8,6 +8,7 @@ use gc_arena::{GcCell, MutationContext};
 use rand::Rng;
 use std::collections::HashMap;
 use std::convert::TryInto;
+use url::form_urlencoded;
 
 use swf::avm1::read::Reader;
 use swf::avm1::types::{Action, Function};
@@ -88,6 +89,10 @@ pub struct Avm1<'gc> {
     /// The register slots (also shared across functions).
     /// `ActionDefineFunction2` defined functions do not use these slots.
     registers: [Value<'gc>; 4],
+
+    /// Represents externally-held references to objects currently in use by
+    /// futures that can't actually hold `'gc` pointers.
+    external_references: Vec<Option<Object<'gc>>>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
@@ -128,7 +133,43 @@ impl<'gc> Avm1<'gc> {
                 Value::Undefined,
                 Value::Undefined,
             ],
+            external_references: vec![],
         }
+    }
+
+    /// Force the AVM to store a reference to an object that can be retrieved
+    /// later by ID.
+    ///
+    /// This is intended for use by async code which will need to run between
+    /// GC passes and for various architectural references cannot hold onto any
+    /// actual GC pointers.
+    ///
+    /// Note that this function is the moral equivalent of moving an object
+    /// from garbage collection into reference counting. Take care to kill
+    /// roots as soon as possible and avoid creating cycles.
+    pub fn forcibly_root_object(&mut self, ob: Object<'gc>) -> usize {
+        if let Some(pos) = self.external_references.iter().position(|&r| r.is_none()) {
+            *self.external_references.get_mut(pos).unwrap() = Some(ob);
+            pos
+        } else {
+            self.external_references.push(Some(ob));
+            self.external_references.len() - 1
+        }
+    }
+
+    /// Get back a previously rooted object.
+    ///
+    /// After retrieving the rooted object, the ID you have given will no
+    /// longer be valid and may refer to a different object or no object at
+    /// all.
+    ///
+    /// Attempting to unroot an object ID that does not exist will panic.
+    pub fn unroot_object(&mut self, id: usize) -> Object<'gc> {
+        let root = self.external_references.get(id).and_then(|v| *v).unwrap();
+
+        *self.external_references.get_mut(id).unwrap() = None;
+
+        root
     }
 
     #[allow(dead_code)]
@@ -882,6 +923,29 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
+    pub fn resolve_dot_path_clip<'s>(
+        start: Option<DisplayObject<'gc>>,
+        root: DisplayObject<'gc>,
+        path: &'s str,
+    ) -> Option<DisplayObject<'gc>> {
+        // If the target clip is invalid, we default to root for the variable path.
+        let mut clip = Some(start.unwrap_or(root));
+        if !path.is_empty() {
+            for name in path.split('.') {
+                if clip.is_none() {
+                    break;
+                }
+
+                clip = clip
+                    .unwrap()
+                    .as_movie_clip()
+                    .and_then(|mc| mc.get_child_by_name(name));
+            }
+        }
+
+        clip
+    }
+
     fn push(&mut self, value: impl Into<Value<'gc>>) {
         let value = value.into();
         avm_debug!("Stack push {}: {:?}", self.stack.len(), value);
@@ -1601,22 +1665,61 @@ impl<'gc> Avm1<'gc> {
             return fscommand::handle(fscommand, self, context);
         }
 
-        if is_target_sprite {
+        if is_load_vars {
+            let clip_target: Option<DisplayObject<'gc>> = if is_target_sprite {
+                let is_slashpath = Self::variable_name_is_slash_path(&target);
+
+                if is_slashpath {
+                    if let Some((node, _)) =
+                        Self::resolve_slash_path_variable(self.target_clip(), context.root, &target)
+                    {
+                        Some(node)
+                    } else {
+                        None
+                    }
+                } else {
+                    Self::resolve_dot_path_clip(self.target_clip(), context.root, &target)
+                }
+            } else {
+                Some(self.target_clip_or_root(context))
+            };
+
+            if let Some(clip_target) = clip_target {
+                let target_obj = clip_target
+                    .as_movie_clip()
+                    .unwrap()
+                    .object()
+                    .as_object()
+                    .unwrap();
+                let player = context.player.clone().unwrap().upgrade().unwrap();
+                let fetch = context.navigator.fetch(url);
+                let slot = self.forcibly_root_object(target_obj);
+
+                context.navigator.spawn_future(Box::pin(async move {
+                    let data = fetch.await.unwrap();
+
+                    player.lock().unwrap().update(|avm, uc| {
+                        let that = avm.unroot_object(slot);
+
+                        for (k, v) in form_urlencoded::parse(&data) {
+                            that.set(&k, v.into_owned().into(), avm, uc);
+                        }
+                    })
+                }));
+            }
+
+            return Ok(());
+        } else if is_target_sprite {
             log::warn!("GetURL into target sprite is not yet implemented");
             return Ok(()); //maybe error?
+        } else {
+            let vars = match NavigationMethod::from_send_vars_method(swf_method) {
+                Some(method) => Some((method, self.locals_into_form_values(context))),
+                None => None,
+            };
+
+            context.navigator.navigate_to_url(url, Some(target), vars);
         }
-
-        if is_load_vars {
-            log::warn!("Reading AVM locals from forms is not yet implemented");
-            return Ok(()); //maybe error?
-        }
-
-        let vars = match NavigationMethod::from_send_vars_method(swf_method) {
-            Some(method) => Some((method, self.locals_into_form_values(context))),
-            None => None,
-        };
-
-        context.navigator.navigate_to_url(url, Some(target), vars);
 
         Ok(())
     }
