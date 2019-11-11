@@ -886,11 +886,10 @@ impl<'gc, 'a> MovieClip<'gc> {
             .get_mut()
             .take(data_len as u64)
             .read_to_end(&mut jpeg_data)?;
-        let bitmap_info = context.renderer.register_bitmap_jpeg(
-            id,
-            &jpeg_data,
-            context.library.jpeg_tables().unwrap(),
-        );
+        let bitmap_info =
+            context
+                .renderer
+                .register_bitmap_jpeg(id, &jpeg_data, context.library.jpeg_tables());
         let bitmap = crate::display_object::Bitmap::new(
             context,
             id,
