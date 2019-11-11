@@ -19,7 +19,13 @@ impl<R: Read> Mp3Decoder<R> {
             decoder: minimp3::Decoder::new(reader),
             num_channels,
             sample_rate,
-            cur_frame: unsafe { std::mem::zeroed::<minimp3::Frame>() },
+            cur_frame: minimp3::Frame {
+                data: vec![],
+                sample_rate: sample_rate as i32,
+                channels: num_channels.into(),
+                layer: 3,
+                bitrate: 128,
+            },
             cur_sample: 0,
             num_samples: 0,
         }
@@ -93,7 +99,7 @@ impl<R: Read> Mp3Decoder<R> {
             decoder: puremp3::Mp3Decoder::new(reader),
             num_channels,
             sample_rate,
-            cur_frame: unsafe { std::mem::zeroed::<puremp3::Frame>() },
+            cur_frame: unsafe { std::mem::MaybeUninit::zeroed().assume_init() },
             cur_sample: 0,
             cur_channel: 0,
         }
