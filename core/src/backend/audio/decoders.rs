@@ -124,7 +124,9 @@ pub struct AdpcmStreamDecoder {
 impl AdpcmStreamDecoder {
     fn new(format: &SoundFormat, swf_data: SwfSlice, swf_version: u8) -> Self {
         let mut tag_reader = StreamTagReader::new(format.compression, swf_data, swf_version);
-        let audio_data = tag_reader.next().unwrap_or_else(SwfSlice::empty);
+        let audio_data = tag_reader
+            .next()
+            .unwrap_or_else(|| SwfSlice::empty(swf_version));
         let decoder = AdpcmDecoder::new(
             Cursor::new(audio_data),
             format.is_stereo,
@@ -222,7 +224,7 @@ impl StreamTagReader {
             compression,
             reader: swf::read::Reader::new(Cursor::new(swf_data), swf_version),
             current_frame: 1,
-            current_audio_data: SwfSlice::empty(),
+            current_audio_data: SwfSlice::empty(swf_version),
         }
     }
 }
@@ -256,13 +258,13 @@ impl Iterator for StreamTagReader {
                     found = true;
                     if tag_len >= skip_len {
                         *audio_data = SwfSlice {
-                            data: std::sync::Arc::clone(&reader.get_ref().get_ref().data),
+                            movie: std::sync::Arc::clone(&reader.get_ref().get_ref().movie),
                             start: pos + skip_len,
                             end: pos + tag_len,
                         };
                     } else {
                         *audio_data = SwfSlice {
-                            data: std::sync::Arc::clone(&reader.get_ref().get_ref().data),
+                            movie: std::sync::Arc::clone(&reader.get_ref().get_ref().movie),
                             start: pos,
                             end: pos + tag_len,
                         };

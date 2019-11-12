@@ -8,6 +8,7 @@ use crate::context::ActionQueue;
 use crate::display_object::{MovieClip, TDisplayObject};
 use crate::library::Library;
 use crate::prelude::*;
+use crate::tag_utils::SwfMovie;
 use gc_arena::{rootless_arena, GcCell, MutationContext};
 use rand::{rngs::SmallRng, SeedableRng};
 use std::sync::Arc;
@@ -21,6 +22,7 @@ where
         F: for<'a> FnOnce(&mut Avm1<'gc>, &mut UpdateContext<'a, 'gc, '_>, Object<'gc>) -> R,
     {
         let mut avm = Avm1::new(gc_context, swf_version);
+        let swf = Arc::new(SwfMovie::empty(swf_version));
         let mut root: DisplayObject<'_> = MovieClip::new(swf_version, gc_context).into();
         root.post_instantiation(gc_context, root, avm.prototypes().movie_clip);
 
@@ -28,7 +30,7 @@ where
             gc_context,
             global_time: 0,
             player_version: 32,
-            swf_version,
+            swf: &swf,
             root,
             rng: &mut SmallRng::from_seed([0u8; 16]),
             audio: &mut NullAudioBackend::new(),
@@ -43,7 +45,6 @@ where
             library: &mut Library::new(),
             navigator: &mut NullNavigatorBackend::new(),
             renderer: &mut NullRenderer::new(),
-            swf_data: &mut Arc::new(vec![]),
             system_prototypes: avm.prototypes().clone(),
             mouse_hovered_object: None,
             mouse_position: &(Twips::new(0), Twips::new(0)),

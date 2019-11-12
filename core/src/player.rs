@@ -9,6 +9,7 @@ use crate::display_object::{MorphShape, MovieClip};
 use crate::events::{ButtonEvent, ButtonKeyCode, ClipEvent, PlayerEvent};
 use crate::library::Library;
 use crate::prelude::*;
+use crate::tag_utils::SwfMovie;
 use crate::transform::TransformStack;
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use log::info;
@@ -84,8 +85,7 @@ pub struct Player {
     ///   Player can be enabled by setting a particular player version.
     player_version: u8,
 
-    swf_data: Arc<Vec<u8>>,
-    swf_version: u8,
+    swf: Arc<SwfMovie>,
 
     is_playing: bool,
 
@@ -131,42 +131,23 @@ impl Player {
         input: Input,
         swf_data: Vec<u8>,
     ) -> Result<Arc<Mutex<Self>>, Error> {
-        let swf_stream = swf::read::read_swf_header(&swf_data[..]).unwrap();
-        let header = swf_stream.header;
-        let mut reader = swf_stream.reader;
+        let movie = Arc::new(SwfMovie::from_data(&swf_data));
 
-        // Decompress the entire SWF in memory.
-        // Sometimes SWFs will have an incorrectly compressed stream,
-        // but will otherwise decompress fine up to the End tag.
-        // So just warn on this case and try to continue gracefully.
-        let data = if header.compression == swf::Compression::Lzma {
-            // TODO: The LZMA decoder is still funky.
-            // It always errors, and doesn't return all the data if you use read_to_end,
-            // but read_exact at least returns the data... why?
-            // Does the decoder need to be flushed somehow?
-            let mut data = vec![0u8; swf_stream.uncompressed_length];
-            let _ = reader.get_mut().read_exact(&mut data);
-            data
-        } else {
-            let mut data = Vec::with_capacity(swf_stream.uncompressed_length);
-            if let Err(e) = reader.get_mut().read_to_end(&mut data) {
-                log::error!("Error decompressing SWF, may be corrupt: {}", e);
-            }
-            data
-        };
+        info!(
+            "{}x{}",
+            movie.header().stage_size.x_max,
+            movie.header().stage_size.y_max
+        );
 
-        let swf_len = data.len();
-
-        info!("{}x{}", header.stage_size.x_max, header.stage_size.y_max);
-
-        let movie_width = (header.stage_size.x_max - header.stage_size.x_min).to_pixels() as u32;
-        let movie_height = (header.stage_size.y_max - header.stage_size.y_min).to_pixels() as u32;
+        let movie_width =
+            (movie.header().stage_size.x_max - movie.header().stage_size.x_min).to_pixels() as u32;
+        let movie_height =
+            (movie.header().stage_size.y_max - movie.header().stage_size.y_min).to_pixels() as u32;
 
         let mut player = Player {
             player_version: NEWEST_PLAYER_VERSION,
 
-            swf_data: Arc::new(data),
-            swf_version: header.version,
+            swf: movie.clone(),
 
             is_playing: false,
 
@@ -199,15 +180,7 @@ impl Player {
                     gc_context,
                     GcRootData {
                         library,
-                        root: MovieClip::new_with_data(
-                            header.version,
-                            gc_context,
-                            0,
-                            0,
-                            swf_len,
-                            header.num_frames,
-                        )
-                        .into(),
+                        root: MovieClip::from_movie(gc_context, movie.clone()).into(),
                         mouse_hovered_object: None,
                         drag_object: None,
                         avm: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
@@ -216,7 +189,7 @@ impl Player {
                 ))
             }),
 
-            frame_rate: header.frame_rate.into(),
+            frame_rate: movie.header().frame_rate.into(),
             frame_accumulator: 0.0,
             global_time: 0,
 
@@ -620,7 +593,7 @@ impl Player {
                 ActionType::Normal { bytecode } => {
                     avm.insert_stack_frame_for_action(
                         actions.clip,
-                        context.swf_version,
+                        context.swf.header().version,
                         bytecode,
                         context,
                     );
@@ -629,7 +602,7 @@ impl Player {
                 ActionType::Init { bytecode } => {
                     avm.insert_stack_frame_for_init_action(
                         actions.clip,
-                        context.swf_version,
+                        context.swf.header().version,
                         bytecode,
                         context,
                     );
@@ -639,7 +612,7 @@ impl Player {
                 ActionType::Method { name } => {
                     avm.insert_stack_frame_for_avm_function(
                         actions.clip,
-                        context.swf_version,
+                        context.swf.header().version,
                         context,
                         name,
                     );
@@ -655,7 +628,7 @@ impl Player {
                     // so this doesn't require any further execution.
                     avm.notify_system_listeners(
                         actions.clip,
-                        context.swf_version,
+                        context.swf.version(),
                         context,
                         listener,
                         method,
@@ -716,8 +689,7 @@ impl Player {
         let (
             player_version,
             global_time,
-            swf_data,
-            swf_version,
+            swf,
             background_color,
             renderer,
             audio,
@@ -731,8 +703,7 @@ impl Player {
         ) = (
             self.player_version,
             self.global_time,
-            &mut self.swf_data,
-            self.swf_version,
+            &self.swf,
             &mut self.background_color,
             self.renderer.deref_mut(),
             self.audio.deref_mut(),
@@ -752,8 +723,7 @@ impl Player {
             let mut update_context = UpdateContext {
                 player_version,
                 global_time,
-                swf_data,
-                swf_version,
+                swf,
                 library,
                 background_color,
                 rng,

@@ -187,6 +187,8 @@ impl<'gc> Activation<'gc> {
         mc: MutationContext<'gc, '_>,
         base_clip: DisplayObject<'gc>,
     ) -> Activation<'gc> {
+        use crate::tag_utils::SwfMovie;
+
         let global_scope = GcCell::allocate(mc, Scope::from_global_object(globals));
         let child_scope = GcCell::allocate(mc, Scope::new_local_scope(global_scope, mc));
         let empty_constant_pool = GcCell::allocate(mc, Vec::new());
@@ -194,7 +196,7 @@ impl<'gc> Activation<'gc> {
         Activation {
             swf_version,
             data: SwfSlice {
-                data: Arc::new(Vec::new()),
+                movie: Arc::new(SwfMovie::empty(swf_version)),
                 start: 0,
                 end: 0,
             },
@@ -251,7 +253,7 @@ impl<'gc> Activation<'gc> {
     /// SwfSlice.
     #[allow(dead_code)]
     pub fn is_identical_fn(&self, other: &SwfSlice) -> bool {
-        Arc::ptr_eq(&self.data.data, &other.data)
+        Arc::ptr_eq(&self.data.movie, &other.movie)
     }
 
     /// Returns a mutable reference to the current data offset.

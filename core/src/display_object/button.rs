@@ -3,6 +3,7 @@ use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::events::{ButtonEvent, ButtonEventResult, ButtonKeyCode};
 use crate::prelude::*;
+use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::BTreeMap;
 use std::convert::TryFrom;
@@ -26,16 +27,13 @@ pub struct ButtonData<'gc> {
 impl<'gc> Button<'gc> {
     pub fn from_swf_tag(
         button: &swf::Button,
+        source_movie: &SwfSlice,
         _library: &crate::library::Library<'gc>,
         gc_context: gc_arena::MutationContext<'gc, '_>,
     ) -> Self {
         let mut actions = vec![];
         for action in &button.actions {
-            let action_data = crate::tag_utils::SwfSlice {
-                data: std::sync::Arc::new(action.action_data.clone()),
-                start: 0,
-                end: action.action_data.len(),
-            };
+            let action_data = source_movie.owned_subslice(action.action_data.clone());
             for condition in &action.conditions {
                 let button_action = ButtonAction {
                     action_data: action_data.clone(),

@@ -1658,7 +1658,7 @@ impl<'gc> Avm1<'gc> {
     ) -> Result<(), Error> {
         // TODO: Support `LoadVariablesFlag`, `LoadTargetFlag`
         // TODO: What happens if there's only one string?
-        let target = self.pop().into_string(self.current_swf_version());
+        let target = self.pop();
         let url = self.pop().into_string(self.current_swf_version());
 
         if let Some(fscommand) = fscommand::parse(&url) {
@@ -1667,19 +1667,8 @@ impl<'gc> Avm1<'gc> {
 
         if is_load_vars {
             let clip_target: Option<DisplayObject<'gc>> = if is_target_sprite {
-                let is_slashpath = Self::variable_name_is_slash_path(&target);
-
-                if is_slashpath {
-                    if let Some((node, _)) =
-                        Self::resolve_slash_path_variable(self.target_clip(), context.root, &target)
-                    {
-                        Some(node)
-                    } else {
-                        None
-                    }
-                } else {
-                    Self::resolve_dot_path_clip(self.target_clip(), context.root, &target)
-                }
+                let start = self.target_clip_or_root(context);
+                self.resolve_target_display_object(context, start, target)?
             } else {
                 Some(self.target_clip_or_root(context))
             };
@@ -1718,7 +1707,11 @@ impl<'gc> Avm1<'gc> {
                 None => None,
             };
 
-            context.navigator.navigate_to_url(url, Some(target), vars);
+            context.navigator.navigate_to_url(
+                url,
+                Some(target.into_string(self.current_swf_version())),
+                vars,
+            );
         }
 
         Ok(())
@@ -2637,7 +2630,7 @@ pub fn start_drag<'gc>(
 ) {
     let lock_center = args
         .get(0)
-        .map(|o| o.as_bool(context.swf_version))
+        .map(|o| o.as_bool(context.swf.version()))
         .unwrap_or(false);
 
     let offset = if lock_center {

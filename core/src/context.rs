@@ -8,7 +8,7 @@ use crate::backend::{audio::AudioBackend, navigator::NavigatorBackend, render::R
 use crate::library::Library;
 use crate::player::Player;
 use crate::prelude::*;
-use crate::tag_utils::SwfSlice;
+use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::transform::TransformStack;
 use core::fmt;
 use gc_arena::{Collect, MutationContext};
@@ -45,11 +45,8 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// variables.
     pub player_version: u8,
 
-    /// The version of the SWF file we are running.
-    pub swf_version: u8,
-
-    /// The raw data of the SWF file.
-    pub swf_data: &'a Arc<Vec<u8>>,
+    /// The root SWF file.
+    pub swf: &'a Arc<SwfMovie>,
 
     /// The audio backend, used by display objects and AVM to play audio.
     pub audio: &'a mut (dyn AudioBackend + 'a),
