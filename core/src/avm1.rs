@@ -8,12 +8,14 @@ use gc_arena::{GcCell, MutationContext};
 use rand::Rng;
 use std::collections::HashMap;
 use std::convert::TryInto;
+use std::sync::Arc;
 use url::form_urlencoded;
 
 use swf::avm1::read::Reader;
 use swf::avm1::types::{Action, Function};
 
-use crate::tag_utils::SwfSlice;
+use crate::display_object::DisplayObject;
+use crate::tag_utils::{SwfMovie, SwfSlice};
 
 #[cfg(test)]
 #[macro_use]
@@ -1665,14 +1667,14 @@ impl<'gc> Avm1<'gc> {
             return fscommand::handle(fscommand, self, context);
         }
 
-        if is_load_vars {
-            let clip_target: Option<DisplayObject<'gc>> = if is_target_sprite {
-                let start = self.target_clip_or_root(context);
-                self.resolve_target_display_object(context, start, target)?
-            } else {
-                Some(self.target_clip_or_root(context))
-            };
+        let clip_target: Option<DisplayObject<'gc>> = if is_target_sprite {
+            let start = self.target_clip_or_root(context);
+            self.resolve_target_display_object(context, start, target.clone())?
+        } else {
+            Some(self.target_clip_or_root(context))
+        };
 
+        if is_load_vars {
             if let Some(clip_target) = clip_target {
                 let target_obj = clip_target
                     .as_movie_clip()
@@ -1699,8 +1701,27 @@ impl<'gc> Avm1<'gc> {
 
             return Ok(());
         } else if is_target_sprite {
-            log::warn!("GetURL into target sprite is not yet implemented");
-            return Ok(()); //maybe error?
+            if let Some(clip_target) = clip_target {
+                let player = context.player.clone().unwrap().upgrade().unwrap();
+                let fetch = context.navigator.fetch(url);
+                let slot = self.forcibly_root_object(clip_target.object().as_object()?);
+
+                context.navigator.spawn_future(Box::pin(async move {
+                    let data = fetch.await.unwrap();
+                    let movie = Arc::new(SwfMovie::from_data(&data));
+
+                    player.lock().unwrap().update(|avm, uc| {
+                        let that = avm.unroot_object(slot);
+                        that.as_display_object()
+                            .unwrap()
+                            .as_movie_clip()
+                            .unwrap()
+                            .replace_with_movie(uc.gc_context, movie);
+                    })
+                }))
+            }
+
+            return Ok(());
         } else {
             let vars = match NavigationMethod::from_send_vars_method(swf_method) {
                 Some(method) => Some((method, self.locals_into_form_values(context))),

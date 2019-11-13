@@ -103,6 +103,21 @@ impl<'gc> MovieClip<'gc> {
         )
     }
 
+    /// Replace the current MovieClip with a completely new SwfMovie.
+    ///
+    /// Playback will start at position zero, any existing streamed audio will
+    /// be terminated, and so on. Children and AVM data will be kept across the
+    /// load boundary.
+    pub fn replace_with_movie(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        movie: Arc<SwfMovie>,
+    ) {
+        self.0
+            .write(gc_context)
+            .replace_with_movie(gc_context, movie)
+    }
+
     pub fn preload(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -406,6 +421,34 @@ unsafe impl<'gc> Collect for MovieClipData<'gc> {
 }
 
 impl<'gc> MovieClipData<'gc> {
+    /// Replace the current MovieClipData with a completely new SwfMovie.
+    ///
+    /// Playback will start at position zero, any existing streamed audio will
+    /// be terminated, and so on. Children and AVM data will be kept across the
+    /// load boundary.
+    pub fn replace_with_movie(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        movie: Arc<SwfMovie>,
+    ) {
+        let total_frames = movie.header().num_frames;
+
+        self.static_data = Gc::allocate(
+            gc_context,
+            MovieClipStatic {
+                id: self.static_data.id, //TODO: This is WRONG; This is VERRRRY WRONG!
+                swf: movie.into(),
+                total_frames,
+                audio_stream_info: None,
+                frame_labels: HashMap::new(),
+            },
+        );
+        self.tag_stream_pos = 0;
+        self.flags = EnumSet::empty();
+        self.current_frame = 0;
+        self.audio_stream = None;
+    }
+
     fn id(&self) -> CharacterId {
         self.static_data.id
     }
