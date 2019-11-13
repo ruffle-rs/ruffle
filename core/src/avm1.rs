@@ -14,7 +14,7 @@ use url::form_urlencoded;
 use swf::avm1::read::Reader;
 use swf::avm1::types::{Action, Function};
 
-use crate::display_object::DisplayObject;
+use crate::display_object::{DisplayObject, MorphShape};
 use crate::tag_utils::{SwfMovie, SwfSlice};
 
 #[cfg(test)]
@@ -1642,12 +1642,22 @@ impl<'gc> Avm1<'gc> {
                 let movie = Arc::new(SwfMovie::from_data(&data));
 
                 player.lock().unwrap().update(|avm, uc| {
-                    let that = avm.unroot_object(slot);
-                    that.as_display_object()
-                        .unwrap()
-                        .as_movie_clip()
-                        .unwrap()
-                        .replace_with_movie(uc.gc_context, movie);
+                    let that = avm.unroot_object(slot).as_display_object().unwrap();
+                    let mut mc = that.as_movie_clip().unwrap();
+
+                    mc.replace_with_movie(uc.gc_context, movie);
+
+                    let mut morph_shapes = fnv::FnvHashMap::default();
+                    mc.preload(uc, &mut morph_shapes);
+
+                    // Finalize morph shapes.
+                    for (id, static_data) in morph_shapes {
+                        let morph_shape = MorphShape::new(uc.gc_context, static_data);
+                        uc.library.register_character(
+                            id,
+                            crate::character::Character::MorphShape(morph_shape),
+                        );
+                    }
                 })
             }));
 
@@ -1725,12 +1735,22 @@ impl<'gc> Avm1<'gc> {
                     let movie = Arc::new(SwfMovie::from_data(&data));
 
                     player.lock().unwrap().update(|avm, uc| {
-                        let that = avm.unroot_object(slot);
-                        that.as_display_object()
-                            .unwrap()
-                            .as_movie_clip()
-                            .unwrap()
-                            .replace_with_movie(uc.gc_context, movie);
+                        let that = avm.unroot_object(slot).as_display_object().unwrap();
+                        let mut mc = that.as_movie_clip().unwrap();
+
+                        mc.replace_with_movie(uc.gc_context, movie);
+
+                        let mut morph_shapes = fnv::FnvHashMap::default();
+                        mc.preload(uc, &mut morph_shapes);
+
+                        // Finalize morph shapes.
+                        for (id, static_data) in morph_shapes {
+                            let morph_shape = MorphShape::new(uc.gc_context, static_data);
+                            uc.library.register_character(
+                                id,
+                                crate::character::Character::MorphShape(morph_shape),
+                            );
+                        }
                     })
                 }))
             }
