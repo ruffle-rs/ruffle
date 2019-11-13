@@ -1627,16 +1627,30 @@ impl<'gc> Avm1<'gc> {
 
     fn action_get_url(
         &mut self,
-        context: &mut UpdateContext,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         url: &str,
         target: &str,
     ) -> Result<(), Error> {
-        //TODO: support `_level0` thru `_level9`
-        if target.starts_with("_level") {
-            log::warn!(
-                "Remote SWF loads into target {} not yet implemented",
-                target
-            );
+        if target.starts_with("_level") && target.len() > 6 {
+            let level_id = target[6..].parse::<usize>().unwrap();
+            let player = context.player.clone().unwrap().upgrade().unwrap();
+            let fetch = context.navigator.fetch(url.to_string());
+            let slot = self.forcibly_root_object(context.layers[level_id].object().as_object()?);
+
+            context.navigator.spawn_future(Box::pin(async move {
+                let data = fetch.await.unwrap();
+                let movie = Arc::new(SwfMovie::from_data(&data));
+
+                player.lock().unwrap().update(|avm, uc| {
+                    let that = avm.unroot_object(slot);
+                    that.as_display_object()
+                        .unwrap()
+                        .as_movie_clip()
+                        .unwrap()
+                        .replace_with_movie(uc.gc_context, movie);
+                })
+            }));
+
             return Ok(());
         }
 
