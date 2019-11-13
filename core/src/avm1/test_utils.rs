@@ -25,12 +25,13 @@ where
         let swf = Arc::new(SwfMovie::empty(swf_version));
         let mut root: DisplayObject<'_> = MovieClip::new(swf_version, gc_context).into();
         root.post_instantiation(gc_context, root, avm.prototypes().movie_clip);
-
+        let mut layers = [root; 9];
         let mut context = UpdateContext {
             gc_context,
             global_time: 0,
             player_version: 32,
             swf: &swf,
+            layers: &mut layers,
             root,
             rng: &mut SmallRng::from_seed([0u8; 16]),
             audio: &mut NullAudioBackend::new(),

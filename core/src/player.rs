@@ -32,7 +32,7 @@ struct GcRoot<'gc>(GcCell<'gc, GcRootData<'gc>>);
 #[collect(no_drop)]
 struct GcRootData<'gc> {
     library: Library<'gc>,
-    root: DisplayObject<'gc>,
+    layers: [DisplayObject<'gc>; 9],
     mouse_hovered_object: Option<DisplayObject<'gc>>, // TODO: Remove GcCell wrapped inside GcCell.
 
     /// The object being dragged via a `startDrag` action.
@@ -48,14 +48,14 @@ impl<'gc> GcRootData<'gc> {
     fn update_context_params(
         &mut self,
     ) -> (
-        DisplayObject<'gc>,
+        &mut [DisplayObject<'gc>; 9],
         &mut Library<'gc>,
         &mut ActionQueue<'gc>,
         &mut Avm1<'gc>,
         &mut Option<DragObject<'gc>>,
     ) {
         (
-            self.root,
+            &mut self.layers,
             &mut self.library,
             &mut self.action_queue,
             &mut self.avm,
@@ -180,7 +180,17 @@ impl Player {
                     gc_context,
                     GcRootData {
                         library,
-                        root: MovieClip::from_movie(gc_context, movie.clone()).into(),
+                        layers: [
+                            MovieClip::from_movie(gc_context, movie.clone()).into(),
+                            MovieClip::new(NEWEST_PLAYER_VERSION, gc_context).into(),
+                            MovieClip::new(NEWEST_PLAYER_VERSION, gc_context).into(),
+                            MovieClip::new(NEWEST_PLAYER_VERSION, gc_context).into(),
+                            MovieClip::new(NEWEST_PLAYER_VERSION, gc_context).into(),
+                            MovieClip::new(NEWEST_PLAYER_VERSION, gc_context).into(),
+                            MovieClip::new(NEWEST_PLAYER_VERSION, gc_context).into(),
+                            MovieClip::new(NEWEST_PLAYER_VERSION, gc_context).into(),
+                            MovieClip::new(NEWEST_PLAYER_VERSION, gc_context).into(),
+                        ],
                         mouse_hovered_object: None,
                         drag_object: None,
                         avm: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
@@ -210,9 +220,13 @@ impl Player {
         };
 
         player.gc_arena.mutate(|gc_context, gc_root| {
-            let root_data = gc_root.0.write(gc_context);
-            let mut root = root_data.root;
-            root.post_instantiation(gc_context, root, root_data.avm.prototypes().movie_clip);
+            let mut root_data = gc_root.0.write(gc_context);
+            let mc_proto = root_data.avm.prototypes().movie_clip;
+
+            for (i, layer) in root_data.layers.iter_mut().enumerate() {
+                layer.post_instantiation(gc_context, *layer, mc_proto);
+                layer.set_name(gc_context, &format!("_level{}", i))
+            }
         });
 
         player.build_matrices();
@@ -372,6 +386,7 @@ impl Player {
                 if let Some(mouse_event_name) = mouse_event_name {
                     context.action_queue.queue_actions(
                         root,
+                        root,
                         ActionType::NotifyListeners {
                             listener: SystemListener::Mouse,
                             method: mouse_event_name,
@@ -450,11 +465,20 @@ impl Player {
             return false;
         }
         let mouse_pos = self.mouse_pos;
-        // Check hovered object.
+
         self.mutate_with_update_context(|avm, context| {
-            let root = context.root;
-            let new_hovered = root.mouse_pick(root, (mouse_pos.0, mouse_pos.1));
+            // Check hovered object.
+            let mut new_hovered = None;
+            for layer in context.layers.iter().rev() {
+                if new_hovered.is_none() {
+                    new_hovered = layer.mouse_pick(*layer, (mouse_pos.0, mouse_pos.1));
+                } else {
+                    break;
+                }
+            }
+
             let cur_hovered = context.mouse_hovered_object;
+
             if cur_hovered.map(|d| d.as_ptr()) != new_hovered.map(|d| d.as_ptr()) {
                 // RollOut of previous node.
                 if let Some(node) = cur_hovered {
@@ -480,6 +504,10 @@ impl Player {
         })
     }
 
+    /// Preload the first movie in the player.
+    ///
+    /// This should only be called once. Further movie loads should preload the
+    /// specific `MovieClip` referenced.
     fn preload(&mut self) {
         self.mutate_with_update_context(|_avm, context| {
             let mut morph_shapes = fnv::FnvHashMap::default();
@@ -499,18 +527,14 @@ impl Player {
     }
 
     pub fn run_frame(&mut self) {
-        self.mutate_with_update_context(|avm, context| {
-            let mut root = context.root;
-            root.run_frame(context);
-            Self::run_actions(avm, context);
-        });
+        self.update(|_avm, update_context| {
+            // TODO: In what order are layers run?
+            for layer in update_context.layers.clone().iter_mut() {
+                update_context.root = *layer;
 
-        // Update mouse state (check for new hovered button, etc.)
-        self.update_drag();
-        self.update_roll_over();
-
-        // GC
-        self.gc_arena.collect_debt();
+                layer.run_frame(update_context);
+            }
+        })
     }
 
     pub fn render(&mut self) {
@@ -541,7 +565,10 @@ impl Player {
                 view_bounds,
                 clip_depth_stack: vec![],
             };
-            root_data.root.render(&mut render_context);
+
+            for layer in &root_data.layers {
+                layer.render(&mut render_context);
+            }
         });
         transform_stack.pop();
 
@@ -588,6 +615,9 @@ impl Player {
             if !actions.is_unload && actions.clip.removed() {
                 continue;
             }
+
+            context.root = actions.root;
+
             match actions.action_type {
                 // DoAction/clip event code
                 ActionType::Normal { bytecode } => {
@@ -607,7 +637,6 @@ impl Player {
                         context,
                     );
                 }
-
                 // Event handler method call (e.g. onEnterFrame)
                 ActionType::Method { name } => {
                     avm.insert_stack_frame_for_avm_function(
@@ -719,7 +748,8 @@ impl Player {
         self.gc_arena.mutate(|gc_context, gc_root| {
             let mut root_data = gc_root.0.write(gc_context);
             let mouse_hovered_object = root_data.mouse_hovered_object;
-            let (root, library, action_queue, avm, drag_object) = root_data.update_context_params();
+            let (layers, library, action_queue, avm, drag_object) =
+                root_data.update_context_params();
             let mut update_context = UpdateContext {
                 player_version,
                 global_time,
@@ -733,12 +763,13 @@ impl Player {
                 input,
                 action_queue,
                 gc_context,
-                root,
-                system_prototypes: avm.prototypes().clone(),
+                root: layers[0],
+                layers,
                 mouse_hovered_object,
                 mouse_position,
                 drag_object,
                 stage_size: (stage_width, stage_height),
+                system_prototypes: avm.prototypes().clone(),
                 player,
             };
 
@@ -788,6 +819,7 @@ impl Player {
         });
 
         // Update mouse state (check for new hovered button, etc.)
+        self.update_drag();
         self.update_roll_over();
 
         // GC

@@ -63,8 +63,11 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// The RNG, used by the AVM `RandomNumber` opcode,  `Math.random(),` and `random()`.
     pub rng: &'a mut SmallRng,
 
-    /// The root of the current timeline.
-    /// This will generally be `_level0`, except for loadMovie/loadMovieNum.
+    /// All nine layers of the current player.
+    pub layers: &'a mut [DisplayObject<'gc>; 9],
+
+    /// The root of the current timeline being updated.
+    /// This will always be one of the layers in `layers`.
     pub root: DisplayObject<'gc>,
 
     /// The current set of system-specified prototypes to use when constructing
@@ -94,6 +97,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 pub struct QueuedActions<'gc> {
     /// The movie clip this ActionScript is running on.
     pub clip: DisplayObject<'gc>,
+
+    /// The root timeline this action was queued in.
+    pub root: DisplayObject<'gc>,
 
     /// The type of action this is, along with the corresponding bytecode/method data.
     pub action_type: ActionType<'gc>,
@@ -131,11 +137,13 @@ impl<'gc> ActionQueue<'gc> {
     pub fn queue_actions(
         &mut self,
         clip: DisplayObject<'gc>,
+        root: DisplayObject<'gc>,
         action_type: ActionType<'gc>,
         is_unload: bool,
     ) {
         self.queue.push_back(QueuedActions {
             clip,
+            root,
             action_type,
             is_unload,
         })

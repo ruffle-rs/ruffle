@@ -357,6 +357,7 @@ impl<'gc> ButtonData<'gc> {
                     handled = ButtonEventResult::Handled;
                     context.action_queue.queue_actions(
                         parent,
+                        context.root,
                         ActionType::Normal {
                             bytecode: action.action_data.clone(),
                         },
