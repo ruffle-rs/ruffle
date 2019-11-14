@@ -216,13 +216,14 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         func: F,
-    ) -> Option<R>
+    ) -> Result<R, Error>
     where
-        F: FnOnce(&mut Self, &mut Reader<'_>, &mut UpdateContext<'_, 'gc, '_>) -> R,
+        F: FnOnce(&mut Self, &mut Reader<'_>, &mut UpdateContext<'_, 'gc, '_>) -> Result<R, Error>,
     {
-        let (frame_cell, swf_version, data, pc) = self.stack_frames.last().map(|frame| {
+        let (frame_cell, swf_version, data, pc) = {
+            let frame = self.stack_frames.last().ok_or("No stack frame to read!")?;
             let mut frame_ref = frame.write(context.gc_context);
-            frame_ref.lock_or_panic();
+            frame_ref.lock()?;
 
             (
                 *frame,
@@ -230,7 +231,7 @@ impl<'gc> Avm1<'gc> {
                 frame_ref.data(),
                 frame_ref.pc(),
             )
-        })?;
+        };
 
         let mut read = Reader::new(data.as_ref(), swf_version);
         read.seek(pc.try_into().unwrap());
@@ -241,7 +242,7 @@ impl<'gc> Avm1<'gc> {
         frame_ref.unlock_execution();
         frame_ref.set_pc(read.pos());
 
-        Some(r)
+        r
     }
 
     /// Destroy the current stack frame (if there is one).
@@ -281,8 +282,7 @@ impl<'gc> Avm1<'gc> {
         while !self.stack_frames.is_empty() {
             self.with_current_reader_mut(context, |this, r, context| {
                 this.do_next_action(context, r)
-            })
-            .unwrap()?;
+            })?;
         }
 
         Ok(())
@@ -310,8 +310,7 @@ impl<'gc> Avm1<'gc> {
             {
                 self.with_current_reader_mut(context, |this, r, context| {
                     this.do_next_action(context, r)
-                })
-                .unwrap()?;
+                })?;
             }
 
             Ok(())

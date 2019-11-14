@@ -340,14 +340,15 @@ impl<'gc> Activation<'gc> {
 
     /// Attempts to lock the activation frame for execution.
     ///
-    /// If this frame is already executing, that is an error condition that we
-    /// panic out of.
-    pub fn lock_or_panic(&mut self) {
+    /// If this frame is already executing, that is an error condition.
+    pub fn lock(&mut self) -> Result<(), Error> {
         if self.is_executing {
-            panic!("Attempted to execute the same frame twice");
+            return Err("Attempted to execute the same frame twice".into());
         }
 
         self.is_executing = true;
+
+        Ok(())
     }
 
     /// Unlock the activation object. This allows future execution to run on it
