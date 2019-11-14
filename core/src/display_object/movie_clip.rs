@@ -301,10 +301,6 @@ impl<'gc> MovieClip<'gc> {
 
         actions.into_iter()
     }
-
-    pub fn movie(self) -> Arc<SwfMovie> {
-        self.0.read().movie()
-    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
@@ -312,6 +308,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn id(&self) -> CharacterId {
         self.0.read().id()
+    }
+
+    fn movie(&self) -> Option<Arc<SwfMovie>> {
+        Some(self.0.read().movie())
     }
 
     fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
@@ -595,10 +595,10 @@ impl<'gc> MovieClipData<'gc> {
         place_object: &swf::PlaceObject,
         copy_previous_properties: bool,
     ) -> Option<DisplayObject<'gc>> {
-        if let Ok(mut child) =
-            context
-                .library
-                .instantiate_by_id(id, context.gc_context, &context.system_prototypes)
+        if let Ok(mut child) = context
+            .library
+            .library_for_movie_mut(self.movie())
+            .instantiate_by_id(id, context.gc_context, &context.system_prototypes)
         {
             // Remove previous child from children list,
             // and add new childonto front of the list.
@@ -1095,6 +1095,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(define_bits_lossless.id, Character::Bitmap(bitmap));
         Ok(())
     }
@@ -1125,6 +1126,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let graphic = Graphic::from_swf_tag(context, &swf_shape);
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(swf_shape.id, Character::Graphic(graphic));
         Ok(())
     }
@@ -1232,10 +1234,14 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .get_mut()
             .take(data_len as u64)
             .read_to_end(&mut jpeg_data)?;
-        let bitmap_info =
+        let bitmap_info = context.renderer.register_bitmap_jpeg(
+            id,
+            &jpeg_data,
             context
-                .renderer
-                .register_bitmap_jpeg(id, &jpeg_data, context.library.jpeg_tables());
+                .library
+                .library_for_movie_mut(self.movie())
+                .jpeg_tables(),
+        );
         let bitmap = crate::display_object::Bitmap::new(
             context,
             id,
@@ -1245,6 +1251,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
@@ -1274,6 +1281,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
@@ -1311,6 +1319,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
@@ -1349,6 +1358,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
@@ -1368,6 +1378,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(swf_button.id, Character::Button(button));
         Ok(())
     }
@@ -1387,6 +1398,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(swf_button.id, Character::Button(button));
         Ok(())
     }
@@ -1399,7 +1411,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
         tag_len: usize,
     ) -> DecodeResult {
         let button_colors = reader.read_define_button_cxform(tag_len)?;
-        if let Some(button) = context.library.get_character_by_id(button_colors.id) {
+        if let Some(button) = context
+            .library
+            .library_for_movie_mut(self.movie())
+            .get_character_by_id(button_colors.id)
+        {
             if let Character::Button(button) = button {
                 button.set_colors(context.gc_context, &button_colors.color_transforms[..]);
             } else {
@@ -1424,7 +1440,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
         let button_sounds = reader.read_define_button_sound()?;
-        if let Some(button) = context.library.get_character_by_id(button_sounds.id) {
+        if let Some(button) = context
+            .library
+            .library_for_movie_mut(self.movie())
+            .get_character_by_id(button_sounds.id)
+        {
             if let Character::Button(button) = button {
                 button.set_sounds(context.gc_context, button_sounds);
             } else {
@@ -1450,9 +1470,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
         let swf_edit_text = reader.read_define_edit_text()?;
-        let edit_text = EditText::from_swf_tag(context, swf_edit_text);
+        let edit_text = EditText::from_swf_tag(context, self.movie(), swf_edit_text);
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(edit_text.id(), Character::EditText(edit_text));
         Ok(())
     }
@@ -1491,6 +1512,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let font_object = Font::from_swf_tag(context.gc_context, context.renderer, &font).unwrap();
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(font.id, Character::Font(font_object));
         Ok(())
     }
@@ -1505,6 +1527,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let font_object = Font::from_swf_tag(context.gc_context, context.renderer, &font).unwrap();
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(font.id, Character::Font(font_object));
         Ok(())
     }
@@ -1519,6 +1542,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let font_object = Font::from_swf_tag(context.gc_context, context.renderer, &font).unwrap();
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(font.id, Character::Font(font_object));
 
         Ok(())
@@ -1541,6 +1565,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let handle = context.audio.register_sound(&sound).unwrap();
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(sound.id, Character::Sound(handle));
         Ok(())
     }
@@ -1573,6 +1598,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
 
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(id, Character::MovieClip(movie_clip));
 
         Ok(())
@@ -1586,9 +1612,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
         version: u8,
     ) -> DecodeResult {
         let text = reader.read_define_text(version)?;
-        let text_object = Text::from_swf_tag(context, &text);
+        let text_object = Text::from_swf_tag(context, self.movie(), &text);
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(text.id, Character::Text(text_object));
         Ok(())
     }
@@ -1601,7 +1628,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
     ) -> DecodeResult {
         let exports = reader.read_export_assets()?;
         for export in exports {
-            context.library.register_export(export.id, &export.name);
+            context
+                .library
+                .library_for_movie_mut(self.movie())
+                .register_export(export.id, &export.name);
         }
         Ok(())
     }
@@ -1642,7 +1672,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .get_mut()
             .take(tag_len as u64)
             .read_to_end(&mut jpeg_data)?;
-        context.library.set_jpeg_tables(jpeg_data);
+        context
+            .library
+            .library_for_movie_mut(self.movie())
+            .set_jpeg_tables(jpeg_data);
         Ok(())
     }
 
@@ -1852,7 +1885,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
         let start_sound = reader.read_start_sound_1()?;
-        if let Some(handle) = context.library.get_sound(start_sound.id) {
+        if let Some(handle) = context
+            .library
+            .library_for_movie_mut(self.movie())
+            .get_sound(start_sound.id)
+        {
             use swf::SoundEvent;
             // The sound event type is controlled by the "Sync" setting in the Flash IDE.
             match start_sound.sound_info.event {

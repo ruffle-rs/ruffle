@@ -174,8 +174,11 @@ impl Player {
                         }
                     };
 
-                let mut library = Library::new();
-                library.set_device_font(device_font);
+                let mut library = Library::default();
+                library
+                    .library_for_movie_mut(movie.clone())
+                    .set_device_font(device_font);
+
                 GcRoot(GcCell::allocate(
                     gc_context,
                     GcRootData {
@@ -521,6 +524,7 @@ impl Player {
                 let morph_shape = MorphShape::new(context.gc_context, static_data);
                 context
                     .library
+                    .library_for_movie_mut(root.as_movie_clip().unwrap().movie().unwrap())
                     .register_character(id, crate::character::Character::MorphShape(morph_shape));
             }
         });

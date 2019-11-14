@@ -1,8 +1,10 @@
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
+use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use gc_arena::{Collect, GcCell};
+use std::sync::Arc;
 
 #[derive(Clone, Debug, Collect, Copy)]
 #[collect(no_drop)]
@@ -15,7 +17,11 @@ pub struct TextData<'gc> {
 }
 
 impl<'gc> Text<'gc> {
-    pub fn from_swf_tag(context: &mut UpdateContext<'_, 'gc, '_>, tag: &swf::Text) -> Self {
+    pub fn from_swf_tag(
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        swf: Arc<SwfMovie>,
+        tag: &swf::Text,
+    ) -> Self {
         Text(GcCell::allocate(
             context.gc_context,
             TextData {
@@ -23,6 +29,7 @@ impl<'gc> Text<'gc> {
                 static_data: gc_arena::Gc::allocate(
                     context.gc_context,
                     TextStatic {
+                        swf,
                         id: tag.id,
                         text_transform: tag.matrix.clone().into(),
                         text_blocks: tag.records.clone(),
@@ -38,6 +45,10 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
 
     fn id(&self) -> CharacterId {
         self.0.read().static_data.id
+    }
+
+    fn movie(&self) -> Option<Arc<SwfMovie>> {
+        Some(self.0.read().static_data.swf.clone())
     }
 
     fn run_frame(&mut self, _context: &mut UpdateContext) {
@@ -71,7 +82,12 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             color = block.color.as_ref().unwrap_or(&color).clone();
             font_id = block.font_id.unwrap_or(font_id);
             height = block.height.map(|h| h.get() as f32).unwrap_or(height);
-            if let Some(font) = context.library.get_font(font_id) {
+            if let Some(font) = context
+                .library
+                .library_for_movie(self.movie().unwrap())
+                .unwrap()
+                .get_font(font_id)
+            {
                 let scale = height / font.scale();
                 transform.matrix.a = scale;
                 transform.matrix.d = scale;
@@ -108,6 +124,7 @@ unsafe impl<'gc> gc_arena::Collect for TextData<'gc> {
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 struct TextStatic {
+    swf: Arc<SwfMovie>,
     id: CharacterId,
     text_transform: Matrix,
     text_blocks: Vec<swf::TextRecord>,

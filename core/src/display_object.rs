@@ -2,12 +2,14 @@ use crate::avm1::{Object, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::player::NEWEST_PLAYER_VERSION;
 use crate::prelude::*;
+use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
+use std::sync::Arc;
 
 mod bitmap;
 mod button;
@@ -344,6 +346,10 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.parent
             .map(|p| p.swf_version())
             .unwrap_or(NEWEST_PLAYER_VERSION)
+    }
+
+    fn movie(&self) -> Option<Arc<SwfMovie>> {
+        self.parent.and_then(|p| p.movie())
     }
 }
 
@@ -725,7 +731,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
                         .clip_actions
                         .iter()
                         .cloned()
-                        .map(|a| ClipAction::from_action_and_movie(a, clip.movie()))
+                        .map(|a| ClipAction::from_action_and_movie(a, clip.movie().unwrap()))
                         .collect(),
                 );
             }
@@ -782,6 +788,11 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
         self.parent()
             .map(|p| p.swf_version())
             .unwrap_or(NEWEST_PLAYER_VERSION)
+    }
+
+    /// Return the SWF that defines this display object.
+    fn movie(&self) -> Option<Arc<SwfMovie>> {
+        self.parent().and_then(|p| p.movie())
     }
 
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc>;

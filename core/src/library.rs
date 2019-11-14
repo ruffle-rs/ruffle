@@ -5,20 +5,24 @@ use crate::character::Character;
 use crate::display_object::TDisplayObject;
 use crate::font::Font;
 use crate::prelude::*;
+use crate::tag_utils::SwfMovie;
 use gc_arena::MutationContext;
 use std::collections::HashMap;
+use std::sync::{Arc, Weak};
 use swf::CharacterId;
+use weak_table::PtrWeakKeyHashMap;
 
-pub struct Library<'gc> {
+/// Symbol library for a single given SWF.
+pub struct MovieLibrary<'gc> {
     characters: HashMap<CharacterId, Character<'gc>>,
     export_characters: HashMap<String, Character<'gc>>,
     jpeg_tables: Option<Vec<u8>>,
     device_font: Option<Font<'gc>>,
 }
 
-impl<'gc> Library<'gc> {
+impl<'gc> MovieLibrary<'gc> {
     pub fn new() -> Self {
-        Library {
+        MovieLibrary {
             characters: HashMap::new(),
             export_characters: HashMap::new(),
             jpeg_tables: None,
@@ -181,7 +185,7 @@ impl<'gc> Library<'gc> {
     }
 }
 
-unsafe impl<'gc> gc_arena::Collect for Library<'gc> {
+unsafe impl<'gc> gc_arena::Collect for MovieLibrary<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
         for character in self.characters.values() {
@@ -191,8 +195,46 @@ unsafe impl<'gc> gc_arena::Collect for Library<'gc> {
     }
 }
 
-impl Default for Library<'_> {
+impl Default for MovieLibrary<'_> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// Symbol library for multiple movies.
+pub struct Library<'gc> {
+    /// All the movie libraries.
+    movie_libraries: PtrWeakKeyHashMap<Weak<SwfMovie>, MovieLibrary<'gc>>,
+}
+
+unsafe impl<'gc> gc_arena::Collect for Library<'gc> {
+    #[inline]
+    fn trace(&self, cc: gc_arena::CollectionContext) {
+        for (_, val) in self.movie_libraries.iter() {
+            val.trace(cc);
+        }
+    }
+}
+
+impl<'gc> Library<'gc> {
+    pub fn library_for_movie(&self, movie: Arc<SwfMovie>) -> Option<&MovieLibrary<'gc>> {
+        self.movie_libraries.get(&movie)
+    }
+
+    pub fn library_for_movie_mut(&mut self, movie: Arc<SwfMovie>) -> &mut MovieLibrary<'gc> {
+        if !self.movie_libraries.contains_key(&movie) {
+            self.movie_libraries
+                .insert(movie.clone(), MovieLibrary::default());
+        };
+
+        self.movie_libraries.get_mut(&movie).unwrap()
+    }
+}
+
+impl<'gc> Default for Library<'gc> {
+    fn default() -> Self {
+        Self {
+            movie_libraries: PtrWeakKeyHashMap::new(),
+        }
     }
 }

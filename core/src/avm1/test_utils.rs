@@ -43,7 +43,7 @@ where
                 b: 0,
                 a: 0,
             },
-            library: &mut Library::new(),
+            library: &mut Library::default(),
             navigator: &mut NullNavigatorBackend::new(),
             renderer: &mut NullRenderer::new(),
             system_prototypes: avm.prototypes().clone(),

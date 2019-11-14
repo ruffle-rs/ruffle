@@ -246,11 +246,15 @@ fn attach_movie<'gc>(
     if depth < 0 || depth > AVM_MAX_DEPTH {
         return Ok(Value::Undefined.into());
     }
-    if let Ok(mut new_clip) = context.library.instantiate_by_export_name(
-        &export_name,
-        context.gc_context,
-        &avm.prototypes,
-    ) {
+
+    if let Ok(mut new_clip) = context
+        .library
+        .library_for_movie(movie_clip.movie().unwrap())
+        .ok_or_else(|| "Movie is missing!".into())
+        .and_then(|l| {
+            l.instantiate_by_export_name(&export_name, context.gc_context, &avm.prototypes)
+        })
+    {
         // Set name and attach to parent.
         new_clip.set_name(context.gc_context, &new_instance_name);
         movie_clip.add_child_from_avm(context, new_clip, depth);
@@ -310,6 +314,7 @@ fn create_text_field<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
+    let movie = avm.base_clip().movie().unwrap();
     let instance_name = args
         .get(0)
         .cloned()
@@ -341,7 +346,8 @@ fn create_text_field<'gc>(
         .unwrap_or(Value::Undefined)
         .as_number(avm, context)?;
 
-    let mut text_field: DisplayObject<'gc> = EditText::new(context, x, y, width, height).into();
+    let mut text_field: DisplayObject<'gc> =
+        EditText::new(context, movie, x, y, width, height).into();
     text_field.post_instantiation(context.gc_context, text_field, avm.prototypes().text_field);
     text_field.set_name(context.gc_context, &instance_name);
     movie_clip.add_child_from_avm(context, text_field, depth as Depth);
@@ -385,10 +391,12 @@ pub fn duplicate_movie_clip<'gc>(
     if depth < 0 || depth > AVM_MAX_DEPTH {
         return Ok(Value::Undefined.into());
     }
-    if let Ok(mut new_clip) =
-        context
-            .library
-            .instantiate_by_id(movie_clip.id(), context.gc_context, &avm.prototypes)
+
+    if let Ok(mut new_clip) = context
+        .library
+        .library_for_movie(movie_clip.movie().unwrap())
+        .ok_or_else(|| "Movie is missing!".into())
+        .and_then(|l| l.instantiate_by_id(movie_clip.id(), context.gc_context, &avm.prototypes))
     {
         // Set name and attach to parent.
         new_clip.set_name(context.gc_context, &new_instance_name);

@@ -1645,7 +1645,7 @@ impl<'gc> Avm1<'gc> {
                     let that = avm.unroot_object(slot).as_display_object().unwrap();
                     let mut mc = that.as_movie_clip().unwrap();
 
-                    mc.replace_with_movie(uc.gc_context, movie);
+                    mc.replace_with_movie(uc.gc_context, movie.clone());
 
                     let mut morph_shapes = fnv::FnvHashMap::default();
                     mc.preload(uc, &mut morph_shapes);
@@ -1653,10 +1653,12 @@ impl<'gc> Avm1<'gc> {
                     // Finalize morph shapes.
                     for (id, static_data) in morph_shapes {
                         let morph_shape = MorphShape::new(uc.gc_context, static_data);
-                        uc.library.register_character(
-                            id,
-                            crate::character::Character::MorphShape(morph_shape),
-                        );
+                        uc.library
+                            .library_for_movie_mut(movie.clone())
+                            .register_character(
+                                id,
+                                crate::character::Character::MorphShape(morph_shape),
+                            );
                     }
                 })
             }));
@@ -1738,7 +1740,7 @@ impl<'gc> Avm1<'gc> {
                         let that = avm.unroot_object(slot).as_display_object().unwrap();
                         let mut mc = that.as_movie_clip().unwrap();
 
-                        mc.replace_with_movie(uc.gc_context, movie);
+                        mc.replace_with_movie(uc.gc_context, movie.clone());
 
                         let mut morph_shapes = fnv::FnvHashMap::default();
                         mc.preload(uc, &mut morph_shapes);
@@ -1746,10 +1748,12 @@ impl<'gc> Avm1<'gc> {
                         // Finalize morph shapes.
                         for (id, static_data) in morph_shapes {
                             let morph_shape = MorphShape::new(uc.gc_context, static_data);
-                            uc.library.register_character(
-                                id,
-                                crate::character::Character::MorphShape(morph_shape),
-                            );
+                            uc.library
+                                .library_for_movie_mut(movie.clone())
+                                .register_character(
+                                    id,
+                                    crate::character::Character::MorphShape(morph_shape),
+                                );
                         }
                     })
                 }))
