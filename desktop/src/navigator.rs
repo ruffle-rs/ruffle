@@ -67,7 +67,10 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         Box::pin(async { Err("Fetch not implemented on desktop!".into()) })
     }
 
-    fn spawn_future(&mut self, _future: Pin<Box<dyn Future<Output = ()> + 'static>>) {
+    fn spawn_future(
+        &mut self,
+        _future: Pin<Box<dyn Future<Output = Result<(), Error>> + 'static>>,
+    ) {
         unimplemented!();
     }
 }

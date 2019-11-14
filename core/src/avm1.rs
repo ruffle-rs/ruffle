@@ -1638,7 +1638,7 @@ impl<'gc> Avm1<'gc> {
             let slot = self.forcibly_root_object(context.layers[level_id].object().as_object()?);
 
             context.navigator.spawn_future(Box::pin(async move {
-                let data = fetch.await.unwrap();
+                let data = fetch.await?;
                 let movie = Arc::new(SwfMovie::from_data(&data));
 
                 player.lock().unwrap().update(|avm, uc| {
@@ -1660,6 +1660,8 @@ impl<'gc> Avm1<'gc> {
                                 crate::character::Character::MorphShape(morph_shape),
                             );
                     }
+
+                    Ok(())
                 })
             }));
 
@@ -1713,14 +1715,16 @@ impl<'gc> Avm1<'gc> {
                 let slot = self.forcibly_root_object(target_obj);
 
                 context.navigator.spawn_future(Box::pin(async move {
-                    let data = fetch.await.unwrap();
+                    let data = fetch.await?;
 
                     player.lock().unwrap().update(|avm, uc| {
                         let that = avm.unroot_object(slot);
 
                         for (k, v) in form_urlencoded::parse(&data) {
-                            that.set(&k, v.into_owned().into(), avm, uc);
+                            that.set(&k, v.into_owned().into(), avm, uc)?;
                         }
+
+                        Ok(())
                     })
                 }));
             }
@@ -1733,7 +1737,7 @@ impl<'gc> Avm1<'gc> {
                 let slot = self.forcibly_root_object(clip_target.object().as_object()?);
 
                 context.navigator.spawn_future(Box::pin(async move {
-                    let data = fetch.await.unwrap();
+                    let data = fetch.await?;
                     let movie = Arc::new(SwfMovie::from_data(&data));
 
                     player.lock().unwrap().update(|avm, uc| {
@@ -1755,6 +1759,8 @@ impl<'gc> Avm1<'gc> {
                                     crate::character::Character::MorphShape(morph_shape),
                                 );
                         }
+
+                        Ok(())
                     })
                 }))
             }

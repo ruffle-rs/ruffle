@@ -99,7 +99,11 @@ impl NavigatorBackend for WebNavigatorBackend {
         })
     }
 
-    fn spawn_future(&mut self, future: Pin<Box<dyn Future<Output = ()> + 'static>>) {
-        spawn_local(future)
+    fn spawn_future(&mut self, future: Pin<Box<dyn Future<Output = Result<(), Error>> + 'static>>) {
+        spawn_local(async move {
+            if let Err(e) = future.await {
+                log::error!("Asynchronous error occured: {}", e);
+            }
+        })
     }
 }

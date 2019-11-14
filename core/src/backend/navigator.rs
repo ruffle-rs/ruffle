@@ -69,7 +69,7 @@ pub trait NavigatorBackend {
     ///
     /// TODO: For some reason, `wasm_bindgen_futures` wants unpinnable futures.
     /// This seems highly limiting.
-    fn spawn_future(&mut self, future: Pin<Box<dyn Future<Output = ()> + 'static>>);
+    fn spawn_future(&mut self, future: Pin<Box<dyn Future<Output = Result<(), Error>> + 'static>>);
 }
 
 /// A null implementation for platforms that do not live in a web browser.
@@ -100,5 +100,9 @@ impl NavigatorBackend for NullNavigatorBackend {
         Box::pin(async { Err("Fetch IO not implemented".into()) })
     }
 
-    fn spawn_future(&mut self, _future: Pin<Box<dyn Future<Output = ()> + 'static>>) {}
+    fn spawn_future(
+        &mut self,
+        _future: Pin<Box<dyn Future<Output = Result<(), Error>> + 'static>>,
+    ) {
+    }
 }
