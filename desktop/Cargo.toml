@@ -8,8 +8,8 @@ default-run = "ruffle_desktop"
 [dependencies]
 cpal = "0.10.0"
 ruffle_core = { path = "../core" }
-glium = "0.26.0-alpha3"
-glutin = "0.22.0-alpha3"
+glium = "0.26.0-alpha5"
+glutin = "0.22.0-alpha5"
 env_logger = "0.6.1"
 generational-arena = "0.2.2"
 image = "0.21.1"
