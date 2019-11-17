@@ -76,5 +76,7 @@ export class VersionRange {
             requirements.push(requirement_set);
             requirement_set = [];
         }
+
+        return new VersionRange(requirement_set);
     }
 }
