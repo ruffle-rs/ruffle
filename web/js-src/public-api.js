@@ -138,7 +138,7 @@ export class PublicAPI {
      * @returns {SourceAPI} An instance of the Source API.
      */
     newest() {
-        this.sources[this.newest_source_name()];
+        return this.sources[this.newest_source_name()];
     }
 
     /**
