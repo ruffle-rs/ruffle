@@ -1,6 +1,5 @@
 target/
 **/*.rs.bk
-Cargo.lock
 bin/
 dist/
 node_modules/
