@@ -1,3 +1,5 @@
+#![allow(clippy::unneeded_field_pattern)]
+
 mod audio;
 mod navigator;
 mod render;
