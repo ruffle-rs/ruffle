@@ -67,7 +67,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     loop {
         // Poll UI events
         event_loop.run(move |event, _window_target, control_flow| {
-            *control_flow = ControlFlow::Poll;
+            *control_flow = ControlFlow::Wait;
             match event {
                 glutin::event::Event::LoopDestroyed => return,
                 glutin::event::Event::WindowEvent { event, .. } => match event {
@@ -118,14 +118,17 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                 _ => (),
             }
 
-            let new_time = Instant::now();
-            let dt = new_time.duration_since(time).as_micros();
-            if dt > 0 {
-                time = new_time;
-                player.tick(dt as f64 / 1000.0);
-            }
+            // After polling events, sleep the event loop until the next event or the next frame.
+            if *control_flow == ControlFlow::Wait {
+                let new_time = Instant::now();
+                let dt = new_time.duration_since(time).as_micros();
+                if dt > 0 {
+                    time = new_time;
+                    player.tick(dt as f64 / 1000.0);
+                }
 
-            std::thread::sleep(player.time_til_next_frame());
+                *control_flow = ControlFlow::WaitUntil(new_time + player.time_til_next_frame());
+            }
         });
     }
 }
