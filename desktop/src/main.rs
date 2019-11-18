@@ -58,6 +58,8 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     let logical_size: LogicalSize = (player.movie_width(), player.movie_height()).into();
     let hidpi_factor = display.gl_window().window().hidpi_factor();
 
+    // Set initial size to movie dimensions.
+    display.gl_window().window().set_inner_size(logical_size);
     display
         .gl_window()
         .resize(logical_size.to_physical(hidpi_factor));
