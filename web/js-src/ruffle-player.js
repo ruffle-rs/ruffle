@@ -1,5 +1,6 @@
 import load_ruffle from "./load-ruffle";
 import ruffle_shadow_template from "./shadow-template";
+import { lookup_element } from "./register-element";
 
 export let FLASH_MIMETYPE = "application/x-shockwave-flash";
 export let FUTURESPLASH_MIMETYPE = "application/futuresplash";
@@ -61,13 +62,17 @@ export class RufflePlayer extends HTMLElement {
      */
     is_unused_fallback_object() {
         let parent = this.parentNode;
-        do {
-            if (parent.nodeName === "RUFFLE-OBJECT") {
-                return true;
-            }
+        let element = lookup_element("ruffle-object");
 
-            parent = parent.parentNode;
-        } while (parent != document);
+        if (element !== null) {
+            do {
+                if (parent.nodeName === element.name) {
+                    return true;
+                }
+
+                parent = parent.parentNode;
+            } while (parent != document);
+        }
 
         return false;
     }

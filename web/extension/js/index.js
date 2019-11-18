@@ -1,4 +1,4 @@
-import "../../js-src/element";
+import { PublicAPI } from "../../js-src/public-api";
+import { SourceAPI } from "../../js-src/source-api";
 
-//Currently, no code is exclusive to the Extension, so we just import the
-//Element and that's that...
+window.RufflePlayer = PublicAPI.negotiate(window.RufflePlayer, "extension", new SourceAPI());

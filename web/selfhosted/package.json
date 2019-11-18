@@ -1,0 +1,16 @@
+{
+  "name": "ruffle-selfhosted",
+  "version": "0.1.0",
+  "description": "Put Flash back on the web with Ruffle on your own site",
+  "scripts": {
+    "build": "webpack",
+    "serve": "webpack-dev-server"
+  },
+  "devDependencies": {
+    "@wasm-tool/wasm-pack-plugin": "0.2.1",
+    "clean-webpack-plugin": "^3.0.0",
+    "webpack": "^4.29.4",
+    "webpack-cli": "^3.1.1",
+    "webpack-dev-server": "^3.1.0"
+  }
+}
