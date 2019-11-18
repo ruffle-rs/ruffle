@@ -60,6 +60,21 @@ struct SoundInstance {
 
 impl CpalAudioBackend {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
+        // Initialize cpal on a separate thread to issues on Windows with cpal + winit:
+        // https://github.com/RustAudio/cpal/pull/348
+        // TODO: Revert back to doing this on the same thread when the above is fixed.
+        let init_thread = std::thread::spawn(move || -> Result<Self, String> {
+            Self::init().map_err(|e| e.to_string())
+        });
+
+        match init_thread.join() {
+            Ok(Ok(audio)) => Ok(audio),
+            Ok(Err(e)) => Err(e.into()),
+            Err(_) => Err("Panic when initializing audio".into()),
+        }
+    }
+
+    fn init() -> Result<Self, Box<dyn std::error::Error>> {
         // Create CPAL audio device.
         let host = cpal::default_host();
         let event_loop = host.event_loop();
