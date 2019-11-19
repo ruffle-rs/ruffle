@@ -42,4 +42,4 @@ features = [
     "Navigator", "Node", "Performance", "ScriptProcessorNode", "Window", "Location", "HtmlFormElement"]
 
 [dev-dependencies]
-wasm-bindgen-test = "0.2.48"
+wasm-bindgen-test = "0.3.5"
