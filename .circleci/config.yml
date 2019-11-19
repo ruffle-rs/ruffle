@@ -58,9 +58,25 @@ jobs:
             cd linux
             tar -czvf ../workspace/linux.tar.gz *
 
-      # Build the wasm binary
+      # Build the web self-hosted binary
       - run:
           name: Web Build
+          command: |
+            cd web/selfhosted
+            npm install
+            npm run build -- --mode=production
+            cd dist
+            cp ../../../README.md .
+            cp ../../../LICENSE_APACHE .
+            cp ../../../LICENSE_MIT .
+            zip -r web.zip .
+            cd ../../..
+            mkdir -p workspace/web
+            cp web/selfhosted/dist/web.zip workspace/web.zip
+
+      # Build the wasm demo binary
+      - run:
+          name: Web Demo Build
           command: |
             cd web/demo
             npm install
@@ -98,6 +114,7 @@ jobs:
           paths:
               - linux.tar.gz
               - extension.zip
+              - web.zip
               - web-demo
 
   # OSX Build
@@ -267,6 +284,9 @@ jobs:
             mkdir -p builds/windows
             cp -f workspace/windows.zip builds/windows/ruffle_windows_latest.zip
             cp -f workspace/windows.zip builds/windows/ruffle_windows_${BUILD_ID}.zip
+            mkdir -p builds/web
+            cp -f workspace/web.zip builds/web/ruffle_web_latest.zip
+            cp -f workspace/web.zip builds/web/ruffle_web_${BUILD_ID}.zip
             mkdir -p builds/extension
             cp -f workspace/extension.zip builds/extension/ruffle_extension_latest.zip
             cp -f workspace/extension.zip builds/extension/ruffle_extension_${BUILD_ID}.zip
@@ -275,6 +295,7 @@ jobs:
             ls -1t builds/linux/* | tail -n +${NUM_BUILDS} | xargs rm -f
             ls -1t builds/osx/* | tail -n +${NUM_BUILDS} | xargs rm -f
             ls -1t builds/windows/* | tail -n +${NUM_BUILDS} | xargs rm -f
+            ls -1t builds/web/* | tail -n +${NUM_BUILDS} | xargs rm -f
             ls -1t builds/extension/* | tail -n +${NUM_BUILDS} | xargs rm -f
 
             # Copy over web demo.
@@ -293,7 +314,7 @@ workflows:
   # Basic linux build on each push or pull request to the repo
   commit_build:
     jobs:
-      - build
+      - nightly_build
 
   # Nightly builds
   nightly_build:
