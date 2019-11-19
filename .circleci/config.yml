@@ -314,7 +314,7 @@ workflows:
   # Basic linux build on each push or pull request to the repo
   commit_build:
     jobs:
-      - nightly_build
+      - build
 
   # Nightly builds
   nightly_build:
