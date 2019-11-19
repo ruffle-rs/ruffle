@@ -1,7 +1,6 @@
-import { define_legacy_elements, polyfill_static_content } from "../../js-src/polyfills";
+import { polyfill } from "../../js-src/polyfills";
 
-define_legacy_elements();
-polyfill_static_content();
+polyfill(["static-content"])
 
 let sampleFileInput = document.getElementById("sample-file");
 if (sampleFileInput) {
