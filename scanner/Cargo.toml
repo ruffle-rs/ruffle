@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 ruffle_core = { path = "../core" }
-env_logger = "0.6.1"
+env_logger = "0.7.1"
 log = "0.4"
 structopt = "0.2.15"
 walkdir = "2.2.9"

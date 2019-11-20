@@ -544,7 +544,7 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.6.2"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "atty 0.2.13 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1531,7 +1531,7 @@ name = "ruffle_desktop"
 version = "0.1.0"
 dependencies = [
  "cpal 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "env_logger 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "env_logger 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "generational-arena 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "glium 0.26.0-alpha5 (registry+https://github.com/rust-lang/crates.io-index)",
  "glutin 0.22.0-alpha5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1552,7 +1552,7 @@ name = "ruffle_scanner"
 version = "0.1.0"
 dependencies = [
  "csv 1.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "env_logger 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "env_logger 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "indicatif 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "path-slash 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2361,7 +2361,7 @@ dependencies = [
 "checksum encode_unicode 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)" = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
 "checksum enumset 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)" = "57b811aef4ff1cc938f13bbec348f0ecbfc2bb565b7ab90161c9f0b2805edc8a"
 "checksum enumset_derive 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "b184c2d0714bbeeb6440481a19c78530aa210654d99529f13d2f860a1b447598"
-"checksum env_logger 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)" = "aafcde04e90a5226a6443b7aabdb016ba2f8307c847d524724bd9b346dd1a2d3"
+"checksum env_logger 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "44533bbbb3bb3c1fa17d9f2e4e38bbbaf8396ba82193c4cb1b6445d711445d36"
 "checksum euclid 0.20.4 (registry+https://github.com/rust-lang/crates.io-index)" = "4eeaa189ab5e5b393b765ff1ca754d88f3180d16260f1a5b39156c7b16159cce"
 "checksum failure 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "f8273f13c977665c5db7eb2b99ae520952fe5ac831ae4cd09d80c4c7042b5ed9"
 "checksum failure_derive 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "0bc225b78e0391e4b8683440bf2e63c2deeeb2ce5189eab46e2b68c6d3725d08"
