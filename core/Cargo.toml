@@ -32,3 +32,4 @@ approx = "0.3.2"
 [features]
 default = ["minimp3"]
 lzma = ["swf/lzma"]
+avm_debug = []

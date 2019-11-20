@@ -345,6 +345,9 @@ impl<'gc> Avm1<'gc> {
             //Executing beyond the end of a function constitutes an implicit return.
             self.retire_stack_frame(context, Value::Undefined)?;
         } else if let Some(action) = reader.read_action()? {
+            #[cfg(feature = "avm_debug")]
+            log::debug!("Action: {:?}", action);
+
             let result = match action {
                 Action::Add => self.action_add(context),
                 Action::Add2 => self.action_add_2(context),
@@ -530,11 +533,21 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn push(&mut self, value: impl Into<Value<'gc>>) {
-        self.stack.push(value.into());
+        let value = value.into();
+        #[cfg(feature = "avm_debug")]
+        log::debug!("Stack push {}: {:?}", self.stack.len(), value);
+        self.stack.push(value);
     }
 
     fn pop(&mut self) -> Result<Value<'gc>, Error> {
-        self.stack.pop().ok_or_else(|| "Stack underflow".into())
+        self.stack
+            .pop()
+            .ok_or_else(|| "Stack underflow".into())
+            .map(|value| {
+                #[cfg(feature = "avm_debug")]
+                log::debug!("Stack pop {}: {:?}", self.stack.len(), value);
+                value
+            })
     }
 
     /// Retrieve a given register value.
