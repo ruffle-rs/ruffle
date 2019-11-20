@@ -627,10 +627,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "gc-arena"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "gc-arena-derive 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gc-arena-derive 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -642,6 +642,17 @@ dependencies = [
  "quote 0.6.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 0.15.44 (registry+https://github.com/rust-lang/crates.io-index)",
  "synstructure 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "gc-arena-derive"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "proc-macro2 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "synstructure 0.12.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1543,7 +1554,7 @@ dependencies = [
  "bitstream-io 0.8.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "enumset 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "fnv 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "gc-arena 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gc-arena 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gc-arena-derive 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "generational-arena 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "jpeg-decoder 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2402,8 +2413,9 @@ dependencies = [
 "checksum foreign-types-shared 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 "checksum fuchsia-zircon 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "2e9763c69ebaae630ba35f74888db465e49e259ba1bc0eda7d06f4a067615d82"
 "checksum fuchsia-zircon-sys 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "3dcaa9ae7725d12cdb85b3ad99a434db70b468c09ded17e012d86b5c1010f7a7"
-"checksum gc-arena 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "f7c68b4ffe0717fbdf7504007607d99e68fcef2cd820729bf3cfeffde384f556"
+"checksum gc-arena 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e7262a3f0bd866ed41d13f7a5147d5fe2278f6860aeab66bd72e9f2f770fc3e8"
 "checksum gc-arena-derive 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "341fbf13fce9688e246763b0820a7e2360df198a68787c0dd82936a0b53d3bff"
+"checksum gc-arena-derive 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f5a1fd9d509709237f7673fe8fa4a2fcf8136bf5bd43b67bab6af267a9850524"
 "checksum generational-arena 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)" = "675c9623fbcdb4b402176db720bf5d95883a36303703ed1bd3a03482382f735a"
 "checksum getrandom 0.1.13 (registry+https://github.com/rust-lang/crates.io-index)" = "e7db7ca94ed4cd01190ceee0d8a8052f08a247aa1b469a7f68c6a3b71afcf407"
 "checksum gif 0.10.3 (registry+https://github.com/rust-lang/crates.io-index)" = "471d90201b3b223f3451cd4ad53e34295f16a1df17b1edf3736d47761c3981af"
