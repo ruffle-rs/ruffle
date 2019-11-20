@@ -1577,7 +1577,7 @@ dependencies = [
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "png 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "ruffle_core 0.1.0",
- "svg 0.5.12 (registry+https://github.com/rust-lang/crates.io-index)",
+ "svg 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 1.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen 0.2.55 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen-test 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1803,7 +1803,7 @@ dependencies = [
 
 [[package]]
 name = "svg"
-version = "0.5.12"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -2504,7 +2504,7 @@ dependencies = [
 "checksum strsim 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)" = "032c03039aae92b350aad2e3779c352e104d919cb192ba2fabbd7b831ce4f0f6"
 "checksum structopt 0.2.18 (registry+https://github.com/rust-lang/crates.io-index)" = "16c2cdbf9cc375f15d1b4141bc48aeef444806655cd0e904207edc8d68d86ed7"
 "checksum structopt-derive 0.2.18 (registry+https://github.com/rust-lang/crates.io-index)" = "53010261a84b37689f9ed7d395165029f9cc7abb9f56bbfe86bee2597ed25107"
-"checksum svg 0.5.12 (registry+https://github.com/rust-lang/crates.io-index)" = "a863ec1f8e7cfd4ea449f77445cca06aac240b9a677ccf12b0f65ef020db52c7"
+"checksum svg 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "1f57a11872ea3f38eb99622ef7877fe207b3eeefbe877a49f08f9995d00f34a5"
 "checksum syn 0.15.44 (registry+https://github.com/rust-lang/crates.io-index)" = "9ca4b3b69a77cbe1ffc9e198781b7acb0c7365a883670e8f1c1bc66fba79a5c5"
 "checksum syn 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)" = "661641ea2aa15845cddeb97dad000d22070bb5c1fb456b96c1cba883ec691e92"
 "checksum synstructure 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)" = "02353edf96d6e4dc81aea2d8490a7e9db177bf8acb0e951c24940bf866cb313f"
