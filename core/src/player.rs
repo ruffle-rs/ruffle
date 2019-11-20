@@ -20,7 +20,7 @@ static DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.
 pub const NEWEST_PLAYER_VERSION: u8 = 32;
 
 #[derive(Collect)]
-#[collect(empty_drop)]
+#[collect(no_drop)]
 struct GcRoot<'gc> {
     library: GcCell<'gc, Library<'gc>>,
     root: DisplayNode<'gc>,
