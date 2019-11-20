@@ -23,7 +23,7 @@ pub use movie_clip::MovieClip;
 pub use text::Text;
 
 #[derive(Clone, Collect, Debug)]
-#[collect(empty_drop)]
+#[collect(no_drop)]
 pub struct DisplayObjectBase<'gc> {
     parent: Option<DisplayNode<'gc>>,
     place_frame: u16,
