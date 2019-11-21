@@ -34,8 +34,8 @@ undefined
 undefined
 
 // true < _global:
-undefined
-undefined
+false
+true
 
 // true < 0.000:
 false
@@ -54,12 +54,12 @@ undefined
 undefined
 
 // true < undefined:
-undefined
-undefined
+false
+true
 
 // true < null:
-undefined
-undefined
+false
+true
 
 // true < 2.0:
 true
@@ -80,6 +80,18 @@ false
 // true < -Infinity:
 false
 true
+
+// true < "a":
+undefined
+undefined
+
+// true < "b":
+undefined
+undefined
+
+// true < "A":
+undefined
+undefined
 
 // false < false:
 false
@@ -113,8 +125,8 @@ undefined
 undefined
 
 // false < _global:
-undefined
-undefined
+false
+false
 
 // false < 0.000:
 false
@@ -133,12 +145,12 @@ undefined
 undefined
 
 // false < undefined:
-undefined
-undefined
+false
+false
 
 // false < null:
-undefined
-undefined
+false
+false
 
 // false < 2.0:
 true
@@ -159,6 +171,18 @@ false
 // false < -Infinity:
 false
 true
+
+// false < "a":
+undefined
+undefined
+
+// false < "b":
+undefined
+undefined
+
+// false < "A":
+undefined
+undefined
 
 // "true" < "true":
 false
@@ -235,6 +259,18 @@ undefined
 undefined
 undefined
 
+// "true" < "a":
+false
+true
+
+// "true" < "b":
+false
+true
+
+// "true" < "A":
+false
+true
+
 // "false" < "false":
 false
 
@@ -306,6 +342,18 @@ undefined
 undefined
 undefined
 
+// "false" < "a":
+false
+true
+
+// "false" < "b":
+false
+true
+
+// "false" < "A":
+false
+true
+
 // 1 < 1:
 false
 
@@ -326,8 +374,8 @@ undefined
 undefined
 
 // 1 < _global:
-undefined
-undefined
+false
+true
 
 // 1 < 0.000:
 false
@@ -346,12 +394,12 @@ undefined
 undefined
 
 // 1 < undefined:
-undefined
-undefined
+false
+true
 
 // 1 < null:
-undefined
-undefined
+false
+true
 
 // 1 < 2.0:
 true
@@ -373,6 +421,18 @@ false
 false
 true
 
+// 1 < "a":
+undefined
+undefined
+
+// 1 < "b":
+undefined
+undefined
+
+// 1 < "A":
+undefined
+undefined
+
 // "1" < "1":
 false
 
@@ -389,8 +449,8 @@ undefined
 undefined
 
 // "1" < _global:
-undefined
-undefined
+false
+true
 
 // "1" < 0.000:
 false
@@ -409,12 +469,12 @@ true
 false
 
 // "1" < undefined:
-undefined
-undefined
+false
+true
 
 // "1" < null:
-undefined
-undefined
+false
+true
 
 // "1" < 2.0:
 true
@@ -436,6 +496,18 @@ false
 false
 true
 
+// "1" < "a":
+true
+false
+
+// "1" < "b":
+true
+false
+
+// "1" < "A":
+true
+false
+
 // 0 < 0:
 false
 
@@ -448,8 +520,8 @@ undefined
 undefined
 
 // 0 < _global:
-undefined
-undefined
+false
+false
 
 // 0 < 0.000:
 false
@@ -468,12 +540,12 @@ undefined
 undefined
 
 // 0 < undefined:
-undefined
-undefined
+false
+false
 
 // 0 < null:
-undefined
-undefined
+false
+false
 
 // 0 < 2.0:
 true
@@ -495,6 +567,18 @@ false
 false
 true
 
+// 0 < "a":
+undefined
+undefined
+
+// 0 < "b":
+undefined
+undefined
+
+// 0 < "A":
+undefined
+undefined
+
 // "0" < "0":
 false
 
@@ -503,8 +587,8 @@ undefined
 undefined
 
 // "0" < _global:
-undefined
-undefined
+false
+false
 
 // "0" < 0.000:
 false
@@ -523,12 +607,12 @@ true
 false
 
 // "0" < undefined:
-undefined
-undefined
+false
+false
 
 // "0" < null:
-undefined
-undefined
+false
+false
 
 // "0" < 2.0:
 true
@@ -549,6 +633,18 @@ false
 // "0" < -Infinity:
 false
 true
+
+// "0" < "a":
+true
+false
+
+// "0" < "b":
+true
+false
+
+// "0" < "A":
+true
+false
 
 // this < this:
 undefined
@@ -601,16 +697,28 @@ undefined
 undefined
 undefined
 
-// _global < _global:
+// this < "a":
 undefined
+undefined
+
+// this < "b":
+undefined
+undefined
+
+// this < "A":
+undefined
+undefined
+
+// _global < _global:
+false
 
 // _global < 0.000:
-undefined
-undefined
+false
+false
 
 // _global < "0.000":
-undefined
-undefined
+false
+false
 
 // _global < "True":
 undefined
@@ -621,30 +729,42 @@ undefined
 undefined
 
 // _global < undefined:
-undefined
-undefined
+false
+false
 
 // _global < null:
-undefined
-undefined
+false
+false
 
 // _global < 2.0:
-undefined
-undefined
+true
+false
 
 // _global < -2.0:
-undefined
-undefined
+false
+true
 
 // _global < NaN:
 undefined
 undefined
 
 // _global < Infinity:
+true
+false
+
+// _global < -Infinity:
+false
+true
+
+// _global < "a":
 undefined
 undefined
 
-// _global < -Infinity:
+// _global < "b":
+undefined
+undefined
+
+// _global < "A":
 undefined
 undefined
 
@@ -664,12 +784,12 @@ undefined
 undefined
 
 // 0.000 < undefined:
-undefined
-undefined
+false
+false
 
 // 0.000 < null:
-undefined
-undefined
+false
+false
 
 // 0.000 < 2.0:
 true
@@ -691,6 +811,18 @@ false
 false
 true
 
+// 0.000 < "a":
+undefined
+undefined
+
+// 0.000 < "b":
+undefined
+undefined
+
+// 0.000 < "A":
+undefined
+undefined
+
 // "0.000" < "0.000":
 false
 
@@ -703,12 +835,12 @@ true
 false
 
 // "0.000" < undefined:
-undefined
-undefined
+false
+false
 
 // "0.000" < null:
-undefined
-undefined
+false
+false
 
 // "0.000" < 2.0:
 true
@@ -729,6 +861,18 @@ false
 // "0.000" < -Infinity:
 false
 true
+
+// "0.000" < "a":
+true
+false
+
+// "0.000" < "b":
+true
+false
+
+// "0.000" < "A":
+true
+false
 
 // "True" < "True":
 false
@@ -765,6 +909,18 @@ undefined
 undefined
 undefined
 
+// "True" < "a":
+true
+false
+
+// "True" < "b":
+true
+false
+
+// "True" < "A":
+false
+true
+
 // "False" < "False":
 false
 
@@ -796,53 +952,89 @@ undefined
 undefined
 undefined
 
+// "False" < "a":
+true
+false
+
+// "False" < "b":
+true
+false
+
+// "False" < "A":
+false
+true
+
 // undefined < undefined:
-undefined
+false
 
 // undefined < null:
-undefined
-undefined
+false
+false
 
 // undefined < 2.0:
-undefined
-undefined
+true
+false
 
 // undefined < -2.0:
-undefined
-undefined
+false
+true
 
 // undefined < NaN:
 undefined
 undefined
 
 // undefined < Infinity:
+true
+false
+
+// undefined < -Infinity:
+false
+true
+
+// undefined < "a":
 undefined
 undefined
 
-// undefined < -Infinity:
+// undefined < "b":
+undefined
+undefined
+
+// undefined < "A":
 undefined
 undefined
 
 // null < null:
-undefined
+false
 
 // null < 2.0:
-undefined
-undefined
+true
+false
 
 // null < -2.0:
-undefined
-undefined
+false
+true
 
 // null < NaN:
 undefined
 undefined
 
 // null < Infinity:
+true
+false
+
+// null < -Infinity:
+false
+true
+
+// null < "a":
 undefined
 undefined
 
-// null < -Infinity:
+// null < "b":
+undefined
+undefined
+
+// null < "A":
 undefined
 undefined
 
@@ -865,6 +1057,18 @@ false
 false
 true
 
+// 2.0 < "a":
+undefined
+undefined
+
+// 2.0 < "b":
+undefined
+undefined
+
+// 2.0 < "A":
+undefined
+undefined
+
 // -2.0 < -2.0:
 false
 
@@ -880,6 +1084,18 @@ false
 false
 true
 
+// -2.0 < "a":
+undefined
+undefined
+
+// -2.0 < "b":
+undefined
+undefined
+
+// -2.0 < "A":
+undefined
+undefined
+
 // NaN < NaN:
 undefined
 
@@ -891,6 +1107,18 @@ undefined
 undefined
 undefined
 
+// NaN < "a":
+undefined
+undefined
+
+// NaN < "b":
+undefined
+undefined
+
+// NaN < "A":
+undefined
+undefined
+
 // Infinity < Infinity:
 false
 
@@ -898,6 +1126,51 @@ false
 false
 true
 
+// Infinity < "a":
+undefined
+undefined
+
+// Infinity < "b":
+undefined
+undefined
+
+// Infinity < "A":
+undefined
+undefined
+
 // -Infinity < -Infinity:
+false
+
+// -Infinity < "a":
+undefined
+undefined
+
+// -Infinity < "b":
+undefined
+undefined
+
+// -Infinity < "A":
+undefined
+undefined
+
+// "a" < "a":
+false
+
+// "a" < "b":
+true
+false
+
+// "a" < "A":
+false
+true
+
+// "b" < "b":
+false
+
+// "b" < "A":
+false
+true
+
+// "A" < "A":
 false
 
