@@ -11,7 +11,7 @@ description = "Read and write the Adobe Flash SWF file format."
 
 [dependencies]
 byteorder = "1.0"
-num-derive = "0.2"
+num-derive = "0.3"
 num-traits = "0.2"
 libflate = {version = "0.1", optional = true}
 log = "0.4"
