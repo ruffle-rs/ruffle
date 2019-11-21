@@ -1,0 +1,903 @@
+// true < true:
+false
+
+// true < false:
+false
+true
+
+// true < "true":
+undefined
+undefined
+
+// true < "false":
+undefined
+undefined
+
+// true < 1:
+false
+false
+
+// true < "1":
+false
+false
+
+// true < 0:
+false
+true
+
+// true < "0":
+false
+true
+
+// true < this:
+undefined
+undefined
+
+// true < _global:
+undefined
+undefined
+
+// true < 0.000:
+false
+true
+
+// true < "0.000":
+false
+true
+
+// true < "True":
+undefined
+undefined
+
+// true < "False":
+undefined
+undefined
+
+// true < undefined:
+undefined
+undefined
+
+// true < null:
+undefined
+undefined
+
+// true < 2.0:
+true
+false
+
+// true < -2.0:
+false
+true
+
+// true < NaN:
+undefined
+undefined
+
+// true < Infinity:
+true
+false
+
+// true < -Infinity:
+false
+true
+
+// false < false:
+false
+
+// false < "true":
+undefined
+undefined
+
+// false < "false":
+undefined
+undefined
+
+// false < 1:
+true
+false
+
+// false < "1":
+true
+false
+
+// false < 0:
+false
+false
+
+// false < "0":
+false
+false
+
+// false < this:
+undefined
+undefined
+
+// false < _global:
+undefined
+undefined
+
+// false < 0.000:
+false
+false
+
+// false < "0.000":
+false
+false
+
+// false < "True":
+undefined
+undefined
+
+// false < "False":
+undefined
+undefined
+
+// false < undefined:
+undefined
+undefined
+
+// false < null:
+undefined
+undefined
+
+// false < 2.0:
+true
+false
+
+// false < -2.0:
+false
+true
+
+// false < NaN:
+undefined
+undefined
+
+// false < Infinity:
+true
+false
+
+// false < -Infinity:
+false
+true
+
+// "true" < "true":
+false
+
+// "true" < "false":
+false
+true
+
+// "true" < 1:
+undefined
+undefined
+
+// "true" < "1":
+false
+true
+
+// "true" < 0:
+undefined
+undefined
+
+// "true" < "0":
+false
+true
+
+// "true" < this:
+undefined
+undefined
+
+// "true" < _global:
+undefined
+undefined
+
+// "true" < 0.000:
+undefined
+undefined
+
+// "true" < "0.000":
+false
+true
+
+// "true" < "True":
+false
+true
+
+// "true" < "False":
+false
+true
+
+// "true" < undefined:
+undefined
+undefined
+
+// "true" < null:
+undefined
+undefined
+
+// "true" < 2.0:
+undefined
+undefined
+
+// "true" < -2.0:
+undefined
+undefined
+
+// "true" < NaN:
+undefined
+undefined
+
+// "true" < Infinity:
+undefined
+undefined
+
+// "true" < -Infinity:
+undefined
+undefined
+
+// "false" < "false":
+false
+
+// "false" < 1:
+undefined
+undefined
+
+// "false" < "1":
+false
+true
+
+// "false" < 0:
+undefined
+undefined
+
+// "false" < "0":
+false
+true
+
+// "false" < this:
+undefined
+undefined
+
+// "false" < _global:
+undefined
+undefined
+
+// "false" < 0.000:
+undefined
+undefined
+
+// "false" < "0.000":
+false
+true
+
+// "false" < "True":
+false
+true
+
+// "false" < "False":
+false
+true
+
+// "false" < undefined:
+undefined
+undefined
+
+// "false" < null:
+undefined
+undefined
+
+// "false" < 2.0:
+undefined
+undefined
+
+// "false" < -2.0:
+undefined
+undefined
+
+// "false" < NaN:
+undefined
+undefined
+
+// "false" < Infinity:
+undefined
+undefined
+
+// "false" < -Infinity:
+undefined
+undefined
+
+// 1 < 1:
+false
+
+// 1 < "1":
+false
+false
+
+// 1 < 0:
+false
+true
+
+// 1 < "0":
+false
+true
+
+// 1 < this:
+undefined
+undefined
+
+// 1 < _global:
+undefined
+undefined
+
+// 1 < 0.000:
+false
+true
+
+// 1 < "0.000":
+false
+true
+
+// 1 < "True":
+undefined
+undefined
+
+// 1 < "False":
+undefined
+undefined
+
+// 1 < undefined:
+undefined
+undefined
+
+// 1 < null:
+undefined
+undefined
+
+// 1 < 2.0:
+true
+false
+
+// 1 < -2.0:
+false
+true
+
+// 1 < NaN:
+undefined
+undefined
+
+// 1 < Infinity:
+true
+false
+
+// 1 < -Infinity:
+false
+true
+
+// "1" < "1":
+false
+
+// "1" < 0:
+false
+true
+
+// "1" < "0":
+false
+true
+
+// "1" < this:
+undefined
+undefined
+
+// "1" < _global:
+undefined
+undefined
+
+// "1" < 0.000:
+false
+true
+
+// "1" < "0.000":
+false
+true
+
+// "1" < "True":
+true
+false
+
+// "1" < "False":
+true
+false
+
+// "1" < undefined:
+undefined
+undefined
+
+// "1" < null:
+undefined
+undefined
+
+// "1" < 2.0:
+true
+false
+
+// "1" < -2.0:
+false
+true
+
+// "1" < NaN:
+undefined
+undefined
+
+// "1" < Infinity:
+true
+false
+
+// "1" < -Infinity:
+false
+true
+
+// 0 < 0:
+false
+
+// 0 < "0":
+false
+false
+
+// 0 < this:
+undefined
+undefined
+
+// 0 < _global:
+undefined
+undefined
+
+// 0 < 0.000:
+false
+false
+
+// 0 < "0.000":
+false
+false
+
+// 0 < "True":
+undefined
+undefined
+
+// 0 < "False":
+undefined
+undefined
+
+// 0 < undefined:
+undefined
+undefined
+
+// 0 < null:
+undefined
+undefined
+
+// 0 < 2.0:
+true
+false
+
+// 0 < -2.0:
+false
+true
+
+// 0 < NaN:
+undefined
+undefined
+
+// 0 < Infinity:
+true
+false
+
+// 0 < -Infinity:
+false
+true
+
+// "0" < "0":
+false
+
+// "0" < this:
+undefined
+undefined
+
+// "0" < _global:
+undefined
+undefined
+
+// "0" < 0.000:
+false
+false
+
+// "0" < "0.000":
+true
+false
+
+// "0" < "True":
+true
+false
+
+// "0" < "False":
+true
+false
+
+// "0" < undefined:
+undefined
+undefined
+
+// "0" < null:
+undefined
+undefined
+
+// "0" < 2.0:
+true
+false
+
+// "0" < -2.0:
+false
+true
+
+// "0" < NaN:
+undefined
+undefined
+
+// "0" < Infinity:
+true
+false
+
+// "0" < -Infinity:
+false
+true
+
+// this < this:
+undefined
+
+// this < _global:
+undefined
+undefined
+
+// this < 0.000:
+undefined
+undefined
+
+// this < "0.000":
+undefined
+undefined
+
+// this < "True":
+undefined
+undefined
+
+// this < "False":
+undefined
+undefined
+
+// this < undefined:
+undefined
+undefined
+
+// this < null:
+undefined
+undefined
+
+// this < 2.0:
+undefined
+undefined
+
+// this < -2.0:
+undefined
+undefined
+
+// this < NaN:
+undefined
+undefined
+
+// this < Infinity:
+undefined
+undefined
+
+// this < -Infinity:
+undefined
+undefined
+
+// _global < _global:
+undefined
+
+// _global < 0.000:
+undefined
+undefined
+
+// _global < "0.000":
+undefined
+undefined
+
+// _global < "True":
+undefined
+undefined
+
+// _global < "False":
+undefined
+undefined
+
+// _global < undefined:
+undefined
+undefined
+
+// _global < null:
+undefined
+undefined
+
+// _global < 2.0:
+undefined
+undefined
+
+// _global < -2.0:
+undefined
+undefined
+
+// _global < NaN:
+undefined
+undefined
+
+// _global < Infinity:
+undefined
+undefined
+
+// _global < -Infinity:
+undefined
+undefined
+
+// 0.000 < 0.000:
+false
+
+// 0.000 < "0.000":
+false
+false
+
+// 0.000 < "True":
+undefined
+undefined
+
+// 0.000 < "False":
+undefined
+undefined
+
+// 0.000 < undefined:
+undefined
+undefined
+
+// 0.000 < null:
+undefined
+undefined
+
+// 0.000 < 2.0:
+true
+false
+
+// 0.000 < -2.0:
+false
+true
+
+// 0.000 < NaN:
+undefined
+undefined
+
+// 0.000 < Infinity:
+true
+false
+
+// 0.000 < -Infinity:
+false
+true
+
+// "0.000" < "0.000":
+false
+
+// "0.000" < "True":
+true
+false
+
+// "0.000" < "False":
+true
+false
+
+// "0.000" < undefined:
+undefined
+undefined
+
+// "0.000" < null:
+undefined
+undefined
+
+// "0.000" < 2.0:
+true
+false
+
+// "0.000" < -2.0:
+false
+true
+
+// "0.000" < NaN:
+undefined
+undefined
+
+// "0.000" < Infinity:
+true
+false
+
+// "0.000" < -Infinity:
+false
+true
+
+// "True" < "True":
+false
+
+// "True" < "False":
+false
+true
+
+// "True" < undefined:
+undefined
+undefined
+
+// "True" < null:
+undefined
+undefined
+
+// "True" < 2.0:
+undefined
+undefined
+
+// "True" < -2.0:
+undefined
+undefined
+
+// "True" < NaN:
+undefined
+undefined
+
+// "True" < Infinity:
+undefined
+undefined
+
+// "True" < -Infinity:
+undefined
+undefined
+
+// "False" < "False":
+false
+
+// "False" < undefined:
+undefined
+undefined
+
+// "False" < null:
+undefined
+undefined
+
+// "False" < 2.0:
+undefined
+undefined
+
+// "False" < -2.0:
+undefined
+undefined
+
+// "False" < NaN:
+undefined
+undefined
+
+// "False" < Infinity:
+undefined
+undefined
+
+// "False" < -Infinity:
+undefined
+undefined
+
+// undefined < undefined:
+undefined
+
+// undefined < null:
+undefined
+undefined
+
+// undefined < 2.0:
+undefined
+undefined
+
+// undefined < -2.0:
+undefined
+undefined
+
+// undefined < NaN:
+undefined
+undefined
+
+// undefined < Infinity:
+undefined
+undefined
+
+// undefined < -Infinity:
+undefined
+undefined
+
+// null < null:
+undefined
+
+// null < 2.0:
+undefined
+undefined
+
+// null < -2.0:
+undefined
+undefined
+
+// null < NaN:
+undefined
+undefined
+
+// null < Infinity:
+undefined
+undefined
+
+// null < -Infinity:
+undefined
+undefined
+
+// 2.0 < 2.0:
+false
+
+// 2.0 < -2.0:
+false
+true
+
+// 2.0 < NaN:
+undefined
+undefined
+
+// 2.0 < Infinity:
+true
+false
+
+// 2.0 < -Infinity:
+false
+true
+
+// -2.0 < -2.0:
+false
+
+// -2.0 < NaN:
+undefined
+undefined
+
+// -2.0 < Infinity:
+true
+false
+
+// -2.0 < -Infinity:
+false
+true
+
+// NaN < NaN:
+undefined
+
+// NaN < Infinity:
+undefined
+undefined
+
+// NaN < -Infinity:
+undefined
+undefined
+
+// Infinity < Infinity:
+false
+
+// Infinity < -Infinity:
+false
+true
+
+// -Infinity < -Infinity:
+false
+

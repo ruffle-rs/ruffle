@@ -67,6 +67,8 @@ swf_tests! {
     #[ignore] (extends_chain, "avm1/extends_chain", 1),
     (is_prototype_of, "avm1/is_prototype_of", 1),
     #[ignore] (string_coercion, "avm1/string_coercion", 1),
+    (lessthan_swf6, "avm1/lessthan_swf6", 1),
+    (lessthan_swf7, "avm1/lessthan_swf7", 1),
 }
 
 #[test]
