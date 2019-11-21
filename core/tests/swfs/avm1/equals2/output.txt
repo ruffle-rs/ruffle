@@ -53,6 +53,14 @@ true == "False":
 false
 false
 
+true == undefined:
+false
+false
+
+true == null:
+false
+false
+
 false == false:
 true
 
@@ -104,6 +112,14 @@ false == "False":
 false
 false
 
+false == undefined:
+false
+false
+
+false == null:
+false
+false
+
 "true" == "true":
 true
 
@@ -151,6 +167,14 @@ false
 false
 false
 
+"true" == undefined:
+false
+false
+
+"true" == null:
+false
+false
+
 "false" == "false":
 true
 
@@ -194,6 +218,14 @@ false
 false
 false
 
+"false" == undefined:
+false
+false
+
+"false" == null:
+false
+false
+
 1 == 1:
 true
 
@@ -233,6 +265,14 @@ false
 false
 false
 
+1 == undefined:
+false
+false
+
+1 == null:
+false
+false
+
 "1" == "1":
 true
 
@@ -268,6 +308,14 @@ false
 false
 false
 
+"1" == undefined:
+false
+false
+
+"1" == null:
+false
+false
+
 0 == 0:
 true
 
@@ -299,6 +347,14 @@ false
 false
 false
 
+0 == undefined:
+false
+false
+
+0 == null:
+false
+false
+
 "0" == "0":
 true
 
@@ -326,6 +382,14 @@ false
 false
 false
 
+"0" == undefined:
+false
+false
+
+"0" == null:
+false
+false
+
 this == this:
 true
 
@@ -349,6 +413,14 @@ this == "False":
 false
 false
 
+this == undefined:
+false
+false
+
+this == null:
+false
+false
+
 _global == _global:
 true
 
@@ -368,6 +440,14 @@ _global == "False":
 false
 false
 
+_global == undefined:
+true
+true
+
+_global == null:
+true
+true
+
 0.000 == 0.000:
 true
 
@@ -383,6 +463,14 @@ false
 false
 false
 
+0.000 == undefined:
+false
+false
+
+0.000 == null:
+false
+false
+
 "0.000" == "0.000":
 true
 
@@ -394,6 +482,14 @@ false
 false
 false
 
+"0.000" == undefined:
+false
+false
+
+"0.000" == null:
+false
+false
+
 "True" == "True":
 true
 
@@ -401,6 +497,32 @@ true
 false
 false
 
+"True" == undefined:
+false
+false
+
+"True" == null:
+false
+false
+
 "False" == "False":
+true
+
+"False" == undefined:
+false
+false
+
+"False" == null:
+false
+false
+
+undefined == undefined:
+true
+
+undefined == null:
+true
+true
+
+null == null:
 true
 

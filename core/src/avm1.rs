@@ -954,6 +954,12 @@ impl<'gc> Avm1<'gc> {
             (Value::Number(a), Value::Number(b)) => a == b || (a.is_nan() && b.is_nan()),
             (Value::String(a), Value::String(b)) => a == b,
             (Value::Object(a), Value::Object(b)) => a.as_ptr() == b.as_ptr(),
+            (Value::Object(a), Value::Null) | (Value::Object(a), Value::Undefined) => {
+                a.as_ptr() == self.globals.as_ptr()
+            }
+            (Value::Null, Value::Object(b)) | (Value::Undefined, Value::Object(b)) => {
+                b.as_ptr() == self.globals.as_ptr()
+            }
             (Value::String(a), Value::Number(b)) => a.parse().unwrap_or(std::f64::NAN) == b,
             (Value::Number(a), Value::String(b)) => a == b.parse().unwrap_or(std::f64::NAN),
             (Value::Bool(a), Value::Bool(b)) => a == b,
