@@ -89,7 +89,7 @@ fn test_prototype_enumerate() -> Result<(), Error> {
     actual.sort();
     expected.sort();
 
-    assert_eq!(actual, expected);
+    assert_eq!(actual, expected, "actual == expected");
     Ok(())
 }
 
@@ -99,7 +99,7 @@ fn test_swf(swf_path: &str, num_frames: u32, expected_output_path: &str) -> Resu
     let expected_output = std::fs::read_to_string(expected_output_path)?.replace("\r\n", "\n");
 
     let trace_log = run_swf(swf_path, num_frames)?;
-    assert_eq!(expected_output, trace_log, "expected_output == trace_log");
+    assert_eq!(trace_log, expected_output, "actual == expected");
 
     Ok(())
 }
