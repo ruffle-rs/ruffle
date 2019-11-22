@@ -6,6 +6,7 @@ use crate::backend::navigator::NavigationMethod;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 use rand::Rng;
+use std::f64;
 
 mod function;
 mod math;
@@ -89,6 +90,32 @@ pub fn is_nan<'gc>(
         Ok(val.as_number(avm, action_context)?.is_nan().into())
     } else {
         Ok(true.into())
+    }
+}
+
+pub fn get_infinity<'gc>(
+    avm: &mut Avm1<'gc>,
+    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: ObjectCell<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if avm.current_swf_version() > 4 {
+        Ok(f64::INFINITY.into())
+    } else {
+        Ok(Value::Undefined.into())
+    }
+}
+
+pub fn get_nan<'gc>(
+    avm: &mut Avm1<'gc>,
+    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: ObjectCell<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if avm.current_swf_version() > 4 {
+        Ok(f64::NAN.into())
+    } else {
+        Ok(Value::Undefined.into())
     }
 }
 
@@ -192,10 +219,11 @@ pub fn create_globals<'gc>(
         EnumSet::empty(),
         Some(function_proto),
     );
-    globals.define_value("NaN", Value::Number(std::f64::NAN), EnumSet::empty());
-    globals.define_value(
+    globals.add_property("NaN", Executable::Native(get_nan), None, EnumSet::empty());
+    globals.add_property(
         "Infinity",
-        Value::Number(std::f64::INFINITY),
+        Executable::Native(get_infinity),
+        None,
         EnumSet::empty(),
     );
 
