@@ -881,7 +881,7 @@ false
 false
 
 // NaN === NaN:
-false
+true
 
 // NaN === Infinity:
 false
