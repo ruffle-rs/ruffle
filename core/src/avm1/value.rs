@@ -276,6 +276,12 @@ impl<'gc> Value<'gc> {
             (Value::String(a), Value::String(b)) => Ok((a == b).into()),
             (Value::Bool(a), Value::Bool(b)) => Ok((a == b).into()),
             (Value::Object(a), Value::Object(b)) => Ok(GcCell::ptr_eq(*a, *b).into()),
+            (Value::Object(a), Value::Null) | (Value::Object(a), Value::Undefined) => {
+                Ok((a.as_ptr() == avm.global_object_cell().as_ptr()).into())
+            }
+            (Value::Null, Value::Object(b)) | (Value::Undefined, Value::Object(b)) => {
+                Ok((b.as_ptr() == avm.global_object_cell().as_ptr()).into())
+            }
             (Value::Undefined, Value::Null) => Ok(true.into()),
             (Value::Null, Value::Undefined) => Ok(true.into()),
             (Value::Number(_), Value::String(_)) => {
