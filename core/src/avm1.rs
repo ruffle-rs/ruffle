@@ -1011,7 +1011,7 @@ impl<'gc> Avm1<'gc> {
         // Version >=5 equality
         let a = self.pop()?;
         let b = self.pop()?;
-        let result = b.abstract_eq(a, self, context)?;
+        let result = b.abstract_eq(a, self, context, false)?;
         self.push(result);
         Ok(())
     }

@@ -254,13 +254,14 @@ impl<'gc> Value<'gc> {
         other: Value<'gc>,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
+        coerced: bool,
     ) -> Result<Value<'gc>, Error> {
         match (self, &other) {
             (Value::Undefined, Value::Undefined) => Ok(true.into()),
             (Value::Null, Value::Null) => Ok(true.into()),
             (Value::Number(a), Value::Number(b)) => {
-                if a.is_nan() || b.is_nan() {
-                    return Ok(false.into());
+                if !coerced && a.is_nan() && b.is_nan() {
+                    return Ok(true.into());
                 }
 
                 if a == b {
@@ -284,26 +285,31 @@ impl<'gc> Value<'gc> {
             }
             (Value::Undefined, Value::Null) => Ok(true.into()),
             (Value::Null, Value::Undefined) => Ok(true.into()),
-            (Value::Number(_), Value::String(_)) => {
-                Ok(self.abstract_eq(Value::Number(other.as_number(avm, context)?), avm, context)?)
+            (Value::Number(_), Value::String(_)) => Ok(self.abstract_eq(
+                Value::Number(other.as_number(avm, context)?),
+                avm,
+                context,
+                true,
+            )?),
+            (Value::String(_), Value::Number(_)) => {
+                Ok(Value::Number(self.as_number(avm, context)?)
+                    .abstract_eq(other, avm, context, true)?)
             }
-            (Value::String(_), Value::Number(_)) => Ok(Value::Number(
-                self.as_number(avm, context)?,
-            )
-            .abstract_eq(other, avm, context)?),
-            (Value::Bool(_), _) => Ok(
-                Value::Number(self.as_number(avm, context)?).abstract_eq(other, avm, context)?
-            ),
-            (_, Value::Bool(_)) => {
-                Ok(self.abstract_eq(Value::Number(other.as_number(avm, context)?), avm, context)?)
-            }
+            (Value::Bool(_), _) => Ok(Value::Number(self.as_number(avm, context)?)
+                .abstract_eq(other, avm, context, true)?),
+            (_, Value::Bool(_)) => Ok(self.abstract_eq(
+                Value::Number(other.as_number(avm, context)?),
+                avm,
+                context,
+                true,
+            )?),
             (Value::String(_), Value::Object(_)) => {
                 let non_obj_other = other.to_primitive_num(avm, context)?;
                 if let Value::Object(_) = non_obj_other {
                     return Ok(false.into());
                 }
 
-                Ok(self.abstract_eq(non_obj_other, avm, context)?)
+                Ok(self.abstract_eq(non_obj_other, avm, context, true)?)
             }
             (Value::Number(_), Value::Object(_)) => {
                 let non_obj_other = other.to_primitive_num(avm, context)?;
@@ -311,7 +317,7 @@ impl<'gc> Value<'gc> {
                     return Ok(false.into());
                 }
 
-                Ok(self.abstract_eq(non_obj_other, avm, context)?)
+                Ok(self.abstract_eq(non_obj_other, avm, context, true)?)
             }
             (Value::Object(_), Value::String(_)) => {
                 let non_obj_self = self.to_primitive_num(avm, context)?;
@@ -319,7 +325,7 @@ impl<'gc> Value<'gc> {
                     return Ok(false.into());
                 }
 
-                Ok(non_obj_self.abstract_eq(other, avm, context)?)
+                Ok(non_obj_self.abstract_eq(other, avm, context, true)?)
             }
             (Value::Object(_), Value::Number(_)) => {
                 let non_obj_self = self.to_primitive_num(avm, context)?;
@@ -327,7 +333,7 @@ impl<'gc> Value<'gc> {
                     return Ok(false.into());
                 }
 
-                Ok(non_obj_self.abstract_eq(other, avm, context)?)
+                Ok(non_obj_self.abstract_eq(other, avm, context, true)?)
             }
             _ => Ok(false.into()),
         }
