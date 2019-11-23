@@ -1382,10 +1382,7 @@ impl<'gc> Avm1<'gc> {
         let a = self.pop()?;
         let b = self.pop()?;
 
-        let result = match b.abstract_lt(a, self, context)? {
-            Value::Bool(b) => b,
-            _ => false,
-        };
+        let result = b.abstract_lt(a, self, context)?;
 
         self.push(result);
         Ok(())
@@ -1396,10 +1393,7 @@ impl<'gc> Avm1<'gc> {
         let a = self.pop()?;
         let b = self.pop()?;
 
-        let result = match a.abstract_lt(b, self, context)? {
-            Value::Bool(b) => b,
-            _ => false,
-        };
+        let result = a.abstract_lt(b, self, context)?;
 
         self.push(result);
         Ok(())
