@@ -288,7 +288,7 @@ impl<'gc> Scope<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
     ) -> Result<Option<Value<'gc>>, Error> {
-        if self.locals().has_property(name) {
+        if self.locals().has_property(name) && self.locals().is_property_overwritable(name) {
             self.locals_mut(context.gc_context)
                 .set(name, value, avm, context, this)?;
             return Ok(None);

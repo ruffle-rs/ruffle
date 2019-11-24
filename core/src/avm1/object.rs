@@ -108,6 +108,15 @@ impl<'gc> Property<'gc> {
             Property::Stored { attributes, .. } => !attributes.contains(DontEnum),
         }
     }
+
+    pub fn is_overwritable(&self) -> bool {
+        match self {
+            Property::Virtual {
+                attributes, set, ..
+            } => !attributes.contains(ReadOnly) && !set.is_none(),
+            Property::Stored { attributes, .. } => !attributes.contains(ReadOnly),
+        }
+    }
 }
 
 unsafe impl<'gc> gc_arena::Collect for Property<'gc> {
@@ -337,6 +346,13 @@ impl<'gc> Object<'gc> {
 
     pub fn has_own_property(&self, name: &str) -> bool {
         self.values.contains_key(name)
+    }
+
+    pub fn is_property_overwritable(&self, name: &str) -> bool {
+        self.values
+            .get(name)
+            .map(|p| p.is_overwritable())
+            .unwrap_or(false)
     }
 
     pub fn get_keys(&self) -> Vec<String> {
