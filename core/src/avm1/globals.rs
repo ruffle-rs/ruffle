@@ -294,7 +294,7 @@ mod tests {
             [0.0] => false,
             [std::f64::INFINITY] => false,
             [std::f64::NAN] => true,
-            [""] => false,
+            [""] => true,
             ["Hello"] => true,
             [" "] => true,
             ["  5  "] => true,
@@ -312,15 +312,26 @@ mod tests {
     );
 
     test_method!(number_function, "Number", setup,
-        [19] => {
+        [5, 6] => {
             [true] => 1.0,
             [false] => 0.0,
             [10.0] => 10.0,
             [-10.0] => -10.0,
+            ["true"] => std::f64::NAN,
+            ["false"] => std::f64::NAN,
+            [1.0] => 1.0,
             [0.0] => 0.0,
-            [std::f64::INFINITY] => std::f64::INFINITY,
+            [0.000] => 0.0,
+            ["0.000"] => 0.0,
+            ["True"] => std::f64::NAN,
+            ["False"] => std::f64::NAN,
             [std::f64::NAN] => std::f64::NAN,
-            [""] => 0.0,
+            [std::f64::INFINITY] => std::f64::INFINITY,
+            [std::f64::NEG_INFINITY] => std::f64::NEG_INFINITY,
+            [" 12"] => 12.0,
+            [" 0x12"] => std::f64::NAN,
+            ["01.2"] => 1.2,
+            [""] => std::f64::NAN,
             ["Hello"] => std::f64::NAN,
             [" "] => std::f64::NAN,
             ["  5  "] => std::f64::NAN,
@@ -328,12 +339,28 @@ mod tests {
             ["1"] => 1.0,
             ["Infinity"] => std::f64::NAN,
             ["100a"] => std::f64::NAN,
-            ["0x10"] => 16.0,
             ["0xhello"] => std::f64::NAN,
             ["123e-1"] => 12.3,
-            ["0x1999999981ffffff"] => -2113929217.0,
             ["0xUIXUIDFKHJDF012345678"] => std::f64::NAN,
             [] => 0.0
+        },
+        [5] => {
+            ["0x12"] => std::f64::NAN,
+            ["0x10"] => std::f64::NAN,
+            ["0x1999999981ffffff"] => std::f64::NAN
+        },
+        [6, 7] => {
+            ["0x12"] => 18.0,
+            ["0x10"] => 16.0,
+            ["0x1999999981ffffff"] => -2113929217.0
+        },
+        [5, 6] => {
+            [Value::Undefined] => 0.0,
+            [Value::Null] => 0.0
+        },
+        [7] => {
+            [Value::Undefined] => std::f64::NAN,
+            [Value::Null] => std::f64::NAN
         }
     );
 }

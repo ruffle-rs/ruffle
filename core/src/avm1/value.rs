@@ -131,7 +131,8 @@ impl<'gc> Value<'gc> {
     /// we are aware, version-gated:
     ///
     /// * In SWF6 and lower, `undefined` is coerced to `0.0` (like `false`)
-    /// rathern than `NaN` as required by spec.
+    /// rather than `NaN` as required by spec.
+    /// * In SWF5 and lower, hexadecimal is unsupported.
     fn primitive_as_number(
         &self,
         avm: &mut Avm1<'gc>,
@@ -146,7 +147,7 @@ impl<'gc> Value<'gc> {
             Value::Bool(true) => 1.0,
             Value::Number(v) => *v,
             Value::String(v) => match v.as_str() {
-                v if v.starts_with("0x") => {
+                v if avm.current_swf_version() >= 6 && v.starts_with("0x") => {
                     let mut n: u32 = 0;
                     for c in v[2..].bytes() {
                         n = n.wrapping_shl(4);
@@ -172,8 +173,8 @@ impl<'gc> Value<'gc> {
                     }
                     f64::from(n as i32)
                 }
-                "" => 0.0,
-                _ => v.parse().unwrap_or(NAN),
+                "" => NAN,
+                _ => v.trim_start().parse().unwrap_or(NAN),
             },
             Value::Object(_) => NAN,
         }
