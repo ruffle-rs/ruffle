@@ -78,6 +78,7 @@ swf_tests! {
     (equals2_swf6, "avm1/equals2_swf6", 1),
     (equals2_swf7, "avm1/equals2_swf7", 1),
     (strictequals_swf6, "avm1/strictequals_swf6", 1),
+    (global_is_bare, "avm1/global_is_bare", 1),
 }
 
 #[test]
