@@ -156,11 +156,12 @@ impl WebCanvasRenderBackend {
         width: u32,
         height: u32,
     ) -> Result<String, Box<dyn std::error::Error>> {
-        use png::{Encoder, HasParameters};
+        use png::Encoder;
         let mut png_data: Vec<u8> = vec![];
         {
             let mut encoder = Encoder::new(&mut png_data, width, height);
-            encoder.set(png::ColorType::RGBA).set(png::BitDepth::Eight);
+            encoder.set_color(png::ColorType::RGBA);
+            encoder.set_depth(png::BitDepth::Eight);
             let mut writer = encoder.write_header()?;
             writer.write_image_data(&rgba)?;
         }
