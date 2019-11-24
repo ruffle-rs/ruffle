@@ -466,7 +466,7 @@ impl<'gc> Value<'gc> {
         if let Value::Object(object) = self {
             object.read().call(avm, context, this, args)
         } else {
-            Err(format!("Expected function, found {:?}", self).into())
+            Ok(Value::Undefined.into())
         }
     }
 }

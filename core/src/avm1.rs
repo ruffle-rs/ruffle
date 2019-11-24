@@ -761,8 +761,9 @@ impl<'gc> Avm1<'gc> {
                         .get(&name, self, context, target)?
                         .resolve(self, context)?;
 
-                    if let Value::Undefined = callable {
-                        return Err(format!("Object method {} is not defined", name).into());
+                    if let Value::Object(_) = callable {
+                    } else {
+                        log::warn!("Object method {} is not callable", name);
                     }
 
                     callable.call(self, context, target, &args)?.push(self);
