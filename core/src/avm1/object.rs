@@ -1,6 +1,7 @@
 use self::Attribute::*;
 use crate::avm1::function::{Avm1Function, Executable, NativeFunction};
-use crate::avm1::{Avm1, UpdateContext, Value};
+use crate::avm1::return_value::ReturnValue;
+use crate::avm1::{Avm1, Error, UpdateContext, Value};
 use crate::display_object::DisplayNode;
 use core::fmt;
 use enumset::{EnumSet, EnumSetType};
@@ -18,8 +19,8 @@ fn default_to_string<'gc>(
     _: &mut UpdateContext<'_, 'gc, '_>,
     _: GcCell<'gc, Object<'gc>>,
     _: &[Value<'gc>],
-) -> Value<'gc> {
-    "[Object object]".into()
+) -> Result<ReturnValue<'gc>, Error> {
+    Ok(ReturnValue::Immediate("[Object object]".into()))
 }
 
 #[derive(EnumSetType, Debug)]
@@ -32,8 +33,8 @@ pub enum Attribute {
 #[derive(Clone)]
 pub enum Property<'gc> {
     Virtual {
-        get: NativeFunction<'gc>,
-        set: Option<NativeFunction<'gc>>,
+        get: Executable<'gc>,
+        set: Option<Executable<'gc>>,
         attributes: EnumSet<Attribute>,
     },
     Stored {
@@ -43,29 +44,43 @@ pub enum Property<'gc> {
 }
 
 impl<'gc> Property<'gc> {
+    /// Get the value of a property slot.
+    ///
+    /// This function yields `None` if the value is being determined on the AVM
+    /// stack. Otherwise, if the value can be determined on the Rust stack,
+    /// then this function returns the value.
     pub fn get(
         &self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
-    ) -> Value<'gc> {
+    ) -> Result<ReturnValue<'gc>, Error> {
         match self {
-            Property::Virtual { get, .. } => get(avm, context, this, &[]),
-            Property::Stored { value, .. } => value.to_owned(),
+            Property::Virtual { get, .. } => get.exec(avm, context, this, &[]),
+            Property::Stored { value, .. } => Ok(value.to_owned().into()),
         }
     }
 
+    /// Set a property slot.
+    ///
+    /// This function returns `true` if the set has completed, or `false` if
+    /// it has not yet occured. If `false`, and you need to run code after the
+    /// set has occured, you must recursively execute the top-most frame via
+    /// `run_current_frame`.
     pub fn set(
         &mut self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
         new_value: impl Into<Value<'gc>>,
-    ) {
+    ) -> Result<bool, Error> {
         match self {
             Property::Virtual { set, .. } => {
                 if let Some(function) = set {
-                    function(avm, context, this, &[new_value.into()]);
+                    let return_value = function.exec(avm, context, this, &[new_value.into()])?;
+                    Ok(return_value.is_immediate())
+                } else {
+                    Ok(true)
                 }
             }
             Property::Stored {
@@ -74,6 +89,8 @@ impl<'gc> Property<'gc> {
                 if !attributes.contains(ReadOnly) {
                     replace::<Value<'gc>>(value, new_value.into());
                 }
+
+                Ok(true)
             }
         }
     }
@@ -89,6 +106,15 @@ impl<'gc> Property<'gc> {
         match self {
             Property::Virtual { attributes, .. } => !attributes.contains(DontEnum),
             Property::Stored { attributes, .. } => !attributes.contains(DontEnum),
+        }
+    }
+
+    pub fn is_overwritable(&self) -> bool {
+        match self {
+            Property::Virtual {
+                attributes, set, ..
+            } => !attributes.contains(ReadOnly) && !set.is_none(),
+            Property::Stored { attributes, .. } => !attributes.contains(ReadOnly),
         }
     }
 }
@@ -218,16 +244,18 @@ impl<'gc> Object<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
-    ) {
+    ) -> Result<(), Error> {
         match self.values.entry(name.to_owned()) {
             Entry::Occupied(mut entry) => {
-                entry.get_mut().set(avm, context, this, value);
+                entry.get_mut().set(avm, context, this, value)?;
+                Ok(())
             }
             Entry::Vacant(entry) => {
                 entry.insert(Property::Stored {
                     value: value.into(),
                     attributes: Default::default(),
                 });
+                Ok(())
             }
         }
     }
@@ -235,8 +263,8 @@ impl<'gc> Object<'gc> {
     pub fn force_set_virtual<A>(
         &mut self,
         name: &str,
-        get: NativeFunction<'gc>,
-        set: Option<NativeFunction<'gc>>,
+        get: Executable<'gc>,
+        set: Option<Executable<'gc>>,
         attributes: A,
     ) where
         A: Into<EnumSet<Attribute>>,
@@ -280,26 +308,24 @@ impl<'gc> Object<'gc> {
         )
     }
 
+    /// Get the value of a particular property on this object.
+    ///
+    /// The `avm`, `context`, and `this` parameters exist so that this object
+    /// can call virtual properties. Likewise, this function returns a
+    /// `ReturnValue` which allows pulling data from the return values of user
+    /// functions.
     pub fn get(
         &self,
         name: &str,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
-    ) -> Value<'gc> {
+    ) -> Result<ReturnValue<'gc>, Error> {
         if let Some(value) = self.values.get(name) {
             return value.get(avm, context, this);
         }
-        Value::Undefined
-    }
 
-    /// Retrieve a value from an object if and only if the value in the object
-    /// property is non-virtual.
-    pub fn force_get(&self, name: &str) -> Value<'gc> {
-        if let Some(Property::Stored { value, .. }) = self.values.get(name) {
-            return value.to_owned();
-        }
-        Value::Undefined
+        Ok(Value::Undefined.into())
     }
 
     /// Delete a given value off the object.
@@ -322,6 +348,13 @@ impl<'gc> Object<'gc> {
         self.values.contains_key(name)
     }
 
+    pub fn is_property_overwritable(&self, name: &str) -> bool {
+        self.values
+            .get(name)
+            .map(|p| p.is_overwritable())
+            .unwrap_or(false)
+    }
+
     pub fn get_keys(&self) -> Vec<String> {
         self.values
             .iter()
@@ -341,11 +374,11 @@ impl<'gc> Object<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Option<Value<'gc>> {
+    ) -> Result<ReturnValue<'gc>, Error> {
         if let Some(function) = &self.function {
             function.exec(avm, context, this, args)
         } else {
-            Some(Value::Undefined)
+            Ok(Value::Undefined.into())
         }
     }
 
@@ -422,10 +455,10 @@ mod tests {
             let object = GcCell::allocate(gc_context, Object::object(gc_context));
 
             let globals = avm.global_object_cell();
-            avm.insert_stack_frame(
+            avm.insert_stack_frame(GcCell::allocate(
+                gc_context,
                 Activation::from_nothing(swf_version, globals, gc_context),
-                &mut context,
-            );
+            ));
 
             test(&mut avm, &mut context, object)
         })
@@ -435,8 +468,11 @@ mod tests {
     fn test_get_undefined() {
         with_object(0, |avm, context, object| {
             assert_eq!(
-                object.read().get("not_defined", avm, context, object),
-                Value::Undefined
+                object
+                    .read()
+                    .get("not_defined", avm, context, object)
+                    .unwrap(),
+                Value::Undefined.into()
             );
         })
     }
@@ -449,15 +485,16 @@ mod tests {
                 .force_set("forced", "forced", EnumSet::empty());
             object
                 .write(context.gc_context)
-                .set("natural", "natural", avm, context, object);
+                .set("natural", "natural", avm, context, object)
+                .unwrap();
 
             assert_eq!(
-                object.read().get("forced", avm, context, object),
-                "forced".into()
+                object.read().get("forced", avm, context, object).unwrap(),
+                ReturnValue::Immediate("forced".into())
             );
             assert_eq!(
-                object.read().get("natural", avm, context, object),
-                "natural".into()
+                object.read().get("natural", avm, context, object).unwrap(),
+                ReturnValue::Immediate("natural".into())
             );
         })
     }
@@ -474,18 +511,20 @@ mod tests {
 
             object
                 .write(context.gc_context)
-                .set("normal", "replaced", avm, context, object);
+                .set("normal", "replaced", avm, context, object)
+                .unwrap();
             object
                 .write(context.gc_context)
-                .set("readonly", "replaced", avm, context, object);
+                .set("readonly", "replaced", avm, context, object)
+                .unwrap();
 
             assert_eq!(
-                object.read().get("normal", avm, context, object),
-                "replaced".into()
+                object.read().get("normal", avm, context, object).unwrap(),
+                ReturnValue::Immediate("replaced".into())
             );
             assert_eq!(
-                object.read().get("readonly", avm, context, object),
-                "initial".into()
+                object.read().get("readonly", avm, context, object).unwrap(),
+                ReturnValue::Immediate("initial".into())
             );
         })
     }
@@ -499,18 +538,19 @@ mod tests {
 
             assert_eq!(object.write(context.gc_context).delete("test"), false);
             assert_eq!(
-                object.read().get("test", avm, context, object),
-                "initial".into()
+                object.read().get("test", avm, context, object).unwrap(),
+                ReturnValue::Immediate("initial".into())
             );
 
             object
                 .write(context.gc_context)
-                .set("test", "replaced", avm, context, object);
+                .set("test", "replaced", avm, context, object)
+                .unwrap();
 
             assert_eq!(object.write(context.gc_context).delete("test"), false);
             assert_eq!(
-                object.read().get("test", avm, context, object),
-                "replaced".into()
+                object.read().get("test", avm, context, object).unwrap(),
+                ReturnValue::Immediate("replaced".into())
             );
         })
     }
@@ -518,7 +558,10 @@ mod tests {
     #[test]
     fn test_virtual_get() {
         with_object(0, |avm, context, object| {
-            let getter: NativeFunction = |_avm, _context, _this, _args| "Virtual!".into();
+            let getter = Executable::Native(|_avm, _context, _this, _args| {
+                Ok(ReturnValue::Immediate("Virtual!".into()))
+            });
+
             object.write(context.gc_context).force_set_virtual(
                 "test",
                 getter,
@@ -527,17 +570,18 @@ mod tests {
             );
 
             assert_eq!(
-                object.read().get("test", avm, context, object),
-                "Virtual!".into()
+                object.read().get("test", avm, context, object).unwrap(),
+                ReturnValue::Immediate("Virtual!".into())
             );
 
             // This set should do nothing
             object
                 .write(context.gc_context)
-                .set("test", "Ignored!", avm, context, object);
+                .set("test", "Ignored!", avm, context, object)
+                .unwrap();
             assert_eq!(
-                object.read().get("test", avm, context, object),
-                "Virtual!".into()
+                object.read().get("test", avm, context, object).unwrap(),
+                ReturnValue::Immediate("Virtual!".into())
             );
         })
     }
@@ -545,11 +589,13 @@ mod tests {
     #[test]
     fn test_delete() {
         with_object(0, |avm, context, object| {
-            let getter: NativeFunction = |_avm, _context, _this, _args| "Virtual!".into();
+            let getter = Executable::Native(|_avm, _context, _this, _args| {
+                Ok(ReturnValue::Immediate("Virtual!".into()))
+            });
 
             object.write(context.gc_context).force_set_virtual(
                 "virtual",
-                getter,
+                getter.clone(),
                 None,
                 EnumSet::empty(),
             );
@@ -576,20 +622,26 @@ mod tests {
             );
 
             assert_eq!(
-                object.read().get("virtual", avm, context, object),
-                Value::Undefined
+                object.read().get("virtual", avm, context, object).unwrap(),
+                Value::Undefined.into()
             );
             assert_eq!(
-                object.read().get("virtual_un", avm, context, object),
-                "Virtual!".into()
+                object
+                    .read()
+                    .get("virtual_un", avm, context, object)
+                    .unwrap(),
+                ReturnValue::Immediate("Virtual!".into())
             );
             assert_eq!(
-                object.read().get("stored", avm, context, object),
-                Value::Undefined
+                object.read().get("stored", avm, context, object).unwrap(),
+                Value::Undefined.into()
             );
             assert_eq!(
-                object.read().get("stored_un", avm, context, object),
-                "Stored!".into()
+                object
+                    .read()
+                    .get("stored_un", avm, context, object)
+                    .unwrap(),
+                ReturnValue::Immediate("Stored!".into())
             );
         })
     }
@@ -597,7 +649,7 @@ mod tests {
     #[test]
     fn test_iter_values() {
         with_object(0, |_avm, context, object| {
-            let getter: NativeFunction = |_avm, _context, _this, _args| Value::Null;
+            let getter = Executable::Native(|_avm, _context, _this, _args| Ok(Value::Null.into()));
 
             object
                 .write(context.gc_context)
@@ -607,7 +659,7 @@ mod tests {
                 .force_set("stored_hidden", Value::Null, DontEnum);
             object.write(context.gc_context).force_set_virtual(
                 "virtual",
-                getter,
+                getter.clone(),
                 None,
                 EnumSet::empty(),
             );

@@ -1,5 +1,6 @@
 use crate::avm1::object::Attribute::*;
-use crate::avm1::{Avm1, Object, UpdateContext, Value};
+use crate::avm1::return_value::ReturnValue;
+use crate::avm1::{Avm1, Error, Object, UpdateContext, Value};
 use gc_arena::{GcCell, MutationContext};
 use rand::Rng;
 use std::f64::NAN;
@@ -9,11 +10,11 @@ macro_rules! wrap_std {
         $(
             $object.force_set_function(
                 $name,
-                |_avm, _context, _this, args| -> Value<'gc> {
+                |_avm, _context, _this, args| -> Result<ReturnValue<'gc>, Error> {
                     if let Some(input) = args.get(0) {
-                        Value::Number($std(input.as_number()))
+                        Ok($std(input.as_number()).into())
                     } else {
-                        Value::Number(NAN)
+                        Ok(NAN.into())
                     }
                 },
                 $gc_context,
@@ -28,15 +29,15 @@ fn atan2<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
-) -> Value<'gc> {
+) -> Result<ReturnValue<'gc>, Error> {
     if let Some(y) = args.get(0) {
         if let Some(x) = args.get(1) {
-            return Value::Number(y.as_number().atan2(x.as_number()));
+            return Ok(y.as_number().atan2(x.as_number()).into());
         } else {
-            return Value::Number(y.as_number().atan2(0.0));
+            return Ok(y.as_number().atan2(0.0).into());
         }
     }
-    Value::Number(NAN)
+    Ok(NAN.into())
 }
 
 pub fn random<'gc>(
@@ -44,8 +45,8 @@ pub fn random<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: GcCell<'gc, Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Value<'gc> {
-    Value::Number(action_context.rng.gen_range(0.0f64, 1.0f64))
+) -> Result<ReturnValue<'gc>, Error> {
+    Ok(action_context.rng.gen_range(0.0f64, 1.0f64).into())
 }
 
 pub fn create<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Object<'gc>> {
@@ -130,7 +131,7 @@ mod tests {
             fn $test() -> Result<(), Error> {
                 with_avm(19, |avm, context, _root| {
                     let math = create(context.gc_context);
-                    let function = math.read().get($name, avm, context, math);
+                    let function = math.read().get($name, avm, context, math)?.unwrap_immediate();
 
                     $(
                         #[allow(unused_mut)]
@@ -138,7 +139,7 @@ mod tests {
                         $(
                             args.push($arg.into());
                         )*
-                        assert_eq!(function.call(avm, context, math, &args)?, Some($out.into()));
+                        assert_eq!(function.call(avm, context, math, &args)?, ReturnValue::Immediate($out.into()));
                     )*
 
                     Ok(())
@@ -236,33 +237,18 @@ mod tests {
     fn test_atan2_nan() {
         with_avm(19, |avm, context, _root| {
             let math = GcCell::allocate(context.gc_context, create(context.gc_context));
-            assert_eq!(atan2(avm, context, *math.read(), &[]), Value::Number(NAN));
+            assert_eq!(atan2(avm, context, *math.read(), &[]).unwrap(), NAN.into());
             assert_eq!(
-                atan2(
-                    avm,
-                    context,
-                    *math.read(),
-                    &[Value::Number(1.0), Value::Null]
-                ),
-                Value::Number(NAN)
+                atan2(avm, context, *math.read(), &[1.0.into(), Value::Null]).unwrap(),
+                NAN.into()
             );
             assert_eq!(
-                atan2(
-                    avm,
-                    context,
-                    *math.read(),
-                    &[Value::Number(1.0), Value::Undefined]
-                ),
-                Value::Number(NAN)
+                atan2(avm, context, *math.read(), &[1.0.into(), Value::Undefined]).unwrap(),
+                NAN.into()
             );
             assert_eq!(
-                atan2(
-                    avm,
-                    context,
-                    *math.read(),
-                    &[Value::Undefined, Value::Number(1.0)]
-                ),
-                Value::Number(NAN)
+                atan2(avm, context, *math.read(), &[Value::Undefined, 1.0.into()]).unwrap(),
+                NAN.into()
             );
         });
     }
@@ -272,17 +258,12 @@ mod tests {
         with_avm(19, |avm, context, _root| {
             let math = GcCell::allocate(context.gc_context, create(context.gc_context));
             assert_eq!(
-                atan2(avm, context, *math.read(), &[Value::Number(10.0)]),
-                Value::Number(std::f64::consts::FRAC_PI_2)
+                atan2(avm, context, *math.read(), &[10.0.into()]).unwrap(),
+                std::f64::consts::FRAC_PI_2.into()
             );
             assert_eq!(
-                atan2(
-                    avm,
-                    context,
-                    *math.read(),
-                    &[Value::Number(1.0), Value::Number(2.0)]
-                ),
-                Value::Number(f64::atan2(1.0, 2.0))
+                atan2(avm, context, *math.read(), &[1.0.into(), 2.0.into()]).unwrap(),
+                f64::atan2(1.0, 2.0).into()
             );
         });
     }

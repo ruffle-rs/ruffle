@@ -1,8 +1,10 @@
 //! Activation records
 
 use crate::avm1::object::Object;
+use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
-use crate::avm1::{Avm1, UpdateContext, Value};
+use crate::avm1::{Avm1, Error, Value};
+use crate::context::UpdateContext;
 use crate::tag_utils::SwfSlice;
 use gc_arena::{GcCell, MutationContext};
 use smallvec::SmallVec;
@@ -48,7 +50,6 @@ impl<'gc> RegisterSet<'gc> {
 }
 
 /// Represents a single activation of a given AVM1 function or keyframe.
-#[derive(Clone)]
 pub struct Activation<'gc> {
     /// Represents the SWF version of a given function.
     ///
@@ -72,6 +73,9 @@ pub struct Activation<'gc> {
     /// The arguments this function was called by.
     arguments: Option<GcCell<'gc, Object<'gc>>>,
 
+    /// The return value of the activation.
+    return_value: Option<Value<'gc>>,
+
     /// Indicates if this activation object represents a function or embedded
     /// block (e.g. ActionWith).
     is_function: bool,
@@ -88,6 +92,11 @@ pub struct Activation<'gc> {
     /// Registers are stored in a `GcCell` so that rescopes (e.g. with) use the
     /// same register set.
     local_registers: Option<GcCell<'gc, RegisterSet<'gc>>>,
+
+    /// Flags that the current activation frame is being executed and has a
+    /// reader object copied from it. Taking out two readers on the same
+    /// activation frame is a programming error.
+    is_executing: bool,
 }
 
 unsafe impl<'gc> gc_arena::Collect for Activation<'gc> {
@@ -96,6 +105,7 @@ unsafe impl<'gc> gc_arena::Collect for Activation<'gc> {
         self.scope.trace(cc);
         self.this.trace(cc);
         self.arguments.trace(cc);
+        self.return_value.trace(cc);
         self.local_registers.trace(cc);
     }
 }
@@ -115,8 +125,10 @@ impl<'gc> Activation<'gc> {
             scope,
             this,
             arguments,
+            return_value: None,
             is_function: false,
             local_registers: None,
+            is_executing: false,
         }
     }
 
@@ -134,8 +146,10 @@ impl<'gc> Activation<'gc> {
             scope,
             this,
             arguments,
+            return_value: None,
             is_function: true,
             local_registers: None,
+            is_executing: false,
         }
     }
 
@@ -164,8 +178,10 @@ impl<'gc> Activation<'gc> {
             scope: child_scope,
             this: globals,
             arguments: None,
+            return_value: None,
             is_function: false,
             local_registers: None,
+            is_executing: false,
         }
     }
 
@@ -178,8 +194,10 @@ impl<'gc> Activation<'gc> {
             scope,
             this: self.this,
             arguments: self.arguments,
+            return_value: None,
             is_function: false,
             local_registers: self.local_registers,
+            is_executing: false,
         }
     }
 
@@ -240,18 +258,21 @@ impl<'gc> Activation<'gc> {
     }
 
     /// Resolve a particular named local variable within this activation.
+    ///
+    /// Because scopes are object chains, the same rules for `Object::get`
+    /// still apply here.
     pub fn resolve(
         &self,
         name: &str,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Value<'gc> {
+    ) -> Result<ReturnValue<'gc>, Error> {
         if name == "this" {
-            return Value::Object(self.this);
+            return Ok(Value::Object(self.this).into());
         }
 
         if name == "arguments" && self.arguments.is_some() {
-            return Value::Object(self.arguments.unwrap());
+            return Ok(Value::Object(self.arguments.unwrap()).into());
         }
 
         self.scope().resolve(name, avm, context, self.this)
@@ -315,5 +336,35 @@ impl<'gc> Activation<'gc> {
                 *r = value.into();
             }
         }
+    }
+
+    /// Attempts to lock the activation frame for execution.
+    ///
+    /// If this frame is already executing, that is an error condition.
+    pub fn lock(&mut self) -> Result<(), Error> {
+        if self.is_executing {
+            return Err("Attempted to execute the same frame twice".into());
+        }
+
+        self.is_executing = true;
+
+        Ok(())
+    }
+
+    /// Unlock the activation object. This allows future execution to run on it
+    /// again.
+    pub fn unlock_execution(&mut self) {
+        self.is_executing = false;
+    }
+
+    /// Retrieve the return value from a completed activation, if the function
+    /// has already returned.
+    pub fn return_value(&self) -> Option<Value<'gc>> {
+        self.return_value.clone()
+    }
+
+    /// Set the return value.
+    pub fn set_return_value(&mut self, value: Value<'gc>) {
+        self.return_value = Some(value);
     }
 }

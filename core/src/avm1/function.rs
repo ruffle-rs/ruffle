@@ -2,19 +2,34 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::object::{Attribute::*, Object};
+use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
-use crate::avm1::{Avm1, UpdateContext};
+use crate::avm1::{Avm1, Error, UpdateContext};
 use crate::tag_utils::SwfSlice;
 use gc_arena::GcCell;
 use swf::avm1::types::FunctionParam;
 
+/// Represents a function defined in Ruffle's code.
+///
+/// Parameters are as follows:
+///
+///  * The AVM1 runtime
+///  * The action context
+///  * The current `this` object
+///  * The arguments this function was called with
+///
+/// Native functions are allowed to return a value or `None`. `None` indicates
+/// that the given value will not be returned on the stack and instead will
+/// resolve on the AVM stack, as if you had called a non-native function. If
+/// your function yields `None`, you must ensure that the top-most activation
+/// in the AVM1 runtime will return with the value of this function.
 pub type NativeFunction<'gc> = fn(
     &mut Avm1<'gc>,
     &mut UpdateContext<'_, 'gc, '_>,
     GcCell<'gc, Object<'gc>>,
     &[Value<'gc>],
-) -> Value<'gc>;
+) -> Result<ReturnValue<'gc>, Error>;
 
 /// Represents a function defined in the AVM1 runtime, either through
 /// `DefineFunction` or `DefineFunction2`.
@@ -169,9 +184,9 @@ impl<'gc> Executable<'gc> {
         ac: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Option<Value<'gc>> {
+    ) -> Result<ReturnValue<'gc>, Error> {
         match self {
-            Executable::Native(nf) => Some(nf(avm, ac, this, args)),
+            Executable::Native(nf) => nf(avm, ac, this, args),
             Executable::Action(af) => {
                 let child_scope = GcCell::allocate(
                     ac.gc_context,
@@ -204,13 +219,17 @@ impl<'gc> Executable<'gc> {
                         .unwrap_or(ac.player_version)
                 };
 
-                let mut frame = Activation::from_function(
-                    effective_ver,
-                    af.data(),
-                    child_scope,
-                    this,
-                    Some(argcell),
+                let frame_cell = GcCell::allocate(
+                    ac.gc_context,
+                    Activation::from_function(
+                        effective_ver,
+                        af.data(),
+                        child_scope,
+                        this,
+                        Some(argcell),
+                    ),
                 );
+                let mut frame = frame_cell.write(ac.gc_context);
 
                 frame.allocate_local_registers(af.register_count(), ac.gc_context);
 
@@ -244,11 +263,17 @@ impl<'gc> Executable<'gc> {
                 }
 
                 if af.preload_parent {
-                    frame.set_local_register(
+                    let parent = child_scope
+                        .read()
+                        .resolve("_parent", avm, ac, this)?
+                        .resolve(avm, ac)?;
+
+                    frame_cell.write(ac.gc_context).set_local_register(
                         preload_r,
-                        child_scope.read().resolve("_parent", avm, ac, this),
+                        parent,
                         ac.gc_context,
                     );
+
                     preload_r += 1;
                 }
 
@@ -269,9 +294,9 @@ impl<'gc> Executable<'gc> {
                         _ => {}
                     }
                 }
-                avm.insert_stack_frame(frame, ac);
+                avm.insert_stack_frame(frame_cell);
 
-                None
+                Ok(frame_cell.into())
             }
         }
     }

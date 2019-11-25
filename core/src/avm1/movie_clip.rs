@@ -1,6 +1,8 @@
+use crate::avm1::function::Executable;
 use crate::avm1::object::{Attribute::*, Object};
-use crate::avm1::{Avm1, UpdateContext, Value};
-use crate::display_object::{DisplayNode, MovieClip};
+use crate::avm1::return_value::ReturnValue;
+use crate::avm1::{Avm1, Error, UpdateContext, Value};
+use crate::display_object::{DisplayNode, DisplayObject, MovieClip};
 use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
 
@@ -9,13 +11,13 @@ macro_rules! with_movie_clip {
         $(
             $object.force_set_function(
                 $name,
-                |_avm, _context, this, args| -> Value<'gc> {
+                |_avm, _context, this, args| -> Result<ReturnValue<'gc>, Error> {
                     if let Some(display_object) = this.read().display_node() {
                         if let Some(movie_clip) = display_object.read().as_movie_clip() {
-                            return $fn(movie_clip, args);
+                            return Ok($fn(movie_clip, args));
                         }
                     }
-                    Value::Undefined
+                    Ok(Value::Undefined.into())
                 },
                 $gc_context,
                 DontDelete | ReadOnly | DontEnum,
@@ -29,13 +31,13 @@ macro_rules! with_movie_clip_mut {
         $(
             $object.force_set_function(
                 $name,
-                |_avm, context: &mut UpdateContext<'_, 'gc, '_>, this, args| -> Value<'gc> {
+                |_avm, context: &mut UpdateContext<'_, 'gc, '_>, this, args| -> Result<ReturnValue<'gc>, Error> {
                     if let Some(display_object) = this.read().display_node() {
                         if let Some(movie_clip) = display_object.write(context.gc_context).as_movie_clip_mut() {
-                            return $fn(movie_clip, context, display_object, args);
+                            return Ok($fn(movie_clip, context, display_object, args).into());
                         }
                     }
-                    Value::Undefined
+                    Ok(Value::Undefined.into())
                 } as crate::avm1::function::NativeFunction<'gc>,
                 $gc_context,
                 DontDelete | ReadOnly | DontEnum,
@@ -49,7 +51,7 @@ pub fn overwrite_root<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
-) -> Value<'gc> {
+) -> Result<ReturnValue<'gc>, Error> {
     let new_val = args
         .get(0)
         .map(|v| v.to_owned())
@@ -57,7 +59,7 @@ pub fn overwrite_root<'gc>(
     this.write(ac.gc_context)
         .force_set("_root", new_val, EnumSet::new());
 
-    Value::Undefined
+    Ok(Value::Undefined.into())
 }
 
 pub fn overwrite_global<'gc>(
@@ -65,7 +67,7 @@ pub fn overwrite_global<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: GcCell<'gc, Object<'gc>>,
     args: &[Value<'gc>],
-) -> Value<'gc> {
+) -> Result<ReturnValue<'gc>, Error> {
     let new_val = args
         .get(0)
         .map(|v| v.to_owned())
@@ -73,7 +75,7 @@ pub fn overwrite_global<'gc>(
     this.write(ac.gc_context)
         .force_set("_global", new_val, EnumSet::new());
 
-    Value::Undefined
+    Ok(Value::Undefined.into())
 }
 
 pub fn create_movie_object<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<'gc> {
@@ -105,38 +107,43 @@ pub fn create_movie_object<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<
         object,
         "getBytesLoaded" => |_movie_clip: &MovieClip<'gc>, _args| {
             // TODO find a correct value
-            Value::Number(1.0)
+            1.0.into()
         },
         "getBytesTotal" => |_movie_clip: &MovieClip<'gc>, _args| {
             // TODO find a correct value
-            Value::Number(1.0)
+            1.0.into()
+        },
+        "toString" => |movie_clip: &MovieClip, _args| {
+            movie_clip.name().to_string().into()
         }
     );
 
     object.force_set_virtual(
         "_global",
-        |avm, context, _this, _args| avm.global_object(context),
-        Some(overwrite_global),
+        Executable::Native(|avm, context, _this, _args| Ok(avm.global_object(context).into())),
+        Some(Executable::Native(overwrite_global)),
         EnumSet::new(),
     );
 
     object.force_set_virtual(
         "_root",
-        |avm, context, _this, _args| avm.root_object(context),
-        Some(overwrite_root),
+        Executable::Native(|avm, context, _this, _args| Ok(avm.root_object(context).into())),
+        Some(Executable::Native(overwrite_root)),
         EnumSet::new(),
     );
 
     object.force_set_virtual(
         "_parent",
-        |_avm, _context, this, _args| {
-            this.read()
+        Executable::Native(|_avm, _context, this, _args| {
+            Ok(this
+                .read()
                 .display_node()
                 .and_then(|mc| mc.read().parent())
                 .and_then(|dn| dn.read().object().as_object().ok())
                 .map(|o| Value::Object(o.to_owned()))
                 .unwrap_or(Value::Undefined)
-        },
+                .into())
+        }),
         None,
         EnumSet::new(),
     );

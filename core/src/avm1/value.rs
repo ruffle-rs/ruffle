@@ -1,4 +1,5 @@
 use crate::avm1::object::Object;
+use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, UpdateContext};
 use gc_arena::GcCell;
 
@@ -257,9 +258,9 @@ impl<'gc> Value<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Result<Option<Value<'gc>>, Error> {
+    ) -> Result<ReturnValue<'gc>, Error> {
         if let Value::Object(object) = self {
-            Ok(object.read().call(avm, context, this, args))
+            object.read().call(avm, context, this, args)
         } else {
             Err(format!("Expected function, found {:?}", self).into())
         }

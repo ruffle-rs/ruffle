@@ -20,6 +20,7 @@ mod function;
 mod globals;
 pub mod movie_clip;
 pub mod object;
+mod return_value;
 mod scope;
 mod value;
 
@@ -52,10 +53,6 @@ pub struct Avm1<'gc> {
     /// The register slots (also shared across functions).
     /// `ActionDefineFunction2` defined functions do not use these slots.
     registers: [Value<'gc>; 4],
-
-    /// Used to enforce the restriction that no more than one mutable current
-    /// reader be active at once.
-    is_reading: bool,
 }
 
 unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
@@ -83,7 +80,6 @@ impl<'gc> Avm1<'gc> {
                 Value::Undefined,
                 Value::Undefined,
             ],
-            is_reading: false,
         }
     }
 
@@ -91,6 +87,8 @@ impl<'gc> Avm1<'gc> {
     ///
     /// This is necessary to support form submission from Flash via a couple of
     /// legacy methods, such as the `ActionGetURL2` opcode or `getURL` function.
+    ///
+    /// WARNING: This does not support user defined virtual properties!
     pub fn locals_into_form_values(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -106,7 +104,18 @@ impl<'gc> Avm1<'gc> {
 
         for k in keys {
             let v = locals.read().get(&k, self, context, locals);
-            form_values.insert(k, v.clone().into_string());
+
+            //TODO: What happens if an error occurs inside a virtual property?
+            form_values.insert(
+                k,
+                v.ok()
+                    .unwrap_or_else(|| Value::Undefined.into())
+                    .resolve(self, context)
+                    .ok()
+                    .unwrap_or(Value::Undefined)
+                    .clone()
+                    .into_string(),
+            );
         }
 
         form_values
@@ -170,13 +179,8 @@ impl<'gc> Avm1<'gc> {
     }
 
     /// Add a stack frame for any arbitrary code.
-    pub fn insert_stack_frame(
-        &mut self,
-        frame: Activation<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) {
-        self.stack_frames
-            .push(GcCell::allocate(context.gc_context, frame));
+    pub fn insert_stack_frame(&mut self, frame: GcCell<'gc, Activation<'gc>>) {
+        self.stack_frames.push(frame);
     }
 
     /// Retrieve the current AVM execution frame.
@@ -212,40 +216,62 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         func: F,
-    ) -> Option<R>
+    ) -> Result<R, Error>
     where
-        F: FnOnce(&mut Self, &mut Reader<'_>, &mut UpdateContext<'_, 'gc, '_>) -> R,
+        F: FnOnce(&mut Self, &mut Reader<'_>, &mut UpdateContext<'_, 'gc, '_>) -> Result<R, Error>,
     {
-        if self.is_reading {
-            log::error!(
-                "Two mutable readers are open at the same time. Please correct this error."
-            );
-        }
+        let (frame_cell, swf_version, data, pc) = {
+            let frame = self.stack_frames.last().ok_or("No stack frame to read!")?;
+            let mut frame_ref = frame.write(context.gc_context);
+            frame_ref.lock()?;
 
-        self.is_reading = true;
-        let (frame_cell, swf_version, data, pc) = self.stack_frames.last().map(|frame| {
-            let frame_ref = frame.read();
             (
                 *frame,
                 frame_ref.swf_version(),
                 frame_ref.data(),
                 frame_ref.pc(),
             )
-        })?;
+        };
+
         let mut read = Reader::new(data.as_ref(), swf_version);
         read.seek(pc.try_into().unwrap());
 
         let r = func(self, &mut read, context);
-        frame_cell.write(context.gc_context).set_pc(read.pos());
 
-        self.is_reading = false;
+        let mut frame_ref = frame_cell.write(context.gc_context);
+        frame_ref.unlock_execution();
+        frame_ref.set_pc(read.pos());
 
-        Some(r)
+        r
     }
 
     /// Destroy the current stack frame (if there is one).
-    fn retire_stack_frame(&mut self) {
-        self.stack_frames.pop();
+    ///
+    /// The given return value will be pushed on the stack if there is a
+    /// function to return it to. Otherwise, it will be discarded.
+    ///
+    /// NOTE: This means that if you are starting a brand new AVM stack just to
+    /// get it's return value, you won't get that value. Instead, retain a cell
+    /// referencing the oldest activation frame and use that to retrieve the
+    /// return value.
+    fn retire_stack_frame(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        return_value: Value<'gc>,
+    ) -> Result<(), Error> {
+        if let Some(frame) = self.current_stack_frame() {
+            self.stack_frames.pop();
+
+            let can_return = !self.stack_frames.is_empty();
+            if can_return {
+                frame
+                    .write(context.gc_context)
+                    .set_return_value(return_value.clone());
+                self.stack.push(return_value);
+            }
+        }
+
+        Ok(())
     }
 
     /// Execute the AVM stack until it is exhausted.
@@ -256,11 +282,41 @@ impl<'gc> Avm1<'gc> {
         while !self.stack_frames.is_empty() {
             self.with_current_reader_mut(context, |this, r, context| {
                 this.do_next_action(context, r)
-            })
-            .unwrap()?;
+            })?;
         }
 
         Ok(())
+    }
+
+    /// Execute the AVM stack until a given activation returns.
+    pub fn run_current_frame(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        stop_frame: GcCell<'gc, Activation<'gc>>,
+    ) -> Result<(), Error> {
+        let mut stop_frame_id = None;
+        for (index, frame) in self.stack_frames.iter().enumerate() {
+            if GcCell::ptr_eq(stop_frame, *frame) {
+                stop_frame_id = Some(index);
+            }
+        }
+
+        if let Some(stop_frame_id) = stop_frame_id {
+            while self
+                .stack_frames
+                .get(stop_frame_id)
+                .map(|fr| GcCell::ptr_eq(stop_frame, *fr))
+                .unwrap_or(false)
+            {
+                self.with_current_reader_mut(context, |this, r, context| {
+                    this.do_next_action(context, r)
+                })?;
+            }
+
+            Ok(())
+        } else {
+            Err("Attempted to run a frame not on the current interpreter stack".into())
+        }
     }
 
     /// Run a single action from a given action reader.
@@ -273,16 +329,7 @@ impl<'gc> Avm1<'gc> {
 
         if reader.pos() >= (data.end - data.start) {
             //Executing beyond the end of a function constitutes an implicit return.
-            if self
-                .current_stack_frame()
-                .unwrap()
-                .read()
-                .can_implicit_return()
-            {
-                self.push(Value::Undefined);
-            }
-
-            self.retire_stack_frame();
+            self.retire_stack_frame(context, Value::Undefined)?;
         } else if let Some(action) = reader.read_action()? {
             let result = match action {
                 Action::Add => self.action_add(context),
@@ -406,16 +453,7 @@ impl<'gc> Avm1<'gc> {
             }
         } else {
             //The explicit end opcode was encountered so return here
-            if self
-                .current_stack_frame()
-                .unwrap()
-                .read()
-                .can_implicit_return()
-            {
-                self.push(Value::Undefined);
-            }
-
-            self.retire_stack_frame();
+            self.retire_stack_frame(context, Value::Undefined)?;
         }
 
         Ok(())
@@ -663,16 +701,16 @@ impl<'gc> Avm1<'gc> {
             args.push(self.pop()?);
         }
 
-        let target_fn = self.stack_frames.last().unwrap().clone().read().resolve(
-            fn_name.as_string()?,
-            self,
-            context,
-        );
+        let target_fn = self
+            .stack_frames
+            .last()
+            .unwrap()
+            .clone()
+            .read()
+            .resolve(fn_name.as_string()?, self, context)?
+            .resolve(self, context)?;
         let this = context.active_clip.read().object().as_object()?.to_owned();
-        let return_value = target_fn.call(self, context, this, &args)?;
-        if let Some(instant_return) = return_value {
-            self.push(instant_return);
-        }
+        target_fn.call(self, context, this, &args)?.push(self);
 
         Ok(())
     }
@@ -692,35 +730,26 @@ impl<'gc> Avm1<'gc> {
         match method_name {
             Value::Undefined | Value::Null => {
                 let this = context.active_clip.read().object().as_object()?.to_owned();
-                let return_value = object.call(self, context, this, &args)?;
-                if let Some(instant_return) = return_value {
-                    self.push(instant_return);
-                }
+                object.call(self, context, this, &args)?.push(self);
             }
             Value::String(name) => {
                 if name.is_empty() {
-                    let return_value =
-                        object.call(self, context, object.as_object()?.to_owned(), &args)?;
-                    if let Some(instant_return) = return_value {
-                        self.push(instant_return);
-                    }
+                    object
+                        .call(self, context, object.as_object()?.to_owned(), &args)?
+                        .push(self);
                 } else {
-                    let callable = object.as_object()?.read().get(
-                        &name,
-                        self,
-                        context,
-                        object.as_object()?.to_owned(),
-                    );
+                    let target = object.as_object()?.to_owned();
+                    let callable = object
+                        .as_object()?
+                        .read()
+                        .get(&name, self, context, target)?
+                        .resolve(self, context)?;
 
                     if let Value::Undefined = callable {
                         return Err(format!("Object method {} is not defined", name).into());
                     }
 
-                    let return_value =
-                        callable.call(self, context, object.as_object()?.to_owned(), &args)?;
-                    if let Some(instant_return) = return_value {
-                        self.push(instant_return);
-                    }
+                    callable.call(self, context, target, &args)?.push(self);
                 }
             }
             _ => {
@@ -891,26 +920,24 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_enumerate(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        let name = self.pop()?;
-        let name = name.as_string()?;
+        let name_value = self.pop()?;
+        let name = name_value.as_string()?;
         self.push(Value::Null); // Sentinel that indicates end of enumeration
-        let ob = match self
+        let object = self
             .current_stack_frame()
             .unwrap()
             .read()
-            .resolve(name, self, context)
-        {
-            Value::Object(ob) => ob,
-            _ => {
-                log::error!("Cannot enumerate properties of {}", name);
+            .resolve(name, self, context)?
+            .resolve(self, context)?;
 
-                return Ok(()); //TODO: This is NOT OK(()).
+        match object {
+            Value::Object(ob) => {
+                for k in ob.read().get_keys() {
+                    self.push(k);
+                }
             }
+            _ => log::error!("Cannot enumerate properties of {}", name_value.as_string()?),
         };
-
-        for k in ob.read().get_keys() {
-            self.push(k);
-        }
 
         Ok(())
     }
@@ -967,8 +994,7 @@ impl<'gc> Avm1<'gc> {
         let name = name_val.into_string();
         let object = self.pop()?.as_object()?;
         let this = self.current_stack_frame().unwrap().read().this_cell();
-        let value = object.read().get(&name, self, context, this);
-        self.push(value);
+        object.read().get(&name, self, context, this)?.push(self);
 
         Ok(())
     }
@@ -984,13 +1010,13 @@ impl<'gc> Avm1<'gc> {
             if let Some(clip) = Avm1::resolve_slash_path(base_clip, context.root, path) {
                 if let Some(clip) = clip.read().as_movie_clip() {
                     match prop_index {
-                        0 => Value::Number(f64::from(clip.x())),
-                        1 => Value::Number(f64::from(clip.y())),
-                        2 => Value::Number(f64::from(clip.x_scale())),
-                        3 => Value::Number(f64::from(clip.y_scale())),
-                        4 => Value::Number(f64::from(clip.current_frame())),
-                        5 => Value::Number(f64::from(clip.total_frames())),
-                        10 => Value::Number(f64::from(clip.rotation())),
+                        0 => f64::from(clip.x()).into(),
+                        1 => f64::from(clip.y()).into(),
+                        2 => f64::from(clip.x_scale()).into(),
+                        3 => f64::from(clip.y_scale()).into(),
+                        4 => f64::from(clip.current_frame()).into(),
+                        5 => f64::from(clip.total_frames()).into(),
+                        10 => f64::from(clip.rotation()).into(),
                         11 => {
                             // _target
                             // TODO: This string should be built dynamically
@@ -998,7 +1024,7 @@ impl<'gc> Avm1<'gc> {
                             // _name to work accurately.
                             context.target_path.clone()
                         }
-                        12 => Value::Number(f64::from(clip.frames_loaded())),
+                        12 => f64::from(clip.frames_loaded()).into(),
                         _ => {
                             log::error!("GetProperty: Unimplemented property index {}", prop_index);
                             Value::Undefined
@@ -1048,7 +1074,6 @@ impl<'gc> Avm1<'gc> {
         let path = var_path.as_string()?;
 
         let is_slashpath = Self::variable_name_is_slash_path(path);
-        let mut result = None;
         if is_slashpath {
             if let Some((node, var_name)) =
                 Self::resolve_slash_path_variable(context.target_clip, context.root, path)
@@ -1056,20 +1081,27 @@ impl<'gc> Avm1<'gc> {
                 if let Some(clip) = node.read().as_movie_clip() {
                     let object = clip.object().as_object()?;
                     if object.read().has_property(var_name) {
-                        result = Some(object.read().get(var_name, self, context, object));
+                        object
+                            .read()
+                            .get(var_name, self, context, object)?
+                            .push(self);
+                    } else {
+                        self.push(Value::Undefined);
                     }
+                } else {
+                    self.push(Value::Undefined);
                 }
             }
         } else if self.current_stack_frame().unwrap().read().is_defined(path) {
-            result = Some(
-                self.current_stack_frame()
-                    .unwrap()
-                    .read()
-                    .resolve(path, self, context),
-            );
+            self.current_stack_frame()
+                .unwrap()
+                .read()
+                .resolve(path, self, context)?
+                .push(self);
+        } else {
+            self.push(Value::Undefined);
         }
 
-        self.push(result.unwrap_or(Value::Undefined));
         Ok(())
     }
 
@@ -1441,9 +1473,9 @@ impl<'gc> Avm1<'gc> {
                 SwfValue::Undefined => Value::Undefined,
                 SwfValue::Null => Value::Null,
                 SwfValue::Bool(v) => Value::Bool(*v),
-                SwfValue::Int(v) => Value::Number(f64::from(*v)),
-                SwfValue::Float(v) => Value::Number(f64::from(*v)),
-                SwfValue::Double(v) => Value::Number(*v),
+                SwfValue::Int(v) => f64::from(*v).into(),
+                SwfValue::Float(v) => f64::from(*v).into(),
+                SwfValue::Double(v) => (*v).into(),
                 SwfValue::Str(v) => v.to_string().into(),
                 SwfValue::Register(v) => self.current_register(*v),
                 SwfValue::ConstantPool(i) => {
@@ -1486,13 +1518,9 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_return(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        let result = self.pop()?;
-
-        if self.stack_frames.len() > 1 {
-            self.retire_stack_frame();
-            self.push(result);
-        }
+    fn action_return(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let return_value = self.pop()?;
+        self.retire_stack_frame(context, return_value)?;
 
         Ok(())
     }
@@ -1506,7 +1534,7 @@ impl<'gc> Avm1<'gc> {
 
         object
             .write(context.gc_context)
-            .set(name, value, self, context, this);
+            .set(&name, value, self, context, this)?;
         Ok(())
     }
 
@@ -1578,13 +1606,15 @@ impl<'gc> Avm1<'gc> {
                         self,
                         context,
                         this,
-                    );
+                    )?;
                 }
             }
         } else {
             let this = self.current_stack_frame().unwrap().read().this_cell();
             let scope = self.current_stack_frame().unwrap().read().scope_cell();
-            let unused_value = scope.read().overwrite(var_path, value, self, context, this);
+            let unused_value = scope
+                .read()
+                .overwrite(var_path, value, self, context, this)?;
             if let Some(value) = unused_value {
                 self.current_stack_frame().unwrap().read().define(
                     var_path,

@@ -1,6 +1,7 @@
 //! Represents AVM1 scope chain resolution.
 
-use crate::avm1::{Avm1, Object, UpdateContext, Value};
+use crate::avm1::return_value::ReturnValue;
+use crate::avm1::{Avm1, Error, Object, UpdateContext, Value};
 use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
@@ -236,13 +237,17 @@ impl<'gc> Scope<'gc> {
     }
 
     /// Resolve a particular value in the scope chain.
+    ///
+    /// Because scopes are object chains, the same rules for `Object::get`
+    /// still apply here. This function is allowed to yield `None` to indicate
+    /// that the result will be calculated on the AVM stack.
     pub fn resolve(
         &self,
         name: &str,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
-    ) -> Value<'gc> {
+    ) -> Result<ReturnValue<'gc>, Error> {
         if self.locals().has_property(name) {
             return self.locals().get(name, avm, context, this);
         }
@@ -250,7 +255,8 @@ impl<'gc> Scope<'gc> {
             return scope.resolve(name, avm, context, this);
         }
 
-        Value::Undefined
+        //TODO: Should undefined variables halt execution?
+        Ok(Value::Undefined.into())
     }
 
     /// Check if a particular property in the scope chain is defined.
@@ -281,18 +287,18 @@ impl<'gc> Scope<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: GcCell<'gc, Object<'gc>>,
-    ) -> Option<Value<'gc>> {
-        if self.locals().has_property(name) {
+    ) -> Result<Option<Value<'gc>>, Error> {
+        if self.locals().has_property(name) && self.locals().is_property_overwritable(name) {
             self.locals_mut(context.gc_context)
-                .set(name, value, avm, context, this);
-            return None;
+                .set(name, value, avm, context, this)?;
+            return Ok(None);
         }
 
         if let Some(scope) = self.parent() {
             return scope.overwrite(name, value, avm, context, this);
         }
 
-        Some(value)
+        Ok(Some(value))
     }
 
     /// Set a particular value in the locals for this scope.

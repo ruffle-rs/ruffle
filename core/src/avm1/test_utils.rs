@@ -49,10 +49,10 @@ where
         };
 
         let globals = avm.global_object_cell();
-        avm.insert_stack_frame(
+        avm.insert_stack_frame(GcCell::allocate(
+            gc_context,
             Activation::from_nothing(swf_version, globals, gc_context),
-            &mut context,
-        );
+        ));
 
         let this = root.read().object().as_object().unwrap().to_owned();
 
