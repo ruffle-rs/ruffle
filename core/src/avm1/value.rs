@@ -516,7 +516,7 @@ mod test {
             assert_eq!(n.to_primitive_num(avm, context).unwrap(), n);
 
             let (protos, global) = create_globals(context.gc_context);
-            let vglobal = Value::Object(GcCell::allocate(context.gc_context, global));
+            let vglobal = Value::Object(global);
 
             assert_eq!(vglobal.to_primitive_num(avm, context).unwrap(), u);
 

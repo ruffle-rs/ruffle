@@ -13,6 +13,10 @@ use swf::avm1::types::{Action, Function};
 
 use crate::tag_utils::SwfSlice;
 
+#[cfg(test)]
+#[macro_use]
+mod test_utils;
+
 mod activation;
 mod fscommand;
 mod function;
@@ -23,9 +27,6 @@ mod return_value;
 mod scope;
 pub mod script_object;
 mod value;
-
-#[cfg(test)]
-mod test_utils;
 
 #[cfg(test)]
 mod tests;
@@ -91,7 +92,7 @@ impl<'gc> Avm1<'gc> {
         Self {
             player_version,
             constant_pool: vec![],
-            globals: GcCell::allocate(gc_context, globals),
+            globals,
             prototypes,
             stack_frames: vec![],
             stack: vec![],
