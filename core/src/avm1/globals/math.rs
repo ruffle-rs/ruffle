@@ -142,123 +142,152 @@ mod tests {
     use crate::avm1::Error;
 
     macro_rules! test_std {
-        ( $test: ident, $avm_ver: expr, $name: expr, $([$($arg: expr),*] => $out: expr),* ) => {
+        ( $test: ident, $name: expr, $($versions: expr => { $([$($arg: expr),*] => $out: expr),* }),* ) => {
             #[test]
             fn $test() -> Result<(), Error> {
-                with_avm($avm_ver, |avm, context, _root| {
-                    let math = create(context.gc_context, Some(avm.prototypes().object), Some(avm.prototypes().function));
-                    let function = math.read().get($name, avm, context, math)?.unwrap_immediate();
+                $(
+                    for version in &$versions {
+                        let _ = with_avm(*version, |avm, context, _root| -> Result<(), Error> {
+                            let math = create(context.gc_context, Some(avm.prototypes().object), Some(avm.prototypes().function));
+                            let function = math.read().get($name, avm, context, math)?.unwrap_immediate();
 
-                    $(
-                        #[allow(unused_mut)]
-                        let mut args: Vec<Value> = Vec::new();
-                        $(
-                            args.push($arg.into());
-                        )*
-                        assert_eq!(function.call(avm, context, math, &args)?, ReturnValue::Immediate($out.into()));
-                    )*
+                            $(
+                                #[allow(unused_mut)]
+                                let mut args: Vec<Value> = Vec::new();
+                                $(
+                                    args.push($arg.into());
+                                )*
+                                assert_eq!(function.call(avm, context, math, &args)?, ReturnValue::Immediate($out.into()), "{:?} => {:?} in swf {}", args, $out, version);
+                            )*
 
-                    Ok(())
-                })
+                            Ok(())
+                        })?;
+                    }
+                )*
+
+                Ok(())
             }
         };
     }
 
-    test_std!(test_abs, 19, "abs",
-        [] => NAN,
-        [Value::Null] => NAN,
-        [-50.0] => 50.0,
-        [25.0] => 25.0
+    test_std!(test_abs, "abs",
+        [19] => {
+            [] => NAN,
+            [Value::Null] => NAN,
+            [-50.0] => 50.0,
+            [25.0] => 25.0
+        }
     );
 
-    test_std!(test_acos, 19, "acos",
-        [] => NAN,
-        [Value::Null] => NAN,
-        [-1.0] => f64::acos(-1.0),
-        [0.0] => f64::acos(0.0),
-        [1.0] => f64::acos(1.0)
+    test_std!(test_acos, "acos",
+        [19] => {
+            [] => NAN,
+            [Value::Null] => NAN,
+            [-1.0] => f64::acos(-1.0),
+            [0.0] => f64::acos(0.0),
+            [1.0] => f64::acos(1.0)
+        }
     );
 
-    test_std!(test_asin, 19, "asin",
-        [] => NAN,
-        [Value::Null] => NAN,
-        [-1.0] => f64::asin(-1.0),
-        [0.0] => f64::asin(0.0),
-        [1.0] => f64::asin(1.0)
+    test_std!(test_asin, "asin",
+        [19] => {
+            [] => NAN,
+            [Value::Null] => NAN,
+            [-1.0] => f64::asin(-1.0),
+            [0.0] => f64::asin(0.0),
+            [1.0] => f64::asin(1.0)
+        }
     );
 
-    test_std!(test_atan, 19, "atan",
-        [] => NAN,
-        [Value::Null] => NAN,
-        [-1.0] => f64::atan(-1.0),
-        [0.0] => f64::atan(0.0),
-        [1.0] => f64::atan(1.0)
+    test_std!(test_atan, "atan",
+        [19] => {
+            [] => NAN,
+            [Value::Null] => NAN,
+            [-1.0] => f64::atan(-1.0),
+            [0.0] => f64::atan(0.0),
+            [1.0] => f64::atan(1.0)
+        }
     );
 
-    test_std!(test_ceil, 19, "ceil",
-        [] => NAN,
-        [Value::Null] => NAN,
-        [12.5] => 13.0
+    test_std!(test_ceil, "ceil",
+        [19] => {
+            [] => NAN,
+            [Value::Null] => NAN,
+            [12.5] => 13.0
+        }
     );
 
-    test_std!(test_cos, 19, "cos",
-        [] => NAN,
-        [Value::Null] => NAN,
-        [0.0] => 1.0,
-        [std::f64::consts::PI] => f64::cos(std::f64::consts::PI)
+    test_std!(test_cos, "cos",
+        [19] => {
+            [] => NAN,
+            [Value::Null] => NAN,
+            [0.0] => 1.0,
+            [std::f64::consts::PI] => f64::cos(std::f64::consts::PI)
+        }
     );
 
-    test_std!(test_exp, 19, "exp",
-        [] => NAN,
-        [Value::Null] => NAN,
-        [1.0] => f64::exp(1.0),
-        [2.0] => f64::exp(2.0)
+    test_std!(test_exp, "exp",
+        [19] => {
+            [] => NAN,
+            [Value::Null] => NAN,
+            [1.0] => f64::exp(1.0),
+            [2.0] => f64::exp(2.0)
+        }
     );
 
-    test_std!(test_floor, 19, "floor",
-        [] => NAN,
-        [Value::Undefined] => NAN,
-        [Value::Null] => NAN,
-        [Value::Bool(false)] => 0.0,
-        [Value::Bool(true)] => 1.0,
-        [12.5] => 12.0
+    test_std!(test_floor, "floor",
+        [19] => {
+            [] => NAN,
+            [Value::Undefined] => NAN,
+            [Value::Null] => NAN,
+            [Value::Bool(false)] => 0.0,
+            [Value::Bool(true)] => 1.0,
+            [12.5] => 12.0
+        },
+        [6] => {
+            [] => NAN,
+            [Value::Undefined] => 0.0,
+            [Value::Null] => 0.0,
+            [Value::Bool(false)] => 0.0,
+            [Value::Bool(true)] => 1.0,
+            [12.5] => 12.0
+        }
     );
 
-    test_std!(test_floor_swf6, 6, "floor",
-        [] => NAN,
-        [Value::Undefined] => 0.0,
-        [Value::Null] => 0.0,
-        [Value::Bool(false)] => 0.0,
-        [Value::Bool(true)] => 1.0,
-        [12.5] => 12.0
+    test_std!(test_round, "round",
+        [19] => {
+            [] => NAN,
+            [Value::Null] => NAN,
+            [12.5] => 13.0,
+            [23.2] => 23.0
+        }
     );
 
-    test_std!(test_round, 19, "round",
-        [] => NAN,
-        [Value::Null] => NAN,
-        [12.5] => 13.0,
-        [23.2] => 23.0
+    test_std!(test_sin, "sin",
+        [19] => {
+            [] => NAN,
+            [Value::Null] => NAN,
+            [0.0] => f64::sin(0.0),
+            [std::f64::consts::PI / 2.0] => f64::sin(std::f64::consts::PI / 2.0)
+        }
     );
 
-    test_std!(test_sin, 19, "sin",
-        [] => NAN,
-        [Value::Null] => NAN,
-        [0.0] => f64::sin(0.0),
-        [std::f64::consts::PI / 2.0] => f64::sin(std::f64::consts::PI / 2.0)
+    test_std!(test_sqrt, "sqrt",
+        [19] => {
+            [] => NAN,
+            [Value::Null] => NAN,
+            [0.0] => f64::sqrt(0.0),
+            [5.0] => f64::sqrt(5.0)
+        }
     );
 
-    test_std!(test_sqrt, 19, "sqrt",
-        [] => NAN,
-        [Value::Null] => NAN,
-        [0.0] => f64::sqrt(0.0),
-        [5.0] => f64::sqrt(5.0)
-    );
-
-    test_std!(test_tan, 19, "tan",
-        [] => NAN,
-        [Value::Null] => NAN,
-        [0.0] => f64::tan(0.0),
-        [1.0] => f64::tan(1.0)
+    test_std!(test_tan, "tan",
+        [19] => {
+            [] => NAN,
+            [Value::Null] => NAN,
+            [0.0] => f64::tan(0.0),
+            [1.0] => f64::tan(1.0)
+        }
     );
 
     #[test]
