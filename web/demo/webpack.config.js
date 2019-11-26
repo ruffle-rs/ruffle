@@ -5,7 +5,7 @@ const webpack = require('webpack');
 const path = require('path');
 
 module.exports = (env, argv) => {
-  let mode = "development";
+  let mode = "production";
   if (argv && argv.mode) {
     mode = argv.mode;
   }
