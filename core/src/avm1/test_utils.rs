@@ -61,3 +61,33 @@ where
 
     rootless_arena(|gc_context| in_the_arena(swf_version, test, gc_context))
 }
+
+macro_rules! test_method {
+    ( $test: ident, $name: expr, $object: expr, $($versions: expr => { $([$($arg: expr),*] => $out: expr),* }),* ) => {
+        #[test]
+        fn $test() -> Result<(), Error> {
+            use $crate::avm1::test_utils::*;
+            $(
+                for version in &$versions {
+                    let _ = with_avm(*version, |avm, context, _root| -> Result<(), Error> {
+                        let object = $object(avm, context);
+                        let function = object.read().get($name, avm, context, object)?.unwrap_immediate();
+
+                        $(
+                            #[allow(unused_mut)]
+                            let mut args: Vec<Value> = Vec::new();
+                            $(
+                                args.push($arg.into());
+                            )*
+                            assert_eq!(function.call(avm, context, object, &args)?, ReturnValue::Immediate($out.into()), "{:?} => {:?} in swf {}", args, $out, version);
+                        )*
+
+                        Ok(())
+                    })?;
+                }
+            )*
+
+            Ok(())
+        }
+    };
+}

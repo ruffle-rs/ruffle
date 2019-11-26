@@ -4,7 +4,7 @@ use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ObjectCell, ScriptObject, UpdateContext, Value};
 use crate::backend::navigator::NavigationMethod;
 use enumset::EnumSet;
-use gc_arena::MutationContext;
+use gc_arena::{GcCell, MutationContext};
 use rand::Rng;
 use std::f64;
 
@@ -141,7 +141,10 @@ unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
 /// Initialize default global scope and builtins for an AVM1 instance.
 pub fn create_globals<'gc>(
     gc_context: MutationContext<'gc, '_>,
-) -> (SystemPrototypes<'gc>, Box<dyn Object<'gc> + 'gc>) {
+) -> (
+    SystemPrototypes<'gc>,
+    GcCell<'gc, Box<dyn Object<'gc> + 'gc>>,
+) {
     let object_proto = ScriptObject::object_cell(gc_context, None);
     let function_proto = function::create_proto(gc_context, object_proto);
 
@@ -233,7 +236,7 @@ pub fn create_globals<'gc>(
             function: function_proto,
             movie_clip: movie_clip_proto,
         },
-        Box::new(globals),
+        GcCell::allocate(gc_context, Box::new(globals)),
     )
 }
 
@@ -241,35 +244,15 @@ pub fn create_globals<'gc>(
 #[allow(clippy::unreadable_literal)]
 mod tests {
     use super::*;
-    use crate::avm1::test_utils::with_avm;
-    use crate::avm1::Error;
 
-    macro_rules! test_std {
-        ( $test: ident, $fun: expr, $($versions: expr => { $([$($arg: expr),*] => $out: expr),* }),* ) => {
-            #[test]
-            fn $test() -> Result<(), Error> {
-                $(
-                    for version in &$versions {
-                        with_avm(*version, |avm, context, this| {
-
-                            $(
-                                #[allow(unused_mut)]
-                                let mut args: Vec<Value> = Vec::new();
-                                $(
-                                    args.push($arg.into());
-                                )*
-                                assert_eq!($fun(avm, context, this, &args).unwrap(), ReturnValue::Immediate($out.into()), "{:?} => {:?} in swf {}", args, $out, version);
-                            )*
-                        });
-                    }
-                )*
-
-                Ok(())
-            }
-        };
+    fn setup<'gc>(
+        _avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> ObjectCell<'gc> {
+        create_globals(context.gc_context).1
     }
 
-    test_std!(boolean_function, boolean,
+    test_method!(boolean_function, "Boolean", setup,
         [19] => {
             [true] => true,
             [false] => false,
@@ -302,7 +285,7 @@ mod tests {
         }
     );
 
-    test_std!(is_nan_function, is_nan,
+    test_method!(is_nan_function, "isNaN", setup,
         [19] => {
             [true] => false,
             [false] => false,
@@ -328,7 +311,7 @@ mod tests {
         }
     );
 
-    test_std!(number_function, number,
+    test_method!(number_function, "Number", setup,
         [19] => {
             [true] => 1.0,
             [false] => 0.0,

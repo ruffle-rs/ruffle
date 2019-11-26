@@ -139,38 +139,19 @@ pub fn create<'gc>(
 mod tests {
     use super::*;
     use crate::avm1::test_utils::with_avm;
-    use crate::avm1::Error;
 
-    macro_rules! test_std {
-        ( $test: ident, $name: expr, $($versions: expr => { $([$($arg: expr),*] => $out: expr),* }),* ) => {
-            #[test]
-            fn $test() -> Result<(), Error> {
-                $(
-                    for version in &$versions {
-                        let _ = with_avm(*version, |avm, context, _root| -> Result<(), Error> {
-                            let math = create(context.gc_context, Some(avm.prototypes().object), Some(avm.prototypes().function));
-                            let function = math.read().get($name, avm, context, math)?.unwrap_immediate();
-
-                            $(
-                                #[allow(unused_mut)]
-                                let mut args: Vec<Value> = Vec::new();
-                                $(
-                                    args.push($arg.into());
-                                )*
-                                assert_eq!(function.call(avm, context, math, &args)?, ReturnValue::Immediate($out.into()), "{:?} => {:?} in swf {}", args, $out, version);
-                            )*
-
-                            Ok(())
-                        })?;
-                    }
-                )*
-
-                Ok(())
-            }
-        };
+    fn setup<'gc>(
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> ObjectCell<'gc> {
+        create(
+            context.gc_context,
+            Some(avm.prototypes().object),
+            Some(avm.prototypes().function),
+        )
     }
 
-    test_std!(test_abs, "abs",
+    test_method!(test_abs, "abs", setup,
         [19] => {
             [] => NAN,
             [Value::Null] => NAN,
@@ -179,7 +160,7 @@ mod tests {
         }
     );
 
-    test_std!(test_acos, "acos",
+    test_method!(test_acos, "acos", setup,
         [19] => {
             [] => NAN,
             [Value::Null] => NAN,
@@ -189,7 +170,7 @@ mod tests {
         }
     );
 
-    test_std!(test_asin, "asin",
+    test_method!(test_asin, "asin", setup,
         [19] => {
             [] => NAN,
             [Value::Null] => NAN,
@@ -199,7 +180,7 @@ mod tests {
         }
     );
 
-    test_std!(test_atan, "atan",
+    test_method!(test_atan, "atan", setup,
         [19] => {
             [] => NAN,
             [Value::Null] => NAN,
@@ -209,7 +190,7 @@ mod tests {
         }
     );
 
-    test_std!(test_ceil, "ceil",
+    test_method!(test_ceil, "ceil", setup,
         [19] => {
             [] => NAN,
             [Value::Null] => NAN,
@@ -217,7 +198,7 @@ mod tests {
         }
     );
 
-    test_std!(test_cos, "cos",
+    test_method!(test_cos, "cos", setup,
         [19] => {
             [] => NAN,
             [Value::Null] => NAN,
@@ -226,7 +207,7 @@ mod tests {
         }
     );
 
-    test_std!(test_exp, "exp",
+    test_method!(test_exp, "exp", setup,
         [19] => {
             [] => NAN,
             [Value::Null] => NAN,
@@ -235,7 +216,7 @@ mod tests {
         }
     );
 
-    test_std!(test_floor, "floor",
+    test_method!(test_floor, "floor", setup,
         [19] => {
             [] => NAN,
             [Value::Undefined] => NAN,
@@ -254,7 +235,7 @@ mod tests {
         }
     );
 
-    test_std!(test_round, "round",
+    test_method!(test_round, "round", setup,
         [19] => {
             [] => NAN,
             [Value::Null] => NAN,
@@ -263,7 +244,7 @@ mod tests {
         }
     );
 
-    test_std!(test_sin, "sin",
+    test_method!(test_sin, "sin", setup,
         [19] => {
             [] => NAN,
             [Value::Null] => NAN,
@@ -272,7 +253,7 @@ mod tests {
         }
     );
 
-    test_std!(test_sqrt, "sqrt",
+    test_method!(test_sqrt, "sqrt", setup,
         [19] => {
             [] => NAN,
             [Value::Null] => NAN,
@@ -281,7 +262,7 @@ mod tests {
         }
     );
 
-    test_std!(test_tan, "tan",
+    test_method!(test_tan, "tan", setup,
         [19] => {
             [] => NAN,
             [Value::Null] => NAN,
