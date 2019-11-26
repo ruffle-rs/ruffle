@@ -37,6 +37,13 @@ use scope::Scope;
 pub use script_object::ScriptObject;
 pub use value::Value;
 
+macro_rules! avm_debug {
+    ($($arg:tt)*) => (
+        #[cfg(feature = "avm_debug")]
+        log::debug!($($arg)*)
+    )
+}
+
 pub struct Avm1<'gc> {
     /// The Flash Player version we're emulating.
     player_version: u8,
@@ -345,8 +352,7 @@ impl<'gc> Avm1<'gc> {
             //Executing beyond the end of a function constitutes an implicit return.
             self.retire_stack_frame(context, Value::Undefined)?;
         } else if let Some(action) = reader.read_action()? {
-            #[cfg(feature = "avm_debug")]
-            log::debug!("Action: {:?}", action);
+            avm_debug!("Action: {:?}", action);
 
             let result = match action {
                 Action::Add => self.action_add(context),
@@ -534,8 +540,7 @@ impl<'gc> Avm1<'gc> {
 
     fn push(&mut self, value: impl Into<Value<'gc>>) {
         let value = value.into();
-        #[cfg(feature = "avm_debug")]
-        log::debug!("Stack push {}: {:?}", self.stack.len(), value);
+        avm_debug!("Stack push {}: {:?}", self.stack.len(), value);
         self.stack.push(value);
     }
 
@@ -544,8 +549,7 @@ impl<'gc> Avm1<'gc> {
             .pop()
             .ok_or_else(|| "Stack underflow".into())
             .map(|value| {
-                #[cfg(feature = "avm_debug")]
-                log::debug!("Stack pop {}: {:?}", self.stack.len(), value);
+                avm_debug!("Stack pop {}: {:?}", self.stack.len(), value);
                 value
             })
     }
