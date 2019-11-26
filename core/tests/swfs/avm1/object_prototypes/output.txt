@@ -1,0 +1,23 @@
+Base constructed!
+Base constructed!
+// a.name
+foo
+
+// b.name
+foo
+
+// c.name
+foo
+
+
+// a.name = "bar"
+
+// a.name
+bar
+
+// b.name
+bar
+
+// c.name
+foo
+
