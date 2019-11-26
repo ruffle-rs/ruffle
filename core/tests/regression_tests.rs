@@ -61,6 +61,7 @@ swf_tests! {
     (root_global_parent, "avm1/root_global_parent", 3),
     (register_underflow, "avm1/register_underflow", 1),
     (object_prototypes, "avm1/object_prototypes", 1),
+    (movieclip_prototype_extension, "avm1/movieclip_prototype_extension", 1),
 }
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
