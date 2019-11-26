@@ -1,0 +1,3 @@
+﻿interface Pink extends Red {
+	
+}
