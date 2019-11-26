@@ -1511,9 +1511,7 @@ impl<'gc> Avm1<'gc> {
             .call(self, context, this, &args)?
             .ignore();
 
-        //TODO: The SWF docs are really cagey about what the hell happens with
-        //user defined constructors... do we need stack continuations?!
-        self.push(Value::Object(this));
+        self.push(this);
 
         Ok(())
     }
@@ -1548,7 +1546,7 @@ impl<'gc> Avm1<'gc> {
             .call(self, context, this, &args)?
             .ignore();
 
-        self.push(Value::Undefined);
+        self.push(this);
 
         Ok(())
     }
