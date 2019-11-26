@@ -91,8 +91,7 @@ jobs:
           command: |
             cd web/extension
             npm install
-            wasm-pack build --release --target=no-modules --out-dir=extension/build/dist ..
-            npx webpack
+            npm run build -- --mode=production
             cd build
             cp ../../../README.md .
             cp ../../../LICENSE_APACHE .
