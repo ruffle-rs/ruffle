@@ -7,7 +7,7 @@ use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
 use crate::avm1::{Avm1, Error, Object, ObjectCell, ScriptObject, UpdateContext};
 use crate::tag_utils::SwfSlice;
-use gc_arena::GcCell;
+use gc_arena::{Collect, CollectionContext, GcCell};
 use swf::avm1::types::FunctionParam;
 
 /// Represents a function defined in Ruffle's code.
@@ -33,7 +33,8 @@ pub type NativeFunction<'gc> = fn(
 
 /// Represents a function defined in the AVM1 runtime, either through
 /// `DefineFunction` or `DefineFunction2`.
-#[derive(Clone)]
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
 pub struct Avm1Function<'gc> {
     /// The file format version of the SWF that generated this function.
     swf_version: u8,
@@ -169,6 +170,15 @@ pub enum Executable<'gc> {
     /// ActionScript data defined by a previous `DefineFunction` or
     /// `DefineFunction2` action.
     Action(Avm1Function<'gc>),
+}
+
+unsafe impl<'gc> Collect for Executable<'gc> {
+    fn trace(&self, cc: CollectionContext) {
+        match self {
+            Self::Native(_) => {}
+            Self::Action(af) => af.trace(cc),
+        }
+    }
 }
 
 impl<'gc> Executable<'gc> {

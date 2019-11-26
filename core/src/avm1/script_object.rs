@@ -27,6 +27,7 @@ unsafe impl<'gc> gc_arena::Collect for ScriptObject<'gc> {
         self.prototype.trace(cc);
         self.display_node.trace(cc);
         self.values.trace(cc);
+        self.function.trace(cc);
     }
 }
 

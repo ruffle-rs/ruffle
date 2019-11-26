@@ -1,3 +1,4 @@
+use gc_arena::Collect;
 use std::sync::Arc;
 use swf::TagCode;
 
@@ -5,7 +6,8 @@ pub type DecodeResult = Result<(), Box<dyn std::error::Error>>;
 pub type SwfStream<R> = swf::read::Reader<std::io::Cursor<R>>;
 
 /// A shared-ownership reference to some portion of an immutable datastream.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Collect)]
+#[collect(no_drop)]
 pub struct SwfSlice {
     pub data: Arc<Vec<u8>>,
     pub start: usize,
