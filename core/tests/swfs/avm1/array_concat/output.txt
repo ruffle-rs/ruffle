@@ -1,0 +1,56 @@
+// a[0]
+a
+
+// a[1]
+b
+
+// a[2]
+undefined
+
+// a[3]
+undefined
+
+// a[4]
+undefined
+
+// a.length
+2
+
+
+// b[0]
+c
+
+// b[1]
+d
+
+// b[2]
+undefined
+
+// b[3]
+undefined
+
+// b[4]
+undefined
+
+// b.length
+2
+
+
+// c[0]
+a
+
+// c[1]
+b
+
+// c[2]
+c
+
+// c[3]
+d
+
+// c[4]
+undefined
+
+// c.length
+4
+

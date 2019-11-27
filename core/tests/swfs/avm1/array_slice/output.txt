@@ -1,0 +1,21 @@
+// original
+a,b,c,d,e
+
+// original.slice()
+a,b,c,d,e
+
+// original.slice(3)
+d,e
+
+// original.slice(1, 3)
+b,c
+
+// original.slice(0, -3)
+a,b
+
+// original.slice(3, 2)
+
+
+// original.slice(-2, 4)
+d
+

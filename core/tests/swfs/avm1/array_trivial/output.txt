@@ -1,0 +1,187 @@
+// for (key in array)
+
+// array
+
+
+// array.join(" / ")
+
+
+// array.length
+0
+
+// array[0]
+undefined
+
+// array[1]
+undefined
+
+// array[2]
+undefined
+
+// array.push("a")
+1
+
+// array
+a
+
+// array.join(" / ")
+a
+
+// array.length
+1
+
+// array[0]
+a
+
+// array[1]
+undefined
+
+// array[2]
+undefined
+
+// array.push("b")
+2
+
+// array
+a,b
+
+// array.join(" / ")
+a / b
+
+// array.length
+2
+
+// array[0]
+a
+
+// array[1]
+b
+
+// array[2]
+undefined
+
+// array.unshift("c")
+3
+
+// array
+c,a,b
+
+// array.join(" / ")
+c / a / b
+
+// array.length
+3
+
+// array[0]
+c
+
+// array[1]
+a
+
+// array[2]
+b
+
+// array.reverse()
+
+// array
+b,a,c
+
+// array.join(" / ")
+b / a / c
+
+// array.length
+3
+
+// array[0]
+b
+
+// array[1]
+a
+
+// array[2]
+c
+
+// array.shift()
+b
+
+// array
+a,c
+
+// array.join(" / ")
+a / c
+
+// array.length
+2
+
+// array[0]
+a
+
+// array[1]
+c
+
+// array[2]
+undefined
+
+// array.pop()
+c
+
+// array
+a
+
+// array.join(" / ")
+a
+
+// array.length
+1
+
+// array[0]
+a
+
+// array[1]
+undefined
+
+// array[2]
+undefined
+
+// array.pop()
+a
+
+// array
+
+
+// array.join(" / ")
+
+
+// array.length
+0
+
+// array[0]
+undefined
+
+// array[1]
+undefined
+
+// array[2]
+undefined
+
+// array.pop()
+undefined
+
+// array
+
+
+// array.join(" / ")
+
+
+// array.length
+0
+
+// array[0]
+undefined
+
+// array[1]
+undefined
+
+// array[2]
+undefined
+
