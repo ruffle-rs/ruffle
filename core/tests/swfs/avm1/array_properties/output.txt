@@ -1,0 +1,24 @@
+// array = new Array(1)
+undefined
+1
+
+// array[0] = "a"
+a
+1
+
+// array[1] = "b"
+a,b
+2
+
+// array[-1] = "irrelevant"
+a,b
+2
+
+// array["foo"] = "irrelephant"
+a,b
+2
+
+// array[5] = "c"
+a,b,undefined,undefined,undefined,c
+6
+
