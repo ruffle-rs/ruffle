@@ -1,0 +1,18 @@
+// base.hasOwnProperty("name")
+true
+
+// child.hasOwnProperty("name")
+false
+
+// base.hasOwnProperty("__proto__")
+true
+
+// child.hasOwnProperty("__proto__")
+true
+
+// base.hasOwnProperty("prototype")
+false
+
+// child.hasOwnProperty("prototype")
+false
+
