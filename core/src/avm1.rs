@@ -1509,7 +1509,7 @@ impl<'gc> Avm1<'gc> {
         constructor
             .read()
             .call(self, context, this, &args)?
-            .ignore();
+            .resolve(self, context)?;
 
         self.push(this);
 
@@ -1544,7 +1544,7 @@ impl<'gc> Avm1<'gc> {
         constructor
             .read()
             .call(self, context, this, &args)?
-            .ignore();
+            .resolve(self, context)?;
 
         self.push(this);
 

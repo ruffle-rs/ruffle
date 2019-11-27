@@ -99,12 +99,6 @@ impl<'gc> ReturnValue<'gc> {
         }
     }
 
-    /// Consumes the given return value.
-    ///
-    /// This exists primarily so that users of return values can indicate that
-    /// they do not plan to use them.
-    pub fn ignore(self) {}
-
     pub fn is_immediate(&self) -> bool {
         use ReturnValue::*;
 
