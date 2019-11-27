@@ -72,7 +72,7 @@ swf_tests! {
 fn test_prototype_enumerate() -> Result<(), Error> {
     let trace_log = run_swf("tests/swfs/avm1/prototype_enumerate/test.swf", 1)?;
     let mut actual: Vec<String> = trace_log.lines().map(|s| s.to_string()).collect();
-    let mut expected = vec!["a", "b", "c", "d"];
+    let mut expected = vec!["a", "b", "c", "d", "e"];
 
     actual.sort();
     expected.sort();

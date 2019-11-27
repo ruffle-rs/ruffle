@@ -7,6 +7,7 @@ use crate::avm1::{Avm1, Error, ScriptObject, UpdateContext, Value};
 use crate::display_object::DisplayNode;
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell};
+use std::collections::HashSet;
 use std::fmt::Debug;
 
 pub type ObjectCell<'gc> = GcCell<'gc, Box<dyn Object<'gc> + 'gc>>;
@@ -164,7 +165,7 @@ pub trait Object<'gc>: 'gc + Collect + Debug {
     fn is_property_enumerable(&self, name: &str) -> bool;
 
     /// Enumerate the object.
-    fn get_keys(&self) -> Vec<String>;
+    fn get_keys(&self) -> HashSet<String>;
 
     /// Coerce the object into a string.
     fn as_string(&self) -> String;

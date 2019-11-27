@@ -7,7 +7,7 @@ use core::fmt;
 use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
 use std::collections::hash_map::Entry;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub const TYPE_OF_OBJECT: &str = "object";
 pub const TYPE_OF_FUNCTION: &str = "function";
@@ -126,7 +126,7 @@ impl<'gc> ScriptObject<'gc> {
             p.write(gc_context).define_value(
                 "constructor",
                 Value::Object(function),
-                EnumSet::empty(),
+                Attribute::DontEnum.into(),
             );
             function
                 .write(gc_context)
@@ -347,7 +347,11 @@ impl<'gc> Object<'gc> for ScriptObject<'gc> {
     }
 
     /// Enumerate the object.
-    fn get_keys(&self) -> Vec<String> {
+    fn get_keys(&self) -> HashSet<String> {
+        let mut result = self
+            .prototype
+            .map_or_else(HashSet::new, |p| p.read().get_keys());
+
         self.values
             .iter()
             .filter_map(|(k, p)| {
@@ -357,7 +361,11 @@ impl<'gc> Object<'gc> for ScriptObject<'gc> {
                     None
                 }
             })
-            .collect()
+            .for_each(|k| {
+                result.insert(k);
+            });
+
+        result
     }
 
     fn as_string(&self) -> String {
