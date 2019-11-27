@@ -186,7 +186,7 @@ impl<'gc> Object<'gc> for ScriptObject<'gc> {
     /// of a `Value`. *This is not equivalent to `undefined`.* Instead, it is a
     /// signal that your value will be returned on the ActionScript stack, and
     /// that you should register a stack continuation in order to get it.
-    fn get(
+    fn get_local(
         &self,
         name: &str,
         avm: &mut Avm1<'gc>,
@@ -204,11 +204,7 @@ impl<'gc> Object<'gc> for ScriptObject<'gc> {
             return value.get(avm, context, this);
         }
 
-        self.prototype
-            .as_ref()
-            .map_or(Ok(Value::Undefined.into()), |p| {
-                p.read().get(name, avm, context, this)
-            })
+        Ok(Value::Undefined.into())
     }
 
     /// Set a named property on the object.

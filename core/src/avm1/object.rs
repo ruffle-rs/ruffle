@@ -14,12 +14,15 @@ pub type ObjectCell<'gc> = GcCell<'gc, Box<dyn Object<'gc> + 'gc>>;
 /// Represents an object that can be directly interacted with by the AVM
 /// runtime.
 pub trait Object<'gc>: 'gc + Collect + Debug {
-    /// Retrieve a named property from the object.
+    /// Retrieve a named property from this object exclusively.
     ///
     /// This function takes a redundant `this` parameter which should be
     /// the object's own `GcCell`, so that it can pass it to user-defined
     /// overrides that may need to interact with the underlying object.
-    fn get(
+    ///
+    /// This function should not inspect prototype chains. Instead, use `get`
+    /// to do ordinary property look-up and resolution.
+    fn get_local(
         &self,
         name: &str,
         avm: &mut Avm1<'gc>,
@@ -27,7 +30,38 @@ pub trait Object<'gc>: 'gc + Collect + Debug {
         this: ObjectCell<'gc>,
     ) -> Result<ReturnValue<'gc>, Error>;
 
-    /// Set a named property on the object.
+    /// Retrieve a named property from the object, or it's prototype.
+    fn get(
+        &self,
+        name: &str,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        this: ObjectCell<'gc>,
+    ) -> Result<ReturnValue<'gc>, Error> {
+        if self.has_own_property(name) {
+            self.get_local(name, avm, context, this)
+        } else {
+            let mut depth = 0;
+            let mut proto = self.proto();
+
+            while proto.is_some() {
+                if depth == 255 {
+                    return Err("Encountered an excessively deep prototype chain.".into());
+                }
+
+                if proto.unwrap().read().has_own_property(name) {
+                    return proto.unwrap().read().get_local(name, avm, context, this);
+                }
+
+                proto = proto.unwrap().read().proto();
+                depth += 1;
+            }
+
+            Ok(Value::Undefined.into())
+        }
+    }
+
+    /// Set a named property on this object, or it's prototype.
     ///
     /// This function takes a redundant `this` parameter which should be
     /// the object's own `GcCell`, so that it can pass it to user-defined
