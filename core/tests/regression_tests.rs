@@ -64,6 +64,7 @@ swf_tests! {
     (movieclip_prototype_extension, "avm1/movieclip_prototype_extension", 1),
     (recursive_prototypes, "avm1/recursive_prototypes", 1),
     (has_own_property, "avm1/has_own_property", 1),
+    (extends_chain, "avm1/extends_chain", 1),
 }
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.

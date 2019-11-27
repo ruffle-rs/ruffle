@@ -1,0 +1,134 @@
+// ChildA constructor
+Super constructor
+ChildA constructor
+
+// ChildA work
+Super work
+ChildA work
+
+// ChildA instanceof Super
+true
+
+// ChildA instanceof ChildA
+true
+
+// ChildA instanceof ChildB
+false
+
+// ChildA instanceof GrandchildBA
+false
+
+// ChildA instanceof GrandchildBB
+false
+
+// ChildA instanceof Red
+false
+
+// ChildA instanceof Blue
+false
+
+// ChildA instanceof Pink
+false
+
+
+// ChildB constructor
+Super constructor
+ChildA constructor
+
+// ChildB work
+Super work
+ChildA work
+
+// ChildB instanceof Super
+true
+
+// ChildB instanceof ChildA
+false
+
+// ChildB instanceof ChildB
+true
+
+// ChildB instanceof GrandchildBA
+false
+
+// ChildB instanceof GrandchildBB
+false
+
+// ChildB instanceof Red
+false
+
+// ChildB instanceof Blue
+true
+
+// ChildB instanceof Pink
+false
+
+
+// GrandchildBA constructor
+Super constructor
+ChildA constructor
+GrandchildBA constructor
+
+// GrandchildBA work
+Super work
+ChildA work
+GrandchildBA work
+
+// GrandchildBA instanceof Super
+true
+
+// GrandchildBA instanceof ChildA
+false
+
+// GrandchildBA instanceof ChildB
+true
+
+// GrandchildBA instanceof GrandchildBA
+true
+
+// GrandchildBA instanceof GrandchildBB
+false
+
+// GrandchildBA instanceof Red
+false
+
+// GrandchildBA instanceof Blue
+true
+
+// GrandchildBA instanceof Pink
+false
+
+
+// GrandchildBB constructor
+Super constructor
+ChildA constructor
+GrandchildBB constructor
+
+// GrandchildBB work
+Super work
+ChildA work
+GrandchildBB work
+
+// GrandchildBB instanceof Super
+true
+
+// GrandchildBB instanceof ChildA
+false
+
+// GrandchildBB instanceof ChildB
+true
+
+// GrandchildBB instanceof GrandchildBA
+false
+
+// GrandchildBB instanceof GrandchildBB
+true
+
+// GrandchildBB instanceof Red
+true
+
+// GrandchildBB instanceof Blue
+true
+
+// GrandchildBB instanceof Pink
+true
