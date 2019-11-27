@@ -68,11 +68,40 @@ swf_tests! {
     (is_prototype_of, "avm1/is_prototype_of", 1),
 }
 
+#[test]
+fn test_prototype_enumerate() -> Result<(), Error> {
+    let trace_log = run_swf("tests/swfs/avm1/prototype_enumerate/test.swf", 1)?;
+    let mut actual: Vec<String> = trace_log.lines().map(|s| s.to_string()).collect();
+    let mut expected = vec!["a", "b", "c", "d"];
+
+    actual.sort();
+    expected.sort();
+
+    assert_eq!(actual, expected);
+    Ok(())
+}
+
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
 /// Tests that the trace output matches the given expected output.
 fn test_swf(swf_path: &str, num_frames: u32, expected_output_path: &str) -> Result<(), Error> {
-    let _ = log::set_logger(&TRACE_LOGGER).map(|()| log::set_max_level(log::LevelFilter::Info));
     let expected_output = std::fs::read_to_string(expected_output_path)?.replace("\r\n", "\n");
+
+    let trace_log = run_swf(swf_path, num_frames)?;
+    if trace_log != expected_output {
+        println!(
+            "Ruffle output:\n{}\nExpected output:\n{}",
+            trace_log, expected_output
+        );
+        panic!("Ruffle output did not match expected output.");
+    }
+
+    Ok(())
+}
+
+/// Loads an SWF and runs it through the Ruffle core for a number of frames.
+/// Tests that the trace output matches the given expected output.
+fn run_swf(swf_path: &str, num_frames: u32) -> Result<String, Error> {
+    let _ = log::set_logger(&TRACE_LOGGER).map(|()| log::set_max_level(log::LevelFilter::Info));
 
     let swf_data = std::fs::read(swf_path)?;
     let mut player = Player::new(
@@ -86,16 +115,7 @@ fn test_swf(swf_path: &str, num_frames: u32, expected_output_path: &str) -> Resu
         player.run_frame();
     }
 
-    let trace_log = trace_log();
-    if trace_log != expected_output {
-        println!(
-            "Ruffle output:\n{}\nExpected output:\n{}",
-            trace_log, expected_output
-        );
-        panic!("Ruffle output did not match expected output.");
-    }
-
-    Ok(())
+    Ok(trace_log())
 }
 
 thread_local! {
