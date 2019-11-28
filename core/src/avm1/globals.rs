@@ -171,7 +171,7 @@ pub fn create_globals<'gc>(
         Some(movie_clip_proto),
     );
 
-    let mut globals = ScriptObject::object(gc_context, Some(object_proto));
+    let mut globals = ScriptObject::bare_object();
     globals.define_value("Object", object.into(), EnumSet::empty());
     globals.define_value("Function", function.into(), EnumSet::empty());
     globals.define_value("MovieClip", movie_clip.into(), EnumSet::empty());

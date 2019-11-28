@@ -490,9 +490,108 @@ impl<'gc> Value<'gc> {
 
 #[cfg(test)]
 mod test {
+    use crate::avm1::function::Executable;
+    use crate::avm1::globals::create_globals;
+    use crate::avm1::object::ObjectCell;
+    use crate::avm1::return_value::ReturnValue;
+    use crate::avm1::script_object::ScriptObject;
     use crate::avm1::test_utils::with_avm;
-    use crate::avm1::Value;
+    use crate::avm1::{Avm1, Error, Value};
+    use crate::context::UpdateContext;
+    use enumset::EnumSet;
+    use gc_arena::GcCell;
     use std::f64::{INFINITY, NAN, NEG_INFINITY};
+
+    #[test]
+    fn to_primitive_num() {
+        with_avm(6, |avm, context, _this| {
+            let t = Value::Bool(true);
+            let u = Value::Undefined;
+            let f = Value::Bool(false);
+            let n = Value::Null;
+
+            assert_eq!(t.to_primitive_num(avm, context).unwrap(), t);
+            assert_eq!(u.to_primitive_num(avm, context).unwrap(), u);
+            assert_eq!(f.to_primitive_num(avm, context).unwrap(), f);
+            assert_eq!(n.to_primitive_num(avm, context).unwrap(), n);
+
+            let (protos, global) = create_globals(context.gc_context);
+            let vglobal = Value::Object(GcCell::allocate(context.gc_context, global));
+
+            assert_eq!(vglobal.to_primitive_num(avm, context).unwrap(), u);
+
+            fn value_of_impl<'gc>(
+                _: &mut Avm1<'gc>,
+                _: &mut UpdateContext<'_, 'gc, '_>,
+                _: ObjectCell<'gc>,
+                _: &[Value<'gc>],
+            ) -> Result<ReturnValue<'gc>, Error> {
+                Ok(5.0.into())
+            }
+
+            let valueof = ScriptObject::function(
+                context.gc_context,
+                Executable::Native(value_of_impl),
+                Some(protos.function),
+                None,
+            );
+
+            let o = ScriptObject::object_cell(context.gc_context, Some(protos.object));
+            o.write(context.gc_context)
+                .define_value("valueOf", valueof.into(), EnumSet::empty());
+
+            assert_eq!(
+                Value::Object(o).to_primitive_num(avm, context).unwrap(),
+                Value::Number(5.0)
+            );
+        });
+    }
+
+    #[test]
+    #[allow(clippy::float_cmp)]
+    fn to_number_swf7() {
+        with_avm(7, |avm, context, _this| {
+            let t = Value::Bool(true);
+            let u = Value::Undefined;
+            let f = Value::Bool(false);
+            let n = Value::Null;
+
+            assert_eq!(t.as_number(avm, context).unwrap(), 1.0);
+            assert!(u.as_number(avm, context).unwrap().is_nan());
+            assert_eq!(f.as_number(avm, context).unwrap(), 0.0);
+            assert!(n.as_number(avm, context).unwrap().is_nan());
+
+            let bo = Value::Object(GcCell::allocate(
+                context.gc_context,
+                Box::new(ScriptObject::bare_object()),
+            ));
+
+            assert!(bo.as_number(avm, context).unwrap().is_nan());
+        });
+    }
+
+    #[test]
+    #[allow(clippy::float_cmp)]
+    fn to_number_swf6() {
+        with_avm(6, |avm, context, _this| {
+            let t = Value::Bool(true);
+            let u = Value::Undefined;
+            let f = Value::Bool(false);
+            let n = Value::Null;
+
+            assert_eq!(t.as_number(avm, context).unwrap(), 1.0);
+            assert_eq!(u.as_number(avm, context).unwrap(), 0.0);
+            assert_eq!(f.as_number(avm, context).unwrap(), 0.0);
+            assert_eq!(n.as_number(avm, context).unwrap(), 0.0);
+
+            let bo = Value::Object(GcCell::allocate(
+                context.gc_context,
+                Box::new(ScriptObject::bare_object()),
+            ));
+
+            assert_eq!(bo.as_number(avm, context).unwrap(), 0.0);
+        });
+    }
 
     #[test]
     fn abstract_lt_num() {

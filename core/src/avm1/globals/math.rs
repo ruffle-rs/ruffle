@@ -142,10 +142,10 @@ mod tests {
     use crate::avm1::Error;
 
     macro_rules! test_std {
-        ( $test: ident, $name: expr, $([$($arg: expr),*] => $out: expr),* ) => {
+        ( $test: ident, $avm_ver: expr, $name: expr, $([$($arg: expr),*] => $out: expr),* ) => {
             #[test]
             fn $test() -> Result<(), Error> {
-                with_avm(19, |avm, context, _root| {
+                with_avm($avm_ver, |avm, context, _root| {
                     let math = create(context.gc_context, Some(avm.prototypes().object), Some(avm.prototypes().function));
                     let function = math.read().get($name, avm, context, math)?.unwrap_immediate();
 
@@ -164,14 +164,14 @@ mod tests {
         };
     }
 
-    test_std!(test_abs, "abs",
+    test_std!(test_abs, 19, "abs",
         [] => NAN,
         [Value::Null] => NAN,
         [-50.0] => 50.0,
         [25.0] => 25.0
     );
 
-    test_std!(test_acos, "acos",
+    test_std!(test_acos, 19, "acos",
         [] => NAN,
         [Value::Null] => NAN,
         [-1.0] => f64::acos(-1.0),
@@ -179,7 +179,7 @@ mod tests {
         [1.0] => f64::acos(1.0)
     );
 
-    test_std!(test_asin, "asin",
+    test_std!(test_asin, 19, "asin",
         [] => NAN,
         [Value::Null] => NAN,
         [-1.0] => f64::asin(-1.0),
@@ -187,7 +187,7 @@ mod tests {
         [1.0] => f64::asin(1.0)
     );
 
-    test_std!(test_atan, "atan",
+    test_std!(test_atan, 19, "atan",
         [] => NAN,
         [Value::Null] => NAN,
         [-1.0] => f64::atan(-1.0),
@@ -195,54 +195,66 @@ mod tests {
         [1.0] => f64::atan(1.0)
     );
 
-    test_std!(test_ceil, "ceil",
+    test_std!(test_ceil, 19, "ceil",
         [] => NAN,
         [Value::Null] => NAN,
         [12.5] => 13.0
     );
 
-    test_std!(test_cos, "cos",
+    test_std!(test_cos, 19, "cos",
         [] => NAN,
         [Value::Null] => NAN,
         [0.0] => 1.0,
         [std::f64::consts::PI] => f64::cos(std::f64::consts::PI)
     );
 
-    test_std!(test_exp, "exp",
+    test_std!(test_exp, 19, "exp",
         [] => NAN,
         [Value::Null] => NAN,
         [1.0] => f64::exp(1.0),
         [2.0] => f64::exp(2.0)
     );
 
-    test_std!(test_floor, "floor",
+    test_std!(test_floor, 19, "floor",
         [] => NAN,
+        [Value::Undefined] => NAN,
         [Value::Null] => NAN,
+        [Value::Bool(false)] => 0.0,
+        [Value::Bool(true)] => 1.0,
         [12.5] => 12.0
     );
 
-    test_std!(test_round, "round",
+    test_std!(test_floor_swf6, 6, "floor",
+        [] => NAN,
+        [Value::Undefined] => 0.0,
+        [Value::Null] => 0.0,
+        [Value::Bool(false)] => 0.0,
+        [Value::Bool(true)] => 1.0,
+        [12.5] => 12.0
+    );
+
+    test_std!(test_round, 19, "round",
         [] => NAN,
         [Value::Null] => NAN,
         [12.5] => 13.0,
         [23.2] => 23.0
     );
 
-    test_std!(test_sin, "sin",
+    test_std!(test_sin, 19, "sin",
         [] => NAN,
         [Value::Null] => NAN,
         [0.0] => f64::sin(0.0),
         [std::f64::consts::PI / 2.0] => f64::sin(std::f64::consts::PI / 2.0)
     );
 
-    test_std!(test_sqrt, "sqrt",
+    test_std!(test_sqrt, 19, "sqrt",
         [] => NAN,
         [Value::Null] => NAN,
         [0.0] => f64::sqrt(0.0),
         [5.0] => f64::sqrt(5.0)
     );
 
-    test_std!(test_tan, "tan",
+    test_std!(test_tan, 19, "tan",
         [] => NAN,
         [Value::Null] => NAN,
         [0.0] => f64::tan(0.0),
