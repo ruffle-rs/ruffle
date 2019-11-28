@@ -195,8 +195,15 @@ impl<'gc> Value<'gc> {
 
     /// ECMA-262 2nd edition s. 9.1 ToPrimitive (hint: Number)
     ///
-    /// NOTE: This deliberately omits the part of the spec where you're
-    /// supposed to fall back to `toString`, because Flash did the same thing.
+    /// Flash diverges from spec in a number of ways. These ways are, as far as
+    /// we are aware, version-gated:
+    ///
+    /// * `toString` is never called when `ToPrimitive` is invoked with number
+    ///   hint.
+    /// * Objects with uncallable `valueOf` implementations are coerced to
+    ///   `undefined`. This is not a special-cased behavior: All values are
+    ///   callable in `AVM1`. Values that are not callable objects instead
+    ///   return `undefined` rather than yielding a runtime error.
     pub fn to_primitive_num(
         &self,
         avm: &mut Avm1<'gc>,
@@ -208,15 +215,11 @@ impl<'gc> Value<'gc> {
                     .read()
                     .get("valueOf", avm, context, *object)?
                     .resolve(avm, context)?;
-                if let Value::Object(value_of_impl) = value_of_impl {
-                    let fake_args = Vec::new();
-                    value_of_impl
-                        .read()
-                        .call(avm, context, *object, &fake_args)?
-                        .resolve(avm, context)?
-                } else {
-                    self.to_owned()
-                }
+
+                let fake_args = Vec::new();
+                value_of_impl
+                    .call(avm, context, *object, &fake_args)?
+                    .resolve(avm, context)?
             }
             val => val.to_owned(),
         })
