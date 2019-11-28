@@ -126,8 +126,20 @@ impl<'gc> Value<'gc> {
     }
 
     /// ECMA-262 2nd edtion s. 9.3 ToNumber (after calling `to_primitive_num`)
-    fn primitive_as_number(&self) -> f64 {
+    ///
+    /// Flash diverges from spec in a number of ways. These ways are, as far as
+    /// we are aware, version-gated:
+    ///
+    /// * In SWF6 and lower, `undefined` is coerced to `0.0` (like `false`)
+    /// rathern than `NaN` as required by spec.
+    fn primitive_as_number(
+        &self,
+        avm: &mut Avm1<'gc>,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> f64 {
         match self {
+            Value::Undefined if avm.current_swf_version() < 7 => 0.0,
+            Value::Null if avm.current_swf_version() < 7 => 0.0,
             Value::Undefined => NAN,
             Value::Null => NAN,
             Value::Bool(false) => 0.0,
@@ -174,8 +186,10 @@ impl<'gc> Value<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<f64, Error> {
         Ok(match self {
-            Value::Object(_) => self.to_primitive_num(avm, context)?.primitive_as_number(),
-            val => val.primitive_as_number(),
+            Value::Object(_) => self
+                .to_primitive_num(avm, context)?
+                .primitive_as_number(avm, context),
+            val => val.primitive_as_number(avm, context),
         })
     }
 
@@ -223,8 +237,8 @@ impl<'gc> Value<'gc> {
             return Ok(a.to_string().bytes().lt(b.to_string().bytes()).into());
         }
 
-        let num_self = prim_self.primitive_as_number();
-        let num_other = prim_other.primitive_as_number();
+        let num_self = prim_self.primitive_as_number(avm, context);
+        let num_other = prim_other.primitive_as_number(avm, context);
 
         if num_self.is_nan() || num_other.is_nan() {
             return Ok(Value::Undefined);
