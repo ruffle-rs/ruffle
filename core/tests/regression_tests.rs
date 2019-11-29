@@ -89,7 +89,7 @@ swf_tests! {
     (equals2_swf7, "avm1/equals2_swf7", 1),
     (strictequals_swf6, "avm1/strictequals_swf6", 1),
     (global_is_bare, "avm1/global_is_bare", 1),
-    #[ignore]    (as2_oop, "avm1/as2_oop", 1),
+    (as2_oop, "avm1/as2_oop", 1),
 }
 
 #[test]
