@@ -62,15 +62,9 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         name: &str,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        _this: Object<'gc>,
+        this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error> {
-        if self.0.read().child.has_own_property(name) {
-            self.0.read().child.get(name, avm, context)
-        } else if let Some(proto) = self.proto() {
-            proto.get(name, avm, context)
-        } else {
-            Ok(Value::Undefined.into())
-        }
+        self.0.read().child.get_local(name, avm, context, this)
     }
 
     fn set(
@@ -121,11 +115,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     }
 
     fn proto(&self) -> Option<Object<'gc>> {
-        if let Some(proto) = self.0.read().proto {
-            proto.proto()
-        } else {
-            None
-        }
+        self.0.read().proto
     }
 
     fn define_value(
