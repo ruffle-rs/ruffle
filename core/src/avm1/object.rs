@@ -1,681 +1,187 @@
-use self::Attribute::*;
-use crate::avm1::function::{Avm1Function, Executable, NativeFunction};
+//! Object trait to expose objects to AVM
+
+use crate::avm1::function::Executable;
+use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, UpdateContext, Value};
+use crate::avm1::{Avm1, Error, ScriptObject, UpdateContext, Value};
 use crate::display_object::DisplayNode;
-use core::fmt;
-use enumset::{EnumSet, EnumSetType};
-use gc_arena::{GcCell, MutationContext};
-use std::collections::hash_map::Entry;
-use std::collections::HashMap;
-use std::mem::replace;
+use enumset::EnumSet;
+use gc_arena::{Collect, GcCell};
+use std::collections::HashSet;
+use std::fmt::Debug;
 
-pub const TYPE_OF_OBJECT: &str = "object";
-pub const TYPE_OF_FUNCTION: &str = "function";
-pub const TYPE_OF_MOVIE_CLIP: &str = "movieclip";
+pub type ObjectCell<'gc> = GcCell<'gc, Box<dyn Object<'gc> + 'gc>>;
 
-fn default_to_string<'gc>(
-    _: &mut Avm1<'gc>,
-    _: &mut UpdateContext<'_, 'gc, '_>,
-    _: GcCell<'gc, Object<'gc>>,
-    _: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
-    Ok(ReturnValue::Immediate("[Object object]".into()))
-}
-
-#[derive(EnumSetType, Debug)]
-pub enum Attribute {
-    DontDelete,
-    DontEnum,
-    ReadOnly,
-}
-
-#[derive(Clone)]
-pub enum Property<'gc> {
-    Virtual {
-        get: Executable<'gc>,
-        set: Option<Executable<'gc>>,
-        attributes: EnumSet<Attribute>,
-    },
-    Stored {
-        value: Value<'gc>,
-        attributes: EnumSet<Attribute>,
-    },
-}
-
-impl<'gc> Property<'gc> {
-    /// Get the value of a property slot.
+/// Represents an object that can be directly interacted with by the AVM
+/// runtime.
+pub trait Object<'gc>: 'gc + Collect + Debug {
+    /// Retrieve a named property from this object exclusively.
     ///
-    /// This function yields `None` if the value is being determined on the AVM
-    /// stack. Otherwise, if the value can be determined on the Rust stack,
-    /// then this function returns the value.
-    pub fn get(
-        &self,
-        avm: &mut Avm1<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        this: GcCell<'gc, Object<'gc>>,
-    ) -> Result<ReturnValue<'gc>, Error> {
-        match self {
-            Property::Virtual { get, .. } => get.exec(avm, context, this, &[]),
-            Property::Stored { value, .. } => Ok(value.to_owned().into()),
-        }
-    }
-
-    /// Set a property slot.
+    /// This function takes a redundant `this` parameter which should be
+    /// the object's own `GcCell`, so that it can pass it to user-defined
+    /// overrides that may need to interact with the underlying object.
     ///
-    /// This function returns `true` if the set has completed, or `false` if
-    /// it has not yet occured. If `false`, and you need to run code after the
-    /// set has occured, you must recursively execute the top-most frame via
-    /// `run_current_frame`.
-    pub fn set(
-        &mut self,
-        avm: &mut Avm1<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        this: GcCell<'gc, Object<'gc>>,
-        new_value: impl Into<Value<'gc>>,
-    ) -> Result<bool, Error> {
-        match self {
-            Property::Virtual { set, .. } => {
-                if let Some(function) = set {
-                    let return_value = function.exec(avm, context, this, &[new_value.into()])?;
-                    Ok(return_value.is_immediate())
-                } else {
-                    Ok(true)
-                }
-            }
-            Property::Stored {
-                value, attributes, ..
-            } => {
-                if !attributes.contains(ReadOnly) {
-                    replace::<Value<'gc>>(value, new_value.into());
-                }
-
-                Ok(true)
-            }
-        }
-    }
-
-    pub fn can_delete(&self) -> bool {
-        match self {
-            Property::Virtual { attributes, .. } => !attributes.contains(DontDelete),
-            Property::Stored { attributes, .. } => !attributes.contains(DontDelete),
-        }
-    }
-
-    pub fn is_enumerable(&self) -> bool {
-        match self {
-            Property::Virtual { attributes, .. } => !attributes.contains(DontEnum),
-            Property::Stored { attributes, .. } => !attributes.contains(DontEnum),
-        }
-    }
-
-    pub fn is_overwritable(&self) -> bool {
-        match self {
-            Property::Virtual {
-                attributes, set, ..
-            } => !attributes.contains(ReadOnly) && !set.is_none(),
-            Property::Stored { attributes, .. } => !attributes.contains(ReadOnly),
-        }
-    }
-}
-
-unsafe impl<'gc> gc_arena::Collect for Property<'gc> {
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        match self {
-            Property::Virtual { get, set, .. } => {
-                get.trace(cc);
-                set.trace(cc);
-            }
-            Property::Stored { value, .. } => value.trace(cc),
-        }
-    }
-}
-
-impl fmt::Debug for Property<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Property::Virtual {
-                get: _,
-                set,
-                attributes,
-            } => f
-                .debug_struct("Property::Virtual")
-                .field("get", &true)
-                .field("set", &set.is_some())
-                .field("attributes", &attributes)
-                .finish(),
-            Property::Stored { value, attributes } => f
-                .debug_struct("Property::Stored")
-                .field("value", &value)
-                .field("attributes", &attributes)
-                .finish(),
-        }
-    }
-}
-
-#[derive(Clone)]
-pub struct Object<'gc> {
-    display_node: Option<DisplayNode<'gc>>,
-    values: HashMap<String, Property<'gc>>,
-    function: Option<Executable<'gc>>,
-    type_of: &'static str,
-}
-
-unsafe impl<'gc> gc_arena::Collect for Object<'gc> {
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.display_node.trace(cc);
-        self.values.trace(cc);
-    }
-}
-
-impl fmt::Debug for Object<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("Object")
-            .field("display_node", &self.display_node)
-            .field("values", &self.values)
-            .field("function", &self.function.is_some())
-            .finish()
-    }
-}
-
-impl<'gc> Object<'gc> {
-    pub fn object(gc_context: MutationContext<'gc, '_>) -> Self {
-        let mut result = Self {
-            type_of: TYPE_OF_OBJECT,
-            display_node: None,
-            values: HashMap::new(),
-            function: None,
-        };
-
-        result.force_set_function(
-            "toString",
-            default_to_string,
-            gc_context,
-            DontDelete | DontEnum,
-        );
-
-        result
-    }
-
-    /// Constructs an object with no values, not even builtins.
-    ///
-    /// Intended for constructing scope chains, since they exclusively use the
-    /// object values, but can't just have a hashmap because of `with` and
-    /// friends.
-    pub fn bare_object() -> Self {
-        Self {
-            type_of: TYPE_OF_OBJECT,
-            display_node: None,
-            values: HashMap::new(),
-            function: None,
-        }
-    }
-
-    pub fn native_function(function: NativeFunction<'gc>) -> Self {
-        Self {
-            type_of: TYPE_OF_FUNCTION,
-            function: Some(Executable::Native(function)),
-            display_node: None,
-            values: HashMap::new(),
-        }
-    }
-
-    pub fn action_function(func: Avm1Function<'gc>) -> Self {
-        Self {
-            type_of: TYPE_OF_FUNCTION,
-            function: Some(Executable::Action(func)),
-            display_node: None,
-            values: HashMap::new(),
-        }
-    }
-
-    pub fn set_display_node(&mut self, display_node: DisplayNode<'gc>) {
-        self.display_node = Some(display_node);
-    }
-
-    pub fn display_node(&self) -> Option<DisplayNode<'gc>> {
-        self.display_node
-    }
-
-    pub fn set(
-        &mut self,
-        name: &str,
-        value: impl Into<Value<'gc>>,
-        avm: &mut Avm1<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        this: GcCell<'gc, Object<'gc>>,
-    ) -> Result<(), Error> {
-        match self.values.entry(name.to_owned()) {
-            Entry::Occupied(mut entry) => {
-                entry.get_mut().set(avm, context, this, value)?;
-                Ok(())
-            }
-            Entry::Vacant(entry) => {
-                entry.insert(Property::Stored {
-                    value: value.into(),
-                    attributes: Default::default(),
-                });
-                Ok(())
-            }
-        }
-    }
-
-    pub fn force_set_virtual<A>(
-        &mut self,
-        name: &str,
-        get: Executable<'gc>,
-        set: Option<Executable<'gc>>,
-        attributes: A,
-    ) where
-        A: Into<EnumSet<Attribute>>,
-    {
-        self.values.insert(
-            name.to_owned(),
-            Property::Virtual {
-                get,
-                set,
-                attributes: attributes.into(),
-            },
-        );
-    }
-
-    pub fn force_set<A>(&mut self, name: &str, value: impl Into<Value<'gc>>, attributes: A)
-    where
-        A: Into<EnumSet<Attribute>>,
-    {
-        self.values.insert(
-            name.to_string(),
-            Property::Stored {
-                value: value.into(),
-                attributes: attributes.into(),
-            },
-        );
-    }
-
-    pub fn force_set_function<A>(
-        &mut self,
-        name: &str,
-        function: NativeFunction<'gc>,
-        gc_context: MutationContext<'gc, '_>,
-        attributes: A,
-    ) where
-        A: Into<EnumSet<Attribute>>,
-    {
-        self.force_set(
-            name,
-            GcCell::allocate(gc_context, Object::native_function(function)),
-            attributes,
-        )
-    }
-
-    /// Get the value of a particular property on this object.
-    ///
-    /// The `avm`, `context`, and `this` parameters exist so that this object
-    /// can call virtual properties. Likewise, this function returns a
-    /// `ReturnValue` which allows pulling data from the return values of user
-    /// functions.
-    pub fn get(
+    /// This function should not inspect prototype chains. Instead, use `get`
+    /// to do ordinary property look-up and resolution.
+    fn get_local(
         &self,
         name: &str,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: GcCell<'gc, Object<'gc>>,
-    ) -> Result<ReturnValue<'gc>, Error> {
-        if let Some(value) = self.values.get(name) {
-            return value.get(avm, context, this);
-        }
+        this: ObjectCell<'gc>,
+    ) -> Result<ReturnValue<'gc>, Error>;
 
-        Ok(Value::Undefined.into())
-    }
-
-    /// Delete a given value off the object.
-    pub fn delete(&mut self, name: &str) -> bool {
-        if let Some(prop) = self.values.get(name) {
-            if prop.can_delete() {
-                self.values.remove(name);
-                return true;
-            }
-        }
-
-        false
-    }
-
-    pub fn has_property(&self, name: &str) -> bool {
-        self.values.contains_key(name)
-    }
-
-    pub fn has_own_property(&self, name: &str) -> bool {
-        self.values.contains_key(name)
-    }
-
-    pub fn is_property_overwritable(&self, name: &str) -> bool {
-        self.values
-            .get(name)
-            .map(|p| p.is_overwritable())
-            .unwrap_or(false)
-    }
-
-    pub fn get_keys(&self) -> Vec<String> {
-        self.values
-            .iter()
-            .filter_map(|(k, p)| {
-                if p.is_enumerable() {
-                    Some(k.to_string())
-                } else {
-                    None
-                }
-            })
-            .collect()
-    }
-
-    pub fn call(
+    /// Retrieve a named property from the object, or it's prototype.
+    fn get(
         &self,
+        name: &str,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: GcCell<'gc, Object<'gc>>,
-        args: &[Value<'gc>],
+        this: ObjectCell<'gc>,
     ) -> Result<ReturnValue<'gc>, Error> {
-        if let Some(function) = &self.function {
-            function.exec(avm, context, this, args)
+        if self.has_own_property(name) {
+            self.get_local(name, avm, context, this)
         } else {
+            let mut depth = 0;
+            let mut proto = self.proto();
+
+            while proto.is_some() {
+                if depth == 255 {
+                    return Err("Encountered an excessively deep prototype chain.".into());
+                }
+
+                if proto.unwrap().read().has_own_property(name) {
+                    return proto.unwrap().read().get_local(name, avm, context, this);
+                }
+
+                proto = proto.unwrap().read().proto();
+                depth += 1;
+            }
+
             Ok(Value::Undefined.into())
         }
     }
 
-    pub fn as_string(&self) -> String {
-        if self.function.is_some() {
-            "[type Function]".to_string()
-        } else {
-            "[object Object]".to_string()
-        }
-    }
+    /// Set a named property on this object, or it's prototype.
+    ///
+    /// This function takes a redundant `this` parameter which should be
+    /// the object's own `GcCell`, so that it can pass it to user-defined
+    /// overrides that may need to interact with the underlying object.
+    fn set(
+        &mut self,
+        name: &str,
+        value: Value<'gc>,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        this: ObjectCell<'gc>,
+    ) -> Result<(), Error>;
 
-    pub fn set_type_of(&mut self, type_of: &'static str) {
-        self.type_of = type_of;
-    }
+    /// Call the underlying object.
+    ///
+    /// This function takes a redundant `this` parameter which should be
+    /// the object's own `GcCell`, so that it can pass it to user-defined
+    /// overrides that may need to interact with the underlying object.
+    fn call(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        this: ObjectCell<'gc>,
+        args: &[Value<'gc>],
+    ) -> Result<ReturnValue<'gc>, Error>;
 
-    pub fn type_of(&self) -> &'static str {
-        self.type_of
-    }
-}
+    /// Construct a host object of some kind and return it's cell.
+    ///
+    /// As the first step in object construction, the `new` method is called on
+    /// the prototype to initialize an object. The prototype may construct any
+    /// object implementation it wants, with itself as the new object's proto.
+    /// Then, the constructor is `call`ed with the new object as `this` to
+    /// initialize the object.
+    ///
+    /// The arguments passed to the constructor are provided here; however, all
+    /// object construction should happen in `call`, not `new`. `new` exists
+    /// purely so that host objects can be constructed by the VM.
+    fn new(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        this: ObjectCell<'gc>,
+        args: &[Value<'gc>],
+    ) -> Result<ObjectCell<'gc>, Error>;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+    /// Delete a named property from the object.
+    ///
+    /// Returns false if the property cannot be deleted.
+    fn delete(&mut self, name: &str) -> bool;
 
-    use crate::avm1::activation::Activation;
-    use crate::backend::audio::NullAudioBackend;
-    use crate::backend::navigator::NullNavigatorBackend;
-    use crate::backend::render::NullRenderer;
-    use crate::display_object::{DisplayObject, MovieClip};
-    use crate::library::Library;
-    use crate::prelude::*;
-    use gc_arena::rootless_arena;
-    use rand::{rngs::SmallRng, SeedableRng};
-    use std::sync::Arc;
+    /// Retrieve the `__proto__` of a given object.
+    ///
+    /// The proto is another object used to resolve methods across a class of
+    /// multiple objects. It should also be accessible as `__proto__` from
+    /// `get`.
+    fn proto(&self) -> Option<ObjectCell<'gc>>;
 
-    fn with_object<F, R>(swf_version: u8, test: F) -> R
-    where
-        F: for<'a, 'gc> FnOnce(
-            &mut Avm1<'gc>,
-            &mut UpdateContext<'a, 'gc, '_>,
-            GcCell<'gc, Object<'gc>>,
-        ) -> R,
-    {
-        rootless_arena(|gc_context| {
-            let mut avm = Avm1::new(gc_context, swf_version);
-            let movie_clip: Box<dyn DisplayObject> =
-                Box::new(MovieClip::new(swf_version, gc_context));
-            let root = GcCell::allocate(gc_context, movie_clip);
-            let mut context = UpdateContext {
-                gc_context,
-                global_time: 0,
-                player_version: 32,
-                swf_version,
-                root,
-                start_clip: root,
-                active_clip: root,
-                target_clip: Some(root),
-                target_path: Value::Undefined,
-                rng: &mut SmallRng::from_seed([0u8; 16]),
-                action_queue: &mut crate::context::ActionQueue::new(),
-                audio: &mut NullAudioBackend::new(),
-                background_color: &mut Color {
-                    r: 0,
-                    g: 0,
-                    b: 0,
-                    a: 0,
-                },
-                library: &mut Library::new(),
-                navigator: &mut NullNavigatorBackend::new(),
-                renderer: &mut NullRenderer::new(),
-                swf_data: &mut Arc::new(vec![]),
-            };
+    /// Define a value on an object.
+    ///
+    /// Unlike setting a value, this function is intended to replace any
+    /// existing virtual or built-in properties already installed on a given
+    /// object. As such, this should not run any setters; the resulting name
+    /// slot should either be completely replaced with the value or completely
+    /// untouched.
+    ///
+    /// It is not guaranteed that all objects accept value definitions,
+    /// especially if a property name conflicts with a built-in property, such
+    /// as `__proto__`.
+    fn define_value(&mut self, name: &str, value: Value<'gc>, attributes: EnumSet<Attribute>);
 
-            let object = GcCell::allocate(gc_context, Object::object(gc_context));
+    /// Define a virtual property onto a given object.
+    ///
+    /// A virtual property is a set of get/set functions that are called when a
+    /// given named property is retrieved or stored on an object. These
+    /// functions are then responsible for providing or accepting the value
+    /// that is given to or taken from the AVM.
+    ///
+    /// It is not guaranteed that all objects accept virtual properties,
+    /// especially if a property name conflicts with a built-in property, such
+    /// as `__proto__`.
+    fn add_property(
+        &mut self,
+        name: &str,
+        get: Executable<'gc>,
+        set: Option<Executable<'gc>>,
+        attributes: EnumSet<Attribute>,
+    );
 
-            let globals = avm.global_object_cell();
-            avm.insert_stack_frame(GcCell::allocate(
-                gc_context,
-                Activation::from_nothing(swf_version, globals, gc_context),
-            ));
+    /// Checks if the object has a given named property.
+    fn has_property(&self, name: &str) -> bool;
 
-            test(&mut avm, &mut context, object)
-        })
-    }
+    /// Checks if the object has a given named property on itself (and not,
+    /// say, the object's prototype or superclass)
+    fn has_own_property(&self, name: &str) -> bool;
 
-    #[test]
-    fn test_get_undefined() {
-        with_object(0, |avm, context, object| {
-            assert_eq!(
-                object
-                    .read()
-                    .get("not_defined", avm, context, object)
-                    .unwrap(),
-                Value::Undefined.into()
-            );
-        })
-    }
+    /// Checks if a named property can be overwritten.
+    fn is_property_overwritable(&self, name: &str) -> bool;
 
-    #[test]
-    fn test_set_get() {
-        with_object(0, |avm, context, object| {
-            object
-                .write(context.gc_context)
-                .force_set("forced", "forced", EnumSet::empty());
-            object
-                .write(context.gc_context)
-                .set("natural", "natural", avm, context, object)
-                .unwrap();
+    /// Checks if a named property appears when enumerating the object.
+    fn is_property_enumerable(&self, name: &str) -> bool;
 
-            assert_eq!(
-                object.read().get("forced", avm, context, object).unwrap(),
-                ReturnValue::Immediate("forced".into())
-            );
-            assert_eq!(
-                object.read().get("natural", avm, context, object).unwrap(),
-                ReturnValue::Immediate("natural".into())
-            );
-        })
-    }
+    /// Enumerate the object.
+    fn get_keys(&self) -> HashSet<String>;
 
-    #[test]
-    fn test_set_readonly() {
-        with_object(0, |avm, context, object| {
-            object
-                .write(context.gc_context)
-                .force_set("normal", "initial", EnumSet::empty());
-            object
-                .write(context.gc_context)
-                .force_set("readonly", "initial", ReadOnly);
+    /// Coerce the object into a string.
+    fn as_string(&self) -> String;
 
-            object
-                .write(context.gc_context)
-                .set("normal", "replaced", avm, context, object)
-                .unwrap();
-            object
-                .write(context.gc_context)
-                .set("readonly", "replaced", avm, context, object)
-                .unwrap();
+    /// Get the object's type string.
+    fn type_of(&self) -> &'static str;
 
-            assert_eq!(
-                object.read().get("normal", avm, context, object).unwrap(),
-                ReturnValue::Immediate("replaced".into())
-            );
-            assert_eq!(
-                object.read().get("readonly", avm, context, object).unwrap(),
-                ReturnValue::Immediate("initial".into())
-            );
-        })
-    }
+    /// Get the underlying script object, if it exists.
+    fn as_script_object(&self) -> Option<&ScriptObject<'gc>>;
 
-    #[test]
-    fn test_deletable_not_readonly() {
-        with_object(0, |avm, context, object| {
-            object
-                .write(context.gc_context)
-                .force_set("test", "initial", DontDelete);
+    /// Get the underlying script object, if it exists.
+    fn as_script_object_mut(&mut self) -> Option<&mut ScriptObject<'gc>>;
 
-            assert_eq!(object.write(context.gc_context).delete("test"), false);
-            assert_eq!(
-                object.read().get("test", avm, context, object).unwrap(),
-                ReturnValue::Immediate("initial".into())
-            );
+    /// Get the underlying display node for this object, if it exists.
+    fn as_display_node(&self) -> Option<DisplayNode<'gc>>;
 
-            object
-                .write(context.gc_context)
-                .set("test", "replaced", avm, context, object)
-                .unwrap();
-
-            assert_eq!(object.write(context.gc_context).delete("test"), false);
-            assert_eq!(
-                object.read().get("test", avm, context, object).unwrap(),
-                ReturnValue::Immediate("replaced".into())
-            );
-        })
-    }
-
-    #[test]
-    fn test_virtual_get() {
-        with_object(0, |avm, context, object| {
-            let getter = Executable::Native(|_avm, _context, _this, _args| {
-                Ok(ReturnValue::Immediate("Virtual!".into()))
-            });
-
-            object.write(context.gc_context).force_set_virtual(
-                "test",
-                getter,
-                None,
-                EnumSet::empty(),
-            );
-
-            assert_eq!(
-                object.read().get("test", avm, context, object).unwrap(),
-                ReturnValue::Immediate("Virtual!".into())
-            );
-
-            // This set should do nothing
-            object
-                .write(context.gc_context)
-                .set("test", "Ignored!", avm, context, object)
-                .unwrap();
-            assert_eq!(
-                object.read().get("test", avm, context, object).unwrap(),
-                ReturnValue::Immediate("Virtual!".into())
-            );
-        })
-    }
-
-    #[test]
-    fn test_delete() {
-        with_object(0, |avm, context, object| {
-            let getter = Executable::Native(|_avm, _context, _this, _args| {
-                Ok(ReturnValue::Immediate("Virtual!".into()))
-            });
-
-            object.write(context.gc_context).force_set_virtual(
-                "virtual",
-                getter.clone(),
-                None,
-                EnumSet::empty(),
-            );
-            object.write(context.gc_context).force_set_virtual(
-                "virtual_un",
-                getter,
-                None,
-                DontDelete,
-            );
-            object
-                .write(context.gc_context)
-                .force_set("stored", "Stored!", EnumSet::empty());
-            object
-                .write(context.gc_context)
-                .force_set("stored_un", "Stored!", DontDelete);
-
-            assert_eq!(object.write(context.gc_context).delete("virtual"), true);
-            assert_eq!(object.write(context.gc_context).delete("virtual_un"), false);
-            assert_eq!(object.write(context.gc_context).delete("stored"), true);
-            assert_eq!(object.write(context.gc_context).delete("stored_un"), false);
-            assert_eq!(
-                object.write(context.gc_context).delete("non_existent"),
-                false
-            );
-
-            assert_eq!(
-                object.read().get("virtual", avm, context, object).unwrap(),
-                Value::Undefined.into()
-            );
-            assert_eq!(
-                object
-                    .read()
-                    .get("virtual_un", avm, context, object)
-                    .unwrap(),
-                ReturnValue::Immediate("Virtual!".into())
-            );
-            assert_eq!(
-                object.read().get("stored", avm, context, object).unwrap(),
-                Value::Undefined.into()
-            );
-            assert_eq!(
-                object
-                    .read()
-                    .get("stored_un", avm, context, object)
-                    .unwrap(),
-                ReturnValue::Immediate("Stored!".into())
-            );
-        })
-    }
-
-    #[test]
-    fn test_iter_values() {
-        with_object(0, |_avm, context, object| {
-            let getter = Executable::Native(|_avm, _context, _this, _args| Ok(Value::Null.into()));
-
-            object
-                .write(context.gc_context)
-                .force_set("stored", Value::Null, EnumSet::empty());
-            object
-                .write(context.gc_context)
-                .force_set("stored_hidden", Value::Null, DontEnum);
-            object.write(context.gc_context).force_set_virtual(
-                "virtual",
-                getter.clone(),
-                None,
-                EnumSet::empty(),
-            );
-            object.write(context.gc_context).force_set_virtual(
-                "virtual_hidden",
-                getter,
-                None,
-                DontEnum,
-            );
-
-            let keys = object.read().get_keys();
-            assert_eq!(keys.len(), 2);
-            assert_eq!(keys.contains(&"stored".to_string()), true);
-            assert_eq!(keys.contains(&"stored_hidden".to_string()), false);
-            assert_eq!(keys.contains(&"virtual".to_string()), true);
-            assert_eq!(keys.contains(&"virtual_hidden".to_string()), false);
-        })
-    }
+    /// Get the underlying executable for this object, if it exists.
+    fn as_executable(&self) -> Option<Executable<'gc>>;
 }

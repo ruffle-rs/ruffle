@@ -1,18 +1,22 @@
 use crate::avm1::fscommand;
+use crate::avm1::function::Executable;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, Object, UpdateContext, Value};
+use crate::avm1::{Avm1, Error, Object, ObjectCell, ScriptObject, UpdateContext, Value};
 use crate::backend::navigator::NavigationMethod;
 use enumset::EnumSet;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::MutationContext;
 use rand::Rng;
 
+mod function;
 mod math;
+mod movie_clip;
+mod object;
 
 #[allow(non_snake_case, unused_must_use)] //can't use errors yet
 pub fn getURL<'a, 'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'a, 'gc, '_>,
-    _this: GcCell<'gc, Object<'gc>>,
+    _this: ObjectCell<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     //TODO: Error behavior if no arguments are present
@@ -40,7 +44,7 @@ pub fn getURL<'a, 'gc>(
 pub fn random<'gc>(
     _avm: &mut Avm1<'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: GcCell<'gc, Object<'gc>>,
+    _this: ObjectCell<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     match args.get(0) {
@@ -52,7 +56,7 @@ pub fn random<'gc>(
 pub fn boolean<'gc>(
     avm: &mut Avm1<'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: GcCell<'gc, Object<'gc>>,
+    _this: ObjectCell<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(val) = args.get(0) {
@@ -65,7 +69,7 @@ pub fn boolean<'gc>(
 pub fn number<'gc>(
     _avm: &mut Avm1<'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: GcCell<'gc, Object<'gc>>,
+    _this: ObjectCell<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(val) = args.get(0) {
@@ -78,7 +82,7 @@ pub fn number<'gc>(
 pub fn is_nan<'gc>(
     _avm: &mut Avm1<'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: GcCell<'gc, Object<'gc>>,
+    _this: ObjectCell<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(val) = args.get(0) {
@@ -88,24 +92,121 @@ pub fn is_nan<'gc>(
     }
 }
 
-pub fn create_globals<'gc>(gc_context: MutationContext<'gc, '_>) -> Object<'gc> {
-    let mut globals = Object::object(gc_context);
+/// This structure represents all system builtins that are used regardless of
+/// whatever the hell happens to `_global`. These are, of course,
+/// user-modifiable.
+#[derive(Clone)]
+pub struct SystemPrototypes<'gc> {
+    pub object: ObjectCell<'gc>,
+    pub function: ObjectCell<'gc>,
+    pub movie_clip: ObjectCell<'gc>,
+}
 
-    globals.force_set_function("isNaN", is_nan, gc_context, EnumSet::empty());
-    globals.force_set_function("Boolean", boolean, gc_context, EnumSet::empty());
-    globals.force_set("Math", math::create(gc_context), EnumSet::empty());
-    globals.force_set_function("getURL", getURL, gc_context, EnumSet::empty());
-    globals.force_set_function("Number", number, gc_context, EnumSet::empty());
-    globals.force_set_function("random", random, gc_context, EnumSet::empty());
+unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
+    #[inline]
+    fn trace(&self, cc: gc_arena::CollectionContext) {
+        self.object.trace(cc);
+        self.function.trace(cc);
+        self.movie_clip.trace(cc);
+    }
+}
 
-    globals.force_set("NaN", Value::Number(std::f64::NAN), EnumSet::empty());
-    globals.force_set(
+/// Initialize default global scope and builtins for an AVM1 instance.
+pub fn create_globals<'gc>(
+    gc_context: MutationContext<'gc, '_>,
+) -> (SystemPrototypes<'gc>, Box<dyn Object<'gc> + 'gc>) {
+    let object_proto = ScriptObject::object_cell(gc_context, None);
+    let function_proto = function::create_proto(gc_context, object_proto);
+
+    object::fill_proto(gc_context, object_proto, function_proto);
+
+    let movie_clip_proto: ObjectCell<'gc> =
+        movie_clip::create_proto(gc_context, object_proto, function_proto);
+
+    //TODO: These need to be constructors and should also set `.prototype` on each one
+    let object = ScriptObject::function(
+        gc_context,
+        Executable::Native(object::constructor),
+        Some(function_proto),
+        Some(object_proto),
+    );
+
+    let function = ScriptObject::function(
+        gc_context,
+        Executable::Native(function::constructor),
+        Some(function_proto),
+        Some(function_proto),
+    );
+    let movie_clip = ScriptObject::function(
+        gc_context,
+        Executable::Native(movie_clip::constructor),
+        Some(function_proto),
+        Some(movie_clip_proto),
+    );
+
+    let mut globals = ScriptObject::object(gc_context, Some(object_proto));
+    globals.define_value("Object", object.into(), EnumSet::empty());
+    globals.define_value("Function", function.into(), EnumSet::empty());
+    globals.define_value("MovieClip", movie_clip.into(), EnumSet::empty());
+    globals.force_set_function(
+        "Number",
+        number,
+        gc_context,
+        EnumSet::empty(),
+        Some(function_proto),
+    );
+    globals.force_set_function(
+        "Boolean",
+        boolean,
+        gc_context,
+        EnumSet::empty(),
+        Some(function_proto),
+    );
+    globals.define_value(
+        "Math",
+        Value::Object(math::create(
+            gc_context,
+            Some(object_proto),
+            Some(function_proto),
+        )),
+        EnumSet::empty(),
+    );
+    globals.force_set_function(
+        "isNaN",
+        is_nan,
+        gc_context,
+        EnumSet::empty(),
+        Some(function_proto),
+    );
+    globals.force_set_function(
+        "getURL",
+        getURL,
+        gc_context,
+        EnumSet::empty(),
+        Some(function_proto),
+    );
+    globals.force_set_function(
+        "random",
+        random,
+        gc_context,
+        EnumSet::empty(),
+        Some(function_proto),
+    );
+    globals.define_value("NaN", Value::Number(std::f64::NAN), EnumSet::empty());
+    globals.define_value(
         "Infinity",
         Value::Number(std::f64::INFINITY),
         EnumSet::empty(),
     );
 
-    globals
+    (
+        SystemPrototypes {
+            object: object_proto,
+            function: function_proto,
+            movie_clip: movie_clip_proto,
+        },
+        Box::new(globals),
+    )
 }
 
 #[cfg(test)]

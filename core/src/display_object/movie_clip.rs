@@ -1,7 +1,6 @@
 //! `MovieClip` display object and support code.
-use crate::avm1::movie_clip::create_movie_object;
-use crate::avm1::object::{Object, TYPE_OF_MOVIE_CLIP};
-use crate::avm1::Value;
+use crate::avm1::script_object::TYPE_OF_MOVIE_CLIP;
+use crate::avm1::{ObjectCell, ScriptObject, Value};
 use crate::backend::audio::AudioStreamHandle;
 use crate::character::Character;
 use crate::context::{RenderContext, UpdateContext};
@@ -34,7 +33,7 @@ pub struct MovieClip<'gc> {
     current_frame: FrameNumber,
     audio_stream: Option<AudioStreamHandle>,
     children: BTreeMap<Depth, DisplayNode<'gc>>,
-    object: GcCell<'gc, Object<'gc>>,
+    object: ObjectCell<'gc>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -48,7 +47,7 @@ impl<'gc> MovieClip<'gc> {
             current_frame: 0,
             audio_stream: None,
             children: BTreeMap::new(),
-            object: GcCell::allocate(gc_context, create_movie_object(gc_context)),
+            object: GcCell::allocate(gc_context, Box::new(ScriptObject::bare_object())),
         }
     }
 
@@ -79,7 +78,7 @@ impl<'gc> MovieClip<'gc> {
             current_frame: 0,
             audio_stream: None,
             children: BTreeMap::new(),
-            object: GcCell::allocate(gc_context, create_movie_object(gc_context)),
+            object: GcCell::allocate(gc_context, Box::new(ScriptObject::bare_object())),
         }
     }
 
@@ -303,10 +302,11 @@ impl<'gc> MovieClip<'gc> {
         depth: Depth,
         copy_previous_properties: bool,
     ) -> Option<DisplayNode<'gc>> {
-        if let Ok(child_cell) = context
-            .library
-            .instantiate_display_object(id, context.gc_context)
-        {
+        if let Ok(child_cell) = context.library.instantiate_display_object(
+            id,
+            context.gc_context,
+            &context.system_prototypes,
+        ) {
             // Remove previous child from children list,
             // and add new childonto front of the list.
             let prev_child = self.children.insert(depth, child_cell);
@@ -626,10 +626,18 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
         &mut self,
         gc_context: MutationContext<'gc, '_>,
         display_object: DisplayNode<'gc>,
+        proto: ObjectCell<'gc>,
     ) {
         let mut object = self.object.write(gc_context);
-        object.set_display_node(display_object);
-        object.set_type_of(TYPE_OF_MOVIE_CLIP);
+        object
+            .as_script_object_mut()
+            .unwrap()
+            .set_display_node(display_object);
+        object
+            .as_script_object_mut()
+            .unwrap()
+            .set_type_of(TYPE_OF_MOVIE_CLIP);
+        object.as_script_object_mut().unwrap().set_prototype(proto);
     }
 
     fn object(&self) -> Value<'gc> {

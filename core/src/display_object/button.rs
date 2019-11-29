@@ -73,10 +73,11 @@ impl<'gc> Button<'gc> {
         self.children.clear();
         for record in &self.static_data.records {
             if record.states.contains(&swf_state) {
-                if let Ok(child) = context
-                    .library
-                    .instantiate_display_object(record.id, context.gc_context)
-                {
+                if let Ok(child) = context.library.instantiate_display_object(
+                    record.id,
+                    context.gc_context,
+                    &context.system_prototypes,
+                ) {
                     child
                         .write(context.gc_context)
                         .set_parent(Some(context.active_clip));
@@ -161,10 +162,11 @@ impl<'gc> DisplayObject<'gc> for Button<'gc> {
 
             for record in &self.static_data.records {
                 if record.states.contains(&swf::ButtonState::HitTest) {
-                    match context
-                        .library
-                        .instantiate_display_object(record.id, context.gc_context)
-                    {
+                    match context.library.instantiate_display_object(
+                        record.id,
+                        context.gc_context,
+                        &context.system_prototypes,
+                    ) {
                         Ok(child) => {
                             {
                                 let mut child = child.write(context.gc_context);

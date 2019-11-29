@@ -81,6 +81,10 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// request, but this requires us to implement auto-generated
     /// _names ("instanceN" etc. for unnamed clips).
     pub target_path: avm1::Value<'gc>,
+
+    /// The current set of system-specified prototypes to use when constructing
+    /// new built-in objects.
+    pub system_prototypes: avm1::SystemPrototypes<'gc>,
 }
 
 /// A queued ActionScript call.

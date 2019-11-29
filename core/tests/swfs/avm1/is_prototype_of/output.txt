@@ -1,0 +1,90 @@
+// a.isPrototypeOf(a)
+false
+
+// a.isPrototypeOf(b)
+true
+
+// a.isPrototypeOf(c)
+false
+
+// a.isPrototypeOf(d)
+false
+
+// a.isPrototypeOf(Fun)
+false
+
+// b.isPrototypeOf(a)
+false
+
+// b.isPrototypeOf(b)
+false
+
+// b.isPrototypeOf(c)
+false
+
+// b.isPrototypeOf(d)
+false
+
+// b.isPrototypeOf(Fun)
+false
+
+// c.isPrototypeOf(a)
+false
+
+// c.isPrototypeOf(b)
+false
+
+// c.isPrototypeOf(c)
+false
+
+// c.isPrototypeOf(d)
+true
+
+// c.isPrototypeOf(Fun)
+false
+
+// d.isPrototypeOf(a)
+false
+
+// d.isPrototypeOf(b)
+false
+
+// d.isPrototypeOf(c)
+false
+
+// d.isPrototypeOf(d)
+false
+
+// d.isPrototypeOf(Fun)
+false
+
+// Fun.prototype.isPrototypeOf(a)
+false
+
+// Fun.prototype.isPrototypeOf(b)
+false
+
+// Fun.prototype.isPrototypeOf(c)
+true
+
+// Fun.prototype.isPrototypeOf(d)
+true
+
+// Fun.prototype.isPrototypeOf(Fun)
+false
+
+// Object.prototype.isPrototypeOf(a)
+true
+
+// Object.prototype.isPrototypeOf(b)
+true
+
+// Object.prototype.isPrototypeOf(c)
+true
+
+// Object.prototype.isPrototypeOf(d)
+true
+
+// Object.prototype.isPrototypeOf(Fun)
+true
+

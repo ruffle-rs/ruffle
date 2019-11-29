@@ -1,7 +1,5 @@
-use crate::avm1::object::Object;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, UpdateContext};
-use gc_arena::GcCell;
+use crate::avm1::{Avm1, Error, ObjectCell, UpdateContext};
 
 #[derive(Clone, Debug)]
 #[allow(dead_code)]
@@ -11,7 +9,7 @@ pub enum Value<'gc> {
     Bool(bool),
     Number(f64),
     String(String),
-    Object(GcCell<'gc, Object<'gc>>),
+    Object(ObjectCell<'gc>),
 }
 
 impl<'gc> From<String> for Value<'gc> {
@@ -32,8 +30,8 @@ impl<'gc> From<bool> for Value<'gc> {
     }
 }
 
-impl<'gc> From<GcCell<'gc, Object<'gc>>> for Value<'gc> {
-    fn from(object: GcCell<'gc, Object<'gc>>) -> Self {
+impl<'gc> From<ObjectCell<'gc>> for Value<'gc> {
+    fn from(object: ObjectCell<'gc>) -> Self {
         Value::Object(object)
     }
 }
@@ -65,6 +63,12 @@ impl<'gc> From<i32> for Value<'gc> {
 impl<'gc> From<u32> for Value<'gc> {
     fn from(value: u32) -> Self {
         Value::Number(f64::from(value))
+    }
+}
+
+impl<'gc> From<usize> for Value<'gc> {
+    fn from(value: usize) -> Self {
+        Value::Number(value as f64)
     }
 }
 
@@ -230,6 +234,10 @@ impl<'gc> Value<'gc> {
         self.as_f64().map(|n| n as i64)
     }
 
+    pub fn as_usize(&self) -> Result<usize, Error> {
+        self.as_f64().map(|n| n as usize)
+    }
+
     pub fn as_f64(&self) -> Result<f64, Error> {
         match *self {
             Value::Number(v) => Ok(v),
@@ -244,7 +252,7 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn as_object(&self) -> Result<GcCell<'gc, Object<'gc>>, Error> {
+    pub fn as_object(&self) -> Result<ObjectCell<'gc>, Error> {
         if let Value::Object(object) = self {
             Ok(object.to_owned())
         } else {
@@ -256,7 +264,7 @@ impl<'gc> Value<'gc> {
         &self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: GcCell<'gc, Object<'gc>>,
+        this: ObjectCell<'gc>,
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
         if let Value::Object(object) = self {

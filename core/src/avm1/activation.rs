@@ -1,9 +1,8 @@
 //! Activation records
 
-use crate::avm1::object::Object;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
-use crate::avm1::{Avm1, Error, Value};
+use crate::avm1::{Avm1, Error, ObjectCell, Value};
 use crate::context::UpdateContext;
 use crate::tag_utils::SwfSlice;
 use gc_arena::{GcCell, MutationContext};
@@ -68,10 +67,10 @@ pub struct Activation<'gc> {
     scope: GcCell<'gc, Scope<'gc>>,
 
     /// The immutable value of `this`.
-    this: GcCell<'gc, Object<'gc>>,
+    this: ObjectCell<'gc>,
 
     /// The arguments this function was called by.
-    arguments: Option<GcCell<'gc, Object<'gc>>>,
+    arguments: Option<ObjectCell<'gc>>,
 
     /// The return value of the activation.
     return_value: Option<Value<'gc>>,
@@ -115,8 +114,8 @@ impl<'gc> Activation<'gc> {
         swf_version: u8,
         code: SwfSlice,
         scope: GcCell<'gc, Scope<'gc>>,
-        this: GcCell<'gc, Object<'gc>>,
-        arguments: Option<GcCell<'gc, Object<'gc>>>,
+        this: ObjectCell<'gc>,
+        arguments: Option<ObjectCell<'gc>>,
     ) -> Activation<'gc> {
         Activation {
             swf_version,
@@ -136,8 +135,8 @@ impl<'gc> Activation<'gc> {
         swf_version: u8,
         code: SwfSlice,
         scope: GcCell<'gc, Scope<'gc>>,
-        this: GcCell<'gc, Object<'gc>>,
-        arguments: Option<GcCell<'gc, Object<'gc>>>,
+        this: ObjectCell<'gc>,
+        arguments: Option<ObjectCell<'gc>>,
     ) -> Activation<'gc> {
         Activation {
             swf_version,
@@ -161,7 +160,7 @@ impl<'gc> Activation<'gc> {
     /// it.
     pub fn from_nothing(
         swf_version: u8,
-        globals: GcCell<'gc, Object<'gc>>,
+        globals: ObjectCell<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Activation<'gc> {
         let global_scope = GcCell::allocate(mc, Scope::from_global_object(globals));
@@ -297,7 +296,7 @@ impl<'gc> Activation<'gc> {
     }
 
     /// Returns value of `this` as a reference.
-    pub fn this_cell(&self) -> GcCell<'gc, Object<'gc>> {
+    pub fn this_cell(&self) -> ObjectCell<'gc> {
         self.this
     }
 

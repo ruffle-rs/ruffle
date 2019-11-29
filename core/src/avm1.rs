@@ -1,6 +1,5 @@
 use crate::avm1::function::Avm1Function;
 use crate::avm1::globals::create_globals;
-use crate::avm1::object::Object;
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
 use crate::prelude::*;
@@ -17,11 +16,12 @@ use crate::tag_utils::SwfSlice;
 mod activation;
 mod fscommand;
 mod function;
-mod globals;
-pub mod movie_clip;
+pub mod globals;
 pub mod object;
+mod property;
 mod return_value;
 mod scope;
+pub mod script_object;
 mod value;
 
 #[cfg(test)]
@@ -31,7 +31,10 @@ mod test_utils;
 mod tests;
 
 use activation::Activation;
+pub use globals::SystemPrototypes;
+pub use object::{Object, ObjectCell};
 use scope::Scope;
+pub use script_object::ScriptObject;
 pub use value::Value;
 
 pub struct Avm1<'gc> {
@@ -42,7 +45,10 @@ pub struct Avm1<'gc> {
     constant_pool: Vec<String>,
 
     /// The global object.
-    globals: GcCell<'gc, Object<'gc>>,
+    globals: ObjectCell<'gc>,
+
+    /// System builtins that we use internally to construct new objects.
+    prototypes: globals::SystemPrototypes<'gc>,
 
     /// All activation records for the current execution context.
     stack_frames: Vec<GcCell<'gc, Activation<'gc>>>,
@@ -59,8 +65,13 @@ unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
         self.globals.trace(cc);
+        self.prototypes.trace(cc);
         self.stack_frames.trace(cc);
         self.stack.trace(cc);
+
+        for register in &self.registers {
+            register.trace(cc);
+        }
     }
 }
 
@@ -68,10 +79,13 @@ type Error = Box<dyn std::error::Error>;
 
 impl<'gc> Avm1<'gc> {
     pub fn new(gc_context: MutationContext<'gc, '_>, player_version: u8) -> Self {
+        let (prototypes, globals) = create_globals(gc_context);
+
         Self {
             player_version,
             constant_pool: vec![],
-            globals: GcCell::allocate(gc_context, create_globals(gc_context)),
+            globals: GcCell::allocate(gc_context, globals),
+            prototypes,
             stack_frames: vec![],
             stack: vec![],
             registers: [
@@ -390,6 +404,7 @@ impl<'gc> Avm1<'gc> {
                 Action::Increment => self.action_increment(context),
                 Action::InitArray => self.action_init_array(context),
                 Action::InitObject => self.action_init_object(context),
+                Action::InstanceOf => self.action_instance_of(context),
                 Action::Jump { offset } => self.action_jump(context, offset, reader),
                 Action::Less => self.action_less(context),
                 Action::Less2 => self.action_less_2(context),
@@ -799,7 +814,19 @@ impl<'gc> Avm1<'gc> {
             context.gc_context,
         );
         let func = Avm1Function::from_df1(swf_version, func_data, name, params, scope);
-        let func_obj = GcCell::allocate(context.gc_context, Object::action_function(func));
+        let prototype = GcCell::allocate(
+            context.gc_context,
+            Box::new(ScriptObject::object(
+                context.gc_context,
+                Some(self.prototypes.object),
+            )) as Box<dyn Object<'gc>>,
+        );
+        let func_obj = ScriptObject::function(
+            context.gc_context,
+            func,
+            Some(self.prototypes.function),
+            Some(prototype),
+        );
         if name == "" {
             self.push(func_obj);
         } else {
@@ -830,7 +857,19 @@ impl<'gc> Avm1<'gc> {
             context.gc_context,
         );
         let func = Avm1Function::from_df2(swf_version, func_data, action_func, scope);
-        let func_obj = GcCell::allocate(context.gc_context, Object::action_function(func));
+        let prototype = GcCell::allocate(
+            context.gc_context,
+            Box::new(ScriptObject::object(
+                context.gc_context,
+                Some(self.prototypes.object),
+            )) as Box<dyn Object<'gc>>,
+        );
+        let func_obj = ScriptObject::function(
+            context.gc_context,
+            func,
+            Some(self.prototypes.function),
+            Some(prototype),
+        );
         if action_func.name == "" {
             self.push(func_obj);
         } else {
@@ -1062,8 +1101,13 @@ impl<'gc> Avm1<'gc> {
     }
 
     /// Obtain a reference to `_global`.
-    pub fn global_object_cell(&self) -> GcCell<'gc, Object<'gc>> {
+    pub fn global_object_cell(&self) -> ObjectCell<'gc> {
         self.globals
+    }
+
+    /// Obtain system built-in prototypes for this instance.
+    pub fn prototypes(&self) -> &globals::SystemPrototypes<'gc> {
+        &self.prototypes
     }
 
     fn action_get_variable(
@@ -1275,15 +1319,54 @@ impl<'gc> Avm1<'gc> {
         Err("Unimplemented action: InitArray".into())
     }
 
-    fn action_init_object(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
+    fn action_init_object(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
         let num_props = self.pop()?.as_i64()?;
+        let mut object = ScriptObject::object(context.gc_context, Some(self.prototypes.object));
         for _ in 0..num_props {
-            let _value = self.pop()?;
-            let _name = self.pop()?;
+            let value = self.pop()?;
+            let name = self.pop()?.into_string();
+            let this = self.current_stack_frame().unwrap().read().this_cell();
+
+            object.set(&name, value, self, context, this)?;
         }
 
-        // TODO(Herschel)
-        Err("Unimplemented action: InitObject".into())
+        self.push(Value::Object(GcCell::allocate(
+            context.gc_context,
+            Box::new(object),
+        )));
+
+        Ok(())
+    }
+
+    fn action_instance_of(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let constr = self.pop()?.as_object()?;
+        let obj = self.pop()?.as_object()?;
+
+        //TODO: Interface detection on SWF7
+        let prototype = constr
+            .read()
+            .get("prototype", self, context, constr)?
+            .resolve(self, context)?
+            .as_object()?;
+        let mut proto = obj.read().proto();
+
+        while let Some(this_proto) = proto {
+            if GcCell::ptr_eq(this_proto, prototype) {
+                self.push(true);
+                return Ok(());
+            }
+
+            proto = this_proto.read().proto();
+        }
+
+        self.push(false);
+        Ok(())
     }
 
     fn action_jump(
@@ -1400,24 +1483,72 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_new_method(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let _name = self.pop()?.as_string()?;
-        let _object = self.pop()?.as_object()?;
-        let _num_args = self.pop()?.as_i64()?;
-        self.push(Value::Undefined);
-        // TODO(Herschel)
-        Err("Unimplemented action: NewMethod".into())
+    fn action_new_method(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let method_name = self.pop()?;
+        let object = self.pop()?.as_object()?;
+        let num_args = self.pop()?.as_i64()?;
+        let mut args = Vec::new();
+        for _ in 0..num_args {
+            args.push(self.pop()?);
+        }
+
+        let constructor = object
+            .read()
+            .get(&method_name.as_string()?, self, context, object.to_owned())?
+            .resolve(self, context)?
+            .as_object()?;
+        let prototype = constructor
+            .read()
+            .get("prototype", self, context, constructor)?
+            .resolve(self, context)?
+            .as_object()?;
+
+        let this = prototype.read().new(self, context, prototype, &args)?;
+
+        //TODO: What happens if you `ActionNewMethod` without a method name?
+        constructor
+            .read()
+            .call(self, context, this, &args)?
+            .resolve(self, context)?;
+
+        self.push(this);
+
+        Ok(())
     }
 
-    fn action_new_object(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let _object = self.pop()?.as_string()?;
+    fn action_new_object(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let fn_name = self.pop()?;
         let num_args = self.pop()?.as_i64()?;
+        let mut args = Vec::new();
         for _ in 0..num_args {
-            let _arg = self.pop()?;
+            args.push(self.pop()?);
         }
-        self.push(Value::Undefined);
-        // TODO(Herschel)
-        Err("Unimplemented action: NewObject".into())
+
+        let constructor = self
+            .stack_frames
+            .last()
+            .unwrap()
+            .clone()
+            .read()
+            .resolve(fn_name.as_string()?, self, context)?
+            .resolve(self, context)?
+            .as_object()?;
+        let prototype = constructor
+            .read()
+            .get("prototype", self, context, constructor)?
+            .resolve(self, context)?
+            .as_object()?;
+
+        let this = prototype.read().new(self, context, prototype, &args)?;
+
+        constructor
+            .read()
+            .call(self, context, this, &args)?
+            .resolve(self, context)?;
+
+        self.push(this);
+
+        Ok(())
     }
 
     fn action_or(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
@@ -1528,7 +1659,7 @@ impl<'gc> Avm1<'gc> {
     fn action_set_member(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let value = self.pop()?;
         let name_val = self.pop()?;
-        let name = name_val.as_string()?;
+        let name = name_val.into_string();
         let object = self.pop()?.as_object()?;
         let this = self.current_stack_frame().unwrap().read().this_cell();
 

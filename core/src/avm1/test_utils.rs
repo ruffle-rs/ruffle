@@ -1,5 +1,5 @@
 use crate::avm1::activation::Activation;
-use crate::avm1::{Avm1, Object, UpdateContext, Value};
+use crate::avm1::{Avm1, ObjectCell, UpdateContext, Value};
 use crate::backend::audio::NullAudioBackend;
 use crate::backend::navigator::NullNavigatorBackend;
 use crate::backend::render::NullRenderer;
@@ -7,19 +7,18 @@ use crate::context::ActionQueue;
 use crate::display_object::{DisplayObject, MovieClip};
 use crate::library::Library;
 use crate::prelude::*;
-use gc_arena::{rootless_arena, GcCell};
+use gc_arena::{rootless_arena, GcCell, MutationContext};
 use rand::{rngs::SmallRng, SeedableRng};
 use std::sync::Arc;
 
 pub fn with_avm<F, R>(swf_version: u8, test: F) -> R
 where
-    F: for<'a, 'gc> FnOnce(
-        &mut Avm1<'gc>,
-        &mut UpdateContext<'a, 'gc, '_>,
-        GcCell<'gc, Object<'gc>>,
-    ) -> R,
+    F: for<'a, 'gc> FnOnce(&mut Avm1<'gc>, &mut UpdateContext<'a, 'gc, '_>, ObjectCell<'gc>) -> R,
 {
-    rootless_arena(|gc_context| {
+    fn in_the_arena<'gc, F, R>(swf_version: u8, test: F, gc_context: MutationContext<'gc, '_>) -> R
+    where
+        F: for<'a> FnOnce(&mut Avm1<'gc>, &mut UpdateContext<'a, 'gc, '_>, ObjectCell<'gc>) -> R,
+    {
         let mut avm = Avm1::new(gc_context, swf_version);
         let movie_clip: Box<dyn DisplayObject> = Box::new(MovieClip::new(swf_version, gc_context));
         let root = GcCell::allocate(gc_context, movie_clip);
@@ -46,6 +45,7 @@ where
             navigator: &mut NullNavigatorBackend::new(),
             renderer: &mut NullRenderer::new(),
             swf_data: &mut Arc::new(vec![]),
+            system_prototypes: avm.prototypes().clone(),
         };
 
         let globals = avm.global_object_cell();
@@ -57,5 +57,7 @@ where
         let this = root.read().object().as_object().unwrap().to_owned();
 
         test(&mut avm, &mut context, this)
-    })
+    }
+
+    rootless_arena(|gc_context| in_the_arena(swf_version, test, gc_context))
 }

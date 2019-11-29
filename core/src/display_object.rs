@@ -1,4 +1,4 @@
-use crate::avm1::Value;
+use crate::avm1::{ObjectCell, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::player::NEWEST_PLAYER_VERSION;
 use crate::prelude::*;
@@ -259,6 +259,7 @@ pub trait DisplayObject<'gc>: 'gc + Collect + Debug {
         &mut self,
         _gc_context: MutationContext<'gc, '_>,
         _display_object: DisplayNode<'gc>,
+        _proto: ObjectCell<'gc>,
     ) {
     }
 
