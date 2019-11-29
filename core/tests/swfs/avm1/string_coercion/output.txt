@@ -1,0 +1,109 @@
+My toString impl
+My toString impl
+Added to: My toString impl
+My toString impl has been added to
+[object Object]
+[object Object]
+Added to: [object Object]
+[object Object] has been added to
+5
+My toString impl
+custom toStrings that return various non-string types:
+ToString Called
+[type Object]
+ToString Called
+[type Object]
+ToString Called
+[type Object]
+ToString Called
+this one's fine
+ToString Called
+[type Object]
+ToString Called
+[type Object]
+ToString Called
+[type Object]
+regular nonstring traces
+[object Object]
+a,5
+[type Function]
+string sorting with toString
+false
+false
+false
+false
+false
+false
+false
+false
+ToString Called
+true
+ToString Called
+false
+ToString Called
+false
+ToString Called
+true
+ToString Called
+false
+ToString Called
+true
+ToString Called
+true
+ToString Called
+false
+false
+ToString Called
+true
+custom valueOfs that return various non-string types:
+[object Object]
+[object Object]
+[object Object]
+[object Object]
+[object Object]
+[object Object]
+[object Object]
+regular nonstring traces (again)
+[object Object]
+a,5
+[type Function]
+string sorting with valueOf
+ValueOf Called
+true
+ValueOf Called
+false
+ValueOf Called
+false
+ValueOf Called
+true
+ValueOf Called
+false
+ValueOf Called
+true
+ValueOf Called
+true
+ValueOf Called
+false
+false
+false
+true
+true
+true
+true
+false
+false
+ValueOf Called
+true
+false
+If these say true valueOf returns this
+true
+true
+true
+toString call tests
+toString was here
+Xs
+toString was here
+sX
+NaN
+NaN
+NaN

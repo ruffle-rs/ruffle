@@ -66,6 +66,19 @@ swf_tests! {
     (has_own_property, "avm1/has_own_property", 1),
     #[ignore] (extends_chain, "avm1/extends_chain", 1),
     (is_prototype_of, "avm1/is_prototype_of", 1),
+    #[ignore] (string_coercion, "avm1/string_coercion", 1),
+    (lessthan_swf4, "avm1/lessthan_swf4", 1),
+    (lessthan2_swf5, "avm1/lessthan2_swf5", 1),
+    (lessthan2_swf6, "avm1/lessthan2_swf6", 1),
+    (lessthan2_swf7, "avm1/lessthan2_swf7", 1),
+    (greater_swf6, "avm1/greater_swf6", 1),
+    (greater_swf7, "avm1/greater_swf7", 1),
+    (equals_swf4, "avm1/equals_swf4", 1),
+    (equals2_swf5, "avm1/equals2_swf5", 1),
+    (equals2_swf6, "avm1/equals2_swf6", 1),
+    (equals2_swf7, "avm1/equals2_swf7", 1),
+    (strictequals_swf6, "avm1/strictequals_swf6", 1),
+    (global_is_bare, "avm1/global_is_bare", 1),
 }
 
 #[test]
@@ -77,7 +90,7 @@ fn test_prototype_enumerate() -> Result<(), Error> {
     actual.sort();
     expected.sort();
 
-    assert_eq!(actual, expected);
+    assert_eq!(actual, expected, "actual == expected");
     Ok(())
 }
 
@@ -87,13 +100,7 @@ fn test_swf(swf_path: &str, num_frames: u32, expected_output_path: &str) -> Resu
     let expected_output = std::fs::read_to_string(expected_output_path)?.replace("\r\n", "\n");
 
     let trace_log = run_swf(swf_path, num_frames)?;
-    if trace_log != expected_output {
-        println!(
-            "Ruffle output:\n{}\nExpected output:\n{}",
-            trace_log, expected_output
-        );
-        panic!("Ruffle output did not match expected output.");
-    }
+    assert_eq!(trace_log, expected_output, "actual == expected");
 
     Ok(())
 }

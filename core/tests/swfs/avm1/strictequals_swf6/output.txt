@@ -1,0 +1,903 @@
+// true === true:
+true
+
+// true === false:
+false
+false
+
+// true === "true":
+false
+false
+
+// true === "false":
+false
+false
+
+// true === 1:
+false
+false
+
+// true === "1":
+false
+false
+
+// true === 0:
+false
+false
+
+// true === "0":
+false
+false
+
+// true === this:
+false
+false
+
+// true === _global:
+false
+false
+
+// true === 0.000:
+false
+false
+
+// true === "0.000":
+false
+false
+
+// true === "True":
+false
+false
+
+// true === "False":
+false
+false
+
+// true === undefined:
+false
+false
+
+// true === null:
+false
+false
+
+// true === 2.0:
+false
+false
+
+// true === -2.0:
+false
+false
+
+// true === NaN:
+false
+false
+
+// true === Infinity:
+false
+false
+
+// true === -Infinity:
+false
+false
+
+// false === false:
+true
+
+// false === "true":
+false
+false
+
+// false === "false":
+false
+false
+
+// false === 1:
+false
+false
+
+// false === "1":
+false
+false
+
+// false === 0:
+false
+false
+
+// false === "0":
+false
+false
+
+// false === this:
+false
+false
+
+// false === _global:
+false
+false
+
+// false === 0.000:
+false
+false
+
+// false === "0.000":
+false
+false
+
+// false === "True":
+false
+false
+
+// false === "False":
+false
+false
+
+// false === undefined:
+false
+false
+
+// false === null:
+false
+false
+
+// false === 2.0:
+false
+false
+
+// false === -2.0:
+false
+false
+
+// false === NaN:
+false
+false
+
+// false === Infinity:
+false
+false
+
+// false === -Infinity:
+false
+false
+
+// "true" === "true":
+true
+
+// "true" === "false":
+false
+false
+
+// "true" === 1:
+false
+false
+
+// "true" === "1":
+false
+false
+
+// "true" === 0:
+false
+false
+
+// "true" === "0":
+false
+false
+
+// "true" === this:
+false
+false
+
+// "true" === _global:
+false
+false
+
+// "true" === 0.000:
+false
+false
+
+// "true" === "0.000":
+false
+false
+
+// "true" === "True":
+false
+false
+
+// "true" === "False":
+false
+false
+
+// "true" === undefined:
+false
+false
+
+// "true" === null:
+false
+false
+
+// "true" === 2.0:
+false
+false
+
+// "true" === -2.0:
+false
+false
+
+// "true" === NaN:
+false
+false
+
+// "true" === Infinity:
+false
+false
+
+// "true" === -Infinity:
+false
+false
+
+// "false" === "false":
+true
+
+// "false" === 1:
+false
+false
+
+// "false" === "1":
+false
+false
+
+// "false" === 0:
+false
+false
+
+// "false" === "0":
+false
+false
+
+// "false" === this:
+false
+false
+
+// "false" === _global:
+false
+false
+
+// "false" === 0.000:
+false
+false
+
+// "false" === "0.000":
+false
+false
+
+// "false" === "True":
+false
+false
+
+// "false" === "False":
+false
+false
+
+// "false" === undefined:
+false
+false
+
+// "false" === null:
+false
+false
+
+// "false" === 2.0:
+false
+false
+
+// "false" === -2.0:
+false
+false
+
+// "false" === NaN:
+false
+false
+
+// "false" === Infinity:
+false
+false
+
+// "false" === -Infinity:
+false
+false
+
+// 1 === 1:
+true
+
+// 1 === "1":
+false
+false
+
+// 1 === 0:
+false
+false
+
+// 1 === "0":
+false
+false
+
+// 1 === this:
+false
+false
+
+// 1 === _global:
+false
+false
+
+// 1 === 0.000:
+false
+false
+
+// 1 === "0.000":
+false
+false
+
+// 1 === "True":
+false
+false
+
+// 1 === "False":
+false
+false
+
+// 1 === undefined:
+false
+false
+
+// 1 === null:
+false
+false
+
+// 1 === 2.0:
+false
+false
+
+// 1 === -2.0:
+false
+false
+
+// 1 === NaN:
+false
+false
+
+// 1 === Infinity:
+false
+false
+
+// 1 === -Infinity:
+false
+false
+
+// "1" === "1":
+true
+
+// "1" === 0:
+false
+false
+
+// "1" === "0":
+false
+false
+
+// "1" === this:
+false
+false
+
+// "1" === _global:
+false
+false
+
+// "1" === 0.000:
+false
+false
+
+// "1" === "0.000":
+false
+false
+
+// "1" === "True":
+false
+false
+
+// "1" === "False":
+false
+false
+
+// "1" === undefined:
+false
+false
+
+// "1" === null:
+false
+false
+
+// "1" === 2.0:
+false
+false
+
+// "1" === -2.0:
+false
+false
+
+// "1" === NaN:
+false
+false
+
+// "1" === Infinity:
+false
+false
+
+// "1" === -Infinity:
+false
+false
+
+// 0 === 0:
+true
+
+// 0 === "0":
+false
+false
+
+// 0 === this:
+false
+false
+
+// 0 === _global:
+false
+false
+
+// 0 === 0.000:
+true
+true
+
+// 0 === "0.000":
+false
+false
+
+// 0 === "True":
+false
+false
+
+// 0 === "False":
+false
+false
+
+// 0 === undefined:
+false
+false
+
+// 0 === null:
+false
+false
+
+// 0 === 2.0:
+false
+false
+
+// 0 === -2.0:
+false
+false
+
+// 0 === NaN:
+false
+false
+
+// 0 === Infinity:
+false
+false
+
+// 0 === -Infinity:
+false
+false
+
+// "0" === "0":
+true
+
+// "0" === this:
+false
+false
+
+// "0" === _global:
+false
+false
+
+// "0" === 0.000:
+false
+false
+
+// "0" === "0.000":
+false
+false
+
+// "0" === "True":
+false
+false
+
+// "0" === "False":
+false
+false
+
+// "0" === undefined:
+false
+false
+
+// "0" === null:
+false
+false
+
+// "0" === 2.0:
+false
+false
+
+// "0" === -2.0:
+false
+false
+
+// "0" === NaN:
+false
+false
+
+// "0" === Infinity:
+false
+false
+
+// "0" === -Infinity:
+false
+false
+
+// this === this:
+true
+
+// this === _global:
+false
+false
+
+// this === 0.000:
+false
+false
+
+// this === "0.000":
+false
+false
+
+// this === "True":
+false
+false
+
+// this === "False":
+false
+false
+
+// this === undefined:
+false
+false
+
+// this === null:
+false
+false
+
+// this === 2.0:
+false
+false
+
+// this === -2.0:
+false
+false
+
+// this === NaN:
+false
+false
+
+// this === Infinity:
+false
+false
+
+// this === -Infinity:
+false
+false
+
+// _global === _global:
+true
+
+// _global === 0.000:
+false
+false
+
+// _global === "0.000":
+false
+false
+
+// _global === "True":
+false
+false
+
+// _global === "False":
+false
+false
+
+// _global === undefined:
+false
+false
+
+// _global === null:
+false
+false
+
+// _global === 2.0:
+false
+false
+
+// _global === -2.0:
+false
+false
+
+// _global === NaN:
+false
+false
+
+// _global === Infinity:
+false
+false
+
+// _global === -Infinity:
+false
+false
+
+// 0.000 === 0.000:
+true
+
+// 0.000 === "0.000":
+false
+false
+
+// 0.000 === "True":
+false
+false
+
+// 0.000 === "False":
+false
+false
+
+// 0.000 === undefined:
+false
+false
+
+// 0.000 === null:
+false
+false
+
+// 0.000 === 2.0:
+false
+false
+
+// 0.000 === -2.0:
+false
+false
+
+// 0.000 === NaN:
+false
+false
+
+// 0.000 === Infinity:
+false
+false
+
+// 0.000 === -Infinity:
+false
+false
+
+// "0.000" === "0.000":
+true
+
+// "0.000" === "True":
+false
+false
+
+// "0.000" === "False":
+false
+false
+
+// "0.000" === undefined:
+false
+false
+
+// "0.000" === null:
+false
+false
+
+// "0.000" === 2.0:
+false
+false
+
+// "0.000" === -2.0:
+false
+false
+
+// "0.000" === NaN:
+false
+false
+
+// "0.000" === Infinity:
+false
+false
+
+// "0.000" === -Infinity:
+false
+false
+
+// "True" === "True":
+true
+
+// "True" === "False":
+false
+false
+
+// "True" === undefined:
+false
+false
+
+// "True" === null:
+false
+false
+
+// "True" === 2.0:
+false
+false
+
+// "True" === -2.0:
+false
+false
+
+// "True" === NaN:
+false
+false
+
+// "True" === Infinity:
+false
+false
+
+// "True" === -Infinity:
+false
+false
+
+// "False" === "False":
+true
+
+// "False" === undefined:
+false
+false
+
+// "False" === null:
+false
+false
+
+// "False" === 2.0:
+false
+false
+
+// "False" === -2.0:
+false
+false
+
+// "False" === NaN:
+false
+false
+
+// "False" === Infinity:
+false
+false
+
+// "False" === -Infinity:
+false
+false
+
+// undefined === undefined:
+true
+
+// undefined === null:
+false
+false
+
+// undefined === 2.0:
+false
+false
+
+// undefined === -2.0:
+false
+false
+
+// undefined === NaN:
+false
+false
+
+// undefined === Infinity:
+false
+false
+
+// undefined === -Infinity:
+false
+false
+
+// null === null:
+true
+
+// null === 2.0:
+false
+false
+
+// null === -2.0:
+false
+false
+
+// null === NaN:
+false
+false
+
+// null === Infinity:
+false
+false
+
+// null === -Infinity:
+false
+false
+
+// 2.0 === 2.0:
+true
+
+// 2.0 === -2.0:
+false
+false
+
+// 2.0 === NaN:
+false
+false
+
+// 2.0 === Infinity:
+false
+false
+
+// 2.0 === -Infinity:
+false
+false
+
+// -2.0 === -2.0:
+true
+
+// -2.0 === NaN:
+false
+false
+
+// -2.0 === Infinity:
+false
+false
+
+// -2.0 === -Infinity:
+false
+false
+
+// NaN === NaN:
+true
+
+// NaN === Infinity:
+false
+false
+
+// NaN === -Infinity:
+false
+false
+
+// Infinity === Infinity:
+true
+
+// Infinity === -Infinity:
+false
+false
+
+// -Infinity === -Infinity:
+true
+
