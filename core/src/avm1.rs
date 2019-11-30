@@ -837,7 +837,7 @@ impl<'gc> Avm1<'gc> {
             .resolve(self, context)?
             .as_object()?;
 
-        if obj.is_instance_of(self, constr, prototype) {
+        if obj.is_instance_of(self, context, constr, prototype)? {
             self.push(obj);
         } else {
             self.push(Value::Null);
@@ -1430,8 +1430,9 @@ impl<'gc> Avm1<'gc> {
             .get("prototype", self, context)?
             .resolve(self, context)?
             .as_object()?;
+        let is_instance_of = obj.is_instance_of(self, context, constr, prototype)?;
 
-        self.push(obj.is_instance_of(self, constr, prototype));
+        self.push(is_instance_of);
         Ok(())
     }
 

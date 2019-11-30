@@ -197,31 +197,50 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The class is provided in the form of it's constructor function and the
     /// explicit prototype of that constructor function. It is assumed that
     /// they are already linked.
+    ///
+    /// Because ActionScript 2.0 added interfaces, this function cannot simply
+    /// check the prototype chain and call it a day. Each interface represents
+    /// a new, parallel prototype chain which also needs to be checked. You
+    /// can't implement interfaces within interfaces (fortunately), but if you
+    /// somehow could this would support that, too.
     fn is_instance_of(
         &self,
-        avm: &Avm1<'gc>,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         constructor: Object<'gc>,
         prototype: Object<'gc>,
-    ) -> bool {
-        let mut proto = self.proto();
+    ) -> Result<bool, Error> {
+        let mut proto_stack = vec![];
+        if let Some(p) = self.proto() {
+            proto_stack.push(p);
+        }
 
-        while let Some(this_proto) = proto {
+        while let Some(this_proto) = proto_stack.pop() {
             if Object::ptr_eq(this_proto, prototype) {
-                return true;
+                return Ok(true);
+            }
+
+            if let Some(p) = this_proto.proto() {
+                proto_stack.push(p);
             }
 
             if avm.current_swf_version() >= 7 {
                 for interface in this_proto.interfaces() {
                     if Object::ptr_eq(interface, constructor) {
-                        return true;
+                        return Ok(true);
+                    }
+
+                    if let Value::Object(o) = interface
+                        .get("prototype", avm, context)?
+                        .resolve(avm, context)?
+                    {
+                        proto_stack.push(o);
                     }
                 }
             }
-
-            proto = this_proto.proto();
         }
 
-        false
+        Ok(false)
     }
 
     /// Get the underlying script object, if it exists.
