@@ -1,5 +1,5 @@
 use crate::avm1::fscommand;
-use crate::avm1::function::Executable;
+use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::listeners::SystemListeners;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
@@ -169,56 +169,56 @@ pub fn create_globals<'gc>(
         boolean::create_proto(gc_context, object_proto, function_proto);
 
     //TODO: These need to be constructors and should also set `.prototype` on each one
-    let object = ScriptObject::function(
+    let object = FunctionObject::function(
         gc_context,
         Executable::Native(object::constructor),
         Some(function_proto),
         Some(object_proto),
     );
 
-    let color = ScriptObject::function(
+    let color = FunctionObject::function(
         gc_context,
         Executable::Native(color::constructor),
         Some(function_proto),
         Some(color_proto),
     );
-    let function = ScriptObject::function(
+    let function = FunctionObject::function(
         gc_context,
         Executable::Native(function::constructor),
         Some(function_proto),
         Some(function_proto),
     );
-    let movie_clip = ScriptObject::function(
+    let movie_clip = FunctionObject::function(
         gc_context,
         Executable::Native(movie_clip::constructor),
         Some(function_proto),
         Some(movie_clip_proto),
     );
-    let sound = ScriptObject::function(
+    let sound = FunctionObject::function(
         gc_context,
         Executable::Native(sound::constructor),
         Some(function_proto),
         Some(sound_proto),
     );
-    let text_field = ScriptObject::function(
+    let text_field = FunctionObject::function(
         gc_context,
         Executable::Native(text_field::constructor),
         Some(function_proto),
         Some(text_field_proto),
     );
-    let array = ScriptObject::function(
+    let array = FunctionObject::function(
         gc_context,
         Executable::Native(array::constructor),
         Some(function_proto),
         Some(array_proto),
     );
-    let xmlnode = ScriptObject::function(
+    let xmlnode = FunctionObject::function(
         gc_context,
         Executable::Native(xml::xmlnode_constructor),
         Some(function_proto),
         Some(xmlnode_proto),
     );
-    let xml = ScriptObject::function(
+    let xml = FunctionObject::function(
         gc_context,
         Executable::Native(xml::xml_constructor),
         Some(function_proto),

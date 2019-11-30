@@ -1,6 +1,6 @@
 //! Object trait to expose objects to AVM
 
-use crate::avm1::function::Executable;
+use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::super_object::SuperObject;
@@ -31,6 +31,7 @@ use std::fmt::Debug;
         XMLAttributesObject(XMLAttributesObject<'gc>),
         XMLIDMapObject(XMLIDMapObject<'gc>),
         ValueObject(ValueObject<'gc>),
+        FunctionObject(FunctionObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
