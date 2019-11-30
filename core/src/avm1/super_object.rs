@@ -25,6 +25,7 @@ pub struct SuperObjectData<'gc> {
     child: Object<'gc>,
     proto: Option<Object<'gc>>,
     constr: Option<Object<'gc>>,
+    this: Option<Object<'gc>>,
 }
 
 impl<'gc> SuperObject<'gc> {
@@ -33,10 +34,11 @@ impl<'gc> SuperObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Self, Error> {
-        let parent_proto = child.proto().and_then(|pr| pr.proto());
-        let parent_constr = if let Some(parent_proto) = parent_proto {
+        let child_proto = child.proto();
+        let parent_proto = child_proto.and_then(|pr| pr.proto());
+        let parent_constr = if let Some(child_proto) = child_proto {
             Some(
-                parent_proto
+                child_proto
                     .get("constructor", avm, context)?
                     .resolve(avm, context)?
                     .as_object()?,
@@ -51,8 +53,17 @@ impl<'gc> SuperObject<'gc> {
                 child,
                 proto: parent_proto,
                 constr: parent_constr,
+                this: None,
             },
         )))
+    }
+
+    /// Set `this` to a particular value.
+    ///
+    /// This is intended to be called with a self-reference, so that future
+    /// invocations of `super()` can get a `this` value one level up the chain.
+    pub fn bind_this(&mut self, context: MutationContext<'gc, '_>, this: Object<'gc>) {
+        self.0.write(context).this = Some(this);
     }
 }
 
@@ -86,7 +97,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
         if let Some(constr) = self.0.read().constr {
-            constr.call(avm, context, this, args)
+            constr.call(avm, context, self.0.read().this.unwrap_or(this), args)
         } else {
             Ok(Value::Undefined.into())
         }
@@ -222,6 +233,10 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
         None
+    }
+
+    fn as_super_object(&self) -> Option<SuperObject<'gc>> {
+        Some(*self)
     }
 
     fn as_display_object(&self) -> Option<DisplayObject<'gc>> {

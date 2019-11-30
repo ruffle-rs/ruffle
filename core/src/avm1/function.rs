@@ -237,6 +237,13 @@ impl<'gc> Executable<'gc> {
                     None
                 };
 
+                if let Some(super_object) = super_object {
+                    super_object
+                        .as_super_object()
+                        .unwrap()
+                        .bind_this(ac.gc_context, super_object);
+                }
+
                 let effective_ver = if avm.current_swf_version() > 5 {
                     af.swf_version()
                 } else {

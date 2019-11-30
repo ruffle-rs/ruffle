@@ -227,6 +227,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Get the underlying script object, if it exists.
     fn as_script_object(&self) -> Option<ScriptObject<'gc>>;
 
+    /// Get the underlying super object, if it exists.
+    fn as_super_object(&self) -> Option<SuperObject<'gc>> {
+        None
+    }
+
     /// Get the underlying display node for this object, if it exists.
     fn as_display_object(&self) -> Option<DisplayObject<'gc>>;
 
