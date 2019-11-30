@@ -1088,9 +1088,13 @@ impl<'gc> Avm1<'gc> {
         let superclass = self.pop()?.as_object()?;
         let subclass = self.pop()?.as_object()?;
 
-        //TODO: What happens if we try to extend an object which has no `__proto__`?
-        //e.g. `class Whatever extends Object.prototype`
-        let super_proto = superclass.proto().unwrap_or(self.prototypes.object);
+        //TODO: What happens if we try to extend an object which has no `prototype`?
+        //e.g. `class Whatever extends Object.prototype` or `class Whatever extends 5`
+        let super_proto = superclass
+            .get("prototype", self, context)?
+            .resolve(self, context)
+            .and_then(|val| val.as_object())
+            .unwrap_or(self.prototypes.object);
 
         let sub_prototype: Object<'gc> =
             ScriptObject::object(context.gc_context, Some(super_proto)).into();
