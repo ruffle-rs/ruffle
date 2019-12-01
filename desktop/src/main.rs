@@ -12,7 +12,11 @@ use glutin::{
     window::WindowBuilder,
     ContextBuilder,
 };
-use ruffle_core::{backend::render::RenderBackend, Player};
+use ruffle_core::{
+    backend::audio::{AudioBackend, NullAudioBackend},
+    backend::render::RenderBackend,
+    Player,
+};
 use std::path::PathBuf;
 use std::time::Instant;
 use structopt::StructOpt;
@@ -48,7 +52,13 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         .with_srgb(true)
         .with_stencil_buffer(8)
         .build_windowed(window_builder, &event_loop)?;
-    let audio = audio::CpalAudioBackend::new()?;
+    let audio: Box<dyn AudioBackend> = match audio::CpalAudioBackend::new() {
+        Ok(audio) => Box::new(audio),
+        Err(e) => {
+            log::error!("Unable to create audio device: {}", e);
+            Box::new(NullAudioBackend::new())
+        }
+    };
     let renderer = GliumRenderBackend::new(windowed_context)?;
     let navigator = navigator::ExternalNavigatorBackend::new(); //TODO: actually implement this backend type
     let display = renderer.display().clone();
