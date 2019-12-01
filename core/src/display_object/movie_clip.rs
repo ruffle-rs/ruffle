@@ -9,9 +9,11 @@ use crate::display_object::{
 use crate::font::Font;
 use crate::prelude::*;
 use crate::tag_utils::{self, DecodeResult, SwfStream};
+use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use smallvec::SmallVec;
 use std::collections::{BTreeMap, HashMap};
-use swf::read::SwfRead;
+use swf::{read::SwfRead, ClipAction, ClipEventFlag};
 
 type Depth = i16;
 type FrameNumber = u16;
@@ -31,11 +33,12 @@ pub struct MovieClipData<'gc> {
     swf_version: u8,
     static_data: Gc<'gc, MovieClipStatic>,
     tag_stream_pos: u64,
-    is_playing: bool,
     current_frame: FrameNumber,
     audio_stream: Option<AudioStreamHandle>,
     children: BTreeMap<Depth, DisplayObject<'gc>>,
     object: Option<Object<'gc>>,
+    clip_actions: SmallVec<[ClipAction; 2]>,
+    flags: EnumSet<MovieClipFlags>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -48,11 +51,12 @@ impl<'gc> MovieClip<'gc> {
                 swf_version,
                 static_data: Gc::allocate(gc_context, MovieClipStatic::default()),
                 tag_stream_pos: 0,
-                is_playing: false,
                 current_frame: 0,
                 audio_stream: None,
                 children: BTreeMap::new(),
                 object: None,
+                clip_actions: SmallVec::new(),
+                flags: EnumSet::empty(),
             },
         ))
     }
@@ -82,11 +86,12 @@ impl<'gc> MovieClip<'gc> {
                     },
                 ),
                 tag_stream_pos: 0,
-                is_playing: true,
                 current_frame: 0,
                 audio_stream: None,
                 children: BTreeMap::new(),
                 object: None,
+                clip_actions: SmallVec::new(),
+                flags: MovieClipFlags::Playing.into(),
             },
         ))
     }
@@ -158,6 +163,18 @@ impl<'gc> MovieClip<'gc> {
             .frame_labels
             .get(frame_label)
             .copied()
+    }
+
+    /// Gets the clip events for this movieclip.
+    pub fn clip_actions(&self) -> std::cell::Ref<[ClipAction]> {
+        std::cell::Ref::map(self.0.read(), |mc| mc.clip_actions())
+    }
+
+    /// Sets the clip actions (a.k.a. clip events) for this movieclip.
+    /// Clip actions are created in the Flash IDE by using the `onEnterFrame`
+    /// tag on a movieclip instance.
+    pub fn set_clip_actions(&self, gc_context: MutationContext<'gc, '_>, actions: &[ClipAction]) {
+        self.0.write(gc_context).set_clip_actions(actions);
     }
 }
 
@@ -255,7 +272,15 @@ impl<'gc> MovieClipData<'gc> {
     }
 
     fn playing(&self) -> bool {
-        self.is_playing
+        self.flags.contains(MovieClipFlags::Playing)
+    }
+
+    fn set_playing(&mut self, value: bool) {
+        if value {
+            self.flags.insert(MovieClipFlags::Playing);
+        } else {
+            self.flags.remove(MovieClipFlags::Playing);
+        }
     }
 
     fn first_child(&self) -> Option<DisplayObject<'gc>> {
@@ -272,12 +297,12 @@ impl<'gc> MovieClipData<'gc> {
     fn play(&mut self) {
         // Can only play clips with multiple frames.
         if self.total_frames() > 1 {
-            self.is_playing = true;
+            self.set_playing(true);
         }
     }
 
     fn stop(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.is_playing = false;
+        self.set_playing(false);
         // Stop audio stream if one is playing.
         if let Some(audio_stream) = self.audio_stream.take() {
             context.audio.stop_stream(audio_stream);
@@ -345,6 +370,14 @@ impl<'gc> MovieClipData<'gc> {
             self.stop(context);
         }
 
+        // Run my load/enterFrame clip event.
+        if !self.initialized() {
+            self.run_clip_action(context, ClipEventFlag::Load, None);
+            self.set_initialized(true);
+        } else {
+            self.run_clip_action(context, ClipEventFlag::EnterFrame, None);
+        }
+
         let _tag_pos = self.tag_stream_pos;
         let mut reader = self.reader(context);
         let mut has_stream_block = false;
@@ -393,6 +426,7 @@ impl<'gc> MovieClipData<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         id: CharacterId,
         depth: Depth,
+        place_object: &swf::PlaceObject,
         copy_previous_properties: bool,
     ) -> Option<DisplayObject<'gc>> {
         if let Ok(mut child) = context.library.instantiate_display_object(
@@ -417,6 +451,7 @@ impl<'gc> MovieClipData<'gc> {
                     }
                 }
                 // Run first frame.
+                child.apply_place_object(context.gc_context, place_object);
                 child.run_frame(context);
             }
             Some(child)
@@ -494,7 +529,7 @@ impl<'gc> MovieClipData<'gc> {
             // Remove all display objects that were created after the desination frame.
             // TODO: We want to do something like self.children.retain here,
             // but BTreeMap::retain does not exist.
-            let children: smallvec::SmallVec<[_; 16]> = self
+            let children: SmallVec<[_; 16]> = self
                 .children
                 .iter()
                 .filter_map(|(depth, clip)| {
@@ -567,6 +602,7 @@ impl<'gc> MovieClipData<'gc> {
                             context,
                             params.id(),
                             depth,
+                            &params.place_object,
                             params.modifies_original_item(),
                         ) {
                             (true, child)
@@ -577,7 +613,6 @@ impl<'gc> MovieClipData<'gc> {
                 };
 
                 // Apply final delta to display pamareters.
-                child.apply_place_object(context.gc_context, &params.place_object);
                 if was_instantiated {
                     // Set the placement frame for the new object to the frame
                     // it is actually created on.
@@ -663,6 +698,49 @@ impl<'gc> MovieClipData<'gc> {
             }
         }
         Ok(())
+    }
+
+    /// Run all actions for the given clip event.
+    fn run_clip_action(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        event: ClipEventFlag,
+        key_code: Option<u8>,
+    ) {
+        for clip_action in self
+            .clip_actions
+            .iter()
+            .filter(|action| action.events.contains(event) && action.key_code == key_code)
+        {
+            let slice = crate::tag_utils::SwfSlice {
+                data: std::sync::Arc::new(clip_action.action_data.clone()),
+                start: 0,
+                end: clip_action.action_data.len(),
+            };
+            context
+                .action_queue
+                .queue_actions(context.active_clip, slice, false);
+        }
+    }
+
+    fn clip_actions(&self) -> &[ClipAction] {
+        &self.clip_actions[..]
+    }
+
+    fn set_clip_actions(&mut self, actions: &[ClipAction]) {
+        self.clip_actions = actions.iter().cloned().collect();
+    }
+
+    fn initialized(&self) -> bool {
+        self.flags.contains(MovieClipFlags::Initialized)
+    }
+
+    fn set_initialized(&mut self, value: bool) -> bool {
+        if value {
+            self.flags.insert(MovieClipFlags::Initialized)
+        } else {
+            self.flags.remove(MovieClipFlags::Initialized)
+        }
     }
 }
 
@@ -1337,18 +1415,18 @@ impl<'gc, 'a> MovieClipData<'gc> {
         use swf::PlaceObjectAction;
         match place_object.action {
             PlaceObjectAction::Place(id) | PlaceObjectAction::Replace(id) => {
-                if let Some(mut child) = self.instantiate_child(
+                if let Some(child) = self.instantiate_child(
                     self_display_object,
                     context,
                     id,
                     place_object.depth,
+                    &place_object,
                     if let PlaceObjectAction::Replace(_) = place_object.action {
                         true
                     } else {
                         false
                     },
                 ) {
-                    child.apply_place_object(context.gc_context, &place_object);
                     child
                 } else {
                     return Ok(());
@@ -1546,4 +1624,14 @@ impl GotoPlaceObject {
         }
         // TODO: Other stuff.
     }
+}
+
+/// Boolean state flags used by `MovieClip`.
+#[derive(Debug, EnumSetType)]
+enum MovieClipFlags {
+    /// Whether this `MovieClip` has run its initial frame.
+    Initialized,
+
+    /// Whether this `MovieClip` is playing or stopped.
+    Playing,
 }

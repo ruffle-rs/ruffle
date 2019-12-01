@@ -653,6 +653,10 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
                     morph_shape.set_ratio(gc_context, ratio);
                 }
             }
+            // Clip events only apply to movie clips.
+            if let Some(clip) = self.as_movie_clip() {
+                clip.set_clip_actions(gc_context, &place_object.clip_actions[..]);
+            }
             // TODO: Others will go here eventually.
         }
     }
@@ -668,6 +672,10 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
         self.set_name(gc_context, &*other.name());
         if let (Some(mut me), Some(other)) = (self.as_morph_shape(), other.as_morph_shape()) {
             me.set_ratio(gc_context, other.ratio());
+        }
+        // onEnterFrame actions only apply to movie clips.
+        if let (Some(me), Some(other)) = (self.as_movie_clip(), other.as_movie_clip()) {
+            me.set_clip_actions(gc_context, &*other.clip_actions());
         }
         // TODO: More in here eventually.
     }
