@@ -2,7 +2,7 @@
 use crate::avm1::{Object, StageObject, Value};
 use crate::backend::audio::AudioStreamHandle;
 use crate::character::Character;
-use crate::context::{RenderContext, UpdateContext};
+use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{
     Bitmap, Button, DisplayObjectBase, EditText, Graphic, MorphShapeStatic, TDisplayObject, Text,
 };
@@ -244,6 +244,13 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             .map(Value::from)
             .unwrap_or(Value::Undefined)
     }
+
+    fn unload(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        self.0
+            .write(context.gc_context)
+            .run_clip_action(context, ClipEventFlag::Unload, None);
+        self.set_removed(context.gc_context, true);
+    }
 }
 
 unsafe impl<'gc> Collect for MovieClipData<'gc> {
@@ -438,7 +445,7 @@ impl<'gc> MovieClipData<'gc> {
             // and add new childonto front of the list.
             let prev_child = self.children.insert(depth, child);
             if let Some(prev_child) = prev_child {
-                self.remove_child_from_exec_list(context.gc_context, prev_child);
+                self.remove_child_from_exec_list(context, prev_child);
             }
             self.add_child_to_exec_list(context.gc_context, child);
             {
@@ -477,25 +484,25 @@ impl<'gc> MovieClipData<'gc> {
     /// This does not affect the render list.
     fn remove_child_from_exec_list(
         &mut self,
-        gc_context: MutationContext<'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         mut child: DisplayObject<'gc>,
     ) {
         // Remove from children linked list.
         let prev = child.prev_sibling();
         let next = child.next_sibling();
         if let Some(mut prev) = prev {
-            prev.set_next_sibling(gc_context, next);
+            prev.set_next_sibling(context.gc_context, next);
         }
         if let Some(mut next) = next {
-            next.set_prev_sibling(gc_context, prev);
+            next.set_prev_sibling(context.gc_context, prev);
         }
         if let Some(head) = self.first_child() {
             if DisplayObject::ptr_eq(head, child) {
-                self.set_first_child(gc_context, next);
+                self.set_first_child(context.gc_context, next);
             }
         }
         // Flag child as removed.
-        child.set_removed(gc_context, true);
+        child.unload(context);
     }
     pub fn run_goto(
         &mut self,
@@ -542,7 +549,7 @@ impl<'gc> MovieClipData<'gc> {
                 .collect();
             for (depth, child) in children {
                 self.children.remove(&depth);
-                self.remove_child_from_exec_list(context.gc_context, child);
+                self.remove_child_from_exec_list(context, child);
             }
             true
         } else {
@@ -552,7 +559,6 @@ impl<'gc> MovieClipData<'gc> {
         // Step through the intermediate frames, and aggregate the deltas of each frame.
         let mut frame_pos = self.tag_stream_pos;
         let mut reader = self.reader(context);
-        let gc_context = context.gc_context;
         while self.current_frame() < frame {
             self.current_frame += 1;
             frame_pos = reader.get_inner().position();
@@ -572,10 +578,10 @@ impl<'gc> MovieClipData<'gc> {
                     self.goto_place_object(reader, tag_len, 4, &mut goto_commands)
                 }
                 TagCode::RemoveObject => {
-                    self.goto_remove_object(reader, 1, gc_context, &mut goto_commands, is_rewind)
+                    self.goto_remove_object(reader, 1, context, &mut goto_commands, is_rewind)
                 }
                 TagCode::RemoveObject2 => {
-                    self.goto_remove_object(reader, 2, gc_context, &mut goto_commands, is_rewind)
+                    self.goto_remove_object(reader, 2, context, &mut goto_commands, is_rewind)
                 }
                 _ => Ok(()),
             };
@@ -676,7 +682,7 @@ impl<'gc> MovieClipData<'gc> {
         &mut self,
         reader: &mut SwfStream<&'a [u8]>,
         version: u8,
-        gc_context: MutationContext<'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         goto_commands: &mut fnv::FnvHashMap<Depth, GotoPlaceObject>,
         is_rewind: bool,
     ) -> DecodeResult {
@@ -694,7 +700,7 @@ impl<'gc> MovieClipData<'gc> {
             // the old children to decide if they persist (place_frame <= goto_frame).
             let child = self.children.remove(&remove_object.depth);
             if let Some(child) = child {
-                self.remove_child_from_exec_list(gc_context, child);
+                self.remove_child_from_exec_list(context, child);
             }
         }
         Ok(())
@@ -717,9 +723,14 @@ impl<'gc> MovieClipData<'gc> {
                 start: 0,
                 end: clip_action.action_data.len(),
             };
+            let action_type = if event == ClipEventFlag::Unload {
+                ActionType::Unload
+            } else {
+                ActionType::Normal
+            };
             context
                 .action_queue
-                .queue_actions(context.active_clip, slice, false);
+                .queue_actions(context.active_clip, slice, action_type);
         }
     }
 
@@ -1365,7 +1376,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         };
         context
             .action_queue
-            .queue_actions(self_display_object, slice, false);
+            .queue_actions(self_display_object, slice, ActionType::Normal);
         Ok(())
     }
 
@@ -1395,7 +1406,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         };
         context
             .action_queue
-            .queue_actions(self_display_object, slice, true);
+            .queue_actions(self_display_object, slice, ActionType::Init);
         Ok(())
     }
 
@@ -1459,7 +1470,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         }?;
         let child = self.children.remove(&remove_object.depth);
         if let Some(child) = child {
-            self.remove_child_from_exec_list(context.gc_context, child);
+            self.remove_child_from_exec_list(context, child);
         }
         Ok(())
     }

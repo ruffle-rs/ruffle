@@ -94,7 +94,7 @@ pub struct QueuedActions<'gc> {
     pub actions: SwfSlice,
 
     /// If this queued action is an init action
-    pub is_init: bool,
+    pub action_type: ActionType,
 }
 
 /// Action and gotos need to be queued up to execute at the end of the frame.
@@ -115,11 +115,16 @@ impl<'gc> ActionQueue<'gc> {
     /// Queues ActionScript to run for the given movie clip.
     /// `actions` is the slice of ActionScript bytecode to run.
     /// The actions will be skipped if the clip is removed before the actions run.
-    pub fn queue_actions(&mut self, clip: DisplayObject<'gc>, actions: SwfSlice, is_init: bool) {
+    pub fn queue_actions(
+        &mut self,
+        clip: DisplayObject<'gc>,
+        actions: SwfSlice,
+        action_type: ActionType,
+    ) {
         self.queue.push_back(QueuedActions {
             clip,
             actions,
-            is_init,
+            action_type,
         })
     }
 
@@ -158,4 +163,17 @@ pub struct RenderContext<'a, 'gc> {
 
     /// The stack of clip depths, used in masking.
     pub clip_depth_stack: Vec<Depth>,
+}
+
+/// The type of action being run.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum ActionType {
+    /// Normal frame or event actions.
+    Normal,
+
+    /// An `unload` clip event action.
+    Unload,
+
+    /// A `DoInitAction` action.
+    Init,
 }

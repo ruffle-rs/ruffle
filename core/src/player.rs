@@ -2,7 +2,7 @@ use crate::avm1::Avm1;
 use crate::backend::{
     audio::AudioBackend, navigator::NavigatorBackend, render::Letterbox, render::RenderBackend,
 };
-use crate::context::{ActionQueue, RenderContext, UpdateContext};
+use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::display_object::{MorphShape, MovieClip};
 use crate::events::{ButtonEvent, PlayerEvent};
 use crate::library::Library;
@@ -482,12 +482,12 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
 
     fn run_actions<'gc>(avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) {
         while let Some(actions) = context.action_queue.pop() {
-            // We don't run the action f the clip was removed after it queued the action.
-            if actions.clip.removed() {
+            // We don't run frame actions if the clip was removed after it queued the action.
+            if actions.action_type != ActionType::Unload && actions.clip.removed() {
                 continue;
             }
 
-            if actions.is_init {
+            if actions.action_type == ActionType::Init {
                 avm.insert_stack_frame_for_init_action(
                     actions.clip,
                     context.swf_version,
