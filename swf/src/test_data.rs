@@ -2123,7 +2123,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 background_color: None,
                 blend_mode: BlendMode::Normal,
                 clip_actions: vec![ClipAction {
-                    events: vec![ClipEvent::EnterFrame].into_iter().collect(),
+                    events: ClipEventFlag::EnterFrame.into(),
                     key_code: None,
                     action_data: vec![150, 6, 0, 0, 99, 108, 105, 112, 0, 38, 0],
                 }],
@@ -2154,19 +2154,17 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 blend_mode: BlendMode::Normal,
                 clip_actions: vec![
                     ClipAction {
-                        events: vec![ClipEvent::Press, ClipEvent::Release]
-                            .into_iter()
-                            .collect(),
+                        events: ClipEventFlag::Press | ClipEventFlag::Release,
                         key_code: None,
                         action_data: vec![150, 3, 0, 0, 65, 0, 38, 0],
                     },
                     ClipAction {
-                        events: vec![ClipEvent::KeyPress].into_iter().collect(),
+                        events: ClipEventFlag::KeyPress.into(),
                         key_code: Some(99),
                         action_data: vec![150, 3, 0, 0, 66, 0, 38, 0],
                     },
                     ClipAction {
-                        events: vec![ClipEvent::EnterFrame].into_iter().collect(),
+                        events: ClipEventFlag::EnterFrame.into(),
                         key_code: None,
                         action_data: vec![150, 3, 0, 0, 67, 0, 38, 0],
                     },
@@ -2326,14 +2324,12 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 blend_mode: BlendMode::Difference,
                 clip_actions: vec![
                     ClipAction {
-                        events: vec![ClipEvent::ReleaseOutside, ClipEvent::RollOver]
-                            .into_iter()
-                            .collect(),
+                        events: ClipEventFlag::ReleaseOutside | ClipEventFlag::RollOver,
                         key_code: None,
                         action_data: vec![0],
                     },
                     ClipAction {
-                        events: vec![ClipEvent::Data].into_iter().collect(),
+                        events: ClipEventFlag::Data.into(),
                         key_code: None,
                         action_data: vec![150, 3, 0, 0, 66, 0, 38, 0],
                     },

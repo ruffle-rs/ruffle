@@ -7,6 +7,7 @@
 use crate::error::{Error, Result};
 use crate::types::*;
 use byteorder::{LittleEndian, ReadBytesExt};
+use enumset::EnumSet;
 use std::collections::HashSet;
 use std::convert::TryInto;
 use std::io::{self, Read};
@@ -2234,7 +2235,7 @@ impl<R: Read> Reader<R> {
             Ok(None)
         } else {
             let mut length = self.read_u32()?;
-            let key_code = if events.contains(&ClipEvent::KeyPress) {
+            let key_code = if events.contains(ClipEventFlag::KeyPress) {
                 // ActionData length includes the 1 byte key code.
                 length -= 1;
                 Some(self.read_u8()?)
@@ -2253,32 +2254,32 @@ impl<R: Read> Reader<R> {
         }
     }
 
-    fn read_clip_event_flags(&mut self) -> Result<HashSet<ClipEvent>> {
+    fn read_clip_event_flags(&mut self) -> Result<EnumSet<ClipEventFlag>> {
         // TODO: Switch to a bitset.
-        let mut event_list = HashSet::with_capacity(32);
+        let mut event_list = EnumSet::new();
         if self.read_bit()? {
-            event_list.insert(ClipEvent::KeyUp);
+            event_list.insert(ClipEventFlag::KeyUp);
         }
         if self.read_bit()? {
-            event_list.insert(ClipEvent::KeyDown);
+            event_list.insert(ClipEventFlag::KeyDown);
         }
         if self.read_bit()? {
-            event_list.insert(ClipEvent::MouseUp);
+            event_list.insert(ClipEventFlag::MouseUp);
         }
         if self.read_bit()? {
-            event_list.insert(ClipEvent::MouseDown);
+            event_list.insert(ClipEventFlag::MouseDown);
         }
         if self.read_bit()? {
-            event_list.insert(ClipEvent::MouseMove);
+            event_list.insert(ClipEventFlag::MouseMove);
         }
         if self.read_bit()? {
-            event_list.insert(ClipEvent::Unload);
+            event_list.insert(ClipEventFlag::Unload);
         }
         if self.read_bit()? {
-            event_list.insert(ClipEvent::EnterFrame);
+            event_list.insert(ClipEventFlag::EnterFrame);
         }
         if self.read_bit()? {
-            event_list.insert(ClipEvent::Load);
+            event_list.insert(ClipEventFlag::Load);
         }
         if self.version < 6 {
             // SWF19 pp. 48-50: For SWFv5, the ClipEventFlags only had 2 bytes of flags,
@@ -2287,41 +2288,41 @@ impl<R: Read> Reader<R> {
             self.read_u8()?;
         } else {
             if self.read_bit()? {
-                event_list.insert(ClipEvent::DragOver);
+                event_list.insert(ClipEventFlag::DragOver);
             }
             if self.read_bit()? {
-                event_list.insert(ClipEvent::RollOut);
+                event_list.insert(ClipEventFlag::RollOut);
             }
             if self.read_bit()? {
-                event_list.insert(ClipEvent::RollOver);
+                event_list.insert(ClipEventFlag::RollOver);
             }
             if self.read_bit()? {
-                event_list.insert(ClipEvent::ReleaseOutside);
+                event_list.insert(ClipEventFlag::ReleaseOutside);
             }
             if self.read_bit()? {
-                event_list.insert(ClipEvent::Release);
+                event_list.insert(ClipEventFlag::Release);
             }
             if self.read_bit()? {
-                event_list.insert(ClipEvent::Press);
+                event_list.insert(ClipEventFlag::Press);
             }
             if self.read_bit()? {
-                event_list.insert(ClipEvent::Initialize);
+                event_list.insert(ClipEventFlag::Initialize);
             }
             if self.read_bit()? {
-                event_list.insert(ClipEvent::Data);
+                event_list.insert(ClipEventFlag::Data);
             }
             if self.version < 6 {
                 self.read_u16()?;
             } else {
                 self.read_ubits(5)?;
                 if self.read_bit()? && self.version >= 7 {
-                    event_list.insert(ClipEvent::Construct);
+                    event_list.insert(ClipEventFlag::Construct);
                 }
                 if self.read_bit()? {
-                    event_list.insert(ClipEvent::KeyPress);
+                    event_list.insert(ClipEventFlag::KeyPress);
                 }
                 if self.read_bit()? {
-                    event_list.insert(ClipEvent::DragOut);
+                    event_list.insert(ClipEventFlag::DragOut);
                 }
                 self.read_u8()?;
             }
