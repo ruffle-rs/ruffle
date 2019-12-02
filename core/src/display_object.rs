@@ -657,7 +657,17 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
             }
             // Clip events only apply to movie clips.
             if let Some(clip) = self.as_movie_clip() {
-                clip.set_clip_actions(gc_context, &place_object.clip_actions[..]);
+                // Convert from `swf::ClipAction` to Ruffle's `ClipAction`.
+                use crate::display_object::movie_clip::ClipAction;
+                clip.set_clip_actions(
+                    gc_context,
+                    place_object
+                        .clip_actions
+                        .iter()
+                        .cloned()
+                        .map(ClipAction::from)
+                        .collect(),
+                );
             }
             // TODO: Others will go here eventually.
         }
@@ -677,7 +687,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
         }
         // onEnterFrame actions only apply to movie clips.
         if let (Some(me), Some(other)) = (self.as_movie_clip(), other.as_movie_clip()) {
-            me.set_clip_actions(gc_context, &*other.clip_actions());
+            me.set_clip_actions(gc_context, other.clip_actions().iter().cloned().collect());
         }
         // TODO: More in here eventually.
     }

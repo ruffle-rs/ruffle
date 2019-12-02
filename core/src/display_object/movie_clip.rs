@@ -6,14 +6,16 @@ use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{
     Bitmap, Button, DisplayObjectBase, EditText, Graphic, MorphShapeStatic, TDisplayObject, Text,
 };
+use crate::events::ClipEvent;
 use crate::font::Font;
 use crate::prelude::*;
-use crate::tag_utils::{self, DecodeResult, SwfStream};
+use crate::tag_utils::{self, DecodeResult, SwfSlice, SwfStream};
 use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
+use std::cell::Ref;
 use std::collections::{BTreeMap, HashMap};
-use swf::{read::SwfRead, ClipAction, ClipEventFlag};
+use swf::read::SwfRead;
 
 type Depth = i16;
 type FrameNumber = u16;
@@ -166,14 +168,18 @@ impl<'gc> MovieClip<'gc> {
     }
 
     /// Gets the clip events for this movieclip.
-    pub fn clip_actions(&self) -> std::cell::Ref<[ClipAction]> {
-        std::cell::Ref::map(self.0.read(), |mc| mc.clip_actions())
+    pub fn clip_actions(&self) -> Ref<[ClipAction]> {
+        Ref::map(self.0.read(), |mc| mc.clip_actions())
     }
 
     /// Sets the clip actions (a.k.a. clip events) for this movieclip.
     /// Clip actions are created in the Flash IDE by using the `onEnterFrame`
     /// tag on a movieclip instance.
-    pub fn set_clip_actions(&self, gc_context: MutationContext<'gc, '_>, actions: &[ClipAction]) {
+    pub fn set_clip_actions(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        actions: SmallVec<[ClipAction; 2]>,
+    ) {
         self.0.write(gc_context).set_clip_actions(actions);
     }
 }
@@ -246,9 +252,11 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn unload(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.0
-            .write(context.gc_context)
-            .run_clip_action(context, ClipEventFlag::Unload, None);
+        self.0.write(context.gc_context).run_clip_action(
+            (*self).into(),
+            context,
+            ClipEvent::Unload,
+        );
         self.set_removed(context.gc_context, true);
     }
 }
@@ -379,10 +387,10 @@ impl<'gc> MovieClipData<'gc> {
 
         // Run my load/enterFrame clip event.
         if !self.initialized() {
-            self.run_clip_action(context, ClipEventFlag::Load, None);
+            self.run_clip_action(self_display_object, context, ClipEvent::Load);
             self.set_initialized(true);
         } else {
-            self.run_clip_action(context, ClipEventFlag::EnterFrame, None);
+            self.run_clip_action(self_display_object, context, ClipEvent::EnterFrame);
         }
 
         let _tag_pos = self.tag_stream_pos;
@@ -709,37 +717,34 @@ impl<'gc> MovieClipData<'gc> {
     /// Run all actions for the given clip event.
     fn run_clip_action(
         &self,
+        self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        event: ClipEventFlag,
-        key_code: Option<u8>,
+        event: ClipEvent,
     ) {
         for clip_action in self
             .clip_actions
             .iter()
-            .filter(|action| action.events.contains(event) && action.key_code == key_code)
+            .filter(|action| action.events.contains(&event))
         {
-            let slice = crate::tag_utils::SwfSlice {
-                data: std::sync::Arc::new(clip_action.action_data.clone()),
-                start: 0,
-                end: clip_action.action_data.len(),
-            };
-            let action_type = if event == ClipEventFlag::Unload {
+            let action_type = if event == ClipEvent::Unload {
                 ActionType::Unload
             } else {
                 ActionType::Normal
             };
-            context
-                .action_queue
-                .queue_actions(context.active_clip, slice, action_type);
+            context.action_queue.queue_actions(
+                self_display_object,
+                clip_action.action_data.clone(),
+                action_type,
+            );
         }
     }
 
-    fn clip_actions(&self) -> &[ClipAction] {
-        &self.clip_actions[..]
+    pub fn clip_actions(&self) -> &[ClipAction] {
+        &self.clip_actions
     }
 
-    fn set_clip_actions(&mut self, actions: &[ClipAction]) {
-        self.clip_actions = actions.iter().cloned().collect();
+    pub fn set_clip_actions(&mut self, actions: SmallVec<[ClipAction; 2]>) {
+        self.clip_actions = actions;
     }
 
     fn initialized(&self) -> bool {
@@ -1369,7 +1374,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         // so make sure to get the proper offsets. This feels kind of bad.
         let start = (self.tag_stream_start() + reader.get_ref().position()) as usize;
         let end = start + tag_len;
-        let slice = crate::tag_utils::SwfSlice {
+        let slice = SwfSlice {
             data: std::sync::Arc::clone(context.swf_data),
             start,
             end,
@@ -1399,7 +1404,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         // so make sure to get the proper offsets. This feels kind of bad.
         let start = (self.tag_stream_start() + reader.get_ref().position()) as usize;
         let end = start + tag_len;
-        let slice = crate::tag_utils::SwfSlice {
+        let slice = SwfSlice {
             data: std::sync::Arc::clone(context.swf_data),
             start,
             end,
@@ -1494,7 +1499,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         if let (Some(stream_info), None) = (&self.static_data.audio_stream_info, self.audio_stream)
         {
             let pos = self.tag_stream_start() + self.tag_stream_pos;
-            let slice = crate::tag_utils::SwfSlice {
+            let slice = SwfSlice {
                 data: std::sync::Arc::clone(context.swf_data),
                 start: pos as usize,
                 end: self.tag_stream_start() as usize + self.tag_stream_len(),
@@ -1645,4 +1650,55 @@ enum MovieClipFlags {
 
     /// Whether this `MovieClip` is playing or stopped.
     Playing,
+}
+
+/// Actions that are attached to a `MovieClip` event in
+/// an `onClipEvent`/`on` handler.
+#[derive(Debug, Clone)]
+pub struct ClipAction {
+    /// The events that trigger this handler.
+    events: SmallVec<[ClipEvent; 1]>,
+
+    /// The actions to run.
+    action_data: SwfSlice,
+}
+
+impl From<swf::ClipAction> for ClipAction {
+    fn from(other: swf::ClipAction) -> Self {
+        use swf::ClipEventFlag;
+        Self {
+            events: other
+                .events
+                .into_iter()
+                .map(|event| match event {
+                    ClipEventFlag::Construct => ClipEvent::Construct,
+                    ClipEventFlag::Data => ClipEvent::Data,
+                    ClipEventFlag::DragOut => ClipEvent::DragOut,
+                    ClipEventFlag::DragOver => ClipEvent::DragOver,
+                    ClipEventFlag::EnterFrame => ClipEvent::EnterFrame,
+                    ClipEventFlag::Initialize => ClipEvent::Initialize,
+                    ClipEventFlag::KeyUp => ClipEvent::KeyUp,
+                    ClipEventFlag::KeyDown => ClipEvent::KeyDown,
+                    ClipEventFlag::KeyPress => ClipEvent::KeyPress {
+                        key_code: other.key_code.unwrap_or(0),
+                    },
+                    ClipEventFlag::Load => ClipEvent::Load,
+                    ClipEventFlag::MouseUp => ClipEvent::MouseUp,
+                    ClipEventFlag::MouseDown => ClipEvent::MouseDown,
+                    ClipEventFlag::MouseMove => ClipEvent::MouseMove,
+                    ClipEventFlag::Press => ClipEvent::Press,
+                    ClipEventFlag::RollOut => ClipEvent::RollOut,
+                    ClipEventFlag::RollOver => ClipEvent::RollOver,
+                    ClipEventFlag::Release => ClipEvent::Release,
+                    ClipEventFlag::ReleaseOutside => ClipEvent::ReleaseOutside,
+                    ClipEventFlag::Unload => ClipEvent::Unload,
+                })
+                .collect(),
+            action_data: SwfSlice {
+                data: std::sync::Arc::new(other.action_data.clone()),
+                start: 0,
+                end: other.action_data.len(),
+            },
+        }
+    }
 }
