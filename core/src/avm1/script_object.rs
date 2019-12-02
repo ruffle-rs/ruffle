@@ -575,6 +575,7 @@ mod tests {
     use crate::tag_utils::SwfMovie;
     use gc_arena::rootless_arena;
     use rand::{rngs::SmallRng, SeedableRng};
+    use std::collections::BTreeMap;
     use std::sync::Arc;
 
     fn with_object<F, R>(swf_version: u8, test: F) -> R
@@ -586,7 +587,9 @@ mod tests {
             let swf = Arc::new(SwfMovie::empty(swf_version));
             let mut root: DisplayObject<'_> = MovieClip::new(swf_version, gc_context).into();
             root.post_instantiation(gc_context, root, avm.prototypes().movie_clip);
-            let mut layers = [root; 9];
+            let mut layers = BTreeMap::new();
+            layers.insert(0, root);
+
             let mut context = UpdateContext {
                 gc_context,
                 global_time: 0,

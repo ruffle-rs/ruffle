@@ -13,6 +13,7 @@ use crate::transform::TransformStack;
 use core::fmt;
 use gc_arena::{Collect, MutationContext};
 use rand::rngs::SmallRng;
+use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, Weak};
 
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
@@ -63,8 +64,8 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// The RNG, used by the AVM `RandomNumber` opcode,  `Math.random(),` and `random()`.
     pub rng: &'a mut SmallRng,
 
-    /// All nine layers of the current player.
-    pub layers: &'a mut [DisplayObject<'gc>; 9],
+    /// All loaded layers of the current player.
+    pub layers: &'a mut BTreeMap<u32, DisplayObject<'gc>>,
 
     /// The root of the current timeline being updated.
     /// This will always be one of the layers in `layers`.

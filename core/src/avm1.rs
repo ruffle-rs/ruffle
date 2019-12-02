@@ -14,7 +14,8 @@ use url::form_urlencoded;
 use swf::avm1::read::Reader;
 use swf::avm1::types::{Action, Function};
 
-use crate::display_object::{DisplayObject, MorphShape};
+use crate::display_object::{DisplayObject, MorphShape, MovieClip};
+use crate::player::NEWEST_PLAYER_VERSION;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 
 #[cfg(test)]
@@ -1632,37 +1633,55 @@ impl<'gc> Avm1<'gc> {
         target: &str,
     ) -> Result<(), Error> {
         if target.starts_with("_level") && target.len() > 6 {
-            let level_id = target[6..].parse::<usize>().unwrap();
+            let url = url.to_string();
+            let level_id = target[6..].parse::<u32>()?;
             let player = context.player.clone().unwrap().upgrade().unwrap();
-            let fetch = context.navigator.fetch(url.to_string());
-            let slot = self.forcibly_root_object(context.layers[level_id].object().as_object()?);
+            let fetch = context.navigator.fetch(url);
+            let layer = if let Some(layer) = context.layers.get(&level_id) {
+                *layer
+            } else {
+                let mut layer: DisplayObject<'_> =
+                    MovieClip::new(NEWEST_PLAYER_VERSION, context.gc_context).into();
+
+                layer.post_instantiation(context.gc_context, layer, self.prototypes.movie_clip);
+                context.layers.insert(level_id, layer);
+
+                layer
+            };
+            let slot = self.forcibly_root_object(layer.object().as_object()?);
 
             context.navigator.spawn_future(Box::pin(async move {
                 let data = fetch.await?;
                 let movie = Arc::new(SwfMovie::from_data(&data));
 
-                player.lock().unwrap().update(|avm, uc| {
-                    let that = avm.unroot_object(slot).as_display_object().unwrap();
-                    let mut mc = that.as_movie_clip().unwrap();
+                player
+                    .lock()
+                    .expect("Could not lock player!!")
+                    .update(|avm, uc| {
+                        let that = avm
+                            .unroot_object(slot)
+                            .as_display_object()
+                            .expect("Locked object not a display node!");
+                        let mut mc = that.as_movie_clip().expect("Locked clip not a clip!");
 
-                    mc.replace_with_movie(uc.gc_context, movie.clone());
+                        mc.replace_with_movie(uc.gc_context, movie.clone());
 
-                    let mut morph_shapes = fnv::FnvHashMap::default();
-                    mc.preload(uc, &mut morph_shapes);
+                        let mut morph_shapes = fnv::FnvHashMap::default();
+                        mc.preload(uc, &mut morph_shapes);
 
-                    // Finalize morph shapes.
-                    for (id, static_data) in morph_shapes {
-                        let morph_shape = MorphShape::new(uc.gc_context, static_data);
-                        uc.library
-                            .library_for_movie_mut(movie.clone())
-                            .register_character(
-                                id,
-                                crate::character::Character::MorphShape(morph_shape),
-                            );
-                    }
+                        // Finalize morph shapes.
+                        for (id, static_data) in morph_shapes {
+                            let morph_shape = MorphShape::new(uc.gc_context, static_data);
+                            uc.library
+                                .library_for_movie_mut(movie.clone())
+                                .register_character(
+                                    id,
+                                    crate::character::Character::MorphShape(morph_shape),
+                                );
+                        }
 
-                    Ok(())
-                })
+                        Ok(())
+                    })
             }));
 
             return Ok(());
