@@ -433,10 +433,11 @@ impl<'gc> MovieClipData<'gc> {
     ) {
         let total_frames = movie.header().num_frames;
 
+        self.base = Default::default();
         self.static_data = Gc::allocate(
             gc_context,
             MovieClipStatic {
-                id: self.static_data.id, //TODO: This is WRONG; This is VERRRRY WRONG!
+                id: 0,
                 swf: movie.into(),
                 total_frames,
                 audio_stream_info: None,
@@ -447,6 +448,7 @@ impl<'gc> MovieClipData<'gc> {
         self.flags = EnumSet::empty();
         self.current_frame = 0;
         self.audio_stream = None;
+        self.children = BTreeMap::new();
     }
 
     fn id(&self) -> CharacterId {

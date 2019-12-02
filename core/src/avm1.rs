@@ -1665,6 +1665,7 @@ impl<'gc> Avm1<'gc> {
                         let mut mc = that.as_movie_clip().expect("Locked clip not a clip!");
 
                         mc.replace_with_movie(uc.gc_context, movie.clone());
+                        mc.post_instantiation(uc.gc_context, that, avm.prototypes.movie_clip);
 
                         let mut morph_shapes = fnv::FnvHashMap::default();
                         mc.preload(uc, &mut morph_shapes);
