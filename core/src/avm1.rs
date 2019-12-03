@@ -497,12 +497,8 @@ impl<'gc> Avm1<'gc> {
         };
         if !path.is_empty() {
             for name in path.split('/') {
-                let next_clip = if let Some(clip) = cur_clip.as_movie_clip() {
-                    if let Some(child) = clip.get_child_by_name(name) {
-                        child
-                    } else {
-                        return None;
-                    }
+                let next_clip = if let Some(child) = cur_clip.get_child_by_name(name) {
+                    child
                 } else {
                     return None;
                 };

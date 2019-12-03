@@ -209,15 +209,6 @@ impl<'gc> MovieClip<'gc> {
         self.0.read().static_data.total_frames
     }
 
-    pub fn get_child_by_name(self, name: &str) -> Option<DisplayObject<'gc>> {
-        // TODO: Make a HashMap from name -> child?
-        let mc = self.0.read();
-        mc.children
-            .values()
-            .find(|child| &*child.name() == name)
-            .copied()
-    }
-
     pub fn frame_label_to_number(self, frame_label: &str) -> Option<FrameNumber> {
         self.0
             .read()

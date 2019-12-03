@@ -235,6 +235,11 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
             cur_child: self.first_child(),
         }
     }
+    /// Get a child display object by instance name.
+    fn get_child_by_name(&self, name: &str) -> Option<DisplayObject<'gc>> {
+        // TODO: Make a HashMap from name -> child?
+        self.children().find(|child| &*child.name() == name)
+    }
     fn removed(&self) -> bool;
     fn set_removed(&mut self, context: MutationContext<'gc, '_>, removed: bool);
     fn run_frame(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
