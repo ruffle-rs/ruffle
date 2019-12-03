@@ -115,7 +115,7 @@ pub fn create_proto<'gc>(
         "_global",
         Executable::Native(|avm, context, _this, _args| Ok(avm.global_object(context).into())),
         Some(Executable::Native(overwrite_global)),
-        EnumSet::new(),
+        DontDelete | ReadOnly | DontEnum,
     );
 
     object.add_property(
@@ -123,7 +123,7 @@ pub fn create_proto<'gc>(
         "_root",
         Executable::Native(|avm, context, _this, _args| Ok(avm.root_object(context).into())),
         Some(Executable::Native(overwrite_root)),
-        EnumSet::new(),
+        DontDelete | ReadOnly | DontEnum,
     );
 
     object.add_property(
@@ -141,7 +141,7 @@ pub fn create_proto<'gc>(
                 .into())
         }),
         None,
-        EnumSet::new(),
+        DontDelete | ReadOnly | DontEnum,
     );
 
     object.into()
