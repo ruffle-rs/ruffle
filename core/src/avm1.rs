@@ -1039,8 +1039,7 @@ impl<'gc> Avm1<'gc> {
         let name_val = self.pop()?;
         let name = name_val.coerce_to_string(self, context)?;
         let object = self.pop()?.as_object()?;
-        let this = self.current_stack_frame().unwrap().read().this_cell();
-        object.read().get(&name, self, context, this)?.push(self);
+        object.read().get(&name, self, context, object)?.push(self);
 
         Ok(())
     }
@@ -1667,11 +1666,10 @@ impl<'gc> Avm1<'gc> {
         let name_val = self.pop()?;
         let name = name_val.coerce_to_string(self, context)?;
         let object = self.pop()?.as_object()?;
-        let this = self.current_stack_frame().unwrap().read().this_cell();
 
         object
             .write(context.gc_context)
-            .set(&name, value, self, context, this)?;
+            .set(&name, value, self, context, object)?;
         Ok(())
     }
 
