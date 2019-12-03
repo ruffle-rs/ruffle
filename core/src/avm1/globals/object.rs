@@ -52,7 +52,7 @@ pub fn add_property<'gc>(
                 }
             }
 
-            Ok(false.into())
+            Ok(true.into())
         }
         _ => Ok(false.into()),
     }
