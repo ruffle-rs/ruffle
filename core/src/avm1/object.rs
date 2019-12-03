@@ -48,23 +48,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         if self.has_own_property(name) {
             self.get_local(name, avm, context, (*self).into())
         } else {
-            let mut depth = 0;
-            let mut proto = self.proto();
-
-            while proto.is_some() {
-                if depth == 255 {
-                    return Err("Encountered an excessively deep prototype chain.".into());
-                }
-
-                if proto.unwrap().has_own_property(name) {
-                    return proto.unwrap().get_local(name, avm, context, (*self).into());
-                }
-
-                proto = proto.unwrap().proto();
-                depth += 1;
-            }
-
-            Ok(Value::Undefined.into())
+            search_prototype(self.proto(), name, avm, context, (*self).into())
         }
     }
 
@@ -199,4 +183,29 @@ impl<'gc> Object<'gc> {
     pub fn ptr_eq(a: Object<'gc>, b: Object<'gc>) -> bool {
         a.as_ptr() == b.as_ptr()
     }
+}
+
+pub fn search_prototype<'gc>(
+    mut proto: Option<Object<'gc>>,
+    name: &str,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+) -> Result<ReturnValue<'gc>, Error> {
+    let mut depth = 0;
+
+    while proto.is_some() {
+        if depth == 255 {
+            return Err("Encountered an excessively deep prototype chain.".into());
+        }
+
+        if proto.unwrap().has_own_property(name) {
+            return proto.unwrap().get_local(name, avm, context, this);
+        }
+
+        proto = proto.unwrap().proto();
+        depth += 1;
+    }
+
+    Ok(Value::Undefined.into())
 }
