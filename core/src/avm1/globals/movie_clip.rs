@@ -106,7 +106,7 @@ pub fn create_proto<'gc>(
             1.0.into()
         },
         "toString" => |movie_clip: MovieClip<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| -> ReturnValue<'gc> {
-            movie_clip.name().to_string().into()
+            movie_clip.path().into()
         }
     );
 

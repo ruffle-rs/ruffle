@@ -206,6 +206,17 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
     );
     fn name(&self) -> Ref<str>;
     fn set_name(&mut self, context: MutationContext<'gc, '_>, name: &str);
+    /// Returns the dot-syntax path to this display object, e.g. `_level0.foo.clip`
+    fn path(&self) -> String {
+        if let Some(parent) = self.parent() {
+            let mut path = parent.path();
+            path.push_str(".");
+            path.push_str(&*self.name());
+            path
+        } else {
+            self.name().to_string()
+        }
+    }
     fn clip_depth(&self) -> Depth;
     fn set_clip_depth(&mut self, context: MutationContext<'gc, '_>, depth: Depth);
     fn parent(&self) -> Option<DisplayObject<'gc>>;
