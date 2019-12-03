@@ -64,6 +64,7 @@ swf_tests! {
     (object_prototypes, "avm1/object_prototypes", 1),
     (movieclip_prototype_extension, "avm1/movieclip_prototype_extension", 1),
     (recursive_prototypes, "avm1/recursive_prototypes", 1),
+    (stage_object_children, "avm1/stage_object_children", 2),
     (has_own_property, "avm1/has_own_property", 1),
     #[ignore] (extends_chain, "avm1/extends_chain", 1),
     (is_prototype_of, "avm1/is_prototype_of", 1),

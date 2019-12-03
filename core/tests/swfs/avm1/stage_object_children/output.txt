@@ -1,0 +1,12 @@
+MovieClip clip added
+clip: _level0.clip
+Set clip to 10
+clip: 10
+Set clip to undefined
+clip: undefined
+Delete clip
+clip: _level0.clip
+Set MovieClip.prototype.clip to 2
+clip: _level0.clip
+MovieClip clip removed
+clip: 2
