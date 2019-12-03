@@ -96,6 +96,19 @@ fn test_prototype_enumerate() -> Result<(), Error> {
     Ok(())
 }
 
+#[test]
+fn test_stage_object_enumerate() -> Result<(), Error> {
+    let trace_log = run_swf("tests/swfs/avm1/stage_object_enumerate/test.swf", 1)?;
+    let mut actual: Vec<String> = trace_log.lines().map(|s| s.to_string()).collect();
+    let mut expected = vec!["clip1", "clip2", "clip3", "foo"];
+
+    actual.sort();
+    expected.sort();
+
+    assert_eq!(actual, expected, "actual == expected");
+    Ok(())
+}
+
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
 /// Tests that the trace output matches the given expected output.
 fn test_swf(swf_path: &str, num_frames: u32, expected_output_path: &str) -> Result<(), Error> {

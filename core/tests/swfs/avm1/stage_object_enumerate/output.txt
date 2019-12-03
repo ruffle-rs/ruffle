@@ -1,0 +1,4 @@
+foo
+clip3
+clip2
+clip1
