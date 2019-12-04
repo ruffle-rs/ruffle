@@ -6,7 +6,7 @@ use ruffle_core::backend::audio::swf::{self, AudioCompression};
 use ruffle_core::backend::audio::{AudioBackend, AudioStreamHandle, SoundHandle};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
-use wasm_bindgen::{closure::Closure, JsCast};
+use wasm_bindgen::{closure::Closure, prelude::*, JsCast};
 use web_sys::AudioContext;
 
 pub struct WebAudioBackend {
@@ -17,6 +17,7 @@ pub struct WebAudioBackend {
     left_samples: Vec<f32>,
     right_samples: Vec<f32>,
     frame_rate: f64,
+    min_sample_rate: u16,
 }
 
 thread_local! {
@@ -96,6 +97,18 @@ type Error = Box<dyn std::error::Error>;
 impl WebAudioBackend {
     pub fn new() -> Result<Self, Error> {
         let context = AudioContext::new().map_err(|_| "Unable to create AudioContext")?;
+
+        // Deduce the minimum sample rate for this browser.
+        let mut min_sample_rate = 44100;
+        while min_sample_rate > 5512
+            && context
+                .create_buffer(1, 1, (min_sample_rate >> 1) as f32)
+                .is_ok()
+        {
+            min_sample_rate >>= 1;
+        }
+        log::info!("Minimum audio buffer sample rate: {}", min_sample_rate);
+
         Ok(Self {
             context,
             sounds: Arena::new(),
@@ -104,6 +117,7 @@ impl WebAudioBackend {
             left_samples: vec![],
             right_samples: vec![],
             frame_rate: 1.0,
+            min_sample_rate,
         })
     }
 
@@ -371,54 +385,52 @@ impl WebAudioBackend {
             _ => unimplemented!("{:?}", format.compression),
         }
 
-        // Double up samples for 5512Hz audio to satisfy Firefox.
-        if format.sample_rate == 5512 {
+        // This sucks. Firefox and Safari don't like low sample rates,
+        // so manually multiply the samples.
+        let sample_rate = if format.sample_rate < self.min_sample_rate {
+            let sample_multiplier = self.min_sample_rate / format.sample_rate;
             let mut samples = Vec::with_capacity(self.left_samples.len() * 2);
             for sample in &self.left_samples {
-                samples.push(*sample);
-                samples.push(*sample);
+                for _ in 0..sample_multiplier {
+                    samples.push(*sample);
+                }
             }
             self.left_samples = samples;
 
             if format.is_stereo {
                 let mut samples = Vec::with_capacity(self.right_samples.len() * 2);
                 for sample in &self.right_samples {
-                    samples.push(*sample);
-                    samples.push(*sample);
+                    for _ in 0..sample_multiplier {
+                        samples.push(*sample);
+                    }
                 }
                 self.right_samples = samples;
             }
-        }
 
-        // This sucks. Firefox doesn't like 5512Hz sample rate, so manually double up the samples.
-        // 5512Hz should be relatively rare.
-        let num_sample_frames = self.left_samples.len() as u32;
-        let audio_buffer = if format.sample_rate > 5512 {
-            self.context
-                .create_buffer(
-                    if format.is_stereo { 2 } else { 1 },
-                    num_sample_frames,
-                    f32::from(format.sample_rate),
-                )
-                .unwrap()
+            self.min_sample_rate
         } else {
-            self.context
-                .create_buffer(
-                    if format.is_stereo { 2 } else { 1 },
-                    num_sample_frames * 2,
-                    11025.0,
-                )
-                .unwrap()
+            format.sample_rate
         };
 
-        audio_buffer
-            .copy_to_channel(&mut self.left_samples, 0)
+        let num_sample_frames = self.left_samples.len() as u32;
+        let audio_buffer = self
+            .context
+            .create_buffer(
+                if format.is_stereo { 2 } else { 1 },
+                num_sample_frames,
+                f32::from(sample_rate),
+            )
             .unwrap();
-        if format.is_stereo {
-            audio_buffer
-                .copy_to_channel(&mut self.right_samples, 1)
-                .unwrap();
-        }
+
+        copy_to_audio_buffer(
+            &audio_buffer,
+            Some(&self.left_samples),
+            if format.is_stereo {
+                Some(&self.right_samples)
+            } else {
+                None
+            },
+        );
 
         Rc::new(RefCell::new(audio_buffer))
     }
@@ -494,14 +506,15 @@ impl WebAudioBackend {
                     break;
                 }
             }
-            output_buffer
-                .copy_to_channel(&mut left_samples[..], 0)
-                .unwrap();
-            if instance.format.is_stereo {
-                output_buffer
-                    .copy_to_channel(&mut right_samples[..], 1)
-                    .unwrap();
-            }
+            copy_to_audio_buffer(
+                &output_buffer,
+                Some(&left_samples),
+                if instance.format.is_stereo {
+                    Some(&right_samples)
+                } else {
+                    None
+                },
+            );
         }
 
         complete
@@ -733,6 +746,18 @@ impl AudioBackend for WebAudioBackend {
                 .any(|(_, instance)| instance.handle == handle)
         })
     }
+}
+
+#[wasm_bindgen(module = "/js-src/ruffle-imports.js")]
+extern "C" {
+    /// Imported JS method to copy data into an `AudioBuffer`.
+    /// We'd prefer to use `AudioBuffer.copyToChannel`, but this isn't supported
+    /// on Safari.
+    fn copy_to_audio_buffer(
+        audio_buffer: &web_sys::AudioBuffer,
+        left_data: Option<&[f32]>,
+        right_data: Option<&[f32]>,
+    );
 }
 
 // Janky resmapling code.
