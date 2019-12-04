@@ -38,13 +38,13 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         self.0.read().static_data.id
     }
 
-    fn local_bounds(&self) -> BoundingBox {
+    fn self_bounds(&self) -> BoundingBox {
         self.0.read().static_data.bounds.clone()
     }
 
     fn world_bounds(&self) -> BoundingBox {
         // TODO: Use dirty flags and cache this.
-        let mut bounds = self.local_bounds().transform(&*self.matrix());
+        let mut bounds = self.local_bounds();
         let mut node = self.parent();
         while let Some(display_object) = node {
             bounds = bounds.transform(&*display_object.matrix());

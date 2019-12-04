@@ -144,5 +144,32 @@ pub fn create_proto<'gc>(
         DontDelete | ReadOnly | DontEnum,
     );
 
+    // object.add_property(
+    //     "_y",
+    //     Executable::Native(|_avm, _context, this, _args| {
+    //         Ok(this
+    //             .read()
+    //             .as_display_node()
+    //             .map(|mc| Value::from(mc.read().y()))
+    //             .unwrap_or(Value::Undefined)
+    //             .into())
+    //     }),
+    //     None,
+    //     DontDelete | ReadOnly | DontEnum,
+    // );
+
+    // object.add_property(
+    //     "_rotation",
+    //     Executable::Native(|_avm, context, this, _args| {
+    //         Ok(this
+    //             .read()
+    //             .as_display_node()
+    //             .map(|mc| Value::from(mc.write(context.gc_context).rotation()))
+    //             .unwrap_or(Value::Undefined)
+    //             .into())
+    //     }),
+    //     None,
+    //     DontDelete | ReadOnly | DontEnum,
+    // );
     object.into()
 }

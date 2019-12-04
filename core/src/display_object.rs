@@ -3,6 +3,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::player::NEWEST_PLAYER_VERSION;
 use crate::prelude::*;
 use crate::transform::Transform;
+use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
@@ -24,8 +25,7 @@ pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::MovieClip;
 pub use text::Text;
 
-#[derive(Clone, Collect, Debug)]
-#[collect(no_drop)]
+#[derive(Clone, Debug)]
 pub struct DisplayObjectBase<'gc> {
     parent: Option<DisplayObject<'gc>>,
     place_frame: u16,
@@ -33,6 +33,14 @@ pub struct DisplayObjectBase<'gc> {
     transform: Transform,
     name: String,
     clip_depth: Depth,
+
+    // Cached transform properties `_xscale`, `_yscale`, `_rotation`.
+    // These are expensive to calculate, so they will be calculated and cached when AS requests
+    // one of these properties.
+    rotation: f64,
+    scale_x: f64,
+    scale_y: f64,
+    skew: f64,
 
     /// The first child of this display object in order of execution.
     /// This is differen than render order.
@@ -44,9 +52,8 @@ pub struct DisplayObjectBase<'gc> {
     /// The next sibling of this display object in order of execution.
     next_sibling: Option<DisplayObject<'gc>>,
 
-    /// Whether this child has been removed from the display list.
-    /// Necessary in AVM1 to throw away queued actions from removed movie clips.
-    removed: bool,
+    /// Bit flags for various display object properites.
+    flags: EnumSet<DisplayObjectFlags>,
 }
 
 impl<'gc> Default for DisplayObjectBase<'gc> {
@@ -58,11 +65,25 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             transform: Default::default(),
             name: Default::default(),
             clip_depth: Default::default(),
+            rotation: 0.0,
+            scale_x: 1.0,
+            scale_y: 1.0,
+            skew: 0.0,
             first_child: None,
             prev_sibling: None,
             next_sibling: None,
-            removed: false,
+            flags: DisplayObjectFlags::Visible.into(),
         }
+    }
+}
+
+unsafe impl<'gc> Collect for DisplayObjectBase<'gc> {
+    #[inline]
+    fn trace(&self, cc: gc_arena::CollectionContext) {
+        self.parent.trace(cc);
+        self.first_child.trace(cc);
+        self.prev_sibling.trace(cc);
+        self.next_sibling.trace(cc);
     }
 }
 
@@ -96,6 +117,9 @@ impl<'gc> DisplayObjectBase<'gc> {
     fn color_transform(&self) -> &ColorTransform {
         &self.transform.color_transform
     }
+    fn color_transform_mut(&mut self) -> &mut ColorTransform {
+        &mut self.transform.color_transform
+    }
     fn set_color_transform(
         &mut self,
         _context: MutationContext<'gc, '_>,
@@ -103,11 +127,126 @@ impl<'gc> DisplayObjectBase<'gc> {
     ) {
         self.transform.color_transform = *color_transform;
     }
+    fn x(&self) -> f64 {
+        f64::from(self.transform.matrix.tx) / Twips::TWIPS_PER_PIXEL
+    }
+    fn set_x(&mut self, value: f64) {
+        self.transform.matrix.tx = (value * Twips::TWIPS_PER_PIXEL) as f32
+    }
+    fn y(&self) -> f64 {
+        f64::from(self.transform.matrix.ty) / Twips::TWIPS_PER_PIXEL
+    }
+    fn set_y(&mut self, value: f64) {
+        self.transform.matrix.ty = (value * Twips::TWIPS_PER_PIXEL) as f32
+    }
+
+    /// Caches the scale and rotation factors for this display object, if necessary.
+    /// Calculating these requires heavy trig ops, so we only do it when `_xscale`, `_yscale` or
+    /// `_rotation` is accessed.
+    fn cache_scale_rotation(&mut self) {
+        if !self.flags.contains(DisplayObjectFlags::ScaleRotationCached) {
+            let (a, b, c, d) = (
+                self.transform.matrix.a,
+                self.transform.matrix.b,
+                self.transform.matrix.c,
+                self.transform.matrix.d,
+            );
+            // If this object's transform matrix is:
+            // [[a c tx]
+            //  [b d ty]]
+            // After transformation, the X-axis and Y-axis will turn into the column vectors x' = <a, b> and y' = <c, d>.
+            // We derive the scale, rotation, and skew values from these transformed axes.
+            // The skew value is not exposed by ActionScript, but is remembered internally.
+            // xscale = len(x')
+            // yscale = len(y')
+            // rotation = atan2(b, a)  (the rotation of x' from the normal x-axis).
+            // skew = atan2(-c, d) - atan2(b, a)  (the signed difference between y' and x' rotation)
+
+            // This can produce some surprising results due to the overlap between flipping/rotation/skewing.
+            // For example, in Flash, using Modify->Transform->Flip Horizontal and then tracing _xscale, _yscale, and _rotation
+            // will output 100, 100, and 180. (a horizontal flip could also be a 180 degree skew followed by 180 degree rotation!)
+            let rotation_x = f32::atan2(b, a);
+            let rotation_y = f32::atan2(-c, d);
+            let scale_x = f32::sqrt(a * a + b * b);
+            let scale_y = f32::sqrt(c * c + d * d);
+            self.rotation = rotation_x.into();
+            self.scale_x = scale_x.into();
+            self.scale_y = scale_y.into();
+            self.skew = (rotation_y - rotation_x).into();
+            self.flags.insert(DisplayObjectFlags::ScaleRotationCached);
+        }
+    }
+
+    fn set_scale(&mut self, scale_x: f32, scale_y: f32, rotation: f32) {
+        self.cache_scale_rotation();
+        let mut matrix = &mut self.transform.matrix;
+        let rotation = rotation.to_radians();
+        let cos_x = f32::cos(rotation);
+        let sin_x = f32::sin(rotation);
+        self.scale_x = scale_x.into();
+        self.scale_y = scale_y.into();
+        self.rotation = rotation.into();
+        matrix.a = (scale_x * cos_x) as f32;
+        matrix.b = (scale_x * sin_x) as f32;
+        matrix.c = (scale_y * -sin_x) as f32;
+        matrix.d = (scale_y * cos_x) as f32;
+    }
+
+    fn rotation(&mut self) -> f64 {
+        self.cache_scale_rotation();
+        self.rotation
+    }
+    fn set_rotation(&mut self, radians: f64) {
+        self.cache_scale_rotation();
+        self.rotation = radians;
+        let cos_x = f64::cos(radians);
+        let sin_x = f64::sin(radians);
+        let cos_y = f64::cos(radians + self.skew);
+        let sin_y = f64::sin(radians + self.skew);
+        let mut matrix = &mut self.transform.matrix;
+        matrix.a = (self.scale_x * cos_x) as f32;
+        matrix.b = (self.scale_x * sin_x) as f32;
+        matrix.c = (self.scale_y * -sin_y) as f32;
+        matrix.d = (self.scale_y * cos_y) as f32;
+    }
+    fn scale_x(&mut self) -> f64 {
+        self.cache_scale_rotation();
+        self.scale_x
+    }
+    fn set_scale_x(&mut self, value: f64) {
+        self.cache_scale_rotation();
+        self.scale_x = value;
+        let cos = f64::cos(self.rotation);
+        let sin = f64::sin(self.rotation);
+        let mut matrix = &mut self.transform.matrix;
+        matrix.a = (cos * value) as f32;
+        matrix.b = (sin * value) as f32;
+    }
+    fn scale_y(&mut self) -> f64 {
+        self.cache_scale_rotation();
+        self.scale_y
+    }
+    fn set_scale_y(&mut self, value: f64) {
+        self.cache_scale_rotation();
+        self.scale_y = value;
+        let cos = f64::cos(self.rotation + self.skew);
+        let sin = f64::sin(self.rotation + self.skew);
+        let mut matrix = &mut self.transform.matrix;
+        matrix.c = (-sin * value) as f32;
+        matrix.d = (cos * value) as f32;
+    }
+
     fn name(&self) -> &str {
         &self.name
     }
     fn set_name(&mut self, _context: MutationContext<'gc, '_>, name: &str) {
         self.name = name.to_string();
+    }
+    fn alpha(&self) -> f64 {
+        f64::from(self.color_transform().a_mult)
+    }
+    fn set_alpha(&mut self, value: f64) {
+        self.color_transform_mut().a_mult = value as f32
     }
     fn clip_depth(&self) -> Depth {
         self.clip_depth
@@ -156,10 +295,31 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.next_sibling = node;
     }
     fn removed(&self) -> bool {
-        self.removed
+        self.flags.contains(DisplayObjectFlags::Removed)
     }
-    fn set_removed(&mut self, _context: MutationContext<'gc, '_>, removed: bool) {
-        self.removed = removed;
+    fn set_removed(&mut self, value: bool) {
+        if value {
+            self.flags.insert(DisplayObjectFlags::Removed);
+        } else {
+            self.flags.remove(DisplayObjectFlags::Removed);
+        }
+    }
+
+    /// Whether this display object is visible.
+    /// Invisible objects are not rendered, but otherwise continue to exist normally.
+    /// Returned by the `_visible`/`visible` ActionScript properties.
+    fn visible(&self) -> bool {
+        self.flags.contains(DisplayObjectFlags::Visible)
+    }
+    /// Sets whether this display object will be visible.
+    /// /// Invisible objects are not rendered, but otherwise continue to exist normally.
+    /// Returned by the `_visible`/`visible` ActionScript properties.
+    fn set_visible(&mut self, value: bool) {
+        if value {
+            self.flags.insert(DisplayObjectFlags::Visible);
+        } else {
+            self.flags.remove(DisplayObjectFlags::Visible);
+        }
     }
     fn swf_version(&self) -> u8 {
         self.parent
@@ -184,12 +344,31 @@ impl<'gc> DisplayObjectBase<'gc> {
 pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
     fn id(&self) -> CharacterId;
     fn depth(&self) -> Depth;
-    fn local_bounds(&self) -> BoundingBox {
-        BoundingBox::default()
+
+    /// The untransformed bounding box of this object
+    /// This does not take into account any parents.
+    fn self_bounds(&self) -> BoundingBox {
+        let mut bounds: BoundingBox = Default::default();
+        for child in self.children() {
+            bounds.union(&child.local_bounds());
+        }
+        bounds
     }
 
+    /// The local bounding box of this object in its parent's coordinate system.
+    fn local_bounds(&self) -> BoundingBox {
+        self.self_bounds().transform(&*self.matrix())
+    }
+
+    /// The world bounding box of this object, relative to the stage.
     fn world_bounds(&self) -> BoundingBox {
-        BoundingBox::default()
+        let mut bounds = self.local_bounds();
+        let mut node = self.parent();
+        while let Some(display_object) = node {
+            bounds = bounds.transform(&*display_object.matrix());
+            node = display_object.parent();
+        }
+        bounds
     }
     fn place_frame(&self) -> u16;
     fn set_place_frame(&mut self, context: MutationContext<'gc, '_>, frame: u16);
@@ -199,11 +378,147 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
     fn matrix_mut(&mut self, context: MutationContext<'gc, '_>) -> RefMut<Matrix>;
     fn set_matrix(&mut self, context: MutationContext<'gc, '_>, matrix: &Matrix);
     fn color_transform(&self) -> Ref<ColorTransform>;
+    fn color_transform_mut(&self, context: MutationContext<'gc, '_>) -> RefMut<ColorTransform>;
     fn set_color_transform(
         &mut self,
         context: MutationContext<'gc, '_>,
         color_transform: &ColorTransform,
     );
+
+    /// The `x` position in pixels of this display object in local space.
+    /// Returned by the `_x`/`x` ActionScript properties.
+    fn x(&self) -> f64;
+
+    /// Sets the `x` position in pixels of this display object in local space.
+    /// Set by the `_x`/`x` ActionScript properties.
+    fn set_x(&mut self, gc_context: MutationContext<'gc, '_>, value: f64);
+
+    /// The `y` position in pixels of this display object in local space.
+    /// Returned by the `_y`/`y` ActionScript properties.
+    fn y(&self) -> f64;
+
+    /// Sets the `y` position in pixels of this display object in local space.
+    /// Set by the `_y`/`y` ActionScript properties.
+    fn set_y(&mut self, gc_context: MutationContext<'gc, '_>, value: f64);
+
+    /// The rotation in radians this display object in local space.
+    /// Returned by the `_rotation`/`rotation` ActionScript properties.
+    /// Note that the ActionScript properties return the angle in degrees;
+    /// the conversion to degrees is done in the AVM.
+    fn rotation(&mut self, gc_context: MutationContext<'gc, '_>) -> f64;
+
+    /// Sets the rotation in radians this display object in local space.
+    /// Set by the `_rotation`/`rotation` ActionScript properties.
+    /// Note that the ActionScript properties set the angle in degrees;
+    /// the conversion to radians is done in the AVM.
+    fn set_rotation(&mut self, gc_context: MutationContext<'gc, '_>, radians: f64);
+
+    /// The X axis scale for this display object in local space.
+    /// The normal scale is 1.
+    /// Returned by the `_xscale`/`scaleX` ActionScript properties.
+    fn scale_x(&mut self, gc_context: MutationContext<'gc, '_>) -> f64;
+
+    /// Sets the scale of the X axis for this display object in local space.
+    /// The normal scale is 1.
+    /// Set by the `_xscale`/`scaleX` ActionScript properties.
+    fn set_scale_x(&mut self, gc_context: MutationContext<'gc, '_>, value: f64);
+
+    /// The Y axis scale for this display object in local space.
+    /// The normal scale is 1.
+    /// Returned by the `_yscale`/`scaleY` ActionScript properties.
+    fn scale_y(&mut self, gc_context: MutationContext<'gc, '_>) -> f64;
+
+    /// Sets the Y axis scale for this display object in local space.
+    /// The normal scale is 1.
+    /// Returned by the `_yscale`/`scaleY` ActionScript properties.
+    fn set_scale_y(&mut self, gc_context: MutationContext<'gc, '_>, value: f64);
+
+    /// Sets the pixel width of this display object in local space.
+    /// The width is based on the AABB of the object.
+    /// Returned by the ActionScript `_width`/`width` properties.
+    fn width(&self) -> f64 {
+        let bounds = self.local_bounds();
+        (bounds.x_max - bounds.x_min).to_pixels()
+    }
+
+    /// Sets the pixel width of this display object in local space.
+    /// The width is based on the AABB of the object.
+    /// Set by the ActionScript `_width`/`width` properties.
+    /// This does odd things on rotated clips to match the behavior of Flash.
+    fn set_width(&mut self, gc_context: MutationContext<'gc, '_>, value: f64) {
+        let object_bounds = self.self_bounds();
+        let object_width = (object_bounds.x_max - object_bounds.x_min).to_pixels();
+        let object_height = (object_bounds.y_max - object_bounds.y_min).to_pixels();
+        let aspect_ratio = object_height / object_width;
+
+        let (target_scale_x, target_scale_y) = if object_width != 0.0 {
+            (value / object_width, value / object_height)
+        } else {
+            (0.0, 0.0)
+        };
+
+        // No idea about the derivation of this -- figured it out via lots of trial and error.
+        // It has to do with the length of the sides A, B of an AABB enclosing the object's OBB with sides a, b:
+        // A = sin(t) * a + cos(t) * b
+        // B = cos(t) * a + sin(t) * b
+        let prev_scale_x = self.scale_x(gc_context);
+        let prev_scale_y = self.scale_y(gc_context);
+        let rotation = self.rotation(gc_context);
+        let cos = f64::abs(f64::cos(rotation));
+        let sin = f64::abs(f64::sin(rotation));
+        let new_scale_x = aspect_ratio * (cos * target_scale_x + sin * target_scale_y)
+            / ((cos + aspect_ratio * sin) * (aspect_ratio * cos + sin));
+        let new_scale_y =
+            (sin * prev_scale_x + aspect_ratio * cos * prev_scale_y) / (aspect_ratio * cos + sin);
+        self.set_scale_x(gc_context, new_scale_x);
+        self.set_scale_y(gc_context, new_scale_y);
+    }
+    /// Gets the pixel height of the AABB containing this display object in local space.
+    /// Returned by the ActionScript `_height`/`height` properties.
+    fn height(&self) -> f64 {
+        let bounds = self.local_bounds();
+        (bounds.y_max - bounds.y_min).to_pixels()
+    }
+    /// Sets the pixel height of this display object in local space.
+    /// Set by the ActionScript `_height`/`height` properties.
+    /// This does odd things on rotated clips to match the behavior of Flash.
+    fn set_height(&mut self, gc_context: MutationContext<'gc, '_>, value: f64) {
+        let object_bounds = self.self_bounds();
+        let object_width = (object_bounds.x_max - object_bounds.x_min).to_pixels();
+        let object_height = (object_bounds.y_max - object_bounds.y_min).to_pixels();
+        let aspect_ratio = object_width / object_height;
+
+        let (target_scale_x, target_scale_y) = if object_height != 0.0 {
+            (value / object_width, value / object_height)
+        } else {
+            (0.0, 0.0)
+        };
+
+        // No idea about the derivation of this -- figured it out via lots of trial and error.
+        // It has to do with the length of the sides A, B of an AABB enclosing the object's OBB with sides a, b:
+        // A = sin(t) * a + cos(t) * b
+        // B = cos(t) * a + sin(t) * b
+        let prev_scale_x = self.scale_x(gc_context);
+        let prev_scale_y = self.scale_y(gc_context);
+        let rotation = self.rotation(gc_context);
+        let cos = f64::abs(f64::cos(rotation));
+        let sin = f64::abs(f64::sin(rotation));
+        let new_scale_x =
+            (aspect_ratio * cos * prev_scale_x + sin * prev_scale_y) / (aspect_ratio * cos + sin);
+        let new_scale_y = aspect_ratio * (sin * target_scale_x + cos * target_scale_y)
+            / ((cos + aspect_ratio * sin) * (aspect_ratio * cos + sin));
+        self.set_scale_x(gc_context, new_scale_x);
+        self.set_scale_y(gc_context, new_scale_y);
+    }
+    /// The opacity of this display object.
+    /// 1 is fully opaque.
+    /// Returned by the `_alpha`/`alpha` ActionScript properties.
+    fn alpha(&self) -> f64;
+
+    /// Sets the opacity of this display object.
+    /// 1 is fully opaque.
+    /// Set by the `_alpha`/`alpha` ActionScript properties.
+    fn set_alpha(&self, gc_context: MutationContext<'gc, '_>, value: f64);
     fn name(&self) -> Ref<str>;
     fn set_name(&mut self, context: MutationContext<'gc, '_>, name: &str);
     /// Returns the dot-syntax path to this display object, e.g. `_level0.foo.clip`
@@ -252,7 +567,9 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
         self.children().find(|child| &*child.name() == name)
     }
     fn removed(&self) -> bool;
-    fn set_removed(&mut self, context: MutationContext<'gc, '_>, removed: bool);
+    fn set_removed(&mut self, context: MutationContext<'gc, '_>, value: bool);
+    fn visible(&self) -> bool;
+    fn set_visible(&mut self, context: MutationContext<'gc, '_>, value: bool);
     fn run_frame(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
     fn render(&self, _context: &mut RenderContext<'_, 'gc>) {}
 
@@ -373,9 +690,48 @@ macro_rules! impl_display_object {
         fn color_transform(&self) -> std::cell::Ref<crate::color_transform::ColorTransform> {
             std::cell::Ref::map(self.0.read(), |o| o.$field.color_transform())
         }
+        fn color_transform_mut(&self, context: gc_arena::MutationContext<'gc, '_>) -> std::cell::RefMut<crate::color_transform::ColorTransform> {
+            std::cell::RefMut::map(self.0.write(context), |o| o.$field.color_transform_mut())
+        }
         fn set_color_transform(&mut self,
             context: gc_arena::MutationContext<'gc, '_>, color_transform: &crate::color_transform::ColorTransform) {
             self.0.write(context).$field.set_color_transform(context, color_transform)
+        }
+        fn x(&self) -> f64 {
+            self.0.read().$field.x()
+        }
+        fn set_x(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>, value: f64) {
+            self.0.write(gc_context).$field.set_x(value)
+        }
+        fn y(&self) -> f64 {
+            self.0.read().$field.y()
+        }
+        fn set_y(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>, value: f64) {
+            self.0.write(gc_context).$field.set_y(value)
+        }
+        fn rotation(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>) -> f64 {
+            self.0.write(gc_context).$field.rotation()
+        }
+        fn set_rotation(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>, radians: f64) {
+            self.0.write(gc_context).$field.set_rotation(radians)
+        }
+        fn scale_x(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>) -> f64 {
+            self.0.write(gc_context).$field.scale_x()
+        }
+        fn set_scale_x(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>, value: f64) {
+            self.0.write(gc_context).$field.set_scale_x(value)
+        }
+        fn scale_y(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>) -> f64 {
+            self.0.write(gc_context).$field.scale_y()
+        }
+        fn set_scale_y(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>, value: f64) {
+            self.0.write(gc_context).$field.set_scale_y(value)
+        }
+        fn alpha(&self) -> f64 {
+            self.0.read().$field.alpha()
+        }
+        fn set_alpha(&self, gc_context: gc_arena::MutationContext<'gc, '_>, value: f64) {
+            self.0.write(gc_context).$field.set_alpha(value)
         }
         fn name(&self) -> std::cell::Ref<str> {
             std::cell::Ref::map(self.0.read(), |o| o.$field.name())
@@ -424,7 +780,14 @@ macro_rules! impl_display_object {
         }
         fn set_removed(&mut self,
             context: gc_arena::MutationContext<'gc, '_>, value: bool) {
-            self.0.write(context).$field.set_removed(context, value)
+            self.0.write(context).$field.set_removed(value)
+        }
+        fn visible(&self) -> bool {
+            self.0.read().$field.visible()
+        }
+        fn set_visible(&mut self,
+            context: gc_arena::MutationContext<'gc, '_>, value: bool) {
+            self.0.write(context).$field.set_visible(value);
         }
         fn swf_version(&self) -> u8 {
             self.0.read().$field.swf_version()
@@ -462,7 +825,7 @@ pub fn render_children<'gc>(
             context.renderer.push_mask();
             child.render(context);
             context.renderer.activate_mask();
-        } else {
+        } else if child.visible() {
             // Normal child.
             child.render(context);
         }
@@ -478,6 +841,21 @@ impl<'gc> DisplayObject<'gc> {
     pub fn ptr_eq(a: DisplayObject<'gc>, b: DisplayObject<'gc>) -> bool {
         a.as_ptr() == b.as_ptr()
     }
+}
+
+/// Bit flags used by `DisplayObject`.
+#[derive(Collect, EnumSetType, Debug)]
+#[collect(no_drop)]
+enum DisplayObjectFlags {
+    /// Whether this object has been removed from the display list.
+    /// Necessary in AVM1 to throw away queued actions from removed movie clips.
+    Removed,
+
+    /// If this object is visible (`_visible` property).
+    Visible,
+
+    /// Whether the `_xscale`, `_yscale` and `_rotation` of the object have been calculated and cached.
+    ScaleRotationCached,
 }
 
 pub struct ChildIter<'gc> {

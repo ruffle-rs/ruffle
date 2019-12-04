@@ -55,6 +55,18 @@ impl<'gc> From<u8> for Value<'gc> {
     }
 }
 
+impl<'gc> From<i16> for Value<'gc> {
+    fn from(value: i16) -> Self {
+        Value::Number(f64::from(value))
+    }
+}
+
+impl<'gc> From<u16> for Value<'gc> {
+    fn from(value: u16) -> Self {
+        Value::Number(f64::from(value))
+    }
+}
+
 impl<'gc> From<i32> for Value<'gc> {
     fn from(value: i32) -> Self {
         Value::Number(f64::from(value))

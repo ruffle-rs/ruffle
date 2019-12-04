@@ -7,7 +7,6 @@ use crate::display_object::{
     Bitmap, Button, DisplayObjectBase, EditText, Graphic, MorphShapeStatic, TDisplayObject, Text,
 };
 use crate::font::Font;
-use crate::matrix::Matrix;
 use crate::prelude::*;
 use crate::tag_utils::{self, DecodeResult, SwfStream};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
@@ -139,69 +138,12 @@ impl<'gc> MovieClip<'gc> {
             .goto_frame(self.into(), context, frame, stop)
     }
 
-    pub fn x(self) -> f32 {
-        self.matrix().tx / Twips::TWIPS_PER_PIXEL as f32
-    }
-
-    pub fn set_x(mut self, gc_context: MutationContext<'gc, '_>, val: f32) {
-        self.matrix_mut(gc_context).tx = val * Twips::TWIPS_PER_PIXEL as f32;
-    }
-
-    pub fn y(self) -> f32 {
-        self.matrix().ty / Twips::TWIPS_PER_PIXEL as f32
-    }
-
-    pub fn set_y(mut self, gc_context: MutationContext<'gc, '_>, val: f32) {
-        self.matrix_mut(gc_context).ty = val * Twips::TWIPS_PER_PIXEL as f32;
-    }
-
-    pub fn x_scale(self) -> f32 {
-        self.matrix().a * 100.0
-    }
-
-    pub fn set_x_scale(mut self, gc_context: MutationContext<'gc, '_>, val: f32) {
-        self.matrix_mut(gc_context).a = val / 100.0;
-    }
-
-    pub fn y_scale(self) -> f32 {
-        self.matrix().d * 100.0
-    }
-
-    pub fn set_y_scale(mut self, gc_context: MutationContext<'gc, '_>, val: f32) {
-        self.matrix_mut(gc_context).d = val / 100.0;
-    }
-
     pub fn current_frame(self) -> FrameNumber {
         self.0.read().current_frame
     }
 
     pub fn total_frames(self) -> FrameNumber {
         self.0.read().static_data.total_frames
-    }
-
-    pub fn rotation(self) -> f32 {
-        // TODO: Cache the user-friendly transform values like rotation.
-        let matrix = self.matrix();
-        f32::atan2(matrix.b, matrix.a).to_degrees()
-    }
-
-    pub fn set_rotation(mut self, gc_context: MutationContext<'gc, '_>, degrees: f32) {
-        // TODO: Use cached user-friendly transform values.
-        let angle = degrees.to_radians();
-        let cos = f32::cos(angle);
-        let sin = f32::sin(angle);
-        let scale_x = self.x_scale() / 100.0;
-        let scale_y = self.y_scale() / 100.0;
-
-        let mut matrix = self.matrix_mut(gc_context);
-        *matrix = Matrix {
-            a: scale_x * cos,
-            b: scale_x * sin,
-            c: scale_y * cos,
-            d: -scale_y * sin,
-            tx: matrix.tx,
-            ty: matrix.ty,
-        };
     }
 
     pub fn frames_loaded(self) -> FrameNumber {

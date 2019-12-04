@@ -2,13 +2,13 @@
 //!
 //! Trace output can be compared with correct output from the official Flash Payer.
 
+use approx::abs_diff_eq;
 use log::{Metadata, Record};
 use ruffle_core::backend::{
     audio::NullAudioBackend, navigator::NullNavigatorBackend, render::NullRenderer,
 };
 use ruffle_core::Player;
 use std::cell::RefCell;
-
 type Error = Box<dyn std::error::Error>;
 
 // This macro generates test cases for a given list of SWFs.
@@ -106,6 +106,25 @@ fn test_stage_object_enumerate() -> Result<(), Error> {
     expected.sort();
 
     assert_eq!(actual, expected, "actual == expected");
+    Ok(())
+}
+
+#[test]
+fn test_stage_object_properties() -> Result<(), Error> {
+    let trace_log = run_swf("tests/swfs/avm1/stage_object_properties/test.swf", 1)?;
+    let actual: Vec<f64> = trace_log
+        .lines()
+        .map(|s| str::parse::<f64>(s).unwrap())
+        .collect();
+    let expected: Vec<f64> =
+        std::fs::read_to_string("tests/swfs/avm1/stage_object_properties/output.txt")?
+            .lines()
+            .map(|s| str::parse::<f64>(s).unwrap())
+            .collect();
+
+    for (actual, expected) in actual.into_iter().zip(expected.into_iter()) {
+        abs_diff_eq!(actual, expected, epsilon = 0.0001);
+    }
     Ok(())
 }
 

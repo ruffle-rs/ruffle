@@ -60,6 +60,9 @@ pub struct Avm1<'gc> {
     /// System builtins that we use internally to construct new objects.
     prototypes: globals::SystemPrototypes<'gc>,
 
+    /// DisplayObject property map.
+    display_properties: GcCell<'gc, stage_object::DisplayPropertyMap<'gc>>,
+
     /// All activation records for the current execution context.
     stack_frames: Vec<GcCell<'gc, Activation<'gc>>>,
 
@@ -76,6 +79,7 @@ unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
         self.globals.trace(cc);
         self.prototypes.trace(cc);
+        self.display_properties.trace(cc);
         self.stack_frames.trace(cc);
         self.stack.trace(cc);
 
@@ -96,6 +100,7 @@ impl<'gc> Avm1<'gc> {
             constant_pool: vec![],
             globals,
             prototypes,
+            display_properties: stage_object::DisplayPropertyMap::new(gc_context),
             stack_frames: vec![],
             stack: vec![],
             registers: [
@@ -1034,30 +1039,12 @@ impl<'gc> Avm1<'gc> {
         let path = clip_path.as_string()?;
         let ret = if let Some(base_clip) = context.target_clip {
             if let Some(clip) = Avm1::resolve_slash_path(base_clip, context.root, path) {
-                if let Some(clip) = clip.as_movie_clip() {
-                    match prop_index {
-                        0 => f64::from(clip.x()).into(),
-                        1 => f64::from(clip.y()).into(),
-                        2 => f64::from(clip.x_scale()).into(),
-                        3 => f64::from(clip.y_scale()).into(),
-                        4 => f64::from(clip.current_frame()).into(),
-                        5 => f64::from(clip.total_frames()).into(),
-                        10 => f64::from(clip.rotation()).into(),
-                        11 => {
-                            // _target
-                            // TODO: This string should be built dynamically
-                            // by traversing through parents. But this requires
-                            // _name to work accurately.
-                            context.target_path.clone()
-                        }
-                        12 => f64::from(clip.frames_loaded()).into(),
-                        _ => {
-                            log::error!("GetProperty: Unimplemented property index {}", prop_index);
-                            Value::Undefined
-                        }
-                    }
+                let display_properties = self.display_properties;
+                let props = display_properties.write(context.gc_context);
+                if let Some(property) = props.get_by_index(prop_index) {
+                    property.get(self, context, clip)?
                 } else {
-                    log::warn!("GetProperty: Target is not a movieclip");
+                    log::warn!("GetProperty: Invalid property index {}", prop_index);
                     Value::Undefined
                 }
             } else {
@@ -1632,24 +1619,20 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_set_property(&mut self, context: &mut UpdateContext) -> Result<(), Error> {
-        let value = self.pop()?.into_number_v1() as f32;
+    fn action_set_property(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let value = self.pop()?;
         let prop_index = self.pop()?.as_u32()? as usize;
         let clip_path = self.pop()?;
         let path = clip_path.as_string()?;
         if let Some(base_clip) = context.target_clip {
             if let Some(clip) = Avm1::resolve_slash_path(base_clip, context.root, path) {
-                if let Some(clip) = clip.as_movie_clip() {
-                    match prop_index {
-                        0 => clip.set_x(context.gc_context, value),
-                        1 => clip.set_y(context.gc_context, value),
-                        2 => clip.set_x_scale(context.gc_context, value),
-                        3 => clip.set_y_scale(context.gc_context, value),
-                        10 => clip.set_rotation(context.gc_context, value),
-                        _ => {
-                            log::error!("SetProperty: Unimplemented property index {}", prop_index)
-                        }
-                    }
+                let display_properties = self.display_properties;
+                let props = display_properties.read();
+                if let Some(property) = props.get_by_index(prop_index) {
+                    property.set(self, context, clip, value)?;
                 }
             } else {
                 log::warn!("SetProperty: Invalid target {}", path);

@@ -69,25 +69,14 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         self.0.read().static_data.id
     }
 
-    fn local_bounds(&self) -> BoundingBox {
+    fn self_bounds(&self) -> BoundingBox {
         BoundingBox {
             x_min: Twips::new(0),
             y_min: Twips::new(0),
-            x_max: Twips::new(self.width()),
-            y_max: Twips::new(self.height()),
+            x_max: Twips::new(Bitmap::width(*self)),
+            y_max: Twips::new(Bitmap::height(*self)),
             valid: true,
         }
-    }
-
-    fn world_bounds(&self) -> BoundingBox {
-        // TODO: Use dirty flags and cache this.
-        let mut bounds = self.local_bounds().transform(&*self.matrix());
-        let mut node = self.parent();
-        while let Some(display_object) = node {
-            bounds = bounds.transform(&*display_object.matrix());
-            node = display_object.parent();
-        }
-        bounds
     }
 
     fn run_frame(&mut self, _context: &mut UpdateContext) {
