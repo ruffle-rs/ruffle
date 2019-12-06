@@ -6,15 +6,21 @@ use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, ScriptObject, UpdateContext, Value};
 use crate::display_object::DisplayNode;
 use enumset::EnumSet;
-use gc_arena::{Collect, GcCell};
+use gc_arena::{Collect, MutationContext};
+use ruffle_macros::enum_trait_object;
 use std::collections::HashSet;
 use std::fmt::Debug;
 
-pub type ObjectCell<'gc> = GcCell<'gc, Box<dyn Object<'gc> + 'gc>>;
-
 /// Represents an object that can be directly interacted with by the AVM
 /// runtime.
-pub trait Object<'gc>: 'gc + Collect + Debug {
+#[enum_trait_object(
+    #[derive(Clone, Collect, Debug, Copy)]
+    #[collect(no_drop)]
+    pub enum Object<'gc> {
+        ScriptObject(ScriptObject<'gc>),
+    }
+)]
+pub trait TObject<'gc>: 'gc + Collect + Debug {
     /// Retrieve a named property from this object exclusively.
     ///
     /// This function takes a redundant `this` parameter which should be
@@ -28,7 +34,7 @@ pub trait Object<'gc>: 'gc + Collect + Debug {
         name: &str,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: ObjectCell<'gc>,
+        this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error>;
 
     /// Retrieve a named property from the object, or it's prototype.
@@ -37,7 +43,7 @@ pub trait Object<'gc>: 'gc + Collect + Debug {
         name: &str,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: ObjectCell<'gc>,
+        this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error> {
         if self.has_own_property(name) {
             self.get_local(name, avm, context, this)
@@ -50,11 +56,11 @@ pub trait Object<'gc>: 'gc + Collect + Debug {
                     return Err("Encountered an excessively deep prototype chain.".into());
                 }
 
-                if proto.unwrap().read().has_own_property(name) {
-                    return proto.unwrap().read().get_local(name, avm, context, this);
+                if proto.unwrap().has_own_property(name) {
+                    return proto.unwrap().get_local(name, avm, context, this);
                 }
 
-                proto = proto.unwrap().read().proto();
+                proto = proto.unwrap().proto();
                 depth += 1;
             }
 
@@ -68,12 +74,12 @@ pub trait Object<'gc>: 'gc + Collect + Debug {
     /// the object's own `GcCell`, so that it can pass it to user-defined
     /// overrides that may need to interact with the underlying object.
     fn set(
-        &mut self,
+        &self,
         name: &str,
         value: Value<'gc>,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: ObjectCell<'gc>,
+        this: Object<'gc>,
     ) -> Result<(), Error>;
 
     /// Call the underlying object.
@@ -85,7 +91,7 @@ pub trait Object<'gc>: 'gc + Collect + Debug {
         &self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: ObjectCell<'gc>,
+        this: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error>;
 
@@ -104,21 +110,21 @@ pub trait Object<'gc>: 'gc + Collect + Debug {
         &self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: ObjectCell<'gc>,
+        this: Object<'gc>,
         args: &[Value<'gc>],
-    ) -> Result<ObjectCell<'gc>, Error>;
+    ) -> Result<Object<'gc>, Error>;
 
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.
-    fn delete(&mut self, name: &str) -> bool;
+    fn delete(&self, gc_context: MutationContext<'gc, '_>, name: &str) -> bool;
 
     /// Retrieve the `__proto__` of a given object.
     ///
     /// The proto is another object used to resolve methods across a class of
     /// multiple objects. It should also be accessible as `__proto__` from
     /// `get`.
-    fn proto(&self) -> Option<ObjectCell<'gc>>;
+    fn proto(&self) -> Option<Object<'gc>>;
 
     /// Define a value on an object.
     ///
@@ -131,7 +137,13 @@ pub trait Object<'gc>: 'gc + Collect + Debug {
     /// It is not guaranteed that all objects accept value definitions,
     /// especially if a property name conflicts with a built-in property, such
     /// as `__proto__`.
-    fn define_value(&mut self, name: &str, value: Value<'gc>, attributes: EnumSet<Attribute>);
+    fn define_value(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        name: &str,
+        value: Value<'gc>,
+        attributes: EnumSet<Attribute>,
+    );
 
     /// Define a virtual property onto a given object.
     ///
@@ -144,7 +156,8 @@ pub trait Object<'gc>: 'gc + Collect + Debug {
     /// especially if a property name conflicts with a built-in property, such
     /// as `__proto__`.
     fn add_property(
-        &mut self,
+        &self,
+        gc_context: MutationContext<'gc, '_>,
         name: &str,
         get: Executable<'gc>,
         set: Option<Executable<'gc>>,
@@ -184,4 +197,14 @@ pub trait Object<'gc>: 'gc + Collect + Debug {
 
     /// Get the underlying executable for this object, if it exists.
     fn as_executable(&self) -> Option<Executable<'gc>>;
+
+    fn as_ptr(&self) -> *const ObjectPtr;
+}
+
+pub enum ObjectPtr {}
+
+impl<'gc> Object<'gc> {
+    pub fn ptr_eq(a: Object<'gc>, b: Object<'gc>) -> bool {
+        a.as_ptr() == b.as_ptr()
+    }
 }

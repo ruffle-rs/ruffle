@@ -1,9 +1,8 @@
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, ObjectCell, UpdateContext};
-use gc_arena::GcCell;
+use crate::avm1::{Avm1, Error, Object, TObject, UpdateContext};
 use std::f64::NAN;
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum Value<'gc> {
     Undefined,
@@ -11,7 +10,7 @@ pub enum Value<'gc> {
     Bool(bool),
     Number(f64),
     String(String),
-    Object(ObjectCell<'gc>),
+    Object(Object<'gc>),
 }
 
 impl<'gc> From<String> for Value<'gc> {
@@ -32,8 +31,8 @@ impl<'gc> From<bool> for Value<'gc> {
     }
 }
 
-impl<'gc> From<ObjectCell<'gc>> for Value<'gc> {
-    fn from(object: ObjectCell<'gc>) -> Self {
+impl<'gc> From<Object<'gc>> for Value<'gc> {
+    fn from(object: Object<'gc>) -> Self {
         Value::Object(object)
     }
 }
@@ -108,7 +107,7 @@ impl PartialEq for Value<'_> {
                 _ => false,
             },
             Value::Object(value) => match other {
-                Value::Object(other_value) => value.as_ptr() == other_value.as_ptr(),
+                Value::Object(other_value) => Object::ptr_eq(*value, *other_value),
                 _ => false,
             },
         }
@@ -213,7 +212,6 @@ impl<'gc> Value<'gc> {
         Ok(match self {
             Value::Object(object) => {
                 let value_of_impl = object
-                    .read()
                     .get("valueOf", avm, context, *object)?
                     .resolve(avm, context)?;
 
@@ -294,12 +292,12 @@ impl<'gc> Value<'gc> {
             }
             (Value::String(a), Value::String(b)) => Ok((a == b).into()),
             (Value::Bool(a), Value::Bool(b)) => Ok((a == b).into()),
-            (Value::Object(a), Value::Object(b)) => Ok(GcCell::ptr_eq(*a, *b).into()),
+            (Value::Object(a), Value::Object(b)) => Ok(Object::ptr_eq(*a, *b).into()),
             (Value::Object(a), Value::Null) | (Value::Object(a), Value::Undefined) => {
-                Ok((a.as_ptr() == avm.global_object_cell().as_ptr()).into())
+                Ok(Object::ptr_eq(*a, avm.global_object_cell()).into())
             }
             (Value::Null, Value::Object(b)) | (Value::Undefined, Value::Object(b)) => {
-                Ok((b.as_ptr() == avm.global_object_cell().as_ptr()).into())
+                Ok(Object::ptr_eq(*b, avm.global_object_cell()).into())
             }
             (Value::Undefined, Value::Null) => Ok(true.into()),
             (Value::Null, Value::Undefined) => Ok(true.into()),
@@ -376,7 +374,7 @@ impl<'gc> Value<'gc> {
             Value::Bool(v) => v.to_string(),
             Value::Number(v) => v.to_string(), // TODO(Herschel): Rounding for int?
             Value::String(v) => v,
-            Value::Object(object) => object.read().as_string(),
+            Value::Object(object) => object.as_string(),
         }
     }
 
@@ -389,7 +387,6 @@ impl<'gc> Value<'gc> {
         Ok(match self {
             Value::Object(object) => {
                 let to_string_impl = object
-                    .read()
                     .get("toString", avm, context, object)?
                     .resolve(avm, context)?;
                 let fake_args = Vec::new();
@@ -430,7 +427,7 @@ impl<'gc> Value<'gc> {
                 Value::Number(_) => "number",
                 Value::Bool(_) => "boolean",
                 Value::String(_) => "string",
-                Value::Object(object) => object.read().type_of(),
+                Value::Object(object) => object.type_of(),
             }
             .to_string(),
         )
@@ -448,6 +445,7 @@ impl<'gc> Value<'gc> {
         self.as_f64().map(|n| n as i64)
     }
 
+    #[allow(dead_code)]
     pub fn as_usize(&self) -> Result<usize, Error> {
         self.as_f64().map(|n| n as usize)
     }
@@ -466,9 +464,9 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn as_object(&self) -> Result<ObjectCell<'gc>, Error> {
+    pub fn as_object(&self) -> Result<Object<'gc>, Error> {
         if let Value::Object(object) = self {
-            Ok(object.to_owned())
+            Ok(*object)
         } else {
             Err(format!("Expected Object, found {:?}", self).into())
         }
@@ -478,11 +476,11 @@ impl<'gc> Value<'gc> {
         &self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: ObjectCell<'gc>,
+        this: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
         if let Value::Object(object) = self {
-            object.read().call(avm, context, this, args)
+            object.call(avm, context, this, args)
         } else {
             Ok(Value::Undefined.into())
         }
@@ -493,14 +491,13 @@ impl<'gc> Value<'gc> {
 mod test {
     use crate::avm1::function::Executable;
     use crate::avm1::globals::create_globals;
-    use crate::avm1::object::ObjectCell;
+    use crate::avm1::object::{Object, TObject};
     use crate::avm1::return_value::ReturnValue;
     use crate::avm1::script_object::ScriptObject;
     use crate::avm1::test_utils::with_avm;
     use crate::avm1::{Avm1, Error, Value};
     use crate::context::UpdateContext;
     use enumset::EnumSet;
-    use gc_arena::GcCell;
     use std::f64::{INFINITY, NAN, NEG_INFINITY};
 
     #[test]
@@ -524,7 +521,7 @@ mod test {
             fn value_of_impl<'gc>(
                 _: &mut Avm1<'gc>,
                 _: &mut UpdateContext<'_, 'gc, '_>,
-                _: ObjectCell<'gc>,
+                _: Object<'gc>,
                 _: &[Value<'gc>],
             ) -> Result<ReturnValue<'gc>, Error> {
                 Ok(5.0.into())
@@ -538,8 +535,12 @@ mod test {
             );
 
             let o = ScriptObject::object_cell(context.gc_context, Some(protos.object));
-            o.write(context.gc_context)
-                .define_value("valueOf", valueof.into(), EnumSet::empty());
+            o.define_value(
+                context.gc_context,
+                "valueOf",
+                valueof.into(),
+                EnumSet::empty(),
+            );
 
             assert_eq!(
                 Value::Object(o).to_primitive_num(avm, context).unwrap(),
@@ -562,10 +563,7 @@ mod test {
             assert_eq!(f.as_number(avm, context).unwrap(), 0.0);
             assert!(n.as_number(avm, context).unwrap().is_nan());
 
-            let bo = Value::Object(GcCell::allocate(
-                context.gc_context,
-                Box::new(ScriptObject::bare_object()),
-            ));
+            let bo = Value::Object(ScriptObject::bare_object(context.gc_context).into());
 
             assert!(bo.as_number(avm, context).unwrap().is_nan());
         });
@@ -585,10 +583,7 @@ mod test {
             assert_eq!(f.as_number(avm, context).unwrap(), 0.0);
             assert_eq!(n.as_number(avm, context).unwrap(), 0.0);
 
-            let bo = Value::Object(GcCell::allocate(
-                context.gc_context,
-                Box::new(ScriptObject::bare_object()),
-            ));
+            let bo = Value::Object(ScriptObject::bare_object(context.gc_context).into());
 
             assert_eq!(bo.as_number(avm, context).unwrap(), 0.0);
         });

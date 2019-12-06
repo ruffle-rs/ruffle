@@ -1,5 +1,5 @@
 use crate::avm1::activation::Activation;
-use crate::avm1::{Avm1, ObjectCell, UpdateContext, Value};
+use crate::avm1::{Avm1, Object, UpdateContext, Value};
 use crate::backend::audio::NullAudioBackend;
 use crate::backend::navigator::NullNavigatorBackend;
 use crate::backend::render::NullRenderer;
@@ -13,11 +13,11 @@ use std::sync::Arc;
 
 pub fn with_avm<F, R>(swf_version: u8, test: F) -> R
 where
-    F: for<'a, 'gc> FnOnce(&mut Avm1<'gc>, &mut UpdateContext<'a, 'gc, '_>, ObjectCell<'gc>) -> R,
+    F: for<'a, 'gc> FnOnce(&mut Avm1<'gc>, &mut UpdateContext<'a, 'gc, '_>, Object<'gc>) -> R,
 {
     fn in_the_arena<'gc, F, R>(swf_version: u8, test: F, gc_context: MutationContext<'gc, '_>) -> R
     where
-        F: for<'a> FnOnce(&mut Avm1<'gc>, &mut UpdateContext<'a, 'gc, '_>, ObjectCell<'gc>) -> R,
+        F: for<'a> FnOnce(&mut Avm1<'gc>, &mut UpdateContext<'a, 'gc, '_>, Object<'gc>) -> R,
     {
         let mut avm = Avm1::new(gc_context, swf_version);
         let movie_clip: Box<dyn DisplayObject> = Box::new(MovieClip::new(swf_version, gc_context));
@@ -54,7 +54,7 @@ where
             Activation::from_nothing(swf_version, globals, gc_context),
         ));
 
-        let this = root.read().object().as_object().unwrap().to_owned();
+        let this = root.read().object().as_object().unwrap();
 
         test(&mut avm, &mut context, this)
     }
@@ -71,7 +71,7 @@ macro_rules! test_method {
                 for version in &$versions {
                     let _ = with_avm(*version, |avm, context, _root| -> Result<(), Error> {
                         let object = $object(avm, context);
-                        let function = object.read().get($name, avm, context, object)?.unwrap_immediate();
+                        let function = object.get($name, avm, context, object)?.unwrap_immediate();
 
                         $(
                             #[allow(unused_mut)]

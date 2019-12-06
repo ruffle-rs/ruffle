@@ -33,7 +33,7 @@ mod tests;
 
 use activation::Activation;
 pub use globals::SystemPrototypes;
-pub use object::{Object, ObjectCell};
+pub use object::{Object, ObjectPtr, TObject};
 use scope::Scope;
 pub use script_object::ScriptObject;
 pub use value::Value;
@@ -53,7 +53,7 @@ pub struct Avm1<'gc> {
     constant_pool: Vec<String>,
 
     /// The global object.
-    globals: ObjectCell<'gc>,
+    globals: Object<'gc>,
 
     /// System builtins that we use internally to construct new objects.
     prototypes: globals::SystemPrototypes<'gc>,
@@ -116,16 +116,14 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> HashMap<String, String> {
         let mut form_values = HashMap::new();
-        let locals = self
-            .current_stack_frame()
-            .unwrap()
-            .read()
-            .scope()
-            .locals_cell();
-        let keys = locals.read().get_keys();
+        let stack_frame = self.current_stack_frame().unwrap();
+        let stack_frame = stack_frame.read();
+        let scope = stack_frame.scope();
+        let locals = scope.locals();
+        let keys = locals.get_keys();
 
         for k in keys {
-            let v = locals.read().get(&k, self, context, locals);
+            let v = locals.get(&k, self, context, *locals);
 
             //TODO: What happens if an error occurs inside a virtual property?
             form_values.insert(
@@ -159,8 +157,7 @@ impl<'gc> Avm1<'gc> {
             .read()
             .object()
             .as_object()
-            .unwrap()
-            .to_owned();
+            .unwrap();
         let child_scope = GcCell::allocate(
             action_context.gc_context,
             Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
@@ -187,8 +184,7 @@ impl<'gc> Avm1<'gc> {
             .read()
             .object()
             .as_object()
-            .unwrap()
-            .to_owned();
+            .unwrap();
         let child_scope = GcCell::allocate(
             action_context.gc_context,
             Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
@@ -743,7 +739,7 @@ impl<'gc> Avm1<'gc> {
             .read()
             .resolve(fn_name.as_string()?, self, context)?
             .resolve(self, context)?;
-        let this = context.active_clip.read().object().as_object()?.to_owned();
+        let this = context.active_clip.read().object().as_object()?;
         target_fn.call(self, context, this, &args)?.push(self);
 
         Ok(())
@@ -763,19 +759,18 @@ impl<'gc> Avm1<'gc> {
 
         match method_name {
             Value::Undefined | Value::Null => {
-                let this = context.active_clip.read().object().as_object()?.to_owned();
+                let this = context.active_clip.read().object().as_object()?;
                 object.call(self, context, this, &args)?.push(self);
             }
             Value::String(name) => {
                 if name.is_empty() {
                     object
-                        .call(self, context, object.as_object()?.to_owned(), &args)?
+                        .call(self, context, object.as_object()?, &args)?
                         .push(self);
                 } else {
-                    let target = object.as_object()?.to_owned();
+                    let target = object.as_object()?;
                     let callable = object
                         .as_object()?
-                        .read()
                         .get(&name, self, context, target)?
                         .resolve(self, context)?;
 
@@ -834,13 +829,8 @@ impl<'gc> Avm1<'gc> {
             context.gc_context,
         );
         let func = Avm1Function::from_df1(swf_version, func_data, name, params, scope);
-        let prototype = GcCell::allocate(
-            context.gc_context,
-            Box::new(ScriptObject::object(
-                context.gc_context,
-                Some(self.prototypes.object),
-            )) as Box<dyn Object<'gc>>,
-        );
+        let prototype =
+            ScriptObject::object(context.gc_context, Some(self.prototypes.object)).into();
         let func_obj = ScriptObject::function(
             context.gc_context,
             func,
@@ -877,13 +867,8 @@ impl<'gc> Avm1<'gc> {
             context.gc_context,
         );
         let func = Avm1Function::from_df2(swf_version, func_data, action_func, scope);
-        let prototype = GcCell::allocate(
-            context.gc_context,
-            Box::new(ScriptObject::object(
-                context.gc_context,
-                Some(self.prototypes.object),
-            )) as Box<dyn Object<'gc>>,
-        );
+        let prototype =
+            ScriptObject::object(context.gc_context, Some(self.prototypes.object)).into();
         let func_obj = ScriptObject::function(
             context.gc_context,
             func,
@@ -935,7 +920,7 @@ impl<'gc> Avm1<'gc> {
         let name = name_val.as_string()?;
         let object = self.pop()?.as_object()?;
 
-        let success = object.write(context.gc_context).delete(name);
+        let success = object.delete(context.gc_context, name);
         self.push(success);
 
         Ok(())
@@ -991,7 +976,7 @@ impl<'gc> Avm1<'gc> {
 
         match object {
             Value::Object(ob) => {
-                for k in ob.read().get_keys() {
+                for k in ob.get_keys() {
                     self.push(k);
                 }
             }
@@ -1008,7 +993,7 @@ impl<'gc> Avm1<'gc> {
         let object = self.pop()?.as_object()?;
 
         self.push(Value::Null); // Sentinel that indicates end of enumeration
-        for k in object.read().get_keys() {
+        for k in object.get_keys() {
             self.push(k);
         }
 
@@ -1039,7 +1024,7 @@ impl<'gc> Avm1<'gc> {
         let name_val = self.pop()?;
         let name = name_val.coerce_to_string(self, context)?;
         let object = self.pop()?.as_object()?;
-        object.read().get(&name, self, context, object)?.push(self);
+        object.get(&name, self, context, object)?.push(self);
 
         Ok(())
     }
@@ -1107,7 +1092,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     /// Obtain a reference to `_global`.
-    pub fn global_object_cell(&self) -> ObjectCell<'gc> {
+    pub fn global_object_cell(&self) -> Object<'gc> {
         self.globals
     }
 
@@ -1130,11 +1115,8 @@ impl<'gc> Avm1<'gc> {
             {
                 if let Some(clip) = node.read().as_movie_clip() {
                     let object = clip.object().as_object()?;
-                    if object.read().has_property(var_name) {
-                        object
-                            .read()
-                            .get(var_name, self, context, object)?
-                            .push(self);
+                    if object.has_property(var_name) {
+                        object.get(var_name, self, context, object)?.push(self);
                     } else {
                         self.push(Value::Undefined);
                     }
@@ -1330,7 +1312,7 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let num_props = self.pop()?.as_i64()?;
-        let mut object = ScriptObject::object(context.gc_context, Some(self.prototypes.object));
+        let object = ScriptObject::object(context.gc_context, Some(self.prototypes.object));
         for _ in 0..num_props {
             let value = self.pop()?;
             let name = self.pop()?.into_string();
@@ -1339,10 +1321,7 @@ impl<'gc> Avm1<'gc> {
             object.set(&name, value, self, context, this)?;
         }
 
-        self.push(Value::Object(GcCell::allocate(
-            context.gc_context,
-            Box::new(object),
-        )));
+        self.push(Value::Object(object.into()));
 
         Ok(())
     }
@@ -1356,19 +1335,18 @@ impl<'gc> Avm1<'gc> {
 
         //TODO: Interface detection on SWF7
         let prototype = constr
-            .read()
             .get("prototype", self, context, constr)?
             .resolve(self, context)?
             .as_object()?;
-        let mut proto = obj.read().proto();
+        let mut proto = obj.proto();
 
         while let Some(this_proto) = proto {
-            if GcCell::ptr_eq(this_proto, prototype) {
+            if Object::ptr_eq(this_proto, prototype) {
                 self.push(true);
                 return Ok(());
             }
 
-            proto = this_proto.read().proto();
+            proto = this_proto.proto();
         }
 
         self.push(false);
@@ -1498,21 +1476,18 @@ impl<'gc> Avm1<'gc> {
         }
 
         let constructor = object
-            .read()
-            .get(&method_name.as_string()?, self, context, object.to_owned())?
+            .get(&method_name.as_string()?, self, context, object)?
             .resolve(self, context)?
             .as_object()?;
         let prototype = constructor
-            .read()
             .get("prototype", self, context, constructor)?
             .resolve(self, context)?
             .as_object()?;
 
-        let this = prototype.read().new(self, context, prototype, &args)?;
+        let this = prototype.new(self, context, prototype, &args)?;
 
         //TODO: What happens if you `ActionNewMethod` without a method name?
         constructor
-            .read()
             .call(self, context, this, &args)?
             .resolve(self, context)?;
 
@@ -1539,15 +1514,13 @@ impl<'gc> Avm1<'gc> {
             .resolve(self, context)?
             .as_object()?;
         let prototype = constructor
-            .read()
             .get("prototype", self, context, constructor)?
             .resolve(self, context)?
             .as_object()?;
 
-        let this = prototype.read().new(self, context, prototype, &args)?;
+        let this = prototype.new(self, context, prototype, &args)?;
 
         constructor
-            .read()
             .call(self, context, this, &args)?
             .resolve(self, context)?;
 
@@ -1667,9 +1640,7 @@ impl<'gc> Avm1<'gc> {
         let name = name_val.coerce_to_string(self, context)?;
         let object = self.pop()?.as_object()?;
 
-        object
-            .write(context.gc_context)
-            .set(&name, value, self, context, object)?;
+        object.set(&name, value, self, context, object)?;
         Ok(())
     }
 
@@ -1735,13 +1706,9 @@ impl<'gc> Avm1<'gc> {
                 Self::resolve_slash_path_variable(context.target_clip, context.root, var_path)
             {
                 if let Some(clip) = node.write(context.gc_context).as_movie_clip_mut() {
-                    clip.object().as_object()?.write(context.gc_context).set(
-                        var_name,
-                        value.clone(),
-                        self,
-                        context,
-                        this,
-                    )?;
+                    clip.object()
+                        .as_object()?
+                        .set(var_name, value.clone(), self, context, this)?;
                 }
             }
         } else {
@@ -1791,13 +1758,7 @@ impl<'gc> Avm1<'gc> {
         }
 
         let scope = self.current_stack_frame().unwrap().read().scope_cell();
-        let clip_obj = context
-            .active_clip
-            .read()
-            .object()
-            .as_object()
-            .unwrap()
-            .to_owned();
+        let clip_obj = context.active_clip.read().object().as_object().unwrap();
 
         self.current_stack_frame()
             .unwrap()

@@ -1,10 +1,10 @@
 //! Represents AVM1 scope chain resolution.
 
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, Object, ObjectCell, ScriptObject, UpdateContext, Value};
+use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
-use std::cell::{Ref, RefMut};
+use std::cell::Ref;
 
 /// Indicates what kind of scope a scope is.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -30,7 +30,7 @@ pub enum ScopeClass {
 pub struct Scope<'gc> {
     parent: Option<GcCell<'gc, Scope<'gc>>>,
     class: ScopeClass,
-    values: ObjectCell<'gc>,
+    values: Object<'gc>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for Scope<'gc> {
@@ -43,7 +43,7 @@ unsafe impl<'gc> gc_arena::Collect for Scope<'gc> {
 
 impl<'gc> Scope<'gc> {
     /// Construct a global scope (one without a parent).
-    pub fn from_global_object(globals: ObjectCell<'gc>) -> Scope<'gc> {
+    pub fn from_global_object(globals: Object<'gc>) -> Scope<'gc> {
         Scope {
             parent: None,
             class: ScopeClass::Global,
@@ -119,7 +119,7 @@ impl<'gc> Scope<'gc> {
     /// scope has been replaced with another given object.
     pub fn new_target_scope(
         mut parent: GcCell<'gc, Self>,
-        clip: ObjectCell<'gc>,
+        clip: Object<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> GcCell<'gc, Self> {
         let mut bottom_scope = None;
@@ -176,7 +176,7 @@ impl<'gc> Scope<'gc> {
     /// scope. This requires some scope chain juggling.
     pub fn new_with_scope(
         locals: GcCell<'gc, Self>,
-        with_object: ObjectCell<'gc>,
+        with_object: Object<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> GcCell<'gc, Self> {
         let parent_scope = locals.read().parent;
@@ -204,7 +204,7 @@ impl<'gc> Scope<'gc> {
     pub fn new(
         parent: GcCell<'gc, Self>,
         class: ScopeClass,
-        with_object: ObjectCell<'gc>,
+        with_object: Object<'gc>,
     ) -> Scope<'gc> {
         Scope {
             parent: Some(parent),
@@ -214,18 +214,14 @@ impl<'gc> Scope<'gc> {
     }
 
     /// Returns a reference to the current local scope object.
-    pub fn locals(&self) -> Ref<Box<dyn Object<'gc>>> {
-        self.values.read()
-    }
-
-    /// Returns a gc cell of the current local scope object.
-    pub fn locals_cell(&self) -> ObjectCell<'gc> {
-        self.values.to_owned()
+    pub fn locals(&self) -> &Object<'gc> {
+        &self.values
     }
 
     /// Returns a reference to the current local scope object for mutation.
-    pub fn locals_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<Box<dyn Object<'gc>>> {
-        self.values.write(mc)
+    #[allow(dead_code)]
+    pub fn locals_mut(&mut self) -> &mut Object<'gc> {
+        &mut self.values
     }
 
     /// Returns a reference to the parent scope object.
@@ -246,7 +242,7 @@ impl<'gc> Scope<'gc> {
         name: &str,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: ObjectCell<'gc>,
+        this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error> {
         if self.locals().has_property(name) {
             return self.locals().get(name, avm, context, this);
@@ -286,11 +282,10 @@ impl<'gc> Scope<'gc> {
         value: Value<'gc>,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: ObjectCell<'gc>,
+        this: Object<'gc>,
     ) -> Result<Option<Value<'gc>>, Error> {
         if self.locals().has_property(name) && self.locals().is_property_overwritable(name) {
-            self.locals_mut(context.gc_context)
-                .set(name, value, avm, context, this)?;
+            self.locals().set(name, value, avm, context, this)?;
             return Ok(None);
         }
 
@@ -308,14 +303,14 @@ impl<'gc> Scope<'gc> {
     /// chain. As a result, this function always force sets a property on the
     /// local object and does not traverse the scope chain.
     pub fn define(&self, name: &str, value: impl Into<Value<'gc>>, mc: MutationContext<'gc, '_>) {
-        self.locals_mut(mc)
-            .define_value(name, value.into(), EnumSet::empty());
+        self.locals()
+            .define_value(mc, name, value.into(), EnumSet::empty());
     }
 
     /// Delete a value from scope
     pub fn delete(&self, name: &str, mc: MutationContext<'gc, '_>) -> bool {
         if self.locals().has_property(name) {
-            return self.locals_mut(mc).delete(name);
+            return self.locals().delete(mc, name);
         }
 
         if let Some(scope) = self.parent() {

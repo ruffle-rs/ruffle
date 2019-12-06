@@ -5,7 +5,7 @@ use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
-use crate::avm1::{Avm1, Error, Object, ObjectCell, ScriptObject, UpdateContext};
+use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext};
 use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, CollectionContext, GcCell};
 use swf::avm1::types::FunctionParam;
@@ -27,7 +27,7 @@ use swf::avm1::types::FunctionParam;
 pub type NativeFunction<'gc> = fn(
     &mut Avm1<'gc>,
     &mut UpdateContext<'_, 'gc, '_>,
-    ObjectCell<'gc>,
+    Object<'gc>,
     &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error>;
 
@@ -192,7 +192,7 @@ impl<'gc> Executable<'gc> {
         &self,
         avm: &mut Avm1<'gc>,
         ac: &mut UpdateContext<'_, 'gc, '_>,
-        this: ObjectCell<'gc>,
+        this: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
@@ -202,29 +202,30 @@ impl<'gc> Executable<'gc> {
                     ac.gc_context,
                     Scope::new_local_scope(af.scope(), ac.gc_context),
                 );
-                let mut arguments =
-                    ScriptObject::object(ac.gc_context, Some(avm.prototypes().object));
+                let arguments = ScriptObject::object(ac.gc_context, Some(avm.prototypes().object));
                 if !af.suppress_arguments {
                     for i in 0..args.len() {
                         arguments.define_value(
+                            ac.gc_context,
                             &format!("{}", i),
                             args.get(i).unwrap().clone(),
                             DontDelete.into(),
                         )
                     }
 
-                    arguments.define_value("length", args.len().into(), DontDelete | DontEnum);
+                    arguments.define_value(
+                        ac.gc_context,
+                        "length",
+                        args.len().into(),
+                        DontDelete | DontEnum,
+                    );
                 }
 
-                let argcell = GcCell::allocate(
-                    ac.gc_context,
-                    Box::new(arguments) as Box<dyn Object<'gc> + 'gc>,
-                );
+                let argcell = arguments.into();
                 let effective_ver = if avm.current_swf_version() > 5 {
                     af.swf_version()
                 } else {
-                    this.read()
-                        .as_display_node()
+                    this.as_display_node()
                         .map(|dn| dn.read().swf_version())
                         .unwrap_or(ac.player_version)
                 };

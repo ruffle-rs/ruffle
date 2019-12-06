@@ -1,6 +1,6 @@
 //! `MovieClip` display object and support code.
 use crate::avm1::script_object::TYPE_OF_MOVIE_CLIP;
-use crate::avm1::{ObjectCell, ScriptObject, Value};
+use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::backend::audio::AudioStreamHandle;
 use crate::character::Character;
 use crate::context::{RenderContext, UpdateContext};
@@ -33,7 +33,7 @@ pub struct MovieClip<'gc> {
     current_frame: FrameNumber,
     audio_stream: Option<AudioStreamHandle>,
     children: BTreeMap<Depth, DisplayNode<'gc>>,
-    object: ObjectCell<'gc>,
+    object: Object<'gc>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -47,7 +47,7 @@ impl<'gc> MovieClip<'gc> {
             current_frame: 0,
             audio_stream: None,
             children: BTreeMap::new(),
-            object: GcCell::allocate(gc_context, Box::new(ScriptObject::bare_object())),
+            object: ScriptObject::bare_object(gc_context).into(),
         }
     }
 
@@ -78,7 +78,7 @@ impl<'gc> MovieClip<'gc> {
             current_frame: 0,
             audio_stream: None,
             children: BTreeMap::new(),
-            object: GcCell::allocate(gc_context, Box::new(ScriptObject::bare_object())),
+            object: ScriptObject::bare_object(gc_context).into(),
         }
     }
 
@@ -626,18 +626,12 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
         &mut self,
         gc_context: MutationContext<'gc, '_>,
         display_object: DisplayNode<'gc>,
-        proto: ObjectCell<'gc>,
+        proto: Object<'gc>,
     ) {
-        let mut object = self.object.write(gc_context);
-        object
-            .as_script_object_mut()
-            .unwrap()
-            .set_display_node(display_object);
-        object
-            .as_script_object_mut()
-            .unwrap()
-            .set_type_of(TYPE_OF_MOVIE_CLIP);
-        object.as_script_object_mut().unwrap().set_prototype(proto);
+        let object = self.object.as_script_object_mut().unwrap();
+        object.set_display_node(gc_context, display_object);
+        object.set_type_of(gc_context, TYPE_OF_MOVIE_CLIP);
+        object.set_prototype(gc_context, proto);
     }
 
     fn object(&self) -> Value<'gc> {

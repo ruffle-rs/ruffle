@@ -3,7 +3,7 @@
 use self::Attribute::*;
 use crate::avm1::function::Executable;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, ObjectCell, UpdateContext, Value};
+use crate::avm1::{Avm1, Error, Object, UpdateContext, Value};
 use core::fmt;
 use enumset::{EnumSet, EnumSetType};
 use std::mem::replace;
@@ -37,7 +37,7 @@ impl<'gc> Property<'gc> {
         &self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: ObjectCell<'gc>,
+        this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
             Property::Virtual { get, .. } => get.exec(avm, context, this, &[]),
@@ -55,7 +55,7 @@ impl<'gc> Property<'gc> {
         &mut self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: ObjectCell<'gc>,
+        this: Object<'gc>,
         new_value: impl Into<Value<'gc>>,
     ) -> Result<bool, Error> {
         match self {
