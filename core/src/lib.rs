@@ -1,4 +1,5 @@
 #![allow(clippy::unneeded_field_pattern)]
+#![allow(clippy::trivially_copy_pass_by_ref)]
 
 #[macro_use]
 mod display_object;

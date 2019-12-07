@@ -5,13 +5,13 @@ use crate::backend::audio::AudioStreamHandle;
 use crate::character::Character;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{
-    Bitmap, Button, DisplayObject, DisplayObjectBase, EditText, Graphic, MorphShapeStatic, Text,
+    Bitmap, Button, DisplayObjectBase, EditText, Graphic, MorphShapeStatic, TDisplayObject, Text,
 };
 use crate::font::Font;
 use crate::matrix::Matrix;
 use crate::prelude::*;
 use crate::tag_utils::{self, DecodeResult, SwfStream};
-use gc_arena::{Gc, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::collections::{BTreeMap, HashMap};
 use swf::read::SwfRead;
 
@@ -23,8 +23,12 @@ type FrameNumber = u16;
 /// However, in AVM2, Sprite is a separate display object, and MovieClip is a subclass of Sprite.
 ///
 /// (SWF19 pp. 201-203)
+#[derive(Clone, Debug, Collect, Copy)]
+#[collect(no_drop)]
+pub struct MovieClip<'gc>(GcCell<'gc, MovieClipData<'gc>>);
+
 #[derive(Clone, Debug)]
-pub struct MovieClip<'gc> {
+pub struct MovieClipData<'gc> {
     base: DisplayObjectBase<'gc>,
     swf_version: u8,
     static_data: Gc<'gc, MovieClipStatic>,
@@ -32,23 +36,27 @@ pub struct MovieClip<'gc> {
     is_playing: bool,
     current_frame: FrameNumber,
     audio_stream: Option<AudioStreamHandle>,
-    children: BTreeMap<Depth, DisplayNode<'gc>>,
+    children: BTreeMap<Depth, DisplayObject<'gc>>,
     object: Object<'gc>,
 }
 
 impl<'gc> MovieClip<'gc> {
+    #[allow(dead_code)]
     pub fn new(swf_version: u8, gc_context: MutationContext<'gc, '_>) -> Self {
-        Self {
-            base: Default::default(),
-            swf_version,
-            static_data: Gc::allocate(gc_context, MovieClipStatic::default()),
-            tag_stream_pos: 0,
-            is_playing: false,
-            current_frame: 0,
-            audio_stream: None,
-            children: BTreeMap::new(),
-            object: ScriptObject::bare_object(gc_context).into(),
-        }
+        MovieClip(GcCell::allocate(
+            gc_context,
+            MovieClipData {
+                base: Default::default(),
+                swf_version,
+                static_data: Gc::allocate(gc_context, MovieClipStatic::default()),
+                tag_stream_pos: 0,
+                is_playing: false,
+                current_frame: 0,
+                audio_stream: None,
+                children: BTreeMap::new(),
+                object: ScriptObject::bare_object(gc_context).into(),
+            },
+        ))
     }
 
     pub fn new_with_data(
@@ -59,56 +67,60 @@ impl<'gc> MovieClip<'gc> {
         tag_stream_len: usize,
         num_frames: u16,
     ) -> Self {
-        Self {
-            base: Default::default(),
-            swf_version,
-            static_data: Gc::allocate(
-                gc_context,
-                MovieClipStatic {
-                    id,
-                    tag_stream_start,
-                    tag_stream_len,
-                    total_frames: num_frames,
-                    audio_stream_info: None,
-                    frame_labels: HashMap::new(),
-                },
-            ),
-            tag_stream_pos: 0,
-            is_playing: true,
-            current_frame: 0,
-            audio_stream: None,
-            children: BTreeMap::new(),
-            object: ScriptObject::bare_object(gc_context).into(),
-        }
+        MovieClip(GcCell::allocate(
+            gc_context,
+            MovieClipData {
+                base: Default::default(),
+                swf_version,
+                static_data: Gc::allocate(
+                    gc_context,
+                    MovieClipStatic {
+                        id,
+                        tag_stream_start,
+                        tag_stream_len,
+                        total_frames: num_frames,
+                        audio_stream_info: None,
+                        frame_labels: HashMap::new(),
+                    },
+                ),
+                tag_stream_pos: 0,
+                is_playing: true,
+                current_frame: 0,
+                audio_stream: None,
+                children: BTreeMap::new(),
+                object: ScriptObject::bare_object(gc_context).into(),
+            },
+        ))
     }
 
-    pub fn playing(&self) -> bool {
-        self.is_playing
+    pub fn playing(self) -> bool {
+        self.0.read().is_playing
     }
 
     pub fn next_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if self.current_frame() < self.total_frames() {
-            self.goto_frame(context, self.current_frame + 1, true);
+            self.goto_frame(context, self.current_frame() + 1, true);
         }
     }
 
-    pub fn play(&mut self) {
+    pub fn play(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Can only play clips with multiple frames.
         if self.total_frames() > 1 {
-            self.is_playing = true;
+            self.0.write(context.gc_context).is_playing = true;
         }
     }
 
     pub fn prev_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        if self.current_frame > 1 {
-            self.goto_frame(context, self.current_frame - 1, true);
+        if self.current_frame() > 1 {
+            self.goto_frame(context, self.current_frame() - 1, true);
         }
     }
 
     pub fn stop(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.is_playing = false;
+        let mut mc = self.0.write(context.gc_context);
+        mc.is_playing = false;
         // Stop audio stream if one is playing.
-        if let Some(audio_stream) = self.audio_stream.take() {
+        if let Some(audio_stream) = mc.audio_stream.take() {
             context.audio.stop_stream(audio_stream);
         }
     }
@@ -125,61 +137,61 @@ impl<'gc> MovieClip<'gc> {
         if stop {
             self.stop(context);
         } else {
-            self.play();
+            self.play(context);
         }
 
-        if frame != self.current_frame {
+        if frame != self.current_frame() {
             self.run_goto(context, frame);
         }
     }
 
-    pub fn x(&self) -> f32 {
+    pub fn x(self) -> f32 {
         self.matrix().tx / Twips::TWIPS_PER_PIXEL as f32
     }
 
-    pub fn set_x(&mut self, val: f32) {
-        self.matrix_mut().tx = val * Twips::TWIPS_PER_PIXEL as f32;
+    pub fn set_x(&mut self, gc_context: MutationContext<'gc, '_>, val: f32) {
+        self.matrix_mut(gc_context).tx = val * Twips::TWIPS_PER_PIXEL as f32;
     }
 
-    pub fn y(&self) -> f32 {
+    pub fn y(self) -> f32 {
         self.matrix().ty / Twips::TWIPS_PER_PIXEL as f32
     }
 
-    pub fn set_y(&mut self, val: f32) {
-        self.matrix_mut().ty = val * Twips::TWIPS_PER_PIXEL as f32;
+    pub fn set_y(&mut self, gc_context: MutationContext<'gc, '_>, val: f32) {
+        self.matrix_mut(gc_context).ty = val * Twips::TWIPS_PER_PIXEL as f32;
     }
 
-    pub fn x_scale(&self) -> f32 {
+    pub fn x_scale(self) -> f32 {
         self.matrix().a * 100.0
     }
 
-    pub fn set_x_scale(&mut self, val: f32) {
-        self.matrix_mut().a = val / 100.0;
+    pub fn set_x_scale(&mut self, gc_context: MutationContext<'gc, '_>, val: f32) {
+        self.matrix_mut(gc_context).a = val / 100.0;
     }
 
-    pub fn y_scale(&self) -> f32 {
+    pub fn y_scale(self) -> f32 {
         self.matrix().d * 100.0
     }
 
-    pub fn set_y_scale(&mut self, val: f32) {
-        self.matrix_mut().d = val / 100.0;
+    pub fn set_y_scale(&mut self, gc_context: MutationContext<'gc, '_>, val: f32) {
+        self.matrix_mut(gc_context).d = val / 100.0;
     }
 
-    pub fn current_frame(&self) -> FrameNumber {
-        self.current_frame
+    pub fn current_frame(self) -> FrameNumber {
+        self.0.read().current_frame
     }
 
-    pub fn total_frames(&self) -> FrameNumber {
-        self.static_data.total_frames
+    pub fn total_frames(self) -> FrameNumber {
+        self.0.read().static_data.total_frames
     }
 
-    pub fn rotation(&self) -> f32 {
+    pub fn rotation(self) -> f32 {
         // TODO: Cache the user-friendly transform values like rotation.
         let matrix = self.matrix();
         f32::atan2(matrix.b, matrix.a).to_degrees()
     }
 
-    pub fn set_rotation(&mut self, degrees: f32) {
+    pub fn set_rotation(&mut self, gc_context: MutationContext<'gc, '_>, degrees: f32) {
         // TODO: Use cached user-friendly transform values.
         let angle = degrees.to_radians();
         let cos = f32::cos(angle);
@@ -187,7 +199,7 @@ impl<'gc> MovieClip<'gc> {
         let scale_x = self.x_scale() / 100.0;
         let scale_y = self.y_scale() / 100.0;
 
-        let matrix = self.matrix_mut();
+        let mut matrix = self.matrix_mut(gc_context);
         *matrix = Matrix {
             a: scale_x * cos,
             b: scale_x * sin,
@@ -198,39 +210,46 @@ impl<'gc> MovieClip<'gc> {
         };
     }
 
-    pub fn frames_loaded(&self) -> FrameNumber {
+    pub fn frames_loaded(self) -> FrameNumber {
         // TODO(Herschel): root needs to progressively stream in frames.
-        self.static_data.total_frames
+        self.0.read().static_data.total_frames
     }
 
-    pub fn get_child_by_name(&self, name: &str) -> Option<&DisplayNode<'gc>> {
+    pub fn get_child_by_name(self, name: &str) -> Option<DisplayObject<'gc>> {
         // TODO: Make a HashMap from name -> child?
-        self.children
+        let mc = self.0.read();
+        mc.children
             .values()
-            .find(|child| child.read().name() == name)
+            .find(|child| &*child.name() == name)
+            .copied()
     }
 
-    pub fn frame_label_to_number(&self, frame_label: &str) -> Option<FrameNumber> {
-        self.static_data.frame_labels.get(frame_label).copied()
+    pub fn frame_label_to_number(self, frame_label: &str) -> Option<FrameNumber> {
+        self.0
+            .read()
+            .static_data
+            .frame_labels
+            .get(frame_label)
+            .copied()
     }
 
-    fn tag_stream_start(&self) -> u64 {
-        self.static_data.tag_stream_start
+    fn tag_stream_start(self) -> u64 {
+        self.0.read().static_data.tag_stream_start
     }
 
-    fn tag_stream_len(&self) -> usize {
-        self.static_data.tag_stream_len
+    fn tag_stream_len(self) -> usize {
+        self.0.read().static_data.tag_stream_len
     }
 
     fn reader<'a>(
-        &self,
+        self,
         context: &UpdateContext<'a, '_, '_>,
     ) -> swf::read::Reader<std::io::Cursor<&'a [u8]>> {
         let mut cursor = std::io::Cursor::new(
             &context.swf_data[self.tag_stream_start() as usize
                 ..self.tag_stream_start() as usize + self.tag_stream_len()],
         );
-        cursor.set_position(self.tag_stream_pos);
+        cursor.set_position(self.0.read().tag_stream_pos);
         swf::read::Reader::new(cursor, context.swf_version)
     }
 
@@ -241,7 +260,7 @@ impl<'gc> MovieClip<'gc> {
     ) {
         // Advance frame number.
         if self.current_frame() < self.total_frames() {
-            self.current_frame += 1;
+            self.0.write(context.gc_context).current_frame += 1;
         } else if self.total_frames() > 1 {
             // Looping acts exactly like a gotoAndPlay(1).
             // Specifically, object that existed on frame 1 should not be destroyed
@@ -253,7 +272,7 @@ impl<'gc> MovieClip<'gc> {
             self.stop(context);
         }
 
-        let _tag_pos = self.tag_stream_pos;
+        let _tag_pos = self.0.read().tag_stream_pos;
         let mut reader = self.reader(context);
         let mut has_stream_block = false;
         use swf::TagCode;
@@ -284,13 +303,14 @@ impl<'gc> MovieClip<'gc> {
         };
         let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
 
-        self.tag_stream_pos = reader.get_ref().position();
+        self.0.write(context.gc_context).tag_stream_pos = reader.get_ref().position();
 
         // If we are playing a streaming sound, there should(?) be a `SoundStreamBlock` on each frame.
-        if let Some(audio_stream) = self.audio_stream {
+        let audio_stream = self.0.read().audio_stream;
+        if let Some(audio_stream) = audio_stream {
             if !has_stream_block {
                 context.audio.stop_stream(audio_stream);
-                self.audio_stream = None;
+                self.0.write(context.gc_context).audio_stream = None;
             }
         }
     }
@@ -301,36 +321,39 @@ impl<'gc> MovieClip<'gc> {
         id: CharacterId,
         depth: Depth,
         copy_previous_properties: bool,
-    ) -> Option<DisplayNode<'gc>> {
-        if let Ok(child_cell) = context.library.instantiate_display_object(
+    ) -> Option<DisplayObject<'gc>> {
+        if let Ok(mut child) = context.library.instantiate_display_object(
             id,
             context.gc_context,
             &context.system_prototypes,
         ) {
             // Remove previous child from children list,
             // and add new childonto front of the list.
-            let prev_child = self.children.insert(depth, child_cell);
+            let prev_child = self
+                .0
+                .write(context.gc_context)
+                .children
+                .insert(depth, child);
             if let Some(prev_child) = prev_child {
                 self.remove_child_from_exec_list(context.gc_context, prev_child);
             }
-            self.add_child_to_exec_list(context.gc_context, child_cell);
+            self.add_child_to_exec_list(context.gc_context, child);
             {
-                let mut child = child_cell.write(context.gc_context);
                 // Set initial properties for child.
-                child.set_parent(Some(context.active_clip));
-                child.set_place_frame(self.current_frame);
+                child.set_parent(context.gc_context, Some(context.active_clip));
+                child.set_place_frame(context.gc_context, self.current_frame());
                 if copy_previous_properties {
                     if let Some(prev_child) = prev_child {
-                        child.copy_display_properties_from(prev_child);
+                        child.copy_display_properties_from(context.gc_context, prev_child);
                     }
                 }
                 let prev_clip = context.active_clip;
                 // Run first frame.
-                context.active_clip = child_cell;
+                context.active_clip = child;
                 child.run_frame(context);
                 context.active_clip = prev_clip;
             }
-            Some(child_cell)
+            Some(child)
         } else {
             log::error!("Unable to instantiate display node id {}", id);
             None
@@ -341,38 +364,37 @@ impl<'gc> MovieClip<'gc> {
     fn add_child_to_exec_list(
         &mut self,
         gc_context: MutationContext<'gc, '_>,
-        child_cell: DisplayNode<'gc>,
+        mut child: DisplayObject<'gc>,
     ) {
-        if let Some(head) = self.first_child() {
-            head.write(gc_context).set_prev_sibling(Some(child_cell));
-            child_cell.write(gc_context).set_next_sibling(Some(head));
+        if let Some(mut head) = self.first_child() {
+            head.set_prev_sibling(gc_context, Some(child));
+            child.set_next_sibling(gc_context, Some(head));
         }
-        self.set_first_child(Some(child_cell));
+        self.set_first_child(gc_context, Some(child));
     }
     /// Removes a child from the execution list.
     /// This does not affect the render list.
     fn remove_child_from_exec_list(
         &mut self,
         gc_context: MutationContext<'gc, '_>,
-        child_cell: DisplayNode<'gc>,
+        mut child: DisplayObject<'gc>,
     ) {
-        let mut child = child_cell.write(gc_context);
         // Remove from children linked list.
         let prev = child.prev_sibling();
         let next = child.next_sibling();
-        if let Some(prev) = prev {
-            prev.write(gc_context).set_next_sibling(next);
+        if let Some(mut prev) = prev {
+            prev.set_next_sibling(gc_context, next);
         }
-        if let Some(next) = next {
-            next.write(gc_context).set_prev_sibling(prev);
+        if let Some(mut next) = next {
+            next.set_prev_sibling(gc_context, prev);
         }
         if let Some(head) = self.first_child() {
-            if GcCell::ptr_eq(head, child_cell) {
-                self.set_first_child(next);
+            if DisplayObject::ptr_eq(head, child) {
+                self.set_first_child(gc_context, next);
             }
         }
         // Flag child as removed.
-        child.set_removed(true);
+        child.set_removed(gc_context, true);
     }
     pub fn run_goto(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, frame: FrameNumber) {
         // Flash gotos are tricky:
@@ -383,7 +405,7 @@ impl<'gc> MovieClip<'gc> {
         // 3) Objects that would persist over the goto conceptually should not be
         //    destroyed and recreated; they should keep their properties.
         //    Particularly for rewinds, the object should persist if it was created
-        //      *before* the frame we are going to. (DisplayNode::place_frame).
+        //      *before* the frame we are going to. (DisplayObject::place_frame).
         // 4) We want to avoid creating objects just to destroy them if they aren't on
         //    the goto frame, so we should instead aggregate the deltas into a final list
         //    of commands, and THEN modify the children as necessary.
@@ -395,17 +417,19 @@ impl<'gc> MovieClip<'gc> {
         let is_rewind = if frame < self.current_frame() {
             // Because we can only step forward, we have to start at frame 1
             // when rewinding.
-            self.tag_stream_pos = 0;
-            self.current_frame = 0;
+            self.0.write(context.gc_context).tag_stream_pos = 0;
+            self.0.write(context.gc_context).current_frame = 0;
 
             // Remove all display objects that were created after the desination frame.
             // TODO: We want to do something like self.children.retain here,
             // but BTreeMap::retain does not exist.
             let children: smallvec::SmallVec<[_; 16]> = self
+                .0
+                .read()
                 .children
                 .iter()
                 .filter_map(|(depth, clip)| {
-                    if clip.read().place_frame() > frame {
+                    if clip.place_frame() > frame {
                         Some((*depth, *clip))
                     } else {
                         None
@@ -413,7 +437,7 @@ impl<'gc> MovieClip<'gc> {
                 })
                 .collect();
             for (depth, child) in children {
-                self.children.remove(&depth);
+                self.0.write(context.gc_context).children.remove(&depth);
                 self.remove_child_from_exec_list(context.gc_context, child);
             }
             true
@@ -422,11 +446,11 @@ impl<'gc> MovieClip<'gc> {
         };
 
         // Step through the intermediate frames, and aggregate the deltas of each frame.
-        let mut frame_pos = self.tag_stream_pos;
+        let mut frame_pos = self.0.read().tag_stream_pos;
         let mut reader = self.reader(context);
         let gc_context = context.gc_context;
-        while self.current_frame < frame {
-            self.current_frame += 1;
+        while self.current_frame() < frame {
+            self.0.write(context.gc_context).current_frame += 1;
             frame_pos = reader.get_inner().position();
 
             use swf::TagCode;
@@ -459,7 +483,13 @@ impl<'gc> MovieClip<'gc> {
             |clip: &mut MovieClip<'gc>,
              context: &mut UpdateContext<'_, 'gc, '_>,
              (&depth, params): (&Depth, &GotoPlaceObject)| {
-                let (was_instantiated, child) = match clip.children.get_mut(&depth).copied() {
+                let child_entry = clip
+                    .0
+                    .write(context.gc_context)
+                    .children
+                    .get_mut(&depth)
+                    .copied();
+                let (was_instantiated, mut child) = match child_entry {
                     // For rewinds, if an object was created before the final frame,
                     // it will exist on the final frame as well. Re-use this object
                     // instead of recreating.
@@ -482,12 +512,11 @@ impl<'gc> MovieClip<'gc> {
                 };
 
                 // Apply final delta to display pamareters.
-                let mut child = child.write(context.gc_context);
-                child.apply_place_object(&params.place_object);
+                child.apply_place_object(context.gc_context, &params.place_object);
                 if was_instantiated {
                     // Set the placement frame for the new object to the frame
                     // it is actually created on.
-                    child.set_place_frame(params.frame);
+                    child.set_place_frame(context.gc_context, params.frame);
                 }
             };
 
@@ -501,8 +530,8 @@ impl<'gc> MovieClip<'gc> {
 
         // Next, run the final frame for the parent clip.
         // Re-run the final frame without display tags (DoAction, StartSound, etc.)
-        self.current_frame = frame - 1;
-        self.tag_stream_pos = frame_pos;
+        self.0.write(context.gc_context).current_frame = frame - 1;
+        self.0.write(context.gc_context).tag_stream_pos = frame_pos;
         self.run_frame_internal(context, false);
 
         // Finally, run frames for children that are placed on this frame.
@@ -530,7 +559,7 @@ impl<'gc> MovieClip<'gc> {
         // We merge the deltas from this PlaceObject with the previous command.
         let depth = place_object.depth;
         let mut goto_place = GotoPlaceObject {
-            frame: self.current_frame,
+            frame: self.current_frame(),
             place_object,
         };
         goto_commands
@@ -563,7 +592,12 @@ impl<'gc> MovieClip<'gc> {
             // Don't do this for rewinds, because they conceptually
             // start from an empty display list, and we also want to examine
             // the old children to decide if they persist (place_frame <= goto_frame).
-            if let Some(child) = self.children.remove(&remove_object.depth) {
+            let child = self
+                .0
+                .write(gc_context)
+                .children
+                .remove(&remove_object.depth);
+            if let Some(child) = child {
                 self.remove_child_from_exec_list(gc_context, child);
             }
         }
@@ -571,41 +605,41 @@ impl<'gc> MovieClip<'gc> {
     }
 }
 
-impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
+impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     impl_display_object!(base);
 
     fn id(&self) -> CharacterId {
-        self.static_data.id
+        self.0.read().static_data.id
     }
 
     fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Children must run first.
         let prev_clip = context.active_clip;
-        for child in self.children() {
+        for mut child in self.children() {
             context.active_clip = child;
-            child.write(context.gc_context).run_frame(context);
+            child.run_frame(context);
         }
         context.active_clip = prev_clip;
 
         // Run myself.
-        if self.is_playing {
+        if self.playing() {
             self.run_frame_internal(context, true);
         }
     }
 
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
-        context.transform_stack.push(self.transform());
-        crate::display_object::render_children(context, &self.children);
+        context.transform_stack.push(&*self.transform());
+        crate::display_object::render_children(context, &self.0.read().children);
         context.transform_stack.pop();
     }
 
     fn mouse_pick(
         &self,
-        _self_node: DisplayNode<'gc>,
+        _self_node: DisplayObject<'gc>,
         point: (Twips, Twips),
-    ) -> Option<DisplayNode<'gc>> {
-        for child in self.children.values().rev() {
-            let result = child.read().mouse_pick(*child, point);
+    ) -> Option<DisplayObject<'gc>> {
+        for child in self.0.read().children.values().rev() {
+            let result = child.mouse_pick(*child, point);
             if result.is_some() {
                 return result;
             }
@@ -625,21 +659,22 @@ impl<'gc> DisplayObject<'gc> for MovieClip<'gc> {
     fn post_instantiation(
         &mut self,
         gc_context: MutationContext<'gc, '_>,
-        display_object: DisplayNode<'gc>,
+        display_object: DisplayObject<'gc>,
         proto: Object<'gc>,
     ) {
-        let object = self.object.as_script_object_mut().unwrap();
+        let mut mc = self.0.write(gc_context);
+        let object = mc.object.as_script_object_mut().unwrap();
         object.set_display_node(gc_context, display_object);
         object.set_type_of(gc_context, TYPE_OF_MOVIE_CLIP);
         object.set_prototype(gc_context, proto);
     }
 
     fn object(&self) -> Value<'gc> {
-        Value::Object(self.object)
+        Value::Object(self.0.read().object)
     }
 }
 
-unsafe impl<'gc> gc_arena::Collect for MovieClip<'gc> {
+unsafe impl<'gc> Collect for MovieClipData<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
         for child in self.children.values() {
@@ -661,7 +696,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         use swf::TagCode;
         // TODO: Re-creating static data because preload step occurs after construction.
         // Should be able to hoist this up somewhere, or use MaybeUninit.
-        let mut static_data = (&*self.static_data).clone();
+        let mut static_data = (&*self.0.read().static_data).clone();
         let mut reader = self.reader(context);
         let mut cur_frame = 1;
         let mut ids = fnv::FnvHashMap::default();
@@ -725,10 +760,11 @@ impl<'gc, 'a> MovieClip<'gc> {
             _ => Ok(()),
         };
         let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End);
-        self.static_data = Gc::allocate(context.gc_context, static_data);
+        self.0.write(context.gc_context).static_data =
+            Gc::allocate(context.gc_context, static_data);
 
         // Finalize audio stream.
-        if self.static_data.audio_stream_info.is_some() {
+        if self.0.read().static_data.audio_stream_info.is_some() {
             context.audio.preload_sound_stream_end(self.id());
         }
     }
@@ -1316,7 +1352,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         use swf::PlaceObjectAction;
         match place_object.action {
             PlaceObjectAction::Place(id) | PlaceObjectAction::Replace(id) => {
-                if let Some(child) = self.instantiate_child(
+                if let Some(mut child) = self.instantiate_child(
                     context,
                     id,
                     place_object.depth,
@@ -1326,20 +1362,22 @@ impl<'gc, 'a> MovieClip<'gc> {
                         false
                     },
                 ) {
-                    child
-                        .write(context.gc_context)
-                        .apply_place_object(&place_object);
+                    child.apply_place_object(context.gc_context, &place_object);
                     child
                 } else {
                     return Ok(());
                 }
             }
             PlaceObjectAction::Modify => {
-                if let Some(child) = self.children.get_mut(&place_object.depth) {
+                if let Some(mut child) = self
+                    .0
+                    .write(context.gc_context)
+                    .children
+                    .get_mut(&place_object.depth)
+                    .copied()
+                {
+                    child.apply_place_object(context.gc_context, &place_object);
                     child
-                        .write(context.gc_context)
-                        .apply_place_object(&place_object);
-                    *child
                 } else {
                     return Ok(());
                 }
@@ -1361,7 +1399,12 @@ impl<'gc, 'a> MovieClip<'gc> {
         } else {
             reader.read_remove_object_2()
         }?;
-        if let Some(child) = self.children.remove(&remove_object.depth) {
+        let child = self
+            .0
+            .write(context.gc_context)
+            .children
+            .remove(&remove_object.depth);
+        if let Some(child) = child {
             self.remove_child_from_exec_list(context.gc_context, child);
         }
         Ok(())
@@ -1383,19 +1426,24 @@ impl<'gc, 'a> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         _reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
-        if let (Some(stream_info), None) = (&self.static_data.audio_stream_info, &self.audio_stream)
-        {
-            let pos = self.tag_stream_start() + self.tag_stream_pos;
+        let (stream_info, audio_stream) = {
+            let mc = self.0.read();
+            (mc.static_data.audio_stream_info.clone(), mc.audio_stream)
+        };
+        if let (Some(stream_info), None) = (stream_info, audio_stream) {
+            let pos = self.tag_stream_start() + self.0.read().tag_stream_pos;
             let slice = crate::tag_utils::SwfSlice {
                 data: std::sync::Arc::clone(context.swf_data),
                 start: pos as usize,
                 end: self.tag_stream_start() as usize + self.tag_stream_len(),
             };
-            let audio_stream =
-                context
-                    .audio
-                    .start_stream(self.id(), self.current_frame() + 1, slice, stream_info);
-            self.audio_stream = Some(audio_stream);
+            let audio_stream = context.audio.start_stream(
+                self.id(),
+                self.current_frame() + 1,
+                slice,
+                &stream_info,
+            );
+            self.0.write(context.gc_context).audio_stream = Some(audio_stream);
         }
 
         Ok(())
@@ -1455,7 +1503,7 @@ impl Default for MovieClipStatic {
     }
 }
 
-unsafe impl<'gc> gc_arena::Collect for MovieClipStatic {
+unsafe impl<'gc> Collect for MovieClipStatic {
     #[inline]
     fn needs_trace() -> bool {
         false

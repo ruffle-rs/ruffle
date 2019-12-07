@@ -21,14 +21,35 @@ pub const NEWEST_PLAYER_VERSION: u8 = 32;
 
 #[derive(Collect)]
 #[collect(no_drop)]
-struct GcRoot<'gc> {
-    library: GcCell<'gc, Library<'gc>>,
-    root: DisplayNode<'gc>,
-    mouse_hover_node: GcCell<'gc, Option<DisplayNode<'gc>>>, // TODO: Remove GcCell wrapped inside GcCell.
-    avm: GcCell<'gc, Avm1<'gc>>,
-    action_queue: GcCell<'gc, ActionQueue<'gc>>,
+struct GcRoot<'gc>(GcCell<'gc, GcRootData<'gc>>);
+
+#[derive(Collect)]
+#[collect(no_drop)]
+struct GcRootData<'gc> {
+    library: Library<'gc>,
+    root: DisplayObject<'gc>,
+    mouse_hover_node: Option<DisplayObject<'gc>>, // TODO: Remove GcCell wrapped inside GcCell.
+    avm: Avm1<'gc>,
+    action_queue: ActionQueue<'gc>,
 }
 
+impl<'gc> GcRootData<'gc> {
+    fn get(
+        &mut self,
+    ) -> (
+        DisplayObject<'gc>,
+        &mut Library<'gc>,
+        &mut ActionQueue<'gc>,
+        &mut Avm1<'gc>,
+    ) {
+        (
+            self.root,
+            &mut self.library,
+            &mut self.action_queue,
+            &mut self.avm,
+        )
+    }
+}
 type Error = Box<dyn std::error::Error>;
 
 make_arena!(GcArena, GcRoot);
@@ -154,23 +175,24 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| {
                 let mut library = Library::new();
                 library.set_device_font(device_font);
-                GcRoot {
-                    library: GcCell::allocate(gc_context, library),
-                    root: GcCell::allocate(
-                        gc_context,
-                        Box::new(MovieClip::new_with_data(
+                GcRoot(GcCell::allocate(
+                    gc_context,
+                    GcRootData {
+                        library,
+                        root: MovieClip::new_with_data(
                             header.version,
                             gc_context,
                             0,
                             0,
                             swf_len,
                             header.num_frames,
-                        )),
-                    ),
-                    mouse_hover_node: GcCell::allocate(gc_context, None),
-                    avm: GcCell::allocate(gc_context, Avm1::new(gc_context, NEWEST_PLAYER_VERSION)),
-                    action_queue: GcCell::allocate(gc_context, ActionQueue::new()),
-                }
+                        )
+                        .into(),
+                        mouse_hover_node: None,
+                        avm: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
+                        action_queue: ActionQueue::new(),
+                    },
+                ))
             }),
 
             frame_rate: header.frame_rate.into(),
@@ -188,11 +210,9 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         };
 
         player.gc_arena.mutate(|gc_context, gc_root| {
-            gc_root.root.write(gc_context).post_instantiation(
-                gc_context,
-                gc_root.root,
-                gc_root.avm.read().prototypes().movie_clip,
-            )
+            let root_data = gc_root.0.write(gc_context);
+            let mut root = root_data.root;
+            root.post_instantiation(gc_context, root, root_data.avm.prototypes().movie_clip)
         });
 
         player.build_matrices();
@@ -320,41 +340,44 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
+            let mut root_data = gc_root.0.write(gc_context);
+            let mouse_hover_node = root_data.mouse_hover_node;
+            let (root, library, action_queue, mut avm) = root_data.get();
             let mut update_context = UpdateContext {
                 player_version,
                 global_time,
                 swf_data,
                 swf_version,
-                library: &mut *gc_root.library.write(gc_context),
+                library,
                 background_color,
                 rng,
                 renderer,
                 audio,
                 navigator,
-                action_queue: &mut *gc_root.action_queue.write(gc_context),
+                action_queue,
                 gc_context,
-                active_clip: gc_root.root,
-                start_clip: gc_root.root,
-                target_clip: Some(gc_root.root),
-                root: gc_root.root,
+                root,
+                active_clip: root,
+                start_clip: root,
+                target_clip: Some(root),
                 target_path: Value::Undefined,
-                system_prototypes: gc_root.avm.read().prototypes().clone(),
+                system_prototypes: avm.prototypes().clone(),
             };
 
-            if let Some(node) = &*gc_root.mouse_hover_node.read() {
-                if let Some(button) = node.write(gc_context).as_button_mut() {
+            if let Some(node) = mouse_hover_node {
+                if let Some(button) = node.clone().as_button_mut() {
                     match event {
                         PlayerEvent::MouseDown { .. } => {
                             *is_mouse_down = true;
                             needs_render = true;
-                            update_context.active_clip = *node;
+                            update_context.active_clip = node;
                             button.handle_button_event(&mut update_context, ButtonEvent::Press);
                         }
 
                         PlayerEvent::MouseUp { .. } => {
                             *is_mouse_down = false;
                             needs_render = true;
-                            update_context.active_clip = *node;
+                            update_context.active_clip = node;
                             button.handle_button_event(&mut update_context, ButtonEvent::Release);
                         }
 
@@ -363,7 +386,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 }
             }
 
-            Self::run_actions(&mut *gc_root.avm.write(gc_context), &mut update_context);
+            Self::run_actions(&mut avm, &mut update_context);
         });
 
         if needs_render {
@@ -393,52 +416,53 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         let mouse_pos = &self.mouse_pos;
         // Check hovered object.
         self.gc_arena.mutate(|gc_context, gc_root| {
-            let new_hover_node = gc_root
+            let mut root_data = gc_root.0.write(gc_context);
+            let new_hover_node = root_data
                 .root
-                .read()
-                .mouse_pick(gc_root.root, (mouse_pos.0, mouse_pos.1));
-            let mut cur_hover_node = gc_root.mouse_hover_node.write(gc_context);
-            if cur_hover_node.map(GcCell::as_ptr) != new_hover_node.map(GcCell::as_ptr) {
+                .mouse_pick(root_data.root, (mouse_pos.0, mouse_pos.1));
+            let cur_hover_node = root_data.mouse_hover_node;
+            let (root, library, action_queue, avm) = root_data.get();
+            if cur_hover_node.map(|d| d.as_ptr()) != new_hover_node.map(|d| d.as_ptr()) {
                 let mut update_context = UpdateContext {
                     player_version,
                     global_time,
                     swf_data,
                     swf_version,
-                    library: &mut *gc_root.library.write(gc_context),
+                    library,
                     background_color,
                     rng,
                     renderer,
                     audio,
                     navigator,
-                    action_queue: &mut *gc_root.action_queue.write(gc_context),
+                    action_queue,
                     gc_context,
-                    active_clip: gc_root.root,
-                    start_clip: gc_root.root,
-                    target_clip: Some(gc_root.root),
-                    root: gc_root.root,
+                    active_clip: root,
+                    start_clip: root,
+                    target_clip: Some(root),
+                    root,
                     target_path: Value::Undefined,
-                    system_prototypes: gc_root.avm.read().prototypes().clone(),
+                    system_prototypes: avm.prototypes().clone(),
                 };
 
                 // RollOut of previous node.
-                if let Some(node) = &*cur_hover_node {
-                    if let Some(button) = node.write(gc_context).as_button_mut() {
-                        update_context.active_clip = *node;
+                if let Some(mut node) = cur_hover_node {
+                    if let Some(mut button) = node.as_button_mut().copied() {
+                        update_context.active_clip = node;
                         button.handle_button_event(&mut update_context, ButtonEvent::RollOut);
                     }
                 }
 
                 // RollOver on new node.
-                if let Some(node) = new_hover_node {
-                    if let Some(button) = node.write(gc_context).as_button_mut() {
+                if let Some(mut node) = new_hover_node {
+                    if let Some(mut button) = node.as_button_mut().copied() {
                         update_context.active_clip = node;
                         button.handle_button_event(&mut update_context, ButtonEvent::RollOver);
                     }
                 }
 
-                *cur_hover_node = new_hover_node;
+                // TODO cur_hover_node = new_hover_node;
 
-                Self::run_actions(&mut *gc_root.avm.write(gc_context), &mut update_context);
+                Self::run_actions(avm, &mut update_context);
                 true
             } else {
                 false
@@ -470,32 +494,31 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
+            let mut root_data = gc_root.0.write(gc_context);
+            let (mut root, library, action_queue, avm) = root_data.get();
             let mut update_context = UpdateContext {
                 player_version,
                 global_time,
                 swf_data,
                 swf_version,
-                library: &mut *gc_root.library.write(gc_context),
+                library,
                 background_color,
                 rng,
                 renderer,
                 audio,
                 navigator,
-                action_queue: &mut *gc_root.action_queue.write(gc_context),
+                action_queue,
                 gc_context,
-                active_clip: gc_root.root,
-                start_clip: gc_root.root,
-                target_clip: Some(gc_root.root),
-                root: gc_root.root,
+                active_clip: root,
+                start_clip: root,
+                target_clip: Some(root),
+                root,
                 target_path: Value::Undefined,
-                system_prototypes: gc_root.avm.read().prototypes().clone(),
+                system_prototypes: avm.prototypes().clone(),
             };
 
             let mut morph_shapes = fnv::FnvHashMap::default();
-            gc_root
-                .root
-                .write(gc_context)
-                .as_movie_clip_mut()
+            root.as_movie_clip_mut()
                 .unwrap()
                 .preload(&mut update_context, &mut morph_shapes);
 
@@ -534,33 +557,32 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
+            let mut root_data = gc_root.0.write(gc_context);
+            let (mut root, library, action_queue, avm) = root_data.get();
             let mut update_context = UpdateContext {
                 player_version,
                 global_time,
                 swf_data,
                 swf_version,
-                library: &mut *gc_root.library.write(gc_context),
+                library,
                 background_color,
                 rng,
                 renderer,
                 audio,
                 navigator,
-                action_queue: &mut *gc_root.action_queue.write(gc_context),
+                action_queue,
                 gc_context,
-                active_clip: gc_root.root,
-                start_clip: gc_root.root,
-                target_clip: Some(gc_root.root),
-                root: gc_root.root,
+                active_clip: root,
+                start_clip: root,
+                target_clip: Some(root),
+                root,
                 target_path: Value::Undefined,
-                system_prototypes: gc_root.avm.read().prototypes().clone(),
+                system_prototypes: avm.prototypes().clone(),
             };
 
-            gc_root
-                .root
-                .write(gc_context)
-                .run_frame(&mut update_context);
+            root.run_frame(&mut update_context);
 
-            Self::run_actions(&mut *gc_root.avm.write(gc_context), &mut update_context);
+            Self::run_actions(avm, &mut update_context);
         });
 
         // Update mouse state (check for new hovered button, etc.)
@@ -590,14 +612,15 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             ..Default::default()
         });
         self.gc_arena.mutate(|_gc_context, gc_root| {
+            let root_data = gc_root.0.read();
             let mut render_context = RenderContext {
                 renderer,
-                library: &*gc_root.library.read(),
+                library: &root_data.library,
                 transform_stack,
                 view_bounds,
                 clip_depth_stack: vec![],
             };
-            gc_root.root.read().render(&mut render_context);
+            root_data.root.render(&mut render_context);
         });
         transform_stack.pop();
 
@@ -633,7 +656,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
     fn run_actions<'gc>(avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) {
         while let Some(actions) = context.action_queue.pop() {
             // We don't run the action f the clip was removed after it queued the action.
-            if actions.clip.read().removed() {
+            if actions.clip.removed() {
                 continue;
             }
 

@@ -1,10 +1,15 @@
 use crate::backend::render::ShapeHandle;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{DisplayObject, DisplayObjectBase};
+use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
+use gc_arena::{Collect, GcCell};
+
+#[derive(Clone, Debug, Collect, Copy)]
+#[collect(no_drop)]
+pub struct Graphic<'gc>(GcCell<'gc, GraphicData<'gc>>);
 
 #[derive(Clone, Debug)]
-pub struct Graphic<'gc> {
+pub struct GraphicData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: gc_arena::Gc<'gc, GraphicStatic>,
 }
@@ -16,31 +21,33 @@ impl<'gc> Graphic<'gc> {
             render_handle: context.renderer.register_shape(swf_shape),
             bounds: swf_shape.shape_bounds.clone().into(),
         };
-        Graphic {
-            base: Default::default(),
-            static_data: gc_arena::Gc::allocate(context.gc_context, static_data),
-        }
+        Graphic(GcCell::allocate(
+            context.gc_context,
+            GraphicData {
+                base: Default::default(),
+                static_data: gc_arena::Gc::allocate(context.gc_context, static_data),
+            },
+        ))
     }
 }
 
-impl<'gc> DisplayObject<'gc> for Graphic<'gc> {
+impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     impl_display_object!(base);
 
     fn id(&self) -> CharacterId {
-        self.static_data.id
+        self.0.read().static_data.id
     }
 
     fn local_bounds(&self) -> BoundingBox {
-        self.static_data.bounds.clone()
+        self.0.read().static_data.bounds.clone()
     }
 
     fn world_bounds(&self) -> BoundingBox {
         // TODO: Use dirty flags and cache this.
-        let mut bounds = self.local_bounds().transform(self.matrix());
+        let mut bounds = self.local_bounds().transform(&*self.matrix());
         let mut node = self.parent();
         while let Some(display_object) = node {
-            let display_object = display_object.read();
-            bounds = bounds.transform(display_object.matrix());
+            bounds = bounds.transform(&*display_object.matrix());
             node = display_object.parent();
         }
         bounds
@@ -56,10 +63,10 @@ impl<'gc> DisplayObject<'gc> for Graphic<'gc> {
             return;
         }
 
-        context.transform_stack.push(self.transform());
+        context.transform_stack.push(&*self.transform());
 
         context.renderer.render_shape(
-            self.static_data.render_handle,
+            self.0.read().static_data.render_handle,
             context.transform_stack.transform(),
         );
 
@@ -67,7 +74,7 @@ impl<'gc> DisplayObject<'gc> for Graphic<'gc> {
     }
 }
 
-unsafe impl<'gc> gc_arena::Collect for Graphic<'gc> {
+unsafe impl<'gc> gc_arena::Collect for GraphicData<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
         self.base.trace(cc);
         self.static_data.trace(cc);

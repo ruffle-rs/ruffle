@@ -4,7 +4,7 @@ use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, ScriptObject, UpdateContext, Value};
-use crate::display_object::DisplayNode;
+use crate::display_object::DisplayObject;
 use enumset::EnumSet;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
@@ -193,7 +193,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug {
     fn as_script_object_mut(&mut self) -> Option<&mut ScriptObject<'gc>>;
 
     /// Get the underlying display node for this object, if it exists.
-    fn as_display_node(&self) -> Option<DisplayNode<'gc>>;
+    fn as_display_node(&self) -> Option<DisplayObject<'gc>>;
 
     /// Get the underlying executable for this object, if it exists.
     fn as_executable(&self) -> Option<Executable<'gc>>;

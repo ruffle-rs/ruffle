@@ -3,7 +3,9 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::player::NEWEST_PLAYER_VERSION;
 use crate::prelude::*;
 use crate::transform::Transform;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, MutationContext};
+use ruffle_macros::enum_trait_object;
+use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 
 mod bitmap;
@@ -25,7 +27,7 @@ pub use text::Text;
 #[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
 pub struct DisplayObjectBase<'gc> {
-    parent: Option<DisplayNode<'gc>>,
+    parent: Option<DisplayObject<'gc>>,
     place_frame: u16,
     depth: Depth,
     transform: Transform,
@@ -34,13 +36,13 @@ pub struct DisplayObjectBase<'gc> {
 
     /// The first child of this display object in order of execution.
     /// This is differen than render order.
-    first_child: Option<DisplayNode<'gc>>,
+    first_child: Option<DisplayObject<'gc>>,
 
     /// The previous sibling of this display object in order of execution.
-    prev_sibling: Option<DisplayNode<'gc>>,
+    prev_sibling: Option<DisplayObject<'gc>>,
 
     /// The next sibling of this display object in order of execution.
-    next_sibling: Option<DisplayNode<'gc>>,
+    next_sibling: Option<DisplayObject<'gc>>,
 
     /// Whether this child has been removed from the display list.
     /// Necessary in AVM1 to throw away queued actions from removed movie clips.
@@ -64,7 +66,8 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
     }
 }
 
-impl<'gc> DisplayObject<'gc> for DisplayObjectBase<'gc> {
+#[allow(dead_code)]
+impl<'gc> DisplayObjectBase<'gc> {
     fn id(&self) -> CharacterId {
         0
     }
@@ -74,7 +77,7 @@ impl<'gc> DisplayObject<'gc> for DisplayObjectBase<'gc> {
     fn place_frame(&self) -> u16 {
         self.place_frame
     }
-    fn set_place_frame(&mut self, frame: u16) {
+    fn set_place_frame(&mut self, _context: MutationContext<'gc, '_>, frame: u16) {
         self.place_frame = frame;
     }
     fn transform(&self) -> &Transform {
@@ -84,66 +87,101 @@ impl<'gc> DisplayObject<'gc> for DisplayObjectBase<'gc> {
     fn matrix(&self) -> &Matrix {
         &self.transform.matrix
     }
-    fn matrix_mut(&mut self) -> &mut Matrix {
+    fn matrix_mut(&mut self, _context: MutationContext<'gc, '_>) -> &mut Matrix {
         &mut self.transform.matrix
     }
-    fn set_matrix(&mut self, matrix: &Matrix) {
+    fn set_matrix(&mut self, _context: MutationContext<'gc, '_>, matrix: &Matrix) {
         self.transform.matrix = *matrix;
     }
     fn color_transform(&self) -> &ColorTransform {
         &self.transform.color_transform
     }
-    fn set_color_transform(&mut self, color_transform: &ColorTransform) {
+    fn set_color_transform(
+        &mut self,
+        _context: MutationContext<'gc, '_>,
+        color_transform: &ColorTransform,
+    ) {
         self.transform.color_transform = *color_transform;
     }
     fn name(&self) -> &str {
         &self.name
     }
-    fn set_name(&mut self, name: &str) {
+    fn set_name(&mut self, _context: MutationContext<'gc, '_>, name: &str) {
         self.name = name.to_string();
     }
     fn clip_depth(&self) -> Depth {
         self.clip_depth
     }
-    fn set_clip_depth(&mut self, depth: Depth) {
+    fn set_clip_depth(&mut self, _context: MutationContext<'gc, '_>, depth: Depth) {
         self.clip_depth = depth;
     }
-    fn parent(&self) -> Option<DisplayNode<'gc>> {
+    fn parent(&self) -> Option<DisplayObject<'gc>> {
         self.parent
     }
-    fn set_parent(&mut self, parent: Option<DisplayNode<'gc>>) {
+    fn set_parent(
+        &mut self,
+        _context: MutationContext<'gc, '_>,
+        parent: Option<DisplayObject<'gc>>,
+    ) {
         self.parent = parent;
     }
-    fn first_child(&self) -> Option<DisplayNode<'gc>> {
+    fn first_child(&self) -> Option<DisplayObject<'gc>> {
         self.first_child
     }
-    fn set_first_child(&mut self, node: Option<DisplayNode<'gc>>) {
+    fn set_first_child(
+        &mut self,
+        _context: MutationContext<'gc, '_>,
+        node: Option<DisplayObject<'gc>>,
+    ) {
         self.first_child = node;
     }
-    fn prev_sibling(&self) -> Option<DisplayNode<'gc>> {
+    fn prev_sibling(&self) -> Option<DisplayObject<'gc>> {
         self.prev_sibling
     }
-    fn set_prev_sibling(&mut self, node: Option<DisplayNode<'gc>>) {
+    fn set_prev_sibling(
+        &mut self,
+        _context: MutationContext<'gc, '_>,
+        node: Option<DisplayObject<'gc>>,
+    ) {
         self.prev_sibling = node;
     }
-    fn next_sibling(&self) -> Option<DisplayNode<'gc>> {
+    fn next_sibling(&self) -> Option<DisplayObject<'gc>> {
         self.next_sibling
     }
-    fn set_next_sibling(&mut self, node: Option<DisplayNode<'gc>>) {
+    fn set_next_sibling(
+        &mut self,
+        _context: MutationContext<'gc, '_>,
+        node: Option<DisplayObject<'gc>>,
+    ) {
         self.next_sibling = node;
     }
     fn removed(&self) -> bool {
         self.removed
     }
-    fn set_removed(&mut self, removed: bool) {
+    fn set_removed(&mut self, _context: MutationContext<'gc, '_>, removed: bool) {
         self.removed = removed;
     }
-    fn box_clone(&self) -> Box<dyn DisplayObject<'gc>> {
-        Box::new(self.clone())
+    fn swf_version(&self) -> u8 {
+        self.parent
+            .map(|p| p.swf_version())
+            .unwrap_or(NEWEST_PLAYER_VERSION)
     }
 }
 
-pub trait DisplayObject<'gc>: 'gc + Collect + Debug {
+#[enum_trait_object(
+    #[derive(Clone, Collect, Debug, Copy)]
+    #[collect(no_drop)]
+    pub enum DisplayObject<'gc> {
+        Bitmap(Bitmap<'gc>),
+        Button(Button<'gc>),
+        EditText(EditText<'gc>),
+        Graphic(Graphic<'gc>),
+        MorphShape(MorphShape<'gc>),
+        MovieClip(MovieClip<'gc>),
+        Text(Text<'gc>),
+    }
+)]
+pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
     fn id(&self) -> CharacterId;
     fn depth(&self) -> Depth;
     fn local_bounds(&self) -> BoundingBox {
@@ -154,26 +192,42 @@ pub trait DisplayObject<'gc>: 'gc + Collect + Debug {
         BoundingBox::default()
     }
     fn place_frame(&self) -> u16;
-    fn set_place_frame(&mut self, frame: u16);
+    fn set_place_frame(&mut self, context: MutationContext<'gc, '_>, frame: u16);
 
-    fn transform(&self) -> &Transform;
-    fn matrix(&self) -> &Matrix;
-    fn matrix_mut(&mut self) -> &mut Matrix;
-    fn set_matrix(&mut self, matrix: &Matrix);
-    fn color_transform(&self) -> &ColorTransform;
-    fn set_color_transform(&mut self, color_transform: &ColorTransform);
-    fn name(&self) -> &str;
-    fn set_name(&mut self, name: &str);
+    fn transform(&self) -> Ref<Transform>;
+    fn matrix(&self) -> Ref<Matrix>;
+    fn matrix_mut(&mut self, context: MutationContext<'gc, '_>) -> RefMut<Matrix>;
+    fn set_matrix(&mut self, context: MutationContext<'gc, '_>, matrix: &Matrix);
+    fn color_transform(&self) -> Ref<ColorTransform>;
+    fn set_color_transform(
+        &mut self,
+        context: MutationContext<'gc, '_>,
+        color_transform: &ColorTransform,
+    );
+    fn name(&self) -> Ref<str>;
+    fn set_name(&mut self, context: MutationContext<'gc, '_>, name: &str);
     fn clip_depth(&self) -> Depth;
-    fn set_clip_depth(&mut self, depth: Depth);
-    fn parent(&self) -> Option<DisplayNode<'gc>>;
-    fn set_parent(&mut self, parent: Option<DisplayNode<'gc>>);
-    fn first_child(&self) -> Option<DisplayNode<'gc>>;
-    fn set_first_child(&mut self, node: Option<DisplayNode<'gc>>);
-    fn prev_sibling(&self) -> Option<DisplayNode<'gc>>;
-    fn set_prev_sibling(&mut self, node: Option<DisplayNode<'gc>>);
-    fn next_sibling(&self) -> Option<DisplayNode<'gc>>;
-    fn set_next_sibling(&mut self, node: Option<DisplayNode<'gc>>);
+    fn set_clip_depth(&mut self, context: MutationContext<'gc, '_>, depth: Depth);
+    fn parent(&self) -> Option<DisplayObject<'gc>>;
+    fn set_parent(&mut self, context: MutationContext<'gc, '_>, parent: Option<DisplayObject<'gc>>);
+    fn first_child(&self) -> Option<DisplayObject<'gc>>;
+    fn set_first_child(
+        &mut self,
+        context: MutationContext<'gc, '_>,
+        node: Option<DisplayObject<'gc>>,
+    );
+    fn prev_sibling(&self) -> Option<DisplayObject<'gc>>;
+    fn set_prev_sibling(
+        &mut self,
+        context: MutationContext<'gc, '_>,
+        node: Option<DisplayObject<'gc>>,
+    );
+    fn next_sibling(&self) -> Option<DisplayObject<'gc>>;
+    fn set_next_sibling(
+        &mut self,
+        context: MutationContext<'gc, '_>,
+        node: Option<DisplayObject<'gc>>,
+    );
     /// Iterates over the children of this display object in execution order.
     /// This is different than render order.
     fn children(&self) -> ChildIter<'gc> {
@@ -182,7 +236,7 @@ pub trait DisplayObject<'gc>: 'gc + Collect + Debug {
         }
     }
     fn removed(&self) -> bool;
-    fn set_removed(&mut self, removed: bool);
+    fn set_removed(&mut self, context: MutationContext<'gc, '_>, removed: bool);
     fn run_frame(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
     fn render(&self, _context: &mut RenderContext<'_, 'gc>) {}
 
@@ -204,61 +258,66 @@ pub trait DisplayObject<'gc>: 'gc + Collect + Debug {
     fn as_morph_shape_mut(&mut self) -> Option<&mut MorphShape<'gc>> {
         None
     }
-    fn apply_place_object(&mut self, place_object: &swf::PlaceObject) {
+    fn apply_place_object(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        place_object: &swf::PlaceObject,
+    ) {
         if let Some(matrix) = &place_object.matrix {
-            self.set_matrix(&matrix.clone().into());
+            self.set_matrix(gc_context, &matrix.clone().into());
         }
         if let Some(color_transform) = &place_object.color_transform {
-            self.set_color_transform(&color_transform.clone().into());
+            self.set_color_transform(gc_context, &color_transform.clone().into());
         }
         if let Some(name) = &place_object.name {
-            self.set_name(name);
+            self.set_name(gc_context, name);
         }
         if let Some(clip_depth) = place_object.clip_depth {
-            self.set_clip_depth(clip_depth);
+            self.set_clip_depth(gc_context, clip_depth);
         }
         if let Some(ratio) = place_object.ratio {
             if let Some(morph_shape) = self.as_morph_shape_mut() {
-                morph_shape.set_ratio(ratio);
+                morph_shape.set_ratio(gc_context, ratio);
             }
         }
         // TODO: Others will go here eventually.
     }
 
-    fn copy_display_properties_from(&mut self, other: DisplayNode<'gc>) {
-        let other = other.read();
-        self.set_matrix(other.matrix());
-        self.set_color_transform(other.color_transform());
-        self.set_clip_depth(other.clip_depth());
-        self.set_name(other.name());
+    fn copy_display_properties_from(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        other: DisplayObject<'gc>,
+    ) {
+        self.set_matrix(gc_context, &*other.matrix());
+        self.set_color_transform(gc_context, &*other.color_transform());
+        self.set_clip_depth(gc_context, other.clip_depth());
+        self.set_name(gc_context, &*other.name());
         if let (Some(me), Some(other)) = (self.as_morph_shape_mut(), other.as_morph_shape()) {
-            me.set_ratio(other.ratio());
+            me.set_ratio(gc_context, other.ratio());
         }
         // TODO: More in here eventually.
     }
-
-    fn box_clone(&self) -> Box<dyn DisplayObject<'gc>>;
 
     fn object(&self) -> Value<'gc> {
         Value::Undefined // todo: impl for every type and delete this fallback
     }
 
-    fn hit_test(&self, _: (Twips, Twips)) -> bool {
+    fn hit_test(&self, _pos: (Twips, Twips)) -> bool {
         false
     }
 
     fn mouse_pick(
         &self,
-        _self_node: DisplayNode<'gc>,
-        _: (Twips, Twips),
-    ) -> Option<DisplayNode<'gc>> {
+        _self_node: DisplayObject<'gc>,
+        _pos: (Twips, Twips),
+    ) -> Option<DisplayObject<'gc>> {
         None
     }
 
     fn post_instantiation(
         &mut self,
         _gc_context: MutationContext<'gc, '_>,
-        _display_object: DisplayNode<'gc>,
+        _display_object: DisplayObject<'gc>,
         _proto: Object<'gc>,
     ) {
     }
@@ -266,95 +325,108 @@ pub trait DisplayObject<'gc>: 'gc + Collect + Debug {
     /// Return the version of the SWF that created this movie clip.
     fn swf_version(&self) -> u8 {
         self.parent()
-            .map(|p| p.read().swf_version())
+            .map(|p| p.swf_version())
             .unwrap_or(NEWEST_PLAYER_VERSION)
     }
+
+    fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc>;
+    fn as_ptr(&self) -> *const DisplayObjectPtr;
 }
 
-impl<'gc> Clone for Box<dyn DisplayObject<'gc>> {
-    fn clone(&self) -> Box<dyn DisplayObject<'gc>> {
-        self.box_clone()
-    }
-}
+pub enum DisplayObjectPtr {}
 
 // To use this macro: `use crate::impl_display_object;` or `use crate::prelude::*;`
 #[macro_export]
 macro_rules! impl_display_object {
     ($field:ident) => {
         fn depth(&self) -> crate::prelude::Depth {
-            self.$field.depth()
+            self.0.read().$field.depth()
         }
         fn place_frame(&self) -> u16 {
-            self.$field.place_frame()
+            self.0.read().$field.place_frame()
         }
-        fn set_place_frame(&mut self, frame: u16) {
-            self.$field.set_place_frame(frame)
+        fn set_place_frame(&mut self,
+            context: gc_arena::MutationContext<'gc, '_>, frame: u16) {
+            self.0.write(context).$field.set_place_frame(context, frame)
         }
-        fn transform(&self) -> &crate::transform::Transform {
-            self.$field.transform()
+        fn transform(&self) -> std::cell::Ref<crate::transform::Transform> {
+            std::cell::Ref::map(self.0.read(), |o| o.$field.transform())
         }
-        fn matrix(&self) -> &crate::matrix::Matrix {
-            self.$field.matrix()
+        fn matrix(&self) -> std::cell::Ref<crate::matrix::Matrix> {
+            std::cell::Ref::map(self.0.read(), |o| o.$field.matrix())
         }
-        fn matrix_mut(&mut self) -> &mut crate::matrix::Matrix {
-            self.$field.matrix_mut()
+        fn matrix_mut(&mut self,
+            context: gc_arena::MutationContext<'gc, '_>) -> std::cell::RefMut<crate::matrix::Matrix> {
+            std::cell::RefMut::map(self.0.write(context), |o| o.$field.matrix_mut(context))
         }
-        fn set_matrix(&mut self, matrix: &crate::matrix::Matrix) {
-            self.$field.set_matrix(matrix)
+        fn set_matrix(&mut self,
+            context: gc_arena::MutationContext<'gc, '_>, matrix: &crate::matrix::Matrix) {
+            self.0.write(context).$field.set_matrix(context, matrix)
         }
-        fn color_transform(&self) -> &crate::color_transform::ColorTransform {
-            self.$field.color_transform()
+        fn color_transform(&self) -> std::cell::Ref<crate::color_transform::ColorTransform> {
+            std::cell::Ref::map(self.0.read(), |o| o.$field.color_transform())
         }
-        fn set_color_transform(&mut self, color_transform: &crate::color_transform::ColorTransform) {
-            self.$field.set_color_transform(color_transform)
+        fn set_color_transform(&mut self,
+            context: gc_arena::MutationContext<'gc, '_>, color_transform: &crate::color_transform::ColorTransform) {
+            self.0.write(context).$field.set_color_transform(context, color_transform)
         }
-        fn name(&self) -> &str {
-            self.$field.name()
+        fn name(&self) -> std::cell::Ref<str> {
+            std::cell::Ref::map(self.0.read(), |o| o.$field.name())
         }
-        fn set_name(&mut self, name: &str) {
-            self.$field.set_name(name)
+        fn set_name(&mut self,
+            context: gc_arena::MutationContext<'gc, '_>, name: &str) {
+            self.0.write(context).$field.set_name(context, name)
         }
         fn clip_depth(&self) -> crate::prelude::Depth {
-            self.$field.clip_depth()
+            self.0.read().$field.clip_depth()
         }
-        fn set_clip_depth(&mut self, depth: crate::prelude::Depth) {
-            self.$field.set_clip_depth(depth)
+        fn set_clip_depth(&mut self,
+            context: gc_arena::MutationContext<'gc, '_>, depth: crate::prelude::Depth) {
+            self.0.write(context).$field.set_clip_depth(context, depth)
         }
-        fn parent(&self) -> Option<crate::display_object::DisplayNode<'gc>> {
-            self.$field.parent()
+        fn parent(&self) -> Option<crate::display_object::DisplayObject<'gc>> {
+            self.0.read().$field.parent()
         }
-        fn set_parent(&mut self, parent: Option<crate::display_object::DisplayNode<'gc>>) {
-            self.$field.set_parent(parent)
+        fn set_parent(&mut self,
+            context: gc_arena::MutationContext<'gc, '_>, parent: Option<crate::display_object::DisplayObject<'gc>>) {
+            self.0.write(context).$field.set_parent(context, parent)
         }
-        fn first_child(&self) -> Option<DisplayNode<'gc>> {
-            self.$field.first_child()
+        fn first_child(&self) -> Option<DisplayObject<'gc>> {
+            self.0.read().$field.first_child()
         }
-        fn set_first_child(&mut self, node: Option<DisplayNode<'gc>>) {
-            self.$field.set_first_child(node);
+        fn set_first_child(&mut self,
+            context: gc_arena::MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>) {
+            self.0.write(context).$field.set_first_child(context, node);
         }
-        fn prev_sibling(&self) -> Option<DisplayNode<'gc>> {
-            self.$field.prev_sibling()
+        fn prev_sibling(&self) -> Option<DisplayObject<'gc>> {
+            self.0.read().$field.prev_sibling()
         }
-        fn set_prev_sibling(&mut self, node: Option<DisplayNode<'gc>>) {
-            self.$field.set_prev_sibling(node);
+        fn set_prev_sibling(&mut self,
+            context: gc_arena::MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>) {
+            self.0.write(context).$field.set_prev_sibling(context, node);
         }
-        fn next_sibling(&self) -> Option<DisplayNode<'gc>> {
-            self.$field.next_sibling()
+        fn next_sibling(&self) -> Option<DisplayObject<'gc>> {
+            self.0.read().$field.next_sibling()
         }
-        fn set_next_sibling(&mut self, node: Option<DisplayNode<'gc>>) {
-            self.$field.set_next_sibling(node);
+        fn set_next_sibling(&mut self,
+            context: gc_arena::MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>) {
+            self.0.write(context).$field.set_next_sibling(context, node);
         }
         fn removed(&self) -> bool {
-            self.$field.removed()
+            self.0.read().$field.removed()
         }
-        fn set_removed(&mut self, value: bool) {
-            self.$field.set_removed(value)
-        }
-        fn box_clone(&self) -> Box<dyn crate::display_object::DisplayObject<'gc>> {
-            Box::new(self.clone())
+        fn set_removed(&mut self,
+            context: gc_arena::MutationContext<'gc, '_>, value: bool) {
+            self.0.write(context).$field.set_removed(context, value)
         }
         fn swf_version(&self) -> u8 {
-            self.$field.swf_version()
+            self.0.read().$field.swf_version()
+        }
+        fn instantiate(&self, gc_context: gc_arena::MutationContext<'gc, '_>) -> crate::display_object::DisplayObject<'gc> {
+            Self(gc_arena::GcCell::allocate(gc_context, self.0.read().clone())).into()
+        }
+        fn as_ptr(&self) -> *const crate::display_object::DisplayObjectPtr {
+            self.0.as_ptr() as *const crate::display_object::DisplayObjectPtr
         }
     };
 }
@@ -364,7 +436,7 @@ macro_rules! impl_display_object {
 // we figure out inheritance
 pub fn render_children<'gc>(
     context: &mut RenderContext<'_, 'gc>,
-    children: &std::collections::BTreeMap<Depth, DisplayNode<'gc>>,
+    children: &std::collections::BTreeMap<Depth, DisplayObject<'gc>>,
 ) {
     let mut clip_depth = 0;
     let mut clip_depth_stack = vec![];
@@ -376,7 +448,6 @@ pub fn render_children<'gc>(
             context.renderer.pop_mask();
             clip_depth = clip_depth_stack.pop().unwrap();
         }
-        let child = child.read();
         if child.clip_depth() > 0 {
             // Push and render the mask.
             clip_depth_stack.push(clip_depth);
@@ -396,22 +467,23 @@ pub fn render_children<'gc>(
     }
 }
 
-/// `DisplayNode` is the garbage-collected pointer between display objects.
-/// TODO(Herschel): The extra Box here is necessary to hold the trait object inside a GC pointer,
-/// but this is an extra allocation... Can we avoid this, maybe with a DST?
-pub type DisplayNode<'gc> = GcCell<'gc, Box<dyn DisplayObject<'gc>>>;
+impl<'gc> DisplayObject<'gc> {
+    pub fn ptr_eq(a: DisplayObject<'gc>, b: DisplayObject<'gc>) -> bool {
+        a.as_ptr() == b.as_ptr()
+    }
+}
 
 pub struct ChildIter<'gc> {
-    cur_child: Option<DisplayNode<'gc>>,
+    cur_child: Option<DisplayObject<'gc>>,
 }
 
 impl<'gc> Iterator for ChildIter<'gc> {
-    type Item = DisplayNode<'gc>;
+    type Item = DisplayObject<'gc>;
     fn next(&mut self) -> Option<Self::Item> {
         let cur = self.cur_child;
         self.cur_child = self
             .cur_child
-            .and_then(|display_cell| display_cell.read().next_sibling());
+            .and_then(|display_cell| display_cell.next_sibling());
         cur
     }
 }

@@ -4,7 +4,7 @@ use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
-use crate::display_object::{DisplayNode, DisplayObject, MovieClip};
+use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
@@ -25,7 +25,7 @@ macro_rules! with_movie_clip {
                 $name,
                 |_avm, _context, this, args| -> Result<ReturnValue<'gc>, Error> {
                     if let Some(display_object) = this.as_display_node() {
-                        if let Some(movie_clip) = display_object.read().as_movie_clip() {
+                        if let Some(movie_clip) = display_object.as_movie_clip() {
                             return Ok($fn(movie_clip, args));
                         }
                     }
@@ -45,9 +45,9 @@ macro_rules! with_movie_clip_mut {
             $object.force_set_function(
                 $name,
                 |_avm, context: &mut UpdateContext<'_, 'gc, '_>, this, args| -> Result<ReturnValue<'gc>, Error> {
-                    if let Some(display_object) = this.as_display_node() {
-                        if let Some(movie_clip) = display_object.write(context.gc_context).as_movie_clip_mut() {
-                            return Ok($fn(movie_clip, context, display_object, args).into());
+                    if let Some(mut display_object) = this.as_display_node() {
+                        if let Some(mut movie_clip) = display_object.as_movie_clip_mut().cloned() {
+                            return Ok($fn(&mut movie_clip, context, display_object, args).into());
                         }
                     }
                     Ok(Value::Undefined.into())
@@ -101,19 +101,19 @@ pub fn create_proto<'gc>(
         gc_context,
         object,
         Some(fn_proto),
-        "nextFrame" => |movie_clip: &mut MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
+        "nextFrame" => |movie_clip: &mut MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
             movie_clip.next_frame(context);
             Value::Undefined
         },
-        "prevFrame" =>  |movie_clip: &mut MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
+        "prevFrame" =>  |movie_clip: &mut MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
             movie_clip.prev_frame(context);
             Value::Undefined
         },
-        "play" => |movie_clip: &mut MovieClip<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
-            movie_clip.play();
+        "play" => |movie_clip: &mut MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
+            movie_clip.play(context);
             Value::Undefined
         },
-        "stop" => |movie_clip: &mut MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
+        "stop" => |movie_clip: &mut MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
             movie_clip.stop(context);
             Value::Undefined
         }
@@ -158,8 +158,8 @@ pub fn create_proto<'gc>(
         Executable::Native(|_avm, _context, this, _args| {
             Ok(this
                 .as_display_node()
-                .and_then(|mc| mc.read().parent())
-                .and_then(|dn| dn.read().object().as_object().ok())
+                .and_then(|mc| mc.parent())
+                .and_then(|dn| dn.object().as_object().ok())
                 .map(Value::Object)
                 .unwrap_or(Value::Undefined)
                 .into())

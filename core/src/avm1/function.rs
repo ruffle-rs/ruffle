@@ -6,6 +6,7 @@ use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext};
+use crate::display_object::TDisplayObject;
 use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, CollectionContext, GcCell};
 use swf::avm1::types::FunctionParam;
@@ -226,7 +227,7 @@ impl<'gc> Executable<'gc> {
                     af.swf_version()
                 } else {
                     this.as_display_node()
-                        .map(|dn| dn.read().swf_version())
+                        .map(|dn| dn.swf_version())
                         .unwrap_or(ac.player_version)
                 };
 

@@ -2,7 +2,7 @@ use crate::avm1::function::{Executable, NativeFunction};
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ObjectPtr, TObject, UpdateContext, Value};
-use crate::display_object::DisplayNode;
+use crate::display_object::DisplayObject;
 use core::fmt;
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -19,7 +19,7 @@ pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
 
 pub struct ScriptObjectData<'gc> {
     prototype: Option<Object<'gc>>,
-    display_node: Option<DisplayNode<'gc>>,
+    display_node: Option<DisplayObject<'gc>>,
     values: HashMap<String, Property<'gc>>,
     function: Option<Executable<'gc>>,
     type_of: &'static str,
@@ -149,13 +149,13 @@ impl<'gc> ScriptObject<'gc> {
     pub fn set_display_node(
         self,
         gc_context: MutationContext<'gc, '_>,
-        display_node: DisplayNode<'gc>,
+        display_node: DisplayObject<'gc>,
     ) {
         self.0.write(gc_context).display_node = Some(display_node);
     }
 
     #[allow(dead_code)]
-    pub fn display_node(&self) -> Option<DisplayNode<'gc>> {
+    pub fn display_node(&self) -> Option<DisplayObject<'gc>> {
         self.0.read().display_node
     }
 
@@ -416,7 +416,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     /// Get the underlying display node for this object, if it exists.
-    fn as_display_node(&self) -> Option<DisplayNode<'gc>> {
+    fn as_display_node(&self) -> Option<DisplayObject<'gc>> {
         self.0.read().display_node
     }
 
@@ -455,9 +455,7 @@ mod tests {
     {
         rootless_arena(|gc_context| {
             let mut avm = Avm1::new(gc_context, swf_version);
-            let movie_clip: Box<dyn DisplayObject> =
-                Box::new(MovieClip::new(swf_version, gc_context));
-            let root = GcCell::allocate(gc_context, movie_clip);
+            let root = MovieClip::new(swf_version, gc_context).into();
             let mut context = UpdateContext {
                 gc_context,
                 global_time: 0,

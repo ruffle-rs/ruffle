@@ -4,7 +4,7 @@ use crate::backend::audio::NullAudioBackend;
 use crate::backend::navigator::NullNavigatorBackend;
 use crate::backend::render::NullRenderer;
 use crate::context::ActionQueue;
-use crate::display_object::{DisplayObject, MovieClip};
+use crate::display_object::{MovieClip, TDisplayObject};
 use crate::library::Library;
 use crate::prelude::*;
 use gc_arena::{rootless_arena, GcCell, MutationContext};
@@ -20,8 +20,7 @@ where
         F: for<'a> FnOnce(&mut Avm1<'gc>, &mut UpdateContext<'a, 'gc, '_>, Object<'gc>) -> R,
     {
         let mut avm = Avm1::new(gc_context, swf_version);
-        let movie_clip: Box<dyn DisplayObject> = Box::new(MovieClip::new(swf_version, gc_context));
-        let root = GcCell::allocate(gc_context, movie_clip);
+        let root = MovieClip::new(swf_version, gc_context).into();
         let mut context = UpdateContext {
             gc_context,
             global_time: 0,
@@ -54,7 +53,7 @@ where
             Activation::from_nothing(swf_version, globals, gc_context),
         ));
 
-        let this = root.read().object().as_object().unwrap();
+        let this = root.object().as_object().unwrap();
 
         test(&mut avm, &mut context, this)
     }

@@ -1,35 +1,43 @@
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{DisplayObject, DisplayObjectBase};
+use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
 use crate::transform::Transform;
+use gc_arena::{Collect, GcCell};
+
+#[derive(Clone, Debug, Collect, Copy)]
+#[collect(no_drop)]
+pub struct Text<'gc>(GcCell<'gc, TextData<'gc>>);
 
 #[derive(Clone, Debug)]
-pub struct Text<'gc> {
+pub struct TextData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: gc_arena::Gc<'gc, TextStatic>,
 }
 
 impl<'gc> Text<'gc> {
     pub fn from_swf_tag(context: &mut UpdateContext<'_, 'gc, '_>, tag: &swf::Text) -> Self {
-        Self {
-            base: Default::default(),
-            static_data: gc_arena::Gc::allocate(
-                context.gc_context,
-                TextStatic {
-                    id: tag.id,
-                    text_transform: tag.matrix.clone().into(),
-                    text_blocks: tag.records.clone(),
-                },
-            ),
-        }
+        Text(GcCell::allocate(
+            context.gc_context,
+            TextData {
+                base: Default::default(),
+                static_data: gc_arena::Gc::allocate(
+                    context.gc_context,
+                    TextStatic {
+                        id: tag.id,
+                        text_transform: tag.matrix.clone().into(),
+                        text_blocks: tag.records.clone(),
+                    },
+                ),
+            },
+        ))
     }
 }
 
-impl<'gc> DisplayObject<'gc> for Text<'gc> {
+impl<'gc> TDisplayObject<'gc> for Text<'gc> {
     impl_display_object!(base);
 
     fn id(&self) -> CharacterId {
-        self.static_data.id
+        self.0.read().static_data.id
     }
 
     fn run_frame(&mut self, _context: &mut UpdateContext) {
@@ -37,9 +45,10 @@ impl<'gc> DisplayObject<'gc> for Text<'gc> {
     }
 
     fn render(&self, context: &mut RenderContext) {
-        context.transform_stack.push(self.transform());
+        let tf = self.0.read();
+        context.transform_stack.push(&*self.transform());
         context.transform_stack.push(&Transform {
-            matrix: self.static_data.text_transform,
+            matrix: tf.static_data.text_transform,
             ..Default::default()
         });
 
@@ -52,7 +61,7 @@ impl<'gc> DisplayObject<'gc> for Text<'gc> {
         let mut font_id = 0;
         let mut height = 0;
         let mut transform: Transform = Default::default();
-        for block in &self.static_data.text_blocks {
+        for block in &tf.static_data.text_blocks {
             if let Some(x) = block.x_offset {
                 transform.matrix.tx = x.get() as f32;
             }
@@ -87,7 +96,7 @@ impl<'gc> DisplayObject<'gc> for Text<'gc> {
     }
 }
 
-unsafe impl<'gc> gc_arena::Collect for Text<'gc> {
+unsafe impl<'gc> gc_arena::Collect for TextData<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
         self.base.trace(cc);
