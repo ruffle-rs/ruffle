@@ -85,6 +85,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// The current set of system-specified prototypes to use when constructing
     /// new built-in objects.
     pub system_prototypes: avm1::SystemPrototypes<'gc>,
+
+    /// The display object that the mouse is currently hovering over.
+    pub mouse_hovered_object: Option<DisplayObject<'gc>>,
 }
 
 /// A queued ActionScript call.

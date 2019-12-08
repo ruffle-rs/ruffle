@@ -480,6 +480,7 @@ mod tests {
                 renderer: &mut NullRenderer::new(),
                 swf_data: &mut Arc::new(vec![]),
                 system_prototypes: avm.prototypes().clone(),
+                mouse_hovered_object: None,
             };
 
             let object = ScriptObject::object(gc_context, Some(avm.prototypes().object)).into();
