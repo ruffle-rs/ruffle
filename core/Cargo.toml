@@ -19,7 +19,7 @@ enumset = "0.4.2"
 smallvec = "1.0.0"
 
 [dependencies.jpeg-decoder]
-version = "0.1.16"
+version = "0.1.17"
 default-features = false # can't use rayon on web
 
 [dependencies.rand]
