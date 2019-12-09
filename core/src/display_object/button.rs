@@ -67,93 +67,14 @@ impl<'gc> Button<'gc> {
         ))
     }
 
-    fn set_state(
-        &mut self,
-        context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
-        state: ButtonState,
-    ) {
-        self.0.write(context.gc_context).state = state;
-        let swf_state = match state {
-            ButtonState::Up => swf::ButtonState::Up,
-            ButtonState::Over => swf::ButtonState::Over,
-            ButtonState::Down => swf::ButtonState::Down,
-        };
-        self.0.write(context.gc_context).children.clear();
-        let static_data = self.0.read().static_data;
-        for record in &static_data.records {
-            if record.states.contains(&swf_state) {
-                if let Ok(mut child) = context.library.instantiate_display_object(
-                    record.id,
-                    context.gc_context,
-                    &context.system_prototypes,
-                ) {
-                    child.set_parent(context.gc_context, Some(context.active_clip));
-                    child.set_matrix(context.gc_context, &record.matrix.clone().into());
-                    child.set_color_transform(
-                        context.gc_context,
-                        &record.color_transform.clone().into(),
-                    );
-                    self.0
-                        .write(context.gc_context)
-                        .children
-                        .insert(record.depth, child);
-                }
-            }
-        }
-    }
-
     pub fn handle_button_event(
         &mut self,
         context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
         event: ButtonEvent,
     ) {
-        let cur_state = self.0.read().state;
-        let new_state = match event {
-            ButtonEvent::RollOut => ButtonState::Up,
-            ButtonEvent::RollOver => ButtonState::Over,
-            ButtonEvent::Press => ButtonState::Down,
-            ButtonEvent::Release => ButtonState::Over,
-            ButtonEvent::KeyPress(key) => {
-                self.run_actions(context, swf::ButtonActionCondition::KeyPress, Some(key));
-                cur_state
-            }
-        };
-
-        match (cur_state, new_state) {
-            (ButtonState::Up, ButtonState::Over) => {
-                self.run_actions(context, swf::ButtonActionCondition::IdleToOverUp, None);
-            }
-            (ButtonState::Over, ButtonState::Up) => {
-                self.run_actions(context, swf::ButtonActionCondition::OverUpToIdle, None);
-            }
-            (ButtonState::Over, ButtonState::Down) => {
-                self.run_actions(context, swf::ButtonActionCondition::OverUpToOverDown, None);
-            }
-            (ButtonState::Down, ButtonState::Over) => {
-                self.run_actions(context, swf::ButtonActionCondition::OverDownToOverUp, None);
-            }
-            _ => (),
-        }
-
-        self.set_state(context, new_state);
-    }
-
-    fn run_actions(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        condition: swf::ButtonActionCondition,
-        key_code: Option<u8>,
-    ) {
-        if let Some(parent) = self.parent() {
-            for action in &self.0.read().static_data.actions {
-                if action.condition == condition && action.key_code == key_code {
-                    // Note that AVM1 buttons run actions relative to their parent, not themselves.
-                    context
-                        .action_queue
-                        .queue_actions(parent, action.action_data.clone(), false);
-                }
-            }
-        }
+        self.0
+            .write(context.gc_context)
+            .handle_button_event(context, event)
     }
 }
 
@@ -165,46 +86,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
     }
 
     fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        // TODO: Move this to post_instantiation.
-        if !self.0.read().initialized {
-            self.0.write(context.gc_context).initialized = true;
-            self.set_state(context, ButtonState::Up);
-
-            let static_data = self.0.read().static_data;
-            for record in &static_data.records {
-                if record.states.contains(&swf::ButtonState::HitTest) {
-                    match context.library.instantiate_display_object(
-                        record.id,
-                        context.gc_context,
-                        &context.system_prototypes,
-                    ) {
-                        Ok(mut child) => {
-                            {
-                                child.set_matrix(context.gc_context, &record.matrix.clone().into());
-                                child.set_parent(context.gc_context, Some(context.active_clip));
-                            }
-                            self.0
-                                .write(context.gc_context)
-                                .hit_area
-                                .insert(record.depth, child);
-                        }
-                        Err(error) => {
-                            log::error!(
-                                "Button ID {}: could not instantiate child ID {}: {}",
-                                self.0.read().static_data.id,
-                                record.id,
-                                error
-                            );
-                        }
-                    }
-                }
-            }
-        }
-
-        for child in self.0.write(context.gc_context).children.values_mut() {
-            context.active_clip = *child;
-            child.run_frame(context);
-        }
+        self.0.write(context.gc_context).run_frame(context)
     }
 
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
@@ -244,6 +126,131 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
 
     fn as_button_mut(&mut self) -> Option<&mut Self> {
         Some(self)
+    }
+}
+
+impl<'gc> ButtonData<'gc> {
+    fn set_state(
+        &mut self,
+        context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
+        state: ButtonState,
+    ) {
+        self.state = state;
+        let swf_state = match state {
+            ButtonState::Up => swf::ButtonState::Up,
+            ButtonState::Over => swf::ButtonState::Over,
+            ButtonState::Down => swf::ButtonState::Down,
+        };
+        self.children.clear();
+        for record in &self.static_data.records {
+            if record.states.contains(&swf_state) {
+                if let Ok(mut child) = context.library.instantiate_display_object(
+                    record.id,
+                    context.gc_context,
+                    &context.system_prototypes,
+                ) {
+                    child.set_parent(context.gc_context, Some(context.active_clip));
+                    child.set_matrix(context.gc_context, &record.matrix.clone().into());
+                    child.set_color_transform(
+                        context.gc_context,
+                        &record.color_transform.clone().into(),
+                    );
+                    self.children.insert(record.depth, child);
+                }
+            }
+        }
+    }
+
+    fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        // TODO: Move this to post_instantiation.
+        if !self.initialized {
+            self.initialized = true;
+            self.set_state(context, ButtonState::Up);
+
+            for record in &self.static_data.records {
+                if record.states.contains(&swf::ButtonState::HitTest) {
+                    match context.library.instantiate_display_object(
+                        record.id,
+                        context.gc_context,
+                        &context.system_prototypes,
+                    ) {
+                        Ok(mut child) => {
+                            {
+                                child.set_matrix(context.gc_context, &record.matrix.clone().into());
+                                child.set_parent(context.gc_context, Some(context.active_clip));
+                            }
+                            self.hit_area.insert(record.depth, child);
+                        }
+                        Err(error) => {
+                            log::error!(
+                                "Button ID {}: could not instantiate child ID {}: {}",
+                                self.static_data.id,
+                                record.id,
+                                error
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        for child in self.children.values_mut() {
+            context.active_clip = *child;
+            child.run_frame(context);
+        }
+    }
+
+    fn handle_button_event(
+        &mut self,
+        context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
+        event: ButtonEvent,
+    ) {
+        let cur_state = self.state;
+        let new_state = match event {
+            ButtonEvent::RollOut => ButtonState::Up,
+            ButtonEvent::RollOver => ButtonState::Over,
+            ButtonEvent::Press => ButtonState::Down,
+            ButtonEvent::Release => ButtonState::Over,
+            ButtonEvent::KeyPress(key) => {
+                self.run_actions(context, swf::ButtonActionCondition::KeyPress, Some(key));
+                cur_state
+            }
+        };
+
+        match (cur_state, new_state) {
+            (ButtonState::Up, ButtonState::Over) => {
+                self.run_actions(context, swf::ButtonActionCondition::IdleToOverUp, None);
+            }
+            (ButtonState::Over, ButtonState::Up) => {
+                self.run_actions(context, swf::ButtonActionCondition::OverUpToIdle, None);
+            }
+            (ButtonState::Over, ButtonState::Down) => {
+                self.run_actions(context, swf::ButtonActionCondition::OverUpToOverDown, None);
+            }
+            (ButtonState::Down, ButtonState::Over) => {
+                self.run_actions(context, swf::ButtonActionCondition::OverDownToOverUp, None);
+            }
+            _ => (),
+        }
+
+        self.set_state(context, new_state);
+    }
+    fn run_actions(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        condition: swf::ButtonActionCondition,
+        key_code: Option<u8>,
+    ) {
+        if let Some(parent) = self.base.parent {
+            for action in &self.static_data.actions {
+                if action.condition == condition && action.key_code == key_code {
+                    // Note that AVM1 buttons run actions relative to their parent, not themselves.
+                    context
+                        .action_queue
+                        .queue_actions(parent, action.action_data.clone(), false);
+                }
+            }
+        }
     }
 }
 
