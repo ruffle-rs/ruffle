@@ -74,7 +74,7 @@ impl<'gc> Button<'gc> {
     ) {
         self.0
             .write(context.gc_context)
-            .handle_button_event(context, event)
+            .handle_button_event((*self).into(), context, event)
     }
 }
 
@@ -86,7 +86,9 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
     }
 
     fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.0.write(context.gc_context).run_frame(context)
+        self.0
+            .write(context.gc_context)
+            .run_frame((*self).into(), context)
     }
 
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
@@ -132,6 +134,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
 impl<'gc> ButtonData<'gc> {
     fn set_state(
         &mut self,
+        self_display_object: DisplayObject<'gc>,
         context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
         state: ButtonState,
     ) {
@@ -149,7 +152,7 @@ impl<'gc> ButtonData<'gc> {
                     context.gc_context,
                     &context.system_prototypes,
                 ) {
-                    child.set_parent(context.gc_context, Some(context.active_clip));
+                    child.set_parent(context.gc_context, Some(self_display_object));
                     child.set_matrix(context.gc_context, &record.matrix.clone().into());
                     child.set_color_transform(
                         context.gc_context,
@@ -161,11 +164,15 @@ impl<'gc> ButtonData<'gc> {
         }
     }
 
-    fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn run_frame(
+        &mut self,
+        self_display_object: DisplayObject<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) {
         // TODO: Move this to post_instantiation.
         if !self.initialized {
             self.initialized = true;
-            self.set_state(context, ButtonState::Up);
+            self.set_state(self_display_object, context, ButtonState::Up);
 
             for record in &self.static_data.records {
                 if record.states.contains(&swf::ButtonState::HitTest) {
@@ -177,7 +184,7 @@ impl<'gc> ButtonData<'gc> {
                         Ok(mut child) => {
                             {
                                 child.set_matrix(context.gc_context, &record.matrix.clone().into());
-                                child.set_parent(context.gc_context, Some(context.active_clip));
+                                child.set_parent(context.gc_context, Some(self_display_object));
                             }
                             self.hit_area.insert(record.depth, child);
                         }
@@ -195,13 +202,13 @@ impl<'gc> ButtonData<'gc> {
         }
 
         for child in self.children.values_mut() {
-            context.active_clip = *child;
             child.run_frame(context);
         }
     }
 
     fn handle_button_event(
         &mut self,
+        self_display_object: DisplayObject<'gc>,
         context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
         event: ButtonEvent,
     ) {
@@ -233,7 +240,7 @@ impl<'gc> ButtonData<'gc> {
             _ => (),
         }
 
-        self.set_state(context, new_state);
+        self.set_state(self_display_object, context, new_state);
     }
     fn run_actions(
         &mut self,

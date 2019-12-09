@@ -144,15 +144,19 @@ impl<'gc> Avm1<'gc> {
     /// Add a stack frame that executes code in timeline scope
     pub fn insert_stack_frame_for_action(
         &mut self,
+        active_clip: DisplayObject<'gc>,
         swf_version: u8,
         code: SwfSlice,
         action_context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
+        action_context.start_clip = active_clip;
+        action_context.active_clip = active_clip;
+        action_context.target_clip = Some(active_clip);
         let global_scope = GcCell::allocate(
             action_context.gc_context,
             Scope::from_global_object(self.globals),
         );
-        let clip_obj = action_context.active_clip.object().as_object().unwrap();
+        let clip_obj = active_clip.object().as_object().unwrap();
         let child_scope = GcCell::allocate(
             action_context.gc_context,
             Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
@@ -166,15 +170,19 @@ impl<'gc> Avm1<'gc> {
     /// Add a stack frame that executes code in initializer scope
     pub fn insert_stack_frame_for_init_action(
         &mut self,
+        active_clip: DisplayObject<'gc>,
         swf_version: u8,
         code: SwfSlice,
         action_context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
+        action_context.start_clip = active_clip;
+        action_context.active_clip = active_clip;
+        action_context.target_clip = Some(active_clip);
         let global_scope = GcCell::allocate(
             action_context.gc_context,
             Scope::from_global_object(self.globals),
         );
-        let clip_obj = action_context.active_clip.object().as_object().unwrap();
+        let clip_obj = active_clip.object().as_object().unwrap();
         let child_scope = GcCell::allocate(
             action_context.gc_context,
             Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),

@@ -100,7 +100,7 @@ impl<'gc> MovieClip<'gc> {
     ) {
         self.0
             .write(context.gc_context)
-            .preload(context, morph_shapes)
+            .preload(context, morph_shapes, self.into())
     }
 
     pub fn playing(self) -> bool {
@@ -108,7 +108,9 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn next_frame(self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.0.write(context.gc_context).next_frame(context)
+        if self.current_frame() < self.total_frames() {
+            self.goto_frame(context, self.current_frame() + 1, true);
+        }
     }
 
     pub fn play(self, context: &mut UpdateContext<'_, 'gc, '_>) {
@@ -116,7 +118,9 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn prev_frame(self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.0.write(context.gc_context).prev_frame(context)
+        if self.current_frame() > 1 {
+            self.goto_frame(context, self.current_frame() - 1, true);
+        }
     }
 
     pub fn stop(self, context: &mut UpdateContext<'_, 'gc, '_>) {
@@ -133,7 +137,7 @@ impl<'gc> MovieClip<'gc> {
     ) {
         self.0
             .write(context.gc_context)
-            .goto_frame(context, frame, stop)
+            .goto_frame(self.into(), context, frame, stop)
     }
 
     pub fn x(self) -> f32 {
@@ -234,18 +238,15 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Children must run first.
-        let prev_clip = context.active_clip;
         for mut child in self.children() {
-            context.active_clip = child;
             child.run_frame(context);
         }
-        context.active_clip = prev_clip;
 
         // Run myself.
         if self.playing() {
             self.0
                 .write(context.gc_context)
-                .run_frame_internal(context, true);
+                .run_frame_internal((*self).into(), context, true);
         }
     }
 
@@ -336,22 +337,10 @@ impl<'gc> MovieClipData<'gc> {
         self.base.set_first_child(context, node);
     }
 
-    fn next_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        if self.current_frame < self.total_frames() {
-            self.goto_frame(context, self.current_frame + 1, true);
-        }
-    }
-
     fn play(&mut self) {
         // Can only play clips with multiple frames.
         if self.total_frames() > 1 {
             self.is_playing = true;
-        }
-    }
-
-    fn prev_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        if self.current_frame > 1 {
-            self.goto_frame(context, self.current_frame - 1, true);
         }
     }
 
@@ -375,6 +364,7 @@ impl<'gc> MovieClipData<'gc> {
     /// `frame` should be 1-based.
     pub fn goto_frame(
         &mut self,
+        self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         frame: FrameNumber,
         stop: bool,
@@ -387,7 +377,7 @@ impl<'gc> MovieClipData<'gc> {
         }
 
         if frame != self.current_frame() {
-            self.run_goto(context, frame);
+            self.run_goto(self_display_object, context, frame);
         }
     }
 
@@ -405,6 +395,7 @@ impl<'gc> MovieClipData<'gc> {
 
     fn run_frame_internal(
         &mut self,
+        self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         run_display_actions: bool,
     ) {
@@ -415,7 +406,7 @@ impl<'gc> MovieClipData<'gc> {
             // Looping acts exactly like a gotoAndPlay(1).
             // Specifically, object that existed on frame 1 should not be destroyed
             // and recreated.
-            self.run_goto(context, 1);
+            self.run_goto(self_display_object, context, 1);
             return;
         } else {
             // Single frame clips do not play.
@@ -428,18 +419,18 @@ impl<'gc> MovieClipData<'gc> {
         use swf::TagCode;
 
         let tag_callback = |reader: &mut _, tag_code, tag_len| match tag_code {
-            TagCode::DoAction => self.do_action(context, reader, tag_len),
+            TagCode::DoAction => self.do_action(self_display_object, context, reader, tag_len),
             TagCode::PlaceObject if run_display_actions => {
-                self.place_object(context, reader, tag_len, 1)
+                self.place_object(self_display_object, context, reader, tag_len, 1)
             }
             TagCode::PlaceObject2 if run_display_actions => {
-                self.place_object(context, reader, tag_len, 2)
+                self.place_object(self_display_object, context, reader, tag_len, 2)
             }
             TagCode::PlaceObject3 if run_display_actions => {
-                self.place_object(context, reader, tag_len, 3)
+                self.place_object(self_display_object, context, reader, tag_len, 3)
             }
             TagCode::PlaceObject4 if run_display_actions => {
-                self.place_object(context, reader, tag_len, 4)
+                self.place_object(self_display_object, context, reader, tag_len, 4)
             }
             TagCode::RemoveObject if run_display_actions => self.remove_object(context, reader, 1),
             TagCode::RemoveObject2 if run_display_actions => self.remove_object(context, reader, 2),
@@ -466,6 +457,7 @@ impl<'gc> MovieClipData<'gc> {
 
     fn instantiate_child(
         &mut self,
+        self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         id: CharacterId,
         depth: Depth,
@@ -485,18 +477,15 @@ impl<'gc> MovieClipData<'gc> {
             self.add_child_to_exec_list(context.gc_context, child);
             {
                 // Set initial properties for child.
-                child.set_parent(context.gc_context, Some(context.active_clip));
+                child.set_parent(context.gc_context, Some(self_display_object));
                 child.set_place_frame(context.gc_context, self.current_frame());
                 if copy_previous_properties {
                     if let Some(prev_child) = prev_child {
                         child.copy_display_properties_from(context.gc_context, prev_child);
                     }
                 }
-                let prev_clip = context.active_clip;
                 // Run first frame.
-                context.active_clip = child;
                 child.run_frame(context);
-                context.active_clip = prev_clip;
             }
             Some(child)
         } else {
@@ -541,7 +530,12 @@ impl<'gc> MovieClipData<'gc> {
         // Flag child as removed.
         child.set_removed(gc_context, true);
     }
-    pub fn run_goto(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, frame: FrameNumber) {
+    pub fn run_goto(
+        &mut self,
+        self_display_object: DisplayObject<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        frame: FrameNumber,
+    ) {
         // Flash gotos are tricky:
         // 1) Conceptually, a goto should act like the playhead is advancing forward or
         //    backward to a frame.
@@ -637,6 +631,7 @@ impl<'gc> MovieClipData<'gc> {
                     Some(prev_child) if is_rewind || params.id() == 0 => (false, prev_child),
                     _ => {
                         if let Some(child) = clip.instantiate_child(
+                            self_display_object,
                             context,
                             params.id(),
                             depth,
@@ -670,7 +665,7 @@ impl<'gc> MovieClipData<'gc> {
         // Re-run the final frame without display tags (DoAction, StartSound, etc.)
         self.current_frame = frame - 1;
         self.tag_stream_pos = frame_pos;
-        self.run_frame_internal(context, false);
+        self.run_frame_internal(self_display_object, context, false);
 
         // Finally, run frames for children that are placed on this frame.
         goto_commands
@@ -745,6 +740,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         morph_shapes: &mut fnv::FnvHashMap<CharacterId, MorphShapeStatic>,
+        self_display_object: DisplayObject<'gc>,
     ) {
         use swf::TagCode;
         // TODO: Re-creating static data because preload step occurs after construction.
@@ -777,7 +773,9 @@ impl<'gc, 'a> MovieClipData<'gc> {
             TagCode::DefineSprite => self.define_sprite(context, reader, tag_len, morph_shapes),
             TagCode::DefineText => self.define_text(context, reader, 1),
             TagCode::DefineText2 => self.define_text(context, reader, 2),
-            TagCode::DoInitAction => self.do_init_action(context, reader, tag_len),
+            TagCode::DoInitAction => {
+                self.do_init_action(self_display_object, context, reader, tag_len)
+            }
             TagCode::FrameLabel => {
                 self.frame_label(context, reader, tag_len, cur_frame, &mut static_data)
             }
@@ -1340,6 +1338,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
     #[inline]
     fn do_action(
         &mut self,
+        self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<&'a [u8]>,
         tag_len: usize,
@@ -1356,13 +1355,14 @@ impl<'gc, 'a> MovieClipData<'gc> {
         };
         context
             .action_queue
-            .queue_actions(context.active_clip, slice, false);
+            .queue_actions(self_display_object, slice, false);
         Ok(())
     }
 
     #[inline]
     fn do_init_action(
         &mut self,
+        self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<&'a [u8]>,
         tag_len: usize,
@@ -1385,12 +1385,13 @@ impl<'gc, 'a> MovieClipData<'gc> {
         };
         context
             .action_queue
-            .queue_actions(context.active_clip, slice, true);
+            .queue_actions(self_display_object, slice, true);
         Ok(())
     }
 
     fn place_object(
         &mut self,
+        self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<&'a [u8]>,
         tag_len: usize,
@@ -1405,6 +1406,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         match place_object.action {
             PlaceObjectAction::Place(id) | PlaceObjectAction::Replace(id) => {
                 if let Some(mut child) = self.instantiate_child(
+                    self_display_object,
                     context,
                     id,
                     place_object.depth,

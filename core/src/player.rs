@@ -326,14 +326,12 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                         PlayerEvent::MouseDown { .. } => {
                             is_mouse_down = true;
                             needs_render = true;
-                            context.active_clip = node;
                             button.handle_button_event(context, ButtonEvent::Press);
                         }
 
                         PlayerEvent::MouseUp { .. } => {
                             is_mouse_down = false;
                             needs_render = true;
-                            context.active_clip = node;
                             button.handle_button_event(context, ButtonEvent::Release);
                         }
 
@@ -366,7 +364,6 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 // RollOut of previous node.
                 if let Some(mut node) = cur_hovered {
                     if let Some(mut button) = node.as_button_mut().copied() {
-                        context.active_clip = node;
                         button.handle_button_event(context, ButtonEvent::RollOut);
                     }
                 }
@@ -374,7 +371,6 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 // RollOver on new node.
                 if let Some(mut node) = new_hovered {
                     if let Some(mut button) = node.as_button_mut().copied() {
-                        context.active_clip = node;
                         button.handle_button_event(context, ButtonEvent::RollOver);
                     }
                 }
@@ -490,18 +486,20 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 continue;
             }
 
-            context.start_clip = actions.clip;
-            context.active_clip = actions.clip;
-            context.target_clip = Some(actions.clip);
-
             if actions.is_init {
                 avm.insert_stack_frame_for_init_action(
+                    actions.clip,
                     context.swf_version,
                     actions.actions,
                     context,
                 );
             } else {
-                avm.insert_stack_frame_for_action(context.swf_version, actions.actions, context);
+                avm.insert_stack_frame_for_action(
+                    actions.clip,
+                    context.swf_version,
+                    actions.actions,
+                    context,
+                );
             }
             let _ = avm.run_stack_till_empty(context);
         }
