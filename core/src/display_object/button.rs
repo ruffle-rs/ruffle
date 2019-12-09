@@ -122,12 +122,8 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         }
     }
 
-    fn as_button(&self) -> Option<&Self> {
-        Some(self)
-    }
-
-    fn as_button_mut(&mut self) -> Option<&mut Self> {
-        Some(self)
+    fn as_button(&self) -> Option<Self> {
+        Some(*self)
     }
 }
 

@@ -140,67 +140,49 @@ fn value_of<'gc>(
 /// bare objects for both and let this function fill Object for you.
 pub fn fill_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    mut object_proto: Object<'gc>,
+    object_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) {
-    object_proto
-        .as_script_object_mut()
-        .unwrap()
-        .force_set_function(
-            "addProperty",
-            add_property,
-            gc_context,
-            DontDelete | DontEnum,
-            Some(fn_proto),
-        );
-    object_proto
-        .as_script_object_mut()
-        .unwrap()
-        .force_set_function(
-            "hasOwnProperty",
-            has_own_property,
-            gc_context,
-            DontDelete | DontEnum,
-            Some(fn_proto),
-        );
-    object_proto
-        .as_script_object_mut()
-        .unwrap()
-        .force_set_function(
-            "isPropertyEnumerable",
-            is_property_enumerable,
-            gc_context,
-            DontDelete | DontEnum,
-            Some(fn_proto),
-        );
-    object_proto
-        .as_script_object_mut()
-        .unwrap()
-        .force_set_function(
-            "isPrototypeOf",
-            is_prototype_of,
-            gc_context,
-            DontDelete | DontEnum,
-            Some(fn_proto),
-        );
-    object_proto
-        .as_script_object_mut()
-        .unwrap()
-        .force_set_function(
-            "toString",
-            to_string,
-            gc_context,
-            DontDelete | DontEnum,
-            Some(fn_proto),
-        );
-    object_proto
-        .as_script_object_mut()
-        .unwrap()
-        .force_set_function(
-            "valueOf",
-            value_of,
-            gc_context,
-            DontDelete | DontEnum,
-            Some(fn_proto),
-        );
+    object_proto.as_script_object().unwrap().force_set_function(
+        "addProperty",
+        add_property,
+        gc_context,
+        DontDelete | DontEnum,
+        Some(fn_proto),
+    );
+    object_proto.as_script_object().unwrap().force_set_function(
+        "hasOwnProperty",
+        has_own_property,
+        gc_context,
+        DontDelete | DontEnum,
+        Some(fn_proto),
+    );
+    object_proto.as_script_object().unwrap().force_set_function(
+        "isPropertyEnumerable",
+        is_property_enumerable,
+        gc_context,
+        DontDelete | DontEnum,
+        Some(fn_proto),
+    );
+    object_proto.as_script_object().unwrap().force_set_function(
+        "isPrototypeOf",
+        is_prototype_of,
+        gc_context,
+        DontDelete | DontEnum,
+        Some(fn_proto),
+    );
+    object_proto.as_script_object().unwrap().force_set_function(
+        "toString",
+        to_string,
+        gc_context,
+        DontDelete | DontEnum,
+        Some(fn_proto),
+    );
+    object_proto.as_script_object().unwrap().force_set_function(
+        "valueOf",
+        value_of,
+        gc_context,
+        DontDelete | DontEnum,
+        Some(fn_proto),
+    );
 }

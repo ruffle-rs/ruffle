@@ -155,7 +155,7 @@ impl<'gc> ScriptObject<'gc> {
     }
 
     #[allow(dead_code)]
-    pub fn display_node(&self) -> Option<DisplayObject<'gc>> {
+    pub fn display_node(self) -> Option<DisplayObject<'gc>> {
         self.0.read().display_node
     }
 
@@ -407,14 +407,9 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().type_of
     }
 
-    fn as_script_object(&self) -> Option<&ScriptObject<'gc>> {
-        Some(self)
+    fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
+        Some(*self)
     }
-
-    fn as_script_object_mut(&mut self) -> Option<&mut ScriptObject<'gc>> {
-        Some(self)
-    }
-
     /// Get the underlying display node for this object, if it exists.
     fn as_display_node(&self) -> Option<DisplayObject<'gc>> {
         self.0.read().display_node
@@ -507,8 +502,8 @@ mod tests {
 
     #[test]
     fn test_set_get() {
-        with_object(0, |avm, context, mut object| {
-            object.as_script_object_mut().unwrap().define_value(
+        with_object(0, |avm, context, object| {
+            object.as_script_object().unwrap().define_value(
                 context.gc_context,
                 "forced",
                 "forced".into(),
@@ -531,14 +526,14 @@ mod tests {
 
     #[test]
     fn test_set_readonly() {
-        with_object(0, |avm, context, mut object| {
-            object.as_script_object_mut().unwrap().define_value(
+        with_object(0, |avm, context, object| {
+            object.as_script_object().unwrap().define_value(
                 context.gc_context,
                 "normal",
                 "initial".into(),
                 EnumSet::empty(),
             );
-            object.as_script_object_mut().unwrap().define_value(
+            object.as_script_object().unwrap().define_value(
                 context.gc_context,
                 "readonly",
                 "initial".into(),
@@ -565,8 +560,8 @@ mod tests {
 
     #[test]
     fn test_deletable_not_readonly() {
-        with_object(0, |avm, context, mut object| {
-            object.as_script_object_mut().unwrap().define_value(
+        with_object(0, |avm, context, object| {
+            object.as_script_object().unwrap().define_value(
                 context.gc_context,
                 "test",
                 "initial".into(),
@@ -581,7 +576,7 @@ mod tests {
 
             let this = object;
             object
-                .as_script_object_mut()
+                .as_script_object()
                 .unwrap()
                 .set("test", "replaced".into(), avm, context, this)
                 .unwrap();
@@ -596,12 +591,12 @@ mod tests {
 
     #[test]
     fn test_virtual_get() {
-        with_object(0, |avm, context, mut object| {
+        with_object(0, |avm, context, object| {
             let getter = Executable::Native(|_avm, _context, _this, _args| {
                 Ok(ReturnValue::Immediate("Virtual!".into()))
             });
 
-            object.as_script_object_mut().unwrap().add_property(
+            object.as_script_object().unwrap().add_property(
                 context.gc_context,
                 "test",
                 getter,
@@ -627,32 +622,32 @@ mod tests {
 
     #[test]
     fn test_delete() {
-        with_object(0, |avm, context, mut object| {
+        with_object(0, |avm, context, object| {
             let getter = Executable::Native(|_avm, _context, _this, _args| {
                 Ok(ReturnValue::Immediate("Virtual!".into()))
             });
 
-            object.as_script_object_mut().unwrap().add_property(
+            object.as_script_object().unwrap().add_property(
                 context.gc_context,
                 "virtual",
                 getter.clone(),
                 None,
                 EnumSet::empty(),
             );
-            object.as_script_object_mut().unwrap().add_property(
+            object.as_script_object().unwrap().add_property(
                 context.gc_context,
                 "virtual_un",
                 getter,
                 None,
                 DontDelete.into(),
             );
-            object.as_script_object_mut().unwrap().define_value(
+            object.as_script_object().unwrap().define_value(
                 context.gc_context,
                 "stored",
                 "Stored!".into(),
                 EnumSet::empty(),
             );
-            object.as_script_object_mut().unwrap().define_value(
+            object.as_script_object().unwrap().define_value(
                 context.gc_context,
                 "stored_un",
                 "Stored!".into(),
@@ -686,31 +681,31 @@ mod tests {
 
     #[test]
     fn test_iter_values() {
-        with_object(0, |_avm, context, mut object| {
+        with_object(0, |_avm, context, object| {
             let getter = Executable::Native(|_avm, _context, _this, _args| {
                 Ok(ReturnValue::Immediate(Value::Null))
             });
 
-            object.as_script_object_mut().unwrap().define_value(
+            object.as_script_object().unwrap().define_value(
                 context.gc_context,
                 "stored",
                 Value::Null,
                 EnumSet::empty(),
             );
-            object.as_script_object_mut().unwrap().define_value(
+            object.as_script_object().unwrap().define_value(
                 context.gc_context,
                 "stored_hidden",
                 Value::Null,
                 DontEnum.into(),
             );
-            object.as_script_object_mut().unwrap().add_property(
+            object.as_script_object().unwrap().add_property(
                 context.gc_context,
                 "virtual",
                 getter.clone(),
                 None,
                 EnumSet::empty(),
             );
-            object.as_script_object_mut().unwrap().add_property(
+            object.as_script_object().unwrap().add_property(
                 context.gc_context,
                 "virtual_hidden",
                 getter,

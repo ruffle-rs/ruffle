@@ -321,7 +321,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         let mut is_mouse_down = self.is_mouse_down;
         self.mutate_with_update_context(|avm, context| {
             if let Some(node) = context.mouse_hovered_object {
-                if let Some(button) = node.clone().as_button_mut() {
+                if let Some(mut button) = node.clone().as_button() {
                     match event {
                         PlayerEvent::MouseDown { .. } => {
                             is_mouse_down = true;
@@ -362,15 +362,15 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             let cur_hovered = context.mouse_hovered_object;
             if cur_hovered.map(|d| d.as_ptr()) != new_hovered.map(|d| d.as_ptr()) {
                 // RollOut of previous node.
-                if let Some(mut node) = cur_hovered {
-                    if let Some(mut button) = node.as_button_mut().copied() {
+                if let Some(node) = cur_hovered {
+                    if let Some(mut button) = node.as_button() {
                         button.handle_button_event(context, ButtonEvent::RollOut);
                     }
                 }
 
                 // RollOver on new node.
-                if let Some(mut node) = new_hovered {
-                    if let Some(mut button) = node.as_button_mut().copied() {
+                if let Some(node) = new_hovered {
+                    if let Some(mut button) = node.as_button() {
                         button.handle_button_event(context, ButtonEvent::RollOver);
                     }
                 }
@@ -388,8 +388,8 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
     fn preload(&mut self) {
         self.mutate_with_update_context(|_avm, context| {
             let mut morph_shapes = fnv::FnvHashMap::default();
-            let mut root = context.root;
-            root.as_movie_clip_mut()
+            let root = context.root;
+            root.as_movie_clip()
                 .unwrap()
                 .preload(context, &mut morph_shapes);
 

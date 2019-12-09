@@ -187,10 +187,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug {
     fn type_of(&self) -> &'static str;
 
     /// Get the underlying script object, if it exists.
-    fn as_script_object(&self) -> Option<&ScriptObject<'gc>>;
-
-    /// Get the underlying script object, if it exists.
-    fn as_script_object_mut(&mut self) -> Option<&mut ScriptObject<'gc>>;
+    fn as_script_object(&self) -> Option<ScriptObject<'gc>>;
 
     /// Get the underlying display node for this object, if it exists.
     fn as_display_node(&self) -> Option<DisplayObject<'gc>>;

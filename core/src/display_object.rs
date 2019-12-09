@@ -240,22 +240,13 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
     fn run_frame(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
     fn render(&self, _context: &mut RenderContext<'_, 'gc>) {}
 
-    fn as_button(&self) -> Option<&Button<'gc>> {
+    fn as_button(&self) -> Option<Button<'gc>> {
         None
     }
-    fn as_button_mut(&mut self) -> Option<&mut Button<'gc>> {
+    fn as_movie_clip(&self) -> Option<MovieClip<'gc>> {
         None
     }
-    fn as_movie_clip(&self) -> Option<&MovieClip<'gc>> {
-        None
-    }
-    fn as_movie_clip_mut(&mut self) -> Option<&mut MovieClip<'gc>> {
-        None
-    }
-    fn as_morph_shape(&self) -> Option<&MorphShape<'gc>> {
-        None
-    }
-    fn as_morph_shape_mut(&mut self) -> Option<&mut MorphShape<'gc>> {
+    fn as_morph_shape(&self) -> Option<MorphShape<'gc>> {
         None
     }
     fn apply_place_object(
@@ -276,7 +267,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
             self.set_clip_depth(gc_context, clip_depth);
         }
         if let Some(ratio) = place_object.ratio {
-            if let Some(morph_shape) = self.as_morph_shape_mut() {
+            if let Some(mut morph_shape) = self.as_morph_shape() {
                 morph_shape.set_ratio(gc_context, ratio);
             }
         }
@@ -292,7 +283,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
         self.set_color_transform(gc_context, &*other.color_transform());
         self.set_clip_depth(gc_context, other.clip_depth());
         self.set_name(gc_context, &*other.name());
-        if let (Some(me), Some(other)) = (self.as_morph_shape_mut(), other.as_morph_shape()) {
+        if let (Some(mut me), Some(other)) = (self.as_morph_shape(), other.as_morph_shape()) {
             me.set_ratio(gc_context, other.ratio());
         }
         // TODO: More in here eventually.

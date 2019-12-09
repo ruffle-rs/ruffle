@@ -1203,8 +1203,7 @@ impl<'gc> Avm1<'gc> {
         frame: u16,
     ) -> Result<(), Error> {
         if let Some(clip) = context.target_clip {
-            let mut display_object = clip;
-            if let Some(clip) = display_object.as_movie_clip_mut() {
+            if let Some(clip) = clip.as_movie_clip() {
                 // The frame on the stack is 0-based, not 1-based.
                 clip.goto_frame(context, frame + 1, true);
             } else {
@@ -1225,8 +1224,7 @@ impl<'gc> Avm1<'gc> {
         // Version 4+ gotoAndPlay/gotoAndStop
         // Param can either be a frame number or a frame label.
         if let Some(clip) = context.target_clip {
-            let mut display_object = clip;
-            if let Some(clip) = display_object.as_movie_clip_mut() {
+            if let Some(clip) = clip.as_movie_clip() {
                 match self.pop()? {
                     Value::Number(frame) => {
                         // The frame on the stack is 1-based, not 0-based.
@@ -1260,8 +1258,7 @@ impl<'gc> Avm1<'gc> {
         label: &str,
     ) -> Result<(), Error> {
         if let Some(clip) = context.target_clip {
-            let mut display_object = clip;
-            if let Some(clip) = display_object.as_movie_clip_mut() {
+            if let Some(clip) = clip.as_movie_clip() {
                 if let Some(frame) = clip.frame_label_to_number(label) {
                     clip.goto_frame(context, frame, true);
                 } else {
@@ -1452,8 +1449,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_next_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         if let Some(clip) = context.target_clip {
-            let mut display_object = clip;
-            if let Some(clip) = display_object.as_movie_clip_mut() {
+            if let Some(clip) = clip.as_movie_clip() {
                 clip.next_frame(context);
             } else {
                 log::warn!("NextFrame: Target is not a MovieClip");
@@ -1538,8 +1534,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_play(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         if let Some(clip) = context.target_clip {
-            let mut display_object = clip;
-            if let Some(clip) = display_object.as_movie_clip_mut() {
+            if let Some(clip) = clip.as_movie_clip() {
                 clip.play(context)
             } else {
                 log::warn!("Play: Target is not a MovieClip");
@@ -1552,8 +1547,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_prev_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         if let Some(clip) = context.target_clip {
-            let mut display_object = clip;
-            if let Some(clip) = display_object.as_movie_clip_mut() {
+            if let Some(clip) = clip.as_movie_clip() {
                 clip.prev_frame(context);
             } else {
                 log::warn!("PrevFrame: Target is not a MovieClip");
@@ -1648,8 +1642,8 @@ impl<'gc> Avm1<'gc> {
         let clip_path = self.pop()?;
         let path = clip_path.as_string()?;
         if let Some(base_clip) = context.target_clip {
-            if let Some(mut clip) = Avm1::resolve_slash_path(base_clip, context.root, path) {
-                if let Some(clip) = clip.as_movie_clip_mut() {
+            if let Some(clip) = Avm1::resolve_slash_path(base_clip, context.root, path) {
+                if let Some(clip) = clip.as_movie_clip() {
                     match prop_index {
                         0 => clip.set_x(context.gc_context, value),
                         1 => clip.set_y(context.gc_context, value),
@@ -1700,10 +1694,10 @@ impl<'gc> Avm1<'gc> {
         let is_slashpath = Self::variable_name_is_slash_path(var_path);
 
         if is_slashpath {
-            if let Some((mut node, var_name)) =
+            if let Some((node, var_name)) =
                 Self::resolve_slash_path_variable(context.target_clip, context.root, var_path)
             {
-                if let Some(clip) = node.as_movie_clip_mut() {
+                if let Some(clip) = node.as_movie_clip() {
                     clip.object()
                         .as_object()?
                         .set(var_name, value.clone(), self, context, this)?;
@@ -1802,8 +1796,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_stop(&mut self, context: &mut UpdateContext) -> Result<(), Error> {
         if let Some(clip) = context.target_clip {
-            let mut display_object = clip;
-            if let Some(clip) = display_object.as_movie_clip_mut() {
+            if let Some(clip) = clip.as_movie_clip() {
                 clip.stop(context);
             } else {
                 log::warn!("Stop: Target is not a MovieClip");

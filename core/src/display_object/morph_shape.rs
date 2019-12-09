@@ -47,12 +47,8 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         self.0.read().static_data.id
     }
 
-    fn as_morph_shape(&self) -> Option<&Self> {
-        Some(self)
-    }
-
-    fn as_morph_shape_mut(&mut self) -> Option<&mut Self> {
-        Some(self)
+    fn as_morph_shape(&self) -> Option<Self> {
+        Some(*self)
     }
 
     fn run_frame(&mut self, _context: &mut UpdateContext) {

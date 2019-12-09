@@ -23,31 +23,11 @@ macro_rules! with_movie_clip {
         $(
             $object.force_set_function(
                 $name,
-                |_avm, _context, this, args| -> Result<ReturnValue<'gc>, Error> {
+                |_avm, context: &mut UpdateContext<'_, 'gc, '_>, this, args| -> Result<ReturnValue<'gc>, Error> {
                     if let Some(display_object) = this.as_display_node() {
                         if let Some(movie_clip) = display_object.as_movie_clip() {
-                            return Ok($fn(movie_clip, args));
-                        }
-                    }
-                    Ok(Value::Undefined.into())
-                },
-                $gc_context,
-                DontDelete | ReadOnly | DontEnum,
-                $fn_proto
-            );
-        )*
-    }};
-}
-
-macro_rules! with_movie_clip_mut {
-    ( $gc_context: ident, $object:ident, $fn_proto: expr, $($name:expr => $fn:expr),* ) => {{
-        $(
-            $object.force_set_function(
-                $name,
-                |_avm, context: &mut UpdateContext<'_, 'gc, '_>, this, args| -> Result<ReturnValue<'gc>, Error> {
-                    if let Some(mut display_object) = this.as_display_node() {
-                        if let Some(mut movie_clip) = display_object.as_movie_clip_mut().cloned() {
-                            return Ok($fn(&mut movie_clip, context, display_object, args).into());
+                            let ret: ReturnValue<'gc> = $fn(movie_clip, context, display_object, args);
+                            return Ok(ret);
                         }
                     }
                     Ok(Value::Undefined.into())
@@ -97,41 +77,35 @@ pub fn create_proto<'gc>(
 ) -> Object<'gc> {
     let mut object = ScriptObject::object(gc_context, Some(proto));
 
-    with_movie_clip_mut!(
-        gc_context,
-        object,
-        Some(fn_proto),
-        "nextFrame" => |movie_clip: &mut MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
-            movie_clip.next_frame(context);
-            Value::Undefined
-        },
-        "prevFrame" =>  |movie_clip: &mut MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
-            movie_clip.prev_frame(context);
-            Value::Undefined
-        },
-        "play" => |movie_clip: &mut MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
-            movie_clip.play(context);
-            Value::Undefined
-        },
-        "stop" => |movie_clip: &mut MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
-            movie_clip.stop(context);
-            Value::Undefined
-        }
-    );
-
     with_movie_clip!(
         gc_context,
         object,
         Some(fn_proto),
-        "getBytesLoaded" => |_movie_clip: &MovieClip<'gc>, _args| {
+        "nextFrame" => |movie_clip: MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
+            movie_clip.next_frame(context);
+            Value::Undefined.into()
+        },
+        "prevFrame" => |movie_clip: MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
+            movie_clip.prev_frame(context);
+            Value::Undefined.into()
+        },
+        "play" => |movie_clip: MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
+            movie_clip.play(context);
+            Value::Undefined.into()
+        },
+        "stop" => |movie_clip: MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
+            movie_clip.stop(context);
+            Value::Undefined.into()
+        },
+        "getBytesLoaded" => |_movie_clip: MovieClip<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
             // TODO find a correct value
             1.0.into()
         },
-        "getBytesTotal" => |_movie_clip: &MovieClip<'gc>, _args| {
+        "getBytesTotal" => |_movie_clip: MovieClip<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
             // TODO find a correct value
             1.0.into()
         },
-        "toString" => |movie_clip: &MovieClip, _args| {
+        "toString" => |movie_clip: MovieClip<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| -> ReturnValue<'gc> {
             movie_clip.name().to_string().into()
         }
     );

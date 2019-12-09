@@ -271,12 +271,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         None
     }
 
-    fn as_movie_clip(&self) -> Option<&MovieClip<'gc>> {
-        Some(self)
-    }
-
-    fn as_movie_clip_mut(&mut self) -> Option<&mut MovieClip<'gc>> {
-        Some(self)
+    fn as_movie_clip(&self) -> Option<MovieClip<'gc>> {
+        Some(*self)
     }
 
     fn post_instantiation(
@@ -285,8 +281,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         display_object: DisplayObject<'gc>,
         proto: Object<'gc>,
     ) {
-        let mut mc = self.0.write(gc_context);
-        let object = mc.object.as_script_object_mut().unwrap();
+        let mc = self.0.write(gc_context);
+        let mut object = mc.object.as_script_object().unwrap();
         object.set_display_node(gc_context, display_object);
         object.set_type_of(gc_context, TYPE_OF_MOVIE_CLIP);
         object.set_prototype(gc_context, proto);

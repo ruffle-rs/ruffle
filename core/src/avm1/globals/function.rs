@@ -41,14 +41,14 @@ pub fn apply<'gc>(
 /// returned object is also a bare object, which will need to be linked into
 /// the prototype of `Object`.
 pub fn create_proto<'gc>(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Object<'gc> {
-    let mut function_proto = ScriptObject::object_cell(gc_context, Some(proto));
+    let function_proto = ScriptObject::object_cell(gc_context, Some(proto));
     let this = Some(function_proto);
     function_proto
-        .as_script_object_mut()
+        .as_script_object()
         .unwrap()
         .force_set_function("call", call, gc_context, EnumSet::empty(), this);
     function_proto
-        .as_script_object_mut()
+        .as_script_object()
         .unwrap()
         .force_set_function("apply", apply, gc_context, EnumSet::empty(), this);
 
