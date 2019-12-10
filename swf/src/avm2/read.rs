@@ -522,9 +522,15 @@ impl<R: Read> Reader<R> {
         use crate::avm2::opcode::OpCode;
         use num_traits::FromPrimitive;
 
-        let opcode = match OpCode::from_u8(self.read_u8()?) {
+        let byte = self.read_u8()?;
+        let opcode = match OpCode::from_u8(byte) {
             Some(o) => o,
-            None => return Err(Error::invalid_data("Invalid opcode")),
+            None => {
+                return Err(Error::invalid_data(format!(
+                    "Unknown ABC opcode {:#x}",
+                    byte
+                )))
+            }
         };
 
         let op = match opcode {
