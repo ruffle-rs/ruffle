@@ -190,7 +190,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug {
     fn as_script_object(&self) -> Option<ScriptObject<'gc>>;
 
     /// Get the underlying display node for this object, if it exists.
-    fn as_display_node(&self) -> Option<DisplayObject<'gc>>;
+    fn as_display_object(&self) -> Option<DisplayObject<'gc>>;
 
     /// Get the underlying executable for this object, if it exists.
     fn as_executable(&self) -> Option<Executable<'gc>>;

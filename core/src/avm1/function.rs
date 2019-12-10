@@ -226,7 +226,7 @@ impl<'gc> Executable<'gc> {
                 let effective_ver = if avm.current_swf_version() > 5 {
                     af.swf_version()
                 } else {
-                    this.as_display_node()
+                    this.as_display_object()
                         .map(|dn| dn.swf_version())
                         .unwrap_or(ac.player_version)
                 };

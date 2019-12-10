@@ -283,7 +283,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     ) {
         let mc = self.0.write(gc_context);
         let mut object = mc.object.as_script_object().unwrap();
-        object.set_display_node(gc_context, display_object);
+        object.set_display_object(gc_context, display_object);
         object.set_type_of(gc_context, TYPE_OF_MOVIE_CLIP);
         object.set_prototype(gc_context, proto);
     }

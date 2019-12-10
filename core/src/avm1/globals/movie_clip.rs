@@ -24,7 +24,7 @@ macro_rules! with_movie_clip {
             $object.force_set_function(
                 $name,
                 |_avm, context: &mut UpdateContext<'_, 'gc, '_>, this, args| -> Result<ReturnValue<'gc>, Error> {
-                    if let Some(display_object) = this.as_display_node() {
+                    if let Some(display_object) = this.as_display_object() {
                         if let Some(movie_clip) = display_object.as_movie_clip() {
                             let ret: ReturnValue<'gc> = $fn(movie_clip, context, display_object, args);
                             return Ok(ret);
@@ -131,7 +131,7 @@ pub fn create_proto<'gc>(
         "_parent",
         Executable::Native(|_avm, _context, this, _args| {
             Ok(this
-                .as_display_node()
+                .as_display_object()
                 .and_then(|mc| mc.parent())
                 .and_then(|dn| dn.object().as_object().ok())
                 .map(Value::Object)
