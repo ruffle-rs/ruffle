@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "core",
+    "core/macros",
     "desktop",
     "swf",
     "web",

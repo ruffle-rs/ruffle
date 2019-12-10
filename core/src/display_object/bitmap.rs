@@ -2,9 +2,9 @@
 
 use crate::backend::render::BitmapHandle;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{DisplayObject, DisplayObjectBase};
+use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
-use gc_arena::Gc;
+use gc_arena::{Collect, Gc, GcCell};
 
 /// A Bitmap display object is a raw bitamp on the stage.
 /// This can only be instanitated on the display list in SWFv9 AVM2 files.
@@ -13,8 +13,12 @@ use gc_arena::Gc;
 /// but starting in AVM2, a raw `Bitmap` display object can be crated
 /// with the `PlaceObject3` tag.
 /// It can also be crated in ActionScript using the `Bitmap` class.
+#[derive(Clone, Debug, Collect, Copy)]
+#[collect(no_drop)]
+pub struct Bitmap<'gc>(GcCell<'gc, BitmapData<'gc>>);
+
 #[derive(Clone, Debug)]
-pub struct Bitmap<'gc> {
+pub struct BitmapData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: Gc<'gc, BitmapStatic>,
 }
@@ -27,38 +31,42 @@ impl<'gc> Bitmap<'gc> {
         width: u16,
         height: u16,
     ) -> Self {
-        Self {
-            base: Default::default(),
-            static_data: Gc::allocate(
-                context.gc_context,
-                BitmapStatic {
-                    id,
-                    bitmap_handle,
-                    width,
-                    height,
-                },
-            ),
-        }
+        Bitmap(GcCell::allocate(
+            context.gc_context,
+            BitmapData {
+                base: Default::default(),
+                static_data: Gc::allocate(
+                    context.gc_context,
+                    BitmapStatic {
+                        id,
+                        bitmap_handle,
+                        width,
+                        height,
+                    },
+                ),
+            },
+        ))
     }
 
-    pub fn bitmap_handle(&self) -> BitmapHandle {
-        self.static_data.bitmap_handle
+    #[allow(dead_code)]
+    pub fn bitmap_handle(self) -> BitmapHandle {
+        self.0.read().static_data.bitmap_handle
     }
 
-    pub fn width(&self) -> u16 {
-        self.static_data.width
+    pub fn width(self) -> u16 {
+        self.0.read().static_data.width
     }
 
-    pub fn height(&self) -> u16 {
-        self.static_data.height
+    pub fn height(self) -> u16 {
+        self.0.read().static_data.height
     }
 }
 
-impl<'gc> DisplayObject<'gc> for Bitmap<'gc> {
+impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
     impl_display_object!(base);
 
     fn id(&self) -> CharacterId {
-        self.static_data.id
+        self.0.read().static_data.id
     }
 
     fn local_bounds(&self) -> BoundingBox {
@@ -73,11 +81,10 @@ impl<'gc> DisplayObject<'gc> for Bitmap<'gc> {
 
     fn world_bounds(&self) -> BoundingBox {
         // TODO: Use dirty flags and cache this.
-        let mut bounds = self.local_bounds().transform(self.matrix());
+        let mut bounds = self.local_bounds().transform(&*self.matrix());
         let mut node = self.parent();
         while let Some(display_object) = node {
-            let display_object = display_object.read();
-            bounds = bounds.transform(display_object.matrix());
+            bounds = bounds.transform(&*display_object.matrix());
             node = display_object.parent();
         }
         bounds
@@ -93,10 +100,10 @@ impl<'gc> DisplayObject<'gc> for Bitmap<'gc> {
             return;
         }
 
-        context.transform_stack.push(self.transform());
+        context.transform_stack.push(&*self.transform());
 
         context.renderer.render_bitmap(
-            self.static_data.bitmap_handle,
+            self.0.read().static_data.bitmap_handle,
             context.transform_stack.transform(),
         );
 
@@ -104,7 +111,7 @@ impl<'gc> DisplayObject<'gc> for Bitmap<'gc> {
     }
 }
 
-unsafe impl<'gc> gc_arena::Collect for Bitmap<'gc> {
+unsafe impl<'gc> gc_arena::Collect for BitmapData<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
         self.base.trace(cc);
         self.static_data.trace(cc);

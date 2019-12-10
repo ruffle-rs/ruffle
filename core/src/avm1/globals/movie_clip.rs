@@ -3,16 +3,16 @@
 use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, Object, ObjectCell, ScriptObject, UpdateContext, Value};
-use crate::display_object::{DisplayNode, DisplayObject, MovieClip};
+use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
 use enumset::EnumSet;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::MutationContext;
 
 /// Implements `MovieClip`
 pub fn constructor<'gc>(
     _avm: &mut Avm1<'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: ObjectCell<'gc>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     Ok(Value::Undefined.into())
@@ -23,31 +23,11 @@ macro_rules! with_movie_clip {
         $(
             $object.force_set_function(
                 $name,
-                |_avm, _context, this, args| -> Result<ReturnValue<'gc>, Error> {
-                    if let Some(display_object) = this.read().as_display_node() {
-                        if let Some(movie_clip) = display_object.read().as_movie_clip() {
-                            return Ok($fn(movie_clip, args));
-                        }
-                    }
-                    Ok(Value::Undefined.into())
-                },
-                $gc_context,
-                DontDelete | ReadOnly | DontEnum,
-                $fn_proto
-            );
-        )*
-    }};
-}
-
-macro_rules! with_movie_clip_mut {
-    ( $gc_context: ident, $object:ident, $fn_proto: expr, $($name:expr => $fn:expr),* ) => {{
-        $(
-            $object.force_set_function(
-                $name,
                 |_avm, context: &mut UpdateContext<'_, 'gc, '_>, this, args| -> Result<ReturnValue<'gc>, Error> {
-                    if let Some(display_object) = this.read().as_display_node() {
-                        if let Some(movie_clip) = display_object.write(context.gc_context).as_movie_clip_mut() {
-                            return Ok($fn(movie_clip, context, display_object, args).into());
+                    if let Some(display_object) = this.as_display_object() {
+                        if let Some(movie_clip) = display_object.as_movie_clip() {
+                            let ret: ReturnValue<'gc> = $fn(movie_clip, context, display_object, args);
+                            return Ok(ret);
                         }
                     }
                     Ok(Value::Undefined.into())
@@ -63,15 +43,14 @@ macro_rules! with_movie_clip_mut {
 pub fn overwrite_root<'gc>(
     _avm: &mut Avm1<'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
-    this: ObjectCell<'gc>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     let new_val = args
         .get(0)
         .map(|v| v.to_owned())
         .unwrap_or(Value::Undefined);
-    this.write(ac.gc_context)
-        .define_value("_root", new_val, EnumSet::new());
+    this.define_value(ac.gc_context, "_root", new_val, EnumSet::new());
 
     Ok(Value::Undefined.into())
 }
@@ -79,66 +58,60 @@ pub fn overwrite_root<'gc>(
 pub fn overwrite_global<'gc>(
     _avm: &mut Avm1<'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
-    this: ObjectCell<'gc>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     let new_val = args
         .get(0)
         .map(|v| v.to_owned())
         .unwrap_or(Value::Undefined);
-    this.write(ac.gc_context)
-        .define_value("_global", new_val, EnumSet::new());
+    this.define_value(ac.gc_context, "_global", new_val, EnumSet::new());
 
     Ok(Value::Undefined.into())
 }
 
 pub fn create_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    proto: ObjectCell<'gc>,
-    fn_proto: ObjectCell<'gc>,
-) -> ObjectCell<'gc> {
+    proto: Object<'gc>,
+    fn_proto: Object<'gc>,
+) -> Object<'gc> {
     let mut object = ScriptObject::object(gc_context, Some(proto));
-
-    with_movie_clip_mut!(
-        gc_context,
-        object,
-        Some(fn_proto),
-        "nextFrame" => |movie_clip: &mut MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
-            movie_clip.next_frame(context);
-            Value::Undefined
-        },
-        "prevFrame" =>  |movie_clip: &mut MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
-            movie_clip.prev_frame(context);
-            Value::Undefined
-        },
-        "play" => |movie_clip: &mut MovieClip<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
-            movie_clip.play();
-            Value::Undefined
-        },
-        "stop" => |movie_clip: &mut MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayNode<'gc>, _args| {
-            movie_clip.stop(context);
-            Value::Undefined
-        }
-    );
 
     with_movie_clip!(
         gc_context,
         object,
         Some(fn_proto),
-        "getBytesLoaded" => |_movie_clip: &MovieClip<'gc>, _args| {
+        "nextFrame" => |movie_clip: MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
+            movie_clip.next_frame(context);
+            Value::Undefined.into()
+        },
+        "prevFrame" => |movie_clip: MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
+            movie_clip.prev_frame(context);
+            Value::Undefined.into()
+        },
+        "play" => |movie_clip: MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
+            movie_clip.play(context);
+            Value::Undefined.into()
+        },
+        "stop" => |movie_clip: MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
+            movie_clip.stop(context);
+            Value::Undefined.into()
+        },
+        "getBytesLoaded" => |_movie_clip: MovieClip<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
             // TODO find a correct value
             1.0.into()
         },
-        "getBytesTotal" => |_movie_clip: &MovieClip<'gc>, _args| {
+        "getBytesTotal" => |_movie_clip: MovieClip<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
             // TODO find a correct value
             1.0.into()
         },
-        "toString" => |movie_clip: &MovieClip, _args| {
+        "toString" => |movie_clip: MovieClip<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| -> ReturnValue<'gc> {
             movie_clip.name().to_string().into()
         }
     );
 
     object.add_property(
+        gc_context,
         "_global",
         Executable::Native(|avm, context, _this, _args| Ok(avm.global_object(context).into())),
         Some(Executable::Native(overwrite_global)),
@@ -146,6 +119,7 @@ pub fn create_proto<'gc>(
     );
 
     object.add_property(
+        gc_context,
         "_root",
         Executable::Native(|avm, context, _this, _args| Ok(avm.root_object(context).into())),
         Some(Executable::Native(overwrite_root)),
@@ -153,14 +127,14 @@ pub fn create_proto<'gc>(
     );
 
     object.add_property(
+        gc_context,
         "_parent",
         Executable::Native(|_avm, _context, this, _args| {
             Ok(this
-                .read()
-                .as_display_node()
-                .and_then(|mc| mc.read().parent())
-                .and_then(|dn| dn.read().object().as_object().ok())
-                .map(|o| Value::Object(o.to_owned()))
+                .as_display_object()
+                .and_then(|mc| mc.parent())
+                .and_then(|dn| dn.object().as_object().ok())
+                .map(Value::Object)
                 .unwrap_or(Value::Undefined)
                 .into())
         }),
@@ -168,5 +142,5 @@ pub fn create_proto<'gc>(
         EnumSet::new(),
     );
 
-    GcCell::allocate(gc_context, Box::new(object))
+    object.into()
 }

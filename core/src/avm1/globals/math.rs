@@ -1,8 +1,8 @@
-use crate::avm1::object::ObjectCell;
+use crate::avm1::object::Object;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, Object, ScriptObject, UpdateContext, Value};
-use gc_arena::{GcCell, MutationContext};
+use crate::avm1::{Avm1, Error, ScriptObject, TObject, UpdateContext, Value};
+use gc_arena::MutationContext;
 use rand::Rng;
 use std::f64::NAN;
 
@@ -29,7 +29,7 @@ macro_rules! wrap_std {
 fn atan2<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: ObjectCell<'gc>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(y) = args.get(0) {
@@ -48,7 +48,7 @@ fn atan2<'gc>(
 pub fn random<'gc>(
     _avm: &mut Avm1<'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: ObjectCell<'gc>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     Ok(action_context.rng.gen_range(0.0f64, 1.0f64).into())
@@ -56,47 +56,55 @@ pub fn random<'gc>(
 
 pub fn create<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    proto: Option<ObjectCell<'gc>>,
-    fn_proto: Option<ObjectCell<'gc>>,
-) -> ObjectCell<'gc> {
+    proto: Option<Object<'gc>>,
+    fn_proto: Option<Object<'gc>>,
+) -> Object<'gc> {
     let mut math = ScriptObject::object(gc_context, proto);
 
     math.define_value(
+        gc_context,
         "E",
         std::f64::consts::E.into(),
         DontDelete | ReadOnly | DontEnum,
     );
     math.define_value(
+        gc_context,
         "LN10",
         std::f64::consts::LN_10.into(),
         DontDelete | ReadOnly | DontEnum,
     );
     math.define_value(
+        gc_context,
         "LN2",
         std::f64::consts::LN_2.into(),
         DontDelete | ReadOnly | DontEnum,
     );
     math.define_value(
+        gc_context,
         "LOG10E",
         std::f64::consts::LOG10_E.into(),
         DontDelete | ReadOnly | DontEnum,
     );
     math.define_value(
+        gc_context,
         "LOG2E",
         std::f64::consts::LOG2_E.into(),
         DontDelete | ReadOnly | DontEnum,
     );
     math.define_value(
+        gc_context,
         "PI",
         std::f64::consts::PI.into(),
         DontDelete | ReadOnly | DontEnum,
     );
     math.define_value(
+        gc_context,
         "SQRT1_2",
         std::f64::consts::FRAC_1_SQRT_2.into(),
         DontDelete | ReadOnly | DontEnum,
     );
     math.define_value(
+        gc_context,
         "SQRT2",
         std::f64::consts::SQRT_2.into(),
         DontDelete | ReadOnly | DontEnum,
@@ -132,7 +140,7 @@ pub fn create<'gc>(
         fn_proto,
     );
 
-    GcCell::allocate(gc_context, Box::new(math))
+    math.into()
 }
 
 #[cfg(test)]
@@ -140,10 +148,7 @@ mod tests {
     use super::*;
     use crate::avm1::test_utils::with_avm;
 
-    fn setup<'gc>(
-        avm: &mut Avm1<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> ObjectCell<'gc> {
+    fn setup<'gc>(avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) -> Object<'gc> {
         create(
             context.gc_context,
             Some(avm.prototypes().object),
@@ -274,26 +279,23 @@ mod tests {
     #[test]
     fn test_atan2_nan() {
         with_avm(19, |avm, context, _root| {
-            let math = GcCell::allocate(
+            let math = create(
                 context.gc_context,
-                create(
-                    context.gc_context,
-                    Some(avm.prototypes().object),
-                    Some(avm.prototypes().function),
-                ),
+                Some(avm.prototypes().object),
+                Some(avm.prototypes().function),
             );
 
-            assert_eq!(atan2(avm, context, *math.read(), &[]).unwrap(), NAN.into());
+            assert_eq!(atan2(avm, context, math, &[]).unwrap(), NAN.into());
             assert_eq!(
-                atan2(avm, context, *math.read(), &[1.0.into(), Value::Null]).unwrap(),
+                atan2(avm, context, math, &[1.0.into(), Value::Null]).unwrap(),
                 NAN.into()
             );
             assert_eq!(
-                atan2(avm, context, *math.read(), &[1.0.into(), Value::Undefined]).unwrap(),
+                atan2(avm, context, math, &[1.0.into(), Value::Undefined]).unwrap(),
                 NAN.into()
             );
             assert_eq!(
-                atan2(avm, context, *math.read(), &[Value::Undefined, 1.0.into()]).unwrap(),
+                atan2(avm, context, math, &[Value::Undefined, 1.0.into()]).unwrap(),
                 NAN.into()
             );
         });
@@ -302,21 +304,18 @@ mod tests {
     #[test]
     fn test_atan2_valid() {
         with_avm(19, |avm, context, _root| {
-            let math = GcCell::allocate(
+            let math = create(
                 context.gc_context,
-                create(
-                    context.gc_context,
-                    Some(avm.prototypes().object),
-                    Some(avm.prototypes().function),
-                ),
+                Some(avm.prototypes().object),
+                Some(avm.prototypes().function),
             );
 
             assert_eq!(
-                atan2(avm, context, *math.read(), &[10.0.into()]).unwrap(),
+                atan2(avm, context, math, &[10.0.into()]).unwrap(),
                 std::f64::consts::FRAC_PI_2.into()
             );
             assert_eq!(
-                atan2(avm, context, *math.read(), &[1.0.into(), 2.0.into()]).unwrap(),
+                atan2(avm, context, math, &[1.0.into(), 2.0.into()]).unwrap(),
                 f64::atan2(1.0, 2.0).into()
             );
         });

@@ -14,6 +14,7 @@ libflate = "0.1.26"
 log = "0.4"
 minimp3 = { version = "0.3.3", optional = true }
 puremp3 = { version = "0.1", optional = true }
+ruffle_macros = { path = "macros" }
 swf = { path = "../swf" }
 enumset = "0.4.2"
 smallvec = "1.0.0"

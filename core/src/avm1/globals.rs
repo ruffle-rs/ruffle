@@ -1,10 +1,10 @@
 use crate::avm1::fscommand;
 use crate::avm1::function::Executable;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, Object, ObjectCell, ScriptObject, UpdateContext, Value};
+use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::backend::navigator::NavigationMethod;
 use enumset::EnumSet;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::MutationContext;
 use rand::Rng;
 use std::f64;
 
@@ -17,7 +17,7 @@ mod object;
 pub fn getURL<'a, 'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'a, 'gc, '_>,
-    _this: ObjectCell<'gc>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     //TODO: Error behavior if no arguments are present
@@ -45,7 +45,7 @@ pub fn getURL<'a, 'gc>(
 pub fn random<'gc>(
     _avm: &mut Avm1<'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: ObjectCell<'gc>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     match args.get(0) {
@@ -57,7 +57,7 @@ pub fn random<'gc>(
 pub fn boolean<'gc>(
     avm: &mut Avm1<'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: ObjectCell<'gc>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(val) = args.get(0) {
@@ -70,7 +70,7 @@ pub fn boolean<'gc>(
 pub fn number<'gc>(
     avm: &mut Avm1<'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: ObjectCell<'gc>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(val) = args.get(0) {
@@ -83,7 +83,7 @@ pub fn number<'gc>(
 pub fn is_nan<'gc>(
     avm: &mut Avm1<'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: ObjectCell<'gc>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(val) = args.get(0) {
@@ -96,7 +96,7 @@ pub fn is_nan<'gc>(
 pub fn get_infinity<'gc>(
     avm: &mut Avm1<'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: ObjectCell<'gc>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if avm.current_swf_version() > 4 {
@@ -109,7 +109,7 @@ pub fn get_infinity<'gc>(
 pub fn get_nan<'gc>(
     avm: &mut Avm1<'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: ObjectCell<'gc>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if avm.current_swf_version() > 4 {
@@ -124,9 +124,9 @@ pub fn get_nan<'gc>(
 /// user-modifiable.
 #[derive(Clone)]
 pub struct SystemPrototypes<'gc> {
-    pub object: ObjectCell<'gc>,
-    pub function: ObjectCell<'gc>,
-    pub movie_clip: ObjectCell<'gc>,
+    pub object: Object<'gc>,
+    pub function: Object<'gc>,
+    pub movie_clip: Object<'gc>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
@@ -141,16 +141,13 @@ unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
 /// Initialize default global scope and builtins for an AVM1 instance.
 pub fn create_globals<'gc>(
     gc_context: MutationContext<'gc, '_>,
-) -> (
-    SystemPrototypes<'gc>,
-    GcCell<'gc, Box<dyn Object<'gc> + 'gc>>,
-) {
+) -> (SystemPrototypes<'gc>, Object<'gc>) {
     let object_proto = ScriptObject::object_cell(gc_context, None);
     let function_proto = function::create_proto(gc_context, object_proto);
 
     object::fill_proto(gc_context, object_proto, function_proto);
 
-    let movie_clip_proto: ObjectCell<'gc> =
+    let movie_clip_proto: Object<'gc> =
         movie_clip::create_proto(gc_context, object_proto, function_proto);
 
     //TODO: These need to be constructors and should also set `.prototype` on each one
@@ -174,10 +171,10 @@ pub fn create_globals<'gc>(
         Some(movie_clip_proto),
     );
 
-    let mut globals = ScriptObject::bare_object();
-    globals.define_value("Object", object.into(), EnumSet::empty());
-    globals.define_value("Function", function.into(), EnumSet::empty());
-    globals.define_value("MovieClip", movie_clip.into(), EnumSet::empty());
+    let mut globals = ScriptObject::bare_object(gc_context);
+    globals.define_value(gc_context, "Object", object.into(), EnumSet::empty());
+    globals.define_value(gc_context, "Function", function.into(), EnumSet::empty());
+    globals.define_value(gc_context, "MovieClip", movie_clip.into(), EnumSet::empty());
     globals.force_set_function(
         "Number",
         number,
@@ -193,6 +190,7 @@ pub fn create_globals<'gc>(
         Some(function_proto),
     );
     globals.define_value(
+        gc_context,
         "Math",
         Value::Object(math::create(
             gc_context,
@@ -222,8 +220,15 @@ pub fn create_globals<'gc>(
         EnumSet::empty(),
         Some(function_proto),
     );
-    globals.add_property("NaN", Executable::Native(get_nan), None, EnumSet::empty());
     globals.add_property(
+        gc_context,
+        "NaN",
+        Executable::Native(get_nan),
+        None,
+        EnumSet::empty(),
+    );
+    globals.add_property(
+        gc_context,
         "Infinity",
         Executable::Native(get_infinity),
         None,
@@ -236,7 +241,7 @@ pub fn create_globals<'gc>(
             function: function_proto,
             movie_clip: movie_clip_proto,
         },
-        GcCell::allocate(gc_context, Box::new(globals)),
+        globals.into(),
     )
 }
 
@@ -245,10 +250,7 @@ pub fn create_globals<'gc>(
 mod tests {
     use super::*;
 
-    fn setup<'gc>(
-        _avm: &mut Avm1<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> ObjectCell<'gc> {
+    fn setup<'gc>(_avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) -> Object<'gc> {
         create_globals(context.gc_context).1
     }
 

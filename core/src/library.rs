@@ -1,11 +1,11 @@
 use crate::avm1::globals::SystemPrototypes;
-use crate::avm1::ObjectCell;
+use crate::avm1::Object;
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
-use crate::display_object::DisplayObject;
+use crate::display_object::TDisplayObject;
 use crate::font::Font;
 use crate::prelude::*;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::MutationContext;
 use std::collections::HashMap;
 use swf::CharacterId;
 
@@ -37,10 +37,12 @@ impl<'gc> Library<'gc> {
         self.characters.contains_key(&id)
     }
 
+    #[allow(dead_code)]
     pub fn get_character(&self, id: CharacterId) -> Option<&Character<'gc>> {
         self.characters.get(&id)
     }
 
+    #[allow(dead_code)]
     pub fn get_character_mut(&mut self, id: CharacterId) -> Option<&mut Character<'gc>> {
         self.characters.get_mut(&id)
     }
@@ -50,29 +52,31 @@ impl<'gc> Library<'gc> {
         id: CharacterId,
         gc_context: MutationContext<'gc, '_>,
         prototypes: &SystemPrototypes<'gc>,
-    ) -> Result<DisplayNode<'gc>, Box<dyn std::error::Error>> {
-        let (obj, proto): (Box<dyn DisplayObject<'gc>>, ObjectCell<'gc>) = match self
-            .characters
-            .get(&id)
-        {
-            Some(Character::Bitmap(bitmap)) => (bitmap.clone(), prototypes.object),
-            Some(Character::EditText(edit_text)) => (edit_text.clone(), prototypes.object),
-            Some(Character::Graphic(graphic)) => (graphic.clone(), prototypes.object),
-            Some(Character::MorphShape(morph_shape)) => (morph_shape.clone(), prototypes.object),
-            Some(Character::MovieClip(movie_clip)) => (movie_clip.clone(), prototypes.movie_clip),
-            Some(Character::Button(button)) => (button.clone(), prototypes.object),
-            Some(Character::Text(text)) => (text.clone(), prototypes.object),
+    ) -> Result<DisplayObject<'gc>, Box<dyn std::error::Error>> {
+        let (mut obj, proto): (DisplayObject<'gc>, Object<'gc>) = match self.characters.get(&id) {
+            Some(Character::Bitmap(bitmap)) => (bitmap.instantiate(gc_context), prototypes.object),
+            Some(Character::EditText(edit_text)) => {
+                (edit_text.instantiate(gc_context), prototypes.object)
+            }
+            Some(Character::Graphic(graphic)) => {
+                (graphic.instantiate(gc_context), prototypes.object)
+            }
+            Some(Character::MorphShape(morph_shape)) => {
+                (morph_shape.instantiate(gc_context), prototypes.object)
+            }
+            Some(Character::MovieClip(movie_clip)) => {
+                (movie_clip.instantiate(gc_context), prototypes.movie_clip)
+            }
+            Some(Character::Button(button)) => (button.instantiate(gc_context), prototypes.object),
+            Some(Character::Text(text)) => (text.instantiate(gc_context), prototypes.object),
             Some(_) => return Err("Not a DisplayObject".into()),
             None => {
                 log::error!("Tried to instantiate non-registered character ID {}", id);
                 return Err("Character id doesn't exist".into());
             }
         };
-        let result = GcCell::allocate(gc_context, obj);
-        result
-            .write(gc_context)
-            .post_instantiation(gc_context, result, proto);
-        Ok(result)
+        obj.post_instantiation(gc_context, obj, proto);
+        Ok(obj)
     }
 
     pub fn get_font(&self, id: CharacterId) -> Option<&Font> {

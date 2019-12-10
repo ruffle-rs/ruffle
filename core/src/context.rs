@@ -57,23 +57,25 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// The RNG, used by the AVM `RandomNumber` opcode,  `Math.random(),` and `random()`.
     pub rng: &'a mut SmallRng,
 
-    /// The `DisplayNode` that this code is running in.
-    /// Used by all `DisplayObject` methods and AVM1 `GetVariable`/`SetVariable`/`this`.
-    pub active_clip: DisplayNode<'gc>,
-
     /// The root of the current timeline.
     /// This will generally be `_level0`, except for loadMovie/loadMovieNum.
-    pub root: DisplayNode<'gc>,
+    pub root: DisplayObject<'gc>,
 
-    /// The base clip for Flash 4-era actions.
-    /// Used by `Play`, `GetProperty`, etc.
-    pub start_clip: DisplayNode<'gc>,
+    /// The `DisplayObject` that this code is running in.
+    /// Used by all `DisplayObject` methods and AVM1 `GetVariable`/`SetVariable`/`this`.
+    /// Can be changed via a `SetTarget` action.
+    /// This will be `root` after an invalid tell target.
+    pub active_clip: DisplayObject<'gc>,
 
-    /// The object targeted with `tellTarget`.
-    /// This is used for Flash 4-era actions, such as
-    /// `Play`, `GetProperty`, etc.
-    /// This will be `None` after an invalid tell target.
-    pub target_clip: Option<DisplayNode<'gc>>,
+    /// Target clip used by Flash 4-era actions (`Play` etc.)
+    /// Can be changed via a `SetTarget` action.
+    /// This is the same as `active_clip` except in the cases of an invalid tell target:
+    /// This is `None` after an invalid tell target.
+    pub target_clip: Option<DisplayObject<'gc>>,
+
+    /// The initial target clip.
+    /// `target_clip` will reset to this value with `SetTarget ""` action.
+    pub start_clip: DisplayObject<'gc>,
 
     /// The last path string used by `tellTarget`.
     /// Returned by `GetProperty`.
@@ -85,12 +87,15 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// The current set of system-specified prototypes to use when constructing
     /// new built-in objects.
     pub system_prototypes: avm1::SystemPrototypes<'gc>,
+
+    /// The display object that the mouse is currently hovering over.
+    pub mouse_hovered_object: Option<DisplayObject<'gc>>,
 }
 
 /// A queued ActionScript call.
 pub struct QueuedActions<'gc> {
     /// The movie clip this ActionScript is running on.
-    pub clip: DisplayNode<'gc>,
+    pub clip: DisplayObject<'gc>,
 
     /// The ActionScript bytecode.
     pub actions: SwfSlice,
@@ -117,7 +122,7 @@ impl<'gc> ActionQueue<'gc> {
     /// Queues ActionScript to run for the given movie clip.
     /// `actions` is the slice of ActionScript bytecode to run.
     /// The actions will be skipped if the clip is removed before the actions run.
-    pub fn queue_actions(&mut self, clip: DisplayNode<'gc>, actions: SwfSlice, is_init: bool) {
+    pub fn queue_actions(&mut self, clip: DisplayObject<'gc>, actions: SwfSlice, is_init: bool) {
         self.queue.push_back(QueuedActions {
             clip,
             actions,

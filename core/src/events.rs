@@ -16,6 +16,7 @@ pub enum PlayerEvent {
 /// }
 /// ```
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum ButtonEvent {
     Press,
     Release,

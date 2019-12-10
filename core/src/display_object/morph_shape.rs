@@ -1,13 +1,18 @@
 use crate::backend::render::{RenderBackend, ShapeHandle};
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{DisplayObject, DisplayObjectBase};
+use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
+use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use swf::Twips;
 
+#[derive(Clone, Debug, Collect, Copy)]
+#[collect(no_drop)]
+pub struct MorphShape<'gc>(GcCell<'gc, MorphShapeData<'gc>>);
+
 #[derive(Clone, Debug)]
-pub struct MorphShape<'gc> {
+pub struct MorphShapeData<'gc> {
     base: DisplayObjectBase<'gc>,
-    static_data: gc_arena::Gc<'gc, MorphShapeStatic>,
+    static_data: Gc<'gc, MorphShapeStatic>,
     ratio: u16,
 }
 
@@ -16,35 +21,34 @@ impl<'gc> MorphShape<'gc> {
         gc_context: gc_arena::MutationContext<'gc, '_>,
         static_data: MorphShapeStatic,
     ) -> Self {
-        Self {
-            base: Default::default(),
-            static_data: gc_arena::Gc::allocate(gc_context, static_data),
-            ratio: 0,
-        }
+        MorphShape(GcCell::allocate(
+            gc_context,
+            MorphShapeData {
+                base: Default::default(),
+                static_data: Gc::allocate(gc_context, static_data),
+                ratio: 0,
+            },
+        ))
     }
 
-    pub fn ratio(&self) -> u16 {
-        self.ratio
+    pub fn ratio(self) -> u16 {
+        self.0.read().ratio
     }
 
-    pub fn set_ratio(&mut self, ratio: u16) {
-        self.ratio = ratio;
+    pub fn set_ratio(&mut self, gc_context: MutationContext<'gc, '_>, ratio: u16) {
+        self.0.write(gc_context).ratio = ratio;
     }
 }
 
-impl<'gc> DisplayObject<'gc> for MorphShape<'gc> {
+impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     impl_display_object!(base);
 
     fn id(&self) -> CharacterId {
-        self.static_data.id
+        self.0.read().static_data.id
     }
 
-    fn as_morph_shape(&self) -> Option<&Self> {
-        Some(self)
-    }
-
-    fn as_morph_shape_mut(&mut self) -> Option<&mut Self> {
-        Some(self)
+    fn as_morph_shape(&self) -> Option<Self> {
+        Some(*self)
     }
 
     fn run_frame(&mut self, _context: &mut UpdateContext) {
@@ -52,9 +56,9 @@ impl<'gc> DisplayObject<'gc> for MorphShape<'gc> {
     }
 
     fn render(&self, context: &mut RenderContext) {
-        context.transform_stack.push(self.transform());
+        context.transform_stack.push(&*self.transform());
 
-        if let Some(shape) = self.static_data.frames.get(&self.ratio) {
+        if let Some(shape) = self.0.read().static_data.frames.get(&self.ratio()) {
             context
                 .renderer
                 .render_shape(*shape, context.transform_stack.transform());
@@ -66,7 +70,7 @@ impl<'gc> DisplayObject<'gc> for MorphShape<'gc> {
     }
 }
 
-unsafe impl<'gc> gc_arena::Collect for MorphShape<'gc> {
+unsafe impl<'gc> gc_arena::Collect for MorphShapeData<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
         self.base.trace(cc);

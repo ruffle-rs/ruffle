@@ -2,7 +2,7 @@
 
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
-use crate::avm1::{Avm1, Error, ObjectCell, Value};
+use crate::avm1::{Avm1, Error, Object, Value};
 use crate::context::UpdateContext;
 use crate::tag_utils::SwfSlice;
 use gc_arena::{GcCell, MutationContext};
@@ -67,10 +67,10 @@ pub struct Activation<'gc> {
     scope: GcCell<'gc, Scope<'gc>>,
 
     /// The immutable value of `this`.
-    this: ObjectCell<'gc>,
+    this: Object<'gc>,
 
     /// The arguments this function was called by.
-    arguments: Option<ObjectCell<'gc>>,
+    arguments: Option<Object<'gc>>,
 
     /// The return value of the activation.
     return_value: Option<Value<'gc>>,
@@ -114,8 +114,8 @@ impl<'gc> Activation<'gc> {
         swf_version: u8,
         code: SwfSlice,
         scope: GcCell<'gc, Scope<'gc>>,
-        this: ObjectCell<'gc>,
-        arguments: Option<ObjectCell<'gc>>,
+        this: Object<'gc>,
+        arguments: Option<Object<'gc>>,
     ) -> Activation<'gc> {
         Activation {
             swf_version,
@@ -135,8 +135,8 @@ impl<'gc> Activation<'gc> {
         swf_version: u8,
         code: SwfSlice,
         scope: GcCell<'gc, Scope<'gc>>,
-        this: ObjectCell<'gc>,
-        arguments: Option<ObjectCell<'gc>>,
+        this: Object<'gc>,
+        arguments: Option<Object<'gc>>,
     ) -> Activation<'gc> {
         Activation {
             swf_version,
@@ -158,9 +158,10 @@ impl<'gc> Activation<'gc> {
     /// will prevent the AVM from panicking without a current activation.
     /// We construct a single scope chain from a global object, and that's about
     /// it.
+    #[cfg(test)]
     pub fn from_nothing(
         swf_version: u8,
-        globals: ObjectCell<'gc>,
+        globals: Object<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Activation<'gc> {
         let global_scope = GcCell::allocate(mc, Scope::from_global_object(globals));
@@ -211,12 +212,14 @@ impl<'gc> Activation<'gc> {
     }
 
     /// Change the data being executed.
+    #[allow(dead_code)]
     pub fn set_data(&mut self, new_data: SwfSlice) {
         self.data = new_data;
     }
 
     /// Determines if a stack frame references the same function as a given
     /// SwfSlice.
+    #[allow(dead_code)]
     pub fn is_identical_fn(&self, other: &SwfSlice) -> bool {
         Arc::ptr_eq(&self.data.data, &other.data)
     }
@@ -236,6 +239,7 @@ impl<'gc> Activation<'gc> {
     }
 
     /// Returns AVM local variable scope for mutation.
+    #[allow(dead_code)]
     pub fn scope_mut(&mut self, mc: MutationContext<'gc, '_>) -> RefMut<Scope<'gc>> {
         self.scope.write(mc)
     }
@@ -252,6 +256,7 @@ impl<'gc> Activation<'gc> {
 
     /// Indicates whether or not the end of this scope should be handled as an
     /// implicit function return or the end of a block.
+    #[allow(dead_code)]
     pub fn can_implicit_return(&self) -> bool {
         self.is_function
     }
@@ -296,7 +301,7 @@ impl<'gc> Activation<'gc> {
     }
 
     /// Returns value of `this` as a reference.
-    pub fn this_cell(&self) -> ObjectCell<'gc> {
+    pub fn this_cell(&self) -> Object<'gc> {
         self.this
     }
 
@@ -358,6 +363,7 @@ impl<'gc> Activation<'gc> {
 
     /// Retrieve the return value from a completed activation, if the function
     /// has already returned.
+    #[allow(dead_code)]
     pub fn return_value(&self) -> Option<Value<'gc>> {
         self.return_value.clone()
     }
