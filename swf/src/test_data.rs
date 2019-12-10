@@ -2866,21 +2866,7 @@ pub fn avm2_tests() -> Vec<Avm2TestData> {
                     num_locals: 1,
                     init_scope_depth: 1,
                     max_scope_depth: 2,
-                    code: vec![
-                        Op::GetLocal { index: 0 },
-                        Op::PushScope,
-                        Op::FindPropStrict {
-                            index: Index::new(3),
-                        },
-                        Op::PushString {
-                            value: Index::new(5),
-                        },
-                        Op::CallPropVoid {
-                            index: Index::new(3),
-                            num_args: 1,
-                        },
-                        Op::ReturnVoid,
-                    ],
+                    code: vec![208, 48, 93, 3, 44, 5, 79, 3, 1, 71],
                     exceptions: vec![],
                     traits: vec![],
                 },
@@ -2890,21 +2876,7 @@ pub fn avm2_tests() -> Vec<Avm2TestData> {
                     num_locals: 2,
                     init_scope_depth: 1,
                     max_scope_depth: 2,
-                    code: vec![
-                        Op::GetLocal { index: 0 },
-                        Op::PushScope,
-                        Op::FindPropStrict {
-                            index: Index::new(2),
-                        },
-                        Op::CallProperty {
-                            index: Index::new(2),
-                            num_args: 0,
-                        },
-                        Op::CoerceA,
-                        Op::SetLocal { index: 1 },
-                        Op::GetLocal { index: 1 },
-                        Op::ReturnValue,
-                    ],
+                    code: vec![208, 48, 93, 2, 70, 2, 0, 130, 213, 209, 72],
                     exceptions: vec![],
                     traits: vec![],
                 },

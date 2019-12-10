@@ -90,6 +90,7 @@ impl<R: Read> Reader<R> {
         self.read_u30()
     }
 
+    #[allow(dead_code)]
     fn read_i24(&mut self) -> Result<i32> {
         Ok(i32::from(self.read_u8()?)
             | (i32::from(self.read_u8()?) << 8)
@@ -484,14 +485,13 @@ impl<R: Read> Reader<R> {
         let init_scope_depth = self.read_u30()?;
         let max_scope_depth = self.read_u30()?;
 
+        // Read the code data.
         let code_len = self.read_u30()?;
-        let mut code = vec![];
-        {
-            let mut code_reader = Reader::new(self.inner.by_ref().take(code_len.into()));
-            while let Ok(Some(op)) = code_reader.read_op() {
-                code.push(op);
-            }
-        }
+        let mut code = Vec::with_capacity(code_len as usize);
+        self.inner
+            .by_ref()
+            .take(code_len.into())
+            .read_to_end(&mut code)?;
 
         let num_exceptions = self.read_u30()? as usize;
         let mut exceptions = Vec::with_capacity(num_exceptions);
@@ -517,6 +517,7 @@ impl<R: Read> Reader<R> {
         })
     }
 
+    #[allow(dead_code)]
     fn read_op(&mut self) -> Result<Option<Op>> {
         use crate::avm2::opcode::OpCode;
         use num_traits::FromPrimitive;
