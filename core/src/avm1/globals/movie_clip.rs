@@ -130,6 +130,8 @@ pub fn create_proto<'gc>(
         gc_context,
         "_parent",
         Executable::Native(|_avm, _context, this, _args| {
+            log::info!("Self: {:?}", this.as_display_object());
+            log::info!("ASDASDASD");
             Ok(this
                 .as_display_object()
                 .and_then(|mc| mc.parent())
