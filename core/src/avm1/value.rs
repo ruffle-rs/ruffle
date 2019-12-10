@@ -211,9 +211,7 @@ impl<'gc> Value<'gc> {
     ) -> Result<Value<'gc>, Error> {
         Ok(match self {
             Value::Object(object) => {
-                let value_of_impl = object
-                    .get("valueOf", avm, context, *object)?
-                    .resolve(avm, context)?;
+                let value_of_impl = object.get("valueOf", avm, context)?.resolve(avm, context)?;
 
                 let fake_args = Vec::new();
                 value_of_impl
@@ -387,7 +385,7 @@ impl<'gc> Value<'gc> {
         Ok(match self {
             Value::Object(object) => {
                 let to_string_impl = object
-                    .get("toString", avm, context, object)?
+                    .get("toString", avm, context)?
                     .resolve(avm, context)?;
                 let fake_args = Vec::new();
                 match to_string_impl

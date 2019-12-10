@@ -245,7 +245,7 @@ impl<'gc> Scope<'gc> {
         this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error> {
         if self.locals().has_property(name) {
-            return self.locals().get(name, avm, context, this);
+            return self.locals().get(name, avm, context);
         }
         if let Some(scope) = self.parent() {
             return scope.resolve(name, avm, context, this);
@@ -285,7 +285,7 @@ impl<'gc> Scope<'gc> {
         this: Object<'gc>,
     ) -> Result<Option<Value<'gc>>, Error> {
         if self.locals().has_property(name) && self.locals().is_property_overwritable(name) {
-            self.locals().set(name, value, avm, context, this)?;
+            self.locals().set(name, value, avm, context)?;
             return Ok(None);
         }
 

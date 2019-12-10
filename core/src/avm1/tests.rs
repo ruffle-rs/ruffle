@@ -11,11 +11,9 @@ fn locals_into_form_values() {
         let my_locals = my_activation.scope().locals().to_owned();
 
         my_locals
-            .set("value1", "string".into(), avm, context, my_locals)
+            .set("value1", "string".into(), avm, context)
             .unwrap();
-        my_locals
-            .set("value2", 2.0.into(), avm, context, my_locals)
-            .unwrap();
+        my_locals.set("value2", 2.0.into(), avm, context).unwrap();
 
         avm.insert_stack_frame(GcCell::allocate(context.gc_context, my_activation));
 

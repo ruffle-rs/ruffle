@@ -20,7 +20,7 @@ use std::fmt::Debug;
         ScriptObject(ScriptObject<'gc>),
     }
 )]
-pub trait TObject<'gc>: 'gc + Collect + Debug {
+pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
     /// Retrieve a named property from this object exclusively.
     ///
     /// This function takes a redundant `this` parameter which should be
@@ -43,10 +43,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug {
         name: &str,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error> {
         if self.has_own_property(name) {
-            self.get_local(name, avm, context, this)
+            self.get_local(name, avm, context, (*self).into())
         } else {
             let mut depth = 0;
             let mut proto = self.proto();
@@ -57,7 +56,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug {
                 }
 
                 if proto.unwrap().has_own_property(name) {
-                    return proto.unwrap().get_local(name, avm, context, this);
+                    return proto.unwrap().get_local(name, avm, context, (*self).into());
                 }
 
                 proto = proto.unwrap().proto();
@@ -69,24 +68,19 @@ pub trait TObject<'gc>: 'gc + Collect + Debug {
     }
 
     /// Set a named property on this object, or it's prototype.
-    ///
-    /// This function takes a redundant `this` parameter which should be
-    /// the object's own `GcCell`, so that it can pass it to user-defined
-    /// overrides that may need to interact with the underlying object.
     fn set(
         &self,
         name: &str,
         value: Value<'gc>,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
     ) -> Result<(), Error>;
 
     /// Call the underlying object.
     ///
-    /// This function takes a redundant `this` parameter which should be
-    /// the object's own `GcCell`, so that it can pass it to user-defined
-    /// overrides that may need to interact with the underlying object.
+    /// This function takes a  `this` parameter which generally
+    /// refers to the object which has this property, although
+    /// it can be changed by `Function.apply`/`Function.call`.
     fn call(
         &self,
         avm: &mut Avm1<'gc>,

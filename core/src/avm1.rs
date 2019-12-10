@@ -123,7 +123,7 @@ impl<'gc> Avm1<'gc> {
         let keys = locals.get_keys();
 
         for k in keys {
-            let v = locals.get(&k, self, context, *locals);
+            let v = locals.get(&k, self, context);
 
             //TODO: What happens if an error occurs inside a virtual property?
             form_values.insert(
@@ -769,7 +769,7 @@ impl<'gc> Avm1<'gc> {
                     let target = object.as_object()?;
                     let callable = object
                         .as_object()?
-                        .get(&name, self, context, target)?
+                        .get(&name, self, context)?
                         .resolve(self, context)?;
 
                     if let Value::Object(_) = callable {
@@ -1022,7 +1022,7 @@ impl<'gc> Avm1<'gc> {
         let name_val = self.pop()?;
         let name = name_val.coerce_to_string(self, context)?;
         let object = self.pop()?.as_object()?;
-        object.get(&name, self, context, object)?.push(self);
+        object.get(&name, self, context)?.push(self);
 
         Ok(())
     }
@@ -1114,7 +1114,7 @@ impl<'gc> Avm1<'gc> {
                 if let Some(clip) = node.as_movie_clip() {
                     let object = clip.object().as_object()?;
                     if object.has_property(var_name) {
-                        object.get(var_name, self, context, object)?.push(self);
+                        object.get(var_name, self, context)?.push(self);
                     } else {
                         self.push(Value::Undefined);
                     }
@@ -1311,9 +1311,7 @@ impl<'gc> Avm1<'gc> {
         for _ in 0..num_props {
             let value = self.pop()?;
             let name = self.pop()?.into_string();
-            let this = self.current_stack_frame().unwrap().read().this_cell();
-
-            object.set(&name, value, self, context, this)?;
+            object.set(&name, value, self, context)?;
         }
 
         self.push(Value::Object(object.into()));
@@ -1330,7 +1328,7 @@ impl<'gc> Avm1<'gc> {
 
         //TODO: Interface detection on SWF7
         let prototype = constr
-            .get("prototype", self, context, constr)?
+            .get("prototype", self, context)?
             .resolve(self, context)?
             .as_object()?;
         let mut proto = obj.proto();
@@ -1470,11 +1468,11 @@ impl<'gc> Avm1<'gc> {
         }
 
         let constructor = object
-            .get(&method_name.as_string()?, self, context, object)?
+            .get(&method_name.as_string()?, self, context)?
             .resolve(self, context)?
             .as_object()?;
         let prototype = constructor
-            .get("prototype", self, context, constructor)?
+            .get("prototype", self, context)?
             .resolve(self, context)?
             .as_object()?;
 
@@ -1508,7 +1506,7 @@ impl<'gc> Avm1<'gc> {
             .resolve(self, context)?
             .as_object()?;
         let prototype = constructor
-            .get("prototype", self, context, constructor)?
+            .get("prototype", self, context)?
             .resolve(self, context)?
             .as_object()?;
 
@@ -1632,7 +1630,7 @@ impl<'gc> Avm1<'gc> {
         let name = name_val.coerce_to_string(self, context)?;
         let object = self.pop()?.as_object()?;
 
-        object.set(&name, value, self, context, object)?;
+        object.set(&name, value, self, context)?;
         Ok(())
     }
 
@@ -1690,7 +1688,6 @@ impl<'gc> Avm1<'gc> {
         var_path: &str,
         value: Value<'gc>,
     ) -> Result<(), Error> {
-        let this = self.current_stack_frame().unwrap().read().this_cell();
         let is_slashpath = Self::variable_name_is_slash_path(var_path);
 
         if is_slashpath {
@@ -1700,7 +1697,7 @@ impl<'gc> Avm1<'gc> {
                 if let Some(clip) = node.as_movie_clip() {
                     clip.object()
                         .as_object()?
-                        .set(var_name, value.clone(), self, context, this)?;
+                        .set(var_name, value.clone(), self, context)?;
                 }
             }
         } else {
