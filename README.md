@@ -60,6 +60,18 @@ all of the flash files and report on the success of such a task.
 - `web` contains the web client (uses `wasm-bindgen`)
 - `scanner` contains a utility to bulk parse swf files
 
+## Sponsors
+
+You can support the development of Ruffle via [GitHub Sponsors](https://github.com/sponsors/Herschel). Your sponsorship will help to ensure the accessibility of Flash content for the future. Thank you!
+
+Sincere thanks to the diamond level sponsors of Ruffle:
+
+<p align="center">
+ <a href="https://www.newgrounds.com">
+  <img src="assets/ng_logo.png" alt="Newgrounds.com">
+ </a>
+</a>
+
 ## License
 
 Licensed under either of
