@@ -6,7 +6,7 @@ edition = "2018"
 default-run = "ruffle_desktop"
 
 [dependencies]
-cpal = "0.10.0"
+cpal = "0.11.0"
 ruffle_core = { path = "../core" }
 glium = "0.26.0-alpha5"
 glutin = "0.22.0-alpha5"
