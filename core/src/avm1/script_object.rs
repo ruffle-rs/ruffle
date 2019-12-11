@@ -21,6 +21,7 @@ pub struct ScriptObjectData<'gc> {
     values: HashMap<String, Property<'gc>>,
     function: Option<Executable<'gc>>,
     type_of: &'static str,
+    length: i32,
 }
 
 unsafe impl<'gc> Collect for ScriptObjectData<'gc> {
@@ -37,6 +38,7 @@ impl fmt::Debug for ScriptObjectData<'_> {
             .field("prototype", &self.prototype)
             .field("values", &self.values)
             .field("function", &self.function.is_some())
+            .field("length", &self.length)
             .finish()
     }
 }
@@ -53,6 +55,7 @@ impl<'gc> ScriptObject<'gc> {
                 type_of: TYPE_OF_OBJECT,
                 values: HashMap::new(),
                 function: None,
+                length: 0,
             },
         ))
     }
@@ -69,6 +72,7 @@ impl<'gc> ScriptObject<'gc> {
                 type_of: TYPE_OF_OBJECT,
                 values: HashMap::new(),
                 function: None,
+                length: 0,
             },
         ))
         .into()
@@ -87,6 +91,7 @@ impl<'gc> ScriptObject<'gc> {
                 type_of: TYPE_OF_OBJECT,
                 values: HashMap::new(),
                 function: None,
+                length: 0,
             },
         ))
     }
@@ -104,6 +109,7 @@ impl<'gc> ScriptObject<'gc> {
                 type_of: TYPE_OF_FUNCTION,
                 function: Some(function.into()),
                 values: HashMap::new(),
+                length: 0,
             },
         ))
     }
@@ -369,6 +375,16 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         result
     }
 
+    /// Get the length of this object, as if it were an array.
+    fn get_length(&self) -> i32 {
+        self.0.read().length
+    }
+
+    /// Sets the length of this object, as if it were an array.
+    fn set_length(&self, gc_context: MutationContext<'gc, '_>, length: i32) {
+        self.0.write(gc_context).length = length;
+    }
+
     fn as_string(&self) -> String {
         if self.0.read().function.is_some() {
             "[type Function]".to_string()
@@ -384,6 +400,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
         Some(*self)
     }
+
     /// Get the underlying display node for this object, if it exists.
     fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
         None
