@@ -62,6 +62,7 @@ swf_tests! {
     (array_trivial, "avm1/array_trivial", 1),
     (array_concat, "avm1/array_concat", 1),
     (array_slice, "avm1/array_slice", 1),
+    (array_properties, "avm1/array_properties", 1),
     (timeline_function_def, "avm1/timeline_function_def", 3),
     (root_global_parent, "avm1/root_global_parent", 3),
     (register_underflow, "avm1/register_underflow", 1),

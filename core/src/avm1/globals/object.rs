@@ -103,17 +103,8 @@ fn is_prototype_of<'gc>(
                 Ok(ob) => ob,
                 Err(_) => return Ok(Value::Bool(false).into()),
             };
-            let mut proto = ob.proto();
 
-            while let Some(proto_ob) = proto {
-                if Object::ptr_eq(this, proto_ob) {
-                    return Ok(Value::Bool(true).into());
-                }
-
-                proto = proto_ob.proto();
-            }
-
-            Ok(Value::Bool(false).into())
+            Ok(Value::Bool(this.is_prototype_of(ob)).into())
         }
         _ => Ok(Value::Bool(false).into()),
     }

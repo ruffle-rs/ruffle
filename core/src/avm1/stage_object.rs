@@ -199,6 +199,14 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         keys
     }
 
+    fn get_length(&self) -> i32 {
+        self.base.get_length()
+    }
+
+    fn set_length(&self, gc_context: MutationContext<'gc, '_>, length: i32) {
+        self.base.set_length(gc_context, length)
+    }
+
     fn as_string(&self) -> String {
         self.display_object.path()
     }

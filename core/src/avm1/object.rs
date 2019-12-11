@@ -3,7 +3,7 @@
 use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, ScriptObject, StageObject, UpdateContext, Value};
+use crate::avm1::{ArrayObject, Avm1, Error, ScriptObject, StageObject, UpdateContext, Value};
 use crate::display_object::DisplayObject;
 use enumset::EnumSet;
 use gc_arena::{Collect, MutationContext};
@@ -19,6 +19,7 @@ use std::fmt::Debug;
     pub enum Object<'gc> {
         ScriptObject(ScriptObject<'gc>),
         StageObject(StageObject<'gc>),
+        ArrayObject(ArrayObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -159,6 +160,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Enumerate the object.
     fn get_keys(&self) -> HashSet<String>;
 
+    /// Get the length of this object, as if it were an array.
+    fn get_length(&self) -> i32;
+
+    /// Sets the length of this object, as if it were an array.
+    fn set_length(&self, gc_context: MutationContext<'gc, '_>, length: i32);
+
     /// Coerce the object into a string.
     fn as_string(&self) -> String;
 
@@ -175,6 +182,21 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn as_executable(&self) -> Option<Executable<'gc>>;
 
     fn as_ptr(&self) -> *const ObjectPtr;
+
+    /// Check if this object is in the prototype chain of the specified test object.
+    fn is_prototype_of(&self, other: Object<'gc>) -> bool {
+        let mut proto = other.proto();
+
+        while let Some(proto_ob) = proto {
+            if self.as_ptr() == proto_ob.as_ptr() {
+                return true;
+            }
+
+            proto = proto_ob.proto();
+        }
+
+        false
+    }
 }
 
 pub enum ObjectPtr {}

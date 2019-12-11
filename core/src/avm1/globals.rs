@@ -8,6 +8,7 @@ use gc_arena::MutationContext;
 use rand::Rng;
 use std::f64;
 
+mod array;
 mod function;
 mod math;
 mod movie_clip;
@@ -127,6 +128,7 @@ pub struct SystemPrototypes<'gc> {
     pub object: Object<'gc>,
     pub function: Object<'gc>,
     pub movie_clip: Object<'gc>,
+    pub array: Object<'gc>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
@@ -135,6 +137,7 @@ unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
         self.object.trace(cc);
         self.function.trace(cc);
         self.movie_clip.trace(cc);
+        self.array.trace(cc);
     }
 }
 
@@ -149,6 +152,8 @@ pub fn create_globals<'gc>(
 
     let movie_clip_proto: Object<'gc> =
         movie_clip::create_proto(gc_context, object_proto, function_proto);
+
+    let array_proto: Object<'gc> = array::create_proto(gc_context, object_proto, function_proto);
 
     //TODO: These need to be constructors and should also set `.prototype` on each one
     let object = ScriptObject::function(
@@ -170,8 +175,15 @@ pub fn create_globals<'gc>(
         Some(function_proto),
         Some(movie_clip_proto),
     );
+    let array = ScriptObject::function(
+        gc_context,
+        Executable::Native(array::constructor),
+        Some(function_proto),
+        Some(array_proto),
+    );
 
     let mut globals = ScriptObject::bare_object(gc_context);
+    globals.define_value(gc_context, "Array", array.into(), EnumSet::empty());
     globals.define_value(gc_context, "Object", object.into(), EnumSet::empty());
     globals.define_value(gc_context, "Function", function.into(), EnumSet::empty());
     globals.define_value(gc_context, "MovieClip", movie_clip.into(), EnumSet::empty());
@@ -240,6 +252,7 @@ pub fn create_globals<'gc>(
             object: object_proto,
             function: function_proto,
             movie_clip: movie_clip_proto,
+            array: array_proto,
         },
         globals.into(),
     )

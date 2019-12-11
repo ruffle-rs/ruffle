@@ -18,6 +18,7 @@ use crate::tag_utils::SwfSlice;
 mod test_utils;
 
 mod activation;
+pub mod array_object;
 mod fscommand;
 mod function;
 pub mod globals;
@@ -33,6 +34,8 @@ mod value;
 mod tests;
 
 use activation::Activation;
+pub use array_object::ArrayObject;
+use enumset::EnumSet;
 pub use globals::SystemPrototypes;
 pub use object::{Object, ObjectPtr, TObject};
 use scope::Scope;
@@ -1277,14 +1280,23 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_init_array(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
+    fn action_init_array(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let num_elements = self.pop()?.as_i64()?;
-        for _ in 0..num_elements {
-            let _value = self.pop()?;
+        let array = ArrayObject::array(context.gc_context, Some(self.prototypes.array));
+
+        for i in 0..num_elements {
+            array.define_value(
+                context.gc_context,
+                &(i as i32).to_string(),
+                self.pop()?,
+                EnumSet::empty(),
+            );
         }
 
-        // TODO(Herschel)
-        Err("Unimplemented action: InitArray".into())
+        array.set_length(context.gc_context, num_elements as i32);
+
+        self.push(Value::Object(array.into()));
+        Ok(())
     }
 
     fn action_init_object(
