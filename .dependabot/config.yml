@@ -1,0 +1,9 @@
+version: 1
+update_configs:
+  - package_manager: "rust:cargo"
+    directory: "/."
+    update_schedule: "live"
+  - package_manager: "javascript"
+    directory: "web/selfhosted"
+    update_schedule: "live"
+
