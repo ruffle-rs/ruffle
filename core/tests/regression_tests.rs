@@ -2,7 +2,7 @@
 //!
 //! Trace output can be compared with correct output from the official Flash Payer.
 
-use approx::abs_diff_eq;
+use approx::assert_abs_diff_eq;
 use log::{Metadata, Record};
 use ruffle_core::backend::{
     audio::NullAudioBackend, navigator::NullNavigatorBackend, render::NullRenderer,
@@ -111,19 +111,23 @@ fn test_stage_object_enumerate() -> Result<(), Error> {
 
 #[test]
 fn test_stage_object_properties() -> Result<(), Error> {
-    let trace_log = run_swf("tests/swfs/avm1/stage_object_properties/test.swf", 1)?;
-    let actual: Vec<f64> = trace_log
-        .lines()
-        .map(|s| str::parse::<f64>(s).unwrap())
-        .collect();
-    let expected: Vec<f64> =
-        std::fs::read_to_string("tests/swfs/avm1/stage_object_properties/output.txt")?
-            .lines()
-            .map(|s| str::parse::<f64>(s).unwrap())
-            .collect();
+    let trace_log = run_swf("tests/swfs/avm1/stage_object_properties/test.swf", 4)?;
+    let expected_data =
+        std::fs::read_to_string("tests/swfs/avm1/stage_object_properties/output.txt")?;
+    assert_eq!(
+        trace_log.lines().count(),
+        expected_data.lines().count(),
+        "# of lines of output didn't match"
+    );
 
-    for (actual, expected) in actual.into_iter().zip(expected.into_iter()) {
-        abs_diff_eq!(actual, expected, epsilon = 0.0001);
+    for (actual, expected) in trace_log.lines().zip(expected_data.lines()) {
+        // If these are numbers, compare using approx_eq.
+        if let (Ok(actual), Ok(expected)) = (actual.parse::<f64>(), expected.parse::<f64>()) {
+            // TODO: Lower this epsilon as the accuracy of the properties improves.
+            assert_abs_diff_eq!(actual, expected, epsilon = 0.5);
+        } else {
+            assert_eq!(actual, expected);
+        }
     }
     Ok(())
 }

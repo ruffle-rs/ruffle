@@ -1,0 +1,80 @@
+Starting properties:
+289.25
+202.1
+805.95
+656.75
+-162.038711547852
+249.484237591759
+301.023390825966
+100
+true
+Setting with SetMember...
+Final properties:
+123
+321
+673.2
+515.45
+27
+-321
+123
+50
+false
+Starting properties:
+123
+321
+673.2
+515.45
+27
+-321
+123
+50
+false
+Setting with SetProperty...
+Final properties:
+100
+200
+153.3
+882
+90
+345
+-123
+25
+true
+Testing ranges...
+_x:
+_y:
+_rotation:
+90
+180
+-179
+-180
+179
+_xscale:
+345
+_yscale:
+-123
+_scale:
+-123
+_alpha:
+25
+_currentframe:
+1
+_totalframes:
+1
+Testing width/height...
+370.05
+108.1
+54.0467504391298
+100
+200.05
+108.1
+54.0467504391298
+54.05
+92.5
+200
+100
+25
+92.5
+50
+24.9966220780976
+25
