@@ -1,0 +1,12 @@
+// array
+undefined,undefined,undefined
+// array[0]
+a
+// array[1]
+b
+// array[2]
+x
+// array[3]
+undefined
+// array.length
+3

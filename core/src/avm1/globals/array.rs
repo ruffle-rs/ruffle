@@ -3,7 +3,7 @@
 use crate::avm1::property::Attribute;
 
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{ArrayObject, Avm1, Error, Object, TObject, UpdateContext, Value};
+use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
 
 use enumset::EnumSet;
 use gc_arena::MutationContext;
@@ -20,8 +20,10 @@ pub fn constructor<'gc>(
     if args.len() == 1 {
         let arg = args.get(0).unwrap();
         if let Ok(length) = arg.as_number(avm, context) {
-            this.set_length(context.gc_context, length as i32);
-            consumed = true;
+            if length >= 0.0 {
+                this.set_length(context.gc_context, length as usize);
+                consumed = true;
+            }
         }
     }
 
@@ -49,80 +51,67 @@ pub fn push<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     let old_length = this.get_length();
-    let new_length = old_length + args.len() as i32;
+    let new_length = old_length + args.len();
+    this.set_length(context.gc_context, new_length);
 
     for i in 0..args.len() {
-        this.define_value(
-            context.gc_context,
-            &(old_length + i as i32).to_string(),
+        this.set_array_element(
+            old_length + i,
             args.get(i).unwrap().to_owned(),
-            EnumSet::empty(),
+            context.gc_context,
         );
     }
 
-    this.set_length(context.gc_context, new_length);
-
-    Ok(new_length.into())
+    Ok((new_length as f64).into())
 }
 
 pub fn unshift<'gc>(
-    avm: &mut Avm1<'gc>,
+    _avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     let old_length = this.get_length();
-    let new_length = old_length + args.len() as i32;
+    let new_length = old_length + args.len();
     let offset = new_length - old_length;
 
     for i in (old_length - 1..new_length).rev() {
-        let old = this
-            .get(&(i - offset).to_string(), avm, context)
-            .and_then(|v| v.resolve(avm, context))
-            .unwrap_or(Value::Undefined);
-        this.define_value(context.gc_context, &i.to_string(), old, EnumSet::empty());
+        this.set_array_element(
+            i,
+            this.get_array_element(dbg!(i - offset)),
+            context.gc_context,
+        );
     }
 
     for i in 0..args.len() {
-        this.define_value(
-            context.gc_context,
-            &(i as i32).to_string(),
-            args.get(i).unwrap().to_owned(),
-            EnumSet::empty(),
-        );
+        this.set_array_element(i, args.get(i).unwrap().to_owned(), context.gc_context);
     }
 
     this.set_length(context.gc_context, new_length);
 
-    Ok(new_length.into())
+    Ok((new_length as f64).into())
 }
 
 pub fn shift<'gc>(
-    avm: &mut Avm1<'gc>,
+    _avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     let old_length = this.get_length();
-    if old_length <= 0 {
+    if old_length == 0 {
         return Ok(Value::Undefined.into());
     }
 
     let new_length = old_length - 1;
 
-    let removed = this
-        .get("0", avm, context)
-        .and_then(|v| v.resolve(avm, context))
-        .unwrap_or(Value::Undefined);
+    let removed = this.get_array_element(0);
 
     for i in 0..new_length {
-        let old = this
-            .get(&(i + 1).to_string(), avm, context)
-            .and_then(|v| v.resolve(avm, context))
-            .unwrap_or(Value::Undefined);
-        this.define_value(context.gc_context, &i.to_string(), old, EnumSet::empty());
+        this.set_array_element(i, this.get_array_element(i + 1), context.gc_context);
     }
 
+    this.delete_array_element(new_length, context.gc_context);
     this.delete(context.gc_context, &new_length.to_string());
 
     this.set_length(context.gc_context, new_length);
@@ -131,22 +120,20 @@ pub fn shift<'gc>(
 }
 
 pub fn pop<'gc>(
-    avm: &mut Avm1<'gc>,
+    _avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     let old_length = this.get_length();
-    if old_length <= 0 {
+    if old_length == 0 {
         return Ok(Value::Undefined.into());
     }
 
     let new_length = old_length - 1;
 
-    let removed = this
-        .get(&new_length.to_string(), avm, context)
-        .and_then(|v| v.resolve(avm, context))
-        .unwrap_or(Value::Undefined);
+    let removed = this.get_array_element(new_length);
+    this.delete_array_element(new_length, context.gc_context);
     this.delete(context.gc_context, &new_length.to_string());
 
     this.set_length(context.gc_context, new_length);
@@ -155,29 +142,16 @@ pub fn pop<'gc>(
 }
 
 pub fn reverse<'gc>(
-    avm: &mut Avm1<'gc>,
+    _avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     let length = this.get_length();
-    let mut values = Vec::with_capacity(length as usize);
+    let mut values = this.get_array().to_vec();
 
     for i in 0..length {
-        values.push(
-            this.get(&i.to_string(), avm, context)
-                .and_then(|v| v.resolve(avm, context))
-                .unwrap_or(Value::Undefined),
-        );
-    }
-
-    for i in 0..length {
-        this.define_value(
-            context.gc_context,
-            &i.to_string(),
-            values.pop().unwrap(),
-            EnumSet::empty(),
-        );
+        this.set_array_element(i, values.pop().unwrap(), context.gc_context);
     }
 
     Ok(Value::Undefined.into())
@@ -189,27 +163,33 @@ pub fn join<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let length = this.get_length();
-    if length < 0 {
-        return Ok("".into());
-    }
-
     let separator = args
         .get(0)
         .and_then(|v| v.to_owned().coerce_to_string(avm, context).ok())
         .unwrap_or_else(|| ",".to_owned());
-    let mut values = Vec::with_capacity(length as usize);
+    let values: Vec<Value<'gc>> = this.get_array();
 
-    for i in 0..length {
-        values.push(
-            this.get(&i.to_string(), avm, context)
-                .and_then(|v| v.resolve(avm, context))
-                .and_then(|v| v.coerce_to_string(avm, context))
-                .unwrap_or_else(|_| "undefined".to_string()),
-        );
+    Ok(values
+        .iter()
+        .map(|v| {
+            v.to_owned()
+                .coerce_to_string(avm, context)
+                .unwrap_or_else(|_| "undefined".to_string())
+        })
+        .collect::<Vec<String>>()
+        .join(&separator)
+        .into())
+}
+
+fn make_index_absolute(mut index: i32, length: usize) -> usize {
+    if index < 0 {
+        index += length as i32;
     }
-
-    Ok(values.join(&separator).into())
+    if index < 0 {
+        0
+    } else {
+        index as usize
+    }
 }
 
 pub fn slice<'gc>(
@@ -218,34 +198,26 @@ pub fn slice<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let mut start = args
+    let start = args
         .get(0)
         .and_then(|v| v.as_number(avm, context).ok())
-        .map(|v| v as i32)
+        .map(|v| make_index_absolute(v as i32, this.get_length()))
         .unwrap_or(0);
-    let mut end = args
+    let end = args
         .get(1)
         .and_then(|v| v.as_number(avm, context).ok())
-        .map(|v| v as i32)
+        .map(|v| make_index_absolute(v as i32, this.get_length()))
         .unwrap_or_else(|| this.get_length());
 
-    if start < 0 {
-        start += this.get_length();
-    }
-    if end < 0 {
-        end += this.get_length();
-    }
+    let array = ScriptObject::array(context.gc_context, Some(avm.prototypes.array));
 
-    let length = end - start;
-    let array = ArrayObject::array(context.gc_context, Some(avm.prototypes.array));
-    array.set_length(context.gc_context, length);
+    if start < end {
+        let length = end - start;
+        array.set_length(context.gc_context, length);
 
-    for i in 0..length {
-        let old = this
-            .get(&(start + i).to_string(), avm, context)
-            .and_then(|v| v.resolve(avm, context))
-            .unwrap_or(Value::Undefined);
-        array.define_value(context.gc_context, &i.to_string(), old, EnumSet::empty());
+        for i in 0..length {
+            array.set_array_element(i, this.get_array_element(start + i), context.gc_context);
+        }
     }
 
     Ok(Value::Object(array.into()).into())
@@ -257,7 +229,7 @@ pub fn concat<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let array = ArrayObject::array(context.gc_context, Some(avm.prototypes.array));
+    let array = ScriptObject::array(context.gc_context, Some(avm.prototypes.array));
     let mut length = 0;
 
     for i in 0..this.get_length() {
@@ -327,7 +299,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let array = ArrayObject::array(gc_context, Some(proto));
+    let array = ScriptObject::array(gc_context, Some(proto));
     let mut object = array.as_script_object().unwrap();
 
     object.force_set_function(
