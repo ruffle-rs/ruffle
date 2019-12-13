@@ -76,11 +76,7 @@ pub fn unshift<'gc>(
     let offset = new_length - old_length;
 
     for i in (old_length - 1..new_length).rev() {
-        this.set_array_element(
-            i,
-            this.get_array_element(dbg!(i - offset)),
-            context.gc_context,
-        );
+        this.set_array_element(i, this.get_array_element(i - offset), context.gc_context);
     }
 
     for i in 0..args.len() {
@@ -223,6 +219,94 @@ pub fn slice<'gc>(
     Ok(Value::Object(array.into()).into())
 }
 
+pub fn splice<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if args.is_empty() {
+        return Ok(Value::Undefined.into());
+    }
+
+    let old_length = this.get_length();
+    let start = args
+        .get(0)
+        .and_then(|v| v.as_number(avm, context).ok())
+        .map(|v| make_index_absolute(v as i32, old_length))
+        .unwrap_or(0);
+    let count = args
+        .get(1)
+        .and_then(|v| v.as_number(avm, context).ok())
+        .map(|v| v as i32)
+        .unwrap_or(old_length as i32);
+    if count < 0 {
+        return Ok(Value::Undefined.into());
+    }
+
+    let removed = ScriptObject::array(context.gc_context, Some(avm.prototypes.array));
+    let to_remove = count.min(old_length as i32 - start as i32).max(0) as usize;
+    let to_add = if args.len() > 2 { &args[2..] } else { &[] };
+    let offset = to_remove as i32 - to_add.len() as i32;
+    let new_length = old_length + to_add.len() - to_remove;
+
+    for i in start..start + to_remove {
+        removed.set_array_element(i - start, this.get_array_element(i), context.gc_context);
+    }
+    removed.set_length(context.gc_context, to_remove);
+
+    if to_remove == 2 && args.len() == 5 {
+        dbg!(
+            &start,
+            &count,
+            &removed,
+            &to_remove,
+            &to_add,
+            &offset,
+            &old_length,
+            &new_length
+        );
+    }
+
+    if offset < 0 {
+        for i in (start + to_add.len()..new_length).rev() {
+            if to_remove == 2 && args.len() == 5 {
+                dbg!(&i, this.get_array_element((i as i32 + offset) as usize));
+            }
+            this.set_array_element(
+                i,
+                this.get_array_element((i as i32 + offset) as usize),
+                context.gc_context,
+            );
+        }
+    } else {
+        for i in start + to_add.len()..new_length {
+            this.set_array_element(
+                i,
+                this.get_array_element((i as i32 + offset) as usize),
+                context.gc_context,
+            );
+        }
+    }
+
+    for i in 0..to_add.len() {
+        this.set_array_element(
+            start + i,
+            to_add.get(i).unwrap().to_owned(),
+            context.gc_context,
+        );
+    }
+
+    for i in new_length..old_length {
+        this.delete_array_element(i, context.gc_context);
+        this.delete(context.gc_context, &i.to_string());
+    }
+
+    this.set_length(context.gc_context, new_length);
+
+    Ok(Value::Object(removed.into()).into())
+}
+
 pub fn concat<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
@@ -341,6 +425,13 @@ pub fn create_proto<'gc>(
     object.force_set_function(
         "slice",
         slice,
+        gc_context,
+        Attribute::DontEnum,
+        Some(fn_proto),
+    );
+    object.force_set_function(
+        "splice",
+        splice,
         gc_context,
         Attribute::DontEnum,
         Some(fn_proto),

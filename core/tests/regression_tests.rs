@@ -62,6 +62,7 @@ swf_tests! {
     (array_trivial, "avm1/array_trivial", 1),
     (array_concat, "avm1/array_concat", 1),
     (array_slice, "avm1/array_slice", 1),
+    (array_splice, "avm1/array_splice", 1),
     (array_properties, "avm1/array_properties", 1),
     (array_prototyping, "avm1/array_prototyping", 1),
     (array_vs_object_length, "avm1/array_vs_object_length", 1),
