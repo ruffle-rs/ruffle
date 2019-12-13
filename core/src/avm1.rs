@@ -760,20 +760,30 @@ impl<'gc> Avm1<'gc> {
 
         match method_name {
             Value::Undefined | Value::Null => {
-                let this = context.active_clip.object().as_object()?;
-                object.call(self, context, this, &args)?.push(self);
+                let this = context.active_clip.object();
+                if let Ok(this) = this.as_object() {
+                    object.call(self, context, this, &args)?.push(self);
+                } else {
+                    log::warn!(
+                        "Attempted to call constructor of {:?} (missing method name)",
+                        this
+                    );
+                    self.push(Value::Undefined);
+                }
             }
             Value::String(name) => {
                 if name.is_empty() {
-                    object
-                        .call(self, context, object.as_object()?, &args)?
-                        .push(self);
-                } else {
-                    let target = object.as_object()?;
-                    let callable = object
-                        .as_object()?
-                        .get(&name, self, context)?
-                        .resolve(self, context)?;
+                    if let Ok(object) = object.as_object() {
+                        object.call(self, context, object, &args)?.push(self);
+                    } else {
+                        log::warn!(
+                            "Attempted to call constructor of {:?} (empty method name)",
+                            object
+                        );
+                        self.push(Value::Undefined);
+                    }
+                } else if let Ok(target) = object.as_object() {
+                    let callable = target.get(&name, self, context)?.resolve(self, context)?;
 
                     if let Value::Object(_) = callable {
                     } else {
@@ -781,6 +791,9 @@ impl<'gc> Avm1<'gc> {
                     }
 
                     callable.call(self, context, target, &args)?.push(self);
+                } else {
+                    log::warn!("Attempted to call method {} of {:?}", name, object);
+                    self.push(Value::Undefined);
                 }
             }
             _ => {
@@ -1024,8 +1037,13 @@ impl<'gc> Avm1<'gc> {
     fn action_get_member(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let name_val = self.pop()?;
         let name = name_val.coerce_to_string(self, context)?;
-        let object = self.pop()?.as_object()?;
-        object.get(&name, self, context)?.push(self);
+        let owner = self.pop()?;
+        if let Ok(object) = owner.as_object() {
+            object.get(&name, self, context)?.push(self);
+        } else {
+            log::warn!("Attempted to get member {} of value {:?}", name, owner);
+            self.push(Value::Undefined);
+        }
 
         Ok(())
     }
@@ -1615,9 +1633,19 @@ impl<'gc> Avm1<'gc> {
         let value = self.pop()?;
         let name_val = self.pop()?;
         let name = name_val.coerce_to_string(self, context)?;
-        let object = self.pop()?.as_object()?;
 
-        object.set(&name, value, self, context)?;
+        let object = self.pop()?;
+        if let Ok(object) = object.as_object() {
+            object.set(&name, value, self, context)?;
+        } else {
+            log::warn!(
+                "Attempted to set member {} of {:?} to {:?}",
+                name,
+                object,
+                value
+            );
+        }
+
         Ok(())
     }
 
