@@ -3,7 +3,7 @@
 use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{ArrayObject, Avm1, Error, ScriptObject, StageObject, UpdateContext, Value};
+use crate::avm1::{Avm1, Error, ScriptObject, StageObject, UpdateContext, Value};
 use crate::display_object::DisplayObject;
 use enumset::EnumSet;
 use gc_arena::{Collect, MutationContext};
@@ -19,7 +19,6 @@ use std::fmt::Debug;
     pub enum Object<'gc> {
         ScriptObject(ScriptObject<'gc>),
         StageObject(StageObject<'gc>),
-        ArrayObject(ArrayObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -160,12 +159,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Enumerate the object.
     fn get_keys(&self) -> HashSet<String>;
 
-    /// Get the length of this object, as if it were an array.
-    fn get_length(&self) -> i32;
-
-    /// Sets the length of this object, as if it were an array.
-    fn set_length(&self, gc_context: MutationContext<'gc, '_>, length: i32);
-
     /// Coerce the object into a string.
     fn as_string(&self) -> String;
 
@@ -197,6 +190,41 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
         false
     }
+
+    /// Get the length of this object, as if it were an array.
+    fn get_length(&self) -> usize;
+
+    /// Gets a copy of the array storage behind this object.
+    fn get_array(&self) -> Vec<Value<'gc>>;
+
+    /// Sets the length of this object, as if it were an array.
+    ///
+    /// Increasing this value will fill the gap with Value::Undefined.
+    /// Decreasing this value will remove affected items from both the array and properties storage.
+    fn set_length(&self, gc_context: MutationContext<'gc, '_>, length: usize);
+
+    /// Gets a property of this object as if it were an array.
+    ///
+    /// Array element lookups do not respect the prototype chain, and will ignore virtual properties.
+    fn get_array_element(&self, index: usize) -> Value<'gc>;
+
+    /// Sets a property of this object as if it were an array.
+    ///
+    /// This will increase the "length" of this object to encompass the index, and return the new length.
+    /// Any gap created by increasing the length will be filled with Value::Undefined, both in array
+    /// and property storage.
+    fn set_array_element(
+        &self,
+        index: usize,
+        value: Value<'gc>,
+        gc_context: MutationContext<'gc, '_>,
+    ) -> usize;
+
+    /// Deletes a property of this object as if it were an array.
+    ///
+    /// This will not rearrange the array or adjust the length, nor will it affect the properties
+    /// storage.
+    fn delete_array_element(&self, index: usize, gc_context: MutationContext<'gc, '_>);
 }
 
 pub enum ObjectPtr {}

@@ -17,23 +17,26 @@ pub fn constructor<'gc>(
 
 /// Implements `Object.prototype.addProperty`
 pub fn add_property<'gc>(
-    _avm: &mut Avm1<'gc>,
+    avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let name = args.get(0).unwrap_or(&Value::Undefined);
+    let name = args
+        .get(0)
+        .and_then(|v| v.to_owned().coerce_to_string(avm, context).ok())
+        .unwrap_or_else(|| "undefined".to_string());
     let getter = args.get(1).unwrap_or(&Value::Undefined);
     let setter = args.get(2).unwrap_or(&Value::Undefined);
 
-    match (name, getter) {
-        (Value::String(name), Value::Object(get)) if !name.is_empty() => {
+    match getter {
+        Value::Object(get) if !name.is_empty() => {
             if let Some(get_func) = get.as_executable() {
                 if let Value::Object(set) = setter {
                     if let Some(set_func) = set.as_executable() {
                         this.add_property(
                             context.gc_context,
-                            name,
+                            &name,
                             get_func,
                             Some(set_func),
                             EnumSet::empty(),
@@ -42,7 +45,7 @@ pub fn add_property<'gc>(
                         return Ok(false.into());
                     }
                 } else if let Value::Null = setter {
-                    this.add_property(context.gc_context, name, get_func, None, ReadOnly.into());
+                    this.add_property(context.gc_context, &name, get_func, None, ReadOnly.into());
                 } else {
                     return Ok(false.into());
                 }

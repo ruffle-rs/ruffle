@@ -12,6 +12,13 @@ use std::collections::{HashMap, HashSet};
 pub const TYPE_OF_OBJECT: &str = "object";
 pub const TYPE_OF_FUNCTION: &str = "function";
 
+#[derive(Debug, Clone, Collect)]
+#[collect(no_drop)]
+pub enum ArrayStorage<'gc> {
+    Vector(Vec<Value<'gc>>),
+    Properties { length: usize },
+}
+
 #[derive(Debug, Copy, Clone, Collect)]
 #[collect(no_drop)]
 pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
@@ -21,7 +28,7 @@ pub struct ScriptObjectData<'gc> {
     values: HashMap<String, Property<'gc>>,
     function: Option<Executable<'gc>>,
     type_of: &'static str,
-    length: i32,
+    array: ArrayStorage<'gc>,
 }
 
 unsafe impl<'gc> Collect for ScriptObjectData<'gc> {
@@ -29,6 +36,7 @@ unsafe impl<'gc> Collect for ScriptObjectData<'gc> {
         self.prototype.trace(cc);
         self.values.trace(cc);
         self.function.trace(cc);
+        self.array.trace(cc);
     }
 }
 
@@ -38,7 +46,7 @@ impl fmt::Debug for ScriptObjectData<'_> {
             .field("prototype", &self.prototype)
             .field("values", &self.values)
             .field("function", &self.function.is_some())
-            .field("length", &self.length)
+            .field("array", &self.array)
             .finish()
     }
 }
@@ -55,9 +63,27 @@ impl<'gc> ScriptObject<'gc> {
                 type_of: TYPE_OF_OBJECT,
                 values: HashMap::new(),
                 function: None,
-                length: 0,
+                array: ArrayStorage::Properties { length: 0 },
             },
         ))
+    }
+
+    pub fn array(
+        gc_context: MutationContext<'gc, '_>,
+        proto: Option<Object<'gc>>,
+    ) -> ScriptObject<'gc> {
+        let object = ScriptObject(GcCell::allocate(
+            gc_context,
+            ScriptObjectData {
+                prototype: proto,
+                type_of: TYPE_OF_OBJECT,
+                values: HashMap::new(),
+                function: None,
+                array: ArrayStorage::Vector(Vec::new()),
+            },
+        ));
+        object.sync_native_property("length", gc_context, Some(0.into()));
+        object
     }
 
     /// Constructs and allocates an empty but normal object in one go.
@@ -72,7 +98,7 @@ impl<'gc> ScriptObject<'gc> {
                 type_of: TYPE_OF_OBJECT,
                 values: HashMap::new(),
                 function: None,
-                length: 0,
+                array: ArrayStorage::Properties { length: 0 },
             },
         ))
         .into()
@@ -91,7 +117,7 @@ impl<'gc> ScriptObject<'gc> {
                 type_of: TYPE_OF_OBJECT,
                 values: HashMap::new(),
                 function: None,
-                length: 0,
+                array: ArrayStorage::Properties { length: 0 },
             },
         ))
     }
@@ -109,7 +135,7 @@ impl<'gc> ScriptObject<'gc> {
                 type_of: TYPE_OF_FUNCTION,
                 function: Some(function.into()),
                 values: HashMap::new(),
-                length: 0,
+                array: ArrayStorage::Properties { length: 0 },
             },
         ))
     }
@@ -172,6 +198,37 @@ impl<'gc> ScriptObject<'gc> {
     pub fn set_type_of(&mut self, gc_context: MutationContext<'gc, '_>, type_of: &'static str) {
         self.0.write(gc_context).type_of = type_of;
     }
+
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    pub fn sync_native_property(
+        &self,
+        name: &str,
+        gc_context: MutationContext<'gc, '_>,
+        native_value: Option<Value<'gc>>,
+    ) {
+        match self.0.write(gc_context).values.entry(name.to_string()) {
+            Entry::Occupied(mut entry) => {
+                if let Property::Stored { value, .. } = entry.get_mut() {
+                    match native_value {
+                        None => {
+                            entry.remove_entry();
+                        }
+                        Some(native_value) => {
+                            *value = native_value;
+                        }
+                    }
+                }
+            }
+            Entry::Vacant(entry) => {
+                if let Some(native_value) = native_value {
+                    entry.insert(Property::Stored {
+                        value: native_value,
+                        attributes: Attribute::DontEnum.into(),
+                    });
+                }
+            }
+        }
+    }
 }
 
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
@@ -215,7 +272,21 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     ) -> Result<(), Error> {
         if name == "__proto__" {
             self.0.write(context.gc_context).prototype = value.as_object().ok();
+        } else if let Ok(index) = name.parse::<usize>() {
+            self.set_array_element(index, value.to_owned(), context.gc_context);
         } else {
+            if name == "length" {
+                let length = value
+                    .as_number(avm, context)
+                    .map(|v| v.abs() as i32)
+                    .unwrap_or(0);
+                if length > 0 {
+                    self.set_length(context.gc_context, length as usize);
+                } else {
+                    self.set_length(context.gc_context, 0);
+                }
+            }
+
             match self
                 .0
                 .write(context.gc_context)
@@ -264,7 +335,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         this: Object<'gc>,
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
-        Ok(ScriptObject::object(context.gc_context, Some(this)).into())
+        match self.0.read().array {
+            ArrayStorage::Vector(_) => {
+                Ok(ScriptObject::array(context.gc_context, Some(this)).into())
+            }
+            ArrayStorage::Properties { .. } => {
+                Ok(ScriptObject::object(context.gc_context, Some(this)).into())
+            }
+        }
     }
 
     /// Delete a named property from the object.
@@ -375,16 +453,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         result
     }
 
-    /// Get the length of this object, as if it were an array.
-    fn get_length(&self) -> i32 {
-        self.0.read().length
-    }
-
-    /// Sets the length of this object, as if it were an array.
-    fn set_length(&self, gc_context: MutationContext<'gc, '_>, length: i32) {
-        self.0.write(gc_context).length = length;
-    }
-
     fn as_string(&self) -> String {
         if self.0.read().function.is_some() {
             "[type Function]".to_string()
@@ -416,6 +484,104 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         self.0.as_ptr() as *const ObjectPtr
+    }
+
+    fn get_length(&self) -> usize {
+        match &self.0.read().array {
+            ArrayStorage::Vector(vector) => vector.len(),
+            ArrayStorage::Properties { length } => *length,
+        }
+    }
+
+    fn set_length(&self, gc_context: MutationContext<'gc, '_>, new_length: usize) {
+        let mut to_remove = None;
+
+        match &mut self.0.write(gc_context).array {
+            ArrayStorage::Vector(vector) => {
+                let old_length = vector.len();
+                vector.resize(new_length, Value::Undefined);
+                if new_length < old_length {
+                    to_remove = Some(new_length..old_length);
+                }
+            }
+            ArrayStorage::Properties { length } => {
+                *length = new_length;
+            }
+        }
+        if let Some(to_remove) = to_remove {
+            for i in to_remove {
+                self.sync_native_property(&i.to_string(), gc_context, None);
+            }
+        }
+        self.sync_native_property("length", gc_context, Some(new_length.into()));
+    }
+
+    fn get_array(&self) -> Vec<Value<'gc>> {
+        match &self.0.read().array {
+            ArrayStorage::Vector(vector) => vector.to_owned(),
+            ArrayStorage::Properties { length } => {
+                let mut values = Vec::new();
+                for i in 0..*length {
+                    values.push(self.get_array_element(i));
+                }
+                values
+            }
+        }
+    }
+
+    fn get_array_element(&self, index: usize) -> Value<'gc> {
+        match &self.0.read().array {
+            ArrayStorage::Vector(vector) => {
+                if let Some(value) = vector.get(index) {
+                    value.to_owned()
+                } else {
+                    Value::Undefined
+                }
+            }
+            ArrayStorage::Properties { length } => {
+                if index < *length {
+                    if let Some(Property::Stored { value, .. }) =
+                        self.0.read().values.get(&index.to_string())
+                    {
+                        return value.to_owned();
+                    }
+                }
+                Value::Undefined
+            }
+        }
+    }
+
+    fn set_array_element(
+        &self,
+        index: usize,
+        value: Value<'gc>,
+        gc_context: MutationContext<'gc, '_>,
+    ) -> usize {
+        self.sync_native_property(&index.to_string(), gc_context, Some(value.clone()));
+        let mut adjust_length = false;
+        let length = match &mut self.0.write(gc_context).array {
+            ArrayStorage::Vector(vector) => {
+                if index >= vector.len() {
+                    vector.resize(index + 1, Value::Undefined);
+                }
+                vector[index] = value.clone();
+                adjust_length = true;
+                vector.len()
+            }
+            ArrayStorage::Properties { length } => *length,
+        };
+        if adjust_length {
+            self.sync_native_property("length", gc_context, Some(length.into()));
+        }
+        length
+    }
+
+    fn delete_array_element(&self, index: usize, gc_context: MutationContext<'gc, '_>) {
+        if let ArrayStorage::Vector(vector) = &mut self.0.write(gc_context).array {
+            if index < vector.len() {
+                vector[index] = Value::Undefined;
+            }
+        }
     }
 }
 
