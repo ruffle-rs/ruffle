@@ -8,10 +8,12 @@ use core::fmt;
 use enumset::{EnumSet, EnumSetType};
 use std::mem::replace;
 
+/// Attributes of properties in the AVM runtime.
+/// The order is significant and should match the order used by `object::as_set_prop_flags`.
 #[derive(EnumSetType, Debug)]
 pub enum Attribute {
-    DontDelete,
     DontEnum,
+    DontDelete,
     ReadOnly,
 }
 

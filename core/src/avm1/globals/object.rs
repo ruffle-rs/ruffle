@@ -1,5 +1,5 @@
 //! Object prototype
-use crate::avm1::property::Attribute::*;
+use crate::avm1::property::Attribute::{self, *};
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, TObject, UpdateContext, Value};
 use enumset::EnumSet;
@@ -225,37 +225,17 @@ pub fn as_set_prop_flags<'gc>(
         _ => None,
     };
 
-    let set_attributes = match args
-        .get(2)
-        .unwrap_or(&Value::Number(0.0))
-        .as_number(avm, ac)? as u64
-    {
-        0 => EnumSet::empty(),
-        1 => DontEnum.into(),
-        2 => DontDelete.into(),
-        3 => DontEnum | DontDelete,
-        4 => ReadOnly.into(),
-        5 => ReadOnly | DontEnum,
-        6 => ReadOnly | DontDelete,
-        7 => ReadOnly | DontEnum | DontDelete,
-        _ => EnumSet::empty(),
-    };
+    let set_attributes = EnumSet::<Attribute>::from_bits(
+        args.get(2)
+            .unwrap_or(&Value::Number(0.0))
+            .as_number(avm, ac)? as u128,
+    );
 
-    let clear_attributes = match args
-        .get(3)
-        .unwrap_or(&Value::Number(0.0))
-        .as_number(avm, ac)? as u64
-    {
-        0 => EnumSet::empty(),
-        1 => DontEnum.into(),
-        2 => DontDelete.into(),
-        3 => DontEnum | DontDelete,
-        4 => ReadOnly.into(),
-        5 => ReadOnly | DontEnum,
-        6 => ReadOnly | DontDelete,
-        7 => ReadOnly | DontEnum | DontDelete,
-        _ => EnumSet::empty(),
-    };
+    let clear_attributes = EnumSet::<Attribute>::from_bits(
+        args.get(3)
+            .unwrap_or(&Value::Number(0.0))
+            .as_number(avm, ac)? as u128,
+    );
 
     match properties {
         Some(properties) => {
