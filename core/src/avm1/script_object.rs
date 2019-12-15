@@ -27,6 +27,7 @@ pub struct ScriptObjectData<'gc> {
     prototype: Option<Object<'gc>>,
     values: HashMap<String, Property<'gc>>,
     function: Option<Executable<'gc>>,
+    interfaces: Vec<Object<'gc>>,
     type_of: &'static str,
     array: ArrayStorage<'gc>,
 }
@@ -37,6 +38,7 @@ unsafe impl<'gc> Collect for ScriptObjectData<'gc> {
         self.values.trace(cc);
         self.function.trace(cc);
         self.array.trace(cc);
+        self.interfaces.trace(cc);
     }
 }
 
@@ -64,6 +66,7 @@ impl<'gc> ScriptObject<'gc> {
                 values: HashMap::new(),
                 function: None,
                 array: ArrayStorage::Properties { length: 0 },
+                interfaces: vec![],
             },
         ))
     }
@@ -80,6 +83,7 @@ impl<'gc> ScriptObject<'gc> {
                 values: HashMap::new(),
                 function: None,
                 array: ArrayStorage::Vector(Vec::new()),
+                interfaces: vec![],
             },
         ));
         object.sync_native_property("length", gc_context, Some(0.into()));
@@ -99,6 +103,7 @@ impl<'gc> ScriptObject<'gc> {
                 values: HashMap::new(),
                 function: None,
                 array: ArrayStorage::Properties { length: 0 },
+                interfaces: vec![],
             },
         ))
         .into()
@@ -118,6 +123,7 @@ impl<'gc> ScriptObject<'gc> {
                 values: HashMap::new(),
                 function: None,
                 array: ArrayStorage::Properties { length: 0 },
+                interfaces: vec![],
             },
         ))
     }
@@ -136,6 +142,7 @@ impl<'gc> ScriptObject<'gc> {
                 function: Some(function.into()),
                 values: HashMap::new(),
                 array: ArrayStorage::Properties { length: 0 },
+                interfaces: vec![],
             },
         ))
     }
@@ -391,6 +398,30 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .insert(name.to_string(), Property::Stored { value, attributes });
     }
 
+    fn set_attributes(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        name: Option<&str>,
+        set_attributes: EnumSet<Attribute>,
+        clear_attributes: EnumSet<Attribute>,
+    ) {
+        match name {
+            None => {
+                // Change *all* attributes.
+                for (_name, prop) in self.0.write(gc_context).values.iter_mut() {
+                    let new_atts = (prop.attributes() - clear_attributes) | set_attributes;
+                    prop.set_attributes(new_atts);
+                }
+            }
+            Some(name) => {
+                if let Some(prop) = self.0.write(gc_context).values.get_mut(name) {
+                    let new_atts = (prop.attributes() - clear_attributes) | set_attributes;
+                    prop.set_attributes(new_atts);
+                }
+            }
+        }
+    }
+
     fn proto(&self) -> Option<Object<'gc>> {
         self.0.read().prototype
     }
@@ -463,6 +494,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn type_of(&self) -> &'static str {
         self.0.read().type_of
+    }
+
+    fn interfaces(&self) -> Vec<Object<'gc>> {
+        self.0.read().interfaces.clone()
+    }
+
+    fn set_interfaces(&mut self, context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
+        self.0.write(context).interfaces = iface_list;
     }
 
     fn as_script_object(&self) -> Option<ScriptObject<'gc>> {

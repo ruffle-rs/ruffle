@@ -74,7 +74,7 @@ swf_tests! {
     (recursive_prototypes, "avm1/recursive_prototypes", 1),
     (stage_object_children, "avm1/stage_object_children", 2),
     (has_own_property, "avm1/has_own_property", 1),
-    #[ignore] (extends_chain, "avm1/extends_chain", 1),
+    (extends_chain, "avm1/extends_chain", 1),
     (is_prototype_of, "avm1/is_prototype_of", 1),
     #[ignore] (string_coercion, "avm1/string_coercion", 1),
     (lessthan_swf4, "avm1/lessthan_swf4", 1),
@@ -89,6 +89,7 @@ swf_tests! {
     (equals2_swf7, "avm1/equals2_swf7", 1),
     (strictequals_swf6, "avm1/strictequals_swf6", 1),
     (global_is_bare, "avm1/global_is_bare", 1),
+    (as2_oop, "avm1/as2_oop", 1),
 }
 
 #[test]

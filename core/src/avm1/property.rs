@@ -8,10 +8,12 @@ use core::fmt;
 use enumset::{EnumSet, EnumSetType};
 use std::mem::replace;
 
+/// Attributes of properties in the AVM runtime.
+/// The order is significant and should match the order used by `object::as_set_prop_flags`.
 #[derive(EnumSetType, Debug)]
 pub enum Attribute {
-    DontDelete,
     DontEnum,
+    DontDelete,
     ReadOnly,
 }
 
@@ -76,6 +78,26 @@ impl<'gc> Property<'gc> {
 
                 Ok(true)
             }
+        }
+    }
+
+    /// List this property's attributes.
+    pub fn attributes(&self) -> EnumSet<Attribute> {
+        match self {
+            Property::Virtual { attributes, .. } => *attributes,
+            Property::Stored { attributes, .. } => *attributes,
+        }
+    }
+
+    /// Re-define this property's attributes.
+    pub fn set_attributes(&mut self, new_attributes: EnumSet<Attribute>) {
+        match self {
+            Property::Virtual {
+                ref mut attributes, ..
+            } => *attributes = new_attributes,
+            Property::Stored {
+                ref mut attributes, ..
+            } => *attributes = new_attributes,
         }
     }
 

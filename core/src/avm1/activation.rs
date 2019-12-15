@@ -66,6 +66,9 @@ pub struct Activation<'gc> {
     /// All defined local variables in this stack frame.
     scope: GcCell<'gc, Scope<'gc>>,
 
+    /// The currently in use constant pool.
+    constant_pool: GcCell<'gc, Vec<String>>,
+
     /// The immutable value of `this`.
     this: Object<'gc>,
 
@@ -114,6 +117,7 @@ impl<'gc> Activation<'gc> {
         swf_version: u8,
         code: SwfSlice,
         scope: GcCell<'gc, Scope<'gc>>,
+        constant_pool: GcCell<'gc, Vec<String>>,
         this: Object<'gc>,
         arguments: Option<Object<'gc>>,
     ) -> Activation<'gc> {
@@ -122,6 +126,7 @@ impl<'gc> Activation<'gc> {
             data: code,
             pc: 0,
             scope,
+            constant_pool,
             this,
             arguments,
             return_value: None,
@@ -135,6 +140,7 @@ impl<'gc> Activation<'gc> {
         swf_version: u8,
         code: SwfSlice,
         scope: GcCell<'gc, Scope<'gc>>,
+        constant_pool: GcCell<'gc, Vec<String>>,
         this: Object<'gc>,
         arguments: Option<Object<'gc>>,
     ) -> Activation<'gc> {
@@ -143,6 +149,7 @@ impl<'gc> Activation<'gc> {
             data: code,
             pc: 0,
             scope,
+            constant_pool,
             this,
             arguments,
             return_value: None,
@@ -166,6 +173,7 @@ impl<'gc> Activation<'gc> {
     ) -> Activation<'gc> {
         let global_scope = GcCell::allocate(mc, Scope::from_global_object(globals));
         let child_scope = GcCell::allocate(mc, Scope::new_local_scope(global_scope, mc));
+        let empty_constant_pool = GcCell::allocate(mc, Vec::new());
 
         Activation {
             swf_version,
@@ -176,6 +184,7 @@ impl<'gc> Activation<'gc> {
             },
             pc: 0,
             scope: child_scope,
+            constant_pool: empty_constant_pool,
             this: globals,
             arguments: None,
             return_value: None,
@@ -192,6 +201,7 @@ impl<'gc> Activation<'gc> {
             data: code,
             pc: 0,
             scope,
+            constant_pool: self.constant_pool,
             this: self.this,
             arguments: self.arguments,
             return_value: None,
@@ -340,6 +350,14 @@ impl<'gc> Activation<'gc> {
                 *r = value.into();
             }
         }
+    }
+
+    pub fn constant_pool(&self) -> GcCell<'gc, Vec<String>> {
+        self.constant_pool
+    }
+
+    pub fn set_constant_pool(&mut self, constant_pool: GcCell<'gc, Vec<String>>) {
+        self.constant_pool = constant_pool;
     }
 
     /// Attempts to lock the activation frame for execution.

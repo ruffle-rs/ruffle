@@ -3,6 +3,7 @@
 use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
+use crate::avm1::super_object::SuperObject;
 use crate::avm1::{Avm1, Error, ScriptObject, StageObject, UpdateContext, Value};
 use crate::display_object::DisplayObject;
 use enumset::EnumSet;
@@ -19,6 +20,7 @@ use std::fmt::Debug;
     pub enum Object<'gc> {
         ScriptObject(ScriptObject<'gc>),
         StageObject(StageObject<'gc>),
+        SuperObject(SuperObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -124,6 +126,21 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         attributes: EnumSet<Attribute>,
     );
 
+    /// Set the attributes of a given property.
+    ///
+    /// Leaving `name` unspecified allows setting all properties on a given
+    /// object to the same set of properties.
+    ///
+    /// Attributes can be set, cleared, or left as-is using the pairs of `set_`
+    /// and `clear_attributes` parameters.
+    fn set_attributes(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        name: Option<&str>,
+        set_attributes: EnumSet<Attribute>,
+        clear_attributes: EnumSet<Attribute>,
+    );
+
     /// Define a virtual property onto a given object.
     ///
     /// A virtual property is a set of get/set functions that are called when a
@@ -165,8 +182,74 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Get the object's type string.
     fn type_of(&self) -> &'static str;
 
+    /// Enumerate all interfaces implemented by this object.
+    fn interfaces(&self) -> Vec<Object<'gc>>;
+
+    /// Set the interface list for this object. (Only useful for prototypes.)
+    fn set_interfaces(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        iface_list: Vec<Object<'gc>>,
+    );
+
+    /// Determine if this object is an instance of a class.
+    ///
+    /// The class is provided in the form of it's constructor function and the
+    /// explicit prototype of that constructor function. It is assumed that
+    /// they are already linked.
+    ///
+    /// Because ActionScript 2.0 added interfaces, this function cannot simply
+    /// check the prototype chain and call it a day. Each interface represents
+    /// a new, parallel prototype chain which also needs to be checked. You
+    /// can't implement interfaces within interfaces (fortunately), but if you
+    /// somehow could this would support that, too.
+    fn is_instance_of(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        constructor: Object<'gc>,
+        prototype: Object<'gc>,
+    ) -> Result<bool, Error> {
+        let mut proto_stack = vec![];
+        if let Some(p) = self.proto() {
+            proto_stack.push(p);
+        }
+
+        while let Some(this_proto) = proto_stack.pop() {
+            if Object::ptr_eq(this_proto, prototype) {
+                return Ok(true);
+            }
+
+            if let Some(p) = this_proto.proto() {
+                proto_stack.push(p);
+            }
+
+            if avm.current_swf_version() >= 7 {
+                for interface in this_proto.interfaces() {
+                    if Object::ptr_eq(interface, constructor) {
+                        return Ok(true);
+                    }
+
+                    if let Value::Object(o) = interface
+                        .get("prototype", avm, context)?
+                        .resolve(avm, context)?
+                    {
+                        proto_stack.push(o);
+                    }
+                }
+            }
+        }
+
+        Ok(false)
+    }
+
     /// Get the underlying script object, if it exists.
     fn as_script_object(&self) -> Option<ScriptObject<'gc>>;
+
+    /// Get the underlying super object, if it exists.
+    fn as_super_object(&self) -> Option<SuperObject<'gc>> {
+        None
+    }
 
     /// Get the underlying display node for this object, if it exists.
     fn as_display_object(&self) -> Option<DisplayObject<'gc>>;

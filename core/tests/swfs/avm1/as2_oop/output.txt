@@ -1,0 +1,13 @@
+[type Function]
+[object Object]
+[type Function]
+[object Object]
+[object Object]
+true
+true
+false
+MyObject.a called
+clock crew's back baby
+MyObject.c called
+[object Object]
+null

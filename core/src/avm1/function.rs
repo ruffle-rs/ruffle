@@ -4,6 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
+use crate::avm1::super_object::SuperObject;
 use crate::avm1::value::Value;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext};
 use crate::display_object::TDisplayObject;
@@ -66,6 +67,9 @@ pub struct Avm1Function<'gc> {
 
     /// The scope the function was born into.
     scope: GcCell<'gc, Scope<'gc>>,
+
+    /// The constant pool the function executes with.
+    constant_pool: GcCell<'gc, Vec<String>>,
 }
 
 impl<'gc> Avm1Function<'gc> {
@@ -79,6 +83,7 @@ impl<'gc> Avm1Function<'gc> {
         name: &str,
         params: &[&str],
         scope: GcCell<'gc, Scope<'gc>>,
+        constant_pool: GcCell<'gc, Vec<String>>,
     ) -> Self {
         let name = match name {
             "" => None,
@@ -101,6 +106,7 @@ impl<'gc> Avm1Function<'gc> {
             preload_global: false,
             params: params.iter().map(|s| (None, s.to_string())).collect(),
             scope,
+            constant_pool,
         }
     }
 
@@ -110,6 +116,7 @@ impl<'gc> Avm1Function<'gc> {
         actions: SwfSlice,
         swf_function: &swf::avm1::types::Function,
         scope: GcCell<'gc, Scope<'gc>>,
+        constant_pool: GcCell<'gc, Vec<String>>,
     ) -> Self {
         let name = match swf_function.name {
             "" => None,
@@ -141,6 +148,7 @@ impl<'gc> Avm1Function<'gc> {
             preload_global: swf_function.preload_global,
             params: owned_params,
             scope,
+            constant_pool,
         }
     }
 
@@ -223,6 +231,19 @@ impl<'gc> Executable<'gc> {
                 }
 
                 let argcell = arguments.into();
+                let super_object: Option<Object<'gc>> = if !af.suppress_super {
+                    Some(SuperObject::from_child_object(this, avm, ac)?.into())
+                } else {
+                    None
+                };
+
+                if let Some(super_object) = super_object {
+                    super_object
+                        .as_super_object()
+                        .unwrap()
+                        .bind_this(ac.gc_context, super_object);
+                }
+
                 let effective_ver = if avm.current_swf_version() > 5 {
                     af.swf_version()
                 } else {
@@ -237,6 +258,7 @@ impl<'gc> Executable<'gc> {
                         effective_ver,
                         af.data(),
                         child_scope,
+                        af.constant_pool,
                         this,
                         Some(argcell),
                     ),
@@ -261,12 +283,15 @@ impl<'gc> Executable<'gc> {
                     preload_r += 1;
                 }
 
-                if af.preload_super {
-                    //TODO: super not implemented
-                    log::warn!("Cannot preload super into register because it's not implemented");
-                    //TODO: What happens if you specify both suppress and
-                    //preload for super?
-                    preload_r += 1;
+                if let Some(super_object) = super_object {
+                    if af.preload_super {
+                        frame.set_local_register(preload_r, super_object, ac.gc_context);
+                        //TODO: What happens if you specify both suppress and
+                        //preload for super?
+                        preload_r += 1;
+                    } else {
+                        frame.define("super", super_object, ac.gc_context);
+                    }
                 }
 
                 if af.preload_root {

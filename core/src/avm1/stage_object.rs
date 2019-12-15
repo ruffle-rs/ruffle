@@ -150,6 +150,17 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.base.define_value(gc_context, name, value, attributes)
     }
 
+    fn set_attributes(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        name: Option<&str>,
+        set_attributes: EnumSet<Attribute>,
+        clear_attributes: EnumSet<Attribute>,
+    ) {
+        self.base
+            .set_attributes(gc_context, name, set_attributes, clear_attributes)
+    }
+
     fn add_property(
         &self,
         gc_context: MutationContext<'gc, '_>,
@@ -226,6 +237,14 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
     fn delete_array_element(&self, index: usize, gc_context: MutationContext<'gc, '_>) {
         self.base.delete_array_element(index, gc_context)
+    }
+
+    fn interfaces(&self) -> Vec<Object<'gc>> {
+        self.base.interfaces()
+    }
+
+    fn set_interfaces(&mut self, context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
+        self.base.set_interfaces(context, iface_list)
     }
 
     fn as_string(&self) -> String {

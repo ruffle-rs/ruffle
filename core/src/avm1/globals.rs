@@ -232,6 +232,13 @@ pub fn create_globals<'gc>(
         EnumSet::empty(),
         Some(function_proto),
     );
+    globals.force_set_function(
+        "ASSetPropFlags",
+        object::as_set_prop_flags,
+        gc_context,
+        EnumSet::empty(),
+        Some(function_proto),
+    );
     globals.add_property(
         gc_context,
         "NaN",

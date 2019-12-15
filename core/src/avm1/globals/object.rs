@@ -1,5 +1,5 @@
 //! Object prototype
-use crate::avm1::property::Attribute::*;
+use crate::avm1::property::Attribute::{self, *};
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, TObject, UpdateContext, Value};
 use enumset::EnumSet;
@@ -179,4 +179,77 @@ pub fn fill_proto<'gc>(
         DontDelete | DontEnum,
         Some(fn_proto),
     );
+}
+
+/// Implements `ASSetPropFlags`.
+///
+/// This is an undocumented function that allows ActionScript 2.0 classes to
+/// declare the property flags of a given property. It's not part of
+/// `Object.prototype`, and I suspect that's a deliberate omission.
+pub fn as_set_prop_flags<'gc>(
+    avm: &mut Avm1<'gc>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
+    _: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    //This exists because `.into` won't work inline
+    let my_error: Result<ReturnValue<'gc>, Error> =
+        Err("ASSetPropFlags called without object to apply to!".into());
+    let my_error_2: Result<ReturnValue<'gc>, Error> =
+        Err("ASSetPropFlags called without object list!".into());
+
+    let mut object = args
+        .get(0)
+        .ok_or_else(|| my_error.unwrap_err())?
+        .as_object()?;
+    let properties = match args.get(1).ok_or_else(|| my_error_2.unwrap_err())? {
+        Value::Object(ob) => {
+            //Convert to native array.
+            //TODO: Can we make this an iterator?
+            let mut array = vec![];
+            let length = ob
+                .get("length", avm, ac)?
+                .resolve(avm, ac)?
+                .as_number(avm, ac)? as usize;
+            for i in 0..length {
+                array.push(
+                    ob.get(&format!("{}", i), avm, ac)?
+                        .resolve(avm, ac)?
+                        .coerce_to_string(avm, ac)?,
+                )
+            }
+
+            Some(array)
+        }
+        Value::String(s) => Some(s.split(',').map(String::from).collect()),
+        _ => None,
+    };
+
+    let set_attributes = EnumSet::<Attribute>::from_bits(
+        args.get(2)
+            .unwrap_or(&Value::Number(0.0))
+            .as_number(avm, ac)? as u128,
+    );
+
+    let clear_attributes = EnumSet::<Attribute>::from_bits(
+        args.get(3)
+            .unwrap_or(&Value::Number(0.0))
+            .as_number(avm, ac)? as u128,
+    );
+
+    match properties {
+        Some(properties) => {
+            for prop_name in properties {
+                object.set_attributes(
+                    ac.gc_context,
+                    Some(&prop_name),
+                    set_attributes,
+                    clear_attributes,
+                )
+            }
+        }
+        None => object.set_attributes(ac.gc_context, None, set_attributes, clear_attributes),
+    }
+
+    Ok(Value::Undefined.into())
 }
