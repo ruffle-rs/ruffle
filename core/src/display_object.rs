@@ -311,15 +311,10 @@ impl<'gc> DisplayObjectBase<'gc> {
         }
     }
 
-    /// Whether this display object is visible.
-    /// Invisible objects are not rendered, but otherwise continue to exist normally.
-    /// Returned by the `_visible`/`visible` ActionScript properties.
     fn visible(&self) -> bool {
         self.flags.contains(DisplayObjectFlags::Visible)
     }
-    /// Sets whether this display object will be visible.
-    /// Invisible objects are not rendered, but otherwise continue to exist normally.
-    /// Returned by the `_visible`/`visible` ActionScript properties.
+
     fn set_visible(&mut self, value: bool) {
         if value {
             self.flags.insert(DisplayObjectFlags::Visible);
@@ -603,7 +598,15 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
     }
     fn removed(&self) -> bool;
     fn set_removed(&mut self, context: MutationContext<'gc, '_>, value: bool);
+
+    /// Whether this display object is visible.
+    /// Invisible objects are not rendered, but otherwise continue to exist normally.
+    /// Returned by the `_visible`/`visible` ActionScript properties.
     fn visible(&self) -> bool;
+
+    /// Sets whether this display object will be visible.
+    /// Invisible objects are not rendered, but otherwise continue to exist normally.
+    /// Returned by the `_visible`/`visible` ActionScript properties.
     fn set_visible(&mut self, context: MutationContext<'gc, '_>, value: bool);
 
     /// Whether this display object has been transformed by ActionScript.
