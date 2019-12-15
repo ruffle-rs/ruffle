@@ -199,20 +199,20 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         keys
     }
 
-    fn get_length(&self) -> usize {
-        self.base.get_length()
+    fn length(&self) -> usize {
+        self.base.length()
     }
 
     fn set_length(&self, gc_context: MutationContext<'gc, '_>, new_length: usize) {
         self.base.set_length(gc_context, new_length)
     }
 
-    fn get_array(&self) -> Vec<Value<'gc>> {
-        self.base.get_array()
+    fn array(&self) -> Vec<Value<'gc>> {
+        self.base.array()
     }
 
-    fn get_array_element(&self, index: usize) -> Value<'gc> {
-        self.base.get_array_element(index)
+    fn array_element(&self, index: usize) -> Value<'gc> {
+        self.base.array_element(index)
     }
 
     fn set_array_element(

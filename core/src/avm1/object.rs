@@ -192,10 +192,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Get the length of this object, as if it were an array.
-    fn get_length(&self) -> usize;
+    fn length(&self) -> usize;
 
     /// Gets a copy of the array storage behind this object.
-    fn get_array(&self) -> Vec<Value<'gc>>;
+    fn array(&self) -> Vec<Value<'gc>>;
 
     /// Sets the length of this object, as if it were an array.
     ///
@@ -206,7 +206,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Gets a property of this object as if it were an array.
     ///
     /// Array element lookups do not respect the prototype chain, and will ignore virtual properties.
-    fn get_array_element(&self, index: usize) -> Value<'gc>;
+    fn array_element(&self, index: usize) -> Value<'gc>;
 
     /// Sets a property of this object as if it were an array.
     ///

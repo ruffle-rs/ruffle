@@ -50,7 +50,7 @@ pub fn push<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let old_length = this.get_length();
+    let old_length = this.length();
     let new_length = old_length + args.len();
     this.set_length(context.gc_context, new_length);
 
@@ -71,12 +71,12 @@ pub fn unshift<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let old_length = this.get_length();
+    let old_length = this.length();
     let new_length = old_length + args.len();
     let offset = new_length - old_length;
 
     for i in (old_length - 1..new_length).rev() {
-        this.set_array_element(i, this.get_array_element(i - offset), context.gc_context);
+        this.set_array_element(i, this.array_element(i - offset), context.gc_context);
     }
 
     for i in 0..args.len() {
@@ -94,17 +94,17 @@ pub fn shift<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let old_length = this.get_length();
+    let old_length = this.length();
     if old_length == 0 {
         return Ok(Value::Undefined.into());
     }
 
     let new_length = old_length - 1;
 
-    let removed = this.get_array_element(0);
+    let removed = this.array_element(0);
 
     for i in 0..new_length {
-        this.set_array_element(i, this.get_array_element(i + 1), context.gc_context);
+        this.set_array_element(i, this.array_element(i + 1), context.gc_context);
     }
 
     this.delete_array_element(new_length, context.gc_context);
@@ -121,14 +121,14 @@ pub fn pop<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let old_length = this.get_length();
+    let old_length = this.length();
     if old_length == 0 {
         return Ok(Value::Undefined.into());
     }
 
     let new_length = old_length - 1;
 
-    let removed = this.get_array_element(new_length);
+    let removed = this.array_element(new_length);
     this.delete_array_element(new_length, context.gc_context);
     this.delete(context.gc_context, &new_length.to_string());
 
@@ -143,8 +143,8 @@ pub fn reverse<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let length = this.get_length();
-    let mut values = this.get_array().to_vec();
+    let length = this.length();
+    let mut values = this.array().to_vec();
 
     for i in 0..length {
         this.set_array_element(i, values.pop().unwrap(), context.gc_context);
@@ -163,7 +163,7 @@ pub fn join<'gc>(
         .get(0)
         .and_then(|v| v.to_owned().coerce_to_string(avm, context).ok())
         .unwrap_or_else(|| ",".to_owned());
-    let values: Vec<Value<'gc>> = this.get_array();
+    let values: Vec<Value<'gc>> = this.array();
 
     Ok(values
         .iter()
@@ -197,13 +197,13 @@ pub fn slice<'gc>(
     let start = args
         .get(0)
         .and_then(|v| v.as_number(avm, context).ok())
-        .map(|v| make_index_absolute(v as i32, this.get_length()))
+        .map(|v| make_index_absolute(v as i32, this.length()))
         .unwrap_or(0);
     let end = args
         .get(1)
         .and_then(|v| v.as_number(avm, context).ok())
-        .map(|v| make_index_absolute(v as i32, this.get_length()))
-        .unwrap_or_else(|| this.get_length());
+        .map(|v| make_index_absolute(v as i32, this.length()))
+        .unwrap_or_else(|| this.length());
 
     let array = ScriptObject::array(context.gc_context, Some(avm.prototypes.array));
 
@@ -212,7 +212,7 @@ pub fn slice<'gc>(
         array.set_length(context.gc_context, length);
 
         for i in 0..length {
-            array.set_array_element(i, this.get_array_element(start + i), context.gc_context);
+            array.set_array_element(i, this.array_element(start + i), context.gc_context);
         }
     }
 
@@ -229,7 +229,7 @@ pub fn splice<'gc>(
         return Ok(Value::Undefined.into());
     }
 
-    let old_length = this.get_length();
+    let old_length = this.length();
     let start = args
         .get(0)
         .and_then(|v| v.as_number(avm, context).ok())
@@ -251,7 +251,7 @@ pub fn splice<'gc>(
     let new_length = old_length + to_add.len() - to_remove;
 
     for i in start..start + to_remove {
-        removed.set_array_element(i - start, this.get_array_element(i), context.gc_context);
+        removed.set_array_element(i - start, this.array_element(i), context.gc_context);
     }
     removed.set_length(context.gc_context, to_remove);
 
@@ -271,11 +271,11 @@ pub fn splice<'gc>(
     if offset < 0 {
         for i in (start + to_add.len()..new_length).rev() {
             if to_remove == 2 && args.len() == 5 {
-                dbg!(&i, this.get_array_element((i as i32 + offset) as usize));
+                dbg!(&i, this.array_element((i as i32 + offset) as usize));
             }
             this.set_array_element(
                 i,
-                this.get_array_element((i as i32 + offset) as usize),
+                this.array_element((i as i32 + offset) as usize),
                 context.gc_context,
             );
         }
@@ -283,7 +283,7 @@ pub fn splice<'gc>(
         for i in start + to_add.len()..new_length {
             this.set_array_element(
                 i,
-                this.get_array_element((i as i32 + offset) as usize),
+                this.array_element((i as i32 + offset) as usize),
                 context.gc_context,
             );
         }
@@ -316,7 +316,7 @@ pub fn concat<'gc>(
     let array = ScriptObject::array(context.gc_context, Some(avm.prototypes.array));
     let mut length = 0;
 
-    for i in 0..this.get_length() {
+    for i in 0..this.length() {
         let old = this
             .get(&i.to_string(), avm, context)
             .and_then(|v| v.resolve(avm, context))
@@ -337,7 +337,7 @@ pub fn concat<'gc>(
             let object = *object;
             if avm.prototypes.array.is_prototype_of(object) {
                 added = true;
-                for i in 0..object.get_length() {
+                for i in 0..object.length() {
                     let old = object
                         .get(&i.to_string(), avm, context)
                         .and_then(|v| v.resolve(avm, context))

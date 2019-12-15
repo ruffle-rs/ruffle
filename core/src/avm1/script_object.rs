@@ -486,7 +486,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn get_length(&self) -> usize {
+    fn length(&self) -> usize {
         match &self.0.read().array {
             ArrayStorage::Vector(vector) => vector.len(),
             ArrayStorage::Properties { length } => *length,
@@ -516,20 +516,20 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.sync_native_property("length", gc_context, Some(new_length.into()));
     }
 
-    fn get_array(&self) -> Vec<Value<'gc>> {
+    fn array(&self) -> Vec<Value<'gc>> {
         match &self.0.read().array {
             ArrayStorage::Vector(vector) => vector.to_owned(),
             ArrayStorage::Properties { length } => {
                 let mut values = Vec::new();
                 for i in 0..*length {
-                    values.push(self.get_array_element(i));
+                    values.push(self.array_element(i));
                 }
                 values
             }
         }
     }
 
-    fn get_array_element(&self, index: usize) -> Value<'gc> {
+    fn array_element(&self, index: usize) -> Value<'gc> {
         match &self.0.read().array {
             ArrayStorage::Vector(vector) => {
                 if let Some(value) = vector.get(index) {
