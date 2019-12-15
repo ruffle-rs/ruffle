@@ -3,6 +3,7 @@
 use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
+use crate::avm1::script_object::TYPE_OF_OBJECT;
 use crate::avm1::{Avm1, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
@@ -70,23 +71,23 @@ impl<'gc> SuperObject<'gc> {
 impl<'gc> TObject<'gc> for SuperObject<'gc> {
     fn get_local(
         &self,
-        name: &str,
-        avm: &mut Avm1<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
+        _name: &str,
+        _avm: &mut Avm1<'gc>,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+        _this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error> {
-        self.0.read().child.get_local(name, avm, context, this)
+        Ok(Value::Undefined.into())
     }
 
     fn set(
         &self,
-        name: &str,
-        value: Value<'gc>,
-        avm: &mut Avm1<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        _name: &str,
+        _value: Value<'gc>,
+        _avm: &mut Avm1<'gc>,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         //TODO: What happens if you set `super.__proto__`?
-        self.0.read().child.set(name, value, avm, context)
+        Ok(())
     }
 
     fn call(
@@ -121,7 +122,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     }
 
     fn delete(&self, _gc_context: MutationContext<'gc, '_>, _name: &str) -> bool {
-        //We cannot delete through `super` because we don't have a GC context
+        //`super` cannot have properties deleted from it
         false
     }
 
@@ -136,7 +137,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         _value: Value<'gc>,
         _attributes: EnumSet<Attribute>,
     ) {
-        //We cannot define through `super` because we don't have a GC context
+        //`super` cannot have values defined on it
     }
 
     fn set_attributes(
@@ -146,7 +147,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         _set_attributes: EnumSet<Attribute>,
         _clear_attributes: EnumSet<Attribute>,
     ) {
-        //We cannot set attributes through `super` because we don't have a GC context
+        //TODO: Does ASSetPropFlags work on `super`? What would it even work on?
     }
 
     fn add_property(
@@ -157,7 +158,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         _set: Option<Executable<'gc>>,
         _attributes: EnumSet<Attribute>,
     ) {
-        //We cannot add virtual properties through `super` because we don't have a GC context
+        //`super` cannot have properties defined on it
     }
 
     fn has_property(&self, name: &str) -> bool {
@@ -177,8 +178,8 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     }
 
     fn get_keys(&self) -> HashSet<String> {
-        //TODO: What's in `for var x in super`?
-        self.0.read().child.get_keys()
+        //`super` cannot be enumerated
+        HashSet::new()
     }
 
     fn as_string(&self) -> String {
@@ -186,7 +187,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     }
 
     fn type_of(&self) -> &'static str {
-        self.0.read().child.type_of()
+        TYPE_OF_OBJECT
     }
 
     fn length(&self) -> usize {
@@ -215,11 +216,8 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     fn delete_array_element(&self, _index: usize, _gc_context: MutationContext<'gc, '_>) {}
 
     fn interfaces(&self) -> Vec<Object<'gc>> {
-        if let Some(proto) = self.proto() {
-            proto.interfaces()
-        } else {
-            vec![]
-        }
+        //`super` does not implement interfaces
+        vec![]
     }
 
     fn set_interfaces(
@@ -227,8 +225,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         _gc_context: MutationContext<'gc, '_>,
         _iface_list: Vec<Object<'gc>>,
     ) {
-        //So we can't actually set interfaces through a `super`, because this
-        //function doesn't get a `gc_context` to write with...
+        //`super` probably cannot have interfaces set on it
     }
 
     fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
@@ -240,11 +237,13 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     }
 
     fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
+        //`super` actually can be used to invoke MovieClip methods
         self.0.read().child.as_display_object()
     }
 
     fn as_executable(&self) -> Option<Executable<'gc>> {
-        self.0.read().child.as_executable()
+        //well, `super` *can* be called...
+        self.0.read().constr.and_then(|c| c.as_executable())
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
