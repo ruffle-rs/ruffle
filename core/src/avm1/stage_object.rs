@@ -363,7 +363,9 @@ fn set_x<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error> {
     let val = val.as_number(avm, context)?;
-    this.set_x(context.gc_context, val);
+    if !val.is_nan() {
+        this.set_x(context.gc_context, val);
+    }
     Ok(())
 }
 
@@ -382,7 +384,9 @@ fn set_y<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error> {
     let val = val.as_number(avm, context)?;
-    this.set_y(context.gc_context, val);
+    if !val.is_nan() {
+        this.set_y(context.gc_context, val);
+    }
     Ok(())
 }
 
@@ -402,7 +406,9 @@ fn set_x_scale<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error> {
     let val = val.as_number(avm, context)? / 100.0;
-    this.set_scale_x(context.gc_context, val);
+    if !val.is_nan() {
+        this.set_scale_x(context.gc_context, val);
+    }
     Ok(())
 }
 
@@ -422,7 +428,9 @@ fn set_y_scale<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error> {
     let val = val.as_number(avm, context)? / 100.0;
-    this.set_scale_y(context.gc_context, val);
+    if !val.is_nan() {
+        this.set_scale_y(context.gc_context, val);
+    }
     Ok(())
 }
 
@@ -468,7 +476,9 @@ fn set_alpha<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error> {
     let val = val.as_number(avm, context)? / 100.0;
-    this.set_alpha(context.gc_context, val);
+    if !val.is_nan() {
+        this.set_alpha(context.gc_context, val);
+    }
     Ok(())
 }
 
@@ -507,7 +517,9 @@ fn set_width<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error> {
     let val = val.as_number(avm, context)?;
-    this.set_width(context.gc_context, val);
+    if !val.is_nan() {
+        this.set_width(context.gc_context, val);
+    }
     Ok(())
 }
 
@@ -526,7 +538,9 @@ fn set_height<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error> {
     let val = val.as_number(avm, context)?;
-    this.set_height(context.gc_context, val);
+    if !val.is_nan() {
+        this.set_height(context.gc_context, val);
+    }
     Ok(())
 }
 
@@ -545,14 +559,16 @@ fn set_rotation<'gc>(
     degrees: Value<'gc>,
 ) -> Result<(), Error> {
     let mut degrees = degrees.as_number(avm, context)?;
-    // Normalize into the range of [-180, 180].
-    degrees %= 360.0;
-    if degrees < -180.0 {
-        degrees += 360.0
-    } else if degrees > 180.0 {
-        degrees -= 360.0
+    if !degrees.is_nan() {
+        // Normalize into the range of [-180, 180].
+        degrees %= 360.0;
+        if degrees < -180.0 {
+            degrees += 360.0
+        } else if degrees > 180.0 {
+            degrees -= 360.0
+        }
+        this.set_rotation(context.gc_context, degrees.to_radians());
     }
-    this.set_rotation(context.gc_context, degrees.to_radians());
     Ok(())
 }
 
