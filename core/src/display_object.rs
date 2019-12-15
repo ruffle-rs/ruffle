@@ -131,12 +131,14 @@ impl<'gc> DisplayObjectBase<'gc> {
         f64::from(self.transform.matrix.tx) / Twips::TWIPS_PER_PIXEL
     }
     fn set_x(&mut self, value: f64) {
+        self.set_transformed_by_script(true);
         self.transform.matrix.tx = (value * Twips::TWIPS_PER_PIXEL) as f32
     }
     fn y(&self) -> f64 {
         f64::from(self.transform.matrix.ty) / Twips::TWIPS_PER_PIXEL
     }
     fn set_y(&mut self, value: f64) {
+        self.set_transformed_by_script(true);
         self.transform.matrix.ty = (value * Twips::TWIPS_PER_PIXEL) as f32
     }
 
@@ -197,6 +199,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.rotation
     }
     fn set_rotation(&mut self, radians: f64) {
+        self.set_transformed_by_script(true);
         self.cache_scale_rotation();
         self.rotation = radians;
         let cos_x = f64::cos(radians);
@@ -214,6 +217,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.scale_x
     }
     fn set_scale_x(&mut self, value: f64) {
+        self.set_transformed_by_script(true);
         self.cache_scale_rotation();
         self.scale_x = value;
         let cos = f64::cos(self.rotation);
@@ -227,6 +231,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.scale_y
     }
     fn set_scale_y(&mut self, value: f64) {
+        self.set_transformed_by_script(true);
         self.cache_scale_rotation();
         self.scale_y = value;
         let cos = f64::cos(self.rotation + self.skew);
@@ -246,6 +251,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         f64::from(self.color_transform().a_mult)
     }
     fn set_alpha(&mut self, value: f64) {
+        self.set_transformed_by_script(true);
         self.color_transform_mut().a_mult = value as f32
     }
     fn clip_depth(&self) -> Depth {
@@ -312,7 +318,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.flags.contains(DisplayObjectFlags::Visible)
     }
     /// Sets whether this display object will be visible.
-    /// /// Invisible objects are not rendered, but otherwise continue to exist normally.
+    /// Invisible objects are not rendered, but otherwise continue to exist normally.
     /// Returned by the `_visible`/`visible` ActionScript properties.
     fn set_visible(&mut self, value: bool) {
         if value {
@@ -321,6 +327,19 @@ impl<'gc> DisplayObjectBase<'gc> {
             self.flags.remove(DisplayObjectFlags::Visible);
         }
     }
+
+    fn transformed_by_script(&self) -> bool {
+        self.flags.contains(DisplayObjectFlags::TransformedByScript)
+    }
+
+    fn set_transformed_by_script(&mut self, value: bool) {
+        if value {
+            self.flags.insert(DisplayObjectFlags::TransformedByScript);
+        } else {
+            self.flags.remove(DisplayObjectFlags::TransformedByScript);
+        }
+    }
+
     fn swf_version(&self) -> u8 {
         self.parent
             .map(|p| p.swf_version())
@@ -586,6 +605,15 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
     fn set_removed(&mut self, context: MutationContext<'gc, '_>, value: bool);
     fn visible(&self) -> bool;
     fn set_visible(&mut self, context: MutationContext<'gc, '_>, value: bool);
+
+    /// Whether this display object has been transformed by ActionScript.
+    /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
+    fn transformed_by_script(&self) -> bool;
+
+    /// Sets whether this display object has been transformed by ActionScript.
+    /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
+    fn set_transformed_by_script(&self, context: MutationContext<'gc, '_>, value: bool);
+
     fn run_frame(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
     fn render(&self, _context: &mut RenderContext<'_, 'gc>) {}
 
@@ -603,24 +631,27 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
         gc_context: MutationContext<'gc, '_>,
         place_object: &swf::PlaceObject,
     ) {
-        if let Some(matrix) = &place_object.matrix {
-            self.set_matrix(gc_context, &matrix.clone().into());
-        }
-        if let Some(color_transform) = &place_object.color_transform {
-            self.set_color_transform(gc_context, &color_transform.clone().into());
-        }
-        if let Some(name) = &place_object.name {
-            self.set_name(gc_context, name);
-        }
-        if let Some(clip_depth) = place_object.clip_depth {
-            self.set_clip_depth(gc_context, clip_depth);
-        }
-        if let Some(ratio) = place_object.ratio {
-            if let Some(mut morph_shape) = self.as_morph_shape() {
-                morph_shape.set_ratio(gc_context, ratio);
+        // PlaceObject tags only apply if this onject has not been dynamically moved by AS code.
+        if !self.transformed_by_script() {
+            if let Some(matrix) = &place_object.matrix {
+                self.set_matrix(gc_context, &matrix.clone().into());
             }
+            if let Some(color_transform) = &place_object.color_transform {
+                self.set_color_transform(gc_context, &color_transform.clone().into());
+            }
+            if let Some(name) = &place_object.name {
+                self.set_name(gc_context, name);
+            }
+            if let Some(clip_depth) = place_object.clip_depth {
+                self.set_clip_depth(gc_context, clip_depth);
+            }
+            if let Some(ratio) = place_object.ratio {
+                if let Some(mut morph_shape) = self.as_morph_shape() {
+                    morph_shape.set_ratio(gc_context, ratio);
+                }
+            }
+            // TODO: Others will go here eventually.
         }
-        // TODO: Others will go here eventually.
     }
 
     fn copy_display_properties_from(
@@ -805,6 +836,12 @@ macro_rules! impl_display_object {
             context: gc_arena::MutationContext<'gc, '_>, value: bool) {
             self.0.write(context).$field.set_visible(value);
         }
+        fn transformed_by_script(&self) -> bool {
+            self.0.read().$field.transformed_by_script()
+        }
+        fn set_transformed_by_script(&self, context: gc_arena::MutationContext<'gc, '_>, value: bool) {
+            self.0.write(context).$field.set_transformed_by_script(value)
+        }
         fn swf_version(&self) -> u8 {
             self.0.read().$field.swf_version()
         }
@@ -872,6 +909,10 @@ enum DisplayObjectFlags {
 
     /// Whether the `_xscale`, `_yscale` and `_rotation` of the object have been calculated and cached.
     ScaleRotationCached,
+
+    /// Whether this object has been transformed by ActionScript.
+    /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
+    TransformedByScript,
 }
 
 pub struct ChildIter<'gc> {
