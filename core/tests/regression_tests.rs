@@ -124,7 +124,7 @@ fn test_stage_object_properties() -> Result<(), Error> {
         // If these are numbers, compare using approx_eq.
         if let (Ok(actual), Ok(expected)) = (actual.parse::<f64>(), expected.parse::<f64>()) {
             // TODO: Lower this epsilon as the accuracy of the properties improves.
-            assert_abs_diff_eq!(actual, expected, epsilon = 0.5);
+            assert_abs_diff_eq!(actual, expected, epsilon = 0.051);
         } else {
             assert_eq!(actual, expected);
         }
