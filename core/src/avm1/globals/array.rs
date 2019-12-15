@@ -216,7 +216,7 @@ pub fn slice<'gc>(
         }
     }
 
-    Ok(Value::Object(array.into()).into())
+    Ok(array.into())
 }
 
 pub fn splice<'gc>(
@@ -304,7 +304,7 @@ pub fn splice<'gc>(
 
     this.set_length(context.gc_context, new_length);
 
-    Ok(Value::Object(removed.into()).into())
+    Ok(removed.into())
 }
 
 pub fn concat<'gc>(
@@ -366,7 +366,7 @@ pub fn concat<'gc>(
 
     array.set_length(context.gc_context, length);
 
-    Ok(Value::Object(array.into()).into())
+    Ok(array.into())
 }
 
 pub fn to_string<'gc>(

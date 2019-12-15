@@ -31,9 +31,12 @@ impl<'gc> From<bool> for Value<'gc> {
     }
 }
 
-impl<'gc> From<Object<'gc>> for Value<'gc> {
-    fn from(object: Object<'gc>) -> Self {
-        Value::Object(object)
+impl<'gc, T> From<T> for Value<'gc>
+where
+    Object<'gc>: From<T>,
+{
+    fn from(value: T) -> Self {
+        Value::Object(Object::from(value))
     }
 }
 
