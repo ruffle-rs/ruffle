@@ -34,6 +34,7 @@ macro_rules! swf_tests {
 // Inside the folder is expected to be "test.swf" and "output.txt" with the correct output.
 swf_tests! {
     (add_property, "avm1/add_property", 1),
+    (as_transformed_flag, "avm1/as_transformed_flag", 3),
     (do_init_action, "avm1/do_init_action", 3),
     (execution_order1, "avm1/execution_order1", 3),
     (execution_order2, "avm1/execution_order2", 15),
