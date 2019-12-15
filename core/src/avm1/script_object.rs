@@ -436,7 +436,6 @@ mod tests {
                 start_clip: root,
                 active_clip: root,
                 target_clip: Some(root),
-                target_path: Value::Undefined,
                 rng: &mut SmallRng::from_seed([0u8; 16]),
                 action_queue: &mut crate::context::ActionQueue::new(),
                 audio: &mut NullAudioBackend::new(),

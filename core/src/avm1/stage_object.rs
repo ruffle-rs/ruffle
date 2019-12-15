@@ -575,10 +575,9 @@ fn set_rotation<'gc>(
 fn target<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: DisplayObject<'gc>,
+    this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error> {
-    log::warn!("Unimplemented property _target");
-    Ok("".into())
+    Ok(this.slash_path().into())
 }
 
 fn frames_loaded<'gc>(

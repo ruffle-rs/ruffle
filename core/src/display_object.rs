@@ -521,6 +521,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
     fn set_alpha(&self, gc_context: MutationContext<'gc, '_>, value: f64);
     fn name(&self) -> Ref<str>;
     fn set_name(&mut self, context: MutationContext<'gc, '_>, name: &str);
+
     /// Returns the dot-syntax path to this display object, e.g. `_level0.foo.clip`
     fn path(&self) -> String {
         if let Some(parent) = self.parent() {
@@ -532,6 +533,21 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
             self.name().to_string()
         }
     }
+
+    /// Returns the Flash 4 slash-syntax path to this display object, e.g. `/foo/clip`.
+    /// Returned by the `_target` property in AVM1.
+    fn slash_path(&self) -> String {
+        if let Some(parent) = self.parent() {
+            let mut path = parent.slash_path();
+            path.push_str("/");
+            path.push_str(&*self.name());
+            path
+        } else {
+            // The stage/root levels do not append their name in slash syntax.
+            "".to_string()
+        }
+    }
+
     fn clip_depth(&self) -> Depth;
     fn set_clip_depth(&mut self, context: MutationContext<'gc, '_>, depth: Depth);
     fn parent(&self) -> Option<DisplayObject<'gc>>;

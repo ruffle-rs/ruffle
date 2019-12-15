@@ -1,4 +1,4 @@
-use crate::avm1::{Avm1, Value};
+use crate::avm1::Avm1;
 use crate::backend::{
     audio::AudioBackend, navigator::NavigatorBackend, render::Letterbox, render::RenderBackend,
 };
@@ -594,7 +594,6 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 start_clip: root,
                 target_clip: Some(root),
                 root,
-                target_path: Value::Undefined,
                 system_prototypes: avm.prototypes().clone(),
                 mouse_hovered_object,
             };

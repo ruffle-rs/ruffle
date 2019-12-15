@@ -1,5 +1,5 @@
 use crate::avm1::activation::Activation;
-use crate::avm1::{Avm1, Object, UpdateContext, Value};
+use crate::avm1::{Avm1, Object, UpdateContext};
 use crate::backend::audio::NullAudioBackend;
 use crate::backend::navigator::NullNavigatorBackend;
 use crate::backend::render::NullRenderer;
@@ -32,7 +32,6 @@ where
             start_clip: root,
             active_clip: root,
             target_clip: Some(root),
-            target_path: Value::Undefined,
             rng: &mut SmallRng::from_seed([0u8; 16]),
             audio: &mut NullAudioBackend::new(),
             action_queue: &mut ActionQueue::new(),
