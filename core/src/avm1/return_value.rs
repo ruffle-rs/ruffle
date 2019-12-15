@@ -147,9 +147,12 @@ impl<'gc> From<bool> for ReturnValue<'gc> {
     }
 }
 
-impl<'gc> From<Object<'gc>> for ReturnValue<'gc> {
-    fn from(object: Object<'gc>) -> Self {
-        ReturnValue::Immediate(Value::Object(object))
+impl<'gc, T> From<T> for ReturnValue<'gc>
+where
+    Object<'gc>: From<T>,
+{
+    fn from(value: T) -> Self {
+        ReturnValue::Immediate(Value::Object(Object::from(value)))
     }
 }
 
