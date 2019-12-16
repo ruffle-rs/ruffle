@@ -346,7 +346,7 @@ impl<'gc> MovieClipData<'gc> {
         &mut self,
         self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        frame: FrameNumber,
+        mut frame: FrameNumber,
         stop: bool,
     ) {
         // Stop first, in case we need to kill and restart the stream sound.
@@ -354,6 +354,13 @@ impl<'gc> MovieClipData<'gc> {
             self.stop(context);
         } else {
             self.play();
+        }
+
+        // Clamp frame number in bounds.
+        if frame < 1 {
+            frame = 1;
+        } else if frame > self.total_frames() {
+            frame = self.total_frames();
         }
 
         if frame != self.current_frame() {
