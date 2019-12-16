@@ -1211,6 +1211,9 @@ impl<'gc> Avm1<'gc> {
                 } else {
                     self.push(Value::Undefined);
                 }
+            } else {
+                log::warn!("Invalid variable path: {}", path);
+                self.push(Value::Undefined);
             }
         } else if self.current_stack_frame().unwrap().read().is_defined(path) {
             self.current_stack_frame()
