@@ -250,8 +250,10 @@ impl<'gc> ButtonData<'gc> {
                     // Note that AVM1 buttons run actions relative to their parent, not themselves.
                     context.action_queue.queue_actions(
                         parent,
-                        action.action_data.clone(),
-                        ActionType::Normal,
+                        ActionType::Normal {
+                            bytecode: action.action_data.clone(),
+                        },
+                        false,
                     );
                 }
             }

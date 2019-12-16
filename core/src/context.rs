@@ -90,11 +90,11 @@ pub struct QueuedActions<'gc> {
     /// The movie clip this ActionScript is running on.
     pub clip: DisplayObject<'gc>,
 
-    /// The ActionScript bytecode.
-    pub actions: SwfSlice,
-
-    /// If this queued action is an init action
+    /// The type of action this is, along with the corresponding bytecode/method data.
     pub action_type: ActionType,
+
+    /// Whether this is an unload action, which can still run if the clip is removed.
+    pub is_unload: bool,
 }
 
 /// Action and gotos need to be queued up to execute at the end of the frame.
@@ -118,13 +118,13 @@ impl<'gc> ActionQueue<'gc> {
     pub fn queue_actions(
         &mut self,
         clip: DisplayObject<'gc>,
-        actions: SwfSlice,
         action_type: ActionType,
+        is_unload: bool,
     ) {
         self.queue.push_back(QueuedActions {
             clip,
-            actions,
             action_type,
+            is_unload,
         })
     }
 
@@ -166,14 +166,14 @@ pub struct RenderContext<'a, 'gc> {
 }
 
 /// The type of action being run.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub enum ActionType {
     /// Normal frame or event actions.
-    Normal,
-
-    /// An `unload` clip event action.
-    Unload,
+    Normal { bytecode: SwfSlice },
 
     /// A `DoInitAction` action.
-    Init,
+    Init { bytecode: SwfSlice },
+
+    /// An event handler method, e.g. `onEnterFrame`.
+    Method { name: &'static str },
 }

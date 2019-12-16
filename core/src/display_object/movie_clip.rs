@@ -108,6 +108,7 @@ impl<'gc> MovieClip<'gc> {
             .preload(context, morph_shapes, self.into())
     }
 
+    #[allow(dead_code)]
     pub fn playing(self) -> bool {
         self.0.read().playing()
     }
@@ -197,11 +198,18 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             child.run_frame(context);
         }
 
-        // Run myself.
-        if self.playing() {
-            self.0
-                .write(context.gc_context)
-                .run_frame_internal((*self).into(), context, true);
+        // Run my load/enterFrame clip event.
+        let mut mc = self.0.write(context.gc_context);
+        if !mc.initialized() {
+            mc.run_clip_action((*self).into(), context, ClipEvent::Load);
+            mc.set_initialized(true);
+        } else {
+            mc.run_clip_action((*self).into(), context, ClipEvent::EnterFrame);
+        }
+
+        // Run my SWF tags.
+        if mc.playing() {
+            mc.run_frame_internal((*self).into(), context, true);
         }
     }
 
@@ -383,14 +391,6 @@ impl<'gc> MovieClipData<'gc> {
         } else {
             // Single frame clips do not play.
             self.stop(context);
-        }
-
-        // Run my load/enterFrame clip event.
-        if !self.initialized() {
-            self.run_clip_action(self_display_object, context, ClipEvent::Load);
-            self.set_initialized(true);
-        } else {
-            self.run_clip_action(self_display_object, context, ClipEvent::EnterFrame);
         }
 
         let _tag_pos = self.tag_stream_pos;
@@ -721,21 +721,54 @@ impl<'gc> MovieClipData<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         event: ClipEvent,
     ) {
-        for clip_action in self
-            .clip_actions
-            .iter()
-            .filter(|action| action.events.contains(&event))
-        {
-            let action_type = if event == ClipEvent::Unload {
-                ActionType::Unload
-            } else {
-                ActionType::Normal
-            };
-            context.action_queue.queue_actions(
-                self_display_object,
-                clip_action.action_data.clone(),
-                action_type,
-            );
+        // TODO: What's the behavior for loaded SWF files?
+        if context.swf_version >= 5 {
+            for clip_action in self
+                .clip_actions
+                .iter()
+                .filter(|action| action.events.contains(&event))
+            {
+                context.action_queue.queue_actions(
+                    self_display_object,
+                    ActionType::Normal {
+                        bytecode: clip_action.action_data.clone(),
+                    },
+                    event == ClipEvent::Unload,
+                );
+            }
+
+            // Queue ActionScript-defined event handlers after the SWF defined ones.
+            // (e.g., clip.onEnterFrame = foo).
+            if context.swf_version >= 6 {
+                let name = match event {
+                    ClipEvent::Construct => None,
+                    ClipEvent::Data => Some("onData"),
+                    ClipEvent::DragOut => Some("onDragOut"),
+                    ClipEvent::DragOver => Some("onDragOver"),
+                    ClipEvent::EnterFrame => Some("onEnterFrame"),
+                    ClipEvent::Initialize => None,
+                    ClipEvent::KeyDown => Some("onKeyDown"),
+                    ClipEvent::KeyPress { .. } => None,
+                    ClipEvent::KeyUp => Some("onKeyUp"),
+                    ClipEvent::Load => Some("onLoad"),
+                    ClipEvent::MouseDown => Some("onMouseDown"),
+                    ClipEvent::MouseMove => Some("onMouseMove"),
+                    ClipEvent::MouseUp => Some("onMouseUp"),
+                    ClipEvent::Press => Some("onPress"),
+                    ClipEvent::RollOut => Some("onRollOut"),
+                    ClipEvent::RollOver => Some("onRollOver"),
+                    ClipEvent::Release => Some("onRelease"),
+                    ClipEvent::ReleaseOutside => Some("onReleaseOutside"),
+                    ClipEvent::Unload => Some("onUnload"),
+                };
+                if let Some(name) = name {
+                    context.action_queue.queue_actions(
+                        self_display_object,
+                        ActionType::Method { name },
+                        event == ClipEvent::Unload,
+                    );
+                }
+            }
         }
     }
 
@@ -1379,9 +1412,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
             start,
             end,
         };
-        context
-            .action_queue
-            .queue_actions(self_display_object, slice, ActionType::Normal);
+        context.action_queue.queue_actions(
+            self_display_object,
+            ActionType::Normal { bytecode: slice },
+            false,
+        );
         Ok(())
     }
 
@@ -1409,9 +1444,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
             start,
             end,
         };
-        context
-            .action_queue
-            .queue_actions(self_display_object, slice, ActionType::Init);
+        context.action_queue.queue_actions(
+            self_display_object,
+            ActionType::Init { bytecode: slice },
+            false,
+        );
         Ok(())
     }
 

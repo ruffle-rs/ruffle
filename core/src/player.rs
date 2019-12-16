@@ -1,4 +1,4 @@
-use crate::avm1::Avm1;
+use crate::avm1::{Avm1, TObject};
 use crate::backend::{
     audio::AudioBackend, navigator::NavigatorBackend, render::Letterbox, render::RenderBackend,
 };
@@ -483,24 +483,45 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
     fn run_actions<'gc>(avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) {
         while let Some(actions) = context.action_queue.pop() {
             // We don't run frame actions if the clip was removed after it queued the action.
-            if actions.action_type != ActionType::Unload && actions.clip.removed() {
+            if !actions.is_unload && actions.clip.removed() {
                 continue;
             }
+            match actions.action_type {
+                // DoAction/clip event code
+                ActionType::Normal { bytecode } => {
+                    avm.insert_stack_frame_for_init_action(
+                        actions.clip,
+                        context.swf_version,
+                        bytecode,
+                        context,
+                    );
+                }
+                // DoInitAction code
+                ActionType::Init { bytecode } => {
+                    avm.insert_stack_frame_for_action(
+                        actions.clip,
+                        context.swf_version,
+                        bytecode,
+                        context,
+                    );
+                }
 
-            if actions.action_type == ActionType::Init {
-                avm.insert_stack_frame_for_init_action(
-                    actions.clip,
-                    context.swf_version,
-                    actions.actions,
-                    context,
-                );
-            } else {
-                avm.insert_stack_frame_for_action(
-                    actions.clip,
-                    context.swf_version,
-                    actions.actions,
-                    context,
-                );
+                // Event handler method call (e.g. onEnterFrame)
+                ActionType::Method { name } => {
+                    avm.insert_stack_frame_for_event_handler(
+                        actions.clip,
+                        context.swf_version,
+                        context,
+                    );
+                    // Grab the property with the given name, and then call it.
+                    let mc = actions.clip.object().as_object();
+                    if let Ok(mc) = mc {
+                        let _ = mc
+                            .get(name, avm, context)
+                            .and_then(|prop| prop.resolve(avm, context))
+                            .and_then(|callback| callback.call(avm, context, mc, &[]));
+                    }
+                }
             }
             let _ = avm.run_stack_till_empty(context);
         }
