@@ -234,6 +234,15 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         None
     }
 
+    fn propagate_clip_event(&self, context: &mut UpdateContext<'_, 'gc, '_>, event: ClipEvent) {
+        for child in self.children() {
+            child.propagate_clip_event(context, event);
+        }
+        self.0
+            .read()
+            .run_clip_action((*self).into(), context, event);
+    }
+
     fn as_movie_clip(&self) -> Option<MovieClip<'gc>> {
         Some(*self)
     }

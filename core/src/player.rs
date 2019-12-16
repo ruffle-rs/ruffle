@@ -4,7 +4,7 @@ use crate::backend::{
 };
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::display_object::{MorphShape, MovieClip};
-use crate::events::{ButtonEvent, PlayerEvent};
+use crate::events::{ButtonEvent, ClipEvent, PlayerEvent};
 use crate::library::Library;
 use crate::prelude::*;
 use crate::transform::TransformStack;
@@ -317,6 +317,20 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             if self.update_roll_over() {
                 needs_render = true;
             }
+        }
+
+        let clip_event = match event {
+            PlayerEvent::MouseMove { .. } => Some(ClipEvent::MouseMove),
+            PlayerEvent::MouseUp { .. } => Some(ClipEvent::MouseUp),
+            PlayerEvent::MouseDown { .. } => Some(ClipEvent::MouseDown),
+            _ => None,
+        };
+
+        if let Some(clip_event) = clip_event {
+            self.mutate_with_update_context(|_avm, context| {
+                let root = context.root;
+                root.propagate_clip_event(context, clip_event);
+            });
         }
 
         let mut is_mouse_down = self.is_mouse_down;
