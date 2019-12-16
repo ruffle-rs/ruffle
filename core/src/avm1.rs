@@ -530,23 +530,23 @@ impl<'gc> Avm1<'gc> {
         root: DisplayObject<'gc>,
         mut path: &str,
     ) -> Option<DisplayObject<'gc>> {
-        let mut cur_clip = if path.bytes().nth(0).unwrap_or(0) == b'/' {
+        let mut clip = if path.bytes().nth(0).unwrap_or(0) == b'/' {
             path = &path[1..];
-            root
+            Some(root)
         } else {
-            start
+            Some(start)
         };
         if !path.is_empty() {
-            for name in path.split('/') {
-                let next_clip = if let Some(child) = cur_clip.get_child_by_name(name) {
-                    child
+            let mut trail = path.split('/');
+            while let (Some(name), Some(cur_clip)) = (trail.next(), clip) {
+                clip = if name == ".." {
+                    cur_clip.parent()
                 } else {
-                    return None;
+                    cur_clip.get_child_by_name(name)
                 };
-                cur_clip = next_clip;
             }
         }
-        Some(cur_clip)
+        clip
     }
 
     pub fn resolve_slash_path_variable<'s>(
