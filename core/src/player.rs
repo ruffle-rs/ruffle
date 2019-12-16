@@ -489,7 +489,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             match actions.action_type {
                 // DoAction/clip event code
                 ActionType::Normal { bytecode } => {
-                    avm.insert_stack_frame_for_init_action(
+                    avm.insert_stack_frame_for_action(
                         actions.clip,
                         context.swf_version,
                         bytecode,
@@ -498,7 +498,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 }
                 // DoInitAction code
                 ActionType::Init { bytecode } => {
-                    avm.insert_stack_frame_for_action(
+                    avm.insert_stack_frame_for_init_action(
                         actions.clip,
                         context.swf_version,
                         bytecode,
