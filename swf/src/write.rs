@@ -519,17 +519,7 @@ impl<W: Write> Writer<W> {
         match *tag {
             Tag::ShowFrame => self.write_tag_header(TagCode::ShowFrame, 0)?,
 
-            Tag::ExportAssets(ref exports) => {
-                let len = exports.iter().map(|e| e.name.len() as u32 + 1).sum::<u32>()
-                    + exports.len() as u32 * 2
-                    + 2;
-                self.write_tag_header(TagCode::ExportAssets, len)?;
-                self.write_u16(exports.len() as u16)?;
-                for &ExportedAsset { id, ref name } in exports {
-                    self.write_u16(id)?;
-                    self.write_c_string(name)?;
-                }
-            }
+            Tag::ExportAssets(ref exports) => self.write_export_assets(&exports[..])?,
 
             Tag::Protect(ref password) => {
                 if let Some(ref password_md5) = *password {
@@ -1571,6 +1561,19 @@ impl<W: Write> Writer<W> {
         };
         self.write_tag_header(TagCode::DefineSprite, buf.len() as u32)?;
         self.output.write_all(&buf)?;
+        Ok(())
+    }
+
+    fn write_export_assets(&mut self, exports: &[ExportedAsset]) -> Result<()> {
+        let len = exports.iter().map(|e| e.name.len() as u32 + 1).sum::<u32>()
+            + exports.len() as u32 * 2
+            + 2;
+        self.write_tag_header(TagCode::ExportAssets, len)?;
+        self.write_u16(exports.len() as u16)?;
+        for &ExportedAsset { id, ref name } in exports {
+            self.write_u16(id)?;
+            self.write_c_string(name)?;
+        }
         Ok(())
     }
 

@@ -463,7 +463,7 @@ pub type KeyCode = u8;
 // [SWF19 p.29](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=29)
 #[derive(Debug, PartialEq)]
 pub enum Tag {
-    ExportAssets(Vec<ExportedAsset>),
+    ExportAssets(ExportAssets),
     ScriptLimits {
         max_recursion_depth: u16,
         timeout_in_seconds: u16,
@@ -565,6 +565,8 @@ pub enum Tag {
         data: Vec<u8>,
     },
 }
+
+pub type ExportAssets = Vec<ExportedAsset>;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ExportedAsset {

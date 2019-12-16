@@ -602,17 +602,7 @@ impl<R: Read> Reader<R> {
                 Tag::SymbolClass(symbols)
             }
 
-            Some(TagCode::ExportAssets) => {
-                let num_exports = tag_reader.read_u16()?;
-                let mut exports = Vec::with_capacity(num_exports as usize);
-                for _ in 0..num_exports {
-                    exports.push(ExportedAsset {
-                        id: tag_reader.read_u16()?,
-                        name: tag_reader.read_c_string()?,
-                    });
-                }
-                Tag::ExportAssets(exports)
-            }
+            Some(TagCode::ExportAssets) => Tag::ExportAssets(tag_reader.read_export_assets()?),
 
             Some(TagCode::FileAttributes) => {
                 let flags = tag_reader.read_u32()?;
@@ -2042,6 +2032,18 @@ impl<R: Read> Reader<R> {
             num_frames: self.read_u16()?,
             tags: self.read_tag_list()?,
         }))
+    }
+
+    pub fn read_export_assets(&mut self) -> Result<ExportAssets> {
+        let num_exports = self.read_u16()?;
+        let mut exports = Vec::with_capacity(num_exports.into());
+        for _ in 0..num_exports {
+            exports.push(ExportedAsset {
+                id: self.read_u16()?,
+                name: self.read_c_string()?,
+            });
+        }
+        Ok(exports)
     }
 
     pub fn read_place_object(&mut self, tag_length: usize) -> Result<PlaceObject> {
