@@ -1,10 +1,13 @@
 //! Contexts and helper types passed between functions.
 use crate::avm1;
+use crate::avm1::function::NativeFunction;
+use crate::avm1::Value;
 use crate::backend::{audio::AudioBackend, navigator::NavigatorBackend, render::RenderBackend};
 use crate::library::Library;
 use crate::prelude::*;
 use crate::tag_utils::SwfSlice;
 use crate::transform::TransformStack;
+use core::fmt;
 use gc_arena::{Collect, MutationContext};
 use rand::rngs::SmallRng;
 use std::sync::Arc;
@@ -94,10 +97,18 @@ pub struct QueuedActions<'gc> {
     pub clip: DisplayObject<'gc>,
 
     /// The type of action this is, along with the corresponding bytecode/method data.
-    pub action_type: ActionType,
+    pub action_type: ActionType<'gc>,
 
     /// Whether this is an unload action, which can still run if the clip is removed.
     pub is_unload: bool,
+}
+
+unsafe impl<'gc> Collect for QueuedActions<'gc> {
+    #[inline]
+    fn trace(&self, cc: gc_arena::CollectionContext) {
+        self.clip.trace(cc);
+        self.action_type.trace(cc);
+    }
 }
 
 /// Action and gotos need to be queued up to execute at the end of the frame.
@@ -121,7 +132,7 @@ impl<'gc> ActionQueue<'gc> {
     pub fn queue_actions(
         &mut self,
         clip: DisplayObject<'gc>,
-        action_type: ActionType,
+        action_type: ActionType<'gc>,
         is_unload: bool,
     ) {
         self.queue.push_back(QueuedActions {
@@ -169,8 +180,8 @@ pub struct RenderContext<'a, 'gc> {
 }
 
 /// The type of action being run.
-#[derive(Debug, Clone)]
-pub enum ActionType {
+#[derive(Clone)]
+pub enum ActionType<'gc> {
     /// Normal frame or event actions.
     Normal { bytecode: SwfSlice },
 
@@ -179,4 +190,42 @@ pub enum ActionType {
 
     /// An event handler method, e.g. `onEnterFrame`.
     Method { name: &'static str },
+
+    /// An event handler method, e.g. `onEnterFrame`.
+    Native {
+        function: NativeFunction<'gc>,
+        args: Vec<Value<'gc>>,
+    },
+}
+
+impl fmt::Debug for ActionType<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ActionType::Normal { bytecode } => f
+                .debug_struct("ActionType::Normal")
+                .field("bytecode", bytecode)
+                .finish(),
+            ActionType::Init { bytecode } => f
+                .debug_struct("ActionType::Init")
+                .field("bytecode", bytecode)
+                .finish(),
+            ActionType::Method { name } => f
+                .debug_struct("ActionType::Method")
+                .field("name", name)
+                .finish(),
+            ActionType::Native { function: _, args } => f
+                .debug_struct("ActionType::Native")
+                .field("args", args)
+                .finish(),
+        }
+    }
+}
+
+unsafe impl<'gc> Collect for ActionType<'gc> {
+    #[inline]
+    fn trace(&self, cc: gc_arena::CollectionContext) {
+        if let ActionType::Native { args, .. } = self {
+            args.trace(cc);
+        }
+    }
 }

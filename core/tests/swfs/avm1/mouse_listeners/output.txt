@@ -1,0 +1,69 @@
+// Mouse['_listeners']
+
+
+// Mouse.addListener(a)
+true
+
+// Mouse['_listeners']
+[object Object]
+
+// Mouse.addListener(a)
+true
+
+// Mouse['_listeners']
+[object Object]
+
+// Mouse.addListener(b)
+true
+
+// Mouse['_listeners']
+[object Object],[object Object]
+
+// Mouse.addListener(b)
+true
+
+// Mouse['_listeners']
+[object Object],[object Object]
+
+// Mouse.addListener(null)
+true
+
+// Mouse['_listeners']
+[object Object],[object Object],null
+
+// Mouse.addListener(1, 2)
+true
+
+// Mouse['_listeners']
+[object Object],[object Object],null,1
+
+// Mouse.removeListener(b)
+true
+
+// Mouse['_listeners']
+[object Object],null,1
+
+// Mouse.removeListener(b)
+false
+
+// Mouse['_listeners']
+[object Object],null,1
+
+// Mouse.removeListener(a)
+true
+
+// Mouse['_listeners']
+null,1
+
+// Mouse.removeListener(null)
+true
+
+// Mouse['_listeners']
+1
+
+// Mouse.removeListener(1, 2)
+true
+
+// Mouse['_listeners']
+
+

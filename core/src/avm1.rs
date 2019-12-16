@@ -19,7 +19,7 @@ mod test_utils;
 
 mod activation;
 mod fscommand;
-mod function;
+pub mod function;
 pub mod globals;
 pub mod object;
 mod property;
