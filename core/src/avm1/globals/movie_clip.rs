@@ -26,8 +26,7 @@ macro_rules! with_movie_clip {
                 |avm, context: &mut UpdateContext<'_, 'gc, '_>, this, args| -> Result<ReturnValue<'gc>, Error> {
                     if let Some(display_object) = this.as_display_object() {
                         if let Some(movie_clip) = display_object.as_movie_clip() {
-                            let ret: ReturnValue<'gc> = $fn(movie_clip, avm, context, args);
-                            return Ok(ret);
+                            return $fn(movie_clip, avm, context, args);
                         }
                     }
                     Ok(Value::Undefined.into())
@@ -83,30 +82,32 @@ pub fn create_proto<'gc>(
         Some(fn_proto),
         "nextFrame" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             movie_clip.next_frame(context);
-            Value::Undefined.into()
+            Ok(Value::Undefined.into())
         },
         "prevFrame" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             movie_clip.prev_frame(context);
-            Value::Undefined.into()
+            Ok(Value::Undefined.into())
         },
         "play" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             movie_clip.play(context);
-            Value::Undefined.into()
+            Ok(Value::Undefined.into())
         },
         "stop" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             movie_clip.stop(context);
-            Value::Undefined.into()
+            Ok(Value::Undefined.into())
         },
         "getBytesLoaded" => |_movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             // TODO find a correct value
-            1.0.into()
+            Ok(1.0.into())
         },
         "getBytesTotal" => |_movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             // TODO find a correct value
-            1.0.into()
+            Ok(1.0.into())
         },
-        "toString" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _args| -> ReturnValue<'gc> {
-            movie_clip.path().into()
+        "gotoAndPlay" => goto_and_play,
+        "gotoAndStop" => goto_and_stop,
+        "toString" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _args| {
+            Ok(movie_clip.path().into())
         }
     );
 
@@ -130,8 +131,6 @@ pub fn create_proto<'gc>(
         gc_context,
         "_parent",
         Executable::Native(|_avm, _context, this, _args| {
-            log::info!("Self: {:?}", this.as_display_object());
-            log::info!("ASDASDASD");
             Ok(this
                 .as_display_object()
                 .and_then(|mc| mc.parent())
@@ -145,4 +144,57 @@ pub fn create_proto<'gc>(
     );
 
     object.into()
+}
+
+pub fn goto_and_play<'gc>(
+    movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    goto_frame(movie_clip, avm, context, args, false)
+}
+
+pub fn goto_and_stop<'gc>(
+    movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    goto_frame(movie_clip, avm, context, args, true)
+}
+
+#[allow(clippy::unreadable_literal)]
+pub fn goto_frame<'gc>(
+    movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+    stop: bool,
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(value) = args.get(0) {
+        if let Ok(mut frame) = value.as_i32() {
+            // Frame #
+            // Gotoing <= 0 has no effect.
+            // Gotoing greater than _totalframes jumps to the last frame.
+            // Wraps around as an i32.
+            // TODO: -1 +1 here to match Flash's behavior.
+            // We probably want to change our frame representation to 0-based.
+            frame = frame.wrapping_sub(1);
+            if frame >= 0 {
+                let num_frames = movie_clip.total_frames();
+                if frame > i32::from(num_frames) {
+                    movie_clip.goto_frame(context, num_frames, stop);
+                } else {
+                    movie_clip.goto_frame(context, frame.saturating_add(1) as u16, stop);
+                }
+            }
+        } else {
+            let frame_label = value.clone().coerce_to_string(avm, context)?;
+            if let Some(frame) = movie_clip.frame_label_to_number(&frame_label) {
+                movie_clip.goto_frame(context, frame, stop);
+            }
+        }
+    }
+    Ok(Value::Undefined.into())
 }
