@@ -46,6 +46,7 @@ swf_tests! {
     (goto_advance2, "avm1/goto_advance2", 10),
     (goto_both_ways1, "avm1/goto_both_ways1", 10),
     (goto_both_ways2, "avm1/goto_both_ways2", 10),
+    (goto_methods, "avm1/goto_methods", 1),
     (goto_rewind1, "avm1/goto_rewind1", 10),
     (goto_rewind2, "avm1/goto_rewind2", 10),
     (goto_rewind3, "avm1/goto_rewind3", 10),

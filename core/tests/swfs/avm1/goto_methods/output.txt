@@ -1,0 +1,40 @@
+// clip.gotoAndStop(999)
+3
+// clip.gotoAndStop(0)
+3
+// clip.gotoAndPlay(1)
+1
+// clip.gotoAndPlay(2147483648)
+3
+// clip.gotoAndPlay(1)
+1
+// clip.gotoAndPlay(4294967298)
+2
+// clip.gotoAndPlay(1)
+1
+// clip.gotoAndPlay(-2147483648)
+3
+// clip.gotoAndPlay(1)
+1
+// clip.gotoAndPlay(-2147483647)
+1
+// clip.gotoAndPlay(-99)
+1
+// clip.prevFrame()
+1
+// clip.prevFrame()
+1
+// clip.prevFrame()
+1
+// clip.gotoAndStop(NaN)
+1
+// clip.gotoAndStop('BAD')
+1
+// clip.gotoAndStop('TheFrame')
+1
+// clip.nextFrame()
+2
+// clip.nextFrame()
+3
+// clip.gotoAndStop({toString: function() { return 'TheFrame' }})
+2
