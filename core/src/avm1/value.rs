@@ -446,12 +446,32 @@ impl<'gc> Value<'gc> {
         )
     }
 
+    /// Casts a Number into an `i32` following the ECMA-262 `ToInt32` specs.
+    /// The number will have 32-bit wrapping semantics if it is outside the range of an `i32`.
+    /// NaN and Infinities will return 0.
+    /// This is written to avoid undefined behavior when casting out-of-bounds floats to ints in Rust.
+    /// (see https://github.com/rust-lang/rust/issues/10184)
+    #[allow(clippy::unreadable_literal)]
     pub fn as_i32(&self) -> Result<i32, Error> {
-        self.as_f64().map(|n| n as i32)
+        self.as_u32().map(|n| n as i32)
     }
 
+    /// Casts a Number into an `i32` following the ECMA-262 `ToUInt32` specs.
+    /// The number will have 32-bit wrapping semantics if it is outside the range of an `u32`.
+    /// NaN and Infinities will return 0.
+    /// This is written to avoid undefined behavior when casting out-of-bounds floats to ints in Rust.
+    /// (see https://github.com/rust-lang/rust/issues/10184)
+    #[allow(clippy::unreadable_literal)]
     pub fn as_u32(&self) -> Result<u32, Error> {
-        self.as_f64().map(|n| n as u32)
+        self.as_f64().map(|n| {
+            if n.is_nan() || n.is_infinite() {
+                0
+            } else if n >= 0.0 {
+                (n % 4294967296.0) as u32
+            } else {
+                ((n % 4294967296.0) + 4294967296.0) as u32
+            }
+        })
     }
 
     pub fn as_i64(&self) -> Result<i64, Error> {
