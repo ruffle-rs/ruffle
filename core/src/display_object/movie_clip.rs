@@ -2,14 +2,18 @@
 use crate::avm1::{Object, StageObject, Value};
 use crate::backend::audio::AudioStreamHandle;
 use crate::character::Character;
-use crate::context::{RenderContext, UpdateContext};
+use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{
     Bitmap, Button, DisplayObjectBase, EditText, Graphic, MorphShapeStatic, TDisplayObject, Text,
 };
+use crate::events::ClipEvent;
 use crate::font::Font;
 use crate::prelude::*;
-use crate::tag_utils::{self, DecodeResult, SwfStream};
+use crate::tag_utils::{self, DecodeResult, SwfSlice, SwfStream};
+use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use smallvec::SmallVec;
+use std::cell::Ref;
 use std::collections::{BTreeMap, HashMap};
 use swf::read::SwfRead;
 
@@ -31,11 +35,12 @@ pub struct MovieClipData<'gc> {
     swf_version: u8,
     static_data: Gc<'gc, MovieClipStatic>,
     tag_stream_pos: u64,
-    is_playing: bool,
     current_frame: FrameNumber,
     audio_stream: Option<AudioStreamHandle>,
     children: BTreeMap<Depth, DisplayObject<'gc>>,
     object: Option<Object<'gc>>,
+    clip_actions: SmallVec<[ClipAction; 2]>,
+    flags: EnumSet<MovieClipFlags>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -48,11 +53,12 @@ impl<'gc> MovieClip<'gc> {
                 swf_version,
                 static_data: Gc::allocate(gc_context, MovieClipStatic::default()),
                 tag_stream_pos: 0,
-                is_playing: false,
                 current_frame: 0,
                 audio_stream: None,
                 children: BTreeMap::new(),
                 object: None,
+                clip_actions: SmallVec::new(),
+                flags: EnumSet::empty(),
             },
         ))
     }
@@ -82,11 +88,12 @@ impl<'gc> MovieClip<'gc> {
                     },
                 ),
                 tag_stream_pos: 0,
-                is_playing: true,
                 current_frame: 0,
                 audio_stream: None,
                 children: BTreeMap::new(),
                 object: None,
+                clip_actions: SmallVec::new(),
+                flags: MovieClipFlags::Playing.into(),
             },
         ))
     }
@@ -101,6 +108,7 @@ impl<'gc> MovieClip<'gc> {
             .preload(context, morph_shapes, self.into())
     }
 
+    #[allow(dead_code)]
     pub fn playing(self) -> bool {
         self.0.read().playing()
     }
@@ -159,6 +167,22 @@ impl<'gc> MovieClip<'gc> {
             .get(frame_label)
             .copied()
     }
+
+    /// Gets the clip events for this movieclip.
+    pub fn clip_actions(&self) -> Ref<[ClipAction]> {
+        Ref::map(self.0.read(), |mc| mc.clip_actions())
+    }
+
+    /// Sets the clip actions (a.k.a. clip events) for this movieclip.
+    /// Clip actions are created in the Flash IDE by using the `onEnterFrame`
+    /// tag on a movieclip instance.
+    pub fn set_clip_actions(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        actions: SmallVec<[ClipAction; 2]>,
+    ) {
+        self.0.write(gc_context).set_clip_actions(actions);
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
@@ -174,11 +198,18 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             child.run_frame(context);
         }
 
-        // Run myself.
-        if self.playing() {
-            self.0
-                .write(context.gc_context)
-                .run_frame_internal((*self).into(), context, true);
+        // Run my load/enterFrame clip event.
+        let mut mc = self.0.write(context.gc_context);
+        if !mc.initialized() {
+            mc.run_clip_action((*self).into(), context, ClipEvent::Load);
+            mc.set_initialized(true);
+        } else {
+            mc.run_clip_action((*self).into(), context, ClipEvent::EnterFrame);
+        }
+
+        // Run my SWF tags.
+        if mc.playing() {
+            mc.run_frame_internal((*self).into(), context, true);
         }
     }
 
@@ -227,6 +258,15 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             .map(Value::from)
             .unwrap_or(Value::Undefined)
     }
+
+    fn unload(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        self.0.write(context.gc_context).run_clip_action(
+            (*self).into(),
+            context,
+            ClipEvent::Unload,
+        );
+        self.set_removed(context.gc_context, true);
+    }
 }
 
 unsafe impl<'gc> Collect for MovieClipData<'gc> {
@@ -255,7 +295,15 @@ impl<'gc> MovieClipData<'gc> {
     }
 
     fn playing(&self) -> bool {
-        self.is_playing
+        self.flags.contains(MovieClipFlags::Playing)
+    }
+
+    fn set_playing(&mut self, value: bool) {
+        if value {
+            self.flags.insert(MovieClipFlags::Playing);
+        } else {
+            self.flags.remove(MovieClipFlags::Playing);
+        }
     }
 
     fn first_child(&self) -> Option<DisplayObject<'gc>> {
@@ -272,12 +320,12 @@ impl<'gc> MovieClipData<'gc> {
     fn play(&mut self) {
         // Can only play clips with multiple frames.
         if self.total_frames() > 1 {
-            self.is_playing = true;
+            self.set_playing(true);
         }
     }
 
     fn stop(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.is_playing = false;
+        self.set_playing(false);
         // Stop audio stream if one is playing.
         if let Some(audio_stream) = self.audio_stream.take() {
             context.audio.stop_stream(audio_stream);
@@ -393,6 +441,7 @@ impl<'gc> MovieClipData<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         id: CharacterId,
         depth: Depth,
+        place_object: &swf::PlaceObject,
         copy_previous_properties: bool,
     ) -> Option<DisplayObject<'gc>> {
         if let Ok(mut child) = context.library.instantiate_display_object(
@@ -404,7 +453,7 @@ impl<'gc> MovieClipData<'gc> {
             // and add new childonto front of the list.
             let prev_child = self.children.insert(depth, child);
             if let Some(prev_child) = prev_child {
-                self.remove_child_from_exec_list(context.gc_context, prev_child);
+                self.remove_child_from_exec_list(context, prev_child);
             }
             self.add_child_to_exec_list(context.gc_context, child);
             {
@@ -417,6 +466,7 @@ impl<'gc> MovieClipData<'gc> {
                     }
                 }
                 // Run first frame.
+                child.apply_place_object(context.gc_context, place_object);
                 child.run_frame(context);
             }
             Some(child)
@@ -442,25 +492,25 @@ impl<'gc> MovieClipData<'gc> {
     /// This does not affect the render list.
     fn remove_child_from_exec_list(
         &mut self,
-        gc_context: MutationContext<'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         mut child: DisplayObject<'gc>,
     ) {
         // Remove from children linked list.
         let prev = child.prev_sibling();
         let next = child.next_sibling();
         if let Some(mut prev) = prev {
-            prev.set_next_sibling(gc_context, next);
+            prev.set_next_sibling(context.gc_context, next);
         }
         if let Some(mut next) = next {
-            next.set_prev_sibling(gc_context, prev);
+            next.set_prev_sibling(context.gc_context, prev);
         }
         if let Some(head) = self.first_child() {
             if DisplayObject::ptr_eq(head, child) {
-                self.set_first_child(gc_context, next);
+                self.set_first_child(context.gc_context, next);
             }
         }
         // Flag child as removed.
-        child.set_removed(gc_context, true);
+        child.unload(context);
     }
     pub fn run_goto(
         &mut self,
@@ -494,7 +544,7 @@ impl<'gc> MovieClipData<'gc> {
             // Remove all display objects that were created after the desination frame.
             // TODO: We want to do something like self.children.retain here,
             // but BTreeMap::retain does not exist.
-            let children: smallvec::SmallVec<[_; 16]> = self
+            let children: SmallVec<[_; 16]> = self
                 .children
                 .iter()
                 .filter_map(|(depth, clip)| {
@@ -507,7 +557,7 @@ impl<'gc> MovieClipData<'gc> {
                 .collect();
             for (depth, child) in children {
                 self.children.remove(&depth);
-                self.remove_child_from_exec_list(context.gc_context, child);
+                self.remove_child_from_exec_list(context, child);
             }
             true
         } else {
@@ -517,7 +567,6 @@ impl<'gc> MovieClipData<'gc> {
         // Step through the intermediate frames, and aggregate the deltas of each frame.
         let mut frame_pos = self.tag_stream_pos;
         let mut reader = self.reader(context);
-        let gc_context = context.gc_context;
         while self.current_frame() < frame {
             self.current_frame += 1;
             frame_pos = reader.get_inner().position();
@@ -537,10 +586,10 @@ impl<'gc> MovieClipData<'gc> {
                     self.goto_place_object(reader, tag_len, 4, &mut goto_commands)
                 }
                 TagCode::RemoveObject => {
-                    self.goto_remove_object(reader, 1, gc_context, &mut goto_commands, is_rewind)
+                    self.goto_remove_object(reader, 1, context, &mut goto_commands, is_rewind)
                 }
                 TagCode::RemoveObject2 => {
-                    self.goto_remove_object(reader, 2, gc_context, &mut goto_commands, is_rewind)
+                    self.goto_remove_object(reader, 2, context, &mut goto_commands, is_rewind)
                 }
                 _ => Ok(()),
             };
@@ -567,6 +616,7 @@ impl<'gc> MovieClipData<'gc> {
                             context,
                             params.id(),
                             depth,
+                            &params.place_object,
                             params.modifies_original_item(),
                         ) {
                             (true, child)
@@ -577,7 +627,6 @@ impl<'gc> MovieClipData<'gc> {
                 };
 
                 // Apply final delta to display pamareters.
-                child.apply_place_object(context.gc_context, &params.place_object);
                 if was_instantiated {
                     // Set the placement frame for the new object to the frame
                     // it is actually created on.
@@ -641,7 +690,7 @@ impl<'gc> MovieClipData<'gc> {
         &mut self,
         reader: &mut SwfStream<&'a [u8]>,
         version: u8,
-        gc_context: MutationContext<'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         goto_commands: &mut fnv::FnvHashMap<Depth, GotoPlaceObject>,
         is_rewind: bool,
     ) -> DecodeResult {
@@ -659,10 +708,88 @@ impl<'gc> MovieClipData<'gc> {
             // the old children to decide if they persist (place_frame <= goto_frame).
             let child = self.children.remove(&remove_object.depth);
             if let Some(child) = child {
-                self.remove_child_from_exec_list(gc_context, child);
+                self.remove_child_from_exec_list(context, child);
             }
         }
         Ok(())
+    }
+
+    /// Run all actions for the given clip event.
+    fn run_clip_action(
+        &self,
+        self_display_object: DisplayObject<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        event: ClipEvent,
+    ) {
+        // TODO: What's the behavior for loaded SWF files?
+        if context.swf_version >= 5 {
+            for clip_action in self
+                .clip_actions
+                .iter()
+                .filter(|action| action.events.contains(&event))
+            {
+                context.action_queue.queue_actions(
+                    self_display_object,
+                    ActionType::Normal {
+                        bytecode: clip_action.action_data.clone(),
+                    },
+                    event == ClipEvent::Unload,
+                );
+            }
+
+            // Queue ActionScript-defined event handlers after the SWF defined ones.
+            // (e.g., clip.onEnterFrame = foo).
+            if context.swf_version >= 6 {
+                let name = match event {
+                    ClipEvent::Construct => None,
+                    ClipEvent::Data => Some("onData"),
+                    ClipEvent::DragOut => Some("onDragOut"),
+                    ClipEvent::DragOver => Some("onDragOver"),
+                    ClipEvent::EnterFrame => Some("onEnterFrame"),
+                    ClipEvent::Initialize => None,
+                    ClipEvent::KeyDown => Some("onKeyDown"),
+                    ClipEvent::KeyPress { .. } => None,
+                    ClipEvent::KeyUp => Some("onKeyUp"),
+                    ClipEvent::Load => Some("onLoad"),
+                    ClipEvent::MouseDown => Some("onMouseDown"),
+                    ClipEvent::MouseMove => Some("onMouseMove"),
+                    ClipEvent::MouseUp => Some("onMouseUp"),
+                    ClipEvent::Press => Some("onPress"),
+                    ClipEvent::RollOut => Some("onRollOut"),
+                    ClipEvent::RollOver => Some("onRollOver"),
+                    ClipEvent::Release => Some("onRelease"),
+                    ClipEvent::ReleaseOutside => Some("onReleaseOutside"),
+                    ClipEvent::Unload => Some("onUnload"),
+                };
+                if let Some(name) = name {
+                    context.action_queue.queue_actions(
+                        self_display_object,
+                        ActionType::Method { name },
+                        event == ClipEvent::Unload,
+                    );
+                }
+            }
+        }
+    }
+
+    pub fn clip_actions(&self) -> &[ClipAction] {
+        &self.clip_actions
+    }
+
+    pub fn set_clip_actions(&mut self, actions: SmallVec<[ClipAction; 2]>) {
+        self.clip_actions = actions;
+    }
+
+    fn initialized(&self) -> bool {
+        self.flags.contains(MovieClipFlags::Initialized)
+    }
+
+    fn set_initialized(&mut self, value: bool) -> bool {
+        if value {
+            self.flags.insert(MovieClipFlags::Initialized)
+        } else {
+            self.flags.remove(MovieClipFlags::Initialized)
+        }
     }
 }
 
@@ -1280,14 +1407,16 @@ impl<'gc, 'a> MovieClipData<'gc> {
         // so make sure to get the proper offsets. This feels kind of bad.
         let start = (self.tag_stream_start() + reader.get_ref().position()) as usize;
         let end = start + tag_len;
-        let slice = crate::tag_utils::SwfSlice {
+        let slice = SwfSlice {
             data: std::sync::Arc::clone(context.swf_data),
             start,
             end,
         };
-        context
-            .action_queue
-            .queue_actions(self_display_object, slice, false);
+        context.action_queue.queue_actions(
+            self_display_object,
+            ActionType::Normal { bytecode: slice },
+            false,
+        );
         Ok(())
     }
 
@@ -1310,14 +1439,16 @@ impl<'gc, 'a> MovieClipData<'gc> {
         // so make sure to get the proper offsets. This feels kind of bad.
         let start = (self.tag_stream_start() + reader.get_ref().position()) as usize;
         let end = start + tag_len;
-        let slice = crate::tag_utils::SwfSlice {
+        let slice = SwfSlice {
             data: std::sync::Arc::clone(context.swf_data),
             start,
             end,
         };
-        context
-            .action_queue
-            .queue_actions(self_display_object, slice, true);
+        context.action_queue.queue_actions(
+            self_display_object,
+            ActionType::Init { bytecode: slice },
+            false,
+        );
         Ok(())
     }
 
@@ -1337,18 +1468,18 @@ impl<'gc, 'a> MovieClipData<'gc> {
         use swf::PlaceObjectAction;
         match place_object.action {
             PlaceObjectAction::Place(id) | PlaceObjectAction::Replace(id) => {
-                if let Some(mut child) = self.instantiate_child(
+                if let Some(child) = self.instantiate_child(
                     self_display_object,
                     context,
                     id,
                     place_object.depth,
+                    &place_object,
                     if let PlaceObjectAction::Replace(_) = place_object.action {
                         true
                     } else {
                         false
                     },
                 ) {
-                    child.apply_place_object(context.gc_context, &place_object);
                     child
                 } else {
                     return Ok(());
@@ -1381,7 +1512,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         }?;
         let child = self.children.remove(&remove_object.depth);
         if let Some(child) = child {
-            self.remove_child_from_exec_list(context.gc_context, child);
+            self.remove_child_from_exec_list(context, child);
         }
         Ok(())
     }
@@ -1405,7 +1536,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         if let (Some(stream_info), None) = (&self.static_data.audio_stream_info, self.audio_stream)
         {
             let pos = self.tag_stream_start() + self.tag_stream_pos;
-            let slice = crate::tag_utils::SwfSlice {
+            let slice = SwfSlice {
                 data: std::sync::Arc::clone(context.swf_data),
                 start: pos as usize,
                 end: self.tag_stream_start() as usize + self.tag_stream_len(),
@@ -1545,5 +1676,66 @@ impl GotoPlaceObject {
             cur_place.background_color = next_place.background_color.take();
         }
         // TODO: Other stuff.
+    }
+}
+
+/// Boolean state flags used by `MovieClip`.
+#[derive(Debug, EnumSetType)]
+enum MovieClipFlags {
+    /// Whether this `MovieClip` has run its initial frame.
+    Initialized,
+
+    /// Whether this `MovieClip` is playing or stopped.
+    Playing,
+}
+
+/// Actions that are attached to a `MovieClip` event in
+/// an `onClipEvent`/`on` handler.
+#[derive(Debug, Clone)]
+pub struct ClipAction {
+    /// The events that trigger this handler.
+    events: SmallVec<[ClipEvent; 1]>,
+
+    /// The actions to run.
+    action_data: SwfSlice,
+}
+
+impl From<swf::ClipAction> for ClipAction {
+    fn from(other: swf::ClipAction) -> Self {
+        use swf::ClipEventFlag;
+        Self {
+            events: other
+                .events
+                .into_iter()
+                .map(|event| match event {
+                    ClipEventFlag::Construct => ClipEvent::Construct,
+                    ClipEventFlag::Data => ClipEvent::Data,
+                    ClipEventFlag::DragOut => ClipEvent::DragOut,
+                    ClipEventFlag::DragOver => ClipEvent::DragOver,
+                    ClipEventFlag::EnterFrame => ClipEvent::EnterFrame,
+                    ClipEventFlag::Initialize => ClipEvent::Initialize,
+                    ClipEventFlag::KeyUp => ClipEvent::KeyUp,
+                    ClipEventFlag::KeyDown => ClipEvent::KeyDown,
+                    ClipEventFlag::KeyPress => ClipEvent::KeyPress {
+                        key_code: other.key_code.unwrap_or(0),
+                    },
+                    ClipEventFlag::Load => ClipEvent::Load,
+                    ClipEventFlag::MouseUp => ClipEvent::MouseUp,
+                    ClipEventFlag::MouseDown => ClipEvent::MouseDown,
+                    ClipEventFlag::MouseMove => ClipEvent::MouseMove,
+                    ClipEventFlag::Press => ClipEvent::Press,
+                    ClipEventFlag::RollOut => ClipEvent::RollOut,
+                    ClipEventFlag::RollOver => ClipEvent::RollOver,
+                    ClipEventFlag::Release => ClipEvent::Release,
+                    ClipEventFlag::ReleaseOutside => ClipEvent::ReleaseOutside,
+                    ClipEventFlag::Unload => ClipEvent::Unload,
+                })
+                .collect(),
+            action_data: SwfSlice {
+                data: std::sync::Arc::new(other.action_data.clone()),
+                start: 0,
+                end: other.action_data.len(),
+            },
+        }
     }
 }

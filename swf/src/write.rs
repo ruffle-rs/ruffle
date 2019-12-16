@@ -9,8 +9,8 @@ use crate::error::{Error, Result};
 use crate::tag_code::TagCode;
 use crate::types::*;
 use byteorder::{LittleEndian, WriteBytesExt};
+use enumset::EnumSet;
 use std::cmp::max;
-use std::collections::HashSet;
 use std::io::{self, Write};
 
 /// Writes an SWF file to an output stream.
@@ -2195,14 +2195,14 @@ impl<W: Write> Writer<W> {
     fn write_clip_actions(&mut self, clip_actions: &[ClipAction]) -> Result<()> {
         self.write_u16(0)?; // Reserved
         {
-            let mut all_events = HashSet::with_capacity(32);
+            let mut all_events = EnumSet::new();
             for action in clip_actions {
-                all_events = &all_events | &action.events;
+                all_events |= action.events;
             }
-            self.write_clip_event_flags(&all_events)?;
+            self.write_clip_event_flags(all_events)?;
         }
         for action in clip_actions {
-            self.write_clip_event_flags(&action.events)?;
+            self.write_clip_event_flags(action.events)?;
             let action_length =
                 action.action_data.len() as u32 + if action.key_code.is_some() { 1 } else { 0 };
             self.write_u32(action_length)?;
@@ -2219,30 +2219,30 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_clip_event_flags(&mut self, clip_events: &HashSet<ClipEvent>) -> Result<()> {
+    fn write_clip_event_flags(&mut self, clip_events: EnumSet<ClipEventFlag>) -> Result<()> {
         // TODO: Assert proper version.
-        self.write_bit(clip_events.contains(&ClipEvent::KeyUp))?;
-        self.write_bit(clip_events.contains(&ClipEvent::KeyDown))?;
-        self.write_bit(clip_events.contains(&ClipEvent::MouseUp))?;
-        self.write_bit(clip_events.contains(&ClipEvent::MouseDown))?;
-        self.write_bit(clip_events.contains(&ClipEvent::MouseMove))?;
-        self.write_bit(clip_events.contains(&ClipEvent::Unload))?;
-        self.write_bit(clip_events.contains(&ClipEvent::EnterFrame))?;
-        self.write_bit(clip_events.contains(&ClipEvent::Load))?;
-        self.write_bit(clip_events.contains(&ClipEvent::DragOver))?;
-        self.write_bit(clip_events.contains(&ClipEvent::RollOut))?;
-        self.write_bit(clip_events.contains(&ClipEvent::RollOver))?;
-        self.write_bit(clip_events.contains(&ClipEvent::ReleaseOutside))?;
-        self.write_bit(clip_events.contains(&ClipEvent::Release))?;
-        self.write_bit(clip_events.contains(&ClipEvent::Press))?;
-        self.write_bit(clip_events.contains(&ClipEvent::Initialize))?;
-        self.write_bit(clip_events.contains(&ClipEvent::Data))?;
+        self.write_bit(clip_events.contains(ClipEventFlag::KeyUp))?;
+        self.write_bit(clip_events.contains(ClipEventFlag::KeyDown))?;
+        self.write_bit(clip_events.contains(ClipEventFlag::MouseUp))?;
+        self.write_bit(clip_events.contains(ClipEventFlag::MouseDown))?;
+        self.write_bit(clip_events.contains(ClipEventFlag::MouseMove))?;
+        self.write_bit(clip_events.contains(ClipEventFlag::Unload))?;
+        self.write_bit(clip_events.contains(ClipEventFlag::EnterFrame))?;
+        self.write_bit(clip_events.contains(ClipEventFlag::Load))?;
+        self.write_bit(clip_events.contains(ClipEventFlag::DragOver))?;
+        self.write_bit(clip_events.contains(ClipEventFlag::RollOut))?;
+        self.write_bit(clip_events.contains(ClipEventFlag::RollOver))?;
+        self.write_bit(clip_events.contains(ClipEventFlag::ReleaseOutside))?;
+        self.write_bit(clip_events.contains(ClipEventFlag::Release))?;
+        self.write_bit(clip_events.contains(ClipEventFlag::Press))?;
+        self.write_bit(clip_events.contains(ClipEventFlag::Initialize))?;
+        self.write_bit(clip_events.contains(ClipEventFlag::Data))?;
         if self.version >= 6 {
             self.write_ubits(5, 0)?;
-            let has_construct = self.version >= 7 && clip_events.contains(&ClipEvent::Construct);
+            let has_construct = self.version >= 7 && clip_events.contains(ClipEventFlag::Construct);
             self.write_bit(has_construct)?;
-            self.write_bit(clip_events.contains(&ClipEvent::KeyPress))?;
-            self.write_bit(clip_events.contains(&ClipEvent::DragOut))?;
+            self.write_bit(clip_events.contains(ClipEventFlag::KeyPress))?;
+            self.write_bit(clip_events.contains(ClipEventFlag::DragOut))?;
             self.write_u8(0)?;
         }
         self.flush_bits()?;

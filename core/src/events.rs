@@ -25,6 +25,32 @@ pub enum ButtonEvent {
     KeyPress(KeyCode),
 }
 
+/// An event type that can be handled by a movie clip
+/// instance.
+/// TODO: Move this representation in the swf crate?
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum ClipEvent {
+    Construct,
+    Data,
+    DragOut,
+    DragOver,
+    EnterFrame,
+    Initialize,
+    KeyUp,
+    KeyDown,
+    KeyPress { key_code: KeyCode },
+    Load,
+    MouseUp,
+    MouseDown,
+    MouseMove,
+    Press,
+    RollOut,
+    RollOver,
+    Release,
+    ReleaseOutside,
+    Unload,
+}
+
 /// Flash virtual keycode.
 /// TODO: This will eventually move to a separate module.
-pub type KeyCode = u8;
+pub type KeyCode = swf::KeyCode;

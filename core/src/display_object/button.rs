@@ -1,4 +1,4 @@
-use crate::context::{RenderContext, UpdateContext};
+use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::events::ButtonEvent;
 use crate::prelude::*;
@@ -248,9 +248,13 @@ impl<'gc> ButtonData<'gc> {
             for action in &self.static_data.actions {
                 if action.condition == condition && action.key_code == key_code {
                     // Note that AVM1 buttons run actions relative to their parent, not themselves.
-                    context
-                        .action_queue
-                        .queue_actions(parent, action.action_data.clone(), false);
+                    context.action_queue.queue_actions(
+                        parent,
+                        ActionType::Normal {
+                            bytecode: action.action_data.clone(),
+                        },
+                        false,
+                    );
                 }
             }
         }

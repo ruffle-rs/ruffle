@@ -3,6 +3,7 @@
 //! These structures are documented in the Adobe SWF File Foramt Specification
 //! version 19 (henceforth SWF19):
 //! https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf
+use enumset::{EnumSet, EnumSetType};
 use std::collections::HashSet;
 
 /// A complete header and tags in the SWF file.
@@ -412,37 +413,46 @@ pub enum BlendMode {
     HardLight,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+/// An clip action (a.k.a. clip event) placed on a movieclip instance.
+/// Created in the Flash IDE using `onClipEvent` or `on` blocks.
+///
+/// [SWF19 pp.37-38 ClipActionRecord](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=37)
+#[derive(Debug, Clone, PartialEq)]
 pub struct ClipAction {
-    pub events: HashSet<ClipEvent>,
-    pub key_code: Option<u8>,
+    pub events: EnumSet<ClipEventFlag>,
+    pub key_code: Option<KeyCode>,
     pub action_data: Vec<u8>,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-pub enum ClipEvent {
+/// An event that can be attached to a movieclip instance using
+/// an `onClipEvent` or `on` block.
+///
+/// [SWF19 pp.48-50 ClipEvent](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=38)
+#[derive(Debug, EnumSetType)]
+pub enum ClipEventFlag {
+    Construct,
+    Data,
+    DragOut,
+    DragOver,
+    EnterFrame,
+    Initialize,
     KeyUp,
     KeyDown,
+    KeyPress,
+    Load,
     MouseUp,
     MouseDown,
     MouseMove,
-    Unload,
-    EnterFrame,
-    Load,
-    DragOver,
+    Press,
     RollOut,
     RollOver,
-    ReleaseOutside,
     Release,
-    Press,
-    Initialize,
-    Data,
-    Construct,
-    KeyPress,
-    DragOut,
+    ReleaseOutside,
+    Unload,
 }
 
-pub type ClipEventFlags = HashSet<ClipEvent>;
+/// A key code used in `ButtonAction` and `ClipAction` key press events.
+pub type KeyCode = u8;
 
 /// Represents a tag in an SWF file.
 ///

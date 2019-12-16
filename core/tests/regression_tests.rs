@@ -35,6 +35,7 @@ macro_rules! swf_tests {
 swf_tests! {
     (add_property, "avm1/add_property", 1),
     (as_transformed_flag, "avm1/as_transformed_flag", 3),
+    (clip_events, "avm1/clip_events", 4),
     (do_init_action, "avm1/do_init_action", 3),
     (execution_order1, "avm1/execution_order1", 3),
     (execution_order2, "avm1/execution_order2", 15),

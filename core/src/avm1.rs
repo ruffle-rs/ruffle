@@ -218,6 +218,22 @@ impl<'gc> Avm1<'gc> {
         ));
     }
 
+    /// Add a stack frame that executes code in timeline scope for an event handler.
+    pub fn insert_stack_frame_for_event_handler(
+        &mut self,
+        active_clip: DisplayObject<'gc>,
+        swf_version: u8,
+        action_context: &mut UpdateContext<'_, 'gc, '_>,
+    ) {
+        action_context.start_clip = active_clip;
+        action_context.active_clip = active_clip;
+        action_context.target_clip = Some(active_clip);
+        self.stack_frames.push(GcCell::allocate(
+            action_context.gc_context,
+            Activation::from_nothing(swf_version, self.globals, action_context.gc_context),
+        ));
+    }
+
     /// Add a stack frame for any arbitrary code.
     pub fn insert_stack_frame(&mut self, frame: GcCell<'gc, Activation<'gc>>) {
         self.stack_frames.push(frame);

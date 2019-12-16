@@ -161,11 +161,8 @@ impl<'gc> Activation<'gc> {
 
     /// Construct an empty stack frame with no code.
     ///
-    /// This is primarily intended for testing purposes: the activation given
-    /// will prevent the AVM from panicking without a current activation.
-    /// We construct a single scope chain from a global object, and that's about
-    /// it.
-    #[cfg(test)]
+    /// This is used by tests and by callback methods (`onEnterFrame`) to create a base
+    /// activation frame with access to the global context.
     pub fn from_nothing(
         swf_version: u8,
         globals: Object<'gc>,

@@ -1,0 +1,10 @@
+frame 1
+frame 2
+clip load
+clip frame 1
+clip enterFrame
+clip onEnterFrame
+frame 3
+clip unload
+clip onUnload
+frame 4
