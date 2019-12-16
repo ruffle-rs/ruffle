@@ -255,24 +255,8 @@ pub fn splice<'gc>(
     }
     removed.set_length(context.gc_context, to_remove);
 
-    if to_remove == 2 && args.len() == 5 {
-        dbg!(
-            &start,
-            &count,
-            &removed,
-            &to_remove,
-            &to_add,
-            &offset,
-            &old_length,
-            &new_length
-        );
-    }
-
     if offset < 0 {
         for i in (start + to_add.len()..new_length).rev() {
-            if to_remove == 2 && args.len() == 5 {
-                dbg!(&i, this.array_element((i as i32 + offset) as usize));
-            }
             this.set_array_element(
                 i,
                 this.array_element((i as i32 + offset) as usize),
