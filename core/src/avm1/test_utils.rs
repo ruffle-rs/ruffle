@@ -47,6 +47,7 @@ where
             swf_data: &mut Arc::new(vec![]),
             system_prototypes: avm.prototypes().clone(),
             mouse_hovered_object: None,
+            mouse_position: &(Twips::new(0), Twips::new(0)),
         };
 
         let globals = avm.global_object_cell();

@@ -399,6 +399,19 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
         color_transform: &ColorTransform,
     );
 
+    /// Converts a local position on the stage to a local position on this display object
+    fn global_to_local(&self, global: (Twips, Twips)) -> (Twips, Twips) {
+        let mut node = self.parent();
+        let mut matrix = *self.matrix();
+        while let Some(display_object) = node {
+            matrix *= *display_object.matrix();
+            node = display_object.parent();
+        }
+
+        matrix.invert();
+        matrix * global
+    }
+
     /// The `x` position in pixels of this display object in local space.
     /// Returned by the `_x`/`x` ActionScript properties.
     fn x(&self) -> f64;

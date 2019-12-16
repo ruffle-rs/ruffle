@@ -83,6 +83,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The display object that the mouse is currently hovering over.
     pub mouse_hovered_object: Option<DisplayObject<'gc>>,
+
+    /// The location of the mouse when it was last over the player.
+    pub mouse_position: &'a (Twips, Twips),
 }
 
 /// A queued ActionScript call.

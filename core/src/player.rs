@@ -582,6 +582,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             audio,
             navigator,
             rng,
+            mouse_position,
         ) = (
             self.player_version,
             self.global_time,
@@ -592,6 +593,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             &mut self.audio,
             &mut self.navigator,
             &mut self.rng,
+            &self.mouse_pos,
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -617,6 +619,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 root,
                 system_prototypes: avm.prototypes().clone(),
                 mouse_hovered_object,
+                mouse_position,
             };
 
             let ret = f(avm, &mut update_context);
