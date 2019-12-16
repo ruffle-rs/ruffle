@@ -744,18 +744,18 @@ fn set_quality<'gc>(
 
 fn x_mouse<'gc>(
     _avm: &mut Avm1<'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: DisplayObject<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error> {
-    log::warn!("Unimplemented property _xmouse");
-    Ok(Value::Undefined)
+    let local = this.global_to_local(*context.mouse_position);
+    Ok(local.0.to_pixels().into())
 }
 
 fn y_mouse<'gc>(
     _avm: &mut Avm1<'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: DisplayObject<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error> {
-    log::warn!("Unimplemented property _ymouse");
-    Ok(Value::Undefined)
+    let local = this.global_to_local(*context.mouse_position);
+    Ok(local.1.to_pixels().into())
 }
