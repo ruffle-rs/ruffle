@@ -3,6 +3,7 @@ use crate::prelude::*;
 
 type Error = Box<dyn std::error::Error>;
 
+#[derive(Clone)]
 pub struct Font {
     /// The list of glyphs defined in the font.
     /// Used directly by `DefineText` tags.

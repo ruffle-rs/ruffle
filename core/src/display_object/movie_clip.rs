@@ -851,6 +851,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             TagCode::DoInitAction => {
                 self.do_init_action(self_display_object, context, reader, tag_len)
             }
+            TagCode::ExportAssets => self.export_assets(context, reader),
             TagCode::FrameLabel => {
                 self.frame_label(context, reader, tag_len, cur_frame, &mut static_data)
             }
@@ -1338,6 +1339,19 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context
             .library
             .register_character(text.id, Character::Text(text_object));
+        Ok(())
+    }
+
+    #[inline]
+    fn export_assets(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        reader: &mut SwfStream<&'a [u8]>,
+    ) -> DecodeResult {
+        let exports = reader.read_export_assets()?;
+        for export in exports {
+            context.library.register_export(export.id, &export.name);
+        }
         Ok(())
     }
 

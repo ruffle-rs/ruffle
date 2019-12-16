@@ -11,6 +11,7 @@ use swf::CharacterId;
 
 pub struct Library<'gc> {
     characters: HashMap<CharacterId, Character<'gc>>,
+    export_characters: HashMap<String, Character<'gc>>,
     jpeg_tables: Option<Vec<u8>>,
     device_font: Option<Box<Font>>,
 }
@@ -19,6 +20,7 @@ impl<'gc> Library<'gc> {
     pub fn new() -> Self {
         Library {
             characters: HashMap::new(),
+            export_characters: HashMap::new(),
             jpeg_tables: None,
             device_font: None,
         }
@@ -33,18 +35,43 @@ impl<'gc> Library<'gc> {
         }
     }
 
+    /// Registers an export name for a given character ID.
+    /// This character will then be instantiable from AVM1.
+    pub fn register_export(&mut self, id: CharacterId, export_name: &str) {
+        use std::collections::hash_map::Entry;
+        if let Some(character) = self.characters.get(&id) {
+            match self.export_characters.entry(export_name.to_string()) {
+                Entry::Vacant(e) => {
+                    e.insert(character.clone());
+                }
+                Entry::Occupied(_) => {
+                    log::warn!(
+                        "Can't register export {}: Export already exists",
+                        export_name
+                    );
+                }
+            }
+        } else {
+            log::warn!(
+                "Can't register export {}: Character ID {} doesn't exist",
+                export_name,
+                id
+            )
+        }
+    }
+
     pub fn contains_character(&self, id: CharacterId) -> bool {
         self.characters.contains_key(&id)
     }
 
     #[allow(dead_code)]
-    pub fn get_character(&self, id: CharacterId) -> Option<&Character<'gc>> {
+    pub fn get_character_by_id(&self, id: CharacterId) -> Option<&Character<'gc>> {
         self.characters.get(&id)
     }
 
     #[allow(dead_code)]
-    pub fn get_character_mut(&mut self, id: CharacterId) -> Option<&mut Character<'gc>> {
-        self.characters.get_mut(&id)
+    pub fn get_character_by_export_name(&self, name: &str) -> Option<&Character<'gc>> {
+        self.export_characters.get(name)
     }
 
     pub fn instantiate_display_object(
