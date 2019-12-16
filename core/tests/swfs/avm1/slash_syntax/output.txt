@@ -1,0 +1,10 @@
+// clip2:val
+10
+// clip2:val = 'TEST'
+TEST
+// /clip1/clip2:val
+TEST
+// /clip1/../clip1/clip2/../clip2:val
+TEST
+// /invalid/INVALID:invalid = 20
+undefined
