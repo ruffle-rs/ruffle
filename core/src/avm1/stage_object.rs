@@ -487,7 +487,6 @@ fn current_frame<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error> {
-    log::warn!("Unimplemented property _currentframe");
     Ok(this
         .as_movie_clip()
         .map(MovieClip::current_frame)
@@ -500,7 +499,6 @@ fn total_frames<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error> {
-    log::warn!("Unimplemented property _totalframes");
     Ok(this
         .as_movie_clip()
         .map(MovieClip::total_frames)
