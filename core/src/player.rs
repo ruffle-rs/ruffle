@@ -1,3 +1,4 @@
+use crate::avm1::globals::mouse::notify_listeners;
 use crate::avm1::{Avm1, TObject};
 use crate::backend::{
     audio::AudioBackend, navigator::NavigatorBackend, render::Letterbox, render::RenderBackend,
@@ -319,17 +320,31 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             }
         }
 
-        let clip_event = match event {
-            PlayerEvent::MouseMove { .. } => Some(ClipEvent::MouseMove),
-            PlayerEvent::MouseUp { .. } => Some(ClipEvent::MouseUp),
-            PlayerEvent::MouseDown { .. } => Some(ClipEvent::MouseDown),
-            _ => None,
+        let (clip_event, mouse_event_name) = match event {
+            PlayerEvent::MouseMove { .. } => (Some(ClipEvent::MouseMove), Some("onMouseMove")),
+            PlayerEvent::MouseUp { .. } => (Some(ClipEvent::MouseUp), Some("onMouseUp")),
+            PlayerEvent::MouseDown { .. } => (Some(ClipEvent::MouseDown), Some("onMouseDown")),
+            _ => (None, None),
         };
 
-        if let Some(clip_event) = clip_event {
+        if clip_event.is_some() || mouse_event_name.is_some() {
             self.mutate_with_update_context(|_avm, context| {
                 let root = context.root;
-                root.propagate_clip_event(context, clip_event);
+
+                if let Some(clip_event) = clip_event {
+                    root.propagate_clip_event(context, clip_event);
+                }
+
+                if let Some(mouse_event_name) = mouse_event_name {
+                    context.action_queue.queue_actions(
+                        root,
+                        ActionType::Native {
+                            function: notify_listeners,
+                            args: vec![mouse_event_name.into()],
+                        },
+                        false,
+                    );
+                }
             });
         }
 
@@ -534,6 +549,19 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                             .get(name, avm, context)
                             .and_then(|prop| prop.resolve(avm, context))
                             .and_then(|callback| callback.call(avm, context, mc, &[]));
+                    }
+                }
+
+                // Event handler method call (e.g. onEnterFrame)
+                ActionType::Native { function, args } => {
+                    avm.insert_stack_frame_for_event_handler(
+                        actions.clip,
+                        context.swf_version,
+                        context,
+                    );
+                    let mc = actions.clip.object().as_object();
+                    if let Ok(mc) = mc {
+                        let _ = function(avm, context, mc, &args);
                     }
                 }
             }

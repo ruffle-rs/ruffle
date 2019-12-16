@@ -11,6 +11,7 @@ use std::f64;
 mod array;
 mod function;
 mod math;
+pub(crate) mod mouse;
 mod movie_clip;
 mod object;
 
@@ -207,6 +208,17 @@ pub fn create_globals<'gc>(
         Value::Object(math::create(
             gc_context,
             Some(object_proto),
+            Some(function_proto),
+        )),
+        EnumSet::empty(),
+    );
+    globals.define_value(
+        gc_context,
+        "Mouse",
+        Value::Object(mouse::create_mouse_object(
+            gc_context,
+            Some(object_proto),
+            Some(array_proto),
             Some(function_proto),
         )),
         EnumSet::empty(),
