@@ -4,7 +4,7 @@ use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
-use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
+use crate::display_object::{MovieClip, TDisplayObject};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
@@ -23,10 +23,10 @@ macro_rules! with_movie_clip {
         $(
             $object.force_set_function(
                 $name,
-                |_avm, context: &mut UpdateContext<'_, 'gc, '_>, this, args| -> Result<ReturnValue<'gc>, Error> {
+                |avm, context: &mut UpdateContext<'_, 'gc, '_>, this, args| -> Result<ReturnValue<'gc>, Error> {
                     if let Some(display_object) = this.as_display_object() {
                         if let Some(movie_clip) = display_object.as_movie_clip() {
-                            let ret: ReturnValue<'gc> = $fn(movie_clip, context, display_object, args);
+                            let ret: ReturnValue<'gc> = $fn(movie_clip, avm, context, args);
                             return Ok(ret);
                         }
                     }
@@ -81,31 +81,31 @@ pub fn create_proto<'gc>(
         gc_context,
         object,
         Some(fn_proto),
-        "nextFrame" => |movie_clip: MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
+        "nextFrame" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             movie_clip.next_frame(context);
             Value::Undefined.into()
         },
-        "prevFrame" => |movie_clip: MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
+        "prevFrame" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             movie_clip.prev_frame(context);
             Value::Undefined.into()
         },
-        "play" => |movie_clip: MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
+        "play" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             movie_clip.play(context);
             Value::Undefined.into()
         },
-        "stop" => |movie_clip: MovieClip<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
+        "stop" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             movie_clip.stop(context);
             Value::Undefined.into()
         },
-        "getBytesLoaded" => |_movie_clip: MovieClip<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
+        "getBytesLoaded" => |_movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             // TODO find a correct value
             1.0.into()
         },
-        "getBytesTotal" => |_movie_clip: MovieClip<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| {
+        "getBytesTotal" => |_movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             // TODO find a correct value
             1.0.into()
         },
-        "toString" => |movie_clip: MovieClip<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _cell: DisplayObject<'gc>, _args| -> ReturnValue<'gc> {
+        "toString" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _args| -> ReturnValue<'gc> {
             movie_clip.path().into()
         }
     );
@@ -144,32 +144,5 @@ pub fn create_proto<'gc>(
         DontDelete | ReadOnly | DontEnum,
     );
 
-    // object.add_property(
-    //     "_y",
-    //     Executable::Native(|_avm, _context, this, _args| {
-    //         Ok(this
-    //             .read()
-    //             .as_display_node()
-    //             .map(|mc| Value::from(mc.read().y()))
-    //             .unwrap_or(Value::Undefined)
-    //             .into())
-    //     }),
-    //     None,
-    //     DontDelete | ReadOnly | DontEnum,
-    // );
-
-    // object.add_property(
-    //     "_rotation",
-    //     Executable::Native(|_avm, context, this, _args| {
-    //         Ok(this
-    //             .read()
-    //             .as_display_node()
-    //             .map(|mc| Value::from(mc.write(context.gc_context).rotation()))
-    //             .unwrap_or(Value::Undefined)
-    //             .into())
-    //     }),
-    //     None,
-    //     DontDelete | ReadOnly | DontEnum,
-    // );
     object.into()
 }
