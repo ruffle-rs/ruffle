@@ -3,14 +3,14 @@ use crate::display_object::{Bitmap, Button, EditText, Graphic, MorphShape, Movie
 use crate::font::Font;
 
 pub enum Character<'gc> {
-    EditText(Box<EditText<'gc>>),
-    Graphic(Box<Graphic<'gc>>),
-    MovieClip(Box<MovieClip<'gc>>),
-    Bitmap(Box<Bitmap<'gc>>),
-    Button(Box<Button<'gc>>),
+    EditText(EditText<'gc>),
+    Graphic(Graphic<'gc>),
+    MovieClip(MovieClip<'gc>),
+    Bitmap(Bitmap<'gc>),
+    Button(Button<'gc>),
     Font(Box<Font>),
-    MorphShape(Box<MorphShape<'gc>>),
-    Text(Box<Text<'gc>>),
+    MorphShape(MorphShape<'gc>),
+    Text(Text<'gc>),
     Sound(SoundHandle),
 }
 

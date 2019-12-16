@@ -912,7 +912,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
-            .register_character(define_bits_lossless.id, Character::Bitmap(Box::new(bitmap)));
+            .register_character(define_bits_lossless.id, Character::Bitmap(bitmap));
         Ok(())
     }
 
@@ -942,7 +942,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let graphic = Graphic::from_swf_tag(context, &swf_shape);
         context
             .library
-            .register_character(swf_shape.id, Character::Graphic(Box::new(graphic)));
+            .register_character(swf_shape.id, Character::Graphic(graphic));
         Ok(())
     }
 
@@ -1062,7 +1062,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
-            .register_character(id, Character::Bitmap(Box::new(bitmap)));
+            .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
 
@@ -1091,7 +1091,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
-            .register_character(id, Character::Bitmap(Box::new(bitmap)));
+            .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
 
@@ -1128,7 +1128,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
-            .register_character(id, Character::Bitmap(Box::new(bitmap)));
+            .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
 
@@ -1166,7 +1166,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
-            .register_character(id, Character::Bitmap(Box::new(bitmap)));
+            .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
 
@@ -1180,7 +1180,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let button = Button::from_swf_tag(&swf_button, &context.library, context.gc_context);
         context
             .library
-            .register_character(swf_button.id, Character::Button(Box::new(button)));
+            .register_character(swf_button.id, Character::Button(button));
         Ok(())
     }
 
@@ -1194,7 +1194,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let button = Button::from_swf_tag(&swf_button, &context.library, context.gc_context);
         context
             .library
-            .register_character(swf_button.id, Character::Button(Box::new(button)));
+            .register_character(swf_button.id, Character::Button(button));
         Ok(())
     }
 
@@ -1209,7 +1209,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let edit_text = EditText::from_swf_tag(context, swf_edit_text);
         context
             .library
-            .register_character(edit_text.id(), Character::EditText(Box::new(edit_text)));
+            .register_character(edit_text.id(), Character::EditText(edit_text));
         Ok(())
     }
 
@@ -1321,7 +1321,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
 
         context
             .library
-            .register_character(id, Character::MovieClip(Box::new(movie_clip)));
+            .register_character(id, Character::MovieClip(movie_clip));
 
         Ok(())
     }
@@ -1337,7 +1337,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let text_object = Text::from_swf_tag(context, &text);
         context
             .library
-            .register_character(text.id, Character::Text(Box::new(text_object)));
+            .register_character(text.id, Character::Text(text_object));
         Ok(())
     }
 

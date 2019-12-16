@@ -426,10 +426,9 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             // Finalize morph shapes.
             for (id, static_data) in morph_shapes {
                 let morph_shape = MorphShape::new(context.gc_context, static_data);
-                context.library.register_character(
-                    id,
-                    crate::character::Character::MorphShape(Box::new(morph_shape)),
-                );
+                context
+                    .library
+                    .register_character(id, crate::character::Character::MorphShape(morph_shape));
             }
         });
     }
