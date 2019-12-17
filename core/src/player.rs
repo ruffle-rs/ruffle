@@ -141,16 +141,6 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         let movie_width = (header.stage_size.x_max - header.stage_size.x_min).to_pixels() as u32;
         let movie_height = (header.stage_size.y_max - header.stage_size.y_min).to_pixels() as u32;
 
-        // Load and parse the device font.
-        // TODO: We could use lazy_static here.
-        let device_font = match Self::load_device_font(DEVICE_FONT_TAG, &mut renderer) {
-            Ok(font) => Some(font),
-            Err(e) => {
-                log::error!("Unable to load device font: {}", e);
-                None
-            }
-        };
-
         let mut player = Player {
             player_version: NEWEST_PLAYER_VERSION,
 
@@ -158,10 +148,6 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             swf_version: header.version,
 
             is_playing: false,
-
-            renderer,
-            audio,
-            navigator,
 
             background_color: Color {
                 r: 255,
@@ -176,6 +162,16 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             rng: SmallRng::from_seed([0u8; 16]), // TODO(Herschel): Get a proper seed on all platforms.
 
             gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| {
+                // Load and parse the device font.
+                let device_font =
+                    match Self::load_device_font(gc_context, DEVICE_FONT_TAG, &mut renderer) {
+                        Ok(font) => Some(font),
+                        Err(e) => {
+                            log::error!("Unable to load device font: {}", e);
+                            None
+                        }
+                    };
+
                 let mut library = Library::new();
                 library.set_device_font(device_font);
                 GcRoot(GcCell::allocate(
@@ -210,6 +206,10 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
 
             mouse_pos: (Twips::new(0), Twips::new(0)),
             is_mouse_down: false,
+
+            renderer,
+            audio,
+            navigator,
         };
 
         player.gc_arena.mutate(|gc_context, gc_root| {
@@ -674,15 +674,14 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
     /// Loads font data from the given buffer.
     /// The buffer should be the `DefineFont3` info for the tag.
     /// The tag header should not be included.
-    fn load_device_font(
+    fn load_device_font<'gc>(
+        gc_context: gc_arena::MutationContext<'gc, '_>,
         data: &[u8],
         renderer: &mut Renderer,
-    ) -> Result<Box<crate::font::Font>, Error> {
+    ) -> Result<crate::font::Font<'gc>, Error> {
         let mut reader = swf::read::Reader::new(data, 8);
-        let device_font = Box::new(crate::font::Font::from_swf_tag(
-            renderer,
-            &reader.read_define_font_2(3)?,
-        )?);
+        let device_font =
+            crate::font::Font::from_swf_tag(gc_context, renderer, &reader.read_define_font_2(3)?)?;
         Ok(device_font)
     }
 }

@@ -1245,10 +1245,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
             is_bold: false,
             is_italic: false,
         };
-        let font_object = Font::from_swf_tag(context.renderer, &font).unwrap();
+        let font_object = Font::from_swf_tag(context.gc_context, context.renderer, &font).unwrap();
         context
             .library
-            .register_character(font.id, Character::Font(Box::new(font_object)));
+            .register_character(font.id, Character::Font(font_object));
         Ok(())
     }
 
@@ -1259,10 +1259,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
         let font = reader.read_define_font_2(2)?;
-        let font_object = Font::from_swf_tag(context.renderer, &font).unwrap();
+        let font_object = Font::from_swf_tag(context.gc_context, context.renderer, &font).unwrap();
         context
             .library
-            .register_character(font.id, Character::Font(Box::new(font_object)));
+            .register_character(font.id, Character::Font(font_object));
         Ok(())
     }
 
@@ -1273,10 +1273,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
         let font = reader.read_define_font_2(3)?;
-        let font_object = Font::from_swf_tag(context.renderer, &font).unwrap();
+        let font_object = Font::from_swf_tag(context.gc_context, context.renderer, &font).unwrap();
         context
             .library
-            .register_character(font.id, Character::Font(Box::new(font_object)));
+            .register_character(font.id, Character::Font(font_object));
 
         Ok(())
     }

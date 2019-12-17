@@ -9,7 +9,7 @@ pub enum Character<'gc> {
     MovieClip(MovieClip<'gc>),
     Bitmap(Bitmap<'gc>),
     Button(Button<'gc>),
-    Font(Box<Font>),
+    Font(Font<'gc>),
     MorphShape(MorphShape<'gc>),
     Text(Text<'gc>),
     Sound(SoundHandle),

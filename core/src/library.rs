@@ -13,7 +13,7 @@ pub struct Library<'gc> {
     characters: HashMap<CharacterId, Character<'gc>>,
     export_characters: HashMap<String, Character<'gc>>,
     jpeg_tables: Option<Vec<u8>>,
-    device_font: Option<Box<Font>>,
+    device_font: Option<Font<'gc>>,
 }
 
 impl<'gc> Library<'gc> {
@@ -106,8 +106,8 @@ impl<'gc> Library<'gc> {
         Ok(obj)
     }
 
-    pub fn get_font(&self, id: CharacterId) -> Option<&Font> {
-        if let Some(&Character::Font(ref font)) = self.characters.get(&id) {
+    pub fn get_font(&self, id: CharacterId) -> Option<Font<'gc>> {
+        if let Some(&Character::Font(font)) = self.characters.get(&id) {
             Some(font)
         } else {
             None
@@ -143,12 +143,12 @@ impl<'gc> Library<'gc> {
     }
 
     /// Returns the device font for use when a font is unavailable.
-    pub fn device_font(&self) -> Option<&Font> {
-        self.device_font.as_ref().map(AsRef::as_ref)
+    pub fn device_font(&self) -> Option<Font<'gc>> {
+        self.device_font
     }
 
     /// Sets the device font.
-    pub fn set_device_font(&mut self, font: Option<Box<Font>>) {
+    pub fn set_device_font(&mut self, font: Option<Font<'gc>>) {
         self.device_font = font;
     }
 }
@@ -159,6 +159,7 @@ unsafe impl<'gc> gc_arena::Collect for Library<'gc> {
         for character in self.characters.values() {
             character.trace(cc);
         }
+        self.device_font.trace(cc);
     }
 }
 
