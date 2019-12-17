@@ -530,6 +530,7 @@ impl<'gc> Avm1<'gc> {
         root: DisplayObject<'gc>,
         mut path: &str,
     ) -> Option<DisplayObject<'gc>> {
+        // Starting / means an absolute path starting from root.
         let mut clip = if path.bytes().nth(0).unwrap_or(0) == b'/' {
             path = &path[1..];
             Some(root)
@@ -537,6 +538,10 @@ impl<'gc> Avm1<'gc> {
             Some(start)
         };
         if !path.is_empty() {
+            // Ignore trailing /.
+            if path.bytes().nth_back(0).unwrap_or(0) == b'/' {
+                path = &path[..path.len() - 1];
+            }
             let mut trail = path.split('/');
             while let (Some(name), Some(cur_clip)) = (trail.next(), clip) {
                 clip = if name == ".." {
