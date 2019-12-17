@@ -74,33 +74,61 @@ impl<'gc> Library<'gc> {
         self.export_characters.get(name)
     }
 
-    pub fn instantiate_display_object(
+    /// Instantiates the library item with the given character ID into a display object.
+    pub fn instantiate_display_object_by_id(
         &self,
         id: CharacterId,
         gc_context: MutationContext<'gc, '_>,
         prototypes: &SystemPrototypes<'gc>,
     ) -> Result<DisplayObject<'gc>, Box<dyn std::error::Error>> {
-        let (mut obj, proto): (DisplayObject<'gc>, Object<'gc>) = match self.characters.get(&id) {
-            Some(Character::Bitmap(bitmap)) => (bitmap.instantiate(gc_context), prototypes.object),
-            Some(Character::EditText(edit_text)) => {
+        if let Some(character) = self.characters.get(&id) {
+            self.instantiate_display_object(character, gc_context, prototypes)
+        } else {
+            log::error!("Tried to instantiate non-registered character ID {}", id);
+            Err("Character id doesn't exist".into())
+        }
+    }
+
+    /// Instantiates the library item with the given export name into a display object.
+    pub fn instantiate_by_export_name(
+        &self,
+        export_name: &str,
+        gc_context: MutationContext<'gc, '_>,
+        prototypes: &SystemPrototypes<'gc>,
+    ) -> Result<DisplayObject<'gc>, Box<dyn std::error::Error>> {
+        if let Some(character) = self.export_characters.get(export_name) {
+            self.instantiate_display_object(character, gc_context, prototypes)
+        } else {
+            log::error!(
+                "Tried to instantiate non-registered character {}",
+                export_name
+            );
+            Err("Character id doesn't exist".into())
+        }
+    }
+
+    /// Instantiates the given character into a display object.
+    fn instantiate_display_object(
+        &self,
+        character: &Character<'gc>,
+        gc_context: MutationContext<'gc, '_>,
+        prototypes: &SystemPrototypes<'gc>,
+    ) -> Result<DisplayObject<'gc>, Box<dyn std::error::Error>> {
+        let (mut obj, proto): (DisplayObject<'gc>, Object<'gc>) = match character {
+            Character::Bitmap(bitmap) => (bitmap.instantiate(gc_context), prototypes.object),
+            Character::EditText(edit_text) => {
                 (edit_text.instantiate(gc_context), prototypes.object)
             }
-            Some(Character::Graphic(graphic)) => {
-                (graphic.instantiate(gc_context), prototypes.object)
-            }
-            Some(Character::MorphShape(morph_shape)) => {
+            Character::Graphic(graphic) => (graphic.instantiate(gc_context), prototypes.object),
+            Character::MorphShape(morph_shape) => {
                 (morph_shape.instantiate(gc_context), prototypes.object)
             }
-            Some(Character::MovieClip(movie_clip)) => {
+            Character::MovieClip(movie_clip) => {
                 (movie_clip.instantiate(gc_context), prototypes.movie_clip)
             }
-            Some(Character::Button(button)) => (button.instantiate(gc_context), prototypes.object),
-            Some(Character::Text(text)) => (text.instantiate(gc_context), prototypes.object),
-            Some(_) => return Err("Not a DisplayObject".into()),
-            None => {
-                log::error!("Tried to instantiate non-registered character ID {}", id);
-                return Err("Character id doesn't exist".into());
-            }
+            Character::Button(button) => (button.instantiate(gc_context), prototypes.object),
+            Character::Text(text) => (text.instantiate(gc_context), prototypes.object),
+            _ => return Err("Not a DisplayObject".into()),
         };
         obj.post_instantiation(gc_context, obj, proto);
         Ok(obj)

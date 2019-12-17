@@ -182,6 +182,24 @@ impl<'gc> MovieClip<'gc> {
     ) {
         self.0.write(gc_context).set_clip_actions(actions);
     }
+
+    /// Adds a script-created display object as a child to this clip.
+    pub fn add_child_from_avm(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        mut child: DisplayObject<'gc>,
+        depth: Depth,
+    ) {
+        let mut parent = self.0.write(context.gc_context);
+
+        let prev_child = parent.children.insert(depth, child);
+        if let Some(prev_child) = prev_child {
+            parent.remove_child_from_exec_list(context, prev_child);
+        }
+        parent.add_child_to_exec_list(context.gc_context, child);
+        child.set_parent(context.gc_context, Some((*self).into()));
+        child.set_place_frame(context.gc_context, 0);
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
@@ -459,7 +477,7 @@ impl<'gc> MovieClipData<'gc> {
         place_object: &swf::PlaceObject,
         copy_previous_properties: bool,
     ) -> Option<DisplayObject<'gc>> {
-        if let Ok(mut child) = context.library.instantiate_display_object(
+        if let Ok(mut child) = context.library.instantiate_display_object_by_id(
             id,
             context.gc_context,
             &context.system_prototypes,
@@ -490,6 +508,7 @@ impl<'gc> MovieClipData<'gc> {
             None
         }
     }
+
     /// Adds a child to the front of the execution list.
     /// This does not affect the render list.
     fn add_child_to_exec_list(
