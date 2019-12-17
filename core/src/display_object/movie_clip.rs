@@ -17,7 +17,6 @@ use std::cell::Ref;
 use std::collections::{BTreeMap, HashMap};
 use swf::read::SwfRead;
 
-type Depth = i16;
 type FrameNumber = u16;
 
 /// A movie clip is a display object with its own timeline that runs independently of the root timeline.

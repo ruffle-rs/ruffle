@@ -902,7 +902,7 @@ impl<W: Write> Writer<W> {
 
             Tag::SetTabIndex { depth, tab_index } => {
                 self.write_tag_header(TagCode::SetTabIndex, 4)?;
-                self.write_i16(depth)?;
+                self.write_u16(depth)?;
                 self.write_u16(tab_index)?;
             }
 
@@ -921,7 +921,7 @@ impl<W: Write> Writer<W> {
                 } else {
                     self.write_tag_header(TagCode::RemoveObject2, 2)?;
                 }
-                self.write_i16(remove_object.depth)?;
+                self.write_u16(remove_object.depth)?;
             }
 
             Tag::SoundStreamBlock(ref data) => {
@@ -1606,7 +1606,7 @@ impl<W: Write> Writer<W> {
         };
         self.write_u8(flags)?;
         self.write_u16(record.id)?;
-        self.write_i16(record.depth)?;
+        self.write_u16(record.depth)?;
         self.write_matrix(&record.matrix)?;
         if tag_version >= 2 {
             self.write_color_transform(&record.color_transform)?;
@@ -1910,7 +1910,7 @@ impl<W: Write> Writer<W> {
                     "PlaceObject version 1 can only use a Place action.",
                 ));
             }
-            writer.write_i16(place_object.depth)?;
+            writer.write_u16(place_object.depth)?;
             if let Some(ref matrix) = place_object.matrix {
                 writer.write_matrix(matrix)?;
             } else {
@@ -1998,7 +1998,7 @@ impl<W: Write> Writer<W> {
                         },
                 )?;
             }
-            writer.write_i16(place_object.depth)?;
+            writer.write_u16(place_object.depth)?;
 
             if place_object_version >= 3 {
                 if let Some(ref class_name) = place_object.class_name {
@@ -2024,7 +2024,7 @@ impl<W: Write> Writer<W> {
                 writer.write_c_string(name)?;
             };
             if let Some(clip_depth) = place_object.clip_depth {
-                writer.write_i16(clip_depth)?;
+                writer.write_u16(clip_depth)?;
             }
 
             if place_object_version >= 3 {

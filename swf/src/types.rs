@@ -261,7 +261,7 @@ pub struct FrameLabelData {
     pub label: String,
 }
 
-pub type Depth = i16;
+pub type Depth = u16;
 pub type CharacterId = u16;
 
 #[derive(Debug, PartialEq)]
