@@ -671,7 +671,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
                 self.set_name(gc_context, name);
             }
             if let Some(clip_depth) = place_object.clip_depth {
-                self.set_clip_depth(gc_context, clip_depth);
+                self.set_clip_depth(gc_context, clip_depth.into());
             }
             if let Some(ratio) = place_object.ratio {
                 if let Some(mut morph_shape) = self.as_morph_shape() {

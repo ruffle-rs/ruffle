@@ -692,7 +692,7 @@ impl<'gc> MovieClipData<'gc> {
             place_object,
         };
         goto_commands
-            .entry(depth)
+            .entry(depth.into())
             .and_modify(|prev_place| prev_place.merge(&mut goto_place))
             .or_insert(goto_place);
 
@@ -714,14 +714,14 @@ impl<'gc> MovieClipData<'gc> {
         } else {
             reader.read_remove_object_2()
         }?;
-        goto_commands.remove(&remove_object.depth);
+        goto_commands.remove(&remove_object.depth.into());
         if !is_rewind {
             // For fast-forwards, if this tag were to remove an object
             // that existed before the goto, then we can remove that child right away.
             // Don't do this for rewinds, because they conceptually
             // start from an empty display list, and we also want to examine
             // the old children to decide if they persist (place_frame <= goto_frame).
-            let child = self.children.remove(&remove_object.depth);
+            let child = self.children.remove(&remove_object.depth.into());
             if let Some(child) = child {
                 self.remove_child_from_exec_list(context, child);
             }
@@ -965,16 +965,16 @@ impl<'gc, 'a> MovieClipData<'gc> {
         match place_object.action {
             PlaceObjectAction::Place(id) => {
                 if let Some(morph_shape) = morph_shapes.get_mut(&id) {
-                    ids.insert(place_object.depth, id);
+                    ids.insert(place_object.depth.into(), id);
                     if let Some(ratio) = place_object.ratio {
                         morph_shape.register_ratio(context.renderer, ratio);
                     }
                 }
             }
             PlaceObjectAction::Modify => {
-                if let Some(&id) = ids.get(&place_object.depth) {
+                if let Some(&id) = ids.get(&place_object.depth.into()) {
                     if let Some(morph_shape) = morph_shapes.get_mut(&id) {
-                        ids.insert(place_object.depth, id);
+                        ids.insert(place_object.depth.into(), id);
                         if let Some(ratio) = place_object.ratio {
                             morph_shape.register_ratio(context.renderer, ratio);
                         }
@@ -983,12 +983,12 @@ impl<'gc, 'a> MovieClipData<'gc> {
             }
             PlaceObjectAction::Replace(id) => {
                 if let Some(morph_shape) = morph_shapes.get_mut(&id) {
-                    ids.insert(place_object.depth, id);
+                    ids.insert(place_object.depth.into(), id);
                     if let Some(ratio) = place_object.ratio {
                         morph_shape.register_ratio(context.renderer, ratio);
                     }
                 } else {
-                    ids.remove(&place_object.depth);
+                    ids.remove(&place_object.depth.into());
                 }
             }
         };
@@ -1405,7 +1405,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         } else {
             reader.read_remove_object_2()
         }?;
-        ids.remove(&remove_object.depth);
+        ids.remove(&remove_object.depth.into());
         Ok(())
     }
 
@@ -1501,7 +1501,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
                     self_display_object,
                     context,
                     id,
-                    place_object.depth,
+                    place_object.depth.into(),
                     &place_object,
                     if let PlaceObjectAction::Replace(_) = place_object.action {
                         true
@@ -1515,7 +1515,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
                 }
             }
             PlaceObjectAction::Modify => {
-                if let Some(mut child) = self.children.get_mut(&place_object.depth).copied() {
+                if let Some(mut child) = self.children.get_mut(&place_object.depth.into()).copied()
+                {
                     child.apply_place_object(context.gc_context, &place_object);
                     child
                 } else {
@@ -1539,7 +1540,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         } else {
             reader.read_remove_object_2()
         }?;
-        let child = self.children.remove(&remove_object.depth);
+        let child = self.children.remove(&remove_object.depth.into());
         if let Some(child) = child {
             self.remove_child_from_exec_list(context, child);
         }
