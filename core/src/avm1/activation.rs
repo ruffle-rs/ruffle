@@ -105,6 +105,7 @@ unsafe impl<'gc> gc_arena::Collect for Activation<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
         self.scope.trace(cc);
+        self.constant_pool.trace(cc);
         self.this.trace(cc);
         self.arguments.trace(cc);
         self.return_value.trace(cc);
