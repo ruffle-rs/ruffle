@@ -96,6 +96,9 @@ impl<'gc> DisplayObjectBase<'gc> {
     fn depth(&self) -> Depth {
         self.depth
     }
+    fn set_depth(&mut self, depth: Depth) {
+        self.depth = depth;
+    }
     fn place_frame(&self) -> u16 {
         self.place_frame
     }
@@ -359,6 +362,7 @@ impl<'gc> DisplayObjectBase<'gc> {
 pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
     fn id(&self) -> CharacterId;
     fn depth(&self) -> Depth;
+    fn set_depth(&self, gc_context: MutationContext<'gc, '_>, depth: Depth);
 
     /// The untransformed bounding box of this object
     /// This does not take into account any parents.
@@ -758,6 +762,9 @@ macro_rules! impl_display_object {
     ($field:ident) => {
         fn depth(&self) -> crate::prelude::Depth {
             self.0.read().$field.depth()
+        }
+        fn set_depth(&self, gc_context: gc_arena::MutationContext<'gc, '_>, depth: Depth) {
+            self.0.write(gc_context).$field.set_depth(depth)
         }
         fn place_frame(&self) -> u16 {
             self.0.read().$field.place_frame()

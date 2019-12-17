@@ -199,6 +199,23 @@ impl<'gc> MovieClip<'gc> {
         parent.add_child_to_exec_list(context.gc_context, child);
         child.set_parent(context.gc_context, Some((*self).into()));
         child.set_place_frame(context.gc_context, 0);
+        child.set_depth(context.gc_context, depth);
+    }
+
+    /// Remove a child from this clip.
+    pub fn remove_child_from_avm(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        child: DisplayObject<'gc>,
+    ) {
+        assert!(DisplayObject::ptr_eq(
+            child.parent().unwrap(),
+            (*self).into()
+        ));
+        let mut parent = self.0.write(context.gc_context);
+        if let Some(child) = parent.children.remove(&child.depth()) {
+            parent.remove_child_from_exec_list(context, child);
+        }
     }
 }
 
@@ -491,6 +508,7 @@ impl<'gc> MovieClipData<'gc> {
             self.add_child_to_exec_list(context.gc_context, child);
             {
                 // Set initial properties for child.
+                child.set_depth(context.gc_context, depth);
                 child.set_parent(context.gc_context, Some(self_display_object));
                 child.set_place_frame(context.gc_context, self.current_frame());
                 if copy_previous_properties {

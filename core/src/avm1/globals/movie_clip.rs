@@ -101,6 +101,10 @@ pub fn create_proto<'gc>(
             movie_clip.play(context);
             Ok(Value::Undefined.into())
         },
+        "removeMovieClip" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
+            // removeMovieClip method uses biased depth compared to RemoveSprite
+            remove_movie_clip(movie_clip, context, AVM_DEPTH_BIAS)
+        },
         "stop" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             movie_clip.stop(context);
             Ok(Value::Undefined.into())
@@ -347,6 +351,29 @@ pub fn goto_frame<'gc>(
                 movie_clip.goto_frame(context, frame, stop);
             }
         }
+    }
+    Ok(Value::Undefined.into())
+}
+
+pub fn remove_movie_clip<'gc>(
+    movie_clip: MovieClip<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    depth_bias: i32,
+) -> Result<ReturnValue<'gc>, Error> {
+    let depth = movie_clip.depth().wrapping_add(depth_bias);
+    // Can only remove positive depths (when offset by the AVM depth bias).
+    // Generally this prevents you from removing non-dynamically created clips,
+    // although you can get around it with swapDepths.
+    // TODO: Figure out the derivation of this range.
+    if depth >= AVM_DEPTH_BIAS && depth < 2_130_706_416 {
+        // Need a parent to remove from.
+        let mut parent = if let Some(parent) = movie_clip.parent().and_then(|o| o.as_movie_clip()) {
+            parent
+        } else {
+            return Ok(Value::Undefined.into());
+        };
+
+        parent.remove_child_from_avm(context, movie_clip.into());
     }
     Ok(Value::Undefined.into())
 }

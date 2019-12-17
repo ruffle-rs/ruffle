@@ -1750,10 +1750,21 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_remove_sprite(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let _target = self.pop()?.into_string();
-        // TODO(Herschel)
-        log::error!("Unimplemented action: RemoveSprite");
+    fn action_remove_sprite(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let target_clip = match self.pop()? {
+            Value::String(s) => Avm1::resolve_slash_path(context.active_clip, context.root, &s),
+            Value::Object(o) => o.as_display_object(),
+            _ => None,
+        };
+
+        if let Some(target_clip) = target_clip.and_then(|o| o.as_movie_clip()) {
+            let _ = globals::movie_clip::remove_movie_clip(target_clip, context, 0);
+        } else {
+            log::warn!("RemoveSprite: Source is not a movie clip");
+        }
         Ok(())
     }
 

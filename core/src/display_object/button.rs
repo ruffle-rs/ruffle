@@ -154,6 +154,7 @@ impl<'gc> ButtonData<'gc> {
                         context.gc_context,
                         &record.color_transform.clone().into(),
                     );
+                    child.set_depth(context.gc_context, record.depth.into());
                     self.children.insert(record.depth.into(), child);
                 }
             }
@@ -181,6 +182,7 @@ impl<'gc> ButtonData<'gc> {
                             {
                                 child.set_matrix(context.gc_context, &record.matrix.clone().into());
                                 child.set_parent(context.gc_context, Some(self_display_object));
+                                child.set_depth(context.gc_context, record.depth.into());
                             }
                             self.hit_area.insert(record.depth.into(), child);
                         }
