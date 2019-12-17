@@ -8,3 +8,7 @@ TEST
 TEST
 // /invalid/INVALID:invalid = 20
 undefined
+// ../clip1/clip2/:val
+TEST
+// ../clip1/clip2//:val
+undefined
