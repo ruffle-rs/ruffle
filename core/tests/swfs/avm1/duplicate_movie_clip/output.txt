@@ -1,0 +1,12 @@
+_level0.clip
+true
+25
+100
+init
+_level0.clip1
+undefined
+50
+1
+undefined
+_level0.clip2
+undefined

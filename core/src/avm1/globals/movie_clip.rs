@@ -8,6 +8,9 @@ use crate::display_object::{MovieClip, TDisplayObject};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
+/// The depth at which dynamic clips are offset.
+const AVM_DEPTH_BIAS: i32 = 16384;
+
 /// Implements `MovieClip`
 pub fn constructor<'gc>(
     _avm: &mut Avm1<'gc>,
@@ -80,6 +83,12 @@ pub fn create_proto<'gc>(
         gc_context,
         object,
         Some(fn_proto),
+        "attachMovie" => attach_movie,
+        "createEmptyMovieClip" => create_empty_movie_clip,
+        "duplicateMovieClip" => |movie_clip: MovieClip<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args| {
+            // duplicateMovieClip method uses biased depth compared to CloneSprite
+            duplicate_movie_clip(movie_clip, avm, context, args, AVM_DEPTH_BIAS)
+        },
         "nextFrame" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             movie_clip.next_frame(context);
             Ok(Value::Undefined.into())
@@ -91,6 +100,10 @@ pub fn create_proto<'gc>(
         "play" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             movie_clip.play(context);
             Ok(Value::Undefined.into())
+        },
+        "removeMovieClip" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
+            // removeMovieClip method uses biased depth compared to RemoveSprite
+            remove_movie_clip(movie_clip, context, AVM_DEPTH_BIAS)
         },
         "stop" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             movie_clip.stop(context);
@@ -146,6 +159,150 @@ pub fn create_proto<'gc>(
     object.into()
 }
 
+fn attach_movie<'gc>(
+    mut movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let (export_name, new_instance_name, depth) = match &args[0..3] {
+        [export_name, new_instance_name, depth] => (
+            export_name.clone().coerce_to_string(avm, context)?,
+            new_instance_name.clone().coerce_to_string(avm, context)?,
+            depth.as_i32().unwrap_or(0).wrapping_add(AVM_DEPTH_BIAS),
+        ),
+        _ => {
+            log::error!("MovieClip.attachMovie: Too few parameters");
+            return Ok(Value::Undefined.into());
+        }
+    };
+    let init_object = args.get(3);
+
+    // TODO: What is the derivation of this max value? It shows up a few times in the AVM...
+    // 2^31 - 16777220
+    if depth < 0 || depth > 2_130_706_428 {
+        return Ok(Value::Undefined.into());
+    }
+    if let Ok(mut new_clip) = context.library.instantiate_by_export_name(
+        &export_name,
+        context.gc_context,
+        &avm.prototypes,
+    ) {
+        // Set name and attach to parent.
+        new_clip.set_name(context.gc_context, &new_instance_name);
+        movie_clip.add_child_from_avm(context, new_clip, depth);
+        new_clip.run_frame(context);
+
+        // Copy properties from init_object to the movieclip.
+        let new_clip = new_clip.object().as_object().unwrap();
+        if let Some(Value::Object(o)) = init_object {
+            for k in o.get_keys() {
+                let value = o.get(&k, avm, context)?.resolve(avm, context)?;
+                new_clip.set(&k, value, avm, context)?;
+            }
+        }
+        Ok(new_clip.into())
+    } else {
+        log::warn!("Unable to attach '{}'", export_name);
+        Ok(Value::Undefined.into())
+    }
+}
+
+fn create_empty_movie_clip<'gc>(
+    mut movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let (new_instance_name, depth) = match &args[0..2] {
+        [new_instance_name, depth] => (
+            new_instance_name.clone().coerce_to_string(avm, context)?,
+            depth.as_i32().unwrap_or(0).wrapping_add(AVM_DEPTH_BIAS),
+        ),
+        _ => {
+            log::error!("MovieClip.attachMovie: Too few parameters");
+            return Ok(Value::Undefined.into());
+        }
+    };
+
+    // Create empty movie clip.
+    let mut new_clip = MovieClip::new(avm.current_swf_version(), context.gc_context);
+    new_clip.post_instantiation(
+        context.gc_context,
+        new_clip.into(),
+        avm.prototypes.movie_clip,
+    );
+
+    // Set name and attach to parent.
+    new_clip.set_name(context.gc_context, &new_instance_name);
+    movie_clip.add_child_from_avm(context, new_clip.into(), depth);
+    new_clip.run_frame(context);
+
+    Ok(new_clip.object().into())
+}
+
+pub fn duplicate_movie_clip<'gc>(
+    movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+    depth_bias: i32,
+) -> Result<ReturnValue<'gc>, Error> {
+    let (new_instance_name, depth) = match &args[0..2] {
+        [new_instance_name, depth] => (
+            new_instance_name.clone().coerce_to_string(avm, context)?,
+            depth.as_i32().unwrap_or(0).wrapping_add(depth_bias),
+        ),
+        _ => {
+            log::error!("MovieClip.attachMovie: Too few parameters");
+            return Ok(Value::Undefined.into());
+        }
+    };
+    let init_object = args.get(2);
+
+    // Can't duplicate the root!
+    let mut parent = if let Some(parent) = movie_clip.parent().and_then(|o| o.as_movie_clip()) {
+        parent
+    } else {
+        return Ok(Value::Undefined.into());
+    };
+
+    // TODO: What is the derivation of this max value? It shows up a few times in the AVM...
+    // 2^31 - 16777220
+    if depth < 0 || depth > 2_130_706_428 {
+        return Ok(Value::Undefined.into());
+    }
+    if let Ok(mut new_clip) =
+        context
+            .library
+            .instantiate_by_id(movie_clip.id(), context.gc_context, &avm.prototypes)
+    {
+        // Set name and attach to parent.
+        new_clip.set_name(context.gc_context, &new_instance_name);
+        parent.add_child_from_avm(context, new_clip, depth);
+
+        // Copy display properties from previous clip to new clip.
+        new_clip.set_matrix(context.gc_context, &*movie_clip.matrix());
+        new_clip.set_color_transform(context.gc_context, &*movie_clip.color_transform());
+        // TODO: Any other properties we should copy...?
+        // Definitely not ScriptObject properties.
+        new_clip.run_frame(context);
+
+        // Copy properties from init_object to the movieclip.
+        let new_clip = new_clip.object().as_object().unwrap();
+        if let Some(Value::Object(o)) = init_object {
+            for k in o.get_keys() {
+                let value = o.get(&k, avm, context)?.resolve(avm, context)?;
+                new_clip.set(&k, value, avm, context)?;
+            }
+        }
+        Ok(new_clip.into())
+    } else {
+        log::warn!("Unable to duplicate clip '{}'", movie_clip.name());
+        Ok(Value::Undefined.into())
+    }
+}
+
 pub fn goto_and_play<'gc>(
     movie_clip: MovieClip<'gc>,
     avm: &mut Avm1<'gc>,
@@ -164,7 +321,6 @@ pub fn goto_and_stop<'gc>(
     goto_frame(movie_clip, avm, context, args, true)
 }
 
-#[allow(clippy::unreadable_literal)]
 pub fn goto_frame<'gc>(
     movie_clip: MovieClip<'gc>,
     avm: &mut Avm1<'gc>,
@@ -195,6 +351,29 @@ pub fn goto_frame<'gc>(
                 movie_clip.goto_frame(context, frame, stop);
             }
         }
+    }
+    Ok(Value::Undefined.into())
+}
+
+pub fn remove_movie_clip<'gc>(
+    movie_clip: MovieClip<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    depth_bias: i32,
+) -> Result<ReturnValue<'gc>, Error> {
+    let depth = movie_clip.depth().wrapping_add(depth_bias);
+    // Can only remove positive depths (when offset by the AVM depth bias).
+    // Generally this prevents you from removing non-dynamically created clips,
+    // although you can get around it with swapDepths.
+    // TODO: Figure out the derivation of this range.
+    if depth >= AVM_DEPTH_BIAS && depth < 2_130_706_416 {
+        // Need a parent to remove from.
+        let mut parent = if let Some(parent) = movie_clip.parent().and_then(|o| o.as_movie_clip()) {
+            parent
+        } else {
+            return Ok(Value::Undefined.into());
+        };
+
+        parent.remove_child_from_avm(context, movie_clip.into());
     }
     Ok(Value::Undefined.into())
 }

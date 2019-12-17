@@ -519,17 +519,7 @@ impl<W: Write> Writer<W> {
         match *tag {
             Tag::ShowFrame => self.write_tag_header(TagCode::ShowFrame, 0)?,
 
-            Tag::ExportAssets(ref exports) => {
-                let len = exports.iter().map(|e| e.name.len() as u32 + 1).sum::<u32>()
-                    + exports.len() as u32 * 2
-                    + 2;
-                self.write_tag_header(TagCode::ExportAssets, len)?;
-                self.write_u16(exports.len() as u16)?;
-                for &ExportedAsset { id, ref name } in exports {
-                    self.write_u16(id)?;
-                    self.write_c_string(name)?;
-                }
-            }
+            Tag::ExportAssets(ref exports) => self.write_export_assets(&exports[..])?,
 
             Tag::Protect(ref password) => {
                 if let Some(ref password_md5) = *password {
@@ -912,7 +902,7 @@ impl<W: Write> Writer<W> {
 
             Tag::SetTabIndex { depth, tab_index } => {
                 self.write_tag_header(TagCode::SetTabIndex, 4)?;
-                self.write_i16(depth)?;
+                self.write_u16(depth)?;
                 self.write_u16(tab_index)?;
             }
 
@@ -931,7 +921,7 @@ impl<W: Write> Writer<W> {
                 } else {
                     self.write_tag_header(TagCode::RemoveObject2, 2)?;
                 }
-                self.write_i16(remove_object.depth)?;
+                self.write_u16(remove_object.depth)?;
             }
 
             Tag::SoundStreamBlock(ref data) => {
@@ -1574,6 +1564,19 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
+    fn write_export_assets(&mut self, exports: &[ExportedAsset]) -> Result<()> {
+        let len = exports.iter().map(|e| e.name.len() as u32 + 1).sum::<u32>()
+            + exports.len() as u32 * 2
+            + 2;
+        self.write_tag_header(TagCode::ExportAssets, len)?;
+        self.write_u16(exports.len() as u16)?;
+        for &ExportedAsset { id, ref name } in exports {
+            self.write_u16(id)?;
+            self.write_c_string(name)?;
+        }
+        Ok(())
+    }
+
     fn write_button_record(&mut self, record: &ButtonRecord, tag_version: u8) -> Result<()> {
         // TODO: Validate version
         let flags = if record.blend_mode != BlendMode::Normal {
@@ -1603,7 +1606,7 @@ impl<W: Write> Writer<W> {
         };
         self.write_u8(flags)?;
         self.write_u16(record.id)?;
-        self.write_i16(record.depth)?;
+        self.write_u16(record.depth)?;
         self.write_matrix(&record.matrix)?;
         if tag_version >= 2 {
             self.write_color_transform(&record.color_transform)?;
@@ -1907,7 +1910,7 @@ impl<W: Write> Writer<W> {
                     "PlaceObject version 1 can only use a Place action.",
                 ));
             }
-            writer.write_i16(place_object.depth)?;
+            writer.write_u16(place_object.depth)?;
             if let Some(ref matrix) = place_object.matrix {
                 writer.write_matrix(matrix)?;
             } else {
@@ -1995,7 +1998,7 @@ impl<W: Write> Writer<W> {
                         },
                 )?;
             }
-            writer.write_i16(place_object.depth)?;
+            writer.write_u16(place_object.depth)?;
 
             if place_object_version >= 3 {
                 if let Some(ref class_name) = place_object.class_name {
@@ -2021,7 +2024,7 @@ impl<W: Write> Writer<W> {
                 writer.write_c_string(name)?;
             };
             if let Some(clip_depth) = place_object.clip_depth {
-                writer.write_i16(clip_depth)?;
+                writer.write_u16(clip_depth)?;
             }
 
             if place_object_version >= 3 {

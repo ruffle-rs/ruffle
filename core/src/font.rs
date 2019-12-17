@@ -1,9 +1,16 @@
 use crate::backend::render::{RenderBackend, ShapeHandle};
 use crate::prelude::*;
+use gc_arena::{Collect, Gc, MutationContext};
 
 type Error = Box<dyn std::error::Error>;
 
-pub struct Font {
+#[derive(Debug, Clone, Collect, Copy)]
+#[collect(no_drop)]
+pub struct Font<'gc>(Gc<'gc, FontData>);
+
+#[derive(Debug, Clone, Collect)]
+#[collect(require_static)]
+struct FontData {
     /// The list of glyphs defined in the font.
     /// Used directly by `DefineText` tags.
     glyphs: Vec<Glyph>,
@@ -21,8 +28,12 @@ pub struct Font {
     kerning_pairs: fnv::FnvHashMap<(u16, u16), Twips>,
 }
 
-impl Font {
-    pub fn from_swf_tag(renderer: &mut dyn RenderBackend, tag: &swf::Font) -> Result<Font, Error> {
+impl<'gc> Font<'gc> {
+    pub fn from_swf_tag(
+        gc_context: MutationContext<'gc, '_>,
+        renderer: &mut dyn RenderBackend,
+        tag: &swf::Font,
+    ) -> Result<Font<'gc>, Error> {
         let mut glyphs = vec![];
         let mut code_point_to_glyph = fnv::FnvHashMap::default();
         for swf_glyph in &tag.glyphs {
@@ -43,36 +54,38 @@ impl Font {
         } else {
             fnv::FnvHashMap::default()
         };
-        Ok(Font {
-            glyphs,
-            code_point_to_glyph,
+        Ok(Font(Gc::allocate(
+            gc_context,
+            FontData {
+                glyphs,
+                code_point_to_glyph,
 
-            /// DefineFont3 stores coordinates at 20x the scale of DefineFont1/2.
-            /// (SWF19 p.164)
-            scale: if tag.version >= 3 { 20480.0 } else { 1024.0 },
-            kerning_pairs,
-        })
+                /// DefineFont3 stores coordinates at 20x the scale of DefineFont1/2.
+                /// (SWF19 p.164)
+                scale: if tag.version >= 3 { 20480.0 } else { 1024.0 },
+                kerning_pairs,
+            },
+        )))
     }
 
     /// Returns whether this font contains glyph shapes.
     /// If not, this font should be rendered as a device font.
-    #[inline]
-    pub fn has_glyphs(&self) -> bool {
-        !self.glyphs.is_empty()
+    pub fn has_glyphs(self) -> bool {
+        !self.0.glyphs.is_empty()
     }
 
     /// Returns a glyph entry by index.
     /// Used by `Text` display objects.
-    pub fn get_glyph(&self, i: usize) -> Option<Glyph> {
-        self.glyphs.get(i).cloned()
+    pub fn get_glyph(self, i: usize) -> Option<Glyph> {
+        self.0.glyphs.get(i).cloned()
     }
 
     /// Returns a glyph entry by character.
     /// Used by `EditText` display objects.
-    pub fn get_glyph_for_char(&self, c: char) -> Option<Glyph> {
+    pub fn get_glyph_for_char(self, c: char) -> Option<Glyph> {
         // TODO: Properly handle UTF-16/out-of-bounds code points.
         let code_point = c as u16;
-        if let Some(index) = self.code_point_to_glyph.get(&code_point) {
+        if let Some(index) = self.0.code_point_to_glyph.get(&code_point) {
             self.get_glyph(*index)
         } else {
             None
@@ -82,25 +95,24 @@ impl Font {
     /// Given a pair of characters, applies the offset that should be applied
     /// to the advance value between these two characters.
     /// Returns 0 twips if no kerning offset exists between these two characters.
-    pub fn get_kerning_offset(&self, left: char, right: char) -> Twips {
+    pub fn get_kerning_offset(self, left: char, right: char) -> Twips {
         // TODO: Properly handle UTF-16/out-of-bounds code points.
         let left_code_point = left as u16;
         let right_code_point = right as u16;
-        self.kerning_pairs
+        self.0
+            .kerning_pairs
             .get(&(left_code_point, right_code_point))
             .cloned()
             .unwrap_or_default()
     }
 
     /// Returns whether this font contains kerning information.
-    #[inline]
-    pub fn has_kerning_info(&self) -> bool {
-        !self.kerning_pairs.is_empty()
+    pub fn has_kerning_info(self) -> bool {
+        !self.0.kerning_pairs.is_empty()
     }
 
-    #[inline]
-    pub fn scale(&self) -> f32 {
-        self.scale
+    pub fn scale(self) -> f32 {
+        self.0.scale
     }
 }
 

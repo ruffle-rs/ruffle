@@ -17,7 +17,6 @@ use std::cell::Ref;
 use std::collections::{BTreeMap, HashMap};
 use swf::read::SwfRead;
 
-type Depth = i16;
 type FrameNumber = u16;
 
 /// A movie clip is a display object with its own timeline that runs independently of the root timeline.
@@ -182,6 +181,41 @@ impl<'gc> MovieClip<'gc> {
         actions: SmallVec<[ClipAction; 2]>,
     ) {
         self.0.write(gc_context).set_clip_actions(actions);
+    }
+
+    /// Adds a script-created display object as a child to this clip.
+    pub fn add_child_from_avm(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        mut child: DisplayObject<'gc>,
+        depth: Depth,
+    ) {
+        let mut parent = self.0.write(context.gc_context);
+
+        let prev_child = parent.children.insert(depth, child);
+        if let Some(prev_child) = prev_child {
+            parent.remove_child_from_exec_list(context, prev_child);
+        }
+        parent.add_child_to_exec_list(context.gc_context, child);
+        child.set_parent(context.gc_context, Some((*self).into()));
+        child.set_place_frame(context.gc_context, 0);
+        child.set_depth(context.gc_context, depth);
+    }
+
+    /// Remove a child from this clip.
+    pub fn remove_child_from_avm(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        child: DisplayObject<'gc>,
+    ) {
+        assert!(DisplayObject::ptr_eq(
+            child.parent().unwrap(),
+            (*self).into()
+        ));
+        let mut parent = self.0.write(context.gc_context);
+        if let Some(child) = parent.children.remove(&child.depth()) {
+            parent.remove_child_from_exec_list(context, child);
+        }
     }
 }
 
@@ -460,11 +494,11 @@ impl<'gc> MovieClipData<'gc> {
         place_object: &swf::PlaceObject,
         copy_previous_properties: bool,
     ) -> Option<DisplayObject<'gc>> {
-        if let Ok(mut child) = context.library.instantiate_display_object(
-            id,
-            context.gc_context,
-            &context.system_prototypes,
-        ) {
+        if let Ok(mut child) =
+            context
+                .library
+                .instantiate_by_id(id, context.gc_context, &context.system_prototypes)
+        {
             // Remove previous child from children list,
             // and add new childonto front of the list.
             let prev_child = self.children.insert(depth, child);
@@ -474,6 +508,7 @@ impl<'gc> MovieClipData<'gc> {
             self.add_child_to_exec_list(context.gc_context, child);
             {
                 // Set initial properties for child.
+                child.set_depth(context.gc_context, depth);
                 child.set_parent(context.gc_context, Some(self_display_object));
                 child.set_place_frame(context.gc_context, self.current_frame());
                 if copy_previous_properties {
@@ -491,6 +526,7 @@ impl<'gc> MovieClipData<'gc> {
             None
         }
     }
+
     /// Adds a child to the front of the execution list.
     /// This does not affect the render list.
     fn add_child_to_exec_list(
@@ -693,7 +729,7 @@ impl<'gc> MovieClipData<'gc> {
             place_object,
         };
         goto_commands
-            .entry(depth)
+            .entry(depth.into())
             .and_modify(|prev_place| prev_place.merge(&mut goto_place))
             .or_insert(goto_place);
 
@@ -715,14 +751,14 @@ impl<'gc> MovieClipData<'gc> {
         } else {
             reader.read_remove_object_2()
         }?;
-        goto_commands.remove(&remove_object.depth);
+        goto_commands.remove(&remove_object.depth.into());
         if !is_rewind {
             // For fast-forwards, if this tag were to remove an object
             // that existed before the goto, then we can remove that child right away.
             // Don't do this for rewinds, because they conceptually
             // start from an empty display list, and we also want to examine
             // the old children to decide if they persist (place_frame <= goto_frame).
-            let child = self.children.remove(&remove_object.depth);
+            let child = self.children.remove(&remove_object.depth.into());
             if let Some(child) = child {
                 self.remove_child_from_exec_list(context, child);
             }
@@ -851,6 +887,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             TagCode::DoInitAction => {
                 self.do_init_action(self_display_object, context, reader, tag_len)
             }
+            TagCode::ExportAssets => self.export_assets(context, reader),
             TagCode::FrameLabel => {
                 self.frame_label(context, reader, tag_len, cur_frame, &mut static_data)
             }
@@ -912,7 +949,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
-            .register_character(define_bits_lossless.id, Character::Bitmap(Box::new(bitmap)));
+            .register_character(define_bits_lossless.id, Character::Bitmap(bitmap));
         Ok(())
     }
 
@@ -942,7 +979,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let graphic = Graphic::from_swf_tag(context, &swf_shape);
         context
             .library
-            .register_character(swf_shape.id, Character::Graphic(Box::new(graphic)));
+            .register_character(swf_shape.id, Character::Graphic(graphic));
         Ok(())
     }
 
@@ -965,16 +1002,16 @@ impl<'gc, 'a> MovieClipData<'gc> {
         match place_object.action {
             PlaceObjectAction::Place(id) => {
                 if let Some(morph_shape) = morph_shapes.get_mut(&id) {
-                    ids.insert(place_object.depth, id);
+                    ids.insert(place_object.depth.into(), id);
                     if let Some(ratio) = place_object.ratio {
                         morph_shape.register_ratio(context.renderer, ratio);
                     }
                 }
             }
             PlaceObjectAction::Modify => {
-                if let Some(&id) = ids.get(&place_object.depth) {
+                if let Some(&id) = ids.get(&place_object.depth.into()) {
                     if let Some(morph_shape) = morph_shapes.get_mut(&id) {
-                        ids.insert(place_object.depth, id);
+                        ids.insert(place_object.depth.into(), id);
                         if let Some(ratio) = place_object.ratio {
                             morph_shape.register_ratio(context.renderer, ratio);
                         }
@@ -983,12 +1020,12 @@ impl<'gc, 'a> MovieClipData<'gc> {
             }
             PlaceObjectAction::Replace(id) => {
                 if let Some(morph_shape) = morph_shapes.get_mut(&id) {
-                    ids.insert(place_object.depth, id);
+                    ids.insert(place_object.depth.into(), id);
                     if let Some(ratio) = place_object.ratio {
                         morph_shape.register_ratio(context.renderer, ratio);
                     }
                 } else {
-                    ids.remove(&place_object.depth);
+                    ids.remove(&place_object.depth.into());
                 }
             }
         };
@@ -1062,7 +1099,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
-            .register_character(id, Character::Bitmap(Box::new(bitmap)));
+            .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
 
@@ -1091,7 +1128,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
-            .register_character(id, Character::Bitmap(Box::new(bitmap)));
+            .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
 
@@ -1128,7 +1165,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
-            .register_character(id, Character::Bitmap(Box::new(bitmap)));
+            .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
 
@@ -1166,7 +1203,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
-            .register_character(id, Character::Bitmap(Box::new(bitmap)));
+            .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
 
@@ -1180,7 +1217,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let button = Button::from_swf_tag(&swf_button, &context.library, context.gc_context);
         context
             .library
-            .register_character(swf_button.id, Character::Button(Box::new(button)));
+            .register_character(swf_button.id, Character::Button(button));
         Ok(())
     }
 
@@ -1194,7 +1231,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let button = Button::from_swf_tag(&swf_button, &context.library, context.gc_context);
         context
             .library
-            .register_character(swf_button.id, Character::Button(Box::new(button)));
+            .register_character(swf_button.id, Character::Button(button));
         Ok(())
     }
 
@@ -1209,7 +1246,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let edit_text = EditText::from_swf_tag(context, swf_edit_text);
         context
             .library
-            .register_character(edit_text.id(), Character::EditText(Box::new(edit_text)));
+            .register_character(edit_text.id(), Character::EditText(edit_text));
         Ok(())
     }
 
@@ -1244,10 +1281,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
             is_bold: false,
             is_italic: false,
         };
-        let font_object = Font::from_swf_tag(context.renderer, &font).unwrap();
+        let font_object = Font::from_swf_tag(context.gc_context, context.renderer, &font).unwrap();
         context
             .library
-            .register_character(font.id, Character::Font(Box::new(font_object)));
+            .register_character(font.id, Character::Font(font_object));
         Ok(())
     }
 
@@ -1258,10 +1295,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
         let font = reader.read_define_font_2(2)?;
-        let font_object = Font::from_swf_tag(context.renderer, &font).unwrap();
+        let font_object = Font::from_swf_tag(context.gc_context, context.renderer, &font).unwrap();
         context
             .library
-            .register_character(font.id, Character::Font(Box::new(font_object)));
+            .register_character(font.id, Character::Font(font_object));
         Ok(())
     }
 
@@ -1272,10 +1309,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
         let font = reader.read_define_font_2(3)?;
-        let font_object = Font::from_swf_tag(context.renderer, &font).unwrap();
+        let font_object = Font::from_swf_tag(context.gc_context, context.renderer, &font).unwrap();
         context
             .library
-            .register_character(font.id, Character::Font(Box::new(font_object)));
+            .register_character(font.id, Character::Font(font_object));
 
         Ok(())
     }
@@ -1321,7 +1358,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
 
         context
             .library
-            .register_character(id, Character::MovieClip(Box::new(movie_clip)));
+            .register_character(id, Character::MovieClip(movie_clip));
 
         Ok(())
     }
@@ -1337,7 +1374,20 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let text_object = Text::from_swf_tag(context, &text);
         context
             .library
-            .register_character(text.id, Character::Text(Box::new(text_object)));
+            .register_character(text.id, Character::Text(text_object));
+        Ok(())
+    }
+
+    #[inline]
+    fn export_assets(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        reader: &mut SwfStream<&'a [u8]>,
+    ) -> DecodeResult {
+        let exports = reader.read_export_assets()?;
+        for export in exports {
+            context.library.register_export(export.id, &export.name);
+        }
         Ok(())
     }
 
@@ -1392,7 +1442,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         } else {
             reader.read_remove_object_2()
         }?;
-        ids.remove(&remove_object.depth);
+        ids.remove(&remove_object.depth.into());
         Ok(())
     }
 
@@ -1488,7 +1538,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
                     self_display_object,
                     context,
                     id,
-                    place_object.depth,
+                    place_object.depth.into(),
                     &place_object,
                     if let PlaceObjectAction::Replace(_) = place_object.action {
                         true
@@ -1502,7 +1552,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
                 }
             }
             PlaceObjectAction::Modify => {
-                if let Some(mut child) = self.children.get_mut(&place_object.depth).copied() {
+                if let Some(mut child) = self.children.get_mut(&place_object.depth.into()).copied()
+                {
                     child.apply_place_object(context.gc_context, &place_object);
                     child
                 } else {
@@ -1526,7 +1577,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         } else {
             reader.read_remove_object_2()
         }?;
-        let child = self.children.remove(&remove_object.depth);
+        let child = self.children.remove(&remove_object.depth.into());
         if let Some(child) = child {
             self.remove_child_from_exec_list(context, child);
         }

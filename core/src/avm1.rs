@@ -694,12 +694,31 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_clone_sprite(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        // TODO(Herschel)
-        let _depth = self.pop()?;
-        let _target = self.pop()?;
-        let _source = self.pop()?;
-        log::error!("Unimplemented action: CloneSprite");
+    fn action_clone_sprite(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let depth = self.pop()?;
+        let target = self.pop()?;
+        let source = self.pop()?;
+        let source_clip = match source {
+            Value::String(s) => Avm1::resolve_slash_path(context.active_clip, context.root, &s),
+            Value::Object(o) => o.as_display_object(),
+            _ => None,
+        };
+
+        if let Some(movie_clip) = source_clip.and_then(|o| o.as_movie_clip()) {
+            let _ = globals::movie_clip::duplicate_movie_clip(
+                movie_clip,
+                self,
+                context,
+                &[target, depth],
+                0,
+            );
+        } else {
+            log::warn!("CloneSprite: Source is not a movie clip");
+        }
+
         Ok(())
     }
 
@@ -1731,10 +1750,21 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_remove_sprite(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let _target = self.pop()?.into_string();
-        // TODO(Herschel)
-        log::error!("Unimplemented action: RemoveSprite");
+    fn action_remove_sprite(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let target_clip = match self.pop()? {
+            Value::String(s) => Avm1::resolve_slash_path(context.active_clip, context.root, &s),
+            Value::Object(o) => o.as_display_object(),
+            _ => None,
+        };
+
+        if let Some(target_clip) = target_clip.and_then(|o| o.as_movie_clip()) {
+            let _ = globals::movie_clip::remove_movie_clip(target_clip, context, 0);
+        } else {
+            log::warn!("RemoveSprite: Source is not a movie clip");
+        }
         Ok(())
     }
 

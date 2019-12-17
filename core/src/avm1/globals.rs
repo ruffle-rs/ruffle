@@ -12,7 +12,7 @@ mod array;
 mod function;
 mod math;
 pub(crate) mod mouse;
-mod movie_clip;
+pub(crate) mod movie_clip;
 mod object;
 
 #[allow(non_snake_case, unused_must_use)] //can't use errors yet

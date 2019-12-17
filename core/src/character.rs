@@ -2,15 +2,16 @@ use crate::backend::audio::SoundHandle;
 use crate::display_object::{Bitmap, Button, EditText, Graphic, MorphShape, MovieClip, Text};
 use crate::font::Font;
 
+#[derive(Clone)]
 pub enum Character<'gc> {
-    EditText(Box<EditText<'gc>>),
-    Graphic(Box<Graphic<'gc>>),
-    MovieClip(Box<MovieClip<'gc>>),
-    Bitmap(Box<Bitmap<'gc>>),
-    Button(Box<Button<'gc>>),
-    Font(Box<Font>),
-    MorphShape(Box<MorphShape<'gc>>),
-    Text(Box<Text<'gc>>),
+    EditText(EditText<'gc>),
+    Graphic(Graphic<'gc>),
+    MovieClip(MovieClip<'gc>),
+    Bitmap(Bitmap<'gc>),
+    Button(Button<'gc>),
+    Font(Font<'gc>),
+    MorphShape(MorphShape<'gc>),
+    Text(Text<'gc>),
     Sound(SoundHandle),
 }
 

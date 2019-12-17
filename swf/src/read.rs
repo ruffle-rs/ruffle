@@ -586,7 +586,7 @@ impl<R: Read> Reader<R> {
             },
 
             Some(TagCode::SetTabIndex) => Tag::SetTabIndex {
-                depth: tag_reader.read_i16()?,
+                depth: tag_reader.read_u16()?,
                 tab_index: tag_reader.read_u16()?,
             },
 
@@ -602,17 +602,7 @@ impl<R: Read> Reader<R> {
                 Tag::SymbolClass(symbols)
             }
 
-            Some(TagCode::ExportAssets) => {
-                let num_exports = tag_reader.read_u16()?;
-                let mut exports = Vec::with_capacity(num_exports as usize);
-                for _ in 0..num_exports {
-                    exports.push(ExportedAsset {
-                        id: tag_reader.read_u16()?,
-                        name: tag_reader.read_c_string()?,
-                    });
-                }
-                Tag::ExportAssets(exports)
-            }
+            Some(TagCode::ExportAssets) => Tag::ExportAssets(tag_reader.read_export_assets()?),
 
             Some(TagCode::FileAttributes) => {
                 let flags = tag_reader.read_u32()?;
@@ -1013,7 +1003,7 @@ impl<R: Read> Reader<R> {
             states.insert(ButtonState::HitTest);
         }
         let id = self.read_u16()?;
-        let depth = self.read_i16()?;
+        let depth = self.read_u16()?;
         let matrix = self.read_matrix()?;
         let color_transform = if version >= 2 {
             self.read_color_transform()?
@@ -2044,6 +2034,18 @@ impl<R: Read> Reader<R> {
         }))
     }
 
+    pub fn read_export_assets(&mut self) -> Result<ExportAssets> {
+        let num_exports = self.read_u16()?;
+        let mut exports = Vec::with_capacity(num_exports.into());
+        for _ in 0..num_exports {
+            exports.push(ExportedAsset {
+                id: self.read_u16()?,
+                name: self.read_c_string()?,
+            });
+        }
+        Ok(exports)
+    }
+
     pub fn read_place_object(&mut self, tag_length: usize) -> Result<PlaceObject> {
         // TODO: What's a best way to know if the tag has a color transform?
         // You only know if there is still data remaining after the matrix.
@@ -2054,7 +2056,7 @@ impl<R: Read> Reader<R> {
         Ok(PlaceObject {
             version: 1,
             action: PlaceObjectAction::Place(reader.read_u16()?),
-            depth: reader.read_i16()?,
+            depth: reader.read_u16()?,
             matrix: Some(reader.read_matrix()?),
             color_transform: if !reader.get_ref().is_empty() {
                 Some(reader.read_color_transform_no_alpha()?)
@@ -2083,7 +2085,7 @@ impl<R: Read> Reader<R> {
             u16::from(self.read_u8()?)
         };
 
-        let depth = self.read_i16()?;
+        let depth = self.read_u16()?;
 
         // PlaceObject3
         let is_image = (flags & 0b10000_00000000) != 0;
@@ -2126,7 +2128,7 @@ impl<R: Read> Reader<R> {
             None
         };
         let clip_depth = if (flags & 0b100_0000) != 0 {
-            Some(self.read_i16()?)
+            Some(self.read_u16()?)
         } else {
             None
         };
@@ -2188,13 +2190,13 @@ impl<R: Read> Reader<R> {
     pub fn read_remove_object_1(&mut self) -> Result<RemoveObject> {
         Ok(RemoveObject {
             character_id: Some(self.read_u16()?),
-            depth: self.read_i16()?,
+            depth: self.read_u16()?,
         })
     }
 
     pub fn read_remove_object_2(&mut self) -> Result<RemoveObject> {
         Ok(RemoveObject {
-            depth: self.read_i16()?,
+            depth: self.read_u16()?,
             character_id: None,
         })
     }

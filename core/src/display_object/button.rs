@@ -143,7 +143,7 @@ impl<'gc> ButtonData<'gc> {
         self.children.clear();
         for record in &self.static_data.records {
             if record.states.contains(&swf_state) {
-                if let Ok(mut child) = context.library.instantiate_display_object(
+                if let Ok(mut child) = context.library.instantiate_by_id(
                     record.id,
                     context.gc_context,
                     &context.system_prototypes,
@@ -154,7 +154,8 @@ impl<'gc> ButtonData<'gc> {
                         context.gc_context,
                         &record.color_transform.clone().into(),
                     );
-                    self.children.insert(record.depth, child);
+                    child.set_depth(context.gc_context, record.depth.into());
+                    self.children.insert(record.depth.into(), child);
                 }
             }
         }
@@ -172,7 +173,7 @@ impl<'gc> ButtonData<'gc> {
 
             for record in &self.static_data.records {
                 if record.states.contains(&swf::ButtonState::HitTest) {
-                    match context.library.instantiate_display_object(
+                    match context.library.instantiate_by_id(
                         record.id,
                         context.gc_context,
                         &context.system_prototypes,
@@ -181,8 +182,9 @@ impl<'gc> ButtonData<'gc> {
                             {
                                 child.set_matrix(context.gc_context, &record.matrix.clone().into());
                                 child.set_parent(context.gc_context, Some(self_display_object));
+                                child.set_depth(context.gc_context, record.depth.into());
                             }
-                            self.hit_area.insert(record.depth, child);
+                            self.hit_area.insert(record.depth.into(), child);
                         }
                         Err(error) => {
                             log::error!(

@@ -1,0 +1,15 @@
+_level0.clip
+true
+0
+0
+undefined
+false
+true
+100
+50
+foo
+true
+0
+0
+_level0.clip2
+undefined
