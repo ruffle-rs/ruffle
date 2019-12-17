@@ -143,7 +143,7 @@ impl<'gc> ButtonData<'gc> {
         self.children.clear();
         for record in &self.static_data.records {
             if record.states.contains(&swf_state) {
-                if let Ok(mut child) = context.library.instantiate_display_object_by_id(
+                if let Ok(mut child) = context.library.instantiate_by_id(
                     record.id,
                     context.gc_context,
                     &context.system_prototypes,
@@ -173,7 +173,7 @@ impl<'gc> ButtonData<'gc> {
 
             for record in &self.static_data.records {
                 if record.states.contains(&swf::ButtonState::HitTest) {
-                    match context.library.instantiate_display_object_by_id(
+                    match context.library.instantiate_by_id(
                         record.id,
                         context.gc_context,
                         &context.system_prototypes,

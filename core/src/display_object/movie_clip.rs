@@ -494,11 +494,11 @@ impl<'gc> MovieClipData<'gc> {
         place_object: &swf::PlaceObject,
         copy_previous_properties: bool,
     ) -> Option<DisplayObject<'gc>> {
-        if let Ok(mut child) = context.library.instantiate_display_object_by_id(
-            id,
-            context.gc_context,
-            &context.system_prototypes,
-        ) {
+        if let Ok(mut child) =
+            context
+                .library
+                .instantiate_by_id(id, context.gc_context, &context.system_prototypes)
+        {
             // Remove previous child from children list,
             // and add new childonto front of the list.
             let prev_child = self.children.insert(depth, child);

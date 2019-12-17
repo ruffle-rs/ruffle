@@ -272,11 +272,11 @@ pub fn duplicate_movie_clip<'gc>(
     if depth < 0 || depth > 2_130_706_428 {
         return Ok(Value::Undefined.into());
     }
-    if let Ok(mut new_clip) = context.library.instantiate_display_object_by_id(
-        movie_clip.id(),
-        context.gc_context,
-        &avm.prototypes,
-    ) {
+    if let Ok(mut new_clip) =
+        context
+            .library
+            .instantiate_by_id(movie_clip.id(), context.gc_context, &avm.prototypes)
+    {
         // Set name and attach to parent.
         new_clip.set_name(context.gc_context, &new_instance_name);
         parent.add_child_from_avm(context, new_clip, depth);

@@ -75,7 +75,7 @@ impl<'gc> Library<'gc> {
     }
 
     /// Instantiates the library item with the given character ID into a display object.
-    pub fn instantiate_display_object_by_id(
+    pub fn instantiate_by_id(
         &self,
         id: CharacterId,
         gc_context: MutationContext<'gc, '_>,
