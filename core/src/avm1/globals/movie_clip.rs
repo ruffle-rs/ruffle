@@ -84,6 +84,7 @@ pub fn create_proto<'gc>(
         object,
         Some(fn_proto),
         "attachMovie" => attach_movie,
+        "createEmptyMovieClip" => create_empty_movie_clip,
         "duplicateMovieClip" => |movie_clip: MovieClip<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args| {
             // duplicateMovieClip method uses biased depth compared to CloneSprite
             duplicate_movie_clip(movie_clip, avm, context, args, AVM_DEPTH_BIAS)
@@ -201,6 +202,39 @@ fn attach_movie<'gc>(
         log::warn!("Unable to attach '{}'", export_name);
         Ok(Value::Undefined.into())
     }
+}
+
+fn create_empty_movie_clip<'gc>(
+    mut movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let (new_instance_name, depth) = match &args[0..2] {
+        [new_instance_name, depth] => (
+            new_instance_name.clone().coerce_to_string(avm, context)?,
+            depth.as_i32().unwrap_or(0).wrapping_add(AVM_DEPTH_BIAS),
+        ),
+        _ => {
+            log::error!("MovieClip.attachMovie: Too few parameters");
+            return Ok(Value::Undefined.into());
+        }
+    };
+
+    // Create empty movie clip.
+    let mut new_clip = MovieClip::new(avm.current_swf_version(), context.gc_context);
+    new_clip.post_instantiation(
+        context.gc_context,
+        new_clip.into(),
+        avm.prototypes.movie_clip,
+    );
+
+    // Set name and attach to parent.
+    new_clip.set_name(context.gc_context, &new_instance_name);
+    movie_clip.add_child_from_avm(context, new_clip.into(), depth);
+    new_clip.run_frame(context);
+
+    Ok(new_clip.object().into())
 }
 
 pub fn duplicate_movie_clip<'gc>(
