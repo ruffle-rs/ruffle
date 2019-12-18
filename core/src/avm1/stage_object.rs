@@ -355,7 +355,7 @@ impl<'gc> DisplayPropertyMap<'gc> {
         property_map.add_property("_rotation", rotation, Some(set_rotation));
         property_map.add_property("_target", target, None);
         property_map.add_property("_framesloaded", frames_loaded, None);
-        property_map.add_property("_name", name, None);
+        property_map.add_property("_name", name, Some(set_name));
         property_map.add_property("_droptarget", drop_target, None);
         property_map.add_property("_url", url, None);
         property_map.add_property("_highquality", high_quality, Some(set_high_quality));
@@ -644,6 +644,17 @@ fn name<'gc>(
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error> {
     Ok((*this.name()).into())
+}
+
+fn set_name<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    mut this: DisplayObject<'gc>,
+    val: Value<'gc>,
+) -> Result<(), Error> {
+    let name = val.coerce_to_string(avm, context)?;
+    this.set_name(context.gc_context, &name);
+    Ok(())
 }
 
 fn drop_target<'gc>(
