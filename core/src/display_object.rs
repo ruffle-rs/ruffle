@@ -117,6 +117,7 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
     fn set_matrix(&mut self, _context: MutationContext<'gc, '_>, matrix: &Matrix) {
         self.transform.matrix = *matrix;
+        self.flags.remove(DisplayObjectFlags::ScaleRotationCached);
     }
     fn color_transform(&self) -> &ColorTransform {
         &self.transform.color_transform
