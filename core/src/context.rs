@@ -1,6 +1,7 @@
 //! Contexts and helper types passed between functions.
 use crate::avm1;
-use crate::avm1::function::NativeFunction;
+
+use crate::avm1::listeners::SystemListener;
 use crate::avm1::Value;
 use crate::backend::{audio::AudioBackend, navigator::NavigatorBackend, render::RenderBackend};
 use crate::library::Library;
@@ -194,9 +195,10 @@ pub enum ActionType<'gc> {
     /// An event handler method, e.g. `onEnterFrame`.
     Method { name: &'static str },
 
-    /// An event handler method, e.g. `onEnterFrame`.
-    Native {
-        function: NativeFunction<'gc>,
+    /// A system listener method,
+    NotifyListeners {
+        listener: SystemListener,
+        method: &'static str,
         args: Vec<Value<'gc>>,
     },
 }
@@ -216,8 +218,14 @@ impl fmt::Debug for ActionType<'_> {
                 .debug_struct("ActionType::Method")
                 .field("name", name)
                 .finish(),
-            ActionType::Native { function: _, args } => f
-                .debug_struct("ActionType::Native")
+            ActionType::NotifyListeners {
+                listener,
+                method,
+                args,
+            } => f
+                .debug_struct("ActionType::NotifyListeners")
+                .field("listener", listener)
+                .field("method", method)
                 .field("args", args)
                 .finish(),
         }
@@ -227,7 +235,7 @@ impl fmt::Debug for ActionType<'_> {
 unsafe impl<'gc> Collect for ActionType<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
-        if let ActionType::Native { args, .. } = self {
+        if let ActionType::NotifyListeners { args, .. } = self {
             args.trace(cc);
         }
     }

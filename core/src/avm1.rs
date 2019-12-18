@@ -17,6 +17,9 @@ use crate::tag_utils::SwfSlice;
 #[macro_use]
 mod test_utils;
 
+#[macro_use]
+pub mod listeners;
+
 mod activation;
 mod fscommand;
 pub mod function;
@@ -33,6 +36,7 @@ mod value;
 #[cfg(test)]
 mod tests;
 
+use crate::avm1::listeners::SystemListener;
 use activation::Activation;
 pub use globals::SystemPrototypes;
 pub use object::{Object, ObjectPtr, TObject};
@@ -62,6 +66,9 @@ pub struct Avm1<'gc> {
     /// System builtins that we use internally to construct new objects.
     prototypes: globals::SystemPrototypes<'gc>,
 
+    /// System event listeners that will respond to native events (Mouse, Key, etc)
+    system_listeners: listeners::SystemListeners<'gc>,
+
     /// DisplayObject property map.
     display_properties: GcCell<'gc, stage_object::DisplayPropertyMap<'gc>>,
 
@@ -81,6 +88,7 @@ unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
         self.globals.trace(cc);
         self.constant_pool.trace(cc);
+        self.system_listeners.trace(cc);
         self.prototypes.trace(cc);
         self.display_properties.trace(cc);
         self.stack_frames.trace(cc);
@@ -96,13 +104,14 @@ type Error = Box<dyn std::error::Error>;
 
 impl<'gc> Avm1<'gc> {
     pub fn new(gc_context: MutationContext<'gc, '_>, player_version: u8) -> Self {
-        let (prototypes, globals) = create_globals(gc_context);
+        let (prototypes, globals, system_listeners) = create_globals(gc_context);
 
         Self {
             player_version,
             constant_pool: GcCell::allocate(gc_context, vec![]),
             globals,
             prototypes,
+            system_listeners,
             display_properties: stage_object::DisplayPropertyMap::new(gc_context),
             stack_frames: vec![],
             stack: vec![],
@@ -252,32 +261,6 @@ impl<'gc> Avm1<'gc> {
         }
     }
 
-    /// Add a stack frame that executes code in timeline scope for a native event handler.
-    pub fn run_native_function(
-        &mut self,
-        active_clip: DisplayObject<'gc>,
-        swf_version: u8,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        function: function::NativeFunction<'gc>,
-        args: &[Value<'gc>],
-    ) {
-        context.start_clip = active_clip;
-        context.active_clip = active_clip;
-        context.target_clip = Some(active_clip);
-
-        // Push a dummy stack frame.
-        self.stack_frames.push(GcCell::allocate(
-            context.gc_context,
-            Activation::from_nothing(swf_version, self.globals, context.gc_context),
-        ));
-        let mc = active_clip.object().as_object();
-        if let Ok(mc) = mc {
-            let _ = function(self, context, mc, &args);
-        }
-        // A native function should resolve completely, so there is no longer a need for the stack frame.
-        self.stack_frames.pop();
-    }
-
     /// Add a stack frame for any arbitrary code.
     pub fn insert_stack_frame(&mut self, frame: GcCell<'gc, Activation<'gc>>) {
         self.stack_frames.push(frame);
@@ -295,6 +278,35 @@ impl<'gc> Avm1<'gc> {
         self.current_stack_frame()
             .map(|sf| sf.read().swf_version())
             .unwrap_or(self.player_version)
+    }
+
+    pub fn notify_system_listeners(
+        &mut self,
+        active_clip: DisplayObject<'gc>,
+        swf_version: u8,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        listener: SystemListener,
+        method: &str,
+        args: &[Value<'gc>],
+    ) {
+        context.start_clip = active_clip;
+        context.active_clip = active_clip;
+        context.target_clip = Some(active_clip);
+
+        // Push a dummy stack frame.
+        self.stack_frames.push(GcCell::allocate(
+            context.gc_context,
+            Activation::from_nothing(swf_version, self.globals, context.gc_context),
+        ));
+        let listeners = self.system_listeners.get(listener);
+        let mut handlers = listeners.prepare_handlers(self, context, method);
+        self.stack_frames.pop();
+
+        // Each callback exec pushes its own stack frame.
+        // The functions are now ready to execute with `run_stack_till_empty`.
+        for (listener, handler) in handlers.drain(..) {
+            let _ = handler.call(self, context, listener, &args);
+        }
     }
 
     /// Perform some action with the current stack frame's reader.
