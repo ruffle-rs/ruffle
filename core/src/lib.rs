@@ -11,7 +11,7 @@ mod bounding_box;
 mod character;
 mod color_transform;
 mod context;
-mod events;
+pub mod events;
 mod font;
 mod library;
 pub mod matrix;

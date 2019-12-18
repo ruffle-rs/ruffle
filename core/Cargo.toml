@@ -18,6 +18,7 @@ ruffle_macros = { path = "macros" }
 swf = { path = "../swf" }
 enumset = "0.4.2"
 smallvec = "1.1.0"
+num_enum = "0.4.2"
 
 [dependencies.jpeg-decoder]
 version = "0.1.18"

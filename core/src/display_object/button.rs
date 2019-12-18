@@ -1,10 +1,11 @@
 use crate::avm1::{Object, StageObject, Value};
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
-use crate::events::ButtonEvent;
+use crate::events::{ButtonEvent, KeyCode};
 use crate::prelude::*;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::BTreeMap;
+use std::convert::TryFrom;
 
 #[derive(Clone, Debug, Collect, Copy)]
 #[collect(no_drop)]
@@ -39,7 +40,7 @@ impl<'gc> Button<'gc> {
                 let button_action = ButtonAction {
                     action_data: action_data.clone(),
                     condition: *condition,
-                    key_code: action.key_code,
+                    key_code: action.key_code.and_then(|k| KeyCode::try_from(k).ok()),
                 };
                 actions.push(button_action);
             }
@@ -315,7 +316,7 @@ impl<'gc> ButtonData<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         condition: swf::ButtonActionCondition,
-        key_code: Option<u8>,
+        key_code: Option<KeyCode>,
     ) {
         if let Some(parent) = self.base.parent {
             for action in &self.static_data.read().actions {
@@ -360,7 +361,7 @@ enum ButtonState {
 struct ButtonAction {
     action_data: crate::tag_utils::SwfSlice,
     condition: swf::ButtonActionCondition,
-    key_code: Option<u8>,
+    key_code: Option<KeyCode>,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
