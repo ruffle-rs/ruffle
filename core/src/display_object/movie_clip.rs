@@ -6,7 +6,7 @@ use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{
     Bitmap, Button, DisplayObjectBase, EditText, Graphic, MorphShapeStatic, TDisplayObject, Text,
 };
-use crate::events::ClipEvent;
+use crate::events::{ClipEvent, KeyCode};
 use crate::font::Font;
 use crate::prelude::*;
 use crate::tag_utils::{self, DecodeResult, SwfSlice, SwfStream};
@@ -15,6 +15,7 @@ use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
 use std::cell::Ref;
 use std::collections::{BTreeMap, HashMap};
+use std::convert::TryFrom;
 use swf::read::SwfRead;
 
 type FrameNumber = u16;
@@ -1841,7 +1842,10 @@ impl From<swf::ClipAction> for ClipAction {
                     ClipEventFlag::KeyUp => ClipEvent::KeyUp,
                     ClipEventFlag::KeyDown => ClipEvent::KeyDown,
                     ClipEventFlag::KeyPress => ClipEvent::KeyPress {
-                        key_code: other.key_code.unwrap_or(0),
+                        key_code: other
+                            .key_code
+                            .and_then(|k| KeyCode::try_from(k).ok())
+                            .unwrap_or(KeyCode::Unknown),
                     },
                     ClipEventFlag::Load => ClipEvent::Load,
                     ClipEventFlag::MouseUp => ClipEvent::MouseUp,
