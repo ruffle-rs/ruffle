@@ -1,4 +1,4 @@
-use crate::avm1::globals::mouse::notify_listeners;
+use crate::avm1::listeners::SystemListener;
 use crate::avm1::Avm1;
 use crate::backend::{
     audio::AudioBackend, navigator::NavigatorBackend, render::Letterbox, render::RenderBackend,
@@ -338,9 +338,10 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 if let Some(mouse_event_name) = mouse_event_name {
                     context.action_queue.queue_actions(
                         root,
-                        ActionType::Native {
-                            function: notify_listeners,
-                            args: vec![mouse_event_name.into()],
+                        ActionType::NotifyListeners {
+                            listener: SystemListener::Mouse,
+                            method: mouse_event_name,
+                            args: vec![],
                         },
                         false,
                     );
@@ -545,15 +546,20 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 }
 
                 // Event handler method call (e.g. onEnterFrame)
-                ActionType::Native { function, args } => {
+                ActionType::NotifyListeners {
+                    listener,
+                    method,
+                    args,
+                } => {
                     // A native function ends up resolving immediately,
                     // so this doesn't require any further execution.
-                    avm.run_native_function(
+                    avm.notify_system_listeners(
                         actions.clip,
                         context.swf_version,
                         context,
-                        function,
-                        &args[..],
+                        listener,
+                        method,
+                        &args,
                     );
                 }
             }

@@ -1,5 +1,6 @@
 use crate::avm1::fscommand;
 use crate::avm1::function::Executable;
+use crate::avm1::listeners::SystemListeners;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::backend::navigator::NavigationMethod;
@@ -146,7 +147,7 @@ unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
 /// Initialize default global scope and builtins for an AVM1 instance.
 pub fn create_globals<'gc>(
     gc_context: MutationContext<'gc, '_>,
-) -> (SystemPrototypes<'gc>, Object<'gc>) {
+) -> (SystemPrototypes<'gc>, Object<'gc>, SystemListeners<'gc>) {
     let object_proto = ScriptObject::object_cell(gc_context, None);
     let function_proto = function::create_proto(gc_context, object_proto);
 
@@ -184,6 +185,8 @@ pub fn create_globals<'gc>(
         Some(array_proto),
     );
 
+    let listeners = SystemListeners::new(gc_context, Some(array_proto));
+
     let mut globals = ScriptObject::bare_object(gc_context);
     globals.define_value(gc_context, "Array", array.into(), EnumSet::empty());
     globals.define_value(gc_context, "Object", object.into(), EnumSet::empty());
@@ -219,8 +222,8 @@ pub fn create_globals<'gc>(
         Value::Object(mouse::create_mouse_object(
             gc_context,
             Some(object_proto),
-            Some(array_proto),
             Some(function_proto),
+            &listeners.mouse,
         )),
         EnumSet::empty(),
     );
@@ -286,6 +289,7 @@ pub fn create_globals<'gc>(
             array: array_proto,
         },
         globals.into(),
+        listeners,
     )
 }
 
