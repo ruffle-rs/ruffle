@@ -386,6 +386,14 @@ impl<'gc> Avm1<'gc> {
             })?;
         }
 
+        // Operand stack should be empty at this point.
+        // This is probably a bug on our part,
+        // although bytecode could in theory leave data on the stack.
+        if !self.stack.is_empty() {
+            log::warn!("Operand stack is not empty after execution");
+            self.stack.clear();
+        }
+
         Ok(())
     }
 
