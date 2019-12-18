@@ -305,11 +305,7 @@ impl<'gc> Executable<'gc> {
                         .resolve("_parent", avm, ac, this)?
                         .resolve(avm, ac)?;
 
-                    frame_cell.write(ac.gc_context).set_local_register(
-                        preload_r,
-                        parent,
-                        ac.gc_context,
-                    );
+                    frame.set_local_register(preload_r, parent, ac.gc_context);
 
                     preload_r += 1;
                 }
