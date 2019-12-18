@@ -1,6 +1,7 @@
 #![allow(clippy::unneeded_field_pattern)]
 
 mod audio;
+mod input;
 mod navigator;
 mod render;
 
@@ -12,7 +13,6 @@ use glutin::{
     window::WindowBuilder,
     ContextBuilder,
 };
-use ruffle_core::backend::input::NullInputBackend;
 use ruffle_core::{
     backend::audio::{AudioBackend, NullAudioBackend},
     backend::render::RenderBackend,
@@ -63,7 +63,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     let renderer = GliumRenderBackend::new(windowed_context)?;
     let navigator = navigator::ExternalNavigatorBackend::new(); //TODO: actually implement this backend type
     let display = renderer.display().clone();
-    let input = NullInputBackend::new();
+    let input = input::GlutinInputBackend::new();
     let mut player = Player::new(renderer, audio, navigator, input, swf_data)?;
     player.set_is_playing(true); // Desktop player will auto-play.
 
@@ -127,6 +127,9 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                         player.handle_event(ruffle_core::PlayerEvent::MouseLeft)
                     }
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                    WindowEvent::KeyboardInput { input, .. } => {
+                        player.input_mut().update(input);
+                    }
                     _ => (),
                 },
                 _ => (),
