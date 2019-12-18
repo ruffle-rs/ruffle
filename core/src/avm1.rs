@@ -1920,11 +1920,38 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let target = self.pop()?;
-        if let Ok(target) = target.as_string() {
-            self.action_set_target(context, target)?;
-        } else {
-            log::error!("SetTarget2: Path must be a string");
-        }
+        match target {
+            Value::String(target) => {
+                return self.action_set_target(context, &target);
+            }
+            Value::Undefined => {
+                // Reset
+                context.active_clip = context.start_clip;
+                context.target_clip = Some(context.start_clip);
+            }
+            Value::Object(o) => {
+                if let Some(clip) = o.as_display_object() {
+                    // Movieclips can be targetted directly
+                    context.target_clip = Some(clip);
+                    context.active_clip = clip;
+                } else {
+                    // Other objects get coerced to string
+                    let target = target.coerce_to_string(self, context)?;
+                    self.action_set_target(context, &target)?;
+                }
+            }
+            _ => {
+                let target = target.coerce_to_string(self, context)?;
+                self.action_set_target(context, &target)?;
+            }
+        };
+
+        let scope = self.current_stack_frame().unwrap().read().scope_cell();
+        let clip_obj = context.active_clip.object().as_object().unwrap();
+        self.current_stack_frame()
+            .unwrap()
+            .write(context.gc_context)
+            .set_scope(Scope::new_target_scope(scope, clip_obj, context.gc_context));
         Ok(())
     }
 

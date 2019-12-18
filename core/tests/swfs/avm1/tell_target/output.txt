@@ -1,9 +1,34 @@
-n: 1
+n: clip1
 tellTarget('clip2') {
-  n: 2
+  n: clip2
   tellTarget('INVALID') {
-    n: 9
+    n: root
   }
-  n: 2
+  n: clip2
 }
-n: 1
+n: clip1
+tellTarget(clip2) {
+  n: clip2
+}
+tellTarget(o) {
+ toString
+  n: root
+}
+tellTarget(123) {
+  n: root
+}
+tellTarget('clip2') {
+  tellTarget(undefined) {
+    n: clip1
+  }
+    n: clip2
+}
+tellTarget('clip2') {
+  tellTarget('') {
+    n: clip1
+  }
+    n: clip2
+}
+tellTarget(null) {
+  n: root
+}
