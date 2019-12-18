@@ -1682,27 +1682,40 @@ impl<'gc> Avm1<'gc> {
             args.push(self.pop()?);
         }
 
-        let constructor = self
-            .stack_frames
-            .last()
-            .unwrap()
-            .clone()
-            .read()
-            .resolve(fn_name.as_string()?, self, context)?
-            .resolve(self, context)?
-            .as_object()?;
-        let prototype = constructor
-            .get("prototype", self, context)?
-            .resolve(self, context)?
-            .as_object()?;
+        let mut ret = Value::Undefined;
 
-        let this = prototype.new(self, context, prototype, &args)?;
+        if let Ok(fn_name) = fn_name.as_string() {
+            if let Ok(constructor) = self
+                .stack_frames
+                .last()
+                .unwrap()
+                .clone()
+                .read()
+                .resolve(fn_name, self, context)?
+                .resolve(self, context)?
+                .as_object()
+            {
+                if let Ok(prototype) = constructor
+                    .get("prototype", self, context)?
+                    .resolve(self, context)?
+                    .as_object()
+                {
+                    let this = prototype.new(self, context, prototype, &args)?;
+                    constructor
+                        .call(self, context, this, &args)?
+                        .resolve(self, context)?;
+                    ret = this.into();
+                } else {
+                    log::warn!("NewObject: Constructor has invalid prototype: {}", fn_name);
+                }
+            } else {
+                log::warn!("NewObject: Object is not a function: {}", fn_name);
+            }
+        } else {
+            log::warn!("NewObject: Expected String for object name: {:?}", fn_name);
+        }
 
-        constructor
-            .call(self, context, this, &args)?
-            .resolve(self, context)?;
-
-        self.push(this);
+        self.push(ret);
 
         Ok(())
     }
