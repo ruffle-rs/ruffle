@@ -3,6 +3,7 @@ use crate::avm1;
 
 use crate::avm1::listeners::SystemListener;
 use crate::avm1::Value;
+use crate::backend::input::InputBackend;
 use crate::backend::{audio::AudioBackend, navigator::NavigatorBackend, render::RenderBackend};
 use crate::library::Library;
 use crate::prelude::*;
@@ -57,6 +58,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The renderer, used by the display objects to draw themselves.
     pub renderer: &'a mut dyn RenderBackend,
+
+    /// The input backend, used to detect user interactions.
+    pub input: &'a mut dyn InputBackend,
 
     /// The RNG, used by the AVM `RandomNumber` opcode,  `Math.random(),` and `random()`.
     pub rng: &'a mut SmallRng,

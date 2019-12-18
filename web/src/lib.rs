@@ -9,6 +9,7 @@ use crate::{
 };
 use generational_arena::{Arena, Index};
 use js_sys::Uint8Array;
+use ruffle_core::backend::input::NullInputBackend;
 use ruffle_core::{backend::render::RenderBackend, PlayerEvent};
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
@@ -24,7 +25,12 @@ thread_local! {
 type AnimationHandler = Closure<dyn FnMut(f64)>;
 
 struct RuffleInstance {
-    core: ruffle_core::Player<WebAudioBackend, WebCanvasRenderBackend, WebNavigatorBackend>,
+    core: ruffle_core::Player<
+        WebAudioBackend,
+        WebCanvasRenderBackend,
+        WebNavigatorBackend,
+        NullInputBackend,
+    >,
     canvas: HtmlCanvasElement,
     canvas_width: i32,
     canvas_height: i32,
@@ -86,8 +92,9 @@ impl Ruffle {
         let renderer = WebCanvasRenderBackend::new(&canvas)?;
         let audio = WebAudioBackend::new()?;
         let navigator = WebNavigatorBackend::new();
+        let input = NullInputBackend::new();
 
-        let mut core = ruffle_core::Player::new(renderer, audio, navigator, data)?;
+        let mut core = ruffle_core::Player::new(renderer, audio, navigator, input, data)?;
         let frame_rate = core.frame_rate();
         core.audio_mut().set_frame_rate(frame_rate);
         // Create instance.

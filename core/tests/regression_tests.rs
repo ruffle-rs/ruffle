@@ -5,10 +5,12 @@
 use approx::assert_abs_diff_eq;
 use log::{Metadata, Record};
 use ruffle_core::backend::{
-    audio::NullAudioBackend, navigator::NullNavigatorBackend, render::NullRenderer,
+    audio::NullAudioBackend, input::NullInputBackend, navigator::NullNavigatorBackend,
+    render::NullRenderer,
 };
 use ruffle_core::Player;
 use std::cell::RefCell;
+
 type Error = Box<dyn std::error::Error>;
 
 // This macro generates test cases for a given list of SWFs.
@@ -172,6 +174,7 @@ fn run_swf(swf_path: &str, num_frames: u32) -> Result<String, Error> {
         NullRenderer,
         NullAudioBackend::new(),
         NullNavigatorBackend::new(),
+        NullInputBackend::new(),
         swf_data,
     )?;
 

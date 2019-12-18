@@ -12,6 +12,7 @@ use glutin::{
     window::WindowBuilder,
     ContextBuilder,
 };
+use ruffle_core::backend::input::NullInputBackend;
 use ruffle_core::{
     backend::audio::{AudioBackend, NullAudioBackend},
     backend::render::RenderBackend,
@@ -62,7 +63,8 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     let renderer = GliumRenderBackend::new(windowed_context)?;
     let navigator = navigator::ExternalNavigatorBackend::new(); //TODO: actually implement this backend type
     let display = renderer.display().clone();
-    let mut player = Player::new(renderer, audio, navigator, swf_data)?;
+    let input = NullInputBackend::new();
+    let mut player = Player::new(renderer, audio, navigator, input, swf_data)?;
     player.set_is_playing(true); // Desktop player will auto-play.
 
     let logical_size: LogicalSize = (player.movie_width(), player.movie_height()).into();
