@@ -624,6 +624,8 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             navigator,
             rng,
             mouse_position,
+            stage_width,
+            stage_height,
         ) = (
             self.player_version,
             self.global_time,
@@ -635,6 +637,8 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             &mut self.navigator,
             &mut self.rng,
             &self.mouse_pos,
+            Twips::from_pixels(self.movie_width.into()),
+            Twips::from_pixels(self.movie_height.into()),
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -661,6 +665,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 system_prototypes: avm.prototypes().clone(),
                 mouse_hovered_object,
                 mouse_position,
+                stage_size: (stage_width, stage_height),
             };
 
             let ret = f(avm, &mut update_context);

@@ -14,6 +14,7 @@ mod math;
 pub(crate) mod mouse;
 pub(crate) mod movie_clip;
 mod object;
+mod stage;
 
 #[allow(non_snake_case, unused_must_use)] //can't use errors yet
 pub fn getURL<'a, 'gc>(
@@ -216,6 +217,17 @@ pub fn create_globals<'gc>(
         gc_context,
         "Mouse",
         Value::Object(mouse::create_mouse_object(
+            gc_context,
+            Some(object_proto),
+            Some(array_proto),
+            Some(function_proto),
+        )),
+        EnumSet::empty(),
+    );
+    globals.define_value(
+        gc_context,
+        "Stage",
+        Value::Object(stage::create_stage_object(
             gc_context,
             Some(object_proto),
             Some(array_proto),

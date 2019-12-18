@@ -89,6 +89,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The location of the mouse when it was last over the player.
     pub mouse_position: &'a (Twips, Twips),
+
+    /// The dimensions of the stage.
+    pub stage_size: (Twips, Twips),
 }
 
 /// A queued ActionScript call.
