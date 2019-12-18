@@ -253,6 +253,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         context.transform_stack.pop();
     }
 
+    fn hit_test(&self, point: (Twips, Twips)) -> bool {
+        self.world_bounds().contains(point)
+    }
+
     fn mouse_pick(
         &self,
         _self_node: DisplayObject<'gc>,

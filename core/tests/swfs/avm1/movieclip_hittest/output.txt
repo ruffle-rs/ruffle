@@ -1,0 +1,51 @@
+// Top left just outside of circle. Within BB, but not the actual shape.
+// circle.hitTest(234, 122)
+true
+
+
+// Bottom right just outside of circle. Within BB, but not the actual shape.
+// circle.hitTest(348, 233)
+true
+
+
+// Inside the circle.
+// circle.hitTest(269, 181)
+true
+
+
+// In the gap inside the circle.
+// circle.hitTest(313, 183)
+true
+
+
+// Outside of the circles BB, to the left.
+// circle.hitTest(216, 229)
+false
+
+
+// Outside of the circles BB, to the right.
+// circle.hitTest(377, 131)
+false
+
+
+// Inside the circle within the gap of the big circle.
+// circle.hitTest(340, 184)
+true
+
+
+// Above and to the right of the circle, not overlapping at all.
+// circle.hitTest(upper)
+false
+
+// upper.hitTest(circle)
+false
+
+
+// Below and to the right of the circle, overlapping only with BB.
+// circle.hitTest(lower)
+true
+
+// lower.hitTest(circle)
+true
+
+
