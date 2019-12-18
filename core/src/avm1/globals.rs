@@ -11,6 +11,7 @@ use std::f64;
 
 mod array;
 mod function;
+mod key;
 mod math;
 pub(crate) mod mouse;
 pub(crate) mod movie_clip;
@@ -237,6 +238,26 @@ pub fn create_globals<'gc>(
             Some(object_proto),
             Some(function_proto),
             &listeners.mouse,
+        )),
+        EnumSet::empty(),
+    );
+    globals.define_value(
+        gc_context,
+        "Key",
+        Value::Object(key::create_key_object(
+            gc_context,
+            Some(object_proto),
+            Some(function_proto),
+        )),
+        EnumSet::empty(),
+    );
+    globals.define_value(
+        gc_context,
+        "Key",
+        Value::Object(key::create_key_object(
+            gc_context,
+            Some(object_proto),
+            Some(function_proto),
         )),
         EnumSet::empty(),
     );

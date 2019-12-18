@@ -1,5 +1,6 @@
 use crate::avm1::listeners::SystemListener;
 use crate::avm1::Avm1;
+use crate::backend::input::InputBackend;
 use crate::backend::{
     audio::AudioBackend, navigator::NavigatorBackend, render::Letterbox, render::RenderBackend,
 };
@@ -63,7 +64,12 @@ type Error = Box<dyn std::error::Error>;
 
 make_arena!(GcArena, GcRoot);
 
-pub struct Player<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend> {
+pub struct Player<
+    Audio: AudioBackend,
+    Renderer: RenderBackend,
+    Navigator: NavigatorBackend,
+    Input: InputBackend,
+> {
     /// The version of the player we're emulating.
     ///
     /// This serves a few purposes, primarily for compatibility:
@@ -84,6 +90,7 @@ pub struct Player<Audio: AudioBackend, Renderer: RenderBackend, Navigator: Navig
     audio: Audio,
     renderer: Renderer,
     navigator: Navigator,
+    input: Input,
     transform_stack: TransformStack,
     view_matrix: Matrix,
     inverse_view_matrix: Matrix,
@@ -107,13 +114,18 @@ pub struct Player<Audio: AudioBackend, Renderer: RenderBackend, Navigator: Navig
     is_mouse_down: bool,
 }
 
-impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
-    Player<Audio, Renderer, Navigator>
+impl<
+        Audio: AudioBackend,
+        Renderer: RenderBackend,
+        Navigator: NavigatorBackend,
+        Input: InputBackend,
+    > Player<Audio, Renderer, Navigator, Input>
 {
     pub fn new(
         mut renderer: Renderer,
         audio: Audio,
         navigator: Navigator,
+        input: Input,
         swf_data: Vec<u8>,
     ) -> Result<Self, Error> {
         let swf_stream = swf::read::read_swf_header(&swf_data[..]).unwrap();
@@ -217,6 +229,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             renderer,
             audio,
             navigator,
+            input,
         };
 
         player.gc_arena.mutate(|gc_context, gc_root| {
@@ -545,6 +558,14 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         &mut self.renderer
     }
 
+    pub fn input(&self) -> &Input {
+        &self.input
+    }
+
+    pub fn input_mut(&mut self) -> &mut Input {
+        &mut self.input
+    }
+
     fn run_actions<'gc>(avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) {
         while let Some(actions) = context.action_queue.pop() {
             // We don't run frame actions if the clip was removed after it queued the action.
@@ -658,6 +679,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             renderer,
             audio,
             navigator,
+            input,
             rng,
             mouse_position,
             stage_width,
@@ -671,6 +693,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
             &mut self.renderer,
             &mut self.audio,
             &mut self.navigator,
+            &mut self.input,
             &mut self.rng,
             &self.mouse_pos,
             Twips::from_pixels(self.movie_width.into()),
@@ -692,6 +715,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 renderer,
                 audio,
                 navigator,
+                input,
                 action_queue,
                 gc_context,
                 root,

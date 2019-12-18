@@ -643,6 +643,7 @@ mod tests {
     use crate::avm1::activation::Activation;
     use crate::avm1::property::Attribute::*;
     use crate::backend::audio::NullAudioBackend;
+    use crate::backend::input::NullInputBackend;
     use crate::backend::navigator::NullNavigatorBackend;
     use crate::backend::render::NullRenderer;
     use crate::display_object::MovieClip;
@@ -670,6 +671,7 @@ mod tests {
                 rng: &mut SmallRng::from_seed([0u8; 16]),
                 action_queue: &mut crate::context::ActionQueue::new(),
                 audio: &mut NullAudioBackend::new(),
+                input: &mut NullInputBackend::new(),
                 background_color: &mut Color {
                     r: 0,
                     g: 0,

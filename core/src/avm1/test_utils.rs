@@ -1,6 +1,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::{Avm1, Object, UpdateContext};
 use crate::backend::audio::NullAudioBackend;
+use crate::backend::input::NullInputBackend;
 use crate::backend::navigator::NullNavigatorBackend;
 use crate::backend::render::NullRenderer;
 use crate::context::ActionQueue;
@@ -31,6 +32,7 @@ where
             root,
             rng: &mut SmallRng::from_seed([0u8; 16]),
             audio: &mut NullAudioBackend::new(),
+            input: &mut NullInputBackend::new(),
             action_queue: &mut ActionQueue::new(),
             background_color: &mut Color {
                 r: 0,
