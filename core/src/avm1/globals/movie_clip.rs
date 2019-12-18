@@ -7,6 +7,7 @@ use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Val
 use crate::display_object::{MovieClip, TDisplayObject};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
+use swf::Twips;
 
 /// The depth at which dynamic clips are offset.
 const AVM_DEPTH_BIAS: i32 = 16384;
@@ -72,6 +73,45 @@ pub fn overwrite_global<'gc>(
     Ok(Value::Undefined.into())
 }
 
+pub fn hit_test<'gc>(
+    movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if args.len() > 1 {
+        let x = args.get(0).unwrap().as_number(avm, context)?;
+        let y = args.get(1).unwrap().as_number(avm, context)?;
+        let shape = args
+            .get(2)
+            .map(|v| v.as_bool(avm.current_swf_version()))
+            .unwrap_or(false);
+        if shape {
+            log::warn!("Ignoring shape hittest and using bounding box instead. Shape based hit detection is not yet implemented. See https://github.com/ruffle-rs/ruffle/issues/177");
+        }
+        if x.is_finite() && y.is_finite() {
+            return Ok(movie_clip
+                .hit_test((Twips::from_pixels(x), Twips::from_pixels(y)))
+                .into());
+        }
+    } else if args.len() == 1 {
+        let other = args
+            .get(0)
+            .unwrap()
+            .as_object()
+            .ok()
+            .and_then(|o| o.as_display_object());
+        if let Some(other) = other {
+            return Ok(other
+                .world_bounds()
+                .intersects(&movie_clip.world_bounds())
+                .into());
+        }
+    }
+
+    Ok(false.into())
+}
+
 pub fn create_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Object<'gc>,
@@ -116,6 +156,9 @@ pub fn create_proto<'gc>(
         "getBytesTotal" => |_movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             // TODO find a correct value
             Ok(1.0.into())
+        },
+        "hitTest" => |movie_clip: MovieClip<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args: &[Value<'gc>]| {
+            hit_test(movie_clip, avm, context, args)
         },
         "gotoAndPlay" => goto_and_play,
         "gotoAndStop" => goto_and_stop,
