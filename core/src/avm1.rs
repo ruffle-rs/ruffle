@@ -219,19 +219,63 @@ impl<'gc> Avm1<'gc> {
     }
 
     /// Add a stack frame that executes code in timeline scope for an event handler.
-    pub fn insert_stack_frame_for_event_handler(
+    pub fn insert_stack_frame_for_avm_function(
         &mut self,
         active_clip: DisplayObject<'gc>,
         swf_version: u8,
-        action_context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
     ) {
-        action_context.start_clip = active_clip;
-        action_context.active_clip = active_clip;
-        action_context.target_clip = Some(active_clip);
+        context.start_clip = active_clip;
+        context.active_clip = active_clip;
+        context.target_clip = Some(active_clip);
+
+        // Grab the property with the given name.
+        // Requires a dummy stack frame.
+        let clip = active_clip.object().as_object();
+        if let Ok(clip) = clip {
+            self.stack_frames.push(GcCell::allocate(
+                context.gc_context,
+                Activation::from_nothing(swf_version, self.globals, context.gc_context),
+            ));
+            let callback = clip
+                .get(name, self, context)
+                .and_then(|prop| prop.resolve(self, context));
+            self.stack_frames.pop();
+
+            // Run the callback.
+            // The function exec pushes its own stack frame.
+            // The function is now ready to execute with `run_stack_till_empty`.
+            if let Ok(callback) = callback {
+                let _ = callback.call(self, context, clip, &[]);
+            }
+        }
+    }
+
+    /// Add a stack frame that executes code in timeline scope for a native event handler.
+    pub fn run_native_function(
+        &mut self,
+        active_clip: DisplayObject<'gc>,
+        swf_version: u8,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        function: function::NativeFunction<'gc>,
+        args: &[Value<'gc>],
+    ) {
+        context.start_clip = active_clip;
+        context.active_clip = active_clip;
+        context.target_clip = Some(active_clip);
+
+        // Push a dummy stack frame.
         self.stack_frames.push(GcCell::allocate(
-            action_context.gc_context,
-            Activation::from_nothing(swf_version, self.globals, action_context.gc_context),
+            context.gc_context,
+            Activation::from_nothing(swf_version, self.globals, context.gc_context),
         ));
+        let mc = active_clip.object().as_object();
+        if let Ok(mc) = mc {
+            let _ = function(self, context, mc, &args);
+        }
+        // A native function should resolve completely, so there is no longer a need for the stack frame.
+        self.stack_frames.pop();
     }
 
     /// Add a stack frame for any arbitrary code.
@@ -323,7 +367,8 @@ impl<'gc> Avm1<'gc> {
                 frame
                     .write(context.gc_context)
                     .set_return_value(return_value.clone());
-                self.stack.push(return_value);
+
+                self.push(return_value);
             }
         }
 

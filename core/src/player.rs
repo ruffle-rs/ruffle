@@ -1,5 +1,5 @@
 use crate::avm1::globals::mouse::notify_listeners;
-use crate::avm1::{Avm1, TObject};
+use crate::avm1::Avm1;
 use crate::backend::{
     audio::AudioBackend, navigator::NavigatorBackend, render::Letterbox, render::RenderBackend,
 };
@@ -536,34 +536,28 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
 
                 // Event handler method call (e.g. onEnterFrame)
                 ActionType::Method { name } => {
-                    avm.insert_stack_frame_for_event_handler(
+                    avm.insert_stack_frame_for_avm_function(
                         actions.clip,
                         context.swf_version,
                         context,
+                        name,
                     );
-                    // Grab the property with the given name, and then call it.
-                    let mc = actions.clip.object().as_object();
-                    if let Ok(mc) = mc {
-                        let _ = mc
-                            .get(name, avm, context)
-                            .and_then(|prop| prop.resolve(avm, context))
-                            .and_then(|callback| callback.call(avm, context, mc, &[]));
-                    }
                 }
 
                 // Event handler method call (e.g. onEnterFrame)
                 ActionType::Native { function, args } => {
-                    avm.insert_stack_frame_for_event_handler(
+                    // A native function ends up resolving immediately,
+                    // so this doesn't require any further execution.
+                    avm.run_native_function(
                         actions.clip,
                         context.swf_version,
                         context,
+                        function,
+                        &args[..],
                     );
-                    let mc = actions.clip.object().as_object();
-                    if let Ok(mc) = mc {
-                        let _ = function(avm, context, mc, &args);
-                    }
                 }
             }
+            // Execute the stack frame (if any).
             let _ = avm.run_stack_till_empty(context);
         }
     }
