@@ -104,7 +104,7 @@ impl<'gc> Avm1Function<'gc> {
             suppress_this: false,
             preload_this: false,
             preload_global: false,
-            params: params.iter().map(|s| (None, s.to_string())).collect(),
+            params: params.iter().map(|&s| (None, s.to_string())).collect(),
             scope,
             constant_pool,
         }
@@ -129,7 +129,7 @@ impl<'gc> Avm1Function<'gc> {
             register_index: r,
         } in &swf_function.params
         {
-            owned_params.push((*r, s.to_string()))
+            owned_params.push((*r, (*s).to_string()))
         }
 
         Avm1Function {

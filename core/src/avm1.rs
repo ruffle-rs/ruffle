@@ -958,7 +958,7 @@ impl<'gc> Avm1<'gc> {
     ) -> Result<(), Error> {
         self.constant_pool = GcCell::allocate(
             context.gc_context,
-            constant_pool.iter().map(|s| s.to_string()).collect(),
+            constant_pool.iter().map(|s| (*s).to_string()).collect(),
         );
         self.current_stack_frame()
             .unwrap()
@@ -1786,7 +1786,7 @@ impl<'gc> Avm1<'gc> {
                 SwfValue::Int(v) => f64::from(*v).into(),
                 SwfValue::Float(v) => f64::from(*v).into(),
                 SwfValue::Double(v) => (*v).into(),
-                SwfValue::Str(v) => v.to_string().into(),
+                SwfValue::Str(v) => (*v).to_string().into(),
                 SwfValue::Register(v) => self.current_register(*v),
                 SwfValue::ConstantPool(i) => {
                     if let Some(value) = self

@@ -73,6 +73,7 @@ pub fn overwrite_global<'gc>(
     Ok(Value::Undefined.into())
 }
 
+#[allow(clippy::comparison_chain)]
 pub fn hit_test<'gc>(
     movie_clip: MovieClip<'gc>,
     avm: &mut Avm1<'gc>,
