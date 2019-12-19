@@ -102,14 +102,16 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         let props = avm.display_properties;
         if self.base.has_own_property(name) {
             // 1) Actual proeprties on the underlying object
-            self.base.set(name, value, avm, context)
+            self.base
+                .internal_set(name, value, avm, context, (*self).into())
         } else if let Some(property) = props.read().get_by_name(&name) {
             // 2) Display object properties such as _x, _y
             property.set(avm, context, self.display_object, value)?;
             Ok(())
         } else {
             // 3) TODO: Prototype
-            self.base.set(name, value, avm, context)
+            self.base
+                .internal_set(name, value, avm, context, (*self).into())
         }
     }
 

@@ -1,9 +1,11 @@
 //! `EditText` display object and support code.
+use crate::avm1::globals::text_field::attach_virtual_properties;
+use crate::avm1::{Object, StageObject, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
 use crate::transform::Transform;
-use gc_arena::{Collect, Gc, GcCell};
+use gc_arena::{Collect, Gc, GcCell, MutationContext};
 
 /// A dynamic text field.
 /// The text in this text field can be changed dynamically.
@@ -28,6 +30,9 @@ pub struct EditTextData<'gc> {
 
     /// The current text displayed by this text field.
     text: String,
+
+    // The AVM1 object handle
+    object: Option<Object<'gc>>,
 }
 
 impl<'gc> EditText<'gc> {
@@ -39,8 +44,18 @@ impl<'gc> EditText<'gc> {
                 base: Default::default(),
                 text: swf_tag.initial_text.clone().unwrap_or_default(),
                 static_data: gc_arena::Gc::allocate(context.gc_context, EditTextStatic(swf_tag)),
+                object: None,
             },
         ))
+    }
+
+    // TODO: This needs to strip away HTML
+    pub fn text(self) -> String {
+        self.0.read().text.to_owned()
+    }
+
+    pub fn set_text(self, text: String, gc_context: MutationContext<'gc, '_>) {
+        self.0.write(gc_context).text = text;
     }
 }
 
@@ -53,6 +68,35 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
     fn run_frame(&mut self, _context: &mut UpdateContext) {
         // Noop
+    }
+
+    fn as_edit_text(&self) -> Option<EditText<'gc>> {
+        Some(*self)
+    }
+
+    fn post_instantiation(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        display_object: DisplayObject<'gc>,
+        proto: Object<'gc>,
+    ) {
+        let mut text = self.0.write(gc_context);
+        if text.object.is_none() {
+            let object =
+                StageObject::for_display_object(gc_context, display_object, Some(proto)).into();
+
+            attach_virtual_properties(gc_context, object);
+
+            text.object = Some(object);
+        }
+    }
+
+    fn object(&self) -> Value<'gc> {
+        self.0
+            .read()
+            .object
+            .map(Value::from)
+            .unwrap_or(Value::Undefined)
     }
 
     fn render(&self, context: &mut RenderContext) {
@@ -132,6 +176,7 @@ unsafe impl<'gc> gc_arena::Collect for EditTextData<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
         self.base.trace(cc);
         self.static_data.trace(cc);
+        self.object.trace(cc);
     }
 }
 

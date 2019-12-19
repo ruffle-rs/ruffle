@@ -656,6 +656,9 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
     fn as_movie_clip(&self) -> Option<MovieClip<'gc>> {
         None
     }
+    fn as_edit_text(&self) -> Option<EditText<'gc>> {
+        None
+    }
     fn as_morph_shape(&self) -> Option<MorphShape<'gc>> {
         None
     }

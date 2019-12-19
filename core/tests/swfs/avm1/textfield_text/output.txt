@@ -1,0 +1,7 @@
+// t.text
+original
+
+// t.text = "altered"
+
+// t.text
+altered
