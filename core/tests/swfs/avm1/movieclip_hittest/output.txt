@@ -49,3 +49,20 @@ true
 true
 
 
+// Transforming _root
+// Inside upper in stage coordinates, but false because hitTest uses root coordinates.
+// circle.hitTest(335, 290)
+false
+
+// Just above circle, inside now because of _root._rotation.
+// circle.hitTest(234, 105)
+true
+
+// Bottom right just outside of circle. Inside now because of _root._rotation.
+// circle.hitTest(348, 233)
+true
+
+// Above and to the right of the circle, Inside now because of _root._rotation.
+// circle.hitTest(upper)
+true
+
