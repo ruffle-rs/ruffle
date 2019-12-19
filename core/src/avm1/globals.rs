@@ -16,6 +16,7 @@ pub(crate) mod mouse;
 pub(crate) mod movie_clip;
 mod object;
 mod stage;
+pub(crate) mod text_field;
 
 #[allow(non_snake_case, unused_must_use)] //can't use errors yet
 pub fn getURL<'a, 'gc>(
@@ -131,6 +132,7 @@ pub struct SystemPrototypes<'gc> {
     pub object: Object<'gc>,
     pub function: Object<'gc>,
     pub movie_clip: Object<'gc>,
+    pub text_field: Object<'gc>,
     pub array: Object<'gc>,
 }
 
@@ -140,6 +142,7 @@ unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
         self.object.trace(cc);
         self.function.trace(cc);
         self.movie_clip.trace(cc);
+        self.text_field.trace(cc);
         self.array.trace(cc);
     }
 }
@@ -155,6 +158,9 @@ pub fn create_globals<'gc>(
 
     let movie_clip_proto: Object<'gc> =
         movie_clip::create_proto(gc_context, object_proto, function_proto);
+
+    let text_field_proto: Object<'gc> =
+        text_field::create_proto(gc_context, object_proto, function_proto);
 
     let array_proto: Object<'gc> = array::create_proto(gc_context, object_proto, function_proto);
 
@@ -178,6 +184,12 @@ pub fn create_globals<'gc>(
         Some(function_proto),
         Some(movie_clip_proto),
     );
+    let text_field = ScriptObject::function(
+        gc_context,
+        Executable::Native(text_field::constructor),
+        Some(function_proto),
+        Some(text_field_proto),
+    );
     let array = ScriptObject::function(
         gc_context,
         Executable::Native(array::constructor),
@@ -192,6 +204,7 @@ pub fn create_globals<'gc>(
     globals.define_value(gc_context, "Object", object.into(), EnumSet::empty());
     globals.define_value(gc_context, "Function", function.into(), EnumSet::empty());
     globals.define_value(gc_context, "MovieClip", movie_clip.into(), EnumSet::empty());
+    globals.define_value(gc_context, "TextField", text_field.into(), EnumSet::empty());
     globals.force_set_function(
         "Number",
         number,
@@ -286,6 +299,7 @@ pub fn create_globals<'gc>(
             object: object_proto,
             function: function_proto,
             movie_clip: movie_clip_proto,
+            text_field: text_field_proto,
             array: array_proto,
         },
         globals.into(),

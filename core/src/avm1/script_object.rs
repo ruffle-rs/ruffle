@@ -236,6 +236,53 @@ impl<'gc> ScriptObject<'gc> {
             }
         }
     }
+
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    pub(crate) fn internal_set(
+        &self,
+        name: &str,
+        value: Value<'gc>,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        this: Object<'gc>,
+    ) -> Result<(), Error> {
+        if name == "__proto__" {
+            self.0.write(context.gc_context).prototype = value.as_object().ok();
+        } else if let Ok(index) = name.parse::<usize>() {
+            self.set_array_element(index, value.to_owned(), context.gc_context);
+        } else {
+            if name == "length" {
+                let length = value
+                    .as_number(avm, context)
+                    .map(|v| v.abs() as i32)
+                    .unwrap_or(0);
+                if length > 0 {
+                    self.set_length(context.gc_context, length as usize);
+                } else {
+                    self.set_length(context.gc_context, 0);
+                }
+            }
+
+            match self
+                .0
+                .write(context.gc_context)
+                .values
+                .entry(name.to_owned())
+            {
+                Entry::Occupied(mut entry) => {
+                    entry.get_mut().set(avm, context, this, value)?;
+                }
+                Entry::Vacant(entry) => {
+                    entry.insert(Property::Stored {
+                        value,
+                        attributes: Default::default(),
+                    });
+                }
+            }
+        }
+
+        Ok(())
+    }
 }
 
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
@@ -277,42 +324,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        if name == "__proto__" {
-            self.0.write(context.gc_context).prototype = value.as_object().ok();
-        } else if let Ok(index) = name.parse::<usize>() {
-            self.set_array_element(index, value.to_owned(), context.gc_context);
-        } else {
-            if name == "length" {
-                let length = value
-                    .as_number(avm, context)
-                    .map(|v| v.abs() as i32)
-                    .unwrap_or(0);
-                if length > 0 {
-                    self.set_length(context.gc_context, length as usize);
-                } else {
-                    self.set_length(context.gc_context, 0);
-                }
-            }
-
-            match self
-                .0
-                .write(context.gc_context)
-                .values
-                .entry(name.to_owned())
-            {
-                Entry::Occupied(mut entry) => {
-                    entry.get_mut().set(avm, context, (*self).into(), value)?;
-                }
-                Entry::Vacant(entry) => {
-                    entry.insert(Property::Stored {
-                        value,
-                        attributes: Default::default(),
-                    });
-                }
-            }
-        }
-
-        Ok(())
+        self.internal_set(name, value, avm, context, (*self).into())
     }
 
     /// Call the underlying object.

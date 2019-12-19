@@ -117,7 +117,7 @@ impl<'gc> Library<'gc> {
         let (mut obj, proto): (DisplayObject<'gc>, Object<'gc>) = match character {
             Character::Bitmap(bitmap) => (bitmap.instantiate(gc_context), prototypes.object),
             Character::EditText(edit_text) => {
-                (edit_text.instantiate(gc_context), prototypes.object)
+                (edit_text.instantiate(gc_context), prototypes.text_field)
             }
             Character::Graphic(graphic) => (graphic.instantiate(gc_context), prototypes.object),
             Character::MorphShape(morph_shape) => {
