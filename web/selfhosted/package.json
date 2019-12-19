@@ -11,6 +11,6 @@
     "clean-webpack-plugin": "^3.0.0",
     "webpack": "^4.41.4",
     "webpack-cli": "^3.3.10",
-    "webpack-dev-server": "^3.9.0"
+    "webpack-dev-server": "^3.10.1"
   }
 }
