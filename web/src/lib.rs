@@ -1,19 +1,20 @@
 //! Ruffle web frontend.
 mod audio;
+mod input;
 mod navigator;
 mod render;
 mod utils;
 
 use crate::{
-    audio::WebAudioBackend, navigator::WebNavigatorBackend, render::WebCanvasRenderBackend,
+    audio::WebAudioBackend, input::WebInputBackend, navigator::WebNavigatorBackend,
+    render::WebCanvasRenderBackend,
 };
 use generational_arena::{Arena, Index};
 use js_sys::Uint8Array;
-use ruffle_core::backend::input::NullInputBackend;
 use ruffle_core::{backend::render::RenderBackend, PlayerEvent};
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
-use web_sys::{Event, EventTarget, HtmlCanvasElement, MouseEvent};
+use web_sys::{Event, EventTarget, HtmlCanvasElement, KeyboardEvent, MouseEvent};
 
 thread_local! {
     /// We store the actual instances of the ruffle core in a static pool.
@@ -29,7 +30,7 @@ struct RuffleInstance {
         WebAudioBackend,
         WebCanvasRenderBackend,
         WebNavigatorBackend,
-        NullInputBackend,
+        WebInputBackend,
     >,
     canvas: HtmlCanvasElement,
     canvas_width: i32,
@@ -92,7 +93,7 @@ impl Ruffle {
         let renderer = WebCanvasRenderBackend::new(&canvas)?;
         let audio = WebAudioBackend::new()?;
         let navigator = WebNavigatorBackend::new();
-        let input = NullInputBackend::new();
+        let input = WebInputBackend::new();
 
         let mut core = ruffle_core::Player::new(renderer, audio, navigator, input, data)?;
         let frame_rate = core.frame_rate();
@@ -229,6 +230,40 @@ impl Ruffle {
                 instance.click_callback = Some(click_callback);
                 // Do initial render to render "click-to-play".
                 instance.core.render();
+            }
+
+            // Create keydown event handler.
+            {
+                let keydown_callback = Closure::wrap(Box::new(move |js_event: KeyboardEvent| {
+                    INSTANCES.with(move |instances| {
+                        if let Some(instance) = instances.borrow_mut().get_mut(index) {
+                            instance.core.input_mut().keydown(js_event.code());
+                        }
+                    })
+                })
+                    as Box<dyn FnMut(KeyboardEvent)>);
+
+                window
+                    .add_event_listener_with_callback(
+                        "keydown",
+                        keydown_callback.as_ref().unchecked_ref(),
+                    )
+                    .unwrap();
+
+                let keyup_callback = Closure::wrap(Box::new(move |js_event: KeyboardEvent| {
+                    INSTANCES.with(move |instances| {
+                        if let Some(instance) = instances.borrow_mut().get_mut(index) {
+                            instance.core.input_mut().keyup(js_event.code());
+                        }
+                    })
+                })
+                    as Box<dyn FnMut(KeyboardEvent)>);
+                window
+                    .add_event_listener_with_callback(
+                        "keyup",
+                        keyup_callback.as_ref().unchecked_ref(),
+                    )
+                    .unwrap();
             }
 
             ruffle
