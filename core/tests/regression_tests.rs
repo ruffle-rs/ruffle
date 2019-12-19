@@ -36,6 +36,7 @@ swf_tests! {
     (add_property, "avm1/add_property", 1),
     (as_transformed_flag, "avm1/as_transformed_flag", 3),
     (attach_movie, "avm1/attach_movie", 1),
+    (function_base_clip, "avm1/function_base_clip", 2),
     (clip_events, "avm1/clip_events", 4),
     (create_empty_movie_clip, "avm1/create_empty_movie_clip", 2),
     (duplicate_movie_clip, "avm1/duplicate_movie_clip", 1),
