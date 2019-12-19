@@ -405,6 +405,18 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
         color_transform: &ColorTransform,
     );
 
+    /// Converts a local position to a global stage position
+    fn local_to_global(&self, local: (Twips, Twips)) -> (Twips, Twips) {
+        let mut node = self.parent();
+        let mut matrix = *self.matrix();
+        while let Some(display_object) = node {
+            matrix *= *display_object.matrix();
+            node = display_object.parent();
+        }
+
+        matrix * local
+    }
+
     /// Converts a local position on the stage to a local position on this display object
     fn global_to_local(&self, global: (Twips, Twips)) -> (Twips, Twips) {
         let mut node = self.parent();
@@ -727,6 +739,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
         Value::Undefined // todo: impl for every type and delete this fallback
     }
 
+    /// Tests if a given stage position point intersects with the world bounds of this object.
     fn hit_test(&self, _pos: (Twips, Twips)) -> bool {
         false
     }
