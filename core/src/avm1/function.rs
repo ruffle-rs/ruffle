@@ -7,7 +7,7 @@ use crate::avm1::scope::Scope;
 use crate::avm1::super_object::SuperObject;
 use crate::avm1::value::Value;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext};
-use crate::display_object::TDisplayObject;
+use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, CollectionContext, GcCell};
 use swf::avm1::types::FunctionParam;
@@ -70,6 +70,10 @@ pub struct Avm1Function<'gc> {
 
     /// The constant pool the function executes with.
     constant_pool: GcCell<'gc, Vec<String>>,
+
+    /// The base movie clip that the function was defined on.
+    /// This is the movie clip that contains the bytecode.
+    base_clip: DisplayObject<'gc>,
 }
 
 impl<'gc> Avm1Function<'gc> {
@@ -84,6 +88,7 @@ impl<'gc> Avm1Function<'gc> {
         params: &[&str],
         scope: GcCell<'gc, Scope<'gc>>,
         constant_pool: GcCell<'gc, Vec<String>>,
+        base_clip: DisplayObject<'gc>,
     ) -> Self {
         let name = match name {
             "" => None,
@@ -107,6 +112,7 @@ impl<'gc> Avm1Function<'gc> {
             params: params.iter().map(|&s| (None, s.to_string())).collect(),
             scope,
             constant_pool,
+            base_clip,
         }
     }
 
@@ -117,6 +123,7 @@ impl<'gc> Avm1Function<'gc> {
         swf_function: &swf::avm1::types::Function,
         scope: GcCell<'gc, Scope<'gc>>,
         constant_pool: GcCell<'gc, Vec<String>>,
+        base_clip: DisplayObject<'gc>,
     ) -> Self {
         let name = match swf_function.name {
             "" => None,
@@ -149,6 +156,7 @@ impl<'gc> Avm1Function<'gc> {
             params: owned_params,
             scope,
             constant_pool,
+            base_clip,
         }
     }
 
@@ -259,6 +267,7 @@ impl<'gc> Executable<'gc> {
                         af.data(),
                         child_scope,
                         af.constant_pool,
+                        af.base_clip,
                         this,
                         Some(argcell),
                     ),

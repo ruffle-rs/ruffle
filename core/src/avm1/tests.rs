@@ -6,8 +6,12 @@ use gc_arena::GcCell;
 #[test]
 fn locals_into_form_values() {
     with_avm(19, |avm, context, _this| {
-        let my_activation =
-            Activation::from_nothing(19, avm.global_object_cell(), context.gc_context);
+        let my_activation = Activation::from_nothing(
+            19,
+            avm.global_object_cell(),
+            context.gc_context,
+            context.root,
+        );
         let my_locals = my_activation.scope().locals().to_owned();
 
         my_locals

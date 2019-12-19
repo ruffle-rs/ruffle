@@ -124,6 +124,32 @@ impl<'gc> Avm1<'gc> {
         }
     }
 
+    #[allow(dead_code)]
+    pub fn base_clip(&self) -> DisplayObject<'gc> {
+        self.current_stack_frame().unwrap().read().base_clip()
+    }
+
+    /// The current target clip for the executing code.
+    /// This is the movie clip that contains the bytecode.
+    /// Timeline actions like `GotoFrame` use this because
+    /// a goto after an invalid tellTarget has no effect.
+    pub fn target_clip(&self) -> Option<DisplayObject<'gc>> {
+        self.current_stack_frame().unwrap().read().target_clip()
+    }
+
+    /// The current target clip of the executing code, or `root` if there is none.
+    /// Actions that affect `root` after an invalid `tellTarget` will use this.
+    pub fn target_clip_or_root(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> DisplayObject<'gc> {
+        self.current_stack_frame()
+            .unwrap()
+            .read()
+            .target_clip()
+            .unwrap_or(context.root)
+    }
+
     /// Convert the current locals pool into a set of form values.
     ///
     /// This is necessary to support form submission from Flash via a couple of
@@ -168,9 +194,6 @@ impl<'gc> Avm1<'gc> {
         code: SwfSlice,
         action_context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
-        action_context.start_clip = active_clip;
-        action_context.active_clip = active_clip;
-        action_context.target_clip = Some(active_clip);
         let global_scope = GcCell::allocate(
             action_context.gc_context,
             Scope::from_global_object(self.globals),
@@ -187,6 +210,7 @@ impl<'gc> Avm1<'gc> {
                 code,
                 child_scope,
                 self.constant_pool,
+                active_clip,
                 clip_obj,
                 None,
             ),
@@ -201,9 +225,6 @@ impl<'gc> Avm1<'gc> {
         code: SwfSlice,
         action_context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
-        action_context.start_clip = active_clip;
-        action_context.active_clip = active_clip;
-        action_context.target_clip = Some(active_clip);
         let global_scope = GcCell::allocate(
             action_context.gc_context,
             Scope::from_global_object(self.globals),
@@ -221,6 +242,7 @@ impl<'gc> Avm1<'gc> {
                 code,
                 child_scope,
                 self.constant_pool,
+                active_clip,
                 clip_obj,
                 None,
             ),
@@ -235,17 +257,18 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) {
-        context.start_clip = active_clip;
-        context.active_clip = active_clip;
-        context.target_clip = Some(active_clip);
-
         // Grab the property with the given name.
         // Requires a dummy stack frame.
         let clip = active_clip.object().as_object();
         if let Ok(clip) = clip {
             self.stack_frames.push(GcCell::allocate(
                 context.gc_context,
-                Activation::from_nothing(swf_version, self.globals, context.gc_context),
+                Activation::from_nothing(
+                    swf_version,
+                    self.globals,
+                    context.gc_context,
+                    active_clip,
+                ),
             ));
             let callback = clip
                 .get(name, self, context)
@@ -289,14 +312,10 @@ impl<'gc> Avm1<'gc> {
         method: &str,
         args: &[Value<'gc>],
     ) {
-        context.start_clip = active_clip;
-        context.active_clip = active_clip;
-        context.target_clip = Some(active_clip);
-
         // Push a dummy stack frame.
         self.stack_frames.push(GcCell::allocate(
             context.gc_context,
-            Activation::from_nothing(swf_version, self.globals, context.gc_context),
+            Activation::from_nothing(swf_version, self.globals, context.gc_context, active_clip),
         ));
         let listeners = self.system_listeners.get(listener);
         let mut handlers = listeners.prepare_handlers(self, context, method);
@@ -772,7 +791,9 @@ impl<'gc> Avm1<'gc> {
         let target = self.pop()?;
         let source = self.pop()?;
         let source_clip = match source {
-            Value::String(s) => Avm1::resolve_slash_path(context.active_clip, context.root, &s),
+            Value::String(s) => {
+                Avm1::resolve_slash_path(self.target_clip_or_root(context), context.root, &s)
+            }
             Value::Object(o) => o.as_display_object(),
             _ => None,
         };
@@ -865,7 +886,7 @@ impl<'gc> Avm1<'gc> {
             .read()
             .resolve(fn_name.as_string()?, self, context)?
             .resolve(self, context)?;
-        let this = context.active_clip.object().as_object()?;
+        let this = self.target_clip_or_root(context).object().as_object()?;
         target_fn.call(self, context, this, &args)?.push(self);
 
         Ok(())
@@ -885,7 +906,7 @@ impl<'gc> Avm1<'gc> {
 
         match method_name {
             Value::Undefined | Value::Null => {
-                let this = context.active_clip.object();
+                let this = self.target_clip_or_root(context).object();
                 if let Ok(this) = this.as_object() {
                     object.call(self, context, this, &args)?.push(self);
                 } else {
@@ -994,8 +1015,15 @@ impl<'gc> Avm1<'gc> {
             context.gc_context,
         );
         let constant_pool = self.current_stack_frame().unwrap().read().constant_pool();
-        let func =
-            Avm1Function::from_df1(swf_version, func_data, name, params, scope, constant_pool);
+        let func = Avm1Function::from_df1(
+            swf_version,
+            func_data,
+            name,
+            params,
+            scope,
+            constant_pool,
+            self.target_clip_or_root(context),
+        );
         let prototype =
             ScriptObject::object(context.gc_context, Some(self.prototypes.object)).into();
         let func_obj = ScriptObject::function(
@@ -1034,8 +1062,14 @@ impl<'gc> Avm1<'gc> {
             context.gc_context,
         );
         let constant_pool = self.current_stack_frame().unwrap().read().constant_pool();
-        let func =
-            Avm1Function::from_df2(swf_version, func_data, action_func, scope, constant_pool);
+        let func = Avm1Function::from_df2(
+            swf_version,
+            func_data,
+            action_func,
+            scope,
+            constant_pool,
+            self.base_clip(),
+        );
         let prototype =
             ScriptObject::object(context.gc_context, Some(self.prototypes.object)).into();
         let func_obj = ScriptObject::function(
@@ -1231,7 +1265,7 @@ impl<'gc> Avm1<'gc> {
         let prop_index = self.pop()?.into_number_v1() as usize;
         let clip_path = self.pop()?;
         let path = clip_path.as_string()?;
-        let ret = if let Some(base_clip) = context.target_clip {
+        let ret = if let Some(base_clip) = self.target_clip() {
             if let Some(clip) = Avm1::resolve_slash_path(base_clip, context.root, path) {
                 let display_properties = self.display_properties;
                 let props = display_properties.write(context.gc_context);
@@ -1288,7 +1322,7 @@ impl<'gc> Avm1<'gc> {
         let is_slashpath = Self::variable_name_is_slash_path(path);
         if is_slashpath {
             if let Some((node, var_name)) =
-                Self::resolve_slash_path_variable(context.target_clip, context.root, path)
+                Self::resolve_slash_path_variable(self.target_clip(), context.root, path)
             {
                 if let Some(clip) = node.as_movie_clip() {
                     let object = clip.object().as_object()?;
@@ -1384,7 +1418,7 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         frame: u16,
     ) -> Result<(), Error> {
-        if let Some(clip) = context.target_clip {
+        if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 // The frame on the stack is 0-based, not 1-based.
                 clip.goto_frame(context, frame + 1, true);
@@ -1405,7 +1439,7 @@ impl<'gc> Avm1<'gc> {
     ) -> Result<(), Error> {
         // Version 4+ gotoAndPlay/gotoAndStop
         // Param can either be a frame number or a frame label.
-        if let Some(clip) = context.target_clip {
+        if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 match self.pop()? {
                     Value::Number(frame) => {
@@ -1439,7 +1473,7 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         label: &str,
     ) -> Result<(), Error> {
-        if let Some(clip) = context.target_clip {
+        if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 if let Some(frame) = clip.frame_label_to_number(label) {
                     clip.goto_frame(context, frame, true);
@@ -1644,7 +1678,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_next_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        if let Some(clip) = context.target_clip {
+        if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 clip.next_frame(context);
             } else {
@@ -1742,7 +1776,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_play(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        if let Some(clip) = context.target_clip {
+        if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 clip.play(context)
             } else {
@@ -1755,7 +1789,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_prev_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        if let Some(clip) = context.target_clip {
+        if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 clip.prev_frame(context);
             } else {
@@ -1838,7 +1872,9 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let target_clip = match self.pop()? {
-            Value::String(s) => Avm1::resolve_slash_path(context.active_clip, context.root, &s),
+            Value::String(s) => {
+                Avm1::resolve_slash_path(self.target_clip_or_root(context), context.root, &s)
+            }
             Value::Object(o) => o.as_display_object(),
             _ => None,
         };
@@ -1886,7 +1922,7 @@ impl<'gc> Avm1<'gc> {
         let prop_index = self.pop()?.as_u32()? as usize;
         let clip_path = self.pop()?;
         let path = clip_path.as_string()?;
-        if let Some(base_clip) = context.target_clip {
+        if let Some(base_clip) = self.target_clip() {
             if let Some(clip) = Avm1::resolve_slash_path(base_clip, context.root, path) {
                 let display_properties = self.display_properties;
                 let props = display_properties.read();
@@ -1932,7 +1968,7 @@ impl<'gc> Avm1<'gc> {
 
         if is_slashpath {
             if let Some((node, var_name)) =
-                Self::resolve_slash_path_variable(context.target_clip, context.root, var_path)
+                Self::resolve_slash_path_variable(self.target_clip(), context.root, var_path)
             {
                 if let Some(clip) = node.as_movie_clip() {
                     clip.object()
@@ -1963,14 +1999,13 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         target: &str,
     ) -> Result<(), Error> {
+        let stack_frame = self.current_stack_frame().unwrap();
+        let mut sf = stack_frame.write(context.gc_context);
+        let base_clip = sf.base_clip();
         if target.is_empty() {
-            context.active_clip = context.start_clip;
-            context.target_clip = Some(context.start_clip);
-        } else if let Some(clip) =
-            Avm1::resolve_slash_path(context.start_clip, context.root, target)
-        {
-            context.target_clip = Some(clip);
-            context.active_clip = clip;
+            sf.set_target_clip(Some(base_clip));
+        } else if let Some(clip) = Avm1::resolve_slash_path(base_clip, context.root, target) {
+            sf.set_target_clip(Some(clip));
         } else {
             log::warn!("SetTarget failed: {} not found", target);
             // TODO: Emulate AVM1 trace error message.
@@ -1979,17 +2014,18 @@ impl<'gc> Avm1<'gc> {
             // When SetTarget has an invalid target, subsequent GetVariables act
             // as if they are targeting root, but subsequent Play/Stop/etc.
             // fail silenty.
-            context.target_clip = None;
-            context.active_clip = context.root;
+            sf.set_target_clip(None);
         }
 
-        let scope = self.current_stack_frame().unwrap().read().scope_cell();
-        let clip_obj = context.active_clip.object().as_object().unwrap();
+        let scope = sf.scope_cell();
+        let clip_obj = sf
+            .target_clip()
+            .unwrap_or(context.root)
+            .object()
+            .as_object()
+            .unwrap();
 
-        self.current_stack_frame()
-            .unwrap()
-            .write(context.gc_context)
-            .set_scope(Scope::new_target_scope(scope, clip_obj, context.gc_context));
+        sf.set_scope(Scope::new_target_scope(scope, clip_obj, context.gc_context));
         Ok(())
     }
 
@@ -2004,14 +2040,17 @@ impl<'gc> Avm1<'gc> {
             }
             Value::Undefined => {
                 // Reset
-                context.active_clip = context.start_clip;
-                context.target_clip = Some(context.start_clip);
+                let stack_frame = self.current_stack_frame().unwrap();
+                let mut sf = stack_frame.write(context.gc_context);
+                let base_clip = sf.base_clip();
+                sf.set_target_clip(Some(base_clip));
             }
             Value::Object(o) => {
                 if let Some(clip) = o.as_display_object() {
+                    let stack_frame = self.current_stack_frame().unwrap();
+                    let mut sf = stack_frame.write(context.gc_context);
                     // Movieclips can be targetted directly
-                    context.target_clip = Some(clip);
-                    context.active_clip = clip;
+                    sf.set_target_clip(Some(clip));
                 } else {
                     // Other objects get coerced to string
                     let target = target.coerce_to_string(self, context)?;
@@ -2024,12 +2063,16 @@ impl<'gc> Avm1<'gc> {
             }
         };
 
-        let scope = self.current_stack_frame().unwrap().read().scope_cell();
-        let clip_obj = context.active_clip.object().as_object().unwrap();
-        self.current_stack_frame()
-            .unwrap()
-            .write(context.gc_context)
-            .set_scope(Scope::new_target_scope(scope, clip_obj, context.gc_context));
+        let stack_frame = self.current_stack_frame().unwrap();
+        let mut sf = stack_frame.write(context.gc_context);
+        let scope = sf.scope_cell();
+        let clip_obj = sf
+            .target_clip()
+            .unwrap_or(context.root)
+            .object()
+            .as_object()
+            .unwrap();
+        sf.set_scope(Scope::new_target_scope(scope, clip_obj, context.gc_context));
         Ok(())
     }
 
@@ -2055,8 +2098,8 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_stop(&mut self, context: &mut UpdateContext) -> Result<(), Error> {
-        if let Some(clip) = context.target_clip {
+    fn action_stop(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 clip.stop(context);
             } else {

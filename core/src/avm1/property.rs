@@ -17,6 +17,7 @@ pub enum Attribute {
     ReadOnly,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone)]
 pub enum Property<'gc> {
     Virtual {
