@@ -29,9 +29,6 @@ where
             player_version: 32,
             swf_version,
             root,
-            start_clip: root,
-            active_clip: root,
-            target_clip: Some(root),
             rng: &mut SmallRng::from_seed([0u8; 16]),
             audio: &mut NullAudioBackend::new(),
             action_queue: &mut ActionQueue::new(),
@@ -54,7 +51,7 @@ where
         let globals = avm.global_object_cell();
         avm.insert_stack_frame(GcCell::allocate(
             gc_context,
-            Activation::from_nothing(swf_version, globals, gc_context),
+            Activation::from_nothing(swf_version, globals, gc_context, root),
         ));
 
         let this = root.object().as_object().unwrap();

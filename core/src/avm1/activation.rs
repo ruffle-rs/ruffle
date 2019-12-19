@@ -4,6 +4,7 @@ use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
 use crate::avm1::{Avm1, Error, Object, Value};
 use crate::context::UpdateContext;
+use crate::display_object::DisplayObject;
 use crate::tag_utils::SwfSlice;
 use gc_arena::{GcCell, MutationContext};
 use smallvec::SmallVec;
@@ -99,6 +100,14 @@ pub struct Activation<'gc> {
     /// reader object copied from it. Taking out two readers on the same
     /// activation frame is a programming error.
     is_executing: bool,
+
+    /// The base clip of this stack frame.
+    /// This will be the movieclip that contains the bytecode.
+    base_clip: DisplayObject<'gc>,
+
+    /// The current target display object of this stack frame.
+    /// This can be changed with `tellTarget` (via `ActionSetTarget` and `ActionSetTarget2`).
+    target_clip: Option<DisplayObject<'gc>>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for Activation<'gc> {
@@ -110,6 +119,8 @@ unsafe impl<'gc> gc_arena::Collect for Activation<'gc> {
         self.arguments.trace(cc);
         self.return_value.trace(cc);
         self.local_registers.trace(cc);
+        self.base_clip.trace(cc);
+        self.target_clip.trace(cc);
     }
 }
 
@@ -119,6 +130,7 @@ impl<'gc> Activation<'gc> {
         code: SwfSlice,
         scope: GcCell<'gc, Scope<'gc>>,
         constant_pool: GcCell<'gc, Vec<String>>,
+        base_clip: DisplayObject<'gc>,
         this: Object<'gc>,
         arguments: Option<Object<'gc>>,
     ) -> Activation<'gc> {
@@ -128,6 +140,8 @@ impl<'gc> Activation<'gc> {
             pc: 0,
             scope,
             constant_pool,
+            base_clip,
+            target_clip: Some(base_clip),
             this,
             arguments,
             return_value: None,
@@ -142,6 +156,7 @@ impl<'gc> Activation<'gc> {
         code: SwfSlice,
         scope: GcCell<'gc, Scope<'gc>>,
         constant_pool: GcCell<'gc, Vec<String>>,
+        base_clip: DisplayObject<'gc>,
         this: Object<'gc>,
         arguments: Option<Object<'gc>>,
     ) -> Activation<'gc> {
@@ -151,6 +166,8 @@ impl<'gc> Activation<'gc> {
             pc: 0,
             scope,
             constant_pool,
+            base_clip,
+            target_clip: Some(base_clip),
             this,
             arguments,
             return_value: None,
@@ -168,6 +185,7 @@ impl<'gc> Activation<'gc> {
         swf_version: u8,
         globals: Object<'gc>,
         mc: MutationContext<'gc, '_>,
+        base_clip: DisplayObject<'gc>,
     ) -> Activation<'gc> {
         let global_scope = GcCell::allocate(mc, Scope::from_global_object(globals));
         let child_scope = GcCell::allocate(mc, Scope::new_local_scope(global_scope, mc));
@@ -183,6 +201,8 @@ impl<'gc> Activation<'gc> {
             pc: 0,
             scope: child_scope,
             constant_pool: empty_constant_pool,
+            base_clip,
+            target_clip: Some(base_clip),
             this: globals,
             arguments: None,
             return_value: None,
@@ -200,6 +220,8 @@ impl<'gc> Activation<'gc> {
             pc: 0,
             scope,
             constant_pool: self.constant_pool,
+            base_clip: self.base_clip,
+            target_clip: self.target_clip,
             this: self.this,
             arguments: self.arguments,
             return_value: None,
@@ -260,6 +282,24 @@ impl<'gc> Activation<'gc> {
     /// Completely replace the current scope with a new one.
     pub fn set_scope(&mut self, scope: GcCell<'gc, Scope<'gc>>) {
         self.scope = scope;
+    }
+
+    /// Gets the base clip of this stack frame.
+    /// This is the movie clip that contains the executing bytecode.
+    pub fn base_clip(&self) -> DisplayObject<'gc> {
+        self.base_clip
+    }
+
+    /// Gets the current target clip of this stack frame.
+    /// This is the movie clip to which `GotoFrame` and other actions apply.
+    /// Changed via `ActionSetTarget`/`ActionSetTarget2`.
+    pub fn target_clip(&self) -> Option<DisplayObject<'gc>> {
+        self.target_clip
+    }
+
+    /// Changes the target clip.
+    pub fn set_target_clip(&mut self, value: Option<DisplayObject<'gc>>) {
+        self.target_clip = value;
     }
 
     /// Indicates whether or not the end of this scope should be handled as an

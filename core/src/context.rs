@@ -65,22 +65,6 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// This will generally be `_level0`, except for loadMovie/loadMovieNum.
     pub root: DisplayObject<'gc>,
 
-    /// The `DisplayObject` that this code is running in.
-    /// Used by all `DisplayObject` methods and AVM1 `GetVariable`/`SetVariable`/`this`.
-    /// Can be changed via a `SetTarget` action.
-    /// This will be `root` after an invalid tell target.
-    pub active_clip: DisplayObject<'gc>,
-
-    /// Target clip used by Flash 4-era actions (`Play` etc.)
-    /// Can be changed via a `SetTarget` action.
-    /// This is the same as `active_clip` except in the cases of an invalid tell target:
-    /// This is `None` after an invalid tell target.
-    pub target_clip: Option<DisplayObject<'gc>>,
-
-    /// The initial target clip.
-    /// `target_clip` will reset to this value with `SetTarget ""` action.
-    pub start_clip: DisplayObject<'gc>,
-
     /// The current set of system-specified prototypes to use when constructing
     /// new built-in objects.
     pub system_prototypes: avm1::SystemPrototypes<'gc>,
