@@ -873,6 +873,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             TagCode::DefineBitsLossless2 => self.define_bits_lossless(context, reader, 2),
             TagCode::DefineButton => self.define_button_1(context, reader),
             TagCode::DefineButton2 => self.define_button_2(context, reader),
+            TagCode::DefineButtonSound => self.define_button_sound(context, reader),
             TagCode::DefineEditText => self.define_edit_text(context, reader),
             TagCode::DefineFont => self.define_font_1(context, reader),
             TagCode::DefineFont2 => self.define_font_2(context, reader),
@@ -1236,6 +1237,31 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context
             .library
             .register_character(swf_button.id, Character::Button(button));
+        Ok(())
+    }
+
+    #[inline]
+    fn define_button_sound(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        reader: &mut SwfStream<&'a [u8]>,
+    ) -> DecodeResult {
+        let button_sounds = reader.read_define_button_sound()?;
+        if let Some(button) = context.library.get_character_by_id(button_sounds.id) {
+            if let Character::Button(button) = button {
+                button.set_sounds(context.gc_context, button_sounds);
+            } else {
+                log::warn!(
+                    "DefineButtonSound: Tried to apply on non-button ID {}",
+                    button_sounds.id
+                );
+            }
+        } else {
+            log::warn!(
+                "DefineButtonSound: Character ID {} doesn't exist",
+                button_sounds.id
+            );
+        }
         Ok(())
     }
 

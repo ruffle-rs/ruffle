@@ -950,7 +950,7 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    fn read_define_button_sound(&mut self) -> Result<ButtonSounds> {
+    pub fn read_define_button_sound(&mut self) -> Result<ButtonSounds> {
         let button_id = self.read_u16()?;
 
         // Some SWFs (third-party soundboard creator?) create SWFs with a malformed

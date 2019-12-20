@@ -2,7 +2,7 @@ use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::events::ButtonEvent;
 use crate::prelude::*;
-use gc_arena::{Collect, GcCell};
+use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::BTreeMap;
 
 #[derive(Clone, Debug, Collect, Copy)]
@@ -12,7 +12,7 @@ pub struct Button<'gc>(GcCell<'gc, ButtonData<'gc>>);
 #[derive(Clone, Debug)]
 pub struct ButtonData<'gc> {
     base: DisplayObjectBase<'gc>,
-    static_data: gc_arena::Gc<'gc, ButtonStatic>,
+    static_data: GcCell<'gc, ButtonStatic>,
     state: ButtonState,
     hit_area: BTreeMap<Depth, DisplayObject<'gc>>,
     children: BTreeMap<Depth, DisplayObject<'gc>>,
@@ -47,13 +47,17 @@ impl<'gc> Button<'gc> {
             id: button.id,
             records: button.records.clone(),
             actions,
+            up_to_over_sound: None,
+            over_to_down_sound: None,
+            down_to_over_sound: None,
+            over_to_up_sound: None,
         };
 
         Button(GcCell::allocate(
             gc_context,
             ButtonData {
                 base: Default::default(),
-                static_data: gc_arena::Gc::allocate(gc_context, static_data),
+                static_data: GcCell::allocate(gc_context, static_data),
                 children: BTreeMap::new(),
                 hit_area: BTreeMap::new(),
                 state: self::ButtonState::Up,
@@ -76,13 +80,22 @@ impl<'gc> Button<'gc> {
             .write(context.gc_context)
             .handle_button_event((*self).into(), context, event)
     }
+
+    pub fn set_sounds(self, gc_context: MutationContext<'gc, '_>, sounds: swf::ButtonSounds) {
+        let button = self.0.write(gc_context);
+        let mut static_data = button.static_data.write(gc_context);
+        static_data.up_to_over_sound = sounds.up_to_over_sound;
+        static_data.over_to_down_sound = sounds.over_to_down_sound;
+        static_data.down_to_over_sound = sounds.down_to_over_sound;
+        static_data.over_to_up_sound = sounds.over_to_up_sound;
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for Button<'gc> {
     impl_display_object!(base);
 
     fn id(&self) -> CharacterId {
-        self.0.read().static_data.id
+        self.0.read().static_data.read().id
     }
 
     fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
@@ -141,7 +154,7 @@ impl<'gc> ButtonData<'gc> {
             ButtonState::Down => swf::ButtonState::Down,
         };
         self.children.clear();
-        for record in &self.static_data.records {
+        for record in &self.static_data.read().records {
             if record.states.contains(&swf_state) {
                 if let Ok(mut child) = context.library.instantiate_by_id(
                     record.id,
@@ -171,7 +184,7 @@ impl<'gc> ButtonData<'gc> {
             self.initialized = true;
             self.set_state(self_display_object, context, ButtonState::Up);
 
-            for record in &self.static_data.records {
+            for record in &self.static_data.read().records {
                 if record.states.contains(&swf::ButtonState::HitTest) {
                     match context.library.instantiate_by_id(
                         record.id,
@@ -189,7 +202,7 @@ impl<'gc> ButtonData<'gc> {
                         Err(error) => {
                             log::error!(
                                 "Button ID {}: could not instantiate child ID {}: {}",
-                                self.static_data.id,
+                                self.static_data.read().id,
                                 record.id,
                                 error
                             );
@@ -225,20 +238,36 @@ impl<'gc> ButtonData<'gc> {
         match (cur_state, new_state) {
             (ButtonState::Up, ButtonState::Over) => {
                 self.run_actions(context, swf::ButtonActionCondition::IdleToOverUp, None);
+                self.play_sound(context, self.static_data.read().up_to_over_sound.as_ref());
             }
             (ButtonState::Over, ButtonState::Up) => {
                 self.run_actions(context, swf::ButtonActionCondition::OverUpToIdle, None);
+                self.play_sound(context, self.static_data.read().over_to_up_sound.as_ref());
             }
             (ButtonState::Over, ButtonState::Down) => {
                 self.run_actions(context, swf::ButtonActionCondition::OverUpToOverDown, None);
+                self.play_sound(context, self.static_data.read().over_to_down_sound.as_ref());
             }
             (ButtonState::Down, ButtonState::Over) => {
                 self.run_actions(context, swf::ButtonActionCondition::OverDownToOverUp, None);
+                self.play_sound(context, self.static_data.read().down_to_over_sound.as_ref());
             }
             _ => (),
         }
 
         self.set_state(self_display_object, context, new_state);
+    }
+
+    fn play_sound(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        sound: Option<&swf::ButtonSound>,
+    ) {
+        if let Some((id, sound_info)) = sound {
+            if let Some(sound_handle) = context.library.get_sound(*id) {
+                context.audio.start_sound(sound_handle, sound_info);
+            }
+        }
     }
     fn run_actions(
         &mut self,
@@ -247,7 +276,7 @@ impl<'gc> ButtonData<'gc> {
         key_code: Option<u8>,
     ) {
         if let Some(parent) = self.base.parent {
-            for action in &self.static_data.actions {
+            for action in &self.static_data.read().actions {
                 if action.condition == condition && action.key_code == key_code {
                     // Note that AVM1 buttons run actions relative to their parent, not themselves.
                     context.action_queue.queue_actions(
@@ -285,7 +314,7 @@ enum ButtonState {
     Down,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct ButtonAction {
     action_data: crate::tag_utils::SwfSlice,
     condition: swf::ButtonActionCondition,
@@ -300,11 +329,17 @@ enum ButtonTracking {
 
 /// Static data shared between all instances of a button.
 #[allow(dead_code)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct ButtonStatic {
     id: CharacterId,
     records: Vec<swf::ButtonRecord>,
     actions: Vec<ButtonAction>,
+
+    /// The sounds to play on state changes for this button.
+    up_to_over_sound: Option<swf::ButtonSound>,
+    over_to_down_sound: Option<swf::ButtonSound>,
+    down_to_over_sound: Option<swf::ButtonSound>,
+    over_to_up_sound: Option<swf::ButtonSound>,
 }
 
 unsafe impl gc_arena::Collect for ButtonStatic {
