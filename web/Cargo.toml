@@ -34,7 +34,7 @@ default-features = false
 features = ["puremp3"]
 
 [dependencies.web-sys]
-version = "0.3.32"
+version = "0.3.33"
 features = [
     "AudioBuffer", "AudioBufferSourceNode", "AudioParam", "AudioProcessingEvent", "AudioContext", "AudioDestinationNode", 
     "AudioNode", "CanvasRenderingContext2d", "ChannelMergerNode", "ChannelSplitterNode", "CssStyleDeclaration", "Document",
