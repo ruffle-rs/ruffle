@@ -7,7 +7,7 @@ jobs:
   # General testing, linux + web build
   build:
     docker:
-      - image: circleci/rust:1.39
+      - image: circleci/rust:1.40
     steps:
       # Git checkout
       - checkout
