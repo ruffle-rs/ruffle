@@ -167,6 +167,23 @@ impl<'gc> XMLNode<'gc> {
         )))
     }
 
+    pub fn comment_from_text_event<'a>(
+        mc: MutationContext<'gc, '_>,
+        bt: BytesText<'a>,
+    ) -> Result<Self, Error> {
+        Ok(XMLNode(GcCell::allocate(
+            mc,
+            XMLNodeData::Comment {
+                contents: match bt.unescaped()? {
+                    Cow::Borrowed(ln) => Cow::Borrowed(std::str::from_utf8(ln)?),
+                    Cow::Owned(ln) => Cow::Owned(String::from_utf8(ln)?),
+                }
+                .to_owned()
+                .to_string(),
+            },
+        )))
+    }
+
     pub fn append_child(
         &mut self,
         mc: MutationContext<'gc, '_>,

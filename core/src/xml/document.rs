@@ -60,6 +60,14 @@ impl<'gc> XMLDocument<'gc> {
                         roots.push(child);
                     }
                 }
+                Event::Comment(bt) => {
+                    let child = XMLNode::comment_from_text_event(mc, bt)?;
+                    if let Some(node) = open_tags.last_mut() {
+                        node.append_child(mc, child)?;
+                    } else {
+                        roots.push(child);
+                    }
+                }
                 Event::Eof => break,
                 _ => {}
             }
