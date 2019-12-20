@@ -3,11 +3,11 @@ use ruffle_core::events::KeyCode;
 use std::collections::HashSet;
 use winit::event::{ElementState, KeyboardInput, VirtualKeyCode};
 
-pub struct GlutinInputBackend {
+pub struct WinitInputBackend {
     keys_down: HashSet<VirtualKeyCode>,
 }
 
-impl GlutinInputBackend {
+impl WinitInputBackend {
     pub fn new() -> Self {
         Self {
             keys_down: HashSet::new(),
@@ -30,7 +30,7 @@ impl GlutinInputBackend {
     }
 }
 
-impl InputBackend for GlutinInputBackend {
+impl InputBackend for WinitInputBackend {
     fn is_key_down(&self, key: KeyCode) -> bool {
         match key {
             KeyCode::Unknown => false,
