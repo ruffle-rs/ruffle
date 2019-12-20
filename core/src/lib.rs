@@ -20,6 +20,7 @@ mod prelude;
 pub mod shape_utils;
 pub mod tag_utils;
 mod transform;
+mod xml;
 
 pub mod backend;
 
