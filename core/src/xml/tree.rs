@@ -2,7 +2,6 @@
 
 use crate::xml::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
-use quick_xml::events::attributes::Attribute;
 use quick_xml::events::{BytesStart, BytesText};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -90,6 +89,16 @@ pub enum XMLNodeData<'gc> {
 }
 
 impl<'gc> XMLNode<'gc> {
+    /// Construct a new XML text node.
+    pub fn new_text(mc: MutationContext<'gc, '_>, contents: &str) -> Self {
+        XMLNode(GcCell::allocate(
+            mc,
+            XMLNodeData::Text {
+                contents: contents.to_string(),
+            },
+        ))
+    }
+
     /// Construct an XML node from a `quick_xml` `BytesStart` event.
     ///
     /// The returned node will always be an `Element`, and it must only contain

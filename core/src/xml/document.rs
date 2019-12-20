@@ -2,19 +2,27 @@
 
 use crate::xml::Error;
 use crate::xml::XMLNode;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::events::Event;
 use quick_xml::Reader;
 
 /// The entirety of an XML document.
+#[derive(Copy, Clone, Collect)]
+#[collect(no_drop)]
+pub struct XMLDocument<'gc>(GcCell<'gc, XMLDocumentData<'gc>>);
+
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-pub struct XMLDocument<'gc> {
+pub struct XMLDocumentData<'gc> {
     /// The root node(s) of the XML document.
     roots: Vec<XMLNode<'gc>>,
 }
 
 impl<'gc> XMLDocument<'gc> {
+    pub fn new(mc: MutationContext<'gc, '_>) -> Self {
+        Self(GcCell::allocate(mc, XMLDocumentData { roots: Vec::new() }))
+    }
+
     pub fn from_str(mc: MutationContext<'gc, '_>, data: &str) -> Result<Self, Error> {
         let mut parser = Reader::from_str(data);
         let mut buf = Vec::new();
@@ -57,6 +65,6 @@ impl<'gc> XMLDocument<'gc> {
             }
         }
 
-        Ok(Self { roots })
+        Ok(Self(GcCell::allocate(mc, XMLDocumentData { roots })))
     }
 }

@@ -33,6 +33,7 @@ mod sound_object;
 mod stage_object;
 mod super_object;
 mod value;
+mod xml_object;
 
 #[cfg(test)]
 mod tests;

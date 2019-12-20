@@ -4,8 +4,10 @@ use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::super_object::SuperObject;
+use crate::avm1::xml_object::XMLObject;
 use crate::avm1::{Avm1, Error, ScriptObject, SoundObject, StageObject, UpdateContext, Value};
 use crate::display_object::DisplayObject;
+use crate::xml::{XMLDocument, XMLNode};
 use enumset::EnumSet;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
@@ -22,6 +24,7 @@ use std::fmt::Debug;
         SoundObject(SoundObject<'gc>),
         StageObject(StageObject<'gc>),
         SuperObject(SuperObject<'gc>),
+        XMLObject(XMLObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -258,10 +261,24 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Get the underlying display node for this object, if it exists.
-    fn as_display_object(&self) -> Option<DisplayObject<'gc>>;
+    fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
+        None
+    }
 
     /// Get the underlying executable for this object, if it exists.
-    fn as_executable(&self) -> Option<Executable<'gc>>;
+    fn as_executable(&self) -> Option<Executable<'gc>> {
+        None
+    }
+
+    /// Get the underlying XML document for this object, if it exists.
+    fn as_xml_document(&self) -> Option<XMLDocument<'gc>> {
+        None
+    }
+
+    /// Get the underlying XML node for this object, if it exists.
+    fn as_xml_node(&self) -> Option<XMLNode<'gc>> {
+        None
+    }
 
     fn as_ptr(&self) -> *const ObjectPtr;
 
