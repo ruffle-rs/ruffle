@@ -489,10 +489,7 @@ pub enum Tag {
     DefineBitsLossless(DefineBitsLossless),
     DefineButton(Box<Button>),
     DefineButton2(Box<Button>),
-    DefineButtonColorTransform {
-        id: CharacterId,
-        color_transforms: Vec<ColorTransform>,
-    },
+    DefineButtonColorTransform(ButtonColorTransform),
     DefineButtonSound(Box<ButtonSounds>),
     DefineEditText(Box<EditText>),
     DefineFont(Box<FontV1>),
@@ -821,6 +818,12 @@ pub enum ButtonState {
     Over,
     Down,
     HitTest,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct ButtonColorTransform {
+    pub id: CharacterId,
+    pub color_transforms: Vec<ColorTransform>,
 }
 
 #[derive(Debug, PartialEq, Clone)]

@@ -615,15 +615,12 @@ impl<W: Write> Writer<W> {
 
             Tag::DefineButton2(ref button) => self.write_define_button_2(button)?,
 
-            Tag::DefineButtonColorTransform {
-                id,
-                ref color_transforms,
-            } => {
+            Tag::DefineButtonColorTransform(ref button_color) => {
                 let mut buf = Vec::new();
                 {
                     let mut writer = Writer::new(&mut buf, self.version);
-                    writer.write_u16(id)?;
-                    for color_transform in color_transforms {
+                    writer.write_character_id(button_color.id)?;
+                    for color_transform in &button_color.color_transforms {
                         writer.write_color_transform_no_alpha(color_transform)?;
                         writer.flush_bits()?;
                     }

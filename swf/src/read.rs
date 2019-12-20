@@ -409,17 +409,7 @@ impl<R: Read> Reader<R> {
                 Tag::DefineButton2(Box::new(tag_reader.read_define_button_2()?))
             }
             Some(TagCode::DefineButtonCxform) => {
-                let id = tag_reader.read_u16()?;
-                // SWF19 is incorrect here. It seems you can have many color transforms in this
-                // tag, one for each character inside the button? In order of state/depth?
-                let mut color_transforms = Vec::new();
-                while let Ok(color_transform) = tag_reader.read_color_transform_no_alpha() {
-                    color_transforms.push(color_transform);
-                }
-                Tag::DefineButtonColorTransform {
-                    id,
-                    color_transforms,
-                }
+                Tag::DefineButtonColorTransform(tag_reader.read_define_button_cxform(length)?)
             }
             Some(TagCode::DefineButtonSound) => {
                 Tag::DefineButtonSound(Box::new(tag_reader.read_define_button_sound()?))
@@ -947,6 +937,28 @@ impl<R: Read> Reader<R> {
             is_track_as_menu,
             records,
             actions,
+        })
+    }
+
+    pub fn read_define_button_cxform(&mut self, tag_length: usize) -> Result<ButtonColorTransform> {
+        // SWF19 is incorrect here. You can have >1 color transforms in this tag. They apply
+        // to the characters in a button in sequence.
+
+        // We don't know how many color transforms this tag will contain, so read it into a buffer.
+        let version = self.version;
+        let mut reader = Reader::new(self.get_inner().by_ref().take(tag_length as u64), version);
+
+        let id = reader.read_character_id()?;
+        let mut color_transforms = Vec::new();
+
+        // Read all color transforms.
+        while let Ok(color_transform) = reader.read_color_transform_no_alpha() {
+            color_transforms.push(color_transform);
+        }
+
+        Ok(ButtonColorTransform {
+            id,
+            color_transforms,
         })
     }
 
