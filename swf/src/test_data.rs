@@ -300,7 +300,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             2,
-            Tag::DefineButtonColorTransform {
+            Tag::DefineButtonColorTransform(ButtonColorTransform {
                 id: 3,
                 color_transforms: vec![
                     ColorTransform {
@@ -334,7 +334,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         a_add: 0,
                     },
                 ],
-            },
+            }),
             read_tag_bytes_from_file(
                 "tests/swfs/DefineButtonCxformSound-MX.swf",
                 TagCode::DefineButtonCxform,
