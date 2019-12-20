@@ -101,6 +101,7 @@ impl<'gc> TObject<'gc> for XMLObject<'gc> {
         self.base().call(avm, context, this, args)
     }
 
+    #[allow(clippy::new_ret_no_self)]
     fn new(
         &self,
         _avm: &mut Avm1<'gc>,

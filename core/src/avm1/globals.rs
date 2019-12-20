@@ -20,6 +20,7 @@ mod object;
 mod sound;
 mod stage;
 pub(crate) mod text_field;
+mod xml;
 
 #[allow(non_snake_case, unused_must_use)] //can't use errors yet
 pub fn getURL<'a, 'gc>(
@@ -172,6 +173,8 @@ pub fn create_globals<'gc>(
     let array_proto: Object<'gc> = array::create_proto(gc_context, object_proto, function_proto);
 
     let color_proto: Object<'gc> = color::create_proto(gc_context, object_proto, function_proto);
+    let xmlnode_proto: Object<'gc> =
+        xml::create_xmlnode_proto(gc_context, object_proto, function_proto);
 
     //TODO: These need to be constructors and should also set `.prototype` on each one
     let object = ScriptObject::function(
@@ -217,6 +220,12 @@ pub fn create_globals<'gc>(
         Some(function_proto),
         Some(array_proto),
     );
+    let xmlnode = ScriptObject::function(
+        gc_context,
+        Executable::Native(xml::xmlnode_constructor),
+        Some(function_proto),
+        Some(xmlnode_proto),
+    );
 
     let listeners = SystemListeners::new(gc_context, Some(array_proto));
 
@@ -228,6 +237,7 @@ pub fn create_globals<'gc>(
     globals.define_value(gc_context, "MovieClip", movie_clip.into(), EnumSet::empty());
     globals.define_value(gc_context, "Sound", sound.into(), EnumSet::empty());
     globals.define_value(gc_context, "TextField", text_field.into(), EnumSet::empty());
+    globals.define_value(gc_context, "XMLNode", xmlnode.into(), EnumSet::empty());
     globals.force_set_function(
         "Number",
         number,

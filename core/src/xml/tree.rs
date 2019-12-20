@@ -31,12 +31,20 @@ impl XMLName {
         Self::from_bytes_cow(Cow::Borrowed(bytes))
     }
 
+    pub fn from_str(strval: &str) -> Result<Self, Error> {
+        Self::from_str_cow(Cow::Borrowed(strval))
+    }
+
     pub fn from_bytes_cow(bytes: Cow<[u8]>) -> Result<Self, Error> {
         let full_name = match bytes {
             Cow::Borrowed(ln) => Cow::Borrowed(std::str::from_utf8(ln)?),
             Cow::Owned(ln) => Cow::Owned(String::from_utf8(ln)?),
         };
 
+        Self::from_str_cow(full_name)
+    }
+
+    pub fn from_str_cow(full_name: Cow<str>) -> Result<Self, Error> {
         if let Some(colon_index) = full_name.find(':') {
             Ok(Self {
                 namespace: Some(full_name[0..colon_index].to_owned()),
@@ -97,6 +105,18 @@ impl<'gc> XMLNode<'gc> {
                 contents: contents.to_string(),
             },
         ))
+    }
+
+    /// Construct a new XML element node.
+    pub fn new_element(mc: MutationContext<'gc, '_>, element_name: &str) -> Result<Self, Error> {
+        Ok(XMLNode(GcCell::allocate(
+            mc,
+            XMLNodeData::Element {
+                tag_name: XMLName::from_str(element_name)?,
+                attributes: BTreeMap::new(),
+                children: Vec::new(),
+            },
+        )))
     }
 
     /// Construct an XML node from a `quick_xml` `BytesStart` event.
