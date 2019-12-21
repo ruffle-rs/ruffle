@@ -89,6 +89,24 @@ impl<'gc> Button<'gc> {
         static_data.down_to_over_sound = sounds.down_to_over_sound;
         static_data.over_to_up_sound = sounds.over_to_up_sound;
     }
+
+    /// Handles the ancient DefineButtonCxform SWF tag.
+    /// Set the color transform for all children of each state.
+    pub fn set_colors(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        color_transforms: &[swf::ColorTransform],
+    ) {
+        let button = self.0.write(gc_context);
+        let mut static_data = button.static_data.write(gc_context);
+
+        // This tag isn't documented well in SWF19. It is only used in very old SWF<=2 content.
+        // It applies color transforms to every character in a button, in sequence(?).
+        for (record, color_transform) in static_data.records.iter_mut().zip(color_transforms.iter())
+        {
+            record.color_transform = color_transform.clone();
+        }
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for Button<'gc> {
