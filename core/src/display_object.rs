@@ -410,7 +410,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
         let mut node = self.parent();
         let mut matrix = *self.matrix();
         while let Some(display_object) = node {
-            matrix *= *display_object.matrix();
+            matrix = *display_object.matrix() * matrix;
             node = display_object.parent();
         }
 
@@ -422,7 +422,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
         let mut node = self.parent();
         let mut matrix = *self.matrix();
         while let Some(display_object) = node {
-            matrix *= *display_object.matrix();
+            matrix = *display_object.matrix() * matrix;
             node = display_object.parent();
         }
 
