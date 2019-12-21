@@ -1160,9 +1160,8 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_end_drag(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        // TODO(Herschel)
-        log::error!("Unimplemented action: EndDrag");
+    fn action_end_drag(&mut self, context: &mut UpdateContext) -> Result<(), Error> {
+        *context.drag_object = None;
         Ok(())
     }
 
@@ -2084,17 +2083,35 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_start_drag(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let _target = self.pop()?;
-        let _lock_center = self.pop()?.as_bool(self.current_swf_version());
-        let constrain = self.pop()?.as_bool(self.current_swf_version());
-        if constrain {
-            let _y2 = self.pop()?;
-            let _x2 = self.pop()?;
-            let _y1 = self.pop()?;
-            let _x1 = self.pop()?;
+    fn action_start_drag(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let target = self.pop()?;
+        let display_object = match target {
+            Value::String(s) => {
+                Avm1::resolve_slash_path(self.target_clip_or_root(context), context.root, &s)
+            }
+            Value::Object(o) => o.as_display_object(),
+            _ => None,
+        };
+        if let Some(display_object) = display_object {
+            let lock_center = self.pop()?;
+            let constrain = self.pop()?.as_bool(self.current_swf_version());
+            if constrain {
+                let y2 = self.pop()?;
+                let x2 = self.pop()?;
+                let y1 = self.pop()?;
+                let x1 = self.pop()?;
+                start_drag(
+                    display_object,
+                    self,
+                    context,
+                    &[lock_center, x1, y1, x2, y2],
+                );
+            } else {
+                start_drag(display_object, self, context, &[lock_center]);
+            };
+        } else {
+            log::warn!("StartDrag: Invalid target");
         }
-        log::error!("Unimplemented action: StartDrag");
         Ok(())
     }
 
@@ -2332,4 +2349,88 @@ fn skip_actions(reader: &mut Reader<'_>, num_actions_to_skip: u8) -> Result<(), 
     }
 
     Ok(())
+}
+
+/// Starts draggining this display object, making it follow the cursor.
+/// Runs via the `startDrag` method or `StartDrag` AVM1 action.
+pub fn start_drag<'gc>(
+    display_object: DisplayObject<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) {
+    let lock_center = args
+        .get(0)
+        .map(|o| o.as_bool(context.swf_version))
+        .unwrap_or(false);
+
+    let offset = if lock_center {
+        // The object's origin point is locked to the mouse.
+        Default::default()
+    } else {
+        // The object moves relative to current mouse position.
+        // Calculate the offset from the mouse to the object in world space.
+        let obj_pos = display_object.local_to_global(Default::default());
+        (
+            obj_pos.0 - context.mouse_position.0,
+            obj_pos.1 - context.mouse_position.1,
+        )
+    };
+
+    let constraint = if args.len() > 1 {
+        // Invalid values turn into 0.
+        let mut x_min = args
+            .get(1)
+            .unwrap_or(&Value::Undefined)
+            .as_number(avm, context)
+            .map(|n| if n.is_finite() { n } else { 0.0 })
+            .map(Twips::from_pixels)
+            .unwrap_or_default();
+        let mut y_min = args
+            .get(2)
+            .unwrap_or(&Value::Undefined)
+            .as_number(avm, context)
+            .map(|n| if n.is_finite() { n } else { 0.0 })
+            .map(Twips::from_pixels)
+            .unwrap_or_default();
+        let mut x_max = args
+            .get(3)
+            .unwrap_or(&Value::Undefined)
+            .as_number(avm, context)
+            .map(|n| if n.is_finite() { n } else { 0.0 })
+            .map(Twips::from_pixels)
+            .unwrap_or_default();
+        let mut y_max = args
+            .get(4)
+            .unwrap_or(&Value::Undefined)
+            .as_number(avm, context)
+            .map(|n| if n.is_finite() { n } else { 0.0 })
+            .map(Twips::from_pixels)
+            .unwrap_or_default();
+
+        // Normalize the bounds.
+        if x_max.get() < x_min.get() {
+            std::mem::swap(&mut x_min, &mut x_max);
+        }
+        if y_max.get() < y_min.get() {
+            std::mem::swap(&mut y_min, &mut y_max);
+        }
+        BoundingBox {
+            valid: true,
+            x_min,
+            y_min,
+            x_max,
+            y_max,
+        }
+    } else {
+        // No constraints.
+        Default::default()
+    };
+
+    let drag_object = crate::player::DragObject {
+        display_object,
+        offset,
+        constraint,
+    };
+    *context.drag_object = Some(drag_object);
 }

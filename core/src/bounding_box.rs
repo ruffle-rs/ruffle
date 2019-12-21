@@ -11,6 +11,19 @@ pub struct BoundingBox {
 }
 
 impl BoundingBox {
+    /// Clamps the given point inside this bounding box.
+    pub fn clamp(&self, point: (Twips, Twips)) -> (Twips, Twips) {
+        if self.valid {
+            use std::cmp::{max, min};
+            (
+                min(max(point.0, self.x_min), self.x_max),
+                min(max(point.1, self.y_min), self.y_max),
+            )
+        } else {
+            point
+        }
+    }
+
     pub fn transform(&self, matrix: &Matrix) -> Self {
         if !self.valid {
             return Self::default();

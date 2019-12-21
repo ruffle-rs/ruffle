@@ -133,6 +133,7 @@ pub fn create_proto<'gc>(
             // duplicateMovieClip method uses biased depth compared to CloneSprite
             duplicate_movie_clip(movie_clip, avm, context, args, AVM_DEPTH_BIAS)
         },
+        "stopDrag" => stop_drag,
         "nextFrame" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             movie_clip.next_frame(context);
             Ok(Value::Undefined.into())
@@ -166,6 +167,7 @@ pub fn create_proto<'gc>(
         },
         "gotoAndPlay" => goto_and_play,
         "gotoAndStop" => goto_and_stop,
+        "startDrag" => start_drag,
         "toString" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             Ok(movie_clip.path().into())
         }
@@ -422,5 +424,26 @@ pub fn remove_movie_clip<'gc>(
 
         parent.remove_child_from_avm(context, movie_clip.into());
     }
+    Ok(Value::Undefined.into())
+}
+
+pub fn start_drag<'gc>(
+    movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    crate::avm1::start_drag(movie_clip.into(), avm, context, args);
+    Ok(Value::Undefined.into())
+}
+
+pub fn stop_drag<'gc>(
+    _movie_clip: MovieClip<'gc>,
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    // It doesn't matter which clip we call this on; it simply stops any active drag.
+    *context.drag_object = None;
     Ok(Value::Undefined.into())
 }
