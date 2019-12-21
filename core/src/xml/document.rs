@@ -20,61 +20,62 @@ pub struct XMLDocumentData<'gc> {
 }
 
 impl<'gc> XMLDocument<'gc> {
+    /// Construct a new, empty XML document.
     pub fn new(mc: MutationContext<'gc, '_>) -> Self {
         Self(GcCell::allocate(mc, XMLDocumentData { roots: Vec::new() }))
+    }
+
+    /// Ensure that a newly-encountered node is added to an ongoing parsing
+    /// stack, or to the document itself if the parsing stack is empty.
+    fn add_child_to_tree(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        open_tags: &mut Vec<XMLNode<'gc>>,
+        child: XMLNode<'gc>,
+    ) -> Result<(), Error> {
+        if let Some(node) = open_tags.last_mut() {
+            node.append_child(mc, child)?;
+        } else {
+            self.0.write(mc).roots.push(child);
+        }
+
+        Ok(())
     }
 
     pub fn from_str(mc: MutationContext<'gc, '_>, data: &str) -> Result<Self, Error> {
         let mut parser = Reader::from_str(data);
         let mut buf = Vec::new();
-        let mut roots = Vec::new();
+        let mut document = Self::new(mc);
         let mut open_tags: Vec<XMLNode<'gc>> = Vec::new();
 
         loop {
             match parser.read_event(&mut buf)? {
                 Event::Start(bs) => {
                     let child = XMLNode::from_start_event(mc, bs)?;
-                    if let Some(node) = open_tags.last_mut() {
-                        node.append_child(mc, child)?;
-                    } else {
-                        roots.push(child);
-                    }
-
+                    document.add_child_to_tree(mc, &mut open_tags, child)?;
                     open_tags.push(child);
                 }
                 Event::Empty(bs) => {
                     let child = XMLNode::from_start_event(mc, bs)?;
-                    if let Some(node) = open_tags.last_mut() {
-                        node.append_child(mc, child)?;
-                    } else {
-                        roots.push(child);
-                    }
+                    document.add_child_to_tree(mc, &mut open_tags, child)?;
                 }
                 Event::End(_) => {
                     open_tags.pop();
                 }
                 Event::Text(bt) => {
                     let child = XMLNode::text_from_text_event(mc, bt)?;
-                    if let Some(node) = open_tags.last_mut() {
-                        node.append_child(mc, child)?;
-                    } else {
-                        roots.push(child);
-                    }
+                    document.add_child_to_tree(mc, &mut open_tags, child)?;
                 }
                 Event::Comment(bt) => {
                     let child = XMLNode::comment_from_text_event(mc, bt)?;
-                    if let Some(node) = open_tags.last_mut() {
-                        node.append_child(mc, child)?;
-                    } else {
-                        roots.push(child);
-                    }
+                    document.add_child_to_tree(mc, &mut open_tags, child)?;
                 }
                 Event::Eof => break,
                 _ => {}
             }
         }
 
-        Ok(Self(GcCell::allocate(mc, XMLDocumentData { roots })))
+        Ok(document)
     }
 
     /// Returns an iterator that yields the document's root nodes.
