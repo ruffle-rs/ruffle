@@ -1,10 +1,12 @@
 //! XML Tree structure
 
+use crate::xml;
 use crate::xml::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::events::{BytesStart, BytesText};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
+use std::fmt;
 
 /// Represents a scoped name within XML.
 ///
@@ -56,6 +58,15 @@ impl XMLName {
                 name: full_name.into_owned(),
             })
         }
+    }
+}
+
+impl fmt::Debug for XMLName {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("XMLName")
+            .field("namespace", &self.namespace)
+            .field("name", &self.name)
+            .finish()
     }
 }
 
@@ -119,7 +130,7 @@ impl<'gc> XMLNode<'gc> {
         )))
     }
 
-    /// Construct an XML node from a `quick_xml` `BytesStart` event.
+    /// Construct an XML Element node from a `quick_xml` `BytesStart` event.
     ///
     /// The returned node will always be an `Element`, and it must only contain
     /// valid encoded UTF-8 data. (Other encoding support is planned later.)
@@ -150,6 +161,10 @@ impl<'gc> XMLNode<'gc> {
         )))
     }
 
+    /// Construct an XML Text node from a `quick_xml` `BytesText` event.
+    ///
+    /// The returned node will always be `Text`, and it must only contain
+    /// valid encoded UTF-8 data. (Other encoding support is planned later.)
     pub fn text_from_text_event<'a>(
         mc: MutationContext<'gc, '_>,
         bt: BytesText<'a>,
@@ -167,6 +182,10 @@ impl<'gc> XMLNode<'gc> {
         )))
     }
 
+    /// Construct an XML Comment node from a `quick_xml` `BytesText` event.
+    ///
+    /// The returned node will always be `Comment`, and it must only contain
+    /// valid encoded UTF-8 data. (Other encoding support is planned later.)
     pub fn comment_from_text_event<'a>(
         mc: MutationContext<'gc, '_>,
         bt: BytesText<'a>,
@@ -184,6 +203,10 @@ impl<'gc> XMLNode<'gc> {
         )))
     }
 
+    /// Append a child element to an Element node.
+    ///
+    /// This function yields an error if appending to a Node that cannot accept
+    /// children. In that case, no modification will be made to the node.
     pub fn append_child(
         &mut self,
         mc: MutationContext<'gc, '_>,
@@ -197,5 +220,96 @@ impl<'gc> XMLNode<'gc> {
         };
 
         Ok(())
+    }
+
+    /// Returns the type of this node as an integer.
+    ///
+    /// This is primarily intended to match W3C DOM L1 specifications and
+    /// should not be used in lieu of a proper `match` statement.
+    pub fn node_type(&self) -> u8 {
+        match &*self.0.read() {
+            XMLNodeData::Element { .. } => xml::ELEMENT_NODE,
+            XMLNodeData::Text { .. } => xml::TEXT_NODE,
+            XMLNodeData::Comment { .. } => xml::COMMENT_NODE,
+        }
+    }
+
+    /// Returns the tagname, if the element has one.
+    pub fn tag_name(&self) -> Option<XMLName> {
+        match &*self.0.read() {
+            XMLNodeData::Element { ref tag_name, .. } => Some(tag_name.clone()),
+            _ => None,
+        }
+    }
+
+    /// Returns the string contents of the node, if the element has them.
+    pub fn node_value(&self) -> Option<String> {
+        match &*self.0.read() {
+            XMLNodeData::Text { ref contents } => Some(contents.clone()),
+            XMLNodeData::Comment { ref contents } => Some(contents.clone()),
+            _ => None,
+        }
+    }
+
+    /// Returns an iterator that yields child nodes.
+    ///
+    /// Yields None if this node cannot accept children.
+    pub fn children(&self) -> Option<impl Iterator<Item = XMLNode<'gc>>> {
+        struct ChildIter<'gc> {
+            base: XMLNode<'gc>,
+            index: usize,
+        };
+
+        impl<'gc> ChildIter<'gc> {
+            fn for_node(base: XMLNode<'gc>) -> Self {
+                Self { base, index: 0 }
+            }
+        }
+
+        impl<'gc> Iterator for ChildIter<'gc> {
+            type Item = XMLNode<'gc>;
+
+            fn next(&mut self) -> Option<Self::Item> {
+                match &*self.base.0.read() {
+                    XMLNodeData::Element { ref children, .. } if self.index < children.len() => {
+                        let item = children.get(self.index).cloned();
+                        self.index += 1;
+
+                        item
+                    }
+                    _ => None,
+                }
+            }
+        }
+
+        match &*self.0.read() {
+            XMLNodeData::Element { .. } => Some(ChildIter::for_node(*self)),
+            _ => return None,
+        }
+    }
+}
+
+impl<'gc> fmt::Debug for XMLNode<'gc> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match &*self.0.read() {
+            XMLNodeData::Text { ref contents } => f
+                .debug_struct("XMLNodeData::Text")
+                .field("contents", contents)
+                .finish(),
+            XMLNodeData::Comment { ref contents } => f
+                .debug_struct("XMLNodeData::Comment")
+                .field("contents", contents)
+                .finish(),
+            XMLNodeData::Element {
+                ref tag_name,
+                ref attributes,
+                ref children,
+            } => f
+                .debug_struct("XMLNodeData::Element")
+                .field("tag_name", tag_name)
+                .field("attributes", attributes)
+                .field("children", children)
+                .finish(),
+        }
     }
 }

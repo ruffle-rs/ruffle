@@ -5,6 +5,7 @@ use crate::xml::XMLNode;
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::events::Event;
 use quick_xml::Reader;
+use std::fmt;
 
 /// The entirety of an XML document.
 #[derive(Copy, Clone, Collect)]
@@ -74,5 +75,46 @@ impl<'gc> XMLDocument<'gc> {
         }
 
         Ok(Self(GcCell::allocate(mc, XMLDocumentData { roots })))
+    }
+
+    /// Returns an iterator that yields the document's root nodes.
+    pub fn roots(&self) -> impl Iterator<Item = XMLNode<'gc>> {
+        struct RootsIter<'gc> {
+            base: XMLDocument<'gc>,
+            index: usize,
+        };
+
+        impl<'gc> RootsIter<'gc> {
+            fn for_document(base: XMLDocument<'gc>) -> Self {
+                Self { base, index: 0 }
+            }
+        }
+
+        impl<'gc> Iterator for RootsIter<'gc> {
+            type Item = XMLNode<'gc>;
+
+            fn next(&mut self) -> Option<Self::Item> {
+                let (len, item) = {
+                    let r = self.base.0.read();
+                    (r.roots.len(), r.roots.get(self.index).cloned())
+                };
+
+                if self.index < len {
+                    self.index += 1;
+                }
+
+                item
+            }
+        }
+
+        RootsIter::for_document(*self)
+    }
+}
+
+impl<'gc> fmt::Debug for XMLDocument<'gc> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("XMLDocument")
+            .field("roots", &self.0.read().roots)
+            .finish()
     }
 }
