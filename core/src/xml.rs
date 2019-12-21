@@ -1,6 +1,7 @@
 //! Garbage-collectable XML DOM impl
 
 mod document;
+mod namespace;
 mod tree;
 
 #[cfg(test)]
@@ -9,7 +10,7 @@ mod tests;
 type Error = Box<dyn std::error::Error>;
 
 pub use document::XMLDocument;
-pub use tree::XMLName;
+pub use namespace::XMLName;
 pub use tree::XMLNode;
 
 pub const ELEMENT_NODE: u8 = 1;
