@@ -1,3 +1,4 @@
+use crate::avm1::{Object, StageObject, Value};
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::events::ButtonEvent;
@@ -17,6 +18,7 @@ pub struct ButtonData<'gc> {
     hit_area: BTreeMap<Depth, DisplayObject<'gc>>,
     children: BTreeMap<Depth, DisplayObject<'gc>>,
     tracking: ButtonTracking,
+    object: Option<Object<'gc>>,
     initialized: bool,
 }
 
@@ -62,6 +64,7 @@ impl<'gc> Button<'gc> {
                 hit_area: BTreeMap::new(),
                 state: self::ButtonState::Up,
                 initialized: false,
+                object: None,
                 tracking: if button.is_track_as_menu {
                     ButtonTracking::Menu
                 } else {
@@ -116,6 +119,19 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         self.0.read().static_data.read().id
     }
 
+    fn post_instantiation(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        display_object: DisplayObject<'gc>,
+        proto: Object<'gc>,
+    ) {
+        let mut mc = self.0.write(gc_context);
+        if mc.object.is_none() {
+            let object = StageObject::for_display_object(gc_context, display_object, Some(proto));
+            mc.object = Some(object.into());
+        }
+    }
+
     fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         self.0
             .write(context.gc_context)
@@ -151,6 +167,14 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         } else {
             None
         }
+    }
+
+    fn object(&self) -> Value<'gc> {
+        self.0
+            .read()
+            .object
+            .map(Value::from)
+            .unwrap_or(Value::Undefined)
     }
 
     fn as_button(&self) -> Option<Self> {
