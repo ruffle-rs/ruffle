@@ -23,7 +23,7 @@ pub enum XMLObject<'gc> {
 }
 
 impl<'gc> XMLObject<'gc> {
-    fn empty_document(
+    pub fn empty_document(
         gc_context: MutationContext<'gc, '_>,
         proto: Option<Object<'gc>>,
     ) -> XMLObject<'gc> {
@@ -33,7 +33,7 @@ impl<'gc> XMLObject<'gc> {
         )
     }
 
-    fn empty_node(
+    pub fn empty_node(
         gc_context: MutationContext<'gc, '_>,
         proto: Option<Object<'gc>>,
     ) -> XMLObject<'gc> {

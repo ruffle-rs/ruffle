@@ -1,7 +1,10 @@
 //! XML/XMLNode global classes
 
+use crate::avm1::function::Executable;
+use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::script_object::ScriptObject;
+use crate::avm1::xml_object::XMLObject;
 use crate::avm1::{Avm1, Error, Object, TObject, UpdateContext, Value};
 use crate::xml::{XMLDocument, XMLNode};
 use gc_arena::MutationContext;
@@ -40,7 +43,73 @@ pub fn create_xmlnode_proto<'gc>(
     proto: Object<'gc>,
     _fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xmlnode_proto = ScriptObject::object(gc_context, Some(proto));
+    let xmlnode_proto = XMLObject::empty_node(gc_context, Some(proto));
+
+    xmlnode_proto.add_property(
+        gc_context,
+        "localName",
+        Executable::Native(|_avm, _ac, this: Object<'gc>, _args| {
+            Ok(this
+                .as_xml_node()
+                .and_then(|n| n.tag_name())
+                .map(|n| n.local_name().to_string().into())
+                .unwrap_or(Value::Undefined.into()))
+        }),
+        None,
+        ReadOnly.into(),
+    );
+    xmlnode_proto.add_property(
+        gc_context,
+        "nodeName",
+        Executable::Native(|_avm, _ac, this: Object<'gc>, _args| {
+            Ok(this
+                .as_xml_node()
+                .and_then(|n| n.tag_name())
+                .map(|n| n.node_name().to_string().into())
+                .unwrap_or(Value::Undefined.into()))
+        }),
+        None,
+        ReadOnly.into(),
+    );
+    // TODO: AS2 only ever supported `Element` and `Text` nodes
+    xmlnode_proto.add_property(
+        gc_context,
+        "nodeType",
+        Executable::Native(|_avm, _ac, this: Object<'gc>, _args| {
+            Ok(this
+                .as_xml_node()
+                .map(|n| n.node_type().into())
+                .unwrap_or(Value::Undefined.into()))
+        }),
+        None,
+        ReadOnly.into(),
+    );
+    xmlnode_proto.add_property(
+        gc_context,
+        "nodeValue",
+        Executable::Native(|_avm, _ac, this: Object<'gc>, _args| {
+            Ok(this
+                .as_xml_node()
+                .and_then(|n| n.node_value())
+                .map(|n| n.into())
+                .unwrap_or(Value::Undefined.into()))
+        }),
+        None,
+        ReadOnly.into(),
+    );
+    xmlnode_proto.add_property(
+        gc_context,
+        "prefix",
+        Executable::Native(|_avm, _ac, this: Object<'gc>, _args| {
+            Ok(this
+                .as_xml_node()
+                .and_then(|n| n.tag_name())
+                .and_then(|n| n.prefix().map(|n| n.to_string().into()))
+                .unwrap_or(Value::Undefined.into()))
+        }),
+        None,
+        ReadOnly.into(),
+    );
 
     xmlnode_proto.into()
 }

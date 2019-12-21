@@ -59,6 +59,27 @@ impl XMLName {
             })
         }
     }
+
+    /// Retrieve the local part of this name.
+    pub fn local_name(&self) -> &str {
+        &self.name
+    }
+
+    /// Retrieve the prefix part of this name, if available.
+    pub fn prefix(&self) -> Option<&str> {
+        self.namespace.as_deref()
+    }
+
+    /// Return the fully qualified part of the name.
+    ///
+    /// This consists of the namespace, if present, plus a colon and local name.
+    pub fn node_name(&self) -> String {
+        if let Some(ref ns) = self.namespace {
+            format!("{}:{}", ns, self.name)
+        } else {
+            format!("{}", self.name)
+        }
+    }
 }
 
 impl fmt::Debug for XMLName {
