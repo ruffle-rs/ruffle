@@ -64,11 +64,15 @@ impl<'gc> XMLDocument<'gc> {
                 }
                 Event::Text(bt) => {
                     let child = XMLNode::text_from_text_event(mc, bt)?;
-                    document.add_child_to_tree(mc, &mut open_tags, child)?;
+                    if child.node_value().as_deref() != Some("") {
+                        document.add_child_to_tree(mc, &mut open_tags, child)?;
+                    }
                 }
                 Event::Comment(bt) => {
                     let child = XMLNode::comment_from_text_event(mc, bt)?;
-                    document.add_child_to_tree(mc, &mut open_tags, child)?;
+                    if child.node_value().as_deref() != Some("") {
+                        document.add_child_to_tree(mc, &mut open_tags, child)?;
+                    }
                 }
                 Event::Eof => break,
                 _ => {}
