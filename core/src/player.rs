@@ -30,6 +30,10 @@ struct GcRootData<'gc> {
     library: Library<'gc>,
     root: DisplayObject<'gc>,
     mouse_hovered_object: Option<DisplayObject<'gc>>, // TODO: Remove GcCell wrapped inside GcCell.
+
+    /// The object being dragged via a `startDrag` action.
+    drag_object: Option<DragObject<'gc>>,
+
     avm: Avm1<'gc>,
     action_queue: ActionQueue<'gc>,
 }
@@ -44,12 +48,14 @@ impl<'gc> GcRootData<'gc> {
         &mut Library<'gc>,
         &mut ActionQueue<'gc>,
         &mut Avm1<'gc>,
+        &mut Option<DragObject<'gc>>,
     ) {
         (
             self.root,
             &mut self.library,
             &mut self.action_queue,
             &mut self.avm,
+            &mut self.drag_object,
         )
     }
 }
@@ -188,6 +194,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                         )
                         .into(),
                         mouse_hovered_object: None,
+                        drag_object: None,
                         avm: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
                         action_queue: ActionQueue::new(),
                     },
@@ -380,6 +387,29 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         }
     }
 
+    /// Update dragged object, if any.
+    fn update_drag(&mut self) {
+        let mouse_pos = self.mouse_pos;
+        self.mutate_with_update_context(|_avm, context| {
+            if let Some(drag_object) = &mut context.drag_object {
+                let mut drag_point = (
+                    mouse_pos.0 + drag_object.offset.0,
+                    mouse_pos.1 + drag_object.offset.1,
+                );
+                if let Some(parent) = drag_object.display_object.parent() {
+                    drag_point = parent.global_to_local(drag_point);
+                }
+                drag_point = drag_object.constraint.clamp(drag_point);
+                drag_object
+                    .display_object
+                    .set_x(context.gc_context, drag_point.0.to_pixels());
+                drag_object
+                    .display_object
+                    .set_y(context.gc_context, drag_point.1.to_pixels());
+            }
+        });
+    }
+
     fn update_roll_over(&mut self) -> bool {
         // TODO: While the mouse is down, maintain the hovered node.
         if self.is_mouse_down {
@@ -442,6 +472,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         });
 
         // Update mouse state (check for new hovered button, etc.)
+        self.update_drag();
         self.update_roll_over();
 
         // GC
@@ -644,7 +675,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         self.gc_arena.mutate(|gc_context, gc_root| {
             let mut root_data = gc_root.0.write(gc_context);
             let mouse_hovered_object = root_data.mouse_hovered_object;
-            let (root, library, action_queue, avm) = root_data.update_context_params();
+            let (root, library, action_queue, avm, drag_object) = root_data.update_context_params();
             let mut update_context = UpdateContext {
                 player_version,
                 global_time,
@@ -662,6 +693,7 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
                 system_prototypes: avm.prototypes().clone(),
                 mouse_hovered_object,
                 mouse_position,
+                drag_object,
                 stage_size: (stage_width, stage_height),
             };
 
@@ -685,5 +717,22 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         let device_font =
             crate::font::Font::from_swf_tag(gc_context, renderer, &reader.read_define_font_2(3)?)?;
         Ok(device_font)
+    }
+}
+
+pub struct DragObject<'gc> {
+    /// The display object being dragged.
+    pub display_object: DisplayObject<'gc>,
+
+    /// The offset from the mouse position to the center of the clip.
+    pub offset: (Twips, Twips),
+
+    /// The bounding rectangle where the clip will be maintained.
+    pub constraint: BoundingBox,
+}
+
+unsafe impl<'gc> gc_arena::Collect for DragObject<'gc> {
+    fn trace(&self, cc: gc_arena::CollectionContext) {
+        self.display_object.trace(cc);
     }
 }

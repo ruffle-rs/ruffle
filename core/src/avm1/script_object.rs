@@ -683,6 +683,7 @@ mod tests {
                 system_prototypes: avm.prototypes().clone(),
                 mouse_hovered_object: None,
                 mouse_position: &(Twips::new(0), Twips::new(0)),
+                drag_object: &mut None,
                 stage_size: (Twips::from_pixels(550.0), Twips::from_pixels(400.0)),
             };
 
