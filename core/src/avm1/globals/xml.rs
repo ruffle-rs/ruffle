@@ -17,17 +17,19 @@ pub fn xmlnode_constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
+    let blank_document = XMLDocument::new(ac.gc_context);
+
     match (
         args.get(0).map(|v| v.as_number(avm, ac).map(|v| v as u32)),
         args.get(1).map(|v| v.clone().coerce_to_string(avm, ac)),
         this.as_xml_node(),
     ) {
         (Some(Ok(1)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
-            let mut xmlelement = XMLNode::new_text(ac.gc_context, strval);
+            let mut xmlelement = XMLNode::new_text(ac.gc_context, strval, blank_document);
             swap(&mut xmlelement, this_node);
         }
         (Some(Ok(3)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
-            let mut xmlelement = XMLNode::new_element(ac.gc_context, strval)?;
+            let mut xmlelement = XMLNode::new_element(ac.gc_context, strval, blank_document)?;
             swap(&mut xmlelement, this_node);
         }
         //Invalid nodetype ID, string value missing, or not an XMLElement
@@ -123,17 +125,17 @@ pub fn xml_constructor<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     match (
         args.get(0).map(|v| v.clone().coerce_to_string(avm, ac)),
-        this.as_xml_document(),
+        this.as_xml_node(),
     ) {
-        (Some(Ok(ref string)), Some(ref mut this_doc)) => {
-            let mut xmldoc = XMLDocument::from_str(ac.gc_context, string)?;
+        (Some(Ok(ref string)), Some(ref mut this_node)) => {
+            let xmldoc = XMLDocument::from_str(ac.gc_context, string)?;
 
-            swap(&mut xmldoc, this_doc);
+            swap(&mut xmldoc.as_node(), this_node);
         }
-        (None, Some(ref mut this_doc)) => {
-            let mut emptydoc = XMLDocument::new(ac.gc_context);
+        (None, Some(ref mut this_node)) => {
+            let xmldoc = XMLDocument::new(ac.gc_context);
 
-            swap(&mut emptydoc, this_doc);
+            swap(&mut xmldoc.as_node(), this_node);
         }
         //Non-string argument or not an XML document
         _ => {}

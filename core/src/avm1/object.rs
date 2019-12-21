@@ -7,7 +7,7 @@ use crate::avm1::super_object::SuperObject;
 use crate::avm1::xml_object::XMLObject;
 use crate::avm1::{Avm1, Error, ScriptObject, SoundObject, StageObject, UpdateContext, Value};
 use crate::display_object::DisplayObject;
-use crate::xml::{XMLDocument, XMLNode};
+use crate::xml::XMLNode;
 use enumset::EnumSet;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
@@ -267,11 +267,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying executable for this object, if it exists.
     fn as_executable(&self) -> Option<Executable<'gc>> {
-        None
-    }
-
-    /// Get the underlying XML document for this object, if it exists.
-    fn as_xml_document(&self) -> Option<XMLDocument<'gc>> {
         None
     }
 

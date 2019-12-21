@@ -14,39 +14,24 @@ use std::fmt;
 /// A ScriptObject that is inherently tied to an XML node.
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
-pub enum XMLObject<'gc> {
-    /// An `XMLObject` that references a whole document.
-    Document(ScriptObject<'gc>, XMLDocument<'gc>),
-
-    /// An `XMLObject` that references a specific node of another document.
-    Node(ScriptObject<'gc>, XMLNode<'gc>),
-}
+pub struct XMLObject<'gc>(ScriptObject<'gc>, XMLNode<'gc>);
 
 impl<'gc> XMLObject<'gc> {
-    pub fn empty_document(
-        gc_context: MutationContext<'gc, '_>,
-        proto: Option<Object<'gc>>,
-    ) -> XMLObject<'gc> {
-        XMLObject::Document(
-            ScriptObject::object(gc_context, proto),
-            XMLDocument::new(gc_context),
-        )
-    }
-
     pub fn empty_node(
         gc_context: MutationContext<'gc, '_>,
         proto: Option<Object<'gc>>,
     ) -> XMLObject<'gc> {
-        XMLObject::Node(
+        let empty_document = XMLDocument::new(gc_context);
+
+        XMLObject(
             ScriptObject::object(gc_context, proto),
-            XMLNode::new_text(gc_context, ""),
+            XMLNode::new_text(gc_context, "", empty_document),
         )
     }
 
     fn base(&self) -> ScriptObject<'gc> {
         match self {
-            XMLObject::Document(base, ..) => *base,
-            XMLObject::Node(base, ..) => *base,
+            XMLObject(base, ..) => *base,
         }
     }
 }
@@ -54,18 +39,7 @@ impl<'gc> XMLObject<'gc> {
 impl fmt::Debug for XMLObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            XMLObject::Document(base, ..) => {
-                f.debug_tuple("XMLObject::Document")
-                    .field(base)
-                    //.field(document)
-                    .finish()
-            }
-            XMLObject::Node(base, ..) => {
-                f.debug_tuple("XMLObject::Node")
-                    .field(base)
-                    //.field(document)
-                    .finish()
-            }
+            XMLObject(base, node) => f.debug_tuple("XMLObject").field(base).field(node).finish(),
         }
     }
 }
@@ -109,12 +83,7 @@ impl<'gc> TObject<'gc> for XMLObject<'gc> {
         this: Object<'gc>,
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
-        match self {
-            XMLObject::Document(..) => {
-                Ok(XMLObject::empty_document(context.gc_context, Some(this)).into())
-            }
-            XMLObject::Node(..) => Ok(XMLObject::empty_node(context.gc_context, Some(this)).into()),
-        }
+        Ok(XMLObject::empty_node(context.gc_context, Some(this)).into())
     }
 
     fn delete(&self, gc_context: MutationContext<'gc, '_>, name: &str) -> bool {
@@ -199,17 +168,9 @@ impl<'gc> TObject<'gc> for XMLObject<'gc> {
         Some(self.base())
     }
 
-    fn as_xml_document(&self) -> Option<XMLDocument<'gc>> {
-        match self {
-            XMLObject::Document(_base, document) => Some(*document),
-            _ => None,
-        }
-    }
-
     fn as_xml_node(&self) -> Option<XMLNode<'gc>> {
         match self {
-            XMLObject::Node(_base, node) => Some(*node),
-            _ => None,
+            XMLObject(_base, node) => Some(*node),
         }
     }
 
