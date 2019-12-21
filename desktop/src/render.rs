@@ -1,9 +1,11 @@
 use glium::uniforms::{Sampler, UniformValue, Uniforms};
 use glium::{draw_parameters::DrawParameters, implement_vertex, uniform, Display, Frame, Surface};
 use glutin::WindowedContext;
-use lyon::tessellation::geometry_builder::{BuffersBuilder, VertexBuffers};
-use lyon::{
-    path::PathEvent, tessellation, tessellation::FillTessellator, tessellation::StrokeTessellator,
+use lyon::path::Path;
+use lyon::tessellation::{
+    self,
+    geometry_builder::{BuffersBuilder, FillVertexConstructor, VertexBuffers},
+    FillAttributes, FillTessellator, StrokeAttributes, StrokeTessellator, StrokeVertexConstructor,
 };
 use ruffle_core::backend::render::swf::{self, FillStyle};
 use ruffle_core::backend::render::{
@@ -212,14 +214,11 @@ impl GliumRenderBackend {
                             f32::from(color.a) / 255.0,
                         ];
 
-                        let vertex_ctor = move |vertex: tessellation::FillVertex| Vertex {
-                            position: [vertex.position.x, vertex.position.y],
-                            color,
-                        };
-                        let mut buffers_builder = BuffersBuilder::new(&mut lyon_mesh, vertex_ctor);
+                        let mut buffers_builder =
+                            BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color });
 
                         if let Err(e) = fill_tess.tessellate_path(
-                            ruffle_path_to_lyon_path(commands, true),
+                            &ruffle_path_to_lyon_path(commands, true),
                             &FillOptions::even_odd(),
                             &mut buffers_builder,
                         ) {
@@ -231,14 +230,15 @@ impl GliumRenderBackend {
                     FillStyle::LinearGradient(gradient) => {
                         flush_draw(DrawType::Color, &mut mesh, &mut lyon_mesh, &self.display);
 
-                        let vertex_ctor = move |vertex: tessellation::FillVertex| Vertex {
-                            position: [vertex.position.x, vertex.position.y],
-                            color: [1.0, 1.0, 1.0, 1.0],
-                        };
-                        let mut buffers_builder = BuffersBuilder::new(&mut lyon_mesh, vertex_ctor);
+                        let mut buffers_builder = BuffersBuilder::new(
+                            &mut lyon_mesh,
+                            RuffleVertexCtor {
+                                color: [1.0, 1.0, 1.0, 1.0],
+                            },
+                        );
 
                         if let Err(e) = fill_tess.tessellate_path(
-                            ruffle_path_to_lyon_path(commands, true),
+                            &ruffle_path_to_lyon_path(commands, true),
                             &FillOptions::even_odd(),
                             &mut buffers_builder,
                         ) {
@@ -279,14 +279,15 @@ impl GliumRenderBackend {
                     FillStyle::RadialGradient(gradient) => {
                         flush_draw(DrawType::Color, &mut mesh, &mut lyon_mesh, &self.display);
 
-                        let vertex_ctor = move |vertex: tessellation::FillVertex| Vertex {
-                            position: [vertex.position.x, vertex.position.y],
-                            color: [1.0, 1.0, 1.0, 1.0],
-                        };
-                        let mut buffers_builder = BuffersBuilder::new(&mut lyon_mesh, vertex_ctor);
+                        let mut buffers_builder = BuffersBuilder::new(
+                            &mut lyon_mesh,
+                            RuffleVertexCtor {
+                                color: [1.0, 1.0, 1.0, 1.0],
+                            },
+                        );
 
                         if let Err(e) = fill_tess.tessellate_path(
-                            ruffle_path_to_lyon_path(commands, true),
+                            &ruffle_path_to_lyon_path(commands, true),
                             &FillOptions::even_odd(),
                             &mut buffers_builder,
                         ) {
@@ -330,14 +331,15 @@ impl GliumRenderBackend {
                     } => {
                         flush_draw(DrawType::Color, &mut mesh, &mut lyon_mesh, &self.display);
 
-                        let vertex_ctor = move |vertex: tessellation::FillVertex| Vertex {
-                            position: [vertex.position.x, vertex.position.y],
-                            color: [1.0, 1.0, 1.0, 1.0],
-                        };
-                        let mut buffers_builder = BuffersBuilder::new(&mut lyon_mesh, vertex_ctor);
+                        let mut buffers_builder = BuffersBuilder::new(
+                            &mut lyon_mesh,
+                            RuffleVertexCtor {
+                                color: [1.0, 1.0, 1.0, 1.0],
+                            },
+                        );
 
                         if let Err(e) = fill_tess.tessellate_path(
-                            ruffle_path_to_lyon_path(commands, true),
+                            &ruffle_path_to_lyon_path(commands, true),
                             &FillOptions::even_odd(),
                             &mut buffers_builder,
                         ) {
@@ -383,14 +385,15 @@ impl GliumRenderBackend {
                     } => {
                         flush_draw(DrawType::Color, &mut mesh, &mut lyon_mesh, &self.display);
 
-                        let vertex_ctor = move |vertex: tessellation::FillVertex| Vertex {
-                            position: [vertex.position.x, vertex.position.y],
-                            color: [1.0, 1.0, 1.0, 1.0],
-                        };
-                        let mut buffers_builder = BuffersBuilder::new(&mut lyon_mesh, vertex_ctor);
+                        let mut buffers_builder = BuffersBuilder::new(
+                            &mut lyon_mesh,
+                            RuffleVertexCtor {
+                                color: [1.0, 1.0, 1.0, 1.0],
+                            },
+                        );
 
                         if let Err(e) = fill_tess.tessellate_path(
-                            ruffle_path_to_lyon_path(commands, true),
+                            &ruffle_path_to_lyon_path(commands, true),
                             &FillOptions::even_odd(),
                             &mut buffers_builder,
                         ) {
@@ -439,11 +442,8 @@ impl GliumRenderBackend {
                         f32::from(style.color.a) / 255.0,
                     ];
 
-                    let vertex_ctor = move |vertex: tessellation::StrokeVertex| Vertex {
-                        position: [vertex.position.x, vertex.position.y],
-                        color,
-                    };
-                    let mut buffers_builder = BuffersBuilder::new(&mut lyon_mesh, vertex_ctor);
+                    let mut buffers_builder =
+                        BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color });
 
                     // TODO(Herschel): 0 width indicates "hairline".
                     let width = if style.width.to_pixels() >= 1.0 {
@@ -475,7 +475,7 @@ impl GliumRenderBackend {
                     }
 
                     if let Err(e) = stroke_tess.tessellate_path(
-                        ruffle_path_to_lyon_path(commands, is_closed),
+                        &ruffle_path_to_lyon_path(commands, is_closed),
                         &options,
                         &mut buffers_builder,
                     ) {
@@ -1045,7 +1045,7 @@ const VERTEX_SHADER: &str = r#"
     uniform mat4 world_matrix;
     uniform vec4 mult_color;
     uniform vec4 add_color;
-    
+
     in vec2 position;
     in vec4 color;
     out vec4 frag_color;
@@ -1150,7 +1150,7 @@ const GRADIENT_FRAGMENT_SHADER: &str = r#"
             j++;
         }
         float a = (t - u_ratios[i]) / (u_ratios[j] - u_ratios[i]);
-        color = mix(u_colors[i], u_colors[j], a);            
+        color = mix(u_colors[i], u_colors[j], a);
         out_color = mult_color * color + add_color;
     }
 "#;
@@ -1203,47 +1203,27 @@ fn point(x: Twips, y: Twips) -> lyon::math::Point {
     lyon::math::Point::new(x.to_pixels() as f32, y.to_pixels() as f32)
 }
 
-fn ruffle_path_to_lyon_path(
-    commands: Vec<DrawCommand>,
-    mut is_closed: bool,
-) -> impl Iterator<Item = PathEvent> {
-    use lyon::geom::{LineSegment, QuadraticBezierSegment};
-
-    let mut cur = lyon::math::Point::new(0.0, 0.0);
-    let mut i = commands.into_iter();
-    std::iter::from_fn(move || match i.next() {
-        Some(DrawCommand::MoveTo { x, y }) => {
-            cur = point(x, y);
-            Some(PathEvent::MoveTo(cur))
-        }
-        Some(DrawCommand::LineTo { x, y }) => {
-            let next = point(x, y);
-            let cmd = PathEvent::Line(LineSegment {
-                from: cur,
-                to: next,
-            });
-            cur = next;
-            Some(cmd)
-        }
-        Some(DrawCommand::CurveTo { x1, y1, x2, y2 }) => {
-            let next = point(x2, y2);
-            let cmd = PathEvent::Quadratic(QuadraticBezierSegment {
-                from: cur,
-                ctrl: point(x1, y1),
-                to: next,
-            });
-            cur = next;
-            Some(cmd)
-        }
-        None => {
-            if is_closed {
-                is_closed = false;
-                Some(PathEvent::Close(LineSegment { from: cur, to: cur }))
-            } else {
-                None
+fn ruffle_path_to_lyon_path(commands: Vec<DrawCommand>, is_closed: bool) -> Path {
+    let mut builder = Path::builder();
+    for cmd in commands {
+        match cmd {
+            DrawCommand::MoveTo { x, y } => {
+                builder.move_to(point(x, y));
+            }
+            DrawCommand::LineTo { x, y } => {
+                builder.line_to(point(x, y));
+            }
+            DrawCommand::CurveTo { x1, y1, x2, y2 } => {
+                builder.quadratic_bezier_to(point(x1, y1), point(x2, y2));
             }
         }
-    })
+    }
+
+    if is_closed {
+        builder.close();
+    }
+
+    builder.build()
 }
 
 #[allow(clippy::many_single_char_names)]
@@ -1364,5 +1344,27 @@ fn bitmap_blend() -> glium::Blend {
             destination: LinearBlendingFactor::OneMinusSourceAlpha,
         },
         ..Default::default()
+    }
+}
+
+struct RuffleVertexCtor {
+    color: [f32; 4],
+}
+
+impl FillVertexConstructor<Vertex> for RuffleVertexCtor {
+    fn new_vertex(&mut self, position: lyon::math::Point, _: FillAttributes) -> Vertex {
+        Vertex {
+            position: [position.x, position.y],
+            color: self.color,
+        }
+    }
+}
+
+impl StrokeVertexConstructor<Vertex> for RuffleVertexCtor {
+    fn new_vertex(&mut self, position: lyon::math::Point, _: StrokeAttributes) -> Vertex {
+        Vertex {
+            position: [position.x, position.y],
+            color: self.color,
+        }
     }
 }
