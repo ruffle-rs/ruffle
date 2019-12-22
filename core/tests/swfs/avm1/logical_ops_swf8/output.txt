@@ -1,0 +1,109 @@
+NOT
+// !false
+true
+// !true
+false
+// !0
+true
+// !1
+false
+// !(-123)
+false
+// !undefined
+true
+// !null
+true
+// !NaN
+true
+// !'' 
+true
+// !'blah' 
+true
+// !'false' 
+true
+// !'true' 
+true
+// !'123' 
+false
+// !'0' 
+true
+// !{} 
+false
+
+AND
+// 0 and 0
+false
+// 0 and 1
+false
+// 1 and 0
+false
+// 1 and 1
+true
+// 7.0 and 2.0
+true
+// 0xFF0 and 0x0FF
+true
+// null and undefined
+false
+// NaN and& NaN
+false
+// '' and ''
+false
+// '1' and '1'
+true
+// 'XXX' and '0xFF'
+false
+// {} and {}
+true
+OR
+// 0 or 0
+false
+// 0 or 1
+true
+// 1 or 0
+true
+// 1 or 1
+true
+// 7.0 or 2.0
+true
+// 0xFF0 or 0x0FF
+true
+// null or undefined
+false
+// NaN or NaN
+false
+// '' or ''
+false
+// '1' or '1'
+true
+// 'XXX' or '0xFF'
+true
+// {} or {}
+true
+
+OR
+// 0 or 0
+false
+// 0 or 1
+true
+// 1 or 0
+true
+// 1 or 1
+true
+// 7.0 or 2.0
+true
+// 0xFF0 or 0x0FF
+true
+// null or undefined
+false
+// NaN or NaN
+false
+// '' or ''
+false
+// '1' or '1'
+true
+// 'XXX' or '0xFF'
+true
+// {} or {}
+true
+

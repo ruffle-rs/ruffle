@@ -92,6 +92,8 @@ swf_tests! {
     (lessthan2_swf5, "avm1/lessthan2_swf5", 1),
     (lessthan2_swf6, "avm1/lessthan2_swf6", 1),
     (lessthan2_swf7, "avm1/lessthan2_swf7", 1),
+    (logical_ops_swf4, "avm1/logical_ops_swf4", 1),
+    (logical_ops_swf8, "avm1/logical_ops_swf8", 1),
     (greater_swf6, "avm1/greater_swf6", 1),
     (greater_swf7, "avm1/greater_swf7", 1),
     (equals_swf4, "avm1/equals_swf4", 1),
