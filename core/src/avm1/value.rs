@@ -368,7 +368,10 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn from_bool_v1(value: bool, swf_version: u8) -> Value<'gc> {
+    /// Converts a bool value into the appropriate value for the platform.
+    /// This should be used when pushing a bool onto the stack.
+    /// This handles SWFv4 pushing a Number, 0 or 1.
+    pub fn from_bool(value: bool, swf_version: u8) -> Value<'gc> {
         // SWF version 4 did not have true bools and will push bools as 0 or 1.
         // e.g. SWF19 p. 72:
         // "If the numbers are equal, true is pushed to the stack for SWF 5 and later. For SWF 4, 1 is pushed to the stack."
