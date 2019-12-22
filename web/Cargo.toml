@@ -38,8 +38,8 @@ version = "0.3.33"
 features = [
     "AudioBuffer", "AudioBufferSourceNode", "AudioParam", "AudioProcessingEvent", "AudioContext", "AudioDestinationNode", 
     "AudioNode", "CanvasRenderingContext2d", "ChannelMergerNode", "ChannelSplitterNode", "CssStyleDeclaration", "Document",
-    "Element", "Event", "EventTarget", "GainNode", "HtmlCanvasElement", "HtmlElement", "HtmlImageElement", "MouseEvent",
-    "Navigator", "Node", "Performance", "ScriptProcessorNode", "Window", "Location", "HtmlFormElement", "KeyboardEvent"]
+    "DomRect", "DomRectReadOnly", "Element", "Event", "EventTarget", "GainNode", "HtmlCanvasElement", "HtmlElement", "HtmlImageElement", "MouseEvent",
+    "Navigator", "Node", "Performance", "ScriptProcessorNode", "ShadowRoot", "UiEvent", "Window", "Location", "HtmlFormElement", "KeyboardEvent"]
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.5"

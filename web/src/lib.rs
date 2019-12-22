@@ -44,6 +44,10 @@ struct RuffleInstance {
     mouse_move_callback: Option<Closure<dyn FnMut(MouseEvent)>>,
     mouse_down_callback: Option<Closure<dyn FnMut(MouseEvent)>>,
     mouse_up_callback: Option<Closure<dyn FnMut(MouseEvent)>>,
+    window_mouse_down_callback: Option<Closure<dyn FnMut(MouseEvent)>>,
+    key_down_callback: Option<Closure<dyn FnMut(KeyboardEvent)>>,
+    key_up_callback: Option<Closure<dyn FnMut(KeyboardEvent)>>,
+    has_focus: bool,
 }
 
 /// An opaque handle to a `RuffleInstance` inside the pool.
@@ -110,8 +114,12 @@ impl Ruffle {
             click_callback: None,
             mouse_move_callback: None,
             mouse_down_callback: None,
+            window_mouse_down_callback: None,
             mouse_up_callback: None,
+            key_down_callback: None,
+            key_up_callback: None,
             timestamp: None,
+            has_focus: false,
         };
 
         // Register the instance and create the animation frame closure.
@@ -141,6 +149,9 @@ impl Ruffle {
                                 y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
                             };
                             instance.core.handle_event(event);
+                            if instance.has_focus {
+                                js_event.prevent_default();
+                            }
                         }
                     });
                 })
@@ -162,11 +173,13 @@ impl Ruffle {
                     INSTANCES.with(move |instances| {
                         let mut instances = instances.borrow_mut();
                         if let Some(instance) = instances.get_mut(index) {
+                            instance.has_focus = true;
                             let event = PlayerEvent::MouseDown {
                                 x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
                                 y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
                             };
                             instance.core.handle_event(event);
+                            js_event.prevent_default();
                         }
                     });
                 })
@@ -182,6 +195,31 @@ impl Ruffle {
                 instance.mouse_down_callback = Some(mouse_down_callback);
             }
 
+            // Create window mouse down handler.
+            {
+                let window_mouse_down_callback =
+                    Closure::wrap(Box::new(move |_js_event: MouseEvent| {
+                        INSTANCES.with(|instances| {
+                            let mut instances = instances.borrow_mut();
+                            if let Some(instance) = instances.get_mut(index) {
+                                // If we actually clicked on the canvas, this will be reset to true
+                                // after the event bubbles down to the canvas.
+                                instance.has_focus = false;
+                            }
+                        });
+                    }) as Box<dyn FnMut(MouseEvent)>);
+
+                window
+                    .add_event_listener_with_callback_and_bool(
+                        "mousedown",
+                        window_mouse_down_callback.as_ref().unchecked_ref(),
+                        true, // Use capture so this first *before* the canvas mouse down handler.
+                    )
+                    .unwrap();
+                let instance = instances.get_mut(index).unwrap();
+                instance.window_mouse_down_callback = Some(window_mouse_down_callback);
+            }
+
             // Create mouse up handler.
             {
                 let mouse_up_callback = Closure::wrap(Box::new(move |js_event: MouseEvent| {
@@ -193,6 +231,9 @@ impl Ruffle {
                                 y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
                             };
                             instance.core.handle_event(event);
+                            if instance.has_focus {
+                                js_event.prevent_default();
+                            }
                         }
                     });
                 })
@@ -234,36 +275,49 @@ impl Ruffle {
 
             // Create keydown event handler.
             {
-                let keydown_callback = Closure::wrap(Box::new(move |js_event: KeyboardEvent| {
-                    INSTANCES.with(move |instances| {
+                let key_down_callback = Closure::wrap(Box::new(move |js_event: KeyboardEvent| {
+                    INSTANCES.with(|instances| {
                         if let Some(instance) = instances.borrow_mut().get_mut(index) {
-                            instance.core.input_mut().keydown(js_event.code());
+                            if instance.has_focus {
+                                instance.core.input_mut().keydown(js_event.code());
+                                js_event.prevent_default();
+                            }
                         }
-                    })
+                    });
                 })
                     as Box<dyn FnMut(KeyboardEvent)>);
 
                 window
                     .add_event_listener_with_callback(
                         "keydown",
-                        keydown_callback.as_ref().unchecked_ref(),
+                        key_down_callback.as_ref().unchecked_ref(),
                     )
                     .unwrap();
+                let instance = instances.get_mut(index).unwrap();
+                instance.key_down_callback = Some(key_down_callback);
+            }
 
-                let keyup_callback = Closure::wrap(Box::new(move |js_event: KeyboardEvent| {
-                    INSTANCES.with(move |instances| {
+            {
+                let key_up_callback = Closure::wrap(Box::new(move |js_event: KeyboardEvent| {
+                    js_event.prevent_default();
+                    INSTANCES.with(|instances| {
                         if let Some(instance) = instances.borrow_mut().get_mut(index) {
-                            instance.core.input_mut().keyup(js_event.code());
+                            if instance.has_focus {
+                                instance.core.input_mut().keyup(js_event.code());
+                                js_event.prevent_default();
+                            }
                         }
-                    })
+                    });
                 })
                     as Box<dyn FnMut(KeyboardEvent)>);
                 window
                     .add_event_listener_with_callback(
                         "keyup",
-                        keyup_callback.as_ref().unchecked_ref(),
+                        key_up_callback.as_ref().unchecked_ref(),
                     )
                     .unwrap();
+                let instance = instances.get_mut(index).unwrap();
+                instance.key_up_callback = Some(key_up_callback);
             }
 
             ruffle
