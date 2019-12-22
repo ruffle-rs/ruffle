@@ -9,7 +9,10 @@ fn parse_single_element() {
     rootless_arena(|mc| {
         let xml = XMLDocument::from_str(mc, "<test></test>").expect("Parsed document");
         dbg!(xml);
-        let mut roots = xml.roots();
+        let mut roots = xml
+            .as_node()
+            .children()
+            .expect("Parsed document should be capable of having child nodes");
 
         let root = roots.next().expect("Parsed document should have a root");
         assert_eq!(root.node_type(), xml::ELEMENT_NODE);

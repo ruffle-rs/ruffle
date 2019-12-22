@@ -87,13 +87,6 @@ impl<'gc> XMLDocument<'gc> {
         Ok(document)
     }
 
-    /// Returns an iterator that yields the document's root nodes.
-    pub fn roots(self) -> impl Iterator<Item = XMLNode<'gc>> {
-        self.as_node()
-            .children()
-            .expect("Document root node must always be capable of holding children")
-    }
-
     /// Yield the document in node form.
     pub fn as_node(self) -> XMLNode<'gc> {
         self.0
