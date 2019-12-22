@@ -74,7 +74,7 @@ impl XMLName {
         if let Some(ref ns) = self.namespace {
             format!("{}:{}", ns, self.name)
         } else {
-            format!("{}", self.name)
+            self.name.to_string()
         }
     }
 }

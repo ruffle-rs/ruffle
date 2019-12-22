@@ -55,7 +55,7 @@ pub fn create_xmlnode_proto<'gc>(
                 .as_xml_node()
                 .and_then(|n| n.tag_name())
                 .map(|n| n.local_name().to_string().into())
-                .unwrap_or(Value::Undefined.into()))
+                .unwrap_or_else(|| Value::Undefined.into()))
         }),
         None,
         ReadOnly.into(),
@@ -67,8 +67,8 @@ pub fn create_xmlnode_proto<'gc>(
             Ok(this
                 .as_xml_node()
                 .and_then(|n| n.tag_name())
-                .map(|n| n.node_name().to_string().into())
-                .unwrap_or(Value::Undefined.into()))
+                .map(|n| n.node_name().into())
+                .unwrap_or_else(|| Value::Undefined.into()))
         }),
         None,
         ReadOnly.into(),
@@ -81,7 +81,7 @@ pub fn create_xmlnode_proto<'gc>(
             Ok(this
                 .as_xml_node()
                 .map(|n| n.node_type().into())
-                .unwrap_or(Value::Undefined.into()))
+                .unwrap_or_else(|| Value::Undefined.into()))
         }),
         None,
         ReadOnly.into(),
@@ -94,7 +94,7 @@ pub fn create_xmlnode_proto<'gc>(
                 .as_xml_node()
                 .and_then(|n| n.node_value())
                 .map(|n| n.into())
-                .unwrap_or(Value::Undefined.into()))
+                .unwrap_or_else(|| Value::Undefined.into()))
         }),
         None,
         ReadOnly.into(),
@@ -107,7 +107,7 @@ pub fn create_xmlnode_proto<'gc>(
                 .as_xml_node()
                 .and_then(|n| n.tag_name())
                 .and_then(|n| n.prefix().map(|n| n.to_string().into()))
-                .unwrap_or(Value::Undefined.into()))
+                .unwrap_or_else(|| Value::Undefined.into()))
         }),
         None,
         ReadOnly.into(),
@@ -139,7 +139,7 @@ pub fn create_xmlnode_proto<'gc>(
         ReadOnly.into(),
     );
 
-    xmlnode_proto.into()
+    xmlnode_proto
 }
 
 /// XML (document) constructor

@@ -95,7 +95,7 @@ impl<'gc> TObject<'gc> for XMLObject<'gc> {
         this: Object<'gc>,
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
-        Ok(XMLObject::empty_node(context.gc_context, Some(this)).into())
+        Ok(XMLObject::empty_node(context.gc_context, Some(this)))
     }
 
     fn delete(&self, gc_context: MutationContext<'gc, '_>, name: &str) -> bool {

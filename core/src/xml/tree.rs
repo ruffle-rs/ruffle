@@ -224,7 +224,7 @@ impl<'gc> XMLNode<'gc> {
     ///
     /// Every XML node belongs to a document object (see `XMLDocument`) which
     /// stores global information about the document, such as namespace URIs.
-    pub fn document(&self) -> XMLDocument<'gc> {
+    pub fn document(self) -> XMLDocument<'gc> {
         match &*self.0.read() {
             XMLNodeData::Text { document, .. } => *document,
             XMLNodeData::Comment { document, .. } => *document,
@@ -295,7 +295,7 @@ impl<'gc> XMLNode<'gc> {
     ///
     /// This is primarily intended to match W3C DOM L1 specifications and
     /// should not be used in lieu of a proper `match` statement.
-    pub fn node_type(&self) -> u8 {
+    pub fn node_type(self) -> u8 {
         match &*self.0.read() {
             XMLNodeData::Element { .. } => xml::ELEMENT_NODE,
             XMLNodeData::DocumentRoot { .. } => xml::ELEMENT_NODE,
@@ -305,7 +305,7 @@ impl<'gc> XMLNode<'gc> {
     }
 
     /// Returns the tagname, if the element has one.
-    pub fn tag_name(&self) -> Option<XMLName> {
+    pub fn tag_name(self) -> Option<XMLName> {
         match &*self.0.read() {
             XMLNodeData::Element { ref tag_name, .. } => Some(tag_name.clone()),
             _ => None,
@@ -313,7 +313,7 @@ impl<'gc> XMLNode<'gc> {
     }
 
     /// Returns the string contents of the node, if the element has them.
-    pub fn node_value(&self) -> Option<String> {
+    pub fn node_value(self) -> Option<String> {
         match &*self.0.read() {
             XMLNodeData::Text { ref contents, .. } => Some(contents.clone()),
             XMLNodeData::Comment { ref contents, .. } => Some(contents.clone()),
@@ -324,7 +324,7 @@ impl<'gc> XMLNode<'gc> {
     /// Returns an iterator that yields child nodes.
     ///
     /// Yields None if this node cannot accept children.
-    pub fn children(&self) -> Option<impl Iterator<Item = XMLNode<'gc>>> {
+    pub fn children(self) -> Option<impl Iterator<Item = XMLNode<'gc>>> {
         struct ChildIter<'gc> {
             base: XMLNode<'gc>,
             index: usize,
@@ -362,14 +362,14 @@ impl<'gc> XMLNode<'gc> {
 
         match &*self.0.read() {
             XMLNodeData::Element { .. } | XMLNodeData::DocumentRoot { .. } => {
-                Some(ChildIter::for_node(*self))
+                Some(ChildIter::for_node(self))
             }
-            _ => return None,
+            _ => None,
         }
     }
 
     /// Get the already-instantiated script object from the current node.
-    fn get_script_object(&self) -> Option<Object<'gc>> {
+    fn get_script_object(self) -> Option<Object<'gc>> {
         match &*self.0.read() {
             XMLNodeData::Element { script_object, .. } => *script_object,
             XMLNodeData::Text { script_object, .. } => *script_object,
