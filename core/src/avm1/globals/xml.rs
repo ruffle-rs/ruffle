@@ -8,7 +8,6 @@ use crate::avm1::xml_object::XMLObject;
 use crate::avm1::{Avm1, Error, Object, TObject, UpdateContext, Value};
 use crate::xml::{XMLDocument, XMLNode};
 use gc_arena::MutationContext;
-use std::mem::swap;
 
 /// XMLNode constructor
 pub fn xmlnode_constructor<'gc>(
@@ -25,12 +24,12 @@ pub fn xmlnode_constructor<'gc>(
         this.as_xml_node(),
     ) {
         (Some(Ok(1)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
-            let mut xmlelement = XMLNode::new_text(ac.gc_context, strval, blank_document);
-            swap(&mut xmlelement, this_node);
+            let xmlelement = XMLNode::new_text(ac.gc_context, strval, blank_document);
+            this_node.swap(ac.gc_context, xmlelement);
         }
         (Some(Ok(3)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
-            let mut xmlelement = XMLNode::new_element(ac.gc_context, strval, blank_document)?;
-            swap(&mut xmlelement, this_node);
+            let xmlelement = XMLNode::new_element(ac.gc_context, strval, blank_document)?;
+            this_node.swap(ac.gc_context, xmlelement);
         }
         //Invalid nodetype ID, string value missing, or not an XMLElement
         _ => {}
@@ -155,13 +154,11 @@ pub fn xml_constructor<'gc>(
     ) {
         (Some(Ok(ref string)), Some(ref mut this_node)) => {
             let xmldoc = XMLDocument::from_str(ac.gc_context, string)?;
-
-            swap(&mut xmldoc.as_node(), this_node);
+            this_node.swap(ac.gc_context, xmldoc.as_node());
         }
         (None, Some(ref mut this_node)) => {
             let xmldoc = XMLDocument::new(ac.gc_context);
-
-            swap(&mut xmldoc.as_node(), this_node);
+            this_node.swap(ac.gc_context, xmldoc.as_node());
         }
         //Non-string argument or not an XML document
         _ => {}
@@ -176,7 +173,5 @@ pub fn create_xml_proto<'gc>(
     proto: Object<'gc>,
     _fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xml_proto = XMLObject::empty_node(gc_context, Some(proto));
-
-    xml_proto.into()
+    XMLObject::empty_node(gc_context, Some(proto))
 }

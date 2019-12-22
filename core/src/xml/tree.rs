@@ -9,6 +9,7 @@ use quick_xml::events::{BytesStart, BytesText};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
+use std::mem::swap;
 
 /// Represents a node in the XML tree.
 #[derive(Copy, Clone, Collect)]
@@ -413,6 +414,20 @@ impl<'gc> XMLNode<'gc> {
         }
 
         object.unwrap()
+    }
+
+    /// Swap the contents of this node with another one.
+    ///
+    /// After this function completes, the current `XMLNode` will contain all
+    /// data present in the `other` node, and vice versa. References to the node
+    /// within the tree will *not* be updated.
+    pub fn swap(&mut self, gc_context: MutationContext<'gc, '_>, other: Self) {
+        if !GcCell::ptr_eq(self.0, other.0) {
+            swap(
+                &mut *self.0.write(gc_context),
+                &mut *other.0.write(gc_context),
+            );
+        }
     }
 }
 
