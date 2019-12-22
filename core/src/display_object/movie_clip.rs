@@ -659,16 +659,19 @@ impl<'gc> MovieClipData<'gc> {
              context: &mut UpdateContext<'_, 'gc, '_>,
              (&depth, params): (&Depth, &GotoPlaceObject)| {
                 let child_entry = clip.children.get_mut(&depth).copied();
-                let (was_instantiated, mut child) = match child_entry {
+                match child_entry {
+                    // Apply final delta to display pamareters.
                     // For rewinds, if an object was created before the final frame,
                     // it will exist on the final frame as well. Re-use this object
                     // instead of recreating.
                     // If the ID is 0, we are modifying a previous child. Otherwise, we're replacing it.
                     // If it's a rewind, we removed any dead children above, so we always
                     // modify the previous child.
-                    Some(prev_child) if is_rewind || params.id() == 0 => (false, prev_child),
+                    Some(mut prev_child) if is_rewind || params.id() == 0 => {
+                        prev_child.apply_place_object(context.gc_context, &params.place_object);
+                    }
                     _ => {
-                        if let Some(child) = clip.instantiate_child(
+                        if let Some(mut child) = clip.instantiate_child(
                             self_display_object,
                             context,
                             params.id(),
@@ -676,18 +679,10 @@ impl<'gc> MovieClipData<'gc> {
                             &params.place_object,
                             params.modifies_original_item(),
                         ) {
-                            (true, child)
-                        } else {
-                            return;
+                            // Set the place frame to the frame where the object *would* have been placed.
+                            child.set_place_frame(context.gc_context, params.frame);
                         }
                     }
-                };
-
-                // Apply final delta to display pamareters.
-                if was_instantiated {
-                    // Set the placement frame for the new object to the frame
-                    // it is actually created on.
-                    child.set_place_frame(context.gc_context, params.frame);
                 }
             };
 
