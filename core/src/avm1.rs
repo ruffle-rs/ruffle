@@ -763,8 +763,9 @@ impl<'gc> Avm1<'gc> {
         // AS1 logical and
         let a = self.pop()?;
         let b = self.pop()?;
-        let result = b.into_number_v1() != 0.0 && a.into_number_v1() != 0.0;
-        self.push(Value::from_bool_v1(result, self.current_swf_version()));
+        let version = self.current_swf_version();
+        let result = b.as_bool(version) && a.as_bool(version);
+        self.push(Value::from_bool(result, self.current_swf_version()));
         Ok(())
     }
 
@@ -1208,7 +1209,7 @@ impl<'gc> Avm1<'gc> {
         let a = self.pop()?;
         let b = self.pop()?;
         let result = b.into_number_v1() == a.into_number_v1();
-        self.push(Value::from_bool_v1(result, self.current_swf_version()));
+        self.push(Value::from_bool(result, self.current_swf_version()));
         Ok(())
     }
 
@@ -1275,7 +1276,7 @@ impl<'gc> Avm1<'gc> {
                     Value::Undefined
                 }
             } else {
-                log::warn!("GetProperty: Invalid target {}", path);
+                //log::warn!("GetProperty: Invalid target {}", path);
                 Value::Undefined
             }
         } else {
@@ -1593,7 +1594,7 @@ impl<'gc> Avm1<'gc> {
         let a = self.pop()?;
         let b = self.pop()?;
         let result = b.into_number_v1() < a.into_number_v1();
-        self.push(Value::from_bool_v1(result, self.current_swf_version()));
+        self.push(Value::from_bool(result, self.current_swf_version()));
         Ok(())
     }
 
@@ -1669,10 +1670,9 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_not(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        // AS1 logical not
-        let val = self.pop()?;
-        let result = val.into_number_v1() == 0.0;
-        self.push(Value::from_bool_v1(result, self.current_swf_version()));
+        let version = self.current_swf_version();
+        let val = !self.pop()?.as_bool(version);
+        self.push(Value::from_bool(val, version));
         Ok(())
     }
 
@@ -1769,8 +1769,9 @@ impl<'gc> Avm1<'gc> {
         // AS1 logical or
         let a = self.pop()?;
         let b = self.pop()?;
-        let result = b.into_number_v1() != 0.0 || a.into_number_v1() != 0.0;
-        self.push(Value::from_bool_v1(result, self.current_swf_version()));
+        let version = self.current_swf_version();
+        let result = b.as_bool(version) || a.as_bool(version);
+        self.push(Value::from_bool(result, version));
         Ok(())
     }
 
@@ -2163,7 +2164,7 @@ impl<'gc> Avm1<'gc> {
         let a = self.pop()?;
         let b = self.pop()?;
         let result = b.coerce_to_string(self, context)? == a.coerce_to_string(self, context)?;
-        self.push(Value::from_bool_v1(result, self.current_swf_version()));
+        self.push(Value::from_bool(result, self.current_swf_version()));
         Ok(())
     }
 
@@ -2197,7 +2198,7 @@ impl<'gc> Avm1<'gc> {
             .coerce_to_string(self, context)?
             .bytes()
             .gt(a.coerce_to_string(self, context)?.bytes());
-        self.push(Value::from_bool_v1(result, self.current_swf_version()));
+        self.push(Value::from_bool(result, self.current_swf_version()));
         Ok(())
     }
 
@@ -2222,7 +2223,7 @@ impl<'gc> Avm1<'gc> {
             .coerce_to_string(self, context)?
             .bytes()
             .lt(a.coerce_to_string(self, context)?.bytes());
-        self.push(Value::from_bool_v1(result, self.current_swf_version()));
+        self.push(Value::from_bool(result, self.current_swf_version()));
         Ok(())
     }
 
