@@ -1,0 +1,91 @@
+NOT
+// !false
+1
+// !true
+0
+// !0
+1
+// !1
+0
+// !(-123)
+0
+// !NaN
+1
+// !'' 
+1
+// !'blah' 
+1
+// !'false' 
+1
+// !'true' 
+1
+// !'123' 
+0
+// !'0' 
+1
+
+AND
+// 0 and 0
+0
+// 0 and 1
+0
+// 1 and 0
+0
+// 1 and 1
+1
+// 7.0 and 2.0
+1
+// 0xFF0 and 0x0FF
+1
+// NaN and& NaN
+0
+// '' and ''
+0
+// '1' and '1'
+1
+// 'XXX' and '0xFF'
+0
+
+OR
+// 0 or 0
+0
+// 0 or 1
+1
+// 1 or 0
+1
+// 1 or 1
+1
+// 7.0 or 2.0
+1
+// 0xFF0 or 0x0FF
+1
+// NaN or NaN
+0
+// '' or ''
+0
+// '1' or '1'
+1
+// 'XXX' or '0xFF'
+0
+OR
+// 0 or 0
+0
+// 0 or 1
+1
+// 1 or 0
+1
+// 1 or 1
+1
+// 7.0 or 2.0
+1
+// 0xFF0 or 0x0FF
+1
+// NaN or NaN
+0
+// '' or ''
+0
+// '1' or '1'
+1
+// 'XXX' or '0xFF'
+0
+
