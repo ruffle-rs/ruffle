@@ -280,6 +280,9 @@ impl<'gc> XMLNode<'gc> {
         match &mut *self.0.write(mc) {
             XMLNodeData::Element {
                 ref mut children, ..
+            }
+            | XMLNodeData::DocumentRoot {
+                ref mut children, ..
             } => {
                 children.push(child);
             }
