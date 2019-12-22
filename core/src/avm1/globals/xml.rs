@@ -176,7 +176,7 @@ pub fn create_xml_proto<'gc>(
     proto: Object<'gc>,
     _fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xml_proto = ScriptObject::object(gc_context, Some(proto));
+    let xml_proto = XMLObject::empty_node(gc_context, Some(proto));
 
     xml_proto.into()
 }
