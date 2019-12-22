@@ -462,14 +462,10 @@ impl<'gc> fmt::Debug for XMLNode<'gc> {
                 .field("attributes", attributes)
                 .field("children", children)
                 .finish(),
-            XMLNodeData::DocumentRoot {
-                script_object,
-                document,
-                children,
-            } => f
+            XMLNodeData::DocumentRoot { children, .. } => f
                 .debug_struct("XMLNodeData::DocumentRoot")
-                .field("script_object", script_object)
-                .field("document", document)
+                .field("script_object", &"<Elided>".to_string())
+                .field("document", &"<Elided>".to_string())
                 .field("children", children)
                 .finish(),
         }
