@@ -2,6 +2,12 @@ use crate::events::KeyCode;
 
 pub trait InputBackend {
     fn is_key_down(&self, key: KeyCode) -> bool;
+
+    fn mouse_visible(&self) -> bool;
+
+    fn hide_mouse(&mut self);
+
+    fn show_mouse(&mut self);
 }
 
 /// Input backend that does nothing
@@ -17,6 +23,14 @@ impl InputBackend for NullInputBackend {
     fn is_key_down(&self, _key: KeyCode) -> bool {
         false
     }
+
+    fn mouse_visible(&self) -> bool {
+        true
+    }
+
+    fn hide_mouse(&mut self) {}
+
+    fn show_mouse(&mut self) {}
 }
 
 impl Default for NullInputBackend {
