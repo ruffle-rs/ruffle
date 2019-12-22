@@ -320,7 +320,10 @@ impl<'gc> ButtonData<'gc> {
     ) {
         if let Some(parent) = self.base.parent {
             for action in &self.static_data.read().actions {
-                if action.condition == condition && action.key_code == key_code {
+                if action.condition == condition
+                    && (action.condition != swf::ButtonActionCondition::KeyPress
+                        || action.key_code == key_code)
+                {
                     // Note that AVM1 buttons run actions relative to their parent, not themselves.
                     context.action_queue.queue_actions(
                         parent,
