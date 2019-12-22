@@ -1,5 +1,7 @@
 //! XML Tree structure
 
+use crate::avm1::xml_object::XMLObject;
+use crate::avm1::Object;
 use crate::xml;
 use crate::xml::{Error, XMLDocument, XMLName};
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -18,6 +20,9 @@ pub struct XMLNode<'gc>(GcCell<'gc, XMLNodeData<'gc>>);
 pub enum XMLNodeData<'gc> {
     /// A text node in the XML tree.
     Text {
+        /// The script object associated with this XML node, if any.
+        script_object: Option<Object<'gc>>,
+
         /// The document that this tree node currently belongs to.
         document: XMLDocument<'gc>,
 
@@ -30,6 +35,9 @@ pub enum XMLNodeData<'gc> {
 
     /// A comment node in the XML tree.
     Comment {
+        /// The script object associated with this XML node, if any.
+        script_object: Option<Object<'gc>>,
+
         /// The document that this tree node currently belongs to.
         document: XMLDocument<'gc>,
 
@@ -46,6 +54,9 @@ pub enum XMLNodeData<'gc> {
     /// either attributes (for key/value pairs) or child nodes (for more
     /// structured data).
     Element {
+        /// The script object associated with this XML node, if any.
+        script_object: Option<Object<'gc>>,
+
         /// The document that this tree node currently belongs to.
         document: XMLDocument<'gc>,
 
@@ -64,6 +75,9 @@ pub enum XMLNodeData<'gc> {
 
     /// The root level of an XML document. Has no parent.
     DocumentRoot {
+        /// The script object associated with this XML node, if any.
+        script_object: Option<Object<'gc>>,
+
         /// The document that this is the root of.
         document: XMLDocument<'gc>,
 
@@ -82,6 +96,7 @@ impl<'gc> XMLNode<'gc> {
         XMLNode(GcCell::allocate(
             mc,
             XMLNodeData::Text {
+                script_object: None,
                 document,
                 parent: None,
                 contents: contents.to_string(),
@@ -98,6 +113,7 @@ impl<'gc> XMLNode<'gc> {
         Ok(XMLNode(GcCell::allocate(
             mc,
             XMLNodeData::Element {
+                script_object: None,
                 document,
                 parent: None,
                 tag_name: XMLName::from_str(element_name)?,
@@ -112,6 +128,7 @@ impl<'gc> XMLNode<'gc> {
         XMLNode(GcCell::allocate(
             mc,
             XMLNodeData::DocumentRoot {
+                script_object: None,
                 document,
                 children: Vec::new(),
             },
@@ -143,6 +160,7 @@ impl<'gc> XMLNode<'gc> {
         Ok(XMLNode(GcCell::allocate(
             mc,
             XMLNodeData::Element {
+                script_object: None,
                 document,
                 parent: None,
                 tag_name,
@@ -164,6 +182,7 @@ impl<'gc> XMLNode<'gc> {
         Ok(XMLNode(GcCell::allocate(
             mc,
             XMLNodeData::Text {
+                script_object: None,
                 document,
                 parent: None,
                 contents: match bt.unescaped()? {
@@ -188,6 +207,7 @@ impl<'gc> XMLNode<'gc> {
         Ok(XMLNode(GcCell::allocate(
             mc,
             XMLNodeData::Comment {
+                script_object: None,
                 document,
                 parent: None,
                 contents: match bt.unescaped()? {
@@ -347,32 +367,81 @@ impl<'gc> XMLNode<'gc> {
             _ => return None,
         }
     }
+
+    /// Get the already-instantiated script object from the current node.
+    fn get_script_object(&self) -> Option<Object<'gc>> {
+        match &*self.0.read() {
+            XMLNodeData::Element { script_object, .. } => *script_object,
+            XMLNodeData::Text { script_object, .. } => *script_object,
+            XMLNodeData::Comment { script_object, .. } => *script_object,
+            XMLNodeData::DocumentRoot { script_object, .. } => *script_object,
+        }
+    }
+
+    /// Introduce this node to a new script object.
+    ///
+    /// This internal function *will* overwrite already extant objects, so only
+    /// call this if you need to instantiate the script object for the first
+    /// time.
+    pub fn introduce_script_object(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        new_object: Object<'gc>,
+    ) {
+        match &mut *self.0.write(gc_context) {
+            XMLNodeData::Element { script_object, .. } => *script_object = Some(new_object),
+            XMLNodeData::Text { script_object, .. } => *script_object = Some(new_object),
+            XMLNodeData::Comment { script_object, .. } => *script_object = Some(new_object),
+            XMLNodeData::DocumentRoot { script_object, .. } => *script_object = Some(new_object),
+        }
+    }
+
+    /// Obtain the script object for a given XML tree node, constructing a new
+    /// script object if one does not exist.
+    pub fn script_object(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        prototype: Option<Object<'gc>>,
+    ) -> Object<'gc> {
+        let mut object = self.get_script_object();
+        if object.is_none() {
+            object = Some(XMLObject::from_xml_node(gc_context, *self, prototype));
+            self.introduce_script_object(gc_context, object.unwrap());
+        }
+
+        object.unwrap()
+    }
 }
 
 impl<'gc> fmt::Debug for XMLNode<'gc> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &*self.0.read() {
             XMLNodeData::Text {
+                script_object,
                 document,
                 parent,
                 contents,
             } => f
                 .debug_struct("XMLNodeData::Text")
+                .field("script_object", script_object)
                 .field("document", document)
                 .field("parent", parent)
                 .field("contents", contents)
                 .finish(),
             XMLNodeData::Comment {
+                script_object,
                 document,
                 parent,
                 contents,
             } => f
                 .debug_struct("XMLNodeData::Comment")
+                .field("script_object", script_object)
                 .field("document", document)
                 .field("parent", parent)
                 .field("contents", contents)
                 .finish(),
             XMLNodeData::Element {
+                script_object,
                 document,
                 parent,
                 tag_name,
@@ -380,14 +449,20 @@ impl<'gc> fmt::Debug for XMLNode<'gc> {
                 children,
             } => f
                 .debug_struct("XMLNodeData::Element")
+                .field("script_object", script_object)
                 .field("document", document)
                 .field("parent", parent)
                 .field("tag_name", tag_name)
                 .field("attributes", attributes)
                 .field("children", children)
                 .finish(),
-            XMLNodeData::DocumentRoot { document, children } => f
+            XMLNodeData::DocumentRoot {
+                script_object,
+                document,
+                children,
+            } => f
                 .debug_struct("XMLNodeData::DocumentRoot")
+                .field("script_object", script_object)
                 .field("document", document)
                 .field("children", children)
                 .finish(),

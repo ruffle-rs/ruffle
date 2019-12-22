@@ -17,16 +17,28 @@ use std::fmt;
 pub struct XMLObject<'gc>(ScriptObject<'gc>, XMLNode<'gc>);
 
 impl<'gc> XMLObject<'gc> {
+    /// Construct a new XML node and object pair.
     pub fn empty_node(
         gc_context: MutationContext<'gc, '_>,
         proto: Option<Object<'gc>>,
-    ) -> XMLObject<'gc> {
+    ) -> Object<'gc> {
         let empty_document = XMLDocument::new(gc_context);
+        let mut xml_node = XMLNode::new_text(gc_context, "", empty_document);
+        let base_object = ScriptObject::object(gc_context, proto);
+        let object = XMLObject(base_object, xml_node).into();
 
-        XMLObject(
-            ScriptObject::object(gc_context, proto),
-            XMLNode::new_text(gc_context, "", empty_document),
-        )
+        xml_node.introduce_script_object(gc_context, object);
+
+        object
+    }
+
+    /// Construct an XMLObject for an already existing node.
+    pub fn from_xml_node(
+        gc_context: MutationContext<'gc, '_>,
+        xml_node: XMLNode<'gc>,
+        proto: Option<Object<'gc>>,
+    ) -> Object<'gc> {
+        XMLObject(ScriptObject::object(gc_context, proto), xml_node).into()
     }
 
     fn base(&self) -> ScriptObject<'gc> {
