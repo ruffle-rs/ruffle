@@ -29,6 +29,7 @@ mod property;
 mod return_value;
 mod scope;
 pub mod script_object;
+mod sound_object;
 mod stage_object;
 mod super_object;
 mod value;
@@ -42,6 +43,7 @@ pub use globals::SystemPrototypes;
 pub use object::{Object, ObjectPtr, TObject};
 use scope::Scope;
 pub use script_object::ScriptObject;
+pub use sound_object::SoundObject;
 pub use stage_object::StageObject;
 pub use value::Value;
 
