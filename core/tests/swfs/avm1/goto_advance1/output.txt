@@ -1,1 +1,6 @@
 child frame 1
+// clip._x
+100
+// gotoAndStop(4)
+// clip._x
+200
