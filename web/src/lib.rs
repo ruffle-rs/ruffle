@@ -97,7 +97,7 @@ impl Ruffle {
         let renderer = WebCanvasRenderBackend::new(&canvas)?;
         let audio = WebAudioBackend::new()?;
         let navigator = WebNavigatorBackend::new();
-        let input = WebInputBackend::new();
+        let input = WebInputBackend::new(&canvas);
 
         let mut core = ruffle_core::Player::new(renderer, audio, navigator, input, data)?;
         let frame_rate = core.frame_rate();

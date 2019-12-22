@@ -1,17 +1,23 @@
+use crate::utils::JsResult;
 use ruffle_core::backend::input::InputBackend;
 use ruffle_core::events::KeyCode;
 use std::collections::HashSet;
+use web_sys::HtmlCanvasElement;
 
 /// An implementation of `InputBackend` utilizing `web_sys` bindings to input
 /// APIs
 pub struct WebInputBackend {
     keys_down: HashSet<String>,
+    canvas: HtmlCanvasElement,
+    cursor_visible: bool,
 }
 
 impl WebInputBackend {
-    pub fn new() -> Self {
+    pub fn new(canvas: &HtmlCanvasElement) -> Self {
         Self {
             keys_down: HashSet::new(),
+            canvas: canvas.clone(),
+            cursor_visible: true,
         }
     }
 
@@ -131,5 +137,25 @@ impl InputBackend for WebInputBackend {
             KeyCode::F11 => self.keys_down.contains("F11"),
             KeyCode::F12 => self.keys_down.contains("F12"),
         }
+    }
+
+    fn mouse_visible(&self) -> bool {
+        self.cursor_visible
+    }
+
+    fn hide_mouse(&mut self) {
+        self.canvas
+            .style()
+            .set_property("cursor", "none")
+            .warn_on_error();
+        self.cursor_visible = false;
+    }
+
+    fn show_mouse(&mut self) {
+        self.canvas
+            .style()
+            .set_property("cursor", "auto")
+            .warn_on_error();
+        self.cursor_visible = true;
     }
 }

@@ -1,3 +1,4 @@
+use glium::Display;
 use ruffle_core::backend::input::InputBackend;
 use ruffle_core::events::KeyCode;
 use std::collections::HashSet;
@@ -5,12 +6,16 @@ use winit::event::{ElementState, KeyboardInput, VirtualKeyCode};
 
 pub struct WinitInputBackend {
     keys_down: HashSet<VirtualKeyCode>,
+    display: Display,
+    cursor_visible: bool,
 }
 
 impl WinitInputBackend {
-    pub fn new() -> Self {
+    pub fn new(display: Display) -> Self {
         Self {
             keys_down: HashSet::new(),
+            cursor_visible: true,
+            display,
         }
     }
 
@@ -138,5 +143,19 @@ impl InputBackend for WinitInputBackend {
             KeyCode::F11 => self.keys_down.contains(&VirtualKeyCode::F11),
             KeyCode::F12 => self.keys_down.contains(&VirtualKeyCode::F12),
         }
+    }
+
+    fn mouse_visible(&self) -> bool {
+        self.cursor_visible
+    }
+
+    fn hide_mouse(&mut self) {
+        self.display.gl_window().window().set_cursor_visible(false);
+        self.cursor_visible = false;
+    }
+
+    fn show_mouse(&mut self) {
+        self.display.gl_window().window().set_cursor_visible(true);
+        self.cursor_visible = true;
     }
 }
