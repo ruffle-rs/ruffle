@@ -108,7 +108,7 @@ pub fn create_xmlnode_proto<'gc>(
                 .map(|n| {
                     n.prefix()
                         .map(|n| n.to_string().into())
-                        .unwrap_or("".to_string().into())
+                        .unwrap_or_else(|| "".to_string().into())
                 })
                 .unwrap_or_else(|| Value::Null.into()))
         }),
