@@ -1148,16 +1148,16 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_divide(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
+    fn action_divide(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         // AS1 divide
-        let a = self.pop()?;
-        let b = self.pop()?;
+        let a = self.pop()?.as_number(self, context)?;
+        let b = self.pop()?.as_number(self, context)?;
 
         // TODO(Herschel): SWF19: "If A is zero, the result NaN, Infinity, or -Infinity is pushed to the in SWF 5 and later.
         // In SWF 4, the result is the string #ERROR#.""
         // Seems to be untrue for SWF v4, I get 1.#INF.
 
-        self.push(b.into_number_v1() / a.into_number_v1());
+        self.push(b / a);
         Ok(())
     }
 
@@ -1653,18 +1653,17 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_multiply(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        // AS1 multiply
-        let a = self.pop()?;
-        let b = self.pop()?;
-        self.push(a.into_number_v1() * b.into_number_v1());
+    fn action_multiply(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let a = self.pop()?.as_number(self, context)?;
+        let b = self.pop()?.as_number(self, context)?;
+        self.push(a * b);
         Ok(())
     }
 
-    fn action_modulo(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
+    fn action_modulo(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         // TODO: Wrong operands?
-        let a = self.pop()?.as_f64()?;
-        let b = self.pop()?.as_f64()?;
+        let a = self.pop()?.as_number(self, context)?;
+        let b = self.pop()?.as_number(self, context)?;
         self.push(a % b);
         Ok(())
     }
@@ -2227,10 +2226,10 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_subtract(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let a = self.pop()?;
-        let b = self.pop()?;
-        self.push(b.into_number_v1() - a.into_number_v1());
+    fn action_subtract(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let a = self.pop()?.as_number(self, context)?;
+        let b = self.pop()?.as_number(self, context)?;
+        self.push(b - a);
         Ok(())
     }
 
@@ -2249,9 +2248,9 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_to_integer(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let val = self.pop()?;
-        self.push(val.into_number_v1().trunc());
+    fn action_to_integer(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let val = self.pop()?.as_number(self, context)?;
+        self.push(val.trunc());
         Ok(())
     }
 
