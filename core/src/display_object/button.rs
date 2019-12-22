@@ -346,6 +346,7 @@ unsafe impl<'gc> gc_arena::Collect for ButtonData<'gc> {
         }
         self.base.trace(cc);
         self.static_data.trace(cc);
+        self.object.trace(cc);
     }
 }
 
