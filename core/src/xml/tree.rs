@@ -419,42 +419,30 @@ impl<'gc> XMLNode<'gc> {
 impl<'gc> fmt::Debug for XMLNode<'gc> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &*self.0.read() {
-            XMLNodeData::Text {
-                script_object,
-                document,
-                parent,
-                contents,
-            } => f
+            XMLNodeData::Text { contents, .. } => f
                 .debug_struct("XMLNodeData::Text")
-                .field("script_object", script_object)
-                .field("document", document)
-                .field("parent", parent)
+                .field("script_object", &"<Elided>".to_string())
+                .field("document", &"<Elided>".to_string())
+                .field("parent", &"<Elided>".to_string())
                 .field("contents", contents)
                 .finish(),
-            XMLNodeData::Comment {
-                script_object,
-                document,
-                parent,
-                contents,
-            } => f
+            XMLNodeData::Comment { contents, .. } => f
                 .debug_struct("XMLNodeData::Comment")
-                .field("script_object", script_object)
-                .field("document", document)
-                .field("parent", parent)
+                .field("script_object", &"<Elided>".to_string())
+                .field("document", &"<Elided>".to_string())
+                .field("parent", &"<Elided>".to_string())
                 .field("contents", contents)
                 .finish(),
             XMLNodeData::Element {
-                script_object,
-                document,
-                parent,
                 tag_name,
                 attributes,
                 children,
+                ..
             } => f
                 .debug_struct("XMLNodeData::Element")
-                .field("script_object", script_object)
-                .field("document", document)
-                .field("parent", parent)
+                .field("script_object", &"<Elided>".to_string())
+                .field("document", &"<Elided>".to_string())
+                .field("parent", &"<Elided>".to_string())
                 .field("tag_name", tag_name)
                 .field("attributes", attributes)
                 .field("children", children)
