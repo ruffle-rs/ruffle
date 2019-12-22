@@ -112,6 +112,32 @@ pub fn create_xmlnode_proto<'gc>(
         None,
         ReadOnly.into(),
     );
+    xmlnode_proto.add_property(
+        gc_context,
+        "childNodes",
+        Executable::Native(|avm, ac, this: Object<'gc>, _args| {
+            if let Some(node) = this.as_xml_node() {
+                let array = ScriptObject::array(ac.gc_context, Some(avm.prototypes.array));
+                if let Some(children) = node.children() {
+                    for (i, mut child) in children.enumerate() {
+                        array.set_array_element(
+                            i as usize,
+                            child
+                                .script_object(ac.gc_context, Some(avm.prototypes.xml_node))
+                                .into(),
+                            ac.gc_context,
+                        );
+                    }
+
+                    return Ok(array.into());
+                }
+            }
+
+            Ok(Value::Undefined.into())
+        }),
+        None,
+        ReadOnly.into(),
+    );
 
     xmlnode_proto.into()
 }

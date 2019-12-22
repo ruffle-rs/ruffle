@@ -139,6 +139,7 @@ pub struct SystemPrototypes<'gc> {
     pub sound: Object<'gc>,
     pub text_field: Object<'gc>,
     pub array: Object<'gc>,
+    pub xml_node: Object<'gc>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
@@ -150,6 +151,7 @@ unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
         self.sound.trace(cc);
         self.text_field.trace(cc);
         self.array.trace(cc);
+        self.xml_node.trace(cc);
     }
 }
 
@@ -364,6 +366,7 @@ pub fn create_globals<'gc>(
             sound: sound_proto,
             text_field: text_field_proto,
             array: array_proto,
+            xml_node: xmlnode_proto,
         },
         globals.into(),
         listeners,
