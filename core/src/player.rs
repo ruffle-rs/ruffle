@@ -392,20 +392,25 @@ impl<Audio: AudioBackend, Renderer: RenderBackend, Navigator: NavigatorBackend>
         let mouse_pos = self.mouse_pos;
         self.mutate_with_update_context(|_avm, context| {
             if let Some(drag_object) = &mut context.drag_object {
-                let mut drag_point = (
-                    mouse_pos.0 + drag_object.offset.0,
-                    mouse_pos.1 + drag_object.offset.1,
-                );
-                if let Some(parent) = drag_object.display_object.parent() {
-                    drag_point = parent.global_to_local(drag_point);
+                if drag_object.display_object.removed() {
+                    // Be sure to clear the drag if the object was removed.
+                    *context.drag_object = None;
+                } else {
+                    let mut drag_point = (
+                        mouse_pos.0 + drag_object.offset.0,
+                        mouse_pos.1 + drag_object.offset.1,
+                    );
+                    if let Some(parent) = drag_object.display_object.parent() {
+                        drag_point = parent.global_to_local(drag_point);
+                    }
+                    drag_point = drag_object.constraint.clamp(drag_point);
+                    drag_object
+                        .display_object
+                        .set_x(context.gc_context, drag_point.0.to_pixels());
+                    drag_object
+                        .display_object
+                        .set_y(context.gc_context, drag_point.1.to_pixels());
                 }
-                drag_point = drag_object.constraint.clamp(drag_point);
-                drag_object
-                    .display_object
-                    .set_x(context.gc_context, drag_point.0.to_pixels());
-                drag_object
-                    .display_object
-                    .set_y(context.gc_context, drag_point.1.to_pixels());
             }
         });
     }
