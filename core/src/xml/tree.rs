@@ -30,6 +30,12 @@ pub enum XMLNodeData<'gc> {
         /// The parent node of this one.
         parent: Option<XMLNode<'gc>>,
 
+        /// The previous sibling node to this one.
+        prev_sibling: Option<XMLNode<'gc>>,
+
+        /// The next sibling node to this one.
+        next_sibling: Option<XMLNode<'gc>>,
+
         /// The string representation of the text.
         contents: String,
     },
@@ -44,6 +50,12 @@ pub enum XMLNodeData<'gc> {
 
         /// The parent node of this one.
         parent: Option<XMLNode<'gc>>,
+
+        /// The previous sibling node to this one.
+        prev_sibling: Option<XMLNode<'gc>>,
+
+        /// The next sibling node to this one.
+        next_sibling: Option<XMLNode<'gc>>,
 
         /// The string representation of the comment.
         contents: String,
@@ -63,6 +75,12 @@ pub enum XMLNodeData<'gc> {
 
         /// The parent node of this one.
         parent: Option<XMLNode<'gc>>,
+
+        /// The previous sibling node to this one.
+        prev_sibling: Option<XMLNode<'gc>>,
+
+        /// The next sibling node to this one.
+        next_sibling: Option<XMLNode<'gc>>,
 
         /// The tag name of this element.
         tag_name: XMLName,
@@ -100,6 +118,8 @@ impl<'gc> XMLNode<'gc> {
                 script_object: None,
                 document,
                 parent: None,
+                prev_sibling: None,
+                next_sibling: None,
                 contents: contents.to_string(),
             },
         ))
@@ -117,6 +137,8 @@ impl<'gc> XMLNode<'gc> {
                 script_object: None,
                 document,
                 parent: None,
+                prev_sibling: None,
+                next_sibling: None,
                 tag_name: XMLName::from_str(element_name)?,
                 attributes: BTreeMap::new(),
                 children: Vec::new(),
@@ -164,6 +186,8 @@ impl<'gc> XMLNode<'gc> {
                 script_object: None,
                 document,
                 parent: None,
+                prev_sibling: None,
+                next_sibling: None,
                 tag_name,
                 attributes,
                 children,
@@ -186,6 +210,8 @@ impl<'gc> XMLNode<'gc> {
                 script_object: None,
                 document,
                 parent: None,
+                prev_sibling: None,
+                next_sibling: None,
                 contents: match bt.unescaped()? {
                     Cow::Borrowed(ln) => Cow::Borrowed(std::str::from_utf8(ln)?),
                     Cow::Owned(ln) => Cow::Owned(String::from_utf8(ln)?),
@@ -211,6 +237,8 @@ impl<'gc> XMLNode<'gc> {
                 script_object: None,
                 document,
                 parent: None,
+                prev_sibling: None,
+                next_sibling: None,
                 contents: match bt.unescaped()? {
                     Cow::Borrowed(ln) => Cow::Borrowed(std::str::from_utf8(ln)?),
                     Cow::Owned(ln) => Cow::Owned(String::from_utf8(ln)?),
@@ -234,32 +262,140 @@ impl<'gc> XMLNode<'gc> {
         }
     }
 
-    /// Adopt a child element into the current node.
+    /// Adopt a new child node into the current node.
     ///
     /// This does not add the node to any internal lists; it merely updates the
     /// child to ensure that it considers this node it's parent. This function
-    /// should always be called after a child node is added to this one.
-    pub fn adopt(
+    /// should always be called after a child node is added to this one. If
+    /// you adopt a node that is NOT already added to the children list, bad
+    /// things may happen.
+    pub fn adopt_child(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        mut child: XMLNode<'gc>,
+    ) -> Result<(), Error> {
+        {
+            let mut write = child.0.write(mc);
+            let (child_document, child_parent) = match &mut *write {
+                XMLNodeData::Element {
+                    document, parent, ..
+                } => Ok((document, parent)),
+                XMLNodeData::Text {
+                    document, parent, ..
+                } => Ok((document, parent)),
+                XMLNodeData::Comment {
+                    document, parent, ..
+                } => Ok((document, parent)),
+                XMLNodeData::DocumentRoot { .. } => Err("Cannot adopt other document roots"),
+            }?;
+
+            if let Some(parent) = child_parent {
+                parent.orphan_child(mc, child)?;
+            }
+
+            *child_document = self.document();
+            *child_parent = Some(*self);
+        }
+        child.disown_siblings(mc)?;
+        Ok(())
+    }
+
+    /// Get the previous sibling
+    pub fn prev_sibling(self) -> Result<Option<XMLNode<'gc>>, Error> {
+        match *self.0.read() {
+            XMLNodeData::Element { prev_sibling, .. } => Ok(prev_sibling),
+            XMLNodeData::Text { prev_sibling, .. } => Ok(prev_sibling),
+            XMLNodeData::Comment { prev_sibling, .. } => Ok(prev_sibling),
+            XMLNodeData::DocumentRoot { .. } => Err("Document roots cannot have siblings".into()),
+        }
+    }
+
+    /// Establish a new, previous sibling node.
+    fn establish_prev_sibling(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        new_prev: Option<XMLNode<'gc>>,
+    ) -> Result<(), Error> {
+        match &mut *self.0.write(mc) {
+            XMLNodeData::Element { prev_sibling, .. } => *prev_sibling = new_prev,
+            XMLNodeData::Text { prev_sibling, .. } => *prev_sibling = new_prev,
+            XMLNodeData::Comment { prev_sibling, .. } => *prev_sibling = new_prev,
+            XMLNodeData::DocumentRoot { .. } => {
+                return Err("Document roots cannot have siblings".into())
+            }
+        };
+
+        Ok(())
+    }
+
+    /// Get the next sibling
+    pub fn next_sibling(self) -> Result<Option<XMLNode<'gc>>, Error> {
+        match *self.0.read() {
+            XMLNodeData::Element { next_sibling, .. } => Ok(next_sibling),
+            XMLNodeData::Text { next_sibling, .. } => Ok(next_sibling),
+            XMLNodeData::Comment { next_sibling, .. } => Ok(next_sibling),
+            XMLNodeData::DocumentRoot { .. } => Err("Document roots cannot have siblings".into()),
+        }
+    }
+
+    /// Establish a new, next sibling node.
+    fn establish_next_sibling(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        new_next: Option<XMLNode<'gc>>,
+    ) -> Result<(), Error> {
+        match &mut *self.0.write(mc) {
+            XMLNodeData::Element { next_sibling, .. } => *next_sibling = new_next,
+            XMLNodeData::Text { next_sibling, .. } => *next_sibling = new_next,
+            XMLNodeData::Comment { next_sibling, .. } => *next_sibling = new_next,
+            XMLNodeData::DocumentRoot { .. } => {
+                return Err("Document roots cannot have siblings".into())
+            }
+        };
+
+        Ok(())
+    }
+
+    /// Remove node from it's current siblings list.
+    fn disown_siblings(&mut self, mc: MutationContext<'gc, '_>) -> Result<(), Error> {
+        let old_prev = self.prev_sibling()?;
+        let old_next = self.next_sibling()?;
+
+        if let Some(mut prev) = old_prev {
+            prev.establish_next_sibling(mc, old_next)?;
+        }
+
+        if let Some(mut next) = old_next {
+            next.establish_prev_sibling(mc, old_prev)?;
+        }
+
+        Ok(())
+    }
+
+    /// Remove node from this node's child list.
+    fn orphan_child(
         &mut self,
         mc: MutationContext<'gc, '_>,
         child: XMLNode<'gc>,
     ) -> Result<(), Error> {
-        let mut write = child.0.write(mc);
-        let (child_document, child_parent) = match &mut *write {
-            XMLNodeData::Element {
-                document, parent, ..
-            } => Ok((document, parent)),
-            XMLNodeData::Text {
-                document, parent, ..
-            } => Ok((document, parent)),
-            XMLNodeData::Comment {
-                document, parent, ..
-            } => Ok((document, parent)),
-            XMLNodeData::DocumentRoot { .. } => Err("Cannot adopt other document roots"),
-        }?;
+        for (i, other_child) in self
+            .children()
+            .ok_or("Cannot orphan child if I have no children")?
+            .enumerate()
+        {
+            if GcCell::ptr_eq(child.0, other_child.0) {
+                match &mut *self.0.write(mc) {
+                    XMLNodeData::Element { children, .. } => children.remove(i),
+                    XMLNodeData::DocumentRoot { children, .. } => children.remove(i),
+                    XMLNodeData::Text { .. } => return Err("Text node has no child nodes!".into()),
+                    XMLNodeData::Comment { .. } => {
+                        return Err("Comment node has no child nodes!".into())
+                    }
+                };
 
-        *child_document = self.document();
-        *child_parent = Some(*self);
+                break;
+            }
+        }
 
         Ok(())
     }
@@ -290,7 +426,7 @@ impl<'gc> XMLNode<'gc> {
             _ => return Err("Not an Element".into()),
         };
 
-        self.adopt(mc, child)?;
+        self.adopt_child(mc, child)?;
 
         Ok(())
     }
