@@ -7,6 +7,7 @@ use crate::avm1::script_object::ScriptObject;
 use crate::avm1::xml_object::XMLObject;
 use crate::avm1::{Avm1, Error, Object, TObject, UpdateContext, Value};
 use crate::xml::{XMLDocument, XMLNode};
+use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 /// XMLNode constructor
@@ -38,11 +39,27 @@ pub fn xmlnode_constructor<'gc>(
     Ok(Value::Undefined.into())
 }
 
+pub fn xmlnode_append_child<'gc>(
+    _avm: &mut Avm1<'gc>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let (Some(mut xmlnode), Some(Ok(Some(child_xmlnode)))) = (
+        this.as_xml_node(),
+        args.get(0).map(|n| n.as_object().map(|n| n.as_xml_node())),
+    ) {
+        xmlnode.append_child(ac.gc_context, child_xmlnode)?;
+    }
+
+    Ok(Value::Undefined.into())
+}
+
 /// Construct the prototype for `XMLNode`.
 pub fn create_xmlnode_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Object<'gc>,
-    _fn_proto: Object<'gc>,
+    fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let xmlnode_proto = XMLObject::empty_node(gc_context, Some(proto));
 
@@ -141,6 +158,16 @@ pub fn create_xmlnode_proto<'gc>(
         None,
         ReadOnly.into(),
     );
+    xmlnode_proto
+        .as_script_object()
+        .unwrap()
+        .force_set_function(
+            "appendChild",
+            xmlnode_append_child,
+            gc_context,
+            EnumSet::empty(),
+            Some(fn_proto),
+        );
 
     xmlnode_proto
 }
