@@ -14,7 +14,7 @@ use js_sys::Uint8Array;
 use ruffle_core::{backend::render::RenderBackend, PlayerEvent};
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
-use web_sys::{Event, EventTarget, HtmlCanvasElement, KeyboardEvent, MouseEvent};
+use web_sys::{Element, EventTarget, HtmlCanvasElement, KeyboardEvent, PointerEvent};
 
 thread_local! {
     /// We store the actual instances of the ruffle core in a static pool.
@@ -40,11 +40,10 @@ struct RuffleInstance {
     animation_handler: Option<AnimationHandler>, // requestAnimationFrame callback
     animation_handler_id: Option<NonZeroI32>,    // requestAnimationFrame id
     #[allow(dead_code)]
-    click_callback: Option<Closure<dyn FnMut(Event)>>,
-    mouse_move_callback: Option<Closure<dyn FnMut(MouseEvent)>>,
-    mouse_down_callback: Option<Closure<dyn FnMut(MouseEvent)>>,
-    mouse_up_callback: Option<Closure<dyn FnMut(MouseEvent)>>,
-    window_mouse_down_callback: Option<Closure<dyn FnMut(MouseEvent)>>,
+    mouse_move_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
+    mouse_down_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
+    mouse_up_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
+    window_mouse_down_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
     key_down_callback: Option<Closure<dyn FnMut(KeyboardEvent)>>,
     key_up_callback: Option<Closure<dyn FnMut(KeyboardEvent)>>,
     has_focus: bool,
@@ -111,7 +110,6 @@ impl Ruffle {
             device_pixel_ratio: window.device_pixel_ratio(),
             animation_handler: None,
             animation_handler_id: None,
-            click_callback: None,
             mouse_move_callback: None,
             mouse_down_callback: None,
             window_mouse_down_callback: None,
@@ -121,6 +119,9 @@ impl Ruffle {
             timestamp: None,
             has_focus: false,
         };
+
+        // Prevent touch-scrolling on canvas.
+        canvas.style().set_property("touch-action", "none").unwrap();
 
         // Register the instance and create the animation frame closure.
         let mut ruffle = INSTANCES.with(move |instances| {
@@ -140,7 +141,7 @@ impl Ruffle {
 
             // Create mouse move handler.
             {
-                let mouse_move_callback = Closure::wrap(Box::new(move |js_event: MouseEvent| {
+                let mouse_move_callback = Closure::wrap(Box::new(move |js_event: PointerEvent| {
                     INSTANCES.with(move |instances| {
                         let mut instances = instances.borrow_mut();
                         if let Some(instance) = instances.get_mut(index) {
@@ -155,11 +156,11 @@ impl Ruffle {
                         }
                     });
                 })
-                    as Box<dyn FnMut(MouseEvent)>);
+                    as Box<dyn FnMut(PointerEvent)>);
                 let canvas_events: &EventTarget = canvas.as_ref();
                 canvas_events
                     .add_event_listener_with_callback(
-                        "mousemove",
+                        "pointermove",
                         mouse_move_callback.as_ref().unchecked_ref(),
                     )
                     .unwrap();
@@ -169,11 +170,17 @@ impl Ruffle {
 
             // Create mouse down handler.
             {
-                let mouse_down_callback = Closure::wrap(Box::new(move |js_event: MouseEvent| {
+                let mouse_down_callback = Closure::wrap(Box::new(move |js_event: PointerEvent| {
                     INSTANCES.with(move |instances| {
                         let mut instances = instances.borrow_mut();
                         if let Some(instance) = instances.get_mut(index) {
                             instance.has_focus = true;
+                            instance.core.set_is_playing(true);
+                            if let Some(target) = js_event.current_target() {
+                                let _ = target
+                                    .unchecked_ref::<Element>()
+                                    .set_pointer_capture(js_event.pointer_id());
+                            }
                             let event = PlayerEvent::MouseDown {
                                 x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
                                 y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
@@ -183,11 +190,11 @@ impl Ruffle {
                         }
                     });
                 })
-                    as Box<dyn FnMut(MouseEvent)>);
+                    as Box<dyn FnMut(PointerEvent)>);
                 let canvas_events: &EventTarget = canvas.as_ref();
                 canvas_events
                     .add_event_listener_with_callback(
-                        "mousedown",
+                        "pointerdown",
                         mouse_down_callback.as_ref().unchecked_ref(),
                     )
                     .unwrap();
@@ -198,7 +205,7 @@ impl Ruffle {
             // Create window mouse down handler.
             {
                 let window_mouse_down_callback =
-                    Closure::wrap(Box::new(move |_js_event: MouseEvent| {
+                    Closure::wrap(Box::new(move |_js_event: PointerEvent| {
                         INSTANCES.with(|instances| {
                             let mut instances = instances.borrow_mut();
                             if let Some(instance) = instances.get_mut(index) {
@@ -207,11 +214,11 @@ impl Ruffle {
                                 instance.has_focus = false;
                             }
                         });
-                    }) as Box<dyn FnMut(MouseEvent)>);
+                    }) as Box<dyn FnMut(PointerEvent)>);
 
                 window
                     .add_event_listener_with_callback_and_bool(
-                        "mousedown",
+                        "pointerdown",
                         window_mouse_down_callback.as_ref().unchecked_ref(),
                         true, // Use capture so this first *before* the canvas mouse down handler.
                     )
@@ -222,10 +229,15 @@ impl Ruffle {
 
             // Create mouse up handler.
             {
-                let mouse_up_callback = Closure::wrap(Box::new(move |js_event: MouseEvent| {
+                let mouse_up_callback = Closure::wrap(Box::new(move |js_event: PointerEvent| {
                     INSTANCES.with(move |instances| {
                         let mut instances = instances.borrow_mut();
                         if let Some(instance) = instances.get_mut(index) {
+                            if let Some(target) = js_event.current_target() {
+                                let _ = target
+                                    .unchecked_ref::<Element>()
+                                    .release_pointer_capture(js_event.pointer_id());
+                            }
                             let event = PlayerEvent::MouseUp {
                                 x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
                                 y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
@@ -237,11 +249,11 @@ impl Ruffle {
                         }
                     });
                 })
-                    as Box<dyn FnMut(MouseEvent)>);
+                    as Box<dyn FnMut(PointerEvent)>);
                 let canvas_events: &EventTarget = canvas.as_ref();
                 canvas_events
                     .add_event_listener_with_callback(
-                        "mouseup",
+                        "pointerup",
                         mouse_up_callback.as_ref().unchecked_ref(),
                     )
                     .unwrap();
@@ -250,28 +262,28 @@ impl Ruffle {
             }
 
             // Create click event handler.
-            {
-                let click_callback = Closure::wrap(Box::new(move |_| {
-                    INSTANCES.with(move |instances| {
-                        let mut instances = instances.borrow_mut();
-                        if let Some(instance) = instances.get_mut(index) {
-                            instance.core.set_is_playing(true);
-                        }
-                    });
-                }) as Box<dyn FnMut(Event)>);
-                let canvas_events: &EventTarget = canvas.as_ref();
-                canvas_events
-                    .add_event_listener_with_callback(
-                        "click",
-                        click_callback.as_ref().unchecked_ref(),
-                    )
-                    .unwrap();
-                canvas.style().set_property("cursor", "pointer").unwrap();
-                let instance = instances.get_mut(index).unwrap();
-                instance.click_callback = Some(click_callback);
-                // Do initial render to render "click-to-play".
-                instance.core.render();
-            }
+            // {
+            //     let click_callback = Closure::wrap(Box::new(move |_| {
+            //         INSTANCES.with(move |instances| {
+            //             let mut instances = instances.borrow_mut();
+            //             if let Some(instance) = instances.get_mut(index) {
+            //                 instance.core.set_is_playing(true);
+            //             }
+            //         });
+            //     }) as Box<dyn FnMut(Event)>);
+            //     let canvas_events: &EventTarget = canvas.as_ref();
+            //     canvas_events
+            //         .add_event_listener_with_callback(
+            //             "click",
+            //             click_callback.as_ref().unchecked_ref(),
+            //         )
+            //         .unwrap();
+            //     canvas.style().set_property("cursor", "pointer").unwrap();
+            //     let instance = instances.get_mut(index).unwrap();
+            //     instance.click_callback = Some(click_callback);
+            //     // Do initial render to render "click-to-play".
+            //     instance.core.render();
+            // }
 
             // Create keydown event handler.
             {
