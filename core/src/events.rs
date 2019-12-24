@@ -3,10 +3,12 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 #[allow(clippy::enum_variant_names)]
 #[derive(Debug)]
 pub enum PlayerEvent {
+    KeyDown { key_code: KeyCode },
     MouseMove { x: f64, y: f64 },
     MouseUp { x: f64, y: f64 },
     MouseDown { x: f64, y: f64 },
     MouseLeft,
+    TextInput { codepoint: char },
 }
 
 /// The events that an AVM1 button can fire.
@@ -17,14 +19,21 @@ pub enum PlayerEvent {
 ///     trace("Button clicked");
 /// }
 /// ```
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[allow(dead_code)]
 pub enum ButtonEvent {
     Press,
     Release,
     RollOut,
     RollOver,
-    KeyPress(KeyCode),
+    KeyPress { key_code: ButtonKeyCode },
+}
+
+/// Whether this button event was handled by some child.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum ButtonEventResult {
+    NotHandled,
+    Handled,
 }
 
 /// An event type that can be handled by a movie clip
@@ -40,7 +49,7 @@ pub enum ClipEvent {
     Initialize,
     KeyUp,
     KeyDown,
-    KeyPress { key_code: KeyCode },
+    KeyPress { key_code: ButtonKeyCode },
     Load,
     MouseUp,
     MouseDown,
@@ -152,4 +161,144 @@ pub enum KeyCode {
     F10 = 121,
     F11 = 122,
     F12 = 123,
+}
+
+/// Key codes for SWF4 keyPress button handlers. These are annoyingly different than
+/// `Key.isDown` key codes.
+/// TODO: After 18, these are mostly ASCII... should we just use u8? How are different
+/// keyboard layouts/languages handled?
+/// SWF19 pp. 198-199
+#[derive(Debug, PartialEq, Eq, Copy, Clone, TryFromPrimitive, IntoPrimitive)]
+#[repr(u8)]
+pub enum ButtonKeyCode {
+    Unknown = 0,
+    Left = 1,
+    Right = 2,
+    Home = 3,
+    End = 4,
+    Insert = 5,
+    Delete = 6,
+    Backspace = 8,
+    Return = 13,
+    Up = 14,
+    Down = 15,
+    PgUp = 16,
+    PgDown = 17,
+    Tab = 18,
+    Escape = 19,
+    Space = 32,
+    Exclamation = 33,
+    DoubleQuote = 34,
+    NumberSign = 35,
+    Dollar = 36,
+    Percent = 37,
+    Ampersand = 38,
+    SingleQuote = 39,
+    LParen = 40,
+    RParen = 41,
+    Asterisk = 42,
+    Plus = 43,
+    Comma = 44,
+    Minus = 45,
+    Period = 46,
+    Slash = 47,
+    Zero = 48,
+    One = 49,
+    Two = 50,
+    Three = 51,
+    Four = 52,
+    Five = 53,
+    Six = 54,
+    Seven = 55,
+    Eight = 56,
+    Nine = 57,
+    Colon = 58,
+    Semicolon = 59,
+    LessThan = 60,
+    Equals = 61,
+    GreaterThan = 62,
+    Question = 63,
+    At = 64,
+    UppercaseA = 65,
+    UppercaseB = 66,
+    UppercaseC = 67,
+    UppercaseD = 68,
+    UppercaseE = 69,
+    UppercaseF = 70,
+    UppercaseG = 71,
+    UppercaseH = 72,
+    UppercaseI = 73,
+    UppercaseJ = 74,
+    UppercaseK = 75,
+    UppercaseL = 76,
+    UppercaseM = 77,
+    UppercaseN = 78,
+    UppercaseO = 79,
+    UppercaseP = 80,
+    UppercaseQ = 81,
+    UppercaseR = 82,
+    UppercaseS = 83,
+    UppercaseT = 84,
+    UppercaseU = 85,
+    UppercaseV = 86,
+    UppercaseW = 87,
+    UppercaseX = 88,
+    UppercaseY = 89,
+    UppercaseZ = 90,
+    LBracket = 91,
+    Backslash = 92,
+    RBracket = 93,
+    Caret = 94,
+    Underscore = 95,
+    Backquote = 96,
+    A = 97,
+    B = 98,
+    C = 99,
+    D = 100,
+    E = 101,
+    F = 102,
+    G = 103,
+    H = 104,
+    I = 105,
+    J = 106,
+    K = 107,
+    L = 108,
+    M = 109,
+    N = 110,
+    O = 111,
+    P = 112,
+    Q = 113,
+    R = 114,
+    S = 115,
+    T = 116,
+    U = 117,
+    V = 118,
+    W = 119,
+    X = 120,
+    Y = 121,
+    Z = 122,
+    LBrace = 123,
+    Pipe = 124,
+    RBrace = 125,
+    Tilde = 126,
+}
+
+pub fn key_code_to_button_key_code(key_code: KeyCode) -> Option<ButtonKeyCode> {
+    let out = match key_code {
+        KeyCode::Left => ButtonKeyCode::Left,
+        KeyCode::Right => ButtonKeyCode::Right,
+        KeyCode::Home => ButtonKeyCode::Home,
+        KeyCode::End => ButtonKeyCode::End,
+        KeyCode::Insert => ButtonKeyCode::Insert,
+        KeyCode::Delete => ButtonKeyCode::Delete,
+        KeyCode::Backspace => ButtonKeyCode::Backspace,
+        KeyCode::Return => ButtonKeyCode::Return,
+        KeyCode::Up => ButtonKeyCode::Up,
+        KeyCode::Down => ButtonKeyCode::Down,
+        KeyCode::PgUp => ButtonKeyCode::PgUp,
+        KeyCode::PgDown => ButtonKeyCode::PgDown,
+        KeyCode::Escape => ButtonKeyCode::Escape,
+        _ => return None,
+    };
+    Some(out)
 }

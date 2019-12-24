@@ -127,8 +127,10 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                         player.handle_event(ruffle_core::PlayerEvent::MouseLeft)
                     }
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                    WindowEvent::KeyboardInput { input, .. } => {
-                        player.input_mut().update(input);
+                    WindowEvent::KeyboardInput { .. } | WindowEvent::ReceivedCharacter(_) => {
+                        if let Some(event) = player.input_mut().handle_event(event) {
+                            player.handle_event(event);
+                        }
                     }
                     _ => (),
                 },

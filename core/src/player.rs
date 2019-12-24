@@ -6,13 +6,14 @@ use crate::backend::{
 };
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::display_object::{MorphShape, MovieClip};
-use crate::events::{ButtonEvent, ClipEvent, PlayerEvent};
+use crate::events::{ButtonEvent, ButtonKeyCode, ClipEvent, PlayerEvent};
 use crate::library::Library;
 use crate::prelude::*;
 use crate::transform::TransformStack;
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
+use std::convert::TryFrom;
 use std::sync::Arc;
 
 static DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
@@ -340,7 +341,40 @@ impl<
             }
         }
 
+        // Propagate button events.
+        let button_event = match event {
+            // ASCII characters convert directly to keyPress button events.
+            PlayerEvent::TextInput { codepoint }
+                if codepoint as u32 >= 32 && codepoint as u32 <= 126 =>
+            {
+                Some(ButtonEvent::KeyPress {
+                    key_code: ButtonKeyCode::try_from(codepoint as u8).unwrap(),
+                })
+            }
+
+            // Special keys have custom values for keyPress.
+            PlayerEvent::KeyDown { key_code } => {
+                if let Some(key_code) = crate::events::key_code_to_button_key_code(key_code) {
+                    Some(ButtonEvent::KeyPress { key_code })
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        };
+
+        if button_event.is_some() {
+            self.mutate_with_update_context(|_avm, context| {
+                let root = context.root;
+                if let Some(button_event) = button_event {
+                    root.propagate_button_event(context, button_event);
+                }
+            });
+        }
+
+        // Propagte clip events.
         let (clip_event, mouse_event_name) = match event {
+            PlayerEvent::KeyDown { .. } => (Some(ClipEvent::KeyDown), Some("onKeyDown")),
             PlayerEvent::MouseMove { .. } => (Some(ClipEvent::MouseMove), Some("onMouseMove")),
             PlayerEvent::MouseUp { .. } => (Some(ClipEvent::MouseUp), Some("onMouseUp")),
             PlayerEvent::MouseDown { .. } => (Some(ClipEvent::MouseDown), Some("onMouseDown")),
