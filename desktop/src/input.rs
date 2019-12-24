@@ -1,8 +1,8 @@
 use glium::Display;
 use ruffle_core::backend::input::InputBackend;
-use ruffle_core::events::KeyCode;
+use ruffle_core::events::{KeyCode, PlayerEvent};
 use std::collections::HashSet;
-use winit::event::{ElementState, KeyboardInput, VirtualKeyCode};
+use winit::event::{ElementState, VirtualKeyCode, WindowEvent};
 
 pub struct WinitInputBackend {
     keys_down: HashSet<VirtualKeyCode>,
@@ -19,19 +19,30 @@ impl WinitInputBackend {
         }
     }
 
-    pub fn update(&mut self, input: KeyboardInput) {
-        match input.state {
-            ElementState::Pressed => {
-                if let Some(key) = input.virtual_keycode {
-                    self.keys_down.insert(key);
+    /// Process an input event, and returns an event that should be forward to the player, if any.
+    pub fn handle_event(&mut self, event: WindowEvent) -> Option<PlayerEvent> {
+        match event {
+            WindowEvent::KeyboardInput { input, .. } => match input.state {
+                ElementState::Pressed => {
+                    if let Some(key) = input.virtual_keycode {
+                        self.keys_down.insert(key);
+                        if let Some(key_code) = winit_to_ruffle_key_code(key) {
+                            return Some(PlayerEvent::KeyDown { key_code });
+                        }
+                    }
                 }
-            }
-            ElementState::Released => {
-                if let Some(key) = input.virtual_keycode {
-                    self.keys_down.remove(&key);
+                ElementState::Released => {
+                    if let Some(key) = input.virtual_keycode {
+                        self.keys_down.remove(&key);
+                    }
                 }
+            },
+            WindowEvent::ReceivedCharacter(codepoint) => {
+                return Some(PlayerEvent::TextInput { codepoint });
             }
+            _ => (),
         }
+        None
     }
 }
 
@@ -158,4 +169,107 @@ impl InputBackend for WinitInputBackend {
         self.display.gl_window().window().set_cursor_visible(true);
         self.cursor_visible = true;
     }
+}
+
+/// Converts a winit `VirtualKeyCode` into a Ruffle `KeyCode`.
+/// Returns `None` if there is no matching Flash key code.
+fn winit_to_ruffle_key_code(key_code: VirtualKeyCode) -> Option<KeyCode> {
+    let out = match key_code {
+        VirtualKeyCode::Back => KeyCode::Backspace,
+        VirtualKeyCode::Return => KeyCode::Return,
+        VirtualKeyCode::LShift | VirtualKeyCode::RShift => KeyCode::Shift,
+        VirtualKeyCode::LControl | VirtualKeyCode::RControl => KeyCode::Control,
+        VirtualKeyCode::LAlt | VirtualKeyCode::RAlt => KeyCode::Alt,
+        VirtualKeyCode::Capital => KeyCode::CapsLock,
+        VirtualKeyCode::Escape => KeyCode::Escape,
+        VirtualKeyCode::Space => KeyCode::Space,
+        VirtualKeyCode::Key0 => KeyCode::Key0,
+        VirtualKeyCode::Key1 => KeyCode::Key1,
+        VirtualKeyCode::Key2 => KeyCode::Key2,
+        VirtualKeyCode::Key3 => KeyCode::Key3,
+        VirtualKeyCode::Key4 => KeyCode::Key4,
+        VirtualKeyCode::Key5 => KeyCode::Key5,
+        VirtualKeyCode::Key6 => KeyCode::Key6,
+        VirtualKeyCode::Key7 => KeyCode::Key7,
+        VirtualKeyCode::Key8 => KeyCode::Key8,
+        VirtualKeyCode::Key9 => KeyCode::Key9,
+        VirtualKeyCode::A => KeyCode::A,
+        VirtualKeyCode::B => KeyCode::B,
+        VirtualKeyCode::C => KeyCode::C,
+        VirtualKeyCode::D => KeyCode::D,
+        VirtualKeyCode::E => KeyCode::E,
+        VirtualKeyCode::F => KeyCode::F,
+        VirtualKeyCode::G => KeyCode::G,
+        VirtualKeyCode::H => KeyCode::H,
+        VirtualKeyCode::I => KeyCode::I,
+        VirtualKeyCode::J => KeyCode::J,
+        VirtualKeyCode::K => KeyCode::K,
+        VirtualKeyCode::L => KeyCode::L,
+        VirtualKeyCode::M => KeyCode::M,
+        VirtualKeyCode::N => KeyCode::N,
+        VirtualKeyCode::O => KeyCode::O,
+        VirtualKeyCode::P => KeyCode::P,
+        VirtualKeyCode::Q => KeyCode::Q,
+        VirtualKeyCode::R => KeyCode::R,
+        VirtualKeyCode::S => KeyCode::S,
+        VirtualKeyCode::T => KeyCode::T,
+        VirtualKeyCode::U => KeyCode::U,
+        VirtualKeyCode::V => KeyCode::V,
+        VirtualKeyCode::W => KeyCode::W,
+        VirtualKeyCode::X => KeyCode::X,
+        VirtualKeyCode::Y => KeyCode::Y,
+        VirtualKeyCode::Z => KeyCode::Z,
+        VirtualKeyCode::Semicolon => KeyCode::Semicolon,
+        VirtualKeyCode::Equals => KeyCode::Equals,
+        VirtualKeyCode::Comma => KeyCode::Comma,
+        VirtualKeyCode::Minus => KeyCode::Minus,
+        VirtualKeyCode::Period => KeyCode::Period,
+        VirtualKeyCode::Slash => KeyCode::Slash,
+        VirtualKeyCode::Grave => KeyCode::Grave,
+        VirtualKeyCode::LBracket => KeyCode::LBracket,
+        VirtualKeyCode::Backslash => KeyCode::Backslash,
+        VirtualKeyCode::RBracket => KeyCode::RBracket,
+        VirtualKeyCode::Apostrophe => KeyCode::Apostrophe,
+        VirtualKeyCode::Numpad0 => KeyCode::Numpad0,
+        VirtualKeyCode::Numpad1 => KeyCode::Numpad1,
+        VirtualKeyCode::Numpad2 => KeyCode::Numpad2,
+        VirtualKeyCode::Numpad3 => KeyCode::Numpad3,
+        VirtualKeyCode::Numpad4 => KeyCode::Numpad4,
+        VirtualKeyCode::Numpad5 => KeyCode::Numpad5,
+        VirtualKeyCode::Numpad6 => KeyCode::Numpad6,
+        VirtualKeyCode::Numpad7 => KeyCode::Numpad7,
+        VirtualKeyCode::Numpad8 => KeyCode::Numpad8,
+        VirtualKeyCode::Numpad9 => KeyCode::Numpad9,
+        VirtualKeyCode::Multiply => KeyCode::Multiply,
+        VirtualKeyCode::Add => KeyCode::Plus,
+        VirtualKeyCode::Subtract => KeyCode::NumpadMinus,
+        VirtualKeyCode::Decimal => KeyCode::NumpadPeriod,
+        VirtualKeyCode::Divide => KeyCode::NumpadSlash,
+        VirtualKeyCode::PageUp => KeyCode::PgUp,
+        VirtualKeyCode::PageDown => KeyCode::PgDown,
+        VirtualKeyCode::End => KeyCode::End,
+        VirtualKeyCode::Home => KeyCode::Home,
+        VirtualKeyCode::Left => KeyCode::Left,
+        VirtualKeyCode::Up => KeyCode::Up,
+        VirtualKeyCode::Right => KeyCode::Right,
+        VirtualKeyCode::Down => KeyCode::Down,
+        VirtualKeyCode::Insert => KeyCode::Insert,
+        VirtualKeyCode::Delete => KeyCode::Delete,
+        VirtualKeyCode::Pause => KeyCode::Pause,
+        VirtualKeyCode::Scroll => KeyCode::ScrollLock,
+        VirtualKeyCode::F1 => KeyCode::F1,
+        VirtualKeyCode::F2 => KeyCode::F2,
+        VirtualKeyCode::F3 => KeyCode::F3,
+        VirtualKeyCode::F4 => KeyCode::F4,
+        VirtualKeyCode::F5 => KeyCode::F5,
+        VirtualKeyCode::F6 => KeyCode::F6,
+        VirtualKeyCode::F7 => KeyCode::F7,
+        VirtualKeyCode::F8 => KeyCode::F8,
+        VirtualKeyCode::F9 => KeyCode::F9,
+        VirtualKeyCode::F10 => KeyCode::F10,
+        VirtualKeyCode::F11 => KeyCode::F11,
+        VirtualKeyCode::F12 => KeyCode::F12,
+        _ => return None,
+    };
+    Some(out)
 }

@@ -1,7 +1,7 @@
 use crate::avm1::{Object, StageObject, Value};
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
-use crate::events::{ButtonEvent, KeyCode};
+use crate::events::{ButtonEvent, ButtonEventResult, ButtonKeyCode};
 use crate::prelude::*;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::BTreeMap;
@@ -40,7 +40,9 @@ impl<'gc> Button<'gc> {
                 let button_action = ButtonAction {
                     action_data: action_data.clone(),
                     condition: *condition,
-                    key_code: action.key_code.and_then(|k| KeyCode::try_from(k).ok()),
+                    key_code: action
+                        .key_code
+                        .and_then(|k| ButtonKeyCode::try_from(k).ok()),
                 };
                 actions.push(button_action);
             }
@@ -170,6 +172,26 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         }
     }
 
+    fn propagate_button_event(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        event: ButtonEvent,
+    ) -> ButtonEventResult {
+        for child in self.children() {
+            if child.propagate_button_event(context, event) == ButtonEventResult::Handled {
+                return ButtonEventResult::Handled;
+            }
+        }
+        match event {
+            ButtonEvent::KeyPress { key_code } => self.0.write(context.gc_context).run_actions(
+                context,
+                swf::ButtonActionCondition::KeyPress,
+                Some(key_code),
+            ),
+            _ => ButtonEventResult::NotHandled,
+        }
+    }
+
     fn object(&self) -> Value<'gc> {
         self.0
             .read()
@@ -272,8 +294,12 @@ impl<'gc> ButtonData<'gc> {
             ButtonEvent::RollOver => ButtonState::Over,
             ButtonEvent::Press => ButtonState::Down,
             ButtonEvent::Release => ButtonState::Over,
-            ButtonEvent::KeyPress(key) => {
-                self.run_actions(context, swf::ButtonActionCondition::KeyPress, Some(key));
+            ButtonEvent::KeyPress { key_code } => {
+                self.run_actions(
+                    context,
+                    swf::ButtonActionCondition::KeyPress,
+                    Some(key_code),
+                );
                 cur_state
             }
         };
@@ -316,8 +342,9 @@ impl<'gc> ButtonData<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         condition: swf::ButtonActionCondition,
-        key_code: Option<KeyCode>,
-    ) {
+        key_code: Option<ButtonKeyCode>,
+    ) -> ButtonEventResult {
+        let mut handled = ButtonEventResult::NotHandled;
         if let Some(parent) = self.base.parent {
             for action in &self.static_data.read().actions {
                 if action.condition == condition
@@ -325,6 +352,7 @@ impl<'gc> ButtonData<'gc> {
                         || action.key_code == key_code)
                 {
                     // Note that AVM1 buttons run actions relative to their parent, not themselves.
+                    handled = ButtonEventResult::Handled;
                     context.action_queue.queue_actions(
                         parent,
                         ActionType::Normal {
@@ -335,6 +363,7 @@ impl<'gc> ButtonData<'gc> {
                 }
             }
         }
+        handled
     }
 }
 
@@ -365,7 +394,7 @@ enum ButtonState {
 struct ButtonAction {
     action_data: crate::tag_utils::SwfSlice,
     condition: swf::ButtonActionCondition,
-    key_code: Option<KeyCode>,
+    key_code: Option<ButtonKeyCode>,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]

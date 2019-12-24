@@ -17,7 +17,7 @@ mod morph_shape;
 mod movie_clip;
 mod text;
 
-use crate::events::ClipEvent;
+use crate::events::{ButtonEvent, ButtonEventResult, ClipEvent};
 pub use bitmap::Bitmap;
 pub use button::Button;
 pub use edit_text::EditText;
@@ -647,6 +647,22 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
     /// Sets whether this display object has been transformed by ActionScript.
     /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
     fn set_transformed_by_script(&self, context: MutationContext<'gc, '_>, value: bool);
+
+    /// Executes and propagates the given clip event.
+    /// Events execute inside-out; the deepest child will react first, followed by its parent, and
+    /// so forth.
+    fn propagate_button_event(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        event: ButtonEvent,
+    ) -> ButtonEventResult {
+        for child in self.children() {
+            if child.propagate_button_event(context, event) == ButtonEventResult::Handled {
+                return ButtonEventResult::Handled;
+            }
+        }
+        ButtonEventResult::NotHandled
+    }
 
     /// Executes and propagates the given clip event.
     /// Events execute inside-out; the deepest child will react first, followed by its parent, and

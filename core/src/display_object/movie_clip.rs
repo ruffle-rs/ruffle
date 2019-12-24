@@ -6,7 +6,7 @@ use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{
     Bitmap, Button, DisplayObjectBase, EditText, Graphic, MorphShapeStatic, TDisplayObject, Text,
 };
-use crate::events::{ClipEvent, KeyCode};
+use crate::events::{ButtonKeyCode, ClipEvent};
 use crate::font::Font;
 use crate::prelude::*;
 use crate::tag_utils::{self, DecodeResult, SwfSlice, SwfStream};
@@ -1839,8 +1839,8 @@ impl From<swf::ClipAction> for ClipAction {
                     ClipEventFlag::KeyPress => ClipEvent::KeyPress {
                         key_code: other
                             .key_code
-                            .and_then(|k| KeyCode::try_from(k).ok())
-                            .unwrap_or(KeyCode::Unknown),
+                            .and_then(|k| ButtonKeyCode::try_from(k).ok())
+                            .unwrap_or(ButtonKeyCode::Unknown),
                     },
                     ClipEventFlag::Load => ClipEvent::Load,
                     ClipEventFlag::MouseUp => ClipEvent::MouseUp,
