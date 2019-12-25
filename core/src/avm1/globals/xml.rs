@@ -76,6 +76,46 @@ pub fn xmlnode_clone_node<'gc>(
     Ok(Value::Undefined.into())
 }
 
+pub fn xmlnode_get_namespace_for_prefix<'gc>(
+    avm: &mut Avm1<'gc>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let (Some(xmlnode), Some(prefix_string)) = (
+        this.as_xml_node(),
+        args.get(0).map(|v| v.clone().coerce_to_string(avm, ac)),
+    ) {
+        if let Some(uri) = xmlnode.lookup_uri_for_namespace(&prefix_string?) {
+            Ok(uri.into())
+        } else {
+            Ok(Value::Null.into())
+        }
+    } else {
+        Ok(Value::Undefined.into())
+    }
+}
+
+pub fn xmlnode_get_prefix_for_namespace<'gc>(
+    avm: &mut Avm1<'gc>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let (Some(xmlnode), Some(uri_string)) = (
+        this.as_xml_node(),
+        args.get(0).map(|v| v.clone().coerce_to_string(avm, ac)),
+    ) {
+        if let Some(prefix) = xmlnode.lookup_namespace_for_uri(&uri_string?) {
+            Ok(prefix.into())
+        } else {
+            Ok(Value::Null.into())
+        }
+    } else {
+        Ok(Value::Undefined.into())
+    }
+}
+
 /// Construct the prototype for `XMLNode`.
 pub fn create_xmlnode_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
@@ -195,6 +235,26 @@ pub fn create_xmlnode_proto<'gc>(
         .force_set_function(
             "cloneNode",
             xmlnode_clone_node,
+            gc_context,
+            EnumSet::empty(),
+            Some(fn_proto),
+        );
+    xmlnode_proto
+        .as_script_object()
+        .unwrap()
+        .force_set_function(
+            "getNamespaceForPrefix",
+            xmlnode_get_namespace_for_prefix,
+            gc_context,
+            EnumSet::empty(),
+            Some(fn_proto),
+        );
+    xmlnode_proto
+        .as_script_object()
+        .unwrap()
+        .force_set_function(
+            "getPrefixForNamespace",
+            xmlnode_get_prefix_for_namespace,
             gc_context,
             EnumSet::empty(),
             Some(fn_proto),

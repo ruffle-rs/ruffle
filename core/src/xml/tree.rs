@@ -300,7 +300,21 @@ impl<'gc> XMLNode<'gc> {
         Ok(())
     }
 
-    /// Get the previous sibling
+    /// Get the parent, if this node has one.
+    ///
+    /// If the node cannot have a parent, then this function yields Err.
+    pub fn parent(self) -> Result<Option<XMLNode<'gc>>, Error> {
+        match *self.0.read() {
+            XMLNodeData::Element { parent, .. } => Ok(parent),
+            XMLNodeData::Text { parent, .. } => Ok(parent),
+            XMLNodeData::Comment { parent, .. } => Ok(parent),
+            XMLNodeData::DocumentRoot { .. } => Err("Document roots cannot have parents".into()),
+        }
+    }
+
+    /// Get the previous sibling, if this node has one.
+    ///
+    /// If the node cannot have siblings, then this function yields Err.
     pub fn prev_sibling(self) -> Result<Option<XMLNode<'gc>>, Error> {
         match *self.0.read() {
             XMLNodeData::Element { prev_sibling, .. } => Ok(prev_sibling),
@@ -328,7 +342,9 @@ impl<'gc> XMLNode<'gc> {
         Ok(())
     }
 
-    /// Get the next sibling
+    /// Get the next sibling, if this node has one.
+    ///
+    /// If the node cannot have siblings, then this function yields Err.
     pub fn next_sibling(self) -> Result<Option<XMLNode<'gc>>, Error> {
         match *self.0.read() {
             XMLNodeData::Element { next_sibling, .. } => Ok(next_sibling),
@@ -647,12 +663,63 @@ impl<'gc> XMLNode<'gc> {
         }
     }
 
-    /// Look up the URI for the namespace in a given `XMLName`.
+    /// Look up the URI for the given namespace.
     ///
     /// XML namespaces are determined by `xmlns:` namespace attributes on the
     /// current node, or it's parent.
     pub fn lookup_uri_for_namespace(self, namespace: &str) -> Option<String> {
-        self.attribute_value(&XMLName::from_parts(Some("xmlns"), namespace))
+        if let Some(url) = self.attribute_value(&XMLName::from_parts(Some("xmlns"), namespace)) {
+            Some(url)
+        } else if let Ok(Some(parent)) = self.parent() {
+            parent.lookup_uri_for_namespace(namespace)
+        } else {
+            None
+        }
+    }
+
+    /// Retrieve the first attribute key set to a given value, if any.
+    ///
+    /// If the node does not contain attributes, then this function always
+    /// yields None.
+    ///
+    /// You may restrict your value search to specific namespaces by setting
+    /// `within_namespace`. If it is set to `None`, then any namespace's
+    /// attributes may satisfy the search. It is it set to `""`, then
+    /// the default namespace will be searched.
+    pub fn value_attribute(self, value: &str, within_namespace: Option<&str>) -> Option<XMLName> {
+        match &*self.0.read() {
+            XMLNodeData::Element { attributes, .. } => {
+                for (attr, attr_value) in attributes.iter() {
+                    if let Some(namespace) = within_namespace {
+                        if attr.prefix().unwrap_or("") == namespace && value == attr_value {
+                            return Some(attr.clone());
+                        }
+                    } else if value == attr_value {
+                        return Some(attr.clone());
+                    }
+                }
+
+                None
+            }
+            _ => None,
+        }
+    }
+
+    /// Look up the namespace for the given URI.
+    ///
+    /// XML namespaces are determined by `xmlns:` namespace attributes on the
+    /// current node, or it's parent.
+    ///
+    /// If there are multiple namespaces that match the URI, the first
+    /// mentioned on the closest node will be returned.
+    pub fn lookup_namespace_for_uri(self, uri: &str) -> Option<String> {
+        if let Some(xname) = self.value_attribute(uri, Some("xmlns")) {
+            Some(xname.local_name().to_string())
+        } else if let Ok(Some(parent)) = self.parent() {
+            parent.lookup_namespace_for_uri(uri)
+        } else {
+            None
+        }
     }
 }
 
