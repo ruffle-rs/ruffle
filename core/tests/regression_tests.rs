@@ -106,6 +106,7 @@ swf_tests! {
     (global_is_bare, "avm1/global_is_bare", 1),
     (as2_oop, "avm1/as2_oop", 1),
     (xml, "avm1/xml", 1),
+    (xml_namespaces, "avm1/xml_namespaces", 1),
 }
 
 #[test]
