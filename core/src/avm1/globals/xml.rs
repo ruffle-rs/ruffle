@@ -55,6 +55,27 @@ pub fn xmlnode_append_child<'gc>(
     Ok(Value::Undefined.into())
 }
 
+pub fn xmlnode_clone_node<'gc>(
+    avm: &mut Avm1<'gc>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let (Some(xmlnode), Some(deep)) = (
+        this.as_xml_node(),
+        args.get(0).map(|v| v.as_bool(avm.current_swf_version())),
+    ) {
+        let mut clone_node = xmlnode.duplicate(ac.gc_context, deep);
+
+        return Ok(Value::Object(
+            clone_node.script_object(ac.gc_context, Some(avm.prototypes.xml_node)),
+        )
+        .into());
+    }
+
+    Ok(Value::Undefined.into())
+}
+
 /// Construct the prototype for `XMLNode`.
 pub fn create_xmlnode_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
@@ -164,6 +185,16 @@ pub fn create_xmlnode_proto<'gc>(
         .force_set_function(
             "appendChild",
             xmlnode_append_child,
+            gc_context,
+            EnumSet::empty(),
+            Some(fn_proto),
+        );
+    xmlnode_proto
+        .as_script_object()
+        .unwrap()
+        .force_set_function(
+            "cloneNode",
+            xmlnode_clone_node,
             gc_context,
             EnumSet::empty(),
             Some(fn_proto),

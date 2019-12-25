@@ -565,6 +565,76 @@ impl<'gc> XMLNode<'gc> {
             );
         }
     }
+
+    /// Check if this XML node constitutes the root of a whole document.
+    pub fn is_document_root(self) -> bool {
+        match &*self.0.read() {
+            XMLNodeData::DocumentRoot { .. } => true,
+            _ => false,
+        }
+    }
+
+    /// Create a duplicate copy of this node.
+    ///
+    /// If the `deep` flag is set true, then the entire node tree will be
+    /// cloned.
+    pub fn duplicate(self, gc_context: MutationContext<'gc, '_>, deep: bool) -> XMLNode<'gc> {
+        let mut document = self.document().duplicate(gc_context);
+        let mut clone = XMLNode(GcCell::allocate(
+            gc_context,
+            match &*self.0.read() {
+                XMLNodeData::Text { contents, .. } => XMLNodeData::Text {
+                    script_object: None,
+                    document,
+                    parent: None,
+                    prev_sibling: None,
+                    next_sibling: None,
+                    contents: contents.to_string(),
+                },
+                XMLNodeData::Comment { contents, .. } => XMLNodeData::Comment {
+                    script_object: None,
+                    document,
+                    parent: None,
+                    prev_sibling: None,
+                    next_sibling: None,
+                    contents: contents.to_string(),
+                },
+                XMLNodeData::Element {
+                    tag_name,
+                    attributes,
+                    ..
+                } => XMLNodeData::Element {
+                    script_object: None,
+                    document,
+                    parent: None,
+                    prev_sibling: None,
+                    next_sibling: None,
+                    tag_name: tag_name.clone(),
+                    attributes: attributes.clone(),
+                    children: Vec::new(),
+                },
+                XMLNodeData::DocumentRoot { .. } => XMLNodeData::DocumentRoot {
+                    script_object: None,
+                    document,
+                    children: Vec::new(),
+                },
+            },
+        ));
+
+        document.link_root_node(gc_context, clone);
+
+        if deep {
+            if let Some(children) = self.children() {
+                for child in children {
+                    clone
+                        .append_child(gc_context, child.duplicate(gc_context, deep))
+                        .expect("If I can see my children then my clone should accept children");
+                }
+            }
+        }
+
+        clone
+    }
 }
 
 impl<'gc> fmt::Debug for XMLNode<'gc> {

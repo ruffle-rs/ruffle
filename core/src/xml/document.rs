@@ -88,11 +88,48 @@ impl<'gc> XMLDocument<'gc> {
     }
 
     /// Yield the document in node form.
+    ///
+    /// If the document does not have a node, then this function will panic.
     pub fn as_node(self) -> XMLNode<'gc> {
         self.0
             .read()
             .root
             .expect("Document must always have a root node")
+    }
+
+    /// Create a duplicate copy of this document.
+    ///
+    /// The contents of the document will not be duplicated. This results in a
+    /// rootless document that is not safe to use without first linking another
+    /// root node into it. (See `link_root_node`.)
+    pub fn duplicate(self, gc_context: MutationContext<'gc, '_>) -> Self {
+        Self(GcCell::allocate(gc_context, XMLDocumentData { root: None }))
+    }
+
+    /// Set the root node of the document, if possible.
+    ///
+    /// If the proposed root is not an `XMLNode::DocumentRoot`, then a fresh
+    /// document root node will be created and the root will be adopted into
+    /// it.
+    ///
+    /// If the document already has a root node, nothing happens.
+    pub fn link_root_node(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        proposed_root: XMLNode<'gc>,
+    ) {
+        match (
+            &mut *self.0.write(gc_context),
+            proposed_root.is_document_root(),
+        ) {
+            (XMLDocumentData { root }, true) if root.is_none() => {
+                *root = Some(proposed_root);
+            }
+            (XMLDocumentData { root }, false) if root.is_none() => {
+                *root = Some(XMLNode::new_document_root(gc_context, *self));
+            }
+            _ => {}
+        }
     }
 }
 
