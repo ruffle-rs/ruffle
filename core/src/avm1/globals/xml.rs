@@ -61,9 +61,11 @@ pub fn xmlnode_clone_node<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    if let (Some(xmlnode), Some(deep)) = (
+    if let (Some(xmlnode), deep) = (
         this.as_xml_node(),
-        args.get(0).map(|v| v.as_bool(avm.current_swf_version())),
+        args.get(0)
+            .map(|v| v.as_bool(avm.current_swf_version()))
+            .unwrap_or(false),
     ) {
         let mut clone_node = xmlnode.duplicate(ac.gc_context, deep);
 
