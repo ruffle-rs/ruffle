@@ -1,0 +1,19 @@
+Shallow copy
+0
+0
+test
+Deep copy
+1
+0
+test
+All expandos
+xml_expando
+xmlnode_expando
+undefined
+undefined
+undefined
+undefined
+cloneNode w/o arg
+false
+0
+undefined

@@ -107,6 +107,7 @@ swf_tests! {
     (as2_oop, "avm1/as2_oop", 1),
     (xml, "avm1/xml", 1),
     (xml_namespaces, "avm1/xml_namespaces", 1),
+    (xml_clone_expandos, "avm1/xml_clone_expandos", 1),
 }
 
 #[test]
