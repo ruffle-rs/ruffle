@@ -477,6 +477,18 @@ impl<'gc> XMLNode<'gc> {
         }
     }
 
+    /// Returns the number of children of the current tree node.
+    ///
+    /// Nodes that cannot hold children always yield `0`.
+    pub fn children_len(self) -> usize {
+        match &*self.0.read() {
+            XMLNodeData::Element { children, .. } | XMLNodeData::DocumentRoot { children, .. } => {
+                children.len()
+            }
+            _ => 0,
+        }
+    }
+
     /// Returns an iterator that yields child nodes.
     ///
     /// Yields None if this node cannot accept children.

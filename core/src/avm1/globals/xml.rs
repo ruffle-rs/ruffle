@@ -118,6 +118,19 @@ pub fn xmlnode_get_prefix_for_namespace<'gc>(
     }
 }
 
+pub fn xmlnode_has_child_nodes<'gc>(
+    _avm: &mut Avm1<'gc>,
+    _ac: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(xmlnode) = this.as_xml_node() {
+        Ok((xmlnode.children_len() > 0).into())
+    } else {
+        Ok(Value::Undefined.into())
+    }
+}
+
 /// Construct the prototype for `XMLNode`.
 pub fn create_xmlnode_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
@@ -257,6 +270,16 @@ pub fn create_xmlnode_proto<'gc>(
         .force_set_function(
             "getPrefixForNamespace",
             xmlnode_get_prefix_for_namespace,
+            gc_context,
+            EnumSet::empty(),
+            Some(fn_proto),
+        );
+    xmlnode_proto
+        .as_script_object()
+        .unwrap()
+        .force_set_function(
+            "hasChildNodes",
+            xmlnode_has_child_nodes,
             gc_context,
             EnumSet::empty(),
             Some(fn_proto),
