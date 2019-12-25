@@ -1,7 +1,6 @@
 //! XML Document
 
-use crate::xml::Error;
-use crate::xml::XMLNode;
+use crate::xml::{Error, XMLNode};
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::events::Event;
 use quick_xml::Reader;

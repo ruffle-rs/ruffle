@@ -26,6 +26,14 @@ pub struct XMLName {
 }
 
 impl XMLName {
+    /// Construct an XML name from it's parts (name and namespace).
+    pub fn from_parts(namespace: Option<&str>, name: &str) -> Self {
+        XMLName {
+            namespace: namespace.map(|s| s.to_string()),
+            name: name.to_string(),
+        }
+    }
+
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         Self::from_bytes_cow(Cow::Borrowed(bytes))
     }

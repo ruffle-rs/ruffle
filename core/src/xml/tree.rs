@@ -635,6 +635,25 @@ impl<'gc> XMLNode<'gc> {
 
         clone
     }
+
+    /// Retrieve the value of a single attribute on this node.
+    ///
+    /// If the node does not contain attributes, then this function always
+    /// yields None.
+    pub fn attribute_value(self, name: &XMLName) -> Option<String> {
+        match &*self.0.read() {
+            XMLNodeData::Element { attributes, .. } => attributes.get(name).cloned(),
+            _ => None,
+        }
+    }
+
+    /// Look up the URI for the namespace in a given `XMLName`.
+    ///
+    /// XML namespaces are determined by `xmlns:` namespace attributes on the
+    /// current node, or it's parent.
+    pub fn lookup_uri_for_namespace(self, namespace: &str) -> Option<String> {
+        self.attribute_value(&XMLName::from_parts(Some("xmlns"), namespace))
+    }
 }
 
 impl<'gc> fmt::Debug for XMLNode<'gc> {
