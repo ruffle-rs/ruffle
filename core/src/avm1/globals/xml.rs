@@ -9,6 +9,8 @@ use crate::avm1::{Avm1, Error, Object, TObject, UpdateContext, Value};
 use crate::xml::{XMLDocument, XMLNode};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
+use quick_xml::Writer;
+use std::io::Cursor;
 
 /// XMLNode constructor
 pub fn xmlnode_constructor<'gc>(
@@ -167,6 +169,25 @@ pub fn xmlnode_remove_node<'gc>(
     }
 
     Ok(Value::Undefined.into())
+}
+
+#[allow(unused_must_use)]
+pub fn xmlnode_to_string<'gc>(
+    _avm: &mut Avm1<'gc>,
+    _ac: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let mut result = Vec::new();
+
+    if let Some(node) = this.as_xml_node() {
+        let mut writer = Writer::new(Cursor::new(&mut result));
+        node.write_node_to_event_writer(&mut writer);
+    }
+
+    Ok(String::from_utf8(result)
+        .unwrap_or_else(|_| "".to_string())
+        .into())
 }
 
 /// Construct the prototype for `XMLNode`.
@@ -479,6 +500,16 @@ pub fn create_xmlnode_proto<'gc>(
         .force_set_function(
             "removeNode",
             xmlnode_remove_node,
+            gc_context,
+            EnumSet::empty(),
+            Some(fn_proto),
+        );
+    xmlnode_proto
+        .as_script_object()
+        .unwrap()
+        .force_set_function(
+            "toString",
+            xmlnode_to_string,
             gc_context,
             EnumSet::empty(),
             Some(fn_proto),

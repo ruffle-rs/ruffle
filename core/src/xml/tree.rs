@@ -6,10 +6,13 @@ use crate::avm1::Object;
 use crate::xml;
 use crate::xml::{Error, XMLDocument, XMLName};
 use gc_arena::{Collect, GcCell, MutationContext};
-use quick_xml::events::{BytesStart, BytesText};
+use quick_xml::events::attributes::Attribute;
+use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
+use quick_xml::Writer;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
+use std::io::Write;
 use std::mem::swap;
 
 /// Represents a node in the XML tree.
@@ -931,6 +934,58 @@ impl<'gc> XMLNode<'gc> {
         } else {
             None
         }
+    }
+
+    pub fn write_node_to_event_writer<W>(self, writer: &mut Writer<W>) -> Result<(), Error>
+    where
+        W: Write,
+    {
+        match &*self.0.read() {
+            XMLNodeData::DocumentRoot { .. } => Ok(0),
+            XMLNodeData::Element {
+                tag_name,
+                attributes,
+                ..
+            } => {
+                let mut bs = BytesStart::owned_name(tag_name.node_name());
+                let key_values: Vec<(String, &str)> = attributes
+                    .iter()
+                    .map(|(name, value)| (name.node_name(), value.as_str()))
+                    .collect();
+
+                bs.extend_attributes(
+                    key_values
+                        .iter()
+                        .map(|(name, value)| Attribute::from((name.as_str(), *value))),
+                );
+
+                writer.write(&Event::Start(bs))
+            }
+            XMLNodeData::Text { contents, .. } => {
+                writer.write(&Event::Text(BytesText::from_escaped_str(contents.as_str())))
+            }
+            XMLNodeData::Comment { contents, .. } => writer.write(&Event::Comment(
+                BytesText::from_escaped_str(contents.as_str()),
+            )),
+        }?;
+
+        if let Some(children) = self.children() {
+            for child in children {
+                child.write_node_to_event_writer(writer)?;
+            }
+        }
+
+        match &*self.0.read() {
+            XMLNodeData::DocumentRoot { .. } => Ok(0),
+            XMLNodeData::Element { tag_name, .. } => {
+                let bs = BytesEnd::owned(tag_name.node_name().into());
+                writer.write(&Event::End(bs))
+            }
+            XMLNodeData::Text { .. } => Ok(0),
+            XMLNodeData::Comment { .. } => Ok(0),
+        }?;
+
+        Ok(())
     }
 }
 
