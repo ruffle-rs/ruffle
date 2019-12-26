@@ -25,11 +25,13 @@ pub fn xmlnode_constructor<'gc>(
         this.as_xml_node(),
     ) {
         (Some(Ok(1)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
-            let xmlelement = XMLNode::new_text(ac.gc_context, strval, blank_document);
+            let mut xmlelement = XMLNode::new_text(ac.gc_context, strval, blank_document);
+            xmlelement.introduce_script_object(ac.gc_context, this);
             this_node.swap(ac.gc_context, xmlelement);
         }
         (Some(Ok(3)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
-            let xmlelement = XMLNode::new_element(ac.gc_context, strval, blank_document)?;
+            let mut xmlelement = XMLNode::new_element(ac.gc_context, strval, blank_document)?;
+            xmlelement.introduce_script_object(ac.gc_context, this);
             this_node.swap(ac.gc_context, xmlelement);
         }
         //Invalid nodetype ID, string value missing, or not an XMLElement
@@ -424,10 +426,16 @@ pub fn xml_constructor<'gc>(
     ) {
         (Some(Ok(ref string)), Some(ref mut this_node)) => {
             let xmldoc = XMLDocument::from_str(ac.gc_context, string)?;
+            xmldoc
+                .as_node()
+                .introduce_script_object(ac.gc_context, this);
             this_node.swap(ac.gc_context, xmldoc.as_node());
         }
         (None, Some(ref mut this_node)) => {
             let xmldoc = XMLDocument::new(ac.gc_context);
+            xmldoc
+                .as_node()
+                .introduce_script_object(ac.gc_context, this);
             this_node.swap(ac.gc_context, xmldoc.as_node());
         }
         //Non-string argument or not an XML document
