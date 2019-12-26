@@ -234,6 +234,50 @@ pub fn create_xmlnode_proto<'gc>(
         None,
         ReadOnly.into(),
     );
+    xmlnode_proto.add_property(
+        gc_context,
+        "firstChild",
+        Executable::Native(|avm, ac, this: Object<'gc>, _args| {
+            if let Some(node) = this.as_xml_node() {
+                if let Some(mut children) = node.children() {
+                    return Ok(children
+                        .next()
+                        .map(|mut child| {
+                            child
+                                .script_object(ac.gc_context, Some(avm.prototypes.xml_node))
+                                .into()
+                        })
+                        .unwrap_or_else(|| Value::Null.into()));
+                }
+            }
+
+            Ok(Value::Undefined.into())
+        }),
+        None,
+        ReadOnly.into(),
+    );
+    xmlnode_proto.add_property(
+        gc_context,
+        "lastChild",
+        Executable::Native(|avm, ac, this: Object<'gc>, _args| {
+            if let Some(node) = this.as_xml_node() {
+                if let Some(mut children) = node.children() {
+                    return Ok(children
+                        .next_back()
+                        .map(|mut child| {
+                            child
+                                .script_object(ac.gc_context, Some(avm.prototypes.xml_node))
+                                .into()
+                        })
+                        .unwrap_or_else(|| Value::Null.into()));
+                }
+            }
+
+            Ok(Value::Undefined.into())
+        }),
+        None,
+        ReadOnly.into(),
+    );
     xmlnode_proto
         .as_script_object()
         .unwrap()

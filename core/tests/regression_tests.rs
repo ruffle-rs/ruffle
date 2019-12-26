@@ -109,6 +109,7 @@ swf_tests! {
     (xml_namespaces, "avm1/xml_namespaces", 1),
     (xml_clone_expandos, "avm1/xml_clone_expandos", 1),
     (xml_has_child_nodes, "avm1/xml_has_child_nodes", 1),
+    (xml_first_last_child, "avm1/xml_first_last_child", 1),
 }
 
 #[test]

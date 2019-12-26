@@ -560,15 +560,20 @@ impl<'gc> XMLNode<'gc> {
     /// Returns an iterator that yields child nodes.
     ///
     /// Yields None if this node cannot accept children.
-    pub fn children(self) -> Option<impl Iterator<Item = XMLNode<'gc>>> {
+    pub fn children(self) -> Option<impl DoubleEndedIterator<Item = XMLNode<'gc>>> {
         struct ChildIter<'gc> {
             base: XMLNode<'gc>,
             index: usize,
+            back_index: usize,
         };
 
         impl<'gc> ChildIter<'gc> {
             fn for_node(base: XMLNode<'gc>) -> Self {
-                Self { base, index: 0 }
+                Self {
+                    base,
+                    index: 0,
+                    back_index: base.children_len(),
+                }
             }
         }
 
@@ -584,9 +589,31 @@ impl<'gc> XMLNode<'gc> {
                 };
 
                 if let Some(children) = children {
-                    if self.index < children.len() {
+                    if self.index < self.back_index {
                         let item = children.get(self.index).cloned();
                         self.index += 1;
+
+                        return item;
+                    }
+                }
+
+                None
+            }
+        }
+
+        impl<'gc> DoubleEndedIterator for ChildIter<'gc> {
+            fn next_back(&mut self) -> Option<Self::Item> {
+                let read = self.base.0.read();
+                let children = match &*read {
+                    XMLNodeData::Element { children, .. }
+                    | XMLNodeData::DocumentRoot { children, .. } => Some(children),
+                    _ => None,
+                };
+
+                if let Some(children) = children {
+                    if self.index < self.back_index {
+                        self.back_index -= 1;
+                        let item = children.get(self.back_index).cloned();
 
                         return item;
                     }
