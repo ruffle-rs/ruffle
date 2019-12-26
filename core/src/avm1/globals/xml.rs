@@ -359,6 +359,24 @@ pub fn create_xmlnode_proto<'gc>(
         None,
         ReadOnly.into(),
     );
+    xmlnode_proto.add_property(
+        gc_context,
+        "namespaceURI",
+        Executable::Native(|_avm, _ac, this: Object<'gc>, _args| {
+            if let Some(node) = this.as_xml_node() {
+                if let Some(name) = node.tag_name() {
+                    return Ok(node
+                        .lookup_uri_for_namespace(name.prefix().unwrap_or(""))
+                        .map(|s| s.into())
+                        .unwrap_or_else(|| "".into()));
+                }
+            }
+
+            Ok(Value::Undefined.into())
+        }),
+        None,
+        ReadOnly.into(),
+    );
     xmlnode_proto
         .as_script_object()
         .unwrap()
