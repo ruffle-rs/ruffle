@@ -462,28 +462,22 @@ impl<'gc> XMLNode<'gc> {
     }
 
     /// Remove node from this node's child list.
+    ///
+    /// This function yields Err if this node cannot accept child nodes.
     fn orphan_child(
         &mut self,
         mc: MutationContext<'gc, '_>,
         child: XMLNode<'gc>,
     ) -> Result<(), Error> {
-        for (i, other_child) in self
-            .children()
-            .ok_or("Cannot orphan child if I have no children")?
-            .enumerate()
-        {
-            if GcCell::ptr_eq(child.0, other_child.0) {
-                match &mut *self.0.write(mc) {
-                    XMLNodeData::Element { children, .. } => children.remove(i),
-                    XMLNodeData::DocumentRoot { children, .. } => children.remove(i),
-                    XMLNodeData::Text { .. } => return Err("Text node has no child nodes!".into()),
-                    XMLNodeData::Comment { .. } => {
-                        return Err("Comment node has no child nodes!".into())
-                    }
-                };
-
-                break;
-            }
+        if let Some(position) = self.child_position(child) {
+            match &mut *self.0.write(mc) {
+                XMLNodeData::Element { children, .. } => children.remove(position),
+                XMLNodeData::DocumentRoot { children, .. } => children.remove(position),
+                XMLNodeData::Text { .. } => return Err("Text node has no child nodes!".into()),
+                XMLNodeData::Comment { .. } => {
+                    return Err("Comment node has no child nodes!".into())
+                }
+            };
         }
 
         Ok(())
@@ -517,6 +511,33 @@ impl<'gc> XMLNode<'gc> {
         };
 
         self.adopt_child(mc, child, position)?;
+
+        Ok(())
+    }
+
+    /// Remove a previously added node from this tree.
+    ///
+    /// If the node is not a child of this one, or this node cannot accept
+    /// children, then this function yields an error.
+    pub fn remove_child(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        mut child: XMLNode<'gc>,
+    ) -> Result<(), Error> {
+        if let Some(position) = self.child_position(child) {
+            match &mut *self.0.write(mc) {
+                XMLNodeData::Element { children, .. } => children.remove(position),
+                XMLNodeData::DocumentRoot { children, .. } => children.remove(position),
+                XMLNodeData::Text { .. } => return Err("Text node has no child nodes!".into()),
+                XMLNodeData::Comment { .. } => {
+                    return Err("Comment node has no child nodes!".into())
+                }
+            };
+
+            child.disown_siblings(mc)?;
+        } else {
+            return Err("Child node is not a child of this one!".into());
+        }
 
         Ok(())
     }
@@ -561,6 +582,22 @@ impl<'gc> XMLNode<'gc> {
             }
             _ => 0,
         }
+    }
+
+    /// Get the position of a child of this node.
+    ///
+    /// This function yields None if the node cannot accept children or if the
+    /// child node is not a child of this node.
+    pub fn child_position(self, child: XMLNode<'gc>) -> Option<usize> {
+        if let Some(children) = self.children() {
+            for (i, other_child) in children.enumerate() {
+                if GcCell::ptr_eq(child.0, other_child.0) {
+                    return Some(i);
+                }
+            }
+        }
+
+        None
     }
 
     /// Returns an iterator that yields child nodes.

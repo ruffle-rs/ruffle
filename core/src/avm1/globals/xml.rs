@@ -133,6 +133,22 @@ pub fn xmlnode_has_child_nodes<'gc>(
     }
 }
 
+#[allow(unused_must_use)]
+pub fn xmlnode_remove_node<'gc>(
+    _avm: &mut Avm1<'gc>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(node) = this.as_xml_node() {
+        if let Ok(Some(mut parent)) = node.parent() {
+            parent.remove_child(ac.gc_context, node);
+        }
+    }
+
+    Ok(Value::Undefined.into())
+}
+
 /// Construct the prototype for `XMLNode`.
 pub fn create_xmlnode_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
@@ -423,6 +439,16 @@ pub fn create_xmlnode_proto<'gc>(
         .force_set_function(
             "hasChildNodes",
             xmlnode_has_child_nodes,
+            gc_context,
+            EnumSet::empty(),
+            Some(fn_proto),
+        );
+    xmlnode_proto
+        .as_script_object()
+        .unwrap()
+        .force_set_function(
+            "removeNode",
+            xmlnode_remove_node,
             gc_context,
             EnumSet::empty(),
             Some(fn_proto),
