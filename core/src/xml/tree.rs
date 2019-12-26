@@ -657,6 +657,11 @@ impl<'gc> XMLNode<'gc> {
         gc_context: MutationContext<'gc, '_>,
         new_object: Object<'gc>,
     ) {
+        if self.get_script_object().is_some() {
+            log::warn!("An attempt was made to change the already-established link between script object and XML node. This has been denied and is likely a bug.");
+            return;
+        }
+
         match &mut *self.0.write(gc_context) {
             XMLNodeData::Element { script_object, .. } => *script_object = Some(new_object),
             XMLNodeData::Text { script_object, .. } => *script_object = Some(new_object),
