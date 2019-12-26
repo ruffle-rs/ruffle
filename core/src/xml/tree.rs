@@ -483,7 +483,7 @@ impl<'gc> XMLNode<'gc> {
         Ok(())
     }
 
-    /// Append a child element to an Element node.
+    /// Insert a child element into the child list of an Element node.
     ///
     /// The child will be adopted into the current tree: all child references
     /// to other nodes or documents will be adjusted to reflect it's new
@@ -492,20 +492,20 @@ impl<'gc> XMLNode<'gc> {
     ///
     /// This function yields an error if appending to a Node that cannot accept
     /// children. In that case, no modification will be made to the node.
-    pub fn append_child(
+    pub fn insert_child(
         &mut self,
         mc: MutationContext<'gc, '_>,
+        position: usize,
         child: XMLNode<'gc>,
     ) -> Result<(), Error> {
-        let position = match &mut *self.0.write(mc) {
+        match &mut *self.0.write(mc) {
             XMLNodeData::Element {
                 ref mut children, ..
             }
             | XMLNodeData::DocumentRoot {
                 ref mut children, ..
             } => {
-                children.push(child);
-                children.len() - 1
+                children.insert(position, child);
             }
             _ => return Err("Not an Element".into()),
         };
@@ -513,6 +513,16 @@ impl<'gc> XMLNode<'gc> {
         self.adopt_child(mc, child, position)?;
 
         Ok(())
+    }
+
+    /// Append a child element into the end of the child list of an Element
+    /// node.
+    pub fn append_child(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        child: XMLNode<'gc>,
+    ) -> Result<(), Error> {
+        self.insert_child(mc, self.children_len(), child)
     }
 
     /// Remove a previously added node from this tree.
@@ -819,9 +829,9 @@ impl<'gc> XMLNode<'gc> {
 
         if deep {
             if let Some(children) = self.children() {
-                for child in children {
+                for (position, child) in children.enumerate() {
                     clone
-                        .append_child(gc_context, child.duplicate(gc_context, deep))
+                        .insert_child(gc_context, position, child.duplicate(gc_context, deep))
                         .expect("If I can see my children then my clone should accept children");
                 }
             }

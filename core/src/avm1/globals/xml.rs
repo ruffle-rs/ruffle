@@ -51,7 +51,27 @@ pub fn xmlnode_append_child<'gc>(
         this.as_xml_node(),
         args.get(0).map(|n| n.as_object().map(|n| n.as_xml_node())),
     ) {
-        xmlnode.append_child(ac.gc_context, child_xmlnode)?;
+        let position = xmlnode.children_len();
+        xmlnode.insert_child(ac.gc_context, position, child_xmlnode)?;
+    }
+
+    Ok(Value::Undefined.into())
+}
+
+pub fn xmlnode_insert_before<'gc>(
+    _avm: &mut Avm1<'gc>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let (Some(mut xmlnode), Some(Ok(Some(child_xmlnode))), Some(Ok(Some(insertpoint_xmlnode)))) = (
+        this.as_xml_node(),
+        args.get(0).map(|n| n.as_object().map(|n| n.as_xml_node())),
+        args.get(1).map(|n| n.as_object().map(|n| n.as_xml_node())),
+    ) {
+        if let Some(position) = xmlnode.child_position(insertpoint_xmlnode) {
+            xmlnode.insert_child(ac.gc_context, position, child_xmlnode)?;
+        }
     }
 
     Ok(Value::Undefined.into())
@@ -399,6 +419,16 @@ pub fn create_xmlnode_proto<'gc>(
         .force_set_function(
             "appendChild",
             xmlnode_append_child,
+            gc_context,
+            EnumSet::empty(),
+            Some(fn_proto),
+        );
+    xmlnode_proto
+        .as_script_object()
+        .unwrap()
+        .force_set_function(
+            "insertBefore",
+            xmlnode_insert_before,
             gc_context,
             EnumSet::empty(),
             Some(fn_proto),
