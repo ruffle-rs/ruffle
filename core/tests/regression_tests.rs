@@ -112,6 +112,7 @@ swf_tests! {
     (xml_first_last_child, "avm1/xml_first_last_child", 1),
     (xml_parent_and_child, "avm1/xml_parent_and_child", 1),
     (xml_siblings, "avm1/xml_siblings", 1),
+    (xml_attributes_read, "avm1/xml_attributes_read", 1),
 }
 
 #[test]

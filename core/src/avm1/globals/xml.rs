@@ -341,6 +341,22 @@ pub fn create_xmlnode_proto<'gc>(
         None,
         ReadOnly.into(),
     );
+    xmlnode_proto.add_property(
+        gc_context,
+        "attributes",
+        Executable::Native(|_avm, ac, this: Object<'gc>, _args| {
+            if let Some(mut node) = this.as_xml_node() {
+                return Ok(node
+                    .attribute_script_object(ac.gc_context)
+                    .map(|o| o.into())
+                    .unwrap_or_else(|| Value::Undefined.into()));
+            }
+
+            Ok(Value::Undefined.into())
+        }),
+        None,
+        ReadOnly.into(),
+    );
     xmlnode_proto
         .as_script_object()
         .unwrap()

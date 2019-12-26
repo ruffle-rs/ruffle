@@ -1,5 +1,6 @@
 //! XML Tree structure
 
+use crate::avm1::xml_attributes_object::XMLAttributesObject;
 use crate::avm1::xml_object::XMLObject;
 use crate::avm1::Object;
 use crate::xml;
@@ -88,6 +89,9 @@ pub enum XMLNodeData<'gc> {
         /// Attributes of the element.
         attributes: BTreeMap<XMLName, String>,
 
+        /// The script object associated with this XML node's attributes, if any.
+        attributes_script_object: Option<Object<'gc>>,
+
         /// Child nodes of this element.
         children: Vec<XMLNode<'gc>>,
     },
@@ -139,8 +143,9 @@ impl<'gc> XMLNode<'gc> {
                 parent: None,
                 prev_sibling: None,
                 next_sibling: None,
-                tag_name: XMLName::from_str(element_name)?,
+                tag_name: XMLName::from_str(element_name),
                 attributes: BTreeMap::new(),
+                attributes_script_object: None,
                 children: Vec::new(),
             },
         )))
@@ -190,6 +195,7 @@ impl<'gc> XMLNode<'gc> {
                 next_sibling: None,
                 tag_name,
                 attributes,
+                attributes_script_object: None,
                 children,
             },
         )))
@@ -675,6 +681,28 @@ impl<'gc> XMLNode<'gc> {
         object.unwrap()
     }
 
+    /// Obtain the script object for a given XML tree node's attributes,
+    /// constructing a new script object if one does not exist.
+    pub fn attribute_script_object(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+    ) -> Option<Object<'gc>> {
+        match &mut *self.0.write(gc_context) {
+            XMLNodeData::Element {
+                attributes_script_object,
+                ..
+            } => {
+                if attributes_script_object.is_none() {
+                    *attributes_script_object =
+                        Some(XMLAttributesObject::from_xml_node(gc_context, *self));
+                }
+
+                *attributes_script_object
+            }
+            _ => None,
+        }
+    }
+
     /// Swap the contents of this node with another one.
     ///
     /// After this function completes, the current `XMLNode` will contain all
@@ -734,6 +762,7 @@ impl<'gc> XMLNode<'gc> {
                     next_sibling: None,
                     tag_name: tag_name.clone(),
                     attributes: attributes.clone(),
+                    attributes_script_object: None,
                     children: Vec::new(),
                 },
                 XMLNodeData::DocumentRoot { .. } => XMLNodeData::DocumentRoot {
@@ -767,6 +796,29 @@ impl<'gc> XMLNode<'gc> {
         match &*self.0.read() {
             XMLNodeData::Element { attributes, .. } => attributes.get(name).cloned(),
             _ => None,
+        }
+    }
+
+    /// Set the value of a single attribute on this node.
+    ///
+    /// If the node does not contain attributes, then this function silently fails.
+    pub fn set_attribute_value(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        name: &XMLName,
+        value: &str,
+    ) {
+        if let XMLNodeData::Element { attributes, .. } = &mut *self.0.write(gc_context) {
+            attributes.insert(name.clone(), value.to_string());
+        }
+    }
+
+    /// Delete the value of a single attribute on this node.
+    ///
+    /// If the node does not contain attributes, then this function silently fails.
+    pub fn delete_attribute(self, gc_context: MutationContext<'gc, '_>, name: &XMLName) {
+        if let XMLNodeData::Element { attributes, .. } = &mut *self.0.write(gc_context) {
+            attributes.remove(name);
         }
     }
 

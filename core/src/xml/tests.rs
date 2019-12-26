@@ -17,7 +17,7 @@ fn parse_single_element() {
 
         let root = roots.next().expect("Parsed document should have a root");
         assert_eq!(root.node_type(), xml::ELEMENT_NODE);
-        assert_eq!(root.tag_name(), Some(XMLName::from_str("test").unwrap()));
+        assert_eq!(root.tag_name(), Some(XMLName::from_str("test")));
 
         let mut root_children = root.children().unwrap();
         assert!(root_children.next().is_none());
@@ -43,23 +43,23 @@ fn double_ended_children() {
 
         let root = roots.next().expect("Should have first root");
         assert_eq!(root.node_type(), xml::ELEMENT_NODE);
-        assert_eq!(root.tag_name(), Some(XMLName::from_str("test").unwrap()));
+        assert_eq!(root.tag_name(), Some(XMLName::from_str("test")));
 
         let root = roots.next_back().expect("Should have last root");
         assert_eq!(root.node_type(), xml::ELEMENT_NODE);
-        assert_eq!(root.tag_name(), Some(XMLName::from_str("test5").unwrap()));
+        assert_eq!(root.tag_name(), Some(XMLName::from_str("test5")));
 
         let root = roots.next().expect("Should have next root");
         assert_eq!(root.node_type(), xml::ELEMENT_NODE);
-        assert_eq!(root.tag_name(), Some(XMLName::from_str("test2").unwrap()));
+        assert_eq!(root.tag_name(), Some(XMLName::from_str("test2")));
 
         let root = roots.next_back().expect("Should have second-to-last root");
         assert_eq!(root.node_type(), xml::ELEMENT_NODE);
-        assert_eq!(root.tag_name(), Some(XMLName::from_str("test4").unwrap()));
+        assert_eq!(root.tag_name(), Some(XMLName::from_str("test4")));
 
         let root = roots.next().expect("Should have next root");
         assert_eq!(root.node_type(), xml::ELEMENT_NODE);
-        assert_eq!(root.tag_name(), Some(XMLName::from_str("test3").unwrap()));
+        assert_eq!(root.tag_name(), Some(XMLName::from_str("test3")));
 
         assert!(roots.next().is_none());
         assert!(roots.next_back().is_none());

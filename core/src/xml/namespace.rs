@@ -38,7 +38,7 @@ impl XMLName {
         Self::from_bytes_cow(Cow::Borrowed(bytes))
     }
 
-    pub fn from_str(strval: &str) -> Result<Self, Error> {
+    pub fn from_str(strval: &str) -> Self {
         Self::from_str_cow(Cow::Borrowed(strval))
     }
 
@@ -48,20 +48,20 @@ impl XMLName {
             Cow::Owned(ln) => Cow::Owned(String::from_utf8(ln)?),
         };
 
-        Self::from_str_cow(full_name)
+        Ok(Self::from_str_cow(full_name))
     }
 
-    pub fn from_str_cow(full_name: Cow<str>) -> Result<Self, Error> {
+    pub fn from_str_cow(full_name: Cow<str>) -> Self {
         if let Some(colon_index) = full_name.find(':') {
-            Ok(Self {
+            Self {
                 namespace: Some(full_name[0..colon_index].to_owned()),
                 name: full_name[colon_index + 1..].to_owned(),
-            })
+            }
         } else {
-            Ok(Self {
+            Self {
                 namespace: None,
                 name: full_name.into_owned(),
-            })
+            }
         }
     }
 
