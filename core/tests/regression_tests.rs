@@ -111,6 +111,7 @@ swf_tests! {
     (xml_has_child_nodes, "avm1/xml_has_child_nodes", 1),
     (xml_first_last_child, "avm1/xml_first_last_child", 1),
     (xml_parent_and_child, "avm1/xml_parent_and_child", 1),
+    (xml_siblings, "avm1/xml_siblings", 1),
 }
 
 #[test]

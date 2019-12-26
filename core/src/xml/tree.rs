@@ -320,7 +320,7 @@ impl<'gc> XMLNode<'gc> {
                     .checked_sub(1)
                     .and_then(|p| children.get(p).cloned());
                 let new_next = new_child_position
-                    .checked_sub(1)
+                    .checked_add(1)
                     .and_then(|p| children.get(p).cloned());
 
                 child.adopt_siblings(mc, new_prev, new_next)?
