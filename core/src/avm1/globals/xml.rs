@@ -71,8 +71,10 @@ pub fn xmlnode_insert_before<'gc>(
         args.get(0).map(|n| n.as_object().map(|n| n.as_xml_node())),
         args.get(1).map(|n| n.as_object().map(|n| n.as_xml_node())),
     ) {
-        if let Some(position) = xmlnode.child_position(insertpoint_xmlnode) {
-            xmlnode.insert_child(ac.gc_context, position, child_xmlnode)?;
+        if let Ok(None) = child_xmlnode.parent() {
+            if let Some(position) = xmlnode.child_position(insertpoint_xmlnode) {
+                xmlnode.insert_child(ac.gc_context, position, child_xmlnode)?;
+            }
         }
     }
 
