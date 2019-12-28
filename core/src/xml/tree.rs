@@ -992,37 +992,92 @@ impl<'gc> XMLNode<'gc> {
 impl<'gc> fmt::Debug for XMLNode<'gc> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &*self.0.read() {
-            XMLNodeData::Text { contents, .. } => f
+            XMLNodeData::Text {
+                script_object,
+                contents,
+                parent,
+                ..
+            } => f
                 .debug_struct("XMLNodeData::Text")
-                .field("script_object", &"<Elided>".to_string())
+                .field("0", &self.0.as_ptr())
+                .field(
+                    "script_object",
+                    &script_object
+                        .map(|p| format!("{:p}", p.as_ptr()))
+                        .unwrap_or_else(|| "None".to_string()),
+                )
                 .field("document", &"<Elided>".to_string())
-                .field("parent", &"<Elided>".to_string())
+                .field(
+                    "parent",
+                    &parent
+                        .map(|p| format!("{:p}", p.0.as_ptr()))
+                        .unwrap_or_else(|| "None".to_string()),
+                )
                 .field("contents", contents)
                 .finish(),
-            XMLNodeData::Comment { contents, .. } => f
+            XMLNodeData::Comment {
+                script_object,
+                contents,
+                parent,
+                ..
+            } => f
                 .debug_struct("XMLNodeData::Comment")
-                .field("script_object", &"<Elided>".to_string())
+                .field("0", &self.0.as_ptr())
+                .field(
+                    "script_object",
+                    &script_object
+                        .map(|p| format!("{:p}", p.as_ptr()))
+                        .unwrap_or_else(|| "None".to_string()),
+                )
                 .field("document", &"<Elided>".to_string())
-                .field("parent", &"<Elided>".to_string())
+                .field(
+                    "parent",
+                    &parent
+                        .map(|p| format!("{:p}", p.0.as_ptr()))
+                        .unwrap_or_else(|| "None".to_string()),
+                )
                 .field("contents", contents)
                 .finish(),
             XMLNodeData::Element {
+                script_object,
                 tag_name,
                 attributes,
                 children,
+                parent,
                 ..
             } => f
                 .debug_struct("XMLNodeData::Element")
-                .field("script_object", &"<Elided>".to_string())
+                .field("0", &self.0.as_ptr())
+                .field(
+                    "script_object",
+                    &script_object
+                        .map(|p| format!("{:p}", p.as_ptr()))
+                        .unwrap_or_else(|| "None".to_string()),
+                )
                 .field("document", &"<Elided>".to_string())
-                .field("parent", &"<Elided>".to_string())
+                .field(
+                    "parent",
+                    &parent
+                        .map(|p| format!("{:p}", p.0.as_ptr()))
+                        .unwrap_or_else(|| "None".to_string()),
+                )
                 .field("tag_name", tag_name)
                 .field("attributes", attributes)
                 .field("children", children)
                 .finish(),
-            XMLNodeData::DocumentRoot { children, .. } => f
+            XMLNodeData::DocumentRoot {
+                script_object,
+                children,
+                ..
+            } => f
                 .debug_struct("XMLNodeData::DocumentRoot")
-                .field("script_object", &"<Elided>".to_string())
+                .field("0", &self.0.as_ptr())
+                .field(
+                    "script_object",
+                    &script_object
+                        .map(|p| format!("{:p}", p.as_ptr()))
+                        .unwrap_or_else(|| "None".to_string()),
+                )
                 .field("document", &"<Elided>".to_string())
                 .field("children", children)
                 .finish(),
