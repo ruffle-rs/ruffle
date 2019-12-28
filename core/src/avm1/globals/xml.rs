@@ -27,12 +27,12 @@ pub fn xmlnode_constructor<'gc>(
         this.as_xml_node(),
     ) {
         (Some(Ok(1)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
-            let mut xmlelement = XMLNode::new_text(ac.gc_context, strval, blank_document);
+            let mut xmlelement = XMLNode::new_element(ac.gc_context, strval, blank_document)?;
             xmlelement.introduce_script_object(ac.gc_context, this);
             this_node.swap(ac.gc_context, xmlelement);
         }
         (Some(Ok(3)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
-            let mut xmlelement = XMLNode::new_element(ac.gc_context, strval, blank_document)?;
+            let mut xmlelement = XMLNode::new_text(ac.gc_context, strval, blank_document);
             xmlelement.introduce_script_object(ac.gc_context, this);
             this_node.swap(ac.gc_context, xmlelement);
         }
