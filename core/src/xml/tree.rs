@@ -1032,6 +1032,8 @@ impl<'gc> XMLNode<'gc> {
     where
         W: Write,
     {
+        let children_len = self.children_len();
+
         match &*self.0.read() {
             XMLNodeData::DocumentRoot { .. } => Ok(0),
             XMLNodeData::Element {
@@ -1051,12 +1053,16 @@ impl<'gc> XMLNode<'gc> {
                         .map(|(name, value)| Attribute::from((name.as_str(), *value))),
                 );
 
-                writer.write(&Event::Start(bs))
+                if children_len > 0 {
+                    writer.write_event(&Event::Start(bs))
+                } else {
+                    writer.write_event(&Event::Empty(bs))
+                }
             }
             XMLNodeData::Text { contents, .. } => {
-                writer.write(&Event::Text(BytesText::from_escaped_str(contents.as_str())))
+                writer.write_event(&Event::Text(BytesText::from_escaped_str(contents.as_str())))
             }
-            XMLNodeData::Comment { contents, .. } => writer.write(&Event::Comment(
+            XMLNodeData::Comment { contents, .. } => writer.write_event(&Event::Comment(
                 BytesText::from_escaped_str(contents.as_str()),
             )),
         }?;
@@ -1070,8 +1076,12 @@ impl<'gc> XMLNode<'gc> {
         match &*self.0.read() {
             XMLNodeData::DocumentRoot { .. } => Ok(0),
             XMLNodeData::Element { tag_name, .. } => {
-                let bs = BytesEnd::owned(tag_name.node_name().into());
-                writer.write(&Event::End(bs))
+                if children_len > 0 {
+                    let bs = BytesEnd::owned(tag_name.node_name().into());
+                    writer.write_event(&Event::End(bs))
+                } else {
+                    Ok(0)
+                }
             }
             XMLNodeData::Text { .. } => Ok(0),
             XMLNodeData::Comment { .. } => Ok(0),
