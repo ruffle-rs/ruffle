@@ -1060,10 +1060,10 @@ impl<'gc> XMLNode<'gc> {
                 }
             }
             XMLNodeData::Text { contents, .. } => {
-                writer.write_event(&Event::Text(BytesText::from_escaped_str(contents.as_str())))
+                writer.write_event(&Event::Text(BytesText::from_plain_str(contents.as_str())))
             }
             XMLNodeData::Comment { contents, .. } => writer.write_event(&Event::Comment(
-                BytesText::from_escaped_str(contents.as_str()),
+                BytesText::from_plain_str(contents.as_str()),
             )),
         }?;
 
