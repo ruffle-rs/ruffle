@@ -1,0 +1,22 @@
+true
+null
+true
+true
+null
+null
+true
+true
+null
+After node removal
+true
+1
+true
+null
+null
+null
+null
+null
+true
+true
+null
+null
