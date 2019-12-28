@@ -164,7 +164,9 @@ pub fn xmlnode_remove_node<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(node) = this.as_xml_node() {
         if let Ok(Some(mut parent)) = node.parent() {
-            parent.remove_child(ac.gc_context, node);
+            if let Err(e) = parent.remove_child(ac.gc_context, node) {
+                log::warn!("Error in XML.removeNode: {}", e);
+            }
         }
     }
 
