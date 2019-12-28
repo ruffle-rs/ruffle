@@ -359,7 +359,7 @@ impl<'gc> XMLNode<'gc> {
             return Err("Cannot adopt child into itself".into());
         }
 
-        match &mut *self.0.write(mc) {
+        let (new_prev, new_next) = match &mut *self.0.write(mc) {
             XMLNodeData::Element {
                 document, children, ..
             }
@@ -384,25 +384,30 @@ impl<'gc> XMLNode<'gc> {
                     }?;
 
                     if let Some(parent) = child_parent {
-                        parent.orphan_child(mc, child)?;
+                        if !GcCell::ptr_eq(self.0, parent.0) {
+                            parent.orphan_child(mc, child)?;
+                        }
                     }
 
                     *child_document = *document;
                     *child_parent = Some(*self);
+
+                    let new_prev = new_child_position
+                        .checked_sub(1)
+                        .and_then(|p| children.get(p).cloned());
+                    let new_next = new_child_position
+                        .checked_add(1)
+                        .and_then(|p| children.get(p).cloned());
+                    
+                    (new_prev, new_next)
                 }
-                child.disown_siblings(mc)?;
-
-                let new_prev = new_child_position
-                    .checked_sub(1)
-                    .and_then(|p| children.get(p).cloned());
-                let new_next = new_child_position
-                    .checked_add(1)
-                    .and_then(|p| children.get(p).cloned());
-
-                child.adopt_siblings(mc, new_prev, new_next)?
             }
             _ => return Err("Cannot adopt children into non-child-bearing node".into()),
-        }
+        };
+
+        child.disown_siblings(mc)?;
+
+        child.adopt_siblings(mc, new_prev, new_next)?;
 
         Ok(())
     }
@@ -582,6 +587,10 @@ impl<'gc> XMLNode<'gc> {
         position: usize,
         child: XMLNode<'gc>,
     ) -> Result<(), Error> {
+        if GcCell::ptr_eq(self.0, child.0) {
+            return Err("Cannot insert child into itself".into());
+        }
+
         match &mut *self.0.write(mc) {
             XMLNodeData::Element {
                 ref mut children, ..
