@@ -532,18 +532,18 @@ pub fn xml_constructor<'gc>(
         this.as_xml_node(),
     ) {
         (Some(Ok(ref string)), Some(ref mut this_node)) => {
-            let xmldoc = XMLDocument::from_str(ac.gc_context, string)?;
-            xmldoc
-                .as_node()
-                .introduce_script_object(ac.gc_context, this);
-            this_node.swap(ac.gc_context, xmldoc.as_node());
+            let xmldoc = XMLDocument::new(ac.gc_context);
+            let mut xmlnode = xmldoc.as_node();
+            xmlnode.introduce_script_object(ac.gc_context, this);
+            this_node.swap(ac.gc_context, xmlnode);
+
+            this_node.replace_with_str(ac.gc_context, string)?;
         }
         (None, Some(ref mut this_node)) => {
             let xmldoc = XMLDocument::new(ac.gc_context);
-            xmldoc
-                .as_node()
-                .introduce_script_object(ac.gc_context, this);
-            this_node.swap(ac.gc_context, xmldoc.as_node());
+            let mut xmlnode = xmldoc.as_node();
+            xmlnode.introduce_script_object(ac.gc_context, this);
+            this_node.swap(ac.gc_context, xmlnode);
         }
         //Non-string argument or not an XML document
         _ => {}

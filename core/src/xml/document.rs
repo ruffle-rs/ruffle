@@ -1,9 +1,7 @@
 //! XML Document
 
-use crate::xml::{Error, XMLNode};
+use crate::xml::XMLNode;
 use gc_arena::{Collect, GcCell, MutationContext};
-use quick_xml::events::Event;
-use quick_xml::Reader;
 use std::fmt;
 
 /// The entirety of an XML document.
@@ -27,63 +25,6 @@ impl<'gc> XMLDocument<'gc> {
         document.0.write(mc).root = Some(root);
 
         document
-    }
-
-    /// Ensure that a newly-encountered node is added to an ongoing parsing
-    /// stack, or to the document itself if the parsing stack is empty.
-    fn add_child_to_tree(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        open_tags: &mut Vec<XMLNode<'gc>>,
-        child: XMLNode<'gc>,
-    ) -> Result<(), Error> {
-        if let Some(node) = open_tags.last_mut() {
-            node.append_child(mc, child)?;
-        } else {
-            self.as_node().append_child(mc, child)?;
-        }
-
-        Ok(())
-    }
-
-    pub fn from_str(mc: MutationContext<'gc, '_>, data: &str) -> Result<Self, Error> {
-        let mut parser = Reader::from_str(data);
-        let mut buf = Vec::new();
-        let mut document = Self::new(mc);
-        let mut open_tags: Vec<XMLNode<'gc>> = Vec::new();
-
-        loop {
-            match parser.read_event(&mut buf)? {
-                Event::Start(bs) => {
-                    let child = XMLNode::from_start_event(mc, bs, document)?;
-                    document.add_child_to_tree(mc, &mut open_tags, child)?;
-                    open_tags.push(child);
-                }
-                Event::Empty(bs) => {
-                    let child = XMLNode::from_start_event(mc, bs, document)?;
-                    document.add_child_to_tree(mc, &mut open_tags, child)?;
-                }
-                Event::End(_) => {
-                    open_tags.pop();
-                }
-                Event::Text(bt) => {
-                    let child = XMLNode::text_from_text_event(mc, bt, document)?;
-                    if child.node_value().as_deref() != Some("") {
-                        document.add_child_to_tree(mc, &mut open_tags, child)?;
-                    }
-                }
-                Event::Comment(bt) => {
-                    let child = XMLNode::comment_from_text_event(mc, bt, document)?;
-                    if child.node_value().as_deref() != Some("") {
-                        document.add_child_to_tree(mc, &mut open_tags, child)?;
-                    }
-                }
-                Event::Eof => break,
-                _ => {}
-            }
-        }
-
-        Ok(document)
     }
 
     /// Yield the document in node form.

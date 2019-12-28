@@ -2,13 +2,13 @@
 
 use crate::avm1::xml_attributes_object::XMLAttributesObject;
 use crate::avm1::xml_object::XMLObject;
-use crate::avm1::Object;
+use crate::avm1::{Object, TObject};
 use crate::xml;
 use crate::xml::{Error, XMLDocument, XMLName};
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::events::attributes::Attribute;
 use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
-use quick_xml::Writer;
+use quick_xml::{Reader, Writer};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
@@ -164,6 +164,73 @@ impl<'gc> XMLNode<'gc> {
                 children: Vec::new(),
             },
         ))
+    }
+
+    /// Ensure that a newly-encountered node is added to an ongoing parsing
+    /// stack, or to the document root itself if the parsing stack is empty.
+    fn add_child_to_tree(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        open_tags: &mut Vec<XMLNode<'gc>>,
+        child: XMLNode<'gc>,
+    ) -> Result<(), Error> {
+        if let Some(node) = open_tags.last_mut() {
+            node.append_child(mc, child)?;
+        } else {
+            self.append_child(mc, child)?;
+        }
+
+        Ok(())
+    }
+
+    /// Replace the contents of this node with the result of parsing a string.
+    ///
+    /// Node replacements are only supported on document root nodes; elements
+    /// may work but will be incorrect.
+    ///
+    /// Also, this method does not yet actually remove existing node contents.
+    pub fn replace_with_str(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        data: &str,
+    ) -> Result<(), Error> {
+        let mut parser = Reader::from_str(data);
+        let mut buf = Vec::new();
+        let document = self.document();
+        let mut open_tags: Vec<XMLNode<'gc>> = Vec::new();
+
+        loop {
+            match parser.read_event(&mut buf)? {
+                Event::Start(bs) => {
+                    let child = XMLNode::from_start_event(mc, bs, document)?;
+                    self.add_child_to_tree(mc, &mut open_tags, child)?;
+                    open_tags.push(child);
+                }
+                Event::Empty(bs) => {
+                    let child = XMLNode::from_start_event(mc, bs, document)?;
+                    self.add_child_to_tree(mc, &mut open_tags, child)?;
+                }
+                Event::End(_) => {
+                    open_tags.pop();
+                }
+                Event::Text(bt) => {
+                    let child = XMLNode::text_from_text_event(mc, bt, document)?;
+                    if child.node_value().as_deref() != Some("") {
+                        self.add_child_to_tree(mc, &mut open_tags, child)?;
+                    }
+                }
+                Event::Comment(bt) => {
+                    let child = XMLNode::comment_from_text_event(mc, bt, document)?;
+                    if child.node_value().as_deref() != Some("") {
+                        self.add_child_to_tree(mc, &mut open_tags, child)?;
+                    }
+                }
+                Event::Eof => break,
+                _ => {}
+            }
+        }
+
+        Ok(())
     }
 
     /// Construct an XML Element node from a `quick_xml` `BytesStart` event.
@@ -762,7 +829,8 @@ impl<'gc> XMLNode<'gc> {
     ///
     /// After this function completes, the current `XMLNode` will contain all
     /// data present in the `other` node, and vice versa. References to the node
-    /// within the tree will *not* be updated.
+    /// will *not* be updated: it is a logic error to swap nodes that have
+    /// existing referents.
     pub fn swap(&mut self, gc_context: MutationContext<'gc, '_>, other: Self) {
         if !GcCell::ptr_eq(self.0, other.0) {
             swap(

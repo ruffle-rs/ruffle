@@ -8,7 +8,10 @@ use gc_arena::rootless_arena;
 #[test]
 fn parse_single_element() {
     rootless_arena(|mc| {
-        let xml = XMLDocument::from_str(mc, "<test></test>").expect("Parsed document");
+        let xml = XMLDocument::new(mc);
+        xml.as_node()
+            .replace_with_str(mc, "<test></test>")
+            .expect("Parsed document");
         dbg!(xml);
         let mut roots = xml
             .as_node()
@@ -30,11 +33,13 @@ fn parse_single_element() {
 #[test]
 fn double_ended_children() {
     rootless_arena(|mc| {
-        let xml = XMLDocument::from_str(
-            mc,
-            "<test></test><test2></test2><test3></test3><test4></test4><test5></test5>",
-        )
-        .expect("Parsed document");
+        let xml = XMLDocument::new(mc);
+        xml.as_node()
+            .replace_with_str(
+                mc,
+                "<test></test><test2></test2><test3></test3><test4></test4><test5></test5>",
+            )
+            .expect("Parsed document");
 
         let mut roots = xml
             .as_node()
