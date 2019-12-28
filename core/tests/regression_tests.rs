@@ -114,6 +114,7 @@ swf_tests! {
     (xml_siblings, "avm1/xml_siblings", 1),
     (xml_attributes_read, "avm1/xml_attributes_read", 1),
     (xml_append_child, "avm1/xml_append_child", 1),
+    (xml_append_child_with_parent, "avm1/xml_append_child_with_parent", 1),
     (xml_remove_node, "avm1/xml_remove_node", 1),
     (xml_insert_before, "avm1/xml_insert_before", 1),
 }

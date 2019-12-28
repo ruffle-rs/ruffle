@@ -53,8 +53,10 @@ pub fn xmlnode_append_child<'gc>(
         this.as_xml_node(),
         args.get(0).map(|n| n.as_object().map(|n| n.as_xml_node())),
     ) {
-        let position = xmlnode.children_len();
-        xmlnode.insert_child(ac.gc_context, position, child_xmlnode)?;
+        if let Ok(None) = child_xmlnode.parent() {
+            let position = xmlnode.children_len();
+            xmlnode.insert_child(ac.gc_context, position, child_xmlnode)?;
+        }
     }
 
     Ok(Value::Undefined.into())
