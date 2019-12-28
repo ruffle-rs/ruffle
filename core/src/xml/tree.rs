@@ -1041,7 +1041,11 @@ impl<'gc> XMLNode<'gc> {
                 attributes,
                 ..
             } => {
-                let mut bs = BytesStart::owned_name(tag_name.node_name());
+                let mut bs = BytesStart::owned_name(if children_len > 0 { 
+                    tag_name.node_name()
+                } else {
+                    format!("{} ", tag_name.node_name())
+                });
                 let key_values: Vec<(String, &str)> = attributes
                     .iter()
                     .map(|(name, value)| (name.node_name(), value.as_str()))
