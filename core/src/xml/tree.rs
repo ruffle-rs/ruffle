@@ -504,6 +504,20 @@ impl<'gc> XMLNode<'gc> {
         Ok(())
     }
 
+    /// Unset the parent of this node.
+    fn disown_parent(&mut self, mc: MutationContext<'gc, '_>) -> Result<(), Error> {
+        match &mut *self.0.write(mc) {
+            XMLNodeData::Element { parent, .. } => *parent = None,
+            XMLNodeData::Text { parent, .. } => *parent = None,
+            XMLNodeData::Comment { parent, .. } => *parent = None,
+            XMLNodeData::DocumentRoot { .. } => {
+                return Err("Document roots cannot have siblings".into())
+            }
+        };
+
+        Ok(())
+    }
+
     /// Add node to a new siblings list.
     ///
     /// If a given sibling exists, we will also ensure this node is adopted as
@@ -615,6 +629,7 @@ impl<'gc> XMLNode<'gc> {
             };
 
             child.disown_siblings(mc)?;
+            child.disown_parent(mc)?;
         } else {
             return Err("Child node is not a child of this one!".into());
         }
