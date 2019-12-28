@@ -1,0 +1,6 @@
+<test />
+I&apos;m a <b>text node</b>!
+<test><test2 /></test>
+I&apos;m a <b>text node</b>!
+<test><test2>&quot;Test&quot; Node 2</test2></test>
+I&apos;m a <b>text node</b>!
