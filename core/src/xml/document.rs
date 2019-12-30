@@ -1,7 +1,8 @@
 //! XML Document
 
-use crate::xml::XMLNode;
+use crate::xml::{Error, XMLNode};
 use gc_arena::{Collect, GcCell, MutationContext};
+use quick_xml::events::Event;
 use std::fmt;
 
 /// The entirety of an XML document.
@@ -14,12 +15,29 @@ pub struct XMLDocument<'gc>(GcCell<'gc, XMLDocumentData<'gc>>);
 pub struct XMLDocumentData<'gc> {
     /// The root node of the XML document.
     root: Option<XMLNode<'gc>>,
+
+    /// The XML version string, if set.
+    version: String,
+
+    /// The XML document encoding, if set.
+    encoding: Option<String>,
+
+    /// The XML standalone flag, if set.
+    standalone: Option<String>,
 }
 
 impl<'gc> XMLDocument<'gc> {
     /// Construct a new, empty XML document.
     pub fn new(mc: MutationContext<'gc, '_>) -> Self {
-        let document = Self(GcCell::allocate(mc, XMLDocumentData { root: None }));
+        let document = Self(GcCell::allocate(
+            mc,
+            XMLDocumentData {
+                root: None,
+                version: "1.0".to_string(),
+                encoding: None,
+                standalone: None,
+            },
+        ));
         let root = XMLNode::new_document_root(mc, document);
 
         document.0.write(mc).root = Some(root);
@@ -43,7 +61,16 @@ impl<'gc> XMLDocument<'gc> {
     /// rootless document that is not safe to use without first linking another
     /// root node into it. (See `link_root_node`.)
     pub fn duplicate(self, gc_context: MutationContext<'gc, '_>) -> Self {
-        Self(GcCell::allocate(gc_context, XMLDocumentData { root: None }))
+        let self_read = self.0.read();
+        Self(GcCell::allocate(
+            gc_context,
+            XMLDocumentData {
+                root: None,
+                version: self_read.version.clone(),
+                encoding: self_read.encoding.clone(),
+                standalone: self_read.standalone.clone(),
+            },
+        ))
     }
 
     /// Set the root node of the document, if possible.
@@ -62,14 +89,41 @@ impl<'gc> XMLDocument<'gc> {
             &mut *self.0.write(gc_context),
             proposed_root.is_document_root(),
         ) {
-            (XMLDocumentData { root }, true) if root.is_none() => {
+            (XMLDocumentData { root, .. }, true) if root.is_none() => {
                 *root = Some(proposed_root);
             }
-            (XMLDocumentData { root }, false) if root.is_none() => {
+            (XMLDocumentData { root, .. }, false) if root.is_none() => {
                 *root = Some(XMLNode::new_document_root(gc_context, *self));
             }
             _ => {}
         }
+    }
+
+    /// Process events being passed into some node of the document.
+    ///
+    /// There are certain nodes which have document-wide implications if parsed
+    /// into any node within the document. These are processed here.
+    pub fn process_event(self, mc: MutationContext<'gc, '_>, event: &Event) -> Result<(), Error> {
+        match event {
+            Event::Decl(bd) => {
+                let mut self_write = self.0.write(mc);
+
+                self_write.version = String::from_utf8(bd.version()?.into_owned())?;
+                self_write.encoding = if let Some(encoding) = bd.encoding() {
+                    Some(String::from_utf8(encoding?.into_owned())?)
+                } else {
+                    None
+                };
+                self_write.standalone = if let Some(standalone) = bd.standalone() {
+                    Some(String::from_utf8(standalone?.into_owned())?)
+                } else {
+                    None
+                };
+            }
+            _ => {}
+        }
+
+        Ok(())
     }
 }
 

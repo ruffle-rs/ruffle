@@ -6,8 +6,8 @@ use crate::avm1::return_value::ReturnValue;
 use crate::avm1::script_object::ScriptObject;
 use crate::avm1::xml_object::XMLObject;
 use crate::avm1::{Avm1, Error, Object, TObject, UpdateContext, Value};
-use crate::xml::{XMLDocument, XMLNode};
 use crate::xml;
+use crate::xml::{XMLDocument, XMLNode};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 use quick_xml::Writer;
@@ -237,11 +237,14 @@ pub fn create_xmlnode_proto<'gc>(
         Executable::Native(|_avm, _ac, this: Object<'gc>, _args| {
             Ok(this
                 .as_xml_node()
-                .map(|n| match n.node_type() {
-                    xml::DOCUMENT_NODE => xml::ELEMENT_NODE,
-                    xml::COMMENT_NODE => xml::TEXT_NODE,
-                    n => n
-                }.into())
+                .map(|n| {
+                    match n.node_type() {
+                        xml::DOCUMENT_NODE => xml::ELEMENT_NODE,
+                        xml::COMMENT_NODE => xml::TEXT_NODE,
+                        n => n,
+                    }
+                    .into()
+                })
                 .unwrap_or_else(|| Value::Undefined.into()))
         }),
         None,

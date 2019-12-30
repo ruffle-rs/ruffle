@@ -196,11 +196,15 @@ impl<'gc> XMLNode<'gc> {
     ) -> Result<(), Error> {
         let mut parser = Reader::from_str(data);
         let mut buf = Vec::new();
-        let document = self.document();
+        let mut document = self.document();
         let mut open_tags: Vec<XMLNode<'gc>> = Vec::new();
 
         loop {
-            match parser.read_event(&mut buf)? {
+            let event = parser.read_event(&mut buf)?;
+
+            document.process_event(mc, &event);
+
+            match event {
                 Event::Start(bs) => {
                     let child = XMLNode::from_start_event(mc, bs, document)?;
                     self.add_child_to_tree(mc, &mut open_tags, child)?;
