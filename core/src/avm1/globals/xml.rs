@@ -240,6 +240,7 @@ pub fn create_xmlnode_proto<'gc>(
                 .map(|n| {
                     match n.node_type() {
                         xml::DOCUMENT_NODE => xml::ELEMENT_NODE,
+                        xml::DOCUMENT_TYPE_NODE => xml::TEXT_NODE,
                         xml::COMMENT_NODE => xml::TEXT_NODE,
                         n => n,
                     }
