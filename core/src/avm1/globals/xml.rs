@@ -14,12 +14,12 @@ use quick_xml::Writer;
 use std::io::Cursor;
 
 /// Returns true if a particular node can or cannot be exposed to AVM1.
-/// 
+///
 /// Our internal XML tree representation supports node types that AVM1 XML did
 /// not. Those nodes are filtered from all attributes that return XML nodes to
 /// act as if those nodes did not exist. For example, `prevSibling` skips
 /// past incompatible nodes, etc.
-fn is_as2_compatible<'gc>(node: XMLNode<'gc>) -> bool {
+fn is_as2_compatible(node: XMLNode<'_>) -> bool {
     node.is_document_root() || node.is_element() || node.is_text()
 }
 
@@ -405,8 +405,7 @@ pub fn create_xmlnode_proto<'gc>(
 
                 return Ok(prev
                     .map(|mut prev| {
-                        prev
-                            .script_object(ac.gc_context, Some(avm.prototypes.xml_node))
+                        prev.script_object(ac.gc_context, Some(avm.prototypes.xml_node))
                             .into()
                     })
                     .unwrap_or_else(|| Value::Null.into()));
@@ -433,8 +432,7 @@ pub fn create_xmlnode_proto<'gc>(
 
                 return Ok(next
                     .map(|mut next| {
-                        next
-                            .script_object(ac.gc_context, Some(avm.prototypes.xml_node))
+                        next.script_object(ac.gc_context, Some(avm.prototypes.xml_node))
                             .into()
                     })
                     .unwrap_or_else(|| Value::Null.into()));
@@ -601,5 +599,31 @@ pub fn create_xml_proto<'gc>(
     proto: Object<'gc>,
     _fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    XMLObject::empty_node(gc_context, Some(proto))
+    let xml_proto = XMLObject::empty_node(gc_context, Some(proto));
+
+    xml_proto.add_property(
+        gc_context,
+        "docTypeDecl",
+        Executable::Native(|_avm, _ac, this: Object<'gc>, _args| {
+            if let Some(node) = this.as_xml_node() {
+                if let Some(doctype) = node.document().doctype() {
+                    let mut result = Vec::new();
+                    let mut writer = Writer::new(Cursor::new(&mut result));
+                    if let Err(e) = doctype.write_node_to_event_writer(&mut writer) {
+                        log::warn!("Error occured when serializing DOCTYPE: {}", e);
+                    }
+
+                    return Ok(String::from_utf8(result)
+                        .unwrap_or_else(|_| "".to_string())
+                        .into());
+                }
+            }
+
+            Ok(Value::Undefined.into())
+        }),
+        None,
+        ReadOnly.into(),
+    );
+
+    xml_proto
 }

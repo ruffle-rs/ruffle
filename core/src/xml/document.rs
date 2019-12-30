@@ -24,6 +24,9 @@ pub struct XMLDocumentData<'gc> {
 
     /// The XML standalone flag, if set.
     standalone: Option<String>,
+
+    /// The XML doctype, if set.
+    doctype: Option<XMLNode<'gc>>,
 }
 
 impl<'gc> XMLDocument<'gc> {
@@ -36,6 +39,7 @@ impl<'gc> XMLDocument<'gc> {
                 version: "1.0".to_string(),
                 encoding: None,
                 standalone: None,
+                doctype: None,
             },
         ));
         let root = XMLNode::new_document_root(mc, document);
@@ -69,6 +73,7 @@ impl<'gc> XMLDocument<'gc> {
                 version: self_read.version.clone(),
                 encoding: self_read.encoding.clone(),
                 standalone: self_read.standalone.clone(),
+                doctype: None,
             },
         ))
     }
@@ -97,6 +102,27 @@ impl<'gc> XMLDocument<'gc> {
             }
             _ => {}
         }
+    }
+
+    /// Set the DOCTYPE of the document, if possible.
+    ///
+    /// If the proposed doctype is not an `XMLNode::DocType`, or the document
+    /// already has a doctype, nothing happens.
+    pub fn link_doctype(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        proposed_doctype: XMLNode<'gc>,
+    ) {
+        let mut self_write = self.0.write(gc_context);
+
+        if self_write.doctype.is_none() && proposed_doctype.is_doctype() {
+            self_write.doctype = Some(proposed_doctype);
+        }
+    }
+
+    /// Retrieve the first DocType node in the document.
+    pub fn doctype(self) -> Option<XMLNode<'gc>> {
+        self.0.read().doctype
     }
 
     /// Process events being passed into some node of the document.

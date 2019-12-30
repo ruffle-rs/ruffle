@@ -422,7 +422,7 @@ impl<'gc> XMLNode<'gc> {
             return Err("Cannot adopt child into itself".into());
         }
 
-        let (new_prev, new_next) = match &mut *self.0.write(mc) {
+        let (mut document, new_prev, new_next) = match &mut *self.0.write(mc) {
             XMLNodeData::Element {
                 document, children, ..
             }
@@ -462,10 +462,14 @@ impl<'gc> XMLNode<'gc> {
                     .checked_add(1)
                     .and_then(|p| children.get(p).cloned());
 
-                (new_prev, new_next)
+                (*document, new_prev, new_next)
             }
             _ => return Err("Cannot adopt children into non-child-bearing node".into()),
         };
+
+        if child.is_doctype() {
+            document.link_doctype(mc, child);
+        }
 
         child.disown_siblings(mc)?;
 
@@ -915,7 +919,8 @@ impl<'gc> XMLNode<'gc> {
             XMLNodeData::Element {
                 attributes_script_object,
                 ..
-            } | XMLNodeData::DocumentRoot {
+            }
+            | XMLNodeData::DocumentRoot {
                 attributes_script_object,
                 ..
             } => {
@@ -965,6 +970,14 @@ impl<'gc> XMLNode<'gc> {
     pub fn is_text(self) -> bool {
         match &*self.0.read() {
             XMLNodeData::Text { .. } => true,
+            _ => false,
+        }
+    }
+
+    /// Check if this XML node constitutes a DOCTYPE declaration
+    pub fn is_doctype(self) -> bool {
+        match &*self.0.read() {
+            XMLNodeData::DocType { .. } => true,
             _ => false,
         }
     }
