@@ -104,23 +104,20 @@ impl<'gc> XMLDocument<'gc> {
     /// There are certain nodes which have document-wide implications if parsed
     /// into any node within the document. These are processed here.
     pub fn process_event(self, mc: MutationContext<'gc, '_>, event: &Event) -> Result<(), Error> {
-        match event {
-            Event::Decl(bd) => {
-                let mut self_write = self.0.write(mc);
+        if let Event::Decl(bd) = event {
+            let mut self_write = self.0.write(mc);
 
-                self_write.version = String::from_utf8(bd.version()?.into_owned())?;
-                self_write.encoding = if let Some(encoding) = bd.encoding() {
-                    Some(String::from_utf8(encoding?.into_owned())?)
-                } else {
-                    None
-                };
-                self_write.standalone = if let Some(standalone) = bd.standalone() {
-                    Some(String::from_utf8(standalone?.into_owned())?)
-                } else {
-                    None
-                };
-            }
-            _ => {}
+            self_write.version = String::from_utf8(bd.version()?.into_owned())?;
+            self_write.encoding = if let Some(encoding) = bd.encoding() {
+                Some(String::from_utf8(encoding?.into_owned())?)
+            } else {
+                None
+            };
+            self_write.standalone = if let Some(standalone) = bd.standalone() {
+                Some(String::from_utf8(standalone?.into_owned())?)
+            } else {
+                None
+            };
         }
 
         Ok(())
