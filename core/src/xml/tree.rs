@@ -946,6 +946,22 @@ impl<'gc> XMLNode<'gc> {
         }
     }
 
+    /// Check if this XML node constitutes an element.
+    pub fn is_element(self) -> bool {
+        match &*self.0.read() {
+            XMLNodeData::Element { .. } => true,
+            _ => false,
+        }
+    }
+
+    /// Check if this XML node constitutes text.
+    pub fn is_text(self) -> bool {
+        match &*self.0.read() {
+            XMLNodeData::Text { .. } => true,
+            _ => false,
+        }
+    }
+
     /// Create a duplicate copy of this node.
     ///
     /// If the `deep` flag is set true, then the entire node tree will be

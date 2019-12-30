@@ -13,6 +13,16 @@ use gc_arena::MutationContext;
 use quick_xml::Writer;
 use std::io::Cursor;
 
+/// Returns true if a particular node can or cannot be exposed to AVM1.
+/// 
+/// Our internal XML tree representation supports node types that AVM1 XML did
+/// not. Those nodes are filtered from all attributes that return XML nodes to
+/// act as if those nodes did not exist. For example, `prevSibling` skips
+/// past incompatible nodes, etc.
+fn is_as2_compatible<'gc>(node: XMLNode<'gc>) -> bool {
+    node.is_document_root() || node.is_element() || node.is_text()
+}
+
 /// XMLNode constructor
 pub fn xmlnode_constructor<'gc>(
     avm: &mut Avm1<'gc>,
@@ -288,14 +298,21 @@ pub fn create_xmlnode_proto<'gc>(
             if let Some(node) = this.as_xml_node() {
                 let array = ScriptObject::array(ac.gc_context, Some(avm.prototypes.array));
                 if let Some(children) = node.children() {
-                    for (i, mut child) in children.enumerate() {
+                    let mut compatible_nodes = 0;
+                    for mut child in children {
+                        if !is_as2_compatible(child) {
+                            continue;
+                        }
+
                         array.set_array_element(
-                            i as usize,
+                            compatible_nodes as usize,
                             child
                                 .script_object(ac.gc_context, Some(avm.prototypes.xml_node))
                                 .into(),
                             ac.gc_context,
                         );
+
+                        compatible_nodes += 1;
                     }
 
                     return Ok(array.into());
@@ -377,11 +394,18 @@ pub fn create_xmlnode_proto<'gc>(
         "previousSibling",
         Executable::Native(|avm, ac, this: Object<'gc>, _args| {
             if let Some(node) = this.as_xml_node() {
-                return Ok(node
-                    .prev_sibling()
-                    .unwrap_or(None)
-                    .map(|mut parent| {
-                        parent
+                let mut prev = node.prev_sibling().unwrap_or(None);
+                while let Some(my_prev) = prev {
+                    if is_as2_compatible(my_prev) {
+                        break;
+                    }
+
+                    prev = my_prev.prev_sibling().unwrap_or(None);
+                }
+
+                return Ok(prev
+                    .map(|mut prev| {
+                        prev
                             .script_object(ac.gc_context, Some(avm.prototypes.xml_node))
                             .into()
                     })
@@ -398,11 +422,18 @@ pub fn create_xmlnode_proto<'gc>(
         "nextSibling",
         Executable::Native(|avm, ac, this: Object<'gc>, _args| {
             if let Some(node) = this.as_xml_node() {
-                return Ok(node
-                    .next_sibling()
-                    .unwrap_or(None)
-                    .map(|mut parent| {
-                        parent
+                let mut next = node.next_sibling().unwrap_or(None);
+                while let Some(my_next) = next {
+                    if is_as2_compatible(my_next) {
+                        break;
+                    }
+
+                    next = my_next.next_sibling().unwrap_or(None);
+                }
+
+                return Ok(next
+                    .map(|mut next| {
+                        next
                             .script_object(ac.gc_context, Some(avm.prototypes.xml_node))
                             .into()
                     })
