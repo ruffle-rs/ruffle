@@ -2,8 +2,10 @@
 
 use crate::xml::{Error, XMLNode};
 use gc_arena::{Collect, GcCell, MutationContext};
-use quick_xml::events::Event;
+use quick_xml::events::{BytesDecl, Event};
+use quick_xml::Writer;
 use std::fmt;
+use std::io::Cursor;
 
 /// The entirety of an XML document.
 #[derive(Copy, Clone, Collect)]
@@ -15,6 +17,9 @@ pub struct XMLDocument<'gc>(GcCell<'gc, XMLDocumentData<'gc>>);
 pub struct XMLDocumentData<'gc> {
     /// The root node of the XML document.
     root: Option<XMLNode<'gc>>,
+
+    /// Whether or not the document has a document declaration.
+    has_xmldecl: bool,
 
     /// The XML version string, if set.
     version: String,
@@ -36,6 +41,7 @@ impl<'gc> XMLDocument<'gc> {
             mc,
             XMLDocumentData {
                 root: None,
+                has_xmldecl: false,
                 version: "1.0".to_string(),
                 encoding: None,
                 standalone: None,
@@ -70,6 +76,7 @@ impl<'gc> XMLDocument<'gc> {
             gc_context,
             XMLDocumentData {
                 root: None,
+                has_xmldecl: self_read.has_xmldecl,
                 version: self_read.version.clone(),
                 encoding: self_read.encoding.clone(),
                 standalone: self_read.standalone.clone(),
@@ -133,6 +140,7 @@ impl<'gc> XMLDocument<'gc> {
         if let Event::Decl(bd) = event {
             let mut self_write = self.0.write(mc);
 
+            self_write.has_xmldecl = true;
             self_write.version = String::from_utf8(bd.version()?.into_owned())?;
             self_write.encoding = if let Some(encoding) = bd.encoding() {
                 Some(String::from_utf8(encoding?.into_owned())?)
@@ -147,6 +155,27 @@ impl<'gc> XMLDocument<'gc> {
         }
 
         Ok(())
+    }
+
+    /// Generate a string matching the XML document declaration, if there is
+    /// one.
+    pub fn xmldecl_string(self) -> Result<Option<String>, Error> {
+        let self_read = self.0.read();
+
+        if self_read.has_xmldecl {
+            let mut result = Vec::new();
+            let mut writer = Writer::new(Cursor::new(&mut result));
+            let bd = BytesDecl::new(
+                &self_read.version.as_bytes(),
+                self_read.encoding.as_ref().map(|s| s.as_bytes()),
+                self_read.standalone.as_ref().map(|s| s.as_bytes()),
+            );
+            writer.write_event(Event::Decl(bd))?;
+
+            Ok(Some(String::from_utf8(result)?))
+        } else {
+            Ok(None)
+        }
     }
 }
 

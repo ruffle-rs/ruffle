@@ -624,6 +624,25 @@ pub fn create_xml_proto<'gc>(
         None,
         ReadOnly.into(),
     );
+    xml_proto.add_property(
+        gc_context,
+        "xmlDecl",
+        Executable::Native(|_avm, _ac, this: Object<'gc>, _args| {
+            if let Some(node) = this.as_xml_node() {
+                let result = node.document().xmldecl_string();
+
+                if let Err(e) = result {
+                    log::warn!("Could not generate XML declaration for document: {}", e);
+                } else if let Ok(Some(result_str)) = result {
+                    return Ok(result_str.into());
+                }
+            }
+
+            Ok(Value::Undefined.into())
+        }),
+        None,
+        ReadOnly.into(),
+    );
 
     xml_proto
 }
