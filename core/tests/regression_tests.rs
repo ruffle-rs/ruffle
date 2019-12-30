@@ -118,6 +118,7 @@ swf_tests! {
     (xml_remove_node, "avm1/xml_remove_node", 1),
     (xml_insert_before, "avm1/xml_insert_before", 1),
     (xml_to_string, "avm1/xml_to_string", 1),
+    (xml_inspect_doctype, "avm1/xml_inspect_doctype", 1),
 }
 
 #[test]
