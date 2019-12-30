@@ -28,6 +28,9 @@ pub enum XMLNodeData<'gc> {
         /// The script object associated with this XML node, if any.
         script_object: Option<Object<'gc>>,
 
+        /// The script object associated with this XML node's attributes, if any.
+        attributes_script_object: Option<Object<'gc>>,
+
         /// The document that this is the root of.
         document: XMLDocument<'gc>,
 
@@ -43,6 +46,9 @@ pub enum XMLNodeData<'gc> {
     Element {
         /// The script object associated with this XML node, if any.
         script_object: Option<Object<'gc>>,
+
+        /// The script object associated with this XML node's attributes, if any.
+        attributes_script_object: Option<Object<'gc>>,
 
         /// The document that this tree node currently belongs to.
         document: XMLDocument<'gc>,
@@ -61,9 +67,6 @@ pub enum XMLNodeData<'gc> {
 
         /// Attributes of the element.
         attributes: BTreeMap<XMLName, String>,
-
-        /// The script object associated with this XML node's attributes, if any.
-        attributes_script_object: Option<Object<'gc>>,
 
         /// Child nodes of this element.
         children: Vec<XMLNode<'gc>>,
@@ -181,6 +184,7 @@ impl<'gc> XMLNode<'gc> {
             mc,
             XMLNodeData::DocumentRoot {
                 script_object: None,
+                attributes_script_object: None,
                 document,
                 children: Vec::new(),
             },
@@ -911,6 +915,9 @@ impl<'gc> XMLNode<'gc> {
             XMLNodeData::Element {
                 attributes_script_object,
                 ..
+            } | XMLNodeData::DocumentRoot {
+                attributes_script_object,
+                ..
             } => {
                 if attributes_script_object.is_none() {
                     *attributes_script_object =
@@ -973,6 +980,7 @@ impl<'gc> XMLNode<'gc> {
             match &*self.0.read() {
                 XMLNodeData::DocumentRoot { .. } => XMLNodeData::DocumentRoot {
                     script_object: None,
+                    attributes_script_object: None,
                     document,
                     children: Vec::new(),
                 },
