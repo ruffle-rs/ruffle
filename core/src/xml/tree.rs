@@ -77,6 +77,9 @@ pub enum XMLNodeData<'gc> {
         /// The script object associated with this XML node, if any.
         script_object: Option<Object<'gc>>,
 
+        /// The script object associated with this XML node's attributes, if any.
+        attributes_script_object: Option<Object<'gc>>,
+
         /// The document that this tree node currently belongs to.
         document: XMLDocument<'gc>,
 
@@ -147,6 +150,7 @@ impl<'gc> XMLNode<'gc> {
             mc,
             XMLNodeData::Text {
                 script_object: None,
+                attributes_script_object: None,
                 document,
                 parent: None,
                 prev_sibling: None,
@@ -319,6 +323,7 @@ impl<'gc> XMLNode<'gc> {
             mc,
             XMLNodeData::Text {
                 script_object: None,
+                attributes_script_object: None,
                 document,
                 parent: None,
                 prev_sibling: None,
@@ -923,6 +928,10 @@ impl<'gc> XMLNode<'gc> {
             | XMLNodeData::DocumentRoot {
                 attributes_script_object,
                 ..
+            }
+            | XMLNodeData::Text {
+                attributes_script_object,
+                ..
             } => {
                 if attributes_script_object.is_none() {
                     *attributes_script_object =
@@ -1014,6 +1023,7 @@ impl<'gc> XMLNode<'gc> {
                 },
                 XMLNodeData::Text { contents, .. } => XMLNodeData::Text {
                     script_object: None,
+                    attributes_script_object: None,
                     document,
                     parent: None,
                     prev_sibling: None,
