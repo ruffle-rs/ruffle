@@ -12,7 +12,7 @@ use quick_xml::{Reader, Writer};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
-use std::io::Write;
+use std::io::{Cursor, Write};
 use std::mem::swap;
 
 /// Represents a node in the XML tree.
@@ -1177,17 +1177,37 @@ impl<'gc> XMLNode<'gc> {
         }
     }
 
+    /// Convert the given node to a string of UTF-8 encoded XML.
+    ///
+    /// The given filter function allows filtering specific children out of the
+    /// resulting string. It will be called at least once for each node
+    /// encountered in the tree (other than this one) if specified; only nodes
+    /// that yield `true` shall be printed.
+    pub fn into_string<F>(self, filter: &mut F) -> Result<String, Error>
+    where
+        F: FnMut(XMLNode<'gc>) -> bool,
+    {
+        let mut buf = Vec::new();
+        let mut writer = Writer::new(Cursor::new(&mut buf));
+        self.write_node_to_event_writer(&mut writer, filter)?;
+        Ok(String::from_utf8(buf)?)
+    }
+
     /// Write the contents of this node, including it's children, to the given
     /// writer.
-    /// 
+    ///
     /// The given filter function allows filtering specific children out of the
     /// resulting write stream. It will be called at least once for each node
     /// encountered in the tree (other than this one) if specified; only nodes
     /// that yield `true` shall be printed.
-    pub fn write_node_to_event_writer<W, F>(self, writer: &mut Writer<W>, filter: &mut F) -> Result<(), Error>
+    fn write_node_to_event_writer<W, F>(
+        self,
+        writer: &mut Writer<W>,
+        filter: &mut F,
+    ) -> Result<(), Error>
     where
         W: Write,
-        F: FnMut(XMLNode<'gc>) -> bool
+        F: FnMut(XMLNode<'gc>) -> bool,
     {
         let mut children = Vec::new();
         if let Some(my_children) = self.children() {
@@ -1239,7 +1259,7 @@ impl<'gc> XMLNode<'gc> {
                 BytesText::from_plain_str(contents.as_str()),
             )),
         }?;
-        
+
         for child in children {
             child.write_node_to_event_writer(writer, filter)?;
         }

@@ -10,8 +10,6 @@ use crate::xml;
 use crate::xml::{XMLDocument, XMLNode};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
-use quick_xml::Writer;
-use std::io::Cursor;
 
 /// Returns true if a particular node can or cannot be exposed to AVM1.
 ///
@@ -195,16 +193,18 @@ pub fn xmlnode_to_string<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let mut result = Vec::new();
-
     if let Some(node) = this.as_xml_node() {
-        let mut writer = Writer::new(Cursor::new(&mut result));
-        node.write_node_to_event_writer(&mut writer, &mut is_as2_compatible);
+        let result = node.into_string(&mut is_as2_compatible);
+
+        return Ok(result
+            .unwrap_or_else(|e| {
+                log::warn!("XMLNode toString failed: {}", e);
+                "".to_string()
+            })
+            .into());
     }
 
-    Ok(String::from_utf8(result)
-        .unwrap_or_else(|_| "".to_string())
-        .into())
+    Ok("".to_string().into())
 }
 
 /// Construct the prototype for `XMLNode`.
@@ -667,14 +667,13 @@ pub fn create_xml_proto<'gc>(
         Executable::Native(|_avm, _ac, this: Object<'gc>, _args| {
             if let Some(node) = this.as_xml_node() {
                 if let Some(doctype) = node.document().doctype() {
-                    let mut result = Vec::new();
-                    let mut writer = Writer::new(Cursor::new(&mut result));
-                    if let Err(e) = doctype.write_node_to_event_writer(&mut writer, &mut |_| true) {
-                        log::warn!("Error occured when serializing DOCTYPE: {}", e);
-                    }
+                    let result = doctype.into_string(&mut |_| true);
 
-                    return Ok(String::from_utf8(result)
-                        .unwrap_or_else(|_| "".to_string())
+                    return Ok(result
+                        .unwrap_or_else(|e| {
+                            log::warn!("Error occured when serializing DOCTYPE: {}", e);
+                            "".to_string()
+                        })
                         .into());
                 }
             }
