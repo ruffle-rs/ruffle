@@ -281,7 +281,7 @@ impl<'gc> XMLNode<'gc> {
         bs: BytesStart<'a>,
         document: XMLDocument<'gc>,
     ) -> Result<Self, Error> {
-        let tag_name = XMLName::from_bytes_cow(bs.unescaped()?)?;
+        let tag_name = XMLName::from_bytes(bs.name())?;
         let mut attributes = BTreeMap::new();
 
         for a in bs.attributes() {
@@ -1103,9 +1103,20 @@ impl<'gc> XMLNode<'gc> {
     /// XML namespaces are determined by `xmlns:` namespace attributes on the
     /// current node, or it's parent.
     pub fn lookup_uri_for_namespace(self, namespace: &str) -> Option<String> {
-        if let Some(url) = self.attribute_value(&XMLName::from_parts(Some("xmlns"), namespace)) {
-            Some(url)
-        } else if let Ok(Some(parent)) = self.parent() {
+        let xmlns_default = XMLName::from_parts(None, "xmlns");
+        let xmlns_ns = XMLName::from_parts(Some("xmlns"), namespace);
+
+        if namespace == "" {
+            if let Some(url) = self.attribute_value(&xmlns_default) {
+                return Some(url);
+            }
+        }
+
+        if let Some(url) = self.attribute_value(&xmlns_ns) {
+            return Some(url);
+        }
+
+        if let Ok(Some(parent)) = self.parent() {
             parent.lookup_uri_for_namespace(namespace)
         } else {
             None
