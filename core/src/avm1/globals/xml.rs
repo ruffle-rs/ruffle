@@ -315,7 +315,7 @@ pub fn create_xmlnode_proto<'gc>(
                         compatible_nodes += 1;
                     }
                 }
-                
+
                 return Ok(array.into());
             }
 
@@ -606,9 +606,17 @@ pub fn xml_create_element<'gc>(
         XMLDocument::new(ac.gc_context)
     };
 
-    let nodename = args.get(0).map(|v| v.clone().coerce_to_string(avm, ac).unwrap_or("".to_string())).unwrap_or("".to_string());
+    let nodename = args
+        .get(0)
+        .map(|v| {
+            v.clone()
+                .coerce_to_string(avm, ac)
+                .unwrap_or("".to_string())
+        })
+        .unwrap_or("".to_string());
     let mut xml_node = XMLNode::new_element(ac.gc_context, &nodename, document)?;
-    let object = XMLObject::from_xml_node(ac.gc_context, xml_node, Some(avm.prototypes().xml_node)).into();
+    let object =
+        XMLObject::from_xml_node(ac.gc_context, xml_node, Some(avm.prototypes().xml_node)).into();
 
     xml_node.introduce_script_object(ac.gc_context, object);
 
@@ -628,9 +636,17 @@ pub fn xml_create_text_node<'gc>(
         XMLDocument::new(ac.gc_context)
     };
 
-    let text_node = args.get(0).map(|v| v.clone().coerce_to_string(avm, ac).unwrap_or("".to_string())).unwrap_or("".to_string());
+    let text_node = args
+        .get(0)
+        .map(|v| {
+            v.clone()
+                .coerce_to_string(avm, ac)
+                .unwrap_or("".to_string())
+        })
+        .unwrap_or("".to_string());
     let mut xml_node = XMLNode::new_text(ac.gc_context, &text_node, document);
-    let object = XMLObject::from_xml_node(ac.gc_context, xml_node, Some(avm.prototypes().xml_node)).into();
+    let object =
+        XMLObject::from_xml_node(ac.gc_context, xml_node, Some(avm.prototypes().xml_node)).into();
 
     xml_node.introduce_script_object(ac.gc_context, object);
 
@@ -687,26 +703,20 @@ pub fn create_xml_proto<'gc>(
         None,
         ReadOnly.into(),
     );
-    xml_proto
-        .as_script_object()
-        .unwrap()
-        .force_set_function(
-            "createElement",
-            xml_create_element,
-            gc_context,
-            EnumSet::empty(),
-            Some(fn_proto),
-        );
-    xml_proto
-        .as_script_object()
-        .unwrap()
-        .force_set_function(
-            "createTextNode",
-            xml_create_text_node,
-            gc_context,
-            EnumSet::empty(),
-            Some(fn_proto),
-        );
+    xml_proto.as_script_object().unwrap().force_set_function(
+        "createElement",
+        xml_create_element,
+        gc_context,
+        EnumSet::empty(),
+        Some(fn_proto),
+    );
+    xml_proto.as_script_object().unwrap().force_set_function(
+        "createTextNode",
+        xml_create_text_node,
+        gc_context,
+        EnumSet::empty(),
+        Some(fn_proto),
+    );
 
     xml_proto
 }
