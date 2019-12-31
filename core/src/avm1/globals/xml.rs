@@ -314,9 +314,9 @@ pub fn create_xmlnode_proto<'gc>(
 
                         compatible_nodes += 1;
                     }
-
-                    return Ok(array.into());
                 }
+                
+                return Ok(array.into());
             }
 
             Ok(Value::Undefined.into())
