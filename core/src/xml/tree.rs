@@ -983,6 +983,15 @@ impl<'gc> XMLNode<'gc> {
         }
     }
 
+    /// Check if this XML node constitutes text.
+    #[allow(dead_code)]
+    pub fn is_comment(self) -> bool {
+        match &*self.0.read() {
+            XMLNodeData::Comment { .. } => true,
+            _ => false,
+        }
+    }
+
     /// Check if this XML node constitutes a DOCTYPE declaration
     pub fn is_doctype(self) -> bool {
         match &*self.0.read() {
@@ -1168,11 +1177,28 @@ impl<'gc> XMLNode<'gc> {
         }
     }
 
-    pub fn write_node_to_event_writer<W>(self, writer: &mut Writer<W>) -> Result<(), Error>
+    /// Write the contents of this node, including it's children, to the given
+    /// writer.
+    /// 
+    /// The given filter function allows filtering specific children out of the
+    /// resulting write stream. It will be called at least once for each node
+    /// encountered in the tree (other than this one) if specified; only nodes
+    /// that yield `true` shall be printed.
+    pub fn write_node_to_event_writer<W, F>(self, writer: &mut Writer<W>, filter: &mut F) -> Result<(), Error>
     where
         W: Write,
+        F: FnMut(XMLNode<'gc>) -> bool
     {
-        let children_len = self.children_len();
+        let mut children = Vec::new();
+        if let Some(my_children) = self.children() {
+            for child in my_children {
+                if filter(child) {
+                    children.push(child)
+                }
+            }
+        }
+
+        let children_len = children.len();
 
         match &*self.0.read() {
             XMLNodeData::DocumentRoot { .. } => Ok(0),
@@ -1213,11 +1239,9 @@ impl<'gc> XMLNode<'gc> {
                 BytesText::from_plain_str(contents.as_str()),
             )),
         }?;
-
-        if let Some(children) = self.children() {
-            for child in children {
-                child.write_node_to_event_writer(writer)?;
-            }
+        
+        for child in children {
+            child.write_node_to_event_writer(writer, filter)?;
         }
 
         match &*self.0.read() {

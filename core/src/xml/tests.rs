@@ -2,7 +2,9 @@
 
 use crate::xml;
 use crate::xml::{XMLDocument, XMLName};
+use quick_xml::Writer;
 use gc_arena::rootless_arena;
+use std::io::Cursor;
 
 /// Tests very basic parsing of a single-element document.
 #[test]
@@ -68,5 +70,45 @@ fn double_ended_children() {
 
         assert!(roots.next().is_none());
         assert!(roots.next_back().is_none());
+    })
+}
+
+/// Tests round-trip XML writing behavior.
+#[test]
+fn round_trip_tostring() {
+    let test_string = "<test><!-- Comment -->This is a text node</test>";
+
+    rootless_arena(|mc| {
+        let xml = XMLDocument::new(mc);
+        xml.as_node()
+            .replace_with_str(mc, test_string)
+            .expect("Parsed document");
+        
+        let mut buf = Vec::new();
+        let mut writer = Writer::new(Cursor::new(&mut buf));
+        xml.as_node().write_node_to_event_writer(&mut writer, &mut |_| true).expect("Successful toString");
+        let result = String::from_utf8(buf).expect("Valid UTF-8");
+        
+        assert_eq!(test_string, result);
+    })
+}
+
+/// Tests filtered XML writing behavior.
+#[test]
+fn round_trip_filtered_tostring() {
+    let test_string = "<test><!-- Comment -->This is a text node</test>";
+
+    rootless_arena(|mc| {
+        let xml = XMLDocument::new(mc);
+        xml.as_node()
+            .replace_with_str(mc, test_string)
+            .expect("Parsed document");
+        
+        let mut buf = Vec::new();
+        let mut writer = Writer::new(Cursor::new(&mut buf));
+        xml.as_node().write_node_to_event_writer(&mut writer, &mut |node| !node.is_comment()).expect("Successful toString");
+        let result = String::from_utf8(buf).expect("Valid UTF-8");
+        
+        assert_eq!("<test>This is a text node</test>", result);
     })
 }

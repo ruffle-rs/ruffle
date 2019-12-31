@@ -199,7 +199,7 @@ pub fn xmlnode_to_string<'gc>(
 
     if let Some(node) = this.as_xml_node() {
         let mut writer = Writer::new(Cursor::new(&mut result));
-        node.write_node_to_event_writer(&mut writer);
+        node.write_node_to_event_writer(&mut writer, &mut is_as2_compatible);
     }
 
     Ok(String::from_utf8(result)
@@ -669,7 +669,7 @@ pub fn create_xml_proto<'gc>(
                 if let Some(doctype) = node.document().doctype() {
                     let mut result = Vec::new();
                     let mut writer = Writer::new(Cursor::new(&mut result));
-                    if let Err(e) = doctype.write_node_to_event_writer(&mut writer) {
+                    if let Err(e) = doctype.write_node_to_event_writer(&mut writer, &mut |_| true) {
                         log::warn!("Error occured when serializing DOCTYPE: {}", e);
                     }
 
