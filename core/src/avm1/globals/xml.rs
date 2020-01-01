@@ -653,6 +653,36 @@ pub fn xml_create_text_node<'gc>(
     Ok(object.into())
 }
 
+#[allow(unused_must_use)]
+pub fn xml_parse_xml<'gc>(
+    avm: &mut Avm1<'gc>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(mut node) = this.as_xml_node() {
+        let xmlstring =
+            if let Some(Ok(xmlstring)) = args.get(0).map(|s| s.clone().coerce_to_string(avm, ac)) {
+                xmlstring
+            } else {
+                "".to_string()
+            };
+
+        if let Some(children) = node.children() {
+            for child in children.rev() {
+                node.remove_child(ac.gc_context, child);
+            }
+        }
+
+        let result = node.replace_with_str(ac.gc_context, &xmlstring);
+        if let Err(e) = result {
+            log::warn!("XML parsing error: {}", e);
+        }
+    }
+
+    Ok(Value::Undefined.into())
+}
+
 /// Construct the prototype for `XML`.
 pub fn create_xml_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
@@ -712,6 +742,13 @@ pub fn create_xml_proto<'gc>(
     xml_proto.as_script_object().unwrap().force_set_function(
         "createTextNode",
         xml_create_text_node,
+        gc_context,
+        EnumSet::empty(),
+        Some(fn_proto),
+    );
+    xml_proto.as_script_object().unwrap().force_set_function(
+        "parseXML",
+        xml_parse_xml,
         gc_context,
         EnumSet::empty(),
         Some(fn_proto),
