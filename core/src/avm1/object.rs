@@ -5,6 +5,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::super_object::SuperObject;
 use crate::avm1::xml_attributes_object::XMLAttributesObject;
+use crate::avm1::xml_idmap_object::XMLIDMapObject;
 use crate::avm1::xml_object::XMLObject;
 use crate::avm1::{Avm1, Error, ScriptObject, SoundObject, StageObject, UpdateContext, Value};
 use crate::display_object::DisplayObject;
@@ -27,6 +28,7 @@ use std::fmt::Debug;
         SuperObject(SuperObject<'gc>),
         XMLObject(XMLObject<'gc>),
         XMLAttributesObject(XMLAttributesObject<'gc>),
+        XMLIDMapObject(XMLIDMapObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {

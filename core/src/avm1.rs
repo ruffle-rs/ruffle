@@ -34,6 +34,7 @@ mod stage_object;
 mod super_object;
 mod value;
 pub mod xml_attributes_object;
+pub mod xml_idmap_object;
 pub mod xml_object;
 
 #[cfg(test)]

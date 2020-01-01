@@ -236,11 +236,13 @@ impl<'gc> XMLNode<'gc> {
             match event {
                 Event::Start(bs) => {
                     let child = XMLNode::from_start_event(mc, bs, document)?;
+                    self.document().update_idmap(mc, child);
                     self.add_child_to_tree(mc, &mut open_tags, child)?;
                     open_tags.push(child);
                 }
                 Event::Empty(bs) => {
                     let child = XMLNode::from_start_event(mc, bs, document)?;
+                    self.document().update_idmap(mc, child);
                     self.add_child_to_tree(mc, &mut open_tags, child)?;
                 }
                 Event::End(_) => {

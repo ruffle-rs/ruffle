@@ -732,6 +732,19 @@ pub fn create_xml_proto<'gc>(
         None,
         ReadOnly.into(),
     );
+    xml_proto.add_property(
+        gc_context,
+        "idMap",
+        Executable::Native(|_avm, ac, this: Object<'gc>, _args| {
+            if let Some(node) = this.as_xml_node() {
+                return Ok(node.document().idmap_script_object(ac.gc_context).into());
+            }
+
+            Ok(Value::Undefined.into())
+        }),
+        None,
+        ReadOnly.into(),
+    );
     xml_proto.as_script_object().unwrap().force_set_function(
         "createElement",
         xml_create_element,

@@ -1,9 +1,12 @@
 //! XML Document
 
-use crate::xml::{Error, XMLNode};
+use crate::avm1::xml_idmap_object::XMLIDMapObject;
+use crate::avm1::Object;
+use crate::xml::{Error, XMLName, XMLNode};
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::events::{BytesDecl, Event};
 use quick_xml::Writer;
+use std::collections::{BTreeMap, HashSet};
 use std::fmt;
 use std::io::Cursor;
 
@@ -32,6 +35,16 @@ pub struct XMLDocumentData<'gc> {
 
     /// The XML doctype, if set.
     doctype: Option<XMLNode<'gc>>,
+
+    /// The document's ID map.
+    ///
+    /// When nodes are parsed into the document by way of `parseXML` or the
+    /// document constructor, they get put into this list here, which is used
+    /// to populate the document's `idMap`.
+    idmap: BTreeMap<String, XMLNode<'gc>>,
+
+    /// The script object associated with this XML node, if any.
+    idmap_script_object: Option<Object<'gc>>,
 }
 
 impl<'gc> XMLDocument<'gc> {
@@ -46,6 +59,8 @@ impl<'gc> XMLDocument<'gc> {
                 encoding: None,
                 standalone: None,
                 doctype: None,
+                idmap: BTreeMap::new(),
+                idmap_script_object: None,
             },
         ));
         let root = XMLNode::new_document_root(mc, document);
@@ -81,6 +96,8 @@ impl<'gc> XMLDocument<'gc> {
                 encoding: self_read.encoding.clone(),
                 standalone: self_read.standalone.clone(),
                 doctype: None,
+                idmap: BTreeMap::new(),
+                idmap_script_object: None,
             },
         ))
     }
@@ -176,6 +193,46 @@ impl<'gc> XMLDocument<'gc> {
         } else {
             Ok(None)
         }
+    }
+
+    /// Obtain the script object for the document's `idMap` property, or create
+    /// one if it doesn't exist
+    pub fn idmap_script_object(&mut self, gc_context: MutationContext<'gc, '_>) -> Object<'gc> {
+        let mut object = self.0.read().idmap_script_object;
+        if object.is_none() {
+            object = Some(XMLIDMapObject::from_xml_document(gc_context, *self));
+            self.0.write(gc_context).idmap_script_object = object;
+        }
+
+        object.unwrap()
+    }
+
+    /// Update the idmap object with a given new node.
+    pub fn update_idmap(&mut self, mc: MutationContext<'gc, '_>, node: XMLNode<'gc>) {
+        if let Some(id) = node.attribute_value(&XMLName::from_str("id")) {
+            self.0.write(mc).idmap.insert(id, node);
+        }
+    }
+
+    /// Retrieve a node from the idmap.
+    ///
+    /// This only retrieves nodes that had this `id` *at the time of string
+    /// parsing*. Nodes which obtained the `id` after the fact, or nodes with
+    /// the `id` that were added to the document after the fact, will not be
+    /// returned by this function.
+    pub fn get_node_by_id(self, id: &str) -> Option<XMLNode<'gc>> {
+        self.0.read().idmap.get(id).cloned()
+    }
+
+    /// Retrieve all IDs currently present in the idmap.
+    pub fn get_node_ids(self) -> HashSet<String> {
+        let mut result = HashSet::new();
+
+        for key in self.0.read().idmap.keys() {
+            result.insert(key.to_string());
+        }
+
+        result
     }
 }
 
