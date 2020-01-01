@@ -1,0 +1,21 @@
+true
+true
+idmap has test
+idmap has test2
+Manually added new node via appendChild
+Checking old copy of IDMAP...
+idmap has test
+idmap has test2
+Checking new copy of IDMAP...
+idmap has test
+idmap has test2
+Parsed another node with parseXML...
+idmap has test
+idmap has test2
+idmap has test4
+Checking for IDMAP expandos...
+idmap has test
+idmap has test124
+idmap has test2
+idmap has test4
+trace
