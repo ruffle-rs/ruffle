@@ -124,6 +124,7 @@ swf_tests! {
     (xml_inspect_doctype, "avm1/xml_inspect_doctype", 1),
     #[ignore] (xml_inspect_xmldecl, "avm1/xml_inspect_xmldecl", 1),
     (xml_inspect_createmethods, "avm1/xml_inspect_createmethods", 1),
+    (xml_inspect_parsexml, "avm1/xml_inspect_parsexml", 1),
 }
 
 #[test]
