@@ -1684,7 +1684,9 @@ impl<'gc, 'a> MovieClipData<'gc> {
             // The sound event type is controlled by the "Sync" setting in the Flash IDE.
             match start_sound.sound_info.event {
                 // "Event" sounds always play, independent of the timeline.
-                SoundEvent::Event => context.audio.start_sound(handle, &start_sound.sound_info),
+                SoundEvent::Event => {
+                    context.audio.start_sound(handle, &start_sound.sound_info);
+                }
 
                 // "Start" sounds only play if an instance of the same sound is not already playing.
                 SoundEvent::Start => {

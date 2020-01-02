@@ -3,7 +3,9 @@ use generational_arena::Arena;
 use ruffle_core::backend::audio::decoders::{
     self, AdpcmDecoder, Mp3Decoder, PcmDecoder, SeekableDecoder,
 };
-use ruffle_core::backend::audio::{swf, AudioBackend, AudioStreamHandle, SoundHandle};
+use ruffle_core::backend::audio::{
+    swf, AudioBackend, AudioStreamHandle, SoundHandle, SoundInstanceHandle,
+};
 use ruffle_core::tag_utils::SwfSlice;
 use std::io::Cursor;
 use std::sync::{Arc, Mutex};
@@ -351,7 +353,11 @@ impl AudioBackend for CpalAudioBackend {
         sound_instances.remove(stream);
     }
 
-    fn start_sound(&mut self, sound_handle: SoundHandle, settings: &swf::SoundInfo) {
+    fn start_sound(
+        &mut self,
+        sound_handle: SoundHandle,
+        settings: &swf::SoundInfo,
+    ) -> SoundInstanceHandle {
         let sound = &self.sounds[sound_handle];
         let data = Cursor::new(VecAsRef(Arc::clone(&sound.data)));
         // Create a signal that decodes and resamples the sound.
@@ -375,7 +381,12 @@ impl AudioBackend for CpalAudioBackend {
             clip_id: None,
             signal,
             active: true,
-        });
+        })
+    }
+
+    fn stop_sound(&mut self, sound: SoundInstanceHandle) {
+        let mut sound_instances = self.sound_instances.lock().unwrap();
+        sound_instances.remove(sound);
     }
 
     fn stop_all_sounds(&mut self) {

@@ -3,7 +3,9 @@ use fnv::FnvHashMap;
 use generational_arena::Arena;
 use ruffle_core::backend::audio::decoders::{AdpcmDecoder, Mp3Decoder};
 use ruffle_core::backend::audio::swf::{self, AudioCompression};
-use ruffle_core::backend::audio::{AudioBackend, AudioStreamHandle, SoundHandle};
+use ruffle_core::backend::audio::{
+    AudioBackend, AudioStreamHandle, SoundHandle, SoundInstanceHandle,
+};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use wasm_bindgen::{closure::Closure, prelude::*, JsCast};
@@ -129,7 +131,7 @@ impl WebAudioBackend {
         &mut self,
         handle: SoundHandle,
         settings: Option<&swf::SoundInfo>,
-    ) -> SoundHandle {
+    ) -> SoundInstanceHandle {
         let sound = self.sounds.get(handle).unwrap();
         match &sound.source {
             SoundSource::AudioBuffer(audio_buffer) => {
@@ -640,8 +642,12 @@ impl AudioBackend for WebAudioBackend {
         }
     }
 
-    fn start_sound(&mut self, sound: SoundHandle, sound_info: &swf::SoundInfo) {
-        self.start_sound_internal(sound, Some(sound_info));
+    fn start_sound(
+        &mut self,
+        sound: SoundHandle,
+        sound_info: &swf::SoundInfo,
+    ) -> SoundInstanceHandle {
+        self.start_sound_internal(sound, Some(sound_info))
     }
 
     fn start_stream(
@@ -689,6 +695,17 @@ impl AudioBackend for WebAudioBackend {
             // TODO: Return dummy sound.
             panic!();
         }
+    }
+
+    fn stop_sound(&mut self, sound: SoundInstanceHandle) {
+        SOUND_INSTANCES.with(|instances| {
+            let mut instances = instances.borrow_mut();
+            if let Some(mut instance) = instances.remove(sound) {
+                if let SoundInstanceType::AudioBuffer(ref mut node) = instance.instance_type {
+                    let _ = node.disconnect();
+                }
+            }
+        })
     }
 
     fn stop_stream(&mut self, stream: AudioStreamHandle) {
