@@ -4,7 +4,7 @@ use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
-use crate::backend::audio::SoundHandle;
+use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use enumset::EnumSet;
@@ -27,6 +27,9 @@ pub struct SoundObjectData<'gc> {
     /// The sound that is attached to this object.
     sound: Option<SoundHandle>,
 
+    /// The instance of the last played sound on this object.
+    sound_instance: Option<SoundInstanceHandle>,
+
     /// Sounds in AVM1 are tied to a speicifc movie clip.
     owner: Option<DisplayObject<'gc>>,
 }
@@ -40,9 +43,11 @@ unsafe impl<'gc> Collect for SoundObjectData<'gc> {
 
 impl fmt::Debug for SoundObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let this = self.0.read();
         f.debug_struct("SoundObject")
-            .field("sound", &self.0.read().sound)
-            .field("owner", &self.0.read().owner)
+            .field("sound", &this.sound)
+            .field("sound_instance", &this.sound_instance)
+            .field("owner", &this.owner)
             .finish()
     }
 }
@@ -57,6 +62,7 @@ impl<'gc> SoundObject<'gc> {
             SoundObjectData {
                 base: ScriptObject::object(gc_context, proto),
                 sound: None,
+                sound_instance: None,
                 owner: None,
             },
         ))
@@ -68,6 +74,18 @@ impl<'gc> SoundObject<'gc> {
 
     pub fn set_sound(self, gc_context: MutationContext<'gc, '_>, sound: Option<SoundHandle>) {
         self.0.write(gc_context).sound = sound;
+    }
+
+    pub fn sound_instance(self) -> Option<SoundInstanceHandle> {
+        self.0.read().sound_instance
+    }
+
+    pub fn set_sound_instance(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        sound_instance: Option<SoundInstanceHandle>,
+    ) {
+        self.0.write(gc_context).sound_instance = sound_instance;
     }
 
     pub fn owner(self) -> Option<DisplayObject<'gc>> {

@@ -319,39 +319,59 @@ fn start<'gc>(
     };
 
     use swf::{SoundEvent, SoundInfo};
-    if let Some(sound) = this.as_sound_object().and_then(|o| o.sound()) {
-        context.audio.start_sound(
-            sound,
-            &SoundInfo {
-                event: SoundEvent::Start,
-                in_sample: if start_offset > 0.0 {
-                    Some((start_offset * 44100.0) as u32)
-                } else {
-                    None
+    if let Some(sound_object) = this.as_sound_object() {
+        if let Some(sound) = sound_object.sound() {
+            let sound_instance = context.audio.start_sound(
+                sound,
+                &SoundInfo {
+                    event: SoundEvent::Start,
+                    in_sample: if start_offset > 0.0 {
+                        Some((start_offset * 44100.0) as u32)
+                    } else {
+                        None
+                    },
+                    out_sample: None,
+                    num_loops: loops,
+                    envelope: None,
                 },
-                out_sample: None,
-                num_loops: loops,
-                envelope: None,
-            },
-        );
+            );
+            sound_object.set_sound_instance(context.gc_context, Some(sound_instance));
+        } else {
+            log::warn!("Sound.start: No sound is attached");
+        }
     } else {
-        log::error!("Sound.start: Invalid sound");
+        log::warn!("Sound.start: Invalid sound");
     }
 
     Ok(Value::Undefined.into())
 }
 
 fn stop<'gc>(
-    _avm: &mut Avm1<'gc>,
+    avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(sound) = this.as_sound_object() {
-        if let Some(_owner) = sound.owner() {
-            // TODO
+        if let Some(name) = args.get(0) {
+            // Usage 1: Stop all instances of a particular sound, using the name parameter.
+            let name = name.clone().coerce_to_string(avm, context)?;
+            if let Some(Character::Sound(sound)) =
+                context.library.get_character_by_export_name(&name)
+            {
+                // Stop all sounds with the given name.
+                context.audio.stop_sounds_with_handle(*sound);
+            } else {
+                log::warn!("Sound.stop: Sound '{}' not found", name);
+            }
+        } else if let Some(_owner) = sound.owner() {
+            // Usage 2: Stop all sound running within a given clip.
+            // TODO: We just stop the last played sound for now.
+            if let Some(sound_instance) = sound.sound_instance() {
+                context.audio.stop_sound(sound_instance);
+            }
         } else {
-            // If there is no owner, this call acts like `stopAllSounds()`.
+            // Usage 3: If there is no owner and no name, this call acts like `stopAllSounds()`.
             context.audio.stop_all_sounds();
         }
     } else {
