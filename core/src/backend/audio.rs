@@ -11,6 +11,7 @@ pub mod swf {
 
 pub type AudioStreamHandle = Index;
 pub type SoundHandle = Index;
+pub type SoundInstanceHandle = Index;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -35,7 +36,9 @@ pub trait AudioBackend {
 
     /// Starts playing a sound instance that is not tied to a MovieClip timeline.
     /// In Flash, this is known as an "Event" sound.
-    fn start_sound(&mut self, sound: SoundHandle, settings: &swf::SoundInfo);
+    fn start_sound(&mut self, sound: SoundHandle, settings: &swf::SoundInfo)
+        -> SoundInstanceHandle;
+
     fn start_stream(
         &mut self,
         clip_id: crate::prelude::CharacterId,
@@ -43,6 +46,10 @@ pub trait AudioBackend {
         clip_data: crate::tag_utils::SwfSlice,
         handle: &swf::SoundStreamHead,
     ) -> AudioStreamHandle;
+
+    /// Stops a playing sound instance.
+    /// No-op if the sound is not playing.
+    fn stop_sound(&mut self, sound: SoundInstanceHandle);
 
     /// Stops a playing stream souund.
     /// Should be called whenever a MovieClip timeline stops playing or seeks to a new frame.
@@ -100,7 +107,11 @@ impl<T: AudioBackend + ?Sized> AudioBackend for Box<T> {
     fn preload_sound_stream_end(&mut self, clip_id: swf::CharacterId) {
         self.deref_mut().preload_sound_stream_end(clip_id)
     }
-    fn start_sound(&mut self, sound: SoundHandle, settings: &swf::SoundInfo) {
+    fn start_sound(
+        &mut self,
+        sound: SoundHandle,
+        settings: &swf::SoundInfo,
+    ) -> SoundInstanceHandle {
         self.deref_mut().start_sound(sound, settings)
     }
     fn start_stream(
@@ -112,6 +123,10 @@ impl<T: AudioBackend + ?Sized> AudioBackend for Box<T> {
     ) -> AudioStreamHandle {
         self.deref_mut()
             .start_stream(clip_id, clip_frame, clip_data, handle)
+    }
+
+    fn stop_sound(&mut self, sound: SoundInstanceHandle) {
+        self.deref_mut().stop_sound(sound)
     }
 
     fn stop_stream(&mut self, stream: AudioStreamHandle) {
@@ -156,7 +171,13 @@ impl AudioBackend for NullAudioBackend {
         Ok(self.sounds.insert(()))
     }
 
-    fn start_sound(&mut self, _sound: SoundHandle, _sound_info: &swf::SoundInfo) {}
+    fn start_sound(
+        &mut self,
+        _sound: SoundHandle,
+        _sound_info: &swf::SoundInfo,
+    ) -> SoundInstanceHandle {
+        SoundInstanceHandle::from_raw_parts(0, 0)
+    }
 
     fn start_stream(
         &mut self,
@@ -167,6 +188,9 @@ impl AudioBackend for NullAudioBackend {
     ) -> AudioStreamHandle {
         self.streams.insert(())
     }
+
+    fn stop_sound(&mut self, _sound: SoundInstanceHandle) {}
+
     fn stop_stream(&mut self, stream: AudioStreamHandle) {
         self.streams.remove(stream);
     }
