@@ -228,8 +228,10 @@ impl<'gc> XMLNode<'gc> {
         let document = self.document();
         let mut open_tags: Vec<XMLNode<'gc>> = Vec::new();
 
+        document.clear_parse_error(mc);
+
         loop {
-            let event = parser.read_event(&mut buf)?;
+            let event = document.log_parse_result(mc, parser.read_event(&mut buf))?;
 
             document.process_event(mc, &event)?;
 

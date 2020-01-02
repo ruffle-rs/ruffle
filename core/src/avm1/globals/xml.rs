@@ -10,6 +10,7 @@ use crate::xml;
 use crate::xml::{XMLDocument, XMLNode};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
+use quick_xml::Error as ParseError;
 
 /// Returns true if a particular node can or cannot be exposed to AVM1.
 ///
@@ -738,6 +739,35 @@ pub fn create_xml_proto<'gc>(
         Executable::Native(|_avm, ac, this: Object<'gc>, _args| {
             if let Some(node) = this.as_xml_node() {
                 return Ok(node.document().idmap_script_object(ac.gc_context).into());
+            }
+
+            Ok(Value::Undefined.into())
+        }),
+        None,
+        ReadOnly.into(),
+    );
+    xml_proto.add_property(
+        gc_context,
+        "status",
+        Executable::Native(|_avm, _ac, this: Object<'gc>, _args| {
+            if let Some(node) = this.as_xml_node() {
+                return match node.document().last_parse_error() {
+                    None => Ok(0.into()),
+                    Some(err) => match err.ref_error() {
+                        ParseError::UnexpectedEof(_) => Ok(Value::Number(-6.0).into()),
+                        ParseError::EndEventMismatch { .. } => Ok(Value::Number(-10.0).into()),
+                        ParseError::XmlDeclWithoutVersion(_) => Ok(Value::Number(-3.0).into()),
+                        ParseError::NameWithQuote(_) => Ok(Value::Number(-6.0).into()),
+                        ParseError::NoEqAfterName(_) => Ok(Value::Number(-6.0).into()),
+                        ParseError::UnquotedValue(_) => Ok(Value::Number(-8.0).into()),
+                        ParseError::DuplicatedAttribute(_, _) => Ok(Value::Number(-6.0).into()),
+                        _ => Ok(Value::Number(-7.0).into()), //Not accounted for:
+                                                             //ParseError::UnexpectedToken(_)
+                                                             //ParseError::UnexpectedBang
+                                                             //ParseError::TextNotFound
+                                                             //ParseError::EscapeError(_)
+                    },
+                };
             }
 
             Ok(Value::Undefined.into())

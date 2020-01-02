@@ -1,15 +1,16 @@
 //! Garbage-collectable XML DOM impl
 
 mod document;
+mod error;
 mod namespace;
 mod tree;
 
 #[cfg(test)]
 mod tests;
 
-type Error = Box<dyn std::error::Error>;
-
 pub use document::XMLDocument;
+pub use error::Error;
+pub use error::ParseError;
 pub use namespace::XMLName;
 pub use tree::XMLNode;
 

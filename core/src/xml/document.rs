@@ -2,10 +2,10 @@
 
 use crate::avm1::xml_idmap_object::XMLIDMapObject;
 use crate::avm1::Object;
-use crate::xml::{Error, XMLName, XMLNode};
+use crate::xml::{Error, ParseError, XMLName, XMLNode};
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::events::{BytesDecl, Event};
-use quick_xml::Writer;
+use quick_xml::{Error as QXError, Writer};
 use std::collections::{BTreeMap, HashSet};
 use std::fmt;
 use std::io::Cursor;
@@ -45,6 +45,9 @@ pub struct XMLDocumentData<'gc> {
 
     /// The script object associated with this XML node, if any.
     idmap_script_object: Option<Object<'gc>>,
+
+    /// The last parse error encountered, if any.
+    last_parse_error: Option<ParseError>,
 }
 
 impl<'gc> XMLDocument<'gc> {
@@ -61,6 +64,7 @@ impl<'gc> XMLDocument<'gc> {
                 doctype: None,
                 idmap: BTreeMap::new(),
                 idmap_script_object: None,
+                last_parse_error: None,
             },
         ));
         let root = XMLNode::new_document_root(mc, document);
@@ -98,6 +102,7 @@ impl<'gc> XMLDocument<'gc> {
                 doctype: None,
                 idmap: BTreeMap::new(),
                 idmap_script_object: None,
+                last_parse_error: None,
             },
         ))
     }
@@ -233,6 +238,35 @@ impl<'gc> XMLDocument<'gc> {
         }
 
         result
+    }
+
+    /// Log the result of an XML parse, saving the error for later inspection
+    /// if necessary.
+    pub fn log_parse_result<O>(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        maybe_error: Result<O, QXError>,
+    ) -> Result<O, ParseError> {
+        match maybe_error {
+            Ok(v) => Ok(v),
+            Err(e) => {
+                let new_error = ParseError::from_quickxml_error(e);
+
+                self.0.write(gc_context).last_parse_error = Some(new_error.clone());
+
+                Err(new_error)
+            }
+        }
+    }
+
+    /// Get the last parse error within this document, if any.
+    pub fn last_parse_error(self) -> Option<ParseError> {
+        self.0.read().last_parse_error.clone()
+    }
+
+    /// Clear the previous parse error.
+    pub fn clear_parse_error(self, gc_context: MutationContext<'gc, '_>) {
+        self.0.write(gc_context).last_parse_error = None;
     }
 }
 
