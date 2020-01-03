@@ -628,7 +628,7 @@ dependencies = [
 
 [[package]]
 name = "generational-arena"
-version = "0.2.6"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "cfg-if 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1568,7 +1568,7 @@ dependencies = [
  "fnv 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "gc-arena 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gc-arena-derive 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "generational-arena 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "generational-arena 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "jpeg-decoder 0.1.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "libflate 0.1.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1587,7 +1587,7 @@ version = "0.1.0"
 dependencies = [
  "cpal 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "generational-arena 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "generational-arena 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "glium 0.26.0-alpha5 (registry+https://github.com/rust-lang/crates.io-index)",
  "glutin 0.22.0-alpha5 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.22.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1634,7 +1634,7 @@ dependencies = [
  "console_error_panic_hook 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "console_log 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "fnv 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "generational-arena 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "generational-arena 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "jpeg-decoder 0.1.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "js-sys 0.3.33 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2471,7 +2471,7 @@ dependencies = [
 "checksum fuchsia-zircon-sys 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "3dcaa9ae7725d12cdb85b3ad99a434db70b468c09ded17e012d86b5c1010f7a7"
 "checksum gc-arena 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e7262a3f0bd866ed41d13f7a5147d5fe2278f6860aeab66bd72e9f2f770fc3e8"
 "checksum gc-arena-derive 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f5a1fd9d509709237f7673fe8fa4a2fcf8136bf5bd43b67bab6af267a9850524"
-"checksum generational-arena 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)" = "675c9623fbcdb4b402176db720bf5d95883a36303703ed1bd3a03482382f735a"
+"checksum generational-arena 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)" = "0e40d0cee2e2fb4fba18b55a27bf96faf49fa86d49f178695bd3bf4500b156b4"
 "checksum getrandom 0.1.13 (registry+https://github.com/rust-lang/crates.io-index)" = "e7db7ca94ed4cd01190ceee0d8a8052f08a247aa1b469a7f68c6a3b71afcf407"
 "checksum gif 0.10.3 (registry+https://github.com/rust-lang/crates.io-index)" = "471d90201b3b223f3451cd4ad53e34295f16a1df17b1edf3736d47761c3981af"
 "checksum gl_generator 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "39a23d5e872a275135d66895d954269cf5e8661d234eb1c2480f4ce0d586acbd"
