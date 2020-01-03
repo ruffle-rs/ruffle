@@ -400,6 +400,17 @@ impl AudioBackend for CpalAudioBackend {
         sound_instances.retain(|_, instance| instance.handle != handle);
     }
 
+    fn get_sound_duration(&self, sound: SoundHandle) -> Option<u32> {
+        if let Some(sound) = self.sounds.get(sound) {
+            // AS duration does not subtract skip_sample_frames.
+            let num_sample_frames = u64::from(sound.num_sample_frames);
+            let ms = num_sample_frames * 1000 / u64::from(sound.format.sample_rate);
+            Some(ms as u32)
+        } else {
+            None
+        }
+    }
+
     fn is_sound_playing_with_handle(&mut self, handle: SoundHandle) -> bool {
         let sound_instances = self.sound_instances.lock().unwrap();
         let handle = Some(handle);

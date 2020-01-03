@@ -67,6 +67,10 @@ pub trait AudioBackend {
     /// which only plays a sound if that sound is not already playing.
     fn is_sound_playing_with_handle(&mut self, handle: SoundHandle) -> bool;
 
+    /// Get the duration of a sound in milliseconds.
+    /// Returns `None` if sound is not registered.
+    fn get_sound_duration(&self, sound: SoundHandle) -> Option<u32>;
+
     // TODO: Eventually remove this/move it to library.
     fn is_loading_complete(&self) -> bool {
         true
@@ -143,6 +147,10 @@ impl<T: AudioBackend + ?Sized> AudioBackend for Box<T> {
         self.deref_mut().is_sound_playing_with_handle(handle)
     }
 
+    fn get_sound_duration(&self, sound: SoundHandle) -> Option<u32> {
+        self.deref().get_sound_duration(sound)
+    }
+
     fn is_loading_complete(&self) -> bool {
         self.deref().is_loading_complete()
     }
@@ -198,6 +206,10 @@ impl AudioBackend for NullAudioBackend {
     fn stop_sounds_with_handle(&mut self, _handle: SoundHandle) {}
     fn is_sound_playing_with_handle(&mut self, _handle: SoundHandle) -> bool {
         false
+    }
+
+    fn get_sound_duration(&self, _sound: SoundHandle) -> Option<u32> {
+        None
     }
 }
 

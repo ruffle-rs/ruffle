@@ -32,6 +32,12 @@ pub struct SoundObjectData<'gc> {
 
     /// Sounds in AVM1 are tied to a speicifc movie clip.
     owner: Option<DisplayObject<'gc>>,
+
+    /// Position of the last playing sound in milliseconds.
+    position: u32,
+
+    /// Duration of the currently attached sound in milliseconds.
+    duration: u32,
 }
 
 unsafe impl<'gc> Collect for SoundObjectData<'gc> {
@@ -64,8 +70,18 @@ impl<'gc> SoundObject<'gc> {
                 sound: None,
                 sound_instance: None,
                 owner: None,
+                position: 0,
+                duration: 0,
             },
         ))
+    }
+
+    pub fn duration(self) -> u32 {
+        self.0.read().duration
+    }
+
+    pub fn set_duration(self, gc_context: MutationContext<'gc, '_>, duration: u32) {
+        self.0.write(gc_context).duration = duration;
     }
 
     pub fn sound(self) -> Option<SoundHandle> {
@@ -98,6 +114,14 @@ impl<'gc> SoundObject<'gc> {
         owner: Option<DisplayObject<'gc>>,
     ) {
         self.0.write(gc_context).owner = owner;
+    }
+
+    pub fn position(self) -> u32 {
+        self.0.read().position
+    }
+
+    pub fn set_position(self, gc_context: MutationContext<'gc, '_>, position: u32) {
+        self.0.write(gc_context).position = position;
     }
 
     fn base(self) -> ScriptObject<'gc> {
