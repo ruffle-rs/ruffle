@@ -1,4 +1,5 @@
 //! AVM1 Sound object
+//! TODO: Sound position, transform, loadSound
 
 use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute::*;
@@ -168,6 +169,11 @@ fn attach_sound<'gc>(
         let name = name.clone().coerce_to_string(avm, context)?;
         if let Some(Character::Sound(sound)) = context.library.get_character_by_export_name(&name) {
             sound_object.set_sound(context.gc_context, Some(*sound));
+            sound_object.set_duration(
+                context.gc_context,
+                context.audio.get_sound_duration(*sound).unwrap_or(0),
+            );
+            sound_object.set_position(context.gc_context, 0);
         } else {
             log::warn!("Sound.attachSound: Sound '{}' not found", name);
         }
@@ -178,33 +184,48 @@ fn attach_sound<'gc>(
 }
 
 fn duration<'gc>(
-    _avm: &mut Avm1<'gc>,
+    avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    log::warn!("Sound.duration: Unimplemented");
-    Ok(1.into())
+    if avm.current_swf_version() >= 6 {
+        if let Some(sound_object) = this.as_sound_object() {
+            return Ok(sound_object.duration().into());
+        } else {
+            log::warn!("Sound.duration: this is not a Sound");
+        }
+    }
+
+    Ok(Value::Undefined.into())
 }
 
 fn get_bytes_loaded<'gc>(
-    _avm: &mut Avm1<'gc>,
+    avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    log::warn!("Sound.getBytesLoaded: Unimplemented");
-    Ok(1.into())
+    if avm.current_swf_version() >= 6 {
+        log::warn!("Sound.getBytesLoaded: Unimplemented");
+        Ok(1.into())
+    } else {
+        Ok(Value::Undefined.into())
+    }
 }
 
 fn get_bytes_total<'gc>(
-    _avm: &mut Avm1<'gc>,
+    avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    log::warn!("Sound.getBytesTotal: Unimplemented");
-    Ok(1.into())
+    if avm.current_swf_version() >= 6 {
+        log::warn!("Sound.getBytesTotal: Unimplemented");
+        Ok(1.into())
+    } else {
+        Ok(Value::Undefined.into())
+    }
 }
 
 fn get_pan<'gc>(
@@ -238,33 +259,51 @@ fn get_volume<'gc>(
 }
 
 fn id3<'gc>(
-    _avm: &mut Avm1<'gc>,
+    avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    log::warn!("Sound.id3: Unimplemented");
+    if avm.current_swf_version() >= 6 {
+        log::warn!("Sound.id3: Unimplemented");
+    }
     Ok(Value::Undefined.into())
 }
 
 fn load_sound<'gc>(
-    _avm: &mut Avm1<'gc>,
+    avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    log::warn!("Sound.loadSound: Unimplemented");
+    if avm.current_swf_version() >= 6 {
+        log::warn!("Sound.loadSound: Unimplemented");
+    }
     Ok(Value::Undefined.into())
 }
 
 fn position<'gc>(
-    _avm: &mut Avm1<'gc>,
+    avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    log::warn!("Sound.position: Unimplemented");
-    Ok(0.into())
+    if avm.current_swf_version() >= 6 {
+        if let Some(sound_object) = this.as_sound_object() {
+            // TODO: The position is "sticky"; even if the sound is no longer playing, it should return
+            // the previous valid position.
+            // Needs some audio backend work for this.
+            if sound_object.sound().is_some() {
+                if let Some(_sound_instance) = sound_object.sound_instance() {
+                    log::warn!("Sound.position: Unimplemented");
+                }
+                return Ok(sound_object.position().into());
+            }
+        } else {
+            log::warn!("Sound.position: this is not a Sound");
+        }
+    }
+    Ok(Value::Undefined.into())
 }
 
 fn set_pan<'gc>(
