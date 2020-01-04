@@ -1,0 +1,29 @@
+// Testing untinted clip
+// c.target:
+_level0.mc
+// c.getTransform():
+ra: 100  ga: 100  ba: 100  aa: 100
+rb: 0  gb: 0  bb: 0  ab: 0
+// c.getRGB():
+0
+// c.setTransform():
+ra: 50  ga: -100  ba: 200  aa: 50
+rb: 100  gb: -100  bb: 50  ab: 25
+// c.setRGB():
+ra: 0  ga: 0  ba: 0  aa: 50
+rb: 255  gb: 0  bb: 102  ab: 25
+
+// Pre-tinted movie clip:
+// c.getTransform():
+ra: 75  ga: 50  ba: 25  aa: 100
+rb: 255  gb: 128  bb: 64  ab: -64
+// c.getRGB():
+16744512
+
+// Pre-tinted button:
+// c.getTransform():
+ra: 100  ga: 100  ba: 100  aa: 100
+rb: -50  gb: -25  bb: 25  ab: -25
+// c.getRGB():
+-6375
+
