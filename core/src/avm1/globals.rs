@@ -10,6 +10,7 @@ use rand::Rng;
 use std::f64;
 
 mod array;
+mod color;
 mod function;
 mod key;
 mod math;
@@ -170,6 +171,8 @@ pub fn create_globals<'gc>(
 
     let array_proto: Object<'gc> = array::create_proto(gc_context, object_proto, function_proto);
 
+    let color_proto: Object<'gc> = color::create_proto(gc_context, object_proto, function_proto);
+
     //TODO: These need to be constructors and should also set `.prototype` on each one
     let object = ScriptObject::function(
         gc_context,
@@ -178,6 +181,12 @@ pub fn create_globals<'gc>(
         Some(object_proto),
     );
 
+    let color = ScriptObject::function(
+        gc_context,
+        Executable::Native(color::constructor),
+        Some(function_proto),
+        Some(color_proto),
+    );
     let function = ScriptObject::function(
         gc_context,
         Executable::Native(function::constructor),
@@ -213,6 +222,7 @@ pub fn create_globals<'gc>(
 
     let mut globals = ScriptObject::bare_object(gc_context);
     globals.define_value(gc_context, "Array", array.into(), EnumSet::empty());
+    globals.define_value(gc_context, "Color", color.into(), EnumSet::empty());
     globals.define_value(gc_context, "Object", object.into(), EnumSet::empty());
     globals.define_value(gc_context, "Function", function.into(), EnumSet::empty());
     globals.define_value(gc_context, "MovieClip", movie_clip.into(), EnumSet::empty());
