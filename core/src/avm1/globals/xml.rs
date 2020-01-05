@@ -12,6 +12,21 @@ use enumset::EnumSet;
 use gc_arena::MutationContext;
 use quick_xml::Error as ParseError;
 
+pub const XML_NO_ERROR: f64 = 0.0;
+#[allow(dead_code)]
+pub const XML_CDATA_NOT_TERMINATED: f64 = -2.0;
+pub const XML_DECL_NOT_TERMINATED: f64 = -3.0;
+#[allow(dead_code)]
+pub const XML_DOCTYPE_NOT_TERMINATED: f64 = -4.0;
+#[allow(dead_code)]
+pub const XML_COMMENT_NOT_TERMINATED: f64 = -5.0;
+pub const XML_ELEMENT_MALFORMED: f64 = -6.0;
+pub const XML_OUT_OF_MEMORY: f64 = -7.0;
+pub const XML_ATTRIBUTE_NOT_TERMINATED: f64 = -8.0;
+#[allow(dead_code)]
+pub const XML_MISMATCHED_START: f64 = -9.0;
+pub const XML_MISMATCHED_END: f64 = -10.0;
+
 /// Returns true if a particular node can or cannot be exposed to AVM1.
 ///
 /// Our internal XML tree representation supports node types that AVM1 XML did
@@ -752,20 +767,34 @@ pub fn create_xml_proto<'gc>(
         Executable::Native(|_avm, _ac, this: Object<'gc>, _args| {
             if let Some(node) = this.as_xml_node() {
                 return match node.document().last_parse_error() {
-                    None => Ok(0.into()),
+                    None => Ok(XML_NO_ERROR.into()),
                     Some(err) => match err.ref_error() {
-                        ParseError::UnexpectedEof(_) => Ok(Value::Number(-6.0).into()),
-                        ParseError::EndEventMismatch { .. } => Ok(Value::Number(-10.0).into()),
-                        ParseError::XmlDeclWithoutVersion(_) => Ok(Value::Number(-3.0).into()),
-                        ParseError::NameWithQuote(_) => Ok(Value::Number(-6.0).into()),
-                        ParseError::NoEqAfterName(_) => Ok(Value::Number(-6.0).into()),
-                        ParseError::UnquotedValue(_) => Ok(Value::Number(-8.0).into()),
-                        ParseError::DuplicatedAttribute(_, _) => Ok(Value::Number(-6.0).into()),
-                        _ => Ok(Value::Number(-7.0).into()), //Not accounted for:
-                                                             //ParseError::UnexpectedToken(_)
-                                                             //ParseError::UnexpectedBang
-                                                             //ParseError::TextNotFound
-                                                             //ParseError::EscapeError(_)
+                        ParseError::UnexpectedEof(_) => {
+                            Ok(Value::Number(XML_ELEMENT_MALFORMED).into())
+                        }
+                        ParseError::EndEventMismatch { .. } => {
+                            Ok(Value::Number(XML_MISMATCHED_END).into())
+                        }
+                        ParseError::XmlDeclWithoutVersion(_) => {
+                            Ok(Value::Number(XML_DECL_NOT_TERMINATED).into())
+                        }
+                        ParseError::NameWithQuote(_) => {
+                            Ok(Value::Number(XML_ELEMENT_MALFORMED).into())
+                        }
+                        ParseError::NoEqAfterName(_) => {
+                            Ok(Value::Number(XML_ELEMENT_MALFORMED).into())
+                        }
+                        ParseError::UnquotedValue(_) => {
+                            Ok(Value::Number(XML_ATTRIBUTE_NOT_TERMINATED).into())
+                        }
+                        ParseError::DuplicatedAttribute(_, _) => {
+                            Ok(Value::Number(XML_ELEMENT_MALFORMED).into())
+                        }
+                        _ => Ok(Value::Number(XML_OUT_OF_MEMORY).into()), //Not accounted for:
+                                                                          //ParseError::UnexpectedToken(_)
+                                                                          //ParseError::UnexpectedBang
+                                                                          //ParseError::TextNotFound
+                                                                          //ParseError::EscapeError(_)
                     },
                 };
             }
