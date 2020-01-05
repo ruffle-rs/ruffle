@@ -184,7 +184,6 @@ pub fn xmlnode_has_child_nodes<'gc>(
     }
 }
 
-#[allow(unused_must_use)]
 pub fn xmlnode_remove_node<'gc>(
     _avm: &mut Avm1<'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
@@ -202,7 +201,6 @@ pub fn xmlnode_remove_node<'gc>(
     Ok(Value::Undefined.into())
 }
 
-#[allow(unused_must_use)]
 pub fn xmlnode_to_string<'gc>(
     _avm: &mut Avm1<'gc>,
     _ac: &mut UpdateContext<'_, 'gc, '_>,
@@ -611,7 +609,6 @@ pub fn xml_constructor<'gc>(
     Ok(Value::Undefined.into())
 }
 
-#[allow(unused_must_use)]
 pub fn xml_create_element<'gc>(
     avm: &mut Avm1<'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
@@ -640,7 +637,6 @@ pub fn xml_create_element<'gc>(
     Ok(object.into())
 }
 
-#[allow(unused_must_use)]
 pub fn xml_create_text_node<'gc>(
     avm: &mut Avm1<'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
@@ -669,7 +665,6 @@ pub fn xml_create_text_node<'gc>(
     Ok(object.into())
 }
 
-#[allow(unused_must_use)]
 pub fn xml_parse_xml<'gc>(
     avm: &mut Avm1<'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
@@ -686,7 +681,11 @@ pub fn xml_parse_xml<'gc>(
 
         if let Some(children) = node.children() {
             for child in children.rev() {
-                node.remove_child(ac.gc_context, child);
+                let result = node.remove_child(ac.gc_context, child);
+                if let Err(e) = result {
+                    log::warn!("XML.parseXML: Error removing node contents: {}", e);
+                    return Ok(Value::Undefined.into());
+                }
             }
         }
 
