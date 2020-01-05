@@ -882,16 +882,13 @@ impl<'gc> XMLNode<'gc> {
     ///
     /// This internal function *will* overwrite already extant objects, so only
     /// call this if you need to instantiate the script object for the first
-    /// time.
+    /// time. Attempting to call it a second time will panic.
     pub fn introduce_script_object(
         &mut self,
         gc_context: MutationContext<'gc, '_>,
         new_object: Object<'gc>,
     ) {
-        if self.get_script_object().is_some() {
-            log::warn!("An attempt was made to change the already-established link between script object and XML node. This has been denied and is likely a bug.");
-            return;
-        }
+        assert!(self.get_script_object().is_none(), "An attempt was made to change the already-established link between script object and XML node. This has been denied and is likely a bug.");
 
         match &mut *self.0.write(gc_context) {
             XMLNodeData::DocumentRoot { script_object, .. } => *script_object = Some(new_object),
