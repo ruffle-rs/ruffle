@@ -714,12 +714,8 @@ pub fn xml_create_element<'gc>(
 
     let nodename = args
         .get(0)
-        .map(|v| {
-            v.clone()
-                .coerce_to_string(avm, ac)
-                .unwrap_or_else(|_| "".to_string())
-        })
-        .unwrap_or_else(|| "".to_string());
+        .map(|v| v.clone().coerce_to_string(avm, ac).unwrap_or_default())
+        .unwrap_or_default();
     let mut xml_node = XMLNode::new_element(ac.gc_context, &nodename, document)?;
     let object = XMLObject::from_xml_node(ac.gc_context, xml_node, Some(avm.prototypes().xml_node));
 
@@ -742,12 +738,8 @@ pub fn xml_create_text_node<'gc>(
 
     let text_node = args
         .get(0)
-        .map(|v| {
-            v.clone()
-                .coerce_to_string(avm, ac)
-                .unwrap_or_else(|_| "".to_string())
-        })
-        .unwrap_or_else(|| "".to_string());
+        .map(|v| v.clone().coerce_to_string(avm, ac).unwrap_or_default())
+        .unwrap_or_default();
     let mut xml_node = XMLNode::new_text(ac.gc_context, &text_node, document);
     let object = XMLObject::from_xml_node(ac.gc_context, xml_node, Some(avm.prototypes().xml_node));
 
