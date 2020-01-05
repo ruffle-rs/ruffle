@@ -9,7 +9,6 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::events::attributes::Attribute;
 use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
 use quick_xml::{Reader, Writer};
-use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::io::{Cursor, Write};
@@ -332,12 +331,7 @@ impl<'gc> XMLNode<'gc> {
                 parent: None,
                 prev_sibling: None,
                 next_sibling: None,
-                contents: match bt.unescaped()? {
-                    Cow::Borrowed(ln) => Cow::Borrowed(std::str::from_utf8(ln)?),
-                    Cow::Owned(ln) => Cow::Owned(String::from_utf8(ln)?),
-                }
-                .to_owned()
-                .to_string(),
+                contents: String::from_utf8(bt.unescaped()?.into_owned())?,
             },
         )))
     }
@@ -359,12 +353,7 @@ impl<'gc> XMLNode<'gc> {
                 parent: None,
                 prev_sibling: None,
                 next_sibling: None,
-                contents: match bt.unescaped()? {
-                    Cow::Borrowed(ln) => Cow::Borrowed(std::str::from_utf8(ln)?),
-                    Cow::Owned(ln) => Cow::Owned(String::from_utf8(ln)?),
-                }
-                .to_owned()
-                .to_string(),
+                contents: String::from_utf8(bt.unescaped()?.into_owned())?,
             },
         )))
     }
@@ -386,12 +375,7 @@ impl<'gc> XMLNode<'gc> {
                 parent: None,
                 prev_sibling: None,
                 next_sibling: None,
-                contents: match bt.unescaped()? {
-                    Cow::Borrowed(ln) => Cow::Borrowed(std::str::from_utf8(ln)?),
-                    Cow::Owned(ln) => Cow::Owned(String::from_utf8(ln)?),
-                }
-                .to_owned()
-                .to_string(),
+                contents: String::from_utf8(bt.unescaped()?.into_owned())?,
             },
         )))
     }
