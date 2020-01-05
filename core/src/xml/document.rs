@@ -226,7 +226,7 @@ impl<'gc> XMLDocument<'gc> {
     /// the `id` that were added to the document after the fact, will not be
     /// returned by this function.
     pub fn get_node_by_id(self, id: &str) -> Option<XMLNode<'gc>> {
-        self.0.read().idmap.get(id).cloned()
+        self.0.read().idmap.get(id).copied()
     }
 
     /// Retrieve all IDs currently present in the idmap.
