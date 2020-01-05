@@ -168,7 +168,10 @@ fn attach_sound<'gc>(
     let name = args.get(0).unwrap_or(&Value::Undefined);
     if let Some(sound_object) = this.as_sound_object() {
         let name = name.clone().coerce_to_string(avm, context)?;
-        let movie = sound_object.owner().and_then(|o| o.movie());
+        let movie = sound_object
+            .owner()
+            .or_else(|| context.layers.get(&0).copied())
+            .and_then(|o| o.movie());
         if let Some(movie) = movie {
             if let Some(Character::Sound(sound)) = context
                 .library
@@ -408,7 +411,10 @@ fn stop<'gc>(
         if let Some(name) = args.get(0) {
             // Usage 1: Stop all instances of a particular sound, using the name parameter.
             let name = name.clone().coerce_to_string(avm, context)?;
-            let movie = sound.owner().and_then(|o| o.movie());
+            let movie = sound
+                .owner()
+                .or_else(|| context.layers.get(&0).copied())
+                .and_then(|o| o.movie());
             if let Some(movie) = movie {
                 if let Some(Character::Sound(sound)) = context
                     .library
