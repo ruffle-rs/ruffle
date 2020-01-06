@@ -469,7 +469,8 @@ impl WebAudioBackend {
             log::info!("Error decoding MP3 audio");
             NUM_SOUNDS_LOADING.with(|n| n.set(n.get() - 1));
         }) as Box<dyn FnMut()>);
-        self.context
+        let _ = self
+            .context
             .decode_audio_data_with_success_callback_and_error_callback(
                 &array_buffer,
                 success_closure.as_ref().unchecked_ref(),
