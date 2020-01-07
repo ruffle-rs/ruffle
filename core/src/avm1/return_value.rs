@@ -94,7 +94,7 @@ impl<'gc> ReturnValue<'gc> {
             ResultOf(frame) => {
                 avm.run_current_frame(context, frame)?;
 
-                avm.pop()
+                Ok(avm.pop())
             }
         }
     }
