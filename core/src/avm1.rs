@@ -398,7 +398,7 @@ impl<'gc> Avm1<'gc> {
         if let Some(frame) = self.current_stack_frame() {
             self.stack_frames.pop();
 
-            let can_return = !self.stack_frames.is_empty();
+            let can_return = frame.read().can_return() && !self.stack_frames.is_empty();
             if can_return {
                 frame
                     .write(context.gc_context)
