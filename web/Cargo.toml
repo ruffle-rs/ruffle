@@ -43,4 +43,4 @@ features = [
     "KeyboardEvent"]
 
 [dev-dependencies]
-wasm-bindgen-test = "0.3.6"
+wasm-bindgen-test = "0.3.7"
