@@ -101,6 +101,7 @@ swf_tests! {
     (equals2_swf5, "avm1/equals2_swf5", 1),
     (equals2_swf6, "avm1/equals2_swf6", 1),
     (equals2_swf7, "avm1/equals2_swf7", 1),
+    (set_variable_scope, "avm1/set_variable_scope", 1),
     (slash_syntax, "avm1/slash_syntax", 2),
     (strictequals_swf6, "avm1/strictequals_swf6", 1),
     (global_is_bare, "avm1/global_is_bare", 1),
