@@ -171,31 +171,19 @@ impl<'gc> Scope<'gc> {
 
     /// Construct a with scope to be used as the scope during a with block.
     ///
-    /// A with block inserts the values of a particular object into the scope
-    /// of currently running code, while still maintaining the same local
-    /// scope. This requires some scope chain juggling.
+    /// A with block adds an object to the top of the scope chain, so unqualified
+    /// references will try to resolve on that object first.
     pub fn new_with_scope(
-        locals: GcCell<'gc, Self>,
+        parent_scope: GcCell<'gc, Self>,
         with_object: Object<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> GcCell<'gc, Self> {
-        let parent_scope = locals.read().parent;
-        let local_values = locals.read().values;
-        let with_scope = GcCell::allocate(
-            mc,
-            Scope {
-                parent: parent_scope,
-                class: ScopeClass::With,
-                values: with_object,
-            },
-        );
-
         GcCell::allocate(
             mc,
             Scope {
-                parent: Some(with_scope),
-                class: ScopeClass::Local,
-                values: local_values,
+                parent: Some(parent_scope),
+                class: ScopeClass::With,
+                values: with_object,
             },
         )
     }
@@ -268,32 +256,36 @@ impl<'gc> Scope<'gc> {
         false
     }
 
-    /// Update a particular value in the scope chain, but only if it was
-    /// previously defined.
+    /// Update a particular value in the scope chain.
     ///
-    /// If the value is currently already defined in this scope, then it will
-    /// be overwritten. If it is not defined, then we traverse the scope chain
-    /// until we find a defined value to overwrite. We do not define a property
-    /// if it is not already defined somewhere in the scope chain, and instead
-    /// return it so that the caller may manually define the property itself.
-    pub fn overwrite(
+    /// Traverses the scope chain in search of a value. If it's found, it's overwritten.
+    /// The traversal stops at Target scopes, which represents the movie clip timeline
+    /// the code is executing in.
+    /// If the value is not found, it is defined on this Target scope.
+    pub fn set(
         &self,
         name: &str,
         value: Value<'gc>,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<Option<Value<'gc>>, Error> {
-        if self.locals().has_property(name) && self.locals().is_property_overwritable(name) {
-            self.locals().set(name, value, avm, context)?;
-            return Ok(None);
+    ) -> Result<(), Error> {
+        if self.class == ScopeClass::Target
+            || (self.locals().has_property(name) && self.locals().is_property_overwritable(name))
+        {
+            // Value found on this object, so overwrite it.
+            // Or we've hit the executing movie clip, so create it here.
+            self.locals().set(name, value, avm, context)
+        } else if let Some(scope) = self.parent() {
+            // Traverse the scope chain in search of the value.
+            scope.set(name, value, avm, context, this)
+        } else {
+            // This probably shouldn't happen -- all AVM1 code runs in reference to some movieclip,
+            // so we should always have a movieclip scope.
+            // Define on the top-level scope.
+            debug_assert!(false, "Scope::set: No top-level movie clip scope");
+            self.locals().set(name, value, avm, context)
         }
-
-        if let Some(scope) = self.parent() {
-            return scope.overwrite(name, value, avm, context, this);
-        }
-
-        Ok(Some(value))
     }
 
     /// Set a particular value in the locals for this scope.
