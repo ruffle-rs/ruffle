@@ -1983,16 +1983,7 @@ impl<'gc> Avm1<'gc> {
         } else {
             let this = self.current_stack_frame().unwrap().read().this_cell();
             let scope = self.current_stack_frame().unwrap().read().scope_cell();
-            let unused_value = scope
-                .read()
-                .overwrite(var_path, value, self, context, this)?;
-            if let Some(value) = unused_value {
-                self.current_stack_frame().unwrap().read().define(
-                    var_path,
-                    value,
-                    context.gc_context,
-                );
-            }
+            scope.read().set(var_path, value, self, context, this)?;
         }
 
         Ok(())
