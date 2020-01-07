@@ -302,10 +302,8 @@ impl<'gc> Activation<'gc> {
         self.target_clip = value;
     }
 
-    /// Indicates whether or not the end of this scope should be handled as an
-    /// implicit function return or the end of a block.
-    #[allow(dead_code)]
-    pub fn can_implicit_return(&self) -> bool {
+    /// Indicates whether or not the end of this scope should return a value.
+    pub fn can_return(&self) -> bool {
         self.is_function
     }
 
