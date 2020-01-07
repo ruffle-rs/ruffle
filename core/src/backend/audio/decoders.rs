@@ -28,6 +28,16 @@ pub fn make_decoder<'a, R: 'a + Send + Read>(
     data: R,
 ) -> Box<dyn 'a + Send + Decoder> {
     match format.compression {
+        AudioCompression::UncompressedUnknownEndian => {
+            // Cross fingers that it's little endian.
+            log::warn!("make_decoder: PCM sound is unknown endian; assuming little endian");
+            Box::new(PcmDecoder::new(
+                data,
+                format.is_stereo,
+                format.sample_rate,
+                format.is_16_bit,
+            ))
+        }
         AudioCompression::Uncompressed => Box::new(PcmDecoder::new(
             data,
             format.is_stereo,
