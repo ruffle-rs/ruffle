@@ -1,0 +1,59 @@
+// foo:
+undefined
+
+// _global.foo = 'global';
+// foo:
+global
+
+// foo = 'root';
+// foo:
+root
+// _global.foo:
+global
+
+// f() {
+//   foo = 'f';
+//   bar = 'f bar';
+//   foo:
+f
+//   bar:
+f bar
+// }
+
+// foo:
+f
+// bar:
+f bar
+
+// tellTarget(mc) {
+//   foo:
+global
+//   foo = 'mc foo';
+//   blah = 'mc blah';
+// }
+
+// foo:
+f
+// mc.foo:
+mc foo
+// blah:
+undefined
+// mc.blah:
+mc blah
+
+// with(mc) {
+//   foo:
+mc foo
+//   foo = 'mc foo2';
+//   baz = 'mc baz';
+// }
+
+// foo:
+f
+// mc.foo:
+mc foo2
+// baz:
+mc baz
+// mc.baz:
+undefined
+
