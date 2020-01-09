@@ -20,7 +20,7 @@ sample = "0.10.0"
 structopt = "0.3.7"
 winit = "0.20.0-alpha6"
 webbrowser = "0.5.2"
-url = "2.1.0"
+url = "2.1.1"
 
 [features]
 avm_debug = ["ruffle_core/avm_debug"]
