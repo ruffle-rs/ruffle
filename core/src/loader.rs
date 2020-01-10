@@ -128,6 +128,15 @@ pub enum Loader<'gc> {
     },
 }
 
+unsafe impl<'gc> Collect for Loader<'gc> {
+    fn trace(&self, cc: CollectionContext) {
+        match self {
+            Loader::Movie { target_clip, .. } => target_clip.trace(cc),
+            Loader::Form { target_object, .. } => target_object.trace(cc),
+        }
+    }
+}
+
 impl<'gc> Loader<'gc> {
     /// Set the loader handle for this loader.
     ///
