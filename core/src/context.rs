@@ -6,6 +6,7 @@ use crate::avm1::Value;
 use crate::backend::input::InputBackend;
 use crate::backend::{audio::AudioBackend, navigator::NavigatorBackend, render::RenderBackend};
 use crate::library::Library;
+use crate::loader::LoadManager;
 use crate::player::Player;
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
@@ -92,6 +93,12 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// Recipients of an update context may upgrade the reference to ensure
     /// that the player lives across I/O boundaries.
     pub player: Option<Weak<Mutex<Player>>>,
+
+    /// The player's load manager.
+    ///
+    /// This is required for asynchronous behavior, such as fetching data from
+    /// a URL.
+    pub load_manager: &'a mut LoadManager<'gc>,
 }
 
 /// A queued ActionScript call.

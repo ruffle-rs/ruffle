@@ -7,6 +7,7 @@ use crate::backend::render::NullRenderer;
 use crate::context::ActionQueue;
 use crate::display_object::{MovieClip, TDisplayObject};
 use crate::library::Library;
+use crate::loader::LoadManager;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use gc_arena::{rootless_arena, GcCell, MutationContext};
@@ -55,6 +56,7 @@ where
             drag_object: &mut None,
             stage_size: (Twips::from_pixels(550.0), Twips::from_pixels(400.0)),
             player: None,
+            load_manager: &mut LoadManager::new(),
         };
 
         let globals = avm.global_object_cell();

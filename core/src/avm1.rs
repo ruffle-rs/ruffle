@@ -8,15 +8,13 @@ use gc_arena::{GcCell, MutationContext};
 use rand::Rng;
 use std::collections::HashMap;
 use std::convert::TryInto;
-use std::sync::Arc;
-use url::form_urlencoded;
 
 use swf::avm1::read::Reader;
 use swf::avm1::types::{Action, Function};
 
-use crate::display_object::{DisplayObject, MorphShape, MovieClip};
+use crate::display_object::{DisplayObject, MovieClip};
 use crate::player::NEWEST_PLAYER_VERSION;
-use crate::tag_utils::{SwfMovie, SwfSlice};
+use crate::tag_utils::SwfSlice;
 
 #[cfg(test)]
 #[macro_use]
@@ -92,10 +90,6 @@ pub struct Avm1<'gc> {
     /// The register slots (also shared across functions).
     /// `ActionDefineFunction2` defined functions do not use these slots.
     registers: [Value<'gc>; 4],
-
-    /// Represents externally-held references to objects currently in use by
-    /// futures that can't actually hold `'gc` pointers.
-    external_references: Vec<Option<Object<'gc>>>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
@@ -136,43 +130,7 @@ impl<'gc> Avm1<'gc> {
                 Value::Undefined,
                 Value::Undefined,
             ],
-            external_references: vec![],
         }
-    }
-
-    /// Force the AVM to store a reference to an object that can be retrieved
-    /// later by ID.
-    ///
-    /// This is intended for use by async code which will need to run between
-    /// GC passes and for various architectural references cannot hold onto any
-    /// actual GC pointers.
-    ///
-    /// Note that this function is the moral equivalent of moving an object
-    /// from garbage collection into reference counting. Take care to kill
-    /// roots as soon as possible and avoid creating cycles.
-    pub fn forcibly_root_object(&mut self, ob: Object<'gc>) -> usize {
-        if let Some(pos) = self.external_references.iter().position(|&r| r.is_none()) {
-            *self.external_references.get_mut(pos).unwrap() = Some(ob);
-            pos
-        } else {
-            self.external_references.push(Some(ob));
-            self.external_references.len() - 1
-        }
-    }
-
-    /// Get back a previously rooted object.
-    ///
-    /// After retrieving the rooted object, the ID you have given will no
-    /// longer be valid and may refer to a different object or no object at
-    /// all.
-    ///
-    /// Attempting to unroot an object ID that does not exist will panic.
-    pub fn unroot_object(&mut self, id: usize) -> Object<'gc> {
-        let root = self.external_references.get(id).and_then(|v| *v).unwrap();
-
-        *self.external_references.get_mut(id).unwrap() = None;
-
-        root
     }
 
     #[allow(dead_code)]
@@ -1635,7 +1593,6 @@ impl<'gc> Avm1<'gc> {
         if target.starts_with("_level") && target.len() > 6 {
             let url = url.to_string();
             let level_id = target[6..].parse::<u32>()?;
-            let player = context.player.clone().unwrap().upgrade().unwrap();
             let fetch = context.navigator.fetch(url);
             let layer = if let Some(layer) = context.layers.get(&level_id) {
                 *layer
@@ -1648,42 +1605,13 @@ impl<'gc> Avm1<'gc> {
 
                 layer
             };
-            let slot = self.forcibly_root_object(layer.object().as_object()?);
 
-            context.navigator.spawn_future(Box::pin(async move {
-                let data = fetch.await?;
-                let movie = Arc::new(SwfMovie::from_data(&data));
-
-                player
-                    .lock()
-                    .expect("Could not lock player!!")
-                    .update(|avm, uc| {
-                        let that = avm
-                            .unroot_object(slot)
-                            .as_display_object()
-                            .expect("Locked object not a display node!");
-                        let mut mc = that.as_movie_clip().expect("Locked clip not a clip!");
-
-                        mc.replace_with_movie(uc.gc_context, movie.clone());
-                        mc.post_instantiation(uc.gc_context, that, avm.prototypes.movie_clip);
-
-                        let mut morph_shapes = fnv::FnvHashMap::default();
-                        mc.preload(uc, &mut morph_shapes);
-
-                        // Finalize morph shapes.
-                        for (id, static_data) in morph_shapes {
-                            let morph_shape = MorphShape::new(uc.gc_context, static_data);
-                            uc.library
-                                .library_for_movie_mut(movie.clone())
-                                .register_character(
-                                    id,
-                                    crate::character::Character::MorphShape(morph_shape),
-                                );
-                        }
-
-                        Ok(())
-                    })
-            }));
+            let process = context.load_manager.load_movie_into_clip(
+                context.player.clone().unwrap(),
+                layer,
+                fetch,
+            );
+            context.navigator.spawn_future(process);
 
             return Ok(());
         }
@@ -1730,59 +1658,26 @@ impl<'gc> Avm1<'gc> {
                     .object()
                     .as_object()
                     .unwrap();
-                let player = context.player.clone().unwrap().upgrade().unwrap();
                 let fetch = context.navigator.fetch(url);
-                let slot = self.forcibly_root_object(target_obj);
+                let process = context.load_manager.load_form_into_object(
+                    context.player.clone().unwrap(),
+                    target_obj,
+                    fetch,
+                );
 
-                context.navigator.spawn_future(Box::pin(async move {
-                    let data = fetch.await?;
-
-                    player.lock().unwrap().update(|avm, uc| {
-                        let that = avm.unroot_object(slot);
-
-                        for (k, v) in form_urlencoded::parse(&data) {
-                            that.set(&k, v.into_owned().into(), avm, uc)?;
-                        }
-
-                        Ok(())
-                    })
-                }));
+                context.navigator.spawn_future(process);
             }
 
             return Ok(());
         } else if is_target_sprite {
             if let Some(clip_target) = clip_target {
-                let player = context.player.clone().unwrap().upgrade().unwrap();
                 let fetch = context.navigator.fetch(url);
-                let slot = self.forcibly_root_object(clip_target.object().as_object()?);
-
-                context.navigator.spawn_future(Box::pin(async move {
-                    let data = fetch.await?;
-                    let movie = Arc::new(SwfMovie::from_data(&data));
-
-                    player.lock().unwrap().update(|avm, uc| {
-                        let that = avm.unroot_object(slot).as_display_object().unwrap();
-                        let mut mc = that.as_movie_clip().unwrap();
-
-                        mc.replace_with_movie(uc.gc_context, movie.clone());
-
-                        let mut morph_shapes = fnv::FnvHashMap::default();
-                        mc.preload(uc, &mut morph_shapes);
-
-                        // Finalize morph shapes.
-                        for (id, static_data) in morph_shapes {
-                            let morph_shape = MorphShape::new(uc.gc_context, static_data);
-                            uc.library
-                                .library_for_movie_mut(movie.clone())
-                                .register_character(
-                                    id,
-                                    crate::character::Character::MorphShape(morph_shape),
-                                );
-                        }
-
-                        Ok(())
-                    })
-                }))
+                let process = context.load_manager.load_movie_into_clip(
+                    context.player.clone().unwrap(),
+                    clip_target,
+                    fetch,
+                );
+                context.navigator.spawn_future(process);
             }
 
             return Ok(());

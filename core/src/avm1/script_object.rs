@@ -571,6 +571,7 @@ mod tests {
     use crate::backend::render::NullRenderer;
     use crate::display_object::MovieClip;
     use crate::library::Library;
+    use crate::loader::LoadManager;
     use crate::prelude::*;
     use crate::tag_utils::SwfMovie;
     use gc_arena::rootless_arena;
@@ -616,6 +617,7 @@ mod tests {
                 drag_object: &mut None,
                 stage_size: (Twips::from_pixels(550.0), Twips::from_pixels(400.0)),
                 player: None,
+                load_manager: &mut LoadManager::new(),
             };
 
             let object = ScriptObject::object(gc_context, Some(avm.prototypes().object)).into();

@@ -8,6 +8,7 @@ use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::display_object::{MorphShape, MovieClip};
 use crate::events::{ButtonEvent, ButtonKeyCode, ClipEvent, PlayerEvent};
 use crate::library::Library;
+use crate::loader::LoadManager;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::transform::TransformStack;
@@ -45,6 +46,10 @@ struct GcRootData<'gc> {
 
     avm: Avm1<'gc>,
     action_queue: ActionQueue<'gc>,
+
+    /// Object which manages asynchronous processes that need to interact with
+    /// data in the GC arena.
+    load_manager: LoadManager<'gc>,
 }
 
 impl<'gc> GcRootData<'gc> {
@@ -58,6 +63,7 @@ impl<'gc> GcRootData<'gc> {
         &mut ActionQueue<'gc>,
         &mut Avm1<'gc>,
         &mut Option<DragObject<'gc>>,
+        &mut LoadManager<'gc>,
     ) {
         (
             &mut self.layers,
@@ -65,6 +71,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.action_queue,
             &mut self.avm,
             &mut self.drag_object,
+            &mut self.load_manager,
         )
     }
 }
@@ -197,6 +204,7 @@ impl Player {
                         drag_object: None,
                         avm: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
                         action_queue: ActionQueue::new(),
+                        load_manager: LoadManager::new(),
                     },
                 ))
             }),
@@ -760,7 +768,7 @@ impl Player {
         self.gc_arena.mutate(|gc_context, gc_root| {
             let mut root_data = gc_root.0.write(gc_context);
             let mouse_hovered_object = root_data.mouse_hovered_object;
-            let (layers, library, action_queue, avm, drag_object) =
+            let (layers, library, action_queue, avm, drag_object, load_manager) =
                 root_data.update_context_params();
             let layer0 = layers.get(&0).expect("Layer 0 should always exist");
 
@@ -785,6 +793,7 @@ impl Player {
                 stage_size: (stage_width, stage_height),
                 system_prototypes: avm.prototypes().clone(),
                 player,
+                load_manager,
             };
 
             let ret = f(avm, &mut update_context);
