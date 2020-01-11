@@ -445,7 +445,7 @@ impl<'gc> MovieClipData<'gc> {
             },
         );
         self.tag_stream_pos = 0;
-        self.flags = EnumSet::empty();
+        self.flags = MovieClipFlags::Playing.into();
         self.current_frame = 0;
         self.audio_stream = None;
         self.children = BTreeMap::new();
