@@ -13,31 +13,21 @@ module.exports = (env, argv) => {
   console.log(`Building ${mode}...`);
 
   return {
-    externals: /^(ruffle_web)$/i,
-
     entry: path.resolve(__dirname, "js/index.js"),
     output: {
       path: path.resolve(__dirname, "build/dist"),
       filename: "ruffle.js",
+      chunkFilename: "core.ruffle.js",
+      jsonpFunction: "RufflePlayerExtensionLoader",
     },
     mode: mode,
     plugins: [
-      new webpack.IgnorePlugin({
-        resourceRegExp: /..\/pkg\/ruffle/
-      }),
-      new CleanWebpackPlugin({
-        protectWebpackAssets: false,
-        cleanAfterEveryBuildPatterns: ["*.module.wasm"],
-      }),
+      new CleanWebpackPlugin(),
       new WasmPackPlugin({
         crateDirectory: path.resolve(__dirname, ".."),
-        extraArgs: "--target=no-modules",
+        extraArgs: "--out-name=ruffle",
         forceMode: mode,
-      }),
-      new CopyPlugin([
-        { from: "../pkg/ruffle_web.js", to: "ruffle_web.js" },
-        { from: "../pkg/ruffle_web_bg.wasm", to: "ruffle_web_bg.wasm" },
-      ])
+      })
     ]
   }
 };
