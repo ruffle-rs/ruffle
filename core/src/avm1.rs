@@ -1,13 +1,14 @@
 use crate::avm1::function::{Avm1Function, FunctionObject};
 use crate::avm1::globals::create_globals;
 use crate::avm1::return_value::ReturnValue;
-use crate::backend::navigator::NavigationMethod;
+use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
 use crate::prelude::*;
 use gc_arena::{GcCell, MutationContext};
 use rand::Rng;
 use std::collections::HashMap;
 use std::convert::TryInto;
+use url::form_urlencoded;
 
 use swf::avm1::read::Reader;
 use swf::avm1::types::{Action, Function};
@@ -194,6 +195,41 @@ impl<'gc> Avm1<'gc> {
         }
 
         form_values
+    }
+
+    /// Construct request options for a fetch operation that may send locals as
+    /// form data in the request body or URL.
+    pub fn locals_into_request_options(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        url: String,
+        method: Option<NavigationMethod>,
+    ) -> (String, RequestOptions) {
+        match method {
+            Some(method) => {
+                let vars = self.locals_into_form_values(context);
+                let qstring = form_urlencoded::Serializer::new(String::new())
+                    .extend_pairs(vars.iter())
+                    .finish();
+
+                match method {
+                    NavigationMethod::GET if url.find('?').is_none() => {
+                        (format!("{}?{}", url, qstring), RequestOptions::get())
+                    }
+                    NavigationMethod::GET => {
+                        (format!("{}&{}", url, qstring), RequestOptions::get())
+                    }
+                    NavigationMethod::POST => (
+                        url,
+                        RequestOptions::post(Some((
+                            qstring.as_bytes().to_owned(),
+                            "application/x-www-form-urlencoded".to_string(),
+                        ))),
+                    ),
+                }
+            }
+            None => (url, RequestOptions::get()),
+        }
     }
 
     /// Add a stack frame that executes code in timeline scope
@@ -1615,7 +1651,7 @@ impl<'gc> Avm1<'gc> {
         if target.starts_with("_level") && target.len() > 6 {
             let url = url.to_string();
             let level_id = target[6..].parse::<u32>()?;
-            let fetch = context.navigator.fetch(url);
+            let fetch = context.navigator.fetch(url, RequestOptions::get());
             let layer = self.resolve_layer(level_id, context);
 
             let process = context.load_manager.load_movie_into_clip(
@@ -1670,7 +1706,12 @@ impl<'gc> Avm1<'gc> {
                     .object()
                     .as_object()
                     .unwrap();
-                let fetch = context.navigator.fetch(url);
+                let (url, opts) = self.locals_into_request_options(
+                    context,
+                    url,
+                    NavigationMethod::from_send_vars_method(swf_method),
+                );
+                let fetch = context.navigator.fetch(url, opts);
                 let process = context.load_manager.load_form_into_object(
                     context.player.clone().unwrap(),
                     target_obj,
@@ -1683,7 +1724,12 @@ impl<'gc> Avm1<'gc> {
             return Ok(());
         } else if is_target_sprite {
             if let Some(clip_target) = clip_target {
-                let fetch = context.navigator.fetch(url);
+                let (url, opts) = self.locals_into_request_options(
+                    context,
+                    url,
+                    NavigationMethod::from_send_vars_method(swf_method),
+                );
+                let fetch = context.navigator.fetch(url, opts);
                 let process = context.load_manager.load_movie_into_clip(
                     context.player.clone().unwrap(),
                     clip_target,

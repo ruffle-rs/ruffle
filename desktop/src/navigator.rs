@@ -1,7 +1,7 @@
 //! Navigator backend for web
 
 use log;
-use ruffle_core::backend::navigator::{Error, NavigationMethod, NavigatorBackend};
+use ruffle_core::backend::navigator::{Error, NavigationMethod, NavigatorBackend, RequestOptions};
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
@@ -63,7 +63,11 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         };
     }
 
-    fn fetch(&self, _url: String) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>> {
+    fn fetch(
+        &self,
+        _url: String,
+        _options: RequestOptions,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>> {
         Box::pin(async { Err("Fetch not implemented on desktop!".into()) })
     }
 

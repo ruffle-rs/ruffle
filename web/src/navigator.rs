@@ -1,13 +1,13 @@
 //! Navigator backend for web
 
-use js_sys::{ArrayBuffer, Uint8Array};
-use ruffle_core::backend::navigator::{Error, NavigationMethod, NavigatorBackend};
+use js_sys::{Array, ArrayBuffer, Uint8Array};
+use ruffle_core::backend::navigator::{Error, NavigationMethod, NavigatorBackend, RequestOptions};
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};
-use web_sys::{window, Response};
+use web_sys::{window, Blob, BlobPropertyBag, Request, RequestInit, Response};
 
 pub struct WebNavigatorBackend {}
 
@@ -77,10 +77,46 @@ impl NavigatorBackend for WebNavigatorBackend {
         }
     }
 
-    fn fetch(&self, url: String) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>> {
+    fn fetch(
+        &self,
+        url: String,
+        options: RequestOptions,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>> {
         Box::pin(async move {
+            let mut init = RequestInit::new();
+
+            init.method(match options.method() {
+                NavigationMethod::GET => "GET",
+                NavigationMethod::POST => "POST",
+            });
+
+            if let Some((data, mime)) = options.body() {
+                let arraydata = ArrayBuffer::new(data.len() as u32);
+                let u8data = Uint8Array::new(&arraydata);
+
+                for (i, byte) in data.iter().enumerate() {
+                    u8data.fill(*byte, i as u32, i as u32 + 1);
+                }
+
+                let blobparts = Array::new();
+                blobparts.push(&arraydata);
+
+                let mut blobprops = BlobPropertyBag::new();
+                blobprops.type_(mime);
+
+                let datablob =
+                    Blob::new_with_buffer_source_sequence_and_options(&blobparts, &blobprops)
+                        .unwrap()
+                        .dyn_into()
+                        .unwrap();
+
+                init.body(Some(&datablob));
+            }
+
+            let request = Request::new_with_str_and_init(&url, &init).unwrap();
+
             let window = web_sys::window().unwrap();
-            let fetchval = JsFuture::from(window.fetch_with_str(&url)).await;
+            let fetchval = JsFuture::from(window.fetch_with_request(&request)).await;
             if fetchval.is_err() {
                 return Err("Could not fetch, got JS Error".into());
             }

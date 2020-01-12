@@ -8,6 +8,7 @@ use swf::avm1::types::SendVarsMethod;
 pub type Error = Box<dyn std::error::Error>;
 
 /// Enumerates all possible navigation methods.
+#[derive(Copy, Clone)]
 pub enum NavigationMethod {
     /// Indicates that navigation should generate a GET request.
     GET,
@@ -24,6 +25,54 @@ impl NavigationMethod {
             SendVarsMethod::Get => Some(Self::GET),
             SendVarsMethod::Post => Some(Self::POST),
         }
+    }
+
+    pub fn from_method_str(method: &str) -> Option<Self> {
+        match method {
+            "GET" => Some(Self::GET),
+            "POST" => Some(Self::POST),
+            _ => None,
+        }
+    }
+}
+
+/// Represents request options to be sent as part of a fetch.
+pub struct RequestOptions {
+    /// The HTTP method to be used to make the request.
+    method: NavigationMethod,
+
+    /// The contents of the request body, if the request's HTTP method supports
+    /// having a body.
+    ///
+    /// The body consists of data and a mime type.
+    body: Option<(Vec<u8>, String)>,
+}
+
+impl RequestOptions {
+    /// Construct request options for a GET request.
+    pub fn get() -> Self {
+        Self {
+            method: NavigationMethod::GET,
+            body: None,
+        }
+    }
+
+    /// Construct request options for a POST request.
+    pub fn post(body: Option<(Vec<u8>, String)>) -> Self {
+        Self {
+            method: NavigationMethod::POST,
+            body,
+        }
+    }
+
+    /// Retrieve the navigation method for this request.
+    pub fn method(&self) -> NavigationMethod {
+        self.method
+    }
+
+    /// Retrieve the body of this request, if it exists.
+    pub fn body(&self) -> &Option<(Vec<u8>, String)> {
+        &self.body
     }
 }
 
@@ -59,7 +108,11 @@ pub trait NavigatorBackend {
     );
 
     /// Fetch data at a given URL and return it some time in the future.
-    fn fetch(&self, url: String) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>>;
+    fn fetch(
+        &self,
+        url: String,
+        request_options: RequestOptions,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>>;
 
     /// Arrange for a future to be run at some point in the... well, future.
     ///
@@ -96,7 +149,11 @@ impl NavigatorBackend for NullNavigatorBackend {
     ) {
     }
 
-    fn fetch(&self, _url: String) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>> {
+    fn fetch(
+        &self,
+        _url: String,
+        _opts: RequestOptions,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>> {
         Box::pin(async { Err("Fetch IO not implemented".into()) })
     }
 

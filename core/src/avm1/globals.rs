@@ -138,10 +138,12 @@ pub fn load_movie<'gc>(
 
         target_clip
     };
-    let _method = args.get(2).cloned().unwrap_or(Value::Undefined);
+    let method = args.get(2).cloned().unwrap_or(Value::Undefined);
 
     if let Some(target) = target {
-        let fetch = context.navigator.fetch(url);
+        let method = NavigationMethod::from_method_str(&method.coerce_to_string(avm, context)?);
+        let (url, opts) = avm.locals_into_request_options(context, url, method);
+        let fetch = context.navigator.fetch(url, opts);
         let process = context.load_manager.load_movie_into_clip(
             context.player.clone().unwrap(),
             target,
@@ -171,8 +173,10 @@ pub fn load_movie_num<'gc>(
         .unwrap_or(Value::Undefined)
         .as_number(avm, context)? as u32;
     let layer = avm.resolve_layer(level_id, context);
-    let _method = args.get(2).cloned().unwrap_or(Value::Undefined);
-    let fetch = context.navigator.fetch(url);
+    let method = args.get(2).cloned().unwrap_or(Value::Undefined);
+    let method = NavigationMethod::from_method_str(&method.coerce_to_string(avm, context)?);
+    let (url, opts) = avm.locals_into_request_options(context, url, method);
+    let fetch = context.navigator.fetch(url, opts);
     let process =
         context
             .load_manager
