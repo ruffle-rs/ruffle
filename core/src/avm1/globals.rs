@@ -4,8 +4,6 @@ use crate::avm1::listeners::SystemListeners;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::backend::navigator::NavigationMethod;
-use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
-use crate::player::NEWEST_PLAYER_VERSION;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 use rand::Rng;
@@ -172,17 +170,7 @@ pub fn load_movie_num<'gc>(
         .cloned()
         .unwrap_or(Value::Undefined)
         .as_number(avm, context)? as u32;
-    let layer = if let Some(layer) = context.layers.get(&level_id) {
-        *layer
-    } else {
-        let mut layer: DisplayObject<'_> =
-            MovieClip::new(NEWEST_PLAYER_VERSION, context.gc_context).into();
-
-        layer.post_instantiation(context.gc_context, layer, avm.prototypes().movie_clip);
-        context.layers.insert(level_id, layer);
-
-        layer
-    };
+    let layer = avm.resolve_layer(level_id, context);
     let _method = args.get(2).cloned().unwrap_or(Value::Undefined);
     let fetch = context.navigator.fetch(url);
     let process =
