@@ -4,6 +4,8 @@ use crate::avm1::listeners::SystemListeners;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::backend::navigator::NavigationMethod;
+use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
+use crate::player::NEWEST_PLAYER_VERSION;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 use rand::Rng;
@@ -105,6 +107,92 @@ pub fn get_nan<'gc>(
     } else {
         Ok(Value::Undefined.into())
     }
+}
+
+pub fn load_movie<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let url = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_string(avm, context)?;
+    let target_or_path = args.get(1).cloned().unwrap_or(Value::Undefined);
+    let target = if let Value::Object(target) = target_or_path {
+        let target = target.as_display_object();
+
+        if target.is_none() {
+            log::warn!("loadMovie: Object passed as target is not a movie clip");
+        }
+
+        target
+    } else {
+        let target_path = target_or_path.into_string();
+        let target_clip =
+            Avm1::resolve_dot_path_clip(avm.target_clip(), context.root, &target_path);
+
+        if target_clip.is_none() {
+            log::warn!("loadMovie: Could not resolve target path {}", target_path)
+        }
+
+        target_clip
+    };
+    let _method = args.get(2).cloned().unwrap_or(Value::Undefined);
+
+    if let Some(target) = target {
+        let fetch = context.navigator.fetch(url);
+        let process = context.load_manager.load_movie_into_clip(
+            context.player.clone().unwrap(),
+            target,
+            fetch,
+        );
+
+        context.navigator.spawn_future(process);
+    }
+
+    Ok(Value::Undefined.into())
+}
+
+pub fn load_movie_num<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let url = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_string(avm, context)?;
+    let level_id = args
+        .get(1)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .as_number(avm, context)? as u32;
+    let layer = if let Some(layer) = context.layers.get(&level_id) {
+        *layer
+    } else {
+        let mut layer: DisplayObject<'_> =
+            MovieClip::new(NEWEST_PLAYER_VERSION, context.gc_context).into();
+
+        layer.post_instantiation(context.gc_context, layer, avm.prototypes().movie_clip);
+        context.layers.insert(level_id, layer);
+
+        layer
+    };
+    let _method = args.get(2).cloned().unwrap_or(Value::Undefined);
+    let fetch = context.navigator.fetch(url);
+    let process =
+        context
+            .load_manager
+            .load_movie_into_clip(context.player.clone().unwrap(), layer, fetch);
+
+    context.navigator.spawn_future(process);
+
+    Ok(Value::Undefined.into())
 }
 
 /// This structure represents all system builtins that are used regardless of
@@ -329,6 +417,20 @@ pub fn create_globals<'gc>(
     globals.force_set_function(
         "ASSetPropFlags",
         object::as_set_prop_flags,
+        gc_context,
+        EnumSet::empty(),
+        Some(function_proto),
+    );
+    globals.force_set_function(
+        "loadMovie",
+        load_movie,
+        gc_context,
+        EnumSet::empty(),
+        Some(function_proto),
+    );
+    globals.force_set_function(
+        "loadMovieNum",
+        load_movie_num,
         gc_context,
         EnumSet::empty(),
         Some(function_proto),
