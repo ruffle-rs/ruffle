@@ -304,12 +304,12 @@ impl RenderBackend for WebCanvasRenderBackend {
             );
         }
 
-        use url::percent_encoding::{utf8_percent_encode, DEFAULT_ENCODE_SET};
+        use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
         let svg = swf_shape_to_svg(&shape, &bitmaps, self.pixelated_property_value);
 
         let svg_encoded = format!(
             "data:image/svg+xml,{}",
-            utf8_percent_encode(&svg, DEFAULT_ENCODE_SET) //&base64::encode(&svg[..])
+            utf8_percent_encode(&svg, NON_ALPHANUMERIC)
         );
 
         image.set_src(&svg_encoded);
