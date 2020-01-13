@@ -4,7 +4,7 @@ use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, ScriptObject, TObject, UpdateContext, Value};
 use gc_arena::MutationContext;
 use rand::Rng;
-use std::f64::NAN;
+use std::f64::{INFINITY, NAN, NEG_INFINITY};
 
 macro_rules! wrap_std {
     ( $object: ident, $gc_context: ident, $proto: ident, $($name:expr => $std:path),* ) => {{
@@ -43,6 +43,74 @@ fn atan2<'gc>(
         }
     }
     Ok(NAN.into())
+}
+
+fn pow<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(y) = args.get(0) {
+        if let Some(x) = args.get(1) {
+            let x = x.as_number(avm, context)?;
+            if x.is_nan() {
+                return Ok(NAN.into());
+            }
+            return Ok(y.as_number(avm, context)?.powf(x).into());
+        }
+    }
+    Ok(NAN.into())
+}
+
+fn max<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(a) = args.get(0) {
+        return if let Some(b) = args.get(1) {
+            match a.abstract_lt(b.to_owned(), avm, context)? {
+                Value::Bool(value) => {
+                    if value {
+                        Ok(b.as_number(avm, context)?.into())
+                    } else {
+                        Ok(a.as_number(avm, context)?.into())
+                    }
+                }
+                _ => Ok(NAN.into()),
+            }
+        } else {
+            Ok(NAN.into())
+        };
+    }
+    Ok(NEG_INFINITY.into())
+}
+
+fn min<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(a) = args.get(0) {
+        return if let Some(b) = args.get(1) {
+            match a.abstract_lt(b.to_owned(), avm, context)? {
+                Value::Bool(value) => {
+                    if value {
+                        Ok(a.as_number(avm, context)?.into())
+                    } else {
+                        Ok(b.as_number(avm, context)?.into())
+                    }
+                }
+                _ => Ok(NAN.into()),
+            }
+        } else {
+            Ok(NAN.into())
+        };
+    }
+    Ok(INFINITY.into())
 }
 
 pub fn random<'gc>(
@@ -122,12 +190,34 @@ pub fn create<'gc>(
         "round" => f64::round,
         "sin" => f64::sin,
         "sqrt" => f64::sqrt,
-        "tan" => f64::tan
+        "tan" => f64::tan,
+        "log" => f64::ln
     );
 
     math.force_set_function(
         "atan2",
         atan2,
+        gc_context,
+        DontDelete | ReadOnly | DontEnum,
+        fn_proto,
+    );
+    math.force_set_function(
+        "pow",
+        pow,
+        gc_context,
+        DontDelete | ReadOnly | DontEnum,
+        fn_proto,
+    );
+    math.force_set_function(
+        "max",
+        max,
+        gc_context,
+        DontDelete | ReadOnly | DontEnum,
+        fn_proto,
+    );
+    math.force_set_function(
+        "min",
+        min,
         gc_context,
         DontDelete | ReadOnly | DontEnum,
         fn_proto,
@@ -273,6 +363,79 @@ mod tests {
             [Value::Null] => NAN,
             [0.0] => f64::tan(0.0),
             [1.0] => f64::tan(1.0)
+        }
+    );
+
+    test_method!(test_pow, "pow", setup,
+        [5, 6, 7, 8] => {
+            [] => NAN,
+            [1.0] => NAN,
+            [NAN] => NAN,
+            [Value::Null] => NAN,
+            [Value::Undefined] => NAN,
+            ["5"] => NAN,
+            [1.0, 2.0] => 1.0,
+            [3.0, 2.0, 1.0] => 9.0
+        },
+        [5, 6] => {
+            [1.0, Value::Null] => 1.0,
+            [Value::Undefined, 3.0] => 0.0
+        },
+        [7, 8] => {
+            [1.0, Value::Null] => NAN,
+            [Value::Undefined, 3.0] => NAN
+        }
+    );
+
+    test_method!(test_log, "log", setup,
+        [19] => {
+            [] => NAN,
+            [Value::Null] => NAN,
+            [2.0] => f64::ln(2.0),
+            [0.0] => f64::ln(0.0),
+            [1.0] => f64::ln(1.0)
+        }
+    );
+
+    test_method!(test_max, "max", setup,
+        [5, 6, 7, 8] => {
+            [] => NEG_INFINITY,
+            [1.0] => NAN,
+            [NAN] => NAN,
+            [Value::Null] => NAN,
+            [Value::Undefined] => NAN,
+            ["5"] => NAN,
+            [1.0, 2.0] => 2.0,
+            [3.0, 2.0, 1.0] => 3.0
+        },
+        [5, 6] => {
+            [1.0, Value::Null] => 1.0,
+            [Value::Undefined, 3.0] => 3.0
+        },
+        [7, 8] => {
+            [1.0, Value::Null] => NAN,
+            [Value::Undefined, 3.0] => NAN
+        }
+    );
+
+    test_method!(test_min, "min", setup,
+        [5, 6, 7, 8] => {
+            [] => INFINITY,
+            [1.0] => NAN,
+            [NAN] => NAN,
+            [Value::Null] => NAN,
+            [Value::Undefined] => NAN,
+            ["5"] => NAN,
+            [1.0, 2.0] => 1.0,
+            [3.0, 2.0, 1.0] => 2.0
+        },
+        [5, 6] => {
+            [1.0, Value::Null] => 0.0,
+            [Value::Undefined, 3.0] => 0.0
+        },
+        [7, 8] => {
+            [1.0, Value::Null] => NAN,
+            [Value::Undefined, 3.0] => NAN
         }
     );
 
