@@ -4,6 +4,7 @@ use crate::avm1::listeners::SystemListeners;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::backend::navigator::NavigationMethod;
+use crate::display_object::TDisplayObject;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 use rand::Rng;
@@ -181,6 +182,71 @@ pub fn load_movie_num<'gc>(
         context
             .load_manager
             .load_movie_into_clip(context.player.clone().unwrap(), layer, fetch);
+
+    context.navigator.spawn_future(process);
+
+    Ok(Value::Undefined.into())
+}
+
+pub fn load_variables<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let url = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_string(avm, context)?;
+    let target = args.get(1).cloned().unwrap_or(Value::Undefined);
+
+    if let Value::Object(target) = target {
+        let method = args.get(2).cloned().unwrap_or(Value::Undefined);
+        let method = NavigationMethod::from_method_str(&method.coerce_to_string(avm, context)?);
+        let (url, opts) = avm.locals_into_request_options(context, url, method);
+        let fetch = context.navigator.fetch(url, opts);
+        let process = context.load_manager.load_form_into_object(
+            context.player.clone().unwrap(),
+            target,
+            fetch,
+        );
+
+        context.navigator.spawn_future(process);
+    } else {
+        log::warn!("loadVariables: Was not called with a valid target");
+    }
+
+    Ok(Value::Undefined.into())
+}
+
+pub fn load_variables_num<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let url = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_string(avm, context)?;
+    let level_id = args
+        .get(1)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .as_number(avm, context)? as u32;
+    let layer = avm.resolve_layer(level_id, context);
+    let target = layer.object().as_object()?;
+
+    let method = args.get(2).cloned().unwrap_or(Value::Undefined);
+    let method = NavigationMethod::from_method_str(&method.coerce_to_string(avm, context)?);
+    let (url, opts) = avm.locals_into_request_options(context, url, method);
+    let fetch = context.navigator.fetch(url, opts);
+    let process =
+        context
+            .load_manager
+            .load_form_into_object(context.player.clone().unwrap(), target, fetch);
 
     context.navigator.spawn_future(process);
 
@@ -423,6 +489,20 @@ pub fn create_globals<'gc>(
     globals.force_set_function(
         "loadMovieNum",
         load_movie_num,
+        gc_context,
+        EnumSet::empty(),
+        Some(function_proto),
+    );
+    globals.force_set_function(
+        "loadVariables",
+        load_variables,
+        gc_context,
+        EnumSet::empty(),
+        Some(function_proto),
+    );
+    globals.force_set_function(
+        "loadVariablesNum",
+        load_variables_num,
         gc_context,
         EnumSet::empty(),
         Some(function_proto),
