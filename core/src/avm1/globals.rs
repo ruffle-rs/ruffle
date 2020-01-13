@@ -4,7 +4,7 @@ use crate::avm1::listeners::SystemListeners;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::backend::navigator::NavigationMethod;
-use crate::display_object::TDisplayObject;
+use crate::display_object::{DisplayObject, TDisplayObject};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 use rand::Rng;
@@ -249,6 +249,83 @@ pub fn load_variables_num<'gc>(
             .load_form_into_object(context.player.clone().unwrap(), target, fetch);
 
     context.navigator.spawn_future(process);
+
+    Ok(Value::Undefined.into())
+}
+
+pub fn unload_movie<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let target_or_path = args.get(0).cloned().unwrap_or(Value::Undefined);
+    let target = if let Value::Object(target) = target_or_path {
+        let target = target.as_display_object();
+
+        if target.is_none() {
+            log::warn!("unloadMovie: Object passed as target is not a movie clip");
+        }
+
+        target
+    } else {
+        let target_path = target_or_path.into_string();
+        let target_clip =
+            Avm1::resolve_dot_path_clip(avm.target_clip(), context.root, &target_path);
+
+        if target_clip.is_none() {
+            log::warn!("unloadMovie: Could not resolve target path {}", target_path)
+        }
+
+        target_clip
+    };
+
+    if let Some(mut target) = target {
+        //TODO: How do we reclaim resources from unloaded movies?
+        if let Some(parent) = target.parent() {
+            parent
+                .as_movie_clip()
+                .unwrap()
+                .remove_child_from_avm(context, target);
+        } else {
+            //Removing a layer is a little different.
+            let mut layer_depth = None;
+
+            for (depth, layer) in context.layers.iter() {
+                if DisplayObject::ptr_eq(*layer, target) {
+                    layer_depth = Some(*depth);
+                    break;
+                }
+            }
+
+            if let Some(depth) = layer_depth {
+                context.layers.remove(&depth);
+            }
+
+            target.unload(context);
+        }
+    }
+
+    Ok(Value::Undefined.into())
+}
+
+pub fn unload_movie_num<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let level_id = args
+        .get(1)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .as_number(avm, context)? as u32;
+
+    if let Some(mut layer) = context.layers.get_mut(&level_id).copied() {
+        layer.unload(context);
+    }
+
+    context.layers.remove(&level_id);
 
     Ok(Value::Undefined.into())
 }
@@ -503,6 +580,20 @@ pub fn create_globals<'gc>(
     globals.force_set_function(
         "loadVariablesNum",
         load_variables_num,
+        gc_context,
+        EnumSet::empty(),
+        Some(function_proto),
+    );
+    globals.force_set_function(
+        "unloadMovie",
+        unload_movie,
+        gc_context,
+        EnumSet::empty(),
+        Some(function_proto),
+    );
+    globals.force_set_function(
+        "unloadMovieNum",
+        unload_movie_num,
         gc_context,
         EnumSet::empty(),
         Some(function_proto),
