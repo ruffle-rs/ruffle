@@ -174,9 +174,9 @@ export class PublicAPI {
      */
     local_compatible() {
         if (this.sources.local !== undefined) {
-            this.satisfying("^" + this.sources.local.version);
+            return this.satisfying("^" + this.sources.local.version);
         } else {
-            this.newest();
+            return this.newest();
         }
     }
 
@@ -186,9 +186,9 @@ export class PublicAPI {
      */
     local() {
         if (this.sources.local !== undefined) {
-            this.satisfying("=" + this.sources.local.version);
+            return this.satisfying("=" + this.sources.local.version);
         } else {
-            this.newest();
+            return this.newest();
         }
     }
 
