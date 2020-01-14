@@ -1899,7 +1899,11 @@ impl<'gc> Avm1<'gc> {
         // A max value < 0 will always return 0,
         // and the max value gets converted into an i32, so any number > 2^31 - 1 will return 0.
         let max = self.pop().into_number_v1() as i32;
-        let val = context.rng.gen_range(0, max);
+        let val = if max > 0 {
+            context.rng.gen_range(0, max)
+        } else {
+            0
+        };
         self.push(val);
         Ok(())
     }
