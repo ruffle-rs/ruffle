@@ -218,6 +218,52 @@ impl<'gc> MovieClip<'gc> {
             parent.remove_child_from_exec_list(context, child);
         }
     }
+
+    /// Returns an iterator of AVM1 `DoAction` blocks on the given frame number.
+    /// Used by the AVM `Call` action.
+    pub fn actions_on_frame(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        frame: FrameNumber,
+    ) -> impl DoubleEndedIterator<Item = SwfSlice> {
+        use swf::{read::Reader, TagCode};
+
+        let mut actions: SmallVec<[SwfSlice; 2]> = SmallVec::new();
+        let mut cur_frame = 1;
+        let clip = self.0.read();
+        let swf_version = self.swf_version();
+        let start = clip.tag_stream_start() as usize;
+        let len = clip.tag_stream_len();
+        let cursor = std::io::Cursor::new(&context.swf_data[start..start + len]);
+        let mut reader = Reader::new(cursor, swf_version);
+
+        // Iterate through this clip's tags, counting frames until we reach the target frame.
+        while cur_frame <= frame && reader.get_ref().position() < len as u64 {
+            let tag_callback = |reader: &mut Reader<std::io::Cursor<&[u8]>>, tag_code, tag_len| {
+                match tag_code {
+                    TagCode::ShowFrame => cur_frame += 1,
+                    TagCode::DoAction if cur_frame == frame => {
+                        // On the target frame, add any DoAction tags to the array.
+                        let start =
+                            (clip.tag_stream_start() + reader.get_ref().position()) as usize;
+                        let end = start + tag_len;
+                        let code = SwfSlice {
+                            data: std::sync::Arc::clone(context.swf_data),
+                            start,
+                            end,
+                        };
+                        actions.push(code)
+                    }
+                    _ => (),
+                }
+                Ok(())
+            };
+
+            let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
+        }
+
+        actions.into_iter()
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
