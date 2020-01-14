@@ -869,10 +869,41 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_call(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let _val = self.pop();
-        // TODO(Herschel)
-        Err("Unimplemented action: Call".into())
+    fn action_call(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        // Runs any actions on the given frame.
+        let frame = self.pop();
+        let clip = self.target_clip_or_root(context);
+        if let Some(clip) = clip.as_movie_clip() {
+            // Use frame # if parameter is a number, otherwise cast to string and check for frame labels.
+            let frame = if let Ok(frame) = frame.as_u32() {
+                if frame >= 1 && frame <= u32::from(clip.total_frames()) {
+                    Some(frame as u16)
+                } else {
+                    None
+                }
+            } else {
+                let frame_label = frame.coerce_to_string(self, context)?;
+                clip.frame_label_to_number(&frame_label)
+            };
+
+            if let Some(frame) = frame {
+                // We must run the actions in the order that the tags appear,
+                // so we want to push the stack frames in reverse order.
+                for action in clip.actions_on_frame(context, frame).rev() {
+                    self.insert_stack_frame_for_action(
+                        self.target_clip_or_root(context),
+                        self.current_swf_version(),
+                        action,
+                        context,
+                    );
+                }
+            } else {
+                log::warn!("Call: Invalid frame {:?}", frame);
+            }
+        } else {
+            log::warn!("Call: Expected MovieClip");
+        }
+        Ok(())
     }
 
     fn action_call_function(
