@@ -1,0 +1,34 @@
+// frame 2
+// call(3)
+// frame 3 A
+// frame 3 B
+// call('SomeFrame')
+// frame 4
+// call(o) with toString
+// frame 4
+// call(5)
+// frame 5
+// foo
+root
+// mc._x
+20
+// tellTarget('mc') { call(5); }
+// mc frame 5
+// foo
+mc
+// tellTarget('BadClip') { call(5); }
+// frame 5
+// foo
+root
+// mc._x
+20
+// mc.f()
+// call(5)
+// mc frame 5
+// foo
+mc
+// call(1234)
+// call('INVALID')
+// call(4294967299)
+// frame 3 A
+// frame 3 B
