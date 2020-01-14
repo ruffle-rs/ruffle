@@ -4,6 +4,7 @@ use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::backend::navigator::NavigationMethod;
 use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObject};
 use crate::prelude::*;
 use enumset::EnumSet;
@@ -184,7 +185,74 @@ pub fn create_proto<'gc>(
             Ok(movie_clip.path().into())
         },
         "localToGlobal" => local_to_global,
-        "globalToLocal" => global_to_local
+        "globalToLocal" => global_to_local,
+        "loadMovie" => |target: MovieClip<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args: &[Value<'gc>]| {
+            let url = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_string(avm, context)?;
+            let method = args.get(1).cloned().unwrap_or(Value::Undefined);
+            let method = NavigationMethod::from_method_str(&method.coerce_to_string(avm, context)?);
+            let (url, opts) = avm.locals_into_request_options(context, url, method);
+            let fetch = context.navigator.fetch(url, opts);
+            let process = context.load_manager.load_movie_into_clip(
+                context.player.clone().unwrap(),
+                DisplayObject::MovieClip(target),
+                fetch,
+            );
+
+            context.navigator.spawn_future(process);
+
+            Ok(Value::Undefined.into())
+        },
+        "loadVariables" => |target: MovieClip<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args: &[Value<'gc>]| {
+            let url = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_string(avm, context)?;
+            let method = args.get(1).cloned().unwrap_or(Value::Undefined);
+            let method = NavigationMethod::from_method_str(&method.coerce_to_string(avm, context)?);
+            let (url, opts) = avm.locals_into_request_options(context, url, method);
+            let fetch = context.navigator.fetch(url, opts);
+            let process = context.load_manager.load_form_into_object(
+                context.player.clone().unwrap(),
+                target.object().as_object()?,
+                fetch,
+            );
+
+            context.navigator.spawn_future(process);
+
+            Ok(Value::Undefined.into())
+        },
+        "unloadMovie" => |mut target: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args: &[Value<'gc>]| {
+            //TODO: How do we reclaim resources from unloaded movies?
+            if let Some(parent) = target.parent() {
+                parent
+                    .as_movie_clip()
+                    .unwrap()
+                    .remove_child_from_avm(context, DisplayObject::MovieClip(target));
+            } else {
+                //Removing a layer is a little different.
+                let mut layer_depth = None;
+
+                for (depth, layer) in context.layers.iter() {
+                    if DisplayObject::ptr_eq(*layer, DisplayObject::MovieClip(target)) {
+                        layer_depth = Some(*depth);
+                        break;
+                    }
+                }
+
+                if let Some(depth) = layer_depth {
+                    context.layers.remove(&depth);
+                }
+
+                target.unload(context);
+            }
+
+            Ok(Value::Undefined.into())
+        }
     );
 
     object.add_property(
