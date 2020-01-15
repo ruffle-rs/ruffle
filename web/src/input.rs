@@ -165,7 +165,7 @@ impl InputBackend for WebInputBackend {
 pub fn web_to_ruffle_key_code(key_code: &str) -> Option<KeyCode> {
     let out = match key_code {
         "Backspace" => KeyCode::Backspace,
-        "Return" => KeyCode::Return,
+        "Enter" => KeyCode::Return,
         "ShiftLeft" | "ShiftRight" => KeyCode::Shift,
         "ControlLeft" | "ControlRight" => KeyCode::Control,
         "AltLeft" | "AltRight" => KeyCode::Alt,
