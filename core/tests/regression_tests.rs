@@ -158,6 +158,7 @@ swf_tests! {
     (undefined_to_string_swf6, "avm1/undefined_to_string_swf6", 1),
     (define_function2_preload, "avm1/define_function2_preload", 1),
     (define_function2_preload_order, "avm1/define_function2_preload_order", 1),
+    (mcl_as_broadcaster, "avm1/mcl_as_broadcaster", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
