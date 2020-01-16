@@ -659,12 +659,16 @@ impl Player {
                 }
                 // Event handler method call (e.g. onEnterFrame)
                 ActionType::Method { name } => {
-                    avm.insert_stack_frame_for_avm_function(
-                        actions.clip,
-                        context.swf.header().version,
-                        context,
-                        name,
-                    );
+                    if let Ok(clip) = actions.clip.object().as_object() {
+                        avm.insert_stack_frame_for_method(
+                            actions.clip,
+                            clip,
+                            context.swf.header().version,
+                            context,
+                            name,
+                            &[],
+                        );
+                    }
                 }
 
                 // Event handler method call (e.g. onEnterFrame)

@@ -200,6 +200,7 @@ pub fn create_proto<'gc>(
                 context.player.clone().unwrap(),
                 DisplayObject::MovieClip(target),
                 fetch,
+                None
             );
 
             context.navigator.spawn_future(process);

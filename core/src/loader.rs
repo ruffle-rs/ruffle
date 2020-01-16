@@ -1,8 +1,8 @@
 //! Management of async loaders
 
-use crate::avm1::{Object, TObject};
+use crate::avm1::{Object, TObject, Value};
 use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
-use crate::player::Player;
+use crate::player::{Player, NEWEST_PLAYER_VERSION};
 use crate::tag_utils::SwfMovie;
 use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
@@ -66,10 +66,12 @@ impl<'gc> LoadManager<'gc> {
         player: Weak<Mutex<Player>>,
         target_clip: DisplayObject<'gc>,
         fetch: Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>>,
+        target_broadcaster: Option<Object<'gc>>,
     ) -> Pin<Box<dyn Future<Output = Result<(), Error>> + 'static>> {
         let loader = Loader::Movie {
             self_handle: None,
             target_clip,
+            target_broadcaster,
         };
         let handle = self.add_loader(loader);
 
@@ -116,6 +118,10 @@ pub enum Loader<'gc> {
 
         /// The target movie clip to load the movie into.
         target_clip: DisplayObject<'gc>,
+
+        /// Event broadcaster (typically a `MovieClipLoader`) to fire events
+        /// into.
+        target_broadcaster: Option<Object<'gc>>,
     },
 
     /// Loader that is loading form data into an AVM1 object scope.
@@ -171,42 +177,132 @@ impl<'gc> Loader<'gc> {
             .expect("Could not upgrade weak reference to player");
 
         Box::pin(async move {
-            let data = fetch.await?;
-            let movie = Arc::new(SwfMovie::from_data(&data));
-
-            player
-                .lock()
-                .expect("Could not lock player!!")
-                .update(|avm, uc| {
-                    let loader = uc.load_manager.get_loader(handle);
-                    let that = match loader {
-                        Some(Loader::Movie { target_clip, .. }) => target_clip,
-                        None => return Err("Loader expired during loading".into()),
-                        _ => return Err("Non-movie loader spawned as movie loader".into()),
+            player.lock().expect("Could not lock player!!").update(
+                |avm, uc| -> Result<(), Error> {
+                    let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
+                        Some(Loader::Movie {
+                            target_clip,
+                            target_broadcaster,
+                            ..
+                        }) => (*target_clip, *target_broadcaster),
+                        _ => unreachable!(),
                     };
-                    let mut mc = that
-                        .as_movie_clip()
-                        .expect("Attempted to load movie into not movie clip");
 
-                    mc.replace_with_movie(uc.gc_context, movie.clone());
-                    mc.post_instantiation(uc.gc_context, *that, avm.prototypes().movie_clip);
-
-                    let mut morph_shapes = fnv::FnvHashMap::default();
-                    mc.preload(uc, &mut morph_shapes);
-
-                    // Finalize morph shapes.
-                    for (id, static_data) in morph_shapes {
-                        let morph_shape = MorphShape::new(uc.gc_context, static_data);
-                        uc.library
-                            .library_for_movie_mut(movie.clone())
-                            .register_character(
-                                id,
-                                crate::character::Character::MorphShape(morph_shape),
-                            );
+                    if let Some(broadcaster) = broadcaster {
+                        avm.insert_stack_frame_for_method(
+                            clip,
+                            broadcaster,
+                            NEWEST_PLAYER_VERSION,
+                            uc,
+                            "onLoadStart",
+                            &[Value::Object(broadcaster)],
+                        );
+                        avm.run_stack_till_empty(uc)?;
                     }
 
                     Ok(())
-                })
+                },
+            )?;
+
+            let data = fetch.await;
+            if let Ok(data) = data {
+                let movie = Arc::new(SwfMovie::from_data(&data));
+
+                player
+                    .lock()
+                    .expect("Could not lock player!!")
+                    .update(|avm, uc| {
+                        let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
+                            Some(Loader::Movie {
+                                target_clip,
+                                target_broadcaster,
+                                ..
+                            }) => (*target_clip, *target_broadcaster),
+                            _ => unreachable!(),
+                        };
+
+                        if let Some(broadcaster) = broadcaster {
+                            avm.insert_stack_frame_for_method(
+                                clip,
+                                broadcaster,
+                                NEWEST_PLAYER_VERSION,
+                                uc,
+                                "onLoadProgress",
+                                &[
+                                    Value::Object(broadcaster),
+                                    data.len().into(),
+                                    data.len().into(),
+                                ],
+                            );
+                            avm.run_stack_till_empty(uc)?;
+                        }
+
+                        let mut mc = clip
+                            .as_movie_clip()
+                            .expect("Attempted to load movie into not movie clip");
+
+                        mc.replace_with_movie(uc.gc_context, movie.clone());
+                        mc.post_instantiation(uc.gc_context, clip, avm.prototypes().movie_clip);
+
+                        let mut morph_shapes = fnv::FnvHashMap::default();
+                        mc.preload(uc, &mut morph_shapes);
+
+                        // Finalize morph shapes.
+                        for (id, static_data) in morph_shapes {
+                            let morph_shape = MorphShape::new(uc.gc_context, static_data);
+                            uc.library
+                                .library_for_movie_mut(movie.clone())
+                                .register_character(
+                                    id,
+                                    crate::character::Character::MorphShape(morph_shape),
+                                );
+                        }
+
+                        if let Some(broadcaster) = broadcaster {
+                            avm.insert_stack_frame_for_method(
+                                clip,
+                                broadcaster,
+                                NEWEST_PLAYER_VERSION,
+                                uc,
+                                "onLoadComplete",
+                                &[Value::Object(broadcaster)],
+                            );
+                            avm.run_stack_till_empty(uc)?;
+                        }
+
+                        Ok(())
+                    })
+            } else {
+                //TODO: Inspect the fetch error.
+                //This requires cooperation from the backend to send abstract
+                //error types we can actually inspect.
+                player.lock().expect("Could not lock player!!").update(
+                    |avm, uc| -> Result<(), Error> {
+                        let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
+                            Some(Loader::Movie {
+                                target_clip,
+                                target_broadcaster,
+                                ..
+                            }) => (*target_clip, *target_broadcaster),
+                            _ => unreachable!(),
+                        };
+
+                        if let Some(broadcaster) = broadcaster {
+                            avm.insert_stack_frame_for_method(
+                                clip,
+                                broadcaster,
+                                NEWEST_PLAYER_VERSION,
+                                uc,
+                                "onLoadError",
+                                &[Value::Object(broadcaster), "LoadNeverCompleted".into()],
+                            );
+                            avm.run_stack_till_empty(uc)?;
+                        }
+
+                        Ok(())
+                    },
+                )
+            }
         })
     }
 

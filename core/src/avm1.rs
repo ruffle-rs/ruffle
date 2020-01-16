@@ -295,38 +295,33 @@ impl<'gc> Avm1<'gc> {
         ));
     }
 
-    /// Add a stack frame that executes code in timeline scope for an event handler.
-    pub fn insert_stack_frame_for_avm_function(
+    /// Add a stack frame that executes code in timeline scope for an object
+    /// method, such as an event handler.
+    pub fn insert_stack_frame_for_method(
         &mut self,
         active_clip: DisplayObject<'gc>,
+        obj: Object<'gc>,
         swf_version: u8,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
+        args: &[Value<'gc>],
     ) {
         // Grab the property with the given name.
         // Requires a dummy stack frame.
-        let clip = active_clip.object().as_object();
-        if let Ok(clip) = clip {
-            self.stack_frames.push(GcCell::allocate(
-                context.gc_context,
-                Activation::from_nothing(
-                    swf_version,
-                    self.globals,
-                    context.gc_context,
-                    active_clip,
-                ),
-            ));
-            let callback = clip
-                .get(name, self, context)
-                .and_then(|prop| prop.resolve(self, context));
-            self.stack_frames.pop();
+        self.stack_frames.push(GcCell::allocate(
+            context.gc_context,
+            Activation::from_nothing(swf_version, self.globals, context.gc_context, active_clip),
+        ));
+        let callback = obj
+            .get(name, self, context)
+            .and_then(|prop| prop.resolve(self, context));
+        self.stack_frames.pop();
 
-            // Run the callback.
-            // The function exec pushes its own stack frame.
-            // The function is now ready to execute with `run_stack_till_empty`.
-            if let Ok(callback) = callback {
-                let _ = callback.call(self, context, clip, &[]);
-            }
+        // Run the callback.
+        // The function exec pushes its own stack frame.
+        // The function is now ready to execute with `run_stack_till_empty`.
+        if let Ok(callback) = callback {
+            let _ = callback.call(self, context, obj, args);
         }
     }
 
@@ -1658,6 +1653,7 @@ impl<'gc> Avm1<'gc> {
                 context.player.clone().unwrap(),
                 layer,
                 fetch,
+                None,
             );
             context.navigator.spawn_future(process);
 
@@ -1734,6 +1730,7 @@ impl<'gc> Avm1<'gc> {
                     context.player.clone().unwrap(),
                     clip_target,
                     fetch,
+                    None,
                 );
                 context.navigator.spawn_future(process);
             }
