@@ -355,21 +355,21 @@ impl WebAudioBackend {
 
         match format.compression {
             AudioCompression::Uncompressed | AudioCompression::UncompressedUnknownEndian => {
-                // TODO: Check for is_16_bit.
-                self.left_samples = audio_data
-                    .iter()
-                    .step_by(2)
-                    .cloned()
-                    .map(|n| f32::from(n) / 32767.0)
-                    .collect();
-                if format.is_stereo {
-                    self.right_samples = audio_data
-                        .iter()
-                        .skip(1)
-                        .step_by(2)
-                        .cloned()
-                        .map(|n| f32::from(n) / 32767.0)
-                        .collect();
+                use byteorder::{LittleEndian, ReadBytesExt};
+                let mut audio_data = audio_data;
+
+                let read_sample = |audio_data: &mut &[u8]| {
+                    if format.is_16_bit {
+                        f32::from(audio_data.read_i16::<LittleEndian>().unwrap_or(0)) / 32767.0
+                    } else {
+                        f32::from(audio_data.read_u8().unwrap_or(0)) / 128.0 - 1.0
+                    }
+                };
+                while !audio_data.is_empty() {
+                    self.left_samples.push(read_sample(&mut audio_data));
+                    if format.is_stereo {
+                        self.right_samples.push(read_sample(&mut audio_data));
+                    }
                 }
             }
             AudioCompression::Adpcm => {
