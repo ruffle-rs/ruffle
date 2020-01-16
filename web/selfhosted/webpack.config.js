@@ -15,7 +15,7 @@ module.exports = (env, argv) => {
     output: {
       path: path.resolve(__dirname, "dist"),
       filename: "ruffle.js",
-      chunkFilename: "core.ruffle.js",
+      chunkFilename: "core.ruffle.[contenthash].js",
       jsonpFunction: "RufflePlayerLoader",
     },
     mode: mode,
