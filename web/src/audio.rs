@@ -157,6 +157,8 @@ impl WebAudioBackend {
                         node.set_loop_start(start_sample_frame);
                         node.start_with_when_and_grain_offset(0.0, start_sample_frame)
                             .warn_on_error();
+
+                        let current_time = self.context.current_time();
                         // If we are looping or have a custom end point, we have to manually stop the sound.
                         if settings.out_sample.is_some() || settings.num_loops > 1 {
                             let end_sample_frame = if let Some(out_sample) = settings.out_sample {
@@ -171,7 +173,6 @@ impl WebAudioBackend {
                             // as you might expect with loops, so we use `stop_with_when` to stop the loop.
                             let total_len = (end_sample_frame - start_sample_frame)
                                 * f64::from(settings.num_loops);
-                            let current_time = self.context.current_time();
                             node.set_loop_end(end_sample_frame);
                             node.stop_with_when(current_time + total_len)
                                 .warn_on_error();
@@ -183,6 +184,7 @@ impl WebAudioBackend {
                                 node.into(),
                                 envelope,
                                 sound.format.is_stereo,
+                                current_time,
                             )
                             .unwrap()
                         } else {
@@ -272,6 +274,7 @@ impl WebAudioBackend {
         node: web_sys::AudioNode,
         envelope: &[swf::SoundEnvelopePoint],
         is_stereo: bool,
+        start_time: f64,
     ) -> Result<web_sys::AudioNode, Box<dyn std::error::Error>> {
         // Split the left and right channels.
         let splitter = self
@@ -299,11 +302,17 @@ impl WebAudioBackend {
         for point in envelope {
             left_gain
                 .gain()
-                .linear_ramp_to_value_at_time(point.left_volume, f64::from(point.sample) / 44100.0)
+                .linear_ramp_to_value_at_time(
+                    point.left_volume,
+                    start_time + f64::from(point.sample) / 44100.0,
+                )
                 .warn_on_error();
             right_gain
                 .gain()
-                .linear_ramp_to_value_at_time(point.right_volume, f64::from(point.sample) / 44100.0)
+                .linear_ramp_to_value_at_time(
+                    point.right_volume,
+                    start_time + f64::from(point.sample) / 44100.0,
+                )
                 .warn_on_error();
         }
 
