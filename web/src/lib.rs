@@ -361,6 +361,8 @@ impl Ruffle {
         INSTANCES.with(|instances| {
             let mut instances = instances.borrow_mut();
             if let Some(instance) = instances.get_mut(self.0) {
+                let window = web_sys::window().unwrap();
+
                 // Calculate the dt from last tick.
                 let dt = if let Some(prev_timestamp) = instance.timestamp {
                     instance.timestamp = Some(timestamp);
@@ -379,13 +381,17 @@ impl Ruffle {
                 // Check for canvas resize.
                 let canvas_width = instance.canvas.client_width();
                 let canvas_height = instance.canvas.client_height();
-                if instance.canvas_width != canvas_width || instance.canvas_height != canvas_height
+                let device_pixel_ratio = window.device_pixel_ratio(); // Changes via user zooming.
+                if instance.canvas_width != canvas_width
+                    || instance.canvas_height != canvas_height
+                    || (instance.device_pixel_ratio - device_pixel_ratio).abs() >= std::f64::EPSILON
                 {
                     // If a canvas resizes, it's drawing context will get scaled. You must reset
                     // the width and height attributes of the canvas element to recreate the context.
                     // (NOT the CSS width/height!)
                     instance.canvas_width = canvas_width;
                     instance.canvas_height = canvas_height;
+                    instance.device_pixel_ratio = device_pixel_ratio;
 
                     // The actual viewport is scaled by DPI, bigger than CSS pixels.
                     let viewport_width =
