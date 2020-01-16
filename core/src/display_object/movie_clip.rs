@@ -677,16 +677,16 @@ impl<'gc> MovieClipData<'gc> {
             use swf::TagCode;
             let tag_callback = |reader: &mut _, tag_code, tag_len| match tag_code {
                 TagCode::PlaceObject => {
-                    self.goto_place_object(reader, tag_len, 1, &mut goto_commands)
+                    self.goto_place_object(reader, tag_len, 1, &mut goto_commands, is_rewind)
                 }
                 TagCode::PlaceObject2 => {
-                    self.goto_place_object(reader, tag_len, 2, &mut goto_commands)
+                    self.goto_place_object(reader, tag_len, 2, &mut goto_commands, is_rewind)
                 }
                 TagCode::PlaceObject3 => {
-                    self.goto_place_object(reader, tag_len, 3, &mut goto_commands)
+                    self.goto_place_object(reader, tag_len, 3, &mut goto_commands, is_rewind)
                 }
                 TagCode::PlaceObject4 => {
-                    self.goto_place_object(reader, tag_len, 4, &mut goto_commands)
+                    self.goto_place_object(reader, tag_len, 4, &mut goto_commands, is_rewind)
                 }
                 TagCode::RemoveObject => {
                     self.goto_remove_object(reader, 1, context, &mut goto_commands, is_rewind)
@@ -713,7 +713,7 @@ impl<'gc> MovieClipData<'gc> {
                     // If the ID is 0, we are modifying a previous child. Otherwise, we're replacing it.
                     // If it's a rewind, we removed any dead children above, so we always
                     // modify the previous child.
-                    Some(mut prev_child) if is_rewind || params.id() == 0 => {
+                    Some(mut prev_child) if params.id() == 0 || is_rewind => {
                         prev_child.apply_place_object(context.gc_context, &params.place_object);
                     }
                     _ => {
@@ -761,6 +761,7 @@ impl<'gc> MovieClipData<'gc> {
         tag_len: usize,
         version: u8,
         goto_commands: &mut fnv::FnvHashMap<Depth, GotoPlaceObject>,
+        is_rewind: bool,
     ) -> DecodeResult {
         let place_object = if version == 1 {
             reader.read_place_object(tag_len)
@@ -770,10 +771,7 @@ impl<'gc> MovieClipData<'gc> {
 
         // We merge the deltas from this PlaceObject with the previous command.
         let depth = place_object.depth;
-        let mut goto_place = GotoPlaceObject {
-            frame: self.current_frame(),
-            place_object,
-        };
+        let mut goto_place = GotoPlaceObject::new(self.current_frame(), place_object, is_rewind);
         goto_commands
             .entry(depth.into())
             .and_modify(|prev_place| prev_place.merge(&mut goto_place))
@@ -1792,6 +1790,36 @@ struct GotoPlaceObject {
 }
 
 impl GotoPlaceObject {
+    fn new(frame: FrameNumber, mut place_object: swf::PlaceObject, is_rewind: bool) -> Self {
+        if is_rewind {
+            if let swf::PlaceObjectAction::Place(_) = place_object.action {
+                if place_object.matrix.is_none() {
+                    place_object.matrix = Some(Default::default());
+                }
+                if place_object.color_transform.is_none() {
+                    place_object.color_transform = Some(Default::default());
+                }
+                if place_object.ratio.is_none() {
+                    place_object.ratio = Some(Default::default());
+                }
+                if place_object.name.is_none() {
+                    place_object.name = Some(Default::default());
+                }
+                if place_object.clip_depth.is_none() {
+                    place_object.clip_depth = Some(Default::default());
+                }
+                if place_object.class_name.is_none() {
+                    place_object.class_name = Some(Default::default());
+                }
+            }
+        }
+
+        Self {
+            frame,
+            place_object,
+        }
+    }
+
     #[inline]
     fn id(&self) -> CharacterId {
         match &self.place_object.action {
