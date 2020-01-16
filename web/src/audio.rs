@@ -179,7 +179,12 @@ impl WebAudioBackend {
 
                         // For envelopes, we rig the node up to some splitter/gain nodes.
                         if let Some(envelope) = &settings.envelope {
-                            self.create_sound_envelope(node.into(), envelope).unwrap()
+                            self.create_sound_envelope(
+                                node.into(),
+                                envelope,
+                                sound.format.is_stereo,
+                            )
+                            .unwrap()
                         } else {
                             node.into()
                         }
@@ -266,6 +271,7 @@ impl WebAudioBackend {
         &self,
         node: web_sys::AudioNode,
         envelope: &[swf::SoundEnvelopePoint],
+        is_stereo: bool,
     ) -> Result<web_sys::AudioNode, Box<dyn std::error::Error>> {
         // Split the left and right channels.
         let splitter = self
@@ -313,8 +319,9 @@ impl WebAudioBackend {
         splitter
             .connect_with_audio_node_and_output(&left_gain, 0)
             .into_js_result()?;
+        // Note that for mono tracks, we want to use channel 0 (left) for both the left and right.
         splitter
-            .connect_with_audio_node_and_output(&right_gain, 1)
+            .connect_with_audio_node_and_output(&right_gain, if is_stereo { 1 } else { 0 })
             .into_js_result()?;
         left_gain
             .connect_with_audio_node_and_output_and_input(&merger, 0, 0)
