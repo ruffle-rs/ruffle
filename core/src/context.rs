@@ -2,7 +2,7 @@
 use crate::avm1;
 
 use crate::avm1::listeners::SystemListener;
-use crate::avm1::Value;
+use crate::avm1::{Object, Value};
 use crate::backend::input::InputBackend;
 use crate::backend::{audio::AudioBackend, navigator::NavigatorBackend, render::RenderBackend};
 use crate::library::Library;
@@ -204,7 +204,11 @@ pub enum ActionType<'gc> {
     Init { bytecode: SwfSlice },
 
     /// An event handler method, e.g. `onEnterFrame`.
-    Method { name: &'static str },
+    Method {
+        object: Object<'gc>,
+        name: &'static str,
+        args: Vec<Value<'gc>>,
+    },
 
     /// A system listener method,
     NotifyListeners {
@@ -225,9 +229,11 @@ impl fmt::Debug for ActionType<'_> {
                 .debug_struct("ActionType::Init")
                 .field("bytecode", bytecode)
                 .finish(),
-            ActionType::Method { name } => f
+            ActionType::Method { object, name, args } => f
                 .debug_struct("ActionType::Method")
+                .field("object", object)
                 .field("name", name)
+                .field("args", args)
                 .finish(),
             ActionType::NotifyListeners {
                 listener,

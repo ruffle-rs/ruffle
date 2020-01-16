@@ -1,6 +1,7 @@
 //! Management of async loaders
 
 use crate::avm1::{Object, TObject, Value};
+use crate::context::{ActionQueue, ActionType};
 use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
 use crate::player::{Player, NEWEST_PLAYER_VERSION};
 use crate::tag_utils::SwfMovie;
@@ -79,6 +80,28 @@ impl<'gc> LoadManager<'gc> {
         loader.introduce_loader_handle(handle);
 
         loader.movie_loader(player, fetch)
+    }
+
+    /// Indicates that a movie clip has initialized (ran it's first frame).
+    ///
+    /// Interested loaders will be invoked from here.
+    pub fn movie_clip_on_load(
+        &mut self,
+        loaded_clip: DisplayObject<'gc>,
+        root: DisplayObject<'gc>,
+        queue: &mut ActionQueue<'gc>,
+    ) {
+        let mut invalidated_loaders = vec![];
+
+        for (index, loader) in self.0.iter_mut() {
+            if loader.movie_clip_loaded(loaded_clip, root, queue) {
+                invalidated_loaders.push(index);
+            }
+        }
+
+        for index in invalidated_loaders {
+            self.0.remove(index);
+        }
     }
 
     /// Kick off a form data load into an AVM1 object.
@@ -338,5 +361,45 @@ impl<'gc> Loader<'gc> {
                 Ok(())
             })
         })
+    }
+
+    /// Event handler morally equivalent to `onLoad` on a movie clip.
+    ///
+    /// Returns `true` if the loader has completed and should be removed.
+    ///
+    /// Used to fire listener events on clips and terminate completed loaders.
+    pub fn movie_clip_loaded(
+        &mut self,
+        loaded_clip: DisplayObject<'gc>,
+        root: DisplayObject<'gc>,
+        queue: &mut ActionQueue<'gc>,
+    ) -> bool {
+        let (clip, broadcaster) = match self {
+            Loader::Movie {
+                target_clip,
+                target_broadcaster,
+                ..
+            } => (*target_clip, *target_broadcaster),
+            _ => return false,
+        };
+
+        if DisplayObject::ptr_eq(loaded_clip, clip) {
+            if let Some(broadcaster) = broadcaster {
+                queue.queue_actions(
+                    clip,
+                    root,
+                    ActionType::Method {
+                        object: broadcaster,
+                        name: "broadcastMessage",
+                        args: vec!["onLoadInit".into(), loaded_clip.object()],
+                    },
+                    false,
+                );
+            }
+
+            true
+        } else {
+            false
+        }
     }
 }

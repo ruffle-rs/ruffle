@@ -950,10 +950,23 @@ impl<'gc> MovieClipData<'gc> {
                     context.action_queue.queue_actions(
                         self_display_object,
                         context.root,
-                        ActionType::Method { name },
+                        ActionType::Method {
+                            object: self.object.unwrap(),
+                            name,
+                            args: vec![],
+                        },
                         event == ClipEvent::Unload,
                     );
                 }
+            }
+
+            // Finally, queue any loaders that may be waiting for this event.
+            if let ClipEvent::Load = event {
+                context.load_manager.movie_clip_on_load(
+                    self_display_object,
+                    context.root,
+                    context.action_queue,
+                );
             }
         }
     }
