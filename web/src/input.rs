@@ -10,6 +10,7 @@ pub struct WebInputBackend {
     keys_down: HashSet<String>,
     canvas: HtmlCanvasElement,
     cursor_visible: bool,
+    last_key: KeyCode,
 }
 
 impl WebInputBackend {
@@ -18,11 +19,13 @@ impl WebInputBackend {
             keys_down: HashSet::new(),
             canvas: canvas.clone(),
             cursor_visible: true,
+            last_key: KeyCode::Unknown,
         }
     }
 
     /// Register a key press for a given code string.
     pub fn keydown(&mut self, code: String) {
+        self.last_key = web_to_ruffle_key_code(&code).unwrap_or_else(|| KeyCode::Unknown);
         self.keys_down.insert(code);
     }
 
@@ -137,6 +140,10 @@ impl InputBackend for WebInputBackend {
             KeyCode::F11 => self.keys_down.contains("F11"),
             KeyCode::F12 => self.keys_down.contains("F12"),
         }
+    }
+
+    fn get_last_key_code(&self) -> KeyCode {
+        self.last_key
     }
 
     fn mouse_visible(&self) -> bool {
