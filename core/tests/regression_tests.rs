@@ -162,6 +162,7 @@ swf_tests! {
     (mcl_as_broadcaster, "avm1/mcl_as_broadcaster", 1),
     (loadmovie, "avm1/loadmovie", 2),
     (loadmovienum, "avm1/loadmovienum", 2),
+    (loadmovie_method, "avm1/loadmovie_method", 2),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
