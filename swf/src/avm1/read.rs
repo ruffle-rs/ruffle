@@ -105,6 +105,7 @@ impl<'a> Reader<'a> {
     /// The `length` passed in should be the length excluding any sub-blocks.
     /// The final `length` returned will be total length of the action, including sub-blocks.
     #[inline]
+    #[allow(clippy::inconsistent_digit_grouping)]
     fn read_op(&mut self, opcode: u8, length: &mut usize) -> Result<Option<Action<'a>>> {
         use num_traits::FromPrimitive;
         let action = if let Some(op) = OpCode::from_u8(opcode) {
@@ -158,9 +159,9 @@ impl<'a> Reader<'a> {
                 OpCode::GetUrl2 => {
                     let flags = self.read_u8()?;
                     Action::GetUrl2 {
-                        is_target_sprite: flags & 0b10 != 0,
-                        is_load_vars: flags & 0b1 != 0,
-                        send_vars_method: match flags >> 6 {
+                        is_load_vars: flags & 0b10_0000_00 != 0,
+                        is_target_sprite: flags & 0b01_0000_00 != 0,
+                        send_vars_method: match flags & 0b11 {
                             0 => SendVarsMethod::None,
                             1 => SendVarsMethod::Get,
                             2 => SendVarsMethod::Post,

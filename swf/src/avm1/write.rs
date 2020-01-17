@@ -22,6 +22,7 @@ impl<W: Write> Writer<W> {
         Writer { inner, version }
     }
 
+    #[allow(clippy::inconsistent_digit_grouping)]
     pub fn write_action(&mut self, action: &Action) -> Result<()> {
         match *action {
             Action::Add => self.write_action_header(OpCode::Add, 0)?,
@@ -144,9 +145,8 @@ impl<W: Write> Writer<W> {
                     SendVarsMethod::None => 0,
                     SendVarsMethod::Get => 1,
                     SendVarsMethod::Post => 2,
-                } << 6)
-                    | if is_target_sprite { 0b10 } else { 0 }
-                    | if is_load_vars { 0b1 } else { 0 };
+                }) | if is_target_sprite { 0b01_0000_00 } else { 0 }
+                    | if is_load_vars { 0b10_0000_00 } else { 0 };
                 self.write_u8(flags)?;
             }
             Action::GetVariable => self.write_action_header(OpCode::GetVariable, 0)?,
