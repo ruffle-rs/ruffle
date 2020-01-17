@@ -166,6 +166,7 @@ swf_tests! {
     #[ignore] (unloadmovie, "avm1/unloadmovie", 3),
     #[ignore] (unloadmovienum, "avm1/unloadmovienum", 3),
     #[ignore] (unloadmovie_method, "avm1/unloadmovie_method", 3),
+    #[ignore] (mcl_loadclip, "avm1/mcl_loadclip", 3),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

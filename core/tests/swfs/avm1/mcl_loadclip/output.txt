@@ -1,0 +1,8 @@
+Parent frame 1
+Parent frame 2
+Event: onLoadStart
+Event: onLoadProgress
+Event: onLoadComplete
+Child movie loaded!
+Parent frame 3
+Event: onLoadInit
