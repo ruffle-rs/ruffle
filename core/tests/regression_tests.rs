@@ -4,12 +4,13 @@
 
 use approx::assert_abs_diff_eq;
 use log::{Metadata, Record};
+use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
 use ruffle_core::backend::{
-    audio::NullAudioBackend, input::NullInputBackend, navigator::NullNavigatorBackend,
-    render::NullRenderer,
+    audio::NullAudioBackend, input::NullInputBackend, render::NullRenderer,
 };
 use ruffle_core::Player;
 use std::cell::RefCell;
+use std::path::Path;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -159,6 +160,7 @@ swf_tests! {
     (define_function2_preload, "avm1/define_function2_preload", 1),
     (define_function2_preload_order, "avm1/define_function2_preload_order", 1),
     (mcl_as_broadcaster, "avm1/mcl_as_broadcaster", 1),
+    (loadmovie, "avm1/loadmovie", 2),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
@@ -271,18 +273,23 @@ fn test_swf_approx(
 fn run_swf(swf_path: &str, num_frames: u32) -> Result<String, Error> {
     let _ = log::set_logger(&TRACE_LOGGER).map(|()| log::set_max_level(log::LevelFilter::Info));
 
+    let base_path = Path::new(swf_path).parent().unwrap();
     let swf_data = std::fs::read(swf_path)?;
+    let (mut executor, channel) = NullExecutor::new();
     let player = Player::new(
         Box::new(NullRenderer),
         Box::new(NullAudioBackend::new()),
-        Box::new(NullNavigatorBackend::new()),
+        Box::new(NullNavigatorBackend::with_base_path(base_path, channel)),
         Box::new(NullInputBackend::new()),
         swf_data,
     )?;
 
     for _ in 0..num_frames {
         player.lock().unwrap().run_frame();
+        executor.poll_all().unwrap();
     }
+
+    executor.block_all().unwrap();
 
     Ok(trace_log())
 }
