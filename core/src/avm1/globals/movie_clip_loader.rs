@@ -5,6 +5,8 @@ use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::script_object::ScriptObject;
 use crate::avm1::{Avm1, Error, Object, UpdateContext, Value};
+use crate::backend::navigator::RequestOptions;
+use crate::display_object::{DisplayObject, TDisplayObject};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
@@ -129,6 +131,41 @@ pub fn broadcast_message<'gc>(
     Ok(Value::Undefined.into())
 }
 
+pub fn load_clip<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let url = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_string(avm, context)?;
+    let target = args.get(1).cloned().unwrap_or(Value::Undefined);
+
+    if let Value::Object(target) = target {
+        if let Some(movieclip) = target
+            .as_display_object()
+            .and_then(|dobj| dobj.as_movie_clip())
+        {
+            let fetch = context.navigator.fetch(url, RequestOptions::get());
+            let process = context.load_manager.load_movie_into_clip(
+                context.player.clone().unwrap(),
+                DisplayObject::MovieClip(movieclip),
+                fetch,
+                Some(this),
+            );
+
+            context.navigator.spawn_future(process);
+        }
+
+        Ok(true.into())
+    } else {
+        Ok(false.into())
+    }
+}
+
 pub fn create_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Object<'gc>,
@@ -153,6 +190,13 @@ pub fn create_proto<'gc>(
     mcl_proto.as_script_object().unwrap().force_set_function(
         "broadcastMessage",
         broadcast_message,
+        gc_context,
+        EnumSet::empty(),
+        Some(fn_proto),
+    );
+    mcl_proto.as_script_object().unwrap().force_set_function(
+        "loadClip",
+        load_clip,
         gc_context,
         EnumSet::empty(),
         Some(fn_proto),
