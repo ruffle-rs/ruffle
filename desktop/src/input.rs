@@ -8,6 +8,7 @@ pub struct WinitInputBackend {
     keys_down: HashSet<VirtualKeyCode>,
     display: Display,
     cursor_visible: bool,
+    last_key: KeyCode,
 }
 
 impl WinitInputBackend {
@@ -15,6 +16,7 @@ impl WinitInputBackend {
         Self {
             keys_down: HashSet::new(),
             cursor_visible: true,
+            last_key: KeyCode::Unknown,
             display,
         }
     }
@@ -27,7 +29,10 @@ impl WinitInputBackend {
                     if let Some(key) = input.virtual_keycode {
                         self.keys_down.insert(key);
                         if let Some(key_code) = winit_to_ruffle_key_code(key) {
+                            self.last_key = key_code;
                             return Some(PlayerEvent::KeyDown { key_code });
+                        } else {
+                            self.last_key = KeyCode::Unknown;
                         }
                     }
                 }
@@ -154,6 +159,10 @@ impl InputBackend for WinitInputBackend {
             KeyCode::F11 => self.keys_down.contains(&VirtualKeyCode::F11),
             KeyCode::F12 => self.keys_down.contains(&VirtualKeyCode::F12),
         }
+    }
+
+    fn get_last_key_code(&self) -> KeyCode {
+        self.last_key
     }
 
     fn mouse_visible(&self) -> bool {

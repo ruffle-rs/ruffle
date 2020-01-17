@@ -23,6 +23,16 @@ pub fn is_down<'gc>(
     }
 }
 
+pub fn get_code<'gc>(
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let code: u8 = context.input.get_last_key_code().into();
+    Ok(code.into())
+}
+
 pub fn create_key_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Option<Object<'gc>>,
@@ -148,6 +158,14 @@ pub fn create_key_object<'gc>(
     key.force_set_function(
         "isDown",
         is_down,
+        gc_context,
+        Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
+        fn_proto,
+    );
+
+    key.force_set_function(
+        "getCode",
+        get_code,
         gc_context,
         Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
         fn_proto,
