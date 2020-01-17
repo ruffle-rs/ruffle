@@ -43,10 +43,13 @@ fn main() {
 }
 
 fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
-    let swf_data = std::fs::read(input_path)?;
+    let swf_data = std::fs::read(&input_path)?;
 
     let event_loop = EventLoop::new();
-    let window_builder = WindowBuilder::new().with_title("Ruffle");
+    let window_builder = WindowBuilder::new().with_title(format!(
+        "Ruffle - {}",
+        input_path.file_name().unwrap_or_default().to_string_lossy()
+    ));
     let windowed_context = ContextBuilder::new()
         .with_vsync(true)
         .with_multisampling(4)
