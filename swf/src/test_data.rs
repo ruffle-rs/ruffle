@@ -2612,7 +2612,16 @@ pub fn avm1_tests() -> Vec<Avm1TestData> {
                 is_target_sprite: true,
                 is_load_vars: false,
             },
-            vec![0x9A, 1, 0, 0b10_0000_10],
+            vec![0x9A, 1, 0, 0b01_0000_10],
+        ),
+        (
+            4,
+            Action::GetUrl2 {
+                send_vars_method: SendVarsMethod::None,
+                is_target_sprite: true,
+                is_load_vars: false,
+            },
+            vec![0x9A, 1, 0, 0b01_0000_00],
         ),
         (4, Action::GetVariable, vec![0x1C]),
         (3, Action::GotoFrame(11), vec![0x81, 2, 0, 11, 0]),
