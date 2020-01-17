@@ -139,7 +139,7 @@ fn test_prototype_enumerate() -> Result<(), Error> {
     actual.sort();
     expected.sort();
 
-    assert_eq!(actual, expected, "actual == expected");
+    assert_eq!(actual, expected, "ruffle output != flash player output");
     Ok(())
 }
 
@@ -152,7 +152,7 @@ fn test_stage_object_enumerate() -> Result<(), Error> {
     actual.sort();
     expected.sort();
 
-    assert_eq!(actual, expected, "actual == expected");
+    assert_eq!(actual, expected, "ruffle output != flash player output");
     Ok(())
 }
 
@@ -179,13 +179,44 @@ fn test_stage_object_properties() -> Result<(), Error> {
     Ok(())
 }
 
+/// Wrapper around string slice that makes debug output `{:?}` to print string same way as `{}`.
+/// Used in different `assert*!` macros in combination with `pretty_assertions` crate to make
+/// test failures to show nice diffs.
+/// Courtesy of https://github.com/colin-kiegel/rust-pretty-assertions/issues/24
+#[derive(PartialEq, Eq)]
+#[doc(hidden)]
+pub struct PrettyString<'a>(pub &'a str);
+
+/// Make diff to display string as multi-line string
+impl<'a> std::fmt::Debug for PrettyString<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str(self.0)
+    }
+}
+
+macro_rules! assert_eq {
+    ($left:expr, $right:expr) => {
+        pretty_assertions::assert_eq!(PrettyString($left.as_ref()), PrettyString($right.as_ref()));
+    };
+    ($left:expr, $right:expr, $message:expr) => {
+        pretty_assertions::assert_eq!(
+            PrettyString($left.as_ref()),
+            PrettyString($right.as_ref()),
+            $message
+        );
+    };
+}
+
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
 /// Tests that the trace output matches the given expected output.
 fn test_swf(swf_path: &str, num_frames: u32, expected_output_path: &str) -> Result<(), Error> {
     let expected_output = std::fs::read_to_string(expected_output_path)?.replace("\r\n", "\n");
 
     let trace_log = run_swf(swf_path, num_frames)?;
-    assert_eq!(trace_log, expected_output, "actual == expected");
+    assert_eq!(
+        trace_log, expected_output,
+        "ruffle output != flash player output"
+    );
 
     Ok(())
 }
