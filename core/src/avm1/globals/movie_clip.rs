@@ -228,29 +228,8 @@ pub fn create_proto<'gc>(
             Ok(Value::Undefined.into())
         },
         "unloadMovie" => |mut target: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args: &[Value<'gc>]| {
-            //TODO: How do we reclaim resources from unloaded movies?
-            if let Some(parent) = target.parent() {
-                parent
-                    .as_movie_clip()
-                    .unwrap()
-                    .remove_child_from_avm(context, DisplayObject::MovieClip(target));
-            } else {
-                //Removing a layer is a little different.
-                let mut layer_depth = None;
-
-                for (depth, layer) in context.layers.iter() {
-                    if DisplayObject::ptr_eq(*layer, DisplayObject::MovieClip(target)) {
-                        layer_depth = Some(*depth);
-                        break;
-                    }
-                }
-
-                if let Some(depth) = layer_depth {
-                    context.layers.remove(&depth);
-                }
-
-                target.unload(context);
-            }
+            target.unload(context);
+            target.replace_with_movie(context.gc_context, None);
 
             Ok(Value::Undefined.into())
         }

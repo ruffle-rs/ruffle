@@ -211,6 +211,12 @@ impl<'gc> Loader<'gc> {
                         _ => unreachable!(),
                     };
 
+                    clip.as_movie_clip().unwrap().unload(uc);
+
+                    clip.as_movie_clip()
+                        .unwrap()
+                        .replace_with_movie(uc.gc_context, None);
+
                     if let Some(broadcaster) = broadcaster {
                         avm.insert_stack_frame_for_method(
                             clip,
@@ -264,7 +270,7 @@ impl<'gc> Loader<'gc> {
                             .as_movie_clip()
                             .expect("Attempted to load movie into not movie clip");
 
-                        mc.replace_with_movie(uc.gc_context, movie.clone());
+                        mc.replace_with_movie(uc.gc_context, Some(movie.clone()));
                         mc.post_instantiation(uc.gc_context, clip, avm.prototypes().movie_clip);
 
                         let mut morph_shapes = fnv::FnvHashMap::default();

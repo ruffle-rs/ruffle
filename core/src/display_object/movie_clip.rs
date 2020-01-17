@@ -111,7 +111,7 @@ impl<'gc> MovieClip<'gc> {
     pub fn replace_with_movie(
         &mut self,
         gc_context: MutationContext<'gc, '_>,
-        movie: Arc<SwfMovie>,
+        movie: Option<Arc<SwfMovie>>,
     ) {
         self.0
             .write(gc_context)
@@ -424,13 +424,17 @@ impl<'gc> MovieClipData<'gc> {
     /// Replace the current MovieClipData with a completely new SwfMovie.
     ///
     /// Playback will start at position zero, any existing streamed audio will
-    /// be terminated, and so on. Children and AVM data will be kept across the
-    /// load boundary.
+    /// be terminated, and so on. Children and AVM data will NOT be kept across
+    /// the load boundary.
+    ///
+    /// If no movie is provided, then the movie clip will be replaced with an
+    /// empty movie of the same SWF version.
     pub fn replace_with_movie(
         &mut self,
         gc_context: MutationContext<'gc, '_>,
-        movie: Arc<SwfMovie>,
+        movie: Option<Arc<SwfMovie>>,
     ) {
+        let movie = movie.unwrap_or_else(|| Arc::new(SwfMovie::empty(self.movie().version())));
         let total_frames = movie.header().num_frames;
 
         self.base = Default::default();
