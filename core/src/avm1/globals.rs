@@ -296,16 +296,6 @@ pub fn create_globals<'gc>(
     );
     globals.define_value(
         gc_context,
-        "Key",
-        Value::Object(key::create_key_object(
-            gc_context,
-            Some(object_proto),
-            Some(function_proto),
-        )),
-        EnumSet::empty(),
-    );
-    globals.define_value(
-        gc_context,
         "Stage",
         Value::Object(stage::create_stage_object(
             gc_context,
