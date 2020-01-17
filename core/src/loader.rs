@@ -88,13 +88,14 @@ impl<'gc> LoadManager<'gc> {
     pub fn movie_clip_on_load(
         &mut self,
         loaded_clip: DisplayObject<'gc>,
+        clip_object: Option<Object<'gc>>,
         root: DisplayObject<'gc>,
         queue: &mut ActionQueue<'gc>,
     ) {
         let mut invalidated_loaders = vec![];
 
         for (index, loader) in self.0.iter_mut() {
-            if loader.movie_clip_loaded(loaded_clip, root, queue) {
+            if loader.movie_clip_loaded(loaded_clip, clip_object, root, queue) {
                 invalidated_loaders.push(index);
             }
         }
@@ -223,8 +224,8 @@ impl<'gc> Loader<'gc> {
                             broadcaster,
                             NEWEST_PLAYER_VERSION,
                             uc,
-                            "onLoadStart",
-                            &[Value::Object(broadcaster)],
+                            "broadcastMessage",
+                            &["onLoadStart".into(), Value::Object(broadcaster)],
                         );
                         avm.run_stack_till_empty(uc)?;
                     }
@@ -256,8 +257,9 @@ impl<'gc> Loader<'gc> {
                                 broadcaster,
                                 NEWEST_PLAYER_VERSION,
                                 uc,
-                                "onLoadProgress",
+                                "broadcastMessage",
                                 &[
+                                    "onLoadProgress".into(),
                                     Value::Object(broadcaster),
                                     data.len().into(),
                                     data.len().into(),
@@ -293,8 +295,8 @@ impl<'gc> Loader<'gc> {
                                 broadcaster,
                                 NEWEST_PLAYER_VERSION,
                                 uc,
-                                "onLoadComplete",
-                                &[Value::Object(broadcaster)],
+                                "broadcastMessage",
+                                &["onLoadComplete".into(), Value::Object(broadcaster)],
                             );
                             avm.run_stack_till_empty(uc)?;
                         }
@@ -322,8 +324,12 @@ impl<'gc> Loader<'gc> {
                                 broadcaster,
                                 NEWEST_PLAYER_VERSION,
                                 uc,
-                                "onLoadError",
-                                &[Value::Object(broadcaster), "LoadNeverCompleted".into()],
+                                "broadcastMessage",
+                                &[
+                                    "onLoadError".into(),
+                                    Value::Object(broadcaster),
+                                    "LoadNeverCompleted".into(),
+                                ],
                             );
                             avm.run_stack_till_empty(uc)?;
                         }
@@ -377,6 +383,7 @@ impl<'gc> Loader<'gc> {
     pub fn movie_clip_loaded(
         &mut self,
         loaded_clip: DisplayObject<'gc>,
+        clip_object: Option<Object<'gc>>,
         root: DisplayObject<'gc>,
         queue: &mut ActionQueue<'gc>,
     ) -> bool {
@@ -397,7 +404,10 @@ impl<'gc> Loader<'gc> {
                     ActionType::Method {
                         object: broadcaster,
                         name: "broadcastMessage",
-                        args: vec!["onLoadInit".into(), loaded_clip.object()],
+                        args: vec![
+                            "onLoadInit".into(),
+                            clip_object.map(|co| co.into()).unwrap_or(Value::Undefined),
+                        ],
                     },
                     false,
                 );

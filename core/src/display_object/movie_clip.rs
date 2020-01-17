@@ -968,6 +968,7 @@ impl<'gc> MovieClipData<'gc> {
             if let ClipEvent::Load = event {
                 context.load_manager.movie_clip_on_load(
                     self_display_object,
+                    self.object,
                     context.root,
                     context.action_queue,
                 );
