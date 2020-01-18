@@ -241,12 +241,7 @@ pub fn create_globals<'gc>(
         Some(function_proto),
         Some(xml_proto),
     );
-    let string = ScriptObject::function(
-        gc_context,
-        Executable::Native(string::string_constructor),
-        Some(function_proto),
-        Some(string_proto),
-    );
+    let string = string::create_string_object(gc_context, Some(string_proto), Some(function_proto));
 
     let listeners = SystemListeners::new(gc_context, Some(array_proto));
 
