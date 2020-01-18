@@ -1,0 +1,278 @@
+// get('_root')
+_level0
+// tellTarget('_root') { trace(_name); }
+
+
+// get('clip1')
+clip1 var
+// tellTarget('clip1') { trace(_name); }
+clip1
+
+// get('clip1.clip2')
+clip2 var
+// tellTarget('clip1.clip2') { trace(_name); }
+clip2
+
+// get('clip1.clip2.clip3')
+_level0.clip1.clip2.clip3
+// tellTarget('clip1.clip2.clip3') { trace(_name); }
+clip3
+
+// get('clip1:clip2.clip3')
+_level0.clip1.clip2.clip3
+// tellTarget('clip1:clip2.clip3') { trace(_name); }
+clip3
+
+// get('clip1:clip2:clip3')
+_level0.clip1.clip2.clip3
+// tellTarget('clip1:clip2:clip3') { trace(_name); }
+clip3
+
+// get('clip1/clip2:clip3')
+_level0.clip1.clip2.clip3
+// tellTarget('clip1/clip2:clip3') { trace(_name); }
+clip3
+
+// get('/clip1/clip2:clip3')
+_level0.clip1.clip2.clip3
+// tellTarget('/clip1/clip2:clip3') { trace(_name); }
+clip3
+
+// get('clip1/clip2.clip3')
+_level0.clip1.clip2.clip3
+// tellTarget('clip1/clip2.clip3') { trace(_name); }
+undefined
+
+// get('clip1.clip2.clip3')
+_level0.clip1.clip2.clip3
+// tellTarget('clip1.clip2.clip3') { trace(_name); }
+clip3
+
+// get('clip1.clip2:clip3')
+_level0.clip1.clip2.clip3
+// tellTarget('clip1.clip2:clip3') { trace(_name); }
+clip3
+
+// get('clip1:clip2.clip3')
+_level0.clip1.clip2.clip3
+// tellTarget('clip1:clip2.clip3') { trace(_name); }
+clip3
+
+// get('clip1:clip2/.clip3')
+_level0.clip1.clip2.clip3
+// tellTarget('clip1:clip2/.clip3') { trace(_name); }
+undefined
+
+// get('clip1:clip2/:clip3')
+_level0.clip1.clip2.clip3
+// tellTarget('clip1:clip2/:clip3') { trace(_name); }
+clip3
+
+// get('clip1.clip2/.clip3')
+_level0.clip1.clip2.clip3
+// tellTarget('clip1.clip2/.clip3') { trace(_name); }
+undefined
+
+// get('clip1/clip2.clip3')
+_level0.clip1.clip2.clip3
+// tellTarget('clip1/clip2.clip3') { trace(_name); }
+undefined
+
+// get('clip1.clip2.clip3.clip4')
+clip4 var
+// tellTarget('clip1.clip2.clip3.clip4') { trace(_name); }
+clip4
+
+// get('clip1:clip2.clip3.clip4')
+clip4 var
+// tellTarget('clip1:clip2.clip3.clip4') { trace(_name); }
+clip4
+
+// get('clip1.clip2.clip3:clip4')
+clip4 var
+// tellTarget('clip1.clip2.clip3:clip4') { trace(_name); }
+clip4
+
+// get('clip1:clip2:clip3:clip4')
+clip4 var
+// tellTarget('clip1:clip2:clip3:clip4') { trace(_name); }
+clip4
+
+// get('/clip1.clip2.clip3.clip4')
+undefined
+// tellTarget('/clip1.clip2.clip3.clip4') { trace(_name); }
+undefined
+
+// get('clip1/clip2.clip3:clip4')
+undefined
+// tellTarget('clip1/clip2.clip3:clip4') { trace(_name); }
+undefined
+
+// get('clip1/clip2:clip3.clip4')
+clip4 var
+// tellTarget('clip1/clip2:clip3.clip4') { trace(_name); }
+undefined
+
+// get('clip1/clip2:clip3:clip4')
+clip4 var
+// tellTarget('clip1/clip2:clip3:clip4') { trace(_name); }
+clip4
+
+// get('clip1.clip2.clip3/:clip4')
+clip4 var
+// tellTarget('clip1.clip2.clip3/:clip4') { trace(_name); }
+clip4
+
+// get('clip1.clip2.clip3/:clip4/')
+undefined
+// tellTarget('clip1.clip2.clip3/:clip4/') { trace(_name); }
+clip4
+
+// get('clip1.clip2.clip3/.clip4')
+clip4 var
+// tellTarget('clip1.clip2.clip3/.clip4') { trace(_name); }
+undefined
+
+// get('clip1.clip2.clip3/clip4')
+undefined
+// tellTarget('clip1.clip2.clip3/clip4') { trace(_name); }
+clip4
+
+// get('clip1.clip2.clip3/clip4/')
+undefined
+// tellTarget('clip1.clip2.clip3/clip4/') { trace(_name); }
+clip4
+
+// get('clip1.clip2.clip3/clip4:')
+undefined
+// tellTarget('clip1.clip2.clip3/clip4:') { trace(_name); }
+clip4
+
+// get('clip1.clip2.clip3/clip4.')
+undefined
+// tellTarget('clip1.clip2.clip3/clip4.') { trace(_name); }
+undefined
+
+// get('clip1.clip2.clip3/clip4..')
+undefined
+// tellTarget('clip1.clip2.clip3/clip4..') { trace(_name); }
+undefined
+
+// get('clip1.clip2.clip3/clip4::')
+undefined
+// tellTarget('clip1.clip2.clip3/clip4::') { trace(_name); }
+undefined
+
+// get('clip1/clip2/clip3/..')
+undefined
+// tellTarget('clip1/clip2/clip3/..') { trace(_name); }
+clip2
+
+// get('clip1/clip2/../clip2/clip3')
+undefined
+// tellTarget('clip1/clip2/../clip2/clip3') { trace(_name); }
+clip3
+
+// get('_root/clip1/clip2/_parent')
+_level0.clip1
+// tellTarget('_root/clip1/clip2/_parent') { trace(_name); }
+clip1
+
+// get('_root/clip1/clip2:_parent')
+_level0.clip1
+// tellTarget('_root/clip1/clip2:_parent') { trace(_name); }
+clip1
+
+// get('_root/clip1/clip2:..')
+undefined
+// tellTarget('_root/clip1/clip2:..') { trace(_name); }
+clip1
+
+// get('_root/clip1:clip2:..')
+undefined
+// tellTarget('_root/clip1:clip2:..') { trace(_name); }
+clip1
+
+// get('_root:clip1:clip2:_parent:../clip1/clip2')
+undefined
+// tellTarget('_root:clip1:clip2:_parent:../clip1/clip2') { trace(_name); }
+clip2
+
+// get('_root:clip1.clip2:_parent:../clip1.clip2')
+clip2 var
+// tellTarget('_root:clip1.clip2:_parent:../clip1.clip2') { trace(_name); }
+undefined
+
+// get('_root/clip1:clip2:...')
+undefined
+// tellTarget('_root/clip1:clip2:...') { trace(_name); }
+undefined
+
+// get('::::clip1.:::clip2/:::clip3:clip4')
+clip4 var
+// tellTarget('::::clip1.:::clip2/:::clip3:clip4') { trace(_name); }
+clip4
+
+// get('::::clip1.:::clip2/:::clip3::clip4')
+clip4 var
+// tellTarget('::::clip1.:::clip2/:::clip3::clip4') { trace(_name); }
+clip4
+
+// get('::::clip1.:::clip2/:::clip3:::clip4')
+undefined
+// tellTarget('::::clip1.:::clip2/:::clip3:::clip4') { trace(_name); }
+clip4
+
+// get('_root:clip1:clip2/...clip2')
+clip2 var
+// tellTarget('_root:clip1:clip2/...clip2') { trace(_name); }
+undefined
+
+// get('_root:clip1:clip2:...clip2')
+clip2 var
+// tellTarget('_root:clip1:clip2:...clip2') { trace(_name); }
+undefined
+
+// get('_root:clip1:clip2...clip2')
+undefined
+// tellTarget('_root:clip1:clip2...clip2') { trace(_name); }
+undefined
+
+// get(_root.clip1)
+undefined
+// tellTarget(undefined) { trace(_name); }
+undefined
+
+// get(o)
+toString
+clip1 var
+// tellTarget(undefined) { trace(_name); }
+toString
+clip1
+
+// get(null)
+undefined
+// tellTarget(undefined) { trace(_name); }
+undefined
+
+// set('clip5/foo', 1)
+1
+
+// set('clip5/:foo', 2)
+2
+
+// set('clip5::foo', 3)
+3
+
+// set('clip5/_parent.foo', 4)
+4
+
+// set('clip5._root.clip5.foo', 5)
+5
+
+// set('clip5/_root._root.foo', 6)
+6
+
+// set('clip5/...foo', 7)
+7
+
