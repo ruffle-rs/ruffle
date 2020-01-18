@@ -5,6 +5,7 @@ use crate::context::{ActionQueue, ActionType};
 use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
 use crate::player::{Player, NEWEST_PLAYER_VERSION};
 use crate::tag_utils::SwfMovie;
+use crate::xml::XMLNode;
 use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
 use std::future::Future;
@@ -125,6 +126,29 @@ impl<'gc> LoadManager<'gc> {
 
         loader.form_loader(player, fetch)
     }
+
+    /// Kick off an XML data load into an XML node.
+    ///
+    /// Returns the loader's async process, which you will need to spawn.
+    pub fn load_xml_into_node(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        target_node: XMLNode<'gc>,
+        active_clip: DisplayObject<'gc>,
+        fetch: Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>>,
+    ) -> Pin<Box<dyn Future<Output = Result<(), Error>> + 'static>> {
+        let loader = Loader::XML {
+            self_handle: None,
+            active_clip,
+            target_node,
+        };
+        let handle = self.add_loader(loader);
+
+        let loader = self.get_loader_mut(handle).unwrap();
+        loader.introduce_loader_handle(handle);
+
+        loader.xml_loader(player, fetch)
+    }
 }
 
 impl<'gc> Default for LoadManager<'gc> {
@@ -156,13 +180,38 @@ pub enum Loader<'gc> {
         /// The target AVM1 object to load form data into.
         target_object: Object<'gc>,
     },
+
+    /// Loader that is loading XML data into an XML tree.
+    XML {
+        /// The handle to refer to this loader instance.
+        self_handle: Option<Handle>,
+
+        /// The active movie clip at the time of load invocation.
+        ///
+        /// This property is a technicality: Under normal circumstances, it's
+        /// not supposed to be a load factor, and only exists so that the
+        /// runtime can do *something* in really contrived scenarios where we
+        /// actually need an active clip.
+        active_clip: DisplayObject<'gc>,
+
+        /// The target node whose contents will be replaced with the parsed XML.
+        target_node: XMLNode<'gc>,
+    },
 }
 
 unsafe impl<'gc> Collect for Loader<'gc> {
     fn trace(&self, cc: CollectionContext) {
         match self {
-            Loader::Movie { target_clip, .. } => target_clip.trace(cc),
+            Loader::Movie {
+                target_clip,
+                target_broadcaster,
+                ..
+            } => {
+                target_clip.trace(cc);
+                target_broadcaster.trace(cc);
+            }
             Loader::Form { target_object, .. } => target_object.trace(cc),
+            Loader::XML { target_node, .. } => target_node.trace(cc),
         }
     }
 }
@@ -176,6 +225,7 @@ impl<'gc> Loader<'gc> {
         match self {
             Loader::Movie { self_handle, .. } => *self_handle = Some(handle),
             Loader::Form { self_handle, .. } => *self_handle = Some(handle),
+            Loader::XML { self_handle, .. } => *self_handle = Some(handle),
         }
     }
 
@@ -417,5 +467,103 @@ impl<'gc> Loader<'gc> {
         } else {
             false
         }
+    }
+
+    pub fn xml_loader(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        fetch: Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>>,
+    ) -> Pin<Box<dyn Future<Output = Result<(), Error>> + 'static>> {
+        let handle = match self {
+            Loader::XML { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
+            _ => return Box::pin(async { Err("Non-XML loader spawned as XML loader".into()) }),
+        };
+
+        let player = player
+            .upgrade()
+            .expect("Could not upgrade weak reference to player");
+
+        Box::pin(async move {
+            let data = fetch.await;
+            if let Ok(data) = data {
+                let xmlstring = String::from_utf8(data)?;
+
+                player.lock().expect("Could not lock player!!").update(
+                    |avm, uc| -> Result<(), Error> {
+                        let (mut node, active_clip) = match uc.load_manager.get_loader(handle) {
+                            Some(Loader::XML {
+                                target_node,
+                                active_clip,
+                                ..
+                            }) => (*target_node, *active_clip),
+                            _ => unreachable!(),
+                        };
+
+                        let object =
+                            node.script_object(uc.gc_context, Some(avm.prototypes().xml_node));
+                        avm.insert_stack_frame_for_method(
+                            active_clip,
+                            object,
+                            NEWEST_PLAYER_VERSION,
+                            uc,
+                            "onHTTPStatus",
+                            &[200.into()],
+                        );
+                        avm.run_stack_till_empty(uc)?;
+
+                        avm.insert_stack_frame_for_method(
+                            active_clip,
+                            object,
+                            NEWEST_PLAYER_VERSION,
+                            uc,
+                            "onData",
+                            &[xmlstring.into()],
+                        );
+                        avm.run_stack_till_empty(uc)?;
+
+                        Ok(())
+                    },
+                )?;
+            } else {
+                player.lock().expect("Could not lock player!!").update(
+                    |avm, uc| -> Result<(), Error> {
+                        let (mut node, active_clip) = match uc.load_manager.get_loader(handle) {
+                            Some(Loader::XML {
+                                target_node,
+                                active_clip,
+                                ..
+                            }) => (*target_node, *active_clip),
+                            _ => unreachable!(),
+                        };
+
+                        let object =
+                            node.script_object(uc.gc_context, Some(avm.prototypes().xml_node));
+                        avm.insert_stack_frame_for_method(
+                            active_clip,
+                            object,
+                            NEWEST_PLAYER_VERSION,
+                            uc,
+                            "onHTTPStatus",
+                            &[404.into()],
+                        );
+                        avm.run_stack_till_empty(uc)?;
+
+                        avm.insert_stack_frame_for_method(
+                            active_clip,
+                            object,
+                            NEWEST_PLAYER_VERSION,
+                            uc,
+                            "onData",
+                            &[],
+                        );
+                        avm.run_stack_till_empty(uc)?;
+
+                        Ok(())
+                    },
+                )?;
+            }
+
+            Ok(())
+        })
     }
 }
