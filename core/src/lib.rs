@@ -18,6 +18,7 @@ pub mod matrix;
 mod player;
 mod prelude;
 pub mod shape_utils;
+pub mod string_utils;
 pub mod tag_utils;
 mod transform;
 mod xml;
