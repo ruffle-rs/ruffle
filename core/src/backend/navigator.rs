@@ -283,11 +283,7 @@ impl NavigatorBackend for NullNavigatorBackend {
     ) {
     }
 
-    fn fetch(
-        &self,
-        url: String,
-        _opts: RequestOptions,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>> {
+    fn fetch(&self, url: String, _opts: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
         let mut path = self.relative_base_path.clone();
         path.push(url);
 

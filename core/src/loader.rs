@@ -1,6 +1,7 @@
 //! Management of async loaders
 
 use crate::avm1::{Object, TObject, Value};
+use crate::backend::navigator::OwnedFuture;
 use crate::context::{ActionQueue, ActionType};
 use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
 use crate::player::{Player, NEWEST_PLAYER_VERSION};
@@ -8,8 +9,6 @@ use crate::tag_utils::SwfMovie;
 use crate::xml::XMLNode;
 use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
-use std::future::Future;
-use std::pin::Pin;
 use std::sync::{Arc, Mutex, Weak};
 use url::form_urlencoded;
 
@@ -67,9 +66,9 @@ impl<'gc> LoadManager<'gc> {
         &mut self,
         player: Weak<Mutex<Player>>,
         target_clip: DisplayObject<'gc>,
-        fetch: Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>>,
+        fetch: OwnedFuture<Vec<u8>, Error>,
         target_broadcaster: Option<Object<'gc>>,
-    ) -> Pin<Box<dyn Future<Output = Result<(), Error>> + 'static>> {
+    ) -> OwnedFuture<(), Error> {
         let loader = Loader::Movie {
             self_handle: None,
             target_clip,
@@ -113,8 +112,8 @@ impl<'gc> LoadManager<'gc> {
         &mut self,
         player: Weak<Mutex<Player>>,
         target_object: Object<'gc>,
-        fetch: Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>>,
-    ) -> Pin<Box<dyn Future<Output = Result<(), Error>> + 'static>> {
+        fetch: OwnedFuture<Vec<u8>, Error>,
+    ) -> OwnedFuture<(), Error> {
         let loader = Loader::Form {
             self_handle: None,
             target_object,
@@ -135,8 +134,8 @@ impl<'gc> LoadManager<'gc> {
         player: Weak<Mutex<Player>>,
         target_node: XMLNode<'gc>,
         active_clip: DisplayObject<'gc>,
-        fetch: Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>>,
-    ) -> Pin<Box<dyn Future<Output = Result<(), Error>> + 'static>> {
+        fetch: OwnedFuture<Vec<u8>, Error>,
+    ) -> OwnedFuture<(), Error> {
         let loader = Loader::XML {
             self_handle: None,
             active_clip,
@@ -239,8 +238,8 @@ impl<'gc> Loader<'gc> {
     pub fn movie_loader(
         &mut self,
         player: Weak<Mutex<Player>>,
-        fetch: Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>>,
-    ) -> Pin<Box<dyn Future<Output = Result<(), Error>> + 'static>> {
+        fetch: OwnedFuture<Vec<u8>, Error>,
+    ) -> OwnedFuture<(), Error> {
         let handle = match self {
             Loader::Movie { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
             _ => return Box::pin(async { Err("Non-movie loader spawned as movie loader".into()) }),
@@ -394,8 +393,8 @@ impl<'gc> Loader<'gc> {
     pub fn form_loader(
         &mut self,
         player: Weak<Mutex<Player>>,
-        fetch: Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>>,
-    ) -> Pin<Box<dyn Future<Output = Result<(), Error>> + 'static>> {
+        fetch: OwnedFuture<Vec<u8>, Error>,
+    ) -> OwnedFuture<(), Error> {
         let handle = match self {
             Loader::Form { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
             _ => return Box::pin(async { Err("Non-form loader spawned as form loader".into()) }),
@@ -472,8 +471,8 @@ impl<'gc> Loader<'gc> {
     pub fn xml_loader(
         &mut self,
         player: Weak<Mutex<Player>>,
-        fetch: Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>>,
-    ) -> Pin<Box<dyn Future<Output = Result<(), Error>> + 'static>> {
+        fetch: OwnedFuture<Vec<u8>, Error>,
+    ) -> OwnedFuture<(), Error> {
         let handle = match self {
             Loader::XML { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
             _ => return Box::pin(async { Err("Non-XML loader spawned as XML loader".into()) }),

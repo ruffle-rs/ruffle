@@ -1,10 +1,10 @@
 //! Navigator backend for web
 
 use js_sys::{Array, ArrayBuffer, Uint8Array};
-use ruffle_core::backend::navigator::{Error, NavigationMethod, NavigatorBackend, RequestOptions};
+use ruffle_core::backend::navigator::{
+    Error, NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
+};
 use std::collections::HashMap;
-use std::future::Future;
-use std::pin::Pin;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{window, Blob, BlobPropertyBag, Request, RequestInit, Response};
@@ -77,11 +77,7 @@ impl NavigatorBackend for WebNavigatorBackend {
         }
     }
 
-    fn fetch(
-        &self,
-        url: String,
-        options: RequestOptions,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>>>> {
+    fn fetch(&self, url: String, options: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
         Box::pin(async move {
             let mut init = RequestInit::new();
 
@@ -135,7 +131,7 @@ impl NavigatorBackend for WebNavigatorBackend {
         })
     }
 
-    fn spawn_future(&mut self, future: Pin<Box<dyn Future<Output = Result<(), Error>> + 'static>>) {
+    fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
         spawn_local(async move {
             if let Err(e) = future.await {
                 log::error!("Asynchronous error occured: {}", e);
