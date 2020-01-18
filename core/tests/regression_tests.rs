@@ -105,6 +105,7 @@ swf_tests! {
     (set_variable_scope, "avm1/set_variable_scope", 1),
     (slash_syntax, "avm1/slash_syntax", 2),
     (strictequals_swf6, "avm1/strictequals_swf6", 1),
+    (string_methods, "avm1/string_methods", 1),
     (global_is_bare, "avm1/global_is_bare", 1),
     (as2_oop, "avm1/as2_oop", 1),
     (xml, "avm1/xml", 1),
