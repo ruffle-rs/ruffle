@@ -23,6 +23,7 @@ mod sound;
 mod stage;
 pub(crate) mod string;
 pub(crate) mod text_field;
+mod text_format;
 mod xml;
 
 #[allow(non_snake_case, unused_must_use)] //can't use errors yet
@@ -154,6 +155,8 @@ pub fn create_globals<'gc>(
 
     let text_field_proto: Object<'gc> =
         text_field::create_proto(gc_context, object_proto, function_proto);
+    let text_format_proto: Object<'gc> =
+        text_format::create_proto(gc_context, object_proto, function_proto);
 
     let array_proto: Object<'gc> = array::create_proto(gc_context, object_proto, function_proto);
 
@@ -206,6 +209,12 @@ pub fn create_globals<'gc>(
         Some(function_proto),
         Some(text_field_proto),
     );
+    let text_format = FunctionObject::function(
+        gc_context,
+        Executable::Native(text_format::constructor),
+        Some(function_proto),
+        Some(text_format_proto),
+    );
     let array = FunctionObject::function(
         gc_context,
         Executable::Native(array::constructor),
@@ -239,6 +248,12 @@ pub fn create_globals<'gc>(
     globals.define_value(gc_context, "MovieClip", movie_clip.into(), EnumSet::empty());
     globals.define_value(gc_context, "Sound", sound.into(), EnumSet::empty());
     globals.define_value(gc_context, "TextField", text_field.into(), EnumSet::empty());
+    globals.define_value(
+        gc_context,
+        "TextFormat",
+        text_format.into(),
+        EnumSet::empty(),
+    );
     globals.define_value(gc_context, "XMLNode", xmlnode.into(), EnumSet::empty());
     globals.define_value(gc_context, "XML", xml.into(), EnumSet::empty());
     globals.define_value(gc_context, "String", string.into(), EnumSet::empty());
