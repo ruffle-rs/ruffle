@@ -33,6 +33,7 @@ mod sound_object;
 mod stage_object;
 mod super_object;
 mod value;
+mod value_object;
 pub mod xml_attributes_object;
 pub mod xml_idmap_object;
 pub mod xml_object;
@@ -936,7 +937,8 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let method_name = self.pop();
-        let object = self.pop();
+        let object =
+            value_object::ValueObject::boxed(context.gc_context, self.pop(), &self.prototypes);
         let num_args = self.pop().as_i64()?; // TODO(Herschel): max arg count?
         let mut args = Vec::new();
         for _ in 0..num_args {
@@ -958,27 +960,16 @@ impl<'gc> Avm1<'gc> {
             }
             Value::String(name) => {
                 if name.is_empty() {
-                    if let Ok(object) = object.as_object() {
-                        object.call(self, context, object, &args)?.push(self);
-                    } else {
-                        log::warn!(
-                            "Attempted to call constructor of {:?} (empty method name)",
-                            object
-                        );
-                        self.push(Value::Undefined);
-                    }
-                } else if let Ok(target) = object.as_object() {
-                    let callable = target.get(&name, self, context)?.resolve(self, context)?;
+                    object.call(self, context, object, &args)?.push(self);
+                } else {
+                    let callable = object.get(&name, self, context)?.resolve(self, context)?;
 
                     if let Value::Object(_) = callable {
                     } else {
                         log::warn!("Object method {} is not callable", name);
                     }
 
-                    callable.call(self, context, target, &args)?.push(self);
-                } else {
-                    log::warn!("Attempted to call method {} of {:?}", name, object);
-                    self.push(Value::Undefined);
+                    callable.call(self, context, object, &args)?.push(self);
                 }
             }
             _ => {
@@ -1285,13 +1276,10 @@ impl<'gc> Avm1<'gc> {
     fn action_get_member(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let name_val = self.pop();
         let name = name_val.coerce_to_string(self, context)?;
-        let owner = self.pop();
-        if let Ok(object) = owner.as_object() {
-            object.get(&name, self, context)?.push(self);
-        } else {
-            log::warn!("Attempted to get member {} of value {:?}", name, owner);
-            self.push(Value::Undefined);
-        }
+        let object =
+            value_object::ValueObject::boxed(context.gc_context, self.pop(), &self.prototypes);
+
+        object.get(&name, self, context)?.push(self);
 
         Ok(())
     }
