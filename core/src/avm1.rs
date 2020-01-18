@@ -1687,9 +1687,14 @@ impl<'gc> Avm1<'gc> {
             return fscommand::handle(fscommand, self, context);
         }
 
+        let window_target = target.clone().into_string(self.current_swf_version());
         let clip_target: Option<DisplayObject<'gc>> = if is_target_sprite {
-            let start = self.target_clip_or_root(context);
-            self.resolve_target_display_object(context, start, target.clone())?
+            if let Value::Object(target) = target {
+                target.as_display_object()
+            } else {
+                let start = self.target_clip_or_root(context);
+                self.resolve_target_display_object(context, start, target.clone())?
+            }
         } else {
             Some(self.target_clip_or_root(context))
         };
@@ -1742,11 +1747,9 @@ impl<'gc> Avm1<'gc> {
                 None => None,
             };
 
-            context.navigator.navigate_to_url(
-                url,
-                Some(target.into_string(self.current_swf_version())),
-                vars,
-            );
+            context
+                .navigator
+                .navigate_to_url(url, Some(window_target), vars);
         }
 
         Ok(())

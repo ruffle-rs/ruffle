@@ -163,7 +163,7 @@ swf_tests! {
     (loadmovie, "avm1/loadmovie", 2),
     (loadmovienum, "avm1/loadmovienum", 2),
     (loadmovie_method, "avm1/loadmovie_method", 2),
-    #[ignore] (unloadmovie, "avm1/unloadmovie", 11),
+    (unloadmovie, "avm1/unloadmovie", 11),
     (unloadmovienum, "avm1/unloadmovienum", 11),
     (unloadmovie_method, "avm1/unloadmovie_method", 11),
     #[ignore] (mcl_loadclip, "avm1/mcl_loadclip", 11),
