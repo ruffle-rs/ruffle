@@ -49,6 +49,56 @@ impl<'gc> EditText<'gc> {
         ))
     }
 
+    /// Create a new, dynamic `EditText`.
+    pub fn new(
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+    ) -> Self {
+        let swf_tag = swf::EditText {
+            id: 0, //TODO: Dynamic text fields don't have a character ID?
+            bounds: swf::Rectangle {
+                x_min: Twips::from_pixels(x),
+                x_max: Twips::from_pixels(x + height),
+                y_min: Twips::from_pixels(y),
+                y_max: Twips::from_pixels(y + width),
+            },
+            font_id: None,
+            font_class_name: None,
+            height: Some(height as u16),
+            color: Some(swf::Color {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 0xFF,
+            }),
+            max_length: Some(width as u16),
+            layout: Some(swf::TextLayout {
+                align: swf::TextAlign::Left,
+                left_margin: Twips::from_pixels(0.0),
+                right_margin: Twips::from_pixels(0.0),
+                indent: Twips::from_pixels(0.0),
+                leading: Twips::from_pixels(0.0),
+            }),
+            variable_name: "".to_string(), //TODO: should be null
+            initial_text: None,
+            is_word_wrap: false,
+            is_multiline: false,
+            is_password: false,
+            is_read_only: true,
+            is_auto_size: false,
+            is_selectable: true,
+            has_border: false,
+            was_static: false,
+            is_html: false,
+            is_device_font: false,
+        };
+
+        Self::from_swf_tag(context, swf_tag)
+    }
+
     // TODO: This needs to strip away HTML
     pub fn text(self) -> String {
         self.0.read().text.to_owned()

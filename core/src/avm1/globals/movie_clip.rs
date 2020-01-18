@@ -4,7 +4,8 @@ use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
-use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
+use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObject};
+use crate::prelude::*;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 use swf::Twips;
@@ -136,6 +137,7 @@ pub fn create_proto<'gc>(
         Some(fn_proto),
         "attachMovie" => attach_movie,
         "createEmptyMovieClip" => create_empty_movie_clip,
+        "createTextField" => create_text_field,
         "duplicateMovieClip" => |movie_clip: MovieClip<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args| {
             // duplicateMovieClip method uses biased depth compared to CloneSprite
             duplicate_movie_clip(movie_clip, avm, context, args, AVM_DEPTH_BIAS)
@@ -298,6 +300,56 @@ fn create_empty_movie_clip<'gc>(
     new_clip.run_frame(context);
 
     Ok(new_clip.object().into())
+}
+
+fn create_text_field<'gc>(
+    mut movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let instance_name = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_string(avm, context)?;
+    let depth = args
+        .get(1)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .as_number(avm, context)?;
+    let x = args
+        .get(2)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .as_number(avm, context)?;
+    let y = args
+        .get(3)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .as_number(avm, context)?;
+    let width = args
+        .get(4)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .as_number(avm, context)?;
+    let height = args
+        .get(5)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .as_number(avm, context)?;
+
+    let mut text_field: DisplayObject<'gc> = EditText::new(context, x, y, width, height).into();
+    text_field.post_instantiation(context.gc_context, text_field, avm.prototypes().text_field);
+    text_field.set_name(context.gc_context, &instance_name);
+    movie_clip.add_child_from_avm(context, text_field, depth as Depth);
+
+    if avm.current_swf_version() >= 8 {
+        //SWF8+ returns the `TextField` instance here
+        Ok(text_field.object().into())
+    } else {
+        Ok(Value::Undefined.into())
+    }
 }
 
 pub fn duplicate_movie_clip<'gc>(
