@@ -167,6 +167,7 @@ swf_tests! {
     (unloadmovienum, "avm1/unloadmovienum", 11),
     (unloadmovie_method, "avm1/unloadmovie_method", 11),
     (mcl_loadclip, "avm1/mcl_loadclip", 11),
+    (mcl_unloadclip, "avm1/mcl_unloadclip", 11),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

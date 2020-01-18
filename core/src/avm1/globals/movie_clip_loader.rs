@@ -166,6 +166,29 @@ pub fn load_clip<'gc>(
     }
 }
 
+pub fn unload_clip<'gc>(
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let target = args.get(0).cloned().unwrap_or(Value::Undefined);
+
+    if let Value::Object(target) = target {
+        if let Some(mut movieclip) = target
+            .as_display_object()
+            .and_then(|dobj| dobj.as_movie_clip())
+        {
+            movieclip.unload(context);
+            movieclip.replace_with_movie(context.gc_context, None);
+
+            return Ok(true.into());
+        }
+    }
+
+    Ok(false.into())
+}
+
 pub fn create_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Object<'gc>,
@@ -197,6 +220,13 @@ pub fn create_proto<'gc>(
     mcl_proto.as_script_object().unwrap().force_set_function(
         "loadClip",
         load_clip,
+        gc_context,
+        EnumSet::empty(),
+        Some(fn_proto),
+    );
+    mcl_proto.as_script_object().unwrap().force_set_function(
+        "unloadClip",
+        unload_clip,
         gc_context,
         EnumSet::empty(),
         Some(fn_proto),
