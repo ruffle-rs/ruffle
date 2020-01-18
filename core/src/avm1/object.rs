@@ -4,6 +4,7 @@ use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::super_object::SuperObject;
+use crate::avm1::value_object::ValueObject;
 use crate::avm1::xml_attributes_object::XMLAttributesObject;
 use crate::avm1::xml_idmap_object::XMLIDMapObject;
 use crate::avm1::xml_object::XMLObject;
@@ -29,6 +30,7 @@ use std::fmt::Debug;
         XMLObject(XMLObject<'gc>),
         XMLAttributesObject(XMLAttributesObject<'gc>),
         XMLIDMapObject(XMLIDMapObject<'gc>),
+        ValueObject(ValueObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -276,6 +278,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying XML node for this object, if it exists.
     fn as_xml_node(&self) -> Option<XMLNode<'gc>> {
+        None
+    }
+
+    /// Get the underlying `ValueObject`, if it exists.
+    fn as_value_object(&self) -> Option<ValueObject<'gc>> {
         None
     }
 
