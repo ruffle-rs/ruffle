@@ -19,6 +19,7 @@ pub(crate) mod movie_clip;
 mod object;
 mod sound;
 mod stage;
+mod string;
 pub(crate) mod text_field;
 mod xml;
 
@@ -140,6 +141,7 @@ pub struct SystemPrototypes<'gc> {
     pub text_field: Object<'gc>,
     pub array: Object<'gc>,
     pub xml_node: Object<'gc>,
+    pub string: Object<'gc>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
@@ -152,6 +154,7 @@ unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
         self.text_field.trace(cc);
         self.array.trace(cc);
         self.xml_node.trace(cc);
+        self.string.trace(cc);
     }
 }
 
@@ -179,6 +182,8 @@ pub fn create_globals<'gc>(
         xml::create_xmlnode_proto(gc_context, object_proto, function_proto);
 
     let xml_proto: Object<'gc> = xml::create_xml_proto(gc_context, xmlnode_proto, function_proto);
+
+    let string_proto: Object<'gc> = string::create_proto(gc_context, object_proto, function_proto);
 
     //TODO: These need to be constructors and should also set `.prototype` on each one
     let object = ScriptObject::function(
@@ -236,6 +241,12 @@ pub fn create_globals<'gc>(
         Some(function_proto),
         Some(xml_proto),
     );
+    let string = ScriptObject::function(
+        gc_context,
+        Executable::Native(string::string_constructor),
+        Some(function_proto),
+        Some(string_proto),
+    );
 
     let listeners = SystemListeners::new(gc_context, Some(array_proto));
 
@@ -249,6 +260,7 @@ pub fn create_globals<'gc>(
     globals.define_value(gc_context, "TextField", text_field.into(), EnumSet::empty());
     globals.define_value(gc_context, "XMLNode", xmlnode.into(), EnumSet::empty());
     globals.define_value(gc_context, "XML", xml.into(), EnumSet::empty());
+    globals.define_value(gc_context, "String", string.into(), EnumSet::empty());
     globals.force_set_function(
         "Number",
         number,
@@ -357,6 +369,7 @@ pub fn create_globals<'gc>(
             text_field: text_field_proto,
             array: array_proto,
             xml_node: xmlnode_proto,
+            string: string_proto,
         },
         globals.into(),
         listeners,

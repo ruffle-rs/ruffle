@@ -42,16 +42,21 @@ impl<'gc> ValueObject<'gc> {
     pub fn boxed(
         gc_context: MutationContext<'gc, '_>,
         value: Value<'gc>,
-        _system_prototypes: &SystemPrototypes<'gc>,
+        system_prototypes: &SystemPrototypes<'gc>,
     ) -> Object<'gc> {
         if let Value::Object(ob) = value {
             ob
         } else {
+            let proto = match value {
+                Value::String(_) => Some(system_prototypes.string),
+                _ => None,
+            };
+
             ValueObject(GcCell::allocate(
                 gc_context,
                 ValueObjectData {
-                    base: ScriptObject::object(gc_context, None),
-                    value: value,
+                    base: ScriptObject::object(gc_context, proto),
+                    value,
                 },
             ))
             .into()
