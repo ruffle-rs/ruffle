@@ -322,7 +322,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
         // Run my load/enterFrame clip event.
         let mut mc = self.0.write(context.gc_context);
-        if !mc.initialized() {
+        let is_load_frame = !mc.initialized();
+        if is_load_frame {
             mc.run_clip_action((*self).into(), context, ClipEvent::Load);
             mc.set_initialized(true);
         } else {
@@ -332,6 +333,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         // Run my SWF tags.
         if mc.playing() {
             mc.run_frame_internal((*self).into(), context, true);
+        }
+
+        if is_load_frame {
+            mc.run_clip_postaction((*self).into(), context, ClipEvent::Load);
         }
     }
 
@@ -963,16 +968,32 @@ impl<'gc> MovieClipData<'gc> {
                     );
                 }
             }
+        }
+    }
 
-            // Finally, queue any loaders that may be waiting for this event.
-            if let ClipEvent::Load = event {
-                context.load_manager.movie_clip_on_load(
-                    self_display_object,
-                    self.object,
-                    context.root,
-                    context.action_queue,
-                );
-            }
+    /// Run clip actions that trigger after the clip's own actions.
+    ///
+    /// Currently, this is purely limited to `MovieClipLoader`'s `onLoadInit`
+    /// event, delivered via the `LoadManager`. We need to be called here so
+    /// that external init code runs after the event.
+    ///
+    /// TODO: If it turns out other `Load` events need to be delayed, perhaps
+    /// we should change which frame triggers a `Load` event, rather than
+    /// making sure our actions run after the clip's.
+    fn run_clip_postaction(
+        &self,
+        self_display_object: DisplayObject<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        event: ClipEvent,
+    ) {
+        // Finally, queue any loaders that may be waiting for this event.
+        if let ClipEvent::Load = event {
+            context.load_manager.movie_clip_on_load(
+                self_display_object,
+                self.object,
+                context.root,
+                context.action_queue,
+            );
         }
     }
 
