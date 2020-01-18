@@ -189,6 +189,46 @@ pub fn unload_clip<'gc>(
     Ok(false.into())
 }
 
+pub fn get_progress<'gc>(
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let target = args.get(0).cloned().unwrap_or(Value::Undefined);
+
+    if let Value::Object(target) = target {
+        if let Some(movieclip) = target
+            .as_display_object()
+            .and_then(|dobj| dobj.as_movie_clip())
+        {
+            let ret_obj = ScriptObject::object(context.gc_context, None);
+            ret_obj.define_value(
+                context.gc_context,
+                "bytesLoaded",
+                movieclip
+                    .movie()
+                    .map(|mv| (mv.data().len() + 21).into())
+                    .unwrap_or(Value::Undefined),
+                EnumSet::empty(),
+            );
+            ret_obj.define_value(
+                context.gc_context,
+                "bytesTotal",
+                movieclip
+                    .movie()
+                    .map(|mv| (mv.data().len() + 21).into())
+                    .unwrap_or(Value::Undefined),
+                EnumSet::empty(),
+            );
+
+            return Ok(ret_obj.into());
+        }
+    }
+
+    Ok(Value::Undefined.into())
+}
+
 pub fn create_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Object<'gc>,
@@ -227,6 +267,13 @@ pub fn create_proto<'gc>(
     mcl_proto.as_script_object().unwrap().force_set_function(
         "unloadClip",
         unload_clip,
+        gc_context,
+        EnumSet::empty(),
+        Some(fn_proto),
+    );
+    mcl_proto.as_script_object().unwrap().force_set_function(
+        "getProgress",
+        get_progress,
         gc_context,
         EnumSet::empty(),
         Some(fn_proto),
