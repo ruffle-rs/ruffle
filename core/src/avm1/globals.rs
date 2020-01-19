@@ -19,7 +19,7 @@ pub(crate) mod movie_clip;
 mod object;
 mod sound;
 mod stage;
-mod string;
+pub(crate) mod string;
 pub(crate) mod text_field;
 mod xml;
 
