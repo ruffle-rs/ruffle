@@ -72,6 +72,42 @@ macro_rules! with_text_field {
     }};
 }
 
+pub fn text_width<'gc>(
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(etext) = this
+        .as_display_object()
+        .and_then(|dobj| dobj.as_edit_text())
+    {
+        let metrics = etext.measure_text(context);
+
+        return Ok(metrics.0.into());
+    }
+
+    Ok(Value::Undefined.into())
+}
+
+pub fn text_height<'gc>(
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(etext) = this
+        .as_display_object()
+        .and_then(|dobj| dobj.as_edit_text())
+    {
+        let metrics = etext.measure_text(context);
+
+        return Ok(metrics.1.into());
+    }
+
+    Ok(Value::Undefined.into())
+}
+
 pub fn create_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Object<'gc>,
@@ -101,6 +137,21 @@ pub fn create_proto<'gc>(
 
             Ok(Value::Undefined.into())
         }
+    );
+
+    object.add_property(
+        gc_context,
+        "textWidth",
+        Executable::Native(text_width),
+        None,
+        ReadOnly.into(),
+    );
+    object.add_property(
+        gc_context,
+        "textHeight",
+        Executable::Native(text_height),
+        None,
+        ReadOnly.into(),
     );
 
     object.into()
