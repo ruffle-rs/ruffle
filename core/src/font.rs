@@ -1,5 +1,6 @@
 use crate::backend::render::{RenderBackend, ShapeHandle};
 use crate::prelude::*;
+use crate::transform::Transform;
 use gc_arena::{Collect, Gc, MutationContext};
 
 type Error = Box<dyn std::error::Error>;
@@ -113,6 +114,53 @@ impl<'gc> Font<'gc> {
 
     pub fn scale(self) -> f32 {
         self.0.scale
+    }
+
+    /// Evaluate this font against a particular string on a glyph-by-glyph
+    /// basis.
+    ///
+    /// This function takes the text string to evaluate against, the base
+    /// transform to start from, the height of each glyph, and produces a list
+    /// of transforms and glyphs which will be consumed by the `glyph_func`
+    /// closure. This corresponds to the series of drawing operations necessary
+    /// to render the text on a single horizontal line.
+    pub fn evaluate<FGlyph>(
+        self,
+        text: &str,
+        mut transform: Transform,
+        height: f32,
+        is_html: bool,
+        mut glyph_func: FGlyph,
+    ) where
+        FGlyph: FnMut(&Transform, &Glyph),
+    {
+        transform.matrix.ty += height;
+        let scale = height / self.scale();
+
+        transform.matrix.a = scale;
+        transform.matrix.d = scale;
+        let mut chars = text.chars().peekable();
+        let has_kerning_info = self.has_kerning_info();
+        while let Some(c) = chars.next() {
+            // TODO: SWF text fields can contain a limited subset of HTML (and often do in SWF versions >6).
+            // This is a quicky-and-dirty way to skip the HTML tags. This is obviously not correct
+            // and we will need to properly parse and handle the HTML at some point.
+            // See SWF19 pp. 173-174 for supported HTML tags.
+            if is_html && c == '<' {
+                // Skip characters until we see a close bracket.
+                chars.by_ref().skip_while(|&x| x != '>').next();
+            } else if let Some(glyph) = self.get_glyph_for_char(c) {
+                glyph_func(&transform, &glyph);
+                // Step horizontally.
+                let mut advance = f32::from(glyph.advance);
+                if has_kerning_info {
+                    advance += self
+                        .get_kerning_offset(c, chars.peek().cloned().unwrap_or('\0'))
+                        .get() as f32;
+                }
+                transform.matrix.tx += advance * scale;
+            }
+        }
     }
 }
 
