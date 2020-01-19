@@ -302,6 +302,9 @@ pub struct EditTextData<'gc> {
     /// The text formatting for newly inserted text spans.
     new_format: TextFormat,
 
+    /// If the text is in multi-line mode or single-line mode.
+    is_multiline: bool,
+
     // The AVM1 object handle
     object: Option<Object<'gc>>,
 }
@@ -309,6 +312,8 @@ pub struct EditTextData<'gc> {
 impl<'gc> EditText<'gc> {
     /// Creates a new `EditText` from an SWF `DefineEditText` tag.
     pub fn from_swf_tag(context: &mut UpdateContext<'_, 'gc, '_>, swf_tag: swf::EditText) -> Self {
+        let is_multiline = swf_tag.is_multiline;
+
         EditText(GcCell::allocate(
             context.gc_context,
             EditTextData {
@@ -316,6 +321,7 @@ impl<'gc> EditText<'gc> {
                 text: swf_tag.initial_text.clone().unwrap_or_default(),
                 new_format: TextFormat::default(),
                 static_data: gc_arena::Gc::allocate(context.gc_context, EditTextStatic(swf_tag)),
+                is_multiline,
                 object: None,
             },
         ))
@@ -386,6 +392,14 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_new_text_format(self, tf: TextFormat, gc_context: MutationContext<'gc, '_>) {
         self.0.write(gc_context).new_format = tf;
+    }
+
+    pub fn is_multiline(self) -> bool {
+        self.0.read().is_multiline
+    }
+
+    pub fn set_multiline(self, is_multiline: bool, gc_context: MutationContext<'gc, '_>) {
+        self.0.write(gc_context).is_multiline = is_multiline;
     }
 
     /// Construct a base text transform for this `EditText`, to be used for

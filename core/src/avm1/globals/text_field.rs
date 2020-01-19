@@ -108,6 +108,44 @@ pub fn text_height<'gc>(
     Ok(Value::Undefined.into())
 }
 
+pub fn multiline<'gc>(
+    _avm: &mut Avm1<'gc>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(etext) = this
+        .as_display_object()
+        .and_then(|dobj| dobj.as_edit_text())
+    {
+        return Ok(etext.is_multiline().into());
+    }
+
+    Ok(Value::Undefined.into())
+}
+
+pub fn set_multiline<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let is_multiline = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .as_bool(avm.current_swf_version());
+
+    if let Some(etext) = this
+        .as_display_object()
+        .and_then(|dobj| dobj.as_edit_text())
+    {
+        etext.set_multiline(is_multiline, context.gc_context);
+    }
+
+    Ok(Value::Undefined.into())
+}
+
 pub fn create_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Object<'gc>,
@@ -151,6 +189,13 @@ pub fn create_proto<'gc>(
         "textHeight",
         Executable::Native(text_height),
         None,
+        ReadOnly.into(),
+    );
+    object.add_property(
+        gc_context,
+        "multiline",
+        Executable::Native(multiline),
+        Some(Executable::Native(set_multiline)),
         ReadOnly.into(),
     );
 
