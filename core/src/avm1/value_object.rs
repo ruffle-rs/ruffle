@@ -1,7 +1,6 @@
 //! Object impl for boxed values
 
 use crate::avm1::function::Executable;
-use crate::avm1::globals::SystemPrototypes;
 use crate::avm1::object::{ObjectPtr, TObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
@@ -40,26 +39,35 @@ impl<'gc> ValueObject<'gc> {
     /// If a class exists for a given value type, this function automatically
     /// selects the correct prototype for it from the system prototypes list.
     pub fn boxed(
-        gc_context: MutationContext<'gc, '_>,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         value: Value<'gc>,
-        system_prototypes: &SystemPrototypes<'gc>,
     ) -> Object<'gc> {
         if let Value::Object(ob) = value {
             ob
         } else {
-            let proto = match value {
-                Value::String(_) => Some(system_prototypes.string),
-                _ => None,
+            let (constructor, proto) = match &value {
+                Value::String(_) => (
+                    Some(crate::avm1::globals::string::string),
+                    Some(avm.prototypes.string),
+                ),
+                _ => (None, None),
             };
 
-            ValueObject(GcCell::allocate(
-                gc_context,
+            let obj = ValueObject(GcCell::allocate(
+                context.gc_context,
                 ValueObjectData {
-                    base: ScriptObject::object(gc_context, proto),
-                    value,
+                    base: ScriptObject::object(context.gc_context, proto),
+                    value: Value::Undefined,
                 },
-            ))
-            .into()
+            ));
+
+            // Constructor populates the boxed object with the value.
+            if let Some(constructor) = constructor {
+                let _ = constructor(avm, context, obj.into(), &[value]);
+            }
+
+            obj.into()
         }
     }
 

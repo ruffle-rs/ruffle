@@ -937,8 +937,8 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let method_name = self.pop();
-        let object =
-            value_object::ValueObject::boxed(context.gc_context, self.pop(), &self.prototypes);
+        let object_val = self.pop();
+        let object = value_object::ValueObject::boxed(self, context, object_val);
         let num_args = self.pop().as_i64()?; // TODO(Herschel): max arg count?
         let mut args = Vec::new();
         for _ in 0..num_args {
@@ -1276,8 +1276,8 @@ impl<'gc> Avm1<'gc> {
     fn action_get_member(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let name_val = self.pop();
         let name = name_val.coerce_to_string(self, context)?;
-        let object =
-            value_object::ValueObject::boxed(context.gc_context, self.pop(), &self.prototypes);
+        let object_val = self.pop();
+        let object = value_object::ValueObject::boxed(self, context, object_val);
 
         object.get(&name, self, context)?.push(self);
 
