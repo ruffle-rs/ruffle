@@ -2,7 +2,7 @@ use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
-use crate::display_object::{EditText, TDisplayObject};
+use crate::display_object::{EditText, TDisplayObject, TextFormat};
 use gc_arena::MutationContext;
 
 /// Implements `TextField`
@@ -85,6 +85,21 @@ pub fn create_proto<'gc>(
         Some(fn_proto),
         "toString" => |text_field: EditText<'gc>, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             Ok(text_field.path().into())
+        },
+        "getNewTextFormat" => |text_field: EditText<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
+            let tf = text_field.new_text_format();
+
+            Ok(tf.as_avm1_object(avm, context)?.into())
+        },
+        "setNewTextFormat" => |text_field: EditText<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args: &[Value<'gc>]| {
+            let tf = args.get(0).cloned().unwrap_or(Value::Undefined);
+
+            if let Value::Object(tf) = tf {
+                let tf_parsed = TextFormat::from_avm1_object(tf, avm, context)?;
+                text_field.set_new_text_format(tf_parsed, context.gc_context);
+            }
+
+            Ok(Value::Undefined.into())
         }
     );
 

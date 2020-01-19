@@ -116,6 +116,7 @@ pub struct SystemPrototypes<'gc> {
     pub movie_clip: Object<'gc>,
     pub sound: Object<'gc>,
     pub text_field: Object<'gc>,
+    pub text_format: Object<'gc>,
     pub array: Object<'gc>,
     pub xml_node: Object<'gc>,
     pub string: Object<'gc>,
@@ -131,6 +132,7 @@ unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
         self.movie_clip.trace(cc);
         self.sound.trace(cc);
         self.text_field.trace(cc);
+        self.text_format.trace(cc);
         self.array.trace(cc);
         self.xml_node.trace(cc);
         self.string.trace(cc);
@@ -352,6 +354,7 @@ pub fn create_globals<'gc>(
             movie_clip: movie_clip_proto,
             sound: sound_proto,
             text_field: text_field_proto,
+            text_format: text_format_proto,
             array: array_proto,
             xml_node: xmlnode_proto,
             string: string_proto,

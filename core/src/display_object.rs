@@ -21,6 +21,7 @@ use crate::events::{ButtonEvent, ButtonEventResult, ClipEvent};
 pub use bitmap::Bitmap;
 pub use button::Button;
 pub use edit_text::EditText;
+pub use edit_text::TextFormat;
 pub use graphic::Graphic;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::MovieClip;
