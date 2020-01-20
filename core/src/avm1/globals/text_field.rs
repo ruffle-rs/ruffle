@@ -147,6 +147,44 @@ pub fn set_multiline<'gc>(
     Ok(Value::Undefined.into())
 }
 
+pub fn word_wrap<'gc>(
+    _avm: &mut Avm1<'gc>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(etext) = this
+        .as_display_object()
+        .and_then(|dobj| dobj.as_edit_text())
+    {
+        return Ok(etext.is_word_wrap().into());
+    }
+
+    Ok(Value::Undefined.into())
+}
+
+pub fn set_word_wrap<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let is_word_wrap = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .as_bool(avm.current_swf_version());
+
+    if let Some(etext) = this
+        .as_display_object()
+        .and_then(|dobj| dobj.as_edit_text())
+    {
+        etext.set_word_wrap(is_word_wrap, context.gc_context);
+    }
+
+    Ok(Value::Undefined.into())
+}
+
 pub fn create_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Object<'gc>,
@@ -208,6 +246,13 @@ pub fn attach_virtual_properties<'gc>(gc_context: MutationContext<'gc, '_>, obje
         "multiline",
         Executable::Native(multiline),
         Some(Executable::Native(set_multiline)),
+        ReadOnly.into(),
+    );
+    object.add_property(
+        gc_context,
+        "wordWrap",
+        Executable::Native(word_wrap),
+        Some(Executable::Native(set_word_wrap)),
         ReadOnly.into(),
     );
 }

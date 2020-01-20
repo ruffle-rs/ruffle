@@ -38,6 +38,9 @@ pub struct EditTextData<'gc> {
     /// If the text is in multi-line mode or single-line mode.
     is_multiline: bool,
 
+    /// If the text is word-wrapped.
+    is_word_wrap: bool,
+
     // The AVM1 object handle
     object: Option<Object<'gc>>,
 }
@@ -46,6 +49,7 @@ impl<'gc> EditText<'gc> {
     /// Creates a new `EditText` from an SWF `DefineEditText` tag.
     pub fn from_swf_tag(context: &mut UpdateContext<'_, 'gc, '_>, swf_tag: swf::EditText) -> Self {
         let is_multiline = swf_tag.is_multiline;
+        let is_word_wrap = swf_tag.is_word_wrap;
 
         EditText(GcCell::allocate(
             context.gc_context,
@@ -55,6 +59,7 @@ impl<'gc> EditText<'gc> {
                 new_format: TextFormat::default(),
                 static_data: gc_arena::Gc::allocate(context.gc_context, EditTextStatic(swf_tag)),
                 is_multiline,
+                is_word_wrap,
                 object: None,
             },
         ))
@@ -133,6 +138,14 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_multiline(self, is_multiline: bool, gc_context: MutationContext<'gc, '_>) {
         self.0.write(gc_context).is_multiline = is_multiline;
+    }
+
+    pub fn is_word_wrap(self) -> bool {
+        self.0.read().is_word_wrap
+    }
+
+    pub fn set_word_wrap(self, is_word_wrap: bool, gc_context: MutationContext<'gc, '_>) {
+        self.0.write(gc_context).is_word_wrap = is_word_wrap;
     }
 
     /// Construct a base text transform for this `EditText`, to be used for
