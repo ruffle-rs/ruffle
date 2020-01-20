@@ -1899,7 +1899,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     }),
                     x_offset: None,
                     y_offset: Some(Twips::from_pixels(16.1)),
-                    height: Some(320),
+                    height: Some(Twips::from_pixels(16.0)),
                     glyphs: vec![
                         GlyphEntry {
                             index: 0,

@@ -2544,7 +2544,7 @@ impl<W: Write> Writer<W> {
                     writer.write_i16(y.get() as i16)?;
                 }
                 if let Some(height) = record.height {
-                    writer.write_u16(height)?;
+                    writer.write_u16(height.get() as u16)?;
                 }
                 writer.write_u8(record.glyphs.len() as u8)?;
                 for glyph in &record.glyphs {

@@ -59,7 +59,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             a: 0,
         };
         let mut font_id = 0;
-        let mut height = 0;
+        let mut height = 0.0;
         let mut transform: Transform = Default::default();
         for block in &tf.static_data.text_blocks {
             if let Some(x) = block.x_offset {
@@ -70,9 +70,9 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             }
             color = block.color.as_ref().unwrap_or(&color).clone();
             font_id = block.font_id.unwrap_or(font_id);
-            height = block.height.unwrap_or(height);
+            height = block.height.map(|h| h.get() as f32).unwrap_or(height);
             if let Some(font) = context.library.get_font(font_id) {
-                let scale = f32::from(height) / font.scale();
+                let scale = height / font.scale();
                 transform.matrix.a = scale;
                 transform.matrix.d = scale;
                 transform.color_transform.r_mult = f32::from(color.r) / 255.0;

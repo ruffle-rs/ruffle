@@ -958,7 +958,7 @@ pub struct TextRecord {
     pub color: Option<Color>,
     pub x_offset: Option<Twips>,
     pub y_offset: Option<Twips>,
-    pub height: Option<u16>,
+    pub height: Option<Twips>,
     pub glyphs: Vec<GlyphEntry>,
 }
 
