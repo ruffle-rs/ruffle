@@ -47,6 +47,7 @@ impl<'gc> ValueObject<'gc> {
             ob
         } else {
             let proto = match &value {
+                Value::Bool(_) => Some(avm.prototypes.boolean),
                 Value::Number(_) => Some(avm.prototypes.number),
                 Value::String(_) => Some(avm.prototypes.string),
                 _ => None,
@@ -62,6 +63,10 @@ impl<'gc> ValueObject<'gc> {
 
             // Constructor populates the boxed object with the value.
             match &value {
+                Value::Bool(_) => {
+                    let _ =
+                        crate::avm1::globals::boolean::boolean(avm, context, obj.into(), &[value]);
+                }
                 Value::Number(_) => {
                     let _ =
                         crate::avm1::globals::number::number(avm, context, obj.into(), &[value]);
