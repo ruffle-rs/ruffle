@@ -1,3 +1,4 @@
+use crate::avm1::Avm1;
 use crate::backend::render::ShapeHandle;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
@@ -42,7 +43,18 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         self.0.read().static_data.bounds.clone()
     }
 
-    fn run_frame(&mut self, _context: &mut UpdateContext) {
+    fn world_bounds(&self) -> BoundingBox {
+        // TODO: Use dirty flags and cache this.
+        let mut bounds = self.local_bounds();
+        let mut node = self.parent();
+        while let Some(display_object) = node {
+            bounds = bounds.transform(&*display_object.matrix());
+            node = display_object.parent();
+        }
+        bounds
+    }
+
+    fn run_frame(&mut self, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext) {
         // Noop
     }
 

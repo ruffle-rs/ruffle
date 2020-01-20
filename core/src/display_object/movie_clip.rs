@@ -1,5 +1,5 @@
 //! `MovieClip` display object and support code.
-use crate::avm1::{Object, StageObject, Value};
+use crate::avm1::{Avm1, Object, StageObject, Value};
 use crate::backend::audio::AudioStreamHandle;
 use crate::character::Character;
 use crate::context::{ActionType, RenderContext, UpdateContext};
@@ -133,9 +133,9 @@ impl<'gc> MovieClip<'gc> {
         self.0.read().playing()
     }
 
-    pub fn next_frame(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    pub fn next_frame(self, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) {
         if self.current_frame() < self.total_frames() {
-            self.goto_frame(context, self.current_frame() + 1, true);
+            self.goto_frame(avm, context, self.current_frame() + 1, true);
         }
     }
 
@@ -143,9 +143,9 @@ impl<'gc> MovieClip<'gc> {
         self.0.write(context.gc_context).play()
     }
 
-    pub fn prev_frame(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    pub fn prev_frame(self, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) {
         if self.current_frame() > 1 {
-            self.goto_frame(context, self.current_frame() - 1, true);
+            self.goto_frame(avm, context, self.current_frame() - 1, true);
         }
     }
 
@@ -157,13 +157,14 @@ impl<'gc> MovieClip<'gc> {
     /// `frame` should be 1-based.
     pub fn goto_frame(
         self,
+        avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         frame: FrameNumber,
         stop: bool,
     ) {
         self.0
             .write(context.gc_context)
-            .goto_frame(self.into(), context, frame, stop)
+            .goto_frame(self.into(), avm, context, frame, stop)
     }
 
     pub fn current_frame(self) -> FrameNumber {
@@ -314,10 +315,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         Some(self.0.read().movie())
     }
 
-    fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn run_frame(&mut self, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Children must run first.
         for mut child in self.children() {
-            child.run_frame(context);
+            child.run_frame(avm, context);
         }
 
         // Run my load/enterFrame clip event.
@@ -332,7 +333,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
         // Run my SWF tags.
         if mc.playing() {
-            mc.run_frame_internal((*self).into(), context, true);
+            mc.run_frame_internal((*self).into(), avm, context, true);
         }
 
         if is_load_frame {
@@ -385,13 +386,17 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn post_instantiation(
         &mut self,
-        gc_context: MutationContext<'gc, '_>,
+        _avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
-        proto: Object<'gc>,
     ) {
-        let mut mc = self.0.write(gc_context);
+        let mut mc = self.0.write(context.gc_context);
         if mc.object.is_none() {
-            let object = StageObject::for_display_object(gc_context, display_object, Some(proto));
+            let object = StageObject::for_display_object(
+                context.gc_context,
+                display_object,
+                Some(context.system_prototypes.movie_clip),
+            );
             mc.object = Some(object.into());
         }
     }
@@ -521,6 +526,7 @@ impl<'gc> MovieClipData<'gc> {
     pub fn goto_frame(
         &mut self,
         self_display_object: DisplayObject<'gc>,
+        avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         mut frame: FrameNumber,
         stop: bool,
@@ -538,13 +544,14 @@ impl<'gc> MovieClipData<'gc> {
         }
 
         if frame != self.current_frame() {
-            self.run_goto(self_display_object, context, frame);
+            self.run_goto(self_display_object, avm, context, frame);
         }
     }
 
     fn run_frame_internal(
         &mut self,
         self_display_object: DisplayObject<'gc>,
+        avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         run_display_actions: bool,
     ) {
@@ -555,7 +562,7 @@ impl<'gc> MovieClipData<'gc> {
             // Looping acts exactly like a gotoAndPlay(1).
             // Specifically, object that existed on frame 1 should not be destroyed
             // and recreated.
-            self.run_goto(self_display_object, context, 1);
+            self.run_goto(self_display_object, avm, context, 1);
             return;
         } else {
             // Single frame clips do not play.
@@ -571,16 +578,16 @@ impl<'gc> MovieClipData<'gc> {
         let tag_callback = |reader: &mut _, tag_code, tag_len| match tag_code {
             TagCode::DoAction => self.do_action(self_display_object, context, reader, tag_len),
             TagCode::PlaceObject if run_display_actions => {
-                self.place_object(self_display_object, context, reader, tag_len, 1)
+                self.place_object(self_display_object, avm, context, reader, tag_len, 1)
             }
             TagCode::PlaceObject2 if run_display_actions => {
-                self.place_object(self_display_object, context, reader, tag_len, 2)
+                self.place_object(self_display_object, avm, context, reader, tag_len, 2)
             }
             TagCode::PlaceObject3 if run_display_actions => {
-                self.place_object(self_display_object, context, reader, tag_len, 3)
+                self.place_object(self_display_object, avm, context, reader, tag_len, 3)
             }
             TagCode::PlaceObject4 if run_display_actions => {
-                self.place_object(self_display_object, context, reader, tag_len, 4)
+                self.place_object(self_display_object, avm, context, reader, tag_len, 4)
             }
             TagCode::RemoveObject if run_display_actions => self.remove_object(context, reader, 1),
             TagCode::RemoveObject2 if run_display_actions => self.remove_object(context, reader, 2),
@@ -602,9 +609,11 @@ impl<'gc> MovieClipData<'gc> {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn instantiate_child(
         &mut self,
         self_display_object: DisplayObject<'gc>,
+        avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         id: CharacterId,
         depth: Depth,
@@ -614,8 +623,10 @@ impl<'gc> MovieClipData<'gc> {
         if let Ok(mut child) = context
             .library
             .library_for_movie_mut(self.movie())
-            .instantiate_by_id(id, context.gc_context, &context.system_prototypes)
+            .instantiate_by_id(id, context.gc_context)
         {
+            child.post_instantiation(avm, context, child);
+
             // Remove previous child from children list,
             // and add new childonto front of the list.
             let prev_child = self.children.insert(depth, child);
@@ -635,7 +646,7 @@ impl<'gc> MovieClipData<'gc> {
                 }
                 // Run first frame.
                 child.apply_place_object(context.gc_context, place_object);
-                child.run_frame(context);
+                child.run_frame(avm, context);
             }
             Some(child)
         } else {
@@ -684,6 +695,7 @@ impl<'gc> MovieClipData<'gc> {
     pub fn run_goto(
         &mut self,
         self_display_object: DisplayObject<'gc>,
+        avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         frame: FrameNumber,
     ) {
@@ -786,6 +798,7 @@ impl<'gc> MovieClipData<'gc> {
 
         // Run the list of goto commands to actually create and update the display objects.
         let run_goto_command = |clip: &mut MovieClipData<'gc>,
+                                avm: &mut Avm1<'gc>,
                                 context: &mut UpdateContext<'_, 'gc, '_>,
                                 params: &GotoPlaceObject| {
             let child_entry = clip.children.get_mut(&params.depth()).copied();
@@ -803,6 +816,7 @@ impl<'gc> MovieClipData<'gc> {
                 _ => {
                     if let Some(mut child) = clip.instantiate_child(
                         self_display_object,
+                        avm,
                         context,
                         params.id(),
                         params.depth(),
@@ -828,7 +842,7 @@ impl<'gc> MovieClipData<'gc> {
         goto_commands
             .iter()
             .filter(|params| params.frame < frame)
-            .for_each(|goto| run_goto_command(self, context, goto));
+            .for_each(|goto| run_goto_command(self, avm, context, goto));
 
         // Next, run the final frame for the parent clip.
         // Re-run the final frame without display tags (DoAction, StartSound, etc.)
@@ -837,7 +851,7 @@ impl<'gc> MovieClipData<'gc> {
         if hit_target_frame {
             self.current_frame -= 1;
             self.tag_stream_pos = frame_pos;
-            self.run_frame_internal(self_display_object, context, false);
+            self.run_frame_internal(self_display_object, avm, context, false);
         } else {
             self.current_frame = clamped_frame;
         }
@@ -846,7 +860,7 @@ impl<'gc> MovieClipData<'gc> {
         goto_commands
             .iter()
             .filter(|params| params.frame >= frame)
-            .for_each(|goto| run_goto_command(self, context, goto));
+            .for_each(|goto| run_goto_command(self, avm, context, goto));
     }
 
     /// Handles a PlaceObject tag when running a goto action.
@@ -1816,6 +1830,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn place_object(
         &mut self,
         self_display_object: DisplayObject<'gc>,
+        avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<&'a [u8]>,
         tag_len: usize,
@@ -1831,6 +1846,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             PlaceObjectAction::Place(id) | PlaceObjectAction::Replace(id) => {
                 if let Some(child) = self.instantiate_child(
                     self_display_object,
+                    avm,
                     context,
                     id,
                     place_object.depth.into(),
