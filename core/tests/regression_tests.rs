@@ -107,6 +107,7 @@ swf_tests! {
     (strictequals_swf6, "avm1/strictequals_swf6", 1),
     (string_methods, "avm1/string_methods", 1),
     (global_is_bare, "avm1/global_is_bare", 1),
+    (primitive_type_globals, "avm1/primitive_type_globals", 1),
     (as2_oop, "avm1/as2_oop", 1),
     (xml, "avm1/xml", 1),
     (xml_namespaces, "avm1/xml_namespaces", 1),

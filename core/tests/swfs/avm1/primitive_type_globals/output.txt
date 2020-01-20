@@ -1,0 +1,205 @@
+// Number
+[type Function]
+
+// Number()
+number
+0
+
+// Number(1)
+number
+1
+
+// new Number("-101")
+object
+-101
+
+// n.valueOf()
+5
+
+// n.toString()
+5
+
+// n.toString(i)
+base 0: 4123
+base 1: 4123
+base 2: 1000000011011
+base 3: 12122201
+base 4: 1000123
+base 5: 112443
+base 6: 31031
+base 7: 15010
+base 8: 10033
+base 9: 5581
+base 10: 4123
+base 11: 3109
+base 12: 2477
+base 13: 1b52
+base 14: 1707
+base 15: 134d
+base 16: 101b
+base 17: e49
+base 18: cd1
+base 19: b80
+base 20: a63
+base 21: 977
+base 22: 8b9
+base 23: 7i6
+base 24: 73j
+base 25: 6en
+base 26: 62f
+base 27: 5hj
+base 28: 577
+base 29: 4q5
+base 30: 4hd
+base 31: 490
+base 32: 40r
+base 33: 3pv
+base 34: 3j9
+base 35: 3cs
+base 36: 36j
+base 37: 4123
+
+// n.toString(i)
+base 0: -123.1
+base 1: -123.1
+base 2: -1111011
+base 3: -11120
+base 4: -1323
+base 5: -443
+base 6: -323
+base 7: -234
+base 8: -173
+base 9: -146
+base 10: -123.1
+base 11: -102
+base 12: -a3
+base 13: -96
+base 14: -8b
+base 15: -83
+base 16: -7b
+base 17: -74
+base 18: -6f
+base 19: -69
+base 20: -63
+base 21: -5i
+base 22: -5d
+base 23: -58
+base 24: -53
+base 25: -4n
+base 26: -4j
+base 27: -4f
+base 28: -4b
+base 29: -47
+base 30: -43
+base 31: -3u
+base 32: -3r
+base 33: -3o
+base 34: -3l
+base 35: -3i
+base 36: -3f
+base 37: -123.1
+
+// n.toString(i)
+base 0: -2147483647.9
+base 1: -2147483647.9
+base 2: -1111111111111111111111111111111
+base 3: -12112122212110202101
+base 4: -1333333333333333
+base 5: -13344223434042
+base 6: -553032005531
+base 7: -104134211161
+base 8: -17777777777
+base 9: -5478773671
+base 10: -2147483647.9
+base 11: -a02220281
+base 12: -4bb2308a7
+base 13: -282ba4aaa
+base 14: -1652ca931
+base 15: -c87e66b7
+base 16: -7fffffff
+base 17: -53g7f548
+base 18: -3928g3h1
+base 19: -27c57h32
+base 20: -1db1f927
+base 21: -140h2d91
+base 22: -ikf5bf1
+base 23: -ebelf95
+base 24: -b5gge57
+base 25: -8jmdnkm
+base 26: -6oj8ion
+base 27: -5ehncka
+base 28: -4clm98f
+base 29: -3hk7987
+base 30: -2sb6cs7
+base 31: -2d09uc1
+base 32: -1vvvvvv
+base 33: -1lsqtl1
+base 34: -1d8xqrp
+base 35: -15v22um
+base 36: -zik0zj
+base 37: -2147483647.9
+
+// 0.toString(2)
+0
+
+// Number.NaN
+NaN
+
+// Boolean
+[type Function]
+
+// Boolean()
+undefined
+undefined
+
+// Boolean(false)
+false
+boolean
+
+// Boolean("asd")
+true
+boolean
+
+// new Boolean()
+false
+object
+
+// new Boolean(true)
+true
+object
+
+// new Boolean(1)
+true
+object
+
+// new Boolean("ASD")
+true
+object
+
+// b.toString()
+true
+
+// b.valueOf()
+true
+
+// String
+[type Function]
+
+// String()
+
+string
+
+// String("foo")
+foo
+string
+
+// new String("333")
+333
+object
+
+// s.toString()
+test
+
+// s.valueOf()
+test2
+
