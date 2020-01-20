@@ -10,6 +10,7 @@ use rand::Rng;
 use std::f64;
 
 mod array;
+pub(crate) mod boolean;
 mod color;
 mod function;
 mod key;
@@ -62,19 +63,6 @@ pub fn random<'gc>(
     match args.get(0) {
         Some(Value::Number(max)) => Ok(action_context.rng.gen_range(0.0f64, max).floor().into()),
         _ => Ok(Value::Undefined.into()), //TODO: Shouldn't this be an error condition?
-    }
-}
-
-pub fn boolean<'gc>(
-    avm: &mut Avm1<'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
-    if let Some(val) = args.get(0) {
-        Ok(val.as_bool(avm.current_swf_version()).into())
-    } else {
-        Ok(false.into())
     }
 }
 
@@ -131,6 +119,7 @@ pub struct SystemPrototypes<'gc> {
     pub xml_node: Object<'gc>,
     pub string: Object<'gc>,
     pub number: Object<'gc>,
+    pub boolean: Object<'gc>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
@@ -145,6 +134,7 @@ unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
         self.xml_node.trace(cc);
         self.string.trace(cc);
         self.number.trace(cc);
+        self.boolean.trace(cc);
     }
 }
 
@@ -175,6 +165,8 @@ pub fn create_globals<'gc>(
 
     let string_proto: Object<'gc> = string::create_proto(gc_context, object_proto, function_proto);
     let number_proto: Object<'gc> = number::create_proto(gc_context, object_proto, function_proto);
+    let boolean_proto: Object<'gc> =
+        boolean::create_proto(gc_context, object_proto, function_proto);
 
     //TODO: These need to be constructors and should also set `.prototype` on each one
     let object = ScriptObject::function(
@@ -234,6 +226,8 @@ pub fn create_globals<'gc>(
     );
     let string = string::create_string_object(gc_context, Some(string_proto), Some(function_proto));
     let number = number::create_number_object(gc_context, Some(number_proto), Some(function_proto));
+    let boolean =
+        boolean::create_boolean_object(gc_context, Some(boolean_proto), Some(function_proto));
 
     let listeners = SystemListeners::new(gc_context, Some(array_proto));
 
@@ -249,13 +243,8 @@ pub fn create_globals<'gc>(
     globals.define_value(gc_context, "XML", xml.into(), EnumSet::empty());
     globals.define_value(gc_context, "String", string.into(), EnumSet::empty());
     globals.define_value(gc_context, "Number", number.into(), EnumSet::empty());
-    globals.force_set_function(
-        "Boolean",
-        boolean,
-        gc_context,
-        EnumSet::empty(),
-        Some(function_proto),
-    );
+    globals.define_value(gc_context, "Boolean", boolean.into(), EnumSet::empty());
+
     globals.define_value(
         gc_context,
         "Math",
@@ -352,6 +341,7 @@ pub fn create_globals<'gc>(
             xml_node: xmlnode_proto,
             string: string_proto,
             number: number_proto,
+            boolean: boolean_proto,
         },
         globals.into(),
         listeners,
