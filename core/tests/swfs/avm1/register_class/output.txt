@@ -1,0 +1,18 @@
+Custom movieclip!
+// typeof custom_movieclip
+movieclip
+// custom_movieclip.__proto__ == custom_mc.prototype
+true
+// custom_movieclip.__proto__ == MovieClip.prototype
+false
+// custom_movieclip.isCustom()
+true
+
+// typeof normal_movieclip
+movieclip
+// normal_movieclip.__proto__ == custom_mc.prototype
+false
+// normal_movieclip.__proto__ == MovieClip.prototype
+true
+// normal_movieclip.isCustom()
+undefined

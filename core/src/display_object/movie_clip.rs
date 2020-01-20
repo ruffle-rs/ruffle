@@ -1,5 +1,5 @@
 //! `MovieClip` display object and support code.
-use crate::avm1::{Avm1, Object, StageObject, Value};
+use crate::avm1::{Avm1, Object, StageObject, TObject, Value};
 use crate::backend::audio::AudioStreamHandle;
 use crate::character::Character;
 use crate::context::{ActionType, RenderContext, UpdateContext};
@@ -41,6 +41,7 @@ pub struct MovieClipData<'gc> {
     object: Option<Object<'gc>>,
     clip_actions: SmallVec<[ClipAction; 2]>,
     flags: EnumSet<MovieClipFlags>,
+    avm1_constructor: Option<Object<'gc>>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -58,6 +59,7 @@ impl<'gc> MovieClip<'gc> {
                 object: None,
                 clip_actions: SmallVec::new(),
                 flags: EnumSet::empty(),
+                avm1_constructor: None,
             },
         ))
     }
@@ -89,6 +91,7 @@ impl<'gc> MovieClip<'gc> {
                 object: None,
                 clip_actions: SmallVec::new(),
                 flags: MovieClipFlags::Playing.into(),
+                avm1_constructor: None,
             },
         ))
     }
@@ -178,6 +181,14 @@ impl<'gc> MovieClip<'gc> {
     pub fn frames_loaded(self) -> FrameNumber {
         // TODO(Herschel): root needs to progressively stream in frames.
         self.0.read().static_data.total_frames
+    }
+
+    pub fn set_avm1_constructor(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        prototype: Option<Object<'gc>>,
+    ) {
+        self.0.write(gc_context).avm1_constructor = prototype;
     }
 
     pub fn frame_label_to_number(self, frame_label: &str) -> Option<FrameNumber> {
@@ -386,12 +397,32 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn post_instantiation(
         &mut self,
-        _avm: &mut Avm1<'gc>,
+        avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
     ) {
         let mut mc = self.0.write(context.gc_context);
         if mc.object.is_none() {
+            if let Some(constructor) = mc.avm1_constructor {
+                if let Ok(prototype) = constructor
+                    .get("prototype", avm, context)
+                    .and_then(|v| v.resolve(avm, context))
+                    .and_then(|v| v.as_object())
+                {
+                    let object: Object<'gc> = StageObject::for_display_object(
+                        context.gc_context,
+                        display_object,
+                        Some(prototype),
+                    )
+                    .into();
+                    mc.object = Some(object);
+                    if let Ok(result) = constructor.call(avm, context, object, &[]) {
+                        let _ = result.resolve(avm, context);
+                    }
+                    return;
+                }
+            };
+
             let object = StageObject::for_display_object(
                 context.gc_context,
                 display_object,
@@ -432,6 +463,7 @@ unsafe impl<'gc> Collect for MovieClipData<'gc> {
         self.base.trace(cc);
         self.static_data.trace(cc);
         self.object.trace(cc);
+        self.avm1_constructor.trace(cc);
     }
 }
 

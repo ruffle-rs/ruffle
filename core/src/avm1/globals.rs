@@ -179,12 +179,7 @@ pub fn create_globals<'gc>(
         boolean::create_proto(gc_context, object_proto, function_proto);
 
     //TODO: These need to be constructors and should also set `.prototype` on each one
-    let object = FunctionObject::function(
-        gc_context,
-        Executable::Native(object::constructor),
-        Some(function_proto),
-        Some(object_proto),
-    );
+    let object = object::create_object_object(gc_context, object_proto, function_proto);
 
     let color = FunctionObject::function(
         gc_context,
