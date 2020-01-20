@@ -16,6 +16,7 @@ mod key;
 mod math;
 pub(crate) mod mouse;
 pub(crate) mod movie_clip;
+pub(crate) mod number;
 mod object;
 mod sound;
 mod stage;
@@ -77,19 +78,6 @@ pub fn boolean<'gc>(
     }
 }
 
-pub fn number<'gc>(
-    avm: &mut Avm1<'gc>,
-    action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
-    if let Some(val) = args.get(0) {
-        Ok(val.as_number(avm, action_context)?.into())
-    } else {
-        Ok(0.0.into())
-    }
-}
-
 pub fn is_nan<'gc>(
     avm: &mut Avm1<'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
@@ -142,6 +130,7 @@ pub struct SystemPrototypes<'gc> {
     pub array: Object<'gc>,
     pub xml_node: Object<'gc>,
     pub string: Object<'gc>,
+    pub number: Object<'gc>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
@@ -155,6 +144,7 @@ unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
         self.array.trace(cc);
         self.xml_node.trace(cc);
         self.string.trace(cc);
+        self.number.trace(cc);
     }
 }
 
@@ -184,6 +174,7 @@ pub fn create_globals<'gc>(
     let xml_proto: Object<'gc> = xml::create_xml_proto(gc_context, xmlnode_proto, function_proto);
 
     let string_proto: Object<'gc> = string::create_proto(gc_context, object_proto, function_proto);
+    let number_proto: Object<'gc> = number::create_proto(gc_context, object_proto, function_proto);
 
     //TODO: These need to be constructors and should also set `.prototype` on each one
     let object = ScriptObject::function(
@@ -242,6 +233,7 @@ pub fn create_globals<'gc>(
         Some(xml_proto),
     );
     let string = string::create_string_object(gc_context, Some(string_proto), Some(function_proto));
+    let number = number::create_number_object(gc_context, Some(number_proto), Some(function_proto));
 
     let listeners = SystemListeners::new(gc_context, Some(array_proto));
 
@@ -256,13 +248,7 @@ pub fn create_globals<'gc>(
     globals.define_value(gc_context, "XMLNode", xmlnode.into(), EnumSet::empty());
     globals.define_value(gc_context, "XML", xml.into(), EnumSet::empty());
     globals.define_value(gc_context, "String", string.into(), EnumSet::empty());
-    globals.force_set_function(
-        "Number",
-        number,
-        gc_context,
-        EnumSet::empty(),
-        Some(function_proto),
-    );
+    globals.define_value(gc_context, "Number", number.into(), EnumSet::empty());
     globals.force_set_function(
         "Boolean",
         boolean,
@@ -365,6 +351,7 @@ pub fn create_globals<'gc>(
             array: array_proto,
             xml_node: xmlnode_proto,
             string: string_proto,
+            number: number_proto,
         },
         globals.into(),
         listeners,
