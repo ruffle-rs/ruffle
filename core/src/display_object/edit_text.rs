@@ -183,6 +183,24 @@ impl<'gc> EditText<'gc> {
         transform
     }
 
+    /// Given a text transform, produce a new transform at the start of the
+    /// next line of text.
+    ///
+    /// This function takes the current font size and the transform to adjust,
+    /// and returns the adjusted transform.
+    pub fn newline(self, height: f32, mut transform: Transform) -> Transform {
+        let edit_text = self.0.read();
+        let static_data = &edit_text.static_data.0;
+
+        transform.matrix.tx = 0.0;
+        transform.matrix.ty += height;
+        if let Some(layout) = &static_data.layout {
+            transform.matrix.ty += layout.leading.get() as f32;
+        }
+
+        transform
+    }
+
     /// Measure the width and height of the `EditText`'s current text load.
     ///
     /// The returned tuple should be interpreted as width, then height.
@@ -254,7 +272,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
         context.transform_stack.push(&*self.transform());
 
-        let text_transform = self.text_transform();
+        let mut text_transform = self.text_transform();
 
         let edit_text = self.0.read();
         let static_data = &edit_text.static_data.0;
@@ -275,20 +293,33 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                 .map(|v| v.to_pixels() as f32)
                 .unwrap_or_else(|| font.scale());
 
-            font.evaluate(
-                &edit_text.text,
-                text_transform,
-                height,
-                edit_text.static_data.0.is_html,
-                |transform, glyph: &Glyph| {
-                    // Render glyph.
-                    context.transform_stack.push(transform);
-                    context
-                        .renderer
-                        .render_shape(glyph.shape, context.transform_stack.transform());
-                    context.transform_stack.pop();
-                },
-            );
+            let mut chunks = vec![];
+            if edit_text.is_multiline {
+                for chunk in edit_text.text.split('\n') {
+                    chunks.push(chunk);
+                }
+            } else {
+                chunks.push(&edit_text.text);
+            }
+
+            for chunk in chunks {
+                font.evaluate(
+                    chunk,
+                    text_transform.clone(),
+                    height,
+                    edit_text.static_data.0.is_html,
+                    |transform, glyph: &Glyph| {
+                        // Render glyph.
+                        context.transform_stack.push(transform);
+                        context
+                            .renderer
+                            .render_shape(glyph.shape, context.transform_stack.transform());
+                        context.transform_stack.pop();
+                    },
+                );
+
+                text_transform = self.newline(height, text_transform);
+            }
         }
 
         context.transform_stack.pop();
