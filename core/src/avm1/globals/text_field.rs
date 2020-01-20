@@ -2,7 +2,8 @@ use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
-use crate::display_object::{EditText, TDisplayObject, TextFormat};
+use crate::display_object::{EditText, TDisplayObject};
+use crate::font::TextFormat;
 use gc_arena::MutationContext;
 
 /// Implements `TextField`
@@ -177,6 +178,17 @@ pub fn create_proto<'gc>(
         }
     );
 
+    object.into()
+}
+
+pub fn attach_virtual_properties<'gc>(gc_context: MutationContext<'gc, '_>, object: Object<'gc>) {
+    object.add_property(
+        gc_context,
+        "text",
+        Executable::Native(get_text),
+        Some(Executable::Native(set_text)),
+        DontDelete | ReadOnly | DontEnum,
+    );
     object.add_property(
         gc_context,
         "textWidth",
@@ -197,17 +209,5 @@ pub fn create_proto<'gc>(
         Executable::Native(multiline),
         Some(Executable::Native(set_multiline)),
         ReadOnly.into(),
-    );
-
-    object.into()
-}
-
-pub fn attach_virtual_properties<'gc>(gc_context: MutationContext<'gc, '_>, object: Object<'gc>) {
-    object.add_property(
-        gc_context,
-        "text",
-        Executable::Native(get_text),
-        Some(Executable::Native(set_text)),
-        DontDelete | ReadOnly | DontEnum,
     );
 }

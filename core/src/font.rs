@@ -5,6 +5,10 @@ use gc_arena::{Collect, Gc, MutationContext};
 
 type Error = Box<dyn std::error::Error>;
 
+mod text_format;
+
+pub use text_format::TextFormat;
+
 #[derive(Debug, Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Font<'gc>(Gc<'gc, FontData>);
