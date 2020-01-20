@@ -394,6 +394,43 @@ impl<'gc> Value<'gc> {
         }
     }
 
+    /// Coerce a number to an `u16` following the ECMAScript specifications for `ToUInt16`.
+    /// The value will be wrapped modulo 2^16.
+    /// This will call `valueOf` and do any conversions that are necessary.
+    #[allow(dead_code)]
+    pub fn coerce_to_u16(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<u16, Error> {
+        self.as_number(avm, context).map(f64_to_wrapping_u16)
+    }
+
+    /// Coerce a number to an `i32` following the ECMAScript specifications for `ToInt32`.
+    /// The value will be wrapped modulo 2^32.
+    /// This will call `valueOf` and do any conversions that are necessary.
+    /// If you are writing AVM code that accepts an integer, you probably want to use this.
+    #[allow(dead_code)]
+    pub fn coerce_to_i32(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<i32, Error> {
+        self.as_number(avm, context).map(f64_to_wrapping_i32)
+    }
+
+    /// Coerce a number to an `u32` following the ECMAScript specifications for `ToUInt32`.
+    /// The value will be wrapped in the range [-2^31, 2^31).
+    /// This will call `valueOf` and do any conversions that are necessary.
+    #[allow(dead_code)]
+    pub fn coerce_to_u32(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<u32, Error> {
+        self.as_number(avm, context).map(f64_to_wrapping_u32)
+    }
+
     /// Coerce a value to a string.
     pub fn coerce_to_string(
         self,
@@ -456,7 +493,7 @@ impl<'gc> Value<'gc> {
     /// (see https://github.com/rust-lang/rust/issues/10184)
     #[allow(clippy::unreadable_literal)]
     pub fn as_i32(&self) -> Result<i32, Error> {
-        self.as_u32().map(|n| n as i32)
+        self.as_f64().map(f64_to_wrapping_i32)
     }
 
     /// Casts a Number into an `i32` following the ECMA-262 `ToUInt32` specs.
@@ -466,15 +503,7 @@ impl<'gc> Value<'gc> {
     /// (see https://github.com/rust-lang/rust/issues/10184)
     #[allow(clippy::unreadable_literal)]
     pub fn as_u32(&self) -> Result<u32, Error> {
-        self.as_f64().map(|n| {
-            if n.is_nan() || n.is_infinite() {
-                0
-            } else if n >= 0.0 {
-                (n % 4294967296.0) as u32
-            } else {
-                ((n % 4294967296.0) + 4294967296.0) as u32
-            }
-        })
+        self.as_f64().map(f64_to_wrapping_u32)
     }
 
     pub fn as_i64(&self) -> Result<i64, Error> {
@@ -521,6 +550,37 @@ impl<'gc> Value<'gc> {
             Ok(Value::Undefined.into())
         }
     }
+}
+
+/// Converts an `f64` to an `u16` with ECMAScript `ToUInt16` wrapping behavior.
+/// The value will be wrapped modulo 2^16.
+pub fn f64_to_wrapping_u16(n: f64) -> u16 {
+    if !n.is_finite() {
+        0
+    } else if n >= 0.0 {
+        (n % 65536.0) as u16
+    } else {
+        ((n.trunc() % 65536.0) + 65536.0) as u16
+    }
+}
+
+/// Converts an `f64` to an `u32` with ECMAScript `ToUInt32` wrapping behavior.
+/// The value will be wrapped modulo 2^32.
+#[allow(clippy::unreadable_literal)]
+pub fn f64_to_wrapping_u32(n: f64) -> u32 {
+    if !n.is_finite() {
+        0
+    } else if n >= 0.0 {
+        (n % 4294967296.0) as u32
+    } else {
+        ((n.trunc() % 4294967296.0) + 4294967296.0) as u32
+    }
+}
+
+/// Converts an `f64` to an `i32` with ECMAScript `ToInt32` wrapping behavior.
+/// The value will be wrapped in the range [-2^31, 2^31).
+pub fn f64_to_wrapping_i32(n: f64) -> i32 {
+    f64_to_wrapping_u32(n) as i32
 }
 
 #[cfg(test)]
@@ -708,5 +768,55 @@ mod test {
 
             assert_eq!(b.abstract_lt(a, avm, context).unwrap(), Value::Bool(false))
         })
+    }
+
+    #[test]
+    #[allow(clippy::unreadable_literal)]
+
+    fn wrapping_u16() {
+        use super::f64_to_wrapping_u16;
+        assert_eq!(f64_to_wrapping_u16(0.0), 0);
+        assert_eq!(f64_to_wrapping_u16(1.0), 1);
+        assert_eq!(f64_to_wrapping_u16(-1.0), 65535);
+        assert_eq!(f64_to_wrapping_u16(123.1), 123);
+        assert_eq!(f64_to_wrapping_u16(66535.9), 999);
+        assert_eq!(f64_to_wrapping_u16(-9980.7), 55556);
+        assert_eq!(f64_to_wrapping_u16(-196608.0), 0);
+        assert_eq!(f64_to_wrapping_u16(std::f64::NAN), 0);
+        assert_eq!(f64_to_wrapping_u16(std::f64::INFINITY), 0);
+        assert_eq!(f64_to_wrapping_u16(std::f64::NEG_INFINITY), 0);
+    }
+
+    #[test]
+    #[allow(clippy::unreadable_literal)]
+    fn wrapping_u32() {
+        use super::f64_to_wrapping_u32;
+        assert_eq!(f64_to_wrapping_u32(0.0), 0);
+        assert_eq!(f64_to_wrapping_u32(1.0), 1);
+        assert_eq!(f64_to_wrapping_u32(-1.0), 4294967295);
+        assert_eq!(f64_to_wrapping_u32(123.1), 123);
+        assert_eq!(f64_to_wrapping_u32(4294968295.9), 999);
+        assert_eq!(f64_to_wrapping_u32(-4289411740.3), 5555556);
+        assert_eq!(f64_to_wrapping_u32(-12884901888.0), 0);
+        assert_eq!(f64_to_wrapping_u32(std::f64::NAN), 0);
+        assert_eq!(f64_to_wrapping_u32(std::f64::INFINITY), 0);
+        assert_eq!(f64_to_wrapping_u32(std::f64::NEG_INFINITY), 0);
+    }
+
+    #[test]
+    #[allow(clippy::unreadable_literal)]
+    fn wrapping_i32() {
+        use super::f64_to_wrapping_i32;
+        assert_eq!(f64_to_wrapping_i32(0.0), 0);
+        assert_eq!(f64_to_wrapping_i32(1.0), 1);
+        assert_eq!(f64_to_wrapping_i32(-1.0), -1);
+        assert_eq!(f64_to_wrapping_i32(123.1), 123);
+        assert_eq!(f64_to_wrapping_i32(4294968295.9), 999);
+        assert_eq!(f64_to_wrapping_i32(2147484648.3), -2147482648);
+        assert_eq!(f64_to_wrapping_i32(-8589934591.2), 1);
+        assert_eq!(f64_to_wrapping_i32(4294966896.1), -400);
+        assert_eq!(f64_to_wrapping_i32(std::f64::NAN), 0);
+        assert_eq!(f64_to_wrapping_i32(std::f64::INFINITY), 0);
+        assert_eq!(f64_to_wrapping_i32(std::f64::NEG_INFINITY), 0);
     }
 }
