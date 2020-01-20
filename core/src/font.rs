@@ -138,8 +138,8 @@ impl<'gc> Font<'gc> {
     ) where
         FGlyph: FnMut(&Transform, &Glyph),
     {
-        transform.matrix.ty += height;
-        let scale = height / self.scale();
+        transform.matrix.ty += height * Twips::TWIPS_PER_PIXEL as f32;
+        let scale = (height * Twips::TWIPS_PER_PIXEL as f32) / self.scale();
 
         transform.matrix.a = scale;
         transform.matrix.d = scale;
@@ -165,6 +165,26 @@ impl<'gc> Font<'gc> {
                 transform.matrix.tx += advance * scale;
             }
         }
+    }
+
+    /// Measure a particular string's metrics (width and height).
+    pub fn measure(self, text: &str, height: f32, is_html: bool) -> (f32, f32) {
+        let mut size = (0.0, 0.0);
+
+        self.evaluate(
+            text,
+            Default::default(),
+            height,
+            is_html,
+            |transform, _glyph| {
+                let tx = transform.matrix.tx / Twips::TWIPS_PER_PIXEL as f32;
+                let ty = transform.matrix.ty / Twips::TWIPS_PER_PIXEL as f32;
+                size.0 = f32::max(size.0, tx);
+                size.1 = f32::max(size.1, ty);
+            },
+        );
+
+        size
     }
 }
 

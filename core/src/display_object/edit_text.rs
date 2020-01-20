@@ -174,18 +174,12 @@ impl<'gc> EditText<'gc> {
     ///
     /// The returned tuple should be interpreted as width, then height.
     pub fn measure_text(self, context: &mut UpdateContext<'_, 'gc, '_>) -> (f32, f32) {
-        let text_transform = self.text_transform();
-
         let edit_text = self.0.read();
         let static_data = &edit_text.static_data.0;
         let font_id = static_data.font_id.unwrap_or(0);
 
         let mut size = (0.0, 0.0);
 
-        // If the font can't be found or has no glyph information, use the "device font" instead.
-        // We're cheating a bit and not actually rendering text using the OS/web.
-        // Instead, we embed an SWF version of Noto Sans to use as the "device font", and render
-        // it the same as any other SWF outline text.
         if let Some(font) = context
             .library
             .get_font(font_id)
@@ -197,19 +191,7 @@ impl<'gc> EditText<'gc> {
                 .map(|v| v.to_pixels() as f32)
                 .unwrap_or_else(|| font.scale());
 
-            font.evaluate(
-                &edit_text.text,
-                text_transform,
-                height,
-                edit_text.static_data.0.is_html,
-                |transform, glyph: &Glyph| {
-                    //This is actually terrible matrix math.
-                    let tx = transform.matrix.tx * transform.matrix.a;
-                    let ty = transform.matrix.ty * transform.matrix.d;
-                    size.0 = f32::max(size.0, tx + (glyph.advance as f32));
-                    size.1 = f32::max(size.1, ty);
-                },
-            );
+            size = font.measure(&edit_text.text, height, edit_text.static_data.0.is_html);
         }
 
         size
