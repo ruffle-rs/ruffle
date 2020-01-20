@@ -974,7 +974,7 @@ pub struct EditText {
     pub bounds: Rectangle,
     pub font_id: Option<CharacterId>, // TODO(Herschel): Combine with height
     pub font_class_name: Option<String>,
-    pub height: Option<u16>,
+    pub height: Option<Twips>,
     pub color: Option<Color>,
     pub max_length: Option<u16>,
     pub layout: Option<TextLayout>,

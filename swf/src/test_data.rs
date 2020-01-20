@@ -384,7 +384,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 },
                 font_id: Some(1),
                 font_class_name: None,
-                height: Some(360),
+                height: Some(Twips::from_pixels(18.0)),
                 color: Some(Color {
                     r: 0,
                     g: 255,

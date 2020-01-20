@@ -2610,7 +2610,7 @@ impl<W: Write> Writer<W> {
 
             // TODO(Herschel): Height only exists iff HasFontId, maybe for HasFontClass too?
             if let Some(height) = edit_text.height {
-                writer.write_u16(height)?
+                writer.write_u16(height.get() as u16)?
             }
 
             if let Some(ref color) = edit_text.color {

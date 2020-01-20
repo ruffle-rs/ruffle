@@ -2654,7 +2654,7 @@ impl<R: Read> Reader<R> {
             None
         };
         let height = if flags & 0b1 != 0 {
-            Some(self.read_u16()?)
+            Some(Twips::new(self.read_u16()?))
         } else {
             None
         };

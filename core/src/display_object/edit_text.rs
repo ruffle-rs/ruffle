@@ -78,7 +78,7 @@ impl<'gc> EditText<'gc> {
             },
             font_id: None,
             font_class_name: None,
-            height: Some(height as u16),
+            height: Some(Twips::from_pixels(height)),
             color: Some(swf::Color {
                 r: 0,
                 g: 0,
@@ -194,7 +194,7 @@ impl<'gc> EditText<'gc> {
         {
             let height = static_data
                 .height
-                .map(|v| v as f32)
+                .map(|v| v.to_pixels() as f32)
                 .unwrap_or_else(|| font.scale());
 
             font.evaluate(
@@ -277,7 +277,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         {
             let height = static_data
                 .height
-                .map(|v| v as f32)
+                .map(|v| v.to_pixels() as f32)
                 .unwrap_or_else(|| font.scale());
 
             font.evaluate(
