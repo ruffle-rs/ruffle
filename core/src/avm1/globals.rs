@@ -371,7 +371,9 @@ mod tests {
             [" "] => true,
             ["0"] => true,
             ["1"] => true,
-            [] => false
+            [Value::Undefined] => false,
+            [Value::Null] => false,
+            [] => Value::Undefined
         },
         [6] => {
             [true] => true,
@@ -386,7 +388,9 @@ mod tests {
             [" "] => false,
             ["0"] => false,
             ["1"] => true,
-            [] => false
+            [Value::Undefined] => false,
+            [Value::Null] => false,
+            [] => Value::Undefined
         }
     );
 
