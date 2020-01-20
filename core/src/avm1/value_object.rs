@@ -46,12 +46,10 @@ impl<'gc> ValueObject<'gc> {
         if let Value::Object(ob) = value {
             ob
         } else {
-            let (constructor, proto) = match &value {
-                Value::String(_) => (
-                    Some(crate::avm1::globals::string::string),
-                    Some(avm.prototypes.string),
-                ),
-                _ => (None, None),
+            let proto = match &value {
+                Value::Number(_) => Some(avm.prototypes.number),
+                Value::String(_) => Some(avm.prototypes.string),
+                _ => None,
             };
 
             let obj = ValueObject(GcCell::allocate(
@@ -63,8 +61,16 @@ impl<'gc> ValueObject<'gc> {
             ));
 
             // Constructor populates the boxed object with the value.
-            if let Some(constructor) = constructor {
-                let _ = constructor(avm, context, obj.into(), &[value]);
+            match &value {
+                Value::Number(_) => {
+                    let _ =
+                        crate::avm1::globals::number::number(avm, context, obj.into(), &[value]);
+                }
+                Value::String(_) => {
+                    let _ =
+                        crate::avm1::globals::string::string(avm, context, obj.into(), &[value]);
+                }
+                _ => (),
             }
 
             obj.into()
