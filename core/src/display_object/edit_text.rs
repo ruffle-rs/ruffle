@@ -42,6 +42,9 @@ pub struct EditTextData<'gc> {
     /// If the text is word-wrapped.
     is_word_wrap: bool,
 
+    /// Cached breakpoints of where to make newlines.
+    cached_break_points: Option<Vec<usize>>,
+
     // The AVM1 object handle
     object: Option<Object<'gc>>,
 }
@@ -62,6 +65,7 @@ impl<'gc> EditText<'gc> {
                 is_multiline,
                 is_word_wrap,
                 object: None,
+                cached_break_points: None,
             },
         ))
     }
@@ -122,6 +126,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_text(self, text: String, gc_context: MutationContext<'gc, '_>) {
+        self.0.write(gc_context).cached_break_points = None;
         self.0.write(gc_context).text = text;
     }
 
@@ -130,6 +135,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_new_text_format(self, tf: TextFormat, gc_context: MutationContext<'gc, '_>) {
+        self.0.write(gc_context).cached_break_points = None;
         self.0.write(gc_context).new_format = tf;
     }
 
@@ -138,6 +144,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_multiline(self, is_multiline: bool, gc_context: MutationContext<'gc, '_>) {
+        self.0.write(gc_context).cached_break_points = None;
         self.0.write(gc_context).is_multiline = is_multiline;
     }
 
@@ -146,6 +153,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_word_wrap(self, is_word_wrap: bool, gc_context: MutationContext<'gc, '_>) {
+        self.0.write(gc_context).cached_break_points = None;
         self.0.write(gc_context).is_word_wrap = is_word_wrap;
     }
 
@@ -286,15 +294,41 @@ impl<'gc> EditText<'gc> {
         }
     }
 
+    /// Get the most recent line breaks, taking cache into account.
+    ///
+    /// This function is separate from `line_breaks` since there are some
+    /// contexts where we don't have the ability to update a cache (such as
+    /// rendering).
+    fn line_breaks_cached(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        library: &Library<'gc>,
+    ) -> Vec<usize> {
+        {
+            let edit_text = self.0.read();
+            if let Some(lbrk) = &edit_text.cached_break_points {
+                return lbrk.clone();
+            }
+        }
+
+        let lbrk = self.line_breaks(library);
+
+        self.0.write(gc_context).cached_break_points = Some(lbrk.clone());
+
+        lbrk
+    }
+
     /// Measure the width and height of the `EditText`'s current text load.
     ///
     /// The returned tuple should be interpreted as width, then height.
     pub fn measure_text(self, context: &mut UpdateContext<'_, 'gc, '_>) -> (f32, f32) {
+        let breakpoints = self.line_breaks_cached(context.gc_context, context.library);
+
         let edit_text = self.0.read();
         let static_data = &edit_text.static_data.0;
         let font_id = static_data.font_id.unwrap_or(0);
 
-        let mut size = (0.0, 0.0);
+        let mut size: (f32, f32) = (0.0, 0.0);
 
         if let Some(font) = context
             .library
@@ -302,12 +336,29 @@ impl<'gc> EditText<'gc> {
             .filter(|font| font.has_glyphs())
             .or_else(|| context.library.device_font())
         {
+            let mut start = 0;
+            let mut chunks = vec![];
+            for breakpoint in breakpoints {
+                chunks.push(&edit_text.text[start..breakpoint]);
+                start = breakpoint;
+            }
+
+            chunks.push(&edit_text.text[start..]);
+
             let height = static_data
                 .height
                 .map(|v| v.to_pixels() as f32)
                 .unwrap_or_else(|| font.scale());
 
-            size = font.measure(&edit_text.text, height, edit_text.static_data.0.is_html);
+            for chunk in chunks {
+                let chunk_size = font.measure(chunk, height, edit_text.static_data.0.is_html);
+
+                size.0 = size.0.max(chunk_size.0);
+                if let Some(layout) = &static_data.layout {
+                    size.1 += layout.leading.to_pixels() as f32;
+                }
+                size.1 += chunk_size.1;
+            }
         }
 
         size
@@ -382,7 +433,10 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                 .map(|v| v.to_pixels() as f32)
                 .unwrap_or_else(|| font.scale());
 
-            let breakpoints = self.line_breaks(context.library);
+            let breakpoints = edit_text
+                .cached_break_points
+                .clone()
+                .unwrap_or_else(|| self.line_breaks(context.library));
             let mut start = 0;
             let mut chunks = vec![];
             for breakpoint in breakpoints {
