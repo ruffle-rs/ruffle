@@ -193,7 +193,7 @@ impl<'gc> EditText<'gc> {
         let static_data = &edit_text.static_data.0;
 
         transform.matrix.tx = 0.0;
-        transform.matrix.ty += height;
+        transform.matrix.ty += height * Twips::TWIPS_PER_PIXEL as f32;
         if let Some(layout) = &static_data.layout {
             transform.matrix.ty += layout.leading.get() as f32;
         }
@@ -302,21 +302,64 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                 chunks.push(&edit_text.text);
             }
 
+            let max_width = edit_text.static_data.0.bounds.x_max.to_pixels() as f32
+                - edit_text.static_data.0.bounds.x_min.to_pixels() as f32
+                - edit_text
+                    .static_data
+                    .0
+                    .layout
+                    .as_ref()
+                    .map(|l| l.right_margin.to_pixels() as f32)
+                    .unwrap_or(0.0)
+                - edit_text
+                    .static_data
+                    .0
+                    .layout
+                    .as_ref()
+                    .map(|l| l.left_margin.to_pixels() as f32)
+                    .unwrap_or(0.0);
+
             for chunk in chunks {
-                font.evaluate(
-                    chunk,
-                    text_transform.clone(),
-                    height,
-                    edit_text.static_data.0.is_html,
-                    |transform, glyph: &Glyph| {
-                        // Render glyph.
-                        context.transform_stack.push(transform);
-                        context
-                            .renderer
-                            .render_shape(glyph.shape, context.transform_stack.transform());
-                        context.transform_stack.pop();
-                    },
-                );
+                if edit_text.is_multiline && edit_text.is_word_wrap {
+                    for word in font.split_wrapped_lines(
+                        chunk,
+                        height,
+                        max_width,
+                        edit_text.static_data.0.is_html,
+                    ) {
+                        font.evaluate(
+                            word,
+                            text_transform.clone(),
+                            height,
+                            edit_text.static_data.0.is_html,
+                            |transform, glyph: &Glyph| {
+                                // Render glyph.
+                                context.transform_stack.push(transform);
+                                context
+                                    .renderer
+                                    .render_shape(glyph.shape, context.transform_stack.transform());
+                                context.transform_stack.pop();
+                            },
+                        );
+
+                        text_transform = self.newline(height, text_transform);
+                    }
+                } else {
+                    font.evaluate(
+                        chunk,
+                        text_transform.clone(),
+                        height,
+                        edit_text.static_data.0.is_html,
+                        |transform, glyph: &Glyph| {
+                            // Render glyph.
+                            context.transform_stack.push(transform);
+                            context
+                                .renderer
+                                .render_shape(glyph.shape, context.transform_stack.transform());
+                            context.transform_stack.pop();
+                        },
+                    );
+                }
 
                 text_transform = self.newline(height, text_transform);
             }
