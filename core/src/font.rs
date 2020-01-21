@@ -198,45 +198,45 @@ impl<'gc> Font<'gc> {
         height: f32,
         width: f32,
         is_html: bool,
-    ) -> Vec<&str> {
+    ) -> Vec<usize> {
         let mut result = vec![];
         let mut current_width = width;
         let mut current_word = &text[0..0];
 
-        // TODO: This function should include the spaces
         for word in text.split(' ') {
             let measure = self.measure(word, height, is_html);
             let line_start = current_word.as_ptr() as usize - text.as_ptr() as usize;
-            let start = word.as_ptr() as usize - text.as_ptr() as usize;
-            let end_w_spc = if (start + word.len() + 1) < text.len() {
-                start + word.len() + 1
+            let line_end = if (line_start + current_word.len() + 1) < text.len() {
+                line_start + current_word.len() + 1
             } else {
-                start + word.len()
+                line_start + current_word.len()
+            };
+            let word_start = word.as_ptr() as usize - text.as_ptr() as usize;
+            let word_end = if (word_start + word.len() + 1) < text.len() {
+                word_start + word.len() + 1
+            } else {
+                word_start + word.len()
             };
 
             if measure.0 > current_width && measure.0 > width {
                 //Failsafe for if we get a word wider than the field.
                 if !current_word.is_empty() {
-                    result.push(current_word);
+                    result.push(line_end);
                 }
-                result.push(&text[start..end_w_spc]);
-                current_word = &text[end_w_spc..end_w_spc];
+                result.push(word_end);
+                current_word = &text[word_end..word_end];
                 current_width = width;
             } else if measure.0 > current_width {
                 if !current_word.is_empty() {
-                    result.push(current_word);
+                    result.push(line_end);
                 }
 
-                current_word = &text[start..end_w_spc];
+                current_word = &text[word_start..word_end];
                 current_width = width;
             } else {
-                current_word = &text[line_start..end_w_spc];
+                current_word = &text[line_start..word_end];
                 current_width -= measure.0;
             }
-        }
-
-        if !current_word.is_empty() {
-            result.push(current_word);
         }
 
         result

@@ -4,6 +4,7 @@ use crate::avm1::{Object, StageObject, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::font::{Glyph, TextFormat};
+use crate::library::Library;
 use crate::prelude::*;
 use crate::transform::Transform;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
@@ -177,6 +178,7 @@ impl<'gc> EditText<'gc> {
         transform.color_transform.a_mult = f32::from(color.a) / 255.0;
 
         if let Some(layout) = &static_data.layout {
+            transform.matrix.tx += layout.left_margin.get() as f32;
             transform.matrix.ty -= layout.leading.get() as f32;
         }
 
@@ -199,6 +201,89 @@ impl<'gc> EditText<'gc> {
         }
 
         transform
+    }
+
+    pub fn line_width(self) -> f32 {
+        let edit_text = self.0.read();
+
+        self.width() as f32
+            - edit_text
+                .static_data
+                .0
+                .layout
+                .as_ref()
+                .map(|l| l.right_margin.to_pixels() as f32)
+                .unwrap_or(0.0)
+            - edit_text
+                .static_data
+                .0
+                .layout
+                .as_ref()
+                .map(|l| l.left_margin.to_pixels() as f32)
+                .unwrap_or(0.0)
+    }
+
+    /// Compute all "break points" between lines.
+    ///
+    /// The breakpoints are the character indicies of every point in the string
+    /// which needs to have a newline in place, exclusive of the start and end
+    /// of the string. Breakpoints are always placed after the whitespace
+    /// character that caused a newline and represent the start of new lines.
+    /// For example, if this function returns `vec![5, 15]`, then the following
+    /// slicing operations would yield the intended line chunks:
+    ///
+    ///   `vec![&text[0..5], &text[5..15], &text[15..]]`
+    ///
+    /// Breakpoints are caused by either the index of a natural newline, or the
+    /// index of a space that overflowed the current text width. Both of the
+    /// above conditions are predicated on the equivalent flags being enabled
+    /// in the underlying `EditText`. If no flags are enabled, or there are no
+    /// break points for the string, then this returns an empty `Vec`.
+    ///
+    /// The given set of break points should be cached for later use as
+    /// calculating them is a relatively expensive operation.
+    fn line_breaks(self, library: &Library<'gc>) -> Vec<usize> {
+        let edit_text = self.0.read();
+        let static_data = &edit_text.static_data.0;
+        let font_id = static_data.font_id.unwrap_or(0);
+
+        if edit_text.is_multiline {
+            if let Some(font) = library
+                .get_font(font_id)
+                .filter(|font| font.has_glyphs())
+                .or_else(|| library.device_font())
+            {
+                let mut breakpoints = vec![];
+                let mut break_base = 0;
+                let height = static_data
+                    .height
+                    .map(|v| v.to_pixels() as f32)
+                    .unwrap_or_else(|| font.scale());
+
+                for natural_line in edit_text.text.split('\n') {
+                    if break_base != 0 {
+                        breakpoints.push(break_base);
+                    }
+
+                    for breakpoint in font.split_wrapped_lines(
+                        natural_line,
+                        height,
+                        self.line_width(),
+                        edit_text.static_data.0.is_html,
+                    ) {
+                        breakpoints.push(break_base + breakpoint);
+                    }
+
+                    break_base += natural_line.len() + 1;
+                }
+
+                breakpoints
+            } else {
+                vec![]
+            }
+        } else {
+            vec![]
+        }
     }
 
     /// Measure the width and height of the `EditText`'s current text load.
@@ -269,6 +354,10 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             .unwrap_or(Value::Undefined)
     }
 
+    fn self_bounds(&self) -> BoundingBox {
+        self.0.read().static_data.0.bounds.clone().into()
+    }
+
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
         context.transform_stack.push(&*self.transform());
 
@@ -293,73 +382,31 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                 .map(|v| v.to_pixels() as f32)
                 .unwrap_or_else(|| font.scale());
 
+            let breakpoints = self.line_breaks(context.library);
+            let mut start = 0;
             let mut chunks = vec![];
-            if edit_text.is_multiline {
-                for chunk in edit_text.text.split('\n') {
-                    chunks.push(chunk);
-                }
-            } else {
-                chunks.push(&edit_text.text);
+            for breakpoint in breakpoints {
+                chunks.push(&edit_text.text[start..breakpoint]);
+                start = breakpoint;
             }
 
-            let max_width = edit_text.static_data.0.bounds.x_max.to_pixels() as f32
-                - edit_text.static_data.0.bounds.x_min.to_pixels() as f32
-                - edit_text
-                    .static_data
-                    .0
-                    .layout
-                    .as_ref()
-                    .map(|l| l.right_margin.to_pixels() as f32)
-                    .unwrap_or(0.0)
-                - edit_text
-                    .static_data
-                    .0
-                    .layout
-                    .as_ref()
-                    .map(|l| l.left_margin.to_pixels() as f32)
-                    .unwrap_or(0.0);
+            chunks.push(&edit_text.text[start..]);
 
             for chunk in chunks {
-                if edit_text.is_multiline && edit_text.is_word_wrap {
-                    for word in font.split_wrapped_lines(
-                        chunk,
-                        height,
-                        max_width,
-                        edit_text.static_data.0.is_html,
-                    ) {
-                        font.evaluate(
-                            word,
-                            text_transform.clone(),
-                            height,
-                            edit_text.static_data.0.is_html,
-                            |transform, glyph: &Glyph| {
-                                // Render glyph.
-                                context.transform_stack.push(transform);
-                                context
-                                    .renderer
-                                    .render_shape(glyph.shape, context.transform_stack.transform());
-                                context.transform_stack.pop();
-                            },
-                        );
-
-                        text_transform = self.newline(height, text_transform);
-                    }
-                } else {
-                    font.evaluate(
-                        chunk,
-                        text_transform.clone(),
-                        height,
-                        edit_text.static_data.0.is_html,
-                        |transform, glyph: &Glyph| {
-                            // Render glyph.
-                            context.transform_stack.push(transform);
-                            context
-                                .renderer
-                                .render_shape(glyph.shape, context.transform_stack.transform());
-                            context.transform_stack.pop();
-                        },
-                    );
-                }
+                font.evaluate(
+                    chunk,
+                    text_transform.clone(),
+                    height,
+                    edit_text.static_data.0.is_html,
+                    |transform, glyph: &Glyph| {
+                        // Render glyph.
+                        context.transform_stack.push(transform);
+                        context
+                            .renderer
+                            .render_shape(glyph.shape, context.transform_stack.transform());
+                        context.transform_stack.pop();
+                    },
+                );
 
                 text_transform = self.newline(height, text_transform);
             }
