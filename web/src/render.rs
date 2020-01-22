@@ -546,30 +546,43 @@ impl RenderBackend for WebCanvasRenderBackend {
         self.push_render_target();
     }
     fn pop_mask(&mut self) {
-        let (maskee_canvas, _maskee_context) = self.pop_render_target();
-        let (masker_canvas, masker_context) = self.pop_render_target();
+        let (maskee_canvas, maskee_context) = self.pop_render_target();
+        let (masker_canvas, _masker_context) = self.pop_render_target();
 
         // We have to be sure to reset the transforms here so that
         // the texture is drawn starting from the upper-left corner.
-        masker_context.reset_transform().warn_on_error();
+        maskee_context.reset_transform().warn_on_error();
         self.context.reset_transform().warn_on_error();
 
         // We draw the maskee onto the masker using the "source-in" blend mode.
         // This will draw the clips in pixels only where the masker alpha > 0.
-        masker_context
-            .set_global_composite_operation("source-in")
+        maskee_context
+            .set_global_composite_operation("destination-in")
             .unwrap();
-        masker_context
-            .draw_image_with_html_canvas_element(&maskee_canvas, 0.0, 0.0)
+
+        // Force alpha to 100% for the mask art, because Flash ignores alpha in masks.
+        // Otherwise canvas blend modes will draw the masked clip as transparent.
+        // TODO: Doesn't work on Safari because it doesn't support context.filter.
+        self.color_matrix
+            .set_attribute(
+                "values",
+                &"1.0 0 0 0 0 0 1.0 0 0 0 0 0 1.0 0 0 0 0 0 256.0 0",
+            )
+            .warn_on_error();
+
+        maskee_context.set_filter("url('#_cm')");
+        maskee_context
+            .draw_image_with_html_canvas_element(&masker_canvas, 0.0, 0.0)
             .unwrap();
-        masker_context
+        maskee_context
             .set_global_composite_operation("source-over")
             .unwrap();
+        maskee_context.set_filter("none");
 
         // Finally, we draw the finalized masked onto the main canvas.
         self.context.reset_transform().warn_on_error();
         self.context
-            .draw_image_with_html_canvas_element(&masker_canvas, 0.0, 0.0)
+            .draw_image_with_html_canvas_element(&maskee_canvas, 0.0, 0.0)
             .unwrap();
     }
 }
