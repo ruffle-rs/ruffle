@@ -187,6 +187,7 @@ impl<'gc> EditText<'gc> {
 
         if let Some(layout) = &static_data.layout {
             transform.matrix.tx += layout.left_margin.get() as f32;
+            transform.matrix.tx += layout.indent.get() as f32;
             transform.matrix.ty -= layout.leading.get() as f32;
         }
 
@@ -205,6 +206,8 @@ impl<'gc> EditText<'gc> {
         transform.matrix.tx = 0.0;
         transform.matrix.ty += height * Twips::TWIPS_PER_PIXEL as f32;
         if let Some(layout) = &static_data.layout {
+            transform.matrix.tx += layout.left_margin.get() as f32;
+            transform.matrix.tx += layout.indent.get() as f32;
             transform.matrix.ty += layout.leading.get() as f32;
         }
 
@@ -213,22 +216,17 @@ impl<'gc> EditText<'gc> {
 
     pub fn line_width(self) -> f32 {
         let edit_text = self.0.read();
+        let static_data = &edit_text.static_data.0;
 
-        self.width() as f32
-            - edit_text
-                .static_data
-                .0
-                .layout
-                .as_ref()
-                .map(|l| l.right_margin.to_pixels() as f32)
-                .unwrap_or(0.0)
-            - edit_text
-                .static_data
-                .0
-                .layout
-                .as_ref()
-                .map(|l| l.left_margin.to_pixels() as f32)
-                .unwrap_or(0.0)
+        let mut base_width = self.width() as f32;
+
+        if let Some(layout) = &static_data.layout {
+            base_width -= layout.left_margin.to_pixels() as f32;
+            base_width -= layout.indent.to_pixels() as f32;
+            base_width -= layout.right_margin.to_pixels() as f32;
+        }
+
+        base_width
     }
 
     /// Compute all "break points" between lines.
