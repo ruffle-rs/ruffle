@@ -2,6 +2,7 @@
 
 mod document;
 mod error;
+mod iterators;
 mod namespace;
 mod tree;
 
@@ -11,6 +12,7 @@ mod tests;
 pub use document::XMLDocument;
 pub use error::Error;
 pub use error::ParseError;
+pub use iterators::Step;
 pub use namespace::XMLName;
 pub use tree::XMLNode;
 
