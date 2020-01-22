@@ -1716,13 +1716,14 @@ impl<'gc> Avm1<'gc> {
 
     fn action_new_method(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let method_name = self.pop();
-        let object = self.pop().as_object()?;
+        let object_val = self.pop();
         let num_args = self.pop().as_i64()?;
         let mut args = Vec::new();
         for _ in 0..num_args {
             args.push(self.pop());
         }
 
+        let object = value_object::ValueObject::boxed(self, context, object_val);
         let constructor = object
             .get(&method_name.as_string()?, self, context)?
             .resolve(self, context)?
