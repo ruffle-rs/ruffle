@@ -1,5 +1,6 @@
 use crate::avm1::function::{Avm1Function, FunctionObject};
 use crate::avm1::globals::create_globals;
+use crate::avm1::return_value::ReturnValue;
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
 use crate::prelude::*;
@@ -611,60 +612,273 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    pub fn variable_name_is_slash_path(path: &str) -> bool {
-        path.contains(':') || path.contains('.')
+    /// Resolves a target value to a display object.
+    ///
+    /// This is used by any action/function with a parameter that can be either
+    /// a display object or a string path referencing the display object.
+    /// For example, `removeMovieClip(mc)` takes either a string or a display object.
+    ///
+    /// This can be an object, dot path, slash path, or weird combination thereof:
+    /// `_root/movieClip`, `movieClip.child._parent`, `movieClip:child`, etc.
+    /// See the `target_path` test for many examples.
+    ///
+    /// A target path always resolves via the display list. It can look
+    /// at the prototype chain, but not the scope chain.
+    pub fn resolve_target_display_object(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        target: Value<'gc>,
+    ) -> Result<Option<DisplayObject<'gc>>, Error> {
+        // If the value you got was a display object, we can just toss it straight back.
+        if let Value::Object(o) = target {
+            if let Some(o) = o.as_display_object() {
+                return Ok(Some(o));
+            }
+        }
+
+        // Otherwise, we coerce it into a string and try to resolve it as a path.
+        // This means that values like `undefined` will resolve to clips with an instance name of
+        // `"undefined"`, for example.
+        let path = target.coerce_to_string(self, context)?;
+        let base_clip = self.target_clip_or_root(context);
+        Ok(self
+            .resolve_target_path(context, base_clip, &path)?
+            .and_then(|o| o.as_display_object()))
     }
 
-    pub fn resolve_slash_path(
+    /// Resolves a target path string to an object.
+    /// This only returns `Object`; other values will bail out with `None`.
+    ///
+    /// This can be a dot path, slash path, or weird combination thereof:
+    /// `_root/movieClip`, `movieClip.child._parent`, `movieClip:child`, etc.
+    /// See the `target_path` test for many examples.
+    ///
+    /// A target path always resolves via the display list. It can look
+    /// at the prototype chain, but not the scope chain.
+    pub fn resolve_target_path(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         start: DisplayObject<'gc>,
-        root: DisplayObject<'gc>,
-        mut path: &str,
-    ) -> Option<DisplayObject<'gc>> {
-        // Starting / means an absolute path starting from root.
-        let mut clip = if path.bytes().nth(0).unwrap_or(0) == b'/' {
-            path = &path[1..];
-            Some(root)
-        } else {
-            Some(start)
-        };
-        if !path.is_empty() {
-            // Ignore trailing /.
-            if path.bytes().nth_back(0).unwrap_or(0) == b'/' {
-                path = &path[..path.len() - 1];
-            }
-            let mut trail = path.split('/');
-            while let (Some(name), Some(cur_clip)) = (trail.next(), clip) {
-                clip = if name == ".." {
-                    cur_clip.parent()
-                } else {
-                    cur_clip.get_child_by_name(name)
-                };
-            }
+        path: &str,
+    ) -> Result<Option<Object<'gc>>, Error> {
+        let root = context.root;
+
+        // Empty path resolves immediately to start clip.
+        if path.is_empty() {
+            return Ok(Some(start.object().as_object().unwrap()));
         }
-        clip
+
+        // Starting / means an absolute path starting from root.
+        // (`/bar` means `_root.bar`)
+        let mut path = path.as_bytes();
+        let (clip, mut is_slash_path) = if path[0] == b'/' {
+            path = &path[1..];
+            (root, true)
+        } else {
+            (start, false)
+        };
+        let mut object = clip.object().as_object().unwrap();
+
+        // Iterate through each token in the path.
+        while !path.is_empty() {
+            // Skip any number of leading :
+            // `foo`, `:foo`, and `:::foo` are all the same
+            while path.get(0) == Some(&b':') {
+                path = &path[1..];
+            }
+
+            let val = if let b".." | b"../" | b"..:" = &path[..std::cmp::min(path.len(), 3)] {
+                // Check for ..
+                // SWF-4 style _parent
+                if path.get(2) == Some(&b'/') {
+                    is_slash_path = true;
+                }
+                path = path.get(3..).unwrap_or(&[]);
+                if let Some(parent) = object.as_display_object().and_then(|o| o.parent()) {
+                    parent.object()
+                } else {
+                    // Tried to get parent of root, bail out.
+                    return Ok(None);
+                }
+            } else {
+                // Step until the next delimiter.
+                // : . / all act as path delimiters.
+                // The only restriction is that after a / appears,
+                // . is no longer considered a delimiter.
+                // TODO: SWF4 is probably more restrictive.
+                let mut pos = 0;
+                while pos < path.len() {
+                    match path[pos] {
+                        b':' => break,
+                        b'.' if !is_slash_path => break,
+                        b'/' => {
+                            is_slash_path = true;
+                            break;
+                        }
+                        _ => (),
+                    }
+                    pos += 1;
+                }
+
+                // Slice out the identifier and step the cursor past the delimiter.
+                let ident = &path[..pos];
+                path = path.get(pos + 1..).unwrap_or(&[]);
+
+                // Guaranteed to be valid UTF-8.
+                let name = unsafe { std::str::from_utf8_unchecked(ident) };
+
+                // Get the value from the object.
+                // Resolves display object instances first, then local variables.
+                // This is the opposite of general GetMember property access!
+                if let Some(child) = object
+                    .as_display_object()
+                    .and_then(|o| o.get_child_by_name(name))
+                {
+                    child.object()
+                } else {
+                    object
+                        .get(&name, self, context)
+                        .unwrap()
+                        .resolve(self, context)?
+                }
+            };
+
+            // Resolve the value to an object while traversing the path.
+            object = if let Value::Object(o) = val {
+                o
+            } else {
+                return Ok(None);
+            };
+        }
+
+        Ok(Some(object))
     }
 
-    pub fn resolve_slash_path_variable<'s>(
-        start: Option<DisplayObject<'gc>>,
-        root: DisplayObject<'gc>,
+    /// Gets the value referenced by a target path string.
+    ///
+    /// This can be a raw variable name, a slash path, a dot path, or weird combination thereof.
+    /// For example:
+    /// `_root/movieClip.foo`, `movieClip:child:_parent`, `blah`
+    /// See the `target_path` test for many examples.
+    ///
+    /// The string first tries to resolve as a variable or target path. The right-most : or .
+    /// delimits the variable name, with the left side identifying the target object path.
+    ///
+    /// If there is no variable name, the string will try to resolve as a target path using
+    /// `resolve_target_path`.
+    ///
+    /// Finally, if the above fails, it is a normal variable resovled via active stack frame
+    /// the scope chain.
+    pub fn get_variable<'s>(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         path: &'s str,
-    ) -> Option<(DisplayObject<'gc>, &'s str)> {
-        // If the target clip is invalid, we default to root for the variable path.
-        let start = start.unwrap_or(root);
-        if !path.is_empty() {
-            let mut var_iter = path.splitn(2, ':');
-            match (var_iter.next(), var_iter.next()) {
-                (Some(var_name), None) => return Some((start, var_name)),
-                (Some(path), Some(var_name)) => {
-                    if let Some(node) = Self::resolve_slash_path(start, root, path) {
-                        return Some((node, var_name));
-                    }
-                }
-                _ => (),
+    ) -> Result<ReturnValue<'gc>, Error> {
+        // Resolve a variable path for a GetVariable action.
+        let root = context.root;
+        let start = self.target_clip().unwrap_or(root);
+
+        // Find the right-most : or . in the path.
+        // If we have one, we must resolve as a target path.
+        // We also check for a / to skip some unnecessary work later.
+        let mut has_slash = false;
+        let mut var_iter = path.as_bytes().rsplitn(2, |c| match c {
+            b':' | b'.' => true,
+            b'/' => {
+                has_slash = true;
+                false
+            }
+            _ => false,
+        });
+        let b = var_iter.next();
+        let a = var_iter.next();
+
+        if let (Some(path), Some(var_name)) = (a, b) {
+            // We have a . or :, so this is a path to an object plus a variable name.
+            // We resolve it directly on the targeted object.
+            let path = unsafe { std::str::from_utf8_unchecked(path) };
+            let var_name = unsafe { std::str::from_utf8_unchecked(var_name) };
+            if let Some(object) = self.resolve_target_path(context, start, path)? {
+                return object.get(var_name, self, context);
+            } else {
+                return Ok(Value::Undefined.into());
             }
         }
 
-        None
+        // If it doesn't have a trailing variable, it can still be a slash path.
+        // We can skip this step if we didn't find a slash above.
+        if has_slash {
+            if let Some(node) = self.resolve_target_path(context, start, path)? {
+                return Ok(node.into());
+            }
+        }
+
+        // Finally! It's a plain old variable name.
+        // Resolve using scope chain, as normal.
+        self.current_stack_frame()
+            .unwrap()
+            .read()
+            .resolve(&path, self, context)
+    }
+
+    /// Sets the value referenced by a target path string.
+    ///
+    /// This can be a raw variable name, a slash path, a dot path, or weird combination thereof.
+    /// For example:
+    /// `_root/movieClip.foo`, `movieClip:child:_parent`, `blah`
+    /// See the `target_path` test for many examples.
+    ///
+    /// The string first tries to resolve as a variable or target path. The right-most : or .
+    /// delimits the variable name, with the left side identifying the target object path.
+    ///
+    /// If there is no variable name, the entire string is considered the name, and it is
+    /// resovled normally via active stack frame and the scope chain.
+    ///
+    /// This differs from `get_variable` because slash paths with no variable segment are invalid;
+    /// For example, `foo/bar` sets a property named `foo/bar` on the current stack frame instead
+    /// of drilling into the display list.
+    pub fn set_variable<'s>(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        path: &'s str,
+        value: Value<'gc>,
+    ) -> Result<(), Error> {
+        // Resolve a variable path for a GetVariable action.
+        let root = context.root;
+        let start = self.target_clip().unwrap_or(root);
+
+        // If the target clip is invalid, we default to root for the variable path.
+        if path.is_empty() {
+            return Ok(());
+        }
+
+        // Find the right-most : or . in the path.
+        // If we have one, we must resolve as a target path.
+        let mut var_iter = path.as_bytes().rsplitn(2, |&c| c == b':' || c == b'.');
+        let b = var_iter.next();
+        let a = var_iter.next();
+
+        if let (Some(path), Some(var_name)) = (a, b) {
+            // We have a . or :, so this is a path to an object plus a variable name.
+            // We resolve it directly on the targeted object.
+            let path = unsafe { std::str::from_utf8_unchecked(path) };
+            let var_name = unsafe { std::str::from_utf8_unchecked(var_name) };
+            if let Some(object) = self.resolve_target_path(context, start, path)? {
+                object.set(var_name, value, self, context)?;
+            }
+            return Ok(());
+        }
+
+        // Finally! It's a plain old variable name.
+        // Set using scope chain, as normal.
+        // This will overwrite the value if the property exists somewhere
+        // in the scope chain, otherwise it is created on the top-level object.
+        let sf = self.current_stack_frame().unwrap();
+        let stack_frame = sf.read();
+        let this = stack_frame.this_cell();
+        let scope = stack_frame.scope_cell();
+        scope.read().set(path, value, self, context, this)?;
+        Ok(())
     }
 
     fn push(&mut self, value: impl Into<Value<'gc>>) {
@@ -799,13 +1013,7 @@ impl<'gc> Avm1<'gc> {
         let depth = self.pop();
         let target = self.pop();
         let source = self.pop();
-        let source_clip = match source {
-            Value::String(s) => {
-                Avm1::resolve_slash_path(self.target_clip_or_root(context), context.root, &s)
-            }
-            Value::Object(o) => o.as_display_object(),
-            _ => None,
-        };
+        let source_clip = self.resolve_target_display_object(context, source)?;
 
         if let Some(movie_clip) = source_clip.and_then(|o| o.as_movie_clip()) {
             let _ = globals::movie_clip::duplicate_movie_clip(
@@ -1289,10 +1497,9 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let prop_index = self.pop().into_number_v1() as usize;
-        let clip_path = self.pop();
-        let path = clip_path.as_string()?;
-        let ret = if let Some(base_clip) = self.target_clip() {
-            if let Some(clip) = Avm1::resolve_slash_path(base_clip, context.root, path) {
+        let path = self.pop();
+        let ret = if self.target_clip().is_some() {
+            if let Some(clip) = self.resolve_target_display_object(context, path)? {
                 let display_properties = self.display_properties;
                 let props = display_properties.write(context.gc_context);
                 if let Some(property) = props.get_by_index(prop_index) {
@@ -1343,36 +1550,9 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let var_path = self.pop();
-        let path = var_path.as_string()?;
+        let path = var_path.coerce_to_string(self, context)?;
 
-        let is_slashpath = Self::variable_name_is_slash_path(path);
-        if is_slashpath {
-            if let Some((node, var_name)) =
-                Self::resolve_slash_path_variable(self.target_clip(), context.root, path)
-            {
-                if let Some(clip) = node.as_movie_clip() {
-                    let object = clip.object().as_object()?;
-                    if object.has_property(var_name) {
-                        object.get(var_name, self, context)?.push(self);
-                    } else {
-                        self.push(Value::Undefined);
-                    }
-                } else {
-                    self.push(Value::Undefined);
-                }
-            } else {
-                log::warn!("Invalid variable path: {}", path);
-                self.push(Value::Undefined);
-            }
-        } else if self.current_stack_frame().unwrap().read().is_defined(path) {
-            self.current_stack_frame()
-                .unwrap()
-                .read()
-                .resolve(path, self, context)?
-                .push(self);
-        } else {
-            self.push(Value::Undefined);
-        }
+        self.get_variable(context, &path)?.push(self);
 
         Ok(())
     }
@@ -1901,13 +2081,8 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let target_clip = match self.pop() {
-            Value::String(s) => {
-                Avm1::resolve_slash_path(self.target_clip_or_root(context), context.root, &s)
-            }
-            Value::Object(o) => o.as_display_object(),
-            _ => None,
-        };
+        let target = self.pop();
+        let target_clip = self.resolve_target_display_object(context, target)?;
 
         if let Some(target_clip) = target_clip.and_then(|o| o.as_movie_clip()) {
             let _ = globals::movie_clip::remove_movie_clip(target_clip, context, 0);
@@ -1950,17 +2125,16 @@ impl<'gc> Avm1<'gc> {
     ) -> Result<(), Error> {
         let value = self.pop();
         let prop_index = self.pop().as_u32()? as usize;
-        let clip_path = self.pop();
-        let path = clip_path.as_string()?;
-        if let Some(base_clip) = self.target_clip() {
-            if let Some(clip) = Avm1::resolve_slash_path(base_clip, context.root, path) {
+        let path = self.pop();
+        if self.target_clip().is_some() {
+            if let Some(clip) = self.resolve_target_display_object(context, path)? {
                 let display_properties = self.display_properties;
                 let props = display_properties.read();
                 if let Some(property) = props.get_by_index(prop_index) {
                     property.set(self, context, clip, value)?;
                 }
             } else {
-                log::warn!("SetProperty: Invalid target {}", path);
+                log::warn!("SetProperty: Invalid target");
             }
         } else {
             log::warn!("SetProperty: Invalid base clip");
@@ -1974,8 +2148,8 @@ impl<'gc> Avm1<'gc> {
     ) -> Result<(), Error> {
         // Flash 4-style variable
         let value = self.pop();
-        let var_path = self.pop();
-        self.set_variable(context, var_path.as_string()?, value)
+        let var_path = self.pop().coerce_to_string(self, context)?;
+        self.set_variable(context, &var_path, value)
     }
 
     #[allow(clippy::float_cmp)]
@@ -1985,33 +2159,6 @@ impl<'gc> Avm1<'gc> {
         let b = self.pop();
         let result = a == b;
         self.push(result);
-        Ok(())
-    }
-
-    pub fn set_variable(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        var_path: &str,
-        value: Value<'gc>,
-    ) -> Result<(), Error> {
-        let is_slashpath = Self::variable_name_is_slash_path(var_path);
-
-        if is_slashpath {
-            if let Some((node, var_name)) =
-                Self::resolve_slash_path_variable(self.target_clip(), context.root, var_path)
-            {
-                if let Some(clip) = node.as_movie_clip() {
-                    clip.object()
-                        .as_object()?
-                        .set(var_name, value.clone(), self, context)?;
-                }
-            }
-        } else {
-            let this = self.current_stack_frame().unwrap().read().this_cell();
-            let scope = self.current_stack_frame().unwrap().read().scope_cell();
-            scope.read().set(var_path, value, self, context, this)?;
-        }
-
         Ok(())
     }
 
@@ -2025,7 +2172,10 @@ impl<'gc> Avm1<'gc> {
         let base_clip = sf.base_clip();
         if target.is_empty() {
             sf.set_target_clip(Some(base_clip));
-        } else if let Some(clip) = Avm1::resolve_slash_path(base_clip, context.root, target) {
+        } else if let Some(clip) = self
+            .resolve_target_path(context, base_clip, target)?
+            .and_then(|o| o.as_display_object())
+        {
             sf.set_target_clip(Some(clip));
         } else {
             log::warn!("SetTarget failed: {} not found", target);
@@ -2075,12 +2225,12 @@ impl<'gc> Avm1<'gc> {
                 } else {
                     // Other objects get coerced to string
                     let target = target.coerce_to_string(self, context)?;
-                    self.action_set_target(context, &target)?;
+                    return self.action_set_target(context, &target);
                 }
             }
             _ => {
                 let target = target.coerce_to_string(self, context)?;
-                self.action_set_target(context, &target)?;
+                return self.action_set_target(context, &target);
             }
         };
 
@@ -2107,13 +2257,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_start_drag(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let target = self.pop();
-        let display_object = match target {
-            Value::String(s) => {
-                Avm1::resolve_slash_path(self.target_clip_or_root(context), context.root, &s)
-            }
-            Value::Object(o) => o.as_display_object(),
-            _ => None,
-        };
+        let display_object = self.resolve_target_display_object(context, target)?;
         if let Some(display_object) = display_object {
             let lock_center = self.pop();
             let constrain = self.pop().as_bool(self.current_swf_version());
