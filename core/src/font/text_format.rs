@@ -165,7 +165,7 @@ impl TextFormat {
             "color",
             self.color
                 .clone()
-                .map(|v| ((v.r << 16) + (v.g << 8) + v.b).into())
+                .map(|v| (((v.r as u32) << 16) + ((v.g as u32) << 8) + v.b as u32).into())
                 .unwrap_or(Value::Null),
             avm1,
             uc,
