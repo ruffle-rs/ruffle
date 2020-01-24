@@ -237,7 +237,6 @@ impl<
             let root_data = gc_root.0.write(gc_context);
             let mut root = root_data.root;
             root.post_instantiation(gc_context, root, root_data.avm.prototypes().movie_clip);
-            root.set_name(gc_context, "_level0");
         });
 
         player.build_matrices();

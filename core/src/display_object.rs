@@ -575,7 +575,8 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
             path.push_str(&*self.name());
             path
         } else {
-            self.name().to_string()
+            // TODO: Get the actual level # from somewhere.
+            "_level0".to_string()
         }
     }
 
