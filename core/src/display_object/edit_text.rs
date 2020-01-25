@@ -476,6 +476,12 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
             text.object = Some(object);
         }
+
+        text.document = text
+            .document
+            .as_node()
+            .duplicate(context.gc_context, true)
+            .document();
     }
 
     fn object(&self) -> Value<'gc> {
