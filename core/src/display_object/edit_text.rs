@@ -25,7 +25,8 @@ use std::sync::Arc;
 #[collect(no_drop)]
 pub struct EditText<'gc>(GcCell<'gc, EditTextData<'gc>>);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
 pub struct EditTextData<'gc> {
     /// DisplayObject common properties.
     base: DisplayObjectBase<'gc>,
@@ -520,15 +521,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
     fn allow_as_mask(&self) -> bool {
         false
-    }
-}
-
-unsafe impl<'gc> gc_arena::Collect for EditTextData<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.base.trace(cc);
-        self.static_data.trace(cc);
-        self.object.trace(cc);
     }
 }
 
