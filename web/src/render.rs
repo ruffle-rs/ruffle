@@ -325,8 +325,6 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn register_shape(&mut self, shape: &swf::Shape) -> ShapeHandle {
         let handle = ShapeHandle(self.shapes.len());
 
-        let image = HtmlImageElement::new().unwrap();
-
         let mut bitmaps = HashMap::new();
         for (id, handle) in &self.id_to_bitmap {
             let bitmap_data = &self.bitmaps[handle.0];
@@ -336,21 +334,7 @@ impl RenderBackend for WebCanvasRenderBackend {
             );
         }
 
-        use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
-        let svg = swf_shape_to_svg(&shape, &bitmaps, self.pixelated_property_value);
-        let svg_encoded = format!(
-            "data:image/svg+xml,{}",
-            utf8_percent_encode(&svg, NON_ALPHANUMERIC)
-        );
-
-        image.set_src(&svg_encoded);
-
-        let mut data = ShapeData(vec![]);
-        data.0.push(CanvasDrawCommand::DrawImage {
-            image,
-            x_min: shape.shape_bounds.x_min.to_pixels(),
-            y_min: shape.shape_bounds.y_min.to_pixels(),
-        });
+        let data = swf_shape_to_shape_data(&shape, &bitmaps, self.pixelated_property_value);
 
         self.shapes.push(data);
 
@@ -656,11 +640,11 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 }
 
-fn swf_shape_to_svg(
+fn swf_shape_to_shape_data(
     shape: &swf::Shape,
     bitmaps: &HashMap<CharacterId, (&str, u32, u32)>,
     pixelated_property_value: &str,
-) -> String {
+) -> ShapeData {
     use fnv::FnvHashSet;
     use ruffle_core::matrix::Matrix;
     use ruffle_core::shape_utils::{swf_shape_to_paths, DrawCommand, DrawPath};
@@ -1030,5 +1014,22 @@ fn swf_shape_to_svg(
         document = document.add(svg_path);
     }
 
-    document.to_string()
+    use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
+    let svg = document.to_string();
+    let svg_encoded = format!(
+        "data:image/svg+xml,{}",
+        utf8_percent_encode(&svg, NON_ALPHANUMERIC)
+    );
+
+    let image = HtmlImageElement::new().unwrap();
+    image.set_src(&svg_encoded);
+
+    let mut data = ShapeData(vec![]);
+    data.0.push(CanvasDrawCommand::DrawImage {
+        image,
+        x_min: shape.shape_bounds.x_min.to_pixels(),
+        y_min: shape.shape_bounds.y_min.to_pixels(),
+    });
+
+    data
 }
