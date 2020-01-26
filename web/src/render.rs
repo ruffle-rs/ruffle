@@ -5,8 +5,11 @@ use ruffle_core::backend::render::{
 };
 use std::collections::HashMap;
 use std::convert::TryInto;
-use wasm_bindgen::JsCast;
-use web_sys::{CanvasRenderingContext2d, Element, HtmlCanvasElement, HtmlImageElement};
+use wasm_bindgen::{JsCast, JsValue};
+use web_sys::{
+    CanvasGradient, CanvasPattern, CanvasRenderingContext2d, Element, HtmlCanvasElement,
+    HtmlImageElement, Path2d,
+};
 
 pub struct WebCanvasRenderBackend {
     canvas: HtmlCanvasElement,
@@ -24,10 +27,39 @@ pub struct WebCanvasRenderBackend {
     pixelated_property_value: &'static str,
 }
 
-struct ShapeData {
-    image: HtmlImageElement,
-    x_min: f64,
-    y_min: f64,
+/// Canvas-drawable shape data extracted from an SWF file.
+struct ShapeData(Vec<CanvasDrawCommand>);
+
+/// An individual command to be drawn to the canvas.
+enum CanvasDrawCommand {
+    /// A command to draw a path stroke with a given style.
+    Stroke {
+        path: Path2d,
+        line_width: f64,
+        stroke_style: String,
+        line_cap: String,
+        line_join: String,
+        miter_limit: f64,
+    },
+
+    /// A command to fill a path with a given style.
+    Fill {
+        path: Path2d,
+        fill_style: CanvasFillStyle,
+    },
+
+    /// A command to draw a particular image (such as an SVG)
+    DrawImage {
+        image: HtmlImageElement,
+        x_min: f64,
+        y_min: f64,
+    },
+}
+
+enum CanvasFillStyle {
+    Color(String),
+    Gradient(CanvasGradient),
+    Pattern(CanvasPattern),
 }
 
 #[allow(dead_code)]
@@ -306,7 +338,6 @@ impl RenderBackend for WebCanvasRenderBackend {
 
         use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
         let svg = swf_shape_to_svg(&shape, &bitmaps, self.pixelated_property_value);
-
         let svg_encoded = format!(
             "data:image/svg+xml,{}",
             utf8_percent_encode(&svg, NON_ALPHANUMERIC)
@@ -314,11 +345,14 @@ impl RenderBackend for WebCanvasRenderBackend {
 
         image.set_src(&svg_encoded);
 
-        self.shapes.push(ShapeData {
+        let mut data = ShapeData(vec![]);
+        data.0.push(CanvasDrawCommand::DrawImage {
             image,
             x_min: shape.shape_bounds.x_min.to_pixels(),
             y_min: shape.shape_bounds.y_min.to_pixels(),
         });
+
+        self.shapes.push(data);
 
         handle
     }
@@ -484,11 +518,46 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
         self.set_transform(transform);
         if let Some(shape) = self.shapes.get(shape.0) {
-            let _ = self.context.draw_image_with_html_image_element(
-                &shape.image,
-                shape.x_min,
-                shape.y_min,
-            );
+            for command in shape.0.iter() {
+                match command {
+                    CanvasDrawCommand::Fill { path, fill_style } => {
+                        match fill_style {
+                            CanvasFillStyle::Color(color) => {
+                                self.context.set_fill_style(&JsValue::from_str(&color))
+                            }
+                            CanvasFillStyle::Gradient(grad) => self.context.set_fill_style(grad),
+                            CanvasFillStyle::Pattern(patt) => self.context.set_fill_style(patt),
+                        };
+
+                        self.context.fill_with_path_2d(&path);
+                    }
+                    CanvasDrawCommand::Stroke {
+                        path,
+                        line_width,
+                        stroke_style,
+                        line_cap,
+                        line_join,
+                        miter_limit,
+                    } => {
+                        self.context.set_line_width(*line_width);
+                        self.context.set_line_cap(&line_cap);
+                        self.context.set_line_join(&line_join);
+                        self.context.set_miter_limit(*miter_limit);
+                        self.context
+                            .set_stroke_style(&JsValue::from_str(&stroke_style));
+                        self.context.stroke_with_path(&path);
+                    }
+                    CanvasDrawCommand::DrawImage {
+                        image,
+                        x_min,
+                        y_min,
+                    } => {
+                        let _ = self
+                            .context
+                            .draw_image_with_html_image_element(&image, *x_min, *y_min);
+                    }
+                }
+            }
         }
         self.clear_transform();
     }
