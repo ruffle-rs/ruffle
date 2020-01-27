@@ -1219,11 +1219,11 @@ fn swf_shape_to_canvas_commands(
 
                 canvas_data.0.push(CanvasDrawCommand::Stroke {
                     path,
-                    line_width: line_width.into(),
+                    line_width: line_width as f64 / 20.0,
                     stroke_style,
                     line_cap: line_cap.to_string(),
                     line_join: line_join.to_string(),
-                    miter_limit: miter_limit.into(),
+                    miter_limit: miter_limit as f64 / 20.0,
                 });
             }
         }
