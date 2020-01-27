@@ -19,6 +19,7 @@ pub struct WebCanvasRenderBackend {
     render_targets: Vec<(HtmlCanvasElement, CanvasRenderingContext2d)>,
     cur_render_target: usize,
     color_matrix: Element,
+    last_matrix_str: Option<String>,
     shapes: Vec<ShapeData>,
     bitmaps: Vec<BitmapData>,
     id_to_bitmap: HashMap<CharacterId, BitmapHandle>,
@@ -165,6 +166,7 @@ impl WebCanvasRenderBackend {
             render_targets,
             cur_render_target: 0,
             color_matrix,
+            last_matrix_str: None,
             context,
             shapes: vec![],
             bitmaps: vec![],
@@ -303,17 +305,23 @@ impl WebCanvasRenderBackend {
                 a_mult,
                 a_add
             );
-            self.color_matrix
-                .set_attribute("values", &matrix_str)
-                .unwrap();
 
-            self.context.set_filter("url('#_cm')");
+            if self.last_matrix_str.as_ref() != Some(&matrix_str) {
+                self.color_matrix
+                    .set_attribute("values", &matrix_str)
+                    .unwrap();
+
+                self.context.set_filter("url('#_cm')");
+
+                self.last_matrix_str = Some(matrix_str);
+            }
         }
     }
 
     #[inline]
     fn clear_transform(&mut self) {
         self.context.set_filter("none");
+        self.last_matrix_str = None;
         self.context.set_global_alpha(1.0);
     }
 }
