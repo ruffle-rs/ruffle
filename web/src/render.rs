@@ -3,6 +3,7 @@ use ruffle_core::backend::render::{
     swf, swf::CharacterId, BitmapHandle, BitmapInfo, Color, Letterbox, RenderBackend, ShapeHandle,
     Transform,
 };
+use ruffle_core::color_transform::ColorTransform;
 use ruffle_core::shape_utils::DrawCommand;
 use std::collections::HashMap;
 use std::convert::TryInto;
@@ -19,7 +20,6 @@ pub struct WebCanvasRenderBackend {
     render_targets: Vec<(HtmlCanvasElement, CanvasRenderingContext2d)>,
     cur_render_target: usize,
     color_matrix: Element,
-    last_matrix_str: Option<String>,
     shapes: Vec<ShapeData>,
     bitmaps: Vec<BitmapData>,
     id_to_bitmap: HashMap<CharacterId, BitmapHandle>,
@@ -32,13 +32,28 @@ pub struct WebCanvasRenderBackend {
 /// Canvas-drawable shape data extracted from an SWF file.
 struct ShapeData(Vec<CanvasDrawCommand>);
 
+struct CanvasColor(String, u8, u8, u8, u8);
+
+impl CanvasColor {
+    /// Apply a color transformation to this color.
+    fn color_transform(&self, cxform: &ColorTransform) -> CanvasColor {
+        let CanvasColor(_, r, g, b, a) = self;
+        let r = (*r as f32 * cxform.r_mult + (cxform.r_add * 256.0)) as u8;
+        let g = (*g as f32 * cxform.g_mult + (cxform.g_add * 256.0)) as u8;
+        let b = (*b as f32 * cxform.b_mult + (cxform.b_add * 256.0)) as u8;
+        let a = (*a as f32 * cxform.a_mult + (cxform.a_add * 256.0)) as u8;
+        let colstring = format!("rgba({},{},{},{})", r, g, b, f32::from(a) / 255.0);
+        CanvasColor(colstring, r, g, b, a)
+    }
+}
+
 /// An individual command to be drawn to the canvas.
 enum CanvasDrawCommand {
     /// A command to draw a path stroke with a given style.
     Stroke {
         path: Path2d,
         line_width: f64,
-        stroke_style: String,
+        stroke_style: CanvasColor,
         line_cap: String,
         line_join: String,
         miter_limit: f64,
@@ -59,10 +74,20 @@ enum CanvasDrawCommand {
 }
 
 enum CanvasFillStyle {
-    Color(String),
+    Color(CanvasColor),
     #[allow(dead_code)]
     Gradient(CanvasGradient),
     Pattern(CanvasPattern),
+}
+
+impl CanvasFillStyle {
+    /// Attempt to apply a color transformation to this fill style.
+    fn color_transform(&self, cxform: &ColorTransform) -> Option<CanvasFillStyle> {
+        match self {
+            Self::Color(cc) => Some(Self::Color(cc.color_transform(cxform))),
+            _ => None,
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -166,7 +191,6 @@ impl WebCanvasRenderBackend {
             render_targets,
             cur_render_target: 0,
             color_matrix,
-            last_matrix_str: None,
             context,
             shapes: vec![],
             bitmaps: vec![],
@@ -274,7 +298,11 @@ impl WebCanvasRenderBackend {
                 f64::from(matrix.ty) / 20.0,
             )
             .unwrap();
+    }
 
+    #[allow(clippy::float_cmp)]
+    #[inline]
+    fn set_color_filter(&self, transform: &Transform) {
         let color_transform = &transform.color_transform;
         if color_transform.r_mult == 1.0
             && color_transform.g_mult == 1.0
@@ -306,22 +334,17 @@ impl WebCanvasRenderBackend {
                 a_add
             );
 
-            if self.last_matrix_str.as_ref() != Some(&matrix_str) {
-                self.color_matrix
-                    .set_attribute("values", &matrix_str)
-                    .unwrap();
+            self.color_matrix
+                .set_attribute("values", &matrix_str)
+                .unwrap();
 
-                self.context.set_filter("url('#_cm')");
-
-                self.last_matrix_str = Some(matrix_str);
-            }
+            self.context.set_filter("url('#_cm')");
         }
     }
 
     #[inline]
-    fn clear_transform(&mut self) {
+    fn clear_color_filter(&self) {
         self.context.set_filter("none");
-        self.last_matrix_str = None;
         self.context.set_global_alpha(1.0);
     }
 }
@@ -507,12 +530,13 @@ impl RenderBackend for WebCanvasRenderBackend {
 
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform) {
         self.set_transform(transform);
+        self.set_color_filter(transform);
         if let Some(bitmap) = self.bitmaps.get(bitmap.0) {
             let _ = self
                 .context
                 .draw_image_with_html_image_element(&bitmap.image, 0.0, 0.0);
         }
-        self.clear_transform();
+        self.clear_color_filter();
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
@@ -521,8 +545,14 @@ impl RenderBackend for WebCanvasRenderBackend {
             for command in shape.0.iter() {
                 match command {
                     CanvasDrawCommand::Fill { path, fill_style } => {
-                        match fill_style {
-                            CanvasFillStyle::Color(color) => {
+                        let xformed_fill_style =
+                            fill_style.color_transform(&transform.color_transform);
+                        if xformed_fill_style.is_none() {
+                            self.set_color_filter(transform);
+                        }
+
+                        match xformed_fill_style.as_ref().unwrap_or(fill_style) {
+                            CanvasFillStyle::Color(CanvasColor(color, ..)) => {
                                 self.context.set_fill_style(&JsValue::from_str(&color))
                             }
                             CanvasFillStyle::Gradient(grad) => self.context.set_fill_style(grad),
@@ -530,6 +560,10 @@ impl RenderBackend for WebCanvasRenderBackend {
                         };
 
                         self.context.fill_with_path_2d(&path);
+
+                        if xformed_fill_style.is_none() {
+                            self.clear_color_filter();
+                        }
                     }
                     CanvasDrawCommand::Stroke {
                         path,
@@ -539,12 +573,14 @@ impl RenderBackend for WebCanvasRenderBackend {
                         line_join,
                         miter_limit,
                     } => {
+                        let xformed_stroke_style =
+                            stroke_style.color_transform(&transform.color_transform);
                         self.context.set_line_width(*line_width);
                         self.context.set_line_cap(&line_cap);
                         self.context.set_line_join(&line_join);
                         self.context.set_miter_limit(*miter_limit);
                         self.context
-                            .set_stroke_style(&JsValue::from_str(&stroke_style));
+                            .set_stroke_style(&JsValue::from_str(&xformed_stroke_style.0));
                         self.context.stroke_with_path(&path);
                     }
                     CanvasDrawCommand::DrawImage {
@@ -559,7 +595,6 @@ impl RenderBackend for WebCanvasRenderBackend {
                 }
             }
         }
-        self.clear_transform();
     }
 
     fn draw_pause_overlay(&mut self) {
@@ -1122,12 +1157,12 @@ fn swf_shape_to_canvas_commands(
         match path {
             DrawPath::Fill { style, commands } => {
                 let fill_style = match style {
-                    FillStyle::Color(Color { r, g, b, a }) => CanvasFillStyle::Color(format!(
-                        "rgba({},{},{},{})",
-                        r,
-                        g,
-                        b,
-                        f32::from(*a) / 255.0
+                    FillStyle::Color(Color { r, g, b, a }) => CanvasFillStyle::Color(CanvasColor(
+                        format!("rgba({},{},{},{})", r, g, b, f32::from(*a) / 255.0),
+                        *r,
+                        *g,
+                        *b,
+                        *a,
                     )),
                     FillStyle::LinearGradient(_gradient) => return None,
                     FillStyle::RadialGradient(_gradient) => return None,
@@ -1204,9 +1239,15 @@ fn swf_shape_to_canvas_commands(
                 // Therefore, we clamp the stroke width to 1 pixel (20 twips). This won't be 100% accurate
                 // if the shape is scaled, but it looks much closer to the Flash Player.
                 let line_width = std::cmp::max(style.width.get(), 20);
-                let stroke_style = format!(
-                    "rgba({},{},{},{})",
-                    style.color.r, style.color.g, style.color.b, style.color.a
+                let stroke_style = CanvasColor(
+                    format!(
+                        "rgba({},{},{},{})",
+                        style.color.r, style.color.g, style.color.b, style.color.a
+                    ),
+                    style.color.r,
+                    style.color.g,
+                    style.color.b,
+                    style.color.a,
                 );
                 let line_cap = match style.start_cap {
                     LineCapStyle::Round => "round",

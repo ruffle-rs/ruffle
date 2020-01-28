@@ -9,7 +9,7 @@ extern crate smallvec;
 mod avm1;
 mod bounding_box;
 mod character;
-mod color_transform;
+pub mod color_transform;
 mod context;
 pub mod events;
 mod font;
