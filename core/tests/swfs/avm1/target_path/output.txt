@@ -41,6 +41,7 @@ clip3
 // get('clip1/clip2.clip3')
 _level0.clip1.clip2.clip3
 // tellTarget('clip1/clip2.clip3') { trace(_name); }
+Target not found: Target="clip1/clip2.clip3" Base="_level0"
 undefined
 
 // get('clip1.clip2.clip3')
@@ -61,6 +62,7 @@ clip3
 // get('clip1:clip2/.clip3')
 _level0.clip1.clip2.clip3
 // tellTarget('clip1:clip2/.clip3') { trace(_name); }
+Target not found: Target="clip1:clip2/.clip3" Base="_level0"
 undefined
 
 // get('clip1:clip2/:clip3')
@@ -71,11 +73,13 @@ clip3
 // get('clip1.clip2/.clip3')
 _level0.clip1.clip2.clip3
 // tellTarget('clip1.clip2/.clip3') { trace(_name); }
+Target not found: Target="clip1.clip2/.clip3" Base="_level0"
 undefined
 
 // get('clip1/clip2.clip3')
 _level0.clip1.clip2.clip3
 // tellTarget('clip1/clip2.clip3') { trace(_name); }
+Target not found: Target="clip1/clip2.clip3" Base="_level0"
 undefined
 
 // get('clip1.clip2.clip3.clip4')
@@ -101,16 +105,19 @@ clip4
 // get('/clip1.clip2.clip3.clip4')
 undefined
 // tellTarget('/clip1.clip2.clip3.clip4') { trace(_name); }
+Target not found: Target="/clip1.clip2.clip3.clip4" Base="_level0"
 undefined
 
 // get('clip1/clip2.clip3:clip4')
 undefined
 // tellTarget('clip1/clip2.clip3:clip4') { trace(_name); }
+Target not found: Target="clip1/clip2.clip3:clip4" Base="_level0"
 undefined
 
 // get('clip1/clip2:clip3.clip4')
 clip4 var
 // tellTarget('clip1/clip2:clip3.clip4') { trace(_name); }
+Target not found: Target="clip1/clip2:clip3.clip4" Base="_level0"
 undefined
 
 // get('clip1/clip2:clip3:clip4')
@@ -131,6 +138,7 @@ clip4
 // get('clip1.clip2.clip3/.clip4')
 clip4 var
 // tellTarget('clip1.clip2.clip3/.clip4') { trace(_name); }
+Target not found: Target="clip1.clip2.clip3/.clip4" Base="_level0"
 undefined
 
 // get('clip1.clip2.clip3/clip4')
@@ -151,16 +159,19 @@ clip4
 // get('clip1.clip2.clip3/clip4.')
 undefined
 // tellTarget('clip1.clip2.clip3/clip4.') { trace(_name); }
+Target not found: Target="clip1.clip2.clip3/clip4." Base="_level0"
 undefined
 
 // get('clip1.clip2.clip3/clip4..')
 undefined
 // tellTarget('clip1.clip2.clip3/clip4..') { trace(_name); }
+Target not found: Target="clip1.clip2.clip3/clip4.." Base="_level0"
 undefined
 
 // get('clip1.clip2.clip3/clip4::')
 undefined
 // tellTarget('clip1.clip2.clip3/clip4::') { trace(_name); }
+Target not found: Target="clip1.clip2.clip3/clip4::" Base="_level0"
 undefined
 
 // get('clip1/clip2/clip3/..')
@@ -201,11 +212,13 @@ clip2
 // get('_root:clip1.clip2:_parent:../clip1.clip2')
 clip2 var
 // tellTarget('_root:clip1.clip2:_parent:../clip1.clip2') { trace(_name); }
+Target not found: Target="_root:clip1.clip2:_parent:../clip1.clip2" Base="_level0"
 undefined
 
 // get('_root/clip1:clip2:...')
 undefined
 // tellTarget('_root/clip1:clip2:...') { trace(_name); }
+Target not found: Target="_root/clip1:clip2:..." Base="_level0"
 undefined
 
 // get('::::clip1.:::clip2/:::clip3:clip4')
@@ -226,21 +239,25 @@ clip4
 // get('_root:clip1:clip2/...clip2')
 clip2 var
 // tellTarget('_root:clip1:clip2/...clip2') { trace(_name); }
+Target not found: Target="_root:clip1:clip2/...clip2" Base="_level0"
 undefined
 
 // get('_root:clip1:clip2:...clip2')
 clip2 var
 // tellTarget('_root:clip1:clip2:...clip2') { trace(_name); }
+Target not found: Target="_root:clip1:clip2:...clip2" Base="_level0"
 undefined
 
 // get('_root:clip1:clip2...clip2')
 undefined
 // tellTarget('_root:clip1:clip2...clip2') { trace(_name); }
+Target not found: Target="_root:clip1:clip2...clip2" Base="_level0"
 undefined
 
 // get(_root.clip1)
 undefined
 // tellTarget(undefined) { trace(_name); }
+Target not found: Target="clip1 var" Base="_level0"
 undefined
 
 // get(o)
@@ -253,6 +270,7 @@ clip1
 // get(null)
 undefined
 // tellTarget(undefined) { trace(_name); }
+Target not found: Target="null" Base="_level0"
 undefined
 
 // set('clip5/foo', 1)

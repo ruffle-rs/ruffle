@@ -2,6 +2,7 @@ n: clip1
 tellTarget('clip2') {
   n: clip2
   tellTarget('INVALID') {
+Target not found: Target="INVALID" Base="_level0.clip1"
     n: root
   }
   n: clip2
@@ -15,6 +16,7 @@ tellTarget(o) {
   n: root
 }
 tellTarget(123) {
+Target not found: Target="123" Base="_level0.clip1"
   n: root
 }
 tellTarget('clip2') {
@@ -30,5 +32,6 @@ tellTarget('clip2') {
     n: clip2
 }
 tellTarget(null) {
+Target not found: Target="null" Base="_level0.clip1"
   n: root
 }
