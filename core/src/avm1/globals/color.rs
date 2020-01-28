@@ -78,10 +78,8 @@ fn target<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
 ) -> Result<Option<DisplayObject<'gc>>, Error> {
-    this.get("target", avm, context)?
-        .resolve(avm, context)?
-        .as_object()
-        .map(|o| o.as_display_object())
+    let target = this.get("target", avm, context)?.resolve(avm, context)?;
+    avm.resolve_target_display_object(context, target)
 }
 
 fn get_rgb<'gc>(
