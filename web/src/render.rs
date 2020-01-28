@@ -49,10 +49,10 @@ impl CanvasColor {
     /// Apply a color transformation to this color.
     fn color_transform(&self, cxform: &ColorTransform) -> CanvasColor {
         let CanvasColor(_, r, g, b, a) = self;
-        let r = clamped_u8_color(*r as f32 * cxform.r_mult + (cxform.r_add * 256.0));
-        let g = clamped_u8_color(*g as f32 * cxform.g_mult + (cxform.g_add * 256.0));
-        let b = clamped_u8_color(*b as f32 * cxform.b_mult + (cxform.b_add * 256.0));
-        let a = clamped_u8_color(*a as f32 * cxform.a_mult + (cxform.a_add * 256.0));
+        let r = clamped_u8_color(*r as f32 * cxform.r_mult + (cxform.r_add * 255.0));
+        let g = clamped_u8_color(*g as f32 * cxform.g_mult + (cxform.g_add * 255.0));
+        let b = clamped_u8_color(*b as f32 * cxform.b_mult + (cxform.b_add * 255.0));
+        let a = clamped_u8_color(*a as f32 * cxform.a_mult + (cxform.a_add * 255.0));
         let colstring = format!("rgba({},{},{},{})", r, g, b, f32::from(a) / 255.0);
         CanvasColor(colstring, r, g, b, a)
     }
@@ -599,9 +599,11 @@ impl RenderBackend for WebCanvasRenderBackend {
                         x_min,
                         y_min,
                     } => {
+                        self.set_color_filter(transform);
                         let _ = self
                             .context
                             .draw_image_with_html_image_element(&image, *x_min, *y_min);
+                        self.clear_color_filter();
                     }
                 }
             }
