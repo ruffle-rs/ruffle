@@ -34,14 +34,25 @@ struct ShapeData(Vec<CanvasDrawCommand>);
 
 struct CanvasColor(String, u8, u8, u8, u8);
 
+/// Convert an f32 to a u8, clamping all out-of-range values to the `u8` range.
+fn clamped_u8_color(v: f32) -> u8 {
+    if v < 0.0 {
+        0
+    } else if v > 255.0 {
+        255
+    } else {
+        v as u8
+    }
+}
+
 impl CanvasColor {
     /// Apply a color transformation to this color.
     fn color_transform(&self, cxform: &ColorTransform) -> CanvasColor {
         let CanvasColor(_, r, g, b, a) = self;
-        let r = (*r as f32 * cxform.r_mult + (cxform.r_add * 256.0)) as u8;
-        let g = (*g as f32 * cxform.g_mult + (cxform.g_add * 256.0)) as u8;
-        let b = (*b as f32 * cxform.b_mult + (cxform.b_add * 256.0)) as u8;
-        let a = (*a as f32 * cxform.a_mult + (cxform.a_add * 256.0)) as u8;
+        let r = clamped_u8_color(*r as f32 * cxform.r_mult + (cxform.r_add * 256.0));
+        let g = clamped_u8_color(*g as f32 * cxform.g_mult + (cxform.g_add * 256.0));
+        let b = clamped_u8_color(*b as f32 * cxform.b_mult + (cxform.b_add * 256.0));
+        let a = clamped_u8_color(*a as f32 * cxform.a_mult + (cxform.a_add * 256.0));
         let colstring = format!("rgba({},{},{},{})", r, g, b, f32::from(a) / 255.0);
         CanvasColor(colstring, r, g, b, a)
     }
