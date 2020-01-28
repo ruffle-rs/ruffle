@@ -585,7 +585,7 @@ pub fn f64_to_wrapping_i32(n: f64) -> i32 {
 
 #[cfg(test)]
 mod test {
-    use crate::avm1::function::Executable;
+    use crate::avm1::function::{Executable, FunctionObject};
     use crate::avm1::globals::create_globals;
     use crate::avm1::object::{Object, TObject};
     use crate::avm1::return_value::ReturnValue;
@@ -623,7 +623,7 @@ mod test {
                 Ok(5.0.into())
             }
 
-            let valueof = ScriptObject::function(
+            let valueof = FunctionObject::function(
                 context.gc_context,
                 Executable::Native(value_of_impl),
                 Some(protos.function),

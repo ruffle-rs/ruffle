@@ -1,15 +1,18 @@
 //! Code relating to executable functions + calling conventions.
 
 use crate::avm1::activation::Activation;
-use crate::avm1::property::Attribute::*;
+use crate::avm1::property::{Attribute, Attribute::*};
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
 use crate::avm1::super_object::SuperObject;
 use crate::avm1::value::Value;
-use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext};
+use crate::avm1::{Avm1, Error, Object, ObjectPtr, ScriptObject, TObject, UpdateContext};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::tag_utils::SwfSlice;
-use gc_arena::{Collect, CollectionContext, GcCell};
+use enumset::EnumSet;
+use gc_arena::{Collect, CollectionContext, GcCell, MutationContext};
+use std::collections::HashSet;
+use std::fmt;
 use swf::avm1::types::FunctionParam;
 
 /// Represents a function defined in Ruffle's code.
@@ -35,7 +38,7 @@ pub type NativeFunction<'gc> = fn(
 
 /// Represents a function defined in the AVM1 runtime, either through
 /// `DefineFunction` or `DefineFunction2`.
-#[derive(Clone, Collect)]
+#[derive(Debug, Clone, Collect)]
 #[collect(no_drop)]
 pub struct Avm1Function<'gc> {
     /// The file format version of the SWF that generated this function.
@@ -198,6 +201,18 @@ unsafe impl<'gc> Collect for Executable<'gc> {
     }
 }
 
+impl fmt::Debug for Executable<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Executable::Native(nf) => f
+                .debug_tuple("Executable::Native")
+                .field(&format!("{:p}", nf))
+                .finish(),
+            Executable::Action(af) => f.debug_tuple("Executable::Action").field(&af).finish(),
+        }
+    }
+}
+
 impl<'gc> Executable<'gc> {
     /// Execute the given code.
     ///
@@ -353,5 +368,262 @@ impl<'gc> From<NativeFunction<'gc>> for Executable<'gc> {
 impl<'gc> From<Avm1Function<'gc>> for Executable<'gc> {
     fn from(af: Avm1Function<'gc>) -> Self {
         Executable::Action(af)
+    }
+}
+
+pub const TYPE_OF_FUNCTION: &str = "function";
+
+/// Represents an `Object` that holds executable code.
+#[derive(Debug, Clone, Collect, Copy)]
+#[collect(no_drop)]
+pub struct FunctionObject<'gc> {
+    /// The script object base.
+    ///
+    /// TODO: Can we move the object's data into our own struct?
+    base: ScriptObject<'gc>,
+
+    data: GcCell<'gc, FunctionObjectData<'gc>>,
+}
+
+#[derive(Debug, Clone, Collect)]
+#[collect(no_drop)]
+struct FunctionObjectData<'gc> {
+    /// The code that will be invoked when this object is called.
+    function: Option<Executable<'gc>>,
+
+    /// The value to be returned by `toString` and `valueOf`.
+    primitive: Value<'gc>,
+}
+
+impl<'gc> FunctionObject<'gc> {
+    /// Construct a function sans prototype.
+    pub fn bare_function(
+        gc_context: MutationContext<'gc, '_>,
+        function: impl Into<Executable<'gc>>,
+        fn_proto: Option<Object<'gc>>,
+    ) -> Self {
+        let base = ScriptObject::object(gc_context, fn_proto);
+
+        FunctionObject {
+            base,
+            data: GcCell::allocate(
+                gc_context,
+                FunctionObjectData {
+                    function: Some(function.into()),
+                    primitive: "[type Function]".into(),
+                },
+            ),
+        }
+    }
+
+    /// Construct a function from an executable and associated protos.
+    ///
+    /// Since prototypes need to link back to themselves, this function builds
+    /// both objects itself and returns the function to you, fully allocated.
+    ///
+    /// `fn_proto` refers to the implicit proto of the function object, and the
+    /// `prototype` refers to the explicit prototype of the function. If
+    /// provided, the function and it's prototype will be linked to each other.
+    pub fn function(
+        context: MutationContext<'gc, '_>,
+        function: impl Into<Executable<'gc>>,
+        fn_proto: Option<Object<'gc>>,
+        prototype: Option<Object<'gc>>,
+    ) -> Object<'gc> {
+        let function = Self::bare_function(context, function, fn_proto).into();
+
+        if let Some(p) = prototype {
+            p.define_value(
+                context,
+                "constructor",
+                Value::Object(function),
+                DontEnum.into(),
+            );
+            function.define_value(context, "prototype", p.into(), EnumSet::empty());
+        }
+
+        function
+    }
+}
+
+impl<'gc> TObject<'gc> for FunctionObject<'gc> {
+    fn get_local(
+        &self,
+        name: &str,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        this: Object<'gc>,
+    ) -> Result<ReturnValue<'gc>, Error> {
+        self.base.get_local(name, avm, context, this)
+    }
+
+    fn set(
+        &self,
+        name: &str,
+        value: Value<'gc>,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        self.base.set(name, value, avm, context)
+    }
+
+    fn call(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        this: Object<'gc>,
+        args: &[Value<'gc>],
+    ) -> Result<ReturnValue<'gc>, Error> {
+        if let Some(exec) = self.as_executable() {
+            exec.exec(avm, context, this, args)
+        } else {
+            Ok(Value::Undefined.into())
+        }
+    }
+
+    #[allow(clippy::new_ret_no_self)]
+    fn new(
+        &self,
+        _avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        prototype: Object<'gc>,
+        _args: &[Value<'gc>],
+    ) -> Result<Object<'gc>, Error> {
+        let base = ScriptObject::object(context.gc_context, Some(prototype));
+        let fn_object = FunctionObject {
+            base,
+            data: GcCell::allocate(
+                context.gc_context,
+                FunctionObjectData {
+                    function: None,
+                    primitive: "[type Function]".into(),
+                },
+            ),
+        };
+
+        Ok(fn_object.into())
+    }
+
+    fn delete(&self, gc_context: MutationContext<'gc, '_>, name: &str) -> bool {
+        self.base.delete(gc_context, name)
+    }
+
+    fn proto(&self) -> Option<Object<'gc>> {
+        self.base.proto()
+    }
+
+    fn define_value(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        name: &str,
+        value: Value<'gc>,
+        attributes: EnumSet<Attribute>,
+    ) {
+        self.base.define_value(gc_context, name, value, attributes)
+    }
+
+    fn set_attributes(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        name: Option<&str>,
+        set_attributes: EnumSet<Attribute>,
+        clear_attributes: EnumSet<Attribute>,
+    ) {
+        self.base
+            .set_attributes(gc_context, name, set_attributes, clear_attributes)
+    }
+
+    fn add_property(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        name: &str,
+        get: Executable<'gc>,
+        set: Option<Executable<'gc>>,
+        attributes: EnumSet<Attribute>,
+    ) {
+        self.base
+            .add_property(gc_context, name, get, set, attributes)
+    }
+
+    fn has_property(&self, name: &str) -> bool {
+        self.base.has_property(name)
+    }
+
+    fn has_own_property(&self, name: &str) -> bool {
+        self.base.has_own_property(name)
+    }
+
+    fn is_property_overwritable(&self, name: &str) -> bool {
+        self.base.is_property_overwritable(name)
+    }
+
+    fn is_property_enumerable(&self, name: &str) -> bool {
+        self.base.is_property_enumerable(name)
+    }
+
+    fn get_keys(&self) -> HashSet<String> {
+        self.base.get_keys()
+    }
+
+    fn as_string(&self) -> String {
+        "[type Function]".to_string()
+    }
+
+    fn type_of(&self) -> &'static str {
+        TYPE_OF_FUNCTION
+    }
+
+    fn interfaces(&self) -> Vec<Object<'gc>> {
+        self.base.interfaces()
+    }
+
+    /// Set the interface list for this object. (Only useful for prototypes.)
+    fn set_interfaces(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        iface_list: Vec<Object<'gc>>,
+    ) {
+        self.base.set_interfaces(gc_context, iface_list)
+    }
+
+    fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
+        Some(self.base)
+    }
+
+    fn as_executable(&self) -> Option<Executable<'gc>> {
+        self.data.read().function.clone()
+    }
+
+    fn as_ptr(&self) -> *const ObjectPtr {
+        self.base.as_ptr()
+    }
+
+    fn length(&self) -> usize {
+        self.base.length()
+    }
+
+    fn set_length(&self, gc_context: MutationContext<'gc, '_>, new_length: usize) {
+        self.base.set_length(gc_context, new_length)
+    }
+
+    fn array(&self) -> Vec<Value<'gc>> {
+        self.base.array()
+    }
+
+    fn array_element(&self, index: usize) -> Value<'gc> {
+        self.base.array_element(index)
+    }
+
+    fn set_array_element(
+        &self,
+        index: usize,
+        value: Value<'gc>,
+        gc_context: MutationContext<'gc, '_>,
+    ) -> usize {
+        self.base.set_array_element(index, value, gc_context)
+    }
+
+    fn delete_array_element(&self, index: usize, gc_context: MutationContext<'gc, '_>) {
+        self.base.delete_array_element(index, gc_context)
     }
 }

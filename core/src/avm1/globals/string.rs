@@ -1,6 +1,6 @@
 //! `String` class impl
 
-use crate::avm1::function::Executable;
+use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::value_object::ValueObject;
@@ -37,7 +37,7 @@ pub fn create_string_object<'gc>(
     string_proto: Option<Object<'gc>>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
-    let string = ScriptObject::function(
+    let string = FunctionObject::function(
         gc_context,
         Executable::Native(string),
         fn_proto,

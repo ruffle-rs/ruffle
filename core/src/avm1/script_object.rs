@@ -1,8 +1,7 @@
-use crate::avm1::function::{Executable, NativeFunction};
+use crate::avm1::function::{Executable, FunctionObject, NativeFunction};
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ObjectPtr, TObject, UpdateContext, Value};
-use crate::display_object::DisplayObject;
 use core::fmt;
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -10,7 +9,6 @@ use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 
 pub const TYPE_OF_OBJECT: &str = "object";
-pub const TYPE_OF_FUNCTION: &str = "function";
 
 #[derive(Debug, Clone, Collect)]
 #[collect(no_drop)]
@@ -26,7 +24,6 @@ pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
 pub struct ScriptObjectData<'gc> {
     prototype: Option<Object<'gc>>,
     values: HashMap<String, Property<'gc>>,
-    function: Option<Executable<'gc>>,
     interfaces: Vec<Object<'gc>>,
     type_of: &'static str,
     array: ArrayStorage<'gc>,
@@ -36,7 +33,6 @@ unsafe impl<'gc> Collect for ScriptObjectData<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
         self.prototype.trace(cc);
         self.values.trace(cc);
-        self.function.trace(cc);
         self.array.trace(cc);
         self.interfaces.trace(cc);
     }
@@ -47,7 +43,6 @@ impl fmt::Debug for ScriptObjectData<'_> {
         f.debug_struct("Object")
             .field("prototype", &self.prototype)
             .field("values", &self.values)
-            .field("function", &self.function.is_some())
             .field("array", &self.array)
             .finish()
     }
@@ -64,7 +59,6 @@ impl<'gc> ScriptObject<'gc> {
                 prototype: proto,
                 type_of: TYPE_OF_OBJECT,
                 values: HashMap::new(),
-                function: None,
                 array: ArrayStorage::Properties { length: 0 },
                 interfaces: vec![],
             },
@@ -81,7 +75,6 @@ impl<'gc> ScriptObject<'gc> {
                 prototype: proto,
                 type_of: TYPE_OF_OBJECT,
                 values: HashMap::new(),
-                function: None,
                 array: ArrayStorage::Vector(Vec::new()),
                 interfaces: vec![],
             },
@@ -101,7 +94,6 @@ impl<'gc> ScriptObject<'gc> {
                 prototype: proto,
                 type_of: TYPE_OF_OBJECT,
                 values: HashMap::new(),
-                function: None,
                 array: ArrayStorage::Properties { length: 0 },
                 interfaces: vec![],
             },
@@ -121,60 +113,10 @@ impl<'gc> ScriptObject<'gc> {
                 prototype: None,
                 type_of: TYPE_OF_OBJECT,
                 values: HashMap::new(),
-                function: None,
                 array: ArrayStorage::Properties { length: 0 },
                 interfaces: vec![],
             },
         ))
-    }
-
-    /// Construct a function sans prototype.
-    pub fn bare_function(
-        gc_context: MutationContext<'gc, '_>,
-        function: impl Into<Executable<'gc>>,
-        fn_proto: Option<Object<'gc>>,
-    ) -> Self {
-        ScriptObject(GcCell::allocate(
-            gc_context,
-            ScriptObjectData {
-                prototype: fn_proto,
-                type_of: TYPE_OF_FUNCTION,
-                function: Some(function.into()),
-                values: HashMap::new(),
-                array: ArrayStorage::Properties { length: 0 },
-                interfaces: vec![],
-            },
-        ))
-    }
-
-    /// Construct a function from an executable and associated protos.
-    ///
-    /// Since prototypes need to link back to themselves, this function builds
-    /// both objects itself and returns the function to you, fully allocated.
-    ///
-    /// `fn_proto` refers to the implicit proto of the function object, and the
-    /// `prototype` refers to the explicit prototype of the function. If
-    /// provided, the function and it's prototype will be linked to each other.
-    pub fn function(
-        gc_context: MutationContext<'gc, '_>,
-        function: impl Into<Executable<'gc>>,
-        fn_proto: Option<Object<'gc>>,
-        prototype: Option<Object<'gc>>,
-    ) -> Object<'gc> {
-        let function = Self::bare_function(gc_context, function, fn_proto).into();
-
-        //TODO: Can we make these proper sets or no?
-        if let Some(p) = prototype {
-            p.define_value(
-                gc_context,
-                "constructor",
-                Value::Object(function),
-                Attribute::DontEnum.into(),
-            );
-            function.define_value(gc_context, "prototype", p.into(), EnumSet::empty());
-        }
-
-        function
     }
 
     /// Declare a native function on the current object.
@@ -197,7 +139,9 @@ impl<'gc> ScriptObject<'gc> {
         self.define_value(
             gc_context,
             name,
-            Value::Object(ScriptObject::function(gc_context, function, fn_proto, None)),
+            Value::Object(FunctionObject::function(
+                gc_context, function, fn_proto, None,
+            )),
             attributes.into(),
         )
     }
@@ -334,16 +278,12 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     /// overrides that may need to interact with the underlying object.
     fn call(
         &self,
-        avm: &mut Avm1<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
-        args: &[Value<'gc>],
+        _avm: &mut Avm1<'gc>,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+        _this: Object<'gc>,
+        _args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
-        if let Some(function) = &self.0.read().function {
-            function.exec(avm, context, this, args)
-        } else {
-            Ok(Value::Undefined.into())
-        }
+        Ok(Value::Undefined.into())
     }
 
     #[allow(clippy::new_ret_no_self)]
@@ -497,11 +437,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     fn as_string(&self) -> String {
-        if self.0.read().function.is_some() {
-            "[type Function]".to_string()
-        } else {
-            "[object Object]".to_string()
-        }
+        "[object Object]".to_string()
     }
 
     fn type_of(&self) -> &'static str {
@@ -518,19 +454,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
         Some(*self)
-    }
-
-    /// Get the underlying display node for this object, if it exists.
-    fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
-        None
-    }
-
-    /// Returns a copy of a given function.
-    ///
-    /// TODO: We have to clone here because of how executables are stored on
-    /// objects directly. This might not be a good idea for performance.
-    fn as_executable(&self) -> Option<Executable<'gc>> {
-        self.0.read().function.clone()
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

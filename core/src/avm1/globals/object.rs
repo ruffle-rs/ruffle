@@ -37,15 +37,21 @@ pub fn add_property<'gc>(
                         this.add_property(
                             context.gc_context,
                             &name,
-                            get_func,
-                            Some(set_func),
+                            get_func.clone(),
+                            Some(set_func.clone()),
                             EnumSet::empty(),
                         );
                     } else {
                         return Ok(false.into());
                     }
                 } else if let Value::Null = setter {
-                    this.add_property(context.gc_context, &name, get_func, None, ReadOnly.into());
+                    this.add_property(
+                        context.gc_context,
+                        &name,
+                        get_func.clone(),
+                        None,
+                        ReadOnly.into(),
+                    );
                 } else {
                     return Ok(false.into());
                 }

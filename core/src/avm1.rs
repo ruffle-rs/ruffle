@@ -1,4 +1,4 @@
-use crate::avm1::function::Avm1Function;
+use crate::avm1::function::{Avm1Function, FunctionObject};
 use crate::avm1::globals::create_globals;
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
@@ -1056,7 +1056,7 @@ impl<'gc> Avm1<'gc> {
         );
         let prototype =
             ScriptObject::object(context.gc_context, Some(self.prototypes.object)).into();
-        let func_obj = ScriptObject::function(
+        let func_obj = FunctionObject::function(
             context.gc_context,
             func,
             Some(self.prototypes.function),
@@ -1102,7 +1102,7 @@ impl<'gc> Avm1<'gc> {
         );
         let prototype =
             ScriptObject::object(context.gc_context, Some(self.prototypes.object)).into();
-        let func_obj = ScriptObject::function(
+        let func_obj = FunctionObject::function(
             context.gc_context,
             func,
             Some(self.prototypes.function),

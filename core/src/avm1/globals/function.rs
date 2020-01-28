@@ -17,22 +17,62 @@ pub fn constructor<'gc>(
 
 /// Implements `Function.prototype.call`
 pub fn call<'gc>(
-    _avm: &mut Avm1<'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    avm: &mut Avm1<'gc>,
+    action_context: &mut UpdateContext<'_, 'gc, '_>,
+    func: Object<'gc>,
+    myargs: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    Ok(Value::Undefined.into())
+    let this = match myargs.get(0) {
+        Some(Value::Object(this)) => *this,
+        _ => avm.globals,
+    };
+    let empty = [];
+    let args = match myargs.len() {
+        0 => &empty,
+        1 => &empty,
+        _ => &myargs[1..],
+    };
+
+    match func.as_executable() {
+        Some(exec) => exec.exec(avm, action_context, this, args),
+        _ => Ok(Value::Undefined.into()),
+    }
 }
 
 /// Implements `Function.prototype.apply`
 pub fn apply<'gc>(
-    _avm: &mut Avm1<'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    avm: &mut Avm1<'gc>,
+    action_context: &mut UpdateContext<'_, 'gc, '_>,
+    func: Object<'gc>,
+    myargs: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    Ok(Value::Undefined.into())
+    let this = match myargs.get(0) {
+        Some(Value::Object(this)) => *this,
+        _ => avm.globals,
+    };
+    let mut child_args = Vec::new();
+    let args_object = myargs.get(1).cloned().unwrap_or(Value::Undefined);
+    let length = match args_object {
+        Value::Object(a) => a
+            .get("length", avm, action_context)?
+            .resolve(avm, action_context)?
+            .as_number(avm, action_context)? as usize,
+        _ => 0,
+    };
+
+    while child_args.len() < length {
+        let args = args_object.as_object()?;
+        let next_arg = args
+            .get(&format!("{}", child_args.len()), avm, action_context)?
+            .resolve(avm, action_context)?;
+
+        child_args.push(next_arg);
+    }
+
+    match func.as_executable() {
+        Some(exec) => exec.exec(avm, action_context, this, &child_args),
+        _ => Ok(Value::Undefined.into()),
+    }
 }
 
 /// Implements `Function.prototype.toString`
