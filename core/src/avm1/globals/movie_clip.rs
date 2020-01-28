@@ -163,6 +163,7 @@ pub fn create_proto<'gc>(
             // TODO find a correct value
             Ok(1.0.into())
         },
+        "getDepth" => get_depth,
         "hitTest" => |movie_clip: MovieClip<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args: &[Value<'gc>]| {
             hit_test(movie_clip, avm, context, args)
         },
@@ -350,6 +351,20 @@ pub fn duplicate_movie_clip<'gc>(
         Ok(new_clip.into())
     } else {
         log::warn!("Unable to duplicate clip '{}'", movie_clip.name());
+        Ok(Value::Undefined.into())
+    }
+}
+
+pub fn get_depth<'gc>(
+    movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if avm.current_swf_version() >= 6 {
+        let depth = movie_clip.depth().wrapping_sub(AVM_DEPTH_BIAS);
+        Ok(depth.into())
+    } else {
         Ok(Value::Undefined.into())
     }
 }
