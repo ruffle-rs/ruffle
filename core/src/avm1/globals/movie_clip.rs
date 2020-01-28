@@ -4,13 +4,14 @@ use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
-use crate::display_object::{MovieClip, TDisplayObject};
+use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 use swf::Twips;
 
 /// The depth at which dynamic clips are offset.
 const AVM_DEPTH_BIAS: i32 = 16384;
+const AVM_MAX_INTERACTIVE_DEPTH: i32 = 2_130_706_428;
 
 /// Implements `MovieClip`
 pub fn constructor<'gc>(
@@ -168,6 +169,7 @@ pub fn create_proto<'gc>(
         "gotoAndPlay" => goto_and_play,
         "gotoAndStop" => goto_and_stop,
         "startDrag" => start_drag,
+        "swapDepths" => swap_depths,
         "toString" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             Ok(movie_clip.path().into())
         }
@@ -229,7 +231,7 @@ fn attach_movie<'gc>(
 
     // TODO: What is the derivation of this max value? It shows up a few times in the AVM...
     // 2^31 - 16777220
-    if depth < 0 || depth > 2_130_706_428 {
+    if depth < 0 || depth > AVM_MAX_INTERACTIVE_DEPTH {
         return Ok(Value::Undefined.into());
     }
     if let Ok(mut new_clip) = context.library.instantiate_by_export_name(
@@ -318,7 +320,7 @@ pub fn duplicate_movie_clip<'gc>(
 
     // TODO: What is the derivation of this max value? It shows up a few times in the AVM...
     // 2^31 - 16777220
-    if depth < 0 || depth > 2_130_706_428 {
+    if depth < 0 || depth > AVM_MAX_INTERACTIVE_DEPTH {
         return Ok(Value::Undefined.into());
     }
     if let Ok(mut new_clip) =
@@ -448,5 +450,50 @@ pub fn stop_drag<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     // It doesn't matter which clip we call this on; it simply stops any active drag.
     *context.drag_object = None;
+    Ok(Value::Undefined.into())
+}
+
+pub fn swap_depths<'gc>(
+    movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let arg = args.get(0).cloned().unwrap_or(Value::Undefined);
+
+    let parent = if let Some(parent) = movie_clip.parent().and_then(|o| o.as_movie_clip()) {
+        parent
+    } else {
+        return Ok(Value::Undefined.into());
+    };
+
+    let mut depth = None;
+    if let Value::Number(n) = arg {
+        depth = Some(crate::avm1::value::f64_to_wrapping_i32(n).wrapping_add(AVM_DEPTH_BIAS));
+    } else if let Some(target) =
+        avm.resolve_target_display_object(context, movie_clip.into(), arg)?
+    {
+        if let Some(target_parent) = target.parent() {
+            if DisplayObject::ptr_eq(target_parent, parent.into()) {
+                depth = Some(target.depth())
+            } else {
+                log::warn!("MovieClip.swapDepths: Objects do not have the same parent");
+            }
+        }
+    } else {
+        log::warn!("MovieClip.swapDepths: Invalid target");
+    };
+
+    if let Some(depth) = depth {
+        if depth < 0 || depth > AVM_MAX_DEPTH {
+            // Depth out of range; no action.
+            return Ok(Value::Undefined.into());
+        }
+
+        if depth != movie_clip.depth() {
+            parent.swap_child_to_depth(context, movie_clip.into(), depth);
+        }
+    }
+
     Ok(Value::Undefined.into())
 }
