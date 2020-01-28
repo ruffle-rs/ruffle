@@ -60,6 +60,7 @@ swf_tests! {
     (goto_rewind2, "avm1/goto_rewind2", 10),
     (goto_rewind3, "avm1/goto_rewind3", 10),
     (goto_execution_order, "avm1/goto_execution_order", 3),
+    (goto_execution_order2, "avm1/goto_execution_order2", 3),
     (greaterthan_swf5, "avm1/greaterthan_swf5", 1),
     (greaterthan_swf8, "avm1/greaterthan_swf8", 1),
     (strictly_equals, "avm1/strictly_equals", 1),
