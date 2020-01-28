@@ -2180,7 +2180,7 @@ impl<'gc> Avm1<'gc> {
         } else {
             log::warn!("SetTarget failed: {} not found", target);
             // TODO: Emulate AVM1 trace error message.
-            // log::info!(target: "avm_trace", "Target not found: Target=\"{}\" Base=\"{}\"", target, context.root.read().name());
+            log::info!(target: "avm_trace", "Target not found: Target=\"{}\" Base=\"{}\"", target, base_clip.path());
 
             // When SetTarget has an invalid target, subsequent GetVariables act
             // as if they are targeting root, but subsequent Play/Stop/etc.

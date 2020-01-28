@@ -17,6 +17,7 @@ root
 // foo
 mc
 // tellTarget('BadClip') { call(5); }
+Target not found: Target="BadClip" Base="_level0"
 // frame 5
 // foo
 root
