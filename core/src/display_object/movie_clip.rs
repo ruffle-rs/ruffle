@@ -206,13 +206,35 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         child: DisplayObject<'gc>,
     ) {
-        assert!(DisplayObject::ptr_eq(
+        debug_assert!(DisplayObject::ptr_eq(
             child.parent().unwrap(),
             (*self).into()
         ));
         let mut parent = self.0.write(context.gc_context);
         if let Some(child) = parent.children.remove(&child.depth()) {
             parent.remove_child_from_exec_list(context, child);
+        }
+    }
+
+    /// Swaps a child to a target depth.
+    pub fn swap_child_to_depth(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        child: DisplayObject<'gc>,
+        depth: Depth,
+    ) {
+        // Verify this is actually our child.
+        debug_assert!(DisplayObject::ptr_eq(child.parent().unwrap(), self.into()));
+
+        // TODO: It'd be nice to just do a swap here, but no swap functionality in BTreeMap.
+        let mut parent = self.0.write(context.gc_context);
+        let prev_depth = child.depth();
+        child.set_depth(context.gc_context, depth);
+        if let Some(prev_child) = parent.children.insert(depth, child) {
+            prev_child.set_depth(context.gc_context, prev_depth);
+            parent.children.insert(prev_depth, prev_child);
+        } else {
+            parent.children.remove(&prev_depth);
         }
     }
 
