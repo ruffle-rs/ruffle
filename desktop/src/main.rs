@@ -1,10 +1,15 @@
 #![allow(clippy::unneeded_field_pattern)]
 
 mod audio;
+mod custom_event;
+mod executor;
 mod input;
 mod navigator;
 mod render;
+mod task;
 
+use crate::custom_event::RuffleEvent;
+use crate::executor::GlutinAsyncExecutor;
 use crate::render::GliumRenderBackend;
 use glutin::{
     dpi::{LogicalSize, PhysicalPosition},
@@ -44,7 +49,7 @@ fn main() {
 fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     let swf_data = std::fs::read(&input_path)?;
 
-    let event_loop = EventLoop::new();
+    let event_loop: EventLoop<RuffleEvent> = EventLoop::with_user_event();
     let window_builder = WindowBuilder::new().with_title(format!(
         "Ruffle - {}",
         input_path.file_name().unwrap_or_default().to_string_lossy()
@@ -63,7 +68,11 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         }
     };
     let renderer = Box::new(GliumRenderBackend::new(windowed_context)?);
-    let navigator = Box::new(navigator::ExternalNavigatorBackend::new()); //TODO: actually implement this backend type
+    let (executor, chan) = GlutinAsyncExecutor::new(event_loop.create_proxy());
+    let navigator = Box::new(navigator::ExternalNavigatorBackend::new(
+        chan,
+        event_loop.create_proxy(),
+    )); //TODO: actually implement this backend type
     let display = renderer.display().clone();
     let input = Box::new(input::WinitInputBackend::new(display.clone()));
     let player = Player::new(renderer, audio, navigator, input, swf_data)?;
@@ -144,6 +153,10 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                     }
                     _ => (),
                 },
+                glutin::event::Event::UserEvent(RuffleEvent::TaskPoll) => executor
+                    .lock()
+                    .expect("active executor reference")
+                    .poll_all(),
                 _ => (),
             }
 
