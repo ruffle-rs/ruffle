@@ -353,6 +353,9 @@ impl WebAudioBackend {
             return self.decompress_mp3_to_audio_buffer(format, audio_data, num_sample_frames);
         }
 
+        self.left_samples.clear();
+        self.right_samples.clear();
+
         match format.compression {
             AudioCompression::Uncompressed | AudioCompression::UncompressedUnknownEndian => {
                 use byteorder::{LittleEndian, ReadBytesExt};
@@ -378,8 +381,6 @@ impl WebAudioBackend {
                 // Event sounds don't have this issue.
                 let full = [0, audio_data.len()];
                 let adpcm_block_offsets = adpcm_block_offsets.unwrap_or(&full);
-                self.left_samples.clear();
-                self.right_samples.clear();
                 for block in adpcm_block_offsets.windows(2) {
                     let start = block[0];
                     let end = block[1];
