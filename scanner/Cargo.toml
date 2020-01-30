@@ -12,5 +12,5 @@ structopt = "0.3.8"
 walkdir = "2.3.1"
 serde = { version = "1.0", features = ["derive"] }
 csv = "1.1"
-indicatif = "0.13"
+indicatif = "0.14"
 path-slash = "0.1.1"
