@@ -149,15 +149,14 @@ impl<'gc> Avm1<'gc> {
 
     /// The current target clip of the executing code, or `root` if there is none.
     /// Actions that affect `root` after an invalid `tellTarget` will use this.
-    pub fn target_clip_or_root(
-        &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> DisplayObject<'gc> {
+    ///
+    /// The `root` is determined relative to the base clip that defined the
+    pub fn target_clip_or_root(&self) -> DisplayObject<'gc> {
         self.current_stack_frame()
             .unwrap()
             .read()
             .target_clip()
-            .unwrap_or(context.root)
+            .unwrap_or_else(|| self.base_clip().root())
     }
 
     /// Convert the current locals pool into a set of form values.
@@ -695,7 +694,7 @@ impl<'gc> Avm1<'gc> {
         start: DisplayObject<'gc>,
         path: &str,
     ) -> Result<Option<Object<'gc>>, Error> {
-        let root = context.root;
+        let root = start.root();
 
         // Empty path resolves immediately to start clip.
         if path.is_empty() {
@@ -809,8 +808,7 @@ impl<'gc> Avm1<'gc> {
         path: &'s str,
     ) -> Result<ReturnValue<'gc>, Error> {
         // Resolve a variable path for a GetVariable action.
-        let root = context.root;
-        let start = self.target_clip().unwrap_or(root);
+        let start = self.target_clip_or_root();
 
         // Find the right-most : or . in the path.
         // If we have one, we must resolve as a target path.
@@ -878,8 +876,7 @@ impl<'gc> Avm1<'gc> {
         value: Value<'gc>,
     ) -> Result<(), Error> {
         // Resolve a variable path for a GetVariable action.
-        let root = context.root;
-        let start = self.target_clip().unwrap_or(root);
+        let start = self.target_clip_or_root();
 
         // If the target clip is invalid, we default to root for the variable path.
         if path.is_empty() {
@@ -1092,7 +1089,7 @@ impl<'gc> Avm1<'gc> {
         let depth = self.pop();
         let target = self.pop();
         let source = self.pop();
-        let start_clip = self.target_clip_or_root(context);
+        let start_clip = self.target_clip_or_root();
         let source_clip = self.resolve_target_display_object(context, start_clip, source)?;
 
         if let Some(movie_clip) = source_clip.and_then(|o| o.as_movie_clip()) {
@@ -1161,7 +1158,7 @@ impl<'gc> Avm1<'gc> {
     fn action_call(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         // Runs any actions on the given frame.
         let frame = self.pop();
-        let clip = self.target_clip_or_root(context);
+        let clip = self.target_clip_or_root();
         if let Some(clip) = clip.as_movie_clip() {
             // Use frame # if parameter is a number, otherwise cast to string and check for frame labels.
             let frame = if let Ok(frame) = frame.as_u32() {
@@ -1180,7 +1177,7 @@ impl<'gc> Avm1<'gc> {
                 // so we want to push the stack frames in reverse order.
                 for action in clip.actions_on_frame(context, frame).rev() {
                     self.insert_stack_frame_for_action(
-                        self.target_clip_or_root(context),
+                        self.target_clip_or_root(),
                         self.current_swf_version(),
                         action,
                         context,
@@ -1214,7 +1211,7 @@ impl<'gc> Avm1<'gc> {
             .read()
             .resolve(fn_name.as_string()?, self, context)?
             .resolve(self, context)?;
-        let this = self.target_clip_or_root(context).object().as_object()?;
+        let this = self.target_clip_or_root().object().as_object()?;
         target_fn.call(self, context, this, &args)?.push(self);
 
         Ok(())
@@ -1235,7 +1232,7 @@ impl<'gc> Avm1<'gc> {
 
         match method_name {
             Value::Undefined | Value::Null => {
-                let this = self.target_clip_or_root(context).object();
+                let this = self.target_clip_or_root().object();
                 if let Ok(this) = this.as_object() {
                     object.call(self, context, this, &args)?.push(self);
                 } else {
@@ -1340,7 +1337,7 @@ impl<'gc> Avm1<'gc> {
             params,
             scope,
             constant_pool,
-            self.target_clip_or_root(context),
+            self.target_clip_or_root(),
         );
         let prototype =
             ScriptObject::object(context.gc_context, Some(self.prototypes.object)).into();
@@ -1606,8 +1603,8 @@ impl<'gc> Avm1<'gc> {
     }
 
     /// Obtain the value of `_root`.
-    pub fn root_object(&self, context: &mut UpdateContext<'_, 'gc, '_>) -> Value<'gc> {
-        context.root.object()
+    pub fn root_object(&self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Value<'gc> {
+        self.base_clip().root().object()
     }
 
     /// Obtain the value of `_global`.
@@ -1692,11 +1689,11 @@ impl<'gc> Avm1<'gc> {
             if let Value::Object(target) = target {
                 target.as_display_object()
             } else {
-                let start = self.target_clip_or_root(context);
+                let start = self.target_clip_or_root();
                 self.resolve_target_display_object(context, start, target.clone())?
             }
         } else {
-            Some(self.target_clip_or_root(context))
+            Some(self.target_clip_or_root())
         };
 
         if is_load_vars {
@@ -2209,7 +2206,7 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let target = self.pop();
-        let start_clip = self.target_clip_or_root(context);
+        let start_clip = self.target_clip_or_root();
         let target_clip = self.resolve_target_display_object(context, start_clip, target)?;
 
         if let Some(target_clip) = target_clip.and_then(|o| o.as_movie_clip()) {
@@ -2295,16 +2292,15 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         target: &str,
     ) -> Result<(), Error> {
-        let stack_frame = self.current_stack_frame().unwrap();
-        let mut sf = stack_frame.write(context.gc_context);
-        let base_clip = sf.base_clip();
+        let base_clip = self.base_clip();
+        let new_target_clip;
         if target.is_empty() {
-            sf.set_target_clip(Some(base_clip));
+            new_target_clip = Some(base_clip);
         } else if let Some(clip) = self
             .resolve_target_path(context, base_clip, target)?
             .and_then(|o| o.as_display_object())
         {
-            sf.set_target_clip(Some(clip));
+            new_target_clip = Some(clip);
         } else {
             log::warn!("SetTarget failed: {} not found", target);
             // TODO: Emulate AVM1 trace error message.
@@ -2313,13 +2309,17 @@ impl<'gc> Avm1<'gc> {
             // When SetTarget has an invalid target, subsequent GetVariables act
             // as if they are targeting root, but subsequent Play/Stop/etc.
             // fail silenty.
-            sf.set_target_clip(None);
+            new_target_clip = None;
         }
+
+        let stack_frame = self.current_stack_frame().unwrap();
+        let mut sf = stack_frame.write(context.gc_context);
+        sf.set_target_clip(new_target_clip);
 
         let scope = sf.scope_cell();
         let clip_obj = sf
             .target_clip()
-            .unwrap_or(context.root)
+            .unwrap_or_else(|| sf.base_clip().root())
             .object()
             .as_object()
             .unwrap();
@@ -2367,7 +2367,7 @@ impl<'gc> Avm1<'gc> {
         let scope = sf.scope_cell();
         let clip_obj = sf
             .target_clip()
-            .unwrap_or(context.root)
+            .unwrap_or_else(|| sf.base_clip().root())
             .object()
             .as_object()
             .unwrap();
@@ -2385,7 +2385,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_start_drag(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let target = self.pop();
-        let start_clip = self.target_clip_or_root(context);
+        let start_clip = self.target_clip_or_root();
         let display_object = self.resolve_target_display_object(context, start_clip, target)?;
         if let Some(display_object) = display_object {
             let lock_center = self.pop();

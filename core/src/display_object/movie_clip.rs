@@ -923,7 +923,6 @@ impl<'gc> MovieClipData<'gc> {
             {
                 context.action_queue.queue_actions(
                     self_display_object,
-                    context.root,
                     ActionType::Normal {
                         bytecode: clip_action.action_data.clone(),
                     },
@@ -958,7 +957,6 @@ impl<'gc> MovieClipData<'gc> {
                 if let Some(name) = name {
                     context.action_queue.queue_actions(
                         self_display_object,
-                        context.root,
                         ActionType::Method {
                             object: self.object.unwrap(),
                             name,
@@ -991,7 +989,6 @@ impl<'gc> MovieClipData<'gc> {
             context.load_manager.movie_clip_on_load(
                 self_display_object,
                 self.object,
-                context.root,
                 context.action_queue,
             );
         }
@@ -1772,7 +1769,6 @@ impl<'gc, 'a> MovieClipData<'gc> {
             })?;
         context.action_queue.queue_actions(
             self_display_object,
-            context.root,
             ActionType::Normal { bytecode: slice },
             false,
         );
@@ -1806,7 +1802,6 @@ impl<'gc, 'a> MovieClipData<'gc> {
             })?;
         context.action_queue.queue_actions(
             self_display_object,
-            context.root,
             ActionType::Init { bytecode: slice },
             true,
         );

@@ -10,7 +10,7 @@ fn locals_into_form_values() {
             19,
             avm.global_object_cell(),
             context.gc_context,
-            context.root,
+            *context.layers.get(&0).expect("root layer in test"),
         );
         let my_locals = my_activation.scope().locals().to_owned();
 

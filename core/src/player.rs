@@ -6,7 +6,7 @@ use crate::backend::{
 };
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::display_object::{MorphShape, MovieClip};
-use crate::events::{ButtonEvent, ButtonKeyCode, ClipEvent, PlayerEvent};
+use crate::events::{ButtonEvent, ButtonEventResult, ButtonKeyCode, ClipEvent, PlayerEvent};
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::prelude::*;
@@ -369,9 +369,14 @@ impl Player {
 
         if button_event.is_some() {
             self.mutate_with_update_context(|_avm, context| {
-                let root = context.root;
-                if let Some(button_event) = button_event {
-                    root.propagate_button_event(context, button_event);
+                let layers: Vec<DisplayObject<'_>> = context.layers.values().copied().collect();
+                for layer in layers {
+                    if let Some(button_event) = button_event {
+                        let state = layer.propagate_button_event(context, button_event);
+                        if state == ButtonEventResult::Handled {
+                            return;
+                        }
+                    }
                 }
             });
         }
@@ -387,16 +392,17 @@ impl Player {
 
         if clip_event.is_some() || mouse_event_name.is_some() {
             self.mutate_with_update_context(|_avm, context| {
-                let root = context.root;
+                let layers: Vec<DisplayObject<'_>> = context.layers.values().copied().collect();
 
-                if let Some(clip_event) = clip_event {
-                    root.propagate_clip_event(context, clip_event);
+                for layer in layers {
+                    if let Some(clip_event) = clip_event {
+                        layer.propagate_clip_event(context, clip_event);
+                    }
                 }
 
                 if let Some(mouse_event_name) = mouse_event_name {
                     context.action_queue.queue_actions(
-                        root,
-                        root,
+                        *context.layers.get(&0).expect("root layer"),
                         ActionType::NotifyListeners {
                             listener: SystemListener::Mouse,
                             method: mouse_event_name,
@@ -521,7 +527,7 @@ impl Player {
     fn preload(&mut self) {
         self.mutate_with_update_context(|_avm, context| {
             let mut morph_shapes = fnv::FnvHashMap::default();
-            let root = context.root;
+            let root = *context.layers.get(&0).expect("root layer");
             root.as_movie_clip()
                 .unwrap()
                 .preload(context, &mut morph_shapes);
@@ -550,8 +556,6 @@ impl Player {
             }
 
             for mut layer in layers {
-                update_context.root = layer;
-
                 layer.run_frame(update_context);
             }
         })
@@ -635,8 +639,6 @@ impl Player {
             if !actions.is_unload && actions.clip.removed() {
                 continue;
             }
-
-            context.root = actions.root;
 
             match actions.action_type {
                 // DoAction/clip event code
@@ -772,7 +774,6 @@ impl Player {
             let mouse_hovered_object = root_data.mouse_hovered_object;
             let (layers, library, action_queue, avm, drag_object, load_manager) =
                 root_data.update_context_params();
-            let layer0 = layers.get(&0).expect("Layer 0 should always exist");
 
             let mut update_context = UpdateContext {
                 player_version,
@@ -787,7 +788,6 @@ impl Player {
                 input,
                 action_queue,
                 gc_context,
-                root: *layer0,
                 layers,
                 mouse_hovered_object,
                 mouse_position,

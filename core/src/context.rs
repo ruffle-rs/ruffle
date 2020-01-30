@@ -68,10 +68,6 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// All loaded layers of the current player.
     pub layers: &'a mut BTreeMap<u32, DisplayObject<'gc>>,
 
-    /// The root of the current timeline being updated.
-    /// This will always be one of the layers in `layers`.
-    pub root: DisplayObject<'gc>,
-
     /// The current set of system-specified prototypes to use when constructing
     /// new built-in objects.
     pub system_prototypes: avm1::SystemPrototypes<'gc>,
@@ -105,9 +101,6 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 pub struct QueuedActions<'gc> {
     /// The movie clip this ActionScript is running on.
     pub clip: DisplayObject<'gc>,
-
-    /// The root timeline this action was queued in.
-    pub root: DisplayObject<'gc>,
 
     /// The type of action this is, along with the corresponding bytecode/method data.
     pub action_type: ActionType<'gc>,
@@ -145,13 +138,11 @@ impl<'gc> ActionQueue<'gc> {
     pub fn queue_actions(
         &mut self,
         clip: DisplayObject<'gc>,
-        root: DisplayObject<'gc>,
         action_type: ActionType<'gc>,
         is_unload: bool,
     ) {
         self.queue.push_back(QueuedActions {
             clip,
-            root,
             action_type,
             is_unload,
         })

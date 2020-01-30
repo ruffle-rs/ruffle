@@ -597,7 +597,6 @@ mod tests {
                 player_version: 32,
                 swf: &swf,
                 layers: &mut layers,
-                root,
                 rng: &mut SmallRng::from_seed([0u8; 16]),
                 action_queue: &mut crate::context::ActionQueue::new(),
                 audio: &mut NullAudioBackend::new(),

@@ -102,8 +102,8 @@ pub fn hit_test<'gc>(
         if x.is_finite() && y.is_finite() {
             // The docs say the point is in "Stage coordinates", but actually they are in root coordinates.
             // root can be moved via _root._x etc., so we actually have to transform from root to world space.
-            let point = context
-                .root
+            let point = movie_clip
+                .root()
                 .local_to_global((Twips::from_pixels(x), Twips::from_pixels(y)));
             return Ok(movie_clip.hit_test(point).into());
         }

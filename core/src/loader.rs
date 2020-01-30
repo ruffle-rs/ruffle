@@ -89,13 +89,12 @@ impl<'gc> LoadManager<'gc> {
         &mut self,
         loaded_clip: DisplayObject<'gc>,
         clip_object: Option<Object<'gc>>,
-        root: DisplayObject<'gc>,
         queue: &mut ActionQueue<'gc>,
     ) {
         let mut invalidated_loaders = vec![];
 
         for (index, loader) in self.0.iter_mut() {
-            if loader.movie_clip_loaded(loaded_clip, clip_object, root, queue) {
+            if loader.movie_clip_loaded(loaded_clip, clip_object, queue) {
                 invalidated_loaders.push(index);
             }
         }
@@ -433,7 +432,6 @@ impl<'gc> Loader<'gc> {
         &mut self,
         loaded_clip: DisplayObject<'gc>,
         clip_object: Option<Object<'gc>>,
-        root: DisplayObject<'gc>,
         queue: &mut ActionQueue<'gc>,
     ) -> bool {
         let (clip, broadcaster) = match self {
@@ -449,7 +447,6 @@ impl<'gc> Loader<'gc> {
             if let Some(broadcaster) = broadcaster {
                 queue.queue_actions(
                     clip,
-                    root,
                     ActionType::Method {
                         object: broadcaster,
                         name: "broadcastMessage",

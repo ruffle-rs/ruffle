@@ -1,4 +1,4 @@
-use crate::avm1::{Object, Value};
+use crate::avm1::{Object, TObject, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::player::NEWEST_PLAYER_VERSION;
 use crate::prelude::*;
@@ -366,7 +366,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         Text(Text<'gc>),
     }
 )]
-pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
+pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> {
     fn id(&self) -> CharacterId;
     fn depth(&self) -> Depth;
     fn set_depth(&self, gc_context: MutationContext<'gc, '_>, depth: Depth);
@@ -803,6 +803,34 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
     /// This is used by movie clips to disable the mask when there are no children, for example.
     fn allow_as_mask(&self) -> bool {
         true
+    }
+
+    /// Obtain the top-most parent of the display tree hierarchy.
+    ///
+    /// This function can panic in the rare case that a top-level display
+    /// object has not been post-instantiated, or that a top-level display
+    /// object does not implement `object`.
+    fn root(&self) -> DisplayObject<'gc> {
+        let mut parent = self.parent();
+
+        while let Some(p) = parent {
+            let grandparent = p.parent();
+
+            if grandparent.is_none() {
+                break;
+            }
+
+            parent = grandparent;
+        }
+
+        parent
+            .or_else(|| {
+                self.object()
+                    .as_object()
+                    .ok()
+                    .and_then(|o| o.as_display_object())
+            })
+            .expect("All objects must have root")
     }
 }
 
