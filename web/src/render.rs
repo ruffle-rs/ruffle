@@ -3,10 +3,15 @@ use ruffle_core::backend::render::{
     swf, swf::CharacterId, BitmapHandle, BitmapInfo, Color, Letterbox, RenderBackend, ShapeHandle,
     Transform,
 };
+use ruffle_core::color_transform::ColorTransform;
+use ruffle_core::shape_utils::DrawCommand;
 use std::collections::HashMap;
 use std::convert::TryInto;
-use wasm_bindgen::JsCast;
-use web_sys::{CanvasRenderingContext2d, Element, HtmlCanvasElement, HtmlImageElement};
+use wasm_bindgen::{JsCast, JsValue};
+use web_sys::{
+    CanvasGradient, CanvasPattern, CanvasRenderingContext2d, Element, HtmlCanvasElement,
+    HtmlImageElement, Path2d, SvgsvgElement,
+};
 
 pub struct WebCanvasRenderBackend {
     canvas: HtmlCanvasElement,
@@ -24,10 +29,76 @@ pub struct WebCanvasRenderBackend {
     pixelated_property_value: &'static str,
 }
 
-struct ShapeData {
-    image: HtmlImageElement,
-    x_min: f64,
-    y_min: f64,
+/// Canvas-drawable shape data extracted from an SWF file.
+struct ShapeData(Vec<CanvasDrawCommand>);
+
+struct CanvasColor(String, u8, u8, u8, u8);
+
+/// Convert an f32 to a u8, clamping all out-of-range values to the `u8` range.
+fn clamped_u8_color(v: f32) -> u8 {
+    if v < 0.0 {
+        0
+    } else if v > 255.0 {
+        255
+    } else {
+        v as u8
+    }
+}
+
+impl CanvasColor {
+    /// Apply a color transformation to this color.
+    fn color_transform(&self, cxform: &ColorTransform) -> CanvasColor {
+        let CanvasColor(_, r, g, b, a) = self;
+        let r = clamped_u8_color(*r as f32 * cxform.r_mult + (cxform.r_add * 255.0));
+        let g = clamped_u8_color(*g as f32 * cxform.g_mult + (cxform.g_add * 255.0));
+        let b = clamped_u8_color(*b as f32 * cxform.b_mult + (cxform.b_add * 255.0));
+        let a = clamped_u8_color(*a as f32 * cxform.a_mult + (cxform.a_add * 255.0));
+        let colstring = format!("rgba({},{},{},{})", r, g, b, f32::from(a) / 255.0);
+        CanvasColor(colstring, r, g, b, a)
+    }
+}
+
+/// An individual command to be drawn to the canvas.
+enum CanvasDrawCommand {
+    /// A command to draw a path stroke with a given style.
+    Stroke {
+        path: Path2d,
+        line_width: f64,
+        stroke_style: CanvasColor,
+        line_cap: String,
+        line_join: String,
+        miter_limit: f64,
+    },
+
+    /// A command to fill a path with a given style.
+    Fill {
+        path: Path2d,
+        fill_style: CanvasFillStyle,
+    },
+
+    /// A command to draw a particular image (such as an SVG)
+    DrawImage {
+        image: HtmlImageElement,
+        x_min: f64,
+        y_min: f64,
+    },
+}
+
+enum CanvasFillStyle {
+    Color(CanvasColor),
+    #[allow(dead_code)]
+    Gradient(CanvasGradient),
+    Pattern(CanvasPattern),
+}
+
+impl CanvasFillStyle {
+    /// Attempt to apply a color transformation to this fill style.
+    fn color_transform(&self, cxform: &ColorTransform) -> Option<CanvasFillStyle> {
+        match self {
+            Self::Color(cc) => Some(Self::Color(cc.color_transform(cxform))),
+            _ => None,
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -238,7 +309,11 @@ impl WebCanvasRenderBackend {
                 f64::from(matrix.ty) / 20.0,
             )
             .unwrap();
+    }
 
+    #[allow(clippy::float_cmp)]
+    #[inline]
+    fn set_color_filter(&self, transform: &Transform) {
         let color_transform = &transform.color_transform;
         if color_transform.r_mult == 1.0
             && color_transform.g_mult == 1.0
@@ -269,6 +344,7 @@ impl WebCanvasRenderBackend {
                 a_mult,
                 a_add
             );
+
             self.color_matrix
                 .set_attribute("values", &matrix_str)
                 .unwrap();
@@ -278,7 +354,7 @@ impl WebCanvasRenderBackend {
     }
 
     #[inline]
-    fn clear_transform(&mut self) {
+    fn clear_color_filter(&self) {
         self.context.set_filter("none");
         self.context.set_global_alpha(1.0);
     }
@@ -293,8 +369,6 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn register_shape(&mut self, shape: &swf::Shape) -> ShapeHandle {
         let handle = ShapeHandle(self.shapes.len());
 
-        let image = HtmlImageElement::new().unwrap();
-
         let mut bitmaps = HashMap::new();
         for (id, handle) in &self.id_to_bitmap {
             let bitmap_data = &self.bitmaps[handle.0];
@@ -304,21 +378,15 @@ impl RenderBackend for WebCanvasRenderBackend {
             );
         }
 
-        use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
-        let svg = swf_shape_to_svg(&shape, &bitmaps, self.pixelated_property_value);
+        let data = swf_shape_to_canvas_commands(
+            &shape,
+            &bitmaps,
+            self.pixelated_property_value,
+            &self.context,
+        )
+        .unwrap_or_else(|| swf_shape_to_svg(&shape, &bitmaps, self.pixelated_property_value));
 
-        let svg_encoded = format!(
-            "data:image/svg+xml,{}",
-            utf8_percent_encode(&svg, NON_ALPHANUMERIC)
-        );
-
-        image.set_src(&svg_encoded);
-
-        self.shapes.push(ShapeData {
-            image,
-            x_min: shape.shape_bounds.x_min.to_pixels(),
-            y_min: shape.shape_bounds.y_min.to_pixels(),
-        });
+        self.shapes.push(data);
 
         handle
     }
@@ -473,24 +541,73 @@ impl RenderBackend for WebCanvasRenderBackend {
 
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform) {
         self.set_transform(transform);
+        self.set_color_filter(transform);
         if let Some(bitmap) = self.bitmaps.get(bitmap.0) {
             let _ = self
                 .context
                 .draw_image_with_html_image_element(&bitmap.image, 0.0, 0.0);
         }
-        self.clear_transform();
+        self.clear_color_filter();
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
         self.set_transform(transform);
         if let Some(shape) = self.shapes.get(shape.0) {
-            let _ = self.context.draw_image_with_html_image_element(
-                &shape.image,
-                shape.x_min,
-                shape.y_min,
-            );
+            for command in shape.0.iter() {
+                match command {
+                    CanvasDrawCommand::Fill { path, fill_style } => {
+                        let xformed_fill_style =
+                            fill_style.color_transform(&transform.color_transform);
+                        if xformed_fill_style.is_none() {
+                            self.set_color_filter(transform);
+                        }
+
+                        match xformed_fill_style.as_ref().unwrap_or(fill_style) {
+                            CanvasFillStyle::Color(CanvasColor(color, ..)) => {
+                                self.context.set_fill_style(&JsValue::from_str(&color))
+                            }
+                            CanvasFillStyle::Gradient(grad) => self.context.set_fill_style(grad),
+                            CanvasFillStyle::Pattern(patt) => self.context.set_fill_style(patt),
+                        };
+
+                        self.context.fill_with_path_2d(&path);
+
+                        if xformed_fill_style.is_none() {
+                            self.clear_color_filter();
+                        }
+                    }
+                    CanvasDrawCommand::Stroke {
+                        path,
+                        line_width,
+                        stroke_style,
+                        line_cap,
+                        line_join,
+                        miter_limit,
+                    } => {
+                        let xformed_stroke_style =
+                            stroke_style.color_transform(&transform.color_transform);
+                        self.context.set_line_width(*line_width);
+                        self.context.set_line_cap(&line_cap);
+                        self.context.set_line_join(&line_join);
+                        self.context.set_miter_limit(*miter_limit);
+                        self.context
+                            .set_stroke_style(&JsValue::from_str(&xformed_stroke_style.0));
+                        self.context.stroke_with_path(&path);
+                    }
+                    CanvasDrawCommand::DrawImage {
+                        image,
+                        x_min,
+                        y_min,
+                    } => {
+                        self.set_color_filter(transform);
+                        let _ = self
+                            .context
+                            .draw_image_with_html_image_element(&image, *x_min, *y_min);
+                        self.clear_color_filter();
+                    }
+                }
+            }
         }
-        self.clear_transform();
     }
 
     fn draw_pause_overlay(&mut self) {
@@ -591,10 +708,10 @@ fn swf_shape_to_svg(
     shape: &swf::Shape,
     bitmaps: &HashMap<CharacterId, (&str, u32, u32)>,
     pixelated_property_value: &str,
-) -> String {
+) -> ShapeData {
     use fnv::FnvHashSet;
     use ruffle_core::matrix::Matrix;
-    use ruffle_core::shape_utils::{swf_shape_to_paths, DrawCommand, DrawPath};
+    use ruffle_core::shape_utils::{swf_shape_to_paths, DrawPath};
     use svg::node::element::{
         path::Data, Definitions, Image, LinearGradient, Path as SvgPath, Pattern, RadialGradient,
         Stop,
@@ -961,5 +1078,218 @@ fn swf_shape_to_svg(
         document = document.add(svg_path);
     }
 
-    document.to_string()
+    use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
+    let svg = document.to_string();
+    let svg_encoded = format!(
+        "data:image/svg+xml,{}",
+        utf8_percent_encode(&svg, NON_ALPHANUMERIC)
+    );
+
+    let image = HtmlImageElement::new().unwrap();
+    image.set_src(&svg_encoded);
+
+    let mut data = ShapeData(vec![]);
+    data.0.push(CanvasDrawCommand::DrawImage {
+        image,
+        x_min: shape.shape_bounds.x_min.to_pixels(),
+        y_min: shape.shape_bounds.y_min.to_pixels(),
+    });
+
+    data
+}
+
+/// Convert a series of `DrawCommands` to a `Path2d` shape.
+///
+/// The path can be optionally closed by setting `is_closed` to `true`.
+///
+/// The resulting path is in the shape's own coordinate space and needs to be
+/// transformed to fit within the shape's bounds.
+fn draw_commands_to_path2d(commands: &[DrawCommand], is_closed: bool) -> Path2d {
+    let path = Path2d::new().unwrap();
+    for command in commands {
+        match command {
+            DrawCommand::MoveTo { x, y } => path.move_to(x.get().into(), y.get().into()),
+            DrawCommand::LineTo { x, y } => path.line_to(x.get().into(), y.get().into()),
+            DrawCommand::CurveTo { x1, y1, x2, y2 } => path.quadratic_curve_to(
+                x1.get().into(),
+                y1.get().into(),
+                x2.get().into(),
+                y2.get().into(),
+            ),
+        };
+    }
+
+    if is_closed {
+        path.close_path();
+    }
+
+    path
+}
+
+fn swf_shape_to_canvas_commands(
+    shape: &swf::Shape,
+    bitmaps: &HashMap<CharacterId, (&str, u32, u32)>,
+    _pixelated_property_value: &str,
+    context: &CanvasRenderingContext2d,
+) -> Option<ShapeData> {
+    use ruffle_core::matrix::Matrix;
+    use ruffle_core::shape_utils::{swf_shape_to_paths, DrawPath};
+    use swf::{FillStyle, LineCapStyle, LineJoinStyle};
+
+    // Some browsers will vomit if you try to load/draw an image with 0 width/height.
+    // TODO(Herschel): Might be better to just return None in this case and skip
+    // rendering altogether.
+    let (_width, _height) = (
+        f32::max(
+            (shape.shape_bounds.x_max - shape.shape_bounds.x_min).get() as f32,
+            1.0,
+        ),
+        f32::max(
+            (shape.shape_bounds.y_max - shape.shape_bounds.y_min).get() as f32,
+            1.0,
+        ),
+    );
+
+    let mut canvas_data = ShapeData(vec![]);
+
+    let matrix_factory: SvgsvgElement = web_sys::window()
+        .expect("window")
+        .document()
+        .expect("document")
+        .create_element_ns(Some("http://www.w3.org/2000/svg"), "svg")
+        .expect("create_element on svg")
+        .dyn_into::<SvgsvgElement>()
+        .expect("an actual SVG element");
+
+    let bounds_viewbox_matrix = matrix_factory.create_svg_matrix();
+    bounds_viewbox_matrix.set_a(1.0 / 20.0);
+    bounds_viewbox_matrix.set_d(1.0 / 20.0);
+
+    let paths = swf_shape_to_paths(shape);
+    for path in paths {
+        match path {
+            DrawPath::Fill { style, commands } => {
+                let fill_style = match style {
+                    FillStyle::Color(Color { r, g, b, a }) => CanvasFillStyle::Color(CanvasColor(
+                        format!("rgba({},{},{},{})", r, g, b, f32::from(*a) / 255.0),
+                        *r,
+                        *g,
+                        *b,
+                        *a,
+                    )),
+                    FillStyle::LinearGradient(_gradient) => return None,
+                    FillStyle::RadialGradient(_gradient) => return None,
+                    FillStyle::FocalGradient { .. } => return None,
+                    FillStyle::Bitmap {
+                        id,
+                        matrix,
+                        is_smoothed,
+                        is_repeating,
+                    } => {
+                        let (bitmap_data, bitmap_width, bitmap_height) =
+                            bitmaps.get(&id).unwrap_or(&("", 0, 0));
+
+                        let image = HtmlImageElement::new_with_width_and_height(
+                            *bitmap_width,
+                            *bitmap_height,
+                        )
+                        .expect("html image element");
+
+                        image.set_src(*bitmap_data);
+
+                        if !*is_smoothed {
+                            //image = image.set("image-rendering", pixelated_property_value);
+                        }
+
+                        let repeat = if !*is_repeating {
+                            "no-repeat"
+                        } else {
+                            "repeat"
+                        };
+
+                        let bitmap_pattern = context
+                            .create_pattern_with_html_image_element(&image, repeat)
+                            .expect("pattern creation success")?;
+
+                        let a = Matrix::from(matrix.clone());
+
+                        let matrix = matrix_factory.create_svg_matrix();
+
+                        matrix.set_a(a.a);
+                        matrix.set_b(a.b);
+                        matrix.set_c(a.c);
+                        matrix.set_d(a.d);
+                        matrix.set_e(a.tx);
+                        matrix.set_f(a.ty);
+
+                        bitmap_pattern.set_transform(&matrix);
+
+                        CanvasFillStyle::Pattern(bitmap_pattern)
+                    }
+                };
+
+                let path = Path2d::new().unwrap();
+                path.add_path_with_transformation(
+                    &draw_commands_to_path2d(&commands, false),
+                    &bounds_viewbox_matrix,
+                );
+
+                canvas_data
+                    .0
+                    .push(CanvasDrawCommand::Fill { path, fill_style });
+            }
+            DrawPath::Stroke {
+                style,
+                commands,
+                is_closed,
+            } => {
+                // Flash always renders strokes with a minimum width of 1 pixel (20 twips).
+                // Additionally, many SWFs use the "hairline" stroke setting, which sets the stroke's width
+                // to 1 twip. Because of the minimum, this will effectively make the stroke nearly-always render
+                // as 1 pixel wide.
+                // SVG doesn't have a minimum and can render strokes at fractional widths, so these hairline
+                // strokes end up rendering very faintly if we use the actual width of 1 twip.
+                // Therefore, we clamp the stroke width to 1 pixel (20 twips). This won't be 100% accurate
+                // if the shape is scaled, but it looks much closer to the Flash Player.
+                let line_width = std::cmp::max(style.width.get(), 20);
+                let stroke_style = CanvasColor(
+                    format!(
+                        "rgba({},{},{},{})",
+                        style.color.r, style.color.g, style.color.b, style.color.a
+                    ),
+                    style.color.r,
+                    style.color.g,
+                    style.color.b,
+                    style.color.a,
+                );
+                let line_cap = match style.start_cap {
+                    LineCapStyle::Round => "round",
+                    LineCapStyle::Square => "square",
+                    LineCapStyle::None => "butt",
+                };
+                let (line_join, miter_limit) = match style.join_style {
+                    LineJoinStyle::Round => ("round", 999_999.0),
+                    LineJoinStyle::Bevel => ("bevel", 999_999.0),
+                    LineJoinStyle::Miter(ml) => ("miter", ml),
+                };
+
+                let path = Path2d::new().unwrap();
+                path.add_path_with_transformation(
+                    &draw_commands_to_path2d(&commands, is_closed),
+                    &bounds_viewbox_matrix,
+                );
+
+                canvas_data.0.push(CanvasDrawCommand::Stroke {
+                    path,
+                    line_width: line_width as f64 / 20.0,
+                    stroke_style,
+                    line_cap: line_cap.to_string(),
+                    line_join: line_join.to_string(),
+                    miter_limit: miter_limit as f64 / 20.0,
+                });
+            }
+        }
+    }
+
+    Some(canvas_data)
 }
