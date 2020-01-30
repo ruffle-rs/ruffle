@@ -379,7 +379,8 @@ pub fn goto_frame<'gc>(
     scene_offset: u16,
 ) -> Result<ReturnValue<'gc>, Error> {
     match args.get(0).cloned().unwrap_or(Value::Undefined) {
-        Value::Number(n) => {
+        // Goto only runs if n is an integer
+        Value::Number(n) if n.fract() == 0.0 => {
             // Frame #
             // Gotoing <= 0 has no effect.
             // Gotoing greater than _totalframes jumps to the last frame.
