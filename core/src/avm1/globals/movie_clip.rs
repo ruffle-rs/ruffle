@@ -164,6 +164,7 @@ pub fn create_proto<'gc>(
             Ok(1.0.into())
         },
         "getDepth" => get_depth,
+        "getNextHighestDepth" => get_next_highest_depth,
         "hitTest" => |movie_clip: MovieClip<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args: &[Value<'gc>]| {
             hit_test(movie_clip, avm, context, args)
         },
@@ -363,6 +364,26 @@ pub fn get_depth<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     if avm.current_swf_version() >= 6 {
         let depth = movie_clip.depth().wrapping_sub(AVM_DEPTH_BIAS);
+        Ok(depth.into())
+    } else {
+        Ok(Value::Undefined.into())
+    }
+}
+
+pub fn get_next_highest_depth<'gc>(
+    movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if avm.current_swf_version() >= 7 {
+        let depth = std::cmp::max(
+            movie_clip
+                .highest_depth()
+                .unwrap_or(0)
+                .wrapping_sub(AVM_DEPTH_BIAS - 1),
+            0,
+        );
         Ok(depth.into())
     } else {
         Ok(Value::Undefined.into())
