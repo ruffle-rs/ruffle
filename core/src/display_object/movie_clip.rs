@@ -165,6 +165,11 @@ impl<'gc> MovieClip<'gc> {
         self.0.read().static_data.frame_labels.get(&label).copied()
     }
 
+    /// Returns the highest depth in use by this movie clip, or `None` if there are no children.
+    pub fn highest_depth(self) -> Option<Depth> {
+        self.0.read().children.keys().copied().rev().next()
+    }
+
     /// Gets the clip events for this movieclip.
     pub fn clip_actions(&self) -> Ref<[ClipAction]> {
         Ref::map(self.0.read(), |mc| mc.clip_actions())
