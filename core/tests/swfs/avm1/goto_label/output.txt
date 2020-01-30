@@ -1,0 +1,17 @@
+// frame 1
+// gotoAndStop('INVALID')
+1
+// frame 2
+// gotoAndPlay('SomeFrame')
+3
+// frame 3
+// frame 4
+// clip.run()
+   // gotoAndStop('END')
+5
+// frame 5
+// gotoAndStop('BADÀ')
+5
+// gotoAndStop('SomeFrame')
+3
+// frame 3

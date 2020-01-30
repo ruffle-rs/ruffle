@@ -1,0 +1,44 @@
+// frame 1
+// gotoAndPlay(2)
+2
+// frame 2
+// frame 3
+// gotoAndStop(0)
+3
+// gotoAndStop(-100)
+3
+// gotoAndStop(invalid)
+3
+// gotoAndStop(NaN)
+3
+// gotoAndStop(4.123)
+3
+// frame 4
+// clip.run()
+   // gotoAndStop(4294967301)
+5
+// frame 5
+// gotoAndPlay(SomeFrame)
+10
+// frame 10
+// gotoAndStop(someframe2)
+11
+// frame 11
+// gotoAndStop(undefined)
+12
+// gotoAndStop(false)
+13
+// frame 12
+// frame 13
+// gotoAndPlay('Scene 2', 1)
+14
+// Scene 2 frame 1
+// gotoAndPlay('Scene 2', 3)
+16
+// Scene 2 frame 3
+// Scene 2 frame 4
+// gotoAndStop('Scene 2', SomeFrame2)
+24
+// Scene 2 frame 11
+// gotoAndStop('Scene 2', 9999)
+28
