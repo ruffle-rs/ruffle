@@ -235,8 +235,10 @@ impl<'gc> MovieClip<'gc> {
         let mut parent = self.0.write(context.gc_context);
         let prev_depth = child.depth();
         child.set_depth(context.gc_context, depth);
+        child.set_transformed_by_script(context.gc_context, true);
         if let Some(prev_child) = parent.children.insert(depth, child) {
             prev_child.set_depth(context.gc_context, prev_depth);
+            prev_child.set_transformed_by_script(context.gc_context, true);
             parent.children.insert(prev_depth, prev_child);
         } else {
             parent.children.remove(&prev_depth);
