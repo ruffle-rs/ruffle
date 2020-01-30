@@ -378,14 +378,16 @@ pub fn goto_frame<'gc>(
     stop: bool,
     scene_offset: u16,
 ) -> Result<ReturnValue<'gc>, Error> {
-    if let Some(value) = args.get(0) {
-        if let Ok(mut frame) = value.as_i32() {
+    match args.get(0).cloned().unwrap_or(Value::Undefined) {
+        Value::Number(n) => {
             // Frame #
             // Gotoing <= 0 has no effect.
             // Gotoing greater than _totalframes jumps to the last frame.
             // Wraps around as an i32.
             // TODO: -1 +1 here to match Flash's behavior.
             // We probably want to change our frame representation to 0-based.
+            // Scene offset is only used by GotoFrame2 global opcode.
+            let mut frame = crate::avm1::value::f64_to_wrapping_i32(n);
             frame = frame.wrapping_sub(1);
             frame = frame.wrapping_add(i32::from(scene_offset));
             if frame >= 0 {
@@ -396,8 +398,10 @@ pub fn goto_frame<'gc>(
                     movie_clip.goto_frame(context, frame.saturating_add(1) as u16, stop);
                 }
             }
-        } else {
-            let frame_label = value.clone().coerce_to_string(avm, context)?;
+        }
+        val => {
+            // Coerce to string and search for a frame label.
+            let frame_label = val.clone().coerce_to_string(avm, context)?;
             if let Some(mut frame) = movie_clip.frame_label_to_number(&frame_label) {
                 frame = frame.wrapping_add(scene_offset);
                 movie_clip.goto_frame(context, frame, stop);

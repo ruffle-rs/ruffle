@@ -160,12 +160,9 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn frame_label_to_number(self, frame_label: &str) -> Option<FrameNumber> {
-        self.0
-            .read()
-            .static_data
-            .frame_labels
-            .get(frame_label)
-            .copied()
+        // Frame labels are case insensitive.
+        let label = frame_label.to_ascii_lowercase();
+        self.0.read().static_data.frame_labels.get(&label).copied()
     }
 
     /// Gets the clip events for this movieclip.
@@ -1513,12 +1510,14 @@ impl<'gc, 'a> MovieClipData<'gc> {
         cur_frame: FrameNumber,
         static_data: &mut MovieClipStatic,
     ) -> DecodeResult {
-        let frame_label = reader.read_frame_label(tag_len)?;
-        if static_data
-            .frame_labels
-            .insert(frame_label.label, cur_frame)
-            .is_some()
+        let mut frame_label = reader.read_frame_label(tag_len)?;
+        // Frame labels are case insensitive (ASCII).
+        frame_label.label.make_ascii_lowercase();
+        if let std::collections::hash_map::Entry::Vacant(v) =
+            static_data.frame_labels.entry(frame_label.label)
         {
+            v.insert(cur_frame);
+        } else {
             log::warn!("Movie clip {}: Duplicated frame label", self.id());
         }
         Ok(())
