@@ -1,0 +1,98 @@
+// getNextHighestDepth()
+0
+
+// clip1.getDepth()
+-16383
+// clip2.getDepth()
+-16381
+// clip3.getDepth()
+-16379
+// getNextHighestDepth()
+0
+
+// clip1.swapDepths(0)
+// clip1.getDepth()
+0
+// getNextHighestDepth()
+1
+
+// clip1.swapDepths(999.234)
+// clip1.getDepth()
+999
+// getNextHighestDepth()
+1000
+
+// clip1.swapDepths(-1.123)
+// clip1.getDepth()
+-1
+// getNextHighestDepth()
+0
+
+// clip1.swapDepths(4294967297.1)
+// clip1.getDepth()
+1
+// getNextHighestDepth()
+2
+
+//clip.swapDepths(2130690044)
+// clip1.getDepth()
+2130690044
+// getNextHighestDepth()
+2130690045
+
+//clip.swapDepths(2130690045)
+// clip1.getDepth()
+2130690044
+// getNextHighestDepth()
+2130690045
+
+//clip.swapDepths(-16384)
+// clip1.getDepth()
+-16384
+// getNextHighestDepth()
+0
+
+//clip.swapDepths(-16385)
+// clip1.getDepth()
+-16384
+
+// clip1.swapDepths(undefined)
+// clip1.getDepth()
+-16384
+
+// clip1.swapDepths(NaN)
+// clip1.getDepth()
+0
+
+// clip1.swapDepths('INVALID')
+// clip1.getDepth()
+0
+
+// clip1.swapDepths(false)
+// clip1.getDepth()
+0
+
+// clip1.swapDepths(clip2)
+// clip1.getDepth()
+-16381
+// clip2.getDepth()
+0
+
+// clip2.swapDepths('../clip1')
+// clip1.getDepth()
+0
+// clip2.getDepth()
+-16381
+
+// clip1.swapDepths(clip3.child)
+// clip1.getDepth()
+0
+// clip3.child.getDepth()
+-16383
+
+// clip1, clip2, clip3
+_level0.clip1
+_level0.clip2
+undefined
+// clip2._x
+75
