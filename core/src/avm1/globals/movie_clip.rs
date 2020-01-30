@@ -9,9 +9,15 @@ use enumset::EnumSet;
 use gc_arena::MutationContext;
 use swf::Twips;
 
-/// The depth at which dynamic clips are offset.
+/// Depths used/returned by ActionScript are offset by this amount from depths used inside the SWF/by the VM.
+/// The depth of objects placed on the timeline in the Flash IDE start from 0 in the SWF,
+/// but are negative when queried from MovieClip.getDepth().
+/// Add this to convert from AS -> SWF depth.
 const AVM_DEPTH_BIAS: i32 = 16384;
-const AVM_MAX_INTERACTIVE_DEPTH: i32 = 2_130_706_428;
+
+/// The maximum depth that the AVM will allow you to swap or attach clips to.
+/// What is the derivation of this number...?
+const AVM_MAX_DEPTH: i32 = 2_130_706_428;
 
 /// Implements `MovieClip`
 pub fn constructor<'gc>(
@@ -233,7 +239,7 @@ fn attach_movie<'gc>(
 
     // TODO: What is the derivation of this max value? It shows up a few times in the AVM...
     // 2^31 - 16777220
-    if depth < 0 || depth > AVM_MAX_INTERACTIVE_DEPTH {
+    if depth < 0 || depth > AVM_MAX_DEPTH {
         return Ok(Value::Undefined.into());
     }
     if let Ok(mut new_clip) = context.library.instantiate_by_export_name(
@@ -322,7 +328,7 @@ pub fn duplicate_movie_clip<'gc>(
 
     // TODO: What is the derivation of this max value? It shows up a few times in the AVM...
     // 2^31 - 16777220
-    if depth < 0 || depth > AVM_MAX_INTERACTIVE_DEPTH {
+    if depth < 0 || depth > AVM_MAX_DEPTH {
         return Ok(Value::Undefined.into());
     }
     if let Ok(mut new_clip) =
