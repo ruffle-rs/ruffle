@@ -173,6 +173,7 @@ swf_tests! {
     (loadvariablesnum, "avm1/loadvariablesnum", 3),
     (loadvariables_method, "avm1/loadvariables_method", 3),
     (xml_load, "avm1/xml_load", 1),
+    (cross_movie_root, "avm1/cross_movie_root", 5),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
