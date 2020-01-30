@@ -1,0 +1,12 @@
+// frame 1
+2
+// frame 2
+// frame 3
+// gotoAndStop(4)
+4
+// frame 4
+// clip.run()
+   // gotoAndStop(5)
+5
+// frame 5
+// gotoAndStop(999)
