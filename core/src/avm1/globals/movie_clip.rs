@@ -358,7 +358,7 @@ pub fn goto_and_play<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    goto_frame(movie_clip, avm, context, args, false)
+    goto_frame(movie_clip, avm, context, args, false, 0)
 }
 
 pub fn goto_and_stop<'gc>(
@@ -367,7 +367,7 @@ pub fn goto_and_stop<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    goto_frame(movie_clip, avm, context, args, true)
+    goto_frame(movie_clip, avm, context, args, true, 0)
 }
 
 pub fn goto_frame<'gc>(
@@ -376,6 +376,7 @@ pub fn goto_frame<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
     stop: bool,
+    scene_offset: u16,
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(value) = args.get(0) {
         if let Ok(mut frame) = value.as_i32() {
@@ -386,6 +387,7 @@ pub fn goto_frame<'gc>(
             // TODO: -1 +1 here to match Flash's behavior.
             // We probably want to change our frame representation to 0-based.
             frame = frame.wrapping_sub(1);
+            frame = frame.wrapping_add(i32::from(scene_offset));
             if frame >= 0 {
                 let num_frames = movie_clip.total_frames();
                 if frame > i32::from(num_frames) {
@@ -396,7 +398,8 @@ pub fn goto_frame<'gc>(
             }
         } else {
             let frame_label = value.clone().coerce_to_string(avm, context)?;
-            if let Some(frame) = movie_clip.frame_label_to_number(&frame_label) {
+            if let Some(mut frame) = movie_clip.frame_label_to_number(&frame_label) {
+                frame = frame.wrapping_add(scene_offset);
                 movie_clip.goto_frame(context, frame, stop);
             }
         }
