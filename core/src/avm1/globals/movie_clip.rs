@@ -391,12 +391,7 @@ pub fn goto_frame<'gc>(
             frame = frame.wrapping_sub(1);
             frame = frame.wrapping_add(i32::from(scene_offset));
             if frame >= 0 {
-                let num_frames = movie_clip.total_frames();
-                if frame > i32::from(num_frames) {
-                    movie_clip.goto_frame(context, num_frames, stop);
-                } else {
-                    movie_clip.goto_frame(context, frame.saturating_add(1) as u16, stop);
-                }
+                movie_clip.goto_frame(context, frame.saturating_add(1) as u16, stop);
             }
         }
         val => {

@@ -450,8 +450,6 @@ impl<'gc> MovieClipData<'gc> {
         // Clamp frame number in bounds.
         if frame < 1 {
             frame = 1;
-        } else if frame > self.total_frames() {
-            frame = self.total_frames();
         }
 
         if frame != self.current_frame() {
@@ -668,7 +666,17 @@ impl<'gc> MovieClipData<'gc> {
         let mut frame_pos = self.tag_stream_pos;
         let mut reader = self.reader(context);
         let mut index = 0;
-        while self.current_frame() < frame {
+
+        let len = self.static_data.tag_stream_len as u64;
+        // Sanity; let's make sure we don't seek way too far.
+        // TODO: This should be self.frames_loaded() when we implement that.
+        let clamped_frame = if frame <= self.total_frames() {
+            frame
+        } else {
+            self.total_frames()
+        };
+
+        while self.current_frame < clamped_frame && frame_pos < len {
             self.current_frame += 1;
             frame_pos = reader.get_inner().position();
 
@@ -700,6 +708,7 @@ impl<'gc> MovieClipData<'gc> {
             };
             let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
         }
+        let hit_target_frame = self.current_frame == frame;
 
         // Run the list of goto commands to actually create and update the display objects.
         let run_goto_command = |clip: &mut MovieClipData<'gc>,
@@ -749,9 +758,15 @@ impl<'gc> MovieClipData<'gc> {
 
         // Next, run the final frame for the parent clip.
         // Re-run the final frame without display tags (DoAction, StartSound, etc.)
-        self.current_frame = frame - 1;
-        self.tag_stream_pos = frame_pos;
-        self.run_frame_internal(self_display_object, context, false);
+        // Note that this only happens if the frame exists and is loaded;
+        // e.g. gotoAndStop(9999) displays the final frame, but actions don't run!
+        if hit_target_frame {
+            self.current_frame -= 1;
+            self.tag_stream_pos = frame_pos;
+            self.run_frame_internal(self_display_object, context, false);
+        } else {
+            self.current_frame = clamped_frame;
+        }
 
         // Finally, run frames for children that are placed on this frame.
         goto_commands
