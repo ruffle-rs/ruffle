@@ -1647,24 +1647,15 @@ impl<'gc> Avm1<'gc> {
         // Param can either be a frame number or a frame label.
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                match self.pop() {
-                    Value::Number(frame) => {
-                        // The frame on the stack is 1-based, not 0-based.
-                        clip.goto_frame(context, scene_offset + (frame as u16), !set_playing)
-                    }
-                    Value::String(frame_label) => {
-                        if let Some(frame) = clip.frame_label_to_number(&frame_label) {
-                            clip.goto_frame(context, scene_offset + frame, !set_playing)
-                        } else {
-                            log::warn!(
-                                "GotoFrame2: MovieClip {} does not contain frame label '{}'",
-                                clip.id(),
-                                frame_label
-                            );
-                        }
-                    }
-                    _ => log::warn!("GotoFrame2: Expected frame label or number"),
-                }
+                let frame = self.pop();
+                let _ = globals::movie_clip::goto_frame(
+                    clip,
+                    self,
+                    context,
+                    &[frame],
+                    !set_playing,
+                    scene_offset,
+                );
             } else {
                 log::warn!("GotoFrame2: Target is not a MovieClip");
             }
