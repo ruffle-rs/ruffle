@@ -78,8 +78,12 @@ fn target<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
 ) -> Result<Option<DisplayObject<'gc>>, Error> {
+    // The target path resolves based on the active tellTarget clip of the stack frame.
+    // This means calls on the same `Color` object could set the color of different clips
+    // depending on which timeline its called from!
     let target = this.get("target", avm, context)?.resolve(avm, context)?;
-    avm.resolve_target_display_object(context, target)
+    let start_clip = avm.target_clip_or_root(context);
+    avm.resolve_target_display_object(context, start_clip, target)
 }
 
 fn get_rgb<'gc>(

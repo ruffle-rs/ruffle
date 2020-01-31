@@ -612,7 +612,7 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    /// Resolves a target value to a display object.
+    /// Resolves a target value to a display object, relative to a starting display object.
     ///
     /// This is used by any action/function with a parameter that can be either
     /// a display object or a string path referencing the display object.
@@ -627,6 +627,7 @@ impl<'gc> Avm1<'gc> {
     pub fn resolve_target_display_object(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
+        start: DisplayObject<'gc>,
         target: Value<'gc>,
     ) -> Result<Option<DisplayObject<'gc>>, Error> {
         // If the value you got was a display object, we can just toss it straight back.
@@ -640,9 +641,8 @@ impl<'gc> Avm1<'gc> {
         // This means that values like `undefined` will resolve to clips with an instance name of
         // `"undefined"`, for example.
         let path = target.coerce_to_string(self, context)?;
-        let base_clip = self.target_clip_or_root(context);
         Ok(self
-            .resolve_target_path(context, base_clip, &path)?
+            .resolve_target_path(context, start, &path)?
             .and_then(|o| o.as_display_object()))
     }
 
@@ -1013,7 +1013,8 @@ impl<'gc> Avm1<'gc> {
         let depth = self.pop();
         let target = self.pop();
         let source = self.pop();
-        let source_clip = self.resolve_target_display_object(context, source)?;
+        let start_clip = self.target_clip_or_root(context);
+        let source_clip = self.resolve_target_display_object(context, start_clip, source)?;
 
         if let Some(movie_clip) = source_clip.and_then(|o| o.as_movie_clip()) {
             let _ = globals::movie_clip::duplicate_movie_clip(
@@ -1498,8 +1499,8 @@ impl<'gc> Avm1<'gc> {
     ) -> Result<(), Error> {
         let prop_index = self.pop().into_number_v1() as usize;
         let path = self.pop();
-        let ret = if self.target_clip().is_some() {
-            if let Some(clip) = self.resolve_target_display_object(context, path)? {
+        let ret = if let Some(target) = self.target_clip() {
+            if let Some(clip) = self.resolve_target_display_object(context, target, path)? {
                 let display_properties = self.display_properties;
                 let props = display_properties.write(context.gc_context);
                 if let Some(property) = props.get_by_index(prop_index) {
@@ -2073,7 +2074,8 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let target = self.pop();
-        let target_clip = self.resolve_target_display_object(context, target)?;
+        let start_clip = self.target_clip_or_root(context);
+        let target_clip = self.resolve_target_display_object(context, start_clip, target)?;
 
         if let Some(target_clip) = target_clip.and_then(|o| o.as_movie_clip()) {
             let _ = globals::movie_clip::remove_movie_clip(target_clip, context, 0);
@@ -2117,8 +2119,8 @@ impl<'gc> Avm1<'gc> {
         let value = self.pop();
         let prop_index = self.pop().as_u32()? as usize;
         let path = self.pop();
-        if self.target_clip().is_some() {
-            if let Some(clip) = self.resolve_target_display_object(context, path)? {
+        if let Some(target) = self.target_clip() {
+            if let Some(clip) = self.resolve_target_display_object(context, target, path)? {
                 let display_properties = self.display_properties;
                 let props = display_properties.read();
                 if let Some(property) = props.get_by_index(prop_index) {
@@ -2248,7 +2250,8 @@ impl<'gc> Avm1<'gc> {
 
     fn action_start_drag(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let target = self.pop();
-        let display_object = self.resolve_target_display_object(context, target)?;
+        let start_clip = self.target_clip_or_root(context);
+        let display_object = self.resolve_target_display_object(context, start_clip, target)?;
         if let Some(display_object) = display_object {
             let lock_center = self.pop();
             let constrain = self.pop().as_bool(self.current_swf_version());
