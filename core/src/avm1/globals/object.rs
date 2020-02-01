@@ -66,12 +66,12 @@ pub fn add_property<'gc>(
 /// Implements `Object.prototype.hasOwnProperty`
 pub fn has_own_property<'gc>(
     _avm: &mut Avm1<'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     match args.get(0) {
-        Some(Value::String(name)) => Ok(Value::Bool(this.has_own_property(name)).into()),
+        Some(Value::String(name)) => Ok(Value::Bool(this.has_own_property(context, name)).into()),
         _ => Ok(Value::Bool(false).into()),
     }
 }

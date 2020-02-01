@@ -379,17 +379,17 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     /// Checks if the object has a given named property.
-    fn has_property(&self, name: &str) -> bool {
-        self.has_own_property(name)
+    fn has_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
+        self.has_own_property(context, name)
             || self
                 .proto()
                 .as_ref()
-                .map_or(false, |p| p.has_property(name))
+                .map_or(false, |p| p.has_property(context, name))
     }
 
     /// Checks if the object has a given named property on itself (and not,
     /// say, the object's prototype or superclass)
-    fn has_own_property(&self, name: &str) -> bool {
+    fn has_own_property(&self, _context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
         if name == "__proto__" {
             return true;
         }

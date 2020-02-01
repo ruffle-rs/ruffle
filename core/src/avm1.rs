@@ -1450,13 +1450,17 @@ impl<'gc> Avm1<'gc> {
 
         //Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
         //a boolean based on if the delete actually deleted something.
-        let did_exist = self.current_stack_frame().unwrap().read().is_defined(name);
-
-        self.current_stack_frame()
+        let did_exist = self
+            .current_stack_frame()
             .unwrap()
             .read()
-            .scope()
-            .delete(name, context.gc_context);
+            .is_defined(context, name);
+
+        self.current_stack_frame().unwrap().read().scope().delete(
+            context,
+            name,
+            context.gc_context,
+        );
         self.push(did_exist);
 
         Ok(())

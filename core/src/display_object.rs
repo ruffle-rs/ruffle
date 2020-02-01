@@ -634,6 +634,18 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
         // TODO: Make a HashMap from name -> child?
         self.children().find(|child| &*child.name() == name)
     }
+    /// Get another layer by layer name.
+    fn get_layer_by_name(
+        &self,
+        name: &str,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Option<DisplayObject<'gc>> {
+        context
+            .layers
+            .values()
+            .find(|layer| &*layer.name() == name)
+            .copied()
+    }
     fn removed(&self) -> bool;
     fn set_removed(&mut self, context: MutationContext<'gc, '_>, value: bool);
 
