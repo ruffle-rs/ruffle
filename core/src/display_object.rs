@@ -786,6 +786,13 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
 
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc>;
     fn as_ptr(&self) -> *const DisplayObjectPtr;
+
+    /// Whether this object can be used as a mask.
+    /// If this returns false and this object is used as a mask, the mask will not be applied.
+    /// This is used by movie clips to disable the mask when there are no children, for example.
+    fn allow_as_mask(&self) -> bool {
+        true
+    }
 }
 
 pub enum DisplayObjectPtr {}
@@ -958,7 +965,7 @@ pub fn render_children<'gc>(
             context.renderer.pop_mask();
             clip_depth = clip_depth_stack.pop().unwrap();
         }
-        if child.clip_depth() > 0 {
+        if child.clip_depth() > 0 && child.allow_as_mask() {
             // Push and render the mask.
             clip_depth_stack.push(clip_depth);
             clip_depth = child.clip_depth();

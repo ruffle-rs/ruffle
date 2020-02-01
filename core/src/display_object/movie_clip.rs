@@ -387,6 +387,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         );
         self.set_removed(context.gc_context, true);
     }
+
+    fn allow_as_mask(&self) -> bool {
+        !self.0.read().children.is_empty()
+    }
 }
 
 unsafe impl<'gc> Collect for MovieClipData<'gc> {

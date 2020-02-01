@@ -169,6 +169,10 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
         context.transform_stack.pop();
     }
+
+    fn allow_as_mask(&self) -> bool {
+        false
+    }
 }
 
 unsafe impl<'gc> gc_arena::Collect for EditTextData<'gc> {
