@@ -233,9 +233,8 @@ impl Player {
             let mut root_data = gc_root.0.write(gc_context);
             let mc_proto = root_data.avm.prototypes().movie_clip;
 
-            for (i, layer) in root_data.layers.iter_mut() {
+            for (_i, layer) in root_data.layers.iter_mut() {
                 layer.post_instantiation(gc_context, *layer, mc_proto);
-                layer.set_name(gc_context, &format!("_level{}", i))
             }
         });
 
