@@ -203,6 +203,10 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
     fn as_button(&self) -> Option<Self> {
         Some(*self)
     }
+
+    fn allow_as_mask(&self) -> bool {
+        !self.0.read().children.is_empty()
+    }
 }
 
 impl<'gc> ButtonData<'gc> {
