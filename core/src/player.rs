@@ -235,6 +235,7 @@ impl Player {
 
             for (_i, layer) in root_data.layers.iter_mut() {
                 layer.post_instantiation(gc_context, *layer, mc_proto);
+                layer.set_depth(gc_context, 0);
             }
         });
 

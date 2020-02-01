@@ -951,6 +951,7 @@ impl<'gc> Avm1<'gc> {
                 MovieClip::new(NEWEST_PLAYER_VERSION, context.gc_context).into();
 
             layer.post_instantiation(context.gc_context, layer, self.prototypes.movie_clip);
+            layer.set_depth(context.gc_context, level_id as i32);
             context.layers.insert(level_id, layer);
 
             layer

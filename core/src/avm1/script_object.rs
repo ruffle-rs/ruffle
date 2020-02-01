@@ -588,6 +588,7 @@ mod tests {
             let swf = Arc::new(SwfMovie::empty(swf_version));
             let mut root: DisplayObject<'_> = MovieClip::new(swf_version, gc_context).into();
             root.post_instantiation(gc_context, root, avm.prototypes().movie_clip);
+            root.set_depth(gc_context, 0);
             let mut layers = BTreeMap::new();
             layers.insert(0, root);
 
