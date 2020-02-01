@@ -671,8 +671,8 @@ impl RenderBackend for WebCanvasRenderBackend {
         maskee_context.reset_transform().warn_on_error();
         self.context.reset_transform().warn_on_error();
 
-        // We draw the maskee onto the masker using the "source-in" blend mode.
-        // This will draw the clips in pixels only where the masker alpha > 0.
+        // We draw the masker onto the maskee using the "destination-in" blend mode.
+        // This will filter out pixels where the maskee alpha == 0.
         maskee_context
             .set_global_composite_operation("destination-in")
             .unwrap();
