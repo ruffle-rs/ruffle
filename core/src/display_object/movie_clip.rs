@@ -442,7 +442,7 @@ impl<'gc> MovieClipData<'gc> {
         let movie = movie.unwrap_or_else(|| Arc::new(SwfMovie::empty(self.movie().version())));
         let total_frames = movie.header().num_frames;
 
-        self.base = Default::default();
+        self.base.reset_for_movie_load();
         self.static_data = Gc::allocate(
             gc_context,
             MovieClipStatic {

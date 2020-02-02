@@ -93,6 +93,12 @@ unsafe impl<'gc> Collect for DisplayObjectBase<'gc> {
 
 #[allow(dead_code)]
 impl<'gc> DisplayObjectBase<'gc> {
+    /// Reset all properties that would be adjusted by a movie load.
+    fn reset_for_movie_load(&mut self) {
+        self.first_child = None;
+        self.flags = DisplayObjectFlags::Visible.into();
+    }
+
     fn id(&self) -> CharacterId {
         0
     }
