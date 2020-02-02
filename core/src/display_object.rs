@@ -8,6 +8,7 @@ use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
+use std::cmp::min;
 use std::fmt::Debug;
 use std::sync::Arc;
 
@@ -634,16 +635,21 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
         self.children().find(|child| &*child.name() == name)
     }
     /// Get another layer by layer name.
-    fn get_layer_by_name(
+    ///
+    /// Since layers don't have instance names, this function instead parses
+    /// their ID and uses that to retrieve the layer.
+    fn get_layer_by_path(
         &self,
         name: &str,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Option<DisplayObject<'gc>> {
-        context
-            .layers
-            .values()
-            .find(|layer| &*layer.name() == name)
-            .copied()
+        if name.get(0..min(name.len(), 6)) == Some("_level") {
+            if let Some(layer_id) = name.get(6..).and_then(|v| v.parse::<u32>().ok()) {
+                return context.layers.get(&layer_id).copied();
+            }
+        }
+
+        None
     }
     fn removed(&self) -> bool;
     fn set_removed(&mut self, context: MutationContext<'gc, '_>, value: bool);

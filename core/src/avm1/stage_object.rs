@@ -75,7 +75,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         } else if let Some(child) = self.display_object.get_child_by_name(name) {
             // 3) Child display objects with the given instance name
             Ok(child.object().into())
-        } else if let Some(layer) = self.display_object.get_layer_by_name(name, context) {
+        } else if let Some(layer) = self.display_object.get_layer_by_path(name, context) {
             // 4) Top-level layers
             Ok(layer.object().into())
         } else {
@@ -189,7 +189,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
         if self
             .display_object
-            .get_layer_by_name(name, context)
+            .get_layer_by_path(name, context)
             .is_some()
         {
             return true;
