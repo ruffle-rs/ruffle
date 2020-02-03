@@ -319,7 +319,11 @@ impl<'gc> Executable<'gc> {
                 }
 
                 if af.preload_root {
-                    frame.set_local_register(preload_r, avm.root_object(ac), ac.gc_context);
+                    frame.set_local_register(
+                        preload_r,
+                        af.base_clip.root().object(),
+                        ac.gc_context,
+                    );
                     preload_r += 1;
                 }
 
