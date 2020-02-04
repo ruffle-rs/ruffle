@@ -55,11 +55,34 @@ impl<'gc> EditText<'gc> {
         let is_multiline = swf_tag.is_multiline;
         let is_word_wrap = swf_tag.is_word_wrap;
 
+        let text = if swf_tag.is_html {
+            let mut result = String::new();
+            let tag_text = swf_tag.initial_text.clone().unwrap_or_default();
+            let mut chars = tag_text.chars().peekable();
+
+            while let Some(c) = chars.next() {
+                // TODO: SWF text fields can contain a limited subset of HTML (and often do in SWF versions >6).
+                // This is a quicky-and-dirty way to skip the HTML tags. This is obviously not correct
+                // and we will need to properly parse and handle the HTML at some point.
+                // See SWF19 pp. 173-174 for supported HTML tags.
+                if c == '<' {
+                    // Skip characters until we see a close bracket.
+                    chars.by_ref().skip_while(|&x| x != '>').next();
+                } else {
+                    result.push(c);
+                }
+            }
+
+            result
+        } else {
+            swf_tag.initial_text.clone().unwrap_or_default()
+        };
+
         EditText(GcCell::allocate(
             context.gc_context,
             EditTextData {
                 base: Default::default(),
-                text: swf_tag.initial_text.clone().unwrap_or_default(),
+                text,
                 new_format: TextFormat::default(),
                 static_data: gc_arena::Gc::allocate(context.gc_context, EditTextStatic(swf_tag)),
                 is_multiline,
@@ -271,12 +294,9 @@ impl<'gc> EditText<'gc> {
                         breakpoints.push(break_base);
                     }
 
-                    for breakpoint in font.split_wrapped_lines(
-                        natural_line,
-                        height,
-                        self.line_width(),
-                        edit_text.static_data.0.is_html,
-                    ) {
+                    for breakpoint in
+                        font.split_wrapped_lines(natural_line, height, self.line_width())
+                    {
                         breakpoints.push(break_base + breakpoint);
                     }
 
@@ -349,7 +369,7 @@ impl<'gc> EditText<'gc> {
                 .unwrap_or_else(|| font.scale());
 
             for chunk in chunks {
-                let chunk_size = font.measure(chunk, height, edit_text.static_data.0.is_html);
+                let chunk_size = font.measure(chunk, height);
 
                 size.0 = size.0.max(chunk_size.0);
                 if let Some(layout) = &static_data.layout {
@@ -449,7 +469,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                     chunk,
                     text_transform.clone(),
                     height,
-                    edit_text.static_data.0.is_html,
                     |transform, glyph: &Glyph| {
                         // Render glyph.
                         context.transform_stack.push(transform);

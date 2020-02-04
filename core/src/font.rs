@@ -133,7 +133,6 @@ impl<'gc> Font<'gc> {
         text: &str,
         mut transform: Transform,
         height: f32,
-        is_html: bool,
         mut glyph_func: FGlyph,
     ) where
         FGlyph: FnMut(&Transform, &Glyph),
@@ -146,14 +145,7 @@ impl<'gc> Font<'gc> {
         let mut chars = text.chars().peekable();
         let has_kerning_info = self.has_kerning_info();
         while let Some(c) = chars.next() {
-            // TODO: SWF text fields can contain a limited subset of HTML (and often do in SWF versions >6).
-            // This is a quicky-and-dirty way to skip the HTML tags. This is obviously not correct
-            // and we will need to properly parse and handle the HTML at some point.
-            // See SWF19 pp. 173-174 for supported HTML tags.
-            if is_html && c == '<' {
-                // Skip characters until we see a close bracket.
-                chars.by_ref().skip_while(|&x| x != '>').next();
-            } else if let Some(glyph) = self.get_glyph_for_char(c) {
+            if let Some(glyph) = self.get_glyph_for_char(c) {
                 glyph_func(&transform, &glyph);
                 // Step horizontally.
                 let mut advance = f32::from(glyph.advance);
@@ -168,21 +160,15 @@ impl<'gc> Font<'gc> {
     }
 
     /// Measure a particular string's metrics (width and height).
-    pub fn measure(self, text: &str, height: f32, is_html: bool) -> (f32, f32) {
+    pub fn measure(self, text: &str, height: f32) -> (f32, f32) {
         let mut size = (0.0, 0.0);
 
-        self.evaluate(
-            text,
-            Default::default(),
-            height,
-            is_html,
-            |transform, _glyph| {
-                let tx = transform.matrix.tx / Twips::TWIPS_PER_PIXEL as f32;
-                let ty = transform.matrix.ty / Twips::TWIPS_PER_PIXEL as f32;
-                size.0 = f32::max(size.0, tx);
-                size.1 = f32::max(size.1, ty);
-            },
-        );
+        self.evaluate(text, Default::default(), height, |transform, _glyph| {
+            let tx = transform.matrix.tx / Twips::TWIPS_PER_PIXEL as f32;
+            let ty = transform.matrix.ty / Twips::TWIPS_PER_PIXEL as f32;
+            size.0 = f32::max(size.0, tx);
+            size.1 = f32::max(size.1, ty);
+        });
 
         size
     }
@@ -192,19 +178,13 @@ impl<'gc> Font<'gc> {
     ///
     /// This function assumes only `" "` is valid whitespace to split words on,
     /// and will not attempt to break words that are longer than `width`.
-    pub fn split_wrapped_lines(
-        self,
-        text: &str,
-        height: f32,
-        width: f32,
-        is_html: bool,
-    ) -> Vec<usize> {
+    pub fn split_wrapped_lines(self, text: &str, height: f32, width: f32) -> Vec<usize> {
         let mut result = vec![];
         let mut current_width = width;
         let mut current_word = &text[0..0];
 
         for word in text.split(' ') {
-            let measure = self.measure(word, height, is_html);
+            let measure = self.measure(word, height);
             let line_start = current_word.as_ptr() as usize - text.as_ptr() as usize;
             let line_end = if (line_start + current_word.len() + 1) < text.len() {
                 line_start + current_word.len() + 1
