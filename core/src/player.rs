@@ -4,6 +4,7 @@ use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::listeners::SystemListener;
 use crate::avm1::object::Object;
 use crate::avm1::{Avm1, AvmString, TObject, Timers, Value};
+use crate::avm2::Avm2;
 use crate::backend::input::{InputBackend, MouseCursor};
 use crate::backend::storage::StorageBackend;
 use crate::backend::{
@@ -53,7 +54,12 @@ struct GcRootData<'gc> {
     /// The object being dragged via a `startDrag` action.
     drag_object: Option<DragObject<'gc>>,
 
-    avm: Avm1<'gc>,
+    /// Interpreter state for AVM1 code.
+    avm1: Avm1<'gc>,
+
+    /// Interpreter state for AVM2 code.
+    avm2: Avm2<'gc>,
+
     action_queue: ActionQueue<'gc>,
 
     /// Object which manages asynchronous processes that need to interact with
@@ -80,6 +86,7 @@ impl<'gc> GcRootData<'gc> {
         &mut Library<'gc>,
         &mut ActionQueue<'gc>,
         &mut Avm1<'gc>,
+        &mut Avm2<'gc>,
         &mut Option<DragObject<'gc>>,
         &mut LoadManager<'gc>,
         &mut HashMap<String, Object<'gc>>,
@@ -90,7 +97,8 @@ impl<'gc> GcRootData<'gc> {
             &mut self.levels,
             &mut self.library,
             &mut self.action_queue,
-            &mut self.avm,
+            &mut self.avm1,
+            &mut self.avm2,
             &mut self.drag_object,
             &mut self.load_manager,
             &mut self.shared_objects,
@@ -238,7 +246,8 @@ impl Player {
                         levels: BTreeMap::new(),
                         mouse_hovered_object: None,
                         drag_object: None,
-                        avm: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
+                        avm1: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
+                        avm2: Avm2::new(),
                         action_queue: ActionQueue::new(),
                         load_manager: LoadManager::new(),
                         shared_objects: HashMap::new(),
@@ -945,7 +954,8 @@ impl Player {
                 levels,
                 library,
                 action_queue,
-                avm,
+                avm1,
+                avm2,
                 drag_object,
                 load_manager,
                 shared_objects,
@@ -970,7 +980,7 @@ impl Player {
                 mouse_position,
                 drag_object,
                 stage_size: (stage_width, stage_height),
-                system_prototypes: avm.prototypes().clone(),
+                system_prototypes: avm1.prototypes().clone(),
                 player,
                 load_manager,
                 system: system_properties,
@@ -982,7 +992,7 @@ impl Player {
                 needs_render,
             };
 
-            let ret = f(avm, &mut update_context);
+            let ret = f(avm1, &mut update_context);
 
             // Hovered object may have been updated; copy it back to the GC root.
             root_data.mouse_hovered_object = update_context.mouse_hovered_object;
