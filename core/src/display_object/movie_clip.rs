@@ -134,7 +134,7 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn preload(
         self,
-        avm: &mut Avm1<'gc>,
+        avm1: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         morph_shapes: &mut fnv::FnvHashMap<CharacterId, MorphShapeStatic>,
     ) {
@@ -250,7 +250,7 @@ impl<'gc> MovieClip<'gc> {
                     .write(context.gc_context)
                     .define_sound(context, reader),
                 TagCode::DefineSprite => self.0.write(context.gc_context).define_sprite(
-                    avm,
+                    avm1,
                     context,
                     reader,
                     tag_len,
@@ -264,7 +264,8 @@ impl<'gc> MovieClip<'gc> {
                     .0
                     .write(context.gc_context)
                     .define_text(context, reader, 2),
-                TagCode::DoInitAction => self.do_init_action(avm, context, reader, tag_len),
+                TagCode::DoInitAction => self.do_init_action(avm1, context, reader, tag_len),
+                TagCode::DoAbc => self.do_abc(context, reader, tag_len),
                 TagCode::ExportAssets => self
                     .0
                     .write(context.gc_context)
@@ -326,7 +327,7 @@ impl<'gc> MovieClip<'gc> {
                     &mut cur_frame,
                 ),
                 TagCode::ScriptLimits => {
-                    self.0.write(context.gc_context).script_limits(reader, avm)
+                    self.0.write(context.gc_context).script_limits(reader, avm1)
                 }
                 TagCode::SoundStreamHead => self
                     .0
@@ -393,6 +394,47 @@ impl<'gc> MovieClip<'gc> {
             context,
         );
 
+        Ok(())
+    }
+
+    #[inline]
+    fn do_abc(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        reader: &mut SwfStream<&[u8]>,
+        tag_len: usize,
+    ) -> DecodeResult {
+        // Queue the actions.
+        // TODO: The tag reader parses the entire ABC file, instead of just
+        // giving us a `SwfSlice` for later parsing, so we have to replcate the
+        // *entire* parsing code here. This sucks.
+        let flags = reader.read_u32()?;
+        let name = reader.read_c_string()?;
+        let is_lazy_initialize = flags & 1 != 0;
+
+        // The rest of the tag is an ABC file so we can take our SwfSlice now.
+        let slice = self
+            .0
+            .read()
+            .static_data
+            .swf
+            .resize_to_reader(reader, tag_len)
+            .ok_or_else(|| {
+                std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "Invalid source or tag length when running init action",
+                )
+            })?;
+        context.action_queue.queue_actions(
+            self.into(),
+            ActionType::DoABC {
+                name,
+                is_lazy_initialize,
+                abc: slice,
+                preload: true,
+            },
+            false,
+        );
         Ok(())
     }
 
