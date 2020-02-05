@@ -6,6 +6,9 @@ use crate::tag_utils::SwfSlice;
 use gc_arena::Collect;
 use swf::avm2::read::Reader;
 
+mod names;
+mod object;
+mod script_object;
 mod value;
 
 /// Boxed error alias.
