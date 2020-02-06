@@ -104,22 +104,24 @@ impl<'gc> Avm2<'gc> {
         ) -> Result<R, Error>,
     {
         let (frame_cell, action, pc) = {
-            let frame = self.stack_frames.last().ok_or("No stack frame to read!")?;
+            let frame = self
+                .current_stack_frame()
+                .ok_or("No stack frame to read!")?;
             let mut frame_ref = frame.write(context.gc_context);
             frame_ref.lock()?;
 
-            (*frame, frame_ref.action(), frame_ref.pc())
+            (frame, frame_ref.action(), frame_ref.pc())
         };
 
         let abc = action.abc.as_ref();
         let method_index = action.abc_method;
         let method_body_index = action.abc_method_body as usize;
         let method_body: Result<&MethodBody, Error> =
-            abc.method_bodies.get(method_body_index).ok_or(
+            abc.method_bodies.get(method_body_index).ok_or_else(|| {
                 "Attempting to execute a method that does not exist"
                     .to_string()
-                    .into(),
-            );
+                    .into()
+            });
 
         let cursor = Cursor::new(method_body?.code.as_ref());
         let mut read = Reader::new(cursor);
@@ -132,6 +134,28 @@ impl<'gc> Avm2<'gc> {
         frame_ref.set_pc(read.get_inner().position() as usize);
 
         r
+    }
+
+    /// Execute the AVM stack until it is exhausted.
+    pub fn run_stack_till_empty(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        while !self.stack_frames.is_empty() {
+            self.with_current_reader_mut(context, |this, r, context| {
+                this.do_next_opcode(context, r)
+            })?;
+        }
+
+        // Operand stack should be empty at this point.
+        // This is probably a bug on our part,
+        // although bytecode could in theory leave data on the stack.
+        if !self.stack.is_empty() {
+            log::warn!("Operand stack is not empty after execution");
+            self.stack.clear();
+        }
+
+        Ok(())
     }
 
     /// Run a single action from a given action reader.

@@ -879,6 +879,8 @@ impl Player {
                     }
                 }
             }
+            // Execute the stack frame (if any).
+            let _ = avm2.run_stack_till_empty(context);
         }
     }
 
