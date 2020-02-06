@@ -518,7 +518,7 @@ impl<R: Read> Reader<R> {
     }
 
     #[allow(dead_code)]
-    fn read_op(&mut self) -> Result<Option<Op>> {
+    pub fn read_op(&mut self) -> Result<Option<Op>> {
         use crate::avm2::opcode::OpCode;
         use num_traits::FromPrimitive;
 

@@ -1,7 +1,7 @@
 //! Default AVM2 object impl
 
 use crate::avm2::names::QName;
-use crate::avm2::object::TObject;
+use crate::avm2::object::{ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use gc_arena::{Collect, GcCell};
 use std::collections::HashMap;
@@ -19,4 +19,8 @@ pub struct ScriptObjectData<'gc> {
     values: HashMap<QName, Value<'gc>>,
 }
 
-impl<'gc> TObject<'gc> for ScriptObject<'gc> {}
+impl<'gc> TObject<'gc> for ScriptObject<'gc> {
+    fn as_ptr(&self) -> *const ObjectPtr {
+        self.0.as_ptr() as *const ObjectPtr
+    }
+}
