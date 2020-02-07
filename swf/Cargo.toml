@@ -10,7 +10,7 @@ readme = "README.md"
 description = "Read and write the Adobe Flash SWF file format."
 
 [dependencies]
-byteorder = "1.0"
+byteorder = "1.3"
 enumset = "0.4.2"
 num-derive = "0.3"
 num-traits = "0.2"
