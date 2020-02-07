@@ -179,6 +179,27 @@ impl<'gc> Avm2<'gc> {
         value
     }
 
+    fn register_value(&self, index: u32) -> Result<Value<'gc>, Error> {
+        self.current_stack_frame()
+            .and_then(|sf| sf.read().local_register(index))
+            .ok_or_else(|| format!("Out of bounds register read: {}", index).into())
+    }
+
+    fn set_register_value(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        index: u32,
+        value: impl Into<Value<'gc>>,
+    ) -> Result<(), Error> {
+        match self.current_stack_frame().map(|sf| {
+            sf.write(context.gc_context)
+                .set_local_register(index, value, context.gc_context)
+        }) {
+            Some(true) => Ok(()),
+            _ => Err(format!("Out of bounds register write: {}", index).into()),
+        }
+    }
+
     /// Retrieve the current constant pool for the currently executing function.
     fn current_abc(&self) -> Option<Rc<AbcFile>> {
         self.current_stack_frame()
@@ -234,6 +255,8 @@ impl<'gc> Avm2<'gc> {
                 Op::PushTrue => self.op_push_true(),
                 Op::PushUint { value } => self.op_push_uint(value),
                 Op::PushUndefined => self.op_push_undefined(),
+                Op::GetLocal { index } => self.op_get_local(index),
+                Op::SetLocal { index } => self.op_set_local(context, index),
                 _ => self.unknown_op(op),
             };
 
@@ -304,5 +327,19 @@ impl<'gc> Avm2<'gc> {
     fn op_push_undefined(&mut self) -> Result<(), Error> {
         self.push(Value::Undefined);
         Ok(())
+    }
+
+    fn op_get_local(&mut self, register_index: u32) -> Result<(), Error> {
+        self.push(self.register_value(register_index)?);
+        Ok(())
+    }
+
+    fn op_set_local(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        register_index: u32,
+    ) -> Result<(), Error> {
+        let value = self.pop();
+        self.set_register_value(context, register_index, value)
     }
 }
