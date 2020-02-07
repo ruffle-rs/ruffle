@@ -17,6 +17,81 @@ pub enum Value<'gc> {
     Object(Object<'gc>),
 }
 
+impl<'gc> From<String> for Value<'gc> {
+    fn from(string: String) -> Self {
+        Value::String(string)
+    }
+}
+
+impl<'gc> From<&str> for Value<'gc> {
+    fn from(string: &str) -> Self {
+        Value::String(string.to_owned())
+    }
+}
+
+impl<'gc> From<bool> for Value<'gc> {
+    fn from(value: bool) -> Self {
+        Value::Bool(value)
+    }
+}
+
+impl<'gc, T> From<T> for Value<'gc>
+where
+    Object<'gc>: From<T>,
+{
+    fn from(value: T) -> Self {
+        Value::Object(Object::from(value))
+    }
+}
+
+impl<'gc> From<f64> for Value<'gc> {
+    fn from(value: f64) -> Self {
+        Value::Number(value)
+    }
+}
+
+impl<'gc> From<f32> for Value<'gc> {
+    fn from(value: f32) -> Self {
+        Value::Number(f64::from(value))
+    }
+}
+
+impl<'gc> From<u8> for Value<'gc> {
+    fn from(value: u8) -> Self {
+        Value::Number(f64::from(value))
+    }
+}
+
+impl<'gc> From<i16> for Value<'gc> {
+    fn from(value: i16) -> Self {
+        Value::Number(f64::from(value))
+    }
+}
+
+impl<'gc> From<u16> for Value<'gc> {
+    fn from(value: u16) -> Self {
+        Value::Number(f64::from(value))
+    }
+}
+
+impl<'gc> From<i32> for Value<'gc> {
+    fn from(value: i32) -> Self {
+        Value::Number(f64::from(value))
+    }
+}
+
+impl<'gc> From<u32> for Value<'gc> {
+    fn from(value: u32) -> Self {
+        Value::Number(f64::from(value))
+    }
+}
+
+impl<'gc> From<usize> for Value<'gc> {
+    fn from(value: usize) -> Self {
+        Value::Number(value as f64)
+    }
+}
+
 impl PartialEq for Value<'_> {
     fn eq(&self, other: &Self) -> bool {
         match self {

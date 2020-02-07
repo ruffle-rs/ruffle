@@ -6,8 +6,9 @@ use crate::context::UpdateContext;
 use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, GcCell};
 use std::io::Cursor;
+use std::rc::Rc;
 use swf::avm2::read::Reader;
-use swf::avm2::types::MethodBody;
+use swf::avm2::types::{AbcFile, Index, MethodBody, Op};
 use swf::read::SwfRead;
 
 mod activation;
@@ -158,6 +159,60 @@ impl<'gc> Avm2<'gc> {
         Ok(())
     }
 
+    /// Push a value onto the operand stack.
+    fn push(&mut self, value: impl Into<Value<'gc>>) {
+        let value = value.into();
+        avm_debug!("Stack push {}: {:?}", self.stack.len(), value);
+        self.stack.push(value);
+    }
+
+    /// Retrieve the top-most value on the operand stack.
+    #[allow(clippy::let_and_return)]
+    fn pop(&mut self) -> Value<'gc> {
+        let value = self.stack.pop().unwrap_or_else(|| {
+            log::warn!("Avm1::pop: Stack underflow");
+            Value::Undefined
+        });
+
+        avm_debug!("Stack pop {}: {:?}", self.stack.len(), value);
+
+        value
+    }
+
+    /// Retrieve the current constant pool for the currently executing function.
+    fn current_abc(&self) -> Option<Rc<AbcFile>> {
+        self.current_stack_frame()
+            .map(|sf| sf.read().action().abc.clone())
+    }
+
+    /// Retrieve a int from the current constant pool.
+    fn pool_int(&self, index: Index<i32>) -> Result<i32, Error> {
+        self.current_abc()
+            .and_then(|abc| abc.constant_pool.ints.get(index.0 as usize).copied())
+            .ok_or_else(|| format!("Unknown int constant {}", index.0).into())
+    }
+
+    /// Retrieve a int from the current constant pool.
+    fn pool_uint(&self, index: Index<u32>) -> Result<u32, Error> {
+        self.current_abc()
+            .and_then(|abc| abc.constant_pool.uints.get(index.0 as usize).copied())
+            .ok_or_else(|| format!("Unknown uint constant {}", index.0).into())
+    }
+
+    /// Retrieve a double from the current constant pool.
+    fn pool_double(&self, index: Index<f64>) -> Result<f64, Error> {
+        self.current_abc()
+            .and_then(|abc| abc.constant_pool.doubles.get(index.0 as usize).copied())
+            .ok_or_else(|| format!("Unknown double constant {}", index.0).into())
+    }
+
+    /// Retrieve a string from the current constant pool.
+    fn pool_string(&self, index: Index<String>) -> Result<String, Error> {
+        self.current_abc()
+            .and_then(|abc| abc.constant_pool.strings.get(index.0 as usize).cloned())
+            .ok_or_else(|| format!("Unknown string constant {}", index.0).into())
+    }
+
     /// Run a single action from a given action reader.
     pub fn do_next_opcode(
         &mut self,
@@ -168,7 +223,18 @@ impl<'gc> Avm2<'gc> {
             avm_debug!("Opcode: {:?}", op);
 
             let result = match op {
-                _ => self.unknown_op(context, op),
+                Op::PushByte { value } => self.op_push_byte(value),
+                Op::PushDouble { value } => self.op_push_double(value),
+                Op::PushFalse => self.op_push_false(),
+                Op::PushInt { value } => self.op_push_int(value),
+                Op::PushNaN => self.op_push_nan(),
+                Op::PushNull => self.op_push_null(),
+                Op::PushShort { value } => self.op_push_short(value),
+                Op::PushString { value } => self.op_push_string(value),
+                Op::PushTrue => self.op_push_true(),
+                Op::PushUint { value } => self.op_push_uint(value),
+                Op::PushUndefined => self.op_push_undefined(),
+                _ => self.unknown_op(op),
             };
 
             if let Err(ref e) = result {
@@ -180,12 +246,63 @@ impl<'gc> Avm2<'gc> {
         Ok(())
     }
 
-    fn unknown_op(
-        &mut self,
-        _context: &mut UpdateContext,
-        op: swf::avm2::types::Op,
-    ) -> Result<(), Error> {
+    fn unknown_op(&mut self, op: swf::avm2::types::Op) -> Result<(), Error> {
         log::error!("Unknown AVM2 opcode: {:?}", op);
         Err("Unknown op".into())
+    }
+
+    fn op_push_byte(&mut self, value: u8) -> Result<(), Error> {
+        self.push(value);
+        Ok(())
+    }
+
+    fn op_push_double(&mut self, value: Index<f64>) -> Result<(), Error> {
+        self.push(self.pool_double(value)?);
+        Ok(())
+    }
+
+    fn op_push_false(&mut self) -> Result<(), Error> {
+        self.push(false);
+        Ok(())
+    }
+
+    fn op_push_int(&mut self, value: Index<i32>) -> Result<(), Error> {
+        self.push(self.pool_int(value)?);
+        Ok(())
+    }
+
+    fn op_push_nan(&mut self) -> Result<(), Error> {
+        self.push(std::f64::NAN);
+        Ok(())
+    }
+
+    fn op_push_null(&mut self) -> Result<(), Error> {
+        self.push(Value::Null);
+        Ok(())
+    }
+
+    fn op_push_short(&mut self, value: u32) -> Result<(), Error> {
+        self.push(value);
+        Ok(())
+    }
+
+    fn op_push_string(&mut self, value: Index<String>) -> Result<(), Error> {
+        self.push(self.pool_string(value)?);
+        Ok(())
+    }
+
+    fn op_push_true(&mut self) -> Result<(), Error> {
+        self.push(true);
+        Ok(())
+    }
+
+    fn op_push_uint(&mut self, value: Index<u32>) -> Result<(), Error> {
+        self.push(self.pool_uint(value)?);
+        Ok(())
+    }
+
+    fn op_push_undefined(&mut self) -> Result<(), Error> {
+        self.push(Value::Undefined);
+        Ok(())
     }
 }
