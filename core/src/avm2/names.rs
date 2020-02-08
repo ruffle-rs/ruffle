@@ -1,7 +1,7 @@
 //! AVM2 names & namespacing
 
 use gc_arena::Collect;
-use swf::avm2::types::{AbcFile, Index, Namespace as AbcNamespace};
+use swf::avm2::types::{AbcFile, Index, Multiname as AbcMultiname, Namespace as AbcNamespace};
 
 /// Represents the name of a namespace.
 #[derive(Clone, Collect, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -17,30 +17,41 @@ pub enum Namespace {
 }
 
 impl Namespace {
-    pub fn from_abc_namespace(name: &AbcNamespace, file: &AbcFile) -> Option<Self> {
-        Some(match name {
-            AbcNamespace::Namespace(Index(idx, ..)) => {
-                Self::Namespace(file.constant_pool.strings.get(*idx as usize)?.clone())
-            }
-            AbcNamespace::Package(Index(idx, ..)) => {
-                Self::Package(file.constant_pool.strings.get(*idx as usize)?.clone())
-            }
-            AbcNamespace::PackageInternal(Index(idx, ..)) => {
-                Self::PackageInternal(file.constant_pool.strings.get(*idx as usize)?.clone())
-            }
-            AbcNamespace::Protected(Index(idx, ..)) => {
-                Self::Protected(file.constant_pool.strings.get(*idx as usize)?.clone())
-            }
-            AbcNamespace::Explicit(Index(idx, ..)) => {
-                Self::Explicit(file.constant_pool.strings.get(*idx as usize)?.clone())
-            }
-            AbcNamespace::StaticProtected(Index(idx, ..)) => {
-                Self::StaticProtected(file.constant_pool.strings.get(*idx as usize)?.clone())
-            }
-            AbcNamespace::Private(Index(idx, ..)) => {
-                Self::Private(file.constant_pool.strings.get(*idx as usize)?.clone())
-            }
-        })
+    /// Read a namespace declaration from the ABC constant pool and copy it to
+    /// a namespace value.
+    pub fn from_abc_namespace(
+        file: &AbcFile,
+        namespace_index: Index<AbcNamespace>,
+    ) -> Option<Self> {
+        Some(
+            match file
+                .constant_pool
+                .namespaces
+                .get(namespace_index.0 as usize)?
+            {
+                AbcNamespace::Namespace(Index(idx, ..)) => {
+                    Self::Namespace(file.constant_pool.strings.get(*idx as usize)?.clone())
+                }
+                AbcNamespace::Package(Index(idx, ..)) => {
+                    Self::Package(file.constant_pool.strings.get(*idx as usize)?.clone())
+                }
+                AbcNamespace::PackageInternal(Index(idx, ..)) => {
+                    Self::PackageInternal(file.constant_pool.strings.get(*idx as usize)?.clone())
+                }
+                AbcNamespace::Protected(Index(idx, ..)) => {
+                    Self::Protected(file.constant_pool.strings.get(*idx as usize)?.clone())
+                }
+                AbcNamespace::Explicit(Index(idx, ..)) => {
+                    Self::Explicit(file.constant_pool.strings.get(*idx as usize)?.clone())
+                }
+                AbcNamespace::StaticProtected(Index(idx, ..)) => {
+                    Self::StaticProtected(file.constant_pool.strings.get(*idx as usize)?.clone())
+                }
+                AbcNamespace::Private(Index(idx, ..)) => {
+                    Self::Private(file.constant_pool.strings.get(*idx as usize)?.clone())
+                }
+            },
+        )
     }
 }
 
