@@ -73,8 +73,15 @@ impl<'gc> Avm2<'gc> {
         Ok(())
     }
 
+    /// Get the current stack frame (`Activation` object).
     pub fn current_stack_frame(&self) -> Option<GcCell<'gc, Activation<'gc>>> {
         self.stack_frames.last().copied()
+    }
+
+    /// Add a new stack frame to the stack, which can represent any particular
+    /// operation you like that needs to execute AVM2 code.
+    pub fn insert_stack_frame(&mut self, frame: GcCell<'gc, Activation<'gc>>) {
+        self.stack_frames.push(frame)
     }
 
     /// Perform some action with the current stack frame's reader.

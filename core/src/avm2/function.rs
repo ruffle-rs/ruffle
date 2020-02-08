@@ -1,12 +1,13 @@
 //! AVM2 executables.
 
+use crate::avm2::activation::Activation;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::script_object::ScriptObjectData;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
-use gc_arena::{Collect, CollectionContext, GcCell};
+use gc_arena::{Collect, CollectionContext, Gc, GcCell};
 use std::fmt;
 use std::rc::Rc;
 use swf::avm2::types::AbcFile;
@@ -50,7 +51,7 @@ pub struct Avm2Function {
 #[derive(Clone)]
 pub enum Executable<'gc> {
     Native(NativeFunction<'gc>),
-    Action(Avm2Function),
+    Action(Gc<'gc, Avm2Function>),
 }
 
 unsafe impl<'gc> Collect for Executable<'gc> {
@@ -92,5 +93,28 @@ pub struct FunctionObjectData<'gc> {
 impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn as_ptr(&self) -> *const ObjectPtr {
         self.0.as_ptr() as *const ObjectPtr
+    }
+
+    fn call(
+        self,
+        reciever: Object<'gc>,
+        arguments: &[Value<'gc>],
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<ReturnValue<'gc>, Error> {
+        let exec = self.0.read().exec.clone();
+
+        match exec {
+            Executable::Native(nf) => nf(avm, context, reciever, arguments),
+            Executable::Action(a2f) => {
+                let activation = GcCell::allocate(
+                    context.gc_context,
+                    Activation::from_action(context, a2f, reciever, None)?,
+                );
+
+                avm.insert_stack_frame(activation);
+                Ok(activation.into())
+            }
+        }
     }
 }

@@ -34,13 +34,24 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Set a property by it's QName.
     fn set_property(
-        self,
+        &mut self,
         _name: &QName,
         _value: Value<'gc>,
         _avm: &mut Avm2<'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         Ok(())
+    }
+
+    /// Call the object.
+    fn call(
+        self,
+        _reciever: Object<'gc>,
+        _arguments: &[Value<'gc>],
+        _avm: &mut Avm2<'gc>,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<ReturnValue<'gc>, Error> {
+        Err("Object is not callable".into())
     }
 
     /// Get a raw pointer value for this object.
