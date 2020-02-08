@@ -1,5 +1,6 @@
 //! AVM2 values
 
+use crate::avm2::names::Namespace;
 use crate::avm2::object::Object;
 use crate::avm2::Error;
 use gc_arena::Collect;
@@ -15,6 +16,7 @@ pub enum Value<'gc> {
     Bool(bool),
     Number(f64),
     String(String),
+    Namespace(Namespace),
     Object(Object<'gc>),
 }
 
@@ -93,6 +95,12 @@ impl<'gc> From<usize> for Value<'gc> {
     }
 }
 
+impl<'gc> From<Namespace> for Value<'gc> {
+    fn from(value: Namespace) -> Self {
+        Value::Namespace(value)
+    }
+}
+
 impl PartialEq for Value<'_> {
     fn eq(&self, other: &Self) -> bool {
         match self {
@@ -120,6 +128,10 @@ impl PartialEq for Value<'_> {
             },
             Value::Object(value) => match other {
                 Value::Object(other_value) => Object::ptr_eq(*value, *other_value),
+                _ => false,
+            },
+            Value::Namespace(ns) => match other {
+                Value::Namespace(other_ns) => ns == other_ns,
                 _ => false,
             },
         }

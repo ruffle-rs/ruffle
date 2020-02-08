@@ -1,6 +1,7 @@
 //! Return value enum
 
 use crate::avm2::activation::Activation;
+use crate::avm2::names::Namespace;
 use crate::avm2::object::Object;
 use crate::avm2::{Avm2, Error, Value};
 use crate::context::UpdateContext;
@@ -173,6 +174,12 @@ impl<'gc> From<i32> for ReturnValue<'gc> {
 impl<'gc> From<u32> for ReturnValue<'gc> {
     fn from(value: u32) -> Self {
         ReturnValue::Immediate(Value::Number(f64::from(value)))
+    }
+}
+
+impl<'gc> From<Namespace> for ReturnValue<'gc> {
+    fn from(value: Namespace) -> Self {
+        ReturnValue::Immediate(Value::Namespace(value))
     }
 }
 
