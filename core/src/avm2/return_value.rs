@@ -65,7 +65,7 @@ impl<'gc> ReturnValue<'gc> {
         use ReturnValue::*;
 
         match self {
-            Immediate(val) => {} //TODO: avm.push(val)
+            Immediate(val) => avm.push(val),
             ResultOf(_frame) => {}
         };
     }
@@ -82,8 +82,9 @@ impl<'gc> ReturnValue<'gc> {
         match self {
             Immediate(val) => Ok(val),
             ResultOf(frame) => {
-                //TODO: Execute AVM frame, pop return value
-                Ok(Value::Undefined)
+                avm.run_current_frame(context, frame)?;
+
+                Ok(avm.pop())
             }
         }
     }

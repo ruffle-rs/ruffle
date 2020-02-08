@@ -1,6 +1,7 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
 use crate::avm2::activation::Activation;
+use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
 use crate::context::UpdateContext;
 use crate::tag_utils::SwfSlice;
@@ -84,6 +85,36 @@ impl<'gc> Avm2<'gc> {
         self.stack_frames.push(frame)
     }
 
+    /// Destroy the current stack frame (if there is one).
+    ///
+    /// The given return value will be pushed on the stack if there is a
+    /// function to return it to. Otherwise, it will be discarded.
+    ///
+    /// NOTE: This means that if you are starting a brand new AVM stack just to
+    /// get it's return value, you won't get that value. Instead, retain a cell
+    /// referencing the oldest activation frame and use that to retrieve the
+    /// return value.
+    fn retire_stack_frame(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        return_value: Value<'gc>,
+    ) -> Result<(), Error> {
+        if let Some(frame) = self.current_stack_frame() {
+            self.stack_frames.pop();
+
+            let can_return = !self.stack_frames.is_empty();
+            if can_return {
+                frame
+                    .write(context.gc_context)
+                    .set_return_value(return_value.clone());
+
+                self.push(return_value);
+            }
+        }
+
+        Ok(())
+    }
+
     /// Perform some action with the current stack frame's reader.
     ///
     /// This function constructs a reader based off the current stack frame's
@@ -164,6 +195,37 @@ impl<'gc> Avm2<'gc> {
         }
 
         Ok(())
+    }
+
+    /// Execute the AVM stack until a given activation returns.
+    pub fn run_current_frame(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        stop_frame: GcCell<'gc, Activation<'gc>>,
+    ) -> Result<(), Error> {
+        let mut stop_frame_id = None;
+        for (index, frame) in self.stack_frames.iter().enumerate() {
+            if GcCell::ptr_eq(stop_frame, *frame) {
+                stop_frame_id = Some(index);
+            }
+        }
+
+        if let Some(stop_frame_id) = stop_frame_id {
+            while self
+                .stack_frames
+                .get(stop_frame_id)
+                .map(|fr| GcCell::ptr_eq(stop_frame, *fr))
+                .unwrap_or(false)
+            {
+                self.with_current_reader_mut(context, |this, r, context| {
+                    this.do_next_opcode(context, r)
+                })?;
+            }
+
+            Ok(())
+        } else {
+            Err("Attempted to run a frame not on the current interpreter stack".into())
+        }
     }
 
     /// Push a value onto the operand stack.
@@ -264,6 +326,9 @@ impl<'gc> Avm2<'gc> {
                 Op::PushUndefined => self.op_push_undefined(),
                 Op::GetLocal { index } => self.op_get_local(index),
                 Op::SetLocal { index } => self.op_set_local(context, index),
+                Op::Call { num_args } => self.op_call(context, num_args),
+                Op::ReturnValue => self.op_return_value(context),
+                Op::ReturnVoid => self.op_return_void(context),
                 _ => self.unknown_op(op),
             };
 
@@ -348,5 +413,32 @@ impl<'gc> Avm2<'gc> {
     ) -> Result<(), Error> {
         let value = self.pop();
         self.set_register_value(context, register_index, value)
+    }
+
+    fn op_call(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        arg_count: u32,
+    ) -> Result<(), Error> {
+        let function = self.pop().as_object()?;
+        let receiver = self.pop().as_object()?;
+        let mut args = Vec::new();
+        for _ in 0..arg_count {
+            args.push(self.pop());
+        }
+
+        function.call(receiver, &args, self, context)?.push(self);
+
+        Ok(())
+    }
+
+    fn op_return_value(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let return_value = self.pop();
+
+        self.retire_stack_frame(context, return_value)
+    }
+
+    fn op_return_void(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        self.retire_stack_frame(context, Value::Undefined)
     }
 }

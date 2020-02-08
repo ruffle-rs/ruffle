@@ -1,6 +1,7 @@
 //! AVM2 values
 
 use crate::avm2::object::Object;
+use crate::avm2::Error;
 use gc_arena::Collect;
 
 /// An AVM2 value.
@@ -121,6 +122,16 @@ impl PartialEq for Value<'_> {
                 Value::Object(other_value) => Object::ptr_eq(*value, *other_value),
                 _ => false,
             },
+        }
+    }
+}
+
+impl<'gc> Value<'gc> {
+    pub fn as_object(&self) -> Result<Object<'gc>, Error> {
+        if let Value::Object(object) = self {
+            Ok(*object)
+        } else {
+            Err(format!("Expected Object, found {:?}", self).into())
         }
     }
 }

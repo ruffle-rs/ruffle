@@ -72,6 +72,12 @@ pub struct Activation<'gc> {
     /// All activations have local registers, but it is possible for multiple
     /// activations (such as a rescope) to execute from the same register set.
     local_registers: GcCell<'gc, RegisterSet<'gc>>,
+
+    /// What was returned from the function.
+    ///
+    /// A return value of `None` indicates that the called function is still
+    /// executing. Functions that do not return instead return `Undefined`.
+    return_value: Option<Value<'gc>>,
 }
 
 impl<'gc> Activation<'gc> {
@@ -97,6 +103,7 @@ impl<'gc> Activation<'gc> {
                 context.gc_context,
                 RegisterSet::new(method_body.num_locals),
             ),
+            return_value: None,
         })
     }
 
@@ -155,5 +162,16 @@ impl<'gc> Activation<'gc> {
         } else {
             false
         }
+    }
+
+    /// Retrieve the return value from a completed activation, if the function
+    /// has already returned.
+    pub fn return_value(&self) -> Option<Value<'gc>> {
+        self.return_value.clone()
+    }
+
+    /// Set the return value.
+    pub fn set_return_value(&mut self, value: Value<'gc>) {
+        self.return_value = Some(value);
     }
 }
