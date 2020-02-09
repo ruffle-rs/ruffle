@@ -4,6 +4,7 @@ use crate::avm2::names::Namespace;
 use crate::avm2::object::Object;
 use crate::avm2::Error;
 use gc_arena::Collect;
+use swf::avm2::types::{AbcFile, Index};
 
 /// An AVM2 value.
 ///
@@ -136,6 +137,38 @@ impl PartialEq for Value<'_> {
             },
         }
     }
+}
+
+pub fn abc_int(file: &AbcFile, index: Index<i32>) -> Result<i32, Error> {
+    file.constant_pool
+        .ints
+        .get(index.0 as usize)
+        .cloned()
+        .ok_or_else(|| format!("Unknown int constant {}", index.0).into())
+}
+
+pub fn abc_uint(file: &AbcFile, index: Index<u32>) -> Result<u32, Error> {
+    file.constant_pool
+        .uints
+        .get(index.0 as usize)
+        .cloned()
+        .ok_or_else(|| format!("Unknown uint constant {}", index.0).into())
+}
+
+pub fn abc_double(file: &AbcFile, index: Index<f64>) -> Result<f64, Error> {
+    file.constant_pool
+        .doubles
+        .get(index.0 as usize)
+        .cloned()
+        .ok_or_else(|| format!("Unknown double constant {}", index.0).into())
+}
+
+pub fn abc_string(file: &AbcFile, index: Index<String>) -> Result<String, Error> {
+    file.constant_pool
+        .strings
+        .get(index.0 as usize)
+        .cloned()
+        .ok_or_else(|| format!("Unknown string constant {}", index.0).into())
 }
 
 impl<'gc> Value<'gc> {

@@ -277,30 +277,22 @@ impl<'gc> Avm2<'gc> {
 
     /// Retrieve a int from the current constant pool.
     fn pool_int(&self, index: Index<i32>) -> Result<i32, Error> {
-        self.current_abc()
-            .and_then(|abc| abc.constant_pool.ints.get(index.0 as usize).copied())
-            .ok_or_else(|| format!("Unknown int constant {}", index.0).into())
+        value::abc_int(&self.current_abc().unwrap(), index)
     }
 
     /// Retrieve a int from the current constant pool.
     fn pool_uint(&self, index: Index<u32>) -> Result<u32, Error> {
-        self.current_abc()
-            .and_then(|abc| abc.constant_pool.uints.get(index.0 as usize).copied())
-            .ok_or_else(|| format!("Unknown uint constant {}", index.0).into())
+        value::abc_uint(&self.current_abc().unwrap(), index)
     }
 
     /// Retrieve a double from the current constant pool.
     fn pool_double(&self, index: Index<f64>) -> Result<f64, Error> {
-        self.current_abc()
-            .and_then(|abc| abc.constant_pool.doubles.get(index.0 as usize).copied())
-            .ok_or_else(|| format!("Unknown double constant {}", index.0).into())
+        value::abc_double(&self.current_abc().unwrap(), index)
     }
 
     /// Retrieve a string from the current constant pool.
     fn pool_string(&self, index: Index<String>) -> Result<String, Error> {
-        self.current_abc()
-            .and_then(|abc| abc.constant_pool.strings.get(index.0 as usize).cloned())
-            .ok_or_else(|| format!("Unknown string constant {}", index.0).into())
+        value::abc_string(&self.current_abc().unwrap(), index)
     }
 
     /// Run a single action from a given action reader.
