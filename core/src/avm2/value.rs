@@ -179,4 +179,18 @@ impl<'gc> Value<'gc> {
             Err(format!("Expected Object, found {:?}", self).into())
         }
     }
+
+    pub fn as_string(&self) -> Result<&String, Error> {
+        match self {
+            Value::String(s) => Ok(s),
+            _ => Err(format!("Expected String, found {:?}", self).into()),
+        }
+    }
+
+    pub fn as_namespace(&self) -> Result<&Namespace, Error> {
+        match self {
+            Value::Namespace(ns) => Ok(ns),
+            _ => Err(format!("Expected Namespace, found {:?}", self).into()),
+        }
+    }
 }
