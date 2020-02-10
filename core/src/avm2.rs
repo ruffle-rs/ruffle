@@ -1,6 +1,7 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
 use crate::avm2::activation::Activation;
+use crate::avm2::names::Namespace;
 use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
 use crate::context::UpdateContext;
@@ -9,7 +10,7 @@ use gc_arena::{Collect, GcCell};
 use std::io::Cursor;
 use std::rc::Rc;
 use swf::avm2::read::Reader;
-use swf::avm2::types::{AbcFile, Index, MethodBody, Op};
+use swf::avm2::types::{AbcFile, Index, MethodBody, Namespace as AbcNamespace, Op};
 use swf::read::SwfRead;
 
 mod activation;
@@ -295,6 +296,11 @@ impl<'gc> Avm2<'gc> {
         value::abc_string(&self.current_abc().unwrap(), index)
     }
 
+    /// Retrieve a namespace from the current constant pool.
+    fn pool_namespace(&self, index: Index<AbcNamespace>) -> Result<Namespace, Error> {
+        Namespace::from_abc_namespace(&self.current_abc().unwrap(), index)
+    }
+
     /// Run a single action from a given action reader.
     pub fn do_next_opcode(
         &mut self,
@@ -309,6 +315,7 @@ impl<'gc> Avm2<'gc> {
                 Op::PushDouble { value } => self.op_push_double(value),
                 Op::PushFalse => self.op_push_false(),
                 Op::PushInt { value } => self.op_push_int(value),
+                Op::PushNamespace { value } => self.op_push_namespace(value),
                 Op::PushNaN => self.op_push_nan(),
                 Op::PushNull => self.op_push_null(),
                 Op::PushShort { value } => self.op_push_short(value),
@@ -355,6 +362,11 @@ impl<'gc> Avm2<'gc> {
 
     fn op_push_int(&mut self, value: Index<i32>) -> Result<(), Error> {
         self.push(self.pool_int(value)?);
+        Ok(())
+    }
+
+    fn op_push_namespace(&mut self, value: Index<AbcNamespace>) -> Result<(), Error> {
+        self.push(self.pool_namespace(value)?);
         Ok(())
     }
 
