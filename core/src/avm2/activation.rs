@@ -2,6 +2,8 @@
 
 use crate::avm2::function::Avm2Function;
 use crate::avm2::object::Object;
+use crate::avm2::scope::Scope;
+use crate::avm2::script_object::ScriptObject;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::context::UpdateContext;
@@ -78,6 +80,14 @@ pub struct Activation<'gc> {
     /// A return value of `None` indicates that the called function is still
     /// executing. Functions that do not return instead return `Undefined`.
     return_value: Option<Value<'gc>>,
+
+    /// The current local scope, implemented as a bare object.
+    local_scope: Object<'gc>,
+
+    /// The current scope stack.
+    ///
+    /// A `scope` of `None` indicates that the scope stack is empty.
+    scope: Option<GcCell<'gc, Scope<'gc>>>,
 }
 
 impl<'gc> Activation<'gc> {
@@ -104,6 +114,8 @@ impl<'gc> Activation<'gc> {
                 RegisterSet::new(method_body.num_locals),
             ),
             return_value: None,
+            local_scope: ScriptObject::bare_object(context.gc_context),
+            scope: None,
         })
     }
 

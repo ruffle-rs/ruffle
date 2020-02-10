@@ -18,6 +18,7 @@ mod function;
 mod names;
 mod object;
 mod return_value;
+mod scope;
 mod script_object;
 mod value;
 
