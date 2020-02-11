@@ -56,7 +56,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Resolve a multiname into a single QName, if any of the namespaces
     /// match.
-    fn resolve_multiname(self, _multiname: &Multiname) -> Option<QName> {
+    fn resolve_multiname(self, multiname: &Multiname) -> Option<QName> {
+        for ns in multiname.namespace_set() {
+            let qname = QName::qualified(ns, multiname.local_name());
+
+            if self.has_property(&qname) {
+                return Some(qname);
+            }
+        }
+
         None
     }
 

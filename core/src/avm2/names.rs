@@ -71,6 +71,13 @@ pub struct QName {
 }
 
 impl QName {
+    pub fn qualified(ns: &Namespace, name: &str) -> Self {
+        Self {
+            ns: ns.clone(),
+            name: name.to_string(),
+        }
+    }
+
     pub fn dynamic_name(local_part: &str) -> Self {
         Self {
             ns: Namespace::public_namespace(),
@@ -164,6 +171,10 @@ impl Multiname {
                 }
             }
         })
+    }
+
+    pub fn namespace_set(&self) -> impl Iterator<Item = &Namespace> {
+        self.ns.iter()
     }
 
     pub fn local_name(&self) -> &str {
