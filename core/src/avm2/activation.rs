@@ -158,8 +158,14 @@ impl<'gc> Activation<'gc> {
         self.local_registers.read().get(id).cloned()
     }
 
+    /// Get the current scope stack.
     pub fn scope(&self) -> Option<GcCell<'gc, Scope<'gc>>> {
         self.scope
+    }
+
+    /// Set a new scope stack.
+    pub fn set_scope(&mut self, new_scope: Option<GcCell<'gc, Scope<'gc>>>) {
+        self.scope = new_scope;
     }
 
     /// Set a local register.

@@ -69,6 +69,10 @@ impl<'gc> Scope<'gc> {
         )
     }
 
+    pub fn pop_scope(&self) -> Option<GcCell<'gc, Scope<'gc>>> {
+        self.parent
+    }
+
     /// Construct a closure scope to be used as the scope stack when invoking a
     /// function.
     ///

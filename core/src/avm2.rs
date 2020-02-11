@@ -4,6 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::return_value::ReturnValue;
+use crate::avm2::scope::Scope;
 use crate::avm2::value::Value;
 use crate::context::UpdateContext;
 use crate::tag_utils::SwfSlice;
@@ -339,6 +340,9 @@ impl<'gc> Avm2<'gc> {
                 Op::ReturnVoid => self.op_return_void(context),
                 Op::GetProperty { index } => self.op_get_property(context, index),
                 Op::SetProperty { index } => self.op_set_property(context, index),
+                Op::PushScope => self.op_push_scope(context),
+                Op::PushWith => self.op_push_with(context),
+                Op::PopScope => self.op_pop_scope(context),
                 Op::FindProperty { index } => self.op_find_property(context, index),
                 Op::FindPropStrict { index } => self.op_find_prop_strict(context, index),
                 Op::GetLex { index } => self.op_get_lex(context, index),
@@ -497,6 +501,41 @@ impl<'gc> Avm2<'gc> {
             let name = QName::dynamic_name(multiname.local_name());
             object.set_property(&name, value, self, context)
         }
+    }
+
+    fn op_push_scope(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let object = self.pop().as_object()?;
+        let activation = self.current_stack_frame().unwrap();
+        let mut write = activation.write(context.gc_context);
+        let scope_stack = write.scope();
+        let new_scope = Scope::push_scope(scope_stack, object, context.gc_context);
+
+        write.set_scope(Some(new_scope));
+
+        Ok(())
+    }
+
+    fn op_push_with(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let object = self.pop().as_object()?;
+        let activation = self.current_stack_frame().unwrap();
+        let mut write = activation.write(context.gc_context);
+        let scope_stack = write.scope();
+        let new_scope = Scope::push_with(scope_stack, object, context.gc_context);
+
+        write.set_scope(Some(new_scope));
+
+        Ok(())
+    }
+
+    fn op_pop_scope(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let activation = self.current_stack_frame().unwrap();
+        let mut write = activation.write(context.gc_context);
+        let scope_stack = write.scope();
+        let new_scope = scope_stack.and_then(|s| s.read().pop_scope());
+
+        write.set_scope(new_scope);
+
+        Ok(())
     }
 
     fn op_find_property(
