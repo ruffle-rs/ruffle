@@ -1,7 +1,7 @@
 //! AVM2 objects.
 
 use crate::avm2::function::FunctionObject;
-use crate::avm2::names::QName;
+use crate::avm2::names::{Multiname, QName};
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::script_object::ScriptObject;
 use crate::avm2::value::Value;
@@ -54,6 +54,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         Ok(())
     }
 
+    /// Resolve a multiname into a single QName, if any of the namespaces
+    /// match.
+    fn resolve_multiname(self, _multiname: &Multiname) -> Option<QName> {
+        None
+    }
+
     /// Indicates whether or not a property exists on an object.
     fn has_property(self, _name: &QName) -> bool {
         false
@@ -73,7 +79,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.
-    fn delete(&self, gc_context: MutationContext<'gc, '_>, name: &QName) -> bool {
+    fn delete(&self, gc_context: MutationContext<'gc, '_>, multiname: &QName) -> bool {
         false
     }
 
