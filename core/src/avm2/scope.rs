@@ -1,9 +1,8 @@
 //! Represents AVM2 scope chain resolution.
 
-use crate::avm2::names::QName;
+use crate::avm2::names::{Multiname, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::return_value::ReturnValue;
-use crate::avm2::script_object::ScriptObject;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
@@ -148,21 +147,42 @@ impl<'gc> Scope<'gc> {
         }
     }
 
+    /// Find an object that contains a given property in the scope stack.
+    pub fn find(
+        &self,
+        name: &Multiname,
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        this: Object<'gc>,
+    ) -> Result<Option<Object<'gc>>, Error> {
+        if let Some(qname) = self.locals().resolve_multiname(name) {
+            if self.locals().has_property(&qname) {
+                return Ok(Some(*self.locals()));
+            }
+        }
+
+        if let Some(scope) = self.parent() {
+            return scope.find(name, avm, context, this);
+        }
+
+        //TODO: This should actually be an error.
+        Ok(None)
+    }
+
     /// Resolve a particular value in the scope chain.
-    ///
-    /// Because scopes are object chains, the same rules for `Object::get`
-    /// still apply here. This function is allowed to yield `None` to indicate
-    /// that the result will be calculated on the AVM stack.
     pub fn resolve(
         &self,
-        name: &QName,
+        name: &Multiname,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error> {
-        if self.locals().has_property(name) {
-            return self.locals().get_property(name, avm, context);
+        if let Some(qname) = self.locals().resolve_multiname(name) {
+            if self.locals().has_property(&qname) {
+                return self.locals().get_property(&qname, avm, context);
+            }
         }
+
         if let Some(scope) = self.parent() {
             return scope.resolve(name, avm, context, this);
         }
@@ -226,9 +246,11 @@ impl<'gc> Scope<'gc> {
     }
 
     /// Delete a value from scope
-    pub fn delete(&self, name: &QName, mc: MutationContext<'gc, '_>) -> bool {
-        if self.locals().has_property(name) {
-            return self.locals().delete(mc, name);
+    pub fn delete(&self, name: &Multiname, mc: MutationContext<'gc, '_>) -> bool {
+        if let Some(qname) = self.locals().resolve_multiname(name) {
+            if self.locals().has_property(&qname) {
+                return self.locals().delete(mc, &qname);
+            }
         }
 
         if let Some(scope) = self.parent() {
