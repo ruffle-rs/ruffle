@@ -103,7 +103,7 @@ impl Multiname {
     /// general form of multiname.
     pub fn from_abc_multiname(
         file: &AbcFile,
-        multiname_index: Index<Multiname>,
+        multiname_index: Index<AbcMultiname>,
         avm: &mut Avm2<'_>,
     ) -> Result<Self, Error> {
         let abc_multiname: Result<&AbcMultiname, Error> = file
@@ -151,5 +151,9 @@ impl Multiname {
                 }
             }
         })
+    }
+
+    pub fn local_name(&self) -> &str {
+        &self.name
     }
 }

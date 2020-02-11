@@ -158,6 +158,10 @@ impl<'gc> Activation<'gc> {
         self.local_registers.read().get(id).cloned()
     }
 
+    pub fn scope(&self) -> Option<GcCell<'gc, Scope<'gc>>> {
+        self.scope
+    }
+
     /// Set a local register.
     ///
     /// Returns `true` if the set was successful; `false` otherwise

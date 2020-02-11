@@ -1,8 +1,9 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::Namespace;
-use crate::avm2::object::TObject;
+use crate::avm2::names::{Multiname, Namespace};
+use crate::avm2::object::{Object, TObject};
+use crate::avm2::return_value::ReturnValue;
 use crate::avm2::value::Value;
 use crate::context::UpdateContext;
 use crate::tag_utils::SwfSlice;
@@ -10,7 +11,9 @@ use gc_arena::{Collect, GcCell};
 use std::io::Cursor;
 use std::rc::Rc;
 use swf::avm2::read::Reader;
-use swf::avm2::types::{AbcFile, Index, MethodBody, Namespace as AbcNamespace, Op};
+use swf::avm2::types::{
+    AbcFile, Index, MethodBody, Multiname as AbcMultiname, Namespace as AbcNamespace, Op,
+};
 use swf::read::SwfRead;
 
 mod activation;
@@ -302,6 +305,11 @@ impl<'gc> Avm2<'gc> {
         Namespace::from_abc_namespace(&self.current_abc().unwrap(), index)
     }
 
+    /// Retrieve a namespace from the current constant pool.
+    fn pool_multiname(&mut self, index: Index<AbcMultiname>) -> Result<Multiname, Error> {
+        Multiname::from_abc_multiname(&self.current_abc().unwrap(), index, self)
+    }
+
     /// Run a single action from a given action reader.
     pub fn do_next_opcode(
         &mut self,
@@ -329,6 +337,9 @@ impl<'gc> Avm2<'gc> {
                 Op::Call { num_args } => self.op_call(context, num_args),
                 Op::ReturnValue => self.op_return_value(context),
                 Op::ReturnVoid => self.op_return_void(context),
+                Op::FindProperty { index } => self.op_find_property(context, index),
+                Op::FindPropStrict { index } => self.op_find_prop_strict(context, index),
+                Op::GetLex { index } => self.op_get_lex(context, index),
                 _ => self.unknown_op(op),
             };
 
@@ -445,5 +456,62 @@ impl<'gc> Avm2<'gc> {
 
     fn op_return_void(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         self.retire_stack_frame(context, Value::Undefined)
+    }
+
+    fn op_find_property(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        index: Index<AbcMultiname>,
+    ) -> Result<(), Error> {
+        let multiname = self.pool_multiname(index)?;
+        let result = if let Some(scope) = self.current_stack_frame().unwrap().read().scope() {
+            scope.read().find(&multiname, self, context)?
+        } else {
+            None
+        };
+
+        self.push(result.map(|o| o.into()).unwrap_or(Value::Undefined));
+
+        Ok(())
+    }
+
+    fn op_find_prop_strict(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        index: Index<AbcMultiname>,
+    ) -> Result<(), Error> {
+        let multiname = self.pool_multiname(index)?;
+        let found: Result<Object<'gc>, Error> =
+            if let Some(scope) = self.current_stack_frame().unwrap().read().scope() {
+                scope.read().find(&multiname, self, context)?
+            } else {
+                None
+            }
+            .ok_or_else(|| format!("Property does not exist: {}", multiname.local_name()).into());
+        let result: Value<'gc> = found?.into();
+
+        self.push(result);
+
+        Ok(())
+    }
+
+    fn op_get_lex(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        index: Index<AbcMultiname>,
+    ) -> Result<(), Error> {
+        //TODO: getlex does not allow runtime multinames according to spec.
+        let multiname = self.pool_multiname(index)?;
+        let found: Result<ReturnValue<'gc>, Error> =
+            if let Some(scope) = self.current_stack_frame().unwrap().read().scope() {
+                Ok(scope.read().resolve(&multiname, self, context)?)
+            } else {
+                Err("No objects exist on scope".into())
+            };
+        let result: Value<'gc> = found?.resolve(self, context)?;
+
+        self.push(result);
+
+        Ok(())
     }
 }

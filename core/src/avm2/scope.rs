@@ -153,7 +153,6 @@ impl<'gc> Scope<'gc> {
         name: &Multiname,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
     ) -> Result<Option<Object<'gc>>, Error> {
         if let Some(qname) = self.locals().resolve_multiname(name) {
             if self.locals().has_property(&qname) {
@@ -162,7 +161,7 @@ impl<'gc> Scope<'gc> {
         }
 
         if let Some(scope) = self.parent() {
-            return scope.find(name, avm, context, this);
+            return scope.find(name, avm, context);
         }
 
         //TODO: This should actually be an error.
@@ -175,7 +174,6 @@ impl<'gc> Scope<'gc> {
         name: &Multiname,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error> {
         if let Some(qname) = self.locals().resolve_multiname(name) {
             if self.locals().has_property(&qname) {
@@ -184,7 +182,7 @@ impl<'gc> Scope<'gc> {
         }
 
         if let Some(scope) = self.parent() {
-            return scope.resolve(name, avm, context, this);
+            return scope.resolve(name, avm, context);
         }
 
         //TODO: Should undefined variables halt execution?
