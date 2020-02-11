@@ -48,6 +48,10 @@ impl Namespace {
             AbcNamespace::Private(idx) => Self::Private(abc_string(file, idx.clone())?),
         })
     }
+
+    pub fn public_namespace() -> Self {
+        Namespace::Namespace("".to_string())
+    }
 }
 
 /// A `QName`, likely "qualified name", consists of a namespace and name string.
@@ -64,6 +68,15 @@ impl Namespace {
 pub struct QName {
     ns: Namespace,
     name: String,
+}
+
+impl QName {
+    pub fn dynamic_name(local_part: &str) -> Self {
+        Self {
+            ns: Namespace::public_namespace(),
+            name: local_part.to_string(),
+        }
+    }
 }
 
 /// A `Multiname` consists of a name which could be resolved in one or more

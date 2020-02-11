@@ -1,7 +1,7 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::{Multiname, Namespace};
+use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::value::Value;
@@ -337,6 +337,8 @@ impl<'gc> Avm2<'gc> {
                 Op::Call { num_args } => self.op_call(context, num_args),
                 Op::ReturnValue => self.op_return_value(context),
                 Op::ReturnVoid => self.op_return_void(context),
+                Op::GetProperty { index } => self.op_get_property(context, index),
+                Op::SetProperty { index } => self.op_set_property(context, index),
                 Op::FindProperty { index } => self.op_find_property(context, index),
                 Op::FindPropStrict { index } => self.op_find_prop_strict(context, index),
                 Op::GetLex { index } => self.op_get_lex(context, index),
@@ -456,6 +458,45 @@ impl<'gc> Avm2<'gc> {
 
     fn op_return_void(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         self.retire_stack_frame(context, Value::Undefined)
+    }
+
+    fn op_get_property(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        index: Index<AbcMultiname>,
+    ) -> Result<(), Error> {
+        let multiname = self.pool_multiname(index)?;
+        let object = self.pop().as_object()?;
+
+        let name: Result<QName, Error> = object
+            .resolve_multiname(&multiname)
+            .ok_or_else(|| format!("Could not resolve property {}", multiname.local_name()).into());
+
+        let value = object
+            .get_property(&name?, self, context)?
+            .resolve(self, context)?;
+        self.push(value);
+
+        Ok(())
+    }
+
+    fn op_set_property(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        index: Index<AbcMultiname>,
+    ) -> Result<(), Error> {
+        let value = self.pop();
+        let multiname = self.pool_multiname(index)?;
+        let object = self.pop().as_object()?;
+
+        if let Some(name) = object.resolve_multiname(&multiname) {
+            object.set_property(&name, value, self, context)
+        } else {
+            //TODO: Non-dynamic objects should fail
+            //TODO: This should only work if the public namespace is present
+            let name = QName::dynamic_name(multiname.local_name());
+            object.set_property(&name, value, self, context)
+        }
     }
 
     fn op_find_property(
