@@ -129,10 +129,7 @@ impl Multiname {
             AbcMultiname::RTQNameL | AbcMultiname::RTQNameLA => {
                 let ns = avm.pop().as_namespace()?.clone();
                 let name = avm.pop().as_string()?.clone();
-                Self {
-                    ns: vec![ns],
-                    name: name,
-                }
+                Self { ns: vec![ns], name }
             }
             AbcMultiname::Multiname {
                 namespace_set,
