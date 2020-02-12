@@ -7,3 +7,7 @@ members = [
     "web",
     "scanner",
 ]
+
+# Don't optimize build scripts and macros.
+[profile.dev.build-override]
+opt-level = 0
