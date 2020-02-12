@@ -8,7 +8,7 @@ use crate::avm2::scope::Scope;
 use crate::avm2::value::Value;
 use crate::context::UpdateContext;
 use crate::tag_utils::SwfSlice;
-use gc_arena::{Collect, GcCell};
+use gc_arena::{Collect, GcCell, MutationContext};
 use std::io::Cursor;
 use std::rc::Rc;
 use swf::avm2::read::Reader;
@@ -19,6 +19,7 @@ use swf::read::SwfRead;
 
 mod activation;
 mod function;
+mod globals;
 mod names;
 mod object;
 mod return_value;
@@ -48,14 +49,18 @@ pub struct Avm2<'gc> {
 
     /// Values currently present on the operand stack.
     stack: Vec<Value<'gc>>,
+
+    /// Global scope object.
+    globals: Object<'gc>,
 }
 
 impl<'gc> Avm2<'gc> {
     /// Construct a new AVM interpreter.
-    pub fn new() -> Self {
+    pub fn new(mc: MutationContext<'gc, '_>) -> Self {
         Self {
             stack_frames: Vec::new(),
             stack: Vec::new(),
+            globals: globals::construct_global_scope(mc),
         }
     }
 
@@ -78,6 +83,10 @@ impl<'gc> Avm2<'gc> {
         let _abc_file = read.read()?;
 
         Ok(())
+    }
+
+    pub fn globals(&self) -> Object<'gc> {
+        self.globals
     }
 
     /// Get the current stack frame (`Activation` object).

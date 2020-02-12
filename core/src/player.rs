@@ -247,7 +247,7 @@ impl Player {
                         mouse_hovered_object: None,
                         drag_object: None,
                         avm1: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
-                        avm2: Avm2::new(),
+                        avm2: Avm2::new(gc_context),
                         action_queue: ActionQueue::new(),
                         load_manager: LoadManager::new(),
                         shared_objects: HashMap::new(),

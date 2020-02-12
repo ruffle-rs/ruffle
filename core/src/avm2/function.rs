@@ -136,7 +136,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             Executable::Action(a2f) => {
                 let activation = GcCell::allocate(
                     context.gc_context,
-                    Activation::from_action(context, a2f, reciever, None)?,
+                    Activation::from_action(context, a2f, reciever, None, avm)?,
                 );
 
                 avm.insert_stack_frame(activation);

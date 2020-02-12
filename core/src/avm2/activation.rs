@@ -5,7 +5,7 @@ use crate::avm2::object::Object;
 use crate::avm2::scope::Scope;
 use crate::avm2::script_object::ScriptObject;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
+use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
@@ -96,6 +96,7 @@ impl<'gc> Activation<'gc> {
         action: Gc<'gc, Avm2Function>,
         this: Object<'gc>,
         arguments: Option<Object<'gc>>,
+        avm2: &mut Avm2<'gc>,
     ) -> Result<Self, Error> {
         let abc = action.abc.clone();
         let method_body = abc
@@ -115,7 +116,7 @@ impl<'gc> Activation<'gc> {
             ),
             return_value: None,
             local_scope: ScriptObject::bare_object(context.gc_context),
-            scope: None,
+            scope: Some(Scope::push_scope(None, avm2.globals(), context.gc_context)),
         })
     }
 
