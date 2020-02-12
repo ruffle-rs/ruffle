@@ -157,19 +157,21 @@ impl<'gc> Avm2<'gc> {
             &mut UpdateContext<'_, 'gc, '_>,
         ) -> Result<R, Error>,
     {
-        let (frame_cell, action, pc) = {
+        let (abc, frame_cell, method_body_index, pc) = {
             let frame = self
                 .current_stack_frame()
                 .ok_or("No stack frame to read!")?;
             let mut frame_ref = frame.write(context.gc_context);
             frame_ref.lock()?;
 
-            (frame, frame_ref.action(), frame_ref.pc())
+            let method = frame_ref.method();
+            let abc = method.abc.as_ref().clone();
+            let method_index = method.abc_method;
+            let method_body_index = method.abc_method_body as usize;
+
+            (abc, frame, method_body_index, frame_ref.pc())
         };
 
-        let abc = action.abc.as_ref();
-        let method_index = action.abc_method;
-        let method_body_index = action.abc_method_body as usize;
         let method_body: Result<&MethodBody, Error> =
             abc.method_bodies.get(method_body_index).ok_or_else(|| {
                 "Attempting to execute a method that does not exist"
@@ -287,7 +289,7 @@ impl<'gc> Avm2<'gc> {
     /// Retrieve the current constant pool for the currently executing function.
     fn current_abc(&self) -> Option<Rc<AbcFile>> {
         self.current_stack_frame()
-            .map(|sf| sf.read().action().abc.clone())
+            .map(|sf| sf.read().method().abc.clone())
     }
 
     /// Retrieve a int from the current constant pool.

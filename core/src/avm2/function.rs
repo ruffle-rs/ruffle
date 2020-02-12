@@ -4,6 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::names::QName;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::return_value::ReturnValue;
+use crate::avm2::scope::Scope;
 use crate::avm2::script_object::ScriptObjectData;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
@@ -11,7 +12,7 @@ use crate::context::UpdateContext;
 use gc_arena::{Collect, CollectionContext, Gc, GcCell};
 use std::fmt;
 use std::rc::Rc;
-use swf::avm2::types::AbcFile;
+use swf::avm2::types::{AbcFile, Method as AbcMethod, MethodBody as AbcMethodBody};
 
 /// Represents a function defined in Ruffle's code.
 ///
@@ -34,10 +35,10 @@ pub type NativeFunction<'gc> = fn(
     &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error>;
 
-/// Represents an AVM2 function.
+/// Represents a reference to an AVM2 method and body.
 #[derive(Collect, Clone, Debug)]
 #[collect(require_static)]
-pub struct Avm2Function {
+pub struct Avm2MethodEntry {
     /// The ABC file this function was defined in.
     pub abc: Rc<AbcFile>,
 
@@ -48,11 +49,37 @@ pub struct Avm2Function {
     pub abc_method_body: u32,
 }
 
+impl Avm2MethodEntry {
+    /// Get a reference to the ABC method entry this refers to.
+    pub fn method(&self) -> &AbcMethod {
+        self.abc.methods.get(self.abc_method as usize).unwrap()
+    }
+
+    /// Get a reference to the ABC method body entry this refers to.
+    pub fn body(&self) -> &AbcMethodBody {
+        self.abc
+            .method_bodies
+            .get(self.abc_method_body as usize)
+            .unwrap()
+    }
+}
+
+/// Represents an AVM2 function.
+#[derive(Collect, Clone, Debug)]
+#[collect(no_drop)]
+pub struct Avm2Function<'gc> {
+    /// The AVM method entry used to create this function.
+    pub method: Avm2MethodEntry,
+
+    /// Closure scope stack at time of creation
+    pub scope: Option<GcCell<'gc, Scope<'gc>>>,
+}
+
 /// Represents code that can be executed by some means.
 #[derive(Clone)]
 pub enum Executable<'gc> {
     Native(NativeFunction<'gc>),
-    Action(Gc<'gc, Avm2Function>),
+    Action(Avm2Function<'gc>),
 }
 
 unsafe impl<'gc> Collect for Executable<'gc> {
@@ -136,7 +163,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             Executable::Action(a2f) => {
                 let activation = GcCell::allocate(
                     context.gc_context,
-                    Activation::from_action(context, a2f, reciever, None, avm)?,
+                    Activation::from_action(context, &a2f, reciever, None)?,
                 );
 
                 avm.insert_stack_frame(activation);

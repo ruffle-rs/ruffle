@@ -1,6 +1,6 @@
 //! Activation frames
 
-use crate::avm2::function::Avm2Function;
+use crate::avm2::function::{Avm2Function, Avm2MethodEntry};
 use crate::avm2::object::Object;
 use crate::avm2::scope::Scope;
 use crate::avm2::script_object::ScriptObject;
@@ -9,6 +9,8 @@ use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
+use std::rc::Rc;
+use swf::avm2::types::AbcFile;
 
 /// Represents a particular register set.
 ///
@@ -52,8 +54,8 @@ impl<'gc> RegisterSet<'gc> {
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Activation<'gc> {
-    /// The function being executed.
-    action: Gc<'gc, Avm2Function>,
+    /// The AVM method entry we're executing code out of.
+    method: Avm2MethodEntry,
 
     /// The current location of the instruction stream being executed.
     pc: usize,
@@ -93,30 +95,24 @@ pub struct Activation<'gc> {
 impl<'gc> Activation<'gc> {
     pub fn from_action(
         context: &mut UpdateContext<'_, 'gc, '_>,
-        action: Gc<'gc, Avm2Function>,
+        action: &Avm2Function<'gc>,
         this: Object<'gc>,
         arguments: Option<Object<'gc>>,
-        avm2: &mut Avm2<'gc>,
     ) -> Result<Self, Error> {
-        let abc = action.abc.clone();
-        let method_body = abc
-            .method_bodies
-            .get(action.abc_method_body as usize)
-            .ok_or_else(|| format!("Method body {} does not exist", action.abc_method_body))?;
+        let method = action.method.clone();
+        let scope = action.scope;
+        let num_locals = method.body().num_locals;
 
         Ok(Self {
-            action,
+            method,
             pc: 0,
             this,
             arguments,
             is_executing: false,
-            local_registers: GcCell::allocate(
-                context.gc_context,
-                RegisterSet::new(method_body.num_locals),
-            ),
+            local_registers: GcCell::allocate(context.gc_context, RegisterSet::new(num_locals)),
             return_value: None,
             local_scope: ScriptObject::bare_object(context.gc_context),
-            scope: Some(Scope::push_scope(None, avm2.globals(), context.gc_context)),
+            scope: scope,
         })
     }
 
@@ -139,9 +135,9 @@ impl<'gc> Activation<'gc> {
         self.is_executing = false;
     }
 
-    /// Obtain a reference to the function being executed.
-    pub fn action(&self) -> Gc<'gc, Avm2Function> {
-        self.action
+    /// Obtain a reference to the method being executed.
+    pub fn method(&self) -> &Avm2MethodEntry {
+        &self.method
     }
 
     /// Get the PC value.
