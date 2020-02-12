@@ -1,6 +1,7 @@
 //! AVM2 executables.
 
 use crate::avm2::activation::Activation;
+use crate::avm2::names::QName;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::script_object::ScriptObjectData;
@@ -91,6 +92,28 @@ pub struct FunctionObjectData<'gc> {
 }
 
 impl<'gc> TObject<'gc> for FunctionObject<'gc> {
+    fn get_property(
+        self,
+        name: &QName,
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<ReturnValue<'gc>, Error> {
+        self.0.read().base.get_property(name, avm, context)
+    }
+
+    fn set_property(
+        self,
+        name: &QName,
+        value: Value<'gc>,
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        self.0
+            .write(context.gc_context)
+            .base
+            .set_property(name, value, avm, context)
+    }
+
     fn as_ptr(&self) -> *const ObjectPtr {
         self.0.as_ptr() as *const ObjectPtr
     }

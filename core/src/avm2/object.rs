@@ -36,23 +36,19 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Retrieve a property by it's QName.
     fn get_property(
         self,
-        _name: &QName,
-        _avm: &mut Avm2<'gc>,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnValue<'gc>, Error> {
-        Ok(Value::Undefined.into())
-    }
+        name: &QName,
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<ReturnValue<'gc>, Error>;
 
     /// Set a property by it's QName.
     fn set_property(
         self,
-        _name: &QName,
-        _value: Value<'gc>,
-        _avm: &mut Avm2<'gc>,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
-        Ok(())
-    }
+        name: &QName,
+        value: Value<'gc>,
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error>;
 
     /// Resolve a multiname into a single QName, if any of the namespaces
     /// match.
