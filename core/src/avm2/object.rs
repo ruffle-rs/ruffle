@@ -65,9 +65,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Indicates whether or not a property exists on an object.
-    fn has_property(self, _name: &QName) -> bool {
-        false
-    }
+    fn has_property(self, _name: &QName) -> bool;
 
     /// Indicates whether or not a property exists on an object and is not part
     /// of the prototype chain.

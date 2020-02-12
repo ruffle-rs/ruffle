@@ -114,6 +114,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             .set_property(name, value, avm, context)
     }
 
+    fn has_property(self, name: &QName) -> bool {
+        self.0.read().base.has_property(name)
+    }
+
     fn as_ptr(&self) -> *const ObjectPtr {
         self.0.as_ptr() as *const ObjectPtr
     }

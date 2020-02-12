@@ -44,6 +44,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .set_property(name, value, avm, context)
     }
 
+    fn has_property(self, name: &QName) -> bool {
+        self.0.read().has_property(name)
+    }
+
     fn as_ptr(&self) -> *const ObjectPtr {
         self.0.as_ptr() as *const ObjectPtr
     }
@@ -90,5 +94,9 @@ impl<'gc> ScriptObjectData<'gc> {
         }
 
         Ok(())
+    }
+
+    pub fn has_property(&self, name: &QName) -> bool {
+        self.values.get(name).is_some()
     }
 }
