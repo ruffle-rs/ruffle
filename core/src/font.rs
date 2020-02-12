@@ -1,8 +1,13 @@
 use crate::backend::render::{RenderBackend, ShapeHandle};
 use crate::prelude::*;
+use crate::transform::Transform;
 use gc_arena::{Collect, Gc, MutationContext};
 
 type Error = Box<dyn std::error::Error>;
+
+mod text_format;
+
+pub use text_format::TextFormat;
 
 #[derive(Debug, Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -113,6 +118,108 @@ impl<'gc> Font<'gc> {
 
     pub fn scale(self) -> f32 {
         self.0.scale
+    }
+
+    /// Evaluate this font against a particular string on a glyph-by-glyph
+    /// basis.
+    ///
+    /// This function takes the text string to evaluate against, the base
+    /// transform to start from, the height of each glyph, and produces a list
+    /// of transforms and glyphs which will be consumed by the `glyph_func`
+    /// closure. This corresponds to the series of drawing operations necessary
+    /// to render the text on a single horizontal line.
+    pub fn evaluate<FGlyph>(
+        self,
+        text: &str,
+        mut transform: Transform,
+        height: f32,
+        mut glyph_func: FGlyph,
+    ) where
+        FGlyph: FnMut(&Transform, &Glyph),
+    {
+        transform.matrix.ty += height * Twips::TWIPS_PER_PIXEL as f32;
+        let scale = (height * Twips::TWIPS_PER_PIXEL as f32) / self.scale();
+
+        transform.matrix.a = scale;
+        transform.matrix.d = scale;
+        let mut chars = text.chars().peekable();
+        let has_kerning_info = self.has_kerning_info();
+        while let Some(c) = chars.next() {
+            if let Some(glyph) = self.get_glyph_for_char(c) {
+                glyph_func(&transform, &glyph);
+                // Step horizontally.
+                let mut advance = f32::from(glyph.advance);
+                if has_kerning_info {
+                    advance += self
+                        .get_kerning_offset(c, chars.peek().cloned().unwrap_or('\0'))
+                        .get() as f32;
+                }
+                transform.matrix.tx += advance * scale;
+            }
+        }
+    }
+
+    /// Measure a particular string's metrics (width and height).
+    pub fn measure(self, text: &str, height: f32) -> (f32, f32) {
+        let mut size = (0.0, 0.0);
+
+        self.evaluate(text, Default::default(), height, |transform, _glyph| {
+            let tx = transform.matrix.tx / Twips::TWIPS_PER_PIXEL as f32;
+            let ty = transform.matrix.ty / Twips::TWIPS_PER_PIXEL as f32;
+            size.0 = f32::max(size.0, tx);
+            size.1 = f32::max(size.1, ty);
+        });
+
+        size
+    }
+
+    /// Given a line of text, split it into the shortest number of lines that
+    /// are shorter than `width`.
+    ///
+    /// This function assumes only `" "` is valid whitespace to split words on,
+    /// and will not attempt to break words that are longer than `width`.
+    pub fn split_wrapped_lines(self, text: &str, height: f32, width: f32) -> Vec<usize> {
+        let mut result = vec![];
+        let mut current_width = width;
+        let mut current_word = &text[0..0];
+
+        for word in text.split(' ') {
+            let measure = self.measure(word, height);
+            let line_start = current_word.as_ptr() as usize - text.as_ptr() as usize;
+            let line_end = if (line_start + current_word.len() + 1) < text.len() {
+                line_start + current_word.len() + 1
+            } else {
+                line_start + current_word.len()
+            };
+            let word_start = word.as_ptr() as usize - text.as_ptr() as usize;
+            let word_end = if (word_start + word.len() + 1) < text.len() {
+                word_start + word.len() + 1
+            } else {
+                word_start + word.len()
+            };
+
+            if measure.0 > current_width && measure.0 > width {
+                //Failsafe for if we get a word wider than the field.
+                if !current_word.is_empty() {
+                    result.push(line_end);
+                }
+                result.push(word_end);
+                current_word = &text[word_end..word_end];
+                current_width = width;
+            } else if measure.0 > current_width {
+                if !current_word.is_empty() {
+                    result.push(line_end);
+                }
+
+                current_word = &text[word_start..word_end];
+                current_width = width;
+            } else {
+                current_word = &text[line_start..word_end];
+                current_width -= measure.0;
+            }
+        }
+
+        result
     }
 }
 

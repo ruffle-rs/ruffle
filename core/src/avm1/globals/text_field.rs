@@ -3,6 +3,7 @@ use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::display_object::{EditText, TDisplayObject};
+use crate::font::TextFormat;
 use gc_arena::MutationContext;
 
 /// Implements `TextField`
@@ -72,6 +73,118 @@ macro_rules! with_text_field {
     }};
 }
 
+pub fn text_width<'gc>(
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(etext) = this
+        .as_display_object()
+        .and_then(|dobj| dobj.as_edit_text())
+    {
+        let metrics = etext.measure_text(context);
+
+        return Ok(metrics.0.into());
+    }
+
+    Ok(Value::Undefined.into())
+}
+
+pub fn text_height<'gc>(
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(etext) = this
+        .as_display_object()
+        .and_then(|dobj| dobj.as_edit_text())
+    {
+        let metrics = etext.measure_text(context);
+
+        return Ok(metrics.1.into());
+    }
+
+    Ok(Value::Undefined.into())
+}
+
+pub fn multiline<'gc>(
+    _avm: &mut Avm1<'gc>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(etext) = this
+        .as_display_object()
+        .and_then(|dobj| dobj.as_edit_text())
+    {
+        return Ok(etext.is_multiline().into());
+    }
+
+    Ok(Value::Undefined.into())
+}
+
+pub fn set_multiline<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let is_multiline = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .as_bool(avm.current_swf_version());
+
+    if let Some(etext) = this
+        .as_display_object()
+        .and_then(|dobj| dobj.as_edit_text())
+    {
+        etext.set_multiline(is_multiline, context.gc_context);
+    }
+
+    Ok(Value::Undefined.into())
+}
+
+pub fn word_wrap<'gc>(
+    _avm: &mut Avm1<'gc>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(etext) = this
+        .as_display_object()
+        .and_then(|dobj| dobj.as_edit_text())
+    {
+        return Ok(etext.is_word_wrap().into());
+    }
+
+    Ok(Value::Undefined.into())
+}
+
+pub fn set_word_wrap<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let is_word_wrap = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .as_bool(avm.current_swf_version());
+
+    if let Some(etext) = this
+        .as_display_object()
+        .and_then(|dobj| dobj.as_edit_text())
+    {
+        etext.set_word_wrap(is_word_wrap, context.gc_context);
+    }
+
+    Ok(Value::Undefined.into())
+}
+
 pub fn create_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Object<'gc>,
@@ -85,6 +198,21 @@ pub fn create_proto<'gc>(
         Some(fn_proto),
         "toString" => |text_field: EditText<'gc>, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             Ok(text_field.path().into())
+        },
+        "getNewTextFormat" => |text_field: EditText<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
+            let tf = text_field.new_text_format();
+
+            Ok(tf.as_avm1_object(avm, context)?.into())
+        },
+        "setNewTextFormat" => |text_field: EditText<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args: &[Value<'gc>]| {
+            let tf = args.get(0).cloned().unwrap_or(Value::Undefined);
+
+            if let Value::Object(tf) = tf {
+                let tf_parsed = TextFormat::from_avm1_object(tf, avm, context)?;
+                text_field.set_new_text_format(tf_parsed, context.gc_context);
+            }
+
+            Ok(Value::Undefined.into())
         }
     );
 
@@ -98,5 +226,33 @@ pub fn attach_virtual_properties<'gc>(gc_context: MutationContext<'gc, '_>, obje
         Executable::Native(get_text),
         Some(Executable::Native(set_text)),
         DontDelete | ReadOnly | DontEnum,
+    );
+    object.add_property(
+        gc_context,
+        "textWidth",
+        Executable::Native(text_width),
+        None,
+        ReadOnly.into(),
+    );
+    object.add_property(
+        gc_context,
+        "textHeight",
+        Executable::Native(text_height),
+        None,
+        ReadOnly.into(),
+    );
+    object.add_property(
+        gc_context,
+        "multiline",
+        Executable::Native(multiline),
+        Some(Executable::Native(set_multiline)),
+        ReadOnly.into(),
+    );
+    object.add_property(
+        gc_context,
+        "wordWrap",
+        Executable::Native(word_wrap),
+        Some(Executable::Native(set_word_wrap)),
+        ReadOnly.into(),
     );
 }
