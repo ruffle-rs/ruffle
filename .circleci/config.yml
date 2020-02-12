@@ -7,7 +7,7 @@ jobs:
   # General testing, linux + web build
   build:
     docker:
-      - image: circleci/rust:1.40
+      - image: circleci/rust:1.41
     steps:
       # Git checkout
       - checkout
@@ -33,7 +33,7 @@ jobs:
             curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
             sudo apt-get install -y nodejs
             mkdir workspace
-      
+
       # Run tests
       - run:
           name: Tests
@@ -129,7 +129,7 @@ jobs:
           keys:
             - v4-cargo-cache-osx-{{ .Revision }}
             - v4-cargo-cache-osx-
-      
+
       # Install dependencies
       - run:
           name: Setup
@@ -212,7 +212,7 @@ jobs:
             copy README.md windows
             copy LICENSE_APACHE windows
             copy LICENSE_MIT windows\
-            
+
             # Have to turn off progress bar or CI explodes?!
             $progressPreference = 'silentlyContinue'
             Compress-Archive -Path windows\* -CompressionLevel Optimal -DestinationPath workspace\windows.zip
@@ -238,7 +238,7 @@ jobs:
       # Access build artifacts in workspace
       - attach_workspace:
           at: workspace
-      
+
       # Set environment variables for nightly build name
       - run:
           name: Environment vars
@@ -251,7 +251,7 @@ jobs:
       - run:
           name: Install awscli
           command: sudo pip install awscli
-      
+
       - run:
           name: Sync with S3
           command: |
@@ -305,7 +305,7 @@ jobs:
             aws s3 sync builds s3://ruffle-rs/builds --acl public-read --exclude '*.wasm' --delete
             aws s3 sync builds s3://ruffle-rs/builds --acl public-read --exclude '*' --include '*.wasm' --delete --content-type 'application/wasm'
 
-            # By default, S3 serves 
+            # By default, S3 serves
 
 workflows:
   version: 2
