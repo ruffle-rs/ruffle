@@ -90,9 +90,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The proto is another object used to resolve methods across a class of
     /// multiple objects. It should also be accessible as `__proto__` from
     /// `get`.
-    fn proto(&self) -> Option<Object<'gc>> {
-        None
-    }
+    fn proto(&self) -> Option<Object<'gc>>;
 
     /// Define a value on an object.
     ///

@@ -20,6 +20,9 @@ pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
 pub struct ScriptObjectData<'gc> {
     /// Properties stored on this object.
     values: HashMap<QName, Value<'gc>>,
+
+    /// Implicit prototype (or declared base class) of this script object.
+    proto: Option<Object<'gc>>,
 }
 
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
@@ -48,17 +51,26 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().has_property(name)
     }
 
+    fn proto(&self) -> Option<Object<'gc>> {
+        self.0.read().proto
+    }
+
     fn as_ptr(&self) -> *const ObjectPtr {
         self.0.as_ptr() as *const ObjectPtr
     }
 }
 
 impl<'gc> ScriptObject<'gc> {
+    /// Construct a bare object with no base class.
+    ///
+    /// This is *not* the same thing as an object literal, which actually does
+    /// have a base class: `Object`.
     pub fn bare_object(mc: MutationContext<'gc, '_>) -> Object<'gc> {
         ScriptObject(GcCell::allocate(
             mc,
             ScriptObjectData {
                 values: HashMap::new(),
+                proto: None,
             },
         ))
         .into()
@@ -98,5 +110,9 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn has_property(&self, name: &QName) -> bool {
         self.values.get(name).is_some()
+    }
+
+    pub fn proto(&self) -> Option<Object<'gc>> {
+        self.proto
     }
 }

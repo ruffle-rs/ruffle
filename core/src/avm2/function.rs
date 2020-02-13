@@ -145,6 +145,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0.read().base.has_property(name)
     }
 
+    fn proto(&self) -> Option<Object<'gc>> {
+        self.0.read().base.proto()
+    }
+
     fn as_ptr(&self) -> *const ObjectPtr {
         self.0.as_ptr() as *const ObjectPtr
     }
