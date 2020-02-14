@@ -406,6 +406,18 @@ impl<'gc> Value<'gc> {
         self.as_number(avm, context).map(f64_to_wrapping_u16)
     }
 
+    /// Coerce a number to an `i16` following the wrapping behavior ECMAScript specifications.
+    /// The value will be wrapped in the range [-2^15, 2^15).
+    /// This will call `valueOf` and do any conversions that are necessary.
+    #[allow(dead_code)]
+    pub fn coerce_to_i16(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<i16, Error> {
+        self.as_number(avm, context).map(f64_to_wrapping_i16)
+    }
+
     /// Coerce a number to an `i32` following the ECMAScript specifications for `ToInt32`.
     /// The value will be wrapped modulo 2^32.
     /// This will call `valueOf` and do any conversions that are necessary.
@@ -562,6 +574,12 @@ pub fn f64_to_wrapping_u16(n: f64) -> u16 {
     } else {
         ((n.trunc() % 65536.0) + 65536.0) as u16
     }
+}
+
+/// Converts an `f64` to an `i16` with ECMAScript wrapping behavior.
+/// The value will be wrapped in the range [-2^15, 2^15).
+pub fn f64_to_wrapping_i16(n: f64) -> i16 {
+    f64_to_wrapping_u16(n) as i16
 }
 
 /// Converts an `f64` to an `u32` with ECMAScript `ToUInt32` wrapping behavior.
@@ -785,6 +803,24 @@ mod test {
         assert_eq!(f64_to_wrapping_u16(std::f64::NAN), 0);
         assert_eq!(f64_to_wrapping_u16(std::f64::INFINITY), 0);
         assert_eq!(f64_to_wrapping_u16(std::f64::NEG_INFINITY), 0);
+    }
+
+    #[test]
+    #[allow(clippy::unreadable_literal)]
+
+    fn wrapping_i16() {
+        use super::f64_to_wrapping_i16;
+        assert_eq!(f64_to_wrapping_i16(0.0), 0);
+        assert_eq!(f64_to_wrapping_i16(1.0), 1);
+        assert_eq!(f64_to_wrapping_i16(-1.0), -1);
+        assert_eq!(f64_to_wrapping_i16(123.1), 123);
+        assert_eq!(f64_to_wrapping_i16(32768.9), -32768);
+        assert_eq!(f64_to_wrapping_i16(-32769.9), 32767);
+        assert_eq!(f64_to_wrapping_i16(-33268.1), 32268);
+        assert_eq!(f64_to_wrapping_i16(-196608.0), 0);
+        assert_eq!(f64_to_wrapping_i16(std::f64::NAN), 0);
+        assert_eq!(f64_to_wrapping_i16(std::f64::INFINITY), 0);
+        assert_eq!(f64_to_wrapping_i16(std::f64::NEG_INFINITY), 0);
     }
 
     #[test]
