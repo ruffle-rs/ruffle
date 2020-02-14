@@ -188,6 +188,29 @@ fn test_stage_object_properties() -> Result<(), Error> {
     Ok(())
 }
 
+#[test]
+fn test_stage_object_properties_swf6() -> Result<(), Error> {
+    let trace_log = run_swf("tests/swfs/avm1/stage_object_properties_swf6/test.swf", 4)?;
+    let expected_data =
+        std::fs::read_to_string("tests/swfs/avm1/stage_object_properties_swf6/output.txt")?;
+    assert_eq!(
+        trace_log.lines().count(),
+        expected_data.lines().count(),
+        "# of lines of output didn't match"
+    );
+
+    for (actual, expected) in trace_log.lines().zip(expected_data.lines()) {
+        // If these are numbers, compare using approx_eq.
+        if let (Ok(actual), Ok(expected)) = (actual.parse::<f64>(), expected.parse::<f64>()) {
+            // TODO: Lower this epsilon as the accuracy of the properties improves.
+            assert_abs_diff_eq!(actual, expected, epsilon = 0.051);
+        } else {
+            assert_eq!(actual, expected);
+        }
+    }
+    Ok(())
+}
+
 /// Wrapper around string slice that makes debug output `{:?}` to print string same way as `{}`.
 /// Used in different `assert*!` macros in combination with `pretty_assertions` crate to make
 /// test failures to show nice diffs.
