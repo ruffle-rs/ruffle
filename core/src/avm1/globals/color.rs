@@ -158,49 +158,56 @@ fn set_transform<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
+    // TODO: These map from the 0-100% range for mult and the -255-255 range for addition used by ActionScript
+    // to the 16-bit range used by the internal representations of the Flash Player.
+    // This will get slightly simpler when we change ColorTransform to the proper representation (see #193).
+    fn set_color_mult<'gc>(
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        transform: Object<'gc>,
+        property: &str,
+        out: &mut f32,
+    ) -> Result<(), Error> {
+        // The parameters are set only if the property exists on the object itself (prototype excluded).
+        if transform.has_own_property(property) {
+            let n = transform
+                .get(property, avm, context)?
+                .resolve(avm, context)?
+                .as_number(avm, context)?;
+            *out = f32::from(crate::avm1::value::f64_to_wrapping_i16(n * 2.56)) / 256.0
+        }
+        Ok(())
+    }
+
+    fn set_color_add<'gc>(
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        transform: Object<'gc>,
+        property: &str,
+        out: &mut f32,
+    ) -> Result<(), Error> {
+        // The parameters are set only if the property exists on the object itself (prototype excluded).
+        if transform.has_own_property(property) {
+            let n = transform
+                .get(property, avm, context)?
+                .resolve(avm, context)?
+                .as_number(avm, context)?;
+            *out = f32::from(crate::avm1::value::f64_to_wrapping_i16(n)) / 255.0
+        }
+        Ok(())
+    }
+
     if let Some(target) = target(avm, context, this)? {
         let mut color_transform = target.color_transform_mut(context.gc_context);
         if let Ok(transform) = args.get(0).unwrap_or(&Value::Undefined).as_object() {
-            color_transform.r_mult = transform
-                .get("ra", avm, context)?
-                .resolve(avm, context)?
-                .as_number(avm, context)? as f32
-                / 100.0;
-            color_transform.g_mult = transform
-                .get("ga", avm, context)?
-                .resolve(avm, context)?
-                .as_number(avm, context)? as f32
-                / 100.0;
-            color_transform.b_mult = transform
-                .get("ba", avm, context)?
-                .resolve(avm, context)?
-                .as_number(avm, context)? as f32
-                / 100.0;
-            color_transform.a_mult = transform
-                .get("aa", avm, context)?
-                .resolve(avm, context)?
-                .as_number(avm, context)? as f32
-                / 100.0;
-            color_transform.r_add = transform
-                .get("rb", avm, context)?
-                .resolve(avm, context)?
-                .as_number(avm, context)? as f32
-                / 255.0;
-            color_transform.g_add = transform
-                .get("gb", avm, context)?
-                .resolve(avm, context)?
-                .as_number(avm, context)? as f32
-                / 255.0;
-            color_transform.b_add = transform
-                .get("bb", avm, context)?
-                .resolve(avm, context)?
-                .as_number(avm, context)? as f32
-                / 255.0;
-            color_transform.a_add = transform
-                .get("ab", avm, context)?
-                .resolve(avm, context)?
-                .as_number(avm, context)? as f32
-                / 255.0;
+            set_color_mult(avm, context, transform, "ra", &mut color_transform.r_mult)?;
+            set_color_mult(avm, context, transform, "ga", &mut color_transform.g_mult)?;
+            set_color_mult(avm, context, transform, "ba", &mut color_transform.b_mult)?;
+            set_color_mult(avm, context, transform, "aa", &mut color_transform.a_mult)?;
+            set_color_add(avm, context, transform, "rb", &mut color_transform.r_add)?;
+            set_color_add(avm, context, transform, "gb", &mut color_transform.g_add)?;
+            set_color_add(avm, context, transform, "bb", &mut color_transform.b_add)?;
+            set_color_add(avm, context, transform, "ab", &mut color_transform.a_add)?;
         }
     }
 
