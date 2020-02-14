@@ -450,10 +450,7 @@ impl<'gc> MovieClipData<'gc> {
 
     fn stop(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         self.set_playing(false);
-        // Stop audio stream if one is playing.
-        if let Some(audio_stream) = self.audio_stream.take() {
-            context.audio.stop_stream(audio_stream);
-        }
+        self.stop_audio_stream(context);
     }
 
     fn tag_stream_start(&self) -> u64 {
@@ -556,11 +553,8 @@ impl<'gc> MovieClipData<'gc> {
         self.tag_stream_pos = reader.get_ref().position();
 
         // If we are playing a streaming sound, there should(?) be a `SoundStreamBlock` on each frame.
-        if let Some(audio_stream) = self.audio_stream {
-            if !has_stream_block {
-                context.audio.stop_stream(audio_stream);
-                self.audio_stream = None;
-            }
+        if !has_stream_block {
+            self.stop_audio_stream(context);
         }
     }
 
@@ -665,6 +659,8 @@ impl<'gc> MovieClipData<'gc> {
         // This map will maintain a map of depth -> placement commands.
         // TODO: Move this to UpdateContext to avoid allocations.
         let mut goto_commands = vec![];
+
+        self.stop_audio_stream(context);
 
         let is_rewind = if frame < self.current_frame() {
             // Because we can only step forward, we have to start at frame 1
@@ -946,6 +942,13 @@ impl<'gc> MovieClipData<'gc> {
             self.flags.insert(MovieClipFlags::Initialized)
         } else {
             self.flags.remove(MovieClipFlags::Initialized)
+        }
+    }
+
+    /// Stops the audio stream if one is playing.
+    fn stop_audio_stream(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        if let Some(audio_stream) = self.audio_stream.take() {
+            context.audio.stop_stream(audio_stream);
         }
     }
 }
