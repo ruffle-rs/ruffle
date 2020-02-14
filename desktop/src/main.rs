@@ -70,14 +70,14 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     let mut player = Player::new(renderer, audio, navigator, input, swf_data)?;
     player.set_is_playing(true); // Desktop player will auto-play.
 
-    let logical_size: LogicalSize = (player.movie_width(), player.movie_height()).into();
-    let hidpi_factor = display.gl_window().window().hidpi_factor();
+    let logical_size: LogicalSize<u32> = (player.movie_width(), player.movie_height()).into();
+    let scale_factor = display.gl_window().window().scale_factor();
 
     // Set initial size to movie dimensions.
     display.gl_window().window().set_inner_size(logical_size);
     display
         .gl_window()
-        .resize(logical_size.to_physical(hidpi_factor));
+        .resize(logical_size.to_physical(scale_factor));
 
     let mut mouse_pos = PhysicalPosition::new(0.0, 0.0);
     let mut time = Instant::now();
@@ -88,19 +88,13 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
             match event {
                 glutin::event::Event::LoopDestroyed => return,
                 glutin::event::Event::WindowEvent { event, .. } => match event {
-                    WindowEvent::Resized(logical_size) => {
-                        let size = logical_size.to_physical(hidpi_factor);
-                        player.set_viewport_dimensions(
-                            size.width.ceil() as u32,
-                            size.height.ceil() as u32,
-                        );
-                        player.renderer_mut().set_viewport_dimensions(
-                            size.width.ceil() as u32,
-                            size.height.ceil() as u32,
-                        );
+                    WindowEvent::Resized(size) => {
+                        player.set_viewport_dimensions(size.width, size.height);
+                        player
+                            .renderer_mut()
+                            .set_viewport_dimensions(size.width, size.height);
                     }
                     WindowEvent::CursorMoved { position, .. } => {
-                        let position = position.to_physical(hidpi_factor);
                         mouse_pos = position;
                         let event = ruffle_core::PlayerEvent::MouseMove {
                             x: position.x,
