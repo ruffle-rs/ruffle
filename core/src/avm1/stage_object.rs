@@ -412,8 +412,7 @@ fn set_x<'gc>(
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
 ) -> Result<(), Error> {
-    let val = val.as_number(avm, context)?;
-    if !val.is_nan() {
+    if let Some(val) = property_coerce_to_number(avm, context, val)? {
         this.set_x(context.gc_context, val);
     }
     Ok(())
@@ -433,8 +432,7 @@ fn set_y<'gc>(
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
 ) -> Result<(), Error> {
-    let val = val.as_number(avm, context)?;
-    if !val.is_nan() {
+    if let Some(val) = property_coerce_to_number(avm, context, val)? {
         this.set_y(context.gc_context, val);
     }
     Ok(())
@@ -455,9 +453,8 @@ fn set_x_scale<'gc>(
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
 ) -> Result<(), Error> {
-    let val = val.as_number(avm, context)? / 100.0;
-    if !val.is_nan() {
-        this.set_scale_x(context.gc_context, val);
+    if let Some(val) = property_coerce_to_number(avm, context, val)? {
+        this.set_scale_x(context.gc_context, val / 100.0);
     }
     Ok(())
 }
@@ -477,9 +474,8 @@ fn set_y_scale<'gc>(
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
 ) -> Result<(), Error> {
-    let val = val.as_number(avm, context)? / 100.0;
-    if !val.is_nan() {
-        this.set_scale_y(context.gc_context, val);
+    if let Some(val) = property_coerce_to_number(avm, context, val)? {
+        this.set_scale_y(context.gc_context, val / 100.0);
     }
     Ok(())
 }
@@ -523,9 +519,8 @@ fn set_alpha<'gc>(
     this: DisplayObject<'gc>,
     val: Value<'gc>,
 ) -> Result<(), Error> {
-    let val = val.as_number(avm, context)? / 100.0;
-    if !val.is_nan() {
-        this.set_alpha(context.gc_context, val);
+    if let Some(val) = property_coerce_to_number(avm, context, val)? {
+        this.set_alpha(context.gc_context, val / 100.0);
     }
     Ok(())
 }
@@ -545,8 +540,11 @@ fn set_visible<'gc>(
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
 ) -> Result<(), Error> {
-    let val = val.as_bool(avm.current_swf_version());
-    this.set_visible(context.gc_context, val);
+    // Because this property dates to the era of Flash 4, this is actually coerced to an integer.
+    // `_visible = "false";` coerces to NaN and has no effect.
+    if let Some(n) = property_coerce_to_number(avm, context, val)? {
+        this.set_visible(context.gc_context, n != 0.0);
+    }
     Ok(())
 }
 
@@ -564,8 +562,7 @@ fn set_width<'gc>(
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
 ) -> Result<(), Error> {
-    let val = val.as_number(avm, context)?;
-    if !val.is_nan() {
+    if let Some(val) = property_coerce_to_number(avm, context, val)? {
         this.set_width(context.gc_context, val);
     }
     Ok(())
@@ -585,8 +582,7 @@ fn set_height<'gc>(
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
 ) -> Result<(), Error> {
-    let val = val.as_number(avm, context)?;
-    if !val.is_nan() {
+    if let Some(val) = property_coerce_to_number(avm, context, val)? {
         this.set_height(context.gc_context, val);
     }
     Ok(())
@@ -606,8 +602,7 @@ fn set_rotation<'gc>(
     mut this: DisplayObject<'gc>,
     degrees: Value<'gc>,
 ) -> Result<(), Error> {
-    let mut degrees = degrees.as_number(avm, context)?;
-    if !degrees.is_nan() {
+    if let Some(mut degrees) = property_coerce_to_number(avm, context, degrees)? {
         // Normalize into the range of [-180, 180].
         degrees %= 360.0;
         if degrees < -180.0 {
@@ -769,4 +764,20 @@ fn y_mouse<'gc>(
 ) -> Result<Value<'gc>, Error> {
     let local = this.global_to_local(*context.mouse_position);
     Ok(local.1.to_pixels().into())
+}
+
+fn property_coerce_to_number<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<Option<f64>, Error> {
+    if value != Value::Undefined && value != Value::Null {
+        let n = value.as_number(avm, context)?;
+        if n.is_finite() {
+            return Ok(Some(n));
+        }
+    }
+
+    // Invalid value; do not set.
+    Ok(None)
 }
