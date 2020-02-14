@@ -47,7 +47,7 @@ _width:
 702.15
 
 _height:
-546.85
+546.9
 
 _rotation:
 27
@@ -76,7 +76,7 @@ _width:
 702.15
 
 _height:
-546.85
+546.9
 
 _rotation:
 27
