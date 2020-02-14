@@ -66,18 +66,18 @@ impl<'gc> ScriptObject<'gc> {
     /// This is *not* the same thing as an object literal, which actually does
     /// have a base class: `Object`.
     pub fn bare_object(mc: MutationContext<'gc, '_>) -> Object<'gc> {
-        ScriptObject(GcCell::allocate(
-            mc,
-            ScriptObjectData {
-                values: HashMap::new(),
-                proto: None,
-            },
-        ))
-        .into()
+        ScriptObject(GcCell::allocate(mc, ScriptObjectData::base_new(None))).into()
     }
 }
 
 impl<'gc> ScriptObjectData<'gc> {
+    pub fn base_new(proto: Option<Object<'gc>>) -> Self {
+        ScriptObjectData {
+            values: HashMap::new(),
+            proto,
+        }
+    }
+
     pub fn get_property(
         &self,
         name: &QName,

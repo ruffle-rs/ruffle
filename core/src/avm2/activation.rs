@@ -112,7 +112,7 @@ impl<'gc> Activation<'gc> {
             local_registers: GcCell::allocate(context.gc_context, RegisterSet::new(num_locals)),
             return_value: None,
             local_scope: ScriptObject::bare_object(context.gc_context),
-            scope: scope,
+            scope,
         })
     }
 

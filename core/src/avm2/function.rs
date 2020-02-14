@@ -9,10 +9,13 @@ use crate::avm2::script_object::ScriptObjectData;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
-use gc_arena::{Collect, CollectionContext, Gc, GcCell};
+use gc_arena::{Collect, CollectionContext, GcCell, MutationContext};
 use std::fmt;
 use std::rc::Rc;
-use swf::avm2::types::{AbcFile, Method as AbcMethod, MethodBody as AbcMethodBody};
+use swf::avm2::types::{
+    AbcFile, Class as AbcClass, Index, Instance as AbcInstance, Method as AbcMethod,
+    MethodBody as AbcMethodBody,
+};
 
 /// Represents a function defined in Ruffle's code.
 ///
@@ -50,6 +53,31 @@ pub struct Avm2MethodEntry {
 }
 
 impl Avm2MethodEntry {
+    /// Construct an `Avm2MethodEntry` from an `AbcFile` and method index.
+    ///
+    /// The method body index will be determined by searching through the ABC
+    /// for a matching method. If none exists, this function returns `None`.
+    pub fn from_method_index(abc: Rc<AbcFile>, abc_method: Index<AbcMethod>) -> Option<Self> {
+        if abc.methods.get(abc_method.0 as usize).is_some() {
+            for (index, method_body) in abc.method_bodies.iter().enumerate() {
+                if method_body.method.0 == abc_method.0 {
+                    return Some(Self {
+                        abc,
+                        abc_method: abc_method.0,
+                        abc_method_body: index as u32,
+                    });
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Get the underlying ABC file.
+    pub fn abc(&self) -> Rc<AbcFile> {
+        self.abc.clone()
+    }
+
     /// Get a reference to the ABC method entry this refers to.
     pub fn method(&self) -> &AbcMethod {
         self.abc.methods.get(self.abc_method as usize).unwrap()
@@ -73,6 +101,12 @@ pub struct Avm2Function<'gc> {
 
     /// Closure scope stack at time of creation
     pub scope: Option<GcCell<'gc, Scope<'gc>>>,
+}
+
+impl<'gc> Avm2Function<'gc> {
+    pub fn from_method(method: Avm2MethodEntry, scope: Option<GcCell<'gc, Scope<'gc>>>) -> Self {
+        Self { method, scope }
+    }
 }
 
 /// Represents code that can be executed by some means.
@@ -103,6 +137,54 @@ impl<'gc> fmt::Debug for Executable<'gc> {
     }
 }
 
+impl<'gc> From<NativeFunction<'gc>> for Executable<'gc> {
+    fn from(nf: NativeFunction<'gc>) -> Self {
+        Self::Native(nf)
+    }
+}
+
+impl<'gc> From<Avm2Function<'gc>> for Executable<'gc> {
+    fn from(a2f: Avm2Function<'gc>) -> Self {
+        Self::Action(a2f)
+    }
+}
+
+/// Represents a reference to an AVM2 class.
+///
+/// For some reason, this comes in two parts, one for static properties (called
+/// the "class") and one for dynamic properties (called the "instance", even
+/// though it really defines what ES3/AS2 would call a prototype)
+#[derive(Collect, Clone, Debug)]
+#[collect(require_static)]
+pub struct Avm2ClassEntry {
+    /// The ABC file this function was defined in.
+    pub abc: Rc<AbcFile>,
+
+    /// The ABC class (used to define static properties)
+    pub abc_class: u32,
+
+    /// The ABC instance (used to define both instance properties as well as
+    /// "prototype" methods)
+    pub abc_instance: u32,
+}
+
+impl Avm2ClassEntry {
+    /// Get the underlying ABC file.
+    pub fn abc(&self) -> Rc<AbcFile> {
+        self.abc.clone()
+    }
+
+    /// Get a reference to the ABC class entry this refers to.
+    pub fn class(&self) -> &AbcClass {
+        self.abc.classes.get(self.abc_class as usize).unwrap()
+    }
+
+    /// Get a reference to the ABC class instance entry this refers to.
+    pub fn instance(&self) -> &AbcInstance {
+        self.abc.instances.get(self.abc_instance as usize).unwrap()
+    }
+}
+
 /// An Object which can be called to execute it's function code.
 #[derive(Collect, Debug, Clone, Copy)]
 #[collect(no_drop)]
@@ -116,6 +198,34 @@ pub struct FunctionObjectData<'gc> {
 
     /// Executable code
     exec: Executable<'gc>,
+
+    /// The class that defined this function object, if any.
+    class: Option<Avm2ClassEntry>,
+}
+
+impl<'gc> FunctionObject<'gc> {
+    /// Construct a class from an ABC class/instance pair.
+    ///
+    /// If the initializer method cannot be found, this function returns None.
+    pub fn from_abc_class(
+        mc: MutationContext<'gc, '_>,
+        class: Avm2ClassEntry,
+    ) -> Option<Object<'gc>> {
+        let initializer_index = class.class().init_method.clone();
+        let initializer = Avm2MethodEntry::from_method_index(class.abc(), initializer_index)?;
+
+        Some(
+            FunctionObject(GcCell::allocate(
+                mc,
+                FunctionObjectData {
+                    base: ScriptObjectData::base_new(None),
+                    exec: Avm2Function::from_method(initializer, None).into(),
+                    class: Some(class),
+                },
+            ))
+            .into(),
+        )
+    }
 }
 
 impl<'gc> TObject<'gc> for FunctionObject<'gc> {
