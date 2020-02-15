@@ -9,7 +9,7 @@ pub use mp3::Mp3Decoder;
 pub use pcm::PcmDecoder;
 
 use crate::tag_utils::SwfSlice;
-use std::io::{self, Cursor, Read};
+use std::io::{Cursor, Read};
 use swf::{AudioCompression, SoundFormat, TagCode};
 
 /// An audio decoder. Can be used as an `Iterator` to return stero sample frames.
@@ -294,7 +294,7 @@ impl Read for StreamTagReader {
             self.current_audio_data = if let Some(audio_data) = self.next() {
                 audio_data
             } else {
-                return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "Stream ended"));
+                return Ok(0);
             }
         }
 
