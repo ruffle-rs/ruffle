@@ -22,6 +22,7 @@ mod function;
 mod globals;
 mod names;
 mod object;
+mod property;
 mod return_value;
 mod scope;
 mod script_object;

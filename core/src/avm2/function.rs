@@ -125,6 +125,29 @@ unsafe impl<'gc> Collect for Executable<'gc> {
     }
 }
 
+impl<'gc> Executable<'gc> {
+    pub fn exec(
+        &self,
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        reciever: Object<'gc>,
+        arguments: &[Value<'gc>],
+    ) -> Result<ReturnValue<'gc>, Error> {
+        match self {
+            Executable::Native(nf) => nf(avm, context, reciever, arguments),
+            Executable::Action(a2f) => {
+                let activation = GcCell::allocate(
+                    context.gc_context,
+                    Activation::from_action(context, &a2f, reciever, None)?,
+                );
+
+                avm.insert_stack_frame(activation);
+                Ok(activation.into())
+            }
+        }
+    }
+}
+
 impl<'gc> fmt::Debug for Executable<'gc> {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -235,7 +258,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
-        self.0.read().base.get_property(name, avm, context)
+        self.0
+            .read()
+            .base
+            .get_property(name, avm, context, self.into())
     }
 
     fn set_property(
@@ -248,7 +274,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0
             .write(context.gc_context)
             .base
-            .set_property(name, value, avm, context)
+            .set_property(name, value, avm, context, self.into())
     }
 
     fn has_property(self, name: &QName) -> bool {
@@ -270,19 +296,6 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
-        let exec = self.0.read().exec.clone();
-
-        match exec {
-            Executable::Native(nf) => nf(avm, context, reciever, arguments),
-            Executable::Action(a2f) => {
-                let activation = GcCell::allocate(
-                    context.gc_context,
-                    Activation::from_action(context, &a2f, reciever, None)?,
-                );
-
-                avm.insert_stack_frame(activation);
-                Ok(activation.into())
-            }
-        }
+        self.0.read().exec.exec(avm, context, reciever, arguments)
     }
 }

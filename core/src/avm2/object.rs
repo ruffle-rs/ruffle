@@ -2,6 +2,7 @@
 
 use crate::avm2::function::FunctionObject;
 use crate::avm2::names::{Multiname, QName};
+use crate::avm2::property::Attribute;
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::script_object::ScriptObject;
 use crate::avm2::value::Value;
@@ -11,16 +12,6 @@ use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::fmt::Debug;
-
-/// Attributes of properties in the AVM runtime.
-///
-/// TODO: Replace with AVM2 properties for traits
-#[derive(EnumSetType, Debug)]
-pub enum Attribute {
-    DontEnum,
-    DontDelete,
-    ReadOnly,
-}
 
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
