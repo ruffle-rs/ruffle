@@ -40,10 +40,12 @@ Ruffle is in the proof-of-concept stage and can currently run early Flash animat
 * `npm run serve`
 * Load indicated page in browser (usually http://localhost:8080)
 
-#### Building the NPM package
+#### Hosting on your own site
 
-* `cd web`
-* `wasm-pack build`
+* `cd web/selfhosted`
+* `npm install`
+* `npm run build`
+* Follow the wiki instructions for [using Ruffle on your own site](https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#web)
 
 ### Scanner
 
