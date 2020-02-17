@@ -182,7 +182,9 @@ pub fn create_proto<'gc>(
         "swapDepths" => swap_depths,
         "toString" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             Ok(movie_clip.path().into())
-        }
+        },
+        "localToGlobal" => local_to_global,
+        "globalToLocal" => global_to_local
     );
 
     object.add_property(
@@ -587,6 +589,70 @@ pub fn swap_depths<'gc>(
         if depth != movie_clip.depth() {
             parent.swap_child_to_depth(context, movie_clip.into(), depth);
         }
+    }
+
+    Ok(Value::Undefined.into())
+}
+
+pub fn local_to_global<'gc>(
+    movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Value::Object(point) = args.get(0).unwrap_or(&Value::Undefined) {
+        // localToGlobal does no coercion; it fails if the properties are not numbers.
+        // It does not search the prototype chain.
+        if let (Value::Number(x), Value::Number(y)) = (
+            point
+                .get_local("x", avm, context, *point)?
+                .resolve(avm, context)?,
+            point
+                .get_local("y", avm, context, *point)?
+                .resolve(avm, context)?,
+        ) {
+            let x = Twips::from_pixels(x);
+            let y = Twips::from_pixels(y);
+            let (out_x, out_y) = movie_clip.local_to_global((x, y));
+            point.set("x", out_x.to_pixels().into(), avm, context)?;
+            point.set("y", out_y.to_pixels().into(), avm, context)?;
+        } else {
+            log::warn!("MovieClip.localToGlobal: Invalid x and y properties");
+        }
+    } else {
+        log::warn!("MovieClip.localToGlobal: Missing point parameter");
+    }
+
+    Ok(Value::Undefined.into())
+}
+
+pub fn global_to_local<'gc>(
+    movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Value::Object(point) = args.get(0).unwrap_or(&Value::Undefined) {
+        // globalToLocal does no coercion; it fails if the properties are not numbers.
+        // It does not search the prototype chain.
+        if let (Value::Number(x), Value::Number(y)) = (
+            point
+                .get_local("x", avm, context, *point)?
+                .resolve(avm, context)?,
+            point
+                .get_local("y", avm, context, *point)?
+                .resolve(avm, context)?,
+        ) {
+            let x = Twips::from_pixels(x);
+            let y = Twips::from_pixels(y);
+            let (out_x, out_y) = movie_clip.global_to_local((x, y));
+            point.set("x", out_x.to_pixels().into(), avm, context)?;
+            point.set("y", out_y.to_pixels().into(), avm, context)?;
+        } else {
+            log::warn!("MovieClip.globalToLocal: Invalid x and y properties");
+        }
+    } else {
+        log::warn!("MovieClip.globalToLocal: Missing point parameter");
     }
 
     Ok(Value::Undefined.into())
