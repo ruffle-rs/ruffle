@@ -67,9 +67,15 @@ You can support the development of Ruffle via [GitHub Sponsors](https://github.c
 Sincere thanks to the diamond level sponsors of Ruffle:
 
 <p align="center">
- <a href="https://www.newgrounds.com">
-  <img src="assets/ng_logo.png" alt="Newgrounds.com">
- </a>
+  <a href="https://www.newgrounds.com">
+    <img src="assets/ng_logo.png" alt="Newgrounds.com">
+  </a>
+  <a href="https://www.cpmstar.com">
+    <img src="assets/cpmstar_logo.png" alt="CPMStar">
+  </a>
+  <a href="https://deepnight.net">
+    <img src="assets/deepnight_logo.png" alt="Sébastien Bénard">
+  </a>
 </a>
 
 ## License
