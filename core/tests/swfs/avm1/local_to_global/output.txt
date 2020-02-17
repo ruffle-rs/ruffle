@@ -1,0 +1,42 @@
+10
+10
+
+// clip.clip.localToGlobal
+225.4
+269.75
+
+// clip.globalToLocal
+210
+209.95
+
+-10
+-10
+
+// clip.clip.localToGlobal (root moved)
+189.2
+281.6
+
+// clip.globalToLocal
+190.2
+190.2
+
+// clip.globalToLocal (invalid 1)
+undefined
+undefined
+
+// clip.globalToLocal (invalid 2)
+10
+null
+
+// clip.localToGlobal (invalid 3)
+10
+true
+
+// clip.globalToLocal (invalid 4)
+10
+10
+
+// clip.localToGlobal (invalid 5)
+10
+10
+

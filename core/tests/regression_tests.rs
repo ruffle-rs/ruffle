@@ -100,6 +100,7 @@ swf_tests! {
     (lessthan2_swf7, "avm1/lessthan2_swf7", 1),
     (logical_ops_swf4, "avm1/logical_ops_swf4", 1),
     (logical_ops_swf8, "avm1/logical_ops_swf8", 1),
+    (local_to_global, "avm1/local_to_global", 1),
     (movieclip_depth_methods, "avm1/movieclip_depth_methods", 3),
     (greater_swf6, "avm1/greater_swf6", 1),
     (greater_swf7, "avm1/greater_swf7", 1),
