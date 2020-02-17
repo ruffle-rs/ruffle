@@ -20,6 +20,10 @@ Ruffle is an Adobe Flash Player emulator written in the Rust programming languag
 
 Ruffle is in the proof-of-concept stage and can currently run early Flash animations. Basic ActionScript 1.0/2.0 support is in place and improving; ActionScript 3.0 support is forthcoming. For more info, read the [project roadmap](https://github.com/ruffle-rs/ruffle/wiki/Roadmap).
 
+## Nightly builds
+
+[Nightly builds](http://ruffle-rs.s3-website-us-west-1.amazonaws.com/) of Ruffle are available for desktop and web platforms.
+
 ## Building from source
 
 [Follow the official guide](https://www.rust-lang.org/tools/install) to install Rust for your platform.
