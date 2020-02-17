@@ -30,6 +30,24 @@ macro_rules! swf_tests {
     };
 }
 
+// This macro generates test cases for a given list of SWFs using `test_swf_approx`.
+macro_rules! swf_tests_approx {
+    ($($(#[$attr:meta])* ($name:ident, $path:expr, $num_frames:literal, $epsilon:literal),)*) => {
+        $(
+        #[test]
+        $(#[$attr])*
+        fn $name() -> Result<(), Error> {
+            test_swf_approx(
+                concat!("tests/swfs/", $path, "/test.swf"),
+                $num_frames,
+                concat!("tests/swfs/", $path, "/output.txt"),
+                $epsilon
+            )
+        }
+        )*
+    };
+}
+
 // List of SWFs to test.
 // Format: (test_name, test_folder, number_of_frames_to_run)
 // The test folder is a relative to core/tests/swfs
@@ -100,7 +118,6 @@ swf_tests! {
     (lessthan2_swf7, "avm1/lessthan2_swf7", 1),
     (logical_ops_swf4, "avm1/logical_ops_swf4", 1),
     (logical_ops_swf8, "avm1/logical_ops_swf8", 1),
-    (local_to_global, "avm1/local_to_global", 1),
     (movieclip_depth_methods, "avm1/movieclip_depth_methods", 3),
     (greater_swf6, "avm1/greater_swf6", 1),
     (greater_swf7, "avm1/greater_swf7", 1),
@@ -140,6 +157,14 @@ swf_tests! {
     (funky_function_calls, "avm1/funky_function_calls", 1),
 }
 
+// TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
+// Eventually we can hopefully make these match exactly (see #193).
+swf_tests_approx! {
+    (local_to_global, "avm1/local_to_global", 1, 0.4),
+    (stage_object_properties, "avm1/stage_object_properties", 4, 0.051),
+    (stage_object_properties_swf6, "avm1/stage_object_properties_swf6", 4, 0.051),
+}
+
 #[test]
 fn test_prototype_enumerate() -> Result<(), Error> {
     let trace_log = run_swf("tests/swfs/avm1/prototype_enumerate/test.swf", 1)?;
@@ -163,52 +188,6 @@ fn test_stage_object_enumerate() -> Result<(), Error> {
     expected.sort();
 
     assert_eq!(actual, expected, "ruffle output != flash player output");
-    Ok(())
-}
-
-#[test]
-fn test_stage_object_properties() -> Result<(), Error> {
-    let trace_log = run_swf("tests/swfs/avm1/stage_object_properties/test.swf", 4)?;
-    let expected_data =
-        std::fs::read_to_string("tests/swfs/avm1/stage_object_properties/output.txt")?;
-    assert_eq!(
-        trace_log.lines().count(),
-        expected_data.lines().count(),
-        "# of lines of output didn't match"
-    );
-
-    for (actual, expected) in trace_log.lines().zip(expected_data.lines()) {
-        // If these are numbers, compare using approx_eq.
-        if let (Ok(actual), Ok(expected)) = (actual.parse::<f64>(), expected.parse::<f64>()) {
-            // TODO: Lower this epsilon as the accuracy of the properties improves.
-            assert_abs_diff_eq!(actual, expected, epsilon = 0.051);
-        } else {
-            assert_eq!(actual, expected);
-        }
-    }
-    Ok(())
-}
-
-#[test]
-fn test_stage_object_properties_swf6() -> Result<(), Error> {
-    let trace_log = run_swf("tests/swfs/avm1/stage_object_properties_swf6/test.swf", 4)?;
-    let expected_data =
-        std::fs::read_to_string("tests/swfs/avm1/stage_object_properties_swf6/output.txt")?;
-    assert_eq!(
-        trace_log.lines().count(),
-        expected_data.lines().count(),
-        "# of lines of output didn't match"
-    );
-
-    for (actual, expected) in trace_log.lines().zip(expected_data.lines()) {
-        // If these are numbers, compare using approx_eq.
-        if let (Ok(actual), Ok(expected)) = (actual.parse::<f64>(), expected.parse::<f64>()) {
-            // TODO: Lower this epsilon as the accuracy of the properties improves.
-            assert_abs_diff_eq!(actual, expected, epsilon = 0.051);
-        } else {
-            assert_eq!(actual, expected);
-        }
-    }
     Ok(())
 }
 
@@ -251,6 +230,35 @@ fn test_swf(swf_path: &str, num_frames: u32, expected_output_path: &str) -> Resu
         "ruffle output != flash player output"
     );
 
+    Ok(())
+}
+
+/// Loads an SWF and runs it through the Ruffle core for a number of frames.
+/// Tests that the trace output matches the given expected output.
+/// If a line has a floating point value, it will be compared approxinmately using the given epsilon.
+fn test_swf_approx(
+    swf_path: &str,
+    num_frames: u32,
+    expected_output_path: &str,
+    epsilon: f64,
+) -> Result<(), Error> {
+    let trace_log = run_swf(swf_path, num_frames)?;
+    let expected_data = std::fs::read_to_string(expected_output_path)?;
+    std::assert_eq!(
+        trace_log.lines().count(),
+        expected_data.lines().count(),
+        "# of lines of output didn't match"
+    );
+
+    for (actual, expected) in trace_log.lines().zip(expected_data.lines()) {
+        // If these are numbers, compare using approx_eq.
+        if let (Ok(actual), Ok(expected)) = (actual.parse::<f64>(), expected.parse::<f64>()) {
+            // TODO: Lower this epsilon as the accuracy of the properties improves.
+            assert_abs_diff_eq!(actual, expected, epsilon = epsilon);
+        } else {
+            assert_eq!(actual, expected);
+        }
+    }
     Ok(())
 }
 
