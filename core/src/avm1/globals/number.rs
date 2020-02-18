@@ -54,7 +54,9 @@ pub fn create_number_object<'gc>(
     object.define_value(
         gc_context,
         "MIN_VALUE",
-        std::f64::MIN.into(),
+        // Note this is actually the smallest positive denormalized f64.
+        // Rust doesn't provide a constant for this (`MIN_POSITIVE` is a normal f64).
+        Value::Number(f64::from_bits(1)),
         DontDelete | ReadOnly | DontEnum,
     );
 
