@@ -1,6 +1,6 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
-use crate::avm2::activation::Activation;
+use crate::avm2::activation::{Activation, Avm2ScriptEntry};
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::return_value::ReturnValue;
@@ -14,6 +14,7 @@ use std::rc::Rc;
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
     AbcFile, Index, MethodBody, Multiname as AbcMultiname, Namespace as AbcNamespace, Op,
+    Script as AbcScript,
 };
 use swf::read::SwfRead;
 
@@ -75,7 +76,15 @@ impl<'gc> Avm2<'gc> {
     ) -> Result<(), Error> {
         let mut read = Reader::new(abc.as_ref());
 
-        let _abc_file = read.read()?;
+        let abc_file = Rc::new(read.read()?);
+
+        if abc_file.scripts.len() > 0 {
+            let entrypoint_script: Index<AbcScript> = Index::new(abc_file.scripts.len() as u32);
+            let entrypoint =
+                Avm2ScriptEntry::from_script_index(abc_file, entrypoint_script).unwrap();
+
+            self.insert_stack_frame_for_script(context, entrypoint)?;
+        }
 
         Ok(())
     }
@@ -93,6 +102,20 @@ impl<'gc> Avm2<'gc> {
     /// operation you like that needs to execute AVM2 code.
     pub fn insert_stack_frame(&mut self, frame: GcCell<'gc, Activation<'gc>>) {
         self.stack_frames.push(frame)
+    }
+
+    /// Add a new stack frame for executing an entrypoint script.
+    pub fn insert_stack_frame_for_script(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        script: Avm2ScriptEntry,
+    ) -> Result<(), Error> {
+        self.stack_frames.push(GcCell::allocate(
+            context.gc_context,
+            Activation::from_script(context, script, self.globals)?,
+        ));
+
+        Ok(())
     }
 
     /// Destroy the current stack frame (if there is one).

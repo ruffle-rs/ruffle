@@ -10,7 +10,45 @@ use crate::context::UpdateContext;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
 use std::rc::Rc;
-use swf::avm2::types::AbcFile;
+use swf::avm2::types::{AbcFile, Index, Script as AbcScript};
+
+/// Represents a reference to an AVM2 script.
+#[derive(Collect, Clone, Debug)]
+#[collect(require_static)]
+pub struct Avm2ScriptEntry {
+    /// The ABC file this function was defined in.
+    pub abc: Rc<AbcFile>,
+
+    /// The ABC method this function uses.
+    pub abc_script: u32,
+}
+
+impl Avm2ScriptEntry {
+    /// Take a script index and ABC file, and produce an `Avm2ScriptEntry`.
+    ///
+    /// This function returns `None` if the given script does not exist within
+    /// the given ABC file.
+    pub fn from_script_index(abc: Rc<AbcFile>, script_index: Index<AbcScript>) -> Option<Self> {
+        if abc.scripts.get(script_index.0 as usize).is_some() {
+            return Some(Self {
+                abc,
+                abc_script: script_index.0,
+            });
+        }
+
+        None
+    }
+
+    /// Get the underlying ABC file.
+    pub fn abc(&self) -> Rc<AbcFile> {
+        self.abc.clone()
+    }
+
+    /// Get a reference to the ABC script entry this refers to.
+    pub fn script(&self) -> &AbcScript {
+        self.abc.scripts.get(self.abc_script as usize).unwrap()
+    }
+}
 
 /// Represents a particular register set.
 ///
@@ -93,6 +131,33 @@ pub struct Activation<'gc> {
 }
 
 impl<'gc> Activation<'gc> {
+    pub fn from_script(
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        script: Avm2ScriptEntry,
+        global: Object<'gc>,
+    ) -> Result<Self, Error> {
+        let method: Result<Avm2MethodEntry, Error> =
+            Avm2MethodEntry::from_method_index(script.abc(), script.script().init_method.clone())
+                .ok_or_else(|| {
+                    format!("Script index {} is not a valid script", script.abc_script).into()
+                });
+        let method = method?;
+        let scope = Some(Scope::push_scope(None, global, context.gc_context));
+        let num_locals = method.body().num_locals;
+
+        Ok(Self {
+            method,
+            pc: 0,
+            this: global,
+            arguments: None,
+            is_executing: false,
+            local_registers: GcCell::allocate(context.gc_context, RegisterSet::new(num_locals)),
+            return_value: None,
+            local_scope: ScriptObject::bare_object(context.gc_context),
+            scope,
+        })
+    }
+
     pub fn from_action(
         context: &mut UpdateContext<'_, 'gc, '_>,
         action: &Avm2Function<'gc>,
