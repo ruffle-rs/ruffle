@@ -35,13 +35,14 @@ pub fn getURL<'a, 'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     //TODO: Error behavior if no arguments are present
     if let Some(url_val) = args.get(0) {
-        let url = url_val.clone().into_string();
+        let swf_version = avm.current_swf_version();
+        let url = url_val.clone().into_string(swf_version);
         if let Some(fscommand) = fscommand::parse(&url) {
             fscommand::handle(fscommand, avm, context);
             return Ok(Value::Undefined.into());
         }
 
-        let window = args.get(1).map(|v| v.clone().into_string());
+        let window = args.get(1).map(|v| v.clone().into_string(swf_version));
         let method = match args.get(2) {
             Some(Value::String(s)) if s == "GET" => Some(NavigationMethod::GET),
             Some(Value::String(s)) if s == "POST" => Some(NavigationMethod::POST),

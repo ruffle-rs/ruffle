@@ -173,6 +173,7 @@ impl<'gc> Avm1<'gc> {
         let scope = stack_frame.scope();
         let locals = scope.locals();
         let keys = locals.get_keys();
+        let swf_version = self.current_swf_version();
 
         for k in keys {
             let v = locals.get(&k, self, context);
@@ -186,7 +187,7 @@ impl<'gc> Avm1<'gc> {
                     .ok()
                     .unwrap_or(Value::Undefined)
                     .clone()
-                    .into_string(),
+                    .into_string(swf_version),
             );
         }
 
@@ -1000,7 +1001,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_char_to_ascii(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // TODO(Herschel): Results on incorrect operands?
-        let s = self.pop().into_string();
+        let s = self.pop().into_string(self.current_swf_version());
         let result = s.bytes().nth(0).unwrap_or(0);
         self.push(result);
         Ok(())
@@ -1593,8 +1594,8 @@ impl<'gc> Avm1<'gc> {
     ) -> Result<(), Error> {
         // TODO: Support `LoadVariablesFlag`, `LoadTargetFlag`
         // TODO: What happens if there's only one string?
-        let target = self.pop().into_string();
-        let url = self.pop().into_string();
+        let target = self.pop().into_string(self.current_swf_version());
+        let url = self.pop().into_string(self.current_swf_version());
 
         if let Some(fscommand) = fscommand::parse(&url) {
             return fscommand::handle(fscommand, self, context);
@@ -1726,7 +1727,7 @@ impl<'gc> Avm1<'gc> {
         let object = ScriptObject::object(context.gc_context, Some(self.prototypes.object));
         for _ in 0..num_props {
             let value = self.pop();
-            let name = self.pop().into_string();
+            let name = self.pop().into_string(self.current_swf_version());
             object.set(&name, value, self, context)?;
         }
 
@@ -1828,7 +1829,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_mb_char_to_ascii(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // TODO(Herschel): Results on incorrect operands?
-        let s = self.pop().into_string();
+        let s = self.pop().into_string(self.current_swf_version());
         let result = s.chars().nth(0).unwrap_or('\0') as u32;
         self.push(result);
         Ok(())
@@ -1838,7 +1839,7 @@ impl<'gc> Avm1<'gc> {
         // TODO(Herschel): Result with incorrect operands?
         let len = self.pop().as_f64()? as usize;
         let start = self.pop().as_f64()? as usize;
-        let s = self.pop().into_string();
+        let s = self.pop().into_string(self.current_swf_version());
         let result = s[len..len + start].to_string(); // TODO(Herschel): Flash uses UTF-16 internally.
         self.push(result);
         Ok(())
@@ -1846,7 +1847,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_mb_string_length(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // TODO(Herschel): Result with non-string operands?
-        let val = self.pop().into_string().len();
+        let val = self.pop().into_string(self.current_swf_version()).len();
         self.push(val as f64);
         Ok(())
     }
@@ -2308,8 +2309,9 @@ impl<'gc> Avm1<'gc> {
     fn action_string_add(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // SWFv4 string concatenation
         // TODO(Herschel): Result with non-string operands?
-        let a = self.pop().into_string();
-        let mut b = self.pop().into_string();
+        let swf_version = self.current_swf_version();
+        let a = self.pop().into_string(swf_version);
+        let mut b = self.pop().into_string(swf_version);
         b.push_str(&a);
         self.push(b);
         Ok(())
@@ -2332,7 +2334,7 @@ impl<'gc> Avm1<'gc> {
         // TODO(Herschel): Result with incorrect operands?
         let len = self.pop().as_f64()? as usize;
         let start = self.pop().as_f64()? as usize;
-        let s = self.pop().into_string();
+        let s = self.pop().into_string(self.current_swf_version());
         // This is specifically a non-UTF8 aware substring.
         // SWFv4 only used ANSI strings.
         let result = s
@@ -2365,7 +2367,11 @@ impl<'gc> Avm1<'gc> {
         // AS1 strlen
         // Only returns byte length.
         // TODO(Herschel): Result with non-string operands?
-        let val = self.pop().into_string().bytes().len() as f64;
+        let val = self
+            .pop()
+            .into_string(self.current_swf_version())
+            .bytes()
+            .len() as f64;
         self.push(val);
         Ok(())
     }
@@ -2427,8 +2433,15 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_trace(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        let val = self.pop().coerce_to_string(self, context)?;
-        log::info!(target: "avm_trace", "{}", val);
+        let val = self.pop();
+        // trace always prints "undefined" even though SWF6 and below normally
+        // coerce undefined to "".
+        let out = if val == Value::Undefined {
+            "undefined".to_string()
+        } else {
+            val.coerce_to_string(self, context)?
+        };
+        log::info!(target: "avm_trace", "{}", out);
         Ok(())
     }
 
