@@ -383,9 +383,15 @@ impl<'gc> Value<'gc> {
     }
 
     /// Coerce a value to a string without calling object methods.
-    pub fn into_string(self) -> String {
+    pub fn into_string(self, swf_version: u8) -> String {
         match self {
-            Value::Undefined => "undefined".to_string(),
+            Value::Undefined => {
+                if swf_version >= 7 {
+                    "undefined".to_string()
+                } else {
+                    "".to_string()
+                }
+            }
             Value::Null => "null".to_string(),
             Value::Bool(v) => v.to_string(),
             Value::Number(v) => f64_to_string(v),
@@ -463,7 +469,7 @@ impl<'gc> Value<'gc> {
                     _ => "[type Object]".to_string(),
                 }
             }
-            _ => self.into_string(),
+            _ => self.into_string(avm.current_swf_version()),
         })
     }
 
