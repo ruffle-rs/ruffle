@@ -142,18 +142,18 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.transform.color_transform = *color_transform;
     }
     fn x(&self) -> f64 {
-        f64::from(self.transform.matrix.tx) / Twips::TWIPS_PER_PIXEL
+        self.transform.matrix.tx.to_pixels()
     }
     fn set_x(&mut self, value: f64) {
         self.set_transformed_by_script(true);
-        self.transform.matrix.tx = (value * Twips::TWIPS_PER_PIXEL) as f32
+        self.transform.matrix.tx = Twips::from_pixels(value)
     }
     fn y(&self) -> f64 {
-        f64::from(self.transform.matrix.ty) / Twips::TWIPS_PER_PIXEL
+        self.transform.matrix.ty.to_pixels()
     }
     fn set_y(&mut self, value: f64) {
         self.set_transformed_by_script(true);
-        self.transform.matrix.ty = (value * Twips::TWIPS_PER_PIXEL) as f32
+        self.transform.matrix.ty = Twips::from_pixels(value)
     }
 
     /// Caches the scale and rotation factors for this display object, if necessary.

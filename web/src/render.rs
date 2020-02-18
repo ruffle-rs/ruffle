@@ -305,8 +305,8 @@ impl WebCanvasRenderBackend {
                 matrix.b.into(),
                 matrix.c.into(),
                 matrix.d.into(),
-                f64::from(matrix.tx) / 20.0,
-                f64::from(matrix.ty) / 20.0,
+                matrix.tx.to_pixels(),
+                matrix.ty.to_pixels(),
             )
             .unwrap();
     }
@@ -774,8 +774,8 @@ fn swf_shape_to_svg(
                             let shift = Matrix {
                                 a: 32768.0 / width,
                                 d: 32768.0 / height,
-                                tx: -16384.0,
-                                ty: -16384.0,
+                                tx: swf::Twips::new(-16384),
+                                ty: swf::Twips::new(-16384),
                                 ..Default::default()
                             };
                             let gradient_matrix = matrix * shift;
@@ -821,8 +821,6 @@ fn swf_shape_to_svg(
                             let shift = Matrix {
                                 a: 32768.0,
                                 d: 32768.0,
-                                tx: 0.0,
-                                ty: 0.0,
                                 ..Default::default()
                             };
                             let gradient_matrix = matrix * shift;
@@ -874,8 +872,6 @@ fn swf_shape_to_svg(
                             let shift = Matrix {
                                 a: 32768.0,
                                 d: 32768.0,
-                                tx: 0.0,
-                                ty: 0.0,
                                 ..Default::default()
                             };
                             let gradient_matrix = matrix * shift;
@@ -1219,8 +1215,8 @@ fn swf_shape_to_canvas_commands(
                         matrix.set_b(a.b);
                         matrix.set_c(a.c);
                         matrix.set_d(a.d);
-                        matrix.set_e(a.tx);
-                        matrix.set_f(a.ty);
+                        matrix.set_e(a.tx.get() as f32);
+                        matrix.set_f(a.ty.get() as f32);
 
                         bitmap_pattern.set_transform(&matrix);
 

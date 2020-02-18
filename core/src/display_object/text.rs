@@ -71,25 +71,25 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             a: 0,
         };
         let mut font_id = 0;
-        let mut height = 0.0;
+        let mut height = Twips::new(0);
         let mut transform: Transform = Default::default();
         for block in &tf.static_data.text_blocks {
             if let Some(x) = block.x_offset {
-                transform.matrix.tx = x.get() as f32;
+                transform.matrix.tx = x;
             }
             if let Some(y) = block.y_offset {
-                transform.matrix.ty = y.get() as f32;
+                transform.matrix.ty = y;
             }
             color = block.color.as_ref().unwrap_or(&color).clone();
             font_id = block.font_id.unwrap_or(font_id);
-            height = block.height.map(|h| h.get() as f32).unwrap_or(height);
+            height = block.height.unwrap_or(height);
             if let Some(font) = context
                 .library
                 .library_for_movie(self.movie().unwrap())
                 .unwrap()
                 .get_font(font_id)
             {
-                let scale = height / font.scale();
+                let scale = (height.get() as f32) / font.scale();
                 transform.matrix.a = scale;
                 transform.matrix.d = scale;
                 transform.color_transform.r_mult = f32::from(color.r) / 255.0;
@@ -103,7 +103,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                             .renderer
                             .render_shape(glyph.shape, context.transform_stack.transform());
                         context.transform_stack.pop();
-                        transform.matrix.tx += c.advance as f32;
+                        transform.matrix.tx += Twips::new(c.advance);
                     }
                 }
             }

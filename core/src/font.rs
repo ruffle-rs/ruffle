@@ -132,13 +132,13 @@ impl<'gc> Font<'gc> {
         self,
         text: &str,
         mut transform: Transform,
-        height: f32,
+        height: Twips,
         mut glyph_func: FGlyph,
     ) where
         FGlyph: FnMut(&Transform, &Glyph),
     {
-        transform.matrix.ty += height * Twips::TWIPS_PER_PIXEL as f32;
-        let scale = (height * Twips::TWIPS_PER_PIXEL as f32) / self.scale();
+        transform.matrix.ty += height;
+        let scale = height.get() as f32 / self.scale();
 
         transform.matrix.a = scale;
         transform.matrix.d = scale;
@@ -148,26 +148,24 @@ impl<'gc> Font<'gc> {
             if let Some(glyph) = self.get_glyph_for_char(c) {
                 glyph_func(&transform, &glyph);
                 // Step horizontally.
-                let mut advance = f32::from(glyph.advance);
+                let mut advance = Twips::new(glyph.advance);
                 if has_kerning_info {
-                    advance += self
-                        .get_kerning_offset(c, chars.peek().cloned().unwrap_or('\0'))
-                        .get() as f32;
+                    advance += self.get_kerning_offset(c, chars.peek().cloned().unwrap_or('\0'));
                 }
-                transform.matrix.tx += advance * scale;
+                transform.matrix.tx += Twips::new((advance.get() as f32 * scale) as i32);
             }
         }
     }
 
     /// Measure a particular string's metrics (width and height).
-    pub fn measure(self, text: &str, height: f32) -> (f32, f32) {
-        let mut size = (0.0, 0.0);
+    pub fn measure(self, text: &str, height: Twips) -> (Twips, Twips) {
+        let mut size = (Twips::new(0), Twips::new(0));
 
         self.evaluate(text, Default::default(), height, |transform, _glyph| {
-            let tx = transform.matrix.tx / Twips::TWIPS_PER_PIXEL as f32;
-            let ty = transform.matrix.ty / Twips::TWIPS_PER_PIXEL as f32;
-            size.0 = f32::max(size.0, tx);
-            size.1 = f32::max(size.1, ty);
+            let tx = transform.matrix.tx;
+            let ty = transform.matrix.ty;
+            size.0 = std::cmp::max(size.0, tx);
+            size.1 = std::cmp::max(size.1, ty);
         });
 
         size
@@ -178,7 +176,7 @@ impl<'gc> Font<'gc> {
     ///
     /// This function assumes only `" "` is valid whitespace to split words on,
     /// and will not attempt to break words that are longer than `width`.
-    pub fn split_wrapped_lines(self, text: &str, height: f32, width: f32) -> Vec<usize> {
+    pub fn split_wrapped_lines(self, text: &str, height: Twips, width: Twips) -> Vec<usize> {
         let mut result = vec![];
         let mut current_width = width;
         let mut current_word = &text[0..0];

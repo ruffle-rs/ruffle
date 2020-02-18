@@ -710,8 +710,8 @@ impl RenderBackend for GliumRenderBackend {
             [transform.matrix.c, transform.matrix.d, 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0],
             [
-                transform.matrix.tx / 20.0,
-                transform.matrix.ty / 20.0,
+                transform.matrix.tx.to_pixels() as f32,
+                transform.matrix.ty.to_pixels() as f32,
                 0.0,
                 1.0,
             ],
