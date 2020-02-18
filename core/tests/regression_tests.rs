@@ -181,10 +181,10 @@ swf_tests! {
 // Eventually we can hopefully make some of these match exactly (see #193).
 // Some will probably always need to be approx. (if they rely on trig functions, etc.)
 swf_tests_approx! {
-    (local_to_global, "avm1/local_to_global", 1, 0.4),
+    (local_to_global, "avm1/local_to_global", 1, 0.051),
     (stage_object_properties, "avm1/stage_object_properties", 4, 0.051),
     (stage_object_properties_swf6, "avm1/stage_object_properties_swf6", 4, 0.051),
-    (movieclip_getbounds, "avm1/movieclip_getbounds", 1, 0.1),
+    (movieclip_getbounds, "avm1/movieclip_getbounds", 1, 0.051),
 }
 
 #[test]

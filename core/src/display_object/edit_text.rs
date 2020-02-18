@@ -226,9 +226,9 @@ impl<'gc> EditText<'gc> {
         transform.color_transform.a_mult = f32::from(color.a) / 255.0;
 
         if let Some(layout) = &static_data.text.layout {
-            transform.matrix.tx += layout.left_margin.get() as f32;
-            transform.matrix.tx += layout.indent.get() as f32;
-            transform.matrix.ty -= layout.leading.get() as f32;
+            transform.matrix.tx += layout.left_margin;
+            transform.matrix.tx += layout.indent;
+            transform.matrix.ty -= layout.leading;
         }
 
         transform
@@ -239,31 +239,31 @@ impl<'gc> EditText<'gc> {
     ///
     /// This function takes the current font size and the transform to adjust,
     /// and returns the adjusted transform.
-    pub fn newline(self, height: f32, mut transform: Transform) -> Transform {
+    pub fn newline(self, height: Twips, mut transform: Transform) -> Transform {
         let edit_text = self.0.read();
         let static_data = &edit_text.static_data;
 
-        transform.matrix.tx = 0.0;
-        transform.matrix.ty += height * Twips::TWIPS_PER_PIXEL as f32;
+        transform.matrix.tx = Twips::new(0);
+        transform.matrix.ty += height;
         if let Some(layout) = &static_data.text.layout {
-            transform.matrix.tx += layout.left_margin.get() as f32;
-            transform.matrix.tx += layout.indent.get() as f32;
-            transform.matrix.ty += layout.leading.get() as f32;
+            transform.matrix.tx += layout.left_margin;
+            transform.matrix.tx += layout.indent;
+            transform.matrix.ty += layout.leading;
         }
 
         transform
     }
 
-    pub fn line_width(self) -> f32 {
+    pub fn line_width(self) -> Twips {
         let edit_text = self.0.read();
         let static_data = &edit_text.static_data;
 
-        let mut base_width = self.width() as f32;
+        let mut base_width = Twips::from_pixels(self.width());
 
         if let Some(layout) = &static_data.text.layout {
-            base_width -= layout.left_margin.to_pixels() as f32;
-            base_width -= layout.indent.to_pixels() as f32;
-            base_width -= layout.right_margin.to_pixels() as f32;
+            base_width -= layout.left_margin;
+            base_width -= layout.indent;
+            base_width -= layout.right_margin;
         }
 
         base_width
@@ -311,8 +311,7 @@ impl<'gc> EditText<'gc> {
                 let height = static_data
                     .text
                     .height
-                    .map(|v| v.to_pixels() as f32)
-                    .unwrap_or_else(|| font.scale());
+                    .unwrap_or_else(|| Twips::from_pixels(font.scale().into()));
 
                 for natural_line in edit_text.text.split('\n') {
                     if break_base != 0 {
@@ -364,14 +363,14 @@ impl<'gc> EditText<'gc> {
     /// Measure the width and height of the `EditText`'s current text load.
     ///
     /// The returned tuple should be interpreted as width, then height.
-    pub fn measure_text(self, context: &mut UpdateContext<'_, 'gc, '_>) -> (f32, f32) {
+    pub fn measure_text(self, context: &mut UpdateContext<'_, 'gc, '_>) -> (Twips, Twips) {
         let breakpoints = self.line_breaks_cached(context.gc_context, context.library);
 
         let edit_text = self.0.read();
         let static_data = &edit_text.static_data;
         let font_id = static_data.text.font_id.unwrap_or(0);
 
-        let mut size: (f32, f32) = (0.0, 0.0);
+        let mut size: (Twips, Twips) = Default::default();
 
         if let Some(font) = context
             .library
@@ -399,15 +398,14 @@ impl<'gc> EditText<'gc> {
             let height = static_data
                 .text
                 .height
-                .map(|v| v.to_pixels() as f32)
-                .unwrap_or_else(|| font.scale());
+                .unwrap_or_else(|| Twips::from_pixels(font.scale().into()));
 
             for chunk in chunks {
                 let chunk_size = font.measure(chunk, height);
 
                 size.0 = size.0.max(chunk_size.0);
                 if let Some(layout) = &static_data.text.layout {
-                    size.1 += layout.leading.to_pixels() as f32;
+                    size.1 += layout.leading;
                 }
                 size.1 += chunk_size.1;
             }
@@ -490,8 +488,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             let height = static_data
                 .text
                 .height
-                .map(|v| v.to_pixels() as f32)
-                .unwrap_or_else(|| font.scale());
+                .unwrap_or_else(|| Twips::from_pixels(font.scale().into()));
 
             let breakpoints = edit_text
                 .cached_break_points

@@ -728,8 +728,8 @@ impl Player {
             b: 0.0,
             c: 0.0,
             d: scale,
-            tx: margin_width * 20.0,
-            ty: margin_height * 20.0,
+            tx: Twips::from_pixels(margin_width.into()),
+            ty: Twips::from_pixels(margin_height.into()),
         };
         self.inverse_view_matrix = self.view_matrix;
         self.inverse_view_matrix.invert();

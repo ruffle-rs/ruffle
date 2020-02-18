@@ -85,7 +85,7 @@ pub fn text_width<'gc>(
     {
         let metrics = etext.measure_text(context);
 
-        return Ok(metrics.0.into());
+        return Ok(metrics.0.to_pixels().into());
     }
 
     Ok(Value::Undefined.into())
@@ -103,7 +103,7 @@ pub fn text_height<'gc>(
     {
         let metrics = etext.measure_text(context);
 
-        return Ok(metrics.1.into());
+        return Ok(metrics.1.to_pixels().into());
     }
 
     Ok(Value::Undefined.into())
