@@ -1,15 +1,20 @@
 //! Default AVM2 object impl
 
+use crate::avm2::function::{
+    Avm2ClassEntry, Avm2Function, Avm2MethodEntry, Executable, FunctionObject,
+};
 use crate::avm2::names::QName;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::return_value::ReturnValue;
+use crate::avm2::scope::Scope;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::HashMap;
 use std::fmt::Debug;
+use swf::avm2::types::TraitKind as AbcTraitKind;
 
 /// Default implementation of `avm2::Object`.
 #[derive(Clone, Collect, Debug, Copy)]
@@ -69,6 +74,48 @@ impl<'gc> ScriptObject<'gc> {
     pub fn bare_object(mc: MutationContext<'gc, '_>) -> Object<'gc> {
         ScriptObject(GcCell::allocate(mc, ScriptObjectData::base_new(None))).into()
     }
+
+    /// Construct the instance prototype half of a class.
+    pub fn instance_prototype(
+        mc: MutationContext<'gc, '_>,
+        type_entry: Avm2ClassEntry,
+        base_class: Object<'gc>,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
+        fn_proto: Object<'gc>,
+    ) -> Result<Object<'gc>, Error> {
+        let mut data = ScriptObjectData::base_new(Some(base_class));
+
+        for trait_entry in type_entry.instance().traits.iter() {
+            let trait_name =
+                QName::from_abc_multiname(&type_entry.abc(), trait_entry.name.clone())?;
+            match &trait_entry.kind {
+                AbcTraitKind::Method { method, .. } => {
+                    let method =
+                        Avm2MethodEntry::from_method_index(type_entry.abc(), method.clone())
+                            .unwrap();
+                    let function = FunctionObject::from_abc_method(mc, method, scope, fn_proto);
+                    data.install_method(trait_name, function);
+                }
+                AbcTraitKind::Getter { method, .. } => {
+                    let method =
+                        Avm2MethodEntry::from_method_index(type_entry.abc(), method.clone())
+                            .unwrap();
+                    let exec = Avm2Function::from_method(method, scope).into();
+                    data.install_getter(trait_name, exec)?;
+                }
+                AbcTraitKind::Setter { method, .. } => {
+                    let method =
+                        Avm2MethodEntry::from_method_index(type_entry.abc(), method.clone())
+                            .unwrap();
+                    let exec = Avm2Function::from_method(method, scope).into();
+                    data.install_setter(trait_name, exec)?;
+                }
+                _ => return Err("".into()),
+            }
+        }
+
+        Ok(ScriptObject(GcCell::allocate(mc, data)).into())
+    }
 }
 
 impl<'gc> ScriptObjectData<'gc> {
@@ -120,5 +167,42 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn proto(&self) -> Option<Object<'gc>> {
         self.proto
+    }
+
+    /// Install a method into the object.
+    fn install_method(&mut self, name: QName, function: Object<'gc>) {
+        self.values.insert(name, Property::new_method(function));
+    }
+
+    /// Install a getter into the object.
+    ///
+    /// This is a little more complicated than methods, since virtual property
+    /// slots can be installed in two parts. Thus, we need to support
+    /// installing them in either order.
+    fn install_getter(&mut self, name: QName, function: Executable<'gc>) -> Result<(), Error> {
+        if !self.values.contains_key(&name) {
+            self.values.insert(name.clone(), Property::new_virtual());
+        }
+
+        self.values
+            .get_mut(&name)
+            .unwrap()
+            .install_virtual_getter(function)
+    }
+
+    /// Install a setter into the object.
+    ///
+    /// This is a little more complicated than methods, since virtual property
+    /// slots can be installed in two parts. Thus, we need to support
+    /// installing them in either order.
+    fn install_setter(&mut self, name: QName, function: Executable<'gc>) -> Result<(), Error> {
+        if !self.values.contains_key(&name) {
+            self.values.insert(name.clone(), Property::new_virtual());
+        }
+
+        self.values
+            .get_mut(&name)
+            .unwrap()
+            .install_virtual_setter(function)
     }
 }

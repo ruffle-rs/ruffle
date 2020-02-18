@@ -25,7 +25,7 @@ pub enum Attribute {
 #[derive(Clone, Debug)]
 pub enum Property<'gc> {
     Virtual {
-        get: Executable<'gc>,
+        get: Option<Executable<'gc>>,
         set: Option<Executable<'gc>>,
         attributes: EnumSet<Attribute>,
     },
@@ -56,6 +56,51 @@ impl<'gc> Property<'gc> {
         }
     }
 
+    /// Convert a function into a method.
+    ///
+    /// This applies ReadOnly/DontDelete to the property.
+    pub fn new_method(fn_obj: Object<'gc>) -> Self {
+        Property::Stored {
+            value: fn_obj.into(),
+            attributes: Attribute::ReadOnly | Attribute::DontDelete,
+        }
+    }
+
+    /// Create a new, unconfigured virtual property item.
+    pub fn new_virtual() -> Self {
+        Property::Virtual {
+            get: None,
+            set: None,
+            attributes: Attribute::ReadOnly | Attribute::DontDelete,
+        }
+    }
+
+    /// Install a getter into this property.
+    ///
+    /// This function errors if attempting to install executables into a
+    /// non-virtual property.
+    pub fn install_virtual_getter(&mut self, getter_impl: Executable<'gc>) -> Result<(), Error> {
+        match self {
+            Property::Virtual { get, .. } => *get = Some(getter_impl),
+            Property::Stored { .. } => return Err("Not a virtual property".into()),
+        };
+
+        Ok(())
+    }
+
+    /// Install a setter into this property.
+    ///
+    /// This function errors if attempting to install executables into a
+    /// non-virtual property.
+    pub fn install_virtual_setter(&mut self, setter_impl: Executable<'gc>) -> Result<(), Error> {
+        match self {
+            Property::Virtual { set, .. } => *set = Some(setter_impl),
+            Property::Stored { .. } => return Err("Not a virtual property".into()),
+        };
+
+        Ok(())
+    }
+
     /// Get the value of a property slot.
     ///
     /// This function yields `ReturnValue` because some properties may be
@@ -67,7 +112,8 @@ impl<'gc> Property<'gc> {
         this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
-            Property::Virtual { get, .. } => get.exec(avm, context, this, &[]),
+            Property::Virtual { get: Some(get), .. } => get.exec(avm, context, this, &[]),
+            Property::Virtual { get: None, .. } => Ok(Value::Undefined.into()),
             Property::Stored { value, .. } => Ok(value.to_owned().into()),
         }
     }

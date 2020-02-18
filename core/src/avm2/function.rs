@@ -249,6 +249,26 @@ impl<'gc> FunctionObject<'gc> {
             .into(),
         )
     }
+
+    /// Construct a function from an ABC method and the current closure scope.
+    pub fn from_abc_method(
+        mc: MutationContext<'gc, '_>,
+        method: Avm2MethodEntry,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
+        fn_proto: Object<'gc>,
+    ) -> Object<'gc> {
+        let exec = Avm2Function::from_method(method, scope).into();
+
+        FunctionObject(GcCell::allocate(
+            mc,
+            FunctionObjectData {
+                base: ScriptObjectData::base_new(Some(fn_proto)),
+                exec,
+                class: None,
+            },
+        ))
+        .into()
+    }
 }
 
 impl<'gc> TObject<'gc> for FunctionObject<'gc> {

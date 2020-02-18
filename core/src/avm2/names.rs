@@ -84,6 +84,29 @@ impl QName {
             name: local_part.to_string(),
         }
     }
+
+    /// Pull a `QName` from the multiname pool.
+    ///
+    /// This function returns an Err if the multiname does not exist or is not
+    /// a `QName`.
+    pub fn from_abc_multiname(
+        file: &AbcFile,
+        multiname_index: Index<AbcMultiname>,
+    ) -> Result<Self, Error> {
+        let abc_multiname: Result<&AbcMultiname, Error> = file
+            .constant_pool
+            .multinames
+            .get(multiname_index.0 as usize)
+            .ok_or_else(|| format!("Unknown multiname constant {}", multiname_index.0).into());
+
+        Ok(match abc_multiname? {
+            AbcMultiname::QName { namespace, name } => Self {
+                ns: Namespace::from_abc_namespace(file, namespace.clone())?,
+                name: abc_string(file, name.clone())?,
+            },
+            _ => return Err("Attempted to pull QName from non-QName multiname".into()),
+        })
+    }
 }
 
 /// A `Multiname` consists of a name which could be resolved in one or more
