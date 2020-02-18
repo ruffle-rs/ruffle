@@ -872,9 +872,8 @@ impl Player {
                     name,
                     is_lazy_initialize,
                     abc,
-                    preload,
                 } => {
-                    if let Err(e) = avm2.load_abc(abc, context, preload) {
+                    if let Err(e) = avm2.load_abc(abc, context) {
                         log::warn!("Error loading ABC file: {}", e);
                     }
                 }

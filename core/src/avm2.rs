@@ -68,16 +68,10 @@ impl<'gc> Avm2<'gc> {
     /// Load an ABC file embedded in a `SwfSlice`.
     ///
     /// The `SwfSlice` must resolve to the contents of an ABC file.
-    ///
-    /// The `preload` flag indicates if the file is being encountered as part
-    /// of a preloading operation. If false, then this file has actually been
-    /// encountered as part of normal movie playback and it's final script
-    /// should be executed.
     pub fn load_abc(
         &mut self,
         abc: SwfSlice,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        preload: bool,
     ) -> Result<(), Error> {
         let mut read = Reader::new(abc.as_ref());
 

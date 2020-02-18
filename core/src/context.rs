@@ -252,10 +252,6 @@ pub enum ActionType<'gc> {
         name: String,
         is_lazy_initialize: bool,
         abc: SwfSlice,
-
-        /// Whether or not this ABC file was encountered during the preloading
-        /// step.
-        preload: bool,
     },
 }
 
@@ -294,13 +290,11 @@ impl fmt::Debug for ActionType<'_> {
                 name,
                 is_lazy_initialize,
                 abc,
-                preload,
             } => f
                 .debug_struct("ActionType::DoABC")
                 .field("name", name)
                 .field("is_lazy_initialize", is_lazy_initialize)
                 .field("bytecode", abc)
-                .field("preload", preload)
                 .finish(),
         }
     }

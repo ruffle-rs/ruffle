@@ -431,7 +431,6 @@ impl<'gc> MovieClip<'gc> {
                 name,
                 is_lazy_initialize,
                 abc: slice,
-                preload: true,
             },
             false,
         );
