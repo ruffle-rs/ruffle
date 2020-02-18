@@ -145,6 +145,12 @@ base 37: -2147483647.9
 // Number.NaN
 NaN
 
+// Number.POSITIVE_INFINITY
+Infinity
+
+// Number.NEGATIVE_INFINITY
+-Infinity
+
 // Boolean
 [type Function]
 
