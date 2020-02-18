@@ -155,6 +155,7 @@ swf_tests! {
     (xml_inspect_createmethods, "avm1/xml_inspect_createmethods", 1),
     (xml_inspect_parsexml, "avm1/xml_inspect_parsexml", 1),
     (funky_function_calls, "avm1/funky_function_calls", 1),
+    (undefined_to_string_swf6, "avm1/undefined_to_string_swf6", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
