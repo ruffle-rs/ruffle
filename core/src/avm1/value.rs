@@ -388,7 +388,7 @@ impl<'gc> Value<'gc> {
             Value::Undefined => "undefined".to_string(),
             Value::Null => "null".to_string(),
             Value::Bool(v) => v.to_string(),
-            Value::Number(v) => v.to_string(), // TODO(Herschel): Rounding for int?
+            Value::Number(v) => f64_to_string(v),
             Value::String(v) => v,
             Value::Object(object) => object.as_string(),
         }
@@ -561,6 +561,32 @@ impl<'gc> Value<'gc> {
         } else {
             Ok(Value::Undefined.into())
         }
+    }
+}
+
+/// Converts an `f64` to a String with (hopefully) the same output as Flash.
+/// For example, NAN returns `"NaN"`, and infinity returns `"Infinity"`.
+pub fn f64_to_string(n: f64) -> String {
+    if n.is_nan() {
+        "NaN".to_string()
+    } else if n == std::f64::INFINITY {
+        "Infinity".to_string()
+    } else if n == std::f64::NEG_INFINITY {
+        "-Infinity".to_string()
+    } else if n != 0.0 && (n.abs() >= 1e15 || n.abs() < 1e-5) {
+        // Exponential notation.
+        // Cheating a bit here; Flash always put a sign in front of the exponent, e.g. 1e+15.
+        // Can't do this with rust format params, so shove it in there manually.
+        let mut s = format!("{:e}", n);
+        if let Some(i) = s.find('e') {
+            if s.as_bytes().get(i + 1) != Some(&b'-') {
+                s.insert(i + 1, '+');
+            }
+        }
+        s
+    } else {
+        // Normal number.
+        n.to_string()
     }
 }
 
@@ -854,5 +880,26 @@ mod test {
         assert_eq!(f64_to_wrapping_i32(std::f64::NAN), 0);
         assert_eq!(f64_to_wrapping_i32(std::f64::INFINITY), 0);
         assert_eq!(f64_to_wrapping_i32(std::f64::NEG_INFINITY), 0);
+    }
+
+    #[test]
+    fn f64_to_string() {
+        use super::f64_to_string;
+        assert_eq!(f64_to_string(0.0), "0");
+        assert_eq!(f64_to_string(-0.0), "0");
+        assert_eq!(f64_to_string(1.0), "1");
+        assert_eq!(f64_to_string(1.4), "1.4");
+        assert_eq!(f64_to_string(-990.123), "-990.123");
+        assert_eq!(f64_to_string(std::f64::NAN), "NaN");
+        assert_eq!(f64_to_string(std::f64::INFINITY), "Infinity");
+        assert_eq!(f64_to_string(std::f64::NEG_INFINITY), "-Infinity");
+        assert_eq!(f64_to_string(9.9999e14), "999990000000000");
+        assert_eq!(f64_to_string(-9.9999e14), "-999990000000000");
+        assert_eq!(f64_to_string(1e15), "1e+15");
+        assert_eq!(f64_to_string(-1e15), "-1e+15");
+        assert_eq!(f64_to_string(1e-5), "0.00001");
+        assert_eq!(f64_to_string(-1e-5), "-0.00001");
+        assert_eq!(f64_to_string(0.999e-5), "9.99e-6");
+        assert_eq!(f64_to_string(-0.999e-5), "-9.99e-6");
     }
 }
