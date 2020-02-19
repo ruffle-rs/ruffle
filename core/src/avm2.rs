@@ -397,6 +397,10 @@ impl<'gc> Avm2<'gc> {
                 Op::SetSlot { index } => self.op_set_slot(context, index),
                 Op::GetGlobalSlot { index } => self.op_get_global_slot(index),
                 Op::SetGlobalSlot { index } => self.op_set_global_slot(context, index),
+                Op::Construct { num_args } => self.op_construct(context, num_args),
+                Op::ConstructProp { index, num_args } => {
+                    self.op_construct_prop(context, index, num_args)
+                }
                 _ => self.unknown_op(op),
             };
 
@@ -682,5 +686,69 @@ impl<'gc> Avm2<'gc> {
         let value = self.pop();
 
         self.globals.set_slot(index, value, context.gc_context)
+    }
+
+    fn op_construct(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        arg_count: u32,
+    ) -> Result<(), Error> {
+        let mut args = Vec::new();
+        for _ in 0..arg_count {
+            args.push(self.pop());
+        }
+
+        let ctor = self.pop().as_object()?;
+        let proto = ctor
+            .get_property(
+                &QName::new(Namespace::public_namespace(), "prototype"),
+                self,
+                context,
+            )?
+            .resolve(self, context)?
+            .as_object()?;
+
+        let object = proto.construct(self, context, &args)?;
+        ctor.call(object, &args, self, context)?
+            .resolve(self, context)?;
+
+        Ok(())
+    }
+
+    fn op_construct_prop(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        index: Index<AbcMultiname>,
+        arg_count: u32,
+    ) -> Result<(), Error> {
+        let mut args = Vec::new();
+        for _ in 0..arg_count {
+            args.push(self.pop());
+        }
+
+        let multiname = self.pool_multiname(index)?;
+
+        let source = self.pop().as_object()?;
+        let ctor_name: Result<QName, Error> = source
+            .resolve_multiname(&multiname)
+            .ok_or_else(|| format!("Could not resolve property {}", multiname.local_name()).into());
+        let ctor = source
+            .get_property(&ctor_name?, self, context)?
+            .resolve(self, context)?
+            .as_object()?;
+        let proto = ctor
+            .get_property(
+                &QName::new(Namespace::public_namespace(), "prototype"),
+                self,
+                context,
+            )?
+            .resolve(self, context)?
+            .as_object()?;
+
+        let object = proto.construct(self, context, &args)?;
+        ctor.call(object, &args, self, context)?
+            .resolve(self, context)?;
+
+        Ok(())
     }
 }

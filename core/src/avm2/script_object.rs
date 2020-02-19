@@ -82,6 +82,16 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
+    fn construct(
+        &self,
+        _avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        _args: &[Value<'gc>],
+    ) -> Result<Object<'gc>, Error> {
+        let this: Object<'gc> = Object::ScriptObject(*self);
+        Ok(ScriptObject::object(context.gc_context, this))
+    }
+
     fn install_trait(
         &mut self,
         mc: MutationContext<'gc, '_>,
@@ -286,6 +296,22 @@ impl<'gc> ScriptObjectData<'gc> {
             .get_mut(&name)
             .unwrap()
             .install_virtual_setter(function)
+    }
+
+    /// Install a class into the object.
+    ///
+    /// Classes are fairly complicated. We desugar them into an ES3-style
+    /// prototype chain, which means we need to build a function, prototype,
+    /// and so on. In concert with the `new` Rust trait function we also ensure
+    /// that subclasses of an object impl use the same impl (e.g. subclasses of
+    /// `MovieClip` remain movie clips).
+    fn install_class(
+        &mut self,
+        name: QName,
+        type_entry: Avm2ClassEntry,
+        slot: u32,
+    ) -> Result<(), Error> {
+        Err("unimplemented".into())
     }
 
     pub fn install_dynamic_property(

@@ -149,6 +149,27 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         Err("Object is not callable".into())
     }
 
+    /// Construct a host object of some kind and return it's cell.
+    ///
+    /// As the first step in object construction, the `construct` method is
+    /// called on the prototype to create a new object. The prototype may
+    /// construct any object implementation it wants, however, it's expected
+    /// to produce a like `TObject` implementor with itself as the new object's
+    /// proto.
+    ///
+    /// After construction, the constructor function is `call`ed with the new
+    /// object as `this` to initialize the object.
+    ///
+    /// The arguments passed to the constructor are provided here; however, all
+    /// object construction should happen in `call`, not `new`. `new` exists
+    /// purely so that host objects can be constructed by the VM.
+    fn construct(
+        &self,
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        args: &[Value<'gc>],
+    ) -> Result<Object<'gc>, Error>;
+
     /// Get a raw pointer value for this object.
     fn as_ptr(&self) -> *const ObjectPtr;
 }

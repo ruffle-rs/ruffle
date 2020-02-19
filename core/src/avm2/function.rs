@@ -220,7 +220,7 @@ pub struct FunctionObjectData<'gc> {
     base: ScriptObjectData<'gc>,
 
     /// Executable code
-    exec: Executable<'gc>,
+    exec: Option<Executable<'gc>>,
 
     /// The class that defined this function object, if any.
     class: Option<Avm2ClassEntry>,
@@ -242,7 +242,7 @@ impl<'gc> FunctionObject<'gc> {
                 mc,
                 FunctionObjectData {
                     base: ScriptObjectData::base_new(None),
-                    exec: Avm2Function::from_method(initializer, None).into(),
+                    exec: Some(Avm2Function::from_method(initializer, None).into()),
                     class: Some(class),
                 },
             ))
@@ -257,7 +257,7 @@ impl<'gc> FunctionObject<'gc> {
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         fn_proto: Object<'gc>,
     ) -> Object<'gc> {
-        let exec = Avm2Function::from_method(method, scope).into();
+        let exec = Some(Avm2Function::from_method(method, scope).into());
 
         FunctionObject(GcCell::allocate(
             mc,
@@ -280,7 +280,7 @@ impl<'gc> FunctionObject<'gc> {
             mc,
             FunctionObjectData {
                 base: ScriptObjectData::base_new(Some(fn_proto)),
-                exec: nf.into(),
+                exec: Some(nf.into()),
                 class: None,
             },
         ))
@@ -305,7 +305,7 @@ impl<'gc> FunctionObject<'gc> {
             mc,
             FunctionObjectData {
                 base,
-                exec: constr.into(),
+                exec: Some(constr.into()),
                 class: None,
             },
         ))
@@ -371,7 +371,31 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
-        self.0.read().exec.exec(avm, context, reciever, arguments)
+        if let Some(exec) = &self.0.read().exec {
+            exec.exec(avm, context, reciever, arguments)
+        } else {
+            Err("Not a callable function!".into())
+        }
+    }
+
+    fn construct(
+        &self,
+        _avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        _args: &[Value<'gc>],
+    ) -> Result<Object<'gc>, Error> {
+        let this: Object<'gc> = Object::FunctionObject(*self);
+        let base = ScriptObjectData::base_new(Some(this));
+
+        Ok(FunctionObject(GcCell::allocate(
+            context.gc_context,
+            FunctionObjectData {
+                base,
+                exec: None,
+                class: None,
+            },
+        ))
+        .into())
     }
 
     fn install_trait(
