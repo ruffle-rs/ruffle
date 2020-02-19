@@ -324,10 +324,11 @@ impl<'gc> Executable<'gc> {
                 }
 
                 if af.preload_parent {
-                    let parent = child_scope
-                        .read()
-                        .resolve("_parent", avm, ac, this)?
-                        .resolve(avm, ac)?;
+                    let parent = af
+                        .base_clip
+                        .parent()
+                        .map(|o| o.object())
+                        .unwrap_or(Value::Undefined);
 
                     frame.set_local_register(preload_r, parent, ac.gc_context);
 
