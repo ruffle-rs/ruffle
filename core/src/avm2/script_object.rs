@@ -28,6 +28,9 @@ pub struct ScriptObjectData<'gc> {
     /// Properties stored on this object.
     values: HashMap<QName, Property<'gc>>,
 
+    /// Slots stored on this object.
+    slots: Vec<Value<'gc>>,
+
     /// Implicit prototype (or declared base class) of this script object.
     proto: Option<Object<'gc>>,
 }
@@ -52,6 +55,19 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0
             .write(context.gc_context)
             .set_property(name, value, avm, context, self.into())
+    }
+
+    fn get_slot(self, id: u32) -> Result<Value<'gc>, Error> {
+        self.0.read().get_slot(id)
+    }
+
+    fn set_slot(
+        self,
+        id: u32,
+        value: Value<'gc>,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<(), Error> {
+        self.0.write(mc).set_slot(id, value, mc)
     }
 
     fn has_property(self, name: &QName) -> bool {
@@ -133,6 +149,7 @@ impl<'gc> ScriptObjectData<'gc> {
     pub fn base_new(proto: Option<Object<'gc>>) -> Self {
         ScriptObjectData {
             values: HashMap::new(),
+            slots: Vec::new(),
             proto,
         }
     }
@@ -170,6 +187,29 @@ impl<'gc> ScriptObjectData<'gc> {
         }
 
         Ok(())
+    }
+
+    pub fn get_slot(&self, id: u32) -> Result<Value<'gc>, Error> {
+        self.slots
+            .get(id as usize)
+            .cloned()
+            .ok_or_else(|| format!("Slot index {} out of bounds!", id).into())
+    }
+
+    /// Set a slot by it's index.
+    pub fn set_slot(
+        &mut self,
+        id: u32,
+        value: Value<'gc>,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<(), Error> {
+        if let Some(slot) = self.slots.get_mut(id as usize) {
+            *slot = value;
+
+            Ok(())
+        } else {
+            Err(format!("Slot index {} out of bounds!", id).into())
+        }
     }
 
     pub fn has_property(&self, name: &QName) -> bool {

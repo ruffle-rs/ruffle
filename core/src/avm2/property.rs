@@ -2,7 +2,7 @@
 
 use self::Attribute::*;
 use crate::avm2::function::Executable;
-use crate::avm2::object::Object;
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
@@ -33,6 +33,10 @@ pub enum Property<'gc> {
         value: Value<'gc>,
         attributes: EnumSet<Attribute>,
     },
+    Slot {
+        slot_id: u32,
+        attributes: EnumSet<Attribute>,
+    },
 }
 
 unsafe impl<'gc> Collect for Property<'gc> {
@@ -43,6 +47,7 @@ unsafe impl<'gc> Collect for Property<'gc> {
                 set.trace(cc);
             }
             Property::Stored { value, .. } => value.trace(cc),
+            Property::Slot { .. } => {}
         }
     }
 }
@@ -83,6 +88,7 @@ impl<'gc> Property<'gc> {
         match self {
             Property::Virtual { get, .. } => *get = Some(getter_impl),
             Property::Stored { .. } => return Err("Not a virtual property".into()),
+            Property::Slot { .. } => return Err("Not a virtual property".into()),
         };
 
         Ok(())
@@ -96,6 +102,7 @@ impl<'gc> Property<'gc> {
         match self {
             Property::Virtual { set, .. } => *set = Some(setter_impl),
             Property::Stored { .. } => return Err("Not a virtual property".into()),
+            Property::Slot { .. } => return Err("Not a virtual property".into()),
         };
 
         Ok(())
@@ -115,6 +122,7 @@ impl<'gc> Property<'gc> {
             Property::Virtual { get: Some(get), .. } => get.exec(avm, context, this, &[]),
             Property::Virtual { get: None, .. } => Ok(Value::Undefined.into()),
             Property::Stored { value, .. } => Ok(value.to_owned().into()),
+            Property::Slot { slot_id, .. } => this.get_slot(*slot_id).map(|v| v.into()),
         }
     }
 
@@ -149,6 +157,9 @@ impl<'gc> Property<'gc> {
 
                 Ok(true)
             }
+            Property::Slot { slot_id, .. } => this
+                .set_slot(*slot_id, new_value.into(), context.gc_context)
+                .map(|v| true),
         }
     }
 
@@ -157,6 +168,7 @@ impl<'gc> Property<'gc> {
         match self {
             Property::Virtual { attributes, .. } => *attributes,
             Property::Stored { attributes, .. } => *attributes,
+            Property::Slot { attributes, .. } => *attributes,
         }
     }
 
@@ -169,6 +181,9 @@ impl<'gc> Property<'gc> {
             Property::Stored {
                 ref mut attributes, ..
             } => *attributes = new_attributes,
+            Property::Slot {
+                ref mut attributes, ..
+            } => *attributes = new_attributes,
         }
     }
 
@@ -176,6 +191,7 @@ impl<'gc> Property<'gc> {
         match self {
             Property::Virtual { attributes, .. } => !attributes.contains(DontDelete),
             Property::Stored { attributes, .. } => !attributes.contains(DontDelete),
+            Property::Slot { attributes, .. } => !attributes.contains(DontDelete),
         }
     }
 
@@ -183,6 +199,7 @@ impl<'gc> Property<'gc> {
         match self {
             Property::Virtual { attributes, .. } => !attributes.contains(DontEnum),
             Property::Stored { attributes, .. } => !attributes.contains(DontEnum),
+            Property::Slot { attributes, .. } => !attributes.contains(DontEnum),
         }
     }
 
@@ -192,6 +209,7 @@ impl<'gc> Property<'gc> {
                 attributes, set, ..
             } => !attributes.contains(ReadOnly) && !set.is_none(),
             Property::Stored { attributes, .. } => !attributes.contains(ReadOnly),
+            Property::Slot { attributes, .. } => !attributes.contains(ReadOnly),
         }
     }
 }

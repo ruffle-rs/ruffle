@@ -339,6 +339,19 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             .set_property(name, value, avm, context, self.into())
     }
 
+    fn get_slot(self, id: u32) -> Result<Value<'gc>, Error> {
+        self.0.read().base.get_slot(id)
+    }
+
+    fn set_slot(
+        self,
+        id: u32,
+        value: Value<'gc>,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<(), Error> {
+        self.0.write(mc).base.set_slot(id, value, mc)
+    }
+
     fn has_property(self, name: &QName) -> bool {
         self.0.read().base.has_property(name)
     }

@@ -44,6 +44,17 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error>;
 
+    /// Retrieve a slot by it's index.
+    fn get_slot(self, id: u32) -> Result<Value<'gc>, Error>;
+
+    /// Set a slot by it's index.
+    fn set_slot(
+        self,
+        id: u32,
+        value: Value<'gc>,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<(), Error>;
+
     /// Resolve a multiname into a single QName, if any of the namespaces
     /// match.
     fn resolve_multiname(self, multiname: &Multiname) -> Option<QName> {

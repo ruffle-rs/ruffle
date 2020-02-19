@@ -393,6 +393,10 @@ impl<'gc> Avm2<'gc> {
                 Op::FindProperty { index } => self.op_find_property(context, index),
                 Op::FindPropStrict { index } => self.op_find_prop_strict(context, index),
                 Op::GetLex { index } => self.op_get_lex(context, index),
+                Op::GetSlot { index } => self.op_get_slot(index),
+                Op::SetSlot { index } => self.op_set_slot(context, index),
+                Op::GetGlobalSlot { index } => self.op_get_global_slot(index),
+                Op::SetGlobalSlot { index } => self.op_set_global_slot(context, index),
                 _ => self.unknown_op(op),
             };
 
@@ -640,5 +644,43 @@ impl<'gc> Avm2<'gc> {
         self.push(result);
 
         Ok(())
+    }
+
+    fn op_get_slot(&mut self, index: u32) -> Result<(), Error> {
+        let object = self.pop().as_object()?;
+        let value = object.get_slot(index)?;
+
+        self.push(value);
+
+        Ok(())
+    }
+
+    fn op_set_slot(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        index: u32,
+    ) -> Result<(), Error> {
+        let object = self.pop().as_object()?;
+        let value = self.pop();
+
+        object.set_slot(index, value, context.gc_context)
+    }
+
+    fn op_get_global_slot(&mut self, index: u32) -> Result<(), Error> {
+        let value = self.globals.get_slot(index)?;
+
+        self.push(value);
+
+        Ok(())
+    }
+
+    fn op_set_global_slot(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        index: u32,
+    ) -> Result<(), Error> {
+        let value = self.pop();
+
+        self.globals.set_slot(index, value, context.gc_context)
     }
 }
