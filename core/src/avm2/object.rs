@@ -4,14 +4,17 @@ use crate::avm2::function::FunctionObject;
 use crate::avm2::names::{Multiname, QName};
 use crate::avm2::property::Attribute;
 use crate::avm2::return_value::ReturnValue;
+use crate::avm2::scope::Scope;
 use crate::avm2::script_object::ScriptObject;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use enumset::{EnumSet, EnumSetType};
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::fmt::Debug;
+use std::rc::Rc;
+use swf::avm2::types::{AbcFile, Trait as AbcTrait};
 
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
@@ -102,6 +105,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         attributes: EnumSet<Attribute>,
     ) {
     }
+
+    /// Install a trait from an ABC file on an object.
+    fn install_trait(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        abc: Rc<AbcFile>,
+        trait_entry: &AbcTrait,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
+        fn_proto: Object<'gc>,
+    ) -> Result<(), Error>;
 
     /// Call the object.
     fn call(

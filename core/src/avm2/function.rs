@@ -14,7 +14,7 @@ use std::fmt;
 use std::rc::Rc;
 use swf::avm2::types::{
     AbcFile, Class as AbcClass, Index, Instance as AbcInstance, Method as AbcMethod,
-    MethodBody as AbcMethodBody,
+    MethodBody as AbcMethodBody, Trait as AbcTrait,
 };
 
 /// Represents a function defined in Ruffle's code.
@@ -317,5 +317,19 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
         self.0.read().exec.exec(avm, context, reciever, arguments)
+    }
+
+    fn install_trait(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        abc: Rc<AbcFile>,
+        trait_entry: &AbcTrait,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
+        fn_proto: Object<'gc>,
+    ) -> Result<(), Error> {
+        self.0
+            .write(mc)
+            .base
+            .install_trait(mc, abc, trait_entry, scope, fn_proto)
     }
 }

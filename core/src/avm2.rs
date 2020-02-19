@@ -78,10 +78,22 @@ impl<'gc> Avm2<'gc> {
 
         let abc_file = Rc::new(read.read()?);
 
-        if abc_file.scripts.len() > 0 {
+        if !abc_file.scripts.is_empty() {
             let entrypoint_script: Index<AbcScript> = Index::new(abc_file.scripts.len() as u32);
             let entrypoint =
                 Avm2ScriptEntry::from_script_index(abc_file, entrypoint_script).unwrap();
+            let scope = Scope::push_scope(None, self.globals(), context.gc_context);
+
+            for trait_entry in entrypoint.script().traits.iter() {
+                //TODO: Actually stick the Function proto here
+                self.globals.install_trait(
+                    context.gc_context,
+                    entrypoint.abc(),
+                    trait_entry,
+                    Some(scope),
+                    self.globals,
+                )?;
+            }
 
             self.insert_stack_frame_for_script(context, entrypoint)?;
         }
