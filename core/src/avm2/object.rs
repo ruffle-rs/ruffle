@@ -9,7 +9,7 @@ use crate::avm2::script_object::ScriptObject;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
-use enumset::{EnumSet, EnumSetType};
+use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::fmt::Debug;
@@ -114,6 +114,17 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         trait_entry: &AbcTrait,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         fn_proto: Object<'gc>,
+    ) -> Result<(), Error>;
+
+    /// Install a method (not necessarily from an ABC file) on an object.
+    fn install_method(&mut self, mc: MutationContext<'gc, '_>, name: QName, function: Object<'gc>);
+
+    /// Install a dynamic or built-in value property on an object.
+    fn install_dynamic_property(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        name: QName,
+        value: Value<'gc>,
     ) -> Result<(), Error>;
 
     /// Call the object.

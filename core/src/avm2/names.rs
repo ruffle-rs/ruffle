@@ -71,6 +71,13 @@ pub struct QName {
 }
 
 impl QName {
+    pub fn new(ns: Namespace, name: &str) -> Self {
+        Self {
+            ns,
+            name: name.to_string(),
+        }
+    }
+
     pub fn qualified(ns: &Namespace, name: &str) -> Self {
         Self {
             ns: ns.clone(),

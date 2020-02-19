@@ -1,6 +1,7 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
 use crate::avm2::activation::{Activation, Avm2ScriptEntry};
+use crate::avm2::globals::SystemPrototypes;
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::return_value::ReturnValue;
@@ -54,15 +55,21 @@ pub struct Avm2<'gc> {
 
     /// Global scope object.
     globals: Object<'gc>,
+
+    /// System prototypes.
+    system_prototypes: SystemPrototypes<'gc>,
 }
 
 impl<'gc> Avm2<'gc> {
     /// Construct a new AVM interpreter.
     pub fn new(mc: MutationContext<'gc, '_>) -> Self {
+        let (globals, system_prototypes) = globals::construct_global_scope(mc);
+
         Self {
             stack_frames: Vec::new(),
             stack: Vec::new(),
-            globals: globals::construct_global_scope(mc),
+            globals,
+            system_prototypes,
         }
     }
 
@@ -85,13 +92,12 @@ impl<'gc> Avm2<'gc> {
             let scope = Scope::push_scope(None, self.globals(), context.gc_context);
 
             for trait_entry in entrypoint.script().traits.iter() {
-                //TODO: Actually stick the Function proto here
                 self.globals.install_trait(
                     context.gc_context,
                     entrypoint.abc(),
                     trait_entry,
                     Some(scope),
-                    self.globals,
+                    self.system_prototypes.function,
                 )?;
             }
 

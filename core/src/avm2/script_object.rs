@@ -78,6 +78,19 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .write(mc)
             .install_trait(mc, abc, trait_entry, scope, fn_proto)
     }
+
+    fn install_method(&mut self, mc: MutationContext<'gc, '_>, name: QName, function: Object<'gc>) {
+        self.0.write(mc).install_method(name, function)
+    }
+
+    fn install_dynamic_property(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        name: QName,
+        value: Value<'gc>,
+    ) -> Result<(), Error> {
+        self.0.write(mc).install_dynamic_property(name, value)
+    }
 }
 
 impl<'gc> ScriptObject<'gc> {
@@ -87,6 +100,15 @@ impl<'gc> ScriptObject<'gc> {
     /// have a base class: `Object`.
     pub fn bare_object(mc: MutationContext<'gc, '_>) -> Object<'gc> {
         ScriptObject(GcCell::allocate(mc, ScriptObjectData::base_new(None))).into()
+    }
+
+    /// Construct an object with a base class.
+    pub fn object(mc: MutationContext<'gc, '_>, proto: Object<'gc>) -> Object<'gc> {
+        ScriptObject(GcCell::allocate(
+            mc,
+            ScriptObjectData::base_new(Some(proto)),
+        ))
+        .into()
     }
 
     /// Construct the instance prototype half of a class.
@@ -190,7 +212,7 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     /// Install a method into the object.
-    fn install_method(&mut self, name: QName, function: Object<'gc>) {
+    pub fn install_method(&mut self, name: QName, function: Object<'gc>) {
         self.values.insert(name, Property::new_method(function));
     }
 
@@ -224,5 +246,16 @@ impl<'gc> ScriptObjectData<'gc> {
             .get_mut(&name)
             .unwrap()
             .install_virtual_setter(function)
+    }
+
+    pub fn install_dynamic_property(
+        &mut self,
+        name: QName,
+        value: Value<'gc>,
+    ) -> Result<(), Error> {
+        self.values
+            .insert(name, Property::new_dynamic_property(value));
+
+        Ok(())
     }
 }

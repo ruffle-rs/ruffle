@@ -1,7 +1,7 @@
 //! AVM2 executables.
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::QName;
+use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::scope::Scope;
@@ -269,6 +269,48 @@ impl<'gc> FunctionObject<'gc> {
         ))
         .into()
     }
+
+    /// Construct a builtin function object from a Rust function.
+    pub fn from_builtin(
+        mc: MutationContext<'gc, '_>,
+        nf: NativeFunction<'gc>,
+        fn_proto: Object<'gc>,
+    ) -> Object<'gc> {
+        FunctionObject(GcCell::allocate(
+            mc,
+            FunctionObjectData {
+                base: ScriptObjectData::base_new(Some(fn_proto)),
+                exec: nf.into(),
+                class: None,
+            },
+        ))
+        .into()
+    }
+
+    /// Construct a builtin type from a Rust constructor and prototype.
+    pub fn from_builtin_constr(
+        mc: MutationContext<'gc, '_>,
+        constr: NativeFunction<'gc>,
+        prototype: Object<'gc>,
+        fn_proto: Object<'gc>,
+    ) -> Result<Object<'gc>, Error> {
+        let mut base = ScriptObjectData::base_new(Some(fn_proto));
+
+        base.install_dynamic_property(
+            QName::new(Namespace::public_namespace(), "prototype"),
+            prototype.into(),
+        )?;
+
+        Ok(FunctionObject(GcCell::allocate(
+            mc,
+            FunctionObjectData {
+                base,
+                exec: constr.into(),
+                class: None,
+            },
+        ))
+        .into())
+    }
 }
 
 impl<'gc> TObject<'gc> for FunctionObject<'gc> {
@@ -331,5 +373,18 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             .write(mc)
             .base
             .install_trait(mc, abc, trait_entry, scope, fn_proto)
+    }
+
+    fn install_method(&mut self, mc: MutationContext<'gc, '_>, name: QName, function: Object<'gc>) {
+        self.0.write(mc).base.install_method(name, function)
+    }
+
+    fn install_dynamic_property(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        name: QName,
+        value: Value<'gc>,
+    ) -> Result<(), Error> {
+        self.0.write(mc).base.install_dynamic_property(name, value)
     }
 }
