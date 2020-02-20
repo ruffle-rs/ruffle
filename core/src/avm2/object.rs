@@ -157,6 +157,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         fn_proto: Object<'gc>,
     ) -> Result<(), Error> {
         let trait_name = QName::from_abc_multiname(&abc, trait_entry.name.clone())?;
+        avm_debug!(
+            "Installing trait {:?} of kind {:?}",
+            trait_name,
+            trait_entry.kind
+        );
+
         match &trait_entry.kind {
             AbcTraitKind::Method { method, .. } => {
                 let method = Avm2MethodEntry::from_method_index(abc, method.clone()).unwrap();

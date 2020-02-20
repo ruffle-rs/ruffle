@@ -19,6 +19,14 @@ use swf::avm2::types::{
 };
 use swf::read::SwfRead;
 
+#[macro_export]
+macro_rules! avm_debug {
+    ($($arg:tt)*) => (
+        #[cfg(feature = "avm_debug")]
+        log::debug!($($arg)*)
+    )
+}
+
 mod activation;
 mod function;
 mod globals;
@@ -29,13 +37,6 @@ mod return_value;
 mod scope;
 mod script_object;
 mod value;
-
-macro_rules! avm_debug {
-    ($($arg:tt)*) => (
-        #[cfg(feature = "avm_debug")]
-        log::debug!($($arg)*)
-    )
-}
 
 /// Boxed error alias.
 ///
