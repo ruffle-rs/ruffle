@@ -324,15 +324,13 @@ impl<'gc> Executable<'gc> {
                 }
 
                 if af.preload_parent {
-                    let parent = af
-                        .base_clip
-                        .parent()
-                        .map(|o| o.object())
-                        .unwrap_or(Value::Undefined);
-
-                    frame.set_local_register(preload_r, parent, ac.gc_context);
-
-                    preload_r += 1;
+                    // If _parent is undefined (because this is a root timeline), it actually does not get pushed,
+                    // and _global ends up incorrectly taking _parent's register.
+                    // See test for more info.
+                    if let Some(parent) = af.base_clip.parent() {
+                        frame.set_local_register(preload_r, parent.object(), ac.gc_context);
+                        preload_r += 1;
+                    }
                 }
 
                 if af.preload_global {
