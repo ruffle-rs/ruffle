@@ -86,9 +86,12 @@ impl<'gc> Avm2<'gc> {
         let abc_file = Rc::new(read.read()?);
 
         if !abc_file.scripts.is_empty() {
-            let entrypoint_script: Index<AbcScript> = Index::new(abc_file.scripts.len() as u32);
-            let entrypoint =
-                Avm2ScriptEntry::from_script_index(abc_file, entrypoint_script).unwrap();
+            let entrypoint_script: Index<AbcScript> = Index::new(abc_file.scripts.len() as u32 - 1);
+            let entrypoint: Result<Avm2ScriptEntry, Error> =
+                Avm2ScriptEntry::from_script_index(abc_file, entrypoint_script.clone()).ok_or_else(
+                    || format!("Script method {} does not exist", entrypoint_script.0).into(),
+                );
+            let entrypoint = entrypoint?;
             let scope = Scope::push_scope(None, self.globals(), context.gc_context);
 
             for trait_entry in entrypoint.script().traits.iter() {
