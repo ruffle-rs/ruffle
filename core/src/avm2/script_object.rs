@@ -1,21 +1,16 @@
 //! Default AVM2 object impl
 
-use crate::avm2::function::{
-    Avm2ClassEntry, Avm2Function, Avm2MethodEntry, Executable, FunctionObject,
-};
+use crate::avm2::function::Executable;
 use crate::avm2::names::QName;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::return_value::ReturnValue;
-use crate::avm2::scope::Scope;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::rc::Rc;
-use swf::avm2::types::{AbcFile, Trait as AbcTrait, TraitKind as AbcTraitKind};
 
 /// Default implementation of `avm2::Object`.
 #[derive(Clone, Collect, Debug, Copy)]
@@ -92,21 +87,26 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         Ok(ScriptObject::object(context.gc_context, this))
     }
 
-    fn install_trait(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        abc: Rc<AbcFile>,
-        trait_entry: &AbcTrait,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-        fn_proto: Object<'gc>,
-    ) -> Result<(), Error> {
-        self.0
-            .write(mc)
-            .install_trait(mc, abc, trait_entry, scope, fn_proto)
-    }
-
     fn install_method(&mut self, mc: MutationContext<'gc, '_>, name: QName, function: Object<'gc>) {
         self.0.write(mc).install_method(name, function)
+    }
+
+    fn install_getter(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        name: QName,
+        function: Executable<'gc>,
+    ) -> Result<(), Error> {
+        self.0.write(mc).install_getter(name, function)
+    }
+
+    fn install_setter(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        name: QName,
+        function: Executable<'gc>,
+    ) -> Result<(), Error> {
+        self.0.write(mc).install_setter(name, function)
     }
 
     fn install_dynamic_property(
@@ -135,23 +135,6 @@ impl<'gc> ScriptObject<'gc> {
             ScriptObjectData::base_new(Some(proto)),
         ))
         .into()
-    }
-
-    /// Construct the instance prototype half of a class.
-    pub fn instance_prototype(
-        mc: MutationContext<'gc, '_>,
-        type_entry: Avm2ClassEntry,
-        base_class: Object<'gc>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-        fn_proto: Object<'gc>,
-    ) -> Result<Object<'gc>, Error> {
-        let mut data = ScriptObjectData::base_new(Some(base_class));
-
-        for trait_entry in type_entry.instance().traits.iter() {
-            data.install_trait(mc, type_entry.abc(), trait_entry, scope, fn_proto)?;
-        }
-
-        Ok(ScriptObject(GcCell::allocate(mc, data)).into())
     }
 }
 
@@ -211,7 +194,7 @@ impl<'gc> ScriptObjectData<'gc> {
         &mut self,
         id: u32,
         value: Value<'gc>,
-        mc: MutationContext<'gc, '_>,
+        _mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
         if let Some(slot) = self.slots.get_mut(id as usize) {
             *slot = value;
@@ -230,37 +213,6 @@ impl<'gc> ScriptObjectData<'gc> {
         self.proto
     }
 
-    pub fn install_trait(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        abc: Rc<AbcFile>,
-        trait_entry: &AbcTrait,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-        fn_proto: Object<'gc>,
-    ) -> Result<(), Error> {
-        let trait_name = QName::from_abc_multiname(&abc, trait_entry.name.clone())?;
-        match &trait_entry.kind {
-            AbcTraitKind::Method { method, .. } => {
-                let method = Avm2MethodEntry::from_method_index(abc, method.clone()).unwrap();
-                let function = FunctionObject::from_abc_method(mc, method, scope, fn_proto);
-                self.install_method(trait_name, function);
-            }
-            AbcTraitKind::Getter { method, .. } => {
-                let method = Avm2MethodEntry::from_method_index(abc, method.clone()).unwrap();
-                let exec = Avm2Function::from_method(method, scope).into();
-                self.install_getter(trait_name, exec)?;
-            }
-            AbcTraitKind::Setter { method, .. } => {
-                let method = Avm2MethodEntry::from_method_index(abc, method.clone()).unwrap();
-                let exec = Avm2Function::from_method(method, scope).into();
-                self.install_setter(trait_name, exec)?;
-            }
-            _ => return Err("".into()),
-        }
-
-        Ok(())
-    }
-
     /// Install a method into the object.
     pub fn install_method(&mut self, name: QName, function: Object<'gc>) {
         self.values.insert(name, Property::new_method(function));
@@ -271,7 +223,7 @@ impl<'gc> ScriptObjectData<'gc> {
     /// This is a little more complicated than methods, since virtual property
     /// slots can be installed in two parts. Thus, we need to support
     /// installing them in either order.
-    fn install_getter(&mut self, name: QName, function: Executable<'gc>) -> Result<(), Error> {
+    pub fn install_getter(&mut self, name: QName, function: Executable<'gc>) -> Result<(), Error> {
         if !self.values.contains_key(&name) {
             self.values.insert(name.clone(), Property::new_virtual());
         }
@@ -287,7 +239,7 @@ impl<'gc> ScriptObjectData<'gc> {
     /// This is a little more complicated than methods, since virtual property
     /// slots can be installed in two parts. Thus, we need to support
     /// installing them in either order.
-    fn install_setter(&mut self, name: QName, function: Executable<'gc>) -> Result<(), Error> {
+    pub fn install_setter(&mut self, name: QName, function: Executable<'gc>) -> Result<(), Error> {
         if !self.values.contains_key(&name) {
             self.values.insert(name.clone(), Property::new_virtual());
         }
@@ -296,22 +248,6 @@ impl<'gc> ScriptObjectData<'gc> {
             .get_mut(&name)
             .unwrap()
             .install_virtual_setter(function)
-    }
-
-    /// Install a class into the object.
-    ///
-    /// Classes are fairly complicated. We desugar them into an ES3-style
-    /// prototype chain, which means we need to build a function, prototype,
-    /// and so on. In concert with the `new` Rust trait function we also ensure
-    /// that subclasses of an object impl use the same impl (e.g. subclasses of
-    /// `MovieClip` remain movie clips).
-    fn install_class(
-        &mut self,
-        name: QName,
-        type_entry: Avm2ClassEntry,
-        slot: u32,
-    ) -> Result<(), Error> {
-        Err("unimplemented".into())
     }
 
     pub fn install_dynamic_property(

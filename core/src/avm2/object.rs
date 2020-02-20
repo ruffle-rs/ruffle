@@ -1,7 +1,9 @@
 //! AVM2 objects.
 
-use crate::avm2::function::FunctionObject;
-use crate::avm2::names::{Multiname, QName};
+use crate::avm2::function::{
+    Avm2ClassEntry, Avm2Function, Avm2MethodEntry, Executable, FunctionObject,
+};
+use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::property::Attribute;
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::scope::Scope;
@@ -14,7 +16,7 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::fmt::Debug;
 use std::rc::Rc;
-use swf::avm2::types::{AbcFile, Trait as AbcTrait};
+use swf::avm2::types::{AbcFile, Trait as AbcTrait, TraitKind as AbcTraitKind};
 
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
@@ -117,18 +119,24 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) {
     }
 
-    /// Install a trait from an ABC file on an object.
-    fn install_trait(
+    /// Install a method (or any other non-slot value) on an object.
+    fn install_method(&mut self, mc: MutationContext<'gc, '_>, name: QName, function: Object<'gc>);
+
+    /// Install a getter method on an object property.
+    fn install_getter(
         &mut self,
         mc: MutationContext<'gc, '_>,
-        abc: Rc<AbcFile>,
-        trait_entry: &AbcTrait,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-        fn_proto: Object<'gc>,
+        name: QName,
+        function: Executable<'gc>,
     ) -> Result<(), Error>;
 
-    /// Install a method (not necessarily from an ABC file) on an object.
-    fn install_method(&mut self, mc: MutationContext<'gc, '_>, name: QName, function: Object<'gc>);
+    /// Install a setter method on an object property.
+    fn install_setter(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        name: QName,
+        function: Executable<'gc>,
+    ) -> Result<(), Error>;
 
     /// Install a dynamic or built-in value property on an object.
     fn install_dynamic_property(
@@ -137,6 +145,85 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: QName,
         value: Value<'gc>,
     ) -> Result<(), Error>;
+
+    /// Install a trait from an ABC file on an object.
+    fn install_trait(
+        &mut self,
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        abc: Rc<AbcFile>,
+        trait_entry: &AbcTrait,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
+        fn_proto: Object<'gc>,
+    ) -> Result<(), Error> {
+        let trait_name = QName::from_abc_multiname(&abc, trait_entry.name.clone())?;
+        match &trait_entry.kind {
+            AbcTraitKind::Method { method, .. } => {
+                let method = Avm2MethodEntry::from_method_index(abc, method.clone()).unwrap();
+                let function =
+                    FunctionObject::from_abc_method(context.gc_context, method, scope, fn_proto);
+                self.install_method(context.gc_context, trait_name, function);
+            }
+            AbcTraitKind::Getter { method, .. } => {
+                let method = Avm2MethodEntry::from_method_index(abc, method.clone()).unwrap();
+                let exec = Avm2Function::from_method(method, scope).into();
+                self.install_getter(context.gc_context, trait_name, exec)?;
+            }
+            AbcTraitKind::Setter { method, .. } => {
+                let method = Avm2MethodEntry::from_method_index(abc, method.clone()).unwrap();
+                let exec = Avm2Function::from_method(method, scope).into();
+                self.install_setter(context.gc_context, trait_name, exec)?;
+            }
+            AbcTraitKind::Class { class, .. } => {
+                let type_entry = Avm2ClassEntry::from_class_index(abc, class.clone()).unwrap();
+                let super_name = QName::from_abc_multiname(
+                    &type_entry.abc(),
+                    type_entry.instance().super_name.clone(),
+                )?;
+                let super_class = self
+                    .get_property(&super_name, avm, context)?
+                    .resolve(avm, context)?
+                    .as_object()?;
+                let super_proto = super_class
+                    .get_property(
+                        &QName::new(Namespace::public_namespace(), "prototype"),
+                        avm,
+                        context,
+                    )?
+                    .resolve(avm, context)?
+                    .as_object()?;
+                let mut class_proto = super_proto.construct(avm, context, &[])?;
+
+                for trait_entry in type_entry.instance().traits.iter() {
+                    class_proto.install_trait(
+                        avm,
+                        context,
+                        type_entry.abc(),
+                        trait_entry,
+                        scope,
+                        fn_proto,
+                    )?;
+                }
+
+                let class = FunctionObject::from_abc_class(
+                    avm,
+                    context,
+                    type_entry.clone(),
+                    class_proto,
+                    scope,
+                    fn_proto,
+                )?;
+                let class_name = QName::from_abc_multiname(
+                    &type_entry.abc(),
+                    type_entry.instance().name.clone(),
+                )?;
+                self.install_method(context.gc_context, class_name, class);
+            }
+            _ => return Err("".into()),
+        }
+
+        Ok(())
+    }
 
     /// Call the object.
     fn call(

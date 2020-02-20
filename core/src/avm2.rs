@@ -92,8 +92,9 @@ impl<'gc> Avm2<'gc> {
             let scope = Scope::push_scope(None, self.globals(), context.gc_context);
 
             for trait_entry in entrypoint.script().traits.iter() {
-                self.globals.install_trait(
-                    context.gc_context,
+                self.globals().install_trait(
+                    self,
+                    context,
                     entrypoint.abc(),
                     trait_entry,
                     Some(scope),
@@ -202,7 +203,7 @@ impl<'gc> Avm2<'gc> {
 
             let method = frame_ref.method();
             let abc = method.abc.as_ref().clone();
-            let method_index = method.abc_method;
+            let _method_index = method.abc_method;
             let method_body_index = method.abc_method_body as usize;
 
             (abc, frame, method_body_index, frame_ref.pc())

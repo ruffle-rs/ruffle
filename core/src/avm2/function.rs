@@ -14,7 +14,7 @@ use std::fmt;
 use std::rc::Rc;
 use swf::avm2::types::{
     AbcFile, Class as AbcClass, Index, Instance as AbcInstance, Method as AbcMethod,
-    MethodBody as AbcMethodBody, Trait as AbcTrait,
+    MethodBody as AbcMethodBody,
 };
 
 /// Represents a function defined in Ruffle's code.
@@ -74,11 +74,13 @@ impl Avm2MethodEntry {
     }
 
     /// Get the underlying ABC file.
+    #[allow(dead_code)]
     pub fn abc(&self) -> Rc<AbcFile> {
         self.abc.clone()
     }
 
     /// Get a reference to the ABC method entry this refers to.
+    #[allow(dead_code)]
     pub fn method(&self) -> &AbcMethod {
         self.abc.methods.get(self.abc_method as usize).unwrap()
     }
@@ -183,15 +185,32 @@ pub struct Avm2ClassEntry {
     /// The ABC file this function was defined in.
     pub abc: Rc<AbcFile>,
 
-    /// The ABC class (used to define static properties)
+    /// The ABC class (used to define static properties).
+    ///
+    /// This is also the index of the ABC instance, which holds instance
+    /// properties.
     pub abc_class: u32,
-
-    /// The ABC instance (used to define both instance properties as well as
-    /// "prototype" methods)
-    pub abc_instance: u32,
 }
 
 impl Avm2ClassEntry {
+    /// Construct an `Avm2MethodEntry` from an `AbcFile` and method index.
+    ///
+    /// This function returns `None` if the given class index does not resolve
+    /// to a valid ABC class, or a valid ABC instance. As mentioned in the type
+    /// documentation, ABC classes and instances are intended to be paired.
+    pub fn from_class_index(abc: Rc<AbcFile>, abc_class: Index<AbcClass>) -> Option<Self> {
+        if abc.classes.get(abc_class.0 as usize).is_some()
+            && abc.instances.get(abc_class.0 as usize).is_some()
+        {
+            return Some(Self {
+                abc,
+                abc_class: abc_class.0,
+            });
+        }
+
+        None
+    }
+
     /// Get the underlying ABC file.
     pub fn abc(&self) -> Rc<AbcFile> {
         self.abc.clone()
@@ -204,7 +223,7 @@ impl Avm2ClassEntry {
 
     /// Get a reference to the ABC class instance entry this refers to.
     pub fn instance(&self) -> &AbcInstance {
-        self.abc.instances.get(self.abc_instance as usize).unwrap()
+        self.abc.instances.get(self.abc_class as usize).unwrap()
     }
 }
 
@@ -231,23 +250,45 @@ impl<'gc> FunctionObject<'gc> {
     ///
     /// If the initializer method cannot be found, this function returns None.
     pub fn from_abc_class(
-        mc: MutationContext<'gc, '_>,
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         class: Avm2ClassEntry,
-    ) -> Option<Object<'gc>> {
+        proto: Object<'gc>,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
+        fn_proto: Object<'gc>,
+    ) -> Result<Object<'gc>, Error> {
         let initializer_index = class.class().init_method.clone();
-        let initializer = Avm2MethodEntry::from_method_index(class.abc(), initializer_index)?;
-
-        Some(
-            FunctionObject(GcCell::allocate(
-                mc,
-                FunctionObjectData {
-                    base: ScriptObjectData::base_new(None),
-                    exec: Some(Avm2Function::from_method(initializer, None).into()),
-                    class: Some(class),
+        let initializer: Result<Avm2MethodEntry, Error> =
+            Avm2MethodEntry::from_method_index(class.abc(), initializer_index.clone()).ok_or_else(
+                || {
+                    format!(
+                        "Class initializer method index {} does not exist",
+                        initializer_index.0
+                    )
+                    .into()
                 },
-            ))
-            .into(),
-        )
+            );
+        let mut constr: Object<'gc> = FunctionObject(GcCell::allocate(
+            context.gc_context,
+            FunctionObjectData {
+                base: ScriptObjectData::base_new(None),
+                exec: Some(Avm2Function::from_method(initializer?, None).into()),
+                class: Some(class.clone()),
+            },
+        ))
+        .into();
+
+        for trait_entry in class.class().traits.iter() {
+            constr.install_trait(avm, context, class.abc(), trait_entry, scope, fn_proto)?;
+        }
+
+        constr.install_method(
+            context.gc_context,
+            QName::new(Namespace::public_namespace(), "prototype"),
+            proto,
+        );
+
+        Ok(constr)
     }
 
     /// Construct a function from an ABC method and the current closure scope.
@@ -398,22 +439,26 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         .into())
     }
 
-    fn install_trait(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        abc: Rc<AbcFile>,
-        trait_entry: &AbcTrait,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-        fn_proto: Object<'gc>,
-    ) -> Result<(), Error> {
-        self.0
-            .write(mc)
-            .base
-            .install_trait(mc, abc, trait_entry, scope, fn_proto)
-    }
-
     fn install_method(&mut self, mc: MutationContext<'gc, '_>, name: QName, function: Object<'gc>) {
         self.0.write(mc).base.install_method(name, function)
+    }
+
+    fn install_getter(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        name: QName,
+        function: Executable<'gc>,
+    ) -> Result<(), Error> {
+        self.0.write(mc).base.install_getter(name, function)
+    }
+
+    fn install_setter(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        name: QName,
+        function: Executable<'gc>,
+    ) -> Result<(), Error> {
+        self.0.write(mc).base.install_setter(name, function)
     }
 
     fn install_dynamic_property(
