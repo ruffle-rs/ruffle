@@ -50,7 +50,7 @@ impl Namespace {
     }
 
     pub fn public_namespace() -> Self {
-        Namespace::Namespace("".to_string())
+        Namespace::Package("".to_string())
     }
 }
 
