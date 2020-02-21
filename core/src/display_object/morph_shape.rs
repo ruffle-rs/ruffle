@@ -58,10 +58,10 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     fn render(&self, context: &mut RenderContext) {
         context.transform_stack.push(&*self.transform());
 
-        if let Some(shape) = self.0.read().static_data.frames.get(&self.ratio()) {
+        if let Some(frame) = self.0.read().static_data.frames.get(&self.ratio()) {
             context
                 .renderer
-                .render_shape(*shape, context.transform_stack.transform());
+                .render_shape(frame.shape, context.transform_stack.transform());
         } else {
             log::warn!("Missing ratio for morph shape");
         }
@@ -71,7 +71,11 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
 
     fn self_bounds(&self) -> BoundingBox {
         // TODO: Use the bounds of the current ratio.
-        self.0.read().static_data.max_bounds.clone()
+        if let Some(frame) = self.0.read().static_data.frames.get(&self.ratio()) {
+            frame.bounds.clone()
+        } else {
+            BoundingBox::default()
+        }
     }
 }
 
@@ -83,14 +87,19 @@ unsafe impl<'gc> gc_arena::Collect for MorphShapeData<'gc> {
     }
 }
 
+/// A precalculated intermediate frame for a morph shape.
+struct Frame {
+    shape: ShapeHandle,
+    bounds: BoundingBox,
+}
+
 /// Static data shared between all instances of a morph shape.
 #[allow(dead_code)]
 pub struct MorphShapeStatic {
     id: CharacterId,
     start: swf::MorphShape,
     end: swf::MorphShape,
-    frames: fnv::FnvHashMap<u16, ShapeHandle>,
-    max_bounds: BoundingBox,
+    frames: fnv::FnvHashMap<u16, Frame>,
 }
 
 impl MorphShapeStatic {
@@ -100,7 +109,6 @@ impl MorphShapeStatic {
             start: swf_tag.start.clone(),
             end: swf_tag.end.clone(),
             frames: fnv::FnvHashMap::default(),
-            max_bounds: Default::default(),
         };
         // Pre-register the start and end states.
         morph_shape.register_ratio(renderer, 0);
@@ -276,12 +284,11 @@ impl MorphShapeStatic {
         };
 
         let bounds = crate::shape_utils::calculate_shape_bounds(&shape[..]);
-        self.max_bounds.union(&bounds.clone().into());
         let shape = swf::Shape {
             version: 4,
             id: 0,
             shape_bounds: bounds.clone(),
-            edge_bounds: bounds,
+            edge_bounds: bounds.clone(),
             has_fill_winding_rule: false,
             has_non_scaling_strokes: false,
             has_scaling_strokes: true,
@@ -289,8 +296,11 @@ impl MorphShapeStatic {
             shape,
         };
 
-        let shape_handle = renderer.register_shape(&shape);
-        self.frames.insert(ratio, shape_handle);
+        let frame = Frame {
+            shape: renderer.register_shape(&shape),
+            bounds: bounds.into(),
+        };
+        self.frames.insert(ratio, frame);
     }
 
     fn update_pos(x: &mut Twips, y: &mut Twips, record: &swf::ShapeRecord) {
