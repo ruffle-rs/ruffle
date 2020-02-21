@@ -532,9 +532,9 @@ impl<'gc> Avm2<'gc> {
         let multiname = self.pool_multiname(index)?;
         let object = self.pop().as_object()?;
 
-        let name: Result<QName, Error> = object
-            .resolve_multiname(&multiname)
-            .ok_or_else(|| format!("Could not resolve property {}", multiname.local_name()).into());
+        let name: Result<QName, Error> = object.resolve_multiname(&multiname).ok_or_else(|| {
+            format!("Could not resolve property {:?}", multiname.local_name()).into()
+        });
 
         let value = object
             .get_property(&name?, self, context)?
@@ -558,7 +558,10 @@ impl<'gc> Avm2<'gc> {
         } else {
             //TODO: Non-dynamic objects should fail
             //TODO: This should only work if the public namespace is present
-            let name = QName::dynamic_name(multiname.local_name());
+            let local_name: Result<&str, Error> = multiname
+                .local_name()
+                .ok_or_else(|| "Cannot set property using any name".into());
+            let name = QName::dynamic_name(local_name?);
             object.set_property(&name, value, self, context)
         }
     }
@@ -627,7 +630,7 @@ impl<'gc> Avm2<'gc> {
             } else {
                 None
             }
-            .ok_or_else(|| format!("Property does not exist: {}", multiname.local_name()).into());
+            .ok_or_else(|| format!("Property does not exist: {:?}", multiname.local_name()).into());
         let result: Value<'gc> = found?.into();
 
         self.push(result);
@@ -734,9 +737,10 @@ impl<'gc> Avm2<'gc> {
         let multiname = self.pool_multiname(index)?;
 
         let source = self.pop().as_object()?;
-        let ctor_name: Result<QName, Error> = source
-            .resolve_multiname(&multiname)
-            .ok_or_else(|| format!("Could not resolve property {}", multiname.local_name()).into());
+        let ctor_name: Result<QName, Error> =
+            source.resolve_multiname(&multiname).ok_or_else(|| {
+                format!("Could not resolve property {:?}", multiname.local_name()).into()
+            });
         let ctor = source
             .get_property(&ctor_name?, self, context)?
             .resolve(self, context)?

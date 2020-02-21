@@ -1,6 +1,6 @@
 //! AVM2 names & namespacing
 
-use crate::avm2::value::abc_string;
+use crate::avm2::value::{abc_string, abc_string_option};
 use crate::avm2::{Avm2, Error};
 use gc_arena::Collect;
 use swf::avm2::types::{
@@ -19,6 +19,7 @@ pub enum Namespace {
     Explicit(String),
     StaticProtected(String),
     Private(String),
+    Any,
 }
 
 impl Namespace {
@@ -28,10 +29,15 @@ impl Namespace {
         file: &AbcFile,
         namespace_index: Index<AbcNamespace>,
     ) -> Result<Self, Error> {
+        if namespace_index.0 == 0 {
+            return Ok(Self::Any);
+        }
+
+        let actual_index = namespace_index.0 as usize - 1;
         let abc_namespace: Result<&AbcNamespace, Error> = file
             .constant_pool
             .namespaces
-            .get(namespace_index.0 as usize)
+            .get(actual_index)
             .ok_or_else(|| format!("Unknown namespace constant {}", namespace_index.0).into());
 
         Ok(match abc_namespace? {
@@ -78,13 +84,6 @@ impl QName {
         }
     }
 
-    pub fn qualified(ns: &Namespace, name: &str) -> Self {
-        Self {
-            ns: ns.clone(),
-            name: name.to_string(),
-        }
-    }
-
     pub fn dynamic_name(local_part: &str) -> Self {
         Self {
             ns: Namespace::public_namespace(),
@@ -100,10 +99,11 @@ impl QName {
         file: &AbcFile,
         multiname_index: Index<AbcMultiname>,
     ) -> Result<Self, Error> {
+        let actual_index = multiname_index.0 as usize - 1;
         let abc_multiname: Result<&AbcMultiname, Error> = file
             .constant_pool
             .multinames
-            .get(multiname_index.0 as usize)
+            .get(actual_index)
             .ok_or_else(|| format!("Unknown multiname constant {}", multiname_index.0).into());
 
         Ok(match abc_multiname? {
@@ -121,9 +121,11 @@ impl QName {
 ///
 /// All unresolved names are of the form `Multiname`, and the name resolution
 /// process consists of searching each name space for a given name.
+///
+/// The existence of a `name` of `None` indicates the `Any` name.
 pub struct Multiname {
     ns: Vec<Namespace>,
-    name: String,
+    name: Option<String>,
 }
 
 impl Multiname {
@@ -133,10 +135,16 @@ impl Multiname {
         file: &AbcFile,
         namespace_set_index: Index<AbcNamespaceSet>,
     ) -> Result<Vec<Namespace>, Error> {
+        if namespace_set_index.0 == 0 {
+            //TODO: What is namespace set zero?
+            return Ok(vec![]);
+        }
+
+        let actual_index = namespace_set_index.0 as usize - 1;
         let ns_set: Result<&AbcNamespaceSet, Error> = file
             .constant_pool
             .namespace_sets
-            .get(namespace_set_index.0 as usize)
+            .get(actual_index)
             .ok_or_else(|| {
                 format!("Unknown namespace set constant {}", namespace_set_index.0).into()
             });
@@ -156,30 +164,34 @@ impl Multiname {
         multiname_index: Index<AbcMultiname>,
         avm: &mut Avm2<'_>,
     ) -> Result<Self, Error> {
+        let actual_index = multiname_index.0 as usize - 1;
         let abc_multiname: Result<&AbcMultiname, Error> = file
             .constant_pool
             .multinames
-            .get(multiname_index.0 as usize)
+            .get(actual_index)
             .ok_or_else(|| format!("Unknown multiname constant {}", multiname_index.0).into());
 
         Ok(match abc_multiname? {
             AbcMultiname::QName { namespace, name } | AbcMultiname::QNameA { namespace, name } => {
                 Self {
                     ns: vec![Namespace::from_abc_namespace(file, namespace.clone())?],
-                    name: abc_string(file, name.clone())?,
+                    name: abc_string_option(file, name.clone())?,
                 }
             }
             AbcMultiname::RTQName { name } | AbcMultiname::RTQNameA { name } => {
                 let ns = avm.pop().as_namespace()?.clone();
                 Self {
                     ns: vec![ns],
-                    name: abc_string(file, name.clone())?,
+                    name: abc_string_option(file, name.clone())?,
                 }
             }
             AbcMultiname::RTQNameL | AbcMultiname::RTQNameLA => {
                 let ns = avm.pop().as_namespace()?.clone();
                 let name = avm.pop().as_string()?.clone();
-                Self { ns: vec![ns], name }
+                Self {
+                    ns: vec![ns],
+                    name: Some(name),
+                }
             }
             AbcMultiname::Multiname {
                 namespace_set,
@@ -190,14 +202,14 @@ impl Multiname {
                 name,
             } => Self {
                 ns: Self::abc_namespace_set(file, namespace_set.clone())?,
-                name: abc_string(file, name.clone())?,
+                name: abc_string_option(file, name.clone())?,
             },
             AbcMultiname::MultinameL { namespace_set }
             | AbcMultiname::MultinameLA { namespace_set } => {
                 let name = avm.pop().as_string()?.clone();
                 Self {
                     ns: Self::abc_namespace_set(file, namespace_set.clone())?,
-                    name,
+                    name: Some(name),
                 }
             }
         })
@@ -207,7 +219,7 @@ impl Multiname {
         self.ns.iter()
     }
 
-    pub fn local_name(&self) -> &str {
-        &self.name
+    pub fn local_name(&self) -> Option<&str> {
+        self.name.as_deref()
     }
 }

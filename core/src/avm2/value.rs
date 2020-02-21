@@ -4,6 +4,7 @@ use crate::avm2::names::Namespace;
 use crate::avm2::object::Object;
 use crate::avm2::Error;
 use gc_arena::Collect;
+use std::f64::NAN;
 use swf::avm2::types::{AbcFile, Index};
 
 /// An AVM2 value.
@@ -140,34 +141,72 @@ impl PartialEq for Value<'_> {
 }
 
 pub fn abc_int(file: &AbcFile, index: Index<i32>) -> Result<i32, Error> {
+    if index.0 == 0 {
+        return Ok(0);
+    }
+
     file.constant_pool
         .ints
-        .get(index.0 as usize)
+        .get(index.0 as usize - 1)
         .cloned()
         .ok_or_else(|| format!("Unknown int constant {}", index.0).into())
 }
 
 pub fn abc_uint(file: &AbcFile, index: Index<u32>) -> Result<u32, Error> {
+    if index.0 == 0 {
+        return Ok(0);
+    }
+
     file.constant_pool
         .uints
-        .get(index.0 as usize)
+        .get(index.0 as usize - 1)
         .cloned()
         .ok_or_else(|| format!("Unknown uint constant {}", index.0).into())
 }
 
 pub fn abc_double(file: &AbcFile, index: Index<f64>) -> Result<f64, Error> {
+    if index.0 == 0 {
+        return Ok(NAN);
+    }
+
     file.constant_pool
         .doubles
-        .get(index.0 as usize)
+        .get(index.0 as usize - 1)
         .cloned()
         .ok_or_else(|| format!("Unknown double constant {}", index.0).into())
 }
 
+/// Retrieve a string from an ABC constant pool, yielding `""` if the string
+/// is the zero string.
 pub fn abc_string(file: &AbcFile, index: Index<String>) -> Result<String, Error> {
+    if index.0 == 0 {
+        return Ok("".to_string());
+    }
+
     file.constant_pool
         .strings
-        .get(index.0 as usize)
+        .get(index.0 as usize - 1)
         .cloned()
+        .ok_or_else(|| format!("Unknown string constant {}", index.0).into())
+}
+
+/// Retrieve a string from an ABC constant pool, yielding `None` if the string
+/// is the zero string.
+///
+/// This function still yields `Err` for out-of-bounds string constants, which
+/// should cause the runtime to halt. `None` indicates that the zero string is
+/// in use, which callers are free to interpret as necessary (although this
+/// usually means "any name").
+pub fn abc_string_option(file: &AbcFile, index: Index<String>) -> Result<Option<String>, Error> {
+    if index.0 == 0 {
+        return Ok(None);
+    }
+
+    file.constant_pool
+        .strings
+        .get(index.0 as usize - 1)
+        .cloned()
+        .map(Some)
         .ok_or_else(|| format!("Unknown string constant {}", index.0).into())
 }
 

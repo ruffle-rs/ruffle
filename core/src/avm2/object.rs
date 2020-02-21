@@ -61,7 +61,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// match.
     fn resolve_multiname(self, multiname: &Multiname) -> Option<QName> {
         for ns in multiname.namespace_set() {
-            let qname = QName::qualified(ns, multiname.local_name());
+            let qname = QName::new(ns.clone(), multiname.local_name()?);
 
             if self.has_property(&qname) {
                 return Some(qname);
