@@ -5,7 +5,7 @@ use crate::avm2::object::Object;
 use crate::avm2::Error;
 use gc_arena::Collect;
 use std::f64::NAN;
-use swf::avm2::types::{AbcFile, Index};
+use swf::avm2::types::{AbcFile, DefaultValue as AbcDefaultValue, Index};
 
 /// An AVM2 value.
 ///
@@ -208,6 +208,32 @@ pub fn abc_string_option(file: &AbcFile, index: Index<String>) -> Result<Option<
         .cloned()
         .map(Some)
         .ok_or_else(|| format!("Unknown string constant {}", index.0).into())
+}
+
+/// Retrieve a default value as an AVM2 `Value`.
+pub fn abc_default_value<'gc>(
+    file: &AbcFile,
+    default: &AbcDefaultValue,
+) -> Result<Value<'gc>, Error> {
+    match default {
+        AbcDefaultValue::Int(i) => abc_int(file, *i).map(|v| v.into()),
+        AbcDefaultValue::Uint(u) => abc_uint(file, *u).map(|v| v.into()),
+        AbcDefaultValue::Double(d) => abc_double(file, *d).map(|v| v.into()),
+        AbcDefaultValue::String(s) => abc_string(file, s.clone()).map(|v| v.into()),
+        AbcDefaultValue::True => Ok(true.into()),
+        AbcDefaultValue::False => Ok(false.into()),
+        AbcDefaultValue::Null => Ok(Value::Null),
+        AbcDefaultValue::Undefined => Ok(Value::Undefined),
+        AbcDefaultValue::Namespace(ns)
+        | AbcDefaultValue::Package(ns)
+        | AbcDefaultValue::PackageInternal(ns)
+        | AbcDefaultValue::Protected(ns)
+        | AbcDefaultValue::Explicit(ns)
+        | AbcDefaultValue::StaticProtected(ns)
+        | AbcDefaultValue::Private(ns) => {
+            Namespace::from_abc_namespace(file, ns.clone()).map(|v| v.into())
+        }
+    }
 }
 
 impl<'gc> Value<'gc> {

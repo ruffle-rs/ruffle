@@ -8,7 +8,7 @@ use crate::avm2::property::Attribute;
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::scope::Scope;
 use crate::avm2::script_object::ScriptObject;
-use crate::avm2::value::Value;
+use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
@@ -173,6 +173,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         );
 
         match &trait_entry.kind {
+            AbcTraitKind::Slot { slot_id, value, .. } => {
+                let value = if let Some(value) = value {
+                    abc_default_value(&abc, value)?
+                } else {
+                    Value::Undefined
+                };
+                self.install_slot(context.gc_context, trait_name, *slot_id, value);
+            }
             AbcTraitKind::Method { method, .. } => {
                 let method = Avm2MethodEntry::from_method_index(abc, method.clone()).unwrap();
                 let function =
