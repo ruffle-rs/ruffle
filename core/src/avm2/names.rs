@@ -58,6 +58,10 @@ impl Namespace {
     pub fn public_namespace() -> Self {
         Namespace::Package("".to_string())
     }
+
+    pub fn package(package_name: &str) -> Self {
+        Namespace::Package(package_name.to_string())
+    }
 }
 
 /// A `QName`, likely "qualified name", consists of a namespace and name string.
