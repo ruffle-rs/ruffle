@@ -114,6 +114,10 @@ impl QName {
             _ => return Err("Attempted to pull QName from non-QName multiname".into()),
         })
     }
+
+    pub fn local_name(&self) -> &str {
+        &self.name
+    }
 }
 
 /// A `Multiname` consists of a name which could be resolved in one or more

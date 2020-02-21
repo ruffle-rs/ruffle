@@ -186,19 +186,29 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     &type_entry.abc(),
                     type_entry.instance().super_name.clone(),
                 )?;
-                let super_class = self
+                let super_class: Result<Object<'gc>, Error> = self
                     .get_property(&super_name, avm, context)?
                     .resolve(avm, context)?
-                    .as_object()?;
-                let super_proto = super_class
+                    .as_object()
+                    .map_err(|_e| {
+                        format!("Could not resolve superclass {:?}", super_name.local_name()).into()
+                    });
+                let super_proto: Result<Object<'gc>, Error> = super_class?
                     .get_property(
                         &QName::new(Namespace::public_namespace(), "prototype"),
                         avm,
                         context,
                     )?
                     .resolve(avm, context)?
-                    .as_object()?;
-                let mut class_proto = super_proto.construct(avm, context, &[])?;
+                    .as_object()
+                    .map_err(|_e| {
+                        format!(
+                            "Could not resolve superclass prototype {:?}",
+                            super_name.local_name()
+                        )
+                        .into()
+                    });
+                let mut class_proto = super_proto?.construct(avm, context, &[])?;
 
                 for trait_entry in type_entry.instance().traits.iter() {
                     class_proto.install_trait(
