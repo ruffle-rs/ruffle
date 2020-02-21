@@ -5,6 +5,7 @@ use crate::avm2::names::QName;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::return_value::ReturnValue;
+use crate::avm2::slot::Slot;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
@@ -24,7 +25,7 @@ pub struct ScriptObjectData<'gc> {
     values: HashMap<QName, Property<'gc>>,
 
     /// Slots stored on this object.
-    slots: Vec<Value<'gc>>,
+    slots: Vec<Slot<'gc>>,
 
     /// Implicit prototype (or declared base class) of this script object.
     proto: Option<Object<'gc>>,
@@ -127,6 +128,16 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     ) {
         self.0.write(mc).install_slot(name, id, value)
     }
+
+    fn install_const(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        name: QName,
+        id: u32,
+        value: Value<'gc>,
+    ) {
+        self.0.write(mc).install_const(name, id, value)
+    }
 }
 
 impl<'gc> ScriptObject<'gc> {
@@ -193,10 +204,12 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     pub fn get_slot(&self, id: u32) -> Result<Value<'gc>, Error> {
+        //TODO: slot inheritance, I think?
         self.slots
             .get(id as usize)
             .cloned()
             .ok_or_else(|| format!("Slot index {} out of bounds!", id).into())
+            .map(|slot| slot.get().unwrap_or(Value::Undefined))
     }
 
     /// Set a slot by it's index.
@@ -207,9 +220,7 @@ impl<'gc> ScriptObjectData<'gc> {
         _mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
         if let Some(slot) = self.slots.get_mut(id as usize) {
-            *slot = value;
-
-            Ok(())
+            slot.set(value)
         } else {
             Err(format!("Slot index {} out of bounds!", id).into())
         }
@@ -281,8 +292,32 @@ impl<'gc> ScriptObjectData<'gc> {
             self.values.insert(name, Property::new_stored(value));
         } else {
             self.values.insert(name, Property::new_slot(id));
-            if self.slots.len() < id as usize {
-                self.slots.resize(id as usize, Value::Undefined);
+            if self.slots.len() < id as usize + 1 {
+                self.slots.resize_with(id as usize + 1, Default::default);
+            }
+
+            if let Some(slot) = self.slots.get_mut(id as usize) {
+                *slot = Slot::new(value);
+            }
+        }
+    }
+
+    /// Install a const onto the object.
+    ///
+    /// Slot number zero indicates a slot ID that is unknown and should be
+    /// allocated by the VM - as far as I know, there is no way to discover
+    /// slot IDs, so we don't allocate a slot for them at all.
+    pub fn install_const(&mut self, name: QName, id: u32, value: Value<'gc>) {
+        if id == 0 {
+            self.values.insert(name, Property::new_const(value));
+        } else {
+            self.values.insert(name, Property::new_slot(id));
+            if self.slots.len() < id as usize + 1 {
+                self.slots.resize_with(id as usize + 1, Default::default);
+            }
+
+            if let Some(slot) = self.slots.get_mut(id as usize) {
+                *slot = Slot::new_const(value);
             }
         }
     }

@@ -155,6 +155,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
     );
 
+    /// Install a const on an object property.
+    fn install_const(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        name: QName,
+        id: u32,
+        value: Value<'gc>,
+    );
+
     /// Install a trait from an ABC file on an object.
     fn install_trait(
         &mut self,
@@ -250,7 +259,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     &type_entry.abc(),
                     type_entry.instance().name.clone(),
                 )?;
-                self.install_slot(context.gc_context, class_name, *slot_id, class.into());
+                self.install_const(context.gc_context, class_name, *slot_id, class.into());
             }
             AbcTraitKind::Function {
                 slot_id, function, ..
@@ -258,9 +267,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 let method = Avm2MethodEntry::from_method_index(abc, function.clone()).unwrap();
                 let function =
                     FunctionObject::from_abc_method(context.gc_context, method, scope, fn_proto);
-                self.install_slot(context.gc_context, trait_name, *slot_id, function.into());
+                self.install_const(context.gc_context, trait_name, *slot_id, function.into());
             }
-            _ => return Err("".into()),
+            AbcTraitKind::Const { slot_id, value, .. } => {
+                let value = if let Some(value) = value {
+                    abc_default_value(&abc, value)?
+                } else {
+                    Value::Undefined
+                };
+                self.install_const(context.gc_context, trait_name, *slot_id, value);
+            }
         }
 
         Ok(())

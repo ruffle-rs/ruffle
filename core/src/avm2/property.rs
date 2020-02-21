@@ -61,6 +61,14 @@ impl<'gc> Property<'gc> {
         }
     }
 
+    /// Create a new stored property.
+    pub fn new_const(value: impl Into<Value<'gc>>) -> Self {
+        Property::Stored {
+            value: value.into(),
+            attributes: Attribute::ReadOnly | Attribute::DontDelete,
+        }
+    }
+
     /// Convert a value into a dynamic property.
     pub fn new_dynamic_property(value: impl Into<Value<'gc>>) -> Self {
         Property::Stored {

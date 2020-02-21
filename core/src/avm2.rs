@@ -36,6 +36,7 @@ mod property;
 mod return_value;
 mod scope;
 mod script_object;
+mod slot;
 mod value;
 
 /// Boxed error alias.
