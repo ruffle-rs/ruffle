@@ -117,6 +117,16 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     ) -> Result<(), Error> {
         self.0.write(mc).install_dynamic_property(name, value)
     }
+
+    fn install_slot(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        name: QName,
+        id: u32,
+        value: Value<'gc>,
+    ) {
+        self.0.write(mc).install_slot(name, id, value)
+    }
 }
 
 impl<'gc> ScriptObject<'gc> {
@@ -259,5 +269,21 @@ impl<'gc> ScriptObjectData<'gc> {
             .insert(name, Property::new_dynamic_property(value));
 
         Ok(())
+    }
+
+    /// Install a slot onto the object.
+    ///
+    /// Slot number zero indicates a slot ID that is unknown and should be
+    /// allocated by the VM - as far as I know, there is no way to discover
+    /// slot IDs, so we don't allocate a slot for them at all.
+    pub fn install_slot(&mut self, name: QName, id: u32, value: Value<'gc>) {
+        if id == 0 {
+            self.values.insert(name, Property::new_stored(value));
+        } else {
+            self.values.insert(name, Property::new_slot(id));
+            if self.slots.len() < id as usize {
+                self.slots.resize(id as usize, Value::Undefined);
+            }
+        }
     }
 }

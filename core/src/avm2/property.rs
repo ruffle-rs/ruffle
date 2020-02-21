@@ -53,6 +53,14 @@ unsafe impl<'gc> Collect for Property<'gc> {
 }
 
 impl<'gc> Property<'gc> {
+    /// Create a new stored property.
+    pub fn new_stored(value: impl Into<Value<'gc>>) -> Self {
+        Property::Stored {
+            value: value.into(),
+            attributes: EnumSet::from(Attribute::DontDelete),
+        }
+    }
+
     /// Convert a value into a dynamic property.
     pub fn new_dynamic_property(value: impl Into<Value<'gc>>) -> Self {
         Property::Stored {
@@ -77,6 +85,14 @@ impl<'gc> Property<'gc> {
             get: None,
             set: None,
             attributes: Attribute::ReadOnly | Attribute::DontDelete,
+        }
+    }
+
+    /// Create a new slot property.
+    pub fn new_slot(slot_id: u32) -> Self {
+        Property::Slot {
+            slot_id,
+            attributes: EnumSet::from(Attribute::DontDelete),
         }
     }
 

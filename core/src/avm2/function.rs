@@ -469,4 +469,14 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     ) -> Result<(), Error> {
         self.0.write(mc).base.install_dynamic_property(name, value)
     }
+
+    fn install_slot(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        name: QName,
+        id: u32,
+        value: Value<'gc>,
+    ) {
+        self.0.write(mc).base.install_slot(name, id, value)
+    }
 }

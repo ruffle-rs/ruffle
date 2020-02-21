@@ -146,6 +146,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
     ) -> Result<(), Error>;
 
+    /// Install a slot on an object property.
+    fn install_slot(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        name: QName,
+        id: u32,
+        value: Value<'gc>,
+    );
+
     /// Install a trait from an ABC file on an object.
     fn install_trait(
         &mut self,
@@ -180,7 +189,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 let exec = Avm2Function::from_method(method, scope).into();
                 self.install_setter(context.gc_context, trait_name, exec)?;
             }
-            AbcTraitKind::Class { class, .. } => {
+            AbcTraitKind::Class { slot_id, class } => {
                 let type_entry = Avm2ClassEntry::from_class_index(abc, class.clone()).unwrap();
                 let super_name = QName::from_abc_multiname(
                     &type_entry.abc(),
@@ -233,7 +242,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     &type_entry.abc(),
                     type_entry.instance().name.clone(),
                 )?;
-                self.install_method(context.gc_context, class_name, class);
+                self.install_slot(context.gc_context, class_name, *slot_id, class.into());
             }
             _ => return Err("".into()),
         }
