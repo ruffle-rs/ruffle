@@ -68,6 +68,11 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
 
         context.transform_stack.pop();
     }
+
+    fn self_bounds(&self) -> BoundingBox {
+        // TODO: Use the bounds of the current ratio.
+        self.0.read().static_data.max_bounds.clone()
+    }
 }
 
 unsafe impl<'gc> gc_arena::Collect for MorphShapeData<'gc> {
@@ -85,6 +90,7 @@ pub struct MorphShapeStatic {
     start: swf::MorphShape,
     end: swf::MorphShape,
     frames: fnv::FnvHashMap<u16, ShapeHandle>,
+    max_bounds: BoundingBox,
 }
 
 impl MorphShapeStatic {
@@ -94,6 +100,7 @@ impl MorphShapeStatic {
             start: swf_tag.start.clone(),
             end: swf_tag.end.clone(),
             frames: fnv::FnvHashMap::default(),
+            max_bounds: Default::default(),
         };
         // Pre-register the start and end states.
         morph_shape.register_ratio(renderer, 0);
@@ -269,6 +276,7 @@ impl MorphShapeStatic {
         };
 
         let bounds = crate::shape_utils::calculate_shape_bounds(&shape[..]);
+        self.max_bounds.union(&bounds.clone().into());
         let shape = swf::Shape {
             version: 4,
             id: 0,

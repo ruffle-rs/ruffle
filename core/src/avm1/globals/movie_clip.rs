@@ -140,6 +140,7 @@ pub fn create_proto<'gc>(
         "createEmptyMovieClip" => create_empty_movie_clip,
         "createTextField" => create_text_field,
         "duplicateMovieClip" => duplicate_movie_clip,
+        "getBounds" => get_bounds,
         "getBytesLoaded" => get_bytes_loaded,
         "getBytesTotal" => get_bytes_total,
         "getDepth" => get_depth,
@@ -697,6 +698,49 @@ fn local_to_global<'gc>(
     }
 
     Ok(Value::Undefined.into())
+}
+
+fn get_bounds<'gc>(
+    movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let target = match args.get(0) {
+        Some(Value::String(s)) if s.is_empty() => None,
+        Some(Value::Object(o)) if o.as_display_object().is_some() => o.as_display_object(),
+        Some(val) => {
+            let path = val.clone().coerce_to_string(avm, context)?;
+            avm.resolve_target_display_object(context, movie_clip.into(), path.into())?
+        }
+        None => Some(movie_clip.into()),
+    };
+
+    if let Some(target) = target {
+        let bounds = movie_clip.bounds();
+        let out_bounds = if DisplayObject::ptr_eq(movie_clip.into(), target) {
+            // Getting the clips bounds in its own coordinate space; no AABB transform needed.
+            bounds
+        } else {
+            // Transform AABB to target space.
+            // Calculate the matrix to transform into the target coordinate space, and transform the above AABB.
+            // Note that this doesn't produce as tight of an AABB as if we had used `bounds_with_transform` with
+            // the final matrix, but this matches Flash's behavior.
+            let to_global_matrix = movie_clip.local_to_global_matrix();
+            let to_target_matrix = target.global_to_local_matrix();
+            let bounds_transform = to_target_matrix * to_global_matrix;
+            bounds.transform(&bounds_transform)
+        };
+
+        let out = ScriptObject::object(context.gc_context, Some(avm.prototypes.object));
+        out.set("xMin", out_bounds.x_min.to_pixels().into(), avm, context)?;
+        out.set("yMin", out_bounds.y_min.to_pixels().into(), avm, context)?;
+        out.set("xMax", out_bounds.x_max.to_pixels().into(), avm, context)?;
+        out.set("yMax", out_bounds.y_max.to_pixels().into(), avm, context)?;
+        Ok(out.into())
+    } else {
+        Ok(Value::Undefined.into())
+    }
 }
 
 fn global_to_local<'gc>(

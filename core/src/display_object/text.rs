@@ -31,6 +31,7 @@ impl<'gc> Text<'gc> {
                     TextStatic {
                         swf,
                         id: tag.id,
+                        bounds: tag.bounds.clone().into(),
                         text_transform: tag.matrix.clone().into(),
                         text_blocks: tag.records.clone(),
                     },
@@ -110,6 +111,10 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         context.transform_stack.pop();
         context.transform_stack.pop();
     }
+
+    fn self_bounds(&self) -> BoundingBox {
+        self.0.read().static_data.bounds.clone()
+    }
 }
 
 unsafe impl<'gc> gc_arena::Collect for TextData<'gc> {
@@ -126,6 +131,7 @@ unsafe impl<'gc> gc_arena::Collect for TextData<'gc> {
 struct TextStatic {
     swf: Arc<SwfMovie>,
     id: CharacterId,
+    bounds: BoundingBox,
     text_transform: Matrix,
     text_blocks: Vec<swf::TextRecord>,
 }

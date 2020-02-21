@@ -378,31 +378,43 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
     fn depth(&self) -> Depth;
     fn set_depth(&self, gc_context: MutationContext<'gc, '_>, depth: Depth);
 
-    /// The untransformed bounding box of this object
-    /// This does not take into account any parents.
-    fn self_bounds(&self) -> BoundingBox {
-        let mut bounds: BoundingBox = Default::default();
-        for child in self.children() {
-            bounds.union(&child.local_bounds());
-        }
-        bounds
+    /// The untransformed inherent bounding box of this object.
+    /// These bounds do **not** include child DisplayObjects.
+    /// To get the bounds including children, use `bounds`, `local_bounds`, or `world_bounds`.
+    ///
+    /// Implementors must override this method.
+    /// Leaf DisplayObjects should return their bounds.
+    /// Composite DisplayObjects that only contain children should return `&Default::default()`
+    fn self_bounds(&self) -> BoundingBox;
+
+    /// The untransformed bounding box of this object including children.
+    fn bounds(&self) -> BoundingBox {
+        self.bounds_with_transform(&Matrix::default())
     }
 
-    /// The local bounding box of this object in its parent's coordinate system.
+    /// The local bounding box of this object including children, in its parent's coordinate system.
     fn local_bounds(&self) -> BoundingBox {
-        self.self_bounds().transform(&*self.matrix())
+        self.bounds_with_transform(&self.matrix())
     }
 
-    /// The world bounding box of this object, relative to the stage.
+    /// The world bounding box of this object including children, relative to the stage.
     fn world_bounds(&self) -> BoundingBox {
-        let mut bounds = self.local_bounds();
-        let mut node = self.parent();
-        while let Some(display_object) = node {
-            bounds = bounds.transform(&*display_object.matrix());
-            node = display_object.parent();
+        self.bounds_with_transform(&self.local_to_global_matrix())
+    }
+
+    /// Gets the bounds of this object and all children, transformed by a given matrix.
+    /// This function recurses down and transforms the AABB each child before adding
+    /// it to the bounding box. This gives a tighter AABB then if we simply transformed
+    /// the overall AABB.
+    fn bounds_with_transform(&self, matrix: &Matrix) -> BoundingBox {
+        let mut bounds = self.self_bounds().transform(matrix);
+        for child in self.children() {
+            let matrix = *matrix * *child.matrix();
+            bounds.union(&child.bounds_with_transform(&matrix));
         }
         bounds
     }
+
     fn place_frame(&self) -> u16;
     fn set_place_frame(&mut self, context: MutationContext<'gc, '_>, frame: u16);
 
@@ -418,8 +430,8 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
         color_transform: &ColorTransform,
     );
 
-    /// Converts a local position to a global stage position
-    fn local_to_global(&self, local: (Twips, Twips)) -> (Twips, Twips) {
+    /// Returns the matrix for transforming from this object's local space to global stage space.
+    fn local_to_global_matrix(&self) -> Matrix {
         let mut node = self.parent();
         let mut matrix = *self.matrix();
         while let Some(display_object) = node {
@@ -427,11 +439,11 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
             node = display_object.parent();
         }
 
-        matrix * local
+        matrix
     }
 
-    /// Converts a local position on the stage to a local position on this display object
-    fn global_to_local(&self, global: (Twips, Twips)) -> (Twips, Twips) {
+    /// Returns the matrix for transforming from global stage to this object's local space.
+    fn global_to_local_matrix(&self) -> Matrix {
         let mut node = self.parent();
         let mut matrix = *self.matrix();
         while let Some(display_object) = node {
@@ -440,7 +452,17 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
         }
 
         matrix.invert();
-        matrix * global
+        matrix
+    }
+
+    /// Converts a local position to a global stage position
+    fn local_to_global(&self, local: (Twips, Twips)) -> (Twips, Twips) {
+        self.local_to_global_matrix() * local
+    }
+
+    /// Converts a local position on the stage to a local position on this display object
+    fn global_to_local(&self, global: (Twips, Twips)) -> (Twips, Twips) {
+        self.global_to_local_matrix() * global
     }
 
     /// The `x` position in pixels of this display object in local space.
@@ -504,7 +526,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
     /// Set by the ActionScript `_width`/`width` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
     fn set_width(&mut self, gc_context: MutationContext<'gc, '_>, value: f64) {
-        let object_bounds = self.self_bounds();
+        let object_bounds = self.bounds();
         let object_width = (object_bounds.x_max - object_bounds.x_min).to_pixels();
         let object_height = (object_bounds.y_max - object_bounds.y_min).to_pixels();
         let aspect_ratio = object_height / object_width;
@@ -541,7 +563,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
     /// Set by the ActionScript `_height`/`height` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
     fn set_height(&mut self, gc_context: MutationContext<'gc, '_>, value: f64) {
-        let object_bounds = self.self_bounds();
+        let object_bounds = self.bounds();
         let object_width = (object_bounds.x_max - object_bounds.x_min).to_pixels();
         let object_height = (object_bounds.y_max - object_bounds.y_min).to_pixels();
         let aspect_ratio = object_width / object_height;
