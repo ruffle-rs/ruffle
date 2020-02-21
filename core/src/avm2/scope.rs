@@ -1,12 +1,11 @@
 //! Represents AVM2 scope chain resolution.
 
-use crate::avm2::names::{Multiname, QName};
+use crate::avm2::names::Multiname;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
-use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::Ref;
 
@@ -119,19 +118,6 @@ impl<'gc> Scope<'gc> {
         bottom_scope
     }
 
-    /// Construct an arbitrary scope
-    pub fn new(
-        parent: GcCell<'gc, Self>,
-        class: ScopeClass,
-        with_object: Object<'gc>,
-    ) -> Scope<'gc> {
-        Scope {
-            parent: Some(parent),
-            class,
-            values: with_object,
-        }
-    }
-
     /// Returns a reference to the current local scope object.
     pub fn locals(&self) -> &Object<'gc> {
         &self.values
@@ -191,74 +177,5 @@ impl<'gc> Scope<'gc> {
 
         //TODO: Should undefined variables halt execution?
         Ok(Value::Undefined.into())
-    }
-
-    /// Check if a particular property in the scope chain is defined.
-    pub fn is_defined(&self, name: &QName) -> bool {
-        if self.locals().has_property(name) {
-            return true;
-        }
-
-        if let Some(scope) = self.parent() {
-            return scope.is_defined(name);
-        }
-
-        false
-    }
-
-    /// Update a particular value in the scope chain.
-    ///
-    /// Traverses the scope chain in search of a value. If it's found, it's overwritten.
-    /// The traversal stops at Target scopes, which represents the movie clip timeline
-    /// the code is executing in.
-    /// If the value is not found, it is defined on this Target scope.
-    pub fn set(
-        &self,
-        name: &QName,
-        value: Value<'gc>,
-        avm: &mut Avm2<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
-    ) -> Result<(), Error> {
-        if self.locals().has_property(name) && self.locals().is_property_overwritable(name) {
-            // Value found on this object, so overwrite it.
-            // Or we've hit the executing movie clip, so create it here.
-            self.locals().set_property(name, value, avm, context)
-        } else if let Some(scope) = self.parent() {
-            // Traverse the scope chain in search of the value.
-            scope.set(name, value, avm, context, this)
-        } else {
-            // This probably shouldn't happen -- all AVM2 code runs in reference to some movieclip,
-            // so we should always have a movieclip scope.
-            // Define on the top-level scope.
-            debug_assert!(false, "Scope::set: No top-level movie clip scope");
-            self.locals().set_property(name, value, avm, context)
-        }
-    }
-
-    /// Set a particular value in the locals for this scope.
-    ///
-    /// By convention, the locals for a given function are always defined as
-    /// stored (e.g. not virtual) properties on the lowest object in the scope
-    /// chain. As a result, this function always force sets a property on the
-    /// local object and does not traverse the scope chain.
-    pub fn define(&self, name: &QName, value: impl Into<Value<'gc>>, mc: MutationContext<'gc, '_>) {
-        self.locals()
-            .define_value(mc, name, value.into(), EnumSet::empty());
-    }
-
-    /// Delete a value from scope
-    pub fn delete(&self, name: &Multiname, mc: MutationContext<'gc, '_>) -> bool {
-        if let Some(qname) = self.locals().resolve_multiname(name) {
-            if self.locals().has_property(&qname) {
-                return self.locals().delete(mc, &qname);
-            }
-        }
-
-        if let Some(scope) = self.parent() {
-            return scope.delete(name, mc);
-        }
-
-        false
     }
 }
