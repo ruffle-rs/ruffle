@@ -183,7 +183,7 @@ impl<'gc> Property<'gc> {
             }
             Property::Slot { slot_id, .. } => this
                 .set_slot(*slot_id, new_value.into(), context.gc_context)
-                .map(|v| true),
+                .map(|_v| true),
         }
     }
 
