@@ -252,6 +252,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 )?;
                 self.install_slot(context.gc_context, class_name, *slot_id, class.into());
             }
+            AbcTraitKind::Function {
+                slot_id, function, ..
+            } => {
+                let method = Avm2MethodEntry::from_method_index(abc, function.clone()).unwrap();
+                let function =
+                    FunctionObject::from_abc_method(context.gc_context, method, scope, fn_proto);
+                self.install_slot(context.gc_context, trait_name, *slot_id, function.into());
+            }
             _ => return Err("".into()),
         }
 
