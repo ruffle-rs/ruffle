@@ -88,9 +88,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.
-    fn delete(&self, gc_context: MutationContext<'gc, '_>, multiname: &QName) -> bool {
-        false
-    }
+    fn delete_property(&self, gc_context: MutationContext<'gc, '_>, multiname: &QName) -> bool;
 
     /// Retrieve the `__proto__` of a given object.
     ///

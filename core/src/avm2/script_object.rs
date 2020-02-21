@@ -53,6 +53,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .set_property(name, value, avm, context, self.into())
     }
 
+    fn delete_property(&self, gc_context: MutationContext<'gc, '_>, multiname: &QName) -> bool {
+        self.0.write(gc_context).delete_property(multiname)
+    }
+
     fn get_slot(self, id: u32) -> Result<Value<'gc>, Error> {
         self.0.read().get_slot(id)
     }
@@ -201,6 +205,20 @@ impl<'gc> ScriptObjectData<'gc> {
         }
 
         Ok(())
+    }
+
+    pub fn delete_property(&mut self, name: &QName) -> bool {
+        let can_delete = if let Some(prop) = self.values.get(name) {
+            prop.can_delete()
+        } else {
+            false
+        };
+
+        if can_delete {
+            self.values.remove(name);
+        }
+
+        can_delete
     }
 
     pub fn get_slot(&self, id: u32) -> Result<Value<'gc>, Error> {

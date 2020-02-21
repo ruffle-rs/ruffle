@@ -380,6 +380,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             .set_property(name, value, avm, context, self.into())
     }
 
+    fn delete_property(&self, gc_context: MutationContext<'gc, '_>, multiname: &QName) -> bool {
+        self.0.write(gc_context).base.delete_property(multiname)
+    }
+
     fn get_slot(self, id: u32) -> Result<Value<'gc>, Error> {
         self.0.read().base.get_slot(id)
     }

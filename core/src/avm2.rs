@@ -393,6 +393,7 @@ impl<'gc> Avm2<'gc> {
                 Op::ReturnVoid => self.op_return_void(context),
                 Op::GetProperty { index } => self.op_get_property(context, index),
                 Op::SetProperty { index } => self.op_set_property(context, index),
+                Op::DeleteProperty { index } => self.op_delete_property(context, index),
                 Op::PushScope => self.op_push_scope(context),
                 Op::PushWith => self.op_push_with(context),
                 Op::PopScope => self.op_pop_scope(context),
@@ -565,6 +566,23 @@ impl<'gc> Avm2<'gc> {
             let name = QName::dynamic_name(local_name?);
             object.set_property(&name, value, self, context)
         }
+    }
+
+    fn op_delete_property(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        index: Index<AbcMultiname>,
+    ) -> Result<(), Error> {
+        let multiname = self.pool_multiname(index)?;
+        let object = self.pop().as_object()?;
+
+        if let Some(name) = object.resolve_multiname(&multiname) {
+            self.push(object.delete_property(context.gc_context, &name))
+        } else {
+            self.push(false)
+        }
+
+        Ok(())
     }
 
     fn op_push_scope(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
