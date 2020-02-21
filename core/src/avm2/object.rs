@@ -4,14 +4,12 @@ use crate::avm2::function::{
     Avm2ClassEntry, Avm2Function, Avm2MethodEntry, Executable, FunctionObject,
 };
 use crate::avm2::names::{Multiname, Namespace, QName};
-use crate::avm2::property::Attribute;
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::scope::Scope;
 use crate::avm2::script_object::ScriptObject;
 use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
-use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::fmt::Debug;
@@ -96,26 +94,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// multiple objects. It should also be accessible as `__proto__` from
     /// `get`.
     fn proto(&self) -> Option<Object<'gc>>;
-
-    /// Define a value on an object.
-    ///
-    /// Unlike setting a value, this function is intended to replace any
-    /// existing virtual or built-in properties already installed on a given
-    /// object. As such, this should not run any setters; the resulting name
-    /// slot should either be completely replaced with the value or completely
-    /// untouched.
-    ///
-    /// It is not guaranteed that all objects accept value definitions,
-    /// especially if a property name conflicts with a built-in property, such
-    /// as `__proto__`.
-    fn define_value(
-        &self,
-        gc_context: MutationContext<'gc, '_>,
-        name: &QName,
-        value: Value<'gc>,
-        attributes: EnumSet<Attribute>,
-    ) {
-    }
 
     /// Install a method (or any other non-slot value) on an object.
     fn install_method(&mut self, mc: MutationContext<'gc, '_>, name: QName, function: Object<'gc>);
