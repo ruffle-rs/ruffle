@@ -153,6 +153,11 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         context.transform_stack.pop();
     }
 
+    fn self_bounds(&self) -> BoundingBox {
+        // No inherent bounds; contains child DisplayObjects.
+        BoundingBox::default()
+    }
+
     fn hit_test(&self, point: (Twips, Twips)) -> bool {
         for child in self.0.read().hit_area.values().rev() {
             if child.world_bounds().contains(point) {

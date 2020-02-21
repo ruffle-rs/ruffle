@@ -346,6 +346,11 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         context.transform_stack.pop();
     }
 
+    fn self_bounds(&self) -> BoundingBox {
+        // No inherent bounds; contains child DisplayObjects.
+        BoundingBox::default()
+    }
+
     fn hit_test(&self, point: (Twips, Twips)) -> bool {
         self.world_bounds().contains(point)
     }
