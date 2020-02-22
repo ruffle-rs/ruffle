@@ -397,6 +397,7 @@ impl<'gc> Avm2<'gc> {
                 Op::PushScope => self.op_push_scope(context),
                 Op::PushWith => self.op_push_with(context),
                 Op::PopScope => self.op_pop_scope(context),
+                Op::GetScopeObject { index } => self.op_get_scope_object(index),
                 Op::FindProperty { index } => self.op_find_property(context, index),
                 Op::FindPropStrict { index } => self.op_find_prop_strict(context, index),
                 Op::GetLex { index } => self.op_get_lex(context, index),
@@ -616,6 +617,26 @@ impl<'gc> Avm2<'gc> {
         let new_scope = scope_stack.and_then(|s| s.read().pop_scope());
 
         write.set_scope(new_scope);
+
+        Ok(())
+    }
+
+    fn op_get_scope_object(&mut self, mut index: u8) -> Result<(), Error> {
+        let mut scope = self.current_stack_frame().unwrap().read().scope();
+
+        while index > 0 {
+            if let Some(child_scope) = scope {
+                scope = child_scope.read().parent_cell();
+            }
+
+            index -= 1;
+        }
+
+        self.push(
+            scope
+                .map(|s| s.read().locals().clone().into())
+                .unwrap_or(Value::Undefined),
+        );
 
         Ok(())
     }

@@ -137,6 +137,10 @@ impl<'gc> Scope<'gc> {
         }
     }
 
+    pub fn parent_cell(&self) -> Option<GcCell<'gc, Scope<'gc>>> {
+        self.parent
+    }
+
     /// Find an object that contains a given property in the scope stack.
     pub fn find(
         &self,
