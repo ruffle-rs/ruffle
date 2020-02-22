@@ -7,6 +7,7 @@ use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::scope::Scope;
+use crate::avm2::script_object::ScriptObject;
 use crate::avm2::value::Value;
 use crate::context::UpdateContext;
 use crate::tag_utils::SwfSlice;
@@ -431,6 +432,8 @@ impl<'gc> Avm2<'gc> {
                 Op::ConstructProp { index, num_args } => {
                     self.op_construct_prop(context, index, num_args)
                 }
+                Op::NewActivation => self.op_new_activation(context),
+                Op::NewObject { num_args } => self.op_new_object(context, num_args),
                 Op::NewFunction { index } => self.op_new_function(context, index),
                 Op::NewClass { index } => self.op_new_class(context, index),
                 Op::Debug {
@@ -876,6 +879,36 @@ impl<'gc> Avm2<'gc> {
         let object = proto.construct(self, context, &args)?;
         ctor.call(object, &args, self, context)?
             .resolve(self, context)?;
+
+        Ok(())
+    }
+
+    fn op_new_activation(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        self.push(ScriptObject::bare_object(context.gc_context));
+
+        Ok(())
+    }
+
+    fn op_new_object(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        num_args: u32,
+    ) -> Result<(), Error> {
+        let object = ScriptObject::object(context.gc_context, self.system_prototypes.object);
+
+        for _ in 0..num_args {
+            let value = self.pop();
+            let name = self.pop();
+
+            object.set_property(
+                &QName::new(Namespace::public_namespace(), name.as_string()?),
+                value,
+                self,
+                context,
+            )?;
+        }
+
+        self.push(object);
 
         Ok(())
     }
