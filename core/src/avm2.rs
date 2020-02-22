@@ -359,9 +359,15 @@ impl<'gc> Avm2<'gc> {
         Namespace::from_abc_namespace(&self.current_abc().unwrap(), index)
     }
 
-    /// Retrieve a namespace from the current constant pool.
+    /// Retrieve a multiname from the current constant pool.
     fn pool_multiname(&mut self, index: Index<AbcMultiname>) -> Result<Multiname, Error> {
         Multiname::from_abc_multiname(&self.current_abc().unwrap(), index, self)
+    }
+
+    /// Retrieve a static, or non-runtime, multiname from the current constant
+    /// pool.
+    fn pool_multiname_static(&mut self, index: Index<AbcMultiname>) -> Result<Multiname, Error> {
+        Multiname::from_abc_multiname_static(&self.current_abc().unwrap(), index)
     }
 
     /// Run a single action from a given action reader.
@@ -683,8 +689,7 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
     ) -> Result<(), Error> {
-        //TODO: getlex does not allow runtime multinames according to spec.
-        let multiname = self.pool_multiname(index)?;
+        let multiname = self.pool_multiname_static(index)?;
         let found: Result<ReturnValue<'gc>, Error> =
             if let Some(scope) = self.current_stack_frame().unwrap().read().scope() {
                 Ok(scope.read().resolve(&multiname, self, context)?)

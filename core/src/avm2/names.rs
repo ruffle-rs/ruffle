@@ -223,6 +223,43 @@ impl Multiname {
         })
     }
 
+    /// Read a static multiname from the ABC constant pool
+    ///
+    /// This function prohibits the use of runtime-qualified and late-bound
+    /// names. Runtime multinames will instead result in an error.
+    pub fn from_abc_multiname_static(
+        file: &AbcFile,
+        multiname_index: Index<AbcMultiname>,
+    ) -> Result<Self, Error> {
+        let actual_index = multiname_index.0 as usize - 1;
+        let abc_multiname: Result<&AbcMultiname, Error> = file
+            .constant_pool
+            .multinames
+            .get(actual_index)
+            .ok_or_else(|| format!("Unknown multiname constant {}", multiname_index.0).into());
+
+        Ok(match abc_multiname? {
+            AbcMultiname::QName { namespace, name } | AbcMultiname::QNameA { namespace, name } => {
+                Self {
+                    ns: vec![Namespace::from_abc_namespace(file, namespace.clone())?],
+                    name: abc_string_option(file, name.clone())?,
+                }
+            }
+            AbcMultiname::Multiname {
+                namespace_set,
+                name,
+            }
+            | AbcMultiname::MultinameA {
+                namespace_set,
+                name,
+            } => Self {
+                ns: Self::abc_namespace_set(file, namespace_set.clone())?,
+                name: abc_string_option(file, name.clone())?,
+            },
+            _ => return Err(format!("Multiname {} is not static", multiname_index.0).into()),
+        })
+    }
+
     pub fn namespace_set(&self) -> impl Iterator<Item = &Namespace> {
         self.ns.iter()
     }
