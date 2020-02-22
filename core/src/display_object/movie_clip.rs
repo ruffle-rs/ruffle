@@ -380,11 +380,11 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn unload(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.0.write(context.gc_context).run_clip_action(
-            (*self).into(),
-            context,
-            ClipEvent::Unload,
-        );
+        {
+            let mut mc = self.0.write(context.gc_context);
+            mc.stop_audio_stream(context);
+            mc.run_clip_action((*self).into(), context, ClipEvent::Unload);
+        }
         self.set_removed(context.gc_context, true);
     }
 
