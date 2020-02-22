@@ -53,6 +53,18 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .set_property(name, value, avm, context, self.into())
     }
 
+    fn init_property(
+        self,
+        name: &QName,
+        value: Value<'gc>,
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        self.0
+            .write(context.gc_context)
+            .init_property(name, value, avm, context, self.into())
+    }
+
     fn delete_property(&self, gc_context: MutationContext<'gc, '_>, multiname: &QName) -> bool {
         self.0.write(gc_context).delete_property(multiname)
     }
@@ -68,6 +80,15 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
         self.0.write(mc).set_slot(id, value, mc)
+    }
+
+    fn init_slot(
+        self,
+        id: u32,
+        value: Value<'gc>,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<(), Error> {
+        self.0.write(mc).init_slot(id, value, mc)
     }
 
     fn has_property(self, name: &QName) -> bool {
@@ -207,6 +228,25 @@ impl<'gc> ScriptObjectData<'gc> {
         Ok(())
     }
 
+    pub fn init_property(
+        &mut self,
+        name: &QName,
+        value: Value<'gc>,
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        this: Object<'gc>,
+    ) -> Result<(), Error> {
+        if let Some(prop) = self.values.get_mut(name) {
+            prop.init(avm, context, this, value)?;
+        } else {
+            //TODO: Not all classes are dynamic like this
+            self.values
+                .insert(name.clone(), Property::new_dynamic_property(value));
+        }
+
+        Ok(())
+    }
+
     pub fn delete_property(&mut self, name: &QName) -> bool {
         let can_delete = if let Some(prop) = self.values.get(name) {
             prop.can_delete()
@@ -239,6 +279,20 @@ impl<'gc> ScriptObjectData<'gc> {
     ) -> Result<(), Error> {
         if let Some(slot) = self.slots.get_mut(id as usize) {
             slot.set(value)
+        } else {
+            Err(format!("Slot index {} out of bounds!", id).into())
+        }
+    }
+
+    /// Set a slot by it's index.
+    pub fn init_slot(
+        &mut self,
+        id: u32,
+        value: Value<'gc>,
+        _mc: MutationContext<'gc, '_>,
+    ) -> Result<(), Error> {
+        if let Some(slot) = self.slots.get_mut(id as usize) {
+            slot.init(value)
         } else {
             Err(format!("Slot index {} out of bounds!", id).into())
         }

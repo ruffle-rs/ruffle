@@ -79,4 +79,18 @@ impl<'gc> Slot<'gc> {
             }
         }
     }
+
+    /// Initialize a slot to a particular value.
+    pub fn init(&mut self, new_value: impl Into<Value<'gc>>) -> Result<(), Error> {
+        match self {
+            Self::Unoccupied => Err("Cannot initialize unoccupied slot".into()),
+            Self::Occupied { value, .. } => {
+                //TODO: Type assert
+
+                *value = new_value.into();
+
+                Ok(())
+            }
+        }
+    }
 }

@@ -44,11 +44,28 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error>;
 
+    /// Init a property by it's QName.
+    fn init_property(
+        self,
+        name: &QName,
+        value: Value<'gc>,
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error>;
+
     /// Retrieve a slot by it's index.
     fn get_slot(self, id: u32) -> Result<Value<'gc>, Error>;
 
     /// Set a slot by it's index.
     fn set_slot(
+        self,
+        id: u32,
+        value: Value<'gc>,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<(), Error>;
+
+    /// Initialize a slot by it's index.
+    fn init_slot(
         self,
         id: u32,
         value: Value<'gc>,

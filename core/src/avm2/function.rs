@@ -379,6 +379,19 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             .set_property(name, value, avm, context, self.into())
     }
 
+    fn init_property(
+        self,
+        name: &QName,
+        value: Value<'gc>,
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        self.0
+            .write(context.gc_context)
+            .base
+            .init_property(name, value, avm, context, self.into())
+    }
+
     fn delete_property(&self, gc_context: MutationContext<'gc, '_>, multiname: &QName) -> bool {
         self.0.write(gc_context).base.delete_property(multiname)
     }
@@ -394,6 +407,15 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
         self.0.write(mc).base.set_slot(id, value, mc)
+    }
+
+    fn init_slot(
+        self,
+        id: u32,
+        value: Value<'gc>,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<(), Error> {
+        self.0.write(mc).base.init_slot(id, value, mc)
     }
 
     fn has_property(self, name: &QName) -> bool {

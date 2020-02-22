@@ -9,7 +9,6 @@ use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, CollectionContext};
-use std::mem::replace;
 
 /// Attributes of properties in the AVM runtime.
 ///
@@ -176,13 +175,51 @@ impl<'gc> Property<'gc> {
                 value, attributes, ..
             } => {
                 if !attributes.contains(ReadOnly) {
-                    replace::<Value<'gc>>(value, new_value.into());
+                    *value = new_value.into();
                 }
 
                 Ok(true)
             }
             Property::Slot { slot_id, .. } => this
                 .set_slot(*slot_id, new_value.into(), context.gc_context)
+                .map(|_v| true),
+        }
+    }
+
+    /// Init a property slot.
+    ///
+    /// The difference between `set` and `init` is that this function does not
+    /// respect `ReadOnly` and will allow initializing nominally `const`
+    /// properties, at least once. Virtual properties with no setter cannot be
+    /// initialized.
+    ///
+    /// This function returns `true` if the set has completed, or `false` if
+    /// it has not yet occured. If `false`, and you need to run code after the
+    /// set has occured, you must recursively execute the top-most frame via
+    /// `run_current_frame`.
+    pub fn init(
+        &mut self,
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        this: Object<'gc>,
+        new_value: impl Into<Value<'gc>>,
+    ) -> Result<bool, Error> {
+        match self {
+            Property::Virtual { set, .. } => {
+                if let Some(function) = set {
+                    let return_value = function.exec(avm, context, this, &[new_value.into()])?;
+                    Ok(return_value.is_immediate())
+                } else {
+                    Ok(true)
+                }
+            }
+            Property::Stored { value, .. } => {
+                *value = new_value.into();
+
+                Ok(true)
+            }
+            Property::Slot { slot_id, .. } => this
+                .init_slot(*slot_id, new_value.into(), context.gc_context)
                 .map(|_v| true),
         }
     }
