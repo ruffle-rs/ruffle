@@ -433,6 +433,13 @@ impl<'gc> Avm2<'gc> {
                 }
                 Op::NewFunction { index } => self.op_new_function(context, index),
                 Op::NewClass { index } => self.op_new_class(context, index),
+                Op::Debug {
+                    is_local_register,
+                    register_name,
+                    register,
+                } => self.op_debug(is_local_register, register_name, register),
+                Op::DebugFile { file_name } => self.op_debug_file(file_name),
+                Op::DebugLine { line_num } => self.op_debug_line(line_num),
                 _ => self.unknown_op(op),
             };
 
@@ -912,6 +919,41 @@ impl<'gc> Avm2<'gc> {
         )?;
 
         self.push(new_class);
+
+        Ok(())
+    }
+
+    #[allow(unused_variables)]
+    fn op_debug(
+        &mut self,
+        is_local_register: bool,
+        register_name: Index<String>,
+        register: u8,
+    ) -> Result<(), Error> {
+        if is_local_register {
+            let register_name = self.pool_string(register_name)?;
+            let value = self.register_value(register as u32)?;
+
+            avm_debug!("Debug: {} = {:?}", register_name, value);
+        } else {
+            avm_debug!("Unknown debugging mode!");
+        }
+
+        Ok(())
+    }
+
+    #[allow(unused_variables)]
+    fn op_debug_file(&mut self, file_name: Index<String>) -> Result<(), Error> {
+        let file_name = self.pool_string(file_name)?;
+
+        avm_debug!("File: {}", file_name);
+
+        Ok(())
+    }
+
+    #[allow(unused_variables)]
+    fn op_debug_line(&mut self, line_num: u32) -> Result<(), Error> {
+        avm_debug!("Line: {}", line_num);
 
         Ok(())
     }
