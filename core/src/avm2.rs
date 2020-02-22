@@ -392,6 +392,7 @@ impl<'gc> Avm2<'gc> {
                 Op::PushTrue => self.op_push_true(),
                 Op::PushUint { value } => self.op_push_uint(value),
                 Op::PushUndefined => self.op_push_undefined(),
+                Op::Dup => self.op_dup(),
                 Op::GetLocal { index } => self.op_get_local(index),
                 Op::SetLocal { index } => self.op_set_local(context, index),
                 Op::Call { num_args } => self.op_call(context, num_args),
@@ -490,6 +491,12 @@ impl<'gc> Avm2<'gc> {
 
     fn op_push_undefined(&mut self) -> Result<(), Error> {
         self.push(Value::Undefined);
+        Ok(())
+    }
+
+    fn op_dup(&mut self) -> Result<(), Error> {
+        self.push(self.stack.last().cloned().unwrap_or(Value::Undefined));
+
         Ok(())
     }
 
