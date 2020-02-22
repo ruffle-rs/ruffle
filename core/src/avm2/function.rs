@@ -80,7 +80,6 @@ impl Avm2MethodEntry {
     }
 
     /// Get a reference to the ABC method entry this refers to.
-    #[allow(dead_code)]
     pub fn method(&self) -> &AbcMethod {
         self.abc.methods.get(self.abc_method as usize).unwrap()
     }
@@ -140,7 +139,7 @@ impl<'gc> Executable<'gc> {
             Executable::Action(a2f) => {
                 let activation = GcCell::allocate(
                     context.gc_context,
-                    Activation::from_action(context, &a2f, reciever, None)?,
+                    Activation::from_action(context, &a2f, reciever, arguments)?,
                 );
 
                 avm.insert_stack_frame(activation);

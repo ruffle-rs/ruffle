@@ -165,19 +165,36 @@ impl<'gc> Activation<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         action: &Avm2Function<'gc>,
         this: Object<'gc>,
-        arguments: Option<Object<'gc>>,
+        arguments: &[Value<'gc>],
     ) -> Result<Self, Error> {
         let method = action.method.clone();
         let scope = action.scope;
         let num_locals = method.body().num_locals;
+        let num_declared_arguments = method.method().params.len() as u32;
+        let local_registers = GcCell::allocate(
+            context.gc_context,
+            RegisterSet::new(num_locals + num_declared_arguments + 1),
+        );
+
+        {
+            let mut write = local_registers.write(context.gc_context);
+            *write.get_mut(0).unwrap() = this.into();
+
+            for i in 0..num_declared_arguments {
+                *write.get_mut(1 + i).unwrap() = arguments
+                    .get(i as usize)
+                    .cloned()
+                    .unwrap_or(Value::Undefined);
+            }
+        }
 
         Ok(Self {
             method,
             pc: 0,
             this,
-            arguments,
+            arguments: None,
             is_executing: false,
-            local_registers: GcCell::allocate(context.gc_context, RegisterSet::new(num_locals)),
+            local_registers,
             return_value: None,
             local_scope: ScriptObject::bare_object(context.gc_context),
             scope,
