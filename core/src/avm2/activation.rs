@@ -5,9 +5,9 @@ use crate::avm2::object::Object;
 use crate::avm2::scope::Scope;
 use crate::avm2::script_object::ScriptObject;
 use crate::avm2::value::Value;
-use crate::avm2::{Avm2, Error};
+use crate::avm2::Error;
 use crate::context::UpdateContext;
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, MutationContext};
 use smallvec::SmallVec;
 use std::rc::Rc;
 use swf::avm2::types::{AbcFile, Index, Script as AbcScript};
@@ -81,10 +81,6 @@ impl<'gc> RegisterSet<'gc> {
     /// Return a mutable reference to a given register, if it exists.
     pub fn get_mut(&mut self, num: u32) -> Option<&mut Value<'gc>> {
         self.0.get_mut(num as usize)
-    }
-
-    pub fn len(&self) -> u32 {
-        self.0.len() as u32
     }
 }
 
@@ -246,12 +242,6 @@ impl<'gc> Activation<'gc> {
         } else {
             false
         }
-    }
-
-    /// Retrieve the return value from a completed activation, if the function
-    /// has already returned.
-    pub fn return_value(&self) -> Option<Value<'gc>> {
-        self.return_value.clone()
     }
 
     /// Set the return value.
