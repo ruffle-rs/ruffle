@@ -9,6 +9,7 @@ use gc_arena::{Collect, MutationContext};
 mod function;
 mod movieclip;
 mod object;
+mod sprite;
 
 /// This structure represents all system builtins' prototypes.
 #[derive(Clone, Collect)]
@@ -29,7 +30,8 @@ pub fn construct_global_scope<'gc>(
 
     let object_proto = ScriptObject::bare_object(mc);
     let function_proto = function::create_proto(mc, object_proto);
-    let movieclip_proto = movieclip::create_proto(mc, object_proto, function_proto);
+    let sprite_proto = sprite::create_proto(mc, object_proto, function_proto);
+    let movieclip_proto = movieclip::create_proto(mc, sprite_proto, function_proto);
 
     object::fill_proto(mc, object_proto, function_proto);
 
@@ -60,6 +62,20 @@ pub fn construct_global_scope<'gc>(
                 mc,
                 function::constructor,
                 function_proto,
+                function_proto,
+            )
+            .unwrap()
+            .into(),
+        )
+        .unwrap();
+    global_scope
+        .install_dynamic_property(
+            mc,
+            QName::new(Namespace::package("flash.display"), "Sprite"),
+            FunctionObject::from_builtin_constr(
+                mc,
+                sprite::constructor,
+                sprite_proto,
                 function_proto,
             )
             .unwrap()
