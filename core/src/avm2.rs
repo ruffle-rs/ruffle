@@ -419,6 +419,7 @@ impl<'gc> Avm2<'gc> {
                 Op::PushWith => self.op_push_with(context),
                 Op::PopScope => self.op_pop_scope(context),
                 Op::GetScopeObject { index } => self.op_get_scope_object(index),
+                Op::GetGlobalScope => self.op_get_global_scope(),
                 Op::FindProperty { index } => self.op_find_property(context, index),
                 Op::FindPropStrict { index } => self.op_find_prop_strict(context, index),
                 Op::GetLex { index } => self.op_get_lex(context, index),
@@ -681,6 +682,27 @@ impl<'gc> Avm2<'gc> {
             }
 
             index -= 1;
+        }
+
+        self.push(
+            scope
+                .map(|s| s.read().locals().clone().into())
+                .unwrap_or(Value::Undefined),
+        );
+
+        Ok(())
+    }
+
+    fn op_get_global_scope(&mut self) -> Result<(), Error> {
+        let mut scope = self.current_stack_frame().unwrap().read().scope();
+
+        while let Some(this_scope) = scope {
+            let parent = this_scope.read().parent_cell();
+            if parent.is_none() {
+                break;
+            }
+
+            scope = parent;
         }
 
         self.push(
