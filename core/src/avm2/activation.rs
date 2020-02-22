@@ -140,6 +140,13 @@ impl<'gc> Activation<'gc> {
         let method = method?;
         let scope = Some(Scope::push_scope(None, global, context.gc_context));
         let num_locals = method.body().num_locals;
+        let local_registers =
+            GcCell::allocate(context.gc_context, RegisterSet::new(num_locals + 1));
+
+        *local_registers
+            .write(context.gc_context)
+            .get_mut(0)
+            .unwrap() = global.into();
 
         Ok(Self {
             method,
@@ -147,7 +154,7 @@ impl<'gc> Activation<'gc> {
             this: global,
             arguments: None,
             is_executing: false,
-            local_registers: GcCell::allocate(context.gc_context, RegisterSet::new(num_locals)),
+            local_registers,
             return_value: None,
             local_scope: ScriptObject::bare_object(context.gc_context),
             scope,
