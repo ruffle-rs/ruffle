@@ -252,10 +252,44 @@ impl<'gc> FunctionObject<'gc> {
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         class: Avm2ClassEntry,
-        proto: Object<'gc>,
+        base_class: Object<'gc>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         fn_proto: Object<'gc>,
     ) -> Result<Object<'gc>, Error> {
+        let super_proto: Result<Object<'gc>, Error> = base_class
+            .get_property(
+                &QName::new(Namespace::public_namespace(), "prototype"),
+                avm,
+                context,
+            )?
+            .resolve(avm, context)?
+            .as_object()
+            .map_err(|_| {
+                let super_name = QName::from_abc_multiname(
+                    &class.abc(),
+                    class.instance().super_name.clone(),
+                );
+
+                if let Ok(super_name) = super_name {
+                    format!(
+                        "Could not resolve superclass prototype {:?}",
+                        super_name.local_name()
+                    )
+                    .into()
+                } else {
+                    format!(
+                        "Could not resolve superclass prototype, and got this error when getting it's name: {:?}",
+                        super_name.unwrap_err()
+                    )
+                    .into()
+                }
+            });
+        let mut class_proto = super_proto?.construct(avm, context, &[])?;
+
+        for trait_entry in class.instance().traits.iter() {
+            class_proto.install_trait(avm, context, class.abc(), trait_entry, scope, fn_proto)?;
+        }
+
         let initializer_index = class.class().init_method.clone();
         let initializer: Result<Avm2MethodEntry, Error> =
             Avm2MethodEntry::from_method_index(class.abc(), initializer_index.clone()).ok_or_else(
@@ -267,6 +301,7 @@ impl<'gc> FunctionObject<'gc> {
                     .into()
                 },
             );
+
         let mut constr: Object<'gc> = FunctionObject(GcCell::allocate(
             context.gc_context,
             FunctionObjectData {
@@ -284,7 +319,7 @@ impl<'gc> FunctionObject<'gc> {
         constr.install_method(
             context.gc_context,
             QName::new(Namespace::public_namespace(), "prototype"),
-            proto,
+            class_proto,
         );
 
         Ok(constr)

@@ -72,52 +72,6 @@ impl<'gc> Scope<'gc> {
         self.parent
     }
 
-    /// Construct a closure scope to be used as the scope stack when invoking a
-    /// function.
-    ///
-    /// This function filters With scopes from the scope chain. If all scopes
-    /// are filtered, this function returns None, representing an empty scope
-    /// stack.
-    pub fn new_closure_scope(
-        mut parent: GcCell<'gc, Self>,
-        mc: MutationContext<'gc, '_>,
-    ) -> Option<GcCell<'gc, Self>> {
-        let mut bottom_scope = None;
-        let mut top_scope: Option<GcCell<'gc, Self>> = None;
-
-        loop {
-            if parent.read().class != ScopeClass::With {
-                let next_scope = GcCell::allocate(
-                    mc,
-                    Self {
-                        parent: None,
-                        class: parent.read().class,
-                        values: parent.read().values,
-                    },
-                );
-
-                if bottom_scope.is_none() {
-                    bottom_scope = Some(next_scope);
-                }
-
-                if let Some(ref scope) = top_scope {
-                    scope.write(mc).parent = Some(next_scope);
-                }
-
-                top_scope = Some(next_scope);
-            }
-
-            let grandparent = parent.read().parent;
-            if let Some(grandparent) = grandparent {
-                parent = grandparent;
-            } else {
-                break;
-            }
-        }
-
-        bottom_scope
-    }
-
     /// Returns a reference to the current local scope object.
     pub fn locals(&self) -> &Object<'gc> {
         &self.values

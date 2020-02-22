@@ -1,6 +1,7 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
 use crate::avm2::activation::{Activation, Avm2ScriptEntry};
+use crate::avm2::function::{Avm2ClassEntry, Avm2MethodEntry, FunctionObject};
 use crate::avm2::globals::SystemPrototypes;
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{Object, TObject};
@@ -14,8 +15,8 @@ use std::io::Cursor;
 use std::rc::Rc;
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
-    AbcFile, Index, MethodBody, Multiname as AbcMultiname, Namespace as AbcNamespace, Op,
-    Script as AbcScript,
+    AbcFile, Class as AbcClass, Index, Method as AbcMethod, MethodBody, Multiname as AbcMultiname,
+    Namespace as AbcNamespace, Op, Script as AbcScript,
 };
 use swf::read::SwfRead;
 
@@ -370,6 +371,18 @@ impl<'gc> Avm2<'gc> {
         Multiname::from_abc_multiname_static(&self.current_abc().unwrap(), index)
     }
 
+    /// Retrieve a method entry from the current ABC file's method table.
+    fn table_method(&mut self, index: Index<AbcMethod>) -> Result<Avm2MethodEntry, Error> {
+        Avm2MethodEntry::from_method_index(self.current_abc().unwrap(), index.clone())
+            .ok_or_else(|| format!("Method index {} does not exist", index.0).into())
+    }
+
+    /// Retrieve a class entry from the current ABC file's method table.
+    fn table_class(&mut self, index: Index<AbcClass>) -> Result<Avm2ClassEntry, Error> {
+        Avm2ClassEntry::from_class_index(self.current_abc().unwrap(), index.clone())
+            .ok_or_else(|| format!("Class index {} does not exist", index.0).into())
+    }
+
     /// Run a single action from a given action reader.
     pub fn do_next_opcode(
         &mut self,
@@ -417,6 +430,8 @@ impl<'gc> Avm2<'gc> {
                 Op::ConstructProp { index, num_args } => {
                     self.op_construct_prop(context, index, num_args)
                 }
+                Op::NewFunction { index } => self.op_new_function(context, index),
+                Op::NewClass { index } => self.op_new_class(context, index),
                 _ => self.unknown_op(op),
             };
 
@@ -832,6 +847,49 @@ impl<'gc> Avm2<'gc> {
         let object = proto.construct(self, context, &args)?;
         ctor.call(object, &args, self, context)?
             .resolve(self, context)?;
+
+        Ok(())
+    }
+
+    fn op_new_function(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        index: Index<AbcMethod>,
+    ) -> Result<(), Error> {
+        let method_entry = self.table_method(index)?;
+        let scope = self.current_stack_frame().unwrap().read().scope();
+
+        let new_fn = FunctionObject::from_abc_method(
+            context.gc_context,
+            method_entry,
+            scope,
+            self.system_prototypes.function,
+        );
+
+        self.push(new_fn);
+
+        Ok(())
+    }
+
+    fn op_new_class(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        index: Index<AbcClass>,
+    ) -> Result<(), Error> {
+        let base_class = self.pop().as_object()?;
+        let class_entry = self.table_class(index)?;
+        let scope = self.current_stack_frame().unwrap().read().scope();
+
+        let new_class = FunctionObject::from_abc_class(
+            self,
+            context,
+            class_entry,
+            base_class,
+            scope,
+            self.system_prototypes.function,
+        )?;
+
+        self.push(new_class);
 
         Ok(())
     }

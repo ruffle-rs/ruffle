@@ -3,7 +3,7 @@
 use crate::avm2::function::{
     Avm2ClassEntry, Avm2Function, Avm2MethodEntry, Executable, FunctionObject,
 };
-use crate::avm2::names::{Multiname, Namespace, QName};
+use crate::avm2::names::{Multiname, QName};
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::scope::Scope;
 use crate::avm2::script_object::ScriptObject;
@@ -213,39 +213,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     .map_err(|_e| {
                         format!("Could not resolve superclass {:?}", super_name.local_name()).into()
                     });
-                let super_proto: Result<Object<'gc>, Error> = super_class?
-                    .get_property(
-                        &QName::new(Namespace::public_namespace(), "prototype"),
-                        avm,
-                        context,
-                    )?
-                    .resolve(avm, context)?
-                    .as_object()
-                    .map_err(|_e| {
-                        format!(
-                            "Could not resolve superclass prototype {:?}",
-                            super_name.local_name()
-                        )
-                        .into()
-                    });
-                let mut class_proto = super_proto?.construct(avm, context, &[])?;
-
-                for trait_entry in type_entry.instance().traits.iter() {
-                    class_proto.install_trait(
-                        avm,
-                        context,
-                        type_entry.abc(),
-                        trait_entry,
-                        scope,
-                        fn_proto,
-                    )?;
-                }
 
                 let class = FunctionObject::from_abc_class(
                     avm,
                     context,
                     type_entry.clone(),
-                    class_proto,
+                    super_class?,
                     scope,
                     fn_proto,
                 )?;
