@@ -145,7 +145,7 @@ impl<'gc> Avm2<'gc> {
         Ok(())
     }
 
-    /// Destroy the current stack frame (if there is one).
+    /// Destroy the current stack frame (if there is one) with a return value.
     ///
     /// The given return value will be pushed on the stack if there is a
     /// function to return it to. Otherwise, it will be discarded.
@@ -173,6 +173,21 @@ impl<'gc> Avm2<'gc> {
         }
 
         Ok(())
+    }
+
+    /// Destroy the current stack frame (if there is one) with an exception.
+    ///
+    /// TODO: This function should allow exception recovery at some point in
+    /// the future.
+    ///
+    /// NOTE: This means that if you are starting a brand new AVM stack just to
+    /// get it's return value, you won't get that value. Instead, retain a cell
+    /// referencing the oldest activation frame and use that to retrieve the
+    /// return value.
+    fn unwind_stack_frame(&mut self) {
+        if let Some(_frame) = self.current_stack_frame() {
+            self.stack_frames.pop();
+        }
     }
 
     /// Perform some action with the current stack frame's reader.
@@ -449,6 +464,7 @@ impl<'gc> Avm2<'gc> {
 
             if let Err(ref e) = result {
                 log::error!("AVM2 error: {}", e);
+                self.unwind_stack_frame();
                 return result;
             }
         }
