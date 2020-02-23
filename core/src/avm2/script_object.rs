@@ -218,7 +218,11 @@ impl<'gc> ScriptObjectData<'gc> {
         this: Object<'gc>,
     ) -> Result<(), Error> {
         if let Some(prop) = self.values.get_mut(name) {
-            prop.set(avm, context, this, value)?;
+            if let Some(slot_id) = prop.slot_id() {
+                self.set_slot(slot_id, value, context.gc_context)?;
+            } else {
+                prop.set(avm, context, this, value)?;
+            }
         } else {
             //TODO: Not all classes are dynamic like this
             self.values
@@ -237,7 +241,11 @@ impl<'gc> ScriptObjectData<'gc> {
         this: Object<'gc>,
     ) -> Result<(), Error> {
         if let Some(prop) = self.values.get_mut(name) {
-            prop.init(avm, context, this, value)?;
+            if let Some(slot_id) = prop.slot_id() {
+                self.init_slot(slot_id, value, context.gc_context)?;
+            } else {
+                prop.init(avm, context, this, value)?;
+            }
         } else {
             //TODO: Not all classes are dynamic like this
             self.values

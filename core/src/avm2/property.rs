@@ -155,6 +155,9 @@ impl<'gc> Property<'gc> {
     /// it has not yet occured. If `false`, and you need to run code after the
     /// set has occured, you must recursively execute the top-most frame via
     /// `run_current_frame`.
+    ///
+    /// This function cannot set slot properties and will panic if one
+    /// is encountered.
     pub fn set(
         &mut self,
         avm: &mut Avm2<'gc>,
@@ -180,9 +183,7 @@ impl<'gc> Property<'gc> {
 
                 Ok(true)
             }
-            Property::Slot { slot_id, .. } => this
-                .set_slot(*slot_id, new_value.into(), context.gc_context)
-                .map(|_v| true),
+            Property::Slot { slot_id, .. } => panic!("Cannot recursively set slots"),
         }
     }
 
@@ -197,6 +198,9 @@ impl<'gc> Property<'gc> {
     /// it has not yet occured. If `false`, and you need to run code after the
     /// set has occured, you must recursively execute the top-most frame via
     /// `run_current_frame`.
+    ///
+    /// This function cannot initialize slot properties and will panic if one
+    /// is encountered.
     pub fn init(
         &mut self,
         avm: &mut Avm2<'gc>,
@@ -218,9 +222,17 @@ impl<'gc> Property<'gc> {
 
                 Ok(true)
             }
-            Property::Slot { slot_id, .. } => this
-                .init_slot(*slot_id, new_value.into(), context.gc_context)
-                .map(|_v| true),
+            Property::Slot { slot_id, .. } => panic!("Cannot recursively init slots"),
+        }
+    }
+
+    /// Retrieve the slot ID of a property.
+    ///
+    /// This function yields `None` if this property is not a slot.
+    pub fn slot_id(&self) -> Option<u32> {
+        match self {
+            Property::Slot { slot_id, .. } => Some(*slot_id),
+            _ => None,
         }
     }
 
