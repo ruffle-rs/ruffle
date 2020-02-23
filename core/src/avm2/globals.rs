@@ -3,12 +3,29 @@
 use crate::avm2::function::{FunctionObject, NativeFunction};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
+use crate::avm2::return_value::ReturnValue;
 use crate::avm2::script_object::ScriptObject;
+use crate::avm2::value::Value;
+use crate::avm2::{Avm2, Error};
+use crate::context::UpdateContext;
 use gc_arena::{Collect, MutationContext};
 
 mod flash;
 mod function;
 mod object;
+
+fn trace<'gc>(
+    _avm: &mut Avm2<'gc>,
+    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(s) = args.get(0) {
+        log::info!(target: "avm_trace", "{}", s.as_string()?);
+    }
+
+    Ok(Value::Undefined.into())
+}
 
 /// This structure represents all system builtins' prototypes.
 #[derive(Clone, Collect)]
@@ -18,6 +35,25 @@ pub struct SystemPrototypes<'gc> {
     pub function: Object<'gc>,
 }
 
+/// Add a free-function builtin to the global scope.
+fn function<'gc>(
+    mc: MutationContext<'gc, '_>,
+    mut global_scope: Object<'gc>,
+    package: &str,
+    name: &str,
+    nf: NativeFunction<'gc>,
+    fn_proto: Object<'gc>,
+) {
+    global_scope
+        .install_dynamic_property(
+            mc,
+            QName::new(Namespace::package(package), name),
+            FunctionObject::from_builtin(mc, nf, fn_proto).into(),
+        )
+        .unwrap()
+}
+
+/// Add a class builtin to the global scope.
 fn class<'gc>(
     mc: MutationContext<'gc, '_>,
     mut global_scope: Object<'gc>,
@@ -71,6 +107,7 @@ pub fn construct_global_scope<'gc>(
         fn_proto,
         fn_proto,
     );
+    function(mc, gs, "", "trace", trace, fn_proto);
 
     // package `flash.events`
     let eventdispatcher_proto =
