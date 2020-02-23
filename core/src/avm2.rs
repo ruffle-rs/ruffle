@@ -730,11 +730,12 @@ impl<'gc> Avm2<'gc> {
         index: Index<AbcMultiname>,
     ) -> Result<(), Error> {
         let multiname = self.pool_multiname(index)?;
-        let result = if let Some(scope) = self.current_stack_frame().unwrap().read().scope() {
-            scope.read().find(&multiname, self, context)?
-        } else {
-            None
-        };
+        let result = self
+            .current_stack_frame()
+            .unwrap()
+            .read()
+            .scope()
+            .and_then(|scope| scope.read().find(&multiname, self, context));
 
         self.push(result.map(|o| o.into()).unwrap_or(Value::Undefined));
 
@@ -747,12 +748,12 @@ impl<'gc> Avm2<'gc> {
         index: Index<AbcMultiname>,
     ) -> Result<(), Error> {
         let multiname = self.pool_multiname(index)?;
-        let found: Result<Object<'gc>, Error> =
-            if let Some(scope) = self.current_stack_frame().unwrap().read().scope() {
-                scope.read().find(&multiname, self, context)?
-            } else {
-                None
-            }
+        let found: Result<Object<'gc>, Error> = self
+            .current_stack_frame()
+            .unwrap()
+            .read()
+            .scope()
+            .and_then(|scope| scope.read().find(&multiname, self, context))
             .ok_or_else(|| format!("Property does not exist: {:?}", multiname.local_name()).into());
         let result: Value<'gc> = found?.into();
 
@@ -767,13 +768,14 @@ impl<'gc> Avm2<'gc> {
         index: Index<AbcMultiname>,
     ) -> Result<(), Error> {
         let multiname = self.pool_multiname_static(index)?;
-        let found: Result<ReturnValue<'gc>, Error> =
-            if let Some(scope) = self.current_stack_frame().unwrap().read().scope() {
-                Ok(scope.read().resolve(&multiname, self, context)?)
-            } else {
-                Err("No objects exist on scope".into())
-            };
-        let result: Value<'gc> = found?.resolve(self, context)?;
+        let found: Result<Result<ReturnValue<'gc>, Error>, Error> = self
+            .current_stack_frame()
+            .unwrap()
+            .read()
+            .scope()
+            .and_then(|scope| scope.read().resolve(&multiname, self, context))
+            .ok_or_else(|| format!("Property does not exist: {:?}", multiname.local_name()).into());
+        let result: Value<'gc> = found??.resolve(self, context)?;
 
         self.push(result);
 

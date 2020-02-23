@@ -3,7 +3,6 @@
 use crate::avm2::names::Multiname;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::return_value::ReturnValue;
-use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -96,15 +95,17 @@ impl<'gc> Scope<'gc> {
     }
 
     /// Find an object that contains a given property in the scope stack.
+    ///
+    /// This function yields `None` if no such scope exists.
     pub fn find(
         &self,
         name: &Multiname,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Option<Object<'gc>>, Error> {
+    ) -> Option<Object<'gc>> {
         if let Some(qname) = self.locals().resolve_multiname(name) {
             if self.locals().has_property(&qname) {
-                return Ok(Some(*self.locals()));
+                return Some(*self.locals());
             }
         }
 
@@ -112,20 +113,22 @@ impl<'gc> Scope<'gc> {
             return scope.find(name, avm, context);
         }
 
-        //TODO: This should actually be an error.
-        Ok(None)
+        None
     }
 
     /// Resolve a particular value in the scope chain.
+    ///
+    /// This function yields `None` if no such scope exists to provide the
+    /// property's value.
     pub fn resolve(
         &self,
         name: &Multiname,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Option<Result<ReturnValue<'gc>, Error>> {
         if let Some(qname) = self.locals().resolve_multiname(name) {
             if self.locals().has_property(&qname) {
-                return self.locals().get_property(&qname, avm, context);
+                return Some(self.locals().get_property(&qname, avm, context));
             }
         }
 
@@ -134,6 +137,6 @@ impl<'gc> Scope<'gc> {
         }
 
         //TODO: Should undefined variables halt execution?
-        Ok(Value::Undefined.into())
+        None
     }
 }
