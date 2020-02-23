@@ -6,10 +6,9 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::script_object::ScriptObject;
 use gc_arena::{Collect, MutationContext};
 
+mod flash;
 mod function;
-mod movieclip;
 mod object;
-mod sprite;
 
 /// This structure represents all system builtins' prototypes.
 #[derive(Clone, Collect)]
@@ -30,8 +29,8 @@ pub fn construct_global_scope<'gc>(
 
     let object_proto = ScriptObject::bare_object(mc);
     let function_proto = function::create_proto(mc, object_proto);
-    let sprite_proto = sprite::create_proto(mc, object_proto, function_proto);
-    let movieclip_proto = movieclip::create_proto(mc, sprite_proto, function_proto);
+    let sprite_proto = flash::display::sprite::create_proto(mc, object_proto, function_proto);
+    let movieclip_proto = flash::display::movieclip::create_proto(mc, sprite_proto, function_proto);
 
     object::fill_proto(mc, object_proto, function_proto);
 
@@ -74,7 +73,7 @@ pub fn construct_global_scope<'gc>(
             QName::new(Namespace::package("flash.display"), "Sprite"),
             FunctionObject::from_builtin_constr(
                 mc,
-                sprite::constructor,
+                flash::display::sprite::constructor,
                 sprite_proto,
                 function_proto,
             )
@@ -88,7 +87,7 @@ pub fn construct_global_scope<'gc>(
             QName::new(Namespace::package("flash.display"), "MovieClip"),
             FunctionObject::from_builtin_constr(
                 mc,
-                movieclip::constructor,
+                flash::display::movieclip::constructor,
                 movieclip_proto,
                 function_proto,
             )

@@ -25,7 +25,5 @@ pub fn create_proto<'gc>(
     _fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     // TODO: Use `StageObject` here.
-    let movieclip_proto = ScriptObject::object(mc, super_proto);
-
-    movieclip_proto
+    ScriptObject::object(mc, super_proto)
 }
