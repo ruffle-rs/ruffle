@@ -183,7 +183,7 @@ impl<'gc> Property<'gc> {
 
                 Ok(true)
             }
-            Property::Slot { slot_id, .. } => panic!("Cannot recursively set slots"),
+            Property::Slot { .. } => panic!("Cannot recursively set slots"),
         }
     }
 
@@ -222,7 +222,7 @@ impl<'gc> Property<'gc> {
 
                 Ok(true)
             }
-            Property::Slot { slot_id, .. } => panic!("Cannot recursively init slots"),
+            Property::Slot { .. } => panic!("Cannot recursively init slots"),
         }
     }
 
