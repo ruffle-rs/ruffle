@@ -89,12 +89,13 @@ impl<'gc> Avm2<'gc> {
 
         let abc_file = Rc::new(read.read()?);
 
-        if !abc_file.scripts.is_empty() {
-            let entrypoint_script: Index<AbcScript> = Index::new(abc_file.scripts.len() as u32 - 1);
+        for i in (0..abc_file.scripts.len()).rev() {
+            let entrypoint_script: Index<AbcScript> = Index::new(i as u32);
             let entrypoint: Result<Avm2ScriptEntry, Error> =
-                Avm2ScriptEntry::from_script_index(abc_file, entrypoint_script.clone()).ok_or_else(
-                    || format!("Script method {} does not exist", entrypoint_script.0).into(),
-                );
+                Avm2ScriptEntry::from_script_index(abc_file.clone(), entrypoint_script.clone())
+                    .ok_or_else(|| {
+                        format!("Script method {} does not exist", entrypoint_script.0).into()
+                    });
             let entrypoint = entrypoint?;
             let scope = Scope::push_scope(None, self.globals(), context.gc_context);
 
@@ -730,6 +731,7 @@ impl<'gc> Avm2<'gc> {
         index: Index<AbcMultiname>,
     ) -> Result<(), Error> {
         let multiname = self.pool_multiname(index)?;
+        avm_debug!("Resolving {:?}", multiname);
         let result = self
             .current_stack_frame()
             .unwrap()
@@ -748,6 +750,7 @@ impl<'gc> Avm2<'gc> {
         index: Index<AbcMultiname>,
     ) -> Result<(), Error> {
         let multiname = self.pool_multiname(index)?;
+        avm_debug!("Resolving {:?}", multiname);
         let found: Result<Object<'gc>, Error> = self
             .current_stack_frame()
             .unwrap()
@@ -768,6 +771,7 @@ impl<'gc> Avm2<'gc> {
         index: Index<AbcMultiname>,
     ) -> Result<(), Error> {
         let multiname = self.pool_multiname_static(index)?;
+        avm_debug!("Resolving {:?}", multiname);
         let found: Result<Result<ReturnValue<'gc>, Error>, Error> = self
             .current_stack_frame()
             .unwrap()
