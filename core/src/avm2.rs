@@ -977,12 +977,9 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         arg_count: u32,
     ) -> Result<(), Error> {
-        let mut args = Vec::new();
-        for _ in 0..arg_count {
-            args.push(self.pop());
-        }
-
+        let args = self.pop_args(arg_count);
         let ctor = self.pop().as_object()?;
+
         let proto = ctor
             .get_property(
                 &QName::new(Namespace::public_namespace(), "prototype"),
@@ -1005,14 +1002,10 @@ impl<'gc> Avm2<'gc> {
         index: Index<AbcMultiname>,
         arg_count: u32,
     ) -> Result<(), Error> {
-        let mut args = Vec::new();
-        for _ in 0..arg_count {
-            args.push(self.pop());
-        }
-
+        let args = self.pop_args(arg_count);
         let multiname = self.pool_multiname(index)?;
-
         let source = self.pop().as_object()?;
+
         let ctor_name: Result<QName, Error> =
             source.resolve_multiname(&multiname).ok_or_else(|| {
                 format!("Could not resolve property {:?}", multiname.local_name()).into()
