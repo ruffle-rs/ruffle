@@ -1094,7 +1094,7 @@ impl<'gc> Avm1<'gc> {
         let source_clip = self.resolve_target_display_object(context, start_clip, source)?;
 
         if let Some(movie_clip) = source_clip.and_then(|o| o.as_movie_clip()) {
-            let _ = globals::movie_clip::duplicate_movie_clip(
+            let _ = globals::movie_clip::duplicate_movie_clip_with_bias(
                 movie_clip,
                 self,
                 context,
@@ -2215,7 +2215,7 @@ impl<'gc> Avm1<'gc> {
         let target_clip = self.resolve_target_display_object(context, start_clip, target)?;
 
         if let Some(target_clip) = target_clip.and_then(|o| o.as_movie_clip()) {
-            let _ = globals::movie_clip::remove_movie_clip(target_clip, context, 0);
+            let _ = globals::movie_clip::remove_movie_clip_with_bias(target_clip, context, 0);
         } else {
             log::warn!("RemoveSprite: Source is not a movie clip");
         }

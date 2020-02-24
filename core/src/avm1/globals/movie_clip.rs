@@ -139,100 +139,28 @@ pub fn create_proto<'gc>(
         "attachMovie" => attach_movie,
         "createEmptyMovieClip" => create_empty_movie_clip,
         "createTextField" => create_text_field,
-        "duplicateMovieClip" => |movie_clip: MovieClip<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args| {
-            // duplicateMovieClip method uses biased depth compared to CloneSprite
-            duplicate_movie_clip(movie_clip, avm, context, args, AVM_DEPTH_BIAS)
-        },
-        "stopDrag" => stop_drag,
-        "nextFrame" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
-            movie_clip.next_frame(context);
-            Ok(Value::Undefined.into())
-        },
-        "prevFrame" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
-            movie_clip.prev_frame(context);
-            Ok(Value::Undefined.into())
-        },
-        "play" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
-            movie_clip.play(context);
-            Ok(Value::Undefined.into())
-        },
-        "removeMovieClip" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
-            // removeMovieClip method uses biased depth compared to RemoveSprite
-            remove_movie_clip(movie_clip, context, AVM_DEPTH_BIAS)
-        },
-        "stop" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
-            movie_clip.stop(context);
-            Ok(Value::Undefined.into())
-        },
-        "getBytesLoaded" => |_movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _args| {
-            // TODO find a correct value
-            Ok(1.0.into())
-        },
-        "getBytesTotal" => |_movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _args| {
-            // TODO find a correct value
-            Ok(1.0.into())
-        },
+        "duplicateMovieClip" => duplicate_movie_clip,
+        "getBytesLoaded" => get_bytes_loaded,
+        "getBytesTotal" => get_bytes_total,
         "getDepth" => get_depth,
         "getNextHighestDepth" => get_next_highest_depth,
-        "hitTest" => |movie_clip: MovieClip<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args: &[Value<'gc>]| {
-            hit_test(movie_clip, avm, context, args)
-        },
+        "globalToLocal" => global_to_local,
         "gotoAndPlay" => goto_and_play,
         "gotoAndStop" => goto_and_stop,
-        "startDrag" => start_drag,
-        "swapDepths" => swap_depths,
-        "toString" => |movie_clip: MovieClip<'gc>, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _args| {
-            Ok(movie_clip.path().into())
-        },
+        "hitTest" => hit_test,
+        "loadMovie" => load_movie,
+        "loadVariables" => load_variables,
         "localToGlobal" => local_to_global,
-        "globalToLocal" => global_to_local,
-        "loadMovie" => |target: MovieClip<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args: &[Value<'gc>]| {
-            let url = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_string(avm, context)?;
-            let method = args.get(1).cloned().unwrap_or(Value::Undefined);
-            let method = NavigationMethod::from_method_str(&method.coerce_to_string(avm, context)?);
-            let (url, opts) = avm.locals_into_request_options(context, url, method);
-            let fetch = context.navigator.fetch(url, opts);
-            let process = context.load_manager.load_movie_into_clip(
-                context.player.clone().unwrap(),
-                DisplayObject::MovieClip(target),
-                fetch,
-                None
-            );
-
-            context.navigator.spawn_future(process);
-
-            Ok(Value::Undefined.into())
-        },
-        "loadVariables" => |target: MovieClip<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args: &[Value<'gc>]| {
-            let url = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_string(avm, context)?;
-            let method = args.get(1).cloned().unwrap_or(Value::Undefined);
-            let method = NavigationMethod::from_method_str(&method.coerce_to_string(avm, context)?);
-            let (url, opts) = avm.locals_into_request_options(context, url, method);
-            let fetch = context.navigator.fetch(url, opts);
-            let process = context.load_manager.load_form_into_object(
-                context.player.clone().unwrap(),
-                target.object().as_object()?,
-                fetch,
-            );
-
-            context.navigator.spawn_future(process);
-
-            Ok(Value::Undefined.into())
-        },
-        "unloadMovie" => |mut target: MovieClip<'gc>, _avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args: &[Value<'gc>]| {
-            target.unload(context);
-            target.replace_with_movie(context.gc_context, None);
-
-            Ok(Value::Undefined.into())
-        }
+        "nextFrame" => next_frame,
+        "play" => play,
+        "prevFrame" => prev_frame,
+        "removeMovieClip" => remove_movie_clip,
+        "startDrag" => start_drag,
+        "stop" => stop,
+        "stopDrag" => stop_drag,
+        "swapDepths" => swap_depths,
+        "toString" => to_string,
+        "unloadMovie" => unload_movie
     );
 
     object.add_property(
@@ -408,7 +336,17 @@ fn create_text_field<'gc>(
     }
 }
 
-pub fn duplicate_movie_clip<'gc>(
+fn duplicate_movie_clip<'gc>(
+    movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    // duplicateMovieClip method uses biased depth compared to CloneSprite
+    duplicate_movie_clip_with_bias(movie_clip, avm, context, args, AVM_DEPTH_BIAS)
+}
+
+pub fn duplicate_movie_clip_with_bias<'gc>(
     movie_clip: MovieClip<'gc>,
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
@@ -472,7 +410,27 @@ pub fn duplicate_movie_clip<'gc>(
     }
 }
 
-pub fn get_depth<'gc>(
+fn get_bytes_loaded<'gc>(
+    _movie_clip: MovieClip<'gc>,
+    _avm: &mut Avm1<'gc>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    // TODO find a correct value
+    Ok(1.0.into())
+}
+
+fn get_bytes_total<'gc>(
+    _movie_clip: MovieClip<'gc>,
+    _avm: &mut Avm1<'gc>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    // TODO find a correct value
+    Ok(1.0.into())
+}
+
+fn get_depth<'gc>(
     movie_clip: MovieClip<'gc>,
     avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
@@ -486,7 +444,7 @@ pub fn get_depth<'gc>(
     }
 }
 
-pub fn get_next_highest_depth<'gc>(
+fn get_next_highest_depth<'gc>(
     movie_clip: MovieClip<'gc>,
     avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
@@ -506,7 +464,7 @@ pub fn get_next_highest_depth<'gc>(
     }
 }
 
-pub fn goto_and_play<'gc>(
+fn goto_and_play<'gc>(
     movie_clip: MovieClip<'gc>,
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
@@ -515,7 +473,7 @@ pub fn goto_and_play<'gc>(
     goto_frame(movie_clip, avm, context, args, false, 0)
 }
 
-pub fn goto_and_stop<'gc>(
+fn goto_and_stop<'gc>(
     movie_clip: MovieClip<'gc>,
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
@@ -561,7 +519,47 @@ pub fn goto_frame<'gc>(
     Ok(Value::Undefined.into())
 }
 
-pub fn remove_movie_clip<'gc>(
+fn next_frame<'gc>(
+    movie_clip: MovieClip<'gc>,
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    movie_clip.next_frame(context);
+    Ok(Value::Undefined.into())
+}
+
+fn play<'gc>(
+    movie_clip: MovieClip<'gc>,
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    movie_clip.play(context);
+    Ok(Value::Undefined.into())
+}
+
+fn prev_frame<'gc>(
+    movie_clip: MovieClip<'gc>,
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    movie_clip.prev_frame(context);
+    Ok(Value::Undefined.into())
+}
+
+fn remove_movie_clip<'gc>(
+    movie_clip: MovieClip<'gc>,
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    // removeMovieClip method uses biased depth compared to RemoveSprite
+    remove_movie_clip_with_bias(movie_clip, context, AVM_DEPTH_BIAS)
+}
+
+pub fn remove_movie_clip_with_bias<'gc>(
     movie_clip: MovieClip<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     depth_bias: i32,
@@ -584,7 +582,7 @@ pub fn remove_movie_clip<'gc>(
     Ok(Value::Undefined.into())
 }
 
-pub fn start_drag<'gc>(
+fn start_drag<'gc>(
     movie_clip: MovieClip<'gc>,
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
@@ -594,7 +592,17 @@ pub fn start_drag<'gc>(
     Ok(Value::Undefined.into())
 }
 
-pub fn stop_drag<'gc>(
+fn stop<'gc>(
+    movie_clip: MovieClip<'gc>,
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    movie_clip.stop(context);
+    Ok(Value::Undefined.into())
+}
+
+fn stop_drag<'gc>(
     _movie_clip: MovieClip<'gc>,
     _avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
@@ -605,7 +613,7 @@ pub fn stop_drag<'gc>(
     Ok(Value::Undefined.into())
 }
 
-pub fn swap_depths<'gc>(
+fn swap_depths<'gc>(
     movie_clip: MovieClip<'gc>,
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
@@ -650,7 +658,16 @@ pub fn swap_depths<'gc>(
     Ok(Value::Undefined.into())
 }
 
-pub fn local_to_global<'gc>(
+fn to_string<'gc>(
+    movie_clip: MovieClip<'gc>,
+    _avm: &mut Avm1<'gc>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    Ok(movie_clip.path().into())
+}
+
+fn local_to_global<'gc>(
     movie_clip: MovieClip<'gc>,
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
@@ -682,7 +699,7 @@ pub fn local_to_global<'gc>(
     Ok(Value::Undefined.into())
 }
 
-pub fn global_to_local<'gc>(
+fn global_to_local<'gc>(
     movie_clip: MovieClip<'gc>,
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
@@ -710,6 +727,71 @@ pub fn global_to_local<'gc>(
     } else {
         log::warn!("MovieClip.globalToLocal: Missing point parameter");
     }
+
+    Ok(Value::Undefined.into())
+}
+
+fn load_movie<'gc>(
+    target: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let url = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_string(avm, context)?;
+    let method = args.get(1).cloned().unwrap_or(Value::Undefined);
+    let method = NavigationMethod::from_method_str(&method.coerce_to_string(avm, context)?);
+    let (url, opts) = avm.locals_into_request_options(context, url, method);
+    let fetch = context.navigator.fetch(url, opts);
+    let process = context.load_manager.load_movie_into_clip(
+        context.player.clone().unwrap(),
+        DisplayObject::MovieClip(target),
+        fetch,
+        None,
+    );
+
+    context.navigator.spawn_future(process);
+
+    Ok(Value::Undefined.into())
+}
+
+fn load_variables<'gc>(
+    target: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let url = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_string(avm, context)?;
+    let method = args.get(1).cloned().unwrap_or(Value::Undefined);
+    let method = NavigationMethod::from_method_str(&method.coerce_to_string(avm, context)?);
+    let (url, opts) = avm.locals_into_request_options(context, url, method);
+    let fetch = context.navigator.fetch(url, opts);
+    let process = context.load_manager.load_form_into_object(
+        context.player.clone().unwrap(),
+        target.object().as_object()?,
+        fetch,
+    );
+
+    context.navigator.spawn_future(process);
+
+    Ok(Value::Undefined.into())
+}
+
+fn unload_movie<'gc>(
+    mut target: MovieClip<'gc>,
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    target.unload(context);
+    target.replace_with_movie(context.gc_context, None);
 
     Ok(Value::Undefined.into())
 }
