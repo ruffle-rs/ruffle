@@ -552,11 +552,7 @@ impl Player {
             // NOTE: We have to copy all the layer pointers into a separate list
             // because level updates can create more levels, which we don't
             // want to run frames on
-            let mut levels = vec![];
-
-            for (_depth, level) in update_context.levels.iter() {
-                levels.push(*level);
-            }
+            let levels: Vec<_> = update_context.levels.values().copied().collect();
 
             for mut level in levels {
                 level.run_frame(update_context);
