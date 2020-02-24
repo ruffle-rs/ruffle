@@ -145,6 +145,7 @@ pub fn create_proto<'gc>(
         "getBytesTotal" => get_bytes_total,
         "getDepth" => get_depth,
         "getNextHighestDepth" => get_next_highest_depth,
+        "getRect" => get_rect,
         "globalToLocal" => global_to_local,
         "gotoAndPlay" => goto_and_play,
         "gotoAndStop" => goto_and_stop,
@@ -741,6 +742,17 @@ fn get_bounds<'gc>(
     } else {
         Ok(Value::Undefined.into())
     }
+}
+
+fn get_rect<'gc>(
+    movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    // TODO: This should get the bounds ignoring strokes. Always equal to or smaller than getBounds.
+    // Just defer to getBounds for now. Will have to store edge_bounds vs. shape_bounds in Graphic.
+    get_bounds(movie_clip, avm, context, args)
 }
 
 fn global_to_local<'gc>(
