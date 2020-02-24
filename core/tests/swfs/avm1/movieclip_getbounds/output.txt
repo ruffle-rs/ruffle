@@ -59,14 +59,14 @@
 521.9
 
 // clip3.getBounds(undefined)
--119.8
--89.8
+-119.3
+-89.3
 50
 68
 
 // clip3.getBounds(o)
--5.8
--107.8
+-5.3
+-107.3
 164
 50
 
@@ -80,5 +80,89 @@ undefined
 undefined
 
 // clip.clip.getBounds('clip.clip')
+undefined
+
+// clip.clip.getRect()
+-50
+-112
+154.95
+50
+
+// clip.clip.getRect(clip.clip)
+-50
+-112
+154.95
+50
+
+// clip.clip.getRect(clip.clip)
+-50
+-112
+154.95
+50
+
+// clip.clip.getRect(clip.clip.clip)
+-154.95
+-100
+50
+471.9
+
+// clip.clip.getRect(clip)
+-35.35
+-57.25
+94.4
+72.5
+
+// clip.clip.getRect(_root)
+99.95
+100
+261.95
+304.95
+
+// clip.clip.getRect(clip2)
+-124.65
+210.05
+145.75
+469.5
+
+// clip.getRect('/')
+3.5
+50
+308.4
+354.9
+
+// clip.getRect('/clip')
+-35.35
+-35.35
+76.7
+68.2
+
+// clip.getRect('clip:clip')
+-204.95
+-99.9
+99.95
+521.9
+
+// clip3.getRect(undefined)
+-119.3
+-89.3
+50
+68
+
+// clip3.getRect(o)
+-5.3
+-107.3
+164
+50
+
+// clip.clip.getRect(undefined)
+undefined
+
+// clip.clip.getRect(undefined)
+undefined
+
+// clip.getRect('')
+undefined
+
+// clip.clip.getRect('clip.clip')
 undefined
 
