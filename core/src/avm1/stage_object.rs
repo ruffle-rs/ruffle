@@ -75,14 +75,14 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         } else if let Some(child) = self.display_object.get_child_by_name(name) {
             // 3) Child display objects with the given instance name
             Ok(child.object().into())
-        } else if let Some(layer) = self.display_object.get_layer_by_path(name, context) {
-            // 4) Top-level layers
-            Ok(layer.object().into())
+        } else if let Some(level) = self.display_object.get_level_by_path(name, context) {
+            // 4) _levelN
+            Ok(level.object().into())
         } else {
             // 5) Prototype
             crate::avm1::object::search_prototype(self.proto(), name, avm, context, (*self).into())
         }
-        // 4) TODO: __resolve?
+        // 6) TODO: __resolve?
     }
 
     fn get_local(
@@ -189,7 +189,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
         if self
             .display_object
-            .get_layer_by_path(name, context)
+            .get_level_by_path(name, context)
             .is_some()
         {
             return true;

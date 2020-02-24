@@ -35,10 +35,13 @@ struct GcRoot<'gc>(GcCell<'gc, GcRootData<'gc>>);
 struct GcRootData<'gc> {
     library: Library<'gc>,
 
-    /// The list of layers on the current stage.
+    /// The list of levels on the current stage.
     ///
-    /// Each layer is a `_root` MovieClip that holds a particular SWF movie.
-    layers: BTreeMap<u32, DisplayObject<'gc>>,
+    /// Each level is a `_root` MovieClip that holds a particular SWF movie, also accessible via
+    /// the `_levelN` property.
+    /// levels[0] represents the initial SWF file that was loaded.
+    levels: BTreeMap<u32, DisplayObject<'gc>>,
+
     mouse_hovered_object: Option<DisplayObject<'gc>>, // TODO: Remove GcCell wrapped inside GcCell.
 
     /// The object being dragged via a `startDrag` action.
@@ -66,7 +69,7 @@ impl<'gc> GcRootData<'gc> {
         &mut LoadManager<'gc>,
     ) {
         (
-            &mut self.layers,
+            &mut self.levels,
             &mut self.library,
             &mut self.action_queue,
             &mut self.avm,
@@ -188,8 +191,8 @@ impl Player {
 
                 let mut library = Library::default();
                 let root = MovieClip::from_movie(gc_context, movie.clone()).into();
-                let mut layers = BTreeMap::new();
-                layers.insert(0, root);
+                let mut levels = BTreeMap::new();
+                levels.insert(0, root);
 
                 library
                     .library_for_movie_mut(movie.clone())
@@ -199,7 +202,7 @@ impl Player {
                     gc_context,
                     GcRootData {
                         library,
-                        layers,
+                        levels,
                         mouse_hovered_object: None,
                         drag_object: None,
                         avm: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
@@ -233,9 +236,9 @@ impl Player {
             let mut root_data = gc_root.0.write(gc_context);
             let mc_proto = root_data.avm.prototypes().movie_clip;
 
-            for (_i, layer) in root_data.layers.iter_mut() {
-                layer.post_instantiation(gc_context, *layer, mc_proto);
-                layer.set_depth(gc_context, 0);
+            for (_i, level) in root_data.levels.iter_mut() {
+                level.post_instantiation(gc_context, *level, mc_proto);
+                level.set_depth(gc_context, 0);
             }
         });
 
@@ -369,10 +372,10 @@ impl Player {
 
         if button_event.is_some() {
             self.mutate_with_update_context(|_avm, context| {
-                let layers: Vec<DisplayObject<'_>> = context.layers.values().copied().collect();
-                for layer in layers {
+                let levels: Vec<DisplayObject<'_>> = context.levels.values().copied().collect();
+                for level in levels {
                     if let Some(button_event) = button_event {
-                        let state = layer.propagate_button_event(context, button_event);
+                        let state = level.propagate_button_event(context, button_event);
                         if state == ButtonEventResult::Handled {
                             return;
                         }
@@ -392,17 +395,17 @@ impl Player {
 
         if clip_event.is_some() || mouse_event_name.is_some() {
             self.mutate_with_update_context(|_avm, context| {
-                let layers: Vec<DisplayObject<'_>> = context.layers.values().copied().collect();
+                let levels: Vec<DisplayObject<'_>> = context.levels.values().copied().collect();
 
-                for layer in layers {
+                for level in levels {
                     if let Some(clip_event) = clip_event {
-                        layer.propagate_clip_event(context, clip_event);
+                        level.propagate_clip_event(context, clip_event);
                     }
                 }
 
                 if let Some(mouse_event_name) = mouse_event_name {
                     context.action_queue.queue_actions(
-                        *context.layers.get(&0).expect("root layer"),
+                        *context.levels.get(&0).expect("root level"),
                         ActionType::NotifyListeners {
                             listener: SystemListener::Mouse,
                             method: mouse_event_name,
@@ -485,9 +488,9 @@ impl Player {
         self.mutate_with_update_context(|avm, context| {
             // Check hovered object.
             let mut new_hovered = None;
-            for (_depth, layer) in context.layers.iter().rev() {
+            for (_depth, level) in context.levels.iter().rev() {
                 if new_hovered.is_none() {
-                    new_hovered = layer.mouse_pick(*layer, (mouse_pos.0, mouse_pos.1));
+                    new_hovered = level.mouse_pick(*level, (mouse_pos.0, mouse_pos.1));
                 } else {
                     break;
                 }
@@ -527,7 +530,7 @@ impl Player {
     fn preload(&mut self) {
         self.mutate_with_update_context(|_avm, context| {
             let mut morph_shapes = fnv::FnvHashMap::default();
-            let root = *context.layers.get(&0).expect("root layer");
+            let root = *context.levels.get(&0).expect("root level");
             root.as_movie_clip()
                 .unwrap()
                 .preload(context, &mut morph_shapes);
@@ -545,18 +548,18 @@ impl Player {
 
     pub fn run_frame(&mut self) {
         self.update(|_avm, update_context| {
-            // TODO: In what order are layers run?
+            // TODO: In what order are levels run?
             // NOTE: We have to copy all the layer pointers into a separate list
-            // because layer updates can create more layers, which we don't
+            // because level updates can create more levels, which we don't
             // want to run frames on
-            let mut layers = vec![];
+            let mut levels = vec![];
 
-            for (_depth, layer) in update_context.layers.iter() {
-                layers.push(*layer);
+            for (_depth, level) in update_context.levels.iter() {
+                levels.push(*level);
             }
 
-            for mut layer in layers {
-                layer.run_frame(update_context);
+            for mut level in levels {
+                level.run_frame(update_context);
             }
         })
     }
@@ -590,8 +593,8 @@ impl Player {
                 clip_depth_stack: vec![],
             };
 
-            for (_depth, layer) in root_data.layers.iter() {
-                layer.render(&mut render_context);
+            for (_depth, level) in root_data.levels.iter() {
+                level.render(&mut render_context);
             }
         });
         transform_stack.pop();
@@ -772,7 +775,7 @@ impl Player {
         self.gc_arena.mutate(|gc_context, gc_root| {
             let mut root_data = gc_root.0.write(gc_context);
             let mouse_hovered_object = root_data.mouse_hovered_object;
-            let (layers, library, action_queue, avm, drag_object, load_manager) =
+            let (levels, library, action_queue, avm, drag_object, load_manager) =
                 root_data.update_context_params();
 
             let mut update_context = UpdateContext {
@@ -788,7 +791,7 @@ impl Player {
                 input,
                 action_queue,
                 gc_context,
-                layers,
+                levels,
                 mouse_hovered_object,
                 mouse_position,
                 drag_object,

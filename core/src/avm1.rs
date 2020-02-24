@@ -935,26 +935,26 @@ impl<'gc> Avm1<'gc> {
         clip
     }
 
-    /// Resolve a layer by ID.
+    /// Resolve a level by ID.
     ///
-    /// If the layer does not exist, then it will be created and instantiated
+    /// If the level does not exist, then it will be created and instantiated
     /// with a script object.
-    pub fn resolve_layer(
+    pub fn resolve_level(
         &self,
         level_id: u32,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> DisplayObject<'gc> {
-        if let Some(layer) = context.layers.get(&level_id) {
-            *layer
+        if let Some(level) = context.levels.get(&level_id) {
+            *level
         } else {
-            let mut layer: DisplayObject<'_> =
+            let mut level: DisplayObject<'_> =
                 MovieClip::new(NEWEST_PLAYER_VERSION, context.gc_context).into();
 
-            layer.post_instantiation(context.gc_context, layer, self.prototypes.movie_clip);
-            layer.set_depth(context.gc_context, level_id as i32);
-            context.layers.insert(level_id, layer);
+            level.post_instantiation(context.gc_context, level, self.prototypes.movie_clip);
+            level.set_depth(context.gc_context, level_id as i32);
+            context.levels.insert(level_id, level);
 
-            layer
+            level
         }
     }
 
@@ -1649,11 +1649,11 @@ impl<'gc> Avm1<'gc> {
             let url = url.to_string();
             let level_id = target[6..].parse::<u32>()?;
             let fetch = context.navigator.fetch(url, RequestOptions::get());
-            let layer = self.resolve_layer(level_id, context);
+            let level = self.resolve_level(level_id, context);
 
             let process = context.load_manager.load_movie_into_clip(
                 context.player.clone().unwrap(),
-                layer,
+                level,
                 fetch,
                 None,
             );

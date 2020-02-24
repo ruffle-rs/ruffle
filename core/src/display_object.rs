@@ -640,18 +640,19 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
         // TODO: Make a HashMap from name -> child?
         self.children().find(|child| &*child.name() == name)
     }
-    /// Get another layer by layer name.
+
+    /// Get another level by level name.
     ///
-    /// Since layers don't have instance names, this function instead parses
-    /// their ID and uses that to retrieve the layer.
-    fn get_layer_by_path(
+    /// Since levels don't have instance names, this function instead parses
+    /// their ID and uses that to retrieve the level.
+    fn get_level_by_path(
         &self,
         name: &str,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Option<DisplayObject<'gc>> {
         if name.get(0..min(name.len(), 6)) == Some("_level") {
-            if let Some(layer_id) = name.get(6..).and_then(|v| v.parse::<u32>().ok()) {
-                return context.layers.get(&layer_id).copied();
+            if let Some(level_id) = name.get(6..).and_then(|v| v.parse::<u32>().ok()) {
+                return context.levels.get(&level_id).copied();
             }
         }
 

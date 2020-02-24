@@ -65,8 +65,8 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// The RNG, used by the AVM `RandomNumber` opcode,  `Math.random(),` and `random()`.
     pub rng: &'a mut SmallRng,
 
-    /// All loaded layers of the current player.
-    pub layers: &'a mut BTreeMap<u32, DisplayObject<'gc>>,
+    /// All loaded levels of the current player.
+    pub levels: &'a mut BTreeMap<u32, DisplayObject<'gc>>,
 
     /// The current set of system-specified prototypes to use when constructing
     /// new built-in objects.

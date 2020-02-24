@@ -28,15 +28,15 @@ where
         let mut root: DisplayObject<'_> = MovieClip::new(swf_version, gc_context).into();
         root.post_instantiation(gc_context, root, avm.prototypes().movie_clip);
         root.set_depth(gc_context, 0);
-        let mut layers = BTreeMap::new();
-        layers.insert(0, root);
+        let mut levels = BTreeMap::new();
+        levels.insert(0, root);
 
         let mut context = UpdateContext {
             gc_context,
             global_time: 0,
             player_version: 32,
             swf: &swf,
-            layers: &mut layers,
+            levels: &mut levels,
             rng: &mut SmallRng::from_seed([0u8; 16]),
             audio: &mut NullAudioBackend::new(),
             input: &mut NullInputBackend::new(),

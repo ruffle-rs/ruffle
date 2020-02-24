@@ -170,7 +170,7 @@ fn attach_sound<'gc>(
         let name = name.clone().coerce_to_string(avm, context)?;
         let movie = sound_object
             .owner()
-            .or_else(|| context.layers.get(&0).copied())
+            .or_else(|| context.levels.get(&0).copied())
             .and_then(|o| o.movie());
         if let Some(movie) = movie {
             if let Some(Character::Sound(sound)) = context
@@ -413,7 +413,7 @@ fn stop<'gc>(
             let name = name.clone().coerce_to_string(avm, context)?;
             let movie = sound
                 .owner()
-                .or_else(|| context.layers.get(&0).copied())
+                .or_else(|| context.levels.get(&0).copied())
                 .and_then(|o| o.movie());
             if let Some(movie) = movie {
                 if let Some(Character::Sound(sound)) = context
