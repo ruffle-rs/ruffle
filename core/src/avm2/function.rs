@@ -290,12 +290,13 @@ impl<'gc> FunctionObject<'gc> {
             class_proto.install_trait(avm, context, class.abc(), trait_entry, scope, fn_proto)?;
         }
 
-        let initializer_index = class.class().init_method.clone();
+        // TODO: Get the class initializer, and store it somewhere.
+        let initializer_index = class.instance().init_method.clone();
         let initializer: Result<Avm2MethodEntry, Error> =
             Avm2MethodEntry::from_method_index(class.abc(), initializer_index.clone()).ok_or_else(
                 || {
                     format!(
-                        "Class initializer method index {} does not exist",
+                        "Instance initializer method index {} does not exist",
                         initializer_index.0
                     )
                     .into()
