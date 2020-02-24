@@ -463,6 +463,7 @@ impl<'gc> Avm2<'gc> {
                 Op::NewObject { num_args } => self.op_new_object(context, num_args),
                 Op::NewFunction { index } => self.op_new_function(context, index),
                 Op::NewClass { index } => self.op_new_class(context, index),
+                Op::CoerceA => self.op_coerce_a(),
                 Op::Debug {
                     is_local_register,
                     register_name,
@@ -1114,6 +1115,10 @@ impl<'gc> Avm2<'gc> {
 
         self.push(new_class);
 
+        Ok(())
+    }
+
+    fn op_coerce_a(&mut self) -> Result<(), Error> {
         Ok(())
     }
 
