@@ -65,7 +65,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     ) -> Result<ReturnValue<'gc>, Error> {
         let props = avm.display_properties;
         // Property search order for DisplayObjects:
-        if self.has_own_property(name) {
+        if self.has_own_property(context, name) {
             // 1) Actual properties on the underlying object
             self.get_local(name, avm, context, (*self).into())
         } else if let Some(property) = props.read().get_by_name(&name) {
@@ -75,11 +75,14 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         } else if let Some(child) = self.display_object.get_child_by_name(name) {
             // 3) Child display objects with the given instance name
             Ok(child.object().into())
+        } else if let Some(level) = self.display_object.get_level_by_path(name, context) {
+            // 4) _levelN
+            Ok(level.object().into())
         } else {
-            // 4) Prototype
+            // 5) Prototype
             crate::avm1::object::search_prototype(self.proto(), name, avm, context, (*self).into())
         }
-        // 4) TODO: __resolve?
+        // 6) TODO: __resolve?
     }
 
     fn get_local(
@@ -100,7 +103,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let props = avm.display_properties;
-        if self.base.has_own_property(name) {
+        if self.base.has_own_property(context, name) {
             // 1) Actual proeprties on the underlying object
             self.base
                 .internal_set(name, value, avm, context, (*self).into())
@@ -175,8 +178,8 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .add_property(gc_context, name, get, set, attributes)
     }
 
-    fn has_property(&self, name: &str) -> bool {
-        if self.base.has_property(name) {
+    fn has_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
+        if self.base.has_property(context, name) {
             return true;
         }
 
@@ -184,12 +187,20 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             return true;
         }
 
+        if self
+            .display_object
+            .get_level_by_path(name, context)
+            .is_some()
+        {
+            return true;
+        }
+
         false
     }
 
-    fn has_own_property(&self, name: &str) -> bool {
+    fn has_own_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
         // Note that `hasOwnProperty` does NOT return true for child display objects.
-        self.base.has_own_property(name)
+        self.base.has_own_property(context, name)
     }
 
     fn is_property_enumerable(&self, name: &str) -> bool {

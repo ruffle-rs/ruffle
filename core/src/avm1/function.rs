@@ -319,7 +319,11 @@ impl<'gc> Executable<'gc> {
                 }
 
                 if af.preload_root {
-                    frame.set_local_register(preload_r, avm.root_object(ac), ac.gc_context);
+                    frame.set_local_register(
+                        preload_r,
+                        af.base_clip.root().object(),
+                        ac.gc_context,
+                    );
                     preload_r += 1;
                 }
 
@@ -544,12 +548,12 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             .add_property(gc_context, name, get, set, attributes)
     }
 
-    fn has_property(&self, name: &str) -> bool {
-        self.base.has_property(name)
+    fn has_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
+        self.base.has_property(context, name)
     }
 
-    fn has_own_property(&self, name: &str) -> bool {
-        self.base.has_own_property(name)
+    fn has_own_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
+        self.base.has_own_property(context, name)
     }
 
     fn is_property_overwritable(&self, name: &str) -> bool {

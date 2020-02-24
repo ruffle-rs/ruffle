@@ -140,12 +140,12 @@ impl<'gc> TObject<'gc> for XMLObject<'gc> {
         self.base().proto()
     }
 
-    fn has_property(&self, name: &str) -> bool {
-        self.base().has_property(name)
+    fn has_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
+        self.base().has_property(context, name)
     }
 
-    fn has_own_property(&self, name: &str) -> bool {
-        self.base().has_own_property(name)
+    fn has_own_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
+        self.base().has_own_property(context, name)
     }
 
     fn is_property_overwritable(&self, name: &str) -> bool {

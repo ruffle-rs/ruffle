@@ -17,6 +17,7 @@ mod key;
 mod math;
 pub(crate) mod mouse;
 pub(crate) mod movie_clip;
+mod movie_clip_loader;
 pub(crate) mod number;
 mod object;
 mod sound;
@@ -154,6 +155,9 @@ pub fn create_globals<'gc>(
     let movie_clip_proto: Object<'gc> =
         movie_clip::create_proto(gc_context, object_proto, function_proto);
 
+    let movie_clip_loader_proto: Object<'gc> =
+        movie_clip_loader::create_proto(gc_context, object_proto, function_proto);
+
     let sound_proto: Object<'gc> = sound::create_proto(gc_context, object_proto, function_proto);
 
     let text_field_proto: Object<'gc> =
@@ -199,6 +203,12 @@ pub fn create_globals<'gc>(
         Executable::Native(movie_clip::constructor),
         Some(function_proto),
         Some(movie_clip_proto),
+    );
+    let movie_clip_loader = FunctionObject::function(
+        gc_context,
+        Executable::Native(movie_clip_loader::constructor),
+        Some(function_proto),
+        Some(movie_clip_loader_proto),
     );
     let sound = FunctionObject::function(
         gc_context,
@@ -249,6 +259,12 @@ pub fn create_globals<'gc>(
     globals.define_value(gc_context, "Object", object.into(), EnumSet::empty());
     globals.define_value(gc_context, "Function", function.into(), EnumSet::empty());
     globals.define_value(gc_context, "MovieClip", movie_clip.into(), EnumSet::empty());
+    globals.define_value(
+        gc_context,
+        "MovieClipLoader",
+        movie_clip_loader.into(),
+        EnumSet::empty(),
+    );
     globals.define_value(gc_context, "Sound", sound.into(), EnumSet::empty());
     globals.define_value(gc_context, "TextField", text_field.into(), EnumSet::empty());
     globals.define_value(

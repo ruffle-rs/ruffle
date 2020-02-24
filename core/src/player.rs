@@ -6,15 +6,19 @@ use crate::backend::{
 };
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::display_object::{MorphShape, MovieClip};
-use crate::events::{ButtonEvent, ButtonKeyCode, ClipEvent, PlayerEvent};
+use crate::events::{ButtonEvent, ButtonEventResult, ButtonKeyCode, ClipEvent, PlayerEvent};
 use crate::library::Library;
+use crate::loader::LoadManager;
 use crate::prelude::*;
+use crate::tag_utils::SwfMovie;
 use crate::transform::TransformStack;
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
+use std::collections::BTreeMap;
 use std::convert::TryFrom;
-use std::sync::Arc;
+use std::ops::DerefMut;
+use std::sync::{Arc, Mutex, Weak};
 
 static DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
 
@@ -30,7 +34,14 @@ struct GcRoot<'gc>(GcCell<'gc, GcRootData<'gc>>);
 #[collect(no_drop)]
 struct GcRootData<'gc> {
     library: Library<'gc>,
-    root: DisplayObject<'gc>,
+
+    /// The list of levels on the current stage.
+    ///
+    /// Each level is a `_root` MovieClip that holds a particular SWF movie, also accessible via
+    /// the `_levelN` property.
+    /// levels[0] represents the initial SWF file that was loaded.
+    levels: BTreeMap<u32, DisplayObject<'gc>>,
+
     mouse_hovered_object: Option<DisplayObject<'gc>>, // TODO: Remove GcCell wrapped inside GcCell.
 
     /// The object being dragged via a `startDrag` action.
@@ -38,6 +49,10 @@ struct GcRootData<'gc> {
 
     avm: Avm1<'gc>,
     action_queue: ActionQueue<'gc>,
+
+    /// Object which manages asynchronous processes that need to interact with
+    /// data in the GC arena.
+    load_manager: LoadManager<'gc>,
 }
 
 impl<'gc> GcRootData<'gc> {
@@ -46,18 +61,20 @@ impl<'gc> GcRootData<'gc> {
     fn update_context_params(
         &mut self,
     ) -> (
-        DisplayObject<'gc>,
+        &mut BTreeMap<u32, DisplayObject<'gc>>,
         &mut Library<'gc>,
         &mut ActionQueue<'gc>,
         &mut Avm1<'gc>,
         &mut Option<DragObject<'gc>>,
+        &mut LoadManager<'gc>,
     ) {
         (
-            self.root,
+            &mut self.levels,
             &mut self.library,
             &mut self.action_queue,
             &mut self.avm,
             &mut self.drag_object,
+            &mut self.load_manager,
         )
     }
 }
@@ -65,12 +82,12 @@ type Error = Box<dyn std::error::Error>;
 
 make_arena!(GcArena, GcRoot);
 
-pub struct Player<
-    Audio: AudioBackend,
-    Renderer: RenderBackend,
-    Navigator: NavigatorBackend,
-    Input: InputBackend,
-> {
+type Audio = Box<dyn AudioBackend>;
+type Navigator = Box<dyn NavigatorBackend>;
+type Renderer = Box<dyn RenderBackend>;
+type Input = Box<dyn InputBackend>;
+
+pub struct Player {
     /// The version of the player we're emulating.
     ///
     /// This serves a few purposes, primarily for compatibility:
@@ -83,14 +100,13 @@ pub struct Player<
     ///   Player can be enabled by setting a particular player version.
     player_version: u8,
 
-    swf_data: Arc<Vec<u8>>,
-    swf_version: u8,
+    swf: Arc<SwfMovie>,
 
     is_playing: bool,
 
     audio: Audio,
     renderer: Renderer,
-    navigator: Navigator,
+    pub navigator: Navigator,
     input: Input,
     transform_stack: TransformStack,
     view_matrix: Matrix,
@@ -113,58 +129,40 @@ pub struct Player<
 
     mouse_pos: (Twips, Twips),
     is_mouse_down: bool,
+
+    /// Self-reference to ourselves.
+    ///
+    /// This is a weak reference that is upgraded and handed out in various
+    /// contexts to other parts of the player. It can be used to ensure the
+    /// player lives across `await` calls in async code.
+    self_reference: Option<Weak<Mutex<Self>>>,
 }
 
-impl<
-        Audio: AudioBackend,
-        Renderer: RenderBackend,
-        Navigator: NavigatorBackend,
-        Input: InputBackend,
-    > Player<Audio, Renderer, Navigator, Input>
-{
+impl Player {
     pub fn new(
         mut renderer: Renderer,
         audio: Audio,
         navigator: Navigator,
         input: Input,
         swf_data: Vec<u8>,
-    ) -> Result<Self, Error> {
-        let swf_stream = swf::read::read_swf_header(&swf_data[..]).unwrap();
-        let header = swf_stream.header;
-        let mut reader = swf_stream.reader;
+    ) -> Result<Arc<Mutex<Self>>, Error> {
+        let movie = Arc::new(SwfMovie::from_data(&swf_data));
 
-        // Decompress the entire SWF in memory.
-        // Sometimes SWFs will have an incorrectly compressed stream,
-        // but will otherwise decompress fine up to the End tag.
-        // So just warn on this case and try to continue gracefully.
-        let data = if header.compression == swf::Compression::Lzma {
-            // TODO: The LZMA decoder is still funky.
-            // It always errors, and doesn't return all the data if you use read_to_end,
-            // but read_exact at least returns the data... why?
-            // Does the decoder need to be flushed somehow?
-            let mut data = vec![0u8; swf_stream.uncompressed_length];
-            let _ = reader.get_mut().read_exact(&mut data);
-            data
-        } else {
-            let mut data = Vec::with_capacity(swf_stream.uncompressed_length);
-            if let Err(e) = reader.get_mut().read_to_end(&mut data) {
-                log::error!("Error decompressing SWF, may be corrupt: {}", e);
-            }
-            data
-        };
+        info!(
+            "{}x{}",
+            movie.header().stage_size.x_max,
+            movie.header().stage_size.y_max
+        );
 
-        let swf_len = data.len();
-
-        info!("{}x{}", header.stage_size.x_max, header.stage_size.y_max);
-
-        let movie_width = (header.stage_size.x_max - header.stage_size.x_min).to_pixels() as u32;
-        let movie_height = (header.stage_size.y_max - header.stage_size.y_min).to_pixels() as u32;
+        let movie_width =
+            (movie.header().stage_size.x_max - movie.header().stage_size.x_min).to_pixels() as u32;
+        let movie_height =
+            (movie.header().stage_size.y_max - movie.header().stage_size.y_min).to_pixels() as u32;
 
         let mut player = Player {
             player_version: NEWEST_PLAYER_VERSION,
 
-            swf_data: Arc::new(data),
-            swf_version: header.version,
+            swf: movie.clone(),
 
             is_playing: false,
 
@@ -191,30 +189,30 @@ impl<
                         }
                     };
 
-                let mut library = Library::new();
-                library.set_device_font(device_font);
+                let mut library = Library::default();
+                let root = MovieClip::from_movie(gc_context, movie.clone()).into();
+                let mut levels = BTreeMap::new();
+                levels.insert(0, root);
+
+                library
+                    .library_for_movie_mut(movie.clone())
+                    .set_device_font(device_font);
+
                 GcRoot(GcCell::allocate(
                     gc_context,
                     GcRootData {
                         library,
-                        root: MovieClip::new_with_data(
-                            header.version,
-                            gc_context,
-                            0,
-                            0,
-                            swf_len,
-                            header.num_frames,
-                        )
-                        .into(),
+                        levels,
                         mouse_hovered_object: None,
                         drag_object: None,
                         avm: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
                         action_queue: ActionQueue::new(),
+                        load_manager: LoadManager::new(),
                     },
                 ))
             }),
 
-            frame_rate: header.frame_rate.into(),
+            frame_rate: movie.header().frame_rate.into(),
             frame_accumulator: 0.0,
             global_time: 0,
 
@@ -231,18 +229,28 @@ impl<
             audio,
             navigator,
             input,
+            self_reference: None,
         };
 
         player.gc_arena.mutate(|gc_context, gc_root| {
-            let root_data = gc_root.0.write(gc_context);
-            let mut root = root_data.root;
-            root.post_instantiation(gc_context, root, root_data.avm.prototypes().movie_clip);
+            let mut root_data = gc_root.0.write(gc_context);
+            let mc_proto = root_data.avm.prototypes().movie_clip;
+
+            for (_i, level) in root_data.levels.iter_mut() {
+                level.post_instantiation(gc_context, *level, mc_proto);
+                level.set_depth(gc_context, 0);
+            }
         });
 
         player.build_matrices();
         player.preload();
 
-        Ok(player)
+        let player_box = Arc::new(Mutex::new(player));
+        let mut player_lock = player_box.lock().unwrap();
+        player_lock.self_reference = Some(Arc::downgrade(&player_box));
+        std::mem::drop(player_lock);
+
+        Ok(player_box)
     }
 
     pub fn tick(&mut self, dt: f64) {
@@ -364,9 +372,14 @@ impl<
 
         if button_event.is_some() {
             self.mutate_with_update_context(|_avm, context| {
-                let root = context.root;
-                if let Some(button_event) = button_event {
-                    root.propagate_button_event(context, button_event);
+                let levels: Vec<DisplayObject<'_>> = context.levels.values().copied().collect();
+                for level in levels {
+                    if let Some(button_event) = button_event {
+                        let state = level.propagate_button_event(context, button_event);
+                        if state == ButtonEventResult::Handled {
+                            return;
+                        }
+                    }
                 }
             });
         }
@@ -382,15 +395,17 @@ impl<
 
         if clip_event.is_some() || mouse_event_name.is_some() {
             self.mutate_with_update_context(|_avm, context| {
-                let root = context.root;
+                let levels: Vec<DisplayObject<'_>> = context.levels.values().copied().collect();
 
-                if let Some(clip_event) = clip_event {
-                    root.propagate_clip_event(context, clip_event);
+                for level in levels {
+                    if let Some(clip_event) = clip_event {
+                        level.propagate_clip_event(context, clip_event);
+                    }
                 }
 
                 if let Some(mouse_event_name) = mouse_event_name {
                     context.action_queue.queue_actions(
-                        root,
+                        *context.levels.get(&0).expect("root level"),
                         ActionType::NotifyListeners {
                             listener: SystemListener::Mouse,
                             method: mouse_event_name,
@@ -461,17 +476,28 @@ impl<
         });
     }
 
+    /// Checks to see if a recent update has caused the current mouse hover
+    /// node to change.
     fn update_roll_over(&mut self) -> bool {
         // TODO: While the mouse is down, maintain the hovered node.
         if self.is_mouse_down {
             return false;
         }
         let mouse_pos = self.mouse_pos;
-        // Check hovered object.
+
         self.mutate_with_update_context(|avm, context| {
-            let root = context.root;
-            let new_hovered = root.mouse_pick(root, (mouse_pos.0, mouse_pos.1));
+            // Check hovered object.
+            let mut new_hovered = None;
+            for (_depth, level) in context.levels.iter().rev() {
+                if new_hovered.is_none() {
+                    new_hovered = level.mouse_pick(*level, (mouse_pos.0, mouse_pos.1));
+                } else {
+                    break;
+                }
+            }
+
             let cur_hovered = context.mouse_hovered_object;
+
             if cur_hovered.map(|d| d.as_ptr()) != new_hovered.map(|d| d.as_ptr()) {
                 // RollOut of previous node.
                 if let Some(node) = cur_hovered {
@@ -497,10 +523,14 @@ impl<
         })
     }
 
+    /// Preload the first movie in the player.
+    ///
+    /// This should only be called once. Further movie loads should preload the
+    /// specific `MovieClip` referenced.
     fn preload(&mut self) {
         self.mutate_with_update_context(|_avm, context| {
             let mut morph_shapes = fnv::FnvHashMap::default();
-            let root = context.root;
+            let root = *context.levels.get(&0).expect("root level");
             root.as_movie_clip()
                 .unwrap()
                 .preload(context, &mut morph_shapes);
@@ -510,24 +540,24 @@ impl<
                 let morph_shape = MorphShape::new(context.gc_context, static_data);
                 context
                     .library
+                    .library_for_movie_mut(root.as_movie_clip().unwrap().movie().unwrap())
                     .register_character(id, crate::character::Character::MorphShape(morph_shape));
             }
         });
     }
 
     pub fn run_frame(&mut self) {
-        self.mutate_with_update_context(|avm, context| {
-            let mut root = context.root;
-            root.run_frame(context);
-            Self::run_actions(avm, context);
-        });
+        self.update(|_avm, update_context| {
+            // TODO: In what order are levels run?
+            // NOTE: We have to copy all the layer pointers into a separate list
+            // because level updates can create more levels, which we don't
+            // want to run frames on
+            let levels: Vec<_> = update_context.levels.values().copied().collect();
 
-        // Update mouse state (check for new hovered button, etc.)
-        self.update_drag();
-        self.update_roll_over();
-
-        // GC
-        self.gc_arena.collect_debt();
+            for mut level in levels {
+                level.run_frame(update_context);
+            }
+        })
     }
 
     pub fn render(&mut self) {
@@ -552,13 +582,16 @@ impl<
         self.gc_arena.mutate(|_gc_context, gc_root| {
             let root_data = gc_root.0.read();
             let mut render_context = RenderContext {
-                renderer,
+                renderer: renderer.deref_mut(),
                 library: &root_data.library,
                 transform_stack,
                 view_bounds,
                 clip_depth_stack: vec![],
             };
-            root_data.root.render(&mut render_context);
+
+            for (_depth, level) in root_data.levels.iter() {
+                level.render(&mut render_context);
+            }
         });
         transform_stack.pop();
 
@@ -595,8 +628,8 @@ impl<
         &self.input
     }
 
-    pub fn input_mut(&mut self) -> &mut Input {
-        &mut self.input
+    pub fn input_mut(&mut self) -> &mut dyn InputBackend {
+        self.input.deref_mut()
     }
 
     fn run_actions<'gc>(avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) {
@@ -605,12 +638,13 @@ impl<
             if !actions.is_unload && actions.clip.removed() {
                 continue;
             }
+
             match actions.action_type {
                 // DoAction/clip event code
                 ActionType::Normal { bytecode } => {
                     avm.insert_stack_frame_for_action(
                         actions.clip,
-                        context.swf_version,
+                        context.swf.header().version,
                         bytecode,
                         context,
                     );
@@ -619,19 +653,20 @@ impl<
                 ActionType::Init { bytecode } => {
                     avm.insert_stack_frame_for_init_action(
                         actions.clip,
-                        context.swf_version,
+                        context.swf.header().version,
                         bytecode,
                         context,
                     );
                 }
-
                 // Event handler method call (e.g. onEnterFrame)
-                ActionType::Method { name } => {
-                    avm.insert_stack_frame_for_avm_function(
+                ActionType::Method { object, name, args } => {
+                    avm.insert_stack_frame_for_method(
                         actions.clip,
-                        context.swf_version,
+                        object,
+                        context.swf.header().version,
                         context,
                         name,
+                        &args,
                     );
                 }
 
@@ -645,7 +680,7 @@ impl<
                     // so this doesn't require any further execution.
                     avm.notify_system_listeners(
                         actions.clip,
-                        context.swf_version,
+                        context.swf.version(),
                         context,
                         listener,
                         method,
@@ -706,8 +741,7 @@ impl<
         let (
             player_version,
             global_time,
-            swf_data,
-            swf_version,
+            swf,
             background_color,
             renderer,
             audio,
@@ -717,31 +751,33 @@ impl<
             mouse_position,
             stage_width,
             stage_height,
+            player,
         ) = (
             self.player_version,
             self.global_time,
-            &mut self.swf_data,
-            self.swf_version,
+            &self.swf,
             &mut self.background_color,
-            &mut self.renderer,
-            &mut self.audio,
-            &mut self.navigator,
-            &mut self.input,
+            self.renderer.deref_mut(),
+            self.audio.deref_mut(),
+            self.navigator.deref_mut(),
+            self.input.deref_mut(),
             &mut self.rng,
             &self.mouse_pos,
             Twips::from_pixels(self.movie_width.into()),
             Twips::from_pixels(self.movie_height.into()),
+            self.self_reference.clone(),
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
             let mut root_data = gc_root.0.write(gc_context);
             let mouse_hovered_object = root_data.mouse_hovered_object;
-            let (root, library, action_queue, avm, drag_object) = root_data.update_context_params();
+            let (levels, library, action_queue, avm, drag_object, load_manager) =
+                root_data.update_context_params();
+
             let mut update_context = UpdateContext {
                 player_version,
                 global_time,
-                swf_data,
-                swf_version,
+                swf,
                 library,
                 background_color,
                 rng,
@@ -751,12 +787,14 @@ impl<
                 input,
                 action_queue,
                 gc_context,
-                root,
-                system_prototypes: avm.prototypes().clone(),
+                levels,
                 mouse_hovered_object,
                 mouse_position,
                 drag_object,
                 stage_size: (stage_width, stage_height),
+                system_prototypes: avm.prototypes().clone(),
+                player,
+                load_manager,
             };
 
             let ret = f(avm, &mut update_context);
@@ -776,9 +814,42 @@ impl<
         renderer: &mut Renderer,
     ) -> Result<crate::font::Font<'gc>, Error> {
         let mut reader = swf::read::Reader::new(data, 8);
-        let device_font =
-            crate::font::Font::from_swf_tag(gc_context, renderer, &reader.read_define_font_2(3)?)?;
+        let device_font = crate::font::Font::from_swf_tag(
+            gc_context,
+            renderer.deref_mut(),
+            &reader.read_define_font_2(3)?,
+        )?;
         Ok(device_font)
+    }
+
+    /// Update the current state of the player.
+    ///
+    /// The given function will be called with the current stage root, current
+    /// mouse hover node, AVM, and an update context.
+    ///
+    /// This particular function runs necessary post-update bookkeeping, such
+    /// as executing any actions queued on the update context, keeping the
+    /// hover state up to date, and running garbage collection.
+    pub fn update<F, R>(&mut self, func: F) -> R
+    where
+        F: for<'a, 'gc> FnOnce(&mut Avm1<'gc>, &mut UpdateContext<'a, 'gc, '_>) -> R,
+    {
+        let rval = self.mutate_with_update_context(|avm, context| {
+            let rval = func(avm, context);
+
+            Self::run_actions(avm, context);
+
+            rval
+        });
+
+        // Update mouse state (check for new hovered button, etc.)
+        self.update_drag();
+        self.update_roll_over();
+
+        // GC
+        self.gc_arena.collect_debt();
+
+        rval
     }
 }
 

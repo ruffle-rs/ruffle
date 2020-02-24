@@ -27,7 +27,7 @@ pub struct SwfStream<'a> {
 /// Notably contains the compression format used by the rest of the SWF data.
 ///
 /// [SWF19 p.27](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=27)
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Header {
     pub version: u8,
     pub compression: Compression,
@@ -40,7 +40,7 @@ pub struct Header {
 ///
 /// The vast majority of SWFs will use zlib compression.
 /// [SWF19 p.27](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=27)
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Compression {
     None,
     Zlib,

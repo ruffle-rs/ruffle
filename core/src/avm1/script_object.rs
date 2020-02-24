@@ -379,17 +379,17 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     /// Checks if the object has a given named property.
-    fn has_property(&self, name: &str) -> bool {
-        self.has_own_property(name)
+    fn has_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
+        self.has_own_property(context, name)
             || self
                 .proto()
                 .as_ref()
-                .map_or(false, |p| p.has_property(name))
+                .map_or(false, |p| p.has_property(context, name))
     }
 
     /// Checks if the object has a given named property on itself (and not,
     /// say, the object's prototype or superclass)
-    fn has_own_property(&self, name: &str) -> bool {
+    fn has_own_property(&self, _context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
         if name == "__proto__" {
             return true;
         }
@@ -571,9 +571,12 @@ mod tests {
     use crate::backend::render::NullRenderer;
     use crate::display_object::MovieClip;
     use crate::library::Library;
+    use crate::loader::LoadManager;
     use crate::prelude::*;
+    use crate::tag_utils::SwfMovie;
     use gc_arena::rootless_arena;
     use rand::{rngs::SmallRng, SeedableRng};
+    use std::collections::BTreeMap;
     use std::sync::Arc;
 
     fn with_object<F, R>(swf_version: u8, test: F) -> R
@@ -582,15 +585,19 @@ mod tests {
     {
         rootless_arena(|gc_context| {
             let mut avm = Avm1::new(gc_context, swf_version);
+            let swf = Arc::new(SwfMovie::empty(swf_version));
             let mut root: DisplayObject<'_> = MovieClip::new(swf_version, gc_context).into();
             root.post_instantiation(gc_context, root, avm.prototypes().movie_clip);
+            root.set_depth(gc_context, 0);
+            let mut levels = BTreeMap::new();
+            levels.insert(0, root);
 
             let mut context = UpdateContext {
                 gc_context,
                 global_time: 0,
                 player_version: 32,
-                swf_version,
-                root,
+                swf: &swf,
+                levels: &mut levels,
                 rng: &mut SmallRng::from_seed([0u8; 16]),
                 action_queue: &mut crate::context::ActionQueue::new(),
                 audio: &mut NullAudioBackend::new(),
@@ -601,15 +608,16 @@ mod tests {
                     b: 0,
                     a: 0,
                 },
-                library: &mut Library::new(),
+                library: &mut Library::default(),
                 navigator: &mut NullNavigatorBackend::new(),
                 renderer: &mut NullRenderer::new(),
-                swf_data: &mut Arc::new(vec![]),
                 system_prototypes: avm.prototypes().clone(),
                 mouse_hovered_object: None,
                 mouse_position: &(Twips::new(0), Twips::new(0)),
                 drag_object: &mut None,
                 stage_size: (Twips::from_pixels(550.0), Twips::from_pixels(400.0)),
+                player: None,
+                load_manager: &mut LoadManager::new(),
             };
 
             let object = ScriptObject::object(gc_context, Some(avm.prototypes().object)).into();

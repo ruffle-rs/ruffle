@@ -9,13 +9,14 @@ use crate::display_object::{
 use crate::events::{ButtonKeyCode, ClipEvent};
 use crate::font::Font;
 use crate::prelude::*;
-use crate::tag_utils::{self, DecodeResult, SwfSlice, SwfStream};
+use crate::tag_utils::{self, DecodeResult, SwfMovie, SwfSlice, SwfStream};
 use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
 use std::cell::Ref;
 use std::collections::{BTreeMap, HashMap};
 use std::convert::TryFrom;
+use std::sync::Arc;
 use swf::read::SwfRead;
 
 type FrameNumber = u16;
@@ -32,7 +33,6 @@ pub struct MovieClip<'gc>(GcCell<'gc, MovieClipData<'gc>>);
 #[derive(Clone, Debug)]
 pub struct MovieClipData<'gc> {
     base: DisplayObjectBase<'gc>,
-    swf_version: u8,
     static_data: Gc<'gc, MovieClipStatic>,
     tag_stream_pos: u64,
     current_frame: FrameNumber,
@@ -50,8 +50,7 @@ impl<'gc> MovieClip<'gc> {
             gc_context,
             MovieClipData {
                 base: Default::default(),
-                swf_version,
-                static_data: Gc::allocate(gc_context, MovieClipStatic::default()),
+                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(swf_version)),
                 tag_stream_pos: 0,
                 current_frame: 0,
                 audio_stream: None,
@@ -64,24 +63,20 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn new_with_data(
-        swf_version: u8,
         gc_context: MutationContext<'gc, '_>,
         id: CharacterId,
-        tag_stream_start: u64,
-        tag_stream_len: usize,
+        swf: SwfSlice,
         num_frames: u16,
     ) -> Self {
         MovieClip(GcCell::allocate(
             gc_context,
             MovieClipData {
                 base: Default::default(),
-                swf_version,
                 static_data: Gc::allocate(
                     gc_context,
                     MovieClipStatic {
                         id,
-                        tag_stream_start,
-                        tag_stream_len,
+                        swf,
                         total_frames: num_frames,
                         audio_stream_info: None,
                         frame_labels: HashMap::new(),
@@ -96,6 +91,31 @@ impl<'gc> MovieClip<'gc> {
                 flags: MovieClipFlags::Playing.into(),
             },
         ))
+    }
+
+    /// Construct a movie clip that represents an entire movie.
+    pub fn from_movie(gc_context: MutationContext<'gc, '_>, movie: Arc<SwfMovie>) -> Self {
+        Self::new_with_data(
+            gc_context,
+            0,
+            movie.clone().into(),
+            movie.header().num_frames,
+        )
+    }
+
+    /// Replace the current MovieClip with a completely new SwfMovie.
+    ///
+    /// Playback will start at position zero, any existing streamed audio will
+    /// be terminated, and so on. Children and AVM data will be kept across the
+    /// load boundary.
+    pub fn replace_with_movie(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        movie: Option<Arc<SwfMovie>>,
+    ) {
+        self.0
+            .write(gc_context)
+            .replace_with_movie(gc_context, movie)
     }
 
     pub fn preload(
@@ -249,7 +269,7 @@ impl<'gc> MovieClip<'gc> {
     /// Used by the AVM `Call` action.
     pub fn actions_on_frame(
         self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
         frame: FrameNumber,
     ) -> impl DoubleEndedIterator<Item = SwfSlice> {
         use swf::{read::Reader, TagCode};
@@ -257,11 +277,8 @@ impl<'gc> MovieClip<'gc> {
         let mut actions: SmallVec<[SwfSlice; 2]> = SmallVec::new();
         let mut cur_frame = 1;
         let clip = self.0.read();
-        let swf_version = self.swf_version();
-        let start = clip.tag_stream_start() as usize;
         let len = clip.tag_stream_len();
-        let cursor = std::io::Cursor::new(&context.swf_data[start..start + len]);
-        let mut reader = Reader::new(cursor, swf_version);
+        let mut reader = clip.static_data.swf.read_from(0);
 
         // Iterate through this clip's tags, counting frames until we reach the target frame.
         while cur_frame <= frame && reader.get_ref().position() < len as u64 {
@@ -270,15 +287,9 @@ impl<'gc> MovieClip<'gc> {
                     TagCode::ShowFrame => cur_frame += 1,
                     TagCode::DoAction if cur_frame == frame => {
                         // On the target frame, add any DoAction tags to the array.
-                        let start =
-                            (clip.tag_stream_start() + reader.get_ref().position()) as usize;
-                        let end = start + tag_len;
-                        let code = SwfSlice {
-                            data: std::sync::Arc::clone(context.swf_data),
-                            start,
-                            end,
-                        };
-                        actions.push(code)
+                        if let Some(code) = clip.static_data.swf.resize_to_reader(reader, tag_len) {
+                            actions.push(code)
+                        }
                     }
                     _ => (),
                 }
@@ -299,6 +310,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.0.read().id()
     }
 
+    fn movie(&self) -> Option<Arc<SwfMovie>> {
+        Some(self.0.read().movie())
+    }
+
     fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Children must run first.
         for mut child in self.children() {
@@ -307,7 +322,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
         // Run my load/enterFrame clip event.
         let mut mc = self.0.write(context.gc_context);
-        if !mc.initialized() {
+        let is_load_frame = !mc.initialized();
+        if is_load_frame {
             mc.run_clip_action((*self).into(), context, ClipEvent::Load);
             mc.set_initialized(true);
         } else {
@@ -317,6 +333,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         // Run my SWF tags.
         if mc.playing() {
             mc.run_frame_internal((*self).into(), context, true);
+        }
+
+        if is_load_frame {
+            mc.run_clip_postaction((*self).into(), context, ClipEvent::Load);
         }
     }
 
@@ -406,6 +426,40 @@ unsafe impl<'gc> Collect for MovieClipData<'gc> {
 }
 
 impl<'gc> MovieClipData<'gc> {
+    /// Replace the current MovieClipData with a completely new SwfMovie.
+    ///
+    /// Playback will start at position zero, any existing streamed audio will
+    /// be terminated, and so on. Children and AVM data will NOT be kept across
+    /// the load boundary.
+    ///
+    /// If no movie is provided, then the movie clip will be replaced with an
+    /// empty movie of the same SWF version.
+    pub fn replace_with_movie(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        movie: Option<Arc<SwfMovie>>,
+    ) {
+        let movie = movie.unwrap_or_else(|| Arc::new(SwfMovie::empty(self.movie().version())));
+        let total_frames = movie.header().num_frames;
+
+        self.base.reset_for_movie_load();
+        self.static_data = Gc::allocate(
+            gc_context,
+            MovieClipStatic {
+                id: 0,
+                swf: movie.into(),
+                total_frames,
+                audio_stream_info: None,
+                frame_labels: HashMap::new(),
+            },
+        );
+        self.tag_stream_pos = 0;
+        self.flags = MovieClipFlags::Playing.into();
+        self.current_frame = 0;
+        self.audio_stream = None;
+        self.children = BTreeMap::new();
+    }
+
     fn id(&self) -> CharacterId {
         self.static_data.id
     }
@@ -453,12 +507,8 @@ impl<'gc> MovieClipData<'gc> {
         self.stop_audio_stream(context);
     }
 
-    fn tag_stream_start(&self) -> u64 {
-        self.static_data.tag_stream_start
-    }
-
     fn tag_stream_len(&self) -> usize {
-        self.static_data.tag_stream_len
+        self.static_data.swf.end - self.static_data.swf.start
     }
 
     /// Queues up a goto to the specified frame.
@@ -487,18 +537,6 @@ impl<'gc> MovieClipData<'gc> {
         }
     }
 
-    fn reader<'a>(
-        &self,
-        context: &UpdateContext<'a, '_, '_>,
-    ) -> swf::read::Reader<std::io::Cursor<&'a [u8]>> {
-        let mut cursor = std::io::Cursor::new(
-            &context.swf_data[self.tag_stream_start() as usize
-                ..self.tag_stream_start() as usize + self.tag_stream_len()],
-        );
-        cursor.set_position(self.tag_stream_pos);
-        swf::read::Reader::new(cursor, context.swf_version)
-    }
-
     fn run_frame_internal(
         &mut self,
         self_display_object: DisplayObject<'gc>,
@@ -520,7 +558,8 @@ impl<'gc> MovieClipData<'gc> {
         }
 
         let _tag_pos = self.tag_stream_pos;
-        let mut reader = self.reader(context);
+        let data = self.static_data.swf.clone();
+        let mut reader = data.read_from(self.tag_stream_pos);
         let mut has_stream_block = false;
         use swf::TagCode;
 
@@ -567,10 +606,10 @@ impl<'gc> MovieClipData<'gc> {
         place_object: &swf::PlaceObject,
         copy_previous_properties: bool,
     ) -> Option<DisplayObject<'gc>> {
-        if let Ok(mut child) =
-            context
-                .library
-                .instantiate_by_id(id, context.gc_context, &context.system_prototypes)
+        if let Ok(mut child) = context
+            .library
+            .library_for_movie_mut(self.movie())
+            .instantiate_by_id(id, context.gc_context, &context.system_prototypes)
         {
             // Remove previous child from children list,
             // and add new childonto front of the list.
@@ -693,10 +732,11 @@ impl<'gc> MovieClipData<'gc> {
 
         // Step through the intermediate frames, and aggregate the deltas of each frame.
         let mut frame_pos = self.tag_stream_pos;
-        let mut reader = self.reader(context);
+        let data = self.static_data.swf.clone();
+        let mut reader = data.read_from(self.tag_stream_pos);
         let mut index = 0;
 
-        let len = self.static_data.tag_stream_len as u64;
+        let len = self.tag_stream_len() as u64;
         // Sanity; let's make sure we don't seek way too far.
         // TODO: This should be self.frames_loaded() when we implement that.
         let clamped_frame = if frame <= self.total_frames() {
@@ -705,7 +745,7 @@ impl<'gc> MovieClipData<'gc> {
             self.total_frames()
         };
 
-        while self.current_frame < clamped_frame && frame_pos < len {
+        while self.current_frame() < clamped_frame && frame_pos < len {
             self.current_frame += 1;
             frame_pos = reader.get_inner().position();
 
@@ -875,7 +915,7 @@ impl<'gc> MovieClipData<'gc> {
         event: ClipEvent,
     ) {
         // TODO: What's the behavior for loaded SWF files?
-        if context.swf_version >= 5 {
+        if context.swf.version() >= 5 {
             for clip_action in self
                 .clip_actions
                 .iter()
@@ -892,7 +932,7 @@ impl<'gc> MovieClipData<'gc> {
 
             // Queue ActionScript-defined event handlers after the SWF defined ones.
             // (e.g., clip.onEnterFrame = foo).
-            if context.swf_version >= 6 {
+            if context.swf.version() >= 6 {
                 let name = match event {
                     ClipEvent::Construct => None,
                     ClipEvent::Data => Some("onData"),
@@ -917,11 +957,40 @@ impl<'gc> MovieClipData<'gc> {
                 if let Some(name) = name {
                     context.action_queue.queue_actions(
                         self_display_object,
-                        ActionType::Method { name },
+                        ActionType::Method {
+                            object: self.object.unwrap(),
+                            name,
+                            args: vec![],
+                        },
                         event == ClipEvent::Unload,
                     );
                 }
             }
+        }
+    }
+
+    /// Run clip actions that trigger after the clip's own actions.
+    ///
+    /// Currently, this is purely limited to `MovieClipLoader`'s `onLoadInit`
+    /// event, delivered via the `LoadManager`. We need to be called here so
+    /// that external init code runs after the event.
+    ///
+    /// TODO: If it turns out other `Load` events need to be delayed, perhaps
+    /// we should change which frame triggers a `Load` event, rather than
+    /// making sure our actions run after the clip's.
+    fn run_clip_postaction(
+        &self,
+        self_display_object: DisplayObject<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        event: ClipEvent,
+    ) {
+        // Finally, queue any loaders that may be waiting for this event.
+        if let ClipEvent::Load = event {
+            context.load_manager.movie_clip_on_load(
+                self_display_object,
+                self.object,
+                context.action_queue,
+            );
         }
     }
 
@@ -951,6 +1020,10 @@ impl<'gc> MovieClipData<'gc> {
             context.audio.stop_stream(audio_stream);
         }
     }
+
+    pub fn movie(&self) -> Arc<SwfMovie> {
+        self.static_data.swf.movie.clone()
+    }
 }
 
 // Preloading of definition tags
@@ -965,7 +1038,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
         // TODO: Re-creating static data because preload step occurs after construction.
         // Should be able to hoist this up somewhere, or use MaybeUninit.
         let mut static_data = (&*self.static_data).clone();
-        let mut reader = self.reader(context);
+        let data = self.static_data.swf.clone();
+        let mut reader = data.read_from(self.tag_stream_pos);
         let mut cur_frame = 1;
         let mut ids = fnv::FnvHashMap::default();
         let tag_callback = |reader: &mut _, tag_code, tag_len| match tag_code {
@@ -1059,6 +1133,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(define_bits_lossless.id, Character::Bitmap(bitmap));
         Ok(())
     }
@@ -1089,6 +1164,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let graphic = Graphic::from_swf_tag(context, &swf_shape);
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(swf_shape.id, Character::Graphic(graphic));
         Ok(())
     }
@@ -1196,10 +1272,14 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .get_mut()
             .take(data_len as u64)
             .read_to_end(&mut jpeg_data)?;
-        let bitmap_info =
+        let bitmap_info = context.renderer.register_bitmap_jpeg(
+            id,
+            &jpeg_data,
             context
-                .renderer
-                .register_bitmap_jpeg(id, &jpeg_data, context.library.jpeg_tables());
+                .library
+                .library_for_movie_mut(self.movie())
+                .jpeg_tables(),
+        );
         let bitmap = crate::display_object::Bitmap::new(
             context,
             id,
@@ -1209,6 +1289,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
@@ -1238,6 +1319,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
@@ -1275,6 +1357,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
@@ -1313,6 +1396,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
@@ -1324,9 +1408,15 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
         let swf_button = reader.read_define_button_1()?;
-        let button = Button::from_swf_tag(&swf_button, &context.library, context.gc_context);
+        let button = Button::from_swf_tag(
+            &swf_button,
+            &self.static_data.swf,
+            &context.library,
+            context.gc_context,
+        );
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(swf_button.id, Character::Button(button));
         Ok(())
     }
@@ -1338,9 +1428,15 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
         let swf_button = reader.read_define_button_2()?;
-        let button = Button::from_swf_tag(&swf_button, &context.library, context.gc_context);
+        let button = Button::from_swf_tag(
+            &swf_button,
+            &self.static_data.swf,
+            &context.library,
+            context.gc_context,
+        );
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(swf_button.id, Character::Button(button));
         Ok(())
     }
@@ -1353,7 +1449,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
         tag_len: usize,
     ) -> DecodeResult {
         let button_colors = reader.read_define_button_cxform(tag_len)?;
-        if let Some(button) = context.library.get_character_by_id(button_colors.id) {
+        if let Some(button) = context
+            .library
+            .library_for_movie_mut(self.movie())
+            .get_character_by_id(button_colors.id)
+        {
             if let Character::Button(button) = button {
                 button.set_colors(context.gc_context, &button_colors.color_transforms[..]);
             } else {
@@ -1378,7 +1478,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
         let button_sounds = reader.read_define_button_sound()?;
-        if let Some(button) = context.library.get_character_by_id(button_sounds.id) {
+        if let Some(button) = context
+            .library
+            .library_for_movie_mut(self.movie())
+            .get_character_by_id(button_sounds.id)
+        {
             if let Character::Button(button) = button {
                 button.set_sounds(context.gc_context, button_sounds);
             } else {
@@ -1404,9 +1508,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
         let swf_edit_text = reader.read_define_edit_text()?;
-        let edit_text = EditText::from_swf_tag(context, swf_edit_text);
+        let edit_text = EditText::from_swf_tag(context, self.movie(), swf_edit_text);
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(edit_text.id(), Character::EditText(edit_text));
         Ok(())
     }
@@ -1445,6 +1550,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let font_object = Font::from_swf_tag(context.gc_context, context.renderer, &font).unwrap();
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(font.id, Character::Font(font_object));
         Ok(())
     }
@@ -1459,6 +1565,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let font_object = Font::from_swf_tag(context.gc_context, context.renderer, &font).unwrap();
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(font.id, Character::Font(font_object));
         Ok(())
     }
@@ -1473,6 +1580,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let font_object = Font::from_swf_tag(context.gc_context, context.renderer, &font).unwrap();
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(font.id, Character::Font(font_object));
 
         Ok(())
@@ -1487,12 +1595,15 @@ impl<'gc, 'a> MovieClipData<'gc> {
     ) -> DecodeResult {
         // TODO(Herschel): Can we use a slice of the sound data instead of copying the data?
         use std::io::Read;
-        let mut reader =
-            swf::read::Reader::new(reader.get_mut().take(tag_len as u64), context.swf_version);
+        let mut reader = swf::read::Reader::new(
+            reader.get_mut().take(tag_len as u64),
+            self.static_data.swf.version(),
+        );
         let sound = reader.read_define_sound()?;
         let handle = context.audio.register_sound(&sound).unwrap();
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(sound.id, Character::Sound(handle));
         Ok(())
     }
@@ -1507,11 +1618,17 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let id = reader.read_character_id()?;
         let num_frames = reader.read_u16()?;
         let movie_clip = MovieClip::new_with_data(
-            context.swf_version,
             context.gc_context,
             id,
-            reader.get_ref().position(),
-            tag_len - 4,
+            self.static_data
+                .swf
+                .resize_to_reader(reader, tag_len - 4)
+                .ok_or_else(|| {
+                    std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        "Cannot define sprite with invalid offset and length!",
+                    )
+                })?,
             num_frames,
         );
 
@@ -1519,6 +1636,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
 
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(id, Character::MovieClip(movie_clip));
 
         Ok(())
@@ -1532,9 +1650,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
         version: u8,
     ) -> DecodeResult {
         let text = reader.read_define_text(version)?;
-        let text_object = Text::from_swf_tag(context, &text);
+        let text_object = Text::from_swf_tag(context, self.movie(), &text);
         context
             .library
+            .library_for_movie_mut(self.movie())
             .register_character(text.id, Character::Text(text_object));
         Ok(())
     }
@@ -1547,7 +1666,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
     ) -> DecodeResult {
         let exports = reader.read_export_assets()?;
         for export in exports {
-            context.library.register_export(export.id, &export.name);
+            context
+                .library
+                .library_for_movie_mut(self.movie())
+                .register_export(export.id, &export.name);
         }
         Ok(())
     }
@@ -1588,7 +1710,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .get_mut()
             .take(tag_len as u64)
             .read_to_end(&mut jpeg_data)?;
-        context.library.set_jpeg_tables(jpeg_data);
+        context
+            .library
+            .library_for_movie_mut(self.movie())
+            .set_jpeg_tables(jpeg_data);
         Ok(())
     }
 
@@ -1632,15 +1757,16 @@ impl<'gc, 'a> MovieClipData<'gc> {
         tag_len: usize,
     ) -> DecodeResult {
         // Queue the actions.
-        // TODO: The reader is actually reading the tag slice at this point (tag_stream.take()),
-        // so make sure to get the proper offsets. This feels kind of bad.
-        let start = (self.tag_stream_start() + reader.get_ref().position()) as usize;
-        let end = start + tag_len;
-        let slice = SwfSlice {
-            data: std::sync::Arc::clone(context.swf_data),
-            start,
-            end,
-        };
+        let slice = self
+            .static_data
+            .swf
+            .resize_to_reader(reader, tag_len)
+            .ok_or_else(|| {
+                std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "Invalid source or tag length when running action",
+                )
+            })?;
         context.action_queue.queue_actions(
             self_display_object,
             ActionType::Normal { bytecode: slice },
@@ -1664,19 +1790,20 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let sprite_id = reader.read_u16()?;
         log::info!("Init Action sprite ID {}", sprite_id);
 
-        // TODO: The reader is actually reading the tag slice at this point (tag_stream.take()),
-        // so make sure to get the proper offsets. This feels kind of bad.
-        let start = (self.tag_stream_start() + reader.get_ref().position()) as usize;
-        let end = start + tag_len;
-        let slice = SwfSlice {
-            data: std::sync::Arc::clone(context.swf_data),
-            start,
-            end,
-        };
+        let slice = self
+            .static_data
+            .swf
+            .resize_to_reader(reader, tag_len)
+            .ok_or_else(|| {
+                std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "Invalid source or tag length when running init action",
+                )
+            })?;
         context.action_queue.queue_actions(
             self_display_object,
             ActionType::Init { bytecode: slice },
-            false,
+            true,
         );
         Ok(())
     }
@@ -1765,18 +1892,23 @@ impl<'gc, 'a> MovieClipData<'gc> {
     ) -> DecodeResult {
         if let (Some(stream_info), None) = (&self.static_data.audio_stream_info, self.audio_stream)
         {
-            let pos = self.tag_stream_start() + self.tag_stream_pos;
-            let slice = SwfSlice {
-                data: std::sync::Arc::clone(context.swf_data),
-                start: pos as usize,
-                end: self.tag_stream_start() as usize + self.tag_stream_len(),
-            };
-            self.audio_stream = Some(context.audio.start_stream(
+            let slice = self
+                .static_data
+                .swf
+                .to_start_and_end(self.tag_stream_pos as usize, self.tag_stream_len())
+                .ok_or_else(|| {
+                    std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        "Invalid slice generated when constructing sound stream block",
+                    )
+                })?;
+            let audio_stream = context.audio.start_stream(
                 self.id(),
                 self.current_frame() + 1,
                 slice,
                 &stream_info,
-            ));
+            );
+            self.audio_stream = Some(audio_stream);
         }
 
         Ok(())
@@ -1789,7 +1921,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
         let start_sound = reader.read_start_sound_1()?;
-        if let Some(handle) = context.library.get_sound(start_sound.id) {
+        if let Some(handle) = context
+            .library
+            .library_for_movie_mut(self.movie())
+            .get_sound(start_sound.id)
+        {
             use swf::SoundEvent;
             // The sound event type is controlled by the "Sync" setting in the Flash IDE.
             match start_sound.sound_info.event {
@@ -1818,19 +1954,17 @@ impl<'gc, 'a> MovieClipData<'gc> {
 #[derive(Clone)]
 struct MovieClipStatic {
     id: CharacterId,
-    tag_stream_start: u64,
-    tag_stream_len: usize,
+    swf: SwfSlice,
     frame_labels: HashMap<String, FrameNumber>,
     audio_stream_info: Option<swf::SoundStreamHead>,
     total_frames: FrameNumber,
 }
 
-impl Default for MovieClipStatic {
-    fn default() -> Self {
+impl MovieClipStatic {
+    fn empty(swf_version: u8) -> Self {
         Self {
             id: 0,
-            tag_stream_start: 0,
-            tag_stream_len: 0,
+            swf: SwfSlice::empty(swf_version),
             total_frames: 1,
             frame_labels: HashMap::new(),
             audio_stream_info: None,
@@ -1975,9 +2109,17 @@ pub struct ClipAction {
     action_data: SwfSlice,
 }
 
-impl From<swf::ClipAction> for ClipAction {
-    fn from(other: swf::ClipAction) -> Self {
+impl ClipAction {
+    /// Build a clip action from a SWF movie and a parsed ClipAction.
+    ///
+    /// TODO: Our underlying SWF parser currently does not yield slices of the
+    /// underlying movie, so we cannot convert those slices into a `SwfSlice`.
+    /// Instead, we have to construct a fake `SwfMovie` just to hold one clip
+    /// action.
+    pub fn from_action_and_movie(other: swf::ClipAction, movie: Arc<SwfMovie>) -> Self {
         use swf::ClipEventFlag;
+
+        let len = other.action_data.len();
         Self {
             events: other
                 .events
@@ -2010,9 +2152,9 @@ impl From<swf::ClipAction> for ClipAction {
                 })
                 .collect(),
             action_data: SwfSlice {
-                data: std::sync::Arc::new(other.action_data.clone()),
+                movie: Arc::new(movie.from_movie_and_subdata(other.action_data)),
                 start: 0,
-                end: other.action_data.len(),
+                end: len,
             },
         }
     }

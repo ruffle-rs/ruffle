@@ -1,0 +1,12 @@
+Called from MovieClipLoader
+[object Object]
+true
+false
+Called from New Listener
+[object Object]
+false
+true
+Called from New Listener
+[object Object]
+false
+true

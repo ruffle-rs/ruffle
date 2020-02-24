@@ -161,12 +161,12 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         //`super` cannot have properties defined on it
     }
 
-    fn has_property(&self, name: &str) -> bool {
-        self.0.read().child.has_property(name)
+    fn has_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
+        self.0.read().child.has_property(context, name)
     }
 
-    fn has_own_property(&self, name: &str) -> bool {
-        self.0.read().child.has_own_property(name)
+    fn has_own_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
+        self.0.read().child.has_own_property(context, name)
     }
 
     fn is_property_enumerable(&self, name: &str) -> bool {

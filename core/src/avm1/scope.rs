@@ -232,7 +232,7 @@ impl<'gc> Scope<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error> {
-        if self.locals().has_property(name) {
+        if self.locals().has_property(context, name) {
             return self.locals().get(name, avm, context);
         }
         if let Some(scope) = self.parent() {
@@ -244,13 +244,13 @@ impl<'gc> Scope<'gc> {
     }
 
     /// Check if a particular property in the scope chain is defined.
-    pub fn is_defined(&self, name: &str) -> bool {
-        if self.locals().has_property(name) {
+    pub fn is_defined(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
+        if self.locals().has_property(context, name) {
             return true;
         }
 
         if let Some(scope) = self.parent() {
-            return scope.is_defined(name);
+            return scope.is_defined(context, name);
         }
 
         false
@@ -271,7 +271,8 @@ impl<'gc> Scope<'gc> {
         this: Object<'gc>,
     ) -> Result<(), Error> {
         if self.class == ScopeClass::Target
-            || (self.locals().has_property(name) && self.locals().is_property_overwritable(name))
+            || (self.locals().has_property(context, name)
+                && self.locals().is_property_overwritable(name))
         {
             // Value found on this object, so overwrite it.
             // Or we've hit the executing movie clip, so create it here.
@@ -300,13 +301,18 @@ impl<'gc> Scope<'gc> {
     }
 
     /// Delete a value from scope
-    pub fn delete(&self, name: &str, mc: MutationContext<'gc, '_>) -> bool {
-        if self.locals().has_property(name) {
+    pub fn delete(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+        mc: MutationContext<'gc, '_>,
+    ) -> bool {
+        if self.locals().has_property(context, name) {
             return self.locals().delete(mc, name);
         }
 
         if let Some(scope) = self.parent() {
-            return scope.delete(name, mc);
+            return scope.delete(context, name, mc);
         }
 
         false

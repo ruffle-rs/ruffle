@@ -6,8 +6,10 @@ use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::font::{Glyph, TextFormat};
 use crate::library::Library;
 use crate::prelude::*;
+use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use std::sync::Arc;
 
 /// A dynamic text field.
 /// The text in this text field can be changed dynamically.
@@ -51,7 +53,11 @@ pub struct EditTextData<'gc> {
 
 impl<'gc> EditText<'gc> {
     /// Creates a new `EditText` from an SWF `DefineEditText` tag.
-    pub fn from_swf_tag(context: &mut UpdateContext<'_, 'gc, '_>, swf_tag: swf::EditText) -> Self {
+    pub fn from_swf_tag(
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        swf_movie: Arc<SwfMovie>,
+        swf_tag: swf::EditText,
+    ) -> Self {
         let is_multiline = swf_tag.is_multiline;
         let is_word_wrap = swf_tag.is_word_wrap;
 
@@ -84,7 +90,13 @@ impl<'gc> EditText<'gc> {
                 base: Default::default(),
                 text,
                 new_format: TextFormat::default(),
-                static_data: gc_arena::Gc::allocate(context.gc_context, EditTextStatic(swf_tag)),
+                static_data: gc_arena::Gc::allocate(
+                    context.gc_context,
+                    EditTextStatic {
+                        swf: swf_movie,
+                        text: swf_tag,
+                    },
+                ),
                 is_multiline,
                 is_word_wrap,
                 object: None,
@@ -96,6 +108,7 @@ impl<'gc> EditText<'gc> {
     /// Create a new, dynamic `EditText`.
     pub fn new(
         context: &mut UpdateContext<'_, 'gc, '_>,
+        swf_movie: Arc<SwfMovie>,
         x: f64,
         y: f64,
         width: f64,
@@ -140,7 +153,7 @@ impl<'gc> EditText<'gc> {
             is_device_font: false,
         };
 
-        Self::from_swf_tag(context, swf_tag)
+        Self::from_swf_tag(context, swf_movie, swf_tag)
     }
 
     // TODO: This needs to strip away HTML
@@ -191,16 +204,20 @@ impl<'gc> EditText<'gc> {
     /// `DisplayObject`.
     pub fn text_transform(self) -> Transform {
         let edit_text = self.0.read();
-        let static_data = &edit_text.static_data.0;
+        let static_data = &edit_text.static_data;
 
         // TODO: Many of these properties should change be instance members instead
         // of static data, because they can be altered via ActionScript.
-        let color = static_data.color.as_ref().unwrap_or_else(|| &swf::Color {
-            r: 0,
-            g: 0,
-            b: 0,
-            a: 255,
-        });
+        let color = static_data
+            .text
+            .color
+            .as_ref()
+            .unwrap_or_else(|| &swf::Color {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            });
 
         let mut transform: Transform = Default::default();
         transform.color_transform.r_mult = f32::from(color.r) / 255.0;
@@ -208,7 +225,7 @@ impl<'gc> EditText<'gc> {
         transform.color_transform.b_mult = f32::from(color.b) / 255.0;
         transform.color_transform.a_mult = f32::from(color.a) / 255.0;
 
-        if let Some(layout) = &static_data.layout {
+        if let Some(layout) = &static_data.text.layout {
             transform.matrix.tx += layout.left_margin.get() as f32;
             transform.matrix.tx += layout.indent.get() as f32;
             transform.matrix.ty -= layout.leading.get() as f32;
@@ -224,11 +241,11 @@ impl<'gc> EditText<'gc> {
     /// and returns the adjusted transform.
     pub fn newline(self, height: f32, mut transform: Transform) -> Transform {
         let edit_text = self.0.read();
-        let static_data = &edit_text.static_data.0;
+        let static_data = &edit_text.static_data;
 
         transform.matrix.tx = 0.0;
         transform.matrix.ty += height * Twips::TWIPS_PER_PIXEL as f32;
-        if let Some(layout) = &static_data.layout {
+        if let Some(layout) = &static_data.text.layout {
             transform.matrix.tx += layout.left_margin.get() as f32;
             transform.matrix.tx += layout.indent.get() as f32;
             transform.matrix.ty += layout.leading.get() as f32;
@@ -239,11 +256,11 @@ impl<'gc> EditText<'gc> {
 
     pub fn line_width(self) -> f32 {
         let edit_text = self.0.read();
-        let static_data = &edit_text.static_data.0;
+        let static_data = &edit_text.static_data;
 
         let mut base_width = self.width() as f32;
 
-        if let Some(layout) = &static_data.layout {
+        if let Some(layout) = &static_data.text.layout {
             base_width -= layout.left_margin.to_pixels() as f32;
             base_width -= layout.indent.to_pixels() as f32;
             base_width -= layout.right_margin.to_pixels() as f32;
@@ -273,18 +290,26 @@ impl<'gc> EditText<'gc> {
     /// calculating them is a relatively expensive operation.
     fn line_breaks(self, library: &Library<'gc>) -> Vec<usize> {
         let edit_text = self.0.read();
-        let static_data = &edit_text.static_data.0;
-        let font_id = static_data.font_id.unwrap_or(0);
+        let static_data = &edit_text.static_data;
+        let font_id = static_data.text.font_id.unwrap_or(0);
 
         if edit_text.is_multiline {
             if let Some(font) = library
+                .library_for_movie(self.movie().unwrap())
+                .unwrap()
                 .get_font(font_id)
                 .filter(|font| font.has_glyphs())
-                .or_else(|| library.device_font())
+                .or_else(|| {
+                    library
+                        .library_for_movie(self.movie().unwrap())
+                        .unwrap()
+                        .device_font()
+                })
             {
                 let mut breakpoints = vec![];
                 let mut break_base = 0;
                 let height = static_data
+                    .text
                     .height
                     .map(|v| v.to_pixels() as f32)
                     .unwrap_or_else(|| font.scale());
@@ -343,16 +368,24 @@ impl<'gc> EditText<'gc> {
         let breakpoints = self.line_breaks_cached(context.gc_context, context.library);
 
         let edit_text = self.0.read();
-        let static_data = &edit_text.static_data.0;
-        let font_id = static_data.font_id.unwrap_or(0);
+        let static_data = &edit_text.static_data;
+        let font_id = static_data.text.font_id.unwrap_or(0);
 
         let mut size: (f32, f32) = (0.0, 0.0);
 
         if let Some(font) = context
             .library
+            .library_for_movie(self.movie().unwrap())
+            .unwrap()
             .get_font(font_id)
             .filter(|font| font.has_glyphs())
-            .or_else(|| context.library.device_font())
+            .or_else(|| {
+                context
+                    .library
+                    .library_for_movie(self.movie().unwrap())
+                    .unwrap()
+                    .device_font()
+            })
         {
             let mut start = 0;
             let mut chunks = vec![];
@@ -364,6 +397,7 @@ impl<'gc> EditText<'gc> {
             chunks.push(&edit_text.text[start..]);
 
             let height = static_data
+                .text
                 .height
                 .map(|v| v.to_pixels() as f32)
                 .unwrap_or_else(|| font.scale());
@@ -372,7 +406,7 @@ impl<'gc> EditText<'gc> {
                 let chunk_size = font.measure(chunk, height);
 
                 size.0 = size.0.max(chunk_size.0);
-                if let Some(layout) = &static_data.layout {
+                if let Some(layout) = &static_data.text.layout {
                     size.1 += layout.leading.to_pixels() as f32;
                 }
                 size.1 += chunk_size.1;
@@ -387,7 +421,11 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     impl_display_object!(base);
 
     fn id(&self) -> CharacterId {
-        self.0.read().static_data.0.id
+        self.0.read().static_data.text.id
+    }
+
+    fn movie(&self) -> Option<Arc<SwfMovie>> {
+        Some(self.0.read().static_data.swf.clone())
     }
 
     fn run_frame(&mut self, _context: &mut UpdateContext) {
@@ -424,7 +462,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn self_bounds(&self) -> BoundingBox {
-        self.0.read().static_data.0.bounds.clone().into()
+        self.0.read().static_data.text.bounds.clone().into()
     }
 
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
@@ -433,20 +471,24 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         let mut text_transform = self.text_transform();
 
         let edit_text = self.0.read();
-        let static_data = &edit_text.static_data.0;
-        let font_id = static_data.font_id.unwrap_or(0);
+        let static_data = &edit_text.static_data;
+        let font_id = static_data.text.font_id.unwrap_or(0);
 
         // If the font can't be found or has no glyph information, use the "device font" instead.
         // We're cheating a bit and not actually rendering text using the OS/web.
         // Instead, we embed an SWF version of Noto Sans to use as the "device font", and render
         // it the same as any other SWF outline text.
-        if let Some(font) = context
+        let library = context
             .library
+            .library_for_movie(edit_text.static_data.swf.clone())
+            .unwrap();
+        if let Some(font) = library
             .get_font(font_id)
             .filter(|font| font.has_glyphs())
-            .or_else(|| context.library.device_font())
+            .or_else(|| library.device_font())
         {
             let height = static_data
+                .text
                 .height
                 .map(|v| v.to_pixels() as f32)
                 .unwrap_or_else(|| font.scale());
@@ -503,7 +545,10 @@ unsafe impl<'gc> gc_arena::Collect for EditTextData<'gc> {
 /// Static data shared between all instances of a text object.
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
-struct EditTextStatic(swf::EditText);
+struct EditTextStatic {
+    swf: Arc<SwfMovie>,
+    text: swf::EditText,
+}
 
 unsafe impl<'gc> gc_arena::Collect for EditTextStatic {
     #[inline]

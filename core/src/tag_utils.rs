@@ -1,53 +1,231 @@
 use gc_arena::Collect;
 use std::sync::Arc;
-use swf::TagCode;
+use swf::{Header, TagCode};
 
 pub type DecodeResult = Result<(), Box<dyn std::error::Error>>;
 pub type SwfStream<R> = swf::read::Reader<std::io::Cursor<R>>;
 
-/// A shared-ownership reference to some portion of an immutable datastream.
+/// An open, fully parsed SWF movie ready to play back, either in a Player or a
+/// MovieClip.
+#[derive(Debug, Clone, Collect)]
+#[collect(require_static)]
+pub struct SwfMovie {
+    /// The SWF header parsed from the data stream.
+    header: Header,
+
+    /// Uncompressed SWF data.
+    data: Vec<u8>,
+}
+
+impl SwfMovie {
+    /// Construct an empty movie.
+    pub fn empty(swf_version: u8) -> Self {
+        Self {
+            header: Header {
+                version: swf_version,
+                compression: swf::Compression::None,
+                stage_size: swf::Rectangle::default(),
+                frame_rate: 1.0,
+                num_frames: 0,
+            },
+            data: vec![],
+        }
+    }
+
+    /// Construct a movie from an existing movie with any particular data on it.
+    pub fn from_movie_and_subdata(&self, data: Vec<u8>) -> Self {
+        Self {
+            header: self.header.clone(),
+            data,
+        }
+    }
+
+    /// Construct a movie based on the contents of the SWF datastream.
+    pub fn from_data(swf_data: &[u8]) -> Self {
+        let swf_stream = swf::read::read_swf_header(&swf_data[..]).unwrap();
+        let header = swf_stream.header;
+        let mut reader = swf_stream.reader;
+
+        // Decompress the entire SWF in memory.
+        // Sometimes SWFs will have an incorrectly compressed stream,
+        // but will otherwise decompress fine up to the End tag.
+        // So just warn on this case and try to continue gracefully.
+        let data = if header.compression == swf::Compression::Lzma {
+            // TODO: The LZMA decoder is still funky.
+            // It always errors, and doesn't return all the data if you use read_to_end,
+            // but read_exact at least returns the data... why?
+            // Does the decoder need to be flushed somehow?
+            let mut data = vec![0u8; swf_stream.uncompressed_length];
+            let _ = reader.get_mut().read_exact(&mut data);
+            data
+        } else {
+            let mut data = Vec::with_capacity(swf_stream.uncompressed_length);
+            if let Err(e) = reader.get_mut().read_to_end(&mut data) {
+                log::error!("Error decompressing SWF, may be corrupt: {}", e);
+            }
+            data
+        };
+
+        Self { header, data }
+    }
+
+    pub fn header(&self) -> &Header {
+        &self.header
+    }
+
+    /// Get the version of the SWF.
+    pub fn version(&self) -> u8 {
+        self.header.version
+    }
+
+    pub fn data(&self) -> &[u8] {
+        &self.data
+    }
+}
+
+/// A shared-ownership reference to some portion of an SWF datastream.
 #[derive(Debug, Clone, Collect)]
 #[collect(no_drop)]
 pub struct SwfSlice {
-    pub data: Arc<Vec<u8>>,
+    pub movie: Arc<SwfMovie>,
     pub start: usize,
     pub end: usize,
+}
+
+impl From<Arc<SwfMovie>> for SwfSlice {
+    fn from(movie: Arc<SwfMovie>) -> Self {
+        let end = movie.data().len();
+
+        Self {
+            movie,
+            start: 0,
+            end,
+        }
+    }
 }
 
 impl AsRef<[u8]> for SwfSlice {
     #[inline]
     fn as_ref(&self) -> &[u8] {
-        &self.data[self.start..self.end]
+        &self.movie.data()[self.start..self.end]
     }
 }
 
 impl SwfSlice {
     /// Creates an empty SwfSlice.
     #[inline]
-    pub fn empty() -> Self {
+    pub fn empty(swf_version: u8) -> Self {
         Self {
-            data: Arc::new(vec![]),
+            movie: Arc::new(SwfMovie::empty(swf_version)),
             start: 0,
             end: 0,
         }
     }
+
+    /// Construct a new slice with a given dataset only.
+    ///
+    /// This is used primarily for converting owned data back into a slice: we
+    /// reattach the SWF data that we can
+    pub fn owned_subslice(&self, data: Vec<u8>) -> Self {
+        let len = data.len();
+
+        Self {
+            movie: Arc::new(self.movie.from_movie_and_subdata(data)),
+            start: 0,
+            end: len,
+        }
+    }
+
     /// Construct a new SwfSlice from a regular slice.
     ///
     /// This function returns None if the given slice is not a subslice of the
     /// current slice.
     pub fn to_subslice(&self, slice: &[u8]) -> Option<SwfSlice> {
-        let self_pval = self.data.as_ptr() as usize;
+        let self_pval = self.movie.data().as_ptr() as usize;
         let slice_pval = slice.as_ptr() as usize;
 
         if (self_pval + self.start) <= slice_pval && slice_pval < (self_pval + self.end) {
             Some(SwfSlice {
-                data: self.data.clone(),
+                movie: self.movie.clone(),
                 start: slice_pval - self_pval,
                 end: (slice_pval - self_pval) + slice.len(),
             })
         } else {
             None
         }
+    }
+
+    /// Construct a new SwfSlice from a Reader and a size.
+    ///
+    /// This is intended to allow constructing references to the contents of a
+    /// given SWF tag. You just need the current reader and the size of the tag
+    /// you want to reference.
+    ///
+    /// The returned slice may or may not be a subslice of the current slice.
+    /// If the resulting slice would be outside the bounds of the underlying
+    /// movie, or the given reader refers to a different underlying movie, this
+    /// function returns None.
+    pub fn resize_to_reader(&self, reader: &mut SwfStream<&[u8]>, size: usize) -> Option<SwfSlice> {
+        if self.movie.data().as_ptr() as usize <= reader.get_ref().get_ref().as_ptr() as usize
+            && (reader.get_ref().get_ref().as_ptr() as usize)
+                < self.movie.data().as_ptr() as usize + self.movie.data().len()
+        {
+            let outer_offset =
+                reader.get_ref().get_ref().as_ptr() as usize - self.movie.data().as_ptr() as usize;
+            let inner_offset = reader.get_ref().position() as usize;
+            let new_start = outer_offset + inner_offset;
+            let new_end = outer_offset + inner_offset + size;
+
+            let len = self.movie.data().len();
+
+            if new_start < len && new_end < len {
+                Some(SwfSlice {
+                    movie: self.movie.clone(),
+                    start: new_start,
+                    end: new_end,
+                })
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Construct a new SwfSlice from a start and an end.
+    ///
+    /// The start and end values will be relative to the current slice.
+    /// Furthermore, this function will yield None if the calculated slice
+    /// would be invalid (e.g. negative length) or would extend past the end of
+    /// the current slice.
+    pub fn to_start_and_end(&self, start: usize, end: usize) -> Option<SwfSlice> {
+        let new_start = self.start + start;
+        let new_end = self.start + end;
+
+        if new_start <= new_end {
+            self.to_subslice(&self.movie.data().get(new_start..new_end)?)
+        } else {
+            None
+        }
+    }
+
+    /// Convert the SwfSlice into a standard data slice.
+    pub fn data(&self) -> &[u8] {
+        &self.movie.data()[self.start..self.end]
+    }
+
+    /// Get the version of the SWF this data comes from.
+    pub fn version(&self) -> u8 {
+        self.movie.header().version
+    }
+
+    /// Construct a reader for this slice.
+    ///
+    /// The `from` paramter is the offset to start reading the slice from.
+    pub fn read_from(&self, from: u64) -> swf::read::Reader<std::io::Cursor<&[u8]>> {
+        let mut cursor = std::io::Cursor::new(self.data());
+        cursor.set_position(from);
+        swf::read::Reader::new(cursor, self.movie.version())
     }
 }
 
@@ -69,8 +247,8 @@ where
         if let Some(tag) = tag {
             let result = tag_callback(reader, tag, tag_len);
 
-            if let Err(_e) = result {
-                log::error!("Error running definition tag: {:?}", tag);
+            if let Err(e) = result {
+                log::error!("Error running definition tag: {:?}, got {}", tag, e);
             }
 
             if stop_tag == tag {

@@ -6,6 +6,7 @@ use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, SoundObject, TObject, UpdateContext, Value};
 use crate::character::Character;
+use crate::display_object::TDisplayObject;
 use gc_arena::MutationContext;
 
 /// Implements `Sound`
@@ -167,15 +168,30 @@ fn attach_sound<'gc>(
     let name = args.get(0).unwrap_or(&Value::Undefined);
     if let Some(sound_object) = this.as_sound_object() {
         let name = name.clone().coerce_to_string(avm, context)?;
-        if let Some(Character::Sound(sound)) = context.library.get_character_by_export_name(&name) {
-            sound_object.set_sound(context.gc_context, Some(*sound));
-            sound_object.set_duration(
-                context.gc_context,
-                context.audio.get_sound_duration(*sound).unwrap_or(0),
-            );
-            sound_object.set_position(context.gc_context, 0);
+        let movie = sound_object
+            .owner()
+            .or_else(|| context.levels.get(&0).copied())
+            .and_then(|o| o.movie());
+        if let Some(movie) = movie {
+            if let Some(Character::Sound(sound)) = context
+                .library
+                .library_for_movie_mut(movie)
+                .get_character_by_export_name(&name)
+            {
+                sound_object.set_sound(context.gc_context, Some(*sound));
+                sound_object.set_duration(
+                    context.gc_context,
+                    context.audio.get_sound_duration(*sound).unwrap_or(0),
+                );
+                sound_object.set_position(context.gc_context, 0);
+            } else {
+                log::warn!("Sound.attachSound: Sound '{}' not found", name);
+            }
         } else {
-            log::warn!("Sound.attachSound: Sound '{}' not found", name);
+            log::warn!(
+                "Sound.attachSound: Cannot attach Sound '{}' without a library to reference",
+                name
+            );
         }
     } else {
         log::warn!("Sound.attachSound: this is not a Sound");
@@ -395,13 +411,26 @@ fn stop<'gc>(
         if let Some(name) = args.get(0) {
             // Usage 1: Stop all instances of a particular sound, using the name parameter.
             let name = name.clone().coerce_to_string(avm, context)?;
-            if let Some(Character::Sound(sound)) =
-                context.library.get_character_by_export_name(&name)
-            {
-                // Stop all sounds with the given name.
-                context.audio.stop_sounds_with_handle(*sound);
+            let movie = sound
+                .owner()
+                .or_else(|| context.levels.get(&0).copied())
+                .and_then(|o| o.movie());
+            if let Some(movie) = movie {
+                if let Some(Character::Sound(sound)) = context
+                    .library
+                    .library_for_movie_mut(movie)
+                    .get_character_by_export_name(&name)
+                {
+                    // Stop all sounds with the given name.
+                    context.audio.stop_sounds_with_handle(*sound);
+                } else {
+                    log::warn!("Sound.stop: Sound '{}' not found", name);
+                }
             } else {
-                log::warn!("Sound.stop: Sound '{}' not found", name);
+                log::warn!(
+                    "Sound.stop: Cannot stop Sound '{}' without a library to reference",
+                    name
+                )
             }
         } else if let Some(_owner) = sound.owner() {
             // Usage 2: Stop all sound running within a given clip.

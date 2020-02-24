@@ -6,6 +6,7 @@ use crate::avm1::return_value::ReturnValue;
 use crate::avm1::script_object::ScriptObject;
 use crate::avm1::xml_object::XMLObject;
 use crate::avm1::{Avm1, Error, Object, TObject, UpdateContext, Value};
+use crate::backend::navigator::RequestOptions;
 use crate::xml;
 use crate::xml::{XMLDocument, XMLNode};
 use enumset::EnumSet;
@@ -781,6 +782,71 @@ pub fn xml_parse_xml<'gc>(
     Ok(Value::Undefined.into())
 }
 
+pub fn xml_load<'gc>(
+    avm: &mut Avm1<'gc>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let url = args.get(0).cloned().unwrap_or(Value::Undefined);
+
+    if let Value::Null = url {
+        return Ok(false.into());
+    }
+
+    if let Some(node) = this.as_xml_node() {
+        let url = url.coerce_to_string(avm, ac)?;
+
+        this.set("loaded", false.into(), avm, ac)?;
+
+        let fetch = ac.navigator.fetch(url, RequestOptions::get());
+        let target_clip = avm.target_clip_or_root();
+        let process = ac.load_manager.load_xml_into_node(
+            ac.player.clone().unwrap(),
+            node,
+            target_clip,
+            fetch,
+        );
+
+        ac.navigator.spawn_future(process);
+
+        Ok(true.into())
+    } else {
+        Ok(false.into())
+    }
+}
+
+pub fn xml_on_data<'gc>(
+    avm: &mut Avm1<'gc>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let src = args.get(0).cloned().unwrap_or(Value::Undefined);
+
+    if let Value::Undefined = src {
+        let on_load = this.get("onLoad", avm, ac)?.resolve(avm, ac)?;
+        on_load
+            .call(avm, ac, this, &[false.into()])?
+            .resolve(avm, ac)?;
+    } else {
+        let src = src.coerce_to_string(avm, ac)?;
+        let parse_xml = this.get("parseXML", avm, ac)?.resolve(avm, ac)?;
+        parse_xml
+            .call(avm, ac, this, &[src.into()])?
+            .resolve(avm, ac)?;
+
+        this.set("loaded", true.into(), avm, ac)?;
+
+        let on_load = this.get("onLoad", avm, ac)?.resolve(avm, ac)?;
+        on_load
+            .call(avm, ac, this, &[true.into()])?
+            .resolve(avm, ac)?;
+    }
+
+    Ok(Value::Undefined.into())
+}
+
 pub fn xml_doc_type_decl<'gc>(
     _avm: &mut Avm1<'gc>,
     _ac: &mut UpdateContext<'_, 'gc, '_>,
@@ -923,6 +989,20 @@ pub fn create_xml_proto<'gc>(
     xml_proto.as_script_object().unwrap().force_set_function(
         "parseXML",
         xml_parse_xml,
+        gc_context,
+        EnumSet::empty(),
+        Some(fn_proto),
+    );
+    xml_proto.as_script_object().unwrap().force_set_function(
+        "load",
+        xml_load,
+        gc_context,
+        EnumSet::empty(),
+        Some(fn_proto),
+    );
+    xml_proto.as_script_object().unwrap().force_set_function(
+        "onData",
+        xml_on_data,
         gc_context,
         EnumSet::empty(),
         Some(fn_proto),

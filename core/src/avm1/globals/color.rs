@@ -82,7 +82,7 @@ fn target<'gc>(
     // This means calls on the same `Color` object could set the color of different clips
     // depending on which timeline its called from!
     let target = this.get("target", avm, context)?.resolve(avm, context)?;
-    let start_clip = avm.target_clip_or_root(context);
+    let start_clip = avm.target_clip_or_root();
     avm.resolve_target_display_object(context, start_clip, target)
 }
 
@@ -169,7 +169,7 @@ fn set_transform<'gc>(
         out: &mut f32,
     ) -> Result<(), Error> {
         // The parameters are set only if the property exists on the object itself (prototype excluded).
-        if transform.has_own_property(property) {
+        if transform.has_own_property(context, property) {
             let n = transform
                 .get(property, avm, context)?
                 .resolve(avm, context)?
@@ -187,7 +187,7 @@ fn set_transform<'gc>(
         out: &mut f32,
     ) -> Result<(), Error> {
         // The parameters are set only if the property exists on the object itself (prototype excluded).
-        if transform.has_own_property(property) {
+        if transform.has_own_property(context, property) {
             let n = transform
                 .get(property, avm, context)?
                 .resolve(avm, context)?

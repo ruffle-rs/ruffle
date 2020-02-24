@@ -1,13 +1,16 @@
-use crate::avm1::{Object, Value};
+use crate::avm1::{Object, TObject, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::player::NEWEST_PLAYER_VERSION;
 use crate::prelude::*;
+use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
+use std::cmp::min;
 use std::fmt::Debug;
+use std::sync::Arc;
 
 mod bitmap;
 mod button;
@@ -90,6 +93,12 @@ unsafe impl<'gc> Collect for DisplayObjectBase<'gc> {
 
 #[allow(dead_code)]
 impl<'gc> DisplayObjectBase<'gc> {
+    /// Reset all properties that would be adjusted by a movie load.
+    fn reset_for_movie_load(&mut self) {
+        self.first_child = None;
+        self.flags = DisplayObjectFlags::Visible.into();
+    }
+
     fn id(&self) -> CharacterId {
         0
     }
@@ -345,6 +354,10 @@ impl<'gc> DisplayObjectBase<'gc> {
             .map(|p| p.swf_version())
             .unwrap_or(NEWEST_PLAYER_VERSION)
     }
+
+    fn movie(&self) -> Option<Arc<SwfMovie>> {
+        self.parent.and_then(|p| p.movie())
+    }
 }
 
 #[enum_trait_object(
@@ -360,7 +373,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         Text(Text<'gc>),
     }
 )]
-pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
+pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> {
     fn id(&self) -> CharacterId;
     fn depth(&self) -> Depth;
     fn set_depth(&self, gc_context: MutationContext<'gc, '_>, depth: Depth);
@@ -575,8 +588,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
             path.push_str(&*self.name());
             path
         } else {
-            // TODO: Get the actual level # from somewhere.
-            "_level0".to_string()
+            format!("_level{}", self.depth())
         }
     }
 
@@ -627,6 +639,24 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
     fn get_child_by_name(&self, name: &str) -> Option<DisplayObject<'gc>> {
         // TODO: Make a HashMap from name -> child?
         self.children().find(|child| &*child.name() == name)
+    }
+
+    /// Get another level by level name.
+    ///
+    /// Since levels don't have instance names, this function instead parses
+    /// their ID and uses that to retrieve the level.
+    fn get_level_by_path(
+        &self,
+        name: &str,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Option<DisplayObject<'gc>> {
+        if name.get(0..min(name.len(), 6)) == Some("_level") {
+            if let Some(level_id) = name.get(6..).and_then(|v| v.parse::<u32>().ok()) {
+                return context.levels.get(&level_id).copied();
+            }
+        }
+
+        None
     }
     fn removed(&self) -> bool;
     fn set_removed(&mut self, context: MutationContext<'gc, '_>, value: bool);
@@ -725,7 +755,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
                         .clip_actions
                         .iter()
                         .cloned()
-                        .map(ClipAction::from)
+                        .map(|a| ClipAction::from_action_and_movie(a, clip.movie().unwrap()))
                         .collect(),
                 );
             }
@@ -784,6 +814,11 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
             .unwrap_or(NEWEST_PLAYER_VERSION)
     }
 
+    /// Return the SWF that defines this display object.
+    fn movie(&self) -> Option<Arc<SwfMovie>> {
+        self.parent().and_then(|p| p.movie())
+    }
+
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc>;
     fn as_ptr(&self) -> *const DisplayObjectPtr;
 
@@ -792,6 +827,34 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug {
     /// This is used by movie clips to disable the mask when there are no children, for example.
     fn allow_as_mask(&self) -> bool {
         true
+    }
+
+    /// Obtain the top-most parent of the display tree hierarchy.
+    ///
+    /// This function can panic in the rare case that a top-level display
+    /// object has not been post-instantiated, or that a top-level display
+    /// object does not implement `object`.
+    fn root(&self) -> DisplayObject<'gc> {
+        let mut parent = self.parent();
+
+        while let Some(p) = parent {
+            let grandparent = p.parent();
+
+            if grandparent.is_none() {
+                break;
+            }
+
+            parent = grandparent;
+        }
+
+        parent
+            .or_else(|| {
+                self.object()
+                    .as_object()
+                    .ok()
+                    .and_then(|o| o.as_display_object())
+            })
+            .expect("All objects must have root")
     }
 }
 

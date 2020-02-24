@@ -3,9 +3,11 @@ use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::events::{ButtonEvent, ButtonEventResult, ButtonKeyCode};
 use crate::prelude::*;
+use crate::tag_utils::{SwfMovie, SwfSlice};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::BTreeMap;
 use std::convert::TryFrom;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, Collect, Copy)]
 #[collect(no_drop)]
@@ -26,16 +28,13 @@ pub struct ButtonData<'gc> {
 impl<'gc> Button<'gc> {
     pub fn from_swf_tag(
         button: &swf::Button,
+        source_movie: &SwfSlice,
         _library: &crate::library::Library<'gc>,
         gc_context: gc_arena::MutationContext<'gc, '_>,
     ) -> Self {
         let mut actions = vec![];
         for action in &button.actions {
-            let action_data = crate::tag_utils::SwfSlice {
-                data: std::sync::Arc::new(action.action_data.clone()),
-                start: 0,
-                end: action.action_data.len(),
-            };
+            let action_data = source_movie.owned_subslice(action.action_data.clone());
             for condition in &action.conditions {
                 let button_action = ButtonAction {
                     action_data: action_data.clone(),
@@ -49,6 +48,7 @@ impl<'gc> Button<'gc> {
         }
 
         let static_data = ButtonStatic {
+            swf: source_movie.movie.clone(),
             id: button.id,
             records: button.records.clone(),
             actions,
@@ -120,6 +120,10 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
 
     fn id(&self) -> CharacterId {
         self.0.read().static_data.read().id
+    }
+
+    fn movie(&self) -> Option<Arc<SwfMovie>> {
+        Some(self.0.read().static_data.read().swf.clone())
     }
 
     fn post_instantiation(
@@ -225,11 +229,11 @@ impl<'gc> ButtonData<'gc> {
         self.children.clear();
         for record in &self.static_data.read().records {
             if record.states.contains(&swf_state) {
-                if let Ok(mut child) = context.library.instantiate_by_id(
-                    record.id,
-                    context.gc_context,
-                    &context.system_prototypes,
-                ) {
+                if let Ok(mut child) = context
+                    .library
+                    .library_for_movie_mut(self.movie())
+                    .instantiate_by_id(record.id, context.gc_context, &context.system_prototypes)
+                {
                     child.set_parent(context.gc_context, Some(self_display_object));
                     child.set_matrix(context.gc_context, &record.matrix.clone().into());
                     child.set_color_transform(
@@ -255,11 +259,14 @@ impl<'gc> ButtonData<'gc> {
 
             for record in &self.static_data.read().records {
                 if record.states.contains(&swf::ButtonState::HitTest) {
-                    match context.library.instantiate_by_id(
-                        record.id,
-                        context.gc_context,
-                        &context.system_prototypes,
-                    ) {
+                    match context
+                        .library
+                        .library_for_movie_mut(self.static_data.read().swf.clone())
+                        .instantiate_by_id(
+                            record.id,
+                            context.gc_context,
+                            &context.system_prototypes,
+                        ) {
                         Ok(mut child) => {
                             {
                                 child.set_matrix(context.gc_context, &record.matrix.clone().into());
@@ -337,7 +344,11 @@ impl<'gc> ButtonData<'gc> {
         sound: Option<&swf::ButtonSound>,
     ) {
         if let Some((id, sound_info)) = sound {
-            if let Some(sound_handle) = context.library.get_sound(*id) {
+            if let Some(sound_handle) = context
+                .library
+                .library_for_movie_mut(self.movie())
+                .get_sound(*id)
+            {
                 context.audio.start_sound(sound_handle, sound_info);
             }
         }
@@ -368,6 +379,10 @@ impl<'gc> ButtonData<'gc> {
             }
         }
         handled
+    }
+
+    fn movie(&self) -> Arc<SwfMovie> {
+        self.static_data.read().swf.clone()
     }
 }
 
@@ -411,6 +426,7 @@ enum ButtonTracking {
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 struct ButtonStatic {
+    swf: Arc<SwfMovie>,
     id: CharacterId,
     records: Vec<swf::ButtonRecord>,
     actions: Vec<ButtonAction>,

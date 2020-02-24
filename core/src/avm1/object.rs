@@ -58,7 +58,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
-        if self.has_own_property(name) {
+        if self.has_own_property(context, name) {
             self.get_local(name, avm, context, (*self).into())
         } else {
             search_prototype(self.proto(), name, avm, context, (*self).into())
@@ -172,11 +172,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     );
 
     /// Checks if the object has a given named property.
-    fn has_property(&self, name: &str) -> bool;
+    fn has_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool;
 
     /// Checks if the object has a given named property on itself (and not,
     /// say, the object's prototype or superclass)
-    fn has_own_property(&self, name: &str) -> bool;
+    fn has_own_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool;
 
     /// Checks if a named property can be overwritten.
     fn is_property_overwritable(&self, name: &str) -> bool;
@@ -362,7 +362,7 @@ pub fn search_prototype<'gc>(
             return Err("Encountered an excessively deep prototype chain.".into());
         }
 
-        if proto.unwrap().has_own_property(name) {
+        if proto.unwrap().has_own_property(context, name) {
             return proto.unwrap().get_local(name, avm, context, this);
         }
 

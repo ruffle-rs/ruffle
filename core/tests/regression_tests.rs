@@ -4,12 +4,13 @@
 
 use approx::assert_abs_diff_eq;
 use log::{Metadata, Record};
+use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
 use ruffle_core::backend::{
-    audio::NullAudioBackend, input::NullInputBackend, navigator::NullNavigatorBackend,
-    render::NullRenderer,
+    audio::NullAudioBackend, input::NullInputBackend, render::NullRenderer,
 };
 use ruffle_core::Player;
 use std::cell::RefCell;
+use std::path::Path;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -158,6 +159,22 @@ swf_tests! {
     (undefined_to_string_swf6, "avm1/undefined_to_string_swf6", 1),
     (define_function2_preload, "avm1/define_function2_preload", 1),
     (define_function2_preload_order, "avm1/define_function2_preload_order", 1),
+    (mcl_as_broadcaster, "avm1/mcl_as_broadcaster", 1),
+    (loadmovie, "avm1/loadmovie", 2),
+    (loadmovienum, "avm1/loadmovienum", 2),
+    (loadmovie_method, "avm1/loadmovie_method", 2),
+    (unloadmovie, "avm1/unloadmovie", 11),
+    (unloadmovienum, "avm1/unloadmovienum", 11),
+    (unloadmovie_method, "avm1/unloadmovie_method", 11),
+    (mcl_loadclip, "avm1/mcl_loadclip", 11),
+    (mcl_unloadclip, "avm1/mcl_unloadclip", 11),
+    (mcl_getprogress, "avm1/mcl_getprogress", 6),
+    (loadvariables, "avm1/loadvariables", 3),
+    (loadvariablesnum, "avm1/loadvariablesnum", 3),
+    (loadvariables_method, "avm1/loadvariables_method", 3),
+    (xml_load, "avm1/xml_load", 1),
+    (cross_movie_root, "avm1/cross_movie_root", 5),
+    (roots_and_levels, "avm1/roots_and_levels", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
@@ -270,18 +287,23 @@ fn test_swf_approx(
 fn run_swf(swf_path: &str, num_frames: u32) -> Result<String, Error> {
     let _ = log::set_logger(&TRACE_LOGGER).map(|()| log::set_max_level(log::LevelFilter::Info));
 
+    let base_path = Path::new(swf_path).parent().unwrap();
     let swf_data = std::fs::read(swf_path)?;
-    let mut player = Player::new(
-        NullRenderer,
-        NullAudioBackend::new(),
-        NullNavigatorBackend::new(),
-        NullInputBackend::new(),
+    let (mut executor, channel) = NullExecutor::new();
+    let player = Player::new(
+        Box::new(NullRenderer),
+        Box::new(NullAudioBackend::new()),
+        Box::new(NullNavigatorBackend::with_base_path(base_path, channel)),
+        Box::new(NullInputBackend::new()),
         swf_data,
     )?;
 
     for _ in 0..num_frames {
-        player.run_frame();
+        player.lock().unwrap().run_frame();
+        executor.poll_all().unwrap();
     }
+
+    executor.block_all().unwrap();
 
     Ok(trace_log())
 }
