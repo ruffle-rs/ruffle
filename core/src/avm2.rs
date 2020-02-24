@@ -993,6 +993,8 @@ impl<'gc> Avm2<'gc> {
         ctor.call(Some(object), &args, self, context)?
             .resolve(self, context)?;
 
+        self.push(object);
+
         Ok(())
     }
 
@@ -1026,6 +1028,8 @@ impl<'gc> Avm2<'gc> {
         let object = proto.construct(self, context, &args)?;
         ctor.call(Some(object), &args, self, context)?
             .resolve(self, context)?;
+
+        self.push(object);
 
         Ok(())
     }
