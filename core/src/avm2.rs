@@ -325,6 +325,16 @@ impl<'gc> Avm2<'gc> {
         value
     }
 
+    fn pop_args(&mut self, arg_count: u32) -> Vec<Value<'gc>> {
+        let mut args = Vec::with_capacity(arg_count as usize);
+        args.resize(arg_count as usize, Value::Undefined);
+        for arg in args.iter_mut().rev() {
+            *arg = self.pop();
+        }
+
+        args
+    }
+
     fn register_value(&self, index: u32) -> Result<Value<'gc>, Error> {
         self.current_stack_frame()
             .and_then(|sf| sf.read().local_register(index))
@@ -574,10 +584,7 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         arg_count: u32,
     ) -> Result<(), Error> {
-        let mut args = Vec::new();
-        for _ in 0..arg_count {
-            args.push(self.pop());
-        }
+        let args = self.pop_args(arg_count);
         let receiver = self.pop().as_object().ok();
         let function = self.pop().as_object()?;
 
@@ -592,10 +599,7 @@ impl<'gc> Avm2<'gc> {
         index: Index<AbcMethod>,
         arg_count: u32,
     ) -> Result<(), Error> {
-        let mut args = Vec::new();
-        for _ in 0..arg_count {
-            args.push(self.pop());
-        }
+        let args = self.pop_args(arg_count);
         let receiver = self.pop().as_object()?;
         let function: Result<Object<'gc>, Error> = receiver
             .get_method(index.0)
@@ -614,10 +618,7 @@ impl<'gc> Avm2<'gc> {
         index: Index<AbcMultiname>,
         arg_count: u32,
     ) -> Result<(), Error> {
-        let mut args = Vec::new();
-        for _ in 0..arg_count {
-            args.push(self.pop());
-        }
+        let args = self.pop_args(arg_count);
         let multiname = self.pool_multiname(index)?;
         let receiver = self.pop().as_object()?;
         let name: Result<QName, Error> = receiver
@@ -641,10 +642,7 @@ impl<'gc> Avm2<'gc> {
         index: Index<AbcMultiname>,
         arg_count: u32,
     ) -> Result<(), Error> {
-        let mut args = Vec::new();
-        for _ in 0..arg_count {
-            args.push(self.pop());
-        }
+        let args = self.pop_args(arg_count);
         let multiname = self.pool_multiname(index)?;
         let receiver = self.pop().as_object()?;
         let name: Result<QName, Error> = receiver
@@ -666,10 +664,7 @@ impl<'gc> Avm2<'gc> {
         index: Index<AbcMultiname>,
         arg_count: u32,
     ) -> Result<(), Error> {
-        let mut args = Vec::new();
-        for _ in 0..arg_count {
-            args.push(self.pop());
-        }
+        let args = self.pop_args(arg_count);
         let multiname = self.pool_multiname(index)?;
         let receiver = self.pop().as_object()?;
         let name: Result<QName, Error> = receiver
@@ -693,10 +688,7 @@ impl<'gc> Avm2<'gc> {
         index: Index<AbcMethod>,
         arg_count: u32,
     ) -> Result<(), Error> {
-        let mut args = Vec::new();
-        for _ in 0..arg_count {
-            args.push(self.pop());
-        }
+        let args = self.pop_args(arg_count);
         let receiver = self.pop().as_object()?;
         let method = self.table_method(index)?;
         let scope = self.current_stack_frame().unwrap().read().scope(); //TODO: Is this correct?
