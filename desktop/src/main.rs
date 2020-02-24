@@ -69,7 +69,10 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     };
     let renderer = Box::new(GliumRenderBackend::new(windowed_context)?);
     let (executor, chan) = GlutinAsyncExecutor::new(event_loop.create_proxy());
-    let navigator = Box::new(navigator::ExternalNavigatorBackend::new(
+    let navigator = Box::new(navigator::ExternalNavigatorBackend::with_base_path(
+        input_path
+            .parent()
+            .unwrap_or_else(|| std::path::Path::new("")),
         chan,
         event_loop.create_proxy(),
     )); //TODO: actually implement this backend type

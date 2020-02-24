@@ -7,6 +7,8 @@ use ruffle_core::backend::navigator::{
     Error, NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
 };
 use std::collections::HashMap;
+use std::fs;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc::Sender;
 use url::Url;
 use webbrowser;
@@ -19,9 +21,13 @@ pub struct ExternalNavigatorBackend {
 
     /// Event sink to trigger a new task poll.
     event_loop: EventLoopProxy<RuffleEvent>,
+
+    /// The base path for all relative fetches.
+    relative_base_path: PathBuf,
 }
 
 impl ExternalNavigatorBackend {
+    #[allow(dead_code)]
     pub fn new(
         channel: Sender<OwnedFuture<(), Error>>,
         event_loop: EventLoopProxy<RuffleEvent>,
@@ -29,6 +35,24 @@ impl ExternalNavigatorBackend {
         Self {
             channel,
             event_loop,
+            relative_base_path: PathBuf::new(),
+        }
+    }
+
+    /// Construct a navigator backend with fetch and async capability.
+    pub fn with_base_path<P: AsRef<Path>>(
+        path: P,
+        channel: Sender<OwnedFuture<(), Error>>,
+        event_loop: EventLoopProxy<RuffleEvent>,
+    ) -> Self {
+        let mut relative_base_path = PathBuf::new();
+
+        relative_base_path.push(path);
+
+        Self {
+            channel,
+            event_loop,
+            relative_base_path,
         }
     }
 }
@@ -78,8 +102,13 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         };
     }
 
-    fn fetch(&self, _url: String, _options: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
-        Box::pin(async { Err("Fetch not implemented on desktop!".into()) })
+    fn fetch(&self, url: String, _options: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
+        // Load from local filesystem.
+        // TODO: Support network loads, honor sandbox type (local-with-filesystem, local-with-network, remote, ...)
+        let mut path = self.relative_base_path.clone();
+        path.push(url);
+
+        Box::pin(async move { fs::read(path).map_err(|e| e.into()) })
     }
 
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
