@@ -1,8 +1,6 @@
 //! AVM2 objects.
 
-use crate::avm2::function::{
-    Avm2ClassEntry, Avm2Function, Avm2MethodEntry, Executable, FunctionObject,
-};
+use crate::avm2::function::{Avm2ClassEntry, Avm2MethodEntry, Executable, FunctionObject};
 use crate::avm2::names::{Multiname, QName};
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::scope::Scope;
@@ -72,6 +70,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error>;
 
+    /// Retrieve a method by it's index.
+    fn get_method(self, id: u32) -> Option<Object<'gc>>;
+
     /// Resolve a multiname into a single QName, if any of the namespaces
     /// match.
     fn resolve_multiname(self, multiname: &Multiname) -> Option<QName> {
@@ -113,14 +114,21 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn proto(&self) -> Option<Object<'gc>>;
 
     /// Install a method (or any other non-slot value) on an object.
-    fn install_method(&mut self, mc: MutationContext<'gc, '_>, name: QName, function: Object<'gc>);
+    fn install_method(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        name: QName,
+        disp_id: u32,
+        function: Object<'gc>,
+    );
 
     /// Install a getter method on an object property.
     fn install_getter(
         &mut self,
         mc: MutationContext<'gc, '_>,
         name: QName,
-        function: Executable<'gc>,
+        disp_id: u32,
+        function: Object<'gc>,
     ) -> Result<(), Error>;
 
     /// Install a setter method on an object property.
@@ -128,7 +136,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &mut self,
         mc: MutationContext<'gc, '_>,
         name: QName,
-        function: Executable<'gc>,
+        disp_id: u32,
+        function: Object<'gc>,
     ) -> Result<(), Error>;
 
     /// Install a dynamic or built-in value property on an object.
@@ -183,21 +192,29 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 };
                 self.install_slot(context.gc_context, trait_name, *slot_id, value);
             }
-            AbcTraitKind::Method { method, .. } => {
+            AbcTraitKind::Method {
+                disp_id, method, ..
+            } => {
                 let method = Avm2MethodEntry::from_method_index(abc, method.clone()).unwrap();
                 let function =
                     FunctionObject::from_abc_method(context.gc_context, method, scope, fn_proto);
-                self.install_method(context.gc_context, trait_name, function);
+                self.install_method(context.gc_context, trait_name, *disp_id, function);
             }
-            AbcTraitKind::Getter { method, .. } => {
+            AbcTraitKind::Getter {
+                disp_id, method, ..
+            } => {
                 let method = Avm2MethodEntry::from_method_index(abc, method.clone()).unwrap();
-                let exec = Avm2Function::from_method(method, scope).into();
-                self.install_getter(context.gc_context, trait_name, exec)?;
+                let function =
+                    FunctionObject::from_abc_method(context.gc_context, method, scope, fn_proto);
+                self.install_getter(context.gc_context, trait_name, *disp_id, function)?;
             }
-            AbcTraitKind::Setter { method, .. } => {
+            AbcTraitKind::Setter {
+                disp_id, method, ..
+            } => {
                 let method = Avm2MethodEntry::from_method_index(abc, method.clone()).unwrap();
-                let exec = Avm2Function::from_method(method, scope).into();
-                self.install_setter(context.gc_context, trait_name, exec)?;
+                let function =
+                    FunctionObject::from_abc_method(context.gc_context, method, scope, fn_proto);
+                self.install_setter(context.gc_context, trait_name, *disp_id, function)?;
             }
             AbcTraitKind::Class { slot_id, class } => {
                 let type_entry = Avm2ClassEntry::from_class_index(abc, class.clone()).unwrap();
@@ -251,7 +268,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Call the object.
     fn call(
         self,
-        _reciever: Object<'gc>,
+        _reciever: Option<Object<'gc>>,
         _arguments: &[Value<'gc>],
         _avm: &mut Avm2<'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
@@ -282,6 +299,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get a raw pointer value for this object.
     fn as_ptr(&self) -> *const ObjectPtr;
+
+    /// Get this object's `Executable`, if it has one.
+    fn as_executable(&self) -> Option<Executable<'gc>> {
+        None
+    }
 }
 
 pub enum ObjectPtr {}

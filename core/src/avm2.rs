@@ -426,6 +426,17 @@ impl<'gc> Avm2<'gc> {
                 Op::GetLocal { index } => self.op_get_local(index),
                 Op::SetLocal { index } => self.op_set_local(context, index),
                 Op::Call { num_args } => self.op_call(context, num_args),
+                Op::CallMethod { index, num_args } => self.op_call_method(context, index, num_args),
+                Op::CallProperty { index, num_args } => {
+                    self.op_call_property(context, index, num_args)
+                }
+                Op::CallPropLex { index, num_args } => {
+                    self.op_call_prop_lex(context, index, num_args)
+                }
+                Op::CallPropVoid { index, num_args } => {
+                    self.op_call_prop_void(context, index, num_args)
+                }
+                Op::CallStatic { index, num_args } => self.op_call_static(context, index, num_args),
                 Op::ReturnValue => self.op_return_value(context),
                 Op::ReturnVoid => self.op_return_void(context),
                 Op::GetProperty { index } => self.op_get_property(context, index),
@@ -562,14 +573,142 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         arg_count: u32,
     ) -> Result<(), Error> {
-        let function = self.pop().as_object()?;
-        let receiver = self.pop().as_object()?;
         let mut args = Vec::new();
         for _ in 0..arg_count {
             args.push(self.pop());
         }
+        let receiver = self.pop().as_object().ok();
+        let function = self.pop().as_object()?;
 
         function.call(receiver, &args, self, context)?.push(self);
+
+        Ok(())
+    }
+
+    fn op_call_method(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        index: Index<AbcMethod>,
+        arg_count: u32,
+    ) -> Result<(), Error> {
+        let mut args = Vec::new();
+        for _ in 0..arg_count {
+            args.push(self.pop());
+        }
+        let receiver = self.pop().as_object()?;
+        let function: Result<Object<'gc>, Error> = receiver
+            .get_method(index.0)
+            .ok_or_else(|| format!("Object method {} does not exist", index.0).into());
+
+        function?
+            .call(Some(receiver), &args, self, context)?
+            .push(self);
+
+        Ok(())
+    }
+
+    fn op_call_property(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        index: Index<AbcMultiname>,
+        arg_count: u32,
+    ) -> Result<(), Error> {
+        let mut args = Vec::new();
+        for _ in 0..arg_count {
+            args.push(self.pop());
+        }
+        let multiname = self.pool_multiname(index)?;
+        let receiver = self.pop().as_object()?;
+        let name: Result<QName, Error> = receiver
+            .resolve_multiname(&multiname)
+            .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
+        let function = receiver
+            .get_property(&name?, self, context)?
+            .resolve(self, context)?
+            .as_object()?;
+
+        function
+            .call(Some(receiver), &args, self, context)?
+            .push(self);
+
+        Ok(())
+    }
+
+    fn op_call_prop_lex(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        index: Index<AbcMultiname>,
+        arg_count: u32,
+    ) -> Result<(), Error> {
+        let mut args = Vec::new();
+        for _ in 0..arg_count {
+            args.push(self.pop());
+        }
+        let multiname = self.pool_multiname(index)?;
+        let receiver = self.pop().as_object()?;
+        let name: Result<QName, Error> = receiver
+            .resolve_multiname(&multiname)
+            .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
+        let function = receiver
+            .get_property(&name?, self, context)?
+            .resolve(self, context)?
+            .as_object()?;
+
+        function.call(None, &args, self, context)?.push(self);
+
+        Ok(())
+    }
+
+    fn op_call_prop_void(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        index: Index<AbcMultiname>,
+        arg_count: u32,
+    ) -> Result<(), Error> {
+        let mut args = Vec::new();
+        for _ in 0..arg_count {
+            args.push(self.pop());
+        }
+        let multiname = self.pool_multiname(index)?;
+        let receiver = self.pop().as_object()?;
+        let name: Result<QName, Error> = receiver
+            .resolve_multiname(&multiname)
+            .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
+        let function = receiver
+            .get_property(&name?, self, context)?
+            .resolve(self, context)?
+            .as_object()?;
+
+        function
+            .call(Some(receiver), &args, self, context)?
+            .resolve(self, context)?;
+
+        Ok(())
+    }
+
+    fn op_call_static(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        index: Index<AbcMethod>,
+        arg_count: u32,
+    ) -> Result<(), Error> {
+        let mut args = Vec::new();
+        for _ in 0..arg_count {
+            args.push(self.pop());
+        }
+        let receiver = self.pop().as_object()?;
+        let method = self.table_method(index)?;
+        let scope = self.current_stack_frame().unwrap().read().scope(); //TODO: Is this correct?
+        let function = FunctionObject::from_abc_method(
+            context.gc_context,
+            method,
+            scope,
+            self.system_prototypes.function,
+        );
+
+        function
+            .call(Some(receiver), &args, self, context)?
+            .push(self);
 
         Ok(())
     }
@@ -861,7 +1000,7 @@ impl<'gc> Avm2<'gc> {
             .as_object()?;
 
         let object = proto.construct(self, context, &args)?;
-        ctor.call(object, &args, self, context)?
+        ctor.call(Some(object), &args, self, context)?
             .resolve(self, context)?;
 
         Ok(())
@@ -899,7 +1038,7 @@ impl<'gc> Avm2<'gc> {
             .as_object()?;
 
         let object = proto.construct(self, context, &args)?;
-        ctor.call(object, &args, self, context)?
+        ctor.call(Some(object), &args, self, context)?
             .resolve(self, context)?;
 
         Ok(())

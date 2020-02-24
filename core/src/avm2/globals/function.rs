@@ -14,7 +14,7 @@ use gc_arena::MutationContext;
 pub fn constructor<'gc>(
     _avm: &mut Avm2<'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: Object<'gc>,
+    _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     Ok(Value::Undefined.into())
@@ -24,7 +24,7 @@ pub fn constructor<'gc>(
 fn to_string<'gc>(
     _: &mut Avm2<'gc>,
     _: &mut UpdateContext<'_, 'gc, '_>,
-    _: Object<'gc>,
+    _: Option<Object<'gc>>,
     _: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     Ok(ReturnValue::Immediate("[type Function]".into()))
@@ -43,6 +43,7 @@ pub fn create_proto<'gc>(gc_context: MutationContext<'gc, '_>, proto: Object<'gc
     function_proto.install_method(
         gc_context,
         QName::new(Namespace::public_namespace(), "toString"),
+        0,
         FunctionObject::from_builtin(gc_context, to_string, function_proto),
     );
 

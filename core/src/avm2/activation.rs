@@ -95,7 +95,7 @@ pub struct Activation<'gc> {
     pc: usize,
 
     /// The immutable value of `this`.
-    this: Object<'gc>,
+    this: Option<Object<'gc>>,
 
     /// The arguments this function was called by.
     arguments: Option<Object<'gc>>,
@@ -151,7 +151,7 @@ impl<'gc> Activation<'gc> {
         Ok(Self {
             method,
             pc: 0,
-            this: global,
+            this: Some(global),
             arguments: None,
             is_executing: false,
             local_registers,
@@ -164,7 +164,7 @@ impl<'gc> Activation<'gc> {
     pub fn from_action(
         context: &mut UpdateContext<'_, 'gc, '_>,
         action: &Avm2Function<'gc>,
-        this: Object<'gc>,
+        this: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
     ) -> Result<Self, Error> {
         let method = action.method.clone();
@@ -178,7 +178,7 @@ impl<'gc> Activation<'gc> {
 
         {
             let mut write = local_registers.write(context.gc_context);
-            *write.get_mut(0).unwrap() = this.into();
+            *write.get_mut(0).unwrap() = this.map(|t| t.into()).unwrap_or(Value::Null);
 
             for i in 0..num_declared_arguments {
                 *write.get_mut(1 + i).unwrap() = arguments

@@ -12,7 +12,7 @@ use gc_arena::MutationContext;
 pub fn constructor<'gc>(
     _avm: &mut Avm2<'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: Object<'gc>,
+    _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     Ok(Value::Undefined.into())

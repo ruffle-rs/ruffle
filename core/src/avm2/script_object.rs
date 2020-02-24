@@ -27,6 +27,9 @@ pub struct ScriptObjectData<'gc> {
     /// Slots stored on this object.
     slots: Vec<Slot<'gc>>,
 
+    /// Methods stored on this object.
+    methods: Vec<Option<Object<'gc>>>,
+
     /// Implicit prototype (or declared base class) of this script object.
     proto: Option<Object<'gc>>,
 }
@@ -91,6 +94,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.write(mc).init_slot(id, value, mc)
     }
 
+    fn get_method(self, id: u32) -> Option<Object<'gc>> {
+        self.0.read().get_method(id)
+    }
+
     fn has_property(self, name: &QName) -> bool {
         self.0.read().has_property(name)
     }
@@ -113,26 +120,34 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         Ok(ScriptObject::object(context.gc_context, this))
     }
 
-    fn install_method(&mut self, mc: MutationContext<'gc, '_>, name: QName, function: Object<'gc>) {
-        self.0.write(mc).install_method(name, function)
+    fn install_method(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        name: QName,
+        disp_id: u32,
+        function: Object<'gc>,
+    ) {
+        self.0.write(mc).install_method(name, disp_id, function)
     }
 
     fn install_getter(
         &mut self,
         mc: MutationContext<'gc, '_>,
         name: QName,
-        function: Executable<'gc>,
+        disp_id: u32,
+        function: Object<'gc>,
     ) -> Result<(), Error> {
-        self.0.write(mc).install_getter(name, function)
+        self.0.write(mc).install_getter(name, disp_id, function)
     }
 
     fn install_setter(
         &mut self,
         mc: MutationContext<'gc, '_>,
         name: QName,
-        function: Executable<'gc>,
+        disp_id: u32,
+        function: Object<'gc>,
     ) -> Result<(), Error> {
-        self.0.write(mc).install_setter(name, function)
+        self.0.write(mc).install_setter(name, disp_id, function)
     }
 
     fn install_dynamic_property(
@@ -189,6 +204,7 @@ impl<'gc> ScriptObjectData<'gc> {
         ScriptObjectData {
             values: HashMap::new(),
             slots: Vec::new(),
+            methods: Vec::new(),
             proto,
         }
     }
@@ -306,6 +322,11 @@ impl<'gc> ScriptObjectData<'gc> {
         }
     }
 
+    /// Retrieve a method from the method table.
+    pub fn get_method(&self, id: u32) -> Option<Object<'gc>> {
+        self.methods.get(id as usize).and_then(|v| *v)
+    }
+
     pub fn has_property(&self, name: &QName) -> bool {
         self.values.get(name).is_some()
     }
@@ -315,7 +336,16 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     /// Install a method into the object.
-    pub fn install_method(&mut self, name: QName, function: Object<'gc>) {
+    pub fn install_method(&mut self, name: QName, disp_id: u32, function: Object<'gc>) {
+        if disp_id > 0 {
+            if self.methods.len() <= disp_id as usize {
+                self.methods
+                    .resize_with(disp_id as usize + 1, Default::default);
+            }
+
+            *self.methods.get_mut(disp_id as usize).unwrap() = Some(function);
+        }
+
         self.values.insert(name, Property::new_method(function));
     }
 
@@ -324,7 +354,26 @@ impl<'gc> ScriptObjectData<'gc> {
     /// This is a little more complicated than methods, since virtual property
     /// slots can be installed in two parts. Thus, we need to support
     /// installing them in either order.
-    pub fn install_getter(&mut self, name: QName, function: Executable<'gc>) -> Result<(), Error> {
+    pub fn install_getter(
+        &mut self,
+        name: QName,
+        disp_id: u32,
+        function: Object<'gc>,
+    ) -> Result<(), Error> {
+        let executable: Result<Executable<'gc>, Error> = function
+            .as_executable()
+            .ok_or_else(|| "Attempted to install getter without a valid method".into());
+        let executable = executable?;
+
+        if disp_id > 0 {
+            if self.methods.len() <= disp_id as usize {
+                self.methods
+                    .resize_with(disp_id as usize + 1, Default::default);
+            }
+
+            *self.methods.get_mut(disp_id as usize).unwrap() = Some(function);
+        }
+
         if !self.values.contains_key(&name) {
             self.values.insert(name.clone(), Property::new_virtual());
         }
@@ -332,7 +381,7 @@ impl<'gc> ScriptObjectData<'gc> {
         self.values
             .get_mut(&name)
             .unwrap()
-            .install_virtual_getter(function)
+            .install_virtual_getter(executable)
     }
 
     /// Install a setter into the object.
@@ -340,7 +389,26 @@ impl<'gc> ScriptObjectData<'gc> {
     /// This is a little more complicated than methods, since virtual property
     /// slots can be installed in two parts. Thus, we need to support
     /// installing them in either order.
-    pub fn install_setter(&mut self, name: QName, function: Executable<'gc>) -> Result<(), Error> {
+    pub fn install_setter(
+        &mut self,
+        name: QName,
+        disp_id: u32,
+        function: Object<'gc>,
+    ) -> Result<(), Error> {
+        let executable: Result<Executable<'gc>, Error> = function
+            .as_executable()
+            .ok_or_else(|| "Attempted to install setter without a valid method".into());
+        let executable = executable?;
+
+        if disp_id > 0 {
+            if self.methods.len() <= disp_id as usize {
+                self.methods
+                    .resize_with(disp_id as usize + 1, Default::default);
+            }
+
+            *self.methods.get_mut(disp_id as usize).unwrap() = Some(function);
+        }
+
         if !self.values.contains_key(&name) {
             self.values.insert(name.clone(), Property::new_virtual());
         }
@@ -348,7 +416,7 @@ impl<'gc> ScriptObjectData<'gc> {
         self.values
             .get_mut(&name)
             .unwrap()
-            .install_virtual_setter(function)
+            .install_virtual_setter(executable)
     }
 
     pub fn install_dynamic_property(

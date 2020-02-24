@@ -17,7 +17,7 @@ mod object;
 fn trace<'gc>(
     _avm: &mut Avm2<'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: Object<'gc>,
+    _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(s) = args.get(0) {

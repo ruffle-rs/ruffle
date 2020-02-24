@@ -34,7 +34,7 @@ use swf::avm2::types::{
 pub type NativeFunction<'gc> = fn(
     &mut Avm2<'gc>,
     &mut UpdateContext<'_, 'gc, '_>,
-    Object<'gc>,
+    Option<Object<'gc>>,
     &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error>;
 
@@ -131,7 +131,7 @@ impl<'gc> Executable<'gc> {
         &self,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reciever: Object<'gc>,
+        reciever: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
@@ -316,11 +316,11 @@ impl<'gc> FunctionObject<'gc> {
             constr.install_trait(avm, context, class.abc(), trait_entry, scope, fn_proto)?;
         }
 
-        constr.install_method(
+        constr.install_dynamic_property(
             context.gc_context,
             QName::new(Namespace::public_namespace(), "prototype"),
-            class_proto,
-        );
+            class_proto.into(),
+        )?;
 
         Ok(constr)
     }
@@ -453,6 +453,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0.write(mc).base.init_slot(id, value, mc)
     }
 
+    fn get_method(self, id: u32) -> Option<Object<'gc>> {
+        self.0.read().base.get_method(id)
+    }
+
     fn has_property(self, name: &QName) -> bool {
         self.0.read().base.has_property(name)
     }
@@ -465,9 +469,13 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
+    fn as_executable(&self) -> Option<Executable<'gc>> {
+        self.0.read().exec.clone()
+    }
+
     fn call(
         self,
-        reciever: Object<'gc>,
+        reciever: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -499,26 +507,43 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         .into())
     }
 
-    fn install_method(&mut self, mc: MutationContext<'gc, '_>, name: QName, function: Object<'gc>) {
-        self.0.write(mc).base.install_method(name, function)
+    fn install_method(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        name: QName,
+        disp_id: u32,
+        function: Object<'gc>,
+    ) {
+        self.0
+            .write(mc)
+            .base
+            .install_method(name, disp_id, function)
     }
 
     fn install_getter(
         &mut self,
         mc: MutationContext<'gc, '_>,
         name: QName,
-        function: Executable<'gc>,
+        disp_id: u32,
+        function: Object<'gc>,
     ) -> Result<(), Error> {
-        self.0.write(mc).base.install_getter(name, function)
+        self.0
+            .write(mc)
+            .base
+            .install_getter(name, disp_id, function)
     }
 
     fn install_setter(
         &mut self,
         mc: MutationContext<'gc, '_>,
         name: QName,
-        function: Executable<'gc>,
+        disp_id: u32,
+        function: Object<'gc>,
     ) -> Result<(), Error> {
-        self.0.write(mc).base.install_setter(name, function)
+        self.0
+            .write(mc)
+            .base
+            .install_setter(name, disp_id, function)
     }
 
     fn install_dynamic_property(
