@@ -228,6 +228,7 @@ swf_tests! {
     (context_menu, "avm1/context_menu", 1),
     (context_menu_item, "avm1/context_menu_item", 1),
     (as3_hello_world, "avm2/hello_world", 1),
+    (as3_function_call, "avm2/function_call", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
