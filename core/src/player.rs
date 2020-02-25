@@ -1,6 +1,6 @@
 use crate::avm1::listeners::SystemListener;
 use crate::avm1::Avm1;
-use crate::backend::input::InputBackend;
+use crate::backend::input::{InputBackend, MouseCursor};
 use crate::backend::{
     audio::AudioBackend, navigator::NavigatorBackend, render::Letterbox, render::RenderBackend,
 };
@@ -130,6 +130,9 @@ pub struct Player {
     mouse_pos: (Twips, Twips),
     is_mouse_down: bool,
 
+    /// The current mouse cursor icon.
+    mouse_cursor: MouseCursor,
+
     /// Self-reference to ourselves.
     ///
     /// This is a weak reference that is upgraded and handed out in various
@@ -224,6 +227,7 @@ impl Player {
 
             mouse_pos: (Twips::new(0), Twips::new(0)),
             is_mouse_down: false,
+            mouse_cursor: MouseCursor::Arrow,
 
             renderer,
             audio,
@@ -485,7 +489,8 @@ impl Player {
         }
         let mouse_pos = self.mouse_pos;
 
-        self.mutate_with_update_context(|avm, context| {
+        let mut new_cursor = self.mouse_cursor;
+        let hover_changed = self.mutate_with_update_context(|avm, context| {
             // Check hovered object.
             let mut new_hovered = None;
             for (_depth, level) in context.levels.iter().rev() {
@@ -507,9 +512,11 @@ impl Player {
                 }
 
                 // RollOver on new node.
+                new_cursor = MouseCursor::Arrow;
                 if let Some(node) = new_hovered {
                     if let Some(mut button) = node.as_button() {
                         button.handle_button_event(context, ButtonEvent::RollOver);
+                        new_cursor = MouseCursor::Hand;
                     }
                 }
 
@@ -520,7 +527,15 @@ impl Player {
             } else {
                 false
             }
-        })
+        });
+
+        // Update mouse cursor if it has changed.
+        if new_cursor != self.mouse_cursor {
+            self.mouse_cursor = new_cursor;
+            self.input.set_mouse_cursor(new_cursor)
+        }
+
+        hover_changed
     }
 
     /// Preload the first movie in the player.
