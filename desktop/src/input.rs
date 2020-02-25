@@ -1,5 +1,5 @@
 use glium::Display;
-use ruffle_core::backend::input::InputBackend;
+use ruffle_core::backend::input::{InputBackend, MouseCursor};
 use ruffle_core::events::{KeyCode, PlayerEvent};
 use std::collections::HashSet;
 use winit::event::{ElementState, VirtualKeyCode, WindowEvent};
@@ -177,6 +177,17 @@ impl InputBackend for WinitInputBackend {
     fn show_mouse(&mut self) {
         self.display.gl_window().window().set_cursor_visible(true);
         self.cursor_visible = true;
+    }
+
+    fn set_mouse_cursor(&mut self, cursor: MouseCursor) {
+        use winit::window::CursorIcon;
+        let icon = match cursor {
+            MouseCursor::Arrow => CursorIcon::Arrow,
+            MouseCursor::Hand => CursorIcon::Hand,
+            MouseCursor::IBeam => CursorIcon::Text,
+            MouseCursor::Grab => CursorIcon::Grab,
+        };
+        self.display.gl_window().window().set_cursor_icon(icon);
     }
 }
 

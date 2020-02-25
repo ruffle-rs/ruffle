@@ -1,5 +1,5 @@
 use crate::utils::JsResult;
-use ruffle_core::backend::input::InputBackend;
+use ruffle_core::backend::input::{InputBackend, MouseCursor};
 use ruffle_core::events::KeyCode;
 use std::collections::HashSet;
 use web_sys::HtmlCanvasElement;
@@ -10,6 +10,7 @@ pub struct WebInputBackend {
     keys_down: HashSet<String>,
     canvas: HtmlCanvasElement,
     cursor_visible: bool,
+    cursor: MouseCursor,
     last_key: KeyCode,
 }
 
@@ -19,6 +20,7 @@ impl WebInputBackend {
             keys_down: HashSet::new(),
             canvas: canvas.clone(),
             cursor_visible: true,
+            cursor: MouseCursor::Arrow,
             last_key: KeyCode::Unknown,
         }
     }
@@ -32,6 +34,23 @@ impl WebInputBackend {
     /// Register a key release for a given code string.
     pub fn keyup(&mut self, code: String) {
         self.keys_down.remove(&code);
+    }
+
+    fn update_mouse_cursor(&self) {
+        let cursor = if self.cursor_visible {
+            "none"
+        } else {
+            match self.cursor {
+                MouseCursor::Arrow => "auto",
+                MouseCursor::Hand => "pointer",
+                MouseCursor::IBeam => "text",
+                MouseCursor::Grab => "grab",
+            }
+        };
+        self.canvas
+            .style()
+            .set_property("cursor", cursor)
+            .warn_on_error();
     }
 }
 
@@ -151,19 +170,18 @@ impl InputBackend for WebInputBackend {
     }
 
     fn hide_mouse(&mut self) {
-        self.canvas
-            .style()
-            .set_property("cursor", "none")
-            .warn_on_error();
         self.cursor_visible = false;
+        self.update_mouse_cursor();
     }
 
     fn show_mouse(&mut self) {
-        self.canvas
-            .style()
-            .set_property("cursor", "auto")
-            .warn_on_error();
         self.cursor_visible = true;
+        self.update_mouse_cursor();
+    }
+
+    fn set_mouse_cursor(&mut self, cursor: MouseCursor) {
+        self.cursor = cursor;
+        self.update_mouse_cursor();
     }
 }
 
