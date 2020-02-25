@@ -127,6 +127,13 @@ unsafe impl<'gc> Collect for Executable<'gc> {
 }
 
 impl<'gc> Executable<'gc> {
+    /// Execute a method.
+    ///
+    /// The function will either be called directly if it is a Rust builtin, or
+    /// placed on the stack of the passed-in AVM2 otherwise. As a result, we
+    /// return a `ReturnValue` which can be used to force execution of the
+    /// given stack frame and obtain it's return value or to push said value
+    /// onto the AVM operand stack.
     pub fn exec(
         &self,
         avm: &mut Avm2<'gc>,
@@ -137,9 +144,42 @@ impl<'gc> Executable<'gc> {
         match self {
             Executable::Native(nf) => nf(avm, context, reciever, arguments),
             Executable::Action(a2f) => {
+                let base_proto = reciever.and_then(|o| o.proto());
                 let activation = GcCell::allocate(
                     context.gc_context,
-                    Activation::from_action(context, &a2f, reciever, arguments)?,
+                    Activation::from_action(context, &a2f, reciever, arguments, base_proto)?,
+                );
+
+                avm.insert_stack_frame(activation);
+                Ok(activation.into())
+            }
+        }
+    }
+
+    /// Execute a method that is the `super` of an existing method.
+    ///
+    /// The primary difference between `exec` and `exec_super` is that the
+    /// former always resets the `base_proto` to the current `reciever` while
+    /// the latter sets it to the next object up the prototype chain. The
+    /// latter behavior is necessary to ensure that chains of `callsuper` and
+    /// `constructsuper` operate correctly.
+    pub fn exec_super(
+        &self,
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        reciever: Option<Object<'gc>>,
+        arguments: &[Value<'gc>],
+    ) -> Result<ReturnValue<'gc>, Error> {
+        match self {
+            Executable::Native(nf) => nf(avm, context, reciever, arguments),
+            Executable::Action(a2f) => {
+                let base_proto = avm
+                    .current_stack_frame()
+                    .and_then(|sf| sf.read().base_proto())
+                    .and_then(|o| o.proto());
+                let activation = GcCell::allocate(
+                    context.gc_context,
+                    Activation::from_action(context, &a2f, reciever, arguments, base_proto)?,
                 );
 
                 avm.insert_stack_frame(activation);
@@ -322,6 +362,11 @@ impl<'gc> FunctionObject<'gc> {
             QName::new(Namespace::public_namespace(), "prototype"),
             class_proto.into(),
         )?;
+        class_proto.install_dynamic_property(
+            context.gc_context,
+            QName::new(Namespace::public_namespace(), "constructor"),
+            constr.into(),
+        )?;
 
         Ok(constr)
     }
@@ -367,25 +412,31 @@ impl<'gc> FunctionObject<'gc> {
     pub fn from_builtin_constr(
         mc: MutationContext<'gc, '_>,
         constr: NativeFunction<'gc>,
-        prototype: Object<'gc>,
+        mut prototype: Object<'gc>,
         fn_proto: Object<'gc>,
     ) -> Result<Object<'gc>, Error> {
-        let mut base = ScriptObjectData::base_new(Some(fn_proto));
-
-        base.install_dynamic_property(
-            QName::new(Namespace::public_namespace(), "prototype"),
-            prototype.into(),
-        )?;
-
-        Ok(FunctionObject(GcCell::allocate(
+        let mut base: Object<'gc> = FunctionObject(GcCell::allocate(
             mc,
             FunctionObjectData {
-                base,
+                base: ScriptObjectData::base_new(Some(fn_proto)),
                 exec: Some(constr.into()),
                 class: None,
             },
         ))
-        .into())
+        .into();
+
+        base.install_dynamic_property(
+            mc,
+            QName::new(Namespace::public_namespace(), "prototype"),
+            prototype.into(),
+        )?;
+        prototype.install_dynamic_property(
+            mc,
+            QName::new(Namespace::public_namespace(), "constructor"),
+            base.into(),
+        )?;
+
+        Ok(base)
     }
 }
 

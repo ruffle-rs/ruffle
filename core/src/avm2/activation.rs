@@ -124,6 +124,11 @@ pub struct Activation<'gc> {
     ///
     /// A `scope` of `None` indicates that the scope stack is empty.
     scope: Option<GcCell<'gc, Scope<'gc>>>,
+
+    /// The base prototype of `this`.
+    ///
+    /// This will not be available if this is not a method call.
+    base_proto: Option<Object<'gc>>,
 }
 
 impl<'gc> Activation<'gc> {
@@ -158,6 +163,7 @@ impl<'gc> Activation<'gc> {
             return_value: None,
             local_scope: ScriptObject::bare_object(context.gc_context),
             scope,
+            base_proto: None,
         })
     }
 
@@ -166,6 +172,7 @@ impl<'gc> Activation<'gc> {
         action: &Avm2Function<'gc>,
         this: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
+        base_proto: Option<Object<'gc>>,
     ) -> Result<Self, Error> {
         let method = action.method.clone();
         let scope = action.scope;
@@ -198,6 +205,7 @@ impl<'gc> Activation<'gc> {
             return_value: None,
             local_scope: ScriptObject::bare_object(context.gc_context),
             scope,
+            base_proto,
         })
     }
 
@@ -271,5 +279,11 @@ impl<'gc> Activation<'gc> {
     /// Set the return value.
     pub fn set_return_value(&mut self, value: Value<'gc>) {
         self.return_value = Some(value);
+    }
+
+    /// Get the base prototype of the object that the currently executing
+    /// method was retrieved from, if one exists.
+    pub fn base_proto(&self) -> Option<Object<'gc>> {
+        self.base_proto
     }
 }

@@ -1,7 +1,7 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
 use crate::avm2::activation::{Activation, Avm2ScriptEntry};
-use crate::avm2::function::{Avm2ClassEntry, Avm2MethodEntry, FunctionObject};
+use crate::avm2::function::{Avm2ClassEntry, Avm2MethodEntry, Executable, FunctionObject};
 use crate::avm2::globals::SystemPrototypes;
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{Object, TObject};
@@ -447,6 +447,10 @@ impl<'gc> Avm2<'gc> {
                     self.op_call_prop_void(context, index, num_args)
                 }
                 Op::CallStatic { index, num_args } => self.op_call_static(context, index, num_args),
+                Op::CallSuper { index, num_args } => self.op_call_super(context, index, num_args),
+                Op::CallSuperVoid { index, num_args } => {
+                    self.op_call_super_void(context, index, num_args)
+                }
                 Op::ReturnValue => self.op_return_value(context),
                 Op::ReturnVoid => self.op_return_void(context),
                 Op::GetProperty { index } => self.op_get_property(context, index),
@@ -469,6 +473,7 @@ impl<'gc> Avm2<'gc> {
                 Op::ConstructProp { index, num_args } => {
                     self.op_construct_prop(context, index, num_args)
                 }
+                Op::ConstructSuper { num_args } => self.op_construct_super(context, num_args),
                 Op::NewActivation => self.op_new_activation(context),
                 Op::NewObject { num_args } => self.op_new_object(context, num_args),
                 Op::NewFunction { index } => self.op_new_function(context, index),
@@ -702,6 +707,72 @@ impl<'gc> Avm2<'gc> {
         function
             .call(Some(receiver), &args, self, context)?
             .push(self);
+
+        Ok(())
+    }
+
+    fn op_call_super(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        index: Index<AbcMultiname>,
+        arg_count: u32,
+    ) -> Result<(), Error> {
+        let args = self.pop_args(arg_count);
+        let multiname = self.pool_multiname(index)?;
+        let receiver = self.pop().as_object()?;
+        let name: Result<QName, Error> = receiver
+            .resolve_multiname(&multiname)
+            .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
+        let function = self
+            .current_stack_frame()
+            .unwrap()
+            .read()
+            .base_proto()
+            .unwrap_or(receiver)
+            .get_property(&name?, self, context)?
+            .resolve(self, context)?
+            .as_object()?;
+
+        let exec: Result<Executable<'gc>, Error> = function.as_executable().ok_or_else(|| {
+            format!("Super method {:?} is not callable", multiname.local_name()).into()
+        });
+
+        exec?
+            .exec_super(self, context, Some(receiver), &args)?
+            .push(self);
+
+        Ok(())
+    }
+
+    fn op_call_super_void(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        index: Index<AbcMultiname>,
+        arg_count: u32,
+    ) -> Result<(), Error> {
+        let args = self.pop_args(arg_count);
+        let multiname = self.pool_multiname(index)?;
+        let receiver = self.pop().as_object()?;
+        let name: Result<QName, Error> = receiver
+            .resolve_multiname(&multiname)
+            .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
+        let function = self
+            .current_stack_frame()
+            .unwrap()
+            .read()
+            .base_proto()
+            .unwrap_or(receiver)
+            .get_property(&name?, self, context)?
+            .resolve(self, context)?
+            .as_object()?;
+
+        let exec: Result<Executable<'gc>, Error> = function.as_executable().ok_or_else(|| {
+            format!("Super method {:?} is not callable", multiname.local_name()).into()
+        });
+
+        exec?
+            .exec_super(self, context, Some(receiver), &args)?
+            .resolve(self, context)?;
 
         Ok(())
     }
@@ -1030,6 +1101,35 @@ impl<'gc> Avm2<'gc> {
             .resolve(self, context)?;
 
         self.push(object);
+
+        Ok(())
+    }
+
+    fn op_construct_super(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        arg_count: u32,
+    ) -> Result<(), Error> {
+        let args = self.pop_args(arg_count);
+        let receiver = self.pop().as_object()?;
+        let name = QName::new(Namespace::public_namespace(), "constructor");
+        let function = self
+            .current_stack_frame()
+            .unwrap()
+            .read()
+            .base_proto()
+            .unwrap_or(receiver)
+            .get_property(&name, self, context)?
+            .resolve(self, context)?
+            .as_object()?;
+
+        let exec: Result<Executable<'gc>, Error> = function
+            .as_executable()
+            .ok_or_else(|| "Super constructor is not callable".to_string().into());
+
+        exec?
+            .exec_super(self, context, Some(receiver), &args)?
+            .resolve(self, context)?;
 
         Ok(())
     }
