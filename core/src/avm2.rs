@@ -1113,12 +1113,15 @@ impl<'gc> Avm2<'gc> {
         let args = self.pop_args(arg_count);
         let receiver = self.pop().as_object()?;
         let name = QName::new(Namespace::public_namespace(), "constructor");
-        let function = self
+        let base_proto: Result<Object<'gc>, Error> = self
             .current_stack_frame()
             .unwrap()
             .read()
             .base_proto()
-            .unwrap_or(receiver)
+            .and_then(|p| p.proto())
+            .ok_or_else(|| "No base prototype!".to_string().into());
+
+        let function = base_proto?
             .get_property(&name, self, context)?
             .resolve(self, context)?
             .as_object()?;
