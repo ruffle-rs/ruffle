@@ -391,6 +391,7 @@ impl Player {
         // Propagte clip events.
         let (clip_event, mouse_event_name) = match event {
             PlayerEvent::KeyDown { .. } => (Some(ClipEvent::KeyDown), Some("onKeyDown")),
+            PlayerEvent::KeyUp { .. } => (Some(ClipEvent::KeyUp), Some("onKeyUp")),
             PlayerEvent::MouseMove { .. } => (Some(ClipEvent::MouseMove), Some("onMouseMove")),
             PlayerEvent::MouseUp { .. } => (Some(ClipEvent::MouseUp), Some("onMouseUp")),
             PlayerEvent::MouseDown { .. } => (Some(ClipEvent::MouseDown), Some("onMouseDown")),

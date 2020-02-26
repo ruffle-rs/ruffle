@@ -39,6 +39,12 @@ impl WinitInputBackend {
                 ElementState::Released => {
                     if let Some(key) = input.virtual_keycode {
                         self.keys_down.remove(&key);
+                        if let Some(key_code) = winit_to_ruffle_key_code(key) {
+                            self.last_key = key_code;
+                            return Some(PlayerEvent::KeyUp { key_code });
+                        } else {
+                            self.last_key = KeyCode::Unknown;
+                        }
                     }
                 }
             },
