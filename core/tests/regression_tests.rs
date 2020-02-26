@@ -230,6 +230,7 @@ swf_tests! {
     (as3_hello_world, "avm2/hello_world", 1),
     (as3_function_call, "avm2/function_call", 1),
     (as3_constructor_call, "avm2/constructor_call", 1),
+    (as3_class_methods, "avm2/class_methods", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
