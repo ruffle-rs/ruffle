@@ -287,7 +287,9 @@ pub struct FunctionObjectData<'gc> {
 impl<'gc> FunctionObject<'gc> {
     /// Construct a class from an ABC class/instance pair.
     ///
-    /// If the initializer method cannot be found, this function returns None.
+    /// This function returns both the class itself, and the static class
+    /// initializer method that you should call before interacting with the
+    /// class. The latter should be called using the former as a reciever.
     pub fn from_abc_class(
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -295,7 +297,7 @@ impl<'gc> FunctionObject<'gc> {
         base_class: Object<'gc>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         fn_proto: Object<'gc>,
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<(Object<'gc>, Object<'gc>), Error> {
         let super_proto: Result<Object<'gc>, Error> = base_class
             .get_property(
                 &QName::new(Namespace::public_namespace(), "prototype"),
@@ -330,7 +332,6 @@ impl<'gc> FunctionObject<'gc> {
             class_proto.install_trait(avm, context, class.abc(), trait_entry, scope, fn_proto)?;
         }
 
-        // TODO: Get the class initializer, and store it somewhere.
         let initializer_index = class.instance().init_method.clone();
         let initializer: Result<Avm2MethodEntry, Error> =
             Avm2MethodEntry::from_method_index(class.abc(), initializer_index.clone()).ok_or_else(
@@ -346,7 +347,7 @@ impl<'gc> FunctionObject<'gc> {
         let mut constr: Object<'gc> = FunctionObject(GcCell::allocate(
             context.gc_context,
             FunctionObjectData {
-                base: ScriptObjectData::base_new(None),
+                base: ScriptObjectData::base_new(Some(fn_proto)),
                 exec: Some(Avm2Function::from_method(initializer?, scope).into()),
                 class: Some(class.clone()),
             },
@@ -368,7 +369,27 @@ impl<'gc> FunctionObject<'gc> {
             constr.into(),
         )?;
 
-        Ok(constr)
+        let class_initializer_index = class.class().init_method.clone();
+        let class_initializer: Result<Avm2MethodEntry, Error> =
+            Avm2MethodEntry::from_method_index(class.abc(), class_initializer_index.clone())
+                .ok_or_else(|| {
+                    format!(
+                        "Class initializer method index {} does not exist",
+                        class_initializer_index.0
+                    )
+                    .into()
+                });
+        let class_constr = FunctionObject(GcCell::allocate(
+            context.gc_context,
+            FunctionObjectData {
+                base: ScriptObjectData::base_new(Some(fn_proto)),
+                exec: Some(Avm2Function::from_method(class_initializer?, scope).into()),
+                class: Some(class.clone()),
+            },
+        ))
+        .into();
+
+        Ok((constr, class_constr))
     }
 
     /// Construct a function from an ABC method and the current closure scope.

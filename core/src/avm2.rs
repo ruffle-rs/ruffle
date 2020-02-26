@@ -1196,7 +1196,7 @@ impl<'gc> Avm2<'gc> {
         let class_entry = self.table_class(index)?;
         let scope = self.current_stack_frame().unwrap().read().scope();
 
-        let new_class = FunctionObject::from_abc_class(
+        let (new_class, class_init) = FunctionObject::from_abc_class(
             self,
             context,
             class_entry,
@@ -1204,6 +1204,10 @@ impl<'gc> Avm2<'gc> {
             scope,
             self.system_prototypes.function,
         )?;
+
+        class_init
+            .call(Some(new_class), &[], self, context)?
+            .resolve(self, context)?;
 
         self.push(new_class);
 

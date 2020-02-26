@@ -230,7 +230,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                         format!("Could not resolve superclass {:?}", super_name.local_name()).into()
                     });
 
-                let class = FunctionObject::from_abc_class(
+                let (class, _cinit) = FunctionObject::from_abc_class(
                     avm,
                     context,
                     type_entry.clone(),
