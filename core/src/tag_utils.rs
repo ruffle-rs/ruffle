@@ -62,7 +62,7 @@ impl SwfMovie {
         } else {
             let mut data = Vec::with_capacity(swf_stream.uncompressed_length);
             if let Err(e) = reader.get_mut().read_to_end(&mut data) {
-                log::error!("Error decompressing SWF, may be corrupt: {}", e);
+                return Err(format!("Error decompressing SWF, may be corrupt: {}", e).into());
             }
             data
         };
