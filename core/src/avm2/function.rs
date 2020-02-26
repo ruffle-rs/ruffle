@@ -347,7 +347,7 @@ impl<'gc> FunctionObject<'gc> {
             context.gc_context,
             FunctionObjectData {
                 base: ScriptObjectData::base_new(None),
-                exec: Some(Avm2Function::from_method(initializer?, None).into()),
+                exec: Some(Avm2Function::from_method(initializer?, scope).into()),
                 class: Some(class.clone()),
             },
         ))
