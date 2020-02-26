@@ -1,5 +1,4 @@
 use generational_arena::{Arena, Index};
-use std::ops::{Deref, DerefMut};
 
 pub mod decoders;
 pub mod swf {
@@ -83,87 +82,6 @@ pub trait AudioBackend {
     /// what the stage frame rate is. Otherwise, you are free to avoid
     /// implementing it.
     fn set_frame_rate(&mut self, _frame_rate: f64) {}
-}
-
-/// Rust does not auto-impl a Trait for Box<Trait> or Deref<Target=Trait>
-/// so do it ourselves.
-/// TODO: Find a derive macro that does this, or just make Player use Box
-/// internally?
-impl<T: AudioBackend + ?Sized> AudioBackend for Box<T> {
-    fn prime_audio(&mut self) {
-        self.deref_mut().prime_audio();
-    }
-
-    fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, Error> {
-        self.deref_mut().register_sound(swf_sound)
-    }
-    fn preload_sound_stream_head(
-        &mut self,
-        clip_id: swf::CharacterId,
-        clip_frame: u16,
-        stream_info: &swf::SoundStreamHead,
-    ) {
-        self.deref_mut()
-            .preload_sound_stream_head(clip_id, clip_frame, stream_info);
-    }
-    fn preload_sound_stream_block(
-        &mut self,
-        clip_id: swf::CharacterId,
-        clip_frame: u16,
-        audio_data: &[u8],
-    ) {
-        self.deref_mut()
-            .preload_sound_stream_block(clip_id, clip_frame, audio_data);
-    }
-    fn preload_sound_stream_end(&mut self, clip_id: swf::CharacterId) {
-        self.deref_mut().preload_sound_stream_end(clip_id)
-    }
-    fn start_sound(
-        &mut self,
-        sound: SoundHandle,
-        settings: &swf::SoundInfo,
-    ) -> SoundInstanceHandle {
-        self.deref_mut().start_sound(sound, settings)
-    }
-    fn start_stream(
-        &mut self,
-        clip_id: crate::prelude::CharacterId,
-        clip_frame: u16,
-        clip_data: crate::tag_utils::SwfSlice,
-        handle: &swf::SoundStreamHead,
-    ) -> AudioStreamHandle {
-        self.deref_mut()
-            .start_stream(clip_id, clip_frame, clip_data, handle)
-    }
-
-    fn stop_sound(&mut self, sound: SoundInstanceHandle) {
-        self.deref_mut().stop_sound(sound)
-    }
-
-    fn stop_stream(&mut self, stream: AudioStreamHandle) {
-        self.deref_mut().stop_stream(stream)
-    }
-
-    fn stop_all_sounds(&mut self) {
-        self.deref_mut().stop_all_sounds()
-    }
-    fn stop_sounds_with_handle(&mut self, handle: SoundHandle) {
-        self.deref_mut().stop_sounds_with_handle(handle)
-    }
-    fn is_sound_playing_with_handle(&mut self, handle: SoundHandle) -> bool {
-        self.deref_mut().is_sound_playing_with_handle(handle)
-    }
-
-    fn get_sound_duration(&self, sound: SoundHandle) -> Option<u32> {
-        self.deref().get_sound_duration(sound)
-    }
-
-    fn is_loading_complete(&self) -> bool {
-        self.deref().is_loading_complete()
-    }
-    fn tick(&mut self) {
-        self.deref_mut().tick()
-    }
 }
 
 /// Audio backend that ignores all audio.
