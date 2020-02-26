@@ -73,6 +73,7 @@ impl<'gc> LoadManager<'gc> {
             self_handle: None,
             target_clip,
             target_broadcaster,
+            load_complete: false,
         };
         let handle = self.add_loader(loader);
 
@@ -168,6 +169,16 @@ pub enum Loader<'gc> {
         /// Event broadcaster (typically a `MovieClipLoader`) to fire events
         /// into.
         target_broadcaster: Option<Object<'gc>>,
+
+        /// Indicates that the load has completed.
+        ///
+        /// This flag exists to prevent a situation in which loading a movie
+        /// into a clip that has not yet fired it's Load event causes the
+        /// loader to be prematurely removed. This flag is only set when either
+        /// the movie has been replaced (and thus Load events can be trusted)
+        /// or an error has occured (in which case we don't care about the
+        /// loader anymore).
+        load_complete: bool,
     },
 
     /// Loader that is loading form data into an AVM1 object scope.
@@ -351,6 +362,12 @@ impl<'gc> Loader<'gc> {
                             avm.run_stack_till_empty(uc)?;
                         }
 
+                        if let Some(Loader::Movie { load_complete, .. }) =
+                            uc.load_manager.get_loader_mut(handle)
+                        {
+                            *load_complete = true;
+                        };
+
                         Ok(())
                     })
             } else {
@@ -384,6 +401,12 @@ impl<'gc> Loader<'gc> {
                             );
                             avm.run_stack_till_empty(uc)?;
                         }
+
+                        if let Some(Loader::Movie { load_complete, .. }) =
+                            uc.load_manager.get_loader_mut(handle)
+                        {
+                            *load_complete = true;
+                        };
 
                         Ok(())
                     },
@@ -437,16 +460,17 @@ impl<'gc> Loader<'gc> {
         clip_object: Option<Object<'gc>>,
         queue: &mut ActionQueue<'gc>,
     ) -> bool {
-        let (clip, broadcaster) = match self {
+        let (clip, broadcaster, load_complete) = match self {
             Loader::Movie {
                 target_clip,
                 target_broadcaster,
+                load_complete,
                 ..
-            } => (*target_clip, *target_broadcaster),
+            } => (*target_clip, *target_broadcaster, *load_complete),
             _ => return false,
         };
 
-        if DisplayObject::ptr_eq(loaded_clip, clip) {
+        if DisplayObject::ptr_eq(loaded_clip, clip) && load_complete {
             if let Some(broadcaster) = broadcaster {
                 queue.queue_actions(
                     clip,
