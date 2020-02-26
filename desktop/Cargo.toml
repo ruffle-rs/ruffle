@@ -24,3 +24,4 @@ url = "2.1.1"
 
 [features]
 avm_debug = ["ruffle_core/avm_debug"]
+lzma = ["ruffle_core/lzma"]

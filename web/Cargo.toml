@@ -8,6 +8,7 @@ edition = "2018"
 crate-type = ["cdylib", "rlib"]
 
 [features]
+lzma = ["ruffle_core/lzma"]
 default = ["console_error_panic_hook", "console_log"]
 
 [dependencies]
