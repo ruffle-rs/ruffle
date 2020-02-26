@@ -38,14 +38,14 @@ impl WebInputBackend {
 
     fn update_mouse_cursor(&self) {
         let cursor = if self.cursor_visible {
-            "none"
-        } else {
             match self.cursor {
                 MouseCursor::Arrow => "auto",
                 MouseCursor::Hand => "pointer",
                 MouseCursor::IBeam => "text",
                 MouseCursor::Grab => "grab",
             }
+        } else {
+            "none"
         };
         self.canvas
             .style()
