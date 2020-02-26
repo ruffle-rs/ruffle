@@ -342,6 +342,7 @@ impl Ruffle {
                     INSTANCES.with(|instances| {
                         if let Some(instance) = instances.borrow_mut().get_mut(index) {
                             if instance.has_focus {
+                                let code = js_event.code();
                                 instance
                                     .core
                                     .lock()
@@ -349,7 +350,16 @@ impl Ruffle {
                                     .input_mut()
                                     .downcast_mut::<WebInputBackend>()
                                     .unwrap()
-                                    .keyup(js_event.code());
+                                    .keyup(code.clone());
+
+                                if let Some(key_code) = input::web_to_ruffle_key_code(&code) {
+                                    instance
+                                        .core
+                                        .lock()
+                                        .unwrap()
+                                        .handle_event(PlayerEvent::KeyUp { key_code });
+                                }
+
                                 js_event.prevent_default();
                             }
                         }

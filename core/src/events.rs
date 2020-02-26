@@ -4,6 +4,7 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 #[derive(Debug)]
 pub enum PlayerEvent {
     KeyDown { key_code: KeyCode },
+    KeyUp { key_code: KeyCode },
     MouseMove { x: f64, y: f64 },
     MouseUp { x: f64, y: f64 },
     MouseDown { x: f64, y: f64 },
