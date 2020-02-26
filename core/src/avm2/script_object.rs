@@ -35,13 +35,15 @@ pub struct ScriptObjectData<'gc> {
 }
 
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
-    fn get_property(
+    fn get_property_local(
         self,
         name: &QName,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
-        self.0.read().get_property(name, avm, context, self.into())
+        self.0
+            .read()
+            .get_property_local(name, avm, context, self.into())
     }
 
     fn set_property(
@@ -98,8 +100,8 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().get_method(id)
     }
 
-    fn has_property(self, name: &QName) -> bool {
-        self.0.read().has_property(name)
+    fn has_own_property(self, name: &QName) -> bool {
+        self.0.read().has_own_property(name)
     }
 
     fn proto(&self) -> Option<Object<'gc>> {
@@ -209,7 +211,7 @@ impl<'gc> ScriptObjectData<'gc> {
         }
     }
 
-    pub fn get_property(
+    pub fn get_property_local(
         &self,
         name: &QName,
         avm: &mut Avm2<'gc>,
@@ -327,7 +329,7 @@ impl<'gc> ScriptObjectData<'gc> {
         self.methods.get(id as usize).and_then(|v| *v)
     }
 
-    pub fn has_property(&self, name: &QName) -> bool {
+    pub fn has_own_property(&self, name: &QName) -> bool {
         self.values.get(name).is_some()
     }
 

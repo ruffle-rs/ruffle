@@ -25,13 +25,32 @@ use swf::avm2::types::{AbcFile, Trait as AbcTrait, TraitKind as AbcTraitKind};
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
+    /// Retrieve a property by it's QName, without taking prototype lookups
+    /// into account.
+    fn get_property_local(
+        self,
+        name: &QName,
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<ReturnValue<'gc>, Error>;
+
     /// Retrieve a property by it's QName.
     fn get_property(
         self,
         name: &QName,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnValue<'gc>, Error>;
+    ) -> Result<ReturnValue<'gc>, Error> {
+        if self.has_own_property(name) {
+            return self.get_property_local(name, avm, context);
+        }
+
+        if let Some(proto) = self.proto() {
+            return proto.get_property(name, avm, context);
+        }
+
+        Ok(Value::Undefined.into())
+    }
 
     /// Set a property by it's QName.
     fn set_property(
@@ -84,17 +103,27 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             }
         }
 
+        if let Some(proto) = self.proto() {
+            proto.resolve_multiname(multiname);
+        }
+
         None
     }
 
     /// Indicates whether or not a property exists on an object.
-    fn has_property(self, _name: &QName) -> bool;
+    fn has_property(self, name: &QName) -> bool {
+        if self.has_own_property(name) {
+            true
+        } else if let Some(proto) = self.proto() {
+            proto.has_own_property(name)
+        } else {
+            false
+        }
+    }
 
     /// Indicates whether or not a property exists on an object and is not part
     /// of the prototype chain.
-    fn has_own_property(self, _name: &QName) -> bool {
-        false
-    }
+    fn has_own_property(self, name: &QName) -> bool;
 
     /// Indicates whether or not a property is overwritable.
     fn is_property_overwritable(self, _name: &QName) -> bool {

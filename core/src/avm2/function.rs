@@ -462,7 +462,7 @@ impl<'gc> FunctionObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for FunctionObject<'gc> {
-    fn get_property(
+    fn get_property_local(
         self,
         name: &QName,
         avm: &mut Avm2<'gc>,
@@ -471,7 +471,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0
             .read()
             .base
-            .get_property(name, avm, context, self.into())
+            .get_property_local(name, avm, context, self.into())
     }
 
     fn set_property(
@@ -530,8 +530,8 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0.read().base.get_method(id)
     }
 
-    fn has_property(self, name: &QName) -> bool {
-        self.0.read().base.has_property(name)
+    fn has_own_property(self, name: &QName) -> bool {
+        self.0.read().base.has_own_property(name)
     }
 
     fn proto(&self) -> Option<Object<'gc>> {
