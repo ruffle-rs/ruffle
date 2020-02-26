@@ -257,6 +257,7 @@ impl<'gc> Loader<'gc> {
                             target_broadcaster,
                             ..
                         }) => (*target_clip, *target_broadcaster),
+                        None => return Err("Load cancelled".into()),
                         _ => unreachable!(),
                     };
 
@@ -296,6 +297,7 @@ impl<'gc> Loader<'gc> {
                                 target_broadcaster,
                                 ..
                             }) => (*target_clip, *target_broadcaster),
+                            None => return Err("Load cancelled".into()),
                             _ => unreachable!(),
                         };
 
@@ -363,6 +365,7 @@ impl<'gc> Loader<'gc> {
                                 target_broadcaster,
                                 ..
                             }) => (*target_clip, *target_broadcaster),
+                            None => return Err("Load cancelled".into()),
                             _ => unreachable!(),
                         };
 
@@ -410,7 +413,7 @@ impl<'gc> Loader<'gc> {
                 let loader = uc.load_manager.get_loader(handle);
                 let that = match loader {
                     Some(Loader::Form { target_object, .. }) => *target_object,
-                    None => return Err("Loader expired during loading".into()),
+                    None => return Err("Load cancelled".into()),
                     _ => return Err("Non-movie loader spawned as movie loader".into()),
                 };
 
@@ -492,6 +495,7 @@ impl<'gc> Loader<'gc> {
                                 active_clip,
                                 ..
                             }) => (*target_node, *active_clip),
+                            None => return Err("Load cancelled".into()),
                             _ => unreachable!(),
                         };
 
@@ -529,6 +533,7 @@ impl<'gc> Loader<'gc> {
                                 active_clip,
                                 ..
                             }) => (*target_node, *active_clip),
+                            None => return Err("Load cancelled".into()),
                             _ => unreachable!(),
                         };
 
