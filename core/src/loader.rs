@@ -294,9 +294,9 @@ impl<'gc> Loader<'gc> {
                 },
             )?;
 
-            let data = fetch.await;
-            if let Ok(data) = data {
-                let movie = Arc::new(SwfMovie::from_data(&data));
+            let data = (fetch.await).and_then(|data| Ok((data.len(), SwfMovie::from_data(&data)?)));
+            if let Ok((length, movie)) = data {
+                let movie = Arc::new(movie);
 
                 player
                     .lock()
@@ -322,8 +322,8 @@ impl<'gc> Loader<'gc> {
                                 &[
                                     "onLoadProgress".into(),
                                     Value::Object(broadcaster),
-                                    data.len().into(),
-                                    data.len().into(),
+                                    length.into(),
+                                    length.into(),
                                 ],
                             );
                             avm.run_stack_till_empty(uc)?;
@@ -374,6 +374,8 @@ impl<'gc> Loader<'gc> {
                 //TODO: Inspect the fetch error.
                 //This requires cooperation from the backend to send abstract
                 //error types we can actually inspect.
+                //This also can get errors from decoding an invalid SWF file,
+                //too. We should distinguish those to player code.
                 player.lock().expect("Could not lock player!!").update(
                     |avm, uc| -> Result<(), Error> {
                         let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
