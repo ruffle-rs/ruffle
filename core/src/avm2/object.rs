@@ -97,14 +97,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn resolve_multiname(self, multiname: &Multiname) -> Option<QName> {
         for ns in multiname.namespace_set() {
             let qname = QName::new(ns.clone(), multiname.local_name()?);
-
             if self.has_property(&qname) {
                 return Some(qname);
             }
         }
 
         if let Some(proto) = self.proto() {
-            proto.resolve_multiname(multiname);
+            return proto.resolve_multiname(multiname);
         }
 
         None
