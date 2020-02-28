@@ -52,6 +52,19 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         Ok(Value::Undefined.into())
     }
 
+    /// Retrieve the base prototype that a particular QName is defined in.
+    fn get_base_proto(self, name: &QName) -> Option<Object<'gc>> {
+        if self.has_own_property(name) {
+            return Some(self.into());
+        }
+
+        if let Some(proto) = self.proto() {
+            return proto.get_base_proto(name);
+        }
+
+        None
+    }
+
     /// Set a property by it's QName.
     fn set_property(
         self,
@@ -300,6 +313,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         _arguments: &[Value<'gc>],
         _avm: &mut Avm2<'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
+        _base_proto: Option<Object<'gc>>,
     ) -> Result<ReturnValue<'gc>, Error> {
         Err("Object is not callable".into())
     }

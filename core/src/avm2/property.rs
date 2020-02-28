@@ -142,7 +142,9 @@ impl<'gc> Property<'gc> {
         this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
-            Property::Virtual { get: Some(get), .. } => get.exec(avm, context, Some(this), &[]),
+            Property::Virtual { get: Some(get), .. } => {
+                get.exec(Some(this), &[], avm, context, this.proto())
+            }
             Property::Virtual { get: None, .. } => Ok(Value::Undefined.into()),
             Property::Stored { value, .. } => Ok(value.to_owned().into()),
             Property::Slot { slot_id, .. } => this.get_slot(*slot_id).map(|v| v.into()),
@@ -168,8 +170,13 @@ impl<'gc> Property<'gc> {
         match self {
             Property::Virtual { set, .. } => {
                 if let Some(function) = set {
-                    let return_value =
-                        function.exec(avm, context, Some(this), &[new_value.into()])?;
+                    let return_value = function.exec(
+                        Some(this),
+                        &[new_value.into()],
+                        avm,
+                        context,
+                        this.proto(),
+                    )?;
                     Ok(return_value.is_immediate())
                 } else {
                     Ok(true)
@@ -212,8 +219,13 @@ impl<'gc> Property<'gc> {
         match self {
             Property::Virtual { set, .. } => {
                 if let Some(function) = set {
-                    let return_value =
-                        function.exec(avm, context, Some(this), &[new_value.into()])?;
+                    let return_value = function.exec(
+                        Some(this),
+                        &[new_value.into()],
+                        avm,
+                        context,
+                        this.proto(),
+                    )?;
                     Ok(return_value.is_immediate())
                 } else {
                     Ok(true)

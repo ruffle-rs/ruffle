@@ -1,7 +1,7 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
 use crate::avm2::activation::{Activation, Avm2ScriptEntry};
-use crate::avm2::function::{Avm2ClassEntry, Avm2MethodEntry, Executable, FunctionObject};
+use crate::avm2::function::{Avm2ClassEntry, Avm2MethodEntry, FunctionObject};
 use crate::avm2::globals::SystemPrototypes;
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{Object, TObject};
@@ -592,8 +592,11 @@ impl<'gc> Avm2<'gc> {
         let args = self.pop_args(arg_count);
         let receiver = self.pop().as_object().ok();
         let function = self.pop().as_object()?;
+        let base_proto = receiver.and_then(|r| r.proto());
 
-        function.call(receiver, &args, self, context)?.push(self);
+        function
+            .call(receiver, &args, self, context, base_proto)?
+            .push(self);
 
         Ok(())
     }
@@ -609,9 +612,10 @@ impl<'gc> Avm2<'gc> {
         let function: Result<Object<'gc>, Error> = receiver
             .get_method(index.0)
             .ok_or_else(|| format!("Object method {} does not exist", index.0).into());
+        let base_proto = receiver.proto();
 
         function?
-            .call(Some(receiver), &args, self, context)?
+            .call(Some(receiver), &args, self, context, base_proto)?
             .push(self);
 
         Ok(())
@@ -629,13 +633,16 @@ impl<'gc> Avm2<'gc> {
         let name: Result<QName, Error> = receiver
             .resolve_multiname(&multiname)
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
-        let function = receiver
-            .get_property(&name?, self, context)?
+        let name = name?;
+        let base_proto = receiver.get_base_proto(&name);
+        let function = base_proto
+            .unwrap_or(receiver)
+            .get_property_local(&name, self, context)?
             .resolve(self, context)?
             .as_object()?;
 
         function
-            .call(Some(receiver), &args, self, context)?
+            .call(Some(receiver), &args, self, context, base_proto)?
             .push(self);
 
         Ok(())
@@ -658,7 +665,7 @@ impl<'gc> Avm2<'gc> {
             .resolve(self, context)?
             .as_object()?;
 
-        function.call(None, &args, self, context)?.push(self);
+        function.call(None, &args, self, context, None)?.push(self);
 
         Ok(())
     }
@@ -675,13 +682,16 @@ impl<'gc> Avm2<'gc> {
         let name: Result<QName, Error> = receiver
             .resolve_multiname(&multiname)
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
-        let function = receiver
-            .get_property(&name?, self, context)?
+        let name = name?;
+        let base_proto = receiver.get_base_proto(&name);
+        let function = base_proto
+            .unwrap_or(receiver)
+            .get_property_local(&name, self, context)?
             .resolve(self, context)?
             .as_object()?;
 
         function
-            .call(Some(receiver), &args, self, context)?
+            .call(Some(receiver), &args, self, context, base_proto)?
             .resolve(self, context)?;
 
         Ok(())
@@ -705,7 +715,7 @@ impl<'gc> Avm2<'gc> {
         );
 
         function
-            .call(Some(receiver), &args, self, context)?
+            .call(Some(receiver), &args, self, context, receiver.proto())?
             .push(self);
 
         Ok(())
@@ -723,22 +733,26 @@ impl<'gc> Avm2<'gc> {
         let name: Result<QName, Error> = receiver
             .resolve_multiname(&multiname)
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
-        let function = self
+        let base_proto: Result<Object<'gc>, Error> = self
             .current_stack_frame()
             .unwrap()
             .read()
             .base_proto()
-            .unwrap_or(receiver)
+            .and_then(|bp| bp.proto())
+            .ok_or_else(|| {
+                "Attempted to call super method without a superclass."
+                    .to_string()
+                    .into()
+            });
+        let base_proto = base_proto?;
+
+        let function = base_proto
             .get_property(&name?, self, context)?
             .resolve(self, context)?
             .as_object()?;
 
-        let exec: Result<Executable<'gc>, Error> = function.as_executable().ok_or_else(|| {
-            format!("Super method {:?} is not callable", multiname.local_name()).into()
-        });
-
-        exec?
-            .exec_super(self, context, Some(receiver), &args)?
+        function
+            .call(Some(receiver), &args, self, context, Some(base_proto))?
             .push(self);
 
         Ok(())
@@ -756,22 +770,26 @@ impl<'gc> Avm2<'gc> {
         let name: Result<QName, Error> = receiver
             .resolve_multiname(&multiname)
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
-        let function = self
+        let base_proto: Result<Object<'gc>, Error> = self
             .current_stack_frame()
             .unwrap()
             .read()
             .base_proto()
-            .unwrap_or(receiver)
+            .and_then(|bp| bp.proto())
+            .ok_or_else(|| {
+                "Attempted to call super method without a superclass."
+                    .to_string()
+                    .into()
+            });
+        let base_proto = base_proto?;
+
+        let function = base_proto
             .get_property(&name?, self, context)?
             .resolve(self, context)?
             .as_object()?;
 
-        let exec: Result<Executable<'gc>, Error> = function.as_executable().ok_or_else(|| {
-            format!("Super method {:?} is not callable", multiname.local_name()).into()
-        });
-
-        exec?
-            .exec_super(self, context, Some(receiver), &args)?
+        function
+            .call(Some(receiver), &args, self, context, Some(base_proto))?
             .resolve(self, context)?;
 
         Ok(())
@@ -1061,7 +1079,7 @@ impl<'gc> Avm2<'gc> {
             .as_object()?;
 
         let object = proto.construct(self, context, &args)?;
-        ctor.call(Some(object), &args, self, context)?
+        ctor.call(Some(object), &args, self, context, object.proto())?
             .resolve(self, context)?;
 
         self.push(object);
@@ -1097,7 +1115,7 @@ impl<'gc> Avm2<'gc> {
             .as_object()?;
 
         let object = proto.construct(self, context, &args)?;
-        ctor.call(Some(object), &args, self, context)?
+        ctor.call(Some(object), &args, self, context, Some(proto))?
             .resolve(self, context)?;
 
         self.push(object);
@@ -1119,19 +1137,20 @@ impl<'gc> Avm2<'gc> {
             .read()
             .base_proto()
             .and_then(|p| p.proto())
-            .ok_or_else(|| "No base prototype!".to_string().into());
+            .ok_or_else(|| {
+                "Attempted to call super constructor without a superclass."
+                    .to_string()
+                    .into()
+            });
+        let base_proto = base_proto?;
 
-        let function = base_proto?
-            .get_property(&name, self, context)?
+        let function = base_proto
+            .get_property_local(&name, self, context)?
             .resolve(self, context)?
             .as_object()?;
 
-        let exec: Result<Executable<'gc>, Error> = function
-            .as_executable()
-            .ok_or_else(|| "Super constructor is not callable".to_string().into());
-
-        exec?
-            .exec_super(self, context, Some(receiver), &args)?
+        function
+            .call(Some(receiver), &args, self, context, Some(base_proto))?
             .resolve(self, context)?;
 
         Ok(())
@@ -1206,7 +1225,7 @@ impl<'gc> Avm2<'gc> {
         )?;
 
         class_init
-            .call(Some(new_class), &[], self, context)?
+            .call(Some(new_class), &[], self, context, None)?
             .resolve(self, context)?;
 
         self.push(new_class);

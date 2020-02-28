@@ -136,47 +136,15 @@ impl<'gc> Executable<'gc> {
     /// onto the AVM operand stack.
     pub fn exec(
         &self,
-        avm: &mut Avm2<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
         reciever: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        base_proto: Option<Object<'gc>>,
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
             Executable::Native(nf) => nf(avm, context, reciever, arguments),
             Executable::Action(a2f) => {
-                let base_proto = reciever.and_then(|o| o.proto());
-                let activation = GcCell::allocate(
-                    context.gc_context,
-                    Activation::from_action(context, &a2f, reciever, arguments, base_proto)?,
-                );
-
-                avm.insert_stack_frame(activation);
-                Ok(activation.into())
-            }
-        }
-    }
-
-    /// Execute a method that is the `super` of an existing method.
-    ///
-    /// The primary difference between `exec` and `exec_super` is that the
-    /// former always resets the `base_proto` to the current `reciever` while
-    /// the latter sets it to the next object up the prototype chain. The
-    /// latter behavior is necessary to ensure that chains of `callsuper` and
-    /// `constructsuper` operate correctly.
-    pub fn exec_super(
-        &self,
-        avm: &mut Avm2<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        reciever: Option<Object<'gc>>,
-        arguments: &[Value<'gc>],
-    ) -> Result<ReturnValue<'gc>, Error> {
-        match self {
-            Executable::Native(nf) => nf(avm, context, reciever, arguments),
-            Executable::Action(a2f) => {
-                let base_proto = avm
-                    .current_stack_frame()
-                    .and_then(|sf| sf.read().base_proto())
-                    .and_then(|o| o.proto());
                 let activation = GcCell::allocate(
                     context.gc_context,
                     Activation::from_action(context, &a2f, reciever, arguments, base_proto)?,
@@ -552,9 +520,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         arguments: &[Value<'gc>],
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
+        base_proto: Option<Object<'gc>>,
     ) -> Result<ReturnValue<'gc>, Error> {
         if let Some(exec) = &self.0.read().exec {
-            exec.exec(avm, context, reciever, arguments)
+            exec.exec(reciever, arguments, avm, context, base_proto)
         } else {
             Err("Not a callable function!".into())
         }
