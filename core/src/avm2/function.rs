@@ -268,6 +268,7 @@ impl<'gc> FunctionObject<'gc> {
     ) -> Result<(Object<'gc>, Object<'gc>), Error> {
         let super_proto: Result<Object<'gc>, Error> = base_class
             .get_property(
+                base_class,
                 &QName::new(Namespace::public_namespace(), "prototype"),
                 avm,
                 context,
@@ -432,6 +433,7 @@ impl<'gc> FunctionObject<'gc> {
 impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn get_property_local(
         self,
+        reciever: Object<'gc>,
         name: &QName,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -439,11 +441,12 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0
             .read()
             .base
-            .get_property_local(name, avm, context, self.into())
+            .get_property_local(reciever, name, avm, context)
     }
 
     fn set_property(
         self,
+        reciever: Object<'gc>,
         name: &QName,
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
@@ -452,7 +455,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0
             .write(context.gc_context)
             .base
-            .set_property(name, value, avm, context, self.into())
+            .set_property(reciever, name, value, avm, context)
     }
 
     fn init_property(

@@ -37,17 +37,19 @@ pub struct ScriptObjectData<'gc> {
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn get_property_local(
         self,
+        reciever: Object<'gc>,
         name: &QName,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
         self.0
             .read()
-            .get_property_local(name, avm, context, self.into())
+            .get_property_local(reciever, name, avm, context)
     }
 
     fn set_property(
         self,
+        reciever: Object<'gc>,
         name: &QName,
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
@@ -55,7 +57,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     ) -> Result<(), Error> {
         self.0
             .write(context.gc_context)
-            .set_property(name, value, avm, context, self.into())
+            .set_property(reciever, name, value, avm, context)
     }
 
     fn init_property(
@@ -213,15 +215,15 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn get_property_local(
         &self,
+        reciever: Object<'gc>,
         name: &QName,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error> {
         let prop = self.values.get(name);
 
         if let Some(prop) = prop {
-            prop.get(avm, context, this)
+            prop.get(avm, context, reciever)
         } else {
             Ok(Value::Undefined.into())
         }
@@ -229,17 +231,17 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn set_property(
         &mut self,
+        reciever: Object<'gc>,
         name: &QName,
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
     ) -> Result<(), Error> {
         if let Some(prop) = self.values.get_mut(name) {
             if let Some(slot_id) = prop.slot_id() {
                 self.set_slot(slot_id, value, context.gc_context)?;
             } else {
-                prop.set(avm, context, this, value)?;
+                prop.set(avm, context, reciever, value)?;
             }
         } else {
             //TODO: Not all classes are dynamic like this

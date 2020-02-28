@@ -128,7 +128,10 @@ impl<'gc> Scope<'gc> {
     ) -> Option<Result<ReturnValue<'gc>, Error>> {
         if let Some(qname) = self.locals().resolve_multiname(name) {
             if self.locals().has_property(&qname) {
-                return Some(self.locals().get_property(&qname, avm, context));
+                return Some(
+                    self.locals()
+                        .get_property(self.values, &qname, avm, context),
+                );
             }
         }
 

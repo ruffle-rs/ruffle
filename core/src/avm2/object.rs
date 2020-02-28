@@ -29,6 +29,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// into account.
     fn get_property_local(
         self,
+        reciever: Object<'gc>,
         name: &QName,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -37,16 +38,17 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Retrieve a property by it's QName.
     fn get_property(
         self,
+        reciever: Object<'gc>,
         name: &QName,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
         if self.has_own_property(name) {
-            return self.get_property_local(name, avm, context);
+            return self.get_property_local(reciever, name, avm, context);
         }
 
         if let Some(proto) = self.proto() {
-            return proto.get_property(name, avm, context);
+            return proto.get_property(reciever, name, avm, context);
         }
 
         Ok(Value::Undefined.into())
@@ -68,6 +70,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Set a property by it's QName.
     fn set_property(
         self,
+        reciever: Object<'gc>,
         name: &QName,
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
@@ -263,8 +266,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     &type_entry.abc(),
                     type_entry.instance().super_name.clone(),
                 )?;
+                let reciever: Object<'gc> = (*self).into();
                 let super_class: Result<Object<'gc>, Error> = self
-                    .get_property(&super_name, avm, context)?
+                    .get_property(reciever, &super_name, avm, context)?
                     .resolve(avm, context)?
                     .as_object()
                     .map_err(|_e| {
