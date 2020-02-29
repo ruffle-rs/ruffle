@@ -153,10 +153,8 @@ impl<'gc> Property<'gc> {
 
     /// Set a property slot.
     ///
-    /// This function returns `true` if the set has completed, or `false` if
-    /// it has not yet occured. If `false`, and you need to run code after the
-    /// set has occured, you must recursively execute the top-most frame via
-    /// `run_current_frame`.
+    /// This function returns a `ReturnValue` which should be resolved. The
+    /// resulting `Value` is unimportant and should be discarded.
     ///
     /// This function cannot set slot properties and will panic if one
     /// is encountered.
@@ -166,21 +164,20 @@ impl<'gc> Property<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         new_value: impl Into<Value<'gc>>,
-    ) -> Result<bool, Error> {
+    ) -> Result<ReturnValue<'gc>, Error> {
         match self {
             Property::Virtual { set, .. } => {
                 if let Some(function) = set {
-                    let return_value = function.exec(
+                    return function.exec(
                         Some(this),
                         &[new_value.into()],
                         avm,
                         context,
                         this.proto(),
-                    )?;
-                    Ok(return_value.is_immediate())
-                } else {
-                    Ok(true)
+                    );
                 }
+
+                Ok(Value::Undefined.into())
             }
             Property::Stored {
                 value, attributes, ..
@@ -189,7 +186,7 @@ impl<'gc> Property<'gc> {
                     *value = new_value.into();
                 }
 
-                Ok(true)
+                Ok(Value::Undefined.into())
             }
             Property::Slot { .. } => panic!("Cannot recursively set slots"),
         }
@@ -202,10 +199,8 @@ impl<'gc> Property<'gc> {
     /// properties, at least once. Virtual properties with no setter cannot be
     /// initialized.
     ///
-    /// This function returns `true` if the set has completed, or `false` if
-    /// it has not yet occured. If `false`, and you need to run code after the
-    /// set has occured, you must recursively execute the top-most frame via
-    /// `run_current_frame`.
+    /// This function returns a `ReturnValue` which should be resolved. The
+    /// resulting `Value` is unimportant and should be discarded.
     ///
     /// This function cannot initialize slot properties and will panic if one
     /// is encountered.
@@ -215,26 +210,25 @@ impl<'gc> Property<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         new_value: impl Into<Value<'gc>>,
-    ) -> Result<bool, Error> {
+    ) -> Result<ReturnValue<'gc>, Error> {
         match self {
             Property::Virtual { set, .. } => {
                 if let Some(function) = set {
-                    let return_value = function.exec(
+                    return function.exec(
                         Some(this),
                         &[new_value.into()],
                         avm,
                         context,
                         this.proto(),
-                    )?;
-                    Ok(return_value.is_immediate())
-                } else {
-                    Ok(true)
+                    );
                 }
+
+                Ok(Value::Undefined.into())
             }
             Property::Stored { value, .. } => {
                 *value = new_value.into();
 
-                Ok(true)
+                Ok(Value::Undefined.into())
             }
             Property::Slot { .. } => panic!("Cannot recursively init slots"),
         }

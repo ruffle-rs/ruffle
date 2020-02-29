@@ -54,7 +54,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<ReturnValue<'gc>, Error> {
         self.0
             .write(context.gc_context)
             .set_property_local(reciever, name, value, avm, context)
@@ -67,7 +67,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<ReturnValue<'gc>, Error> {
         self.0
             .write(context.gc_context)
             .init_property_local(reciever, name, value, avm, context)
@@ -241,20 +241,21 @@ impl<'gc> ScriptObjectData<'gc> {
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<ReturnValue<'gc>, Error> {
         if let Some(prop) = self.values.get_mut(name) {
             if let Some(slot_id) = prop.slot_id() {
                 self.set_slot(slot_id, value, context.gc_context)?;
+                Ok(Value::Undefined.into())
             } else {
-                prop.set(avm, context, reciever, value)?;
+                prop.set(avm, context, reciever, value)
             }
         } else {
             //TODO: Not all classes are dynamic like this
             self.values
                 .insert(name.clone(), Property::new_dynamic_property(value));
-        }
 
-        Ok(())
+            Ok(Value::Undefined.into())
+        }
     }
 
     pub fn init_property_local(
@@ -264,20 +265,21 @@ impl<'gc> ScriptObjectData<'gc> {
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<ReturnValue<'gc>, Error> {
         if let Some(prop) = self.values.get_mut(name) {
             if let Some(slot_id) = prop.slot_id() {
                 self.init_slot(slot_id, value, context.gc_context)?;
+                Ok(Value::Undefined.into())
             } else {
-                prop.init(avm, context, reciever, value)?;
+                prop.init(avm, context, reciever, value)
             }
         } else {
             //TODO: Not all classes are dynamic like this
             self.values
                 .insert(name.clone(), Property::new_dynamic_property(value));
-        }
 
-        Ok(())
+            Ok(Value::Undefined.into())
+        }
     }
 
     pub fn delete_property(&mut self, name: &QName) -> bool {

@@ -451,7 +451,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<ReturnValue<'gc>, Error> {
         self.0
             .write(context.gc_context)
             .base
@@ -465,7 +465,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<ReturnValue<'gc>, Error> {
         self.0
             .write(context.gc_context)
             .base
