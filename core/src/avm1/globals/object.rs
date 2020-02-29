@@ -138,17 +138,15 @@ pub fn register_class<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    if let Some(class_name) = args
-        .get(0)
-        .and_then(|v| v.clone().coerce_to_string(avm, context).ok())
-    {
+    if let Some(class_name) = args.get(0).cloned() {
+        let class_name = class_name.coerce_to_string(avm, context)?;
         if let Some(Character::MovieClip(movie_clip)) = context
             .library
             .library_for_movie_mut(context.swf.clone())
             .get_character_by_export_name(&class_name)
         {
-            if let Some(constructor) = args.get(1).and_then(|v| v.as_object().ok()) {
-                movie_clip.set_avm1_constructor(context.gc_context, Some(constructor));
+            if let Some(constructor) = args.get(1) {
+                movie_clip.set_avm1_constructor(context.gc_context, Some(constructor.as_object()?));
             } else {
                 movie_clip.set_avm1_constructor(context.gc_context, None);
             }
