@@ -232,6 +232,7 @@ swf_tests! {
     (as3_constructor_call, "avm2/constructor_call", 1),
     (as3_class_methods, "avm2/class_methods", 1),
     (as3_inheritance, "avm2/inheritance", 1),
+    (as3_stored_properties, "avm2/stored_properties", 1),
     (as3_virtual_properties, "avm2/virtual_properties", 1),
 }
 

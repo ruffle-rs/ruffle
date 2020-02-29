@@ -1,0 +1,11 @@
+x.prop resolved!
+y.prop resolved!
+y.propDefault resolved!
+y.propDefault overwritten!
+y.propConst resolved!
+z.prop resolved!
+z.prop2 resolved!
+y.propDefault resolved!
+z.prop2Default!
+y.propDefault overwritten!
+y.propConst resolved!
