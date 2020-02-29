@@ -506,6 +506,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0.read().base.has_own_property(name)
     }
 
+    fn has_own_virtual_getter(self, name: &QName) -> bool {
+        self.0.read().base.has_own_virtual_getter(name)
+    }
+
     fn has_own_virtual_setter(self, name: &QName) -> bool {
         self.0.read().base.has_own_virtual_setter(name)
     }

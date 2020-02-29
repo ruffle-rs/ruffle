@@ -107,6 +107,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().has_own_property(name)
     }
 
+    fn has_own_virtual_getter(self, name: &QName) -> bool {
+        self.0.read().has_own_virtual_getter(name)
+    }
+
     fn has_own_virtual_setter(self, name: &QName) -> bool {
         self.0.read().has_own_virtual_setter(name)
     }
@@ -342,9 +346,16 @@ impl<'gc> ScriptObjectData<'gc> {
         self.values.get(name).is_some()
     }
 
+    pub fn has_own_virtual_getter(&self, name: &QName) -> bool {
+        match self.values.get(name) {
+            Some(Property::Virtual { get: Some(_), .. }) => true,
+            _ => false,
+        }
+    }
+
     pub fn has_own_virtual_setter(&self, name: &QName) -> bool {
         match self.values.get(name) {
-            Some(Property::Virtual { .. }) => true,
+            Some(Property::Virtual { set: Some(_), .. }) => true,
             _ => false,
         }
     }

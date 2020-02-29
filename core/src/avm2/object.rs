@@ -43,7 +43,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
-        if self.has_own_property(name) {
+        let has_no_getter = self.has_own_virtual_setter(name) && !self.has_own_virtual_getter(name);
+
+        if self.has_own_property(name) && !has_no_getter {
             return self.get_property_local(reciever, name, avm, context);
         }
 
@@ -216,6 +218,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Indicates whether or not a property exists on an object and is not part
     /// of the prototype chain.
     fn has_own_property(self, name: &QName) -> bool;
+
+    /// Check if a particular object contains a virtual getter by the given
+    /// name.
+    fn has_own_virtual_getter(self, name: &QName) -> bool;
 
     /// Check if a particular object contains a virtual setter by the given
     /// name.
