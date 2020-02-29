@@ -859,7 +859,7 @@ impl<'gc> Avm2<'gc> {
         let object = self.pop().as_object()?;
 
         if let Some(name) = object.resolve_multiname(&multiname) {
-            object.init_property(&name, value, self, context)
+            object.init_property(object, &name, value, self, context)
         } else {
             //TODO: Non-dynamic objects should fail
             //TODO: This should only work if the public namespace is present
@@ -867,7 +867,7 @@ impl<'gc> Avm2<'gc> {
                 .local_name()
                 .ok_or_else(|| "Cannot set property using any name".into());
             let name = QName::dynamic_name(local_name?);
-            object.init_property(&name, value, self, context)
+            object.init_property(object, &name, value, self, context)
         }
     }
 
@@ -927,6 +927,7 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
     ) -> Result<(), Error> {
+        let value = self.pop();
         let multiname = self.pool_multiname(index)?;
         let object = self.pop().as_object()?;
         let base_proto: Result<Object<'gc>, Error> = self
@@ -946,8 +947,6 @@ impl<'gc> Avm2<'gc> {
                 )
                 .into()
             });
-
-        let value = self.pop();
 
         base_proto.set_property(object, &name?, value, self, context)?;
 

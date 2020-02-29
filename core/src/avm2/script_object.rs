@@ -47,7 +47,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .get_property_local(reciever, name, avm, context)
     }
 
-    fn set_property(
+    fn set_property_local(
         self,
         reciever: Object<'gc>,
         name: &QName,
@@ -57,11 +57,12 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     ) -> Result<(), Error> {
         self.0
             .write(context.gc_context)
-            .set_property(reciever, name, value, avm, context)
+            .set_property_local(reciever, name, value, avm, context)
     }
 
-    fn init_property(
+    fn init_property_local(
         self,
+        reciever: Object<'gc>,
         name: &QName,
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
@@ -69,7 +70,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     ) -> Result<(), Error> {
         self.0
             .write(context.gc_context)
-            .init_property(name, value, avm, context, self.into())
+            .init_property_local(reciever, name, value, avm, context)
     }
 
     fn delete_property(&self, gc_context: MutationContext<'gc, '_>, multiname: &QName) -> bool {
@@ -104,6 +105,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn has_own_property(self, name: &QName) -> bool {
         self.0.read().has_own_property(name)
+    }
+
+    fn has_own_virtual_setter(self, name: &QName) -> bool {
+        self.0.read().has_own_virtual_setter(name)
     }
 
     fn proto(&self) -> Option<Object<'gc>> {
@@ -229,7 +234,7 @@ impl<'gc> ScriptObjectData<'gc> {
         }
     }
 
-    pub fn set_property(
+    pub fn set_property_local(
         &mut self,
         reciever: Object<'gc>,
         name: &QName,
@@ -252,19 +257,19 @@ impl<'gc> ScriptObjectData<'gc> {
         Ok(())
     }
 
-    pub fn init_property(
+    pub fn init_property_local(
         &mut self,
+        reciever: Object<'gc>,
         name: &QName,
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
     ) -> Result<(), Error> {
         if let Some(prop) = self.values.get_mut(name) {
             if let Some(slot_id) = prop.slot_id() {
                 self.init_slot(slot_id, value, context.gc_context)?;
             } else {
-                prop.init(avm, context, this, value)?;
+                prop.init(avm, context, reciever, value)?;
             }
         } else {
             //TODO: Not all classes are dynamic like this
@@ -333,6 +338,13 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn has_own_property(&self, name: &QName) -> bool {
         self.values.get(name).is_some()
+    }
+
+    pub fn has_own_virtual_setter(&self, name: &QName) -> bool {
+        match self.values.get(name) {
+            Some(Property::Virtual { .. }) => true,
+            _ => false,
+        }
     }
 
     pub fn proto(&self) -> Option<Object<'gc>> {

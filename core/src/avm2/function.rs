@@ -444,7 +444,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             .get_property_local(reciever, name, avm, context)
     }
 
-    fn set_property(
+    fn set_property_local(
         self,
         reciever: Object<'gc>,
         name: &QName,
@@ -455,11 +455,12 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0
             .write(context.gc_context)
             .base
-            .set_property(reciever, name, value, avm, context)
+            .set_property_local(reciever, name, value, avm, context)
     }
 
-    fn init_property(
+    fn init_property_local(
         self,
+        reciever: Object<'gc>,
         name: &QName,
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
@@ -468,7 +469,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0
             .write(context.gc_context)
             .base
-            .init_property(name, value, avm, context, self.into())
+            .init_property_local(reciever, name, value, avm, context)
     }
 
     fn delete_property(&self, gc_context: MutationContext<'gc, '_>, multiname: &QName) -> bool {
@@ -503,6 +504,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn has_own_property(self, name: &QName) -> bool {
         self.0.read().base.has_own_property(name)
+    }
+
+    fn has_own_virtual_setter(self, name: &QName) -> bool {
+        self.0.read().base.has_own_virtual_setter(name)
     }
 
     fn proto(&self) -> Option<Object<'gc>> {

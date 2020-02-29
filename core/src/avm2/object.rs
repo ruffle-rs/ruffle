@@ -67,8 +67,46 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
+    /// Set a property on this specific object.
+    fn set_property_local(
+        self,
+        reciever: Object<'gc>,
+        name: &QName,
+        value: Value<'gc>,
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error>;
+
     /// Set a property by it's QName.
     fn set_property(
+        self,
+        reciever: Object<'gc>,
+        name: &QName,
+        value: Value<'gc>,
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        if self.has_own_virtual_setter(name) {
+            return self.set_property_local(reciever, name, value, avm, context);
+        }
+
+        let mut proto = self.proto();
+        while let Some(my_proto) = proto {
+            //NOTE: This only works because we validate ahead-of-time that
+            //we're calling a virtual setter. If you call `set_property` on
+            //a non-virtual you will actually alter the prototype.
+            if my_proto.has_own_virtual_setter(name) {
+                return my_proto.set_property(reciever, name, value, avm, context);
+            }
+
+            proto = my_proto.proto();
+        }
+
+        reciever.set_property_local(reciever, name, value, avm, context)
+    }
+
+    /// Init a property on this specific object.
+    fn init_property_local(
         self,
         reciever: Object<'gc>,
         name: &QName,
@@ -80,11 +118,30 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Init a property by it's QName.
     fn init_property(
         self,
+        reciever: Object<'gc>,
         name: &QName,
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error>;
+    ) -> Result<(), Error> {
+        if self.has_own_virtual_setter(name) {
+            return self.init_property_local(reciever, name, value, avm, context);
+        }
+
+        let mut proto = self.proto();
+        while let Some(my_proto) = proto {
+            //NOTE: This only works because we validate ahead-of-time that
+            //we're calling a virtual setter. If you call `set_property` on
+            //a non-virtual you will actually alter the prototype.
+            if my_proto.has_own_virtual_setter(name) {
+                return my_proto.init_property(reciever, name, value, avm, context);
+            }
+
+            proto = my_proto.proto();
+        }
+
+        reciever.init_property_local(reciever, name, value, avm, context)
+    }
 
     /// Retrieve a slot by it's index.
     fn get_slot(self, id: u32) -> Result<Value<'gc>, Error>;
@@ -139,6 +196,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Indicates whether or not a property exists on an object and is not part
     /// of the prototype chain.
     fn has_own_property(self, name: &QName) -> bool;
+
+    /// Check if a particular object contains a virtual setter by the given
+    /// name.
+    fn has_own_virtual_setter(self, name: &QName) -> bool;
 
     /// Indicates whether or not a property is overwritable.
     fn is_property_overwritable(self, _name: &QName) -> bool {
