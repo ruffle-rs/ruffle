@@ -1,7 +1,7 @@
 //! AVM2 objects.
 
 use crate::avm2::function::{Avm2ClassEntry, Avm2MethodEntry, Executable, FunctionObject};
-use crate::avm2::names::{Multiname, QName};
+use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::scope::Scope;
 use crate::avm2::script_object::ScriptObject;
@@ -191,9 +191,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// match.
     fn resolve_multiname(self, multiname: &Multiname) -> Option<QName> {
         for ns in multiname.namespace_set() {
-            let qname = QName::new(ns.clone(), multiname.local_name()?);
-            if self.has_property(&qname) {
-                return Some(qname);
+            if ns.is_any() {
+                let name = multiname.local_name()?;
+                let ns = self.resolve_any(name);
+                return ns.map(|ns| QName::new(ns, name));
+            } else {
+                let qname = QName::new(ns.clone(), multiname.local_name()?);
+                if self.has_property(&qname) {
+                    return Some(qname);
+                }
             }
         }
 
@@ -203,6 +209,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
         None
     }
+
+    /// Given a local name, find the namespace it resides in, if any.
+    ///
+    /// The `Namespace` must not be `Namespace::Any`, as this function exists
+    /// specifically resolve names in that namespace.
+    fn resolve_any(self, local_name: &str) -> Option<Namespace>;
 
     /// Indicates whether or not a property exists on an object.
     fn has_property(self, name: &QName) -> bool {

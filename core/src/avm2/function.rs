@@ -502,6 +502,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0.read().base.get_method(id)
     }
 
+    fn resolve_any(self, local_name: &str) -> Option<Namespace> {
+        self.0.read().base.resolve_any(local_name)
+    }
+
     fn has_own_property(self, name: &QName) -> bool {
         self.0.read().base.has_own_property(name)
     }

@@ -1,7 +1,7 @@
 //! Default AVM2 object impl
 
 use crate::avm2::function::Executable;
-use crate::avm2::names::QName;
+use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::return_value::ReturnValue;
@@ -101,6 +101,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn get_method(self, id: u32) -> Option<Object<'gc>> {
         self.0.read().get_method(id)
+    }
+
+    fn resolve_any(self, local_name: &str) -> Option<Namespace> {
+        self.0.read().resolve_any(local_name)
     }
 
     fn has_own_property(self, name: &QName) -> bool {
@@ -340,6 +344,16 @@ impl<'gc> ScriptObjectData<'gc> {
     /// Retrieve a method from the method table.
     pub fn get_method(&self, id: u32) -> Option<Object<'gc>> {
         self.methods.get(id as usize).and_then(|v| *v)
+    }
+
+    pub fn resolve_any(&self, local_name: &str) -> Option<Namespace> {
+        for (key, _value) in self.values.iter() {
+            if key.local_name() == local_name {
+                return Some(key.namespace().clone());
+            }
+        }
+
+        None
     }
 
     pub fn has_own_property(&self, name: &QName) -> bool {

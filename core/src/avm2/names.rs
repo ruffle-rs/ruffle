@@ -62,6 +62,13 @@ impl Namespace {
     pub fn package(package_name: &str) -> Self {
         Namespace::Package(package_name.to_string())
     }
+
+    pub fn is_any(&self) -> bool {
+        match self {
+            Self::Any => true,
+            _ => false,
+        }
+    }
 }
 
 /// A `QName`, likely "qualified name", consists of a namespace and name string.
@@ -121,6 +128,10 @@ impl QName {
 
     pub fn local_name(&self) -> &str {
         &self.name
+    }
+
+    pub fn namespace(&self) -> &Namespace {
+        &self.ns
     }
 }
 
