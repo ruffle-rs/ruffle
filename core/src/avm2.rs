@@ -83,6 +83,8 @@ impl<'gc> Avm2<'gc> {
     pub fn load_abc(
         &mut self,
         abc: SwfSlice,
+        _abc_name: &str,
+        _lazy_init: bool,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let mut read = Reader::new(abc.as_ref());
