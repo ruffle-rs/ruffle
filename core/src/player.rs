@@ -149,7 +149,7 @@ impl Player {
         input: Input,
         swf_data: Vec<u8>,
     ) -> Result<Arc<Mutex<Self>>, Error> {
-        let movie = Arc::new(SwfMovie::from_data(&swf_data));
+        let movie = Arc::new(SwfMovie::from_data(&swf_data)?);
 
         info!(
             "{}x{}",

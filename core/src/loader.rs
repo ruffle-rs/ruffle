@@ -73,6 +73,7 @@ impl<'gc> LoadManager<'gc> {
             self_handle: None,
             target_clip,
             target_broadcaster,
+            load_complete: false,
         };
         let handle = self.add_loader(loader);
 
@@ -168,6 +169,16 @@ pub enum Loader<'gc> {
         /// Event broadcaster (typically a `MovieClipLoader`) to fire events
         /// into.
         target_broadcaster: Option<Object<'gc>>,
+
+        /// Indicates that the load has completed.
+        ///
+        /// This flag exists to prevent a situation in which loading a movie
+        /// into a clip that has not yet fired it's Load event causes the
+        /// loader to be prematurely removed. This flag is only set when either
+        /// the movie has been replaced (and thus Load events can be trusted)
+        /// or an error has occured (in which case we don't care about the
+        /// loader anymore).
+        load_complete: bool,
     },
 
     /// Loader that is loading form data into an AVM1 object scope.
@@ -257,6 +268,7 @@ impl<'gc> Loader<'gc> {
                             target_broadcaster,
                             ..
                         }) => (*target_clip, *target_broadcaster),
+                        None => return Err("Load cancelled".into()),
                         _ => unreachable!(),
                     };
 
@@ -282,9 +294,9 @@ impl<'gc> Loader<'gc> {
                 },
             )?;
 
-            let data = fetch.await;
-            if let Ok(data) = data {
-                let movie = Arc::new(SwfMovie::from_data(&data));
+            let data = (fetch.await).and_then(|data| Ok((data.len(), SwfMovie::from_data(&data)?)));
+            if let Ok((length, movie)) = data {
+                let movie = Arc::new(movie);
 
                 player
                     .lock()
@@ -296,6 +308,7 @@ impl<'gc> Loader<'gc> {
                                 target_broadcaster,
                                 ..
                             }) => (*target_clip, *target_broadcaster),
+                            None => return Err("Load cancelled".into()),
                             _ => unreachable!(),
                         };
 
@@ -309,8 +322,8 @@ impl<'gc> Loader<'gc> {
                                 &[
                                     "onLoadProgress".into(),
                                     Value::Object(broadcaster),
-                                    data.len().into(),
-                                    data.len().into(),
+                                    length.into(),
+                                    length.into(),
                                 ],
                             );
                             avm.run_stack_till_empty(uc)?;
@@ -349,12 +362,20 @@ impl<'gc> Loader<'gc> {
                             avm.run_stack_till_empty(uc)?;
                         }
 
+                        if let Some(Loader::Movie { load_complete, .. }) =
+                            uc.load_manager.get_loader_mut(handle)
+                        {
+                            *load_complete = true;
+                        };
+
                         Ok(())
                     })
             } else {
                 //TODO: Inspect the fetch error.
                 //This requires cooperation from the backend to send abstract
                 //error types we can actually inspect.
+                //This also can get errors from decoding an invalid SWF file,
+                //too. We should distinguish those to player code.
                 player.lock().expect("Could not lock player!!").update(
                     |avm, uc| -> Result<(), Error> {
                         let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
@@ -363,6 +384,7 @@ impl<'gc> Loader<'gc> {
                                 target_broadcaster,
                                 ..
                             }) => (*target_clip, *target_broadcaster),
+                            None => return Err("Load cancelled".into()),
                             _ => unreachable!(),
                         };
 
@@ -381,6 +403,12 @@ impl<'gc> Loader<'gc> {
                             );
                             avm.run_stack_till_empty(uc)?;
                         }
+
+                        if let Some(Loader::Movie { load_complete, .. }) =
+                            uc.load_manager.get_loader_mut(handle)
+                        {
+                            *load_complete = true;
+                        };
 
                         Ok(())
                     },
@@ -410,7 +438,7 @@ impl<'gc> Loader<'gc> {
                 let loader = uc.load_manager.get_loader(handle);
                 let that = match loader {
                     Some(Loader::Form { target_object, .. }) => *target_object,
-                    None => return Err("Loader expired during loading".into()),
+                    None => return Err("Load cancelled".into()),
                     _ => return Err("Non-movie loader spawned as movie loader".into()),
                 };
 
@@ -434,16 +462,17 @@ impl<'gc> Loader<'gc> {
         clip_object: Option<Object<'gc>>,
         queue: &mut ActionQueue<'gc>,
     ) -> bool {
-        let (clip, broadcaster) = match self {
+        let (clip, broadcaster, load_complete) = match self {
             Loader::Movie {
                 target_clip,
                 target_broadcaster,
+                load_complete,
                 ..
-            } => (*target_clip, *target_broadcaster),
+            } => (*target_clip, *target_broadcaster, *load_complete),
             _ => return false,
         };
 
-        if DisplayObject::ptr_eq(loaded_clip, clip) {
+        if DisplayObject::ptr_eq(loaded_clip, clip) && load_complete {
             if let Some(broadcaster) = broadcaster {
                 queue.queue_actions(
                     clip,
@@ -492,6 +521,7 @@ impl<'gc> Loader<'gc> {
                                 active_clip,
                                 ..
                             }) => (*target_node, *active_clip),
+                            None => return Err("Load cancelled".into()),
                             _ => unreachable!(),
                         };
 
@@ -529,6 +559,7 @@ impl<'gc> Loader<'gc> {
                                 active_clip,
                                 ..
                             }) => (*target_node, *active_clip),
+                            None => return Err("Load cancelled".into()),
                             _ => unreachable!(),
                         };
 

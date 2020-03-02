@@ -2,7 +2,8 @@ use gc_arena::Collect;
 use std::sync::Arc;
 use swf::{Header, TagCode};
 
-pub type DecodeResult = Result<(), Box<dyn std::error::Error>>;
+pub type Error = Box<dyn std::error::Error>;
+pub type DecodeResult = Result<(), Error>;
 pub type SwfStream<R> = swf::read::Reader<std::io::Cursor<R>>;
 
 /// An open, fully parsed SWF movie ready to play back, either in a Player or a
@@ -41,8 +42,8 @@ impl SwfMovie {
     }
 
     /// Construct a movie based on the contents of the SWF datastream.
-    pub fn from_data(swf_data: &[u8]) -> Self {
-        let swf_stream = swf::read::read_swf_header(&swf_data[..]).unwrap();
+    pub fn from_data(swf_data: &[u8]) -> Result<Self, Error> {
+        let swf_stream = swf::read::read_swf_header(&swf_data[..])?;
         let header = swf_stream.header;
         let mut reader = swf_stream.reader;
 
@@ -61,12 +62,12 @@ impl SwfMovie {
         } else {
             let mut data = Vec::with_capacity(swf_stream.uncompressed_length);
             if let Err(e) = reader.get_mut().read_to_end(&mut data) {
-                log::error!("Error decompressing SWF, may be corrupt: {}", e);
+                return Err(format!("Error decompressing SWF, may be corrupt: {}", e).into());
             }
             data
         };
 
-        Self { header, data }
+        Ok(Self { header, data })
     }
 
     pub fn header(&self) -> &Header {
