@@ -14,7 +14,7 @@ use std::fmt;
 use std::rc::Rc;
 use swf::avm2::types::{
     AbcFile, Class as AbcClass, Index, Instance as AbcInstance, Method as AbcMethod,
-    MethodBody as AbcMethodBody,
+    MethodBody as AbcMethodBody, Trait as AbcTrait,
 };
 
 /// Represents a function defined in Ruffle's code.
@@ -247,9 +247,6 @@ pub struct FunctionObjectData<'gc> {
 
     /// Executable code
     exec: Option<Executable<'gc>>,
-
-    /// The class that defined this function object, if any.
-    class: Option<Avm2ClassEntry>,
 }
 
 impl<'gc> FunctionObject<'gc> {
@@ -297,10 +294,6 @@ impl<'gc> FunctionObject<'gc> {
             });
         let mut class_proto = super_proto?.construct(avm, context, &[])?;
 
-        for trait_entry in class.instance().traits.iter() {
-            class_proto.install_trait(avm, context, class.abc(), trait_entry, scope, fn_proto)?;
-        }
-
         let initializer_index = class.instance().init_method.clone();
         let initializer: Result<Avm2MethodEntry, Error> =
             Avm2MethodEntry::from_method_index(class.abc(), initializer_index.clone()).ok_or_else(
@@ -316,9 +309,8 @@ impl<'gc> FunctionObject<'gc> {
         let mut constr: Object<'gc> = FunctionObject(GcCell::allocate(
             context.gc_context,
             FunctionObjectData {
-                base: ScriptObjectData::base_new(Some(fn_proto)),
+                base: ScriptObjectData::base_new(Some(fn_proto), Some(class.clone()), true),
                 exec: Some(Avm2Function::from_method(initializer?, scope).into()),
-                class: Some(class.clone()),
             },
         ))
         .into();
@@ -348,15 +340,12 @@ impl<'gc> FunctionObject<'gc> {
                     )
                     .into()
                 });
-        let class_constr = FunctionObject(GcCell::allocate(
+        let class_constr = FunctionObject::from_abc_method(
             context.gc_context,
-            FunctionObjectData {
-                base: ScriptObjectData::base_new(Some(fn_proto)),
-                exec: Some(Avm2Function::from_method(class_initializer?, scope).into()),
-                class: Some(class.clone()),
-            },
-        ))
-        .into();
+            class_initializer?,
+            scope,
+            fn_proto,
+        );
 
         Ok((constr, class_constr))
     }
@@ -373,9 +362,8 @@ impl<'gc> FunctionObject<'gc> {
         FunctionObject(GcCell::allocate(
             mc,
             FunctionObjectData {
-                base: ScriptObjectData::base_new(Some(fn_proto)),
+                base: ScriptObjectData::base_new(Some(fn_proto), None, true),
                 exec,
-                class: None,
             },
         ))
         .into()
@@ -390,9 +378,8 @@ impl<'gc> FunctionObject<'gc> {
         FunctionObject(GcCell::allocate(
             mc,
             FunctionObjectData {
-                base: ScriptObjectData::base_new(Some(fn_proto)),
+                base: ScriptObjectData::base_new(Some(fn_proto), None, true),
                 exec: Some(nf.into()),
-                class: None,
             },
         ))
         .into()
@@ -408,9 +395,8 @@ impl<'gc> FunctionObject<'gc> {
         let mut base: Object<'gc> = FunctionObject(GcCell::allocate(
             mc,
             FunctionObjectData {
-                base: ScriptObjectData::base_new(Some(fn_proto)),
+                base: ScriptObjectData::base_new(Some(fn_proto), None, true),
                 exec: Some(constr.into()),
-                class: None,
             },
         ))
         .into();
@@ -502,6 +488,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0.read().base.get_method(id)
     }
 
+    fn get_trait(self, name: &QName) -> Result<Option<AbcTrait>, Error> {
+        self.0.read().base.get_trait(name)
+    }
+
     fn resolve_any(self, local_name: &str) -> Option<Namespace> {
         self.0.read().base.resolve_any(local_name)
     }
@@ -551,16 +541,13 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
+        let class = self.0.read().base.class().cloned();
         let this: Object<'gc> = Object::FunctionObject(*self);
-        let base = ScriptObjectData::base_new(Some(this));
+        let base = ScriptObjectData::base_new(Some(this), class, false);
 
         Ok(FunctionObject(GcCell::allocate(
             context.gc_context,
-            FunctionObjectData {
-                base,
-                exec: None,
-                class: None,
-            },
+            FunctionObjectData { base, exec: None },
         ))
         .into())
     }

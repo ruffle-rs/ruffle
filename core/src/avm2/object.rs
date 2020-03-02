@@ -187,6 +187,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Retrieve a method by it's index.
     fn get_method(self, id: u32) -> Option<Object<'gc>>;
 
+    /// Retrieves a trait entry by name.
+    ///
+    /// This function returns `None` if no such trait exists, or the object
+    /// does not have traits. It returns `Err` if *any* trait in the object is
+    /// malformed in some way.
+    fn get_trait(self, name: &QName) -> Result<Option<AbcTrait>, Error>;
+
     /// Resolve a multiname into a single QName, if any of the namespaces
     /// match.
     fn resolve_multiname(self, multiname: &Multiname) -> Option<QName> {

@@ -1,6 +1,6 @@
 //! Default AVM2 object impl
 
-use crate::avm2::function::Executable;
+use crate::avm2::function::{Avm2ClassEntry, Executable};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::property::Property;
@@ -12,6 +12,7 @@ use crate::context::UpdateContext;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::HashMap;
 use std::fmt::Debug;
+use swf::avm2::types::Trait as AbcTrait;
 
 /// Default implementation of `avm2::Object`.
 #[derive(Clone, Collect, Debug, Copy)]
@@ -30,8 +31,16 @@ pub struct ScriptObjectData<'gc> {
     /// Methods stored on this object.
     methods: Vec<Option<Object<'gc>>>,
 
-    /// Implicit prototype (or declared base class) of this script object.
+    /// Implicit prototype of this script object.
     proto: Option<Object<'gc>>,
+
+    /// Declared base class of this script object.
+    class: Option<Avm2ClassEntry>,
+
+    /// Whether or not to use declared instance or class properties.
+    ///
+    /// Only effective if `class` is not `None`.
+    is_instance: bool,
 }
 
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
@@ -101,6 +110,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn get_method(self, id: u32) -> Option<Object<'gc>> {
         self.0.read().get_method(id)
+    }
+
+    fn get_trait(self, name: &QName) -> Result<Option<AbcTrait>, Error> {
+        self.0.read().get_trait(name)
     }
 
     fn resolve_any(self, local_name: &str) -> Option<Namespace> {
@@ -203,27 +216,76 @@ impl<'gc> ScriptObject<'gc> {
     /// This is *not* the same thing as an object literal, which actually does
     /// have a base class: `Object`.
     pub fn bare_object(mc: MutationContext<'gc, '_>) -> Object<'gc> {
-        ScriptObject(GcCell::allocate(mc, ScriptObjectData::base_new(None))).into()
+        ScriptObject(GcCell::allocate(
+            mc,
+            ScriptObjectData::base_new(None, None, true),
+        ))
+        .into()
     }
 
-    /// Construct an object with a base class.
+    /// Construct an object with a prototype.
     pub fn object(mc: MutationContext<'gc, '_>, proto: Object<'gc>) -> Object<'gc> {
         ScriptObject(GcCell::allocate(
             mc,
-            ScriptObjectData::base_new(Some(proto)),
+            ScriptObjectData::base_new(Some(proto), None, true),
+        ))
+        .into()
+    }
+
+    /// Construct a class instance.
+    pub fn instance(
+        mc: MutationContext<'gc, '_>,
+        proto: Object<'gc>,
+        class: Avm2ClassEntry,
+    ) -> Object<'gc> {
+        ScriptObject(GcCell::allocate(
+            mc,
+            ScriptObjectData::base_new(Some(proto), Some(class), true),
         ))
         .into()
     }
 }
 
 impl<'gc> ScriptObjectData<'gc> {
-    pub fn base_new(proto: Option<Object<'gc>>) -> Self {
+    pub fn base_new(
+        proto: Option<Object<'gc>>,
+        class: Option<Avm2ClassEntry>,
+        is_instance: bool,
+    ) -> Self {
         ScriptObjectData {
             values: HashMap::new(),
             slots: Vec::new(),
             methods: Vec::new(),
             proto,
+            class,
+            is_instance,
         }
+    }
+
+    pub fn get_trait(&self, name: &QName) -> Result<Option<AbcTrait>, Error> {
+        if let Some(class) = &self.class {
+            if self.is_instance {
+                for trait_entry in class.instance().traits.iter() {
+                    let trait_name =
+                        QName::from_abc_multiname(&class.abc(), trait_entry.name.clone())?;
+
+                    if name == &trait_name {
+                        return Ok(Some(trait_entry.clone()));
+                    }
+                }
+            } else {
+                for trait_entry in class.class().traits.iter() {
+                    let trait_name =
+                        QName::from_abc_multiname(&class.abc(), trait_entry.name.clone())?;
+
+                    if name == &trait_name {
+                        return Ok(Some(trait_entry.clone()));
+                    }
+                }
+            }
+        }
+
+        Ok(None)
     }
 
     pub fn get_property_local(
@@ -376,6 +438,10 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn proto(&self) -> Option<Object<'gc>> {
         self.proto
+    }
+
+    pub fn class(&self) -> Option<&Avm2ClassEntry> {
+        self.class.as_ref()
     }
 
     /// Install a method into the object.
