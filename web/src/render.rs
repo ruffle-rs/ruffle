@@ -972,8 +972,8 @@ fn swf_shape_to_svg(
                                         bitmap_matrix.b,
                                         bitmap_matrix.c,
                                         bitmap_matrix.d,
-                                        bitmap_matrix.tx,
-                                        bitmap_matrix.ty
+                                        bitmap_matrix.tx.get(),
+                                        bitmap_matrix.ty.get()
                                     ),
                                 );
 
