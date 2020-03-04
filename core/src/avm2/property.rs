@@ -140,10 +140,11 @@ impl<'gc> Property<'gc> {
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
             Property::Virtual { get: Some(get), .. } => {
-                get.exec(Some(this), &[], avm, context, this.proto())
+                get.exec(Some(this), &[], avm, context, base_proto)
             }
             Property::Virtual { get: None, .. } => Ok(Value::Undefined.into()),
             Property::Stored { value, .. } => Ok(value.to_owned().into()),
@@ -163,6 +164,7 @@ impl<'gc> Property<'gc> {
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
         new_value: impl Into<Value<'gc>>,
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
@@ -173,7 +175,7 @@ impl<'gc> Property<'gc> {
                         &[new_value.into()],
                         avm,
                         context,
-                        this.proto(),
+                        base_proto,
                     );
                 }
 
@@ -209,6 +211,7 @@ impl<'gc> Property<'gc> {
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
         new_value: impl Into<Value<'gc>>,
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
@@ -219,7 +222,7 @@ impl<'gc> Property<'gc> {
                         &[new_value.into()],
                         avm,
                         context,
-                        this.proto(),
+                        base_proto,
                     );
                 }
 

@@ -33,7 +33,7 @@ pub fn has_own_property<'gc>(
 
     if let Some(ns) = this.resolve_any(&name) {
         let qname = QName::new(ns, &name);
-        return Ok(this.has_own_property(&qname).into());
+        return Ok(this.has_own_property(&qname)?.into());
     }
 
     Ok(false.into())

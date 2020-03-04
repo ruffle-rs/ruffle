@@ -77,7 +77,6 @@ impl<'gc> Scope<'gc> {
     }
 
     /// Returns a reference to the current local scope object for mutation.
-    #[allow(dead_code)]
     pub fn locals_mut(&mut self) -> &mut Object<'gc> {
         &mut self.values
     }
@@ -102,10 +101,10 @@ impl<'gc> Scope<'gc> {
         name: &Multiname,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Option<Object<'gc>> {
-        if let Some(qname) = self.locals().resolve_multiname(name) {
-            if self.locals().has_property(&qname) {
-                return Some(*self.locals());
+    ) -> Result<Option<Object<'gc>>, Error> {
+        if let Some(qname) = self.locals().resolve_multiname(name)? {
+            if self.locals().has_property(&qname)? {
+                return Ok(Some(*self.locals()));
             }
         }
 
@@ -113,7 +112,7 @@ impl<'gc> Scope<'gc> {
             return scope.find(name, avm, context);
         }
 
-        None
+        Ok(None)
     }
 
     /// Resolve a particular value in the scope chain.
@@ -121,25 +120,27 @@ impl<'gc> Scope<'gc> {
     /// This function yields `None` if no such scope exists to provide the
     /// property's value.
     pub fn resolve(
-        &self,
+        &mut self,
         name: &Multiname,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Option<Result<ReturnValue<'gc>, Error>> {
-        if let Some(qname) = self.locals().resolve_multiname(name) {
-            if self.locals().has_property(&qname) {
-                return Some(
-                    self.locals()
-                        .get_property(self.values, &qname, avm, context),
-                );
+    ) -> Result<Option<ReturnValue<'gc>>, Error> {
+        if let Some(qname) = self.locals().resolve_multiname(name)? {
+            if self.locals().has_property(&qname)? {
+                return Ok(Some(self.values.get_property(
+                    self.values,
+                    &qname,
+                    avm,
+                    context,
+                )?));
             }
         }
 
-        if let Some(scope) = self.parent() {
-            return scope.resolve(name, avm, context);
+        if let Some(parent) = self.parent {
+            return parent.write(context.gc_context).resolve(name, avm, context);
         }
 
         //TODO: Should undefined variables halt execution?
-        None
+        Ok(None)
     }
 }

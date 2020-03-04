@@ -5,7 +5,7 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::scope::Scope;
-use crate::avm2::script_object::ScriptObjectData;
+use crate::avm2::script_object::{ScriptObjectClass, ScriptObjectData};
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
@@ -259,9 +259,8 @@ impl<'gc> FunctionObject<'gc> {
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         class: Avm2ClassEntry,
-        base_class: Object<'gc>,
+        mut base_class: Object<'gc>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
-        fn_proto: Object<'gc>,
     ) -> Result<(Object<'gc>, Object<'gc>), Error> {
         let super_proto: Result<Object<'gc>, Error> = base_class
             .get_property(
@@ -292,7 +291,8 @@ impl<'gc> FunctionObject<'gc> {
                     .into()
                 }
             });
-        let mut class_proto = super_proto?.construct(avm, context, &[])?;
+        let mut class_proto = super_proto?.derive(avm, context, class.clone(), scope)?;
+        let fn_proto = avm.prototypes().function;
 
         let initializer_index = class.instance().init_method.clone();
         let initializer: Result<Avm2MethodEntry, Error> =
@@ -309,15 +309,14 @@ impl<'gc> FunctionObject<'gc> {
         let mut constr: Object<'gc> = FunctionObject(GcCell::allocate(
             context.gc_context,
             FunctionObjectData {
-                base: ScriptObjectData::base_new(Some(fn_proto), Some(class.clone()), true),
+                base: ScriptObjectData::base_new(
+                    Some(fn_proto),
+                    ScriptObjectClass::ClassConstructor(class.clone(), scope),
+                ),
                 exec: Some(Avm2Function::from_method(initializer?, scope).into()),
             },
         ))
         .into();
-
-        for trait_entry in class.class().traits.iter() {
-            constr.install_trait(avm, context, class.abc(), trait_entry, scope, fn_proto)?;
-        }
 
         constr.install_dynamic_property(
             context.gc_context,
@@ -362,7 +361,7 @@ impl<'gc> FunctionObject<'gc> {
         FunctionObject(GcCell::allocate(
             mc,
             FunctionObjectData {
-                base: ScriptObjectData::base_new(Some(fn_proto), None, true),
+                base: ScriptObjectData::base_new(Some(fn_proto), ScriptObjectClass::NoClass),
                 exec,
             },
         ))
@@ -378,7 +377,7 @@ impl<'gc> FunctionObject<'gc> {
         FunctionObject(GcCell::allocate(
             mc,
             FunctionObjectData {
-                base: ScriptObjectData::base_new(Some(fn_proto), None, true),
+                base: ScriptObjectData::base_new(Some(fn_proto), ScriptObjectClass::NoClass),
                 exec: Some(nf.into()),
             },
         ))
@@ -395,7 +394,7 @@ impl<'gc> FunctionObject<'gc> {
         let mut base: Object<'gc> = FunctionObject(GcCell::allocate(
             mc,
             FunctionObjectData {
-                base: ScriptObjectData::base_new(Some(fn_proto), None, true),
+                base: ScriptObjectData::base_new(Some(fn_proto), ScriptObjectClass::NoClass),
                 exec: Some(constr.into()),
             },
         ))
@@ -488,16 +487,36 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0.read().base.get_method(id)
     }
 
-    fn get_trait(self, name: &QName) -> Result<Option<AbcTrait>, Error> {
+    fn get_trait(self, name: &QName) -> Result<Vec<AbcTrait>, Error> {
         self.0.read().base.get_trait(name)
+    }
+
+    fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
+        self.0.read().base.get_scope()
+    }
+
+    fn get_abc(self) -> Option<Rc<AbcFile>> {
+        self.0.read().base.get_abc()
     }
 
     fn resolve_any(self, local_name: &str) -> Option<Namespace> {
         self.0.read().base.resolve_any(local_name)
     }
 
-    fn has_own_property(self, name: &QName) -> bool {
+    fn has_own_property(self, name: &QName) -> Result<bool, Error> {
         self.0.read().base.has_own_property(name)
+    }
+
+    fn has_trait(self, name: &QName) -> Result<bool, Error> {
+        self.0.read().base.has_trait(name)
+    }
+
+    fn has_own_trait(self, name: &QName) -> Result<bool, Error> {
+        self.0.read().base.has_own_trait(name)
+    }
+
+    fn has_instantiated_property(self, name: &QName) -> bool {
+        self.0.read().base.has_instantiated_property(name)
     }
 
     fn has_own_virtual_getter(self, name: &QName) -> bool {
@@ -541,9 +560,28 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
-        let class = self.0.read().base.class().cloned();
         let this: Object<'gc> = Object::FunctionObject(*self);
-        let base = ScriptObjectData::base_new(Some(this), class, false);
+        let base = ScriptObjectData::base_new(Some(this), ScriptObjectClass::NoClass);
+
+        Ok(FunctionObject(GcCell::allocate(
+            context.gc_context,
+            FunctionObjectData { base, exec: None },
+        ))
+        .into())
+    }
+
+    fn derive(
+        &self,
+        _avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        class: Avm2ClassEntry,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
+    ) -> Result<Object<'gc>, Error> {
+        let this: Object<'gc> = Object::FunctionObject(*self);
+        let base = ScriptObjectData::base_new(
+            Some(this),
+            ScriptObjectClass::InstancePrototype(class, scope),
+        );
 
         Ok(FunctionObject(GcCell::allocate(
             context.gc_context,

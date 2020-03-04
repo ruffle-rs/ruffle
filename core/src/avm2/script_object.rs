@@ -5,6 +5,7 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::return_value::ReturnValue;
+use crate::avm2::scope::Scope;
 use crate::avm2::slot::Slot;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
@@ -12,13 +13,40 @@ use crate::context::UpdateContext;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::HashMap;
 use std::fmt::Debug;
-use swf::avm2::types::Trait as AbcTrait;
+use std::rc::Rc;
+use swf::avm2::types::{AbcFile, Trait as AbcTrait, TraitKind as AbcTraitKind};
 
 /// Default implementation of `avm2::Object`.
 #[derive(Clone, Collect, Debug, Copy)]
 #[collect(no_drop)]
 pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
 
+/// Information necessary for a script object to have a class attached to it.
+///
+/// Classes can be attached to a `ScriptObject` such that the class's traits
+/// are instantiated on-demand. Either class or instance traits can be
+/// instantiated.
+///
+/// Trait instantiation obeys prototyping rules: prototypes provide their
+/// instances with classes to pull traits from.
+#[derive(Clone, Collect, Debug)]
+#[collect(no_drop)]
+pub enum ScriptObjectClass<'gc> {
+    /// Instantiate instance traits, for prototypes.
+    InstancePrototype(Avm2ClassEntry, Option<GcCell<'gc, Scope<'gc>>>),
+
+    /// Instantiate class traits, for class constructors.
+    ClassConstructor(Avm2ClassEntry, Option<GcCell<'gc, Scope<'gc>>>),
+
+    /// Do not instantiate any class or instance traits.
+    NoClass,
+}
+
+/// Base data common to all `TObject` implementations.
+///
+/// Host implementations of `TObject` should embed `ScriptObjectData` and
+/// forward any trait method implementations it does not overwrite to this
+/// struct.
 #[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
 pub struct ScriptObjectData<'gc> {
@@ -34,13 +62,8 @@ pub struct ScriptObjectData<'gc> {
     /// Implicit prototype of this script object.
     proto: Option<Object<'gc>>,
 
-    /// Declared base class of this script object.
-    class: Option<Avm2ClassEntry>,
-
-    /// Whether or not to use declared instance or class properties.
-    ///
-    /// Only effective if `class` is not `None`.
-    is_instance: bool,
+    /// The class that this script object represents.
+    class: ScriptObjectClass<'gc>,
 }
 
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
@@ -112,16 +135,36 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().get_method(id)
     }
 
-    fn get_trait(self, name: &QName) -> Result<Option<AbcTrait>, Error> {
+    fn get_trait(self, name: &QName) -> Result<Vec<AbcTrait>, Error> {
         self.0.read().get_trait(name)
+    }
+
+    fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
+        self.0.read().get_scope()
+    }
+
+    fn get_abc(self) -> Option<Rc<AbcFile>> {
+        self.0.read().get_abc()
     }
 
     fn resolve_any(self, local_name: &str) -> Option<Namespace> {
         self.0.read().resolve_any(local_name)
     }
 
-    fn has_own_property(self, name: &QName) -> bool {
+    fn has_own_property(self, name: &QName) -> Result<bool, Error> {
         self.0.read().has_own_property(name)
+    }
+
+    fn has_trait(self, name: &QName) -> Result<bool, Error> {
+        self.0.read().has_trait(name)
+    }
+
+    fn has_own_trait(self, name: &QName) -> Result<bool, Error> {
+        self.0.read().has_own_trait(name)
+    }
+
+    fn has_instantiated_property(self, name: &QName) -> bool {
+        self.0.read().has_instantiated_property(name)
     }
 
     fn has_own_virtual_getter(self, name: &QName) -> bool {
@@ -148,6 +191,22 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     ) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::ScriptObject(*self);
         Ok(ScriptObject::object(context.gc_context, this))
+    }
+
+    fn derive(
+        &self,
+        _avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        class: Avm2ClassEntry,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
+    ) -> Result<Object<'gc>, Error> {
+        let this: Object<'gc> = Object::ScriptObject(*self);
+        Ok(ScriptObject::prototype(
+            context.gc_context,
+            this,
+            class,
+            scope,
+        ))
     }
 
     fn install_method(
@@ -218,7 +277,7 @@ impl<'gc> ScriptObject<'gc> {
     pub fn bare_object(mc: MutationContext<'gc, '_>) -> Object<'gc> {
         ScriptObject(GcCell::allocate(
             mc,
-            ScriptObjectData::base_new(None, None, true),
+            ScriptObjectData::base_new(None, ScriptObjectClass::NoClass),
         ))
         .into()
     }
@@ -227,65 +286,82 @@ impl<'gc> ScriptObject<'gc> {
     pub fn object(mc: MutationContext<'gc, '_>, proto: Object<'gc>) -> Object<'gc> {
         ScriptObject(GcCell::allocate(
             mc,
-            ScriptObjectData::base_new(Some(proto), None, true),
+            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::NoClass),
         ))
         .into()
     }
 
-    /// Construct a class instance.
-    pub fn instance(
+    /// Construct a prototype for an ES4 class.
+    pub fn prototype(
         mc: MutationContext<'gc, '_>,
         proto: Object<'gc>,
         class: Avm2ClassEntry,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Object<'gc> {
+        let script_class = ScriptObjectClass::InstancePrototype(class, scope);
+
         ScriptObject(GcCell::allocate(
             mc,
-            ScriptObjectData::base_new(Some(proto), Some(class), true),
+            ScriptObjectData::base_new(Some(proto), script_class),
         ))
         .into()
     }
 }
 
+/// Given a list of traits from an ABC file, find the one that matches this
+/// name.
+///
+/// This function adds it's result onto the list of known traits, with the
+/// caveat that duplicate entries will be replaced (if allowed). As such, this
+/// function should be run on the class hierarchy from top to bottom.
+///
+/// If a given trait has an invalid name, attempts to override a final trait,
+/// or overlaps an existing trait without being an override, then this function
+/// returns an error.
+///
+/// TODO: This is an O(n^2) algorithm, it sucks.
+fn do_trait_lookup(
+    name: &QName,
+    known_traits: &mut Vec<AbcTrait>,
+    abc: Rc<AbcFile>,
+    traits: &[AbcTrait],
+) -> Result<(), Error> {
+    for trait_entry in traits.iter() {
+        let trait_name = QName::from_abc_multiname(&abc, trait_entry.name.clone())?;
+
+        if name == &trait_name {
+            for known_trait in known_traits.iter() {
+                match (&trait_entry.kind, &known_trait.kind) {
+                    (AbcTraitKind::Getter { .. }, AbcTraitKind::Setter { .. }) => continue,
+                    (AbcTraitKind::Setter { .. }, AbcTraitKind::Getter { .. }) => continue,
+                    _ => {}
+                };
+
+                if known_trait.is_final {
+                    return Err("Attempting to override a final definition".into());
+                }
+
+                if !trait_entry.is_override {
+                    return Err("Definition override is not marked as override".into());
+                }
+            }
+
+            known_traits.push(trait_entry.clone());
+        }
+    }
+
+    Ok(())
+}
+
 impl<'gc> ScriptObjectData<'gc> {
-    pub fn base_new(
-        proto: Option<Object<'gc>>,
-        class: Option<Avm2ClassEntry>,
-        is_instance: bool,
-    ) -> Self {
+    pub fn base_new(proto: Option<Object<'gc>>, trait_source: ScriptObjectClass<'gc>) -> Self {
         ScriptObjectData {
             values: HashMap::new(),
             slots: Vec::new(),
             methods: Vec::new(),
             proto,
-            class,
-            is_instance,
+            class: trait_source,
         }
-    }
-
-    pub fn get_trait(&self, name: &QName) -> Result<Option<AbcTrait>, Error> {
-        if let Some(class) = &self.class {
-            if self.is_instance {
-                for trait_entry in class.instance().traits.iter() {
-                    let trait_name =
-                        QName::from_abc_multiname(&class.abc(), trait_entry.name.clone())?;
-
-                    if name == &trait_name {
-                        return Ok(Some(trait_entry.clone()));
-                    }
-                }
-            } else {
-                for trait_entry in class.class().traits.iter() {
-                    let trait_name =
-                        QName::from_abc_multiname(&class.abc(), trait_entry.name.clone())?;
-
-                    if name == &trait_name {
-                        return Ok(Some(trait_entry.clone()));
-                    }
-                }
-            }
-        }
-
-        Ok(None)
     }
 
     pub fn get_property_local(
@@ -298,7 +374,14 @@ impl<'gc> ScriptObjectData<'gc> {
         let prop = self.values.get(name);
 
         if let Some(prop) = prop {
-            prop.get(avm, context, reciever)
+            prop.get(
+                avm,
+                context,
+                reciever,
+                avm.current_stack_frame()
+                    .and_then(|sf| sf.read().base_proto())
+                    .or(self.proto),
+            )
         } else {
             Ok(Value::Undefined.into())
         }
@@ -317,7 +400,16 @@ impl<'gc> ScriptObjectData<'gc> {
                 self.set_slot(slot_id, value, context.gc_context)?;
                 Ok(Value::Undefined.into())
             } else {
-                prop.set(avm, context, reciever, value)
+                let proto = self.proto;
+                prop.set(
+                    avm,
+                    context,
+                    reciever,
+                    avm.current_stack_frame()
+                        .and_then(|sf| sf.read().base_proto())
+                        .or(proto),
+                    value,
+                )
             }
         } else {
             //TODO: Not all classes are dynamic like this
@@ -341,7 +433,16 @@ impl<'gc> ScriptObjectData<'gc> {
                 self.init_slot(slot_id, value, context.gc_context)?;
                 Ok(Value::Undefined.into())
             } else {
-                prop.init(avm, context, reciever, value)
+                let proto = self.proto;
+                prop.init(
+                    avm,
+                    context,
+                    reciever,
+                    avm.current_stack_frame()
+                        .and_then(|sf| sf.read().base_proto())
+                        .or(proto),
+                    value,
+                )
             }
         } else {
             //TODO: Not all classes are dynamic like this
@@ -408,6 +509,83 @@ impl<'gc> ScriptObjectData<'gc> {
         self.methods.get(id as usize).and_then(|v| *v)
     }
 
+    pub fn get_trait(&self, name: &QName) -> Result<Vec<AbcTrait>, Error> {
+        let mut known_traits = if let Some(proto) = self.proto {
+            proto.get_trait(name)?
+        } else {
+            vec![]
+        };
+
+        match &self.class {
+            ScriptObjectClass::ClassConstructor(class, ..) => {
+                do_trait_lookup(name, &mut known_traits, class.abc(), &class.class().traits)?
+            }
+            ScriptObjectClass::InstancePrototype(class, ..) => do_trait_lookup(
+                name,
+                &mut known_traits,
+                class.abc(),
+                &class.instance().traits,
+            )?,
+            ScriptObjectClass::NoClass => {}
+        };
+
+        Ok(known_traits)
+    }
+
+    pub fn has_trait(&self, name: &QName) -> Result<bool, Error> {
+        if let Some(proto) = self.proto {
+            if proto.has_trait(name)? {
+                return Ok(true);
+            }
+        }
+
+        self.has_own_trait(name)
+    }
+
+    pub fn has_own_trait(&self, name: &QName) -> Result<bool, Error> {
+        match &self.class {
+            ScriptObjectClass::ClassConstructor(class, ..) => {
+                for trait_entry in class.class().traits.iter() {
+                    let trait_name =
+                        QName::from_abc_multiname(&class.abc(), trait_entry.name.clone())?;
+
+                    if name == &trait_name {
+                        return Ok(true);
+                    }
+                }
+            }
+            ScriptObjectClass::InstancePrototype(class, ..) => {
+                for trait_entry in class.instance().traits.iter() {
+                    let trait_name =
+                        QName::from_abc_multiname(&class.abc(), trait_entry.name.clone())?;
+
+                    if name == &trait_name {
+                        return Ok(true);
+                    }
+                }
+            }
+            ScriptObjectClass::NoClass => {}
+        };
+
+        Ok(false)
+    }
+
+    pub fn get_scope(&self) -> Option<GcCell<'gc, Scope<'gc>>> {
+        match &self.class {
+            ScriptObjectClass::ClassConstructor(_class, scope) => *scope,
+            ScriptObjectClass::InstancePrototype(_class, scope) => *scope,
+            ScriptObjectClass::NoClass => self.proto().and_then(|proto| proto.get_scope()),
+        }
+    }
+
+    pub fn get_abc(&self) -> Option<Rc<AbcFile>> {
+        match &self.class {
+            ScriptObjectClass::ClassConstructor(class, ..) => Some(class.abc()),
+            ScriptObjectClass::InstancePrototype(class, ..) => Some(class.abc()),
+            ScriptObjectClass::NoClass => self.proto().and_then(|proto| proto.get_abc()),
+        }
+    }
+
     pub fn resolve_any(&self, local_name: &str) -> Option<Namespace> {
         for (key, _value) in self.values.iter() {
             if key.local_name() == local_name {
@@ -418,7 +596,11 @@ impl<'gc> ScriptObjectData<'gc> {
         None
     }
 
-    pub fn has_own_property(&self, name: &QName) -> bool {
+    pub fn has_own_property(&self, name: &QName) -> Result<bool, Error> {
+        Ok(self.values.get(name).is_some() || self.has_trait(name)?)
+    }
+
+    pub fn has_instantiated_property(&self, name: &QName) -> bool {
         self.values.get(name).is_some()
     }
 
@@ -438,10 +620,6 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn proto(&self) -> Option<Object<'gc>> {
         self.proto
-    }
-
-    pub fn class(&self) -> Option<&Avm2ClassEntry> {
-        self.class.as_ref()
     }
 
     /// Install a method into the object.

@@ -37,36 +37,45 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Retrieve a property by it's QName.
     fn get_property(
-        self,
+        &mut self,
         reciever: Object<'gc>,
         name: &QName,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
+        if !self.has_instantiated_property(name) {
+            for abc_trait in self.get_trait(name)? {
+                self.install_trait(avm, context, &abc_trait)?;
+            }
+        }
+
         let has_no_getter = self.has_own_virtual_setter(name) && !self.has_own_virtual_getter(name);
 
-        if self.has_own_property(name) && !has_no_getter {
+        if self.has_own_property(name)? && !has_no_getter {
             return self.get_property_local(reciever, name, avm, context);
         }
 
-        if let Some(proto) = self.proto() {
+        if let Some(mut proto) = self.proto() {
             return proto.get_property(reciever, name, avm, context);
         }
 
         Ok(Value::Undefined.into())
     }
 
-    /// Retrieve the base prototype that a particular QName is defined in.
-    fn get_base_proto(self, name: &QName) -> Option<Object<'gc>> {
-        if self.has_own_property(name) {
-            return Some(self.into());
+    /// Retrieve the base prototype that a particular QName trait is defined in.
+    ///
+    /// This function returns `None` for non-trait properties, such as actually
+    /// defined prototype methods for ES3-style classes.
+    fn get_base_proto(self, name: &QName) -> Result<Option<Object<'gc>>, Error> {
+        if self.has_own_trait(name)? {
+            return Ok(Some(self.into()));
         }
 
         if let Some(proto) = self.proto() {
             return proto.get_base_proto(name);
         }
 
-        None
+        Ok(None)
     }
 
     /// Set a property on this specific object.
@@ -84,13 +93,19 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Set a property by it's QName.
     fn set_property(
-        self,
+        &mut self,
         reciever: Object<'gc>,
         name: &QName,
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
+        if !self.has_instantiated_property(name) {
+            for abc_trait in self.get_trait(name)? {
+                self.install_trait(avm, context, &abc_trait)?;
+            }
+        }
+
         if self.has_own_virtual_setter(name) {
             self.set_property_local(reciever, name, value, avm, context)?
                 .resolve(avm, context)?;
@@ -99,7 +114,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
 
         let mut proto = self.proto();
-        while let Some(my_proto) = proto {
+        while let Some(mut my_proto) = proto {
             //NOTE: This only works because we validate ahead-of-time that
             //we're calling a virtual setter. If you call `set_property` on
             //a non-virtual you will actually alter the prototype.
@@ -132,13 +147,19 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Init a property by it's QName.
     fn init_property(
-        self,
+        &mut self,
         reciever: Object<'gc>,
         name: &QName,
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
+        if !self.has_instantiated_property(name) {
+            for abc_trait in self.get_trait(name)? {
+                self.install_trait(avm, context, &abc_trait)?;
+            }
+        }
+
         if self.has_own_virtual_setter(name) {
             self.init_property_local(reciever, name, value, avm, context)?
                 .resolve(avm, context)?;
@@ -147,7 +168,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
 
         let mut proto = self.proto();
-        while let Some(my_proto) = proto {
+        while let Some(mut my_proto) = proto {
             //NOTE: This only works because we validate ahead-of-time that
             //we're calling a virtual setter. If you call `set_property` on
             //a non-virtual you will actually alter the prototype.
@@ -192,29 +213,50 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This function returns `None` if no such trait exists, or the object
     /// does not have traits. It returns `Err` if *any* trait in the object is
     /// malformed in some way.
-    fn get_trait(self, name: &QName) -> Result<Option<AbcTrait>, Error>;
+    fn get_trait(self, name: &QName) -> Result<Vec<AbcTrait>, Error>;
+
+    /// Retrieves the scope chain of the object at time of it's creation.
+    ///
+    /// The scope chain is used to determine the starting scope stack when an
+    /// object is called, as well as any class methods on the object.
+    /// Non-method functions and prototype functions (ES3 methods) do not use
+    /// this scope chain.
+    fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>>;
+
+    /// Retrieves the ABC file that this object, or it's class, was defined in.
+    ///
+    /// Objects that were not defined in an ABC file or created from a class
+    /// defined in an ABC file will return `None`. This can happen for things
+    /// such as object or array literals. If this object does not have an ABC
+    /// file, then it must also not have traits.
+    fn get_abc(self) -> Option<Rc<AbcFile>>;
 
     /// Resolve a multiname into a single QName, if any of the namespaces
     /// match.
-    fn resolve_multiname(self, multiname: &Multiname) -> Option<QName> {
+    fn resolve_multiname(self, multiname: &Multiname) -> Result<Option<QName>, Error> {
         for ns in multiname.namespace_set() {
             if ns.is_any() {
-                let name = multiname.local_name()?;
-                let ns = self.resolve_any(name);
-                return ns.map(|ns| QName::new(ns, name));
-            } else {
-                let qname = QName::new(ns.clone(), multiname.local_name()?);
-                if self.has_property(&qname) {
-                    return Some(qname);
+                if let Some(name) = multiname.local_name() {
+                    let ns = self.resolve_any(name);
+                    return Ok(ns.map(|ns| QName::new(ns, name)));
+                } else {
+                    return Ok(None);
                 }
+            } else if let Some(name) = multiname.local_name() {
+                let qname = QName::new(ns.clone(), name);
+                if self.has_property(&qname)? {
+                    return Ok(Some(qname));
+                }
+            } else {
+                return Ok(None);
             }
         }
 
         if let Some(proto) = self.proto() {
-            return proto.resolve_multiname(multiname);
+            return Ok(proto.resolve_multiname(multiname)?);
         }
 
-        None
+        Ok(None)
     }
 
     /// Given a local name, find the namespace it resides in, if any.
@@ -224,19 +266,34 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn resolve_any(self, local_name: &str) -> Option<Namespace>;
 
     /// Indicates whether or not a property exists on an object.
-    fn has_property(self, name: &QName) -> bool {
-        if self.has_own_property(name) {
-            true
+    fn has_property(self, name: &QName) -> Result<bool, Error> {
+        if self.has_own_property(name)? {
+            Ok(true)
         } else if let Some(proto) = self.proto() {
-            proto.has_own_property(name)
+            Ok(proto.has_own_property(name)?)
         } else {
-            false
+            Ok(false)
         }
     }
 
-    /// Indicates whether or not a property exists on an object and is not part
-    /// of the prototype chain.
-    fn has_own_property(self, name: &QName) -> bool;
+    /// Indicates whether or not a property or trait exists on an object and is
+    /// not part of the prototype chain.
+    fn has_own_property(self, name: &QName) -> Result<bool, Error>;
+
+    /// Returns true if an object has one or more traits of a given name.
+    fn has_trait(self, name: &QName) -> Result<bool, Error>;
+
+    /// Returns true if an object is part of a class that defines a trait of a
+    /// given name on itself (as opposed to merely inheriting a superclass
+    /// trait.)
+    fn has_own_trait(self, name: &QName) -> Result<bool, Error>;
+
+    /// Indicates whether or not a property or *instantiated* trait exists on
+    /// an object and is not part of the prototype chain.
+    ///
+    /// Unlike `has_own_property`, this will not yield `true` for traits this
+    /// object can have but has not yet instantiated.
+    fn has_instantiated_property(self, name: &QName) -> bool;
 
     /// Check if a particular object contains a virtual getter by the given
     /// name.
@@ -316,16 +373,39 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
     );
 
-    /// Install a trait from an ABC file on an object.
+    /// Install a trait from the current object.
+    ///
+    /// This function should only be called once, as reinstalling a trait may
+    /// also unset already set properties. It may either be called immediately
+    /// when the object is instantiated or lazily; this behavior is ostensibly
+    /// controlled by the `lazy_init` flag provided to `load_abc`, but in
+    /// practice every version of Flash and Animate uses lazy trait
+    /// installation.
     fn install_trait(
+        &mut self,
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        trait_entry: &AbcTrait,
+    ) -> Result<(), Error> {
+        let scope = self.get_scope();
+        let abc: Result<Rc<AbcFile>, Error> = self.get_abc().ok_or_else(|| {
+            "Object with traits must have an ABC file!"
+                .to_string()
+                .into()
+        });
+        self.install_foreign_trait(avm, context, abc?, trait_entry, scope)
+    }
+
+    /// Install a trait from anywyere.
+    fn install_foreign_trait(
         &mut self,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         abc: Rc<AbcFile>,
         trait_entry: &AbcTrait,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
-        fn_proto: Object<'gc>,
     ) -> Result<(), Error> {
+        let fn_proto = avm.prototypes().function;
         let trait_name = QName::from_abc_multiname(&abc, trait_entry.name.clone())?;
         avm_debug!(
             "Installing trait {:?} of kind {:?}",
@@ -387,7 +467,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     type_entry.clone(),
                     super_class?,
                     scope,
-                    fn_proto,
                 )?;
                 let class_name = QName::from_abc_multiname(
                     &type_entry.abc(),
@@ -439,6 +518,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// After construction, the constructor function is `call`ed with the new
     /// object as `this` to initialize the object.
     ///
+    /// `construct`ed objects should instantiate instance traits of the class
+    /// that this prototype represents.
+    ///
     /// The arguments passed to the constructor are provided here; however, all
     /// object construction should happen in `call`, not `new`. `new` exists
     /// purely so that host objects can be constructed by the VM.
@@ -447,6 +529,23 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         args: &[Value<'gc>],
+    ) -> Result<Object<'gc>, Error>;
+
+    /// Construct a host object prototype of some kind and return it.
+    ///
+    /// This is called specifically to construct prototypes. The primary
+    /// difference is that a new class and scope closure are defined here.
+    /// Objects constructed from the new prototype should use that new class
+    /// and scope closure when instantiating non-prototype traits.
+    ///
+    /// Unlike `construct`, `derive`d objects should *not* instantiate instance
+    /// traits.
+    fn derive(
+        &self,
+        avm: &mut Avm2<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        class: Avm2ClassEntry,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error>;
 
     /// Get a raw pointer value for this object.

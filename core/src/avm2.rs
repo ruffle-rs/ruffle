@@ -77,6 +77,11 @@ impl<'gc> Avm2<'gc> {
         }
     }
 
+    /// Return the current set of system prototypes.
+    pub fn prototypes(&self) -> &SystemPrototypes<'gc> {
+        &self.system_prototypes
+    }
+
     /// Load an ABC file embedded in a `SwfSlice`.
     ///
     /// The `SwfSlice` must resolve to the contents of an ABC file.
@@ -102,13 +107,12 @@ impl<'gc> Avm2<'gc> {
             let scope = Scope::push_scope(None, self.globals(), context.gc_context);
 
             for trait_entry in entrypoint.script().traits.iter() {
-                self.globals().install_trait(
+                self.globals().install_foreign_trait(
                     self,
                     context,
-                    entrypoint.abc(),
+                    abc_file.clone(),
                     trait_entry,
                     Some(scope),
-                    self.system_prototypes.function,
                 )?;
             }
 
@@ -635,13 +639,13 @@ impl<'gc> Avm2<'gc> {
         let multiname = self.pool_multiname(index)?;
         let receiver = self.pop().as_object()?;
         let name: Result<QName, Error> = receiver
-            .resolve_multiname(&multiname)
+            .resolve_multiname(&multiname)?
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
         let name = name?;
-        let base_proto = receiver.get_base_proto(&name);
+        let base_proto = receiver.get_base_proto(&name)?;
         let function = base_proto
             .unwrap_or(receiver)
-            .get_property_local(receiver, &name, self, context)?
+            .get_property(receiver, &name, self, context)?
             .resolve(self, context)?
             .as_object()?;
 
@@ -660,9 +664,9 @@ impl<'gc> Avm2<'gc> {
     ) -> Result<(), Error> {
         let args = self.pop_args(arg_count);
         let multiname = self.pool_multiname(index)?;
-        let receiver = self.pop().as_object()?;
+        let mut receiver = self.pop().as_object()?;
         let name: Result<QName, Error> = receiver
-            .resolve_multiname(&multiname)
+            .resolve_multiname(&multiname)?
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
         let function = receiver
             .get_property(receiver, &name?, self, context)?
@@ -684,13 +688,13 @@ impl<'gc> Avm2<'gc> {
         let multiname = self.pool_multiname(index)?;
         let receiver = self.pop().as_object()?;
         let name: Result<QName, Error> = receiver
-            .resolve_multiname(&multiname)
+            .resolve_multiname(&multiname)?
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
         let name = name?;
-        let base_proto = receiver.get_base_proto(&name);
+        let base_proto = receiver.get_base_proto(&name)?;
         let function = base_proto
             .unwrap_or(receiver)
-            .get_property_local(receiver, &name, self, context)?
+            .get_property(receiver, &name, self, context)?
             .resolve(self, context)?
             .as_object()?;
 
@@ -735,7 +739,7 @@ impl<'gc> Avm2<'gc> {
         let multiname = self.pool_multiname(index)?;
         let receiver = self.pop().as_object()?;
         let name: Result<QName, Error> = receiver
-            .resolve_multiname(&multiname)
+            .resolve_multiname(&multiname)?
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
         let base_proto: Result<Object<'gc>, Error> = self
             .current_stack_frame()
@@ -749,8 +753,9 @@ impl<'gc> Avm2<'gc> {
                     .into()
             });
         let base_proto = base_proto?;
+        let mut base = base_proto.construct(self, context, &[])?; //TODO: very hacky workaround
 
-        let function = base_proto
+        let function = base
             .get_property(receiver, &name?, self, context)?
             .resolve(self, context)?
             .as_object()?;
@@ -772,7 +777,7 @@ impl<'gc> Avm2<'gc> {
         let multiname = self.pool_multiname(index)?;
         let receiver = self.pop().as_object()?;
         let name: Result<QName, Error> = receiver
-            .resolve_multiname(&multiname)
+            .resolve_multiname(&multiname)?
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
         let base_proto: Result<Object<'gc>, Error> = self
             .current_stack_frame()
@@ -786,8 +791,9 @@ impl<'gc> Avm2<'gc> {
                     .into()
             });
         let base_proto = base_proto?;
+        let mut base = base_proto.construct(self, context, &[])?; //TODO: very hacky workaround
 
-        let function = base_proto
+        let function = base
             .get_property(receiver, &name?, self, context)?
             .resolve(self, context)?
             .as_object()?;
@@ -815,9 +821,9 @@ impl<'gc> Avm2<'gc> {
         index: Index<AbcMultiname>,
     ) -> Result<(), Error> {
         let multiname = self.pool_multiname(index)?;
-        let object = self.pop().as_object()?;
+        let mut object = self.pop().as_object()?;
 
-        let name: Result<QName, Error> = object.resolve_multiname(&multiname).ok_or_else(|| {
+        let name: Result<QName, Error> = object.resolve_multiname(&multiname)?.ok_or_else(|| {
             format!("Could not resolve property {:?}", multiname.local_name()).into()
         });
 
@@ -836,9 +842,9 @@ impl<'gc> Avm2<'gc> {
     ) -> Result<(), Error> {
         let value = self.pop();
         let multiname = self.pool_multiname(index)?;
-        let object = self.pop().as_object()?;
+        let mut object = self.pop().as_object()?;
 
-        if let Some(name) = object.resolve_multiname(&multiname) {
+        if let Some(name) = object.resolve_multiname(&multiname)? {
             object.set_property(object, &name, value, self, context)
         } else {
             //TODO: Non-dynamic objects should fail
@@ -858,9 +864,9 @@ impl<'gc> Avm2<'gc> {
     ) -> Result<(), Error> {
         let value = self.pop();
         let multiname = self.pool_multiname(index)?;
-        let object = self.pop().as_object()?;
+        let mut object = self.pop().as_object()?;
 
-        if let Some(name) = object.resolve_multiname(&multiname) {
+        if let Some(name) = object.resolve_multiname(&multiname)? {
             object.init_property(object, &name, value, self, context)
         } else {
             //TODO: Non-dynamic objects should fail
@@ -881,7 +887,7 @@ impl<'gc> Avm2<'gc> {
         let multiname = self.pool_multiname(index)?;
         let object = self.pop().as_object()?;
 
-        if let Some(name) = object.resolve_multiname(&multiname) {
+        if let Some(name) = object.resolve_multiname(&multiname)? {
             self.push(object.delete_property(context.gc_context, &name))
         } else {
             self.push(false)
@@ -905,17 +911,17 @@ impl<'gc> Avm2<'gc> {
             .and_then(|p| p.proto())
             .ok_or_else(|| "Attempted to get property on non-existent super object".into());
         let base_proto = base_proto?;
+        let mut base = base_proto.construct(self, context, &[])?; //TODO: very hacky workaround
 
-        let name: Result<QName, Error> =
-            base_proto.resolve_multiname(&multiname).ok_or_else(|| {
-                format!(
-                    "Could not resolve {:?} as super property",
-                    multiname.local_name()
-                )
-                .into()
-            });
+        let name: Result<QName, Error> = base.resolve_multiname(&multiname)?.ok_or_else(|| {
+            format!(
+                "Could not resolve {:?} as super property",
+                multiname.local_name()
+            )
+            .into()
+        });
 
-        let value = base_proto
+        let value = base
             .get_property(object, &name?, self, context)?
             .resolve(self, context)?;
 
@@ -940,17 +946,17 @@ impl<'gc> Avm2<'gc> {
             .and_then(|p| p.proto())
             .ok_or_else(|| "Attempted to get property on non-existent super object".into());
         let base_proto = base_proto?;
+        let mut base = base_proto.construct(self, context, &[])?; //TODO: very hacky workaround
 
-        let name: Result<QName, Error> =
-            base_proto.resolve_multiname(&multiname).ok_or_else(|| {
-                format!(
-                    "Could not resolve {:?} as super property",
-                    multiname.local_name()
-                )
-                .into()
-            });
+        let name: Result<QName, Error> = base.resolve_multiname(&multiname)?.ok_or_else(|| {
+            format!(
+                "Could not resolve {:?} as super property",
+                multiname.local_name()
+            )
+            .into()
+        });
 
-        base_proto.set_property(object, &name?, value, self, context)?;
+        base.set_property(object, &name?, value, self, context)?;
 
         Ok(())
     }
@@ -1038,12 +1044,11 @@ impl<'gc> Avm2<'gc> {
     ) -> Result<(), Error> {
         let multiname = self.pool_multiname(index)?;
         avm_debug!("Resolving {:?}", multiname);
-        let result = self
-            .current_stack_frame()
-            .unwrap()
-            .read()
-            .scope()
-            .and_then(|scope| scope.read().find(&multiname, self, context));
+        let result = if let Some(scope) = self.current_stack_frame().unwrap().read().scope() {
+            scope.read().find(&multiname, self, context)?
+        } else {
+            None
+        };
 
         self.push(result.map(|o| o.into()).unwrap_or(Value::Undefined));
 
@@ -1057,12 +1062,12 @@ impl<'gc> Avm2<'gc> {
     ) -> Result<(), Error> {
         let multiname = self.pool_multiname(index)?;
         avm_debug!("Resolving {:?}", multiname);
-        let found: Result<Object<'gc>, Error> = self
-            .current_stack_frame()
-            .unwrap()
-            .read()
-            .scope()
-            .and_then(|scope| scope.read().find(&multiname, self, context))
+        let found: Result<Object<'gc>, Error> =
+            if let Some(scope) = self.current_stack_frame().unwrap().read().scope() {
+                scope.read().find(&multiname, self, context)?
+            } else {
+                None
+            }
             .ok_or_else(|| format!("Property does not exist: {:?}", multiname.local_name()).into());
         let result: Value<'gc> = found?.into();
 
@@ -1078,14 +1083,16 @@ impl<'gc> Avm2<'gc> {
     ) -> Result<(), Error> {
         let multiname = self.pool_multiname_static(index)?;
         avm_debug!("Resolving {:?}", multiname);
-        let found: Result<Result<ReturnValue<'gc>, Error>, Error> = self
-            .current_stack_frame()
-            .unwrap()
-            .read()
-            .scope()
-            .and_then(|scope| scope.read().resolve(&multiname, self, context))
+        let found: Result<ReturnValue<'gc>, Error> =
+            if let Some(scope) = self.current_stack_frame().unwrap().read().scope() {
+                scope
+                    .write(context.gc_context)
+                    .resolve(&multiname, self, context)?
+            } else {
+                None
+            }
             .ok_or_else(|| format!("Property does not exist: {:?}", multiname.local_name()).into());
-        let result: Value<'gc> = found??.resolve(self, context)?;
+        let result: Value<'gc> = found?.resolve(self, context)?;
 
         self.push(result);
 
@@ -1136,7 +1143,7 @@ impl<'gc> Avm2<'gc> {
         arg_count: u32,
     ) -> Result<(), Error> {
         let args = self.pop_args(arg_count);
-        let ctor = self.pop().as_object()?;
+        let mut ctor = self.pop().as_object()?;
 
         let proto = ctor
             .get_property(
@@ -1165,13 +1172,13 @@ impl<'gc> Avm2<'gc> {
     ) -> Result<(), Error> {
         let args = self.pop_args(arg_count);
         let multiname = self.pool_multiname(index)?;
-        let source = self.pop().as_object()?;
+        let mut source = self.pop().as_object()?;
 
         let ctor_name: Result<QName, Error> =
-            source.resolve_multiname(&multiname).ok_or_else(|| {
+            source.resolve_multiname(&multiname)?.ok_or_else(|| {
                 format!("Could not resolve property {:?}", multiname.local_name()).into()
             });
-        let ctor = source
+        let mut ctor = source
             .get_property(source, &ctor_name?, self, context)?
             .resolve(self, context)?
             .as_object()?;
@@ -1213,10 +1220,10 @@ impl<'gc> Avm2<'gc> {
                     .to_string()
                     .into()
             });
-        let base_proto = base_proto?;
+        let mut base_proto = base_proto?;
 
         let function = base_proto
-            .get_property_local(receiver, &name, self, context)?
+            .get_property(receiver, &name, self, context)?
             .resolve(self, context)?
             .as_object()?;
 
@@ -1238,7 +1245,7 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         num_args: u32,
     ) -> Result<(), Error> {
-        let object = ScriptObject::object(context.gc_context, self.system_prototypes.object);
+        let mut object = ScriptObject::object(context.gc_context, self.system_prototypes.object);
 
         for _ in 0..num_args {
             let value = self.pop();
@@ -1287,14 +1294,8 @@ impl<'gc> Avm2<'gc> {
         let class_entry = self.table_class(index)?;
         let scope = self.current_stack_frame().unwrap().read().scope();
 
-        let (new_class, class_init) = FunctionObject::from_abc_class(
-            self,
-            context,
-            class_entry,
-            base_class,
-            scope,
-            self.system_prototypes.function,
-        )?;
+        let (new_class, class_init) =
+            FunctionObject::from_abc_class(self, context, class_entry, base_class, scope)?;
 
         class_init
             .call(Some(new_class), &[], self, context, None)?
