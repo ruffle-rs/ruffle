@@ -236,6 +236,8 @@ swf_tests! {
     (as3_virtual_properties, "avm2/virtual_properties", 1),
     (as3_es4_oop_prototypes, "avm2/es4_oop_prototypes", 1),
     (as3_es4_method_binding, "avm2/es4_method_binding", 1),
+    (as3_control_flow_bool, "avm2/control_flow_bool", 1),
+    (as3_control_flow_stricteq, "avm2/control_flow_stricteq", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
