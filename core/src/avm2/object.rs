@@ -304,14 +304,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn has_own_virtual_setter(self, name: &QName) -> bool;
 
     /// Indicates whether or not a property is overwritable.
-    fn is_property_overwritable(self, _name: &QName) -> bool {
-        false
-    }
+    fn is_property_overwritable(self, gc_context: MutationContext<'gc, '_>, _name: &QName) -> bool;
 
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.
-    fn delete_property(&self, gc_context: MutationContext<'gc, '_>, multiname: &QName) -> bool;
+    fn delete_property(&self, gc_context: MutationContext<'gc, '_>, name: &QName) -> bool;
 
     /// Retrieve the `__proto__` of a given object.
     ///

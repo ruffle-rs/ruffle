@@ -477,6 +477,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             .init_property_local(reciever, name, value, avm, context)
     }
 
+    fn is_property_overwritable(self, gc_context: MutationContext<'gc, '_>, name: &QName) -> bool {
+        self.0.write(gc_context).base.is_property_overwritable(name)
+    }
+
     fn delete_property(&self, gc_context: MutationContext<'gc, '_>, multiname: &QName) -> bool {
         self.0.write(gc_context).base.delete_property(multiname)
     }

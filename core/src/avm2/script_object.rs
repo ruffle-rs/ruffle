@@ -105,8 +105,12 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .init_property_local(reciever, name, value, avm, context)
     }
 
-    fn delete_property(&self, gc_context: MutationContext<'gc, '_>, multiname: &QName) -> bool {
-        self.0.write(gc_context).delete_property(multiname)
+    fn is_property_overwritable(self, gc_context: MutationContext<'gc, '_>, name: &QName) -> bool {
+        self.0.write(gc_context).is_property_overwritable(name)
+    }
+
+    fn delete_property(&self, gc_context: MutationContext<'gc, '_>, name: &QName) -> bool {
+        self.0.write(gc_context).delete_property(name)
     }
 
     fn get_slot(self, id: u32) -> Result<Value<'gc>, Error> {
@@ -451,6 +455,13 @@ impl<'gc> ScriptObjectData<'gc> {
 
             Ok(Value::Undefined.into())
         }
+    }
+
+    pub fn is_property_overwritable(&self, name: &QName) -> bool {
+        self.values
+            .get(name)
+            .map(|p| p.is_overwritable())
+            .unwrap_or(true)
     }
 
     pub fn delete_property(&mut self, name: &QName) -> bool {
