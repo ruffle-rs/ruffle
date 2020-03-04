@@ -1,0 +1,8 @@
+ES4Class constructor
+ES4Class test_var
+ES4Class test_const
+ES4Class test_proto_var
+ES4Class test_method
+ES4Class test_static
+ES4Class test_proto_method
+ES4Class test_get

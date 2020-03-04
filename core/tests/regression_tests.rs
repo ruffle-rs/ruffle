@@ -234,6 +234,7 @@ swf_tests! {
     (as3_inheritance, "avm2/inheritance", 1),
     (as3_stored_properties, "avm2/stored_properties", 1),
     (as3_virtual_properties, "avm2/virtual_properties", 1),
+    (as3_es4_oop_prototypes, "avm2/es4_oop_prototypes", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
