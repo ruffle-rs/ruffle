@@ -252,6 +252,14 @@ impl<'gc> Value<'gc> {
         }
     }
 
+    pub fn as_bool(&self) -> Result<bool, Error> {
+        if let Value::Bool(b) = self {
+            Ok(*b)
+        } else {
+            Err(format!("Expected Boolean, found {:?}", self).into())
+        }
+    }
+
     pub fn as_namespace(&self) -> Result<&Namespace, Error> {
         match self {
             Value::Namespace(ns) => Ok(ns),

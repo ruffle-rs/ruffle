@@ -488,6 +488,11 @@ impl<'gc> Avm2<'gc> {
                 Op::NewFunction { index } => self.op_new_function(context, index),
                 Op::NewClass { index } => self.op_new_class(context, index),
                 Op::CoerceA => self.op_coerce_a(),
+                Op::Jump { offset } => self.op_jump(offset, reader),
+                Op::IfTrue { offset } => self.op_if_true(offset, reader),
+                Op::IfFalse { offset } => self.op_if_false(offset, reader),
+                Op::IfStrictEq { offset } => self.op_if_strict_eq(offset, reader),
+                Op::IfStrictNe { offset } => self.op_if_strict_ne(offset, reader),
                 Op::Debug {
                     is_local_register,
                     register_name,
@@ -1310,6 +1315,66 @@ impl<'gc> Avm2<'gc> {
     }
 
     fn op_coerce_a(&mut self) -> Result<(), Error> {
+        Ok(())
+    }
+
+    fn op_jump(&mut self, offset: i32, reader: &mut Reader<Cursor<&[u8]>>) -> Result<(), Error> {
+        reader.seek(offset as i64)?;
+
+        Ok(())
+    }
+
+    fn op_if_true(&mut self, offset: i32, reader: &mut Reader<Cursor<&[u8]>>) -> Result<(), Error> {
+        let value = self.pop().as_bool()?;
+
+        if value {
+            reader.seek(offset as i64)?;
+        }
+
+        Ok(())
+    }
+
+    fn op_if_false(
+        &mut self,
+        offset: i32,
+        reader: &mut Reader<Cursor<&[u8]>>,
+    ) -> Result<(), Error> {
+        let value = self.pop().as_bool()?;
+
+        if !value {
+            reader.seek(offset as i64)?;
+        }
+
+        Ok(())
+    }
+
+    fn op_if_strict_eq(
+        &mut self,
+        offset: i32,
+        reader: &mut Reader<Cursor<&[u8]>>,
+    ) -> Result<(), Error> {
+        let value2 = self.pop().as_bool()?;
+        let value1 = self.pop().as_bool()?;
+
+        if value1 == value2 {
+            reader.seek(offset as i64)?;
+        }
+
+        Ok(())
+    }
+
+    fn op_if_strict_ne(
+        &mut self,
+        offset: i32,
+        reader: &mut Reader<Cursor<&[u8]>>,
+    ) -> Result<(), Error> {
+        let value2 = self.pop().as_bool()?;
+        let value1 = self.pop().as_bool()?;
+
+        if value1 != value2 {
+            reader.seek(offset as i64)?;
+        }
+
         Ok(())
     }
 

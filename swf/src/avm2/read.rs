@@ -1,7 +1,7 @@
 use crate::avm2::types::*;
 use crate::error::{Error, Result};
 use crate::read::SwfRead;
-use std::io::Read;
+use std::io::{Read, Seek, SeekFrom};
 
 pub struct Reader<R: Read> {
     inner: R,
@@ -10,6 +10,16 @@ pub struct Reader<R: Read> {
 impl<R: Read> SwfRead<R> for Reader<R> {
     fn get_inner(&mut self) -> &mut R {
         &mut self.inner
+    }
+}
+
+impl<R> Reader<R>
+where
+    R: Read + Seek,
+{
+    #[inline]
+    pub fn seek(&mut self, relative_offset: i64) -> std::io::Result<u64> {
+        self.inner.seek(SeekFrom::Current(relative_offset as i64))
     }
 }
 
