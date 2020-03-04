@@ -102,11 +102,25 @@ pub struct Avm2Function<'gc> {
 
     /// Closure scope stack at time of creation
     pub scope: Option<GcCell<'gc, Scope<'gc>>>,
+
+    /// The reciever this method is attached to.
+    ///
+    /// Objects without a reciever are free functions that can be invoked with
+    /// any desired parameter for `this`.
+    pub reciever: Option<Object<'gc>>,
 }
 
 impl<'gc> Avm2Function<'gc> {
-    pub fn from_method(method: Avm2MethodEntry, scope: Option<GcCell<'gc, Scope<'gc>>>) -> Self {
-        Self { method, scope }
+    pub fn from_method(
+        method: Avm2MethodEntry,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
+        reciever: Option<Object<'gc>>,
+    ) -> Self {
+        Self {
+            method,
+            scope,
+            reciever,
+        }
     }
 }
 
@@ -136,15 +150,16 @@ impl<'gc> Executable<'gc> {
     /// onto the AVM operand stack.
     pub fn exec(
         &self,
-        reciever: Option<Object<'gc>>,
+        unbound_reciever: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         base_proto: Option<Object<'gc>>,
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
-            Executable::Native(nf) => nf(avm, context, reciever, arguments),
+            Executable::Native(nf) => nf(avm, context, unbound_reciever, arguments),
             Executable::Action(a2f) => {
+                let reciever = a2f.reciever.or(unbound_reciever);
                 let activation = GcCell::allocate(
                     context.gc_context,
                     Activation::from_action(context, &a2f, reciever, arguments, base_proto)?,
@@ -313,7 +328,7 @@ impl<'gc> FunctionObject<'gc> {
                     Some(fn_proto),
                     ScriptObjectClass::ClassConstructor(class.clone(), scope),
                 ),
-                exec: Some(Avm2Function::from_method(initializer?, scope).into()),
+                exec: Some(Avm2Function::from_method(initializer?, scope, None).into()),
             },
         ))
         .into();
@@ -344,19 +359,24 @@ impl<'gc> FunctionObject<'gc> {
             class_initializer?,
             scope,
             fn_proto,
+            None,
         );
 
         Ok((constr, class_constr))
     }
 
     /// Construct a function from an ABC method and the current closure scope.
+    ///
+    /// The given `reciever`, if supplied, will override any user-specified
+    /// `this` parameter.
     pub fn from_abc_method(
         mc: MutationContext<'gc, '_>,
         method: Avm2MethodEntry,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         fn_proto: Object<'gc>,
+        reciever: Option<Object<'gc>>,
     ) -> Object<'gc> {
-        let exec = Some(Avm2Function::from_method(method, scope).into());
+        let exec = Some(Avm2Function::from_method(method, scope, reciever).into());
 
         FunctionObject(GcCell::allocate(
             mc,

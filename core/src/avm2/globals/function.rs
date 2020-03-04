@@ -30,6 +30,27 @@ fn to_string<'gc>(
     Ok(ReturnValue::Immediate("[type Function]".into()))
 }
 
+/// Implements `Function.prototype.call`
+fn call<'gc>(
+    avm: &mut Avm2<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    func: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let this = args.get(0).and_then(|v| v.as_object().ok());
+    let base_proto = this.and_then(|that| that.proto());
+
+    if let Some(func) = func {
+        if args.len() > 1 {
+            func.call(this, &args[1..], avm, context, base_proto)
+        } else {
+            func.call(this, &[], avm, context, base_proto)
+        }
+    } else {
+        Err("Not a callable function".into())
+    }
+}
+
 /// Partially construct `Function.prototype`.
 ///
 /// `__proto__` and other cross-linked properties of this object will *not*
@@ -45,6 +66,12 @@ pub fn create_proto<'gc>(gc_context: MutationContext<'gc, '_>, proto: Object<'gc
         QName::new(Namespace::public_namespace(), "toString"),
         0,
         FunctionObject::from_builtin(gc_context, to_string, function_proto),
+    );
+    function_proto.install_method(
+        gc_context,
+        QName::new(Namespace::public_namespace(), "call"),
+        0,
+        FunctionObject::from_builtin(gc_context, call, function_proto),
     );
 
     function_proto

@@ -45,7 +45,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<ReturnValue<'gc>, Error> {
         if !self.has_instantiated_property(name) {
             for abc_trait in self.get_trait(name)? {
-                self.install_trait(avm, context, &abc_trait)?;
+                self.install_trait(avm, context, &abc_trait, reciever)?;
             }
         }
 
@@ -102,7 +102,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<(), Error> {
         if !self.has_instantiated_property(name) {
             for abc_trait in self.get_trait(name)? {
-                self.install_trait(avm, context, &abc_trait)?;
+                self.install_trait(avm, context, &abc_trait, reciever)?;
             }
         }
 
@@ -156,7 +156,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<(), Error> {
         if !self.has_instantiated_property(name) {
             for abc_trait in self.get_trait(name)? {
-                self.install_trait(avm, context, &abc_trait)?;
+                self.install_trait(avm, context, &abc_trait, reciever)?;
             }
         }
 
@@ -381,11 +381,17 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// controlled by the `lazy_init` flag provided to `load_abc`, but in
     /// practice every version of Flash and Animate uses lazy trait
     /// installation.
+    ///
+    /// The `reciever` property allows specifying the object that methods are
+    /// bound to. It should always be `self` except when doing things with
+    /// `super`, which needs to create bound methods pointing to a different
+    /// object.
     fn install_trait(
         &mut self,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         trait_entry: &AbcTrait,
+        reciever: Object<'gc>,
     ) -> Result<(), Error> {
         let scope = self.get_scope();
         let abc: Result<Rc<AbcFile>, Error> = self.get_abc().ok_or_else(|| {
@@ -393,7 +399,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 .to_string()
                 .into()
         });
-        self.install_foreign_trait(avm, context, abc?, trait_entry, scope)
+        self.install_foreign_trait(avm, context, abc?, trait_entry, scope, reciever)
     }
 
     /// Install a trait from anywyere.
@@ -404,6 +410,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         abc: Rc<AbcFile>,
         trait_entry: &AbcTrait,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
+        reciever: Object<'gc>,
     ) -> Result<(), Error> {
         let fn_proto = avm.prototypes().function;
         let trait_name = QName::from_abc_multiname(&abc, trait_entry.name.clone())?;
@@ -426,24 +433,39 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 disp_id, method, ..
             } => {
                 let method = Avm2MethodEntry::from_method_index(abc, method.clone()).unwrap();
-                let function =
-                    FunctionObject::from_abc_method(context.gc_context, method, scope, fn_proto);
+                let function = FunctionObject::from_abc_method(
+                    context.gc_context,
+                    method,
+                    scope,
+                    fn_proto,
+                    Some(reciever),
+                );
                 self.install_method(context.gc_context, trait_name, *disp_id, function);
             }
             AbcTraitKind::Getter {
                 disp_id, method, ..
             } => {
                 let method = Avm2MethodEntry::from_method_index(abc, method.clone()).unwrap();
-                let function =
-                    FunctionObject::from_abc_method(context.gc_context, method, scope, fn_proto);
+                let function = FunctionObject::from_abc_method(
+                    context.gc_context,
+                    method,
+                    scope,
+                    fn_proto,
+                    Some(reciever),
+                );
                 self.install_getter(context.gc_context, trait_name, *disp_id, function)?;
             }
             AbcTraitKind::Setter {
                 disp_id, method, ..
             } => {
                 let method = Avm2MethodEntry::from_method_index(abc, method.clone()).unwrap();
-                let function =
-                    FunctionObject::from_abc_method(context.gc_context, method, scope, fn_proto);
+                let function = FunctionObject::from_abc_method(
+                    context.gc_context,
+                    method,
+                    scope,
+                    fn_proto,
+                    Some(reciever),
+                );
                 self.install_setter(context.gc_context, trait_name, *disp_id, function)?;
             }
             AbcTraitKind::Class { slot_id, class } => {
@@ -452,7 +474,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     &type_entry.abc(),
                     type_entry.instance().super_name.clone(),
                 )?;
-                let reciever: Object<'gc> = (*self).into();
                 let super_class: Result<Object<'gc>, Error> = self
                     .get_property(reciever, &super_name, avm, context)?
                     .resolve(avm, context)?
@@ -478,8 +499,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 slot_id, function, ..
             } => {
                 let method = Avm2MethodEntry::from_method_index(abc, function.clone()).unwrap();
-                let function =
-                    FunctionObject::from_abc_method(context.gc_context, method, scope, fn_proto);
+                let function = FunctionObject::from_abc_method(
+                    context.gc_context,
+                    method,
+                    scope,
+                    fn_proto,
+                    None,
+                );
                 self.install_const(context.gc_context, trait_name, *slot_id, function.into());
             }
             AbcTraitKind::Const { slot_id, value, .. } => {

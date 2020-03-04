@@ -113,6 +113,7 @@ impl<'gc> Avm2<'gc> {
                     abc_file.clone(),
                     trait_entry,
                     Some(scope),
+                    self.globals(),
                 )?;
             }
 
@@ -720,6 +721,7 @@ impl<'gc> Avm2<'gc> {
             method,
             scope,
             self.system_prototypes.function,
+            None,
         );
 
         function
@@ -1278,6 +1280,7 @@ impl<'gc> Avm2<'gc> {
             method_entry,
             scope,
             self.system_prototypes.function,
+            None,
         );
 
         self.push(new_fn);
