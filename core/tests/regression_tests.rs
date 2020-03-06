@@ -240,6 +240,7 @@ swf_tests! {
     (as3_control_flow_stricteq, "avm2/control_flow_stricteq", 1),
     (as3_object_enumeration, "avm2/object_enumeration", 1),
     (as3_class_enumeration, "avm2/class_enumeration", 1),
+    (as3_is_prototype_of, "avm2/is_prototype_of", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

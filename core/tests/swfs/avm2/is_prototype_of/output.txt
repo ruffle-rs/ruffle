@@ -1,4 +1,3 @@
-
 //ES4Class.prototype.isPrototypeOf(es4inst);
 true
 //Object.prototype.isPrototypeOf(es4inst);
