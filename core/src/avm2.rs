@@ -439,6 +439,7 @@ impl<'gc> Avm2<'gc> {
                 Op::PushTrue => self.op_push_true(),
                 Op::PushUint { value } => self.op_push_uint(value),
                 Op::PushUndefined => self.op_push_undefined(),
+                Op::Pop => self.op_pop(),
                 Op::Dup => self.op_dup(),
                 Op::GetLocal { index } => self.op_get_local(index),
                 Op::SetLocal { index } => self.op_set_local(context, index),
@@ -577,6 +578,12 @@ impl<'gc> Avm2<'gc> {
 
     fn op_push_undefined(&mut self) -> Result<(), Error> {
         self.push(Value::Undefined);
+        Ok(())
+    }
+
+    fn op_pop(&mut self) -> Result<(), Error> {
+        self.pop();
+
         Ok(())
     }
 
