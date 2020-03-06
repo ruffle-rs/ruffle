@@ -102,9 +102,9 @@ impl<R: Read> Reader<R> {
 
     #[allow(dead_code)]
     fn read_i24(&mut self) -> Result<i32> {
-        Ok(i32::from(self.read_u8()?)
-            | (i32::from(self.read_u8()?) << 8)
-            | (i32::from(self.read_u8()?) << 16))
+        Ok(i32::from(self.read_u8()? as i8)
+            | (i32::from(self.read_u8()? as i8) << 8)
+            | (i32::from(self.read_u8()? as i8) << 16))
     }
     fn read_i32(&mut self) -> Result<i32> {
         let mut n: i32 = 0;
