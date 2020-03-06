@@ -245,10 +245,23 @@ impl<'gc> Value<'gc> {
         }
     }
 
+    /// Demand a string value, erroring out if one is not found.
+    ///
+    /// TODO: This should be replaced with `coerce_string` where possible.
     pub fn as_string(&self) -> Result<&String, Error> {
         match self {
             Value::String(s) => Ok(s),
             _ => Err(format!("Expected String, found {:?}", self).into()),
+        }
+    }
+
+    /// Coerce a value into a string.
+    pub fn coerce_string(self) -> String {
+        match self {
+            Value::String(s) => s,
+            Value::Bool(true) => "true".to_string(),
+            Value::Bool(false) => "false".to_string(),
+            _ => "".to_string(),
         }
     }
 
