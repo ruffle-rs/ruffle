@@ -442,6 +442,7 @@ impl<'gc> Avm2<'gc> {
                 Op::Dup => self.op_dup(),
                 Op::GetLocal { index } => self.op_get_local(index),
                 Op::SetLocal { index } => self.op_set_local(context, index),
+                Op::Kill { index } => self.op_kill(context, index),
                 Op::Call { num_args } => self.op_call(context, num_args),
                 Op::CallMethod { index, num_args } => self.op_call_method(context, index, num_args),
                 Op::CallProperty { index, num_args } => {
@@ -596,6 +597,14 @@ impl<'gc> Avm2<'gc> {
     ) -> Result<(), Error> {
         let value = self.pop();
         self.set_register_value(context, register_index, value)
+    }
+
+    fn op_kill(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        register_index: u32,
+    ) -> Result<(), Error> {
+        self.set_register_value(context, register_index, Value::Undefined)
     }
 
     fn op_call(
