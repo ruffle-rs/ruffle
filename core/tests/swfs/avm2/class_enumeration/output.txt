@@ -1,0 +1,4 @@
+dynamic_variable
+variable value
+dynamic_prototype_variable
+prototype value
