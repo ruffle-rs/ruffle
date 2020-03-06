@@ -252,6 +252,13 @@ impl<'gc> Value<'gc> {
         }
     }
 
+    pub fn as_number(&self) -> Result<f64, Error> {
+        match self {
+            Value::Number(f) => Ok(*f),
+            _ => Err(format!("Expected Number, found {:?}", self).into()),
+        }
+    }
+
     pub fn as_bool(&self) -> Result<bool, Error> {
         if let Value::Bool(b) = self {
             Ok(*b)

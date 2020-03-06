@@ -64,6 +64,9 @@ pub struct ScriptObjectData<'gc> {
 
     /// The class that this script object represents.
     class: ScriptObjectClass<'gc>,
+
+    /// Enumeratable property names.
+    enumerants: Vec<QName>,
 }
 
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
@@ -181,6 +184,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn proto(&self) -> Option<Object<'gc>> {
         self.0.read().proto
+    }
+
+    fn get_enumerant_name(&self, index: u32) -> Option<QName> {
+        self.0.read().get_enumerant_name(index)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
@@ -365,6 +372,7 @@ impl<'gc> ScriptObjectData<'gc> {
             methods: Vec::new(),
             proto,
             class: trait_source,
+            enumerants: Vec::new(),
         }
     }
 
@@ -417,6 +425,7 @@ impl<'gc> ScriptObjectData<'gc> {
             }
         } else {
             //TODO: Not all classes are dynamic like this
+            self.enumerants.push(name.clone());
             self.values
                 .insert(name.clone(), Property::new_dynamic_property(value));
 
@@ -631,6 +640,18 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn proto(&self) -> Option<Object<'gc>> {
         self.proto
+    }
+
+    pub fn get_enumerant_name(&self, index: u32) -> Option<QName> {
+        // NOTE: AVM2 object enumeration is one of the weakest parts of an
+        // otherwise well-designed VM. Notably, because of the way they
+        // implemented `hasnext` and `hasnext2`, all enumerants start from ONE.
+        // Hence why we have to `checked_sub` here in case some miscompiled
+        // code doesn't check for the zero index, which is actually a failure
+        // sentinel.
+        let true_index = (index as usize).checked_sub(1)?;
+
+        self.enumerants.get(true_index).cloned()
     }
 
     /// Install a method into the object.

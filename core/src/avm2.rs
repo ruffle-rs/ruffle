@@ -496,6 +496,13 @@ impl<'gc> Avm2<'gc> {
                 Op::IfFalse { offset } => self.op_if_false(offset, reader),
                 Op::IfStrictEq { offset } => self.op_if_strict_eq(offset, reader),
                 Op::IfStrictNe { offset } => self.op_if_strict_ne(offset, reader),
+                Op::HasNext => self.op_has_next(),
+                Op::HasNext2 {
+                    object_register,
+                    index_register,
+                } => self.op_has_next_2(context, object_register, index_register),
+                Op::NextName => self.op_next_name(),
+                Op::NextValue => self.op_next_value(context),
                 Op::Label => Ok(()),
                 Op::Debug {
                     is_local_register,
@@ -1400,6 +1407,91 @@ impl<'gc> Avm2<'gc> {
         if value1 != value2 {
             reader.seek(offset as i64)?;
         }
+
+        Ok(())
+    }
+
+    fn op_has_next(&mut self) -> Result<(), Error> {
+        //TODO: After adding ints, change this to ints.
+        let cur_index = self.pop().as_number()?;
+        let object = self.pop().as_object()?;
+
+        let next_index = cur_index as u32 + 1;
+
+        if object.get_enumerant_name(next_index).is_some() {
+            self.push(next_index as f32);
+        } else {
+            self.push(0.0);
+        }
+
+        Ok(())
+    }
+
+    fn op_has_next_2(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        object_register: u32,
+        index_register: u32,
+    ) -> Result<(), Error> {
+        //TODO: After adding ints, change this to ints.
+        let cur_index = self.register_value(index_register)?.as_number()?;
+        let mut object = Some(self.register_value(object_register)?.as_object()?);
+
+        let mut next_index = cur_index as u32 + 1;
+
+        while let Some(cur_object) = object {
+            if cur_object.get_enumerant_name(next_index).is_none() {
+                next_index = 1;
+                object = cur_object.proto();
+            } else {
+                break;
+            }
+        }
+
+        if object.is_none() {
+            next_index = 0;
+        }
+
+        self.push(next_index != 0);
+        self.set_register_value(context, index_register, next_index)?;
+        self.set_register_value(
+            context,
+            object_register,
+            object.map(|v| v.into()).unwrap_or(Value::Null),
+        )?;
+
+        Ok(())
+    }
+
+    fn op_next_name(&mut self) -> Result<(), Error> {
+        //TODO: After adding ints, change this to ints.
+        let cur_index = self.pop().as_number()?;
+        let object = self.pop().as_object()?;
+
+        let name = object
+            .get_enumerant_name(cur_index as u32)
+            .map(|n| n.local_name().into());
+
+        self.push(name.unwrap_or(Value::Undefined));
+
+        Ok(())
+    }
+
+    fn op_next_value(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        //TODO: After adding ints, change this to ints.
+        let cur_index = self.pop().as_number()?;
+        let mut object = self.pop().as_object()?;
+
+        let name = object.get_enumerant_name(cur_index as u32);
+        let value = if let Some(name) = name {
+            object
+                .get_property(object, &name, self, context)?
+                .resolve(self, context)?
+        } else {
+            Value::Undefined
+        };
+
+        self.push(value);
 
         Ok(())
     }

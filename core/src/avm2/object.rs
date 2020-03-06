@@ -318,6 +318,17 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// `get`.
     fn proto(&self) -> Option<Object<'gc>>;
 
+    /// Retrieve a given enumerable name by index.
+    ///
+    /// Enumerants are listed by index, starting from zero. A value of `None`
+    /// indicates that no enumerant with that index, or any greater index,
+    /// exists. (In other words, it means stop.)
+    ///
+    /// Objects are responsible for maintaining a consistently ordered and
+    /// indexed list of enumerable names which can be queried by this
+    /// mechanism.
+    fn get_enumerant_name(&self, index: u32) -> Option<QName>;
+
     /// Install a method (or any other non-slot value) on an object.
     fn install_method(
         &mut self,

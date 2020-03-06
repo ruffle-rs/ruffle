@@ -555,6 +555,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0.read().base.proto()
     }
 
+    fn get_enumerant_name(&self, index: u32) -> Option<QName> {
+        self.0.read().base.get_enumerant_name(index)
+    }
+
     fn as_ptr(&self) -> *const ObjectPtr {
         self.0.as_ptr() as *const ObjectPtr
     }
