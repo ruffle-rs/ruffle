@@ -423,7 +423,8 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut Reader<Cursor<&[u8]>>,
     ) -> Result<(), Error> {
-        if let Some(op) = reader.read_op()? {
+        let op = reader.read_op();
+        if let Ok(Some(op)) = op {
             avm_debug!("Opcode: {:?}", op);
 
             let result = match op {
@@ -511,6 +512,14 @@ impl<'gc> Avm2<'gc> {
                 self.unwind_stack_frame();
                 return result;
             }
+        } else if let Ok(None) = op {
+            log::error!("Unknown opcode!");
+            self.unwind_stack_frame();
+            return Err("Unknown opcode!".into());
+        } else if let Err(e) = op {
+            log::error!("Parse error: {:?}", e);
+            self.unwind_stack_frame();
+            return Err(e.into());
         }
 
         Ok(())
