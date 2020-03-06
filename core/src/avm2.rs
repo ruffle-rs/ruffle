@@ -494,6 +494,7 @@ impl<'gc> Avm2<'gc> {
                 Op::IfFalse { offset } => self.op_if_false(offset, reader),
                 Op::IfStrictEq { offset } => self.op_if_strict_eq(offset, reader),
                 Op::IfStrictNe { offset } => self.op_if_strict_ne(offset, reader),
+                Op::Label => Ok(()),
                 Op::Debug {
                     is_local_register,
                     register_name,
