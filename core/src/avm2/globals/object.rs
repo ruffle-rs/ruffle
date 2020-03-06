@@ -12,7 +12,7 @@ use gc_arena::MutationContext;
 /// Implements `Object`
 pub fn constructor<'gc>(
     _avm: &mut Avm2<'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
@@ -22,7 +22,7 @@ pub fn constructor<'gc>(
 /// `Object.prototype.hasOwnProperty`
 pub fn has_own_property<'gc>(
     _avm: &mut Avm2<'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
@@ -34,6 +34,29 @@ pub fn has_own_property<'gc>(
     if let Some(ns) = this.resolve_any(&name) {
         let qname = QName::new(ns, &name);
         return Ok(this.has_own_property(&qname)?.into());
+    }
+
+    Ok(false.into())
+}
+
+/// `Object.prototype.isPrototypeOf`
+pub fn is_prototype_of<'gc>(
+    _avm: &mut Avm2<'gc>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let search_proto: Result<Object<'gc>, Error> =
+        this.ok_or_else(|| "No valid this parameter".into());
+    let search_proto = search_proto?;
+    let mut target_proto = args.get(0).cloned().unwrap_or(Value::Undefined);
+
+    while let Value::Object(proto) = target_proto {
+        if Object::ptr_eq(search_proto, proto) {
+            return Ok(true.into());
+        }
+
+        target_proto = proto.proto().map(|o| o.into()).unwrap_or(Value::Undefined);
     }
 
     Ok(false.into())
@@ -58,5 +81,11 @@ pub fn fill_proto<'gc>(
         QName::new(Namespace::public_namespace(), "hasOwnProperty"),
         0,
         FunctionObject::from_builtin(gc_context, has_own_property, fn_proto),
+    );
+    object_proto.install_method(
+        gc_context,
+        QName::new(Namespace::public_namespace(), "isPrototypeOf"),
+        0,
+        FunctionObject::from_builtin(gc_context, is_prototype_of, fn_proto),
     );
 }
