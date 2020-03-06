@@ -508,12 +508,20 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 slot_id, function, ..
             } => {
                 let method = Avm2MethodEntry::from_method_index(abc, function.clone()).unwrap();
-                let function = FunctionObject::from_abc_method(
+                let mut function = FunctionObject::from_abc_method(
                     context.gc_context,
                     method,
                     scope,
                     fn_proto,
                     None,
+                );
+                let es3_proto = ScriptObject::object(context.gc_context, avm.prototypes().object);
+
+                function.install_slot(
+                    context.gc_context,
+                    QName::new(Namespace::public_namespace(), "prototype"),
+                    0,
+                    es3_proto.into(),
                 );
                 self.install_const(context.gc_context, trait_name, *slot_id, function.into());
             }
