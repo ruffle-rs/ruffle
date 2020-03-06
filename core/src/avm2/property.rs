@@ -15,7 +15,6 @@ use gc_arena::{Collect, CollectionContext};
 /// TODO: Replace with AVM2 properties for traits
 #[derive(EnumSetType, Debug)]
 pub enum Attribute {
-    DontEnum,
     DontDelete,
     ReadOnly,
 }
@@ -247,43 +246,11 @@ impl<'gc> Property<'gc> {
         }
     }
 
-    /// List this property's attributes.
-    pub fn attributes(&self) -> EnumSet<Attribute> {
-        match self {
-            Property::Virtual { attributes, .. } => *attributes,
-            Property::Stored { attributes, .. } => *attributes,
-            Property::Slot { attributes, .. } => *attributes,
-        }
-    }
-
-    /// Re-define this property's attributes.
-    pub fn set_attributes(&mut self, new_attributes: EnumSet<Attribute>) {
-        match self {
-            Property::Virtual {
-                ref mut attributes, ..
-            } => *attributes = new_attributes,
-            Property::Stored {
-                ref mut attributes, ..
-            } => *attributes = new_attributes,
-            Property::Slot {
-                ref mut attributes, ..
-            } => *attributes = new_attributes,
-        }
-    }
-
     pub fn can_delete(&self) -> bool {
         match self {
             Property::Virtual { attributes, .. } => !attributes.contains(DontDelete),
             Property::Stored { attributes, .. } => !attributes.contains(DontDelete),
             Property::Slot { attributes, .. } => !attributes.contains(DontDelete),
-        }
-    }
-
-    pub fn is_enumerable(&self) -> bool {
-        match self {
-            Property::Virtual { attributes, .. } => !attributes.contains(DontEnum),
-            Property::Stored { attributes, .. } => !attributes.contains(DontEnum),
-            Property::Slot { attributes, .. } => !attributes.contains(DontEnum),
         }
     }
 
