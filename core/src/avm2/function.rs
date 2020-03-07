@@ -523,8 +523,12 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0.read().base.get_abc()
     }
 
-    fn resolve_any(self, local_name: &str) -> Option<Namespace> {
+    fn resolve_any(self, local_name: &str) -> Result<Option<Namespace>, Error> {
         self.0.read().base.resolve_any(local_name)
+    }
+
+    fn resolve_any_trait(self, local_name: &str) -> Result<Option<Namespace>, Error> {
+        self.0.read().base.resolve_any_trait(local_name)
     }
 
     fn has_own_property(self, name: &QName) -> Result<bool, Error> {

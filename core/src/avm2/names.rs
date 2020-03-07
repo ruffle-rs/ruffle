@@ -69,6 +69,13 @@ impl Namespace {
             _ => false,
         }
     }
+
+    pub fn is_private(&self) -> bool {
+        match self {
+            Self::Private(_) => true,
+            _ => false,
+        }
+    }
 }
 
 /// A `QName`, likely "qualified name", consists of a namespace and name string.

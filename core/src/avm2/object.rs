@@ -237,7 +237,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         for ns in multiname.namespace_set() {
             if ns.is_any() {
                 if let Some(name) = multiname.local_name() {
-                    let ns = self.resolve_any(name);
+                    let ns = self.resolve_any(name)?;
                     return Ok(ns.map(|ns| QName::new(ns, name)));
                 } else {
                     return Ok(None);
@@ -263,7 +263,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// The `Namespace` must not be `Namespace::Any`, as this function exists
     /// specifically resolve names in that namespace.
-    fn resolve_any(self, local_name: &str) -> Option<Namespace>;
+    ///
+    /// Trait names will be resolve on class constructors and object instances,
+    /// but not prototypes. If you want to search a prototype's provided traits
+    /// you must walk the prototype chain using `resolve_any_trait`.
+    fn resolve_any(self, local_name: &str) -> Result<Option<Namespace>, Error>;
+
+    /// Given a local name of a trait, find the namespace it resides in, if any.
+    ///
+    /// This function only works for names which are trait properties, not
+    /// dynamic or prototype properties. Furthermore, instance prototypes *will*
+    /// resolve trait names here, contrary to their behavior in `resolve_any.`
+    fn resolve_any_trait(self, local_name: &str) -> Result<Option<Namespace>, Error>;
 
     /// Indicates whether or not a property exists on an object.
     fn has_property(self, name: &QName) -> Result<bool, Error> {

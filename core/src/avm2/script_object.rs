@@ -154,8 +154,12 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().get_abc()
     }
 
-    fn resolve_any(self, local_name: &str) -> Option<Namespace> {
+    fn resolve_any(self, local_name: &str) -> Result<Option<Namespace>, Error> {
         self.0.read().resolve_any(local_name)
+    }
+
+    fn resolve_any_trait(self, local_name: &str) -> Result<Option<Namespace>, Error> {
+        self.0.read().resolve_any_trait(local_name)
     }
 
     fn has_own_property(self, name: &QName) -> Result<bool, Error> {
@@ -606,14 +610,53 @@ impl<'gc> ScriptObjectData<'gc> {
         }
     }
 
-    pub fn resolve_any(&self, local_name: &str) -> Option<Namespace> {
+    pub fn resolve_any(&self, local_name: &str) -> Result<Option<Namespace>, Error> {
         for (key, _value) in self.values.iter() {
             if key.local_name() == local_name {
-                return Some(key.namespace().clone());
+                return Ok(Some(key.namespace().clone()));
             }
         }
 
-        None
+        match self.class {
+            ScriptObjectClass::ClassConstructor(..) => self.resolve_any_trait(local_name),
+            ScriptObjectClass::NoClass => self.resolve_any_trait(local_name),
+            _ => Ok(None),
+        }
+    }
+
+    pub fn resolve_any_trait(&self, local_name: &str) -> Result<Option<Namespace>, Error> {
+        if let Some(proto) = self.proto {
+            let proto_trait_name = proto.resolve_any_trait(local_name)?;
+            if let Some(ns) = proto_trait_name {
+                return Ok(Some(ns));
+            }
+        }
+
+        match &self.class {
+            ScriptObjectClass::ClassConstructor(class, ..) => {
+                for trait_entry in class.class().traits.iter() {
+                    let trait_name =
+                        QName::from_abc_multiname(&class.abc(), trait_entry.name.clone())?;
+
+                    if local_name == trait_name.local_name() {
+                        return Ok(Some(trait_name.namespace().clone()));
+                    }
+                }
+            }
+            ScriptObjectClass::InstancePrototype(class, ..) => {
+                for trait_entry in class.instance().traits.iter() {
+                    let trait_name =
+                        QName::from_abc_multiname(&class.abc(), trait_entry.name.clone())?;
+
+                    if local_name == trait_name.local_name() {
+                        return Ok(Some(trait_name.namespace().clone()));
+                    }
+                }
+            }
+            ScriptObjectClass::NoClass => {}
+        };
+
+        Ok(None)
     }
 
     pub fn has_own_property(&self, name: &QName) -> Result<bool, Error> {

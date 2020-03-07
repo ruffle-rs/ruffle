@@ -31,9 +31,11 @@ pub fn has_own_property<'gc>(
     let name: Result<&Value<'gc>, Error> = args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.as_string()?;
 
-    if let Some(ns) = this.resolve_any(&name) {
-        let qname = QName::new(ns, &name);
-        return Ok(this.has_own_property(&qname)?.into());
+    if let Some(ns) = this.resolve_any(&name)? {
+        if !ns.is_private() {
+            let qname = QName::new(ns, &name);
+            return Ok(this.has_own_property(&qname)?.into());
+        }
     }
 
     Ok(false.into())
