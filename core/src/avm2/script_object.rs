@@ -146,6 +146,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().get_trait(name)
     }
 
+    fn get_provided_trait(
+        &self,
+        name: &QName,
+        known_traits: &mut Vec<AbcTrait>,
+    ) -> Result<(), Error> {
+        self.0.read().get_provided_trait(name, known_traits)
+    }
+
     fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
         self.0.read().get_scope()
     }
@@ -170,8 +178,8 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().has_trait(name)
     }
 
-    fn has_own_trait(self, name: &QName) -> Result<bool, Error> {
-        self.0.read().has_own_trait(name)
+    fn provides_trait(self, name: &QName) -> Result<bool, Error> {
+        self.0.read().provides_trait(name)
     }
 
     fn has_instantiated_property(self, name: &QName) -> bool {
@@ -534,39 +542,84 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     pub fn get_trait(&self, name: &QName) -> Result<Vec<AbcTrait>, Error> {
-        let mut known_traits = if let Some(proto) = self.proto {
-            proto.get_trait(name)?
-        } else {
-            vec![]
-        };
+        match &self.class {
+            //Class constructors have local traits only.
+            ScriptObjectClass::ClassConstructor(..) => {
+                let mut known_traits = Vec::new();
+                self.get_provided_trait(name, &mut known_traits)?;
 
+                Ok(known_traits)
+            }
+
+            //Prototypes do not have traits available locally, but they provide
+            //traits instead.
+            ScriptObjectClass::InstancePrototype(..) => Ok(Vec::new()),
+
+            //Instances walk the prototype chain to build a list of known
+            //traits provided by the classes attached to those prototypes.
+            ScriptObjectClass::NoClass => {
+                let mut known_traits = Vec::new();
+                let mut chain = Vec::new();
+                let mut proto = self.proto();
+
+                while let Some(p) = proto {
+                    chain.push(p);
+                    proto = p.proto();
+                }
+
+                for proto in chain.iter().rev() {
+                    proto.get_provided_trait(name, &mut known_traits)?;
+                }
+
+                Ok(known_traits)
+            }
+        }
+    }
+
+    pub fn get_provided_trait(
+        &self,
+        name: &QName,
+        known_traits: &mut Vec<AbcTrait>,
+    ) -> Result<(), Error> {
         match &self.class {
             ScriptObjectClass::ClassConstructor(class, ..) => {
-                do_trait_lookup(name, &mut known_traits, class.abc(), &class.class().traits)?
+                do_trait_lookup(name, known_traits, class.abc(), &class.class().traits)
             }
-            ScriptObjectClass::InstancePrototype(class, ..) => do_trait_lookup(
-                name,
-                &mut known_traits,
-                class.abc(),
-                &class.instance().traits,
-            )?,
-            ScriptObjectClass::NoClass => {}
-        };
-
-        Ok(known_traits)
+            ScriptObjectClass::InstancePrototype(class, ..) => {
+                do_trait_lookup(name, known_traits, class.abc(), &class.instance().traits)
+            }
+            ScriptObjectClass::NoClass => Ok(()),
+        }
     }
 
     pub fn has_trait(&self, name: &QName) -> Result<bool, Error> {
-        if let Some(proto) = self.proto {
-            if proto.has_trait(name)? {
-                return Ok(true);
+        match &self.class {
+            //Class constructors have local traits only.
+            ScriptObjectClass::ClassConstructor(..) => self.provides_trait(name),
+
+            //Prototypes do not have traits available locally, but we walk
+            //through them to find traits (see `provides_trait`)
+            ScriptObjectClass::InstancePrototype(..) => Ok(false),
+
+            //Instances walk the prototype chain to build a list of known
+            //traits provided by the classes attached to those prototypes.
+            ScriptObjectClass::NoClass => {
+                let mut proto = self.proto();
+
+                while let Some(p) = proto {
+                    if p.provides_trait(name)? {
+                        return Ok(true);
+                    }
+
+                    proto = p.proto();
+                }
+
+                Ok(false)
             }
         }
-
-        self.has_own_trait(name)
     }
 
-    pub fn has_own_trait(&self, name: &QName) -> Result<bool, Error> {
+    pub fn provides_trait(&self, name: &QName) -> Result<bool, Error> {
         match &self.class {
             ScriptObjectClass::ClassConstructor(class, ..) => {
                 for trait_entry in class.class().traits.iter() {

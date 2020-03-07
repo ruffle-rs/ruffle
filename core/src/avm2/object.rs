@@ -67,7 +67,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This function returns `None` for non-trait properties, such as actually
     /// defined prototype methods for ES3-style classes.
     fn get_base_proto(self, name: &QName) -> Result<Option<Object<'gc>>, Error> {
-        if self.has_own_trait(name)? {
+        if self.provides_trait(name)? {
             return Ok(Some(self.into()));
         }
 
@@ -215,6 +215,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// malformed in some way.
     fn get_trait(self, name: &QName) -> Result<Vec<AbcTrait>, Error>;
 
+    /// Populate a list of traits that this object provides.
+    ///
+    /// This function yields traits for class constructors and prototypes, but
+    /// not instances. For resolving traits for normal `TObject` methods, use
+    /// `get_trait` and `has_trait` as it will tell you if the current object
+    /// has a given trait.
+    fn get_provided_trait(
+        &self,
+        name: &QName,
+        known_traits: &mut Vec<AbcTrait>,
+    ) -> Result<(), Error>;
+
     /// Retrieves the scope chain of the object at time of it's creation.
     ///
     /// The scope chain is used to determine the starting scope stack when an
@@ -297,7 +309,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Returns true if an object is part of a class that defines a trait of a
     /// given name on itself (as opposed to merely inheriting a superclass
     /// trait.)
-    fn has_own_trait(self, name: &QName) -> Result<bool, Error>;
+    fn provides_trait(self, name: &QName) -> Result<bool, Error>;
 
     /// Indicates whether or not a property or *instantiated* trait exists on
     /// an object and is not part of the prototype chain.

@@ -515,6 +515,14 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0.read().base.get_trait(name)
     }
 
+    fn get_provided_trait(
+        &self,
+        name: &QName,
+        known_traits: &mut Vec<AbcTrait>,
+    ) -> Result<(), Error> {
+        self.0.read().base.get_provided_trait(name, known_traits)
+    }
+
     fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
         self.0.read().base.get_scope()
     }
@@ -539,8 +547,8 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0.read().base.has_trait(name)
     }
 
-    fn has_own_trait(self, name: &QName) -> Result<bool, Error> {
-        self.0.read().base.has_own_trait(name)
+    fn provides_trait(self, name: &QName) -> Result<bool, Error> {
+        self.0.read().base.provides_trait(name)
     }
 
     fn has_instantiated_property(self, name: &QName) -> bool {
