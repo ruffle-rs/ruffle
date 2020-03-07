@@ -676,14 +676,13 @@ impl<'gc> Avm2<'gc> {
     ) -> Result<(), Error> {
         let args = self.pop_args(arg_count);
         let multiname = self.pool_multiname(index)?;
-        let receiver = self.pop().as_object()?;
+        let mut receiver = self.pop().as_object()?;
         let name: Result<QName, Error> = receiver
             .resolve_multiname(&multiname)?
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
         let name = name?;
         let base_proto = receiver.get_base_proto(&name)?;
-        let function = base_proto
-            .unwrap_or(receiver)
+        let function = receiver
             .get_property(receiver, &name, self, context)?
             .resolve(self, context)?
             .as_object()?;
@@ -725,14 +724,13 @@ impl<'gc> Avm2<'gc> {
     ) -> Result<(), Error> {
         let args = self.pop_args(arg_count);
         let multiname = self.pool_multiname(index)?;
-        let receiver = self.pop().as_object()?;
+        let mut receiver = self.pop().as_object()?;
         let name: Result<QName, Error> = receiver
             .resolve_multiname(&multiname)?
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
         let name = name?;
         let base_proto = receiver.get_base_proto(&name)?;
-        let function = base_proto
-            .unwrap_or(receiver)
+        let function = receiver
             .get_property(receiver, &name, self, context)?
             .resolve(self, context)?
             .as_object()?;
