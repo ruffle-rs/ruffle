@@ -206,6 +206,17 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().property_is_enumerable(name)
     }
 
+    fn set_local_property_is_enumerable(
+        &self,
+        mc: MutationContext<'gc, '_>,
+        name: &QName,
+        is_enumerable: bool,
+    ) -> Result<(), Error> {
+        self.0
+            .write(mc)
+            .set_local_property_is_enumerable(name, is_enumerable)
+    }
+
     fn as_ptr(&self) -> *const ObjectPtr {
         self.0.as_ptr() as *const ObjectPtr
     }
@@ -756,6 +767,34 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn property_is_enumerable(&self, name: &QName) -> bool {
         self.enumerants.contains(name)
+    }
+
+    pub fn set_local_property_is_enumerable(
+        &mut self,
+        name: &QName,
+        is_enumerable: bool,
+    ) -> Result<(), Error> {
+        if is_enumerable && self.values.contains_key(name) && !self.enumerants.contains(name) {
+            // Traits are never enumerable
+            if self.has_trait(name)? {
+                return Ok(());
+            }
+
+            self.enumerants.push(name.clone());
+        } else if !is_enumerable && self.enumerants.contains(name) {
+            let mut index = None;
+            for (i, other_name) in self.enumerants.iter().enumerate() {
+                if other_name == name {
+                    index = Some(i);
+                }
+            }
+
+            if let Some(index) = index {
+                self.enumerants.remove(index);
+            }
+        }
+
+        Ok(())
     }
 
     /// Install a method into the object.

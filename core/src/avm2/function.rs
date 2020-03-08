@@ -575,6 +575,18 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0.read().base.property_is_enumerable(name)
     }
 
+    fn set_local_property_is_enumerable(
+        &self,
+        mc: MutationContext<'gc, '_>,
+        name: &QName,
+        is_enumerable: bool,
+    ) -> Result<(), Error> {
+        self.0
+            .write(mc)
+            .base
+            .set_local_property_is_enumerable(name, is_enumerable)
+    }
+
     fn as_ptr(&self) -> *const ObjectPtr {
         self.0.as_ptr() as *const ObjectPtr
     }

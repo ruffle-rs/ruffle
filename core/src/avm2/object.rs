@@ -357,6 +357,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Properties that do not exist are also not enumerable.
     fn property_is_enumerable(&self, name: &QName) -> bool;
 
+    /// Mark a dynamic property on this object as enumerable.
+    fn set_local_property_is_enumerable(
+        &self,
+        mc: MutationContext<'gc, '_>,
+        name: &QName,
+        is_enumerable: bool,
+    ) -> Result<(), Error>;
+
     /// Install a method (or any other non-slot value) on an object.
     fn install_method(
         &mut self,

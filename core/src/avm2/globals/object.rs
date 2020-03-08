@@ -86,6 +86,33 @@ pub fn property_is_enumerable<'gc>(
     Ok(false.into())
 }
 
+/// `Object.prototype.setPropertyIsEnumerable`
+pub fn set_property_is_enumerable<'gc>(
+    _avm: &mut Avm2<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let this: Result<Object<'gc>, Error> = this.ok_or_else(|| "No valid this parameter".into());
+    let this = this?;
+    let name: Result<&Value<'gc>, Error> = args.get(0).ok_or_else(|| "No name specified".into());
+    let name = name?.as_string()?;
+    let is_enum = args
+        .get(1)
+        .cloned()
+        .unwrap_or(Value::Bool(true))
+        .as_bool()?;
+
+    if let Some(ns) = this.resolve_any(&name)? {
+        if !ns.is_private() {
+            let qname = QName::new(ns, &name);
+            this.set_local_property_is_enumerable(context.gc_context, &qname, is_enum)?;
+        }
+    }
+
+    Ok(Value::Undefined.into())
+}
+
 /// Partially construct `Object.prototype`.
 ///
 /// `__proto__` and other cross-linked properties of this object will *not*
@@ -117,5 +144,11 @@ pub fn fill_proto<'gc>(
         QName::new(Namespace::public_namespace(), "propertyIsEnumerable"),
         0,
         FunctionObject::from_builtin(gc_context, property_is_enumerable, fn_proto),
+    );
+    object_proto.install_method(
+        gc_context,
+        QName::new(Namespace::public_namespace(), "setPropertyIsEnumerable"),
+        0,
+        FunctionObject::from_builtin(gc_context, set_property_is_enumerable, fn_proto),
     );
 }
