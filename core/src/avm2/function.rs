@@ -571,6 +571,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0.read().base.get_enumerant_name(index)
     }
 
+    fn property_is_enumerable(&self, name: &QName) -> bool {
+        self.0.read().base.property_is_enumerable(name)
+    }
+
     fn as_ptr(&self) -> *const ObjectPtr {
         self.0.as_ptr() as *const ObjectPtr
     }

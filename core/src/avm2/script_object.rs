@@ -202,6 +202,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().get_enumerant_name(index)
     }
 
+    fn property_is_enumerable(&self, name: &QName) -> bool {
+        self.0.read().property_is_enumerable(name)
+    }
+
     fn as_ptr(&self) -> *const ObjectPtr {
         self.0.as_ptr() as *const ObjectPtr
     }
@@ -748,6 +752,10 @@ impl<'gc> ScriptObjectData<'gc> {
         let true_index = (index as usize).checked_sub(1)?;
 
         self.enumerants.get(true_index).cloned()
+    }
+
+    pub fn property_is_enumerable(&self, name: &QName) -> bool {
+        self.enumerants.contains(name)
     }
 
     /// Install a method into the object.

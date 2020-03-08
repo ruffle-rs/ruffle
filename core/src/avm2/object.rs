@@ -352,6 +352,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// mechanism.
     fn get_enumerant_name(&self, index: u32) -> Option<QName>;
 
+    /// Determine if a property is currently enumerable.
+    ///
+    /// Properties that do not exist are also not enumerable.
+    fn property_is_enumerable(&self, name: &QName) -> bool;
+
     /// Install a method (or any other non-slot value) on an object.
     fn install_method(
         &mut self,
