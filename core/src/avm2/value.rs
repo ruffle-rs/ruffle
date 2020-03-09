@@ -119,9 +119,7 @@ impl PartialEq for Value<'_> {
                 _ => false,
             },
             Value::Number(value) => match other {
-                Value::Number(other_value) => {
-                    (value == other_value) || (value.is_nan() && other_value.is_nan())
-                }
+                Value::Number(other_value) => value == other_value,
                 _ => false,
             },
             Value::String(value) => match other {
