@@ -627,6 +627,23 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error>;
 
+    /// Implement the result of calling `Object.prototype.toString` on this
+    /// object class.
+    ///
+    /// `toString` is a method used to request an object be coerced to a string
+    /// value. The default implementation is stored here. User-specified string
+    /// coercions happen by defining `toString` in a downstream class or
+    /// prototype; this is then picked up by the VM runtime when doing
+    /// coercions.
+    fn to_string(&self) -> Result<Value<'gc>, Error>;
+
+    /// Implement the result of calling `Object.prototype.valueOf` on this
+    /// object class.
+    ///
+    /// `valueOf` is a method used to request an object be coerced to a
+    /// primitive value. Typically, this would be a number of some kind.
+    fn value_of(&self) -> Result<Value<'gc>, Error>;
+
     /// Get a raw pointer value for this object.
     fn as_ptr(&self) -> *const ObjectPtr;
 

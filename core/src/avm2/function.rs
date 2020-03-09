@@ -646,6 +646,19 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         .into())
     }
 
+    fn to_string(&self) -> Result<Value<'gc>, Error> {
+        if let ScriptObjectClass::ClassConstructor(class, ..) = self.0.read().base.class() {
+            let name = QName::from_abc_multiname(&class.abc(), class.instance().name.clone())?;
+            Ok(format!("[class {}]", name.local_name()).into())
+        } else {
+            Ok("function Function() {}".into())
+        }
+    }
+
+    fn value_of(&self) -> Result<Value<'gc>, Error> {
+        Ok(Value::Object(Object::from(*self)))
+    }
+
     fn install_method(
         &mut self,
         mc: MutationContext<'gc, '_>,

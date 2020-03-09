@@ -247,6 +247,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         ))
     }
 
+    fn to_string(&self) -> Result<Value<'gc>, Error> {
+        Ok("[object Object]".into())
+    }
+
+    fn value_of(&self) -> Result<Value<'gc>, Error> {
+        Ok(Value::Object(Object::from(*self)))
+    }
+
     fn install_method(
         &mut self,
         mc: MutationContext<'gc, '_>,
@@ -795,6 +803,10 @@ impl<'gc> ScriptObjectData<'gc> {
         }
 
         Ok(())
+    }
+
+    pub fn class(&self) -> &ScriptObjectClass<'gc> {
+        &self.class
     }
 
     /// Install a method into the object.

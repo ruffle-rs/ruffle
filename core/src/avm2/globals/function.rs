@@ -20,16 +20,6 @@ pub fn constructor<'gc>(
     Ok(Value::Undefined.into())
 }
 
-/// Implements `Function.prototype.toString`
-fn to_string<'gc>(
-    _: &mut Avm2<'gc>,
-    _: &mut UpdateContext<'_, 'gc, '_>,
-    _: Option<Object<'gc>>,
-    _: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
-    Ok(ReturnValue::Immediate("[type Function]".into()))
-}
-
 /// Implements `Function.prototype.call`
 fn call<'gc>(
     avm: &mut Avm2<'gc>,
@@ -61,12 +51,6 @@ fn call<'gc>(
 pub fn create_proto<'gc>(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Object<'gc> {
     let mut function_proto = ScriptObject::object(gc_context, proto);
 
-    function_proto.install_method(
-        gc_context,
-        QName::new(Namespace::public_namespace(), "toString"),
-        0,
-        FunctionObject::from_builtin(gc_context, to_string, function_proto),
-    );
     function_proto.install_method(
         gc_context,
         QName::new(Namespace::public_namespace(), "call"),
