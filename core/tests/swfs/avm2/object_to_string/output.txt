@@ -1,0 +1,2 @@
+//(new Object()).toString()
+[object Object]

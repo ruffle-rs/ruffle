@@ -244,6 +244,9 @@ swf_tests! {
     (as3_has_own_property, "avm2/has_own_property", 1),
     (as3_property_is_enumerable, "avm2/property_is_enumerable", 1),
     (as3_set_property_is_enumerable, "avm2/set_property_is_enumerable", 1),
+    (as3_object_to_string, "avm2/object_to_string", 1),
+    (as3_function_to_string, "avm2/function_to_string", 1),
+    (as3_class_to_string, "avm2/class_to_string", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

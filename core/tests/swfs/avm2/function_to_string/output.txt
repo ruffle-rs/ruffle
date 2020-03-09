@@ -1,0 +1,4 @@
+//freeFunction.toString()
+function Function() {}
+//namedFunction.toString()
+function Function() {}
