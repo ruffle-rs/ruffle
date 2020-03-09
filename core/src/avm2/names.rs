@@ -59,6 +59,10 @@ impl Namespace {
         Namespace::Package("".to_string())
     }
 
+    pub fn as3_namespace() -> Self {
+        Namespace::Namespace("http://adobe.com/AS3/2006/builtin".to_string())
+    }
+
     pub fn package(package_name: &str) -> Self {
         Namespace::Package(package_name.to_string())
     }

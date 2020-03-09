@@ -167,19 +167,19 @@ pub fn fill_proto<'gc>(
     );
     object_proto.install_method(
         gc_context,
-        QName::new(Namespace::public_namespace(), "hasOwnProperty"),
+        QName::new(Namespace::as3_namespace(), "hasOwnProperty"),
         0,
         FunctionObject::from_builtin(gc_context, has_own_property, fn_proto),
     );
     object_proto.install_method(
         gc_context,
-        QName::new(Namespace::public_namespace(), "isPrototypeOf"),
+        QName::new(Namespace::as3_namespace(), "isPrototypeOf"),
         0,
         FunctionObject::from_builtin(gc_context, is_prototype_of, fn_proto),
     );
     object_proto.install_method(
         gc_context,
-        QName::new(Namespace::public_namespace(), "propertyIsEnumerable"),
+        QName::new(Namespace::as3_namespace(), "propertyIsEnumerable"),
         0,
         FunctionObject::from_builtin(gc_context, property_is_enumerable, fn_proto),
     );

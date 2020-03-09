@@ -53,7 +53,7 @@ pub fn create_proto<'gc>(gc_context: MutationContext<'gc, '_>, proto: Object<'gc
 
     function_proto.install_method(
         gc_context,
-        QName::new(Namespace::public_namespace(), "call"),
+        QName::new(Namespace::as3_namespace(), "call"),
         0,
         FunctionObject::from_builtin(gc_context, call, function_proto),
     );
