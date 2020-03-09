@@ -30,26 +30,36 @@
     }
 
     #nav {
-      min-height: 25px;
       width: calc(100% - 20px);
-      background: lightgray;
+      background: #37528C;
       border: 0;
       border-color: darkgray;
-      border-bottom: 2px;
+      border-bottom: 2px #37528C;
       border-style: solid;
-      box-shadow: 0 5px 5px grey;
+      box-shadow: 0 5px 5px #37528C;
       padding: 10px;
       display: flex;
       flex-direction: row;
       justify-content: space-around;
-      align-items: baseline;
+      align-items: center;
       align-self: flex-start;
+      color: white;
+      min-height: 50px;
     }
 
-    #title h1 {
-      font-size: 120%;
-      margin: 0;
-      padding: 0;
+    #title:hover {
+      opacity: 0.5;
+      cursor: pointer;
+    }
+
+    #title img
+    {
+      display: inline-block;
+      height: 45px;
+    }
+
+    #file-picker {
+      margin-top: 7px;
     }
 
     @media only screen and (max-device-width: 600px) {
@@ -73,10 +83,16 @@
 <body>
   <div id="nav">
     <div id="title">
-      <h1>Ruffle</h1>
+      <a href="https://ruffle.rs" target="_blank">
+      <img src="https://ruffle.rs/assets/logo.png" alt="Ruffle" data-canonical-src="https://ruffle.rs/assets/logo.png">
+      </a>
     </div>
     <div id="file-picker">
-      Local SWF: <input type="file" id="local-file"></div>
+      <div>
+        Local SWF: 
+        <input type="file" id="local-file">
+      </div>
+    </div>
   </div>
   </div>
   <div id="main">
