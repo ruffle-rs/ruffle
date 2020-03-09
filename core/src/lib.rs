@@ -17,6 +17,7 @@ mod context;
 mod drawing;
 pub mod events;
 mod font;
+mod html;
 mod library;
 pub mod loader;
 mod player;

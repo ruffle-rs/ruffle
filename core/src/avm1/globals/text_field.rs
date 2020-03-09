@@ -5,7 +5,7 @@ use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::display_object::{EditText, TDisplayObject};
-use crate::font::TextFormat;
+use crate::html::TextFormat;
 use gc_arena::MutationContext;
 
 /// Implements `TextField`

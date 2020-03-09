@@ -1,6 +1,7 @@
 //! Classes that store formatting options
 use crate::avm1::{Avm1, Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
+use gc_arena::Collect;
 
 /// A set of text formatting options to be applied to some part, or the whole
 /// of, a given text field.
@@ -11,7 +12,8 @@ use crate::context::UpdateContext;
 /// means that multiple regions of text apply. When setting the format of a
 /// particular region of text, `None` means that the existing setting for that
 /// property will be retained.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(require_static)]
 pub struct TextFormat {
     font: Option<String>,
     size: Option<f64>,
