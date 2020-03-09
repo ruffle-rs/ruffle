@@ -8,6 +8,7 @@ use gc_arena::{Collect, CollectionContext};
 
 /// Represents a single slot on an object.
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 pub enum Slot<'gc> {
     /// An unoccupied slot.
     ///
@@ -16,6 +17,8 @@ pub enum Slot<'gc> {
     Unoccupied,
 
     /// An occupied slot.
+    ///
+    /// TODO: For some reason, rustc believes this variant is unused.
     Occupied {
         value: Value<'gc>,
         attributes: EnumSet<Attribute>,
