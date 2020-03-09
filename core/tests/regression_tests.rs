@@ -252,6 +252,9 @@ swf_tests! {
     (as3_object_to_locale_string, "avm2/object_to_locale_string", 1),
     (as3_function_to_locale_string, "avm2/function_to_locale_string", 1),
     (as3_class_to_locale_string, "avm2/class_to_locale_string", 1),
+    (as3_object_value_of, "avm2/object_value_of", 1),
+    (as3_function_value_of, "avm2/function_value_of", 1),
+    (as3_class_value_of, "avm2/class_value_of", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
