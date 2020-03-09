@@ -9,6 +9,7 @@ use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use gc_arena::{Collect, MutationContext};
+use std::f64::NAN;
 
 mod class;
 mod flash;
@@ -76,6 +77,17 @@ fn class<'gc>(
         .unwrap();
 }
 
+/// Add a builtin constant to the global scope.
+fn constant<'gc>(
+    mc: MutationContext<'gc, '_>,
+    mut global_scope: Object<'gc>,
+    package: &str,
+    name: &str,
+    value: Value<'gc>,
+) {
+    global_scope.install_const(mc, QName::new(Namespace::package(package), name), 0, value)
+}
+
 /// Construct a new global scope.
 ///
 /// This function returns both the global scope object, as well as all builtin
@@ -120,6 +132,9 @@ pub fn construct_global_scope<'gc>(
         fn_proto,
     );
     function(mc, gs, "", "trace", trace, fn_proto);
+    constant(mc, gs, "", "undefined", Value::Undefined);
+    constant(mc, gs, "", "null", Value::Null);
+    constant(mc, gs, "", "NaN", NAN.into());
 
     // package `flash.events`
     let eventdispatcher_proto =
