@@ -232,7 +232,8 @@ swf_tests! {
     (as3_function_call_via_call, "avm2/function_call_via_call", 1),
     (as3_constructor_call, "avm2/constructor_call", 1),
     (as3_class_methods, "avm2/class_methods", 1),
-    (as3_inheritance, "avm2/inheritance", 1),
+    (as3_es3_inheritance, "avm2/es3_inheritance", 1),
+    (as3_es4_inheritance, "avm2/es4_inheritance", 1),
     (as3_stored_properties, "avm2/stored_properties", 1),
     (as3_virtual_properties, "avm2/virtual_properties", 1),
     (as3_es4_oop_prototypes, "avm2/es4_oop_prototypes", 1),
@@ -251,7 +252,6 @@ swf_tests! {
     (as3_object_to_locale_string, "avm2/object_to_locale_string", 1),
     (as3_function_to_locale_string, "avm2/function_to_locale_string", 1),
     (as3_class_to_locale_string, "avm2/class_to_locale_string", 1),
-    (as3_es3_inheritance, "avm2/es3_inheritance", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
