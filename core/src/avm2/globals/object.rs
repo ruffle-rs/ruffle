@@ -32,6 +32,19 @@ fn to_string<'gc>(
         .into())
 }
 
+/// Implements `Object.prototype.toLocaleString`
+fn to_locale_string<'gc>(
+    _: &mut Avm2<'gc>,
+    _: &mut UpdateContext<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    Ok(this
+        .map(|t| t.to_string())
+        .unwrap_or(Ok(Value::Undefined))?
+        .into())
+}
+
 /// Implements `Object.prototype.valueOf`
 fn value_of<'gc>(
     _: &mut Avm2<'gc>,
@@ -158,6 +171,12 @@ pub fn fill_proto<'gc>(
         QName::new(Namespace::public_namespace(), "toString"),
         0,
         FunctionObject::from_builtin(gc_context, to_string, fn_proto),
+    );
+    object_proto.install_method(
+        gc_context,
+        QName::new(Namespace::public_namespace(), "toLocaleString"),
+        0,
+        FunctionObject::from_builtin(gc_context, to_locale_string, fn_proto),
     );
     object_proto.install_method(
         gc_context,
