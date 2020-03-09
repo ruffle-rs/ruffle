@@ -496,6 +496,7 @@ impl<'gc> Avm2<'gc> {
                 Op::IfFalse { offset } => self.op_if_false(offset, reader),
                 Op::IfStrictEq { offset } => self.op_if_strict_eq(offset, reader),
                 Op::IfStrictNe { offset } => self.op_if_strict_ne(offset, reader),
+                Op::StrictEquals => self.op_strict_equals(),
                 Op::HasNext => self.op_has_next(),
                 Op::HasNext2 {
                     object_register,
@@ -1413,6 +1414,15 @@ impl<'gc> Avm2<'gc> {
         if value1 != value2 {
             reader.seek(offset as i64)?;
         }
+
+        Ok(())
+    }
+
+    fn op_strict_equals(&mut self) -> Result<(), Error> {
+        let value2 = self.pop();
+        let value1 = self.pop();
+
+        self.push(value1 == value2);
 
         Ok(())
     }
