@@ -1393,8 +1393,8 @@ impl<'gc> Avm2<'gc> {
         offset: i32,
         reader: &mut Reader<Cursor<&[u8]>>,
     ) -> Result<(), Error> {
-        let value2 = self.pop().as_bool()?;
-        let value1 = self.pop().as_bool()?;
+        let value2 = self.pop();
+        let value1 = self.pop();
 
         if value1 == value2 {
             reader.seek(offset as i64)?;
@@ -1408,8 +1408,8 @@ impl<'gc> Avm2<'gc> {
         offset: i32,
         reader: &mut Reader<Cursor<&[u8]>>,
     ) -> Result<(), Error> {
-        let value2 = self.pop().as_bool()?;
-        let value1 = self.pop().as_bool()?;
+        let value2 = self.pop();
+        let value1 = self.pop();
 
         if value1 != value2 {
             reader.seek(offset as i64)?;
