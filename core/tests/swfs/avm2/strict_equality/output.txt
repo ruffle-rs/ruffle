@@ -1,0 +1,34 @@
+//2 === "2"
+false
+//2 === 2
+true
+//2 === 5
+false
+//true === true
+true
+//false === false
+true
+//true === false
+false
+//1 === true
+false
+//0 === false
+false
+//"abc" === "abc"
+true
+//0 === undefined
+false
+//undefined === undefined
+true
+//NaN === NaN
+false
+//undefined === NaN
+false
+//0 === null
+false
+//null === null
+true
+//undefined === null
+false
+//NaN === null
+false

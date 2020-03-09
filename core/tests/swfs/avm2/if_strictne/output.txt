@@ -1,0 +1,11 @@
+2 !== "2"
+2 !== 5
+true !== false
+1 !== true
+0 !== false
+0 !== undefined
+NaN !== NaN
+undefined !== NaN
+0 !== null
+undefined !== null
+NaN !== null
