@@ -308,6 +308,7 @@ impl<'gc> FunctionObject<'gc> {
             });
         let mut class_proto = super_proto?.derive(avm, context, class.clone(), scope)?;
         let fn_proto = avm.prototypes().function;
+        let class_constr_proto = avm.prototypes().class;
 
         let initializer_index = class.instance().init_method.clone();
         let initializer: Result<Avm2MethodEntry, Error> =
@@ -358,7 +359,7 @@ impl<'gc> FunctionObject<'gc> {
             context.gc_context,
             class_initializer?,
             scope,
-            fn_proto,
+            class_constr_proto,
             None,
         );
 

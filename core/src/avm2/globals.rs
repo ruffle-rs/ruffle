@@ -10,6 +10,7 @@ use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use gc_arena::{Collect, MutationContext};
 
+mod class;
 mod flash;
 mod function;
 mod object;
@@ -33,6 +34,7 @@ fn trace<'gc>(
 pub struct SystemPrototypes<'gc> {
     pub object: Object<'gc>,
     pub function: Object<'gc>,
+    pub class: Object<'gc>,
 }
 
 /// Add a free-function builtin to the global scope.
@@ -86,6 +88,7 @@ pub fn construct_global_scope<'gc>(
     // public / root package
     let object_proto = ScriptObject::bare_object(mc);
     let fn_proto = function::create_proto(mc, object_proto);
+    let class_proto = class::create_proto(mc, object_proto, fn_proto);
 
     object::fill_proto(mc, object_proto, fn_proto);
 
@@ -105,6 +108,15 @@ pub fn construct_global_scope<'gc>(
         "Function",
         function::constructor,
         fn_proto,
+        fn_proto,
+    );
+    class(
+        mc,
+        gs,
+        "",
+        "Class",
+        class::constructor,
+        class_proto,
         fn_proto,
     );
     function(mc, gs, "", "trace", trace, fn_proto);
@@ -183,6 +195,7 @@ pub fn construct_global_scope<'gc>(
     let system_prototypes = SystemPrototypes {
         object: object_proto,
         function: fn_proto,
+        class: class_proto,
     };
 
     (gs, system_prototypes)
