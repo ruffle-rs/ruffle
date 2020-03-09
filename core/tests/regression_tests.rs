@@ -247,6 +247,7 @@ swf_tests! {
     (as3_object_to_string, "avm2/object_to_string", 1),
     (as3_function_to_string, "avm2/function_to_string", 1),
     (as3_class_to_string, "avm2/class_to_string", 1),
+    (as3_es3_inheritance, "avm2/es3_inheritance", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
