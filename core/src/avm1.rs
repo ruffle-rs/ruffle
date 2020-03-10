@@ -675,7 +675,12 @@ impl<'gc> Avm1<'gc> {
         // `"undefined"`, for example.
         let path = target.coerce_to_string(self, context)?;
         Ok(self
-            .resolve_target_path(context, start, &path)?
+            .resolve_target_path(
+                context,
+                start.root(),
+                start.object().as_object().unwrap(),
+                &path,
+            )?
             .and_then(|o| o.as_display_object()))
     }
 
@@ -691,26 +696,24 @@ impl<'gc> Avm1<'gc> {
     pub fn resolve_target_path(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        start: DisplayObject<'gc>,
+        root: DisplayObject<'gc>,
+        start: Object<'gc>,
         path: &str,
     ) -> Result<Option<Object<'gc>>, Error> {
-        let root = start.root();
-
         // Empty path resolves immediately to start clip.
         if path.is_empty() {
-            return Ok(Some(start.object().as_object().unwrap()));
+            return Ok(Some(start));
         }
 
         // Starting / means an absolute path starting from root.
         // (`/bar` means `_root.bar`)
         let mut path = path.as_bytes();
-        let (clip, mut is_slash_path) = if path[0] == b'/' {
+        let (mut object, mut is_slash_path) = if path[0] == b'/' {
             path = &path[1..];
-            (root, true)
+            (root.object().as_object().unwrap(), true)
         } else {
             (start, false)
         };
-        let mut object = clip.object().as_object().unwrap();
 
         // Iterate through each token in the path.
         while !path.is_empty() {
@@ -794,14 +797,20 @@ impl<'gc> Avm1<'gc> {
     /// `_root/movieClip.foo`, `movieClip:child:_parent`, `blah`
     /// See the `target_path` test for many examples.
     ///
-    /// The string first tries to resolve as a variable or target path. The right-most : or .
-    /// delimits the variable name, with the left side identifying the target object path.
+    /// The string first tries to resolve as target path with a variable name, such as
+    /// "a/b/c:foo". The right-most : or . delimits the variable name, with the left side
+    /// identifying the target object path. Note that the variable name on the right can
+    /// contain a slash in this case. This path is resolved on the scope chain; if
+    /// the path does not resolve to an existing property on a scope, the parent scope is
+    /// searched. Undefined is returned if no path resolves successfully.
     ///
-    /// If there is no variable name, the string will try to resolve as a target path using
-    /// `resolve_target_path`.
+    /// If there is no variable name, but the path contains slashes, the path will still try
+    /// to resolve on the scope chain as above. If this fails to resolve, we consider
+    /// it a simple variable name and fall through to the variable case
+    /// (i.e. "a/b/c" would be a variable named "a/b/c", not a path).
     ///
-    /// Finally, if the above fails, it is a normal variable resovled via active stack frame
-    /// the scope chain.
+    /// Finally, if none of the above applies, it is a normal variable name resovled via the
+    /// scope chain.
     pub fn get_variable<'s>(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -822,26 +831,41 @@ impl<'gc> Avm1<'gc> {
             }
             _ => false,
         });
+
         let b = var_iter.next();
         let a = var_iter.next();
-
         if let (Some(path), Some(var_name)) = (a, b) {
             // We have a . or :, so this is a path to an object plus a variable name.
             // We resolve it directly on the targeted object.
             let path = unsafe { std::str::from_utf8_unchecked(path) };
             let var_name = unsafe { std::str::from_utf8_unchecked(var_name) };
-            if let Some(object) = self.resolve_target_path(context, start, path)? {
-                return object.get(var_name, self, context);
-            } else {
-                return Ok(Value::Undefined.into());
+
+            let mut current_scope = Some(self.current_stack_frame().unwrap().read().scope_cell());
+            while let Some(scope) = current_scope {
+                if let Some(object) =
+                    self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
+                {
+                    if object.has_property(context, var_name) {
+                        return object.get(var_name, self, context);
+                    }
+                }
+                current_scope = scope.read().parent_cell();
             }
+
+            return Ok(Value::Undefined.into());
         }
 
         // If it doesn't have a trailing variable, it can still be a slash path.
         // We can skip this step if we didn't find a slash above.
         if has_slash {
-            if let Some(node) = self.resolve_target_path(context, start, path)? {
-                return Ok(node.into());
+            let mut current_scope = Some(self.current_stack_frame().unwrap().read().scope_cell());
+            while let Some(scope) = current_scope {
+                if let Some(object) =
+                    self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
+                {
+                    return Ok(object.into());
+                }
+                current_scope = scope.read().parent_cell();
             }
         }
 
@@ -860,15 +884,21 @@ impl<'gc> Avm1<'gc> {
     /// `_root/movieClip.foo`, `movieClip:child:_parent`, `blah`
     /// See the `target_path` test for many examples.
     ///
-    /// The string first tries to resolve as a variable or target path. The right-most : or .
-    /// delimits the variable name, with the left side identifying the target object path.
-    ///
-    /// If there is no variable name, the entire string is considered the name, and it is
-    /// resovled normally via active stack frame and the scope chain.
+    /// The string first tries to resolve as target path with a variable name, such as
+    /// "a/b/c:foo". The right-most : or . delimits the variable name, with the left side
+    /// identifying the target object path. Note that the variable name on the right can
+    /// contain a slash in this case. This target path (sans variable) is resolved on the
+    /// scope chain; if the path does not resolve to an existing property on a scope, the
+    /// parent scope is searched. If the path does not resolve on any scope, the set fails
+    /// and returns immediately. If the path does resolve, the variable name is created
+    /// or overwritten on the target scope.
     ///
     /// This differs from `get_variable` because slash paths with no variable segment are invalid;
     /// For example, `foo/bar` sets a property named `foo/bar` on the current stack frame instead
     /// of drilling into the display list.
+    ///
+    /// If the string does not resolve as a path, the path is considered a normal variable
+    /// name and is set on the scope chain as usual.
     pub fn set_variable<'s>(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -894,9 +924,18 @@ impl<'gc> Avm1<'gc> {
             // We resolve it directly on the targeted object.
             let path = unsafe { std::str::from_utf8_unchecked(path) };
             let var_name = unsafe { std::str::from_utf8_unchecked(var_name) };
-            if let Some(object) = self.resolve_target_path(context, start, path)? {
-                object.set(var_name, value, self, context)?;
+
+            let mut current_scope = Some(self.current_stack_frame().unwrap().read().scope_cell());
+            while let Some(scope) = current_scope {
+                if let Some(object) =
+                    self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
+                {
+                    object.set(var_name, value, self, context)?;
+                    return Ok(());
+                }
+                current_scope = scope.read().parent_cell();
             }
+
             return Ok(());
         }
 
@@ -2302,7 +2341,12 @@ impl<'gc> Avm1<'gc> {
         if target.is_empty() {
             new_target_clip = Some(base_clip);
         } else if let Some(clip) = self
-            .resolve_target_path(context, base_clip, target)?
+            .resolve_target_path(
+                context,
+                base_clip.root(),
+                base_clip.object().as_object().unwrap(),
+                target,
+            )?
             .and_then(|o| o.as_display_object())
         {
             new_target_clip = Some(clip);
