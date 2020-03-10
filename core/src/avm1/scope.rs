@@ -220,6 +220,11 @@ impl<'gc> Scope<'gc> {
         }
     }
 
+    /// Returns a reference to the parent scope object.
+    pub fn parent_cell(&self) -> Option<GcCell<'gc, Scope<'gc>>> {
+        self.parent
+    }
+
     /// Resolve a particular value in the scope chain.
     ///
     /// Because scopes are object chains, the same rules for `Object::get`
