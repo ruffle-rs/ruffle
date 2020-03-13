@@ -154,10 +154,10 @@ impl<'gc> Font<'gc> {
     }
 
     /// Measure a particular string's metrics (width and height).
-    pub fn measure(self, text: &str, height: Twips) -> (Twips, Twips) {
+    pub fn measure(self, text: &str, font_size: Twips) -> (Twips, Twips) {
         let mut size = (Twips::new(0), Twips::new(0));
 
-        self.evaluate(text, Default::default(), height, |transform, _glyph| {
+        self.evaluate(text, Default::default(), font_size, |transform, _glyph| {
             let tx = transform.matrix.tx;
             let ty = transform.matrix.ty;
             size.0 = std::cmp::max(size.0, tx);
@@ -172,13 +172,26 @@ impl<'gc> Font<'gc> {
     ///
     /// This function assumes only `" "` is valid whitespace to split words on,
     /// and will not attempt to break words that are longer than `width`.
-    pub fn split_wrapped_lines(self, text: &str, height: Twips, width: Twips) -> Vec<usize> {
+    ///
+    /// The given `offset` determines the start of the initial line.
+    ///
+    /// TODO: This function and, more generally, this entire file will need to
+    /// be internationalized to implement AS3 `flash.text.engine`.
+    pub fn split_wrapped_lines(
+        self,
+        text: &str,
+        font_size: Twips,
+        width: Twips,
+        offset: Twips,
+    ) -> Vec<usize> {
         let mut result = vec![];
-        let mut current_width = width;
-        let mut current_word = text;
+        let mut current_width = width
+            .checked_sub(offset)
+            .unwrap_or_else(|| Twips::from_pixels(0.0));
+        let mut current_word = &text[0..0];
 
         for word in text.split(' ') {
-            let measure = self.measure(word, height);
+            let measure = self.measure(word, font_size);
             let line_start = current_word.as_ptr() as usize - text.as_ptr() as usize;
             let line_end = if (line_start + current_word.len() + 1) < text.len() {
                 line_start + current_word.len() + 1

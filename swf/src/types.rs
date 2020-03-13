@@ -95,6 +95,10 @@ impl Twips {
     pub fn to_pixels(self) -> f64 {
         f64::from(self.0) / Self::TWIPS_PER_PIXEL
     }
+
+    pub fn checked_sub(self, other: Self) -> Option<Self> {
+        Some(Self(self.0.checked_sub(other.0)?))
+    }
 }
 
 impl std::ops::Add for Twips {

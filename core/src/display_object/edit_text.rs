@@ -331,9 +331,12 @@ impl<'gc> EditText<'gc> {
                         breakpoints.push(break_base);
                     }
 
-                    for breakpoint in
-                        font.split_wrapped_lines(natural_line, height, self.line_width())
-                    {
+                    for breakpoint in font.split_wrapped_lines(
+                        natural_line,
+                        height,
+                        self.line_width(),
+                        Twips::from_pixels(0.0),
+                    ) {
                         breakpoints.push(break_base + breakpoint);
                     }
 
