@@ -114,7 +114,7 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
             let variant_type = variant
                 .fields
                 .iter()
-                .nth(0)
+                .next()
                 .expect("Missing field for enum variant")
                 .ty
                 .clone();

@@ -1078,7 +1078,7 @@ impl<'gc> Avm1<'gc> {
     fn action_char_to_ascii(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // TODO(Herschel): Results on incorrect operands?
         let s = self.pop().into_string(self.current_swf_version());
-        let result = s.bytes().nth(0).unwrap_or(0);
+        let result = s.bytes().next().unwrap_or(0);
         self.push(result);
         Ok(())
     }
@@ -1966,7 +1966,7 @@ impl<'gc> Avm1<'gc> {
     fn action_mb_char_to_ascii(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
         // TODO(Herschel): Results on incorrect operands?
         let s = self.pop().into_string(self.current_swf_version());
-        let result = s.chars().nth(0).unwrap_or('\0') as u32;
+        let result = s.chars().next().unwrap_or('\0') as u32;
         self.push(result);
         Ok(())
     }
