@@ -73,7 +73,7 @@ impl<'gc> EditText<'gc> {
                 // See SWF19 pp. 173-174 for supported HTML tags.
                 if c == '<' {
                     // Skip characters until we see a close bracket.
-                    chars.by_ref().skip_while(|&x| x != '>').next();
+                    chars.by_ref().find(|&x| x == '>');
                 } else {
                     result.push(c);
                 }
