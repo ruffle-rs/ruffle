@@ -1420,7 +1420,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "quick-xml"
-version = "0.17.2"
+version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "memchr 2.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1571,7 +1571,7 @@ dependencies = [
  "num_enum 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "pretty_assertions 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "puremp3 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "quick-xml 0.17.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "quick-xml 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "ruffle_macros 0.1.0",
  "smallvec 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2560,7 +2560,7 @@ dependencies = [
 "checksum proc-macro2 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)" = "0319972dcae462681daf4da1adeeaa066e3ebd29c69be96c6abb1259d2ee2bcc"
 "checksum puremp3 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f2b7efbb39e373af70c139e0611375fa6cad751fb93d528a610b55302710d883"
 "checksum quick-error 1.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "9274b940887ce9addde99c4eee6b5c44cc494b182b97e73dc8ffdcb3397fd3f0"
-"checksum quick-xml 0.17.2 (registry+https://github.com/rust-lang/crates.io-index)" = "fe1e430bdcf30c9fdc25053b9c459bb1a4672af4617b6c783d7d91dc17c6bbb0"
+"checksum quick-xml 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d331ad6f65c249a2edc2878fb8433c3ce3471deebe306d6f0cf21b7aab829598"
 "checksum quote 0.6.13 (registry+https://github.com/rust-lang/crates.io-index)" = "6ce23b6b870e8f94f81fb0a363d65d86675884b34a09043c81e5562f11c1f8e1"
 "checksum quote 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "2bdc6c187c65bca4260c9011c9e3132efe4909da44726bad24cf7572ae338d7f"
 "checksum rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)" = "6a6b1679d49b24bbfe0c803429aa1874472f50d9b363131f0e89fc356b544d03"
