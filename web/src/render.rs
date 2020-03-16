@@ -791,8 +791,8 @@ fn swf_shape_to_svg(
                                         gradient_matrix.b,
                                         gradient_matrix.c,
                                         gradient_matrix.d,
-                                        gradient_matrix.tx,
-                                        gradient_matrix.ty
+                                        gradient_matrix.tx.get(),
+                                        gradient_matrix.ty.get()
                                     ),
                                 );
                             for record in &gradient.records {
@@ -839,8 +839,8 @@ fn swf_shape_to_svg(
                                         gradient_matrix.b,
                                         gradient_matrix.c,
                                         gradient_matrix.d,
-                                        gradient_matrix.tx,
-                                        gradient_matrix.ty
+                                        gradient_matrix.tx.get(),
+                                        gradient_matrix.ty.get()
                                     ),
                                 );
                             for record in &gradient.records {
@@ -891,8 +891,8 @@ fn swf_shape_to_svg(
                                         gradient_matrix.b,
                                         gradient_matrix.c,
                                         gradient_matrix.d,
-                                        gradient_matrix.tx,
-                                        gradient_matrix.ty
+                                        gradient_matrix.tx.get(),
+                                        gradient_matrix.ty.get()
                                     ),
                                 );
                             for record in &gradient.records {
