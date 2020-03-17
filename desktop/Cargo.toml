@@ -9,7 +9,7 @@ default-run = "ruffle_desktop"
 cpal = "0.11.0"
 ruffle_core = { path = "../core" }
 glium = "0.26.0"
-glutin = "0.23"
+glutin = "0.24"
 env_logger = "0.7.1"
 generational-arena = "0.2.7"
 image = "0.23.2"
