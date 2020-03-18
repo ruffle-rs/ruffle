@@ -18,7 +18,7 @@ log = "0.4"
 lyon = "0.15.6"
 sample = "0.10.0"
 structopt = "0.3.12"
-winit = "0.21"
+winit = "0.22"
 webbrowser = "0.5.2"
 url = "2.1.1"
 
