@@ -3,7 +3,7 @@ use crate::avm1::globals::text_field::attach_virtual_properties;
 use crate::avm1::{Object, StageObject, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
-use crate::font::{Glyph, TextFormat};
+use crate::font::{Font, Glyph, TextFormat};
 use crate::library::Library;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
@@ -291,21 +291,9 @@ impl<'gc> EditText<'gc> {
     fn line_breaks(self, library: &Library<'gc>) -> Vec<usize> {
         let edit_text = self.0.read();
         let static_data = &edit_text.static_data;
-        let font_id = static_data.text.font_id.unwrap_or(0);
 
         if edit_text.is_multiline {
-            if let Some(font) = library
-                .library_for_movie(self.movie().unwrap())
-                .unwrap()
-                .get_font(font_id)
-                .filter(|font| font.has_glyphs())
-                .or_else(|| {
-                    library
-                        .library_for_movie(self.movie().unwrap())
-                        .unwrap()
-                        .device_font()
-                })
-            {
+            if let Some(font) = self.font(library) {
                 let mut breakpoints = vec![];
                 let mut break_base = 0;
                 let height = static_data
@@ -368,24 +356,10 @@ impl<'gc> EditText<'gc> {
 
         let edit_text = self.0.read();
         let static_data = &edit_text.static_data;
-        let font_id = static_data.text.font_id.unwrap_or(0);
 
         let mut size: (Twips, Twips) = Default::default();
 
-        if let Some(font) = context
-            .library
-            .library_for_movie(self.movie().unwrap())
-            .unwrap()
-            .get_font(font_id)
-            .filter(|font| font.has_glyphs())
-            .or_else(|| {
-                context
-                    .library
-                    .library_for_movie(self.movie().unwrap())
-                    .unwrap()
-                    .device_font()
-            })
-        {
+        if let Some(font) = self.font(context.library) {
             let mut start = 0;
             let mut chunks = vec![];
             for breakpoint in breakpoints {
@@ -412,6 +386,25 @@ impl<'gc> EditText<'gc> {
         }
 
         size
+    }
+
+    /// Returns the device font if this is text field should not use outline glyphs,
+    /// or if the font is not found.
+    fn font(&self, library: &Library<'gc>) -> Option<Font<'gc>> {
+        let static_data = self.0.read().static_data;
+        let library = library.library_for_movie(static_data.swf.clone()).unwrap();
+        if static_data.text.is_device_font {
+            // We're cheating a bit and not actually rendering "device text" using the OS/web.
+            // Instead, we embed an SWF version of Noto Sans to use as the "device font", and render
+            // it the same as any other SWF outline text.
+            library.device_font()
+        } else {
+            let font_id = static_data.text.font_id.unwrap_or_default();
+            library
+                .get_font(font_id)
+                .filter(|font| font.has_glyphs())
+                .or_else(|| library.device_font())
+        }
     }
 }
 
@@ -470,21 +463,12 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         let edit_text = self.0.read();
         let static_data = &edit_text.static_data;
-        let font_id = static_data.text.font_id.unwrap_or(0);
 
         // If the font can't be found or has no glyph information, use the "device font" instead.
         // We're cheating a bit and not actually rendering text using the OS/web.
         // Instead, we embed an SWF version of Noto Sans to use as the "device font", and render
         // it the same as any other SWF outline text.
-        let library = context
-            .library
-            .library_for_movie(edit_text.static_data.swf.clone())
-            .unwrap();
-        if let Some(font) = library
-            .get_font(font_id)
-            .filter(|font| font.has_glyphs())
-            .or_else(|| library.device_font())
-        {
+        if let Some(font) = self.font(context.library) {
             let height = static_data
                 .text
                 .height
