@@ -390,7 +390,7 @@ impl<'gc> EditText<'gc> {
 
     /// Returns the device font if this is text field should not use outline glyphs,
     /// or if the font is not found.
-    fn font(&self, library: &Library<'gc>) -> Option<Font<'gc>> {
+    fn font(self, library: &Library<'gc>) -> Option<Font<'gc>> {
         let static_data = self.0.read().static_data;
         let library = library.library_for_movie(static_data.swf.clone()).unwrap();
         if static_data.text.is_device_font {
