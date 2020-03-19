@@ -4,7 +4,7 @@ use crate::avm1::{Avm1, Object, StageObject, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::font::{Font, Glyph};
-use crate::html::{FormatSpans, TextFormat};
+use crate::html::{BoxBounds, FormatSpans, LayoutBox, Size, TextFormat};
 use crate::library::Library;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
@@ -12,6 +12,7 @@ use crate::transform::Transform;
 use crate::xml::{XMLDocument, XMLNode};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::sync::Arc;
+use swf::Twips;
 
 /// Boxed error type.
 pub type Error = Box<dyn std::error::Error>;
@@ -38,9 +39,6 @@ pub struct EditTextData<'gc> {
     /// Static data shared among all instances of this `EditText`.
     static_data: Gc<'gc, EditTextStatic>,
 
-    /// The current text displayed by this text field.
-    text: String,
-
     /// The current HTML document displayed by this `EditText`.
     ///
     /// The HTML representation of this `EditText` is lowered into an
@@ -65,8 +63,8 @@ pub struct EditTextData<'gc> {
     /// If the text is word-wrapped.
     is_word_wrap: bool,
 
-    /// Cached breakpoints of where to make newlines.
-    cached_break_points: Option<Vec<usize>>,
+    /// The calculated layout box.
+    layout: Option<GcCell<'gc, LayoutBox<'gc>>>,
 
     // The AVM1 object handle
     object: Option<Object<'gc>>,
@@ -85,26 +83,33 @@ impl<'gc> EditText<'gc> {
         let text = swf_tag.initial_text.clone().unwrap_or_default();
         let default_format = TextFormat::from_swf_tag(swf_tag.clone(), swf_movie.clone(), context);
 
+        let mut text_spans = FormatSpans::new();
+
         if swf_tag.is_html {
             document
                 .as_node()
                 .replace_with_str(context.gc_context, &text)
                 .unwrap();
+            text_spans.lower_from_html(document);
         } else {
-            let tnode = XMLNode::new_text(context.gc_context, &text, document);
-            document
-                .as_node()
-                .append_child(context.gc_context, tnode)
-                .unwrap();
+            text_spans.replace_text(0, text_spans.text().len(), &text, Some(&default_format));
         }
+
+        let bounds: BoxBounds<Twips> = swf_tag.bounds.clone().into();
+        let max_length = swf_tag
+            .max_length
+            .map(|ml| Twips::from_pixels(ml.into()))
+            .unwrap_or_else(|| bounds.width());
+
+        let layout =
+            LayoutBox::lower_from_text_spans(&text_spans, context, swf_movie.clone(), max_length);
 
         EditText(GcCell::allocate(
             context.gc_context,
             EditTextData {
                 base: Default::default(),
-                text,
                 document,
-                text_spans: FormatSpans::from_str_and_format("", default_format),
+                text_spans,
                 static_data: gc_arena::Gc::allocate(
                     context.gc_context,
                     EditTextStatic {
@@ -115,7 +120,7 @@ impl<'gc> EditText<'gc> {
                 is_multiline,
                 is_word_wrap,
                 object: None,
-                cached_break_points: None,
+                layout,
             },
         ))
     }
@@ -172,34 +177,22 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn text(self) -> String {
-        self.0.read().text.to_owned()
+        self.0.read().text_spans.text().to_string()
     }
 
-    pub fn set_text(self, text: String, gc_context: MutationContext<'gc, '_>) -> Result<(), Error> {
-        let mut edit_text = self.0.write(gc_context);
-        let mut child_ptr = edit_text
-            .document
-            .as_node()
-            .children()
-            .and_then(|mut ch| ch.next());
+    pub fn set_text(
+        self,
+        text: String,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let mut edit_text = self.0.write(context.gc_context);
+        let len = edit_text.text_spans.text().len();
 
-        while let Some(child) = child_ptr {
-            edit_text
-                .document
-                .as_node()
-                .remove_child(gc_context, child)?;
+        edit_text.text_spans.replace_text(0, len, &text, None);
 
-            child_ptr = child.next_sibling().unwrap();
-        }
+        drop(edit_text);
 
-        let text_node = XMLNode::new_text(gc_context, &text, edit_text.document);
-        edit_text
-            .document
-            .as_node()
-            .append_child(gc_context, text_node)?;
-
-        edit_text.cached_break_points = None;
-        edit_text.text = text;
+        self.relayout(context);
 
         Ok(())
     }
@@ -208,27 +201,30 @@ impl<'gc> EditText<'gc> {
         self.0.read().text_spans.default_format().clone()
     }
 
-    pub fn set_new_text_format(self, tf: TextFormat, gc_context: MutationContext<'gc, '_>) {
-        self.0.write(gc_context).cached_break_points = None;
-        self.0.write(gc_context).text_spans.set_default_format(tf);
+    pub fn set_new_text_format(self, tf: TextFormat, context: &mut UpdateContext<'_, 'gc, '_>) {
+        self.0
+            .write(context.gc_context)
+            .text_spans
+            .set_default_format(tf);
+        self.relayout(context);
     }
 
     pub fn is_multiline(self) -> bool {
         self.0.read().is_multiline
     }
 
-    pub fn set_multiline(self, is_multiline: bool, gc_context: MutationContext<'gc, '_>) {
-        self.0.write(gc_context).cached_break_points = None;
-        self.0.write(gc_context).is_multiline = is_multiline;
+    pub fn set_multiline(self, is_multiline: bool, context: &mut UpdateContext<'_, 'gc, '_>) {
+        self.0.write(context.gc_context).is_multiline = is_multiline;
+        self.relayout(context);
     }
 
     pub fn is_word_wrap(self) -> bool {
         self.0.read().is_word_wrap
     }
 
-    pub fn set_word_wrap(self, is_word_wrap: bool, gc_context: MutationContext<'gc, '_>) {
-        self.0.write(gc_context).cached_break_points = None;
-        self.0.write(gc_context).is_word_wrap = is_word_wrap;
+    pub fn set_word_wrap(self, is_word_wrap: bool, context: &mut UpdateContext<'_, 'gc, '_>) {
+        self.0.write(context.gc_context).is_word_wrap = is_word_wrap;
+        self.relayout(context);
     }
 
     /// Construct a base text transform for this `EditText`, to be used for
@@ -263,32 +259,6 @@ impl<'gc> EditText<'gc> {
         transform.color_transform.b_mult = f32::from(color.b) / 255.0;
         transform.color_transform.a_mult = f32::from(color.a) / 255.0;
 
-        if let Some(layout) = &static_data.text.layout {
-            transform.matrix.tx += layout.left_margin;
-            transform.matrix.tx += layout.indent;
-            transform.matrix.ty -= layout.leading;
-        }
-
-        transform
-    }
-
-    /// Given a text transform, produce a new transform at the start of the
-    /// next line of text.
-    ///
-    /// This function takes the current font size and the transform to adjust,
-    /// and returns the adjusted transform.
-    pub fn newline(self, height: Twips, mut transform: Transform) -> Transform {
-        let edit_text = self.0.read();
-        let static_data = &edit_text.static_data;
-
-        transform.matrix.tx = Twips::new(0);
-        transform.matrix.ty += height;
-        if let Some(layout) = &static_data.text.layout {
-            transform.matrix.tx += layout.left_margin;
-            transform.matrix.tx += layout.indent;
-            transform.matrix.ty += layout.leading;
-        }
-
         transform
     }
 
@@ -307,146 +277,84 @@ impl<'gc> EditText<'gc> {
         base_width
     }
 
-    /// Compute all "break points" between lines.
+    /// Relayout the `EditText`.
     ///
-    /// The breakpoints are the character indicies of every point in the string
-    /// which needs to have a newline in place, exclusive of the start and end
-    /// of the string. Breakpoints are always placed after the whitespace
-    /// character that caused a newline and represent the start of new lines.
-    /// For example, if this function returns `vec![5, 15]`, then the following
-    /// slicing operations would yield the intended line chunks:
-    ///
-    ///   `vec![&text[0..5], &text[5..15], &text[15..]]`
-    ///
-    /// Breakpoints are caused by either the index of a natural newline, or the
-    /// index of a space that overflowed the current text width. Both of the
-    /// above conditions are predicated on the equivalent flags being enabled
-    /// in the underlying `EditText`. If no flags are enabled, or there are no
-    /// break points for the string, then this returns an empty `Vec`.
-    ///
-    /// The given set of break points should be cached for later use as
-    /// calculating them is a relatively expensive operation.
-    fn line_breaks(self, library: &Library<'gc>) -> Vec<usize> {
-        let edit_text = self.0.read();
-        let static_data = &edit_text.static_data;
+    /// This function operats exclusively with the text-span representation of
+    /// the text, and no higher-level representation. Specifically, CSS should
+    /// have already been calculated and applied to HTML trees lowered into the
+    /// text-span representation.
+    fn relayout(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let mut edit_text = self.0.write(context.gc_context);
+        let movie = edit_text.static_data.swf.clone();
+        let library = context.library.library_for_movie(movie.clone()).unwrap();
 
         if edit_text.is_multiline {
-            if let Some(font) = self.font(library) {
-                let mut breakpoints = vec![];
-                let mut break_base = 0;
-                let height = static_data
-                    .text
-                    .height
-                    .unwrap_or_else(|| Twips::from_pixels(font.scale().into()));
-
-                for natural_line in self.text().split('\n') {
-                    if break_base != 0 {
-                        breakpoints.push(break_base);
-                    }
-
-                    for breakpoint in font.split_wrapped_lines(
-                        natural_line,
-                        height,
-                        self.line_width(),
-                        Twips::from_pixels(0.0),
-                    ) {
-                        breakpoints.push(break_base + breakpoint);
-                    }
-
-                    break_base += natural_line.len() + 1;
-                }
-
-                breakpoints
-            } else {
-                vec![]
-            }
-        } else {
-            vec![]
-        }
-    }
-
-    /// Get the most recent line breaks, taking cache into account.
-    ///
-    /// This function is separate from `line_breaks` since there are some
-    /// contexts where we don't have the ability to update a cache (such as
-    /// rendering).
-    fn line_breaks_cached(
-        self,
-        gc_context: MutationContext<'gc, '_>,
-        library: &Library<'gc>,
-    ) -> Vec<usize> {
-        {
-            let edit_text = self.0.read();
-            if let Some(lbrk) = &edit_text.cached_break_points {
-                return lbrk.clone();
-            }
+            //TODO: this should control if bounds are set during layout
         }
 
-        let lbrk = self.line_breaks(library);
+        let bounds: BoxBounds<Twips> = edit_text.static_data.text.bounds.clone().into();
+        let max_length = edit_text
+            .static_data
+            .text
+            .max_length
+            .map(|ml| Twips::from_pixels(ml.into()))
+            .unwrap_or_else(|| bounds.width());
 
-        self.0.write(gc_context).cached_break_points = Some(lbrk.clone());
-
-        lbrk
+        edit_text.layout =
+            LayoutBox::lower_from_text_spans(&edit_text.text_spans, context, movie, max_length);
     }
 
     /// Measure the width and height of the `EditText`'s current text load.
     ///
     /// The returned tuple should be interpreted as width, then height.
-    pub fn measure_text(self, context: &mut UpdateContext<'_, 'gc, '_>) -> (Twips, Twips) {
-        let breakpoints = self.line_breaks_cached(context.gc_context, context.library);
-        let text = self.text();
-
+    pub fn measure_text(self, _context: &mut UpdateContext<'_, 'gc, '_>) -> (Twips, Twips) {
         let edit_text = self.0.read();
-        let static_data = &edit_text.static_data;
+        let mut bounds: BoxBounds<Twips> = Default::default();
+        let mut ptr = edit_text.layout;
 
-        let mut size: (Twips, Twips) = Default::default();
+        while let Some(layout_box) = ptr {
+            bounds += layout_box.read().bounds();
 
-        if let Some(font) = self.font(context.library) {
-            let mut start = 0;
-            let mut chunks = vec![];
-            for breakpoint in breakpoints {
-                chunks.push(&text[start..breakpoint]);
-                start = breakpoint;
-            }
-
-            chunks.push(&text[start..]);
-
-            let height = static_data
-                .text
-                .height
-                .unwrap_or_else(|| Twips::from_pixels(font.scale().into()));
-
-            for chunk in chunks {
-                let chunk_size = font.measure(chunk, height);
-
-                size.0 = size.0.max(chunk_size.0);
-                if let Some(layout) = &static_data.text.layout {
-                    size.1 += layout.leading;
-                }
-                size.1 += chunk_size.1;
-            }
+            ptr = layout_box.read().next_sibling();
         }
 
-        size
+        (bounds.width(), bounds.height())
     }
 
-    /// Returns the device font if this is text field should not use outline glyphs,
-    /// or if the font is not found.
-    fn font(self, library: &Library<'gc>) -> Option<Font<'gc>> {
-        let static_data = self.0.read().static_data;
-        let library = library.library_for_movie(static_data.swf.clone()).unwrap();
-        if static_data.text.is_device_font {
-            // We're cheating a bit and not actually rendering "device text" using the OS/web.
-            // Instead, we embed an SWF version of Noto Sans to use as the "device font", and render
-            // it the same as any other SWF outline text.
-            library.device_font()
-        } else {
-            let font_id = static_data.text.font_id.unwrap_or_default();
-            library
-                .get_font(font_id)
-                .filter(|font| font.has_glyphs())
-                .or_else(|| library.device_font())
+    /// Render a layout box, plus it's children.
+    fn render_layout_box(
+        &self,
+        context: &mut RenderContext<'_, 'gc>,
+        lbox: GcCell<'gc, LayoutBox<'gc>>,
+    ) {
+        let box_transform: Transform = lbox.read().bounds().origin().into();
+        context.transform_stack.push(&box_transform);
+
+        let edit_text = self.0.read();
+
+        // If the font can't be found or has no glyph information, use the "device font" instead.
+        // We're cheating a bit and not actually rendering text using the OS/web.
+        // Instead, we embed an SWF version of Noto Sans to use as the "device font", and render
+        // it the same as any other SWF outline text.
+        if let Some((start, end, _tf, font, font_size)) = lbox.read().text_node() {
+            if let Some(chunk) = edit_text.text_spans.text().get(start..end) {
+                font.evaluate(
+                    &chunk[start..end],
+                    self.text_transform(),
+                    font_size,
+                    |transform, glyph: &Glyph| {
+                        // Render glyph.
+                        context.transform_stack.push(transform);
+                        context
+                            .renderer
+                            .render_shape(glyph.shape, context.transform_stack.transform());
+                        context.transform_stack.pop();
+                    },
+                );
+            }
         }
+
+        context.transform_stack.pop();
     }
 }
 
@@ -515,52 +423,12 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
         context.transform_stack.push(&*self.transform());
 
-        let mut text_transform = self.text_transform();
-        let text = self.text();
+        let mut ptr = self.0.read().layout;
 
-        let edit_text = self.0.read();
-        let static_data = &edit_text.static_data;
+        while let Some(lbox) = ptr {
+            self.render_layout_box(context, lbox);
 
-        // If the font can't be found or has no glyph information, use the "device font" instead.
-        // We're cheating a bit and not actually rendering text using the OS/web.
-        // Instead, we embed an SWF version of Noto Sans to use as the "device font", and render
-        // it the same as any other SWF outline text.
-        if let Some(font) = self.font(context.library) {
-            let height = static_data
-                .text
-                .height
-                .unwrap_or_else(|| Twips::from_pixels(font.scale().into()));
-
-            let breakpoints = edit_text
-                .cached_break_points
-                .clone()
-                .unwrap_or_else(|| self.line_breaks(context.library));
-            let mut start = 0;
-            let mut chunks = vec![];
-            for breakpoint in breakpoints {
-                chunks.push(&text[start..breakpoint]);
-                start = breakpoint;
-            }
-
-            chunks.push(&text[start..]);
-
-            for chunk in chunks {
-                font.evaluate(
-                    chunk,
-                    text_transform.clone(),
-                    height,
-                    |transform, glyph: &Glyph| {
-                        // Render glyph.
-                        context.transform_stack.push(transform);
-                        context
-                            .renderer
-                            .render_shape(glyph.shape, context.transform_stack.transform());
-                        context.transform_stack.pop();
-                    },
-                );
-
-                text_transform = self.newline(height, text_transform);
-            }
+            ptr = lbox.read().next_sibling();
         }
 
         context.transform_stack.pop();

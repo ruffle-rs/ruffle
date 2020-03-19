@@ -41,10 +41,7 @@ pub fn set_text<'gc>(
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             if let Some(value) = args.get(0) {
-                text_field.set_text(
-                    value.coerce_to_string(avm, context)?.to_string(),
-                    context.gc_context,
-                )?;
+                text_field.set_text(value.coerce_to_string(avm, context)?.to_string(), context);
             }
         }
     }
@@ -140,7 +137,7 @@ pub fn set_multiline<'gc>(
         .as_display_object()
         .and_then(|dobj| dobj.as_edit_text())
     {
-        etext.set_multiline(is_multiline, context.gc_context);
+        etext.set_multiline(is_multiline, context);
     }
 
     Ok(Value::Undefined.into())
@@ -178,7 +175,7 @@ pub fn set_word_wrap<'gc>(
         .as_display_object()
         .and_then(|dobj| dobj.as_edit_text())
     {
-        etext.set_word_wrap(is_word_wrap, context.gc_context);
+        etext.set_word_wrap(is_word_wrap, context);
     }
 
     Ok(Value::Undefined.into())
@@ -207,7 +204,7 @@ pub fn create_proto<'gc>(
 
             if let Value::Object(tf) = tf {
                 let tf_parsed = TextFormat::from_avm1_object(tf, avm, context)?;
-                text_field.set_new_text_format(tf_parsed, context.gc_context);
+                text_field.set_new_text_format(tf_parsed, context);
             }
 
             Ok(Value::Undefined.into())

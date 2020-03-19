@@ -1,3 +1,4 @@
+use crate::html::Position;
 use crate::prelude::*;
 use gc_arena::Collect;
 
@@ -15,6 +16,22 @@ impl Default for Transform {
     fn default() -> Self {
         Self {
             matrix: Default::default(),
+            color_transform: Default::default(),
+        }
+    }
+}
+
+impl From<Position<Twips>> for Transform {
+    fn from(pos: Position<Twips>) -> Self {
+        Self {
+            matrix: Matrix {
+                a: 1.0,
+                b: 0.0,
+                c: 0.0,
+                d: 1.0,
+                tx: pos.x(),
+                ty: pos.y(),
+            },
             color_transform: Default::default(),
         }
     }
