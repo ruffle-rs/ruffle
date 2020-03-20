@@ -2038,7 +2038,7 @@ impl<'gc> Avm1<'gc> {
         // TODO: Wrong operands?
         let a = self.pop().as_number(self, context)?;
         let b = self.pop().as_number(self, context)?;
-        self.push(a % b);
+        self.push(b % a);
         Ok(())
     }
 
