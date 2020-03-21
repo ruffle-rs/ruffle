@@ -42,21 +42,37 @@ function polyfill_static_content() {
     wrap_tree(document.getElementsByTagName("html")[0]);
 }
 
-
-function polyfill_dynamic_content() {
-    const observer = new MutationObserver(function (mutationsList, observer) {
-        for (let mutation of mutationsList) {
-            for (let node of mutation.addedNodes) {
-                if (node instanceof Element) {
-                    wrap_tree(node);
-                } else {
-                    console.error("Cannot process added node of type " + node.constructor.name);
-                }
-            }
+function dynamic_content_listener(event) {
+    /* For use with polyfill_dynamic_content */
+    var target=event.target;
+    if (event.animationName == "ruffleObjectOrEmbedInserted") {
+        /* Exclude embeds & objects inside of objects */
+        if(target.parentElement.tagName.toLowerCase()!="object") {
+            wrap_tree(target);
         }
-    });
+    }
+}
 
-    observer.observe(document, { childList: true, subtree: true});
+function polyfill_dynamic_content()
+{
+    /* This creates a stylesheet to apply a very short CSS animation to     *
+     * object and embed tags, then detect the animation being applied       */
+    var style=document.createElement("style");
+    var sheet;
+    var dynamic_content_listener;
+    /* To make it work for webkit?  */
+    style.appendChild(document.createTextNode(""));
+    /* Add it to the page. */
+    document.head.appendChild(style);
+    sheet=style.sheet;
+    /* The animation(opacity from 0.99 to 1) */
+    sheet.insertRule("@keyframes ruffleObjectOrEmbedInserted { from { opacity: 0.99; } to { opacity: 1; } }",-1);
+    /* Apply it to object & embed tags */
+    sheet.insertRule("object, embed { animation-duration:0.001s; animation-name: ruffleObjectOrEmbedInserted; }",-1);
+    document.addEventListener("animationstart", dynamic_content_listener, false); /* standard */
+    document.addEventListener("MSAnimationStart", dynamic_content_listener, false); /* IE */
+    document.addEventListener("webkitAnimationStart", dynamic_content_listener, false); /* Chrome + Safari */
+
 }
 
 function falsify_plugin_detection() {

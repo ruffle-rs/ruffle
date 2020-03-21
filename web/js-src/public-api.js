@@ -125,7 +125,7 @@ export class PublicAPI {
 
             let polyfills = this.config.polyfills;
             if (polyfills === undefined) {
-                polyfills = ["plugin-detect", "static-content"];
+                polyfills = ["plugin-detect", "static-content", "dynamic-content"];
             }
             
             this.sources[this.newest_name].polyfill(polyfills);
