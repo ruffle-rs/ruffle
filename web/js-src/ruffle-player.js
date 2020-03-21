@@ -6,6 +6,8 @@ export let FLASH_MIMETYPE = "application/x-shockwave-flash";
 export let FUTURESPLASH_MIMETYPE = "application/futuresplash";
 export let FLASH_ACTIVEX_CLASSID = "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000";
 
+const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
+
 export class RufflePlayer extends HTMLElement {
     constructor(...args) {
         let self = super(...args);
@@ -44,12 +46,18 @@ export class RufflePlayer extends HTMLElement {
             this.dynamic_styles.sheet.deleteRule(i);
         }
 
-        if (this.attributes.width && !isNaN(parseInt(this.attributes.width.value))) {
-            this.dynamic_styles.sheet.insertRule(":host { width: " + this.attributes.width.value + "px; }");
+        if (this.attributes.width) {
+            let width = RufflePlayer.html_dimension_to_css_dimension(this.attributes.width.value);
+            if (width !== null) {
+                this.dynamic_styles.sheet.insertRule(`:host { width: ${width}; }`);
+            }
         }
 
-        if (this.attributes.height && !isNaN(parseInt(this.attributes.height.value))) {
-            this.dynamic_styles.sheet.insertRule(":host { height: " + this.attributes.height.value + "px; }");
+        if (this.attributes.height) {
+            let height = RufflePlayer.html_dimension_to_css_dimension(this.attributes.height.value);
+            if (height !== null) {
+                this.dynamic_styles.sheet.insertRule(`:host { height: ${height}; }`);
+            }
         }
     }
 
@@ -120,6 +128,27 @@ export class RufflePlayer extends HTMLElement {
         } else {
             console.warn("Ignoring attempt to play a disconnected or suspended Ruffle element");
         }
+    }
+
+    /*
+     * Converts a dimension attribute on an HTML embed/object element to a valid CSS dimension.
+     * HTML element dimensions are unitless, but can also be percentages.
+     * Add a 'px' unit unless the value is a percentage.
+     * Returns null if this is not a valid dimension.
+     */
+    static html_dimension_to_css_dimension(attribute) {
+        if (attribute) {
+            let match = attribute.match(DIMENSION_REGEX);
+            if (match) {
+                let out = match[1];
+                if (!match[3]) {
+                    // Unitless -- add px for CSS.
+                    out += "px"
+                }
+                return out;
+            }
+        }
+        return null;
     }
 }
 
