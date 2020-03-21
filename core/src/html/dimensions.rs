@@ -33,6 +33,53 @@ impl<T> From<(T, T)> for Position<T> {
     }
 }
 
+impl<T> Position<T> {
+    pub fn set_x(&mut self, x: T) {
+        self.x = x;
+    }
+
+    pub fn set_y(&mut self, y: T) {
+        self.y = y;
+    }
+}
+
+impl<T> Position<T>
+where
+    T: Clone,
+{
+    pub fn x(&self) -> T {
+        self.x.clone()
+    }
+
+    pub fn y(&self) -> T {
+        self.y.clone()
+    }
+}
+
+impl<T> Add for Position<T>
+where
+    T: Add<T, Output = T>,
+{
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
+    }
+}
+
+impl<T> AddAssign for Position<T>
+where
+    T: AddAssign,
+{
+    fn add_assign(&mut self, rhs: Self) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+    }
+}
+
 /// A type which represents the size of a layout box.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Collect)]
 #[collect(require_static)]
@@ -59,6 +106,19 @@ impl<T> From<(T, T)> for Size<T> {
             width: pair.0,
             height: pair.1,
         }
+    }
+}
+
+impl<T> Size<T>
+where
+    T: Clone,
+{
+    pub fn width(&self) -> T {
+        self.width.clone()
+    }
+
+    pub fn height(&self) -> T {
+        self.height.clone()
     }
 }
 
@@ -123,6 +183,17 @@ where
             width: T::from(bounds.x_max - bounds.x_min),
             offset_y: T::from(bounds.y_min),
             height: T::from(bounds.y_max - bounds.y_min),
+        }
+    }
+}
+
+impl<T> BoxBounds<T> {
+    pub fn from_position_and_size(pos: Position<T>, size: Size<T>) -> Self {
+        Self {
+            offset_x: pos.x,
+            width: size.width,
+            offset_y: pos.y,
+            height: size.height,
         }
     }
 }
