@@ -1,5 +1,5 @@
-import {FLASH_MIMETYPE, FUTURESPLASH_MIMETYPE, FLASH_ACTIVEX_CLASSID, RufflePlayer} from "./ruffle-player.js";
-import {register_element} from "./register-element";
+import { FLASH_MIMETYPE, FUTURESPLASH_MIMETYPE, FLASH_ACTIVEX_CLASSID, is_swf_filename, RufflePlayer } from "./ruffle-player.js";
+import { register_element } from "./register-element";
 
 export default class RuffleObject extends RufflePlayer {
     constructor(...args) {
@@ -10,7 +10,7 @@ export default class RuffleObject extends RufflePlayer {
         super.connectedCallback();
         
         this.params = RuffleObject.params_of(this);
-        
+
         //Kick off the SWF download.
         if (this.attributes.data) {
             this.stream_swf_url(this.attributes.data.value);
@@ -28,7 +28,18 @@ export default class RuffleObject extends RufflePlayer {
     }
 
     static is_interdictable(elem) {
-        return elem.type === FLASH_MIMETYPE || elem.type === FUTURESPLASH_MIMETYPE || elem.attributes.classid.value === FLASH_ACTIVEX_CLASSID;
+        if (elem.type === FLASH_MIMETYPE || elem.type === FUTURESPLASH_MIMETYPE) {
+            return true;
+        } else if (elem.attributes && elem.attributes.classid && elem.attributes.classid.value === FLASH_ACTIVEX_CLASSID) {
+            return true;
+        } else if ((elem.type === undefined || elem.type === "") && elem.attributes.classid === undefined) {
+            let params = RuffleObject.params_of(elem);
+            if (params && params.movie) {
+                return is_swf_filename(params.movie);
+            }
+        }
+
+        return false;
     }
 
     static params_of(elem) {

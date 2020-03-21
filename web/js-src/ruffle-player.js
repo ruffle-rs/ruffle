@@ -122,3 +122,10 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 }
+
+/*
+ * Returns whether the given filename ends in an "swf" extension.
+ */
+export function is_swf_filename(filename) {
+    return filename && typeof filename === "string" && filename.search(/\.swf\s*$/i) >= 0;
+}
