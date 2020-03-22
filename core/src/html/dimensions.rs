@@ -1,7 +1,7 @@
 //! CSS dimension types
 use gc_arena::Collect;
 use std::cmp::{max, min, Ord};
-use std::ops::{Add, AddAssign};
+use std::ops::{Add, AddAssign, Sub};
 use swf::{Rectangle, Twips};
 
 /// A type which represents the top-left position of a layout box.
@@ -137,9 +137,9 @@ where
 #[collect(require_static)]
 pub struct BoxBounds<T> {
     offset_x: T,
-    width: T,
+    extent_x: T,
     offset_y: T,
-    height: T,
+    extent_y: T,
 }
 
 impl<T> Default for BoxBounds<T>
@@ -149,26 +149,23 @@ where
     fn default() -> Self {
         Self {
             offset_x: Default::default(),
-            width: Default::default(),
+            extent_x: Default::default(),
             offset_y: Default::default(),
-            height: Default::default(),
+            extent_y: Default::default(),
         }
     }
 }
 
 impl<T> Into<Rectangle> for BoxBounds<T>
 where
-    T: Into<Twips> + Add<T, Output = T> + Clone,
+    T: Into<Twips> + Add<T, Output = T>,
 {
     fn into(self) -> Rectangle {
-        let x_max = self.extent_x().into();
-        let y_max = self.extent_y().into();
-
         Rectangle {
             x_min: self.offset_x.into(),
-            x_max,
+            x_max: self.extent_x.into(),
             y_min: self.offset_y.into(),
-            y_max,
+            y_max: self.extent_y.into(),
         }
     }
 }
@@ -180,21 +177,34 @@ where
     fn from(bounds: Rectangle) -> Self {
         Self {
             offset_x: T::from(bounds.x_min),
-            width: T::from(bounds.x_max - bounds.x_min),
+            extent_x: T::from(bounds.x_max),
             offset_y: T::from(bounds.y_min),
-            height: T::from(bounds.y_max - bounds.y_min),
+            extent_y: T::from(bounds.y_max),
         }
     }
 }
 
-impl<T> BoxBounds<T> {
+impl<T> BoxBounds<T>
+where
+    T: Add<T, Output = T> + Sub<T, Output = T> + Clone,
+{
     pub fn from_position_and_size(pos: Position<T>, size: Size<T>) -> Self {
         Self {
-            offset_x: pos.x,
-            width: size.width,
-            offset_y: pos.y,
-            height: size.height,
+            offset_x: pos.x.clone(),
+            extent_x: pos.x + size.width,
+            offset_y: pos.y.clone(),
+            extent_y: pos.y + size.height,
         }
+    }
+
+    pub fn into_position_and_size(self) -> (Position<T>, Size<T>) {
+        let width = self.extent_x - self.offset_x.clone();
+        let height = self.extent_y - self.offset_y.clone();
+
+        (
+            Position::from((self.offset_x, self.offset_y)),
+            Size::from((width, height)),
+        )
     }
 }
 
@@ -210,16 +220,29 @@ where
         self.offset_y.clone()
     }
 
-    pub fn width(&self) -> T {
-        self.width.clone()
+    pub fn extent_x(&self) -> T {
+        self.extent_x.clone()
     }
 
-    pub fn height(&self) -> T {
-        self.height.clone()
+    pub fn extent_y(&self) -> T {
+        self.extent_y.clone()
     }
 
     pub fn origin(&self) -> Position<T> {
         Position::from((self.offset_x(), self.offset_y()))
+    }
+}
+
+impl<T> BoxBounds<T>
+where
+    T: Sub<T, Output = T> + Clone,
+{
+    pub fn width(&self) -> T {
+        self.extent_x() - self.offset_x()
+    }
+
+    pub fn height(&self) -> T {
+        self.extent_y() - self.offset_y()
     }
 
     pub fn size(&self) -> Size<T> {
@@ -227,31 +250,18 @@ where
     }
 }
 
-impl<T> BoxBounds<T>
-where
-    T: Add<T, Output = T> + Clone,
-{
-    pub fn extent_x(&self) -> T {
-        self.offset_x.clone() + self.width.clone()
-    }
-
-    pub fn extent_y(&self) -> T {
-        self.offset_y.clone() + self.height.clone()
-    }
-}
-
 impl<T> Add for BoxBounds<T>
 where
-    T: Add<T> + Ord,
+    T: Add<T> + Ord + Clone,
 {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
         Self {
             offset_x: min(self.offset_x, rhs.offset_x),
-            width: max(self.width, rhs.width),
+            extent_x: max(self.extent_x, rhs.extent_x),
             offset_y: min(self.offset_y, rhs.offset_y),
-            height: max(self.height, rhs.height),
+            extent_y: max(self.extent_y, rhs.extent_y),
         }
     }
 }
@@ -262,9 +272,9 @@ where
 {
     fn add_assign(&mut self, rhs: Self) {
         self.offset_x = min(self.offset_x.clone(), rhs.offset_x);
-        self.width = max(self.width.clone(), rhs.width);
+        self.extent_x = max(self.extent_x.clone(), rhs.extent_x);
         self.offset_y = min(self.offset_y.clone(), rhs.offset_y);
-        self.height = max(self.height.clone(), rhs.height);
+        self.extent_y = max(self.extent_y.clone(), rhs.extent_y);
     }
 }
 
@@ -276,10 +286,10 @@ where
 
     fn add(self, rhs: Position<T>) -> Self::Output {
         Self {
-            offset_x: self.offset_x + rhs.x,
-            width: self.width,
-            offset_y: self.offset_y + rhs.y,
-            height: self.height,
+            offset_x: self.offset_x + rhs.x.clone(),
+            extent_x: self.extent_x + rhs.x,
+            offset_y: self.offset_y + rhs.y.clone(),
+            extent_y: self.extent_y + rhs.y,
         }
     }
 }
@@ -289,8 +299,10 @@ where
     T: AddAssign<T> + Clone,
 {
     fn add_assign(&mut self, rhs: Position<T>) {
-        self.offset_x += rhs.x;
-        self.offset_y += rhs.y;
+        self.offset_x += rhs.x.clone();
+        self.extent_x += rhs.x;
+        self.offset_y += rhs.y.clone();
+        self.extent_y += rhs.y;
     }
 }
 
@@ -303,9 +315,9 @@ where
     fn add(self, rhs: Size<T>) -> Self::Output {
         Self {
             offset_x: self.offset_x,
-            width: self.width + rhs.width,
+            extent_x: self.extent_x + rhs.width,
             offset_y: self.offset_y,
-            height: self.height + rhs.height,
+            extent_y: self.extent_y + rhs.height,
         }
     }
 }
@@ -315,7 +327,7 @@ where
     T: AddAssign<T> + Clone,
 {
     fn add_assign(&mut self, rhs: Size<T>) {
-        self.width += rhs.width;
-        self.height += rhs.height;
+        self.extent_x += rhs.width;
+        self.extent_y += rhs.height;
     }
 }
