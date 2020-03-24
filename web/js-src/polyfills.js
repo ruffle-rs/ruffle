@@ -59,7 +59,6 @@ function polyfill_dynamic_content()
      * object and embed tags, then detect the animation being applied       */
     var style=document.createElement("style");
     var sheet;
-    var dynamic_content_listener;
     /* To make it work for webkit?  */
     style.appendChild(document.createTextNode(""));
     /* Add it to the page. */
