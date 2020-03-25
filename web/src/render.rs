@@ -1191,8 +1191,6 @@ fn swf_shape_to_canvas_commands(
                         )
                         .expect("html image element");
 
-                        image.set_src(*bitmap_data);
-
                         if !*is_smoothed {
                             //image = image.set("image-rendering", pixelated_property_value);
                         }
@@ -1206,6 +1204,10 @@ fn swf_shape_to_canvas_commands(
                         let bitmap_pattern = context
                             .create_pattern_with_html_image_element(&image, repeat)
                             .expect("pattern creation success")?;
+
+                        // Set source below the pattern creation because otherwise the bitmap gets screwed up
+                        // when cached? (Issue #412)
+                        image.set_src(*bitmap_data);
 
                         let a = Matrix::from(matrix.clone());
 
