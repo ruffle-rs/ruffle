@@ -65,9 +65,9 @@ function polyfill_dynamic_content()
     document.head.appendChild(style);
     sheet=style.sheet;
     /* The animation(opacity from 0.99 to 1) */
-    sheet.insertRule("@keyframes ruffleObjectOrEmbedInserted { from { opacity: 0.99; } to { opacity: 1; } }",-1);
+    sheet.insertRule("@keyframes ruffleObjectOrEmbedInserted { from { opacity: 0.99; } to { opacity: 1; } }",0);
     /* Apply it to object & embed tags */
-    sheet.insertRule("object, embed { animation-duration:0.001s; animation-name: ruffleObjectOrEmbedInserted; }",-1);
+    sheet.insertRule("object, embed { animation-duration:0.001s; animation-name: ruffleObjectOrEmbedInserted; }",1);
     document.addEventListener("animationstart", dynamic_content_listener, false); /* standard */
     document.addEventListener("MSAnimationStart", dynamic_content_listener, false); /* IE */
     document.addEventListener("webkitAnimationStart", dynamic_content_listener, false); /* Chrome + Safari */
