@@ -128,7 +128,7 @@ class RufflePluginArray {
     }
 };
 
-export const FLASH_PLUGIN = new RufflePlugin("Shockwave Flash", "Shockwave Flash 32.0 r0 (compatible; Ruffle 0.1.0)", "ruffle.js", [
+export const FLASH_PLUGIN = new RufflePlugin("Shockwave Flash", "Shockwave Flash 32.0 r0", "ruffle.js", [
     new RuffleMimeType("application/futuresplash", "Shockwave Flash", "spl"),
     new RuffleMimeType("application/x-shockwave-flash", "Shockwave Flash", "swf"),
 ]);
