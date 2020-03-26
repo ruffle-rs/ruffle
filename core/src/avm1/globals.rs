@@ -11,7 +11,9 @@ use std::f64;
 
 mod array;
 pub(crate) mod boolean;
+pub(crate) mod button;
 mod color;
+pub(crate) mod display_object;
 mod function;
 mod key;
 mod math;
@@ -113,6 +115,7 @@ pub fn get_nan<'gc>(
 /// user-modifiable.
 #[derive(Clone)]
 pub struct SystemPrototypes<'gc> {
+    pub button: Object<'gc>,
     pub object: Object<'gc>,
     pub function: Object<'gc>,
     pub movie_clip: Object<'gc>,
@@ -132,6 +135,7 @@ unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
         self.object.trace(cc);
         self.function.trace(cc);
         self.movie_clip.trace(cc);
+        self.button.trace(cc);
         self.sound.trace(cc);
         self.text_field.trace(cc);
         self.text_format.trace(cc);
@@ -151,6 +155,8 @@ pub fn create_globals<'gc>(
     let function_proto = function::create_proto(gc_context, object_proto);
 
     object::fill_proto(gc_context, object_proto, function_proto);
+
+    let button_proto: Object<'gc> = button::create_proto(gc_context, object_proto, function_proto);
 
     let movie_clip_proto: Object<'gc> =
         movie_clip::create_proto(gc_context, object_proto, function_proto);
@@ -181,6 +187,12 @@ pub fn create_globals<'gc>(
     //TODO: These need to be constructors and should also set `.prototype` on each one
     let object = object::create_object_object(gc_context, object_proto, function_proto);
 
+    let button = FunctionObject::function(
+        gc_context,
+        Executable::Native(button::constructor),
+        Some(function_proto),
+        Some(button_proto),
+    );
     let color = FunctionObject::function(
         gc_context,
         Executable::Native(color::constructor),
@@ -250,6 +262,7 @@ pub fn create_globals<'gc>(
 
     let mut globals = ScriptObject::bare_object(gc_context);
     globals.define_value(gc_context, "Array", array.into(), EnumSet::empty());
+    globals.define_value(gc_context, "Button", button.into(), EnumSet::empty());
     globals.define_value(gc_context, "Color", color.into(), EnumSet::empty());
     globals.define_value(gc_context, "Object", object.into(), EnumSet::empty());
     globals.define_value(gc_context, "Function", function.into(), EnumSet::empty());
@@ -361,6 +374,7 @@ pub fn create_globals<'gc>(
 
     (
         SystemPrototypes {
+            button: button_proto,
             object: object_proto,
             function: function_proto,
             movie_clip: movie_clip_proto,

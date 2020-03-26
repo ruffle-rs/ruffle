@@ -138,7 +138,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
             let object = StageObject::for_display_object(
                 context.gc_context,
                 display_object,
-                Some(context.system_prototypes.object),
+                Some(context.system_prototypes.button),
             );
             mc.object = Some(object.into());
         }
@@ -327,24 +327,44 @@ impl<'gc> ButtonData<'gc> {
             }
         };
 
-        match (cur_state, new_state) {
+        let button_event_handler = match (cur_state, new_state) {
             (ButtonState::Up, ButtonState::Over) => {
                 self.run_actions(context, swf::ButtonActionCondition::IdleToOverUp, None);
                 self.play_sound(context, self.static_data.read().up_to_over_sound.as_ref());
+                Some("onRollOver")
             }
             (ButtonState::Over, ButtonState::Up) => {
                 self.run_actions(context, swf::ButtonActionCondition::OverUpToIdle, None);
                 self.play_sound(context, self.static_data.read().over_to_up_sound.as_ref());
+                Some("onRollOut")
             }
             (ButtonState::Over, ButtonState::Down) => {
                 self.run_actions(context, swf::ButtonActionCondition::OverUpToOverDown, None);
                 self.play_sound(context, self.static_data.read().over_to_down_sound.as_ref());
+                Some("onPress")
             }
             (ButtonState::Down, ButtonState::Over) => {
                 self.run_actions(context, swf::ButtonActionCondition::OverDownToOverUp, None);
                 self.play_sound(context, self.static_data.read().down_to_over_sound.as_ref());
+                Some("onRelease")
             }
-            _ => (),
+            _ => None,
+        };
+
+        // Queue ActionScript-defined event handlers after the SWF defined ones.
+        // (e.g., clip.onRelease = foo).
+        if context.swf.version() >= 6 {
+            if let Some(name) = button_event_handler {
+                context.action_queue.queue_actions(
+                    self_display_object,
+                    ActionType::Method {
+                        object: self.object.unwrap(),
+                        name,
+                        args: vec![],
+                    },
+                    false,
+                );
+            }
         }
 
         self.set_state(self_display_object, avm, context, new_state);
