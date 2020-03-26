@@ -4,6 +4,8 @@ import { lookup_element } from "./register-element";
 
 export let FLASH_MIMETYPE = "application/x-shockwave-flash";
 export let FUTURESPLASH_MIMETYPE = "application/futuresplash";
+export let FLASH7_AND_8_MIMETYPE = "application/x-shockwave-flash2-preview";
+export let FLASH_MOVIE_MIMETYPE = "application/vnd.adobe.flash-movie";
 export let FLASH_ACTIVEX_CLASSID = "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000";
 
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
