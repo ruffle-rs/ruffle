@@ -1,25 +1,14 @@
 //! MovieClip prototype
 
-use crate::avm1::function::Executable;
+use crate::avm1::globals::display_object::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::backend::navigator::NavigationMethod;
 use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObject};
 use crate::prelude::*;
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 use swf::Twips;
-
-/// Depths used/returned by ActionScript are offset by this amount from depths used inside the SWF/by the VM.
-/// The depth of objects placed on the timeline in the Flash IDE start from 0 in the SWF,
-/// but are negative when queried from MovieClip.getDepth().
-/// Add this to convert from AS -> SWF depth.
-const AVM_DEPTH_BIAS: i32 = 16384;
-
-/// The maximum depth that the AVM will allow you to swap or attach clips to.
-/// What is the derivation of this number...?
-const AVM_MAX_DEPTH: i32 = 2_130_706_428;
 
 /// Implements `MovieClip`
 pub fn constructor<'gc>(
@@ -50,36 +39,6 @@ macro_rules! with_movie_clip {
             );
         )*
     }};
-}
-
-pub fn overwrite_root<'gc>(
-    _avm: &mut Avm1<'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
-    let new_val = args
-        .get(0)
-        .map(|v| v.to_owned())
-        .unwrap_or(Value::Undefined);
-    this.define_value(ac.gc_context, "_root", new_val, EnumSet::new());
-
-    Ok(Value::Undefined.into())
-}
-
-pub fn overwrite_global<'gc>(
-    _avm: &mut Avm1<'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
-    let new_val = args
-        .get(0)
-        .map(|v| v.to_owned())
-        .unwrap_or(Value::Undefined);
-    this.define_value(ac.gc_context, "_global", new_val, EnumSet::new());
-
-    Ok(Value::Undefined.into())
 }
 
 #[allow(clippy::comparison_chain)]
@@ -132,6 +91,8 @@ pub fn create_proto<'gc>(
 ) -> Object<'gc> {
     let mut object = ScriptObject::object(gc_context, Some(proto));
 
+    display_object::define_display_object_proto(gc_context, object, fn_proto);
+
     with_movie_clip!(
         gc_context,
         object,
@@ -143,7 +104,6 @@ pub fn create_proto<'gc>(
         "getBounds" => get_bounds,
         "getBytesLoaded" => get_bytes_loaded,
         "getBytesTotal" => get_bytes_total,
-        "getDepth" => get_depth,
         "getNextHighestDepth" => get_next_highest_depth,
         "getRect" => get_rect,
         "globalToLocal" => global_to_local,
@@ -163,38 +123,6 @@ pub fn create_proto<'gc>(
         "swapDepths" => swap_depths,
         "toString" => to_string,
         "unloadMovie" => unload_movie
-    );
-
-    object.add_property(
-        gc_context,
-        "_global",
-        Executable::Native(|avm, context, _this, _args| Ok(avm.global_object(context).into())),
-        Some(Executable::Native(overwrite_global)),
-        DontDelete | ReadOnly | DontEnum,
-    );
-
-    object.add_property(
-        gc_context,
-        "_root",
-        Executable::Native(|avm, context, _this, _args| Ok(avm.root_object(context).into())),
-        Some(Executable::Native(overwrite_root)),
-        DontDelete | ReadOnly | DontEnum,
-    );
-
-    object.add_property(
-        gc_context,
-        "_parent",
-        Executable::Native(|_avm, _context, this, _args| {
-            Ok(this
-                .as_display_object()
-                .and_then(|mc| mc.parent())
-                .and_then(|dn| dn.object().as_object().ok())
-                .map(Value::Object)
-                .unwrap_or(Value::Undefined)
-                .into())
-        }),
-        None,
-        DontDelete | ReadOnly | DontEnum,
     );
 
     object.into()
@@ -427,20 +355,6 @@ fn get_bytes_total<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     // TODO find a correct value
     Ok(1.0.into())
-}
-
-fn get_depth<'gc>(
-    movie_clip: MovieClip<'gc>,
-    avm: &mut Avm1<'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
-    _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
-    if avm.current_swf_version() >= 6 {
-        let depth = movie_clip.depth().wrapping_sub(AVM_DEPTH_BIAS);
-        Ok(depth.into())
-    } else {
-        Ok(Value::Undefined.into())
-    }
 }
 
 fn get_next_highest_depth<'gc>(
