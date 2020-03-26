@@ -1,4 +1,4 @@
-use crate::avm1::{Object, StageObject, Value};
+use crate::avm1::{Avm1, Object, StageObject, Value};
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::events::{ButtonEvent, ButtonEventResult, ButtonKeyCode};
@@ -79,12 +79,13 @@ impl<'gc> Button<'gc> {
 
     pub fn handle_button_event(
         &mut self,
+        avm: &mut Avm1<'gc>,
         context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
         event: ButtonEvent,
     ) {
         self.0
             .write(context.gc_context)
-            .handle_button_event((*self).into(), context, event)
+            .handle_button_event((*self).into(), avm, context, event)
     }
 
     pub fn set_sounds(self, gc_context: MutationContext<'gc, '_>, sounds: swf::ButtonSounds) {
@@ -128,21 +129,25 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
 
     fn post_instantiation(
         &mut self,
-        gc_context: MutationContext<'gc, '_>,
+        _avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
-        proto: Object<'gc>,
     ) {
-        let mut mc = self.0.write(gc_context);
+        let mut mc = self.0.write(context.gc_context);
         if mc.object.is_none() {
-            let object = StageObject::for_display_object(gc_context, display_object, Some(proto));
+            let object = StageObject::for_display_object(
+                context.gc_context,
+                display_object,
+                Some(context.system_prototypes.object),
+            );
             mc.object = Some(object.into());
         }
     }
 
-    fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn run_frame(&mut self, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) {
         self.0
             .write(context.gc_context)
-            .run_frame((*self).into(), context)
+            .run_frame((*self).into(), avm, context)
     }
 
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
@@ -222,6 +227,7 @@ impl<'gc> ButtonData<'gc> {
     fn set_state(
         &mut self,
         self_display_object: DisplayObject<'gc>,
+        avm: &mut Avm1<'gc>,
         context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
         state: ButtonState,
     ) {
@@ -237,8 +243,9 @@ impl<'gc> ButtonData<'gc> {
                 if let Ok(mut child) = context
                     .library
                     .library_for_movie_mut(self.movie())
-                    .instantiate_by_id(record.id, context.gc_context, &context.system_prototypes)
+                    .instantiate_by_id(record.id, context.gc_context)
                 {
+                    child.post_instantiation(avm, context, child);
                     child.set_parent(context.gc_context, Some(self_display_object));
                     child.set_matrix(context.gc_context, &record.matrix.clone().into());
                     child.set_color_transform(
@@ -255,25 +262,24 @@ impl<'gc> ButtonData<'gc> {
     fn run_frame(
         &mut self,
         self_display_object: DisplayObject<'gc>,
+        avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         // TODO: Move this to post_instantiation.
         if !self.initialized {
             self.initialized = true;
-            self.set_state(self_display_object, context, ButtonState::Up);
+            self.set_state(self_display_object, avm, context, ButtonState::Up);
 
             for record in &self.static_data.read().records {
                 if record.states.contains(&swf::ButtonState::HitTest) {
                     match context
                         .library
                         .library_for_movie_mut(self.static_data.read().swf.clone())
-                        .instantiate_by_id(
-                            record.id,
-                            context.gc_context,
-                            &context.system_prototypes,
-                        ) {
+                        .instantiate_by_id(record.id, context.gc_context)
+                    {
                         Ok(mut child) => {
                             {
+                                child.post_instantiation(avm, context, child);
                                 child.set_matrix(context.gc_context, &record.matrix.clone().into());
                                 child.set_parent(context.gc_context, Some(self_display_object));
                                 child.set_depth(context.gc_context, record.depth.into());
@@ -294,13 +300,14 @@ impl<'gc> ButtonData<'gc> {
         }
 
         for child in self.children.values_mut() {
-            child.run_frame(context);
+            child.run_frame(avm, context);
         }
     }
 
     fn handle_button_event(
         &mut self,
         self_display_object: DisplayObject<'gc>,
+        avm: &mut Avm1<'gc>,
         context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
         event: ButtonEvent,
     ) {
@@ -340,7 +347,7 @@ impl<'gc> ButtonData<'gc> {
             _ => (),
         }
 
-        self.set_state(self_display_object, context, new_state);
+        self.set_state(self_display_object, avm, context, new_state);
     }
 
     fn play_sound(

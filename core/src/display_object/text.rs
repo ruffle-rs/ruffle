@@ -1,3 +1,4 @@
+use crate::avm1::Avm1;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
@@ -52,7 +53,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         Some(self.0.read().static_data.swf.clone())
     }
 
-    fn run_frame(&mut self, _context: &mut UpdateContext) {
+    fn run_frame(&mut self, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext) {
         // Noop
     }
 

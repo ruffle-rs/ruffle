@@ -979,7 +979,7 @@ impl<'gc> Avm1<'gc> {
     /// If the level does not exist, then it will be created and instantiated
     /// with a script object.
     pub fn resolve_level(
-        &self,
+        &mut self,
         level_id: u32,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> DisplayObject<'gc> {
@@ -989,7 +989,7 @@ impl<'gc> Avm1<'gc> {
             let mut level: DisplayObject<'_> =
                 MovieClip::new(NEWEST_PLAYER_VERSION, context.gc_context).into();
 
-            level.post_instantiation(context.gc_context, level, self.prototypes.movie_clip);
+            level.post_instantiation(self, context, level);
             level.set_depth(context.gc_context, level_id as i32);
             context.levels.insert(level_id, level);
 
@@ -1804,7 +1804,7 @@ impl<'gc> Avm1<'gc> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 // The frame on the stack is 0-based, not 1-based.
-                clip.goto_frame(context, frame + 1, true);
+                clip.goto_frame(self, context, frame + 1, true);
             } else {
                 log::error!("GotoFrame failed: Target is not a MovieClip");
             }
@@ -1850,7 +1850,7 @@ impl<'gc> Avm1<'gc> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 if let Some(frame) = clip.frame_label_to_number(label) {
-                    clip.goto_frame(context, frame, true);
+                    clip.goto_frame(self, context, frame, true);
                 } else {
                     log::warn!("GoToLabel: Frame label '{}' not found", label);
                 }
@@ -2052,7 +2052,7 @@ impl<'gc> Avm1<'gc> {
     fn action_next_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                clip.next_frame(context);
+                clip.next_frame(self, context);
             } else {
                 log::warn!("NextFrame: Target is not a MovieClip");
             }
@@ -2165,7 +2165,7 @@ impl<'gc> Avm1<'gc> {
     fn action_prev_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                clip.prev_frame(context);
+                clip.prev_frame(self, context);
             } else {
                 log::warn!("PrevFrame: Target is not a MovieClip");
             }

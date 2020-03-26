@@ -1,4 +1,4 @@
-use crate::avm1::{Object, TObject, Value};
+use crate::avm1::{Avm1, TObject, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::player::NEWEST_PLAYER_VERSION;
 use crate::prelude::*;
@@ -726,7 +726,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
         }
     }
 
-    fn run_frame(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
+    fn run_frame(&mut self, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>) {}
     fn render(&self, _context: &mut RenderContext<'_, 'gc>) {}
     fn unload(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         self.set_removed(context.gc_context, true);
@@ -823,9 +823,9 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
 
     fn post_instantiation(
         &mut self,
-        _gc_context: MutationContext<'gc, '_>,
+        _avm: &mut Avm1<'gc>,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
         _display_object: DisplayObject<'gc>,
-        _proto: Object<'gc>,
     ) {
     }
 

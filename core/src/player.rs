@@ -193,9 +193,6 @@ impl Player {
                     };
 
                 let mut library = Library::default();
-                let root = MovieClip::from_movie(gc_context, movie.clone()).into();
-                let mut levels = BTreeMap::new();
-                levels.insert(0, root);
 
                 library
                     .library_for_movie_mut(movie.clone())
@@ -205,7 +202,7 @@ impl Player {
                     gc_context,
                     GcRootData {
                         library,
-                        levels,
+                        levels: BTreeMap::new(),
                         mouse_hovered_object: None,
                         drag_object: None,
                         avm: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
@@ -236,14 +233,12 @@ impl Player {
             self_reference: None,
         };
 
-        player.gc_arena.mutate(|gc_context, gc_root| {
-            let mut root_data = gc_root.0.write(gc_context);
-            let mc_proto = root_data.avm.prototypes().movie_clip;
-
-            for (_i, level) in root_data.levels.iter_mut() {
-                level.post_instantiation(gc_context, *level, mc_proto);
-                level.set_depth(gc_context, 0);
-            }
+        player.mutate_with_update_context(|avm, context| {
+            let mut root: DisplayObject =
+                MovieClip::from_movie(context.gc_context, movie.clone()).into();
+            root.post_instantiation(avm, context, root);
+            root.set_depth(context.gc_context, 0);
+            context.levels.insert(0, root);
         });
 
         player.build_matrices();
@@ -430,13 +425,13 @@ impl Player {
                         PlayerEvent::MouseDown { .. } => {
                             is_mouse_down = true;
                             needs_render = true;
-                            button.handle_button_event(context, ButtonEvent::Press);
+                            button.handle_button_event(avm, context, ButtonEvent::Press);
                         }
 
                         PlayerEvent::MouseUp { .. } => {
                             is_mouse_down = false;
                             needs_render = true;
-                            button.handle_button_event(context, ButtonEvent::Release);
+                            button.handle_button_event(avm, context, ButtonEvent::Release);
                         }
 
                         _ => (),
@@ -508,7 +503,7 @@ impl Player {
                 // RollOut of previous node.
                 if let Some(node) = cur_hovered {
                     if let Some(mut button) = node.as_button() {
-                        button.handle_button_event(context, ButtonEvent::RollOut);
+                        button.handle_button_event(avm, context, ButtonEvent::RollOut);
                     }
                 }
 
@@ -516,7 +511,7 @@ impl Player {
                 new_cursor = MouseCursor::Arrow;
                 if let Some(node) = new_hovered {
                     if let Some(mut button) = node.as_button() {
-                        button.handle_button_event(context, ButtonEvent::RollOver);
+                        button.handle_button_event(avm, context, ButtonEvent::RollOver);
                         new_cursor = MouseCursor::Hand;
                     }
                 }
@@ -563,7 +558,7 @@ impl Player {
     }
 
     pub fn run_frame(&mut self) {
-        self.update(|_avm, update_context| {
+        self.update(|avm, update_context| {
             // TODO: In what order are levels run?
             // NOTE: We have to copy all the layer pointers into a separate list
             // because level updates can create more levels, which we don't
@@ -571,7 +566,7 @@ impl Player {
             let levels: Vec<_> = update_context.levels.values().copied().collect();
 
             for mut level in levels {
-                level.run_frame(update_context);
+                level.run_frame(avm, update_context);
             }
         })
     }

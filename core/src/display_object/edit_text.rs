@@ -1,6 +1,6 @@
 //! `EditText` display object and support code.
 use crate::avm1::globals::text_field::attach_virtual_properties;
-use crate::avm1::{Object, StageObject, Value};
+use crate::avm1::{Avm1, Object, StageObject, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::font::{Font, Glyph, TextFormat};
@@ -419,7 +419,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         Some(self.0.read().static_data.swf.clone())
     }
 
-    fn run_frame(&mut self, _context: &mut UpdateContext) {
+    fn run_frame(&mut self, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext) {
         // Noop
     }
 
@@ -429,16 +429,20 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
     fn post_instantiation(
         &mut self,
-        gc_context: MutationContext<'gc, '_>,
+        _avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
-        proto: Object<'gc>,
     ) {
-        let mut text = self.0.write(gc_context);
+        let mut text = self.0.write(context.gc_context);
         if text.object.is_none() {
-            let object =
-                StageObject::for_display_object(gc_context, display_object, Some(proto)).into();
+            let object = StageObject::for_display_object(
+                context.gc_context,
+                display_object,
+                Some(context.system_prototypes.text_field),
+            )
+            .into();
 
-            attach_virtual_properties(gc_context, object);
+            attach_virtual_properties(context.gc_context, object);
 
             text.object = Some(object);
         }

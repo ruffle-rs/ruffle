@@ -229,14 +229,13 @@ fn attach_movie<'gc>(
         .library
         .library_for_movie(movie_clip.movie().unwrap())
         .ok_or_else(|| "Movie is missing!".into())
-        .and_then(|l| {
-            l.instantiate_by_export_name(&export_name, context.gc_context, &avm.prototypes)
-        })
+        .and_then(|l| l.instantiate_by_export_name(&export_name, context.gc_context))
     {
+        new_clip.post_instantiation(avm, context, new_clip);
         // Set name and attach to parent.
         new_clip.set_name(context.gc_context, &new_instance_name);
         movie_clip.add_child_from_avm(context, new_clip, depth);
-        new_clip.run_frame(context);
+        new_clip.run_frame(avm, context);
 
         // Copy properties from init_object to the movieclip.
         let new_clip = new_clip.object().as_object().unwrap();
@@ -272,16 +271,12 @@ fn create_empty_movie_clip<'gc>(
 
     // Create empty movie clip.
     let mut new_clip = MovieClip::new(avm.current_swf_version(), context.gc_context);
-    new_clip.post_instantiation(
-        context.gc_context,
-        new_clip.into(),
-        avm.prototypes.movie_clip,
-    );
+    new_clip.post_instantiation(avm, context, new_clip.into());
 
     // Set name and attach to parent.
     new_clip.set_name(context.gc_context, &new_instance_name);
     movie_clip.add_child_from_avm(context, new_clip.into(), depth);
-    new_clip.run_frame(context);
+    new_clip.run_frame(avm, context);
 
     Ok(new_clip.object().into())
 }
@@ -326,7 +321,7 @@ fn create_text_field<'gc>(
 
     let mut text_field: DisplayObject<'gc> =
         EditText::new(context, movie, x, y, width, height).into();
-    text_field.post_instantiation(context.gc_context, text_field, avm.prototypes().text_field);
+    text_field.post_instantiation(avm, context, text_field);
     text_field.set_name(context.gc_context, &instance_name);
     movie_clip.add_child_from_avm(context, text_field, depth as Depth);
 
@@ -384,8 +379,10 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
         .library
         .library_for_movie(movie_clip.movie().unwrap())
         .ok_or_else(|| "Movie is missing!".into())
-        .and_then(|l| l.instantiate_by_id(movie_clip.id(), context.gc_context, &avm.prototypes))
+        .and_then(|l| l.instantiate_by_id(movie_clip.id(), context.gc_context))
     {
+        new_clip.post_instantiation(avm, context, new_clip);
+
         // Set name and attach to parent.
         new_clip.set_name(context.gc_context, &new_instance_name);
         parent.add_child_from_avm(context, new_clip, depth);
@@ -395,7 +392,7 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
         new_clip.set_color_transform(context.gc_context, &*movie_clip.color_transform());
         // TODO: Any other properties we should copy...?
         // Definitely not ScriptObject properties.
-        new_clip.run_frame(context);
+        new_clip.run_frame(avm, context);
 
         // Copy properties from init_object to the movieclip.
         let new_clip = new_clip.object().as_object().unwrap();
@@ -506,7 +503,7 @@ pub fn goto_frame<'gc>(
             frame = frame.wrapping_sub(1);
             frame = frame.wrapping_add(i32::from(scene_offset));
             if frame >= 0 {
-                movie_clip.goto_frame(context, frame.saturating_add(1) as u16, stop);
+                movie_clip.goto_frame(avm, context, frame.saturating_add(1) as u16, stop);
             }
         }
         val => {
@@ -514,7 +511,7 @@ pub fn goto_frame<'gc>(
             let frame_label = val.clone().coerce_to_string(avm, context)?;
             if let Some(mut frame) = movie_clip.frame_label_to_number(&frame_label) {
                 frame = frame.wrapping_add(scene_offset);
-                movie_clip.goto_frame(context, frame, stop);
+                movie_clip.goto_frame(avm, context, frame, stop);
             }
         }
     }
@@ -523,11 +520,11 @@ pub fn goto_frame<'gc>(
 
 fn next_frame<'gc>(
     movie_clip: MovieClip<'gc>,
-    _avm: &mut Avm1<'gc>,
+    avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    movie_clip.next_frame(context);
+    movie_clip.next_frame(avm, context);
     Ok(Value::Undefined.into())
 }
 
@@ -543,11 +540,11 @@ fn play<'gc>(
 
 fn prev_frame<'gc>(
     movie_clip: MovieClip<'gc>,
-    _avm: &mut Avm1<'gc>,
+    avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    movie_clip.prev_frame(context);
+    movie_clip.prev_frame(avm, context);
     Ok(Value::Undefined.into())
 }
 
