@@ -57,20 +57,7 @@ export default class RuffleObject extends RufflePlayer {
     static from_native_object_element(elem) {
         let external_name = register_element("ruffle-object", RuffleObject);
         let ruffle_obj = document.createElement(external_name);
-        for (let attrib of elem.attributes) {
-            if (attrib.specified) {
-                try {
-                    ruffle_obj.setAttribute(attrib.name, attrib.value);
-                } catch (err) {
-                    // The embed may have invalid attributes, so handle these gracefully.
-                    console.warn(`Unable to set attribute ${attrib.name} on Ruffle instance`);
-                }
-            }
-        }
-
-        for (let node of Array.from(elem.children)) {
-            ruffle_obj.appendChild(node);
-        }
+        ruffle_obj.copyElement(elem);
 
         return ruffle_obj;
     }

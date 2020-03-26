@@ -131,6 +131,34 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /*
+     * Copies attributes and children from another element to this player element.
+     * Used by the polyfill elements, RuffleObject and RuffleEmbed.
+     */
+    copyElement(elem) {
+        if (elem) {
+            for (let attrib of elem.attributes) {
+                if (attrib.specified) {
+                    // Issue 468: Chrome "Click to Active Flash" box stomps on title attribute
+                    if (attrib.name === "title" && attrib.value === "Adobe Flash Player") {
+                        continue;
+                    }
+
+                    try {
+                        this.setAttribute(attrib.name, attrib.value);
+                    } catch (err) {
+                        // The embed may have invalid attributes, so handle these gracefully.
+                        console.warn(`Unable to set attribute ${attrib.name} on Ruffle instance`);
+                    }
+                }
+            }
+
+            for (let node of Array.from(elem.children)) {
+                this.appendChild(node);
+            }
+        }
+    }
+
+    /*
      * Converts a dimension attribute on an HTML embed/object element to a valid CSS dimension.
      * HTML element dimensions are unitless, but can also be percentages.
      * Add a 'px' unit unless the value is a percentage.
