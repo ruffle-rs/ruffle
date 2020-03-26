@@ -242,6 +242,15 @@ export class PublicAPI {
         
         if (source_name !== undefined && source_api !== undefined) {
             public_api.register_source(source_name, source_api);
+            
+            // Install the faux plugin detection immediately.
+            // This is necessary because scripts such as SWFObject check for the
+            // Flash Player immediately when they load.
+            // TODO: Maybe there's a better place for this.
+            let polyfills = public_api.config.polyfills;
+            if (polyfills === undefined || polyfills.includes("plugin-detect")) {
+                source_api.polyfill(["plugin-detect"]);
+            }
         }
 
         return public_api;
