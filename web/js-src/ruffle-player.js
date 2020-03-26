@@ -134,7 +134,7 @@ export class RufflePlayer extends HTMLElement {
      * Copies attributes and children from another element to this player element.
      * Used by the polyfill elements, RuffleObject and RuffleEmbed.
      */
-    copyElement(elem) {
+    copy_element(elem) {
         if (elem) {
             for (let attrib of elem.attributes) {
                 if (attrib.specified) {

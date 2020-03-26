@@ -57,7 +57,7 @@ export default class RuffleObject extends RufflePlayer {
     static from_native_object_element(elem) {
         let external_name = register_element("ruffle-object", RuffleObject);
         let ruffle_obj = document.createElement(external_name);
-        ruffle_obj.copyElement(elem);
+        ruffle_obj.copy_element(elem);
 
         return ruffle_obj;
     }
