@@ -6,9 +6,9 @@ use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Value};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip};
+use crate::property_map::PropertyMap;
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::collections::HashMap;
 use std::fmt;
 
 /// The type string for MovieClip objects.
@@ -375,7 +375,7 @@ unsafe impl<'gc> Collect for DisplayProperty<'gc> {
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct DisplayPropertyMap<'gc> {
-    property_by_name: HashMap<String, DisplayProperty<'gc>>,
+    property_by_name: PropertyMap<DisplayProperty<'gc>>,
     property_by_index: Vec<DisplayProperty<'gc>>,
 }
 
@@ -383,7 +383,7 @@ impl<'gc> DisplayPropertyMap<'gc> {
     /// Creates the display property map.
     pub fn new(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, DisplayPropertyMap<'gc>> {
         let mut property_map = DisplayPropertyMap {
-            property_by_name: HashMap::with_capacity(21),
+            property_by_name: PropertyMap::new(),
             property_by_index: Vec::with_capacity(21),
         };
 
@@ -420,7 +420,7 @@ impl<'gc> DisplayPropertyMap<'gc> {
     pub fn get_by_name(&self, name: &str) -> Option<&DisplayProperty<'gc>> {
         // Display object properties are case insensitive, regardless of SWF version!?
         // TODO: Another string alloc; optimize this eventually.
-        self.property_by_name.get(&name.to_ascii_lowercase())
+        self.property_by_name.get_case_insensitive(&name)
     }
 
     /// Gets a property slot by SWF4 index.
@@ -438,7 +438,8 @@ impl<'gc> DisplayPropertyMap<'gc> {
         set: Option<DisplaySetter<'gc>>,
     ) {
         let prop = DisplayProperty { get, set };
-        self.property_by_name.insert(name.to_string(), prop.clone());
+        self.property_by_name
+            .insert_case_sensitive(name.to_string(), prop.clone());
         self.property_by_index.push(prop);
     }
 }
