@@ -174,7 +174,7 @@ impl<'gc> Avm1<'gc> {
         let stack_frame = stack_frame.read();
         let scope = stack_frame.scope();
         let locals = scope.locals();
-        let keys = locals.get_keys();
+        let keys = locals.get_keys(self);
         let swf_version = self.current_swf_version();
 
         for k in keys {
@@ -341,6 +341,11 @@ impl<'gc> Avm1<'gc> {
         self.current_stack_frame()
             .map(|sf| sf.read().swf_version())
             .unwrap_or(self.player_version)
+    }
+
+    /// Returns whether property keys should be case sensitive based on the current SWF version.
+    pub fn is_case_sensitive(&self) -> bool {
+        is_swf_case_sensitive(self.current_swf_version())
     }
 
     pub fn notify_system_listeners(
@@ -845,7 +850,7 @@ impl<'gc> Avm1<'gc> {
                 if let Some(object) =
                     self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
                 {
-                    if object.has_property(context, var_name) {
+                    if object.has_property(self, context, var_name) {
                         return object.get(var_name, self, context);
                     }
                 }
@@ -1478,7 +1483,7 @@ impl<'gc> Avm1<'gc> {
         let name = name_val.as_string()?;
         let object = self.pop().as_object()?;
 
-        let success = object.delete(context.gc_context, name);
+        let success = object.delete(self, context.gc_context, name);
         self.push(success);
 
         Ok(())
@@ -1494,9 +1499,10 @@ impl<'gc> Avm1<'gc> {
             .current_stack_frame()
             .unwrap()
             .read()
-            .is_defined(context, name);
+            .is_defined(self, context, name);
 
         self.current_stack_frame().unwrap().read().scope().delete(
+            self,
             context,
             name,
             context.gc_context,
@@ -1537,7 +1543,7 @@ impl<'gc> Avm1<'gc> {
 
         match object {
             Value::Object(ob) => {
-                for k in ob.get_keys() {
+                for k in ob.get_keys(self) {
                     self.push(k);
                 }
             }
@@ -1554,7 +1560,7 @@ impl<'gc> Avm1<'gc> {
         let object = self.pop().as_object()?;
 
         self.push(Value::Null); // Sentinel that indicates end of enumeration
-        for k in object.get_keys() {
+        for k in object.get_keys(self) {
             self.push(k);
         }
 

@@ -169,7 +169,7 @@ fn set_transform<'gc>(
         out: &mut f32,
     ) -> Result<(), Error> {
         // The parameters are set only if the property exists on the object itself (prototype excluded).
-        if transform.has_own_property(context, property) {
+        if transform.has_own_property(avm, context, property) {
             let n = transform
                 .get(property, avm, context)?
                 .resolve(avm, context)?
@@ -187,7 +187,7 @@ fn set_transform<'gc>(
         out: &mut f32,
     ) -> Result<(), Error> {
         // The parameters are set only if the property exists on the object itself (prototype excluded).
-        if transform.has_own_property(context, property) {
+        if transform.has_own_property(avm, context, property) {
             let n = transform
                 .get(property, avm, context)?
                 .resolve(avm, context)?

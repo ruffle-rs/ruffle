@@ -331,7 +331,12 @@ impl<'gc> Activation<'gc> {
     }
 
     /// Check if a particular property in the scope chain is defined.
-    pub fn is_defined(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
+    pub fn is_defined(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
         if name == "this" {
             return true;
         }
@@ -340,7 +345,7 @@ impl<'gc> Activation<'gc> {
             return true;
         }
 
-        self.scope().is_defined(context, name)
+        self.scope().is_defined(avm, context, name)
     }
 
     /// Define a named local variable within this activation.

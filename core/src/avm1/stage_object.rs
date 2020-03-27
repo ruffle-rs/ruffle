@@ -8,7 +8,7 @@ use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip};
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fmt;
 
 /// The type string for MovieClip objects.
@@ -65,7 +65,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     ) -> Result<ReturnValue<'gc>, Error> {
         let props = avm.display_properties;
         // Property search order for DisplayObjects:
-        if self.has_own_property(context, name) {
+        if self.has_own_property(avm, context, name) {
             // 1) Actual properties on the underlying object
             self.get_local(name, avm, context, (*self).into())
         } else if let Some(property) = props.read().get_by_name(&name) {
@@ -103,7 +103,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let props = avm.display_properties;
-        if self.base.has_own_property(context, name) {
+        if self.base.has_own_property(avm, context, name) {
             // 1) Actual proeprties on the underlying object
             self.base
                 .internal_set(name, value, avm, context, (*self).into())
@@ -139,12 +139,20 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         //TODO: Create a StageObject of some kind
         self.base.new(avm, context, this, args)
     }
-    fn delete(&self, gc_context: MutationContext<'gc, '_>, name: &str) -> bool {
-        self.base.delete(gc_context, name)
+
+    fn delete(
+        &self,
+        avm: &mut Avm1<'gc>,
+        gc_context: MutationContext<'gc, '_>,
+        name: &str,
+    ) -> bool {
+        self.base.delete(avm, gc_context, name)
     }
+
     fn proto(&self) -> Option<Object<'gc>> {
         self.base.proto()
     }
+
     fn define_value(
         &self,
         gc_context: MutationContext<'gc, '_>,
@@ -178,8 +186,26 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .add_property(gc_context, name, get, set, attributes)
     }
 
-    fn has_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
-        if self.base.has_property(context, name) {
+    fn add_property_with_case(
+        &self,
+        avm: &mut Avm1<'gc>,
+        gc_context: MutationContext<'gc, '_>,
+        name: &str,
+        get: Executable<'gc>,
+        set: Option<Executable<'gc>>,
+        attributes: EnumSet<Attribute>,
+    ) {
+        self.base
+            .add_property_with_case(avm, gc_context, name, get, set, attributes)
+    }
+
+    fn has_property(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
+        if self.base.has_property(avm, context, name) {
             return true;
         }
 
@@ -198,28 +224,36 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         false
     }
 
-    fn has_own_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_property(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
         // Note that `hasOwnProperty` does NOT return true for child display objects.
-        self.base.has_own_property(context, name)
+        self.base.has_own_property(avm, context, name)
     }
 
-    fn is_property_enumerable(&self, name: &str) -> bool {
-        self.base.is_property_enumerable(name)
+    fn is_property_enumerable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
+        self.base.is_property_enumerable(avm, name)
     }
 
-    fn is_property_overwritable(&self, name: &str) -> bool {
-        self.base.is_property_overwritable(name)
+    fn is_property_overwritable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
+        self.base.is_property_overwritable(avm, name)
     }
 
-    fn get_keys(&self) -> HashSet<String> {
+    fn get_keys(&self, avm: &mut Avm1<'gc>) -> Vec<String> {
         // Keys from the underlying object are listed first, followed by
         // child display objects in order from highest depth to lowest depth.
-        // TODO: It's possible to have multiple instances with the same name,
-        // and that name will be returned multiple times in the key list for a `for..in` loop.
-        let mut keys = self.base.get_keys();
-        for child in self.display_object.children() {
-            keys.insert(child.name().to_string());
+        let mut keys = self.base.get_keys(avm);
+        for child in self
+            .display_object
+            .children()
+            .map(|child| child.name().to_string())
+        {
+            keys.push(child)
         }
+
         keys
     }
 
