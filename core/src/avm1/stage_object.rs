@@ -64,6 +64,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
         let props = avm.display_properties;
+        let case_sensitive = avm.is_case_sensitive();
         // Property search order for DisplayObjects:
         if self.has_own_property(avm, context, name) {
             // 1) Actual properties on the underlying object
@@ -72,10 +73,13 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             // 2) Display object properties such as _x, _y
             let val = property.get(avm, context, self.display_object)?;
             Ok(val.into())
-        } else if let Some(child) = self.display_object.get_child_by_name(name) {
+        } else if let Some(child) = self.display_object.get_child_by_name(name, case_sensitive) {
             // 3) Child display objects with the given instance name
             Ok(child.object().into())
-        } else if let Some(level) = self.display_object.get_level_by_path(name, context) {
+        } else if let Some(level) =
+            self.display_object
+                .get_level_by_path(name, context, case_sensitive)
+        {
             // 4) _levelN
             Ok(level.object().into())
         } else {
@@ -209,13 +213,18 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             return true;
         }
 
-        if self.display_object.get_child_by_name(name).is_some() {
+        let case_sensitive = avm.is_case_sensitive();
+        if self
+            .display_object
+            .get_child_by_name(name, case_sensitive)
+            .is_some()
+        {
             return true;
         }
 
         if self
             .display_object
-            .get_level_by_path(name, context)
+            .get_level_by_path(name, context, case_sensitive)
             .is_some()
         {
             return true;
@@ -420,7 +429,7 @@ impl<'gc> DisplayPropertyMap<'gc> {
     pub fn get_by_name(&self, name: &str) -> Option<&DisplayProperty<'gc>> {
         // Display object properties are case insensitive, regardless of SWF version!?
         // TODO: Another string alloc; optimize this eventually.
-        self.property_by_name.get_case_insensitive(&name)
+        self.property_by_name.get(&name, false)
     }
 
     /// Gets a property slot by SWF4 index.
@@ -439,7 +448,7 @@ impl<'gc> DisplayPropertyMap<'gc> {
     ) {
         let prop = DisplayProperty { get, set };
         self.property_by_name
-            .insert_case_sensitive(name.to_string(), prop.clone());
+            .insert(name.to_string(), prop.clone(), false);
         self.property_by_index.push(prop);
     }
 }

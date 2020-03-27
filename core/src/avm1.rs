@@ -720,6 +720,8 @@ impl<'gc> Avm1<'gc> {
             (start, false)
         };
 
+        let case_sensitive = self.is_case_sensitive();
+
         // Iterate through each token in the path.
         while !path.is_empty() {
             // Skip any number of leading :
@@ -773,7 +775,7 @@ impl<'gc> Avm1<'gc> {
                 // This is the opposite of general GetMember property access!
                 if let Some(child) = object
                     .as_display_object()
-                    .and_then(|o| o.get_child_by_name(name))
+                    .and_then(|o| o.get_child_by_name(name, case_sensitive))
                 {
                     child.object()
                 } else {
@@ -954,29 +956,6 @@ impl<'gc> Avm1<'gc> {
         let scope = stack_frame.scope_cell();
         scope.read().set(path, value, self, context, this)?;
         Ok(())
-    }
-
-    pub fn resolve_dot_path_clip<'s>(
-        start: Option<DisplayObject<'gc>>,
-        root: DisplayObject<'gc>,
-        path: &'s str,
-    ) -> Option<DisplayObject<'gc>> {
-        // If the target clip is invalid, we default to root for the variable path.
-        let mut clip = Some(start.unwrap_or(root));
-        if !path.is_empty() {
-            for name in path.split('.') {
-                if clip.is_none() {
-                    break;
-                }
-
-                clip = clip
-                    .unwrap()
-                    .as_movie_clip()
-                    .and_then(|mc| mc.get_child_by_name(name));
-            }
-        }
-
-        clip
     }
 
     /// Resolve a level by ID.
