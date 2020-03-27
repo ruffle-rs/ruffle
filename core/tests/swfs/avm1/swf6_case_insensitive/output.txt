@@ -1,0 +1,43 @@
+// trace('FOO')
+foo
+foo
+
+// trace(this['ä'])
+test
+
+// trace(this['ӥ'])
+test2
+
+// trace(this['ǳǳǳ'])
+test3
+test3
+test3
+
+// trace(this['ⱥ'])
+undefined
+
+// trace(this['Ϸ'])
+undefined
+
+// trace(clip)
+_level0.clip
+_level0.clip
+
+// trace(this['clipÄ'])
+_level0.clipäǱ
+_level0.clipäǱ
+
+// trace(clip._X)
+0
+
+// trace(clip._rOtaTION)
+0
+
+// trace(_LeVeL0)
+_level0
+
+// obj keys:
+foo
+
+FOO
+
