@@ -2697,6 +2697,12 @@ impl<'gc> Avm1<'gc> {
     }
 }
 
+/// Returns whether the given SWF version is case-sensitive.
+/// SWFv7 and above is case-sensitive.
+pub fn is_swf_case_sensitive(swf_version: u8) -> bool {
+    swf_version > 6
+}
+
 /// Utility function used by `Avm1::action_wait_for_frame` and
 /// `Avm1::action_wait_for_frame_2`.
 fn skip_actions(reader: &mut Reader<'_>, num_actions_to_skip: u8) -> Result<(), Error> {
