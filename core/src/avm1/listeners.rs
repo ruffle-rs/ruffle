@@ -26,9 +26,8 @@ macro_rules! register_listener {
             _this: Object<'gc>,
             args: &[Value<'gc>],
         ) -> Result<ReturnValue<'gc>, Error> {
-            avm.system_listeners
-                .$system_listeners_key
-                .remove_listener(context, args)
+            let listener = avm.system_listeners.$system_listeners_key;
+            listener.remove_listener(avm, context, args)
         }
 
         $object.define_value(
@@ -80,6 +79,7 @@ impl<'gc> Listeners<'gc> {
 
     pub fn remove_listener(
         &self,
+        avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
@@ -98,7 +98,7 @@ impl<'gc> Listeners<'gc> {
                 }
 
                 listeners.delete_array_element(new_length, context.gc_context);
-                listeners.delete(context.gc_context, &new_length.to_string());
+                listeners.delete(avm, context.gc_context, &new_length.to_string());
                 listeners.set_length(context.gc_context, new_length);
 
                 return Ok(true.into());

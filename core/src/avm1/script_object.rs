@@ -2,11 +2,10 @@ use crate::avm1::function::{Executable, FunctionObject, NativeFunction};
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ObjectPtr, TObject, UpdateContext, Value};
+use crate::property_map::{Entry, PropertyMap};
 use core::fmt;
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::collections::hash_map::Entry;
-use std::collections::{HashMap, HashSet};
 
 pub const TYPE_OF_OBJECT: &str = "object";
 
@@ -23,7 +22,7 @@ pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
 
 pub struct ScriptObjectData<'gc> {
     prototype: Option<Object<'gc>>,
-    values: HashMap<String, Property<'gc>>,
+    values: PropertyMap<Property<'gc>>,
     interfaces: Vec<Object<'gc>>,
     type_of: &'static str,
     array: ArrayStorage<'gc>,
@@ -58,7 +57,7 @@ impl<'gc> ScriptObject<'gc> {
             ScriptObjectData {
                 prototype: proto,
                 type_of: TYPE_OF_OBJECT,
-                values: HashMap::new(),
+                values: PropertyMap::new(),
                 array: ArrayStorage::Properties { length: 0 },
                 interfaces: vec![],
             },
@@ -74,7 +73,7 @@ impl<'gc> ScriptObject<'gc> {
             ScriptObjectData {
                 prototype: proto,
                 type_of: TYPE_OF_OBJECT,
-                values: HashMap::new(),
+                values: PropertyMap::new(),
                 array: ArrayStorage::Vector(Vec::new()),
                 interfaces: vec![],
             },
@@ -93,7 +92,7 @@ impl<'gc> ScriptObject<'gc> {
             ScriptObjectData {
                 prototype: proto,
                 type_of: TYPE_OF_OBJECT,
-                values: HashMap::new(),
+                values: PropertyMap::new(),
                 array: ArrayStorage::Properties { length: 0 },
                 interfaces: vec![],
             },
@@ -112,7 +111,7 @@ impl<'gc> ScriptObject<'gc> {
             ScriptObjectData {
                 prototype: None,
                 type_of: TYPE_OF_OBJECT,
-                values: HashMap::new(),
+                values: PropertyMap::new(),
                 array: ArrayStorage::Properties { length: 0 },
                 interfaces: vec![],
             },
@@ -157,7 +156,12 @@ impl<'gc> ScriptObject<'gc> {
         gc_context: MutationContext<'gc, '_>,
         native_value: Option<Value<'gc>>,
     ) {
-        match self.0.write(gc_context).values.entry(name.to_string()) {
+        match self
+            .0
+            .write(gc_context)
+            .values
+            .entry(name.to_string(), false)
+        {
             Entry::Occupied(mut entry) => {
                 if let Property::Stored { value, .. } = entry.get_mut() {
                     match native_value {
@@ -211,7 +215,7 @@ impl<'gc> ScriptObject<'gc> {
                 .0
                 .write(context.gc_context)
                 .values
-                .entry(name.to_owned())
+                .entry(name.to_owned(), avm.is_case_sensitive())
             {
                 Entry::Occupied(mut entry) => {
                     entry.get_mut().set(avm, context, this, value)?;
@@ -249,7 +253,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             return Ok(self.proto().map_or(Value::Undefined, Value::Object).into());
         }
 
-        if let Some(value) = self.0.read().values.get(name) {
+        if let Some(value) = self.0.read().values.get(name, avm.is_case_sensitive()) {
             return value.get(avm, context, this);
         }
 
@@ -307,11 +311,16 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.
-    fn delete(&self, gc_context: MutationContext<'gc, '_>, name: &str) -> bool {
+    fn delete(
+        &self,
+        avm: &mut Avm1<'gc>,
+        gc_context: MutationContext<'gc, '_>,
+        name: &str,
+    ) -> bool {
         let mut object = self.0.write(gc_context);
-        if let Some(prop) = object.values.get(name) {
+        if let Some(prop) = object.values.get(name, avm.is_case_sensitive()) {
             if prop.can_delete() {
-                object.values.remove(name);
+                object.values.remove(name, avm.is_case_sensitive());
                 return true;
             }
         }
@@ -334,6 +343,27 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
                 set,
                 attributes,
             },
+            false,
+        );
+    }
+
+    fn add_property_with_case(
+        &self,
+        avm: &mut Avm1<'gc>,
+        gc_context: MutationContext<'gc, '_>,
+        name: &str,
+        get: Executable<'gc>,
+        set: Option<Executable<'gc>>,
+        attributes: EnumSet<Attribute>,
+    ) {
+        self.0.write(gc_context).values.insert(
+            name.to_owned(),
+            Property::Virtual {
+                get,
+                set,
+                attributes,
+            },
+            avm.is_case_sensitive(),
         );
     }
 
@@ -344,10 +374,11 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         value: Value<'gc>,
         attributes: EnumSet<Attribute>,
     ) {
-        self.0
-            .write(gc_context)
-            .values
-            .insert(name.to_string(), Property::Stored { value, attributes });
+        self.0.write(gc_context).values.insert(
+            name.to_string(),
+            Property::Stored { value, attributes },
+            false,
+        );
     }
 
     fn set_attributes(
@@ -366,7 +397,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
                 }
             }
             Some(name) => {
-                if let Some(prop) = self.0.write(gc_context).values.get_mut(name) {
+                if let Some(prop) = self.0.write(gc_context).values.get_mut(name, false) {
                     let new_atts = (prop.attributes() - clear_attributes) | set_attributes;
                     prop.set_attributes(new_atts);
                 }
@@ -379,35 +410,48 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     /// Checks if the object has a given named property.
-    fn has_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
-        self.has_own_property(context, name)
+    fn has_property(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
+        self.has_own_property(avm, context, name)
             || self
                 .proto()
                 .as_ref()
-                .map_or(false, |p| p.has_property(context, name))
+                .map_or(false, |p| p.has_property(avm, context, name))
     }
 
     /// Checks if the object has a given named property on itself (and not,
     /// say, the object's prototype or superclass)
-    fn has_own_property(&self, _context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_property(
+        &self,
+        avm: &mut Avm1<'gc>,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
         if name == "__proto__" {
             return true;
         }
-        self.0.read().values.contains_key(name)
-    }
-
-    fn is_property_overwritable(&self, name: &str) -> bool {
         self.0
             .read()
             .values
-            .get(name)
+            .contains_key(name, avm.is_case_sensitive())
+    }
+
+    fn is_property_overwritable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
+        self.0
+            .read()
+            .values
+            .get(name, avm.is_case_sensitive())
             .map(|p| p.is_overwritable())
             .unwrap_or(false)
     }
 
     /// Checks if a named property appears when enumerating the object.
-    fn is_property_enumerable(&self, name: &str) -> bool {
-        if let Some(prop) = self.0.read().values.get(name) {
+    fn is_property_enumerable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
+        if let Some(prop) = self.0.read().values.get(name, avm.is_case_sensitive()) {
             prop.is_enumerable()
         } else {
             false
@@ -415,25 +459,25 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     /// Enumerate the object.
-    fn get_keys(&self) -> HashSet<String> {
-        let mut result = self.proto().map_or_else(HashSet::new, |p| p.get_keys());
-
-        self.0
-            .read()
-            .values
-            .iter()
-            .filter_map(|(k, p)| {
-                if p.is_enumerable() {
-                    Some(k.to_string())
-                } else {
-                    None
-                }
-            })
-            .for_each(|k| {
-                result.insert(k);
-            });
-
-        result
+    fn get_keys(&self, avm: &mut Avm1<'gc>) -> Vec<String> {
+        let proto_keys = self.proto().map_or_else(Vec::new, |p| p.get_keys(avm));
+        let mut out_keys = vec![];
+        let object = self.0.read();
+        for key in proto_keys {
+            if !object.values.contains_key(&key, avm.is_case_sensitive()) {
+                out_keys.push(key);
+            }
+        }
+        for key in self.0.read().values.iter().filter_map(move |(k, p)| {
+            if p.is_enumerable() {
+                Some(k.to_string())
+            } else {
+                None
+            }
+        }) {
+            out_keys.push(key)
+        }
+        out_keys
     }
 
     fn as_string(&self) -> String {
@@ -515,7 +559,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             ArrayStorage::Properties { length } => {
                 if index < *length {
                     if let Some(Property::Stored { value, .. }) =
-                        self.0.read().values.get(&index.to_string())
+                        self.0.read().values.get(&index.to_string(), false)
                     {
                         return value.to_owned();
                     }
@@ -711,7 +755,7 @@ mod tests {
                 DontDelete.into(),
             );
 
-            assert_eq!(object.delete(context.gc_context, "test"), false);
+            assert_eq!(object.delete(avm, context.gc_context, "test"), false);
             assert_eq!(
                 object.get("test", avm, context).unwrap(),
                 ReturnValue::Immediate("initial".into())
@@ -723,7 +767,7 @@ mod tests {
                 .set("test", "replaced".into(), avm, context)
                 .unwrap();
 
-            assert_eq!(object.delete(context.gc_context, "test"), false);
+            assert_eq!(object.delete(avm, context.gc_context, "test"), false);
             assert_eq!(
                 object.get("test", avm, context).unwrap(),
                 ReturnValue::Immediate("replaced".into())
@@ -794,11 +838,14 @@ mod tests {
                 DontDelete.into(),
             );
 
-            assert_eq!(object.delete(context.gc_context, "virtual"), true);
-            assert_eq!(object.delete(context.gc_context, "virtual_un"), false);
-            assert_eq!(object.delete(context.gc_context, "stored"), true);
-            assert_eq!(object.delete(context.gc_context, "stored_un"), false);
-            assert_eq!(object.delete(context.gc_context, "non_existent"), false);
+            assert_eq!(object.delete(avm, context.gc_context, "virtual"), true);
+            assert_eq!(object.delete(avm, context.gc_context, "virtual_un"), false);
+            assert_eq!(object.delete(avm, context.gc_context, "stored"), true);
+            assert_eq!(object.delete(avm, context.gc_context, "stored_un"), false);
+            assert_eq!(
+                object.delete(avm, context.gc_context, "non_existent"),
+                false
+            );
 
             assert_eq!(
                 object.get("virtual", avm, context).unwrap(),
@@ -821,7 +868,7 @@ mod tests {
 
     #[test]
     fn test_iter_values() {
-        with_object(0, |_avm, context, object| {
+        with_object(0, |avm, context, object| {
             let getter = Executable::Native(|_avm, _context, _this, _args| {
                 Ok(ReturnValue::Immediate(Value::Null))
             });
@@ -853,7 +900,7 @@ mod tests {
                 DontEnum.into(),
             );
 
-            let keys = object.get_keys();
+            let keys: Vec<_> = object.get_keys(avm);
             assert_eq!(keys.len(), 2);
             assert_eq!(keys.contains(&"stored".to_string()), true);
             assert_eq!(keys.contains(&"stored_hidden".to_string()), false);

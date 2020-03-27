@@ -8,7 +8,6 @@ use crate::avm1::{Avm1, Error, Object, ScriptObject, UpdateContext, Value};
 use crate::xml::{XMLDocument, XMLNode};
 use enumset::EnumSet;
 use gc_arena::{Collect, MutationContext};
-use std::collections::HashSet;
 use std::fmt;
 
 /// An Object that is inherently tied to an XML document's ID map.
@@ -104,8 +103,13 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         Err("Cannot create new XML Attributes object".into())
     }
 
-    fn delete(&self, gc_context: MutationContext<'gc, '_>, name: &str) -> bool {
-        self.base().delete(gc_context, name)
+    fn delete(
+        &self,
+        avm: &mut Avm1<'gc>,
+        gc_context: MutationContext<'gc, '_>,
+        name: &str,
+    ) -> bool {
+        self.base().delete(avm, gc_context, name)
     }
 
     fn add_property(
@@ -118,6 +122,19 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
     ) {
         self.base()
             .add_property(gc_context, name, get, set, attributes)
+    }
+
+    fn add_property_with_case(
+        &self,
+        avm: &mut Avm1<'gc>,
+        gc_context: MutationContext<'gc, '_>,
+        name: &str,
+        get: Executable<'gc>,
+        set: Option<Executable<'gc>>,
+        attributes: EnumSet<Attribute>,
+    ) {
+        self.base()
+            .add_property_with_case(avm, gc_context, name, get, set, attributes)
     }
 
     fn define_value(
@@ -146,28 +163,37 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         self.base().proto()
     }
 
-    fn has_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
-        self.base().has_property(context, name)
+    fn has_property(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
+        self.base().has_property(avm, context, name)
     }
 
-    fn has_own_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_property(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
         self.document().get_node_by_id(name).is_some()
-            || self.base().has_own_property(context, name)
+            || self.base().has_own_property(avm, context, name)
     }
 
-    fn is_property_overwritable(&self, name: &str) -> bool {
-        self.base().is_property_overwritable(name)
+    fn is_property_overwritable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
+        self.base().is_property_overwritable(avm, name)
     }
 
-    fn is_property_enumerable(&self, name: &str) -> bool {
-        self.base().is_property_enumerable(name)
+    fn is_property_enumerable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
+        self.base().is_property_enumerable(avm, name)
     }
 
-    fn get_keys(&self) -> HashSet<String> {
-        let keys = self.base().get_keys();
-        keys.union(&self.document().get_node_ids())
-            .map(|s| s.to_string())
-            .collect()
+    fn get_keys(&self, avm: &mut Avm1<'gc>) -> Vec<String> {
+        let mut keys = self.base().get_keys(avm);
+        keys.extend(self.document().get_node_ids().into_iter());
+        keys
     }
 
     fn as_string(&self) -> String {

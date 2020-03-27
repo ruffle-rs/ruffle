@@ -9,7 +9,6 @@ use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::collections::HashSet;
 use std::fmt;
 
 /// A SounObject that is tied to a sound from the AudioBackend.
@@ -171,8 +170,13 @@ impl<'gc> TObject<'gc> for SoundObject<'gc> {
         Ok(SoundObject::empty_sound(context.gc_context, Some(avm.prototypes.sound)).into())
     }
 
-    fn delete(&self, gc_context: MutationContext<'gc, '_>, name: &str) -> bool {
-        self.base().delete(gc_context, name)
+    fn delete(
+        &self,
+        avm: &mut Avm1<'gc>,
+        gc_context: MutationContext<'gc, '_>,
+        name: &str,
+    ) -> bool {
+        self.base().delete(avm, gc_context, name)
     }
 
     fn proto(&self) -> Option<Object<'gc>> {
@@ -213,24 +217,47 @@ impl<'gc> TObject<'gc> for SoundObject<'gc> {
             .add_property(gc_context, name, get, set, attributes)
     }
 
-    fn has_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
-        self.base().has_property(context, name)
+    fn add_property_with_case(
+        &self,
+        avm: &mut Avm1<'gc>,
+        gc_context: MutationContext<'gc, '_>,
+        name: &str,
+        get: Executable<'gc>,
+        set: Option<Executable<'gc>>,
+        attributes: EnumSet<Attribute>,
+    ) {
+        self.base()
+            .add_property_with_case(avm, gc_context, name, get, set, attributes)
     }
 
-    fn has_own_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
-        self.base().has_own_property(context, name)
+    fn has_property(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
+        self.base().has_property(avm, context, name)
     }
 
-    fn is_property_overwritable(&self, name: &str) -> bool {
-        self.base().is_property_overwritable(name)
+    fn has_own_property(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
+        self.base().has_own_property(avm, context, name)
     }
 
-    fn is_property_enumerable(&self, name: &str) -> bool {
-        self.base().is_property_enumerable(name)
+    fn is_property_overwritable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
+        self.base().is_property_overwritable(avm, name)
     }
 
-    fn get_keys(&self) -> HashSet<String> {
-        self.base().get_keys()
+    fn is_property_enumerable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
+        self.base().is_property_enumerable(avm, name)
+    }
+
+    fn get_keys(&self, avm: &mut Avm1<'gc>) -> Vec<String> {
+        self.base().get_keys(avm)
     }
 
     fn as_string(&self) -> String {

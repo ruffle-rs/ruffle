@@ -9,7 +9,6 @@ use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::collections::HashSet;
 
 /// Implementation of the `super` object in AS2.
 ///
@@ -121,7 +120,12 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         }
     }
 
-    fn delete(&self, _gc_context: MutationContext<'gc, '_>, _name: &str) -> bool {
+    fn delete(
+        &self,
+        _avm: &mut Avm1<'gc>,
+        _gc_context: MutationContext<'gc, '_>,
+        _name: &str,
+    ) -> bool {
         //`super` cannot have properties deleted from it
         false
     }
@@ -161,25 +165,46 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         //`super` cannot have properties defined on it
     }
 
-    fn has_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
-        self.0.read().child.has_property(context, name)
+    fn add_property_with_case(
+        &self,
+        _avm: &mut Avm1<'gc>,
+        _gc_context: MutationContext<'gc, '_>,
+        _name: &str,
+        _get: Executable<'gc>,
+        _set: Option<Executable<'gc>>,
+        _attributes: EnumSet<Attribute>,
+    ) {
+        //`super` cannot have properties defined on it
     }
 
-    fn has_own_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
-        self.0.read().child.has_own_property(context, name)
+    fn has_property(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
+        self.0.read().child.has_property(avm, context, name)
     }
 
-    fn is_property_enumerable(&self, name: &str) -> bool {
-        self.0.read().child.is_property_enumerable(name)
+    fn has_own_property(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
+        self.0.read().child.has_own_property(avm, context, name)
     }
 
-    fn is_property_overwritable(&self, name: &str) -> bool {
-        self.0.read().child.is_property_overwritable(name)
+    fn is_property_enumerable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
+        self.0.read().child.is_property_enumerable(avm, name)
     }
 
-    fn get_keys(&self) -> HashSet<String> {
-        //`super` cannot be enumerated
-        HashSet::new()
+    fn is_property_overwritable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
+        self.0.read().child.is_property_overwritable(avm, name)
+    }
+
+    fn get_keys(&self, _avm: &mut Avm1<'gc>) -> Vec<String> {
+        vec![]
     }
 
     fn as_string(&self) -> String {

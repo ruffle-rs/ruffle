@@ -85,7 +85,7 @@ pub fn remove_listener<'gc>(
                 }
 
                 listeners.delete_array_element(new_length, context.gc_context);
-                listeners.delete(context.gc_context, &new_length.to_string());
+                listeners.delete(avm, context.gc_context, &new_length.to_string());
 
                 listeners.set_length(context.gc_context, new_length);
             }
