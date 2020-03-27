@@ -21,6 +21,7 @@ mod loader;
 pub mod matrix;
 mod player;
 mod prelude;
+mod property_map;
 pub mod shape_utils;
 pub mod string_utils;
 pub mod tag_utils;
