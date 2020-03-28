@@ -255,14 +255,11 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         // Keys from the underlying object are listed first, followed by
         // child display objects in order from highest depth to lowest depth.
         let mut keys = self.base.get_keys(avm);
-        for child in self
-            .display_object
-            .children()
-            .map(|child| child.name().to_string())
-        {
-            keys.push(child)
-        }
-
+        keys.extend(
+            self.display_object
+                .children()
+                .map(|child| child.name().to_string()),
+        );
         keys
     }
 

@@ -463,20 +463,23 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         let proto_keys = self.proto().map_or_else(Vec::new, |p| p.get_keys(avm));
         let mut out_keys = vec![];
         let object = self.0.read();
-        for key in proto_keys {
-            if !object.values.contains_key(&key, avm.is_case_sensitive()) {
-                out_keys.push(key);
-            }
-        }
-        for key in self.0.read().values.iter().filter_map(move |(k, p)| {
+
+        // Prototype keys come first.
+        out_keys.extend(
+            proto_keys
+                .into_iter()
+                .filter(|k| !object.values.contains_key(k, avm.is_case_sensitive())),
+        );
+
+        // Then our own keys.
+        out_keys.extend(self.0.read().values.iter().filter_map(move |(k, p)| {
             if p.is_enumerable() {
                 Some(k.to_string())
             } else {
                 None
             }
-        }) {
-            out_keys.push(key)
-        }
+        }));
+
         out_keys
     }
 
