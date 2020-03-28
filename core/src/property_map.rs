@@ -71,6 +71,11 @@ impl<V> PropertyMap<V> {
         }
     }
 
+    /// Gets a value by index, based on insertion order.
+    pub fn get_index(&self, index: usize) -> Option<&V> {
+        self.0.get_index(index).map(|(_, v)| v)
+    }
+
     pub fn insert(&mut self, key: String, value: V, case_sensitive: bool) -> Option<V> {
         match self.entry(key, case_sensitive) {
             Entry::Occupied(entry) => Some(entry.insert(value)),
