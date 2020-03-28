@@ -7,7 +7,7 @@ jobs:
   # General testing, linux + web build
   build:
     docker:
-      - image: circleci/rust:1.41
+      - image: circleci/rust:1.42
     steps:
       # Git checkout
       - checkout
@@ -32,6 +32,7 @@ jobs:
             sudo apt-get -y install libasound2-dev # Required for cpal crate on Linux
             curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
             sudo apt-get install -y nodejs
+            curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
             mkdir workspace
 
       # Run tests

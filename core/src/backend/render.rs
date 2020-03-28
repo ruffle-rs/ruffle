@@ -336,9 +336,9 @@ pub fn unmultiply_alpha_rgba(rgba: &mut [u8]) {
     rgba.chunks_exact_mut(4).for_each(|rgba| {
         if rgba[3] > 0 {
             let a = f32::from(rgba[3]) / 255.0;
-            rgba[0] = (f32::from(rgba[0]) / a) as u8;
-            rgba[1] = (f32::from(rgba[1]) / a) as u8;
-            rgba[2] = (f32::from(rgba[2]) / a) as u8;
+            rgba[0] = f32::min(f32::from(rgba[0]) / a, 255.0) as u8;
+            rgba[1] = f32::min(f32::from(rgba[1]) / a, 255.0) as u8;
+            rgba[2] = f32::min(f32::from(rgba[2]) / a, 255.0) as u8;
         }
     })
 }

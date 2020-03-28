@@ -5,7 +5,7 @@ authors = ["Mike Welsh <mwelsh@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-bitstream-io = "0.8.2"
+bitstream-io = "0.8.5"
 fnv = "1.0.3"
 gc-arena = "0.2.0"
 gc-arena-derive = "0.2.0"
@@ -18,8 +18,8 @@ ruffle_macros = { path = "macros" }
 swf = { path = "../swf" }
 enumset = "0.4.5"
 smallvec = "1.2.0"
-num_enum = "0.4.2"
-quick-xml = "0.17.2"
+num_enum = "0.4.3"
+quick-xml = "0.18.1"
 downcast-rs = "1.1.1"
 url = "2.1.0"
 weak-table = "0.2.3"

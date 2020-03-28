@@ -1,0 +1,30 @@
+// a.b.c
+from global
+
+// a.b
+from this
+
+// f() a.b
+from f()
+
+// a.b.c
+from global
+
+// _global.a.b.c.d
+global
+// _global.a.b.c.d
+changed
+
+// _root.a.b
+root
+// _root.a.b
+changed 2
+
+// _root.a.b.c
+changed 3
+
+// f2() a.b
+from f2()
+// f2() a.b
+changed 4
+

@@ -791,8 +791,8 @@ fn swf_shape_to_svg(
                                         gradient_matrix.b,
                                         gradient_matrix.c,
                                         gradient_matrix.d,
-                                        gradient_matrix.tx,
-                                        gradient_matrix.ty
+                                        gradient_matrix.tx.get(),
+                                        gradient_matrix.ty.get()
                                     ),
                                 );
                             for record in &gradient.records {
@@ -839,8 +839,8 @@ fn swf_shape_to_svg(
                                         gradient_matrix.b,
                                         gradient_matrix.c,
                                         gradient_matrix.d,
-                                        gradient_matrix.tx,
-                                        gradient_matrix.ty
+                                        gradient_matrix.tx.get(),
+                                        gradient_matrix.ty.get()
                                     ),
                                 );
                             for record in &gradient.records {
@@ -891,8 +891,8 @@ fn swf_shape_to_svg(
                                         gradient_matrix.b,
                                         gradient_matrix.c,
                                         gradient_matrix.d,
-                                        gradient_matrix.tx,
-                                        gradient_matrix.ty
+                                        gradient_matrix.tx.get(),
+                                        gradient_matrix.ty.get()
                                     ),
                                 );
                             for record in &gradient.records {
@@ -1191,8 +1191,6 @@ fn swf_shape_to_canvas_commands(
                         )
                         .expect("html image element");
 
-                        image.set_src(*bitmap_data);
-
                         if !*is_smoothed {
                             //image = image.set("image-rendering", pixelated_property_value);
                         }
@@ -1206,6 +1204,10 @@ fn swf_shape_to_canvas_commands(
                         let bitmap_pattern = context
                             .create_pattern_with_html_image_element(&image, repeat)
                             .expect("pattern creation success")?;
+
+                        // Set source below the pattern creation because otherwise the bitmap gets screwed up
+                        // when cached? (Issue #412)
+                        image.set_src(*bitmap_data);
 
                         let a = Matrix::from(matrix.clone());
 

@@ -334,7 +334,7 @@ impl<'gc> Loader<'gc> {
                             .expect("Attempted to load movie into not movie clip");
 
                         mc.replace_with_movie(uc.gc_context, Some(movie.clone()));
-                        mc.post_instantiation(uc.gc_context, clip, avm.prototypes().movie_clip);
+                        mc.post_instantiation(avm, uc, clip);
 
                         let mut morph_shapes = fnv::FnvHashMap::default();
                         mc.preload(uc, &mut morph_shapes);

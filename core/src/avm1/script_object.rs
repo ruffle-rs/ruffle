@@ -587,7 +587,6 @@ mod tests {
             let mut avm = Avm1::new(gc_context, swf_version);
             let swf = Arc::new(SwfMovie::empty(swf_version));
             let mut root: DisplayObject<'_> = MovieClip::new(swf_version, gc_context).into();
-            root.post_instantiation(gc_context, root, avm.prototypes().movie_clip);
             root.set_depth(gc_context, 0);
             let mut levels = BTreeMap::new();
             levels.insert(0, root);
@@ -619,6 +618,8 @@ mod tests {
                 player: None,
                 load_manager: &mut LoadManager::new(),
             };
+
+            root.post_instantiation(&mut avm, &mut context, root);
 
             let object = ScriptObject::object(gc_context, Some(avm.prototypes().object)).into();
 

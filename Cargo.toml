@@ -11,3 +11,9 @@ members = [
 # Don't optimize build scripts and macros.
 [profile.release.build-override]
 opt-level = 0
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"

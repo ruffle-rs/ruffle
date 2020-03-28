@@ -2,6 +2,10 @@ import RuffleObject from "./ruffle-object";
 import RuffleEmbed from "./ruffle-embed";
 import { install_plugin, FLASH_PLUGIN } from "./plugin-polyfill";
 
+// Live collection for object and embed tags.
+let objects = null;
+let embeds = null;
+
 /**
  * Polyfill native elements with Ruffle equivalents.
  * 
@@ -10,27 +14,23 @@ import { install_plugin, FLASH_PLUGIN } from "./plugin-polyfill";
  * keep native objects out of the DOM, and thus out of JavaScript's grubby
  * little hands, but only if we load first.
  */
-function wrap_tree(elem) {
+function replace_flash_instances() {
     try {
-        if (elem.nodeName.toLowerCase() === "object" && RuffleObject.is_interdictable(elem)) {
-            let ruffle_obj = RuffleObject.from_native_object_element(elem);
-            elem.parentElement.replaceChild(ruffle_obj, elem);
-        } else if (elem.nodeName.toLowerCase() === "embed" && RuffleEmbed.is_interdictable(elem)) {
-            let ruffle_obj = RuffleEmbed.from_native_object_element(elem);
-            elem.parentElement.replaceChild(ruffle_obj, elem);
-        } else {
-            for (let node of Array.from(elem.getElementsByTagName("object"))) {
-                if (RuffleObject.is_interdictable(node)) {
-                    let ruffle_obj = RuffleObject.from_native_object_element(node);
-                    node.parentElement.replaceChild(ruffle_obj, node);
-                }
-            }
+        // Create live collections to track embed tags.
+        objects = objects || document.getElementsByTagName("object");
+        embeds = embeds || document.getElementsByTagName("embed");
 
-            for (let node of Array.from(elem.getElementsByTagName("embed"))) {
-                if (RuffleEmbed.is_interdictable(node)) {
-                    let ruffle_obj = RuffleEmbed.from_native_embed_element(node);
-                    node.parentElement.replaceChild(ruffle_obj, node);
-                }
+        // Replace <object> first, because <object> often wraps <embed>.
+        for (let elem of Array.from(objects)) {
+            if (RuffleObject.is_interdictable(elem)) {
+                let ruffle_obj = RuffleObject.from_native_object_element(elem);
+                elem.replaceWith(ruffle_obj);
+            }
+        }
+        for (let elem of Array.from(embeds)) {
+            if (RuffleEmbed.is_interdictable(elem)) {
+                let ruffle_obj = RuffleEmbed.from_native_embed_element(elem);
+                elem.replaceWith(ruffle_obj);
             }
         }
     } catch (err) {
@@ -39,20 +39,17 @@ function wrap_tree(elem) {
 }
 
 function polyfill_static_content() {
-    wrap_tree(document.getElementsByTagName("html")[0]);
+    replace_flash_instances();
 }
 
 
 function polyfill_dynamic_content() {
+    // Listen for changes to the DOM. If nodes are added, re-check for any Flash instances.
     const observer = new MutationObserver(function (mutationsList, observer) {
-        for (let mutation of mutationsList) {
-            for (let node of mutation.addedNodes) {
-                if (node instanceof Element) {
-                    wrap_tree(node);
-                } else {
-                    console.error("Cannot process added node of type " + node.constructor.name);
-                }
-            }
+        // If any nodes were added, re-run the polyfill to replace any new instances.
+        let nodesAdded = mutationsList.some(mutation => mutation.addedNodes.length > 0);
+        if (nodesAdded) {
+            replace_flash_instances();
         }
     });
 

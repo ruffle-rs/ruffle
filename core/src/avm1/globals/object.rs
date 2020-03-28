@@ -1,7 +1,9 @@
 //! Object prototype
+use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::{self, *};
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, TObject, UpdateContext, Value};
+use crate::character::Character;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
@@ -127,6 +129,30 @@ fn value_of<'gc>(
     _: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     Ok(ReturnValue::Immediate(this.into()))
+}
+
+/// Implements `Object.registerClass`
+pub fn register_class<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(class_name) = args.get(0).cloned() {
+        let class_name = class_name.coerce_to_string(avm, context)?;
+        if let Some(Character::MovieClip(movie_clip)) = context
+            .library
+            .library_for_movie_mut(context.swf.clone())
+            .get_character_by_export_name(&class_name)
+        {
+            if let Some(constructor) = args.get(1) {
+                movie_clip.set_avm1_constructor(context.gc_context, Some(constructor.as_object()?));
+            } else {
+                movie_clip.set_avm1_constructor(context.gc_context, None);
+            }
+        }
+    }
+    Ok(Value::Undefined.into())
 }
 
 /// Partially construct `Object.prototype`.
@@ -258,4 +284,28 @@ pub fn as_set_prop_flags<'gc>(
     }
 
     Ok(Value::Undefined.into())
+}
+
+pub fn create_object_object<'gc>(
+    gc_context: MutationContext<'gc, '_>,
+    proto: Object<'gc>,
+    fn_proto: Object<'gc>,
+) -> Object<'gc> {
+    let object_function = FunctionObject::function(
+        gc_context,
+        Executable::Native(constructor),
+        Some(fn_proto),
+        Some(proto),
+    );
+    let mut object = object_function.as_script_object().unwrap();
+
+    object.force_set_function(
+        "registerClass",
+        register_class,
+        gc_context,
+        Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
+        Some(fn_proto),
+    );
+
+    object_function
 }

@@ -7,7 +7,7 @@
     "serve": "webpack-dev-server"
   },
   "devDependencies": {
-    "@wasm-tool/wasm-pack-plugin": "0.2.1",
+    "@wasm-tool/wasm-pack-plugin": "^1.2.0",
     "clean-webpack-plugin": "^3.0.0",
     "copy-webpack-plugin": "^5.1.0",
     "webpack": "^4.41.2",

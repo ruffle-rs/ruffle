@@ -1,4 +1,5 @@
 use crate::avm1::function::Executable;
+use crate::avm1::globals::display_object;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
@@ -192,13 +193,12 @@ pub fn create_proto<'gc>(
 ) -> Object<'gc> {
     let mut object = ScriptObject::object(gc_context, Some(proto));
 
+    display_object::define_display_object_proto(gc_context, object, fn_proto);
+
     with_text_field!(
         gc_context,
         object,
         Some(fn_proto),
-        "toString" => |text_field: EditText<'gc>, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>, _args| {
-            Ok(text_field.path().into())
-        },
         "getNewTextFormat" => |text_field: EditText<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
             let tf = text_field.new_text_format();
 

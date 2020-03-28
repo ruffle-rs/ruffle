@@ -1,15 +1,51 @@
+// mc = _root.attachMovie("Clip", "clip", 0)
+// clip
 _level0.clip
+
+// clip == mc
 true
+
+// mc._x
 0
+
+// mc._y
 0
+
+// mc = _root.attachMovie("BOGUS", "clip", 0)
+// mc
 undefined
+
+// clip == mc
 false
+
+// mc = _root.attachMovie("Clip", "clip", 0, {_x: 100, _y: 50, foo: "foo"})
+// clip == mc
 true
+
+// mc._x
 100
+
+// mc._y
 50
+
+// mc.foo
 foo
+
+// mc = _root.attachMovie("Clip", "clip", -1)
+// clip == mc
 true
+
+// mc._x
 0
+
+// mc._y
 0
+
+// mc2 = _root.attachMovie("Clip", "clip2", 2130690044)
+// mc2
 _level0.clip2
+
+// mc3 = _root.attachMovie("Clip", "clip2", 2130690045)
+// mc3
 undefined
+

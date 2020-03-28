@@ -1,5 +1,3 @@
-use crate::avm1::globals::SystemPrototypes;
-use crate::avm1::Object;
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
@@ -79,14 +77,14 @@ impl<'gc> MovieLibrary<'gc> {
     }
 
     /// Instantiates the library item with the given character ID into a display object.
+    /// The object must then be post-instantiated before being used.
     pub fn instantiate_by_id(
         &self,
         id: CharacterId,
         gc_context: MutationContext<'gc, '_>,
-        prototypes: &SystemPrototypes<'gc>,
     ) -> Result<DisplayObject<'gc>, Box<dyn std::error::Error>> {
         if let Some(character) = self.characters.get(&id) {
-            self.instantiate_display_object(character, gc_context, prototypes)
+            self.instantiate_display_object(character, gc_context)
         } else {
             log::error!("Tried to instantiate non-registered character ID {}", id);
             Err("Character id doesn't exist".into())
@@ -94,14 +92,14 @@ impl<'gc> MovieLibrary<'gc> {
     }
 
     /// Instantiates the library item with the given export name into a display object.
+    /// The object must then be post-instantiated before being used.
     pub fn instantiate_by_export_name(
         &self,
         export_name: &str,
         gc_context: MutationContext<'gc, '_>,
-        prototypes: &SystemPrototypes<'gc>,
     ) -> Result<DisplayObject<'gc>, Box<dyn std::error::Error>> {
         if let Some(character) = self.export_characters.get(export_name) {
-            self.instantiate_display_object(character, gc_context, prototypes)
+            self.instantiate_display_object(character, gc_context)
         } else {
             log::error!(
                 "Tried to instantiate non-registered character {}",
@@ -112,30 +110,22 @@ impl<'gc> MovieLibrary<'gc> {
     }
 
     /// Instantiates the given character into a display object.
+    /// The object must then be post-instantiated before being used.
     fn instantiate_display_object(
         &self,
         character: &Character<'gc>,
         gc_context: MutationContext<'gc, '_>,
-        prototypes: &SystemPrototypes<'gc>,
     ) -> Result<DisplayObject<'gc>, Box<dyn std::error::Error>> {
-        let (mut obj, proto): (DisplayObject<'gc>, Object<'gc>) = match character {
-            Character::Bitmap(bitmap) => (bitmap.instantiate(gc_context), prototypes.object),
-            Character::EditText(edit_text) => {
-                (edit_text.instantiate(gc_context), prototypes.text_field)
-            }
-            Character::Graphic(graphic) => (graphic.instantiate(gc_context), prototypes.object),
-            Character::MorphShape(morph_shape) => {
-                (morph_shape.instantiate(gc_context), prototypes.object)
-            }
-            Character::MovieClip(movie_clip) => {
-                (movie_clip.instantiate(gc_context), prototypes.movie_clip)
-            }
-            Character::Button(button) => (button.instantiate(gc_context), prototypes.object),
-            Character::Text(text) => (text.instantiate(gc_context), prototypes.object),
-            _ => return Err("Not a DisplayObject".into()),
-        };
-        obj.post_instantiation(gc_context, obj, proto);
-        Ok(obj)
+        match character {
+            Character::Bitmap(bitmap) => Ok(bitmap.instantiate(gc_context)),
+            Character::EditText(edit_text) => Ok(edit_text.instantiate(gc_context)),
+            Character::Graphic(graphic) => Ok(graphic.instantiate(gc_context)),
+            Character::MorphShape(morph_shape) => Ok(morph_shape.instantiate(gc_context)),
+            Character::MovieClip(movie_clip) => Ok(movie_clip.instantiate(gc_context)),
+            Character::Button(button) => Ok(button.instantiate(gc_context)),
+            Character::Text(text) => Ok(text.instantiate(gc_context)),
+            _ => Err("Not a DisplayObject".into()),
+        }
     }
 
     pub fn get_font(&self, id: CharacterId) -> Option<Font<'gc>> {

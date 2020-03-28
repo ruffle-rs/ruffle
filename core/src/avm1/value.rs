@@ -187,8 +187,26 @@ impl<'gc> Value<'gc> {
                     }
                     f64::from(n as i32)
                 }
+                v if avm.current_swf_version() >= 6
+                    && (v.starts_with('0') || v.starts_with("+0") || v.starts_with("-0"))
+                    && v[1..].bytes().all(|c| c >= b'0' && c <= b'7') =>
+                {
+                    let trimmed = v.trim_start_matches(|c| c == '+' || c == '-');
+                    let mut n: u32 = 0;
+                    for c in trimmed.bytes() {
+                        n = n.wrapping_shl(3);
+                        n |= (c - b'0') as u32;
+                    }
+                    if v.starts_with('-') {
+                        n = n.wrapping_neg();
+                    }
+                    f64::from(n as i32)
+                }
                 "" => NAN,
-                _ => v.trim_start().parse().unwrap_or(NAN),
+                _ => v
+                    .trim_start_matches(|c| c == '\t' || c == '\n' || c == '\r' || c == ' ')
+                    .parse()
+                    .unwrap_or(NAN),
             },
             Value::Object(_) => NAN,
         }

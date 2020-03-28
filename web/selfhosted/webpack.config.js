@@ -23,7 +23,7 @@ module.exports = (env, argv) => {
       new CleanWebpackPlugin(),
       new WasmPackPlugin({
         crateDirectory: path.resolve(__dirname, ".."),
-        extraArgs: "--out-name=ruffle",
+        outName: "ruffle",
         forceMode: mode,
       })
     ]

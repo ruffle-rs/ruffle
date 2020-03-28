@@ -6,6 +6,8 @@ export let FLASH_MIMETYPE = "application/x-shockwave-flash";
 export let FUTURESPLASH_MIMETYPE = "application/futuresplash";
 export let FLASH_ACTIVEX_CLASSID = "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000";
 
+const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
+
 export class RufflePlayer extends HTMLElement {
     constructor(...args) {
         let self = super(...args);
@@ -44,12 +46,18 @@ export class RufflePlayer extends HTMLElement {
             this.dynamic_styles.sheet.deleteRule(i);
         }
 
-        if (this.attributes.width && !isNaN(parseInt(this.attributes.width.value))) {
-            this.dynamic_styles.sheet.insertRule(":host { width: " + this.attributes.width.value + "px; }");
+        if (this.attributes.width) {
+            let width = RufflePlayer.html_dimension_to_css_dimension(this.attributes.width.value);
+            if (width !== null) {
+                this.dynamic_styles.sheet.insertRule(`:host { width: ${width}; }`);
+            }
         }
 
-        if (this.attributes.height && !isNaN(parseInt(this.attributes.height.value))) {
-            this.dynamic_styles.sheet.insertRule(":host { height: " + this.attributes.height.value + "px; }");
+        if (this.attributes.height) {
+            let height = RufflePlayer.html_dimension_to_css_dimension(this.attributes.height.value);
+            if (height !== null) {
+                this.dynamic_styles.sheet.insertRule(`:host { height: ${height}; }`);
+            }
         }
     }
 
@@ -121,4 +129,60 @@ export class RufflePlayer extends HTMLElement {
             console.warn("Ignoring attempt to play a disconnected or suspended Ruffle element");
         }
     }
+
+    /*
+     * Copies attributes and children from another element to this player element.
+     * Used by the polyfill elements, RuffleObject and RuffleEmbed.
+     */
+    copy_element(elem) {
+        if (elem) {
+            for (let attrib of elem.attributes) {
+                if (attrib.specified) {
+                    // Issue 468: Chrome "Click to Active Flash" box stomps on title attribute
+                    if (attrib.name === "title" && attrib.value === "Adobe Flash Player") {
+                        continue;
+                    }
+
+                    try {
+                        this.setAttribute(attrib.name, attrib.value);
+                    } catch (err) {
+                        // The embed may have invalid attributes, so handle these gracefully.
+                        console.warn(`Unable to set attribute ${attrib.name} on Ruffle instance`);
+                    }
+                }
+            }
+
+            for (let node of Array.from(elem.children)) {
+                this.appendChild(node);
+            }
+        }
+    }
+
+    /*
+     * Converts a dimension attribute on an HTML embed/object element to a valid CSS dimension.
+     * HTML element dimensions are unitless, but can also be percentages.
+     * Add a 'px' unit unless the value is a percentage.
+     * Returns null if this is not a valid dimension.
+     */
+    static html_dimension_to_css_dimension(attribute) {
+        if (attribute) {
+            let match = attribute.match(DIMENSION_REGEX);
+            if (match) {
+                let out = match[1];
+                if (!match[3]) {
+                    // Unitless -- add px for CSS.
+                    out += "px"
+                }
+                return out;
+            }
+        }
+        return null;
+    }
+}
+
+/*
+ * Returns whether the given filename ends in an "swf" extension.
+ */
+export function is_swf_filename(filename) {
+    return filename && typeof filename === "string" && filename.search(/\.swf\s*$/i) >= 0;
 }

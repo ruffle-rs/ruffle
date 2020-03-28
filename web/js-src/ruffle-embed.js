@@ -1,5 +1,5 @@
-import {FLASH_MIMETYPE, FUTURESPLASH_MIMETYPE, RufflePlayer} from "./ruffle-player.js";
-import {register_element} from "./register-element";
+import { FLASH_MIMETYPE, FUTURESPLASH_MIMETYPE, is_swf_filename, RufflePlayer } from "./ruffle-player.js";
+import { register_element } from "./register-element";
 
 export default class RuffleEmbed extends RufflePlayer {
     constructor(...args) {
@@ -34,21 +34,19 @@ export default class RuffleEmbed extends RufflePlayer {
     }
 
     static is_interdictable(elem) {
-        return elem.type === FLASH_MIMETYPE || elem.type === FUTURESPLASH_MIMETYPE;
+        if (elem.type === FLASH_MIMETYPE || elem.type === FUTURESPLASH_MIMETYPE) {
+            return true;
+        } else if (elem.type === undefined || elem.type === "") {
+            return is_swf_filename(elem.src);
+        }
+
+        return false;
     }
 
     static from_native_embed_element(elem) {
         let external_name = register_element("ruffle-embed", RuffleEmbed);
         let ruffle_obj = document.createElement(external_name);
-        for (let attrib of elem.attributes) {
-            if (attrib.specified) {
-                ruffle_obj.setAttribute(attrib.name, attrib.value);
-            }
-        }
-
-        for (let node of Array.from(elem.children)) {
-            ruffle_obj.appendChild(node);
-        }
+        ruffle_obj.copy_element(elem);
 
         return ruffle_obj;
     }
