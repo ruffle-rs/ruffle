@@ -380,18 +380,12 @@ unsafe impl<'gc> Collect for DisplayProperty<'gc> {
 /// The map from key/index to function pointers for special display object properties.
 #[derive(Collect)]
 #[collect(no_drop)]
-pub struct DisplayPropertyMap<'gc> {
-    property_by_name: PropertyMap<DisplayProperty<'gc>>,
-    property_by_index: Vec<DisplayProperty<'gc>>,
-}
+pub struct DisplayPropertyMap<'gc>(PropertyMap<DisplayProperty<'gc>>);
 
 impl<'gc> DisplayPropertyMap<'gc> {
     /// Creates the display property map.
     pub fn new(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, DisplayPropertyMap<'gc>> {
-        let mut property_map = DisplayPropertyMap {
-            property_by_name: PropertyMap::new(),
-            property_by_index: Vec::with_capacity(21),
-        };
+        let mut property_map = DisplayPropertyMap(PropertyMap::new());
 
         // Order is important:
         // should match the SWF specs for GetProperty/SetProperty.
@@ -426,7 +420,7 @@ impl<'gc> DisplayPropertyMap<'gc> {
     pub fn get_by_name(&self, name: &str) -> Option<&DisplayProperty<'gc>> {
         // Display object properties are case insensitive, regardless of SWF version!?
         // TODO: Another string alloc; optimize this eventually.
-        self.property_by_name.get(&name, false)
+        self.0.get(&name, false)
     }
 
     /// Gets a property slot by SWF4 index.
@@ -434,7 +428,7 @@ impl<'gc> DisplayPropertyMap<'gc> {
     /// Used by `GetProperty`/`SetProperty`.
     /// SWF19 pp. 85-86
     pub fn get_by_index(&self, index: usize) -> Option<&DisplayProperty<'gc>> {
-        self.property_by_index.get(index)
+        self.0.get_index(index)
     }
 
     fn add_property(
@@ -444,9 +438,7 @@ impl<'gc> DisplayPropertyMap<'gc> {
         set: Option<DisplaySetter<'gc>>,
     ) {
         let prop = DisplayProperty { get, set };
-        self.property_by_name
-            .insert(name.to_string(), prop.clone(), false);
-        self.property_by_index.push(prop);
+        self.0.insert(name.to_string(), prop.clone(), false);
     }
 }
 
