@@ -179,6 +179,8 @@ swf_tests! {
     (roots_and_levels, "avm1/roots_and_levels", 1),
     (swf6_case_insensitive, "avm1/swf6_case_insensitive", 1),
     (swf7_case_sensitive, "avm1/swf7_case_sensitive", 1),
+    (prototype_enumerate, "avm1/prototype_enumerate", 1),
+    (stage_object_enumerate, "avm1/stage_object_enumerate", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
@@ -189,32 +191,6 @@ swf_tests_approx! {
     (stage_object_properties, "avm1/stage_object_properties", 4, 0.051),
     (stage_object_properties_swf6, "avm1/stage_object_properties_swf6", 4, 0.051),
     (movieclip_getbounds, "avm1/movieclip_getbounds", 1, 0.051),
-}
-
-#[test]
-fn test_prototype_enumerate() -> Result<(), Error> {
-    let trace_log = run_swf("tests/swfs/avm1/prototype_enumerate/test.swf", 1)?;
-    let mut actual: Vec<String> = trace_log.lines().map(|s| s.to_string()).collect();
-    let mut expected = vec!["a", "b", "c", "d", "e"];
-
-    actual.sort();
-    expected.sort();
-
-    assert_eq!(actual, expected, "ruffle output != flash player output");
-    Ok(())
-}
-
-#[test]
-fn test_stage_object_enumerate() -> Result<(), Error> {
-    let trace_log = run_swf("tests/swfs/avm1/stage_object_enumerate/test.swf", 1)?;
-    let mut actual: Vec<String> = trace_log.lines().map(|s| s.to_string()).collect();
-    let mut expected = vec!["clip1", "clip2", "clip3", "foo"];
-
-    actual.sort();
-    expected.sort();
-
-    assert_eq!(actual, expected, "ruffle output != flash player output");
-    Ok(())
 }
 
 /// Wrapper around string slice that makes debug output `{:?}` to print string same way as `{}`.
