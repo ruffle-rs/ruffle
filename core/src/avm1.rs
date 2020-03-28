@@ -1522,7 +1522,7 @@ impl<'gc> Avm1<'gc> {
 
         match object {
             Value::Object(ob) => {
-                for k in ob.get_keys(self) {
+                for k in ob.get_keys(self).into_iter().rev() {
                     self.push(k);
                 }
             }
@@ -1539,7 +1539,7 @@ impl<'gc> Avm1<'gc> {
         let object = self.pop().as_object()?;
 
         self.push(Value::Null); // Sentinel that indicates end of enumeration
-        for k in object.get_keys(self) {
+        for k in object.get_keys(self).into_iter().rev() {
             self.push(k);
         }
 

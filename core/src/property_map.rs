@@ -81,12 +81,14 @@ impl<V> PropertyMap<V> {
         }
     }
 
+    /// Returns the value tuples in Flash's iteration order (most recently added first).
     pub fn iter(&self) -> impl Iterator<Item = (&String, &V)> {
-        self.0.iter().map(|(k, v)| (&k.0, v))
+        self.0.iter().rev().map(|(k, v)| (&k.0, v))
     }
 
+    /// Returns the key-value tuples in Flash's iteration order (most recently added first).
     pub fn iter_mut(&mut self) -> impl Iterator<Item = (&String, &mut V)> {
-        self.0.iter_mut().map(|(k, v)| (&k.0, v))
+        self.0.iter_mut().rev().map(|(k, v)| (&k.0, v))
     }
 
     pub fn remove(&mut self, key: &str, case_sensitive: bool) -> Option<V> {
