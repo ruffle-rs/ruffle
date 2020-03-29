@@ -122,6 +122,27 @@ where
     }
 }
 
+impl<T> Size<T>
+where
+    T: Ord,
+{
+    pub fn max(self, rhs: Self) -> Self {
+        Self {
+            width: max(self.width, rhs.width),
+            height: max(self.height, rhs.height),
+        }
+    }
+}
+
+impl<T> From<Position<T>> for Size<T> {
+    fn from(size: Position<T>) -> Self {
+        Self {
+            width: size.x,
+            height: size.y,
+        }
+    }
+}
+
 /// A type which represents the offset and size of text-orientation-relative
 /// boxes.
 ///
@@ -231,6 +252,10 @@ where
     pub fn origin(&self) -> Position<T> {
         Position::from((self.offset_x(), self.offset_y()))
     }
+
+    pub fn extent(&self) -> Position<T> {
+        Position::from((self.extent_x(), self.extent_y()))
+    }
 }
 
 impl<T> BoxBounds<T>
@@ -247,6 +272,20 @@ where
 
     pub fn size(&self) -> Size<T> {
         Size::from((self.width(), self.height()))
+    }
+}
+
+impl<T> BoxBounds<T>
+where
+    T: Add<T, Output = T> + Clone,
+{
+    pub fn with_size(self, new_size: Size<T>) -> Self {
+        Self {
+            offset_x: self.offset_x.clone(),
+            extent_x: self.offset_x + new_size.width,
+            offset_y: self.offset_y.clone(),
+            extent_y: self.offset_y + new_size.height,
+        }
     }
 }
 
