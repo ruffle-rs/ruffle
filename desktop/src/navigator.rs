@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::Sender;
+use std::time::{Duration, Instant};
 use url::Url;
 use webbrowser;
 
@@ -24,6 +25,9 @@ pub struct ExternalNavigatorBackend {
 
     /// The base path for all relative fetches.
     relative_base_path: PathBuf,
+
+    /// The time that the SWF was launched.
+    start_time: Instant,
 }
 
 impl ExternalNavigatorBackend {
@@ -36,6 +40,7 @@ impl ExternalNavigatorBackend {
             channel,
             event_loop,
             relative_base_path: PathBuf::new(),
+            start_time: Instant::now(),
         }
     }
 
@@ -53,6 +58,7 @@ impl ExternalNavigatorBackend {
             channel,
             event_loop,
             relative_base_path,
+            start_time: Instant::now(),
         }
     }
 }
@@ -100,6 +106,10 @@ impl NavigatorBackend for ExternalNavigatorBackend {
             Ok(_output) => {}
             Err(e) => log::error!("Could not open URL {}: {}", modified_url, e),
         };
+    }
+
+    fn time_since_launch(&mut self) -> Duration {
+        Instant::now().duration_since(self.start_time)
     }
 
     fn fetch(&self, url: String, _options: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {

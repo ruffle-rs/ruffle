@@ -1627,7 +1627,8 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_get_time(&mut self, context: &mut UpdateContext) -> Result<(), Error> {
-        self.push(context.global_time as f64);
+        let time = context.navigator.time_since_launch().as_millis() as u32;
+        self.push(time);
         Ok(())
     }
 

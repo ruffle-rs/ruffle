@@ -5,15 +5,25 @@ use ruffle_core::backend::navigator::{
     Error, NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
 };
 use std::collections::HashMap;
+use std::time::Duration;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};
-use web_sys::{window, Blob, BlobPropertyBag, Request, RequestInit, Response};
+use web_sys::{window, Blob, BlobPropertyBag, Performance, Request, RequestInit, Response};
 
-pub struct WebNavigatorBackend {}
+pub struct WebNavigatorBackend {
+    performance: Performance,
+    start_time: f64,
+}
 
 impl WebNavigatorBackend {
     pub fn new() -> Self {
-        WebNavigatorBackend {}
+        let window = web_sys::window().expect("window()");
+        let performance = window.performance().expect("window.performance()");
+
+        WebNavigatorBackend {
+            start_time: performance.now(),
+            performance,
+        }
     }
 }
 
@@ -75,6 +85,11 @@ impl NavigatorBackend for WebNavigatorBackend {
                 }
             };
         }
+    }
+
+    fn time_since_launch(&mut self) -> Duration {
+        let dt = self.performance.now() - self.start_time;
+        Duration::from_millis(dt as u64)
     }
 
     fn fetch(&self, url: String, options: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
