@@ -89,7 +89,7 @@ pub fn unshift<'gc>(
 }
 
 pub fn shift<'gc>(
-    _avm: &mut Avm1<'gc>,
+    avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -108,7 +108,7 @@ pub fn shift<'gc>(
     }
 
     this.delete_array_element(new_length, context.gc_context);
-    this.delete(context.gc_context, &new_length.to_string());
+    this.delete(avm, context.gc_context, &new_length.to_string());
 
     this.set_length(context.gc_context, new_length);
 
@@ -116,7 +116,7 @@ pub fn shift<'gc>(
 }
 
 pub fn pop<'gc>(
-    _avm: &mut Avm1<'gc>,
+    avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -130,7 +130,7 @@ pub fn pop<'gc>(
 
     let removed = this.array_element(new_length);
     this.delete_array_element(new_length, context.gc_context);
-    this.delete(context.gc_context, &new_length.to_string());
+    this.delete(avm, context.gc_context, &new_length.to_string());
 
     this.set_length(context.gc_context, new_length);
 
@@ -283,7 +283,7 @@ pub fn splice<'gc>(
 
     for i in new_length..old_length {
         this.delete_array_element(i, context.gc_context);
-        this.delete(context.gc_context, &i.to_string());
+        this.delete(avm, context.gc_context, &i.to_string());
     }
 
     this.set_length(context.gc_context, new_length);

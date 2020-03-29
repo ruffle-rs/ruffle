@@ -168,7 +168,7 @@ fn attach_movie<'gc>(
         // Copy properties from init_object to the movieclip.
         let new_clip = new_clip.object().as_object().unwrap();
         if let Some(Value::Object(o)) = init_object {
-            for k in o.get_keys() {
+            for k in o.get_keys(avm) {
                 let value = o.get(&k, avm, context)?.resolve(avm, context)?;
                 new_clip.set(&k, value, avm, context)?;
             }
@@ -325,7 +325,7 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
         // Copy properties from init_object to the movieclip.
         let new_clip = new_clip.object().as_object().unwrap();
         if let Some(Value::Object(o)) = init_object {
-            for k in o.get_keys() {
+            for k in o.get_keys(avm) {
                 let value = o.get(&k, avm, context)?.resolve(avm, context)?;
                 new_clip.set(&k, value, avm, context)?;
             }

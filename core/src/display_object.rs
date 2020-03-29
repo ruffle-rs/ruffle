@@ -650,6 +650,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
         context: MutationContext<'gc, '_>,
         node: Option<DisplayObject<'gc>>,
     );
+
     /// Iterates over the children of this display object in execution order.
     /// This is different than render order.
     fn children(&self) -> ChildIter<'gc> {
@@ -657,10 +658,17 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
             cur_child: self.first_child(),
         }
     }
+
     /// Get a child display object by instance name.
-    fn get_child_by_name(&self, name: &str) -> Option<DisplayObject<'gc>> {
+    fn get_child_by_name(&self, name: &str, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
         // TODO: Make a HashMap from name -> child?
-        self.children().find(|child| &*child.name() == name)
+        use crate::string_utils::swf_string_eq_ignore_case;
+        if case_sensitive {
+            self.children().find(|child| &*child.name() == name)
+        } else {
+            self.children()
+                .find(|child| swf_string_eq_ignore_case(&*child.name(), name))
+        }
     }
 
     /// Get another level by level name.
@@ -671,10 +679,18 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
         &self,
         name: &str,
         context: &mut UpdateContext<'_, 'gc, '_>,
+        case_sensitive: bool,
     ) -> Option<DisplayObject<'gc>> {
-        if name.get(0..min(name.len(), 6)) == Some("_level") {
-            if let Some(level_id) = name.get(6..).and_then(|v| v.parse::<u32>().ok()) {
-                return context.levels.get(&level_id).copied();
+        if let Some(slice) = name.get(0..min(name.len(), 6)) {
+            let is_level = if case_sensitive {
+                slice == "_level"
+            } else {
+                slice.eq_ignore_ascii_case("_level")
+            };
+            if is_level {
+                if let Some(level_id) = name.get(6..).and_then(|v| v.parse::<u32>().ok()) {
+                    return context.levels.get(&level_id).copied();
+                }
             }
         }
 

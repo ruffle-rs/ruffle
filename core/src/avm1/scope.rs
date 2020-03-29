@@ -237,7 +237,7 @@ impl<'gc> Scope<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error> {
-        if self.locals().has_property(context, name) {
+        if self.locals().has_property(avm, context, name) {
             return self.locals().get(name, avm, context);
         }
         if let Some(scope) = self.parent() {
@@ -249,13 +249,18 @@ impl<'gc> Scope<'gc> {
     }
 
     /// Check if a particular property in the scope chain is defined.
-    pub fn is_defined(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
-        if self.locals().has_property(context, name) {
+    pub fn is_defined(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
+        if self.locals().has_property(avm, context, name) {
             return true;
         }
 
         if let Some(scope) = self.parent() {
-            return scope.is_defined(context, name);
+            return scope.is_defined(avm, context, name);
         }
 
         false
@@ -276,8 +281,8 @@ impl<'gc> Scope<'gc> {
         this: Object<'gc>,
     ) -> Result<(), Error> {
         if self.class == ScopeClass::Target
-            || (self.locals().has_property(context, name)
-                && self.locals().is_property_overwritable(name))
+            || (self.locals().has_property(avm, context, name)
+                && self.locals().is_property_overwritable(avm, name))
         {
             // Value found on this object, so overwrite it.
             // Or we've hit the executing movie clip, so create it here.
@@ -308,16 +313,17 @@ impl<'gc> Scope<'gc> {
     /// Delete a value from scope
     pub fn delete(
         &self,
+        avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
         mc: MutationContext<'gc, '_>,
     ) -> bool {
-        if self.locals().has_property(context, name) {
-            return self.locals().delete(mc, name);
+        if self.locals().has_property(avm, context, name) {
+            return self.locals().delete(avm, mc, name);
         }
 
         if let Some(scope) = self.parent() {
-            return scope.delete(context, name, mc);
+            return scope.delete(avm, context, name, mc);
         }
 
         false

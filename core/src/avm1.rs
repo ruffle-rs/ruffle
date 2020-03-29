@@ -174,7 +174,7 @@ impl<'gc> Avm1<'gc> {
         let stack_frame = stack_frame.read();
         let scope = stack_frame.scope();
         let locals = scope.locals();
-        let keys = locals.get_keys();
+        let keys = locals.get_keys(self);
         let swf_version = self.current_swf_version();
 
         for k in keys {
@@ -341,6 +341,11 @@ impl<'gc> Avm1<'gc> {
         self.current_stack_frame()
             .map(|sf| sf.read().swf_version())
             .unwrap_or(self.player_version)
+    }
+
+    /// Returns whether property keys should be case sensitive based on the current SWF version.
+    pub fn is_case_sensitive(&self) -> bool {
+        is_swf_case_sensitive(self.current_swf_version())
     }
 
     pub fn notify_system_listeners(
@@ -715,6 +720,8 @@ impl<'gc> Avm1<'gc> {
             (start, false)
         };
 
+        let case_sensitive = self.is_case_sensitive();
+
         // Iterate through each token in the path.
         while !path.is_empty() {
             // Skip any number of leading :
@@ -768,7 +775,7 @@ impl<'gc> Avm1<'gc> {
                 // This is the opposite of general GetMember property access!
                 if let Some(child) = object
                     .as_display_object()
-                    .and_then(|o| o.get_child_by_name(name))
+                    .and_then(|o| o.get_child_by_name(name, case_sensitive))
                 {
                     child.object()
                 } else {
@@ -845,7 +852,7 @@ impl<'gc> Avm1<'gc> {
                 if let Some(object) =
                     self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
                 {
-                    if object.has_property(context, var_name) {
+                    if object.has_property(self, context, var_name) {
                         return object.get(var_name, self, context);
                     }
                 }
@@ -949,29 +956,6 @@ impl<'gc> Avm1<'gc> {
         let scope = stack_frame.scope_cell();
         scope.read().set(path, value, self, context, this)?;
         Ok(())
-    }
-
-    pub fn resolve_dot_path_clip<'s>(
-        start: Option<DisplayObject<'gc>>,
-        root: DisplayObject<'gc>,
-        path: &'s str,
-    ) -> Option<DisplayObject<'gc>> {
-        // If the target clip is invalid, we default to root for the variable path.
-        let mut clip = Some(start.unwrap_or(root));
-        if !path.is_empty() {
-            for name in path.split('.') {
-                if clip.is_none() {
-                    break;
-                }
-
-                clip = clip
-                    .unwrap()
-                    .as_movie_clip()
-                    .and_then(|mc| mc.get_child_by_name(name));
-            }
-        }
-
-        clip
     }
 
     /// Resolve a level by ID.
@@ -1478,7 +1462,7 @@ impl<'gc> Avm1<'gc> {
         let name = name_val.as_string()?;
         let object = self.pop().as_object()?;
 
-        let success = object.delete(context.gc_context, name);
+        let success = object.delete(self, context.gc_context, name);
         self.push(success);
 
         Ok(())
@@ -1494,9 +1478,10 @@ impl<'gc> Avm1<'gc> {
             .current_stack_frame()
             .unwrap()
             .read()
-            .is_defined(context, name);
+            .is_defined(self, context, name);
 
         self.current_stack_frame().unwrap().read().scope().delete(
+            self,
             context,
             name,
             context.gc_context,
@@ -1537,7 +1522,7 @@ impl<'gc> Avm1<'gc> {
 
         match object {
             Value::Object(ob) => {
-                for k in ob.get_keys() {
+                for k in ob.get_keys(self).into_iter().rev() {
                     self.push(k);
                 }
             }
@@ -1554,7 +1539,7 @@ impl<'gc> Avm1<'gc> {
         let object = self.pop().as_object()?;
 
         self.push(Value::Null); // Sentinel that indicates end of enumeration
-        for k in object.get_keys() {
+        for k in object.get_keys(self).into_iter().rev() {
             self.push(k);
         }
 
@@ -2695,6 +2680,12 @@ impl<'gc> Avm1<'gc> {
             .push(GcCell::allocate(context.gc_context, new_activation));
         Ok(())
     }
+}
+
+/// Returns whether the given SWF version is case-sensitive.
+/// SWFv7 and above is case-sensitive.
+pub fn is_swf_case_sensitive(swf_version: u8) -> bool {
+    swf_version > 6
 }
 
 /// Utility function used by `Avm1::action_wait_for_frame` and

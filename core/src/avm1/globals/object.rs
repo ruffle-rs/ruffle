@@ -36,7 +36,8 @@ pub fn add_property<'gc>(
             if let Some(get_func) = get.as_executable() {
                 if let Value::Object(set) = setter {
                     if let Some(set_func) = set.as_executable() {
-                        this.add_property(
+                        this.add_property_with_case(
+                            avm,
                             context.gc_context,
                             &name,
                             get_func.clone(),
@@ -47,7 +48,8 @@ pub fn add_property<'gc>(
                         return Ok(false.into());
                     }
                 } else if let Value::Null = setter {
-                    this.add_property(
+                    this.add_property_with_case(
+                        avm,
                         context.gc_context,
                         &name,
                         get_func.clone(),
@@ -67,13 +69,15 @@ pub fn add_property<'gc>(
 
 /// Implements `Object.prototype.hasOwnProperty`
 pub fn has_own_property<'gc>(
-    _avm: &mut Avm1<'gc>,
+    avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     match args.get(0) {
-        Some(Value::String(name)) => Ok(Value::Bool(this.has_own_property(context, name)).into()),
+        Some(Value::String(name)) => {
+            Ok(Value::Bool(this.has_own_property(avm, context, name)).into())
+        }
         _ => Ok(Value::Bool(false).into()),
     }
 }
@@ -90,13 +94,13 @@ fn to_string<'gc>(
 
 /// Implements `Object.prototype.isPropertyEnumerable`
 fn is_property_enumerable<'gc>(
-    _: &mut Avm1<'gc>,
+    avm: &mut Avm1<'gc>,
     _: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     match args.get(0) {
-        Some(Value::String(name)) => Ok(Value::Bool(this.is_property_enumerable(name)).into()),
+        Some(Value::String(name)) => Ok(Value::Bool(this.is_property_enumerable(avm, name)).into()),
         _ => Ok(Value::Bool(false).into()),
     }
 }

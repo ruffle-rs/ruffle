@@ -6,9 +6,9 @@ use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Value};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip};
+use crate::property_map::PropertyMap;
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::collections::{HashMap, HashSet};
 use std::fmt;
 
 /// The type string for MovieClip objects.
@@ -64,18 +64,22 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
         let props = avm.display_properties;
+        let case_sensitive = avm.is_case_sensitive();
         // Property search order for DisplayObjects:
-        if self.has_own_property(context, name) {
+        if self.has_own_property(avm, context, name) {
             // 1) Actual properties on the underlying object
             self.get_local(name, avm, context, (*self).into())
         } else if let Some(property) = props.read().get_by_name(&name) {
             // 2) Display object properties such as _x, _y
             let val = property.get(avm, context, self.display_object)?;
             Ok(val.into())
-        } else if let Some(child) = self.display_object.get_child_by_name(name) {
+        } else if let Some(child) = self.display_object.get_child_by_name(name, case_sensitive) {
             // 3) Child display objects with the given instance name
             Ok(child.object().into())
-        } else if let Some(level) = self.display_object.get_level_by_path(name, context) {
+        } else if let Some(level) =
+            self.display_object
+                .get_level_by_path(name, context, case_sensitive)
+        {
             // 4) _levelN
             Ok(level.object().into())
         } else {
@@ -103,7 +107,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let props = avm.display_properties;
-        if self.base.has_own_property(context, name) {
+        if self.base.has_own_property(avm, context, name) {
             // 1) Actual proeprties on the underlying object
             self.base
                 .internal_set(name, value, avm, context, (*self).into())
@@ -139,12 +143,20 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         //TODO: Create a StageObject of some kind
         self.base.new(avm, context, this, args)
     }
-    fn delete(&self, gc_context: MutationContext<'gc, '_>, name: &str) -> bool {
-        self.base.delete(gc_context, name)
+
+    fn delete(
+        &self,
+        avm: &mut Avm1<'gc>,
+        gc_context: MutationContext<'gc, '_>,
+        name: &str,
+    ) -> bool {
+        self.base.delete(avm, gc_context, name)
     }
+
     fn proto(&self) -> Option<Object<'gc>> {
         self.base.proto()
     }
+
     fn define_value(
         &self,
         gc_context: MutationContext<'gc, '_>,
@@ -178,18 +190,41 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .add_property(gc_context, name, get, set, attributes)
     }
 
-    fn has_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
-        if self.base.has_property(context, name) {
+    fn add_property_with_case(
+        &self,
+        avm: &mut Avm1<'gc>,
+        gc_context: MutationContext<'gc, '_>,
+        name: &str,
+        get: Executable<'gc>,
+        set: Option<Executable<'gc>>,
+        attributes: EnumSet<Attribute>,
+    ) {
+        self.base
+            .add_property_with_case(avm, gc_context, name, get, set, attributes)
+    }
+
+    fn has_property(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
+        if self.base.has_property(avm, context, name) {
             return true;
         }
 
-        if self.display_object.get_child_by_name(name).is_some() {
+        let case_sensitive = avm.is_case_sensitive();
+        if self
+            .display_object
+            .get_child_by_name(name, case_sensitive)
+            .is_some()
+        {
             return true;
         }
 
         if self
             .display_object
-            .get_level_by_path(name, context)
+            .get_level_by_path(name, context, case_sensitive)
             .is_some()
         {
             return true;
@@ -198,28 +233,33 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         false
     }
 
-    fn has_own_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_property(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
         // Note that `hasOwnProperty` does NOT return true for child display objects.
-        self.base.has_own_property(context, name)
+        self.base.has_own_property(avm, context, name)
     }
 
-    fn is_property_enumerable(&self, name: &str) -> bool {
-        self.base.is_property_enumerable(name)
+    fn is_property_enumerable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
+        self.base.is_property_enumerable(avm, name)
     }
 
-    fn is_property_overwritable(&self, name: &str) -> bool {
-        self.base.is_property_overwritable(name)
+    fn is_property_overwritable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
+        self.base.is_property_overwritable(avm, name)
     }
 
-    fn get_keys(&self) -> HashSet<String> {
+    fn get_keys(&self, avm: &mut Avm1<'gc>) -> Vec<String> {
         // Keys from the underlying object are listed first, followed by
         // child display objects in order from highest depth to lowest depth.
-        // TODO: It's possible to have multiple instances with the same name,
-        // and that name will be returned multiple times in the key list for a `for..in` loop.
-        let mut keys = self.base.get_keys();
-        for child in self.display_object.children() {
-            keys.insert(child.name().to_string());
-        }
+        let mut keys = self.base.get_keys(avm);
+        keys.extend(
+            self.display_object
+                .children()
+                .map(|child| child.name().to_string()),
+        );
         keys
     }
 
@@ -340,18 +380,12 @@ unsafe impl<'gc> Collect for DisplayProperty<'gc> {
 /// The map from key/index to function pointers for special display object properties.
 #[derive(Collect)]
 #[collect(no_drop)]
-pub struct DisplayPropertyMap<'gc> {
-    property_by_name: HashMap<String, DisplayProperty<'gc>>,
-    property_by_index: Vec<DisplayProperty<'gc>>,
-}
+pub struct DisplayPropertyMap<'gc>(PropertyMap<DisplayProperty<'gc>>);
 
 impl<'gc> DisplayPropertyMap<'gc> {
     /// Creates the display property map.
     pub fn new(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, DisplayPropertyMap<'gc>> {
-        let mut property_map = DisplayPropertyMap {
-            property_by_name: HashMap::with_capacity(21),
-            property_by_index: Vec::with_capacity(21),
-        };
+        let mut property_map = DisplayPropertyMap(PropertyMap::new());
 
         // Order is important:
         // should match the SWF specs for GetProperty/SetProperty.
@@ -386,7 +420,7 @@ impl<'gc> DisplayPropertyMap<'gc> {
     pub fn get_by_name(&self, name: &str) -> Option<&DisplayProperty<'gc>> {
         // Display object properties are case insensitive, regardless of SWF version!?
         // TODO: Another string alloc; optimize this eventually.
-        self.property_by_name.get(&name.to_ascii_lowercase())
+        self.0.get(&name, false)
     }
 
     /// Gets a property slot by SWF4 index.
@@ -394,7 +428,7 @@ impl<'gc> DisplayPropertyMap<'gc> {
     /// Used by `GetProperty`/`SetProperty`.
     /// SWF19 pp. 85-86
     pub fn get_by_index(&self, index: usize) -> Option<&DisplayProperty<'gc>> {
-        self.property_by_index.get(index)
+        self.0.get_index(index)
     }
 
     fn add_property(
@@ -404,8 +438,7 @@ impl<'gc> DisplayPropertyMap<'gc> {
         set: Option<DisplaySetter<'gc>>,
     ) {
         let prop = DisplayProperty { get, set };
-        self.property_by_name.insert(name.to_string(), prop.clone());
-        self.property_by_index.push(prop);
+        self.0.insert(name.to_string(), prop.clone(), false);
     }
 }
 

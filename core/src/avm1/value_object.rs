@@ -7,7 +7,6 @@ use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, UpdateContext, Value};
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::collections::HashSet;
 use std::fmt;
 
 /// An Object that serves as a box for a primitive value.
@@ -160,8 +159,13 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
         Ok(ValueObject::empty_box(context.gc_context, Some(this)))
     }
 
-    fn delete(&self, gc_context: MutationContext<'gc, '_>, name: &str) -> bool {
-        self.0.read().base.delete(gc_context, name)
+    fn delete(
+        &self,
+        avm: &mut Avm1<'gc>,
+        gc_context: MutationContext<'gc, '_>,
+        name: &str,
+    ) -> bool {
+        self.0.read().base.delete(avm, gc_context, name)
     }
 
     fn add_property(
@@ -176,6 +180,21 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
             .read()
             .base
             .add_property(gc_context, name, get, set, attributes)
+    }
+
+    fn add_property_with_case(
+        &self,
+        avm: &mut Avm1<'gc>,
+        gc_context: MutationContext<'gc, '_>,
+        name: &str,
+        get: Executable<'gc>,
+        set: Option<Executable<'gc>>,
+        attributes: EnumSet<Attribute>,
+    ) {
+        self.0
+            .read()
+            .base
+            .add_property_with_case(avm, gc_context, name, get, set, attributes)
     }
 
     fn define_value(
@@ -210,24 +229,34 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
         self.0.read().base.proto()
     }
 
-    fn has_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
-        self.0.read().base.has_property(context, name)
+    fn has_property(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
+        self.0.read().base.has_property(avm, context, name)
     }
 
-    fn has_own_property(&self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
-        self.0.read().base.has_own_property(context, name)
+    fn has_own_property(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
+        self.0.read().base.has_own_property(avm, context, name)
     }
 
-    fn is_property_overwritable(&self, name: &str) -> bool {
-        self.0.read().base.is_property_overwritable(name)
+    fn is_property_overwritable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
+        self.0.read().base.is_property_overwritable(avm, name)
     }
 
-    fn is_property_enumerable(&self, name: &str) -> bool {
-        self.0.read().base.is_property_enumerable(name)
+    fn is_property_enumerable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
+        self.0.read().base.is_property_enumerable(avm, name)
     }
 
-    fn get_keys(&self) -> HashSet<String> {
-        self.0.read().base.get_keys()
+    fn get_keys(&self, avm: &mut Avm1<'gc>) -> Vec<String> {
+        self.0.read().base.get_keys(avm)
     }
 
     fn as_string(&self) -> String {

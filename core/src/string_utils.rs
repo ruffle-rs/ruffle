@@ -30,6 +30,14 @@ pub fn swf_char_to_uppercase(c: char) -> char {
     }
 }
 
+/// Compares two strings for equality, ignoring case as done by the Flash Player.
+/// Note that the case mapping is different than Rust's case mapping.
+pub fn swf_string_eq_ignore_case(a: &str, b: &str) -> bool {
+    a.chars()
+        .map(swf_char_to_lowercase)
+        .eq(b.chars().map(swf_char_to_lowercase))
+}
+
 static UPPERCASE_TABLE: &[(u16, u16)] = &[
     (97, 65),
     (98, 66),
