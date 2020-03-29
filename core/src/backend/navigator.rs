@@ -8,6 +8,7 @@ use std::pin::Pin;
 use std::ptr::null;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
+use std::time::Duration;
 use swf::avm1::types::SendVarsMethod;
 
 pub type Error = Box<dyn std::error::Error>;
@@ -118,6 +119,10 @@ pub trait NavigatorBackend {
 
     /// Fetch data at a given URL and return it some time in the future.
     fn fetch(&self, url: String, request_options: RequestOptions) -> OwnedFuture<Vec<u8>, Error>;
+
+    /// Get the amount of time since the SWF was launched.
+    /// Used by the `getTimer` ActionScript call.
+    fn time_since_launch(&mut self) -> Duration;
 
     /// Arrange for a future to be run at some point in the... well, future.
     ///
@@ -288,6 +293,10 @@ impl NavigatorBackend for NullNavigatorBackend {
         path.push(url);
 
         Box::pin(async move { fs::read(path).map_err(|e| e.into()) })
+    }
+
+    fn time_since_launch(&mut self) -> Duration {
+        Duration::from_millis(0)
     }
 
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
