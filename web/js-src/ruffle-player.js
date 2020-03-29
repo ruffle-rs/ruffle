@@ -40,6 +40,7 @@ export class RufflePlayer extends HTMLElement {
         if (this.instance) {
             this.instance.destroy();
             this.instance = null;
+            console.log("Ruffle instance destroyed.");
         }
     }
 
@@ -119,6 +120,7 @@ export class RufflePlayer extends HTMLElement {
             if (this.instance) {
                 this.instance.destroy();
                 this.instance = null;
+                console.log("Ruffle instance destroyed.");
             }
 
             let Ruffle = await this.Ruffle.catch(function (e) {
@@ -127,6 +129,7 @@ export class RufflePlayer extends HTMLElement {
             });
             
             this.instance = Ruffle.new(this.canvas, new Uint8Array(data));
+            console.log("New Ruffle instance created.");
         } else {
             console.warn("Ignoring attempt to play a disconnected or suspended Ruffle element");
         }

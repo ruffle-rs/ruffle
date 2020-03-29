@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ruffle</title>
+  <title>Ruffle Web Demo</title>
   <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
   <style>
     body {
@@ -30,22 +30,33 @@
       max-height: calc(100vh - 70px);
     }
 
+    #container
+    {
+      height: calc(100vh - 70px);
+      width: 100vw;
+    }
+
+    #player {
+      width: 100vw;
+      height: calc(100vh - 70px);
+      display: block;
+    }
+
     #nav {
-      width: calc(100% - 20px);
+      width: 100%;
       background: #37528C;
       border: 0;
       border-color: darkgray;
       border-bottom: 2px #37528C;
       border-style: solid;
       box-shadow: 0 5px 5px #37528C;
-      padding: 10px;
       display: flex;
       flex-direction: row;
       justify-content: space-around;
       align-items: center;
       align-self: flex-start;
       color: white;
-      min-height: 20px;
+      min-height: 45px;
     }
 
     #title:hover {
@@ -53,8 +64,7 @@
       cursor: pointer;
     }
 
-    #title img
-    {
+    #title img {
       display: inline-block;
       height: 32px;
       margin-top: 5px;
@@ -64,9 +74,48 @@
       margin-top: 7px;
     }
 
+    #local-file-container {
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    #sample-swfs-container {
+      display: none;
+      vertical-align: middle;
+    }
+
+    #author-container {
+      display: none;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    #author {
+      padding-left: 5px;
+      color: #ffad33;
+    }
+
+    @media only screen and (max-width: 800px) {
+      #local-file-container,#sample-swfs-container {
+        display: block;
+      }
+
+      #nav {
+        min-height: 65px;
+      }
+
+      #player {
+        height: calc(100vh - 90px) !important;
+      }
+    }
+
     @media only screen and (max-device-width: 600px) {
       #file-picker {
         display: none;
+      }
+
+      #nav {
+        min-height: 45px;
       }
     }
 
@@ -90,17 +139,22 @@
       </a>
     </div>
     <div id="file-picker">
-      <div>
+      <div id="local-file-container">
         Local SWF: 
         <input type="file" id="local-file">
+      </div>
+      <div id="sample-swfs-container">
+        Sample SWF: 
+        <select id="sample-swfs">
+          <option value="none">None</option>
+        </select>
+        <span id="author-container">Author: <a href="#" target="_blank" id="author"></a></span>
       </div>
     </div>
   </div>
   </div>
   <div id="main">
-    <embed id="player" type="application/x-shockwave-flash" src="test.swf">
   </div>
   <script src="./index.js"></script>
 </body>
-
 </html>
