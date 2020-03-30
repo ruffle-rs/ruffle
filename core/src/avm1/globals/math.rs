@@ -63,6 +63,22 @@ fn pow<'gc>(
     Ok(NAN.into())
 }
 
+fn round<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(x) = args.get(0) {
+        let x = x.as_number(avm, context)?;
+        // Note that Flash Math.round always rounds toward infinity,
+        // unlike Rust f32::round which rounds away from zero.
+        let ret = (x + 0.5).floor();
+        return Ok(ret.into());
+    }
+    Ok(NAN.into())
+}
+
 fn max<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
@@ -187,7 +203,6 @@ pub fn create<'gc>(
         "cos" => f64::cos,
         "exp" => f64::exp,
         "floor" => f64::floor,
-        "round" => f64::round,
         "sin" => f64::sin,
         "sqrt" => f64::sqrt,
         "tan" => f64::tan,
@@ -225,6 +240,13 @@ pub fn create<'gc>(
     math.force_set_function(
         "random",
         random,
+        gc_context,
+        DontDelete | ReadOnly | DontEnum,
+        fn_proto,
+    );
+    math.force_set_function(
+        "round",
+        round,
         gc_context,
         DontDelete | ReadOnly | DontEnum,
         fn_proto,
@@ -334,8 +356,23 @@ mod tests {
         [19] => {
             [] => NAN,
             [Value::Null] => NAN,
+            [Value::Undefined] => NAN,
             [12.5] => 13.0,
-            [23.2] => 23.0
+            [23.2] => 23.0,
+            [23.5] => 24.0,
+            [23.7] => 24.0,
+            [-23.2] => -23.0,
+            [-23.5] => -23.0,
+            [-23.7] => -24.0,
+            [std::f64::NAN] => std::f64::NAN,
+            [std::f64::INFINITY] => std::f64::INFINITY,
+            [std::f64::NEG_INFINITY] => std::f64::NEG_INFINITY
+        },
+        [5, 6] => {
+            [] => NAN,
+            [Value::Null] => 0.0,
+            [Value::Undefined] => 0.0,
+            [std::f64::NAN] => std::f64::NAN
         }
     );
 

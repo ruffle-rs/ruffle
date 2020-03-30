@@ -82,8 +82,13 @@ fn target<'gc>(
     // This means calls on the same `Color` object could set the color of different clips
     // depending on which timeline its called from!
     let target = this.get("target", avm, context)?.resolve(avm, context)?;
-    let start_clip = avm.target_clip_or_root();
-    avm.resolve_target_display_object(context, start_clip, target)
+    // Undefined or empty target is no-op.
+    if target != Value::Undefined && !matches!(&target, &Value::String(ref s) if s.is_empty()) {
+        let start_clip = avm.target_clip_or_root();
+        avm.resolve_target_display_object(context, start_clip, target)
+    } else {
+        Ok(None)
+    }
 }
 
 fn get_rgb<'gc>(
