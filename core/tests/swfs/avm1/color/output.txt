@@ -51,3 +51,8 @@ rb: -50  gb: -25  bb: 25  ab: -25
 // c.getRGB():
 -6375
 
+// Invalid target parameters:
+undefined
+undefined
+undefined
+
