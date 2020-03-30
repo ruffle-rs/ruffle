@@ -235,12 +235,7 @@ pub fn create_globals<'gc>(
         Some(function_proto),
         Some(text_format_proto),
     );
-    let array = FunctionObject::function(
-        gc_context,
-        Executable::Native(array::constructor),
-        Some(function_proto),
-        Some(array_proto),
-    );
+    let array = array::create_array_object(gc_context, Some(array_proto), Some(function_proto));
     let xmlnode = FunctionObject::function(
         gc_context,
         Executable::Native(xml::xmlnode_constructor),

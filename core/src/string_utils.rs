@@ -38,6 +38,14 @@ pub fn swf_string_eq_ignore_case(a: &str, b: &str) -> bool {
         .eq(b.chars().map(swf_char_to_lowercase))
 }
 
+/// Compares two strings, ignoring case as done by the Flash Player.
+/// Note that the case mapping is different than Rust's case mapping.
+pub fn swf_string_cmp_ignore_case(a: &str, b: &str) -> std::cmp::Ordering {
+    a.chars()
+        .map(swf_char_to_lowercase)
+        .cmp(b.chars().map(swf_char_to_lowercase))
+}
+
 static UPPERCASE_TABLE: &[(u16, u16)] = &[
     (97, 65),
     (98, 66),
