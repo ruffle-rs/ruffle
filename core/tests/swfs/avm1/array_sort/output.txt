@@ -1,0 +1,144 @@
+// ["d", "c", "a", "b"].sort()
+true
+a,b,c,d
+
+// [1, 2].sort(undefined)
+undefined
+
+// [1, 2].sort(true)
+undefined
+
+// [1, 2].sort(true, 0)
+undefined
+
+// [1, 2].sort(undefined, 0)
+undefined
+
+// [1, 2].sort(null, 0)
+undefined
+
+// [1, 2].sort(NaN)
+1,2
+
+// [undefined, null, true, false, o].sort()
+AAA,false,null,true,undefined
+
+// ["d", "c", "a", "b"].sort(Array.DESCENDING)
+d,c,b,a
+
+// [4, 1, 3, 22, 2, 3].sort()
+1,2,22,3,3,4
+
+// [4, 1, 3, 22, 2, 3].sort(Array.NUMERIC)
+1,2,3,3,4,22
+
+// [4, 1, 3, 22, 2, 3].sort(Array.DESCENDING | Array.NUMERIC)
+22,4,3,3,2,1
+
+// [4, 1, 3, 22, 2].sort(Array.UNIQUESORT)
+1,2,22,3,4
+1,2,22,3,4
+
+// [4, 1, 3, 22, 2, 3].sort(Array.UNIQUESORT)
+0
+4,1,3,22,2,3
+
+// ["hëllo", "HËLLO", "TeSt", "test"].sort(Array.CASEINSENSITIVE)
+hëllo,HËLLO,TeSt,test
+
+// ["TeSt", "hëllo", "HËLLO", "test"].sort(Array.CASEINSENSITIVE | Array.UNIQUESORT)
+0
+TeSt,hëllo,HËLLO,test
+
+// ["d", "c", "a", "b"].sort(Array.RETURNINDEXEDARRAY)
+2,3,1,0
+d,c,a,b
+
+// ["test", 4, 1, "22", undefined, 3, 23, 2, true].sort(Array.NUMERIC | Array.CASEINSENSITIVE | Array.DESCENDING | Array.UNIQUESORT | Array.RETURNINDEXEDARRAY)
+4,8,0,6,1,5,3,7,2
+test,4,1,22,undefined,3,23,2,true
+
+// [objects..].sort(mySort)
+{n: 1},{n: 1},{n: 2},{n: 3},{n: 5}
+
+// [objects..].sort(mySort, Array.DESCENDING)
+{n: 5},{n: 3},{n: 2},{n: 1},{n: 1}
+
+// [objects..].sort(mySort, Array.UNIQUESORT)
+0
+{n: 3},{n: 5},{n: 1},{n: 2},{n: 1}
+
+// [objects..].sort({})
+[object Object],[object Object],[object Object],[object Object],[object Object]
+{n: 3},{n: 5},{n: 1},{n: 2},{n: 1}
+
+// [objects..].sort({}, undefined)
+[object Object],[object Object],[object Object],[object Object],[object Object]
+
+// [2, 3, 1].sort(55, undefined)
+3,2,1
+
+// [2, 3, 1].sort(Array.DESCENDING, Array.NUMERIC)
+1,2,3
+
+// [objects..].sortOn("n")
+true
+{n: 1},{n: 2},{n: 22},{n: 3},{n: 5}
+
+// [objects..].sortOn("n", Array.DESCENDING)
+{n: 5},{n: 3},{n: 22},{n: 2},{n: 1}
+
+// [objects..].sortOn("n", Array.NUMERIC)
+{n: 1},{n: 2},{n: 3},{n: 5},{n: 22}
+
+// [objects..].sortOn("n", "n", Array.CASEINSENSITIVE)
+{n: hello},{n: HELLO},{n: test},{n: TEST}
+
+// [objects..].sortOn("n", Array.UNIQUESORT)
+0
+{n: test},{n: hello},{n: TEST},{n: hello}
+
+// [objects..].sortOn("n", Array.UNIQUESORT)
+4,3,2,0,1
+{n: 3},{n: 5},{n: 22},{n: 2},{n: 1}
+
+// [objects..].sortOn("n", Array.NUMERIC | Array.CASEINSENSITIVE | Array.DESCENDING | Array.UNIQUESORT | Array.RETURNINDEXEDARRAY)
+2,1,0,3,4
+{n: 3},{n: 5},{n: 22},{n: 2},{n: 1}
+
+// [stringobjs..].sortOn("length", Array.NUMERIC)
+a,bar,test,hello,asdasdasdsad
+
+// [objects..].sortOn(["n", "b"])
+{n: 1, b: 2},{n: 2, b: 2},{n: 2, b: 3},{n: 3, b: 1}
+
+// [objects..].sortOn(["n", "b"], [Array.CASEINSENSITIVE, Array.NUMERIC])
+{n: bar, b: 3},{n: BAR, b: 22},{n: foo, b: 1},{n: foo, b: 2}
+
+// [objects..].sortOn(["n", "b"], [Array.DESCENDING])
+{n: BAR, b: 22},{n: bar, b: 3},{n: foo, b: 1},{n: foo, b: 2}
+
+// [objects..].sortOn(["n", "b"], [Array.DESCENDING, Array.0, 0])
+{n: BAR, b: 22},{n: bar, b: 3},{n: foo, b: 1},{n: foo, b: 2}
+
+// [objects..].sortOn(["n", "b"], [Array.UNIQUESORT, Array.0])
+0
+{n: 3, b: 1},{n: 2, b: 3},{n: 2, b: 2},{n: 1, b: 2},{n: 3, b: 1}
+
+// [objects..].sortOn(["n", "b"], [Array.RETURNINDEXEDARRAY, 0])
+3,2,1,0,4
+{n: 3, b: 1},{n: 2, b: 3},{n: 2, b: 2},{n: 1, b: 2},{n: 3, b: 1}
+
+// [objects..].sortOn(["n", "b"], [0, Array.RETURNINDEXEDARRAY | Array.UNIQUESORT])
+[object Object],[object Object],[object Object],[object Object],[object Object]
+{n: 1, b: 2},{n: 2, b: 2},{n: 2, b: 3},{n: 3, b: 1},{n: 3, b: 1}
+
+// [1, 2].sortOn([])
+1,2
+
+// [1, 2].sortOn()
+undefined
+
+// [1, 2].sortOn(undefined)
+1,2
+
