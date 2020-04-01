@@ -100,6 +100,7 @@ swf_tests! {
     (array_properties, "avm1/array_properties", 1),
     (array_prototyping, "avm1/array_prototyping", 1),
     (array_vs_object_length, "avm1/array_vs_object_length", 1),
+    (array_sort, "avm1/array_sort", 1),
     (timeline_function_def, "avm1/timeline_function_def", 3),
     (root_global_parent, "avm1/root_global_parent", 3),
     (register_underflow, "avm1/register_underflow", 1),
