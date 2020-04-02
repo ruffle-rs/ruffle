@@ -1,4 +1,4 @@
-import { FLASH_MIMETYPE, FUTURESPLASH_MIMETYPE, is_swf_filename, RufflePlayer } from "./ruffle-player.js";
+import { FLASH_MIMETYPE, FUTURESPLASH_MIMETYPE, FLASH7_AND_8_MIMETYPE, FLASH_MOVIE_MIMETYPE, is_swf_filename, RufflePlayer } from "./ruffle-player.js";
 import { register_element } from "./register-element";
 
 export default class RuffleEmbed extends RufflePlayer {
@@ -34,7 +34,7 @@ export default class RuffleEmbed extends RufflePlayer {
     }
 
     static is_interdictable(elem) {
-        if (elem.type === FLASH_MIMETYPE || elem.type === FUTURESPLASH_MIMETYPE) {
+        if (elem.type === FLASH_MIMETYPE || elem.type === FUTURESPLASH_MIMETYPE || elem.type == FLASH7_AND_8_MIMETYPE || elem.type == FLASH_MOVIE_MIMETYPE) {
             return true;
         } else if (elem.type === undefined || elem.type === "") {
             return is_swf_filename(elem.src);
