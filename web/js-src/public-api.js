@@ -125,8 +125,12 @@ export class PublicAPI {
 
             let polyfills = this.config.polyfills;
             if (polyfills === undefined) {
-                // Default to all polyfills for simplest usage.
-                polyfills = ["plugin-detect", "dynamic-content", "static-content"];
+                /* Default to all polyfills except for frames. It might *
+                 * make sense to add frames to the default, but then    *
+                 * we would need to have all polyfills but frames added *
+                 * to the extension's javascript because it uses the    *
+                 * "all_frames" manifest property to handle frames.     */
+                polyfills = ["plugin-detect", "static-content", "dynamic-content"];
             }
             
             this.sources[this.newest_name].polyfill(polyfills);

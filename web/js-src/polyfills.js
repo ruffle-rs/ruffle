@@ -1,10 +1,22 @@
 import RuffleObject from "./ruffle-object";
 import RuffleEmbed from "./ruffle-embed";
 import { install_plugin, FLASH_PLUGIN } from "./plugin-polyfill";
+import { public_path } from "./public-path"
 
-// Live collection for object and embed tags.
-let objects = null;
-let embeds = null;
+if (!window.RufflePlayer) {
+    window.RufflePlayer={};
+}
+let top_level_ruffle_config;
+let ruffle_script_src=public_path({}, "ruffle.js");
+if (window.RufflePlayer.config) {
+    top_level_ruffle_config=window.RufflePlayer.config;
+    ruffle_script_src=public_path(window.RufflePlayer.config, "ruffle.js");
+}
+/* public_path returns the directory where the file is, *
+ * so we need to append the filename. We don't need to  *
+ * worry about the directory not having a slash because *
+ * public_path appends a slash.                         */
+ruffle_script_src+="ruffle.js";
 
 /**
  * Polyfill native elements with Ruffle equivalents.
@@ -14,6 +26,8 @@ let embeds = null;
  * keep native objects out of the DOM, and thus out of JavaScript's grubby
  * little hands, but only if we load first.
  */
+let objects;
+let embeds;
 function replace_flash_instances() {
     try {
         // Create live collections to track embed tags.
@@ -60,15 +74,92 @@ function falsify_plugin_detection() {
     install_plugin(FLASH_PLUGIN);
 }
 
-var running_polyfills = [];
-var polyfills = {
+function load_ruffle_player_into_frame(event) {
+    let current_frame=event.currentTarget.contentWindow;
+    let frame_document;
+    console.log("Event handled");
+    try {
+        frame_document=current_frame.document;
+        if (!frame_document) {
+            console.log("Frame has no document.");
+            return;
+        }
+    }
+    catch(e) {
+        console.log("Error Getting Frame: " + e.message);
+        return;
+    }
+    if(!current_frame.RufflePlayer) {
+        /* Make sure we populate the frame's window.RufflePlayer.config */
+        current_frame.RufflePlayer={};
+        current_frame.RufflePlayer.config=top_level_ruffle_config;
+        let script = frame_document.createElement("script");
+        script.src=ruffle_script_src; /* Load this script(ruffle.js) into the frame */
+        frame_document.body.appendChild(script);
+    }
+    else {
+        console.log("(i)frame already has RufflePlayer");
+    }
+    polyfill_frames_common(current_frame);
+}
+
+function polyfill_frames_common(depth) {
+    let current_iframes=depth.document.getElementsByTagName("iframe");
+    let current_frames=depth.document.getElementsByTagName("frame");
+    for (let i=0;i<current_iframes.length;i++) {
+        let current_frame=current_iframes[i];
+        /* Apperently, using addEventListener attatches the event *
+         * to the dummy document, which is overwritten when the   *
+         * iframe is loaded, so we do this. It can only works if  *
+         * it's attached to the frame object itself, which is why *
+         * we're using                                            *
+         * depth.document.getElementsByTagName("iframe") instead  *
+         * of depth.frames to get the iframes at the depth.       *
+         * Also, this way we should be able to handle frame       *
+         * frame navigation, which is good.                       */
+        current_frame.onload=load_ruffle_player_into_frame;
+        polyfill_frames_common(current_frame.contentWindow);
+    }
+    for (let i=0;i<current_frames.length;i++) {
+        let current_frame=current_frames[i];
+        current_frame.onload=load_ruffle_player_into_frame;
+        polyfill_frames_common(current_frame.contentWindow);
+    }
+}
+
+function polyfill_static_frames() {
+    polyfill_frames_common(window);
+}
+
+function ruffle_frame_listener(mutationsList, observer) {
+    /* Basically the same as the listener for dynamic embeds. */
+    let nodesAdded = mutationsList.some(mutation => mutation.addedNodes.length > 0);
+    if (nodesAdded) {
+        polyfill_frames_common(window);
+    }
+}
+
+function polyfill_dynamic_frames() {
+    const observer = new MutationObserver(ruffle_frame_listener);
+    observer.observe(document, {childList: true, subtree: true});
+}
+
+function polyfill_frames() {
+    polyfill_static_frames();
+    if (running_polyfills.indexOf("dynamic-content") != -1) {
+        polyfill_dynamic_frames();
+    }
+}
+let running_polyfills = [];
+let polyfills = {
     "static-content": polyfill_static_content,
     "dynamic-content": polyfill_dynamic_content,
-    "plugin-detect": falsify_plugin_detection
+    "plugin-detect": falsify_plugin_detection,
+    "frames": polyfill_frames
 };
 
 export function polyfill(polyfill_list) {
-    for (var i = 0; i < polyfill_list.length; i += 1) {
+    for (let i = 0; i < polyfill_list.length; i += 1) {
         if (running_polyfills.indexOf(polyfill_list[i]) !== -1) {
             continue;
         }
@@ -79,7 +170,7 @@ export function polyfill(polyfill_list) {
 
         running_polyfills.push(polyfill_list[i]);
 
-        var this_polyfill = polyfills[polyfill_list[i]];
+        let this_polyfill = polyfills[polyfill_list[i]];
 
         if (this_polyfill.dependencies !== undefined) {
             polyfill(this_polyfill.dependencies);
