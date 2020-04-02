@@ -13,7 +13,8 @@
     "content_scripts": [
         {
             "matches": ["<all_urls>"],
-            "js": ["js/lv0.js"]
+            "js": ["js/lv0.js"],
+            "all_frames": true
         }
     ],
     "web_accessible_resources": ["dist/*"]
