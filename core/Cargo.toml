@@ -18,7 +18,7 @@ puremp3 = { version = "0.1", optional = true }
 ruffle_macros = { path = "macros" }
 swf = { path = "../swf" }
 enumset = "0.4.5"
-smallvec = "1.2.0"
+smallvec = "1.3.0"
 num_enum = "0.4.3"
 quick-xml = "0.18.1"
 downcast-rs = "1.1.1"
