@@ -661,15 +661,6 @@ impl Player {
                         context,
                     );
                 }
-                // DoInitAction code
-                ActionType::Init { bytecode } => {
-                    avm.insert_stack_frame_for_init_action(
-                        actions.clip,
-                        context.swf.header().version,
-                        bytecode,
-                        context,
-                    );
-                }
                 // Change the prototype of a movieclip
                 ActionType::ChangePrototype { constructor } => {
                     avm.insert_stack_frame(GcCell::allocate(

@@ -240,7 +240,7 @@ impl<'gc> MovieClip<'gc> {
                 .0
                 .write(context.gc_context)
                 .define_text(context, reader, 2),
-            TagCode::DoInitAction => self.do_init_action(context, reader, tag_len),
+            TagCode::DoInitAction => self.do_init_action(avm, context, reader, tag_len),
             TagCode::ExportAssets => self
                 .0
                 .write(context.gc_context)
@@ -331,6 +331,7 @@ impl<'gc> MovieClip<'gc> {
     #[inline]
     fn do_init_action(
         self,
+        avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<&[u8]>,
         tag_len: usize,
@@ -354,9 +355,16 @@ impl<'gc> MovieClip<'gc> {
                     "Invalid source or tag length when running init action",
                 )
             })?;
-        context
-            .action_queue
-            .queue_actions(self.into(), ActionType::Init { bytecode: slice }, true);
+
+        avm.insert_stack_frame_for_init_action(
+            *context.levels.get(&0).unwrap(),
+            context.swf.header().version,
+            slice,
+            context,
+        );
+        let frame = avm.current_stack_frame().unwrap();
+        let _ = avm.run_current_frame(context, frame);
+
         Ok(())
     }
 
