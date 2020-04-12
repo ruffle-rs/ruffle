@@ -238,12 +238,7 @@ impl<'gc> MovieClip<'gc> {
                 .0
                 .write(context.gc_context)
                 .define_text(context, reader, 2),
-            TagCode::DoInitAction => self.0.write(context.gc_context).do_init_action(
-                self.into(),
-                context,
-                reader,
-                tag_len,
-            ),
+            TagCode::DoInitAction => self.do_init_action(context, reader, tag_len),
             TagCode::ExportAssets => self
                 .0
                 .write(context.gc_context)
@@ -329,6 +324,38 @@ impl<'gc> MovieClip<'gc> {
         if self.0.read().static_data.audio_stream_info.is_some() {
             context.audio.preload_sound_stream_end(self.0.read().id());
         }
+    }
+
+    #[inline]
+    fn do_init_action(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        reader: &mut SwfStream<&[u8]>,
+        tag_len: usize,
+    ) -> DecodeResult {
+        // Queue the init actions.
+
+        // TODO: Init actions are supposed to be executed once, and it gives a
+        // sprite ID... how does that work?
+        let sprite_id = reader.read_u16()?;
+        log::info!("Init Action sprite ID {}", sprite_id);
+
+        let slice = self
+            .0
+            .read()
+            .static_data
+            .swf
+            .resize_to_reader(reader, tag_len)
+            .ok_or_else(|| {
+                std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "Invalid source or tag length when running init action",
+                )
+            })?;
+        context
+            .action_queue
+            .queue_actions(self.into(), ActionType::Init { bytecode: slice }, true);
+        Ok(())
     }
 
     #[allow(dead_code)]
@@ -1947,39 +1974,6 @@ impl<'gc, 'a> MovieClipData<'gc> {
             self_display_object,
             ActionType::Normal { bytecode: slice },
             false,
-        );
-        Ok(())
-    }
-
-    #[inline]
-    fn do_init_action(
-        &mut self,
-        self_display_object: DisplayObject<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<&'a [u8]>,
-        tag_len: usize,
-    ) -> DecodeResult {
-        // Queue the init actions.
-
-        // TODO: Init actions are supposed to be executed once, and it gives a
-        // sprite ID... how does that work?
-        let sprite_id = reader.read_u16()?;
-        log::info!("Init Action sprite ID {}", sprite_id);
-
-        let slice = self
-            .static_data
-            .swf
-            .resize_to_reader(reader, tag_len)
-            .ok_or_else(|| {
-                std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "Invalid source or tag length when running init action",
-                )
-            })?;
-        context.action_queue.queue_actions(
-            self_display_object,
-            ActionType::Init { bytecode: slice },
-            true,
         );
         Ok(())
     }
