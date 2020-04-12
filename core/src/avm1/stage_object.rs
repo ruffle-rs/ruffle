@@ -157,6 +157,10 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.base.proto()
     }
 
+    fn set_proto(&self, gc_context: MutationContext<'gc, '_>, prototype: Option<Object<'gc>>) {
+        self.base.set_proto(gc_context, prototype);
+    }
+
     fn define_value(
         &self,
         gc_context: MutationContext<'gc, '_>,

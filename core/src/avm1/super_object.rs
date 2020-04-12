@@ -134,6 +134,10 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         self.0.read().proto
     }
 
+    fn set_proto(&self, gc_context: MutationContext<'gc, '_>, prototype: Option<Object<'gc>>) {
+        self.0.write(gc_context).proto = prototype;
+    }
+
     fn define_value(
         &self,
         _gc_context: MutationContext<'gc, '_>,
