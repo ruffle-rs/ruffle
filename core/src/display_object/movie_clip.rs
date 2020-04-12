@@ -126,9 +126,209 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         morph_shapes: &mut fnv::FnvHashMap<CharacterId, MorphShapeStatic>,
     ) {
-        self.0
-            .write(context.gc_context)
-            .preload(context, morph_shapes, self.into())
+        use swf::TagCode;
+        // TODO: Re-creating static data because preload step occurs after construction.
+        // Should be able to hoist this up somewhere, or use MaybeUninit.
+        let mut static_data = (&*self.0.read().static_data).clone();
+        let data = self.0.read().static_data.swf.clone();
+        let mut reader = data.read_from(self.0.read().tag_stream_pos);
+        let mut cur_frame = 1;
+        let mut ids = fnv::FnvHashMap::default();
+        let tag_callback = |reader: &mut _, tag_code, tag_len| match tag_code {
+            TagCode::DefineBits => self
+                .0
+                .write(context.gc_context)
+                .define_bits(context, reader, tag_len),
+            TagCode::DefineBitsJpeg2 => self
+                .0
+                .write(context.gc_context)
+                .define_bits_jpeg_2(context, reader, tag_len),
+            TagCode::DefineBitsJpeg3 => self
+                .0
+                .write(context.gc_context)
+                .define_bits_jpeg_3(context, reader, tag_len),
+            TagCode::DefineBitsJpeg4 => self
+                .0
+                .write(context.gc_context)
+                .define_bits_jpeg_4(context, reader, tag_len),
+            TagCode::DefineBitsLossless => self
+                .0
+                .write(context.gc_context)
+                .define_bits_lossless(context, reader, 1),
+            TagCode::DefineBitsLossless2 => self
+                .0
+                .write(context.gc_context)
+                .define_bits_lossless(context, reader, 2),
+            TagCode::DefineButton => self
+                .0
+                .write(context.gc_context)
+                .define_button_1(context, reader),
+            TagCode::DefineButton2 => self
+                .0
+                .write(context.gc_context)
+                .define_button_2(context, reader),
+            TagCode::DefineButtonCxform => self
+                .0
+                .write(context.gc_context)
+                .define_button_cxform(context, reader, tag_len),
+            TagCode::DefineButtonSound => self
+                .0
+                .write(context.gc_context)
+                .define_button_sound(context, reader),
+            TagCode::DefineEditText => self
+                .0
+                .write(context.gc_context)
+                .define_edit_text(context, reader),
+            TagCode::DefineFont => self
+                .0
+                .write(context.gc_context)
+                .define_font_1(context, reader),
+            TagCode::DefineFont2 => self
+                .0
+                .write(context.gc_context)
+                .define_font_2(context, reader),
+            TagCode::DefineFont3 => self
+                .0
+                .write(context.gc_context)
+                .define_font_3(context, reader),
+            TagCode::DefineFont4 => unimplemented!(),
+            TagCode::DefineMorphShape => self.0.write(context.gc_context).define_morph_shape(
+                context,
+                reader,
+                morph_shapes,
+                1,
+            ),
+            TagCode::DefineMorphShape2 => self.0.write(context.gc_context).define_morph_shape(
+                context,
+                reader,
+                morph_shapes,
+                2,
+            ),
+            TagCode::DefineShape => self
+                .0
+                .write(context.gc_context)
+                .define_shape(context, reader, 1),
+            TagCode::DefineShape2 => self
+                .0
+                .write(context.gc_context)
+                .define_shape(context, reader, 2),
+            TagCode::DefineShape3 => self
+                .0
+                .write(context.gc_context)
+                .define_shape(context, reader, 3),
+            TagCode::DefineShape4 => self
+                .0
+                .write(context.gc_context)
+                .define_shape(context, reader, 4),
+            TagCode::DefineSound => self
+                .0
+                .write(context.gc_context)
+                .define_sound(context, reader, tag_len),
+            TagCode::DefineSprite => self.0.write(context.gc_context).define_sprite(
+                context,
+                reader,
+                tag_len,
+                morph_shapes,
+            ),
+            TagCode::DefineText => self
+                .0
+                .write(context.gc_context)
+                .define_text(context, reader, 1),
+            TagCode::DefineText2 => self
+                .0
+                .write(context.gc_context)
+                .define_text(context, reader, 2),
+            TagCode::DoInitAction => self.0.write(context.gc_context).do_init_action(
+                self.into(),
+                context,
+                reader,
+                tag_len,
+            ),
+            TagCode::ExportAssets => self
+                .0
+                .write(context.gc_context)
+                .export_assets(context, reader),
+            TagCode::FrameLabel => self.0.write(context.gc_context).frame_label(
+                context,
+                reader,
+                tag_len,
+                cur_frame,
+                &mut static_data,
+            ),
+            TagCode::JpegTables => self
+                .0
+                .write(context.gc_context)
+                .jpeg_tables(context, reader, tag_len),
+            TagCode::PlaceObject => self.0.write(context.gc_context).preload_place_object(
+                context,
+                reader,
+                tag_len,
+                &mut ids,
+                morph_shapes,
+                1,
+            ),
+            TagCode::PlaceObject2 => self.0.write(context.gc_context).preload_place_object(
+                context,
+                reader,
+                tag_len,
+                &mut ids,
+                morph_shapes,
+                2,
+            ),
+            TagCode::PlaceObject3 => self.0.write(context.gc_context).preload_place_object(
+                context,
+                reader,
+                tag_len,
+                &mut ids,
+                morph_shapes,
+                3,
+            ),
+            TagCode::PlaceObject4 => self.0.write(context.gc_context).preload_place_object(
+                context,
+                reader,
+                tag_len,
+                &mut ids,
+                morph_shapes,
+                4,
+            ),
+            TagCode::RemoveObject => self
+                .0
+                .write(context.gc_context)
+                .preload_remove_object(context, reader, &mut ids, 1),
+            TagCode::RemoveObject2 => self
+                .0
+                .write(context.gc_context)
+                .preload_remove_object(context, reader, &mut ids, 2),
+            TagCode::ShowFrame => {
+                self.0
+                    .write(context.gc_context)
+                    .preload_show_frame(context, reader, &mut cur_frame)
+            }
+            TagCode::SoundStreamHead => self.0.write(context.gc_context).preload_sound_stream_head(
+                context,
+                reader,
+                cur_frame,
+                &mut static_data,
+                1,
+            ),
+            TagCode::SoundStreamHead2 => self
+                .0
+                .write(context.gc_context)
+                .preload_sound_stream_head(context, reader, cur_frame, &mut static_data, 2),
+            TagCode::SoundStreamBlock => self
+                .0
+                .write(context.gc_context)
+                .preload_sound_stream_block(context, reader, cur_frame, &mut static_data, tag_len),
+            _ => Ok(()),
+        };
+        let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End);
+        self.0.write(context.gc_context).static_data =
+            Gc::allocate(context.gc_context, static_data);
+
+        // Finalize audio stream.
+        if self.0.read().static_data.audio_stream_info.is_some() {
+            context.audio.preload_sound_stream_end(self.0.read().id());
+        }
     }
 
     #[allow(dead_code)]
@@ -1091,93 +1291,6 @@ impl<'gc> MovieClipData<'gc> {
 
 // Preloading of definition tags
 impl<'gc, 'a> MovieClipData<'gc> {
-    fn preload(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        morph_shapes: &mut fnv::FnvHashMap<CharacterId, MorphShapeStatic>,
-        self_display_object: DisplayObject<'gc>,
-    ) {
-        use swf::TagCode;
-        // TODO: Re-creating static data because preload step occurs after construction.
-        // Should be able to hoist this up somewhere, or use MaybeUninit.
-        let mut static_data = (&*self.static_data).clone();
-        let data = self.static_data.swf.clone();
-        let mut reader = data.read_from(self.tag_stream_pos);
-        let mut cur_frame = 1;
-        let mut ids = fnv::FnvHashMap::default();
-        let tag_callback = |reader: &mut _, tag_code, tag_len| match tag_code {
-            TagCode::DefineBits => self.define_bits(context, reader, tag_len),
-            TagCode::DefineBitsJpeg2 => self.define_bits_jpeg_2(context, reader, tag_len),
-            TagCode::DefineBitsJpeg3 => self.define_bits_jpeg_3(context, reader, tag_len),
-            TagCode::DefineBitsJpeg4 => self.define_bits_jpeg_4(context, reader, tag_len),
-            TagCode::DefineBitsLossless => self.define_bits_lossless(context, reader, 1),
-            TagCode::DefineBitsLossless2 => self.define_bits_lossless(context, reader, 2),
-            TagCode::DefineButton => self.define_button_1(context, reader),
-            TagCode::DefineButton2 => self.define_button_2(context, reader),
-            TagCode::DefineButtonCxform => self.define_button_cxform(context, reader, tag_len),
-            TagCode::DefineButtonSound => self.define_button_sound(context, reader),
-            TagCode::DefineEditText => self.define_edit_text(context, reader),
-            TagCode::DefineFont => self.define_font_1(context, reader),
-            TagCode::DefineFont2 => self.define_font_2(context, reader),
-            TagCode::DefineFont3 => self.define_font_3(context, reader),
-            TagCode::DefineFont4 => unimplemented!(),
-            TagCode::DefineMorphShape => self.define_morph_shape(context, reader, morph_shapes, 1),
-            TagCode::DefineMorphShape2 => self.define_morph_shape(context, reader, morph_shapes, 2),
-            TagCode::DefineShape => self.define_shape(context, reader, 1),
-            TagCode::DefineShape2 => self.define_shape(context, reader, 2),
-            TagCode::DefineShape3 => self.define_shape(context, reader, 3),
-            TagCode::DefineShape4 => self.define_shape(context, reader, 4),
-            TagCode::DefineSound => self.define_sound(context, reader, tag_len),
-            TagCode::DefineSprite => self.define_sprite(context, reader, tag_len, morph_shapes),
-            TagCode::DefineText => self.define_text(context, reader, 1),
-            TagCode::DefineText2 => self.define_text(context, reader, 2),
-            TagCode::DoInitAction => {
-                self.do_init_action(self_display_object, context, reader, tag_len)
-            }
-            TagCode::ExportAssets => self.export_assets(context, reader),
-            TagCode::FrameLabel => {
-                self.frame_label(context, reader, tag_len, cur_frame, &mut static_data)
-            }
-            TagCode::JpegTables => self.jpeg_tables(context, reader, tag_len),
-            TagCode::PlaceObject => {
-                self.preload_place_object(context, reader, tag_len, &mut ids, morph_shapes, 1)
-            }
-            TagCode::PlaceObject2 => {
-                self.preload_place_object(context, reader, tag_len, &mut ids, morph_shapes, 2)
-            }
-            TagCode::PlaceObject3 => {
-                self.preload_place_object(context, reader, tag_len, &mut ids, morph_shapes, 3)
-            }
-            TagCode::PlaceObject4 => {
-                self.preload_place_object(context, reader, tag_len, &mut ids, morph_shapes, 4)
-            }
-            TagCode::RemoveObject => self.preload_remove_object(context, reader, &mut ids, 1),
-            TagCode::RemoveObject2 => self.preload_remove_object(context, reader, &mut ids, 2),
-            TagCode::ShowFrame => self.preload_show_frame(context, reader, &mut cur_frame),
-            TagCode::SoundStreamHead => {
-                self.preload_sound_stream_head(context, reader, cur_frame, &mut static_data, 1)
-            }
-            TagCode::SoundStreamHead2 => {
-                self.preload_sound_stream_head(context, reader, cur_frame, &mut static_data, 2)
-            }
-            TagCode::SoundStreamBlock => self.preload_sound_stream_block(
-                context,
-                reader,
-                cur_frame,
-                &mut static_data,
-                tag_len,
-            ),
-            _ => Ok(()),
-        };
-        let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End);
-        self.static_data = Gc::allocate(context.gc_context, static_data);
-
-        // Finalize audio stream.
-        if self.static_data.audio_stream_info.is_some() {
-            context.audio.preload_sound_stream_end(self.id());
-        }
-    }
-
     #[inline]
     fn define_bits_lossless(
         &mut self,
