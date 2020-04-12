@@ -1,0 +1,156 @@
+b #initclip
+b #endinitclip
+
+
+aa #initclip
+aa #endinitclip
+
+
+a #initclip
+a #endinitclip
+
+
+c #initclip
+c #endinitclip
+
+
+a constructor()
+
+// trace(this._name)
+a
+
+// trace(this._name)
+a
+
+// trace(this.box)
+_level0.a.box
+
+// trace(this.custom)
+true
+
+// trace(this.box.custom)
+undefined
+
+// trace(this.box.box)
+_level0.a.box.box
+
+a constructor() end
+
+
+aaclass constructor
+
+// trace(this._name)
+box
+
+aaclass test()
+
+// trace(this._name)
+box
+
+// trace(this.box)
+_level0.a.box.box
+
+aaclass test() end
+aaclass constructor end
+
+
+b constructor()
+
+// trace(this._name)
+b
+
+// trace(this._name)
+b
+
+// trace(this.box)
+_level0.b.box
+
+// trace(this.custom)
+true
+
+b constructor() end
+
+
+root first frame
+
+// trace(a._name)
+a
+
+// trace(a.box)
+_level0.a.box
+
+// trace(a.custom)
+true
+
+// trace(a.box.box)
+_level0.a.box.box
+
+// trace(a.box.custom)
+undefined
+
+// trace(b._name)
+b
+
+// trace(b.custom)
+true
+
+// trace(b.box)
+_level0.b.box
+
+root first frame end
+
+
+a first frame
+
+// trace(this._name)
+a
+
+// trace(this.box)
+_level0.a.box
+
+// trace(this.custom)
+true
+
+// trace(this.box.custom)
+undefined
+
+// trace(this.box.box)
+_level0.a.box.box
+
+// trace(this.oldbox)
+_level0.a.box
+
+// trace(this.box === this.oldbox)
+true
+
+a first frame end
+
+
+aa first frame
+
+// trace(this._name)
+box
+
+// trace(this.box)
+_level0.a.box.box
+
+// trace(this.custom)
+undefined
+
+aa first frame end
+
+
+b first frame
+
+// trace(this._name)
+b
+
+// trace(this.box)
+_level0.b.box
+
+// trace(this.custom)
+true
+
+b first frame end
+
+
