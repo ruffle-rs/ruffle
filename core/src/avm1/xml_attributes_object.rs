@@ -169,6 +169,10 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
         self.base().proto()
     }
 
+    fn set_proto(&self, gc_context: MutationContext<'gc, '_>, prototype: Option<Object<'gc>>) {
+        self.base().set_proto(gc_context, prototype);
+    }
+
     fn has_property(
         &self,
         avm: &mut Avm1<'gc>,

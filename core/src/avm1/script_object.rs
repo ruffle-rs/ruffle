@@ -409,6 +409,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().prototype
     }
 
+    fn set_proto(&self, gc_context: MutationContext<'gc, '_>, prototype: Option<Object<'gc>>) {
+        self.0.write(gc_context).prototype = prototype;
+    }
+
     /// Checks if the object has a given named property.
     fn has_property(
         &self,
