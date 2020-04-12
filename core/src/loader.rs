@@ -337,7 +337,7 @@ impl<'gc> Loader<'gc> {
                         mc.post_instantiation(avm, uc, clip);
 
                         let mut morph_shapes = fnv::FnvHashMap::default();
-                        mc.preload(uc, &mut morph_shapes);
+                        mc.preload(avm, uc, &mut morph_shapes);
 
                         // Finalize morph shapes.
                         for (id, static_data) in morph_shapes {
