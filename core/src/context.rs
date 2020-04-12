@@ -190,7 +190,6 @@ pub struct RenderContext<'a, 'gc> {
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 enum ActionPriority {
-    StaticInitializers,
     ChangePrototypes,
     Other,
 }
@@ -200,9 +199,6 @@ enum ActionPriority {
 pub enum ActionType<'gc> {
     /// Normal frame or event actions.
     Normal { bytecode: SwfSlice },
-
-    /// A `DoInitAction` action.
-    Init { bytecode: SwfSlice },
 
     /// Change the prototype of a movieclip (ie via `Object.registerClass`)
     ChangePrototype { constructor: Object<'gc> },
@@ -225,7 +221,6 @@ pub enum ActionType<'gc> {
 impl ActionType<'_> {
     fn priority(&self) -> ActionPriority {
         match self {
-            ActionType::Init { .. } => ActionPriority::StaticInitializers,
             ActionType::ChangePrototype { .. } => ActionPriority::ChangePrototypes,
             _ => ActionPriority::Other,
         }
@@ -237,10 +232,6 @@ impl fmt::Debug for ActionType<'_> {
         match self {
             ActionType::Normal { bytecode } => f
                 .debug_struct("ActionType::Normal")
-                .field("bytecode", bytecode)
-                .finish(),
-            ActionType::Init { bytecode } => f
-                .debug_struct("ActionType::Init")
                 .field("bytecode", bytecode)
                 .finish(),
             ActionType::ChangePrototype { constructor } => f
