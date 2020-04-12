@@ -46,7 +46,7 @@ pub mod xml_object;
 mod tests;
 
 use crate::avm1::listeners::SystemListener;
-use activation::Activation;
+pub use activation::Activation;
 pub use globals::SystemPrototypes;
 pub use object::{Object, ObjectPtr, TObject};
 use scope::Scope;
@@ -334,6 +334,14 @@ impl<'gc> Avm1<'gc> {
     /// Yields None if there is no stack frame.
     pub fn current_stack_frame(&self) -> Option<GcCell<'gc, Activation<'gc>>> {
         self.stack_frames.last().copied()
+    }
+
+    /// Checks if there is currently a stack frame.
+    ///
+    /// This is an indicator if you are currently running from inside or outside the AVM.
+    /// This method is cheaper than `current_stack_frame` as it doesn't need to perform a copy.
+    pub fn has_stack_frame(&self) -> bool {
+        !self.stack_frames.is_empty()
     }
 
     /// Get the currently executing SWF version.

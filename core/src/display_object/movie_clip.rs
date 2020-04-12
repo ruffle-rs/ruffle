@@ -401,9 +401,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
     ) {
-        let mut mc = self.0.write(context.gc_context);
-        if mc.object.is_none() {
-            if let Some(constructor) = mc.avm1_constructor {
+        if self.0.read().object.is_none() {
+            // If we are running within the AVM, this must be an immediate action.
+            // If we are not, then this must be queued to be ran first-thing
+            if avm.has_stack_frame() && self.0.read().avm1_constructor.is_some() {
+                let constructor = self.0.read().avm1_constructor.unwrap();
+
                 if let Ok(prototype) = constructor
                     .get("prototype", avm, context)
                     .and_then(|v| v.resolve(avm, context))
@@ -411,24 +414,33 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 {
                     let object: Object<'gc> = StageObject::for_display_object(
                         context.gc_context,
-                        display_object,
+                        (*self).into(),
                         Some(prototype),
                     )
                     .into();
-                    mc.object = Some(object);
+                    self.0.write(context.gc_context).object = Some(object);
                     if let Ok(result) = constructor.call(avm, context, object, &[]) {
                         let _ = result.resolve(avm, context);
                     }
                     return;
                 }
-            };
+            }
 
+            let mut mc = self.0.write(context.gc_context);
             let object = StageObject::for_display_object(
                 context.gc_context,
                 display_object,
                 Some(context.system_prototypes.movie_clip),
             );
             mc.object = Some(object.into());
+
+            if let Some(constructor) = mc.avm1_constructor {
+                context.action_queue.queue_actions(
+                    display_object,
+                    ActionType::ChangePrototype { constructor },
+                    false,
+                );
+            }
         }
     }
 
