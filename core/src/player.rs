@@ -1,10 +1,10 @@
 use crate::avm1::listeners::SystemListener;
-use crate::avm1::Avm1;
+use crate::avm1::{Activation, Avm1, TObject, Value};
 use crate::backend::input::{InputBackend, MouseCursor};
 use crate::backend::{
     audio::AudioBackend, navigator::NavigatorBackend, render::Letterbox, render::RenderBackend,
 };
-use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
+use crate::context::{ActionQueue, ActionType, QueuedActions, RenderContext, UpdateContext};
 use crate::display_object::{MorphShape, MovieClip};
 use crate::events::{ButtonEvent, ButtonEventResult, ButtonKeyCode, ClipEvent, PlayerEvent};
 use crate::library::Library;
@@ -644,7 +644,8 @@ impl Player {
     }
 
     fn run_actions<'gc>(avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) {
-        while let Some(actions) = context.action_queue.pop() {
+        let queue: Vec<QueuedActions<'gc>> = context.action_queue.drain().collect();
+        for actions in queue {
             // We don't run frame actions if the clip was removed after it queued the action.
             if !actions.is_unload && actions.clip.removed() {
                 continue;
@@ -668,6 +669,30 @@ impl Player {
                         bytecode,
                         context,
                     );
+                }
+                // Change the prototype of a movieclip
+                ActionType::ChangePrototype { constructor } => {
+                    avm.insert_stack_frame(GcCell::allocate(
+                        context.gc_context,
+                        Activation::from_nothing(
+                            context.swf.header().version,
+                            avm.global_object_cell(),
+                            context.gc_context,
+                            actions.clip,
+                        ),
+                    ));
+                    if let Ok(prototype) = constructor
+                        .get("prototype", avm, context)
+                        .and_then(|v| v.resolve(avm, context))
+                        .and_then(|v| v.as_object())
+                    {
+                        if let Value::Object(object) = actions.clip.object() {
+                            object.set_proto(context.gc_context, Some(prototype));
+                            if let Ok(result) = constructor.call(avm, context, object, &[]) {
+                                let _ = result.resolve(avm, context);
+                            }
+                        }
+                    }
                 }
                 // Event handler method call (e.g. onEnterFrame)
                 ActionType::Method { object, name, args } => {

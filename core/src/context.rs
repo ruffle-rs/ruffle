@@ -16,6 +16,7 @@ use gc_arena::{Collect, MutationContext};
 use rand::rngs::SmallRng;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, Weak};
+use std::vec::Drain;
 
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
 /// `Player` crates this when it begins a tick and passes it through the call stack to
@@ -119,7 +120,7 @@ unsafe impl<'gc> Collect for QueuedActions<'gc> {
 
 /// Action and gotos need to be queued up to execute at the end of the frame.
 pub struct ActionQueue<'gc> {
-    queue: std::collections::VecDeque<QueuedActions<'gc>>,
+    queue: Vec<QueuedActions<'gc>>,
 }
 
 impl<'gc> ActionQueue<'gc> {
@@ -128,7 +129,7 @@ impl<'gc> ActionQueue<'gc> {
     /// Crates a new `ActionQueue` with an empty queue.
     pub fn new() -> Self {
         Self {
-            queue: std::collections::VecDeque::with_capacity(Self::DEFAULT_CAPACITY),
+            queue: Vec::with_capacity(Self::DEFAULT_CAPACITY),
         }
     }
 
@@ -141,16 +142,18 @@ impl<'gc> ActionQueue<'gc> {
         action_type: ActionType<'gc>,
         is_unload: bool,
     ) {
-        self.queue.push_back(QueuedActions {
+        self.queue.push(QueuedActions {
             clip,
             action_type,
             is_unload,
         })
     }
 
-    /// Pops the next actions off of the queue.
-    pub fn pop(&mut self) -> Option<QueuedActions<'gc>> {
-        self.queue.pop_front()
+    /// Sorts and drains the actions from the queue.
+    pub fn drain(&mut self) -> Drain<QueuedActions<'gc>> {
+        self.queue
+            .sort_by(|a, b| a.action_type.priority().cmp(&b.action_type.priority()));
+        self.queue.drain(..)
     }
 }
 
@@ -185,6 +188,13 @@ pub struct RenderContext<'a, 'gc> {
     pub clip_depth_stack: Vec<Depth>,
 }
 
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum ActionPriority {
+    StaticInitializers,
+    ChangePrototypes,
+    Other,
+}
+
 /// The type of action being run.
 #[derive(Clone)]
 pub enum ActionType<'gc> {
@@ -193,6 +203,9 @@ pub enum ActionType<'gc> {
 
     /// A `DoInitAction` action.
     Init { bytecode: SwfSlice },
+
+    /// Change the prototype of a movieclip (ie via `Object.registerClass`)
+    ChangePrototype { constructor: Object<'gc> },
 
     /// An event handler method, e.g. `onEnterFrame`.
     Method {
@@ -209,6 +222,16 @@ pub enum ActionType<'gc> {
     },
 }
 
+impl ActionType<'_> {
+    fn priority(&self) -> ActionPriority {
+        match self {
+            ActionType::Init { .. } => ActionPriority::StaticInitializers,
+            ActionType::ChangePrototype { .. } => ActionPriority::ChangePrototypes,
+            _ => ActionPriority::Other,
+        }
+    }
+}
+
 impl fmt::Debug for ActionType<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -219,6 +242,10 @@ impl fmt::Debug for ActionType<'_> {
             ActionType::Init { bytecode } => f
                 .debug_struct("ActionType::Init")
                 .field("bytecode", bytecode)
+                .finish(),
+            ActionType::ChangePrototype { constructor } => f
+                .debug_struct("ActionType::ChangePrototype")
+                .field("constructor", constructor)
                 .finish(),
             ActionType::Method { object, name, args } => f
                 .debug_struct("ActionType::Method")
@@ -243,8 +270,18 @@ impl fmt::Debug for ActionType<'_> {
 unsafe impl<'gc> Collect for ActionType<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
-        if let ActionType::NotifyListeners { args, .. } = self {
-            args.trace(cc);
+        match self {
+            ActionType::ChangePrototype { constructor, .. } => {
+                constructor.trace(cc);
+            }
+            ActionType::Method { object, args, .. } => {
+                object.trace(cc);
+                args.trace(cc);
+            }
+            ActionType::NotifyListeners { args, .. } => {
+                args.trace(cc);
+            }
+            _ => {}
         }
     }
 }
