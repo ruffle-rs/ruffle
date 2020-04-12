@@ -123,6 +123,7 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn preload(
         self,
+        avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         morph_shapes: &mut fnv::FnvHashMap<CharacterId, MorphShapeStatic>,
     ) {
@@ -225,6 +226,7 @@ impl<'gc> MovieClip<'gc> {
                 .write(context.gc_context)
                 .define_sound(context, reader, tag_len),
             TagCode::DefineSprite => self.0.write(context.gc_context).define_sprite(
+                avm,
                 context,
                 reader,
                 tag_len,
@@ -1813,6 +1815,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
 
     fn define_sprite(
         &mut self,
+        avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<&'a [u8]>,
         tag_len: usize,
@@ -1835,7 +1838,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             num_frames,
         );
 
-        movie_clip.preload(context, morph_shapes);
+        movie_clip.preload(avm, context, morph_shapes);
 
         context
             .library
