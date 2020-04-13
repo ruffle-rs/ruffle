@@ -94,10 +94,17 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
         if let Some(constr) = self.0.read().constr {
-            constr.call(avm, context, self.0.read().this.unwrap_or(this), args)
+            constr.call(
+                avm,
+                context,
+                self.0.read().this.unwrap_or(this),
+                base_proto,
+                args,
+            )
         } else {
             Ok(Value::Undefined.into())
         }

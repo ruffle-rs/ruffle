@@ -803,7 +803,7 @@ fn sort_compare_custom<'gc>(
     // TODO: Handle errors.
     let args = [a.clone(), b.clone()];
     let ret = compare_fn
-        .call(avm, context, this, &args)
+        .call(avm, context, this, None, &args)
         .and_then(|v| v.resolve(avm, context))
         .unwrap_or(Value::Undefined);
     match ret {

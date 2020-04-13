@@ -90,9 +90,10 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
-        self.base().call(avm, context, this, args)
+        self.base().call(avm, context, this, base_proto, args)
     }
 
     #[allow(clippy::new_ret_no_self)]

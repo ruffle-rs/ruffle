@@ -224,6 +224,7 @@ impl<'gc> Executable<'gc> {
         avm: &mut Avm1<'gc>,
         ac: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
+        _base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
@@ -474,10 +475,11 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
         if let Some(exec) = self.as_executable() {
-            exec.exec(avm, context, this, args)
+            exec.exec(avm, context, this, base_proto, args)
         } else {
             Ok(Value::Undefined.into())
         }

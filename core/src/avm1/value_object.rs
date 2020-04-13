@@ -143,9 +143,13 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
-        self.0.read().base.call(avm, context, this, args)
+        self.0
+            .read()
+            .base
+            .call(avm, context, this, base_proto, args)
     }
 
     #[allow(clippy::new_ret_no_self)]

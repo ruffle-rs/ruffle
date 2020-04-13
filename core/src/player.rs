@@ -679,7 +679,7 @@ impl Player {
                     {
                         if let Value::Object(object) = actions.clip.object() {
                             object.set_proto(context.gc_context, Some(prototype));
-                            if let Ok(result) = constructor.call(avm, context, object, &[]) {
+                            if let Ok(result) = constructor.call(avm, context, object, None, &[]) {
                                 let _ = result.resolve(avm, context);
                             }
                         }

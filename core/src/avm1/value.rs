@@ -1,3 +1,4 @@
+use crate::avm1::object::search_prototype;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, TObject, UpdateContext};
 use std::f64::NAN;
@@ -244,11 +245,13 @@ impl<'gc> Value<'gc> {
     ) -> Result<Value<'gc>, Error> {
         Ok(match self {
             Value::Object(object) => {
-                let value_of_impl = object.get("valueOf", avm, context)?.resolve(avm, context)?;
+                let (value_of_impl, base_proto) =
+                    search_prototype(Some(*object), "valueOf", avm, context, *object)?;
 
                 let fake_args = Vec::new();
                 value_of_impl
-                    .call(avm, context, *object, &fake_args)?
+                    .resolve(avm, context)?
+                    .call(avm, context, *object, base_proto, &fake_args)?
                     .resolve(avm, context)?
             }
             val => val.to_owned(),
@@ -475,12 +478,12 @@ impl<'gc> Value<'gc> {
     ) -> Result<String, Error> {
         Ok(match self {
             Value::Object(object) => {
-                let to_string_impl = object
-                    .get("toString", avm, context)?
-                    .resolve(avm, context)?;
+                let (to_string_impl, base_proto) =
+                    search_prototype(Some(object), "toString", avm, context, object)?;
                 let fake_args = Vec::new();
                 match to_string_impl
-                    .call(avm, context, object, &fake_args)?
+                    .resolve(avm, context)?
+                    .call(avm, context, object, base_proto, &fake_args)?
                     .resolve(avm, context)?
                 {
                     Value::String(s) => s,
@@ -578,10 +581,11 @@ impl<'gc> Value<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
         if let Value::Object(object) = self {
-            object.call(avm, context, this, args)
+            object.call(avm, context, this, base_proto, args)
         } else {
             Ok(Value::Undefined.into())
         }

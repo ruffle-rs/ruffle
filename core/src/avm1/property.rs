@@ -41,9 +41,10 @@ impl<'gc> Property<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
-            Property::Virtual { get, .. } => get.exec(avm, context, this, &[]),
+            Property::Virtual { get, .. } => get.exec(avm, context, this, base_proto, &[]),
             Property::Stored { value, .. } => Ok(value.to_owned().into()),
         }
     }
@@ -59,12 +60,14 @@ impl<'gc> Property<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
         new_value: impl Into<Value<'gc>>,
     ) -> Result<bool, Error> {
         match self {
             Property::Virtual { set, .. } => {
                 if let Some(function) = set {
-                    let return_value = function.exec(avm, context, this, &[new_value.into()])?;
+                    let return_value =
+                        function.exec(avm, context, this, base_proto, &[new_value.into()])?;
                     Ok(return_value.is_immediate())
                 } else {
                     Ok(true)

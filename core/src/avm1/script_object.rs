@@ -193,6 +193,7 @@ impl<'gc> ScriptObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
     ) -> Result<(), Error> {
         if name == "__proto__" {
             self.0.write(context.gc_context).prototype = value.as_object().ok();
@@ -218,7 +219,7 @@ impl<'gc> ScriptObject<'gc> {
                 .entry(name.to_owned(), avm.is_case_sensitive())
             {
                 Entry::Occupied(mut entry) => {
-                    entry.get_mut().set(avm, context, this, value)?;
+                    entry.get_mut().set(avm, context, this, base_proto, value)?;
                 }
                 Entry::Vacant(entry) => {
                     entry.insert(Property::Stored {
@@ -254,7 +255,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         }
 
         if let Some(value) = self.0.read().values.get(name, avm.is_case_sensitive()) {
-            return value.get(avm, context, this);
+            return value.get(avm, context, this, Some((*self).into()));
         }
 
         Ok(Value::Undefined.into())
@@ -272,7 +273,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        self.internal_set(name, value, avm, context, (*self).into())
+        self.internal_set(
+            name,
+            value,
+            avm,
+            context,
+            (*self).into(),
+            Some((*self).into()),
+        )
     }
 
     /// Call the underlying object.
@@ -285,6 +293,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         _avm: &mut Avm1<'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
+        _base_proto: Option<Object<'gc>>,
         _args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
         Ok(Value::Undefined.into())

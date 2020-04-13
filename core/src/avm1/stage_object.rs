@@ -1,6 +1,7 @@
 //! AVM1 object type to represent objects on the stage.
 
 use crate::avm1::function::Executable;
+use crate::avm1::object::search_prototype;
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Value};
@@ -84,7 +85,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             Ok(level.object().into())
         } else {
             // 5) Prototype
-            crate::avm1::object::search_prototype(self.proto(), name, avm, context, (*self).into())
+            Ok(search_prototype(self.proto(), name, avm, context, (*self).into())?.0)
         }
         // 6) TODO: __resolve?
     }
@@ -109,16 +110,28 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         let props = avm.display_properties;
         if self.base.has_own_property(avm, context, name) {
             // 1) Actual proeprties on the underlying object
-            self.base
-                .internal_set(name, value, avm, context, (*self).into())
+            self.base.internal_set(
+                name,
+                value,
+                avm,
+                context,
+                (*self).into(),
+                Some((*self).into()),
+            )
         } else if let Some(property) = props.read().get_by_name(&name) {
             // 2) Display object properties such as _x, _y
             property.set(avm, context, self.display_object, value)?;
             Ok(())
         } else {
             // 3) TODO: Prototype
-            self.base
-                .internal_set(name, value, avm, context, (*self).into())
+            self.base.internal_set(
+                name,
+                value,
+                avm,
+                context,
+                (*self).into(),
+                Some((*self).into()),
+            )
         }
     }
 
@@ -127,9 +140,10 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
-        self.base.call(avm, context, this, args)
+        self.base.call(avm, context, this, base_proto, args)
     }
 
     #[allow(clippy::new_ret_no_self)]
