@@ -65,6 +65,11 @@ impl Ruffle {
             let mut instances = instances.borrow_mut();
             instances.remove(self.0)
         }) {
+            // Stop all audio playing from the instance
+            let mut player = instance.core.lock().unwrap();
+            let audio = player.audio_mut();
+            audio.stop_all_sounds();
+
             // Cancel the animation handler, if it's still active.
             if let Some(id) = instance.animation_handler_id {
                 if let Some(window) = web_sys::window() {
