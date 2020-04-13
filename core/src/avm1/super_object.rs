@@ -22,27 +22,36 @@ pub struct SuperObject<'gc>(GcCell<'gc, SuperObjectData<'gc>>);
 #[collect(no_drop)]
 #[derive(Clone, Collect, Debug)]
 pub struct SuperObjectData<'gc> {
+    /// The object present as `this` throughout the superchain.
     child: Object<'gc>,
-    proto: Option<Object<'gc>>,
-    constr: Option<Object<'gc>>,
-    this: Option<Object<'gc>>,
+
+    /// The `proto` that all property resolution on `super` happens on.
+    super_proto: Option<Object<'gc>>,
+
+    /// The object called when `super` is called.
+    ///
+    /// This should be the `constructor` property of `super_proto`.
+    super_constr: Option<Object<'gc>>,
 }
 
 impl<'gc> SuperObject<'gc> {
-    pub fn from_child_object(
-        child: Object<'gc>,
+    /// Construct a `super` for an incoming stack frame.
+    ///
+    /// `this` and `base_proto` must be the values provided to
+    /// `Executable.exec`.
+    pub fn from_this_and_base_proto(
+        this: Object<'gc>,
+        base_proto: Object<'gc>,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Self, Error> {
-        let child_proto = child.proto();
-        let parent_proto = child_proto.and_then(|pr| pr.proto());
-        let parent_constr = if let Some(child_proto) = child_proto {
-            Some(
-                child_proto
-                    .get("constructor", avm, context)?
-                    .resolve(avm, context)?
-                    .as_object()?,
-            )
+        let super_proto = base_proto.proto();
+        let super_constr = if let Some(super_proto) = super_proto {
+            super_proto
+                .get("constructor", avm, context)?
+                .resolve(avm, context)?
+                .as_object()
+                .ok()
         } else {
             None
         };
@@ -50,20 +59,11 @@ impl<'gc> SuperObject<'gc> {
         Ok(Self(GcCell::allocate(
             context.gc_context,
             SuperObjectData {
-                child,
-                proto: parent_proto,
-                constr: parent_constr,
-                this: None,
+                child: this,
+                super_proto,
+                super_constr,
             },
         )))
-    }
-
-    /// Set `this` to a particular value.
-    ///
-    /// This is intended to be called with a self-reference, so that future
-    /// invocations of `super()` can get a `this` value one level up the chain.
-    pub fn bind_this(&mut self, context: MutationContext<'gc, '_>, this: Object<'gc>) {
-        self.0.write(context).this = Some(this);
     }
 }
 
@@ -93,16 +93,16 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         &self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        _this: Object<'gc>,
+        _base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
-        if let Some(constr) = self.0.read().constr {
+        if let Some(constr) = self.0.read().super_constr {
             constr.call(
                 avm,
                 context,
-                self.0.read().this.unwrap_or(this),
-                base_proto,
+                self.0.read().child,
+                self.0.read().super_proto,
                 args,
             )
         } else {
@@ -138,7 +138,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     }
 
     fn proto(&self) -> Option<Object<'gc>> {
-        self.0.read().proto
+        self.0.read().super_proto
     }
 
     fn set_proto(&self, gc_context: MutationContext<'gc, '_>, prototype: Option<Object<'gc>>) {
@@ -279,7 +279,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn as_executable(&self) -> Option<Executable<'gc>> {
         //well, `super` *can* be called...
-        self.0.read().constr.and_then(|c| c.as_executable())
+        self.0.read().super_constr.and_then(|c| c.as_executable())
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
