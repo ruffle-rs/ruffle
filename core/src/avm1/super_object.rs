@@ -1,6 +1,7 @@
 //! Special object that implements `super`
 
 use crate::avm1::function::Executable;
+use crate::avm1::object::search_prototype;
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::script_object::TYPE_OF_OBJECT;
@@ -108,6 +109,26 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         } else {
             Ok(Value::Undefined.into())
         }
+    }
+
+    fn call_method(
+        &self,
+        name: &str,
+        args: &[Value<'gc>],
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<ReturnValue<'gc>, Error> {
+        let child = self.0.read().child;
+        let super_proto = self.0.read().super_proto;
+        let (method, base_proto) = search_prototype(super_proto, name, avm, context, child)?;
+        let method = method.resolve(avm, context)?;
+
+        if let Value::Object(_) = method {
+        } else {
+            log::warn!("Super method {} is not callable", name);
+        }
+
+        method.call(avm, context, child, base_proto, args)
     }
 
     #[allow(clippy::new_ret_no_self)]
