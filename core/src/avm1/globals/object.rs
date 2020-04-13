@@ -261,13 +261,13 @@ pub fn as_set_prop_flags<'gc>(
         _ => None,
     };
 
-    let set_attributes = EnumSet::<Attribute>::from_bits(
+    let set_attributes = EnumSet::<Attribute>::from_u128(
         args.get(2)
             .unwrap_or(&Value::Number(0.0))
             .as_number(avm, ac)? as u128,
     );
 
-    let clear_attributes = EnumSet::<Attribute>::from_bits(
+    let clear_attributes = EnumSet::<Attribute>::from_u128(
         args.get(3)
             .unwrap_or(&Value::Number(0.0))
             .as_number(avm, ac)? as u128,
