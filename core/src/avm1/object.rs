@@ -113,6 +113,24 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         method.call(avm, context, (*self).into(), base_proto, args)
     }
 
+    /// Call a setter defined in this object.
+    ///
+    /// This function returns the `ReturnValue` of the called function; it
+    /// should be resolved and discarded. Attempts to call a non-virtual setter
+    /// or non-existent setter fail silently.
+    ///
+    /// The setter will be invoked with the provided `this`. It is assumed that
+    /// this function is being called on the appropriate `base_proto` and
+    /// `super` will be invoked following said guidance.
+    fn call_setter(
+        &self,
+        name: &str,
+        value: Value<'gc>,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        this: Object<'gc>,
+    ) -> Result<ReturnValue<'gc>, Error>;
+
     /// Construct a host object of some kind and return it's cell.
     ///
     /// As the first step in object construction, the `new` method is called on
@@ -236,6 +254,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Checks if the object has a given named property on itself (and not,
     /// say, the object's prototype or superclass)
     fn has_own_property(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool;
+
+    /// Checks if the object has a given named property on itself that is
+    /// virtual.
+    fn has_own_virtual(
         &self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,

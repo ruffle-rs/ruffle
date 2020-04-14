@@ -96,6 +96,17 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
         self.base().call(avm, context, this, base_proto, args)
     }
 
+    fn call_setter(
+        &self,
+        name: &str,
+        value: Value<'gc>,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        this: Object<'gc>,
+    ) -> Result<ReturnValue<'gc>, Error> {
+        self.base().call_setter(name, value, avm, context, this)
+    }
+
     #[allow(clippy::new_ret_no_self)]
     fn new(
         &self,
@@ -192,6 +203,15 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
         self.node()
             .attribute_value(&XMLName::from_str(name))
             .is_some()
+    }
+
+    fn has_own_virtual(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
+        self.base().has_own_virtual(avm, context, name)
     }
 
     fn is_property_overwritable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {

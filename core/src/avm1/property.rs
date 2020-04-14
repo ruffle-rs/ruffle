@@ -124,6 +124,13 @@ impl<'gc> Property<'gc> {
             Property::Stored { attributes, .. } => !attributes.contains(ReadOnly),
         }
     }
+
+    pub fn is_virtual(&self) -> bool {
+        match self {
+            Property::Virtual { .. } => true,
+            Property::Stored { .. } => false,
+        }
+    }
 }
 
 unsafe impl<'gc> gc_arena::Collect for Property<'gc> {

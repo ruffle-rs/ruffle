@@ -26,13 +26,8 @@ pub struct SuperObjectData<'gc> {
     /// The object present as `this` throughout the superchain.
     child: Object<'gc>,
 
-    /// The `proto` that all property resolution on `super` happens on.
-    super_proto: Option<Object<'gc>>,
-
-    /// The object called when `super` is called.
-    ///
-    /// This should be the `constructor` property of `super_proto`.
-    super_constr: Option<Object<'gc>>,
+    /// The `proto` that the currently-executing method was pulled from.
+    base_proto: Object<'gc>,
 }
 
 impl<'gc> SuperObject<'gc> {
@@ -40,31 +35,46 @@ impl<'gc> SuperObject<'gc> {
     ///
     /// `this` and `base_proto` must be the values provided to
     /// `Executable.exec`.
+    ///
+    /// NOTE: This function must not borrow any `GcCell` data as it is
+    /// sometimes called while mutable borrows are held on cells. Specifically,
+    /// `Object.call_setter` will panic if this function attempts to borrow
+    /// *any* objects.
     pub fn from_this_and_base_proto(
         this: Object<'gc>,
         base_proto: Object<'gc>,
-        avm: &mut Avm1<'gc>,
+        _avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Self, Error> {
-        let super_proto = base_proto.proto();
-        let super_constr = if let Some(super_proto) = super_proto {
-            super_proto
-                .get("constructor", avm, context)?
-                .resolve(avm, context)?
-                .as_object()
-                .ok()
-        } else {
-            None
-        };
-
         Ok(Self(GcCell::allocate(
             context.gc_context,
             SuperObjectData {
                 child: this,
-                super_proto,
-                super_constr,
+                base_proto,
             },
         )))
+    }
+
+    /// Retrieve the prototype that `super` should be pulling from.
+    fn super_proto(self) -> Option<Object<'gc>> {
+        self.0.read().base_proto.proto()
+    }
+
+    /// Retrieve the constructor associated with the super proto.
+    fn super_constr(
+        self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<Option<Object<'gc>>, Error> {
+        if let Some(super_proto) = self.super_proto() {
+            Ok(super_proto
+                .get("constructor", avm, context)?
+                .resolve(avm, context)?
+                .as_object()
+                .ok())
+        } else {
+            Ok(None)
+        }
     }
 }
 
@@ -98,14 +108,8 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         _base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
-        if let Some(constr) = self.0.read().super_constr {
-            constr.call(
-                avm,
-                context,
-                self.0.read().child,
-                self.0.read().super_proto,
-                args,
-            )
+        if let Some(constr) = self.super_constr(avm, context)? {
+            constr.call(avm, context, self.0.read().child, self.super_proto(), args)
         } else {
             Ok(Value::Undefined.into())
         }
@@ -119,7 +123,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
         let child = self.0.read().child;
-        let super_proto = self.0.read().super_proto;
+        let super_proto = self.super_proto();
         let (method, base_proto) = search_prototype(super_proto, name, avm, context, child)?;
         let method = method.resolve(avm, context)?;
 
@@ -129,6 +133,20 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         }
 
         method.call(avm, context, child, base_proto, args)
+    }
+
+    fn call_setter(
+        &self,
+        name: &str,
+        value: Value<'gc>,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        this: Object<'gc>,
+    ) -> Result<ReturnValue<'gc>, Error> {
+        self.0
+            .read()
+            .child
+            .call_setter(name, value, avm, context, this)
     }
 
     #[allow(clippy::new_ret_no_self)]
@@ -159,7 +177,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     }
 
     fn proto(&self) -> Option<Object<'gc>> {
-        self.0.read().super_proto
+        self.super_proto()
     }
 
     fn set_proto(&self, gc_context: MutationContext<'gc, '_>, prototype: Option<Object<'gc>>) {
@@ -225,6 +243,15 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         name: &str,
     ) -> bool {
         self.0.read().child.has_own_property(avm, context, name)
+    }
+
+    fn has_own_virtual(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
+        self.0.read().child.has_own_virtual(avm, context, name)
     }
 
     fn is_property_enumerable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
@@ -300,7 +327,9 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn as_executable(&self) -> Option<Executable<'gc>> {
         //well, `super` *can* be called...
-        self.0.read().super_constr.and_then(|c| c.as_executable())
+        //...but `super_constr` needs an avm and context in order to get called.
+        //ergo, we can't downcast.
+        None
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
