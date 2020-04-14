@@ -212,22 +212,26 @@ impl<'gc> ScriptObject<'gc> {
                 }
             }
 
-            match self
+            let rval = match self
                 .0
                 .write(context.gc_context)
                 .values
                 .entry(name.to_owned(), avm.is_case_sensitive())
             {
                 Entry::Occupied(mut entry) => {
-                    entry.get_mut().set(avm, context, this, base_proto, value)?;
+                    entry.get_mut().set(avm, context, this, base_proto, value)?
                 }
                 Entry::Vacant(entry) => {
                     entry.insert(Property::Stored {
                         value,
                         attributes: Default::default(),
                     });
+
+                    return Ok(());
                 }
-            }
+            };
+
+            rval.resolve(avm, context)?;
         }
 
         Ok(())
