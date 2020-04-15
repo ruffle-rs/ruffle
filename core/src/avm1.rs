@@ -1536,11 +1536,16 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         _context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let object = self.pop().as_object()?;
+        let value = self.pop();
 
         self.push(Value::Null); // Sentinel that indicates end of enumeration
-        for k in object.get_keys(self).into_iter().rev() {
-            self.push(k);
+
+        if let Value::Object(object) = value {
+            for k in object.get_keys(self).into_iter().rev() {
+                self.push(k);
+            }
+        } else {
+            log::warn!("Cannot enumerate {:?}", value);
         }
 
         Ok(())
