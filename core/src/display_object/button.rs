@@ -245,7 +245,6 @@ impl<'gc> ButtonData<'gc> {
                     .library_for_movie_mut(self.movie())
                     .instantiate_by_id(record.id, context.gc_context)
                 {
-                    child.post_instantiation(avm, context, child);
                     child.set_parent(context.gc_context, Some(self_display_object));
                     child.set_matrix(context.gc_context, &record.matrix.clone().into());
                     child.set_color_transform(
@@ -253,6 +252,7 @@ impl<'gc> ButtonData<'gc> {
                         &record.color_transform.clone().into(),
                     );
                     child.set_depth(context.gc_context, record.depth.into());
+                    child.post_instantiation(avm, context, child);
                     self.children.insert(record.depth.into(), child);
                 }
             }
@@ -279,10 +279,10 @@ impl<'gc> ButtonData<'gc> {
                     {
                         Ok(mut child) => {
                             {
-                                child.post_instantiation(avm, context, child);
                                 child.set_matrix(context.gc_context, &record.matrix.clone().into());
                                 child.set_parent(context.gc_context, Some(self_display_object));
                                 child.set_depth(context.gc_context, record.depth.into());
+                                child.post_instantiation(avm, context, child);
                             }
                             self.hit_area.insert(record.depth.into(), child);
                         }

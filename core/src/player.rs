@@ -236,8 +236,8 @@ impl Player {
         player.mutate_with_update_context(|avm, context| {
             let mut root: DisplayObject =
                 MovieClip::from_movie(context.gc_context, movie.clone()).into();
-            root.post_instantiation(avm, context, root);
             root.set_depth(context.gc_context, 0);
+            root.post_instantiation(avm, context, root);
             context.levels.insert(0, root);
         });
 
