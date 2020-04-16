@@ -1,0 +1,29 @@
+First frame
+
+// Base.prototype = new MovieClip();
+
+// Extended.prototype = new Base();
+// Base
+undefined
+
+// ExtendedFurther.prototype = new Extended();
+// Base
+undefined
+// Extended
+undefined
+
+// var ef = new ExtendedFurther();
+// Base
+undefined
+// Extended
+undefined
+// ExtendedFurther
+undefined
+
+// ef.test_method();
+
+// trace(ef.test_property);
+undefined
+
+// ef.test_property = "";
+

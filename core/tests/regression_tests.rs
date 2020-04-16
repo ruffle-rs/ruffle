@@ -186,6 +186,7 @@ swf_tests! {
     (stage_object_enumerate, "avm1/stage_object_enumerate", 1),
     (as2_super_and_this_v6, "avm1/as2_super_and_this_v6", 1),
     (as2_super_and_this_v8, "avm1/as2_super_and_this_v8", 1),
+    (as2_super_via_manual_prototype, "avm1/as2_super_via_manual_prototype", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
