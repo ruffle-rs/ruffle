@@ -906,8 +906,6 @@ impl<'gc> MovieClipData<'gc> {
             .library_for_movie_mut(self.movie())
             .instantiate_by_id(id, context.gc_context)
         {
-            child.post_instantiation(avm, context, child);
-
             // Remove previous child from children list,
             // and add new childonto front of the list.
             let prev_child = self.children.insert(depth, child);
@@ -927,6 +925,7 @@ impl<'gc> MovieClipData<'gc> {
                 }
                 // Run first frame.
                 child.apply_place_object(context.gc_context, place_object);
+                child.post_instantiation(avm, context, child);
                 child.run_frame(avm, context);
             }
             Some(child)
