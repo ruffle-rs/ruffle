@@ -147,8 +147,10 @@ pub fn unshift<'gc>(
     let new_length = old_length + args.len();
     let offset = new_length - old_length;
 
-    for i in (old_length - 1..new_length).rev() {
-        this.set_array_element(i, this.array_element(i - offset), context.gc_context);
+    if old_length > 0 {
+        for i in (old_length - 1..new_length).rev() {
+            this.set_array_element(i, this.array_element(i - offset), context.gc_context);
+        }
     }
 
     for i in 0..args.len() {

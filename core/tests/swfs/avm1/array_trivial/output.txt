@@ -185,3 +185,9 @@ undefined
 // array[2]
 undefined
 
+// array.unshift(1,2)
+2
+
+// array
+1,2
+
