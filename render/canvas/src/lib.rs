@@ -3,7 +3,7 @@ use ruffle_core::backend::render::{
     Transform,
 };
 use ruffle_core::color_transform::ColorTransform;
-use ruffle_core::shape_utils::DrawCommand;
+use ruffle_core::shape_utils::{DistilledShape, DrawCommand};
 use ruffle_web_common::JsResult;
 use std::collections::HashMap;
 use std::convert::TryInto;
@@ -366,7 +366,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         self.viewport_height = height;
     }
 
-    fn register_shape(&mut self, shape: &swf::Shape) -> ShapeHandle {
+    fn register_shape(&mut self, shape: DistilledShape) -> ShapeHandle {
         let handle = ShapeHandle(self.shapes.len());
 
         let mut bitmaps = HashMap::new();
@@ -384,7 +384,7 @@ impl RenderBackend for WebCanvasRenderBackend {
             self.pixelated_property_value,
             &self.context,
         )
-        .unwrap_or_else(|| swf_shape_to_svg(&shape, &bitmaps, self.pixelated_property_value));
+        .unwrap_or_else(|| swf_shape_to_svg(shape, &bitmaps, self.pixelated_property_value));
 
         self.shapes.push(data);
 
@@ -422,7 +422,7 @@ impl RenderBackend for WebCanvasRenderBackend {
             },
             shape: glyph.shape_records.clone(),
         };
-        self.register_shape(&shape)
+        self.register_shape((&shape).into())
     }
 
     fn register_bitmap_jpeg(
@@ -689,13 +689,13 @@ impl RenderBackend for WebCanvasRenderBackend {
 }
 
 fn swf_shape_to_svg(
-    shape: &swf::Shape,
+    shape: DistilledShape,
     bitmaps: &HashMap<CharacterId, (&str, u32, u32)>,
     pixelated_property_value: &str,
 ) -> ShapeData {
     use fnv::FnvHashSet;
     use ruffle_core::matrix::Matrix;
-    use ruffle_core::shape_utils::{swf_shape_to_paths, DrawPath};
+    use ruffle_core::shape_utils::DrawPath;
     use svg::node::element::{
         path::Data, Definitions, Image, LinearGradient, Path as SvgPath, Pattern, RadialGradient,
         Stop,
@@ -741,8 +741,7 @@ fn swf_shape_to_svg(
     let mut num_defs = 0;
 
     let mut svg_paths = vec![];
-    let paths = swf_shape_to_paths(shape);
-    for path in paths {
+    for path in shape.paths {
         match path {
             DrawPath::Fill { style, commands } => {
                 let mut svg_path = SvgPath::new();
@@ -1107,13 +1106,13 @@ fn draw_commands_to_path2d(commands: &[DrawCommand], is_closed: bool) -> Path2d 
 }
 
 fn swf_shape_to_canvas_commands(
-    shape: &swf::Shape,
+    shape: &DistilledShape,
     bitmaps: &HashMap<CharacterId, (&str, u32, u32)>,
     _pixelated_property_value: &str,
     context: &CanvasRenderingContext2d,
 ) -> Option<ShapeData> {
     use ruffle_core::matrix::Matrix;
-    use ruffle_core::shape_utils::{swf_shape_to_paths, DrawPath};
+    use ruffle_core::shape_utils::DrawPath;
     use swf::{FillStyle, LineCapStyle, LineJoinStyle};
 
     // Some browsers will vomit if you try to load/draw an image with 0 width/height.
@@ -1145,8 +1144,7 @@ fn swf_shape_to_canvas_commands(
     bounds_viewbox_matrix.set_a(1.0 / 20.0);
     bounds_viewbox_matrix.set_d(1.0 / 20.0);
 
-    let paths = swf_shape_to_paths(shape);
-    for path in paths {
+    for path in &shape.paths {
         match path {
             DrawPath::Fill { style, commands } => {
                 let fill_style = match style {
@@ -1257,7 +1255,7 @@ fn swf_shape_to_canvas_commands(
 
                 let path = Path2d::new().unwrap();
                 path.add_path_with_transformation(
-                    &draw_commands_to_path2d(&commands, is_closed),
+                    &draw_commands_to_path2d(&commands, *is_closed),
                     &bounds_viewbox_matrix,
                 );
 

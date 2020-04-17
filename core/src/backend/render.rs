@@ -1,10 +1,11 @@
+use crate::shape_utils::DistilledShape;
 pub use crate::{transform::Transform, Color};
 use std::io::Read;
 pub use swf;
 
 pub trait RenderBackend {
     fn set_viewport_dimensions(&mut self, width: u32, height: u32);
-    fn register_shape(&mut self, shape: &swf::Shape) -> ShapeHandle;
+    fn register_shape(&mut self, shape: DistilledShape) -> ShapeHandle;
     fn register_glyph_shape(&mut self, shape: &swf::Glyph) -> ShapeHandle;
     fn register_bitmap_jpeg(
         &mut self,
@@ -68,7 +69,7 @@ impl Default for NullRenderer {
 
 impl RenderBackend for NullRenderer {
     fn set_viewport_dimensions(&mut self, _width: u32, _height: u32) {}
-    fn register_shape(&mut self, _shape: &swf::Shape) -> ShapeHandle {
+    fn register_shape(&mut self, _shape: DistilledShape) -> ShapeHandle {
         ShapeHandle(0)
     }
     fn register_glyph_shape(&mut self, _shape: &swf::Glyph) -> ShapeHandle {

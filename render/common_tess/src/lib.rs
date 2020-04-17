@@ -6,7 +6,7 @@ use lyon::tessellation::{
 };
 use lyon::tessellation::{FillOptions, StrokeOptions};
 use ruffle_core::backend::render::swf::{self, FillStyle, Twips};
-use ruffle_core::shape_utils::{DrawCommand, DrawPath};
+use ruffle_core::shape_utils::{DistilledShape, DrawCommand, DrawPath};
 
 pub struct ShapeTessellator {
     fill_tess: FillTessellator,
@@ -21,11 +21,10 @@ impl ShapeTessellator {
         }
     }
 
-    pub fn tessellate_shape<F>(&mut self, shape: &swf::Shape, get_bitmap_dimensions: F) -> Mesh
+    pub fn tessellate_shape<F>(&mut self, shape: DistilledShape, get_bitmap_dimensions: F) -> Mesh
     where
         F: Fn(swf::CharacterId) -> Option<(u32, u32)>,
     {
-        let paths = ruffle_core::shape_utils::swf_shape_to_paths(shape);
         let mut mesh = Vec::new();
 
         let mut lyon_mesh: VertexBuffers<_, u32> = VertexBuffers::new();
@@ -43,7 +42,7 @@ impl ShapeTessellator {
             });
         }
 
-        for path in paths {
+        for path in shape.paths {
             match path {
                 DrawPath::Fill { style, commands } => match style {
                     FillStyle::Color(color) => {

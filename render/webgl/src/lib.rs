@@ -2,6 +2,7 @@ use ruffle_core::backend::render::swf::{self, FillStyle};
 use ruffle_core::backend::render::{
     BitmapHandle, BitmapInfo, Color, Letterbox, RenderBackend, ShapeHandle, Transform,
 };
+use ruffle_core::shape_utils::DistilledShape;
 use ruffle_render_common_tess::{GradientSpread, GradientType, ShapeTessellator, Vertex};
 use ruffle_web_common::JsResult;
 use std::convert::TryInto;
@@ -422,7 +423,7 @@ impl WebGlRenderBackend {
         Ok(())
     }
 
-    fn register_shape_internal(&mut self, shape: &swf::Shape) -> ShapeHandle {
+    fn register_shape_internal(&mut self, shape: DistilledShape) -> ShapeHandle {
         use ruffle_render_common_tess::DrawType as TessDrawType;
 
         let handle = ShapeHandle(self.meshes.len());
@@ -651,7 +652,7 @@ impl RenderBackend for WebGlRenderBackend {
         self.build_matrices();
     }
 
-    fn register_shape(&mut self, shape: &swf::Shape) -> ShapeHandle {
+    fn register_shape(&mut self, shape: DistilledShape) -> ShapeHandle {
         self.register_shape_internal(shape)
     }
 
@@ -675,7 +676,7 @@ impl RenderBackend for WebGlRenderBackend {
             },
             shape: glyph.shape_records.clone(),
         };
-        self.register_shape_internal(&shape)
+        self.register_shape_internal((&shape).into())
     }
 
     fn register_bitmap_jpeg(

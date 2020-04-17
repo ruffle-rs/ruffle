@@ -1,6 +1,6 @@
 use fnv::FnvHashMap;
 use std::num::NonZeroU32;
-use swf::{FillStyle, LineStyle, ShapeRecord, Twips};
+use swf::{CharacterId, FillStyle, LineStyle, Rectangle, Shape, ShapeRecord, Twips};
 
 pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectangle {
     let mut bounds = swf::Rectangle {
@@ -58,16 +58,10 @@ pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectan
     bounds
 }
 
-/// Converts an SWF shape into a list of paths for easy conversion in the rendering backend.
-/// Each path represents either a fill or a stroke, and they will be in drawing order from back-to-front.
-pub fn swf_shape_to_paths<'a>(shape: &'a swf::Shape) -> Vec<DrawPath<'a>> {
-    ShapeConverter::from_shape(shape).into_commands()
-}
-
 /// `DrawPath` represents a solid fill or a stroke.
 /// Fills are always closed paths, while strokes may be open or closed.
 /// Closed paths will have the first point equal to the last point.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum DrawPath<'a> {
     Stroke {
         style: &'a LineStyle,
@@ -80,9 +74,30 @@ pub enum DrawPath<'a> {
     },
 }
 
+/// `DistilledShape` represents a ready-to-be-consumed collection of paths (both fills and strokes)
+/// that has been converted down from another source (such as SWF's `swf::Shape` format).
+#[derive(Debug, PartialEq, Clone)]
+pub struct DistilledShape<'a> {
+    pub paths: Vec<DrawPath<'a>>,
+    pub shape_bounds: Rectangle,
+    pub edge_bounds: Rectangle,
+    pub id: CharacterId,
+}
+
+impl<'a> From<&'a swf::Shape> for DistilledShape<'a> {
+    fn from(shape: &'a Shape) -> Self {
+        Self {
+            paths: ShapeConverter::from_shape(shape).into_commands(),
+            shape_bounds: shape.shape_bounds.clone(),
+            edge_bounds: shape.edge_bounds.clone(),
+            id: shape.id,
+        }
+    }
+}
+
 /// `DrawCommands` trace the outline of a path.
 /// Fills follow the even-odd fill rule, with opposite winding for holes.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum DrawCommand {
     MoveTo {
         x: Twips,
@@ -592,7 +607,7 @@ mod tests {
                 delta_y: Twips::from_pixels(-100.0),
             },
         ]);
-        let commands = swf_shape_to_paths(&shape);
+        let commands = ShapeConverter::from_shape(&shape).into_commands();
         let expected = vec![DrawPath::Fill {
             style: &FILL_STYLES[0],
             commands: vec![
@@ -656,7 +671,7 @@ mod tests {
                 delta_y: Twips::from_pixels(100.0),
             },
         ]);
-        let commands = swf_shape_to_paths(&shape);
+        let commands = ShapeConverter::from_shape(&shape).into_commands();
         let expected = vec![DrawPath::Fill {
             style: &FILL_STYLES[0],
             commands: vec![
