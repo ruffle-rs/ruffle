@@ -298,7 +298,7 @@ impl MorphShapeStatic {
         };
 
         let frame = Frame {
-            shape: renderer.register_shape(&shape),
+            shape: renderer.register_shape((&shape).into()),
             bounds: bounds.into(),
         };
         self.frames.insert(ratio, frame);

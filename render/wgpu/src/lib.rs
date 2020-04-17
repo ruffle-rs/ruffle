@@ -7,9 +7,9 @@ use ruffle_core::backend::render::swf::{self, FillStyle};
 use ruffle_core::backend::render::{
     BitmapHandle, BitmapInfo, Color, Letterbox, RenderBackend, ShapeHandle, Transform,
 };
-use ruffle_core::shape_utils::DrawPath;
+use ruffle_core::shape_utils::{DistilledShape, DrawPath};
 use std::convert::TryInto;
-use swf::{CharacterId, DefineBitsLossless, Glyph, Shape};
+use swf::{CharacterId, DefineBitsLossless, Glyph};
 
 use bytemuck::{Pod, Zeroable};
 use futures::executor::block_on;
@@ -213,9 +213,8 @@ impl WgpuRenderBackend {
     }
 
     #[allow(clippy::cognitive_complexity)]
-    fn register_shape_internal(&mut self, shape: &swf::Shape) -> ShapeHandle {
+    fn register_shape_internal(&mut self, shape: DistilledShape) -> ShapeHandle {
         let handle = ShapeHandle(self.meshes.len());
-        let paths = ruffle_core::shape_utils::swf_shape_to_paths(shape);
 
         use lyon::tessellation::{FillOptions, StrokeOptions};
 
@@ -288,7 +287,7 @@ impl WgpuRenderBackend {
             *lyon_mesh = VertexBuffers::new();
         }
 
-        for path in paths {
+        for path in shape.paths {
             match path {
                 DrawPath::Fill { style, commands } => match style {
                     FillStyle::Color(color) => {
@@ -835,7 +834,7 @@ impl RenderBackend for WgpuRenderBackend {
         self.build_matrices();
     }
 
-    fn register_shape(&mut self, shape: &Shape) -> ShapeHandle {
+    fn register_shape(&mut self, shape: DistilledShape) -> ShapeHandle {
         self.register_shape_internal(shape)
     }
 
@@ -859,7 +858,7 @@ impl RenderBackend for WgpuRenderBackend {
             },
             shape: glyph.shape_records.clone(),
         };
-        self.register_shape_internal(&shape)
+        self.register_shape_internal((&shape).into())
     }
 
     fn register_bitmap_jpeg(
