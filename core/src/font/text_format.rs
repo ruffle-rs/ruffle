@@ -109,12 +109,8 @@ impl TextFormat {
         Ok(Self {
             font: getstr_from_avm1_object(object1, "font", avm1, uc)?,
             size: getfloat_from_avm1_object(object1, "size", avm1, uc)?,
-            color: getfloat_from_avm1_object(object1, "color", avm1, uc)?.map(|v| swf::Color {
-                r: ((v as u32 & 0xFF_0000) >> 16) as u8,
-                g: ((v as u32 & 0x00_FF00) >> 8) as u8,
-                b: (v as u32 & 0x00_00FF) as u8,
-                a: 0xFF,
-            }),
+            color: getfloat_from_avm1_object(object1, "color", avm1, uc)?
+                .map(|v| swf::Color::from_rgb(v as u32, 0xFF)),
             align: getstr_from_avm1_object(object1, "align", avm1, uc)?.and_then(|v| {
                 match v.to_lowercase().as_str() {
                     "left" => Some(swf::TextAlign::Left),

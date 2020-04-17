@@ -162,6 +162,17 @@ pub struct Color {
     pub a: u8,
 }
 
+impl Color {
+    pub fn from_rgb(rgb: u32, alpha: u8) -> Self {
+        Self {
+            r: ((rgb & 0xFF_0000) >> 16) as u8,
+            g: ((rgb & 0x00_FF00) >> 8) as u8,
+            b: (rgb & 0x00_00FF) as u8,
+            a: alpha,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct ColorTransform {
     pub r_multiply: f32,
