@@ -7,6 +7,7 @@ use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Val
 use crate::backend::navigator::NavigationMethod;
 use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObject};
 use crate::prelude::*;
+use crate::tag_utils::SwfSlice;
 use gc_arena::MutationContext;
 use swf::Twips;
 
@@ -198,7 +199,11 @@ fn create_empty_movie_clip<'gc>(
     };
 
     // Create empty movie clip.
-    let mut new_clip = MovieClip::new(avm.current_swf_version(), context.gc_context);
+    let swf_movie = movie_clip
+        .movie()
+        .or_else(|| avm.base_clip().movie())
+        .unwrap();
+    let mut new_clip = MovieClip::new(SwfSlice::empty(swf_movie), context.gc_context);
 
     // Set name and attach to parent.
     new_clip.set_name(context.gc_context, &new_instance_name);

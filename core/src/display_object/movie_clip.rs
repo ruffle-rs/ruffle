@@ -46,12 +46,12 @@ pub struct MovieClipData<'gc> {
 
 impl<'gc> MovieClip<'gc> {
     #[allow(dead_code)]
-    pub fn new(swf_version: u8, gc_context: MutationContext<'gc, '_>) -> Self {
+    pub fn new(swf: SwfSlice, gc_context: MutationContext<'gc, '_>) -> Self {
         MovieClip(GcCell::allocate(
             gc_context,
             MovieClipData {
                 base: Default::default(),
-                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(swf_version)),
+                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(swf)),
                 tag_stream_pos: 0,
                 current_frame: 0,
                 audio_stream: None,
@@ -2143,10 +2143,10 @@ struct MovieClipStatic {
 }
 
 impl MovieClipStatic {
-    fn empty(swf_version: u8) -> Self {
+    fn empty(swf: SwfSlice) -> Self {
         Self {
             id: 0,
-            swf: SwfSlice::empty(swf_version),
+            swf,
             total_frames: 1,
             frame_labels: HashMap::new(),
             audio_stream_info: None,

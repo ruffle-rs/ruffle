@@ -229,10 +229,9 @@ impl CpalAudioBackend {
         &self,
         format: &swf::SoundFormat,
         data_stream: SwfSlice,
-        swf_version: u8,
     ) -> Box<dyn 'a + Send + sample::signal::Signal<Frame = [i16; 2]>> {
         // Instantiate a decoder for the compression that the sound data uses.
-        let clip_stream_decoder = decoders::make_stream_decoder(format, data_stream, swf_version);
+        let clip_stream_decoder = decoders::make_stream_decoder(format, data_stream);
 
         // Convert the `Decoder` to a `Signal`, and resample it the the output
         // sample rate.
@@ -336,8 +335,7 @@ impl AudioBackend for CpalAudioBackend {
         // The audio data for stream sounds is distributed among the frames of a
         // movie clip. The stream tag reader will parse through the SWF and
         // feed the decoder audio data on the fly.
-        // TODO: Use actual SWF version here (would only matter for SWF <3...)
-        let signal = self.make_signal_from_stream(format, clip_data, 8);
+        let signal = self.make_signal_from_stream(format, clip_data);
 
         let mut sound_instances = self.sound_instances.lock().unwrap();
         sound_instances.insert(SoundInstance {

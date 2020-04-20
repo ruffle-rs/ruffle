@@ -115,9 +115,9 @@ impl AsRef<[u8]> for SwfSlice {
 impl SwfSlice {
     /// Creates an empty SwfSlice.
     #[inline]
-    pub fn empty(swf_version: u8) -> Self {
+    pub fn empty(movie: Arc<SwfMovie>) -> Self {
         Self {
-            movie: Arc::new(SwfMovie::empty(swf_version)),
+            movie,
             start: 0,
             end: 0,
         }
