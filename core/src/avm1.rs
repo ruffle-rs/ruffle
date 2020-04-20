@@ -14,7 +14,6 @@ use swf::avm1::read::Reader;
 use swf::avm1::types::{Action, Function};
 
 use crate::display_object::{DisplayObject, MovieClip};
-use crate::player::NEWEST_PLAYER_VERSION;
 use crate::tag_utils::SwfSlice;
 
 #[cfg(test)]
@@ -978,8 +977,11 @@ impl<'gc> Avm1<'gc> {
         if let Some(level) = context.levels.get(&level_id) {
             *level
         } else {
-            let mut level: DisplayObject<'_> =
-                MovieClip::new(NEWEST_PLAYER_VERSION, context.gc_context).into();
+            let mut level: DisplayObject<'_> = MovieClip::new(
+                SwfSlice::empty(self.base_clip().movie().unwrap()),
+                context.gc_context,
+            )
+            .into();
 
             level.set_depth(context.gc_context, level_id as i32);
             context.levels.insert(level_id, level);

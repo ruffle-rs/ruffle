@@ -9,7 +9,7 @@ use crate::display_object::{MovieClip, TDisplayObject};
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::prelude::*;
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::{SwfMovie, SwfSlice};
 use gc_arena::{rootless_arena, GcCell, MutationContext};
 use rand::{rngs::SmallRng, SeedableRng};
 use std::collections::BTreeMap;
@@ -25,7 +25,8 @@ where
     {
         let mut avm = Avm1::new(gc_context, swf_version);
         let swf = Arc::new(SwfMovie::empty(swf_version));
-        let mut root: DisplayObject<'_> = MovieClip::new(swf_version, gc_context).into();
+        let mut root: DisplayObject<'_> =
+            MovieClip::new(SwfSlice::empty(swf.clone()), gc_context).into();
         root.set_depth(gc_context, 0);
         let mut levels = BTreeMap::new();
         levels.insert(0, root);

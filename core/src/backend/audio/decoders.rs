@@ -84,9 +84,9 @@ struct StandardStreamDecoder {
 impl StandardStreamDecoder {
     /// Constructs a new `StandardStreamDecoder.
     /// `swf_data` should be the tag data of the MovieClip that contains the stream.
-    fn new(format: &SoundFormat, swf_data: SwfSlice, swf_version: u8) -> Self {
+    fn new(format: &SoundFormat, swf_data: SwfSlice) -> Self {
         // Create a tag reader to get the audio data from SoundStreamBlock tags.
-        let tag_reader = StreamTagReader::new(format.compression, swf_data, swf_version);
+        let tag_reader = StreamTagReader::new(format.compression, swf_data);
         // Wrap the tag reader in the decoder.
         let decoder = make_decoder(format, tag_reader);
         Self { decoder }
@@ -122,11 +122,10 @@ pub struct AdpcmStreamDecoder {
 }
 
 impl AdpcmStreamDecoder {
-    fn new(format: &SoundFormat, swf_data: SwfSlice, swf_version: u8) -> Self {
-        let mut tag_reader = StreamTagReader::new(format.compression, swf_data, swf_version);
-        let audio_data = tag_reader
-            .next()
-            .unwrap_or_else(|| SwfSlice::empty(swf_version));
+    fn new(format: &SoundFormat, swf_data: SwfSlice) -> Self {
+        let movie = swf_data.movie.clone();
+        let mut tag_reader = StreamTagReader::new(format.compression, swf_data);
+        let audio_data = tag_reader.next().unwrap_or_else(|| SwfSlice::empty(movie));
         let decoder = AdpcmDecoder::new(
             Cursor::new(audio_data),
             format.is_stereo,
@@ -180,12 +179,11 @@ impl Iterator for AdpcmStreamDecoder {
 pub fn make_stream_decoder(
     format: &swf::SoundFormat,
     swf_data: SwfSlice,
-    swf_version: u8,
 ) -> Box<dyn Decoder + Send> {
     if format.compression == AudioCompression::Adpcm {
-        Box::new(AdpcmStreamDecoder::new(format, swf_data, swf_version))
+        Box::new(AdpcmStreamDecoder::new(format, swf_data))
     } else {
-        Box::new(StandardStreamDecoder::new(format, swf_data, swf_version))
+        Box::new(StandardStreamDecoder::new(format, swf_data))
     }
 }
 
@@ -219,12 +217,14 @@ struct StreamTagReader {
 impl StreamTagReader {
     /// Builds a new `StreamTagReader` from the given SWF data.
     /// `swf_data` should be the tag data of a MovieClip.
-    fn new(compression: AudioCompression, swf_data: SwfSlice, swf_version: u8) -> Self {
+    fn new(compression: AudioCompression, swf_data: SwfSlice) -> Self {
+        let current_audio_data = SwfSlice::empty(swf_data.movie.clone());
+        let version = swf_data.version();
         Self {
             compression,
-            reader: swf::read::Reader::new(Cursor::new(swf_data), swf_version),
+            reader: swf::read::Reader::new(Cursor::new(swf_data), version),
             current_frame: 1,
-            current_audio_data: SwfSlice::empty(swf_version),
+            current_audio_data,
         }
     }
 }
