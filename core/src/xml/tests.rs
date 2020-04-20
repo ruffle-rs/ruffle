@@ -12,7 +12,6 @@ fn parse_single_element() {
         xml.as_node()
             .replace_with_str(mc, "<test></test>")
             .expect("Parsed document");
-        dbg!(xml);
         let mut roots = xml
             .as_node()
             .children()
