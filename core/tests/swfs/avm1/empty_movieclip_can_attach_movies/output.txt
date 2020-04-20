@@ -1,0 +1,12 @@
+// trace(square);
+_level0.clip.square
+
+// trace(mc.square);
+_level0.clip.square
+
+// trace(mc.square == square);
+true
+
+// trace(mc.square.test);
+_level0.clip.square.test
+
