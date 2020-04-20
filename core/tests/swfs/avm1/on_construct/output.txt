@@ -1,0 +1,26 @@
+/// on(construct) start
+
+// _name
+custom_clip
+
+// customProperty
+Custom property from CustomClass
+
+// child
+_level0.custom_clip.child
+
+/// on(construct) end
+
+/// CustomClass() constructor start
+
+// this._name
+custom_clip
+
+// this.customProperty
+Custom property from on(construct)
+
+// this.child
+_level0.custom_clip.child
+
+/// CustomClass() constructor end
+
