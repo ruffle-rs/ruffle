@@ -671,13 +671,24 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             );
             mc.object = Some(object.into());
 
-            if let Some(constructor) = mc.avm1_constructor {
-                context.action_queue.queue_actions(
-                    display_object,
-                    ActionType::ChangePrototype { constructor },
-                    false,
-                );
+            let mut events = Vec::new();
+
+            for clip_action in mc
+                .clip_actions()
+                .iter()
+                .filter(|action| action.events.contains(&ClipEvent::Construct))
+            {
+                events.push(clip_action.action_data.clone());
             }
+
+            context.action_queue.queue_actions(
+                display_object,
+                ActionType::Construct {
+                    constructor: mc.avm1_constructor,
+                    events,
+                },
+                false,
+            );
         }
     }
 
