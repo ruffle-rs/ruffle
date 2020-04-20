@@ -656,8 +656,11 @@ impl Player {
                         context,
                     );
                 }
-                // Change the prototype of a movieclip
-                ActionType::ChangePrototype { constructor } => {
+                // Change the prototype of a movieclip & run constructor events
+                ActionType::Construct {
+                    constructor: Some(constructor),
+                    events,
+                } => {
                     avm.insert_stack_frame(GcCell::allocate(
                         context.gc_context,
                         Activation::from_nothing(
@@ -674,10 +677,43 @@ impl Player {
                     {
                         if let Value::Object(object) = actions.clip.object() {
                             object.set_proto(context.gc_context, Some(prototype));
+                            for event in events {
+                                avm.insert_stack_frame_for_action(
+                                    actions.clip,
+                                    context.swf.header().version,
+                                    event,
+                                    context,
+                                );
+                            }
+                            let _ = avm.run_stack_till_empty(context);
+
+                            avm.insert_stack_frame(GcCell::allocate(
+                                context.gc_context,
+                                Activation::from_nothing(
+                                    context.swf.header().version,
+                                    avm.global_object_cell(),
+                                    context.gc_context,
+                                    actions.clip,
+                                ),
+                            ));
                             if let Ok(result) = constructor.call(avm, context, object, None, &[]) {
                                 let _ = result.resolve(avm, context);
                             }
                         }
+                    }
+                }
+                // Run constructor events without changing the prototype
+                ActionType::Construct {
+                    constructor: None,
+                    events,
+                } => {
+                    for event in events {
+                        avm.insert_stack_frame_for_action(
+                            actions.clip,
+                            context.swf.header().version,
+                            event,
+                            context,
+                        );
                     }
                 }
                 // Event handler method call (e.g. onEnterFrame)

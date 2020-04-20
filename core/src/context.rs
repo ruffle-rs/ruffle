@@ -145,7 +145,7 @@ impl<'gc> ActionQueue<'gc> {
         is_unload: bool,
     ) {
         // Prototype change goes a higher priority queue.
-        if let ActionType::ChangePrototype { .. } = action_type {
+        if let ActionType::Construct { .. } = action_type {
             self.change_prototype_queue.push_back(QueuedActions {
                 clip,
                 action_type,
@@ -208,8 +208,11 @@ pub enum ActionType<'gc> {
     /// Normal frame or event actions.
     Normal { bytecode: SwfSlice },
 
-    /// Change the prototype of a movieclip (ie via `Object.registerClass`)
-    ChangePrototype { constructor: Object<'gc> },
+    /// Construct a movie with a custom class or on(construct) events
+    Construct {
+        constructor: Option<Object<'gc>>,
+        events: Vec<SwfSlice>,
+    },
 
     /// An event handler method, e.g. `onEnterFrame`.
     Method {
@@ -233,9 +236,13 @@ impl fmt::Debug for ActionType<'_> {
                 .debug_struct("ActionType::Normal")
                 .field("bytecode", bytecode)
                 .finish(),
-            ActionType::ChangePrototype { constructor } => f
-                .debug_struct("ActionType::ChangePrototype")
+            ActionType::Construct {
+                constructor,
+                events,
+            } => f
+                .debug_struct("ActionType::Construct")
                 .field("constructor", constructor)
+                .field("events", events)
                 .finish(),
             ActionType::Method { object, name, args } => f
                 .debug_struct("ActionType::Method")
@@ -261,7 +268,7 @@ unsafe impl<'gc> Collect for ActionType<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
         match self {
-            ActionType::ChangePrototype { constructor, .. } => {
+            ActionType::Construct { constructor, .. } => {
                 constructor.trace(cc);
             }
             ActionType::Method { object, args, .. } => {

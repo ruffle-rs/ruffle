@@ -1,6 +1,6 @@
 /// on(construct) start
 
-// _name
+// this._name
 custom_clip
 
 // customProperty
