@@ -49,3 +49,6 @@ _level0.clip2
 // mc3
 undefined
 
+/// Frame 1 of clip
+/// Frame 1 of clip
+/// Frame 1 of clip2
