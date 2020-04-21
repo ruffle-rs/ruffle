@@ -98,6 +98,7 @@ swf_tests! {
     (variable_args, "avm1/variable_args", 1),
     (custom_clip_methods, "avm1/custom_clip_methods", 3),
     (delete, "avm1/delete", 3),
+    (default_names, "avm1/default_names", 6),
     (array_trivial, "avm1/array_trivial", 1),
     (array_concat, "avm1/array_concat", 1),
     (array_slice, "avm1/array_slice", 1),
