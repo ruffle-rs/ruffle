@@ -8,7 +8,7 @@ members = [
     "scanner",
 
     "render/canvas",
-    "render/glium",
+    "render/wgpu",
     "render/common_tess",
 ]
 

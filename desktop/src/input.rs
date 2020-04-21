@@ -1,23 +1,24 @@
-use glium::Display;
 use ruffle_core::backend::input::{InputBackend, MouseCursor};
 use ruffle_core::events::{KeyCode, PlayerEvent};
 use std::collections::HashSet;
+use std::rc::Rc;
 use winit::event::{ElementState, VirtualKeyCode, WindowEvent};
+use winit::window::Window;
 
 pub struct WinitInputBackend {
     keys_down: HashSet<VirtualKeyCode>,
-    display: Display,
+    window: Rc<Window>,
     cursor_visible: bool,
     last_key: KeyCode,
 }
 
 impl WinitInputBackend {
-    pub fn new(display: Display) -> Self {
+    pub fn new(window: Rc<Window>) -> Self {
         Self {
             keys_down: HashSet::new(),
             cursor_visible: true,
             last_key: KeyCode::Unknown,
-            display,
+            window,
         }
     }
 
@@ -176,12 +177,12 @@ impl InputBackend for WinitInputBackend {
     }
 
     fn hide_mouse(&mut self) {
-        self.display.gl_window().window().set_cursor_visible(false);
+        self.window.set_cursor_visible(false);
         self.cursor_visible = false;
     }
 
     fn show_mouse(&mut self) {
-        self.display.gl_window().window().set_cursor_visible(true);
+        self.window.set_cursor_visible(true);
         self.cursor_visible = true;
     }
 
@@ -193,7 +194,7 @@ impl InputBackend for WinitInputBackend {
             MouseCursor::IBeam => CursorIcon::Text,
             MouseCursor::Grab => CursorIcon::Grab,
         };
-        self.display.gl_window().window().set_cursor_icon(icon);
+        self.window.set_cursor_icon(icon);
     }
 }
 

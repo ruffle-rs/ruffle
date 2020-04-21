@@ -3,11 +3,11 @@
 use crate::custom_event::RuffleEvent;
 use crate::task::Task;
 use generational_arena::{Arena, Index};
-use glutin::event_loop::EventLoopProxy;
 use ruffle_core::backend::navigator::{Error, OwnedFuture};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex, Weak};
 use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
+use winit::event_loop::EventLoopProxy;
 
 /// Exeuctor context passed to event sources.
 ///

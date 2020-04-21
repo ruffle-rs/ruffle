@@ -9,21 +9,20 @@ mod task;
 
 use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
-use glutin::{
-    dpi::{LogicalSize, PhysicalPosition},
-    event::{ElementState, MouseButton, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
-    ContextBuilder,
-};
 use ruffle_core::{
     backend::audio::{AudioBackend, NullAudioBackend},
     Player,
 };
-use ruffle_render_glium::GliumRenderBackend;
+use ruffle_render_wgpu::WGPURenderBackend;
 use std::path::PathBuf;
 use std::time::Instant;
 use structopt::StructOpt;
+
+use std::rc::Rc;
+use winit::dpi::{LogicalSize, PhysicalPosition};
+use winit::event::{ElementState, MouseButton, WindowEvent};
+use winit::event_loop::{ControlFlow, EventLoop};
+use winit::window::WindowBuilder;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "basic")]
@@ -49,16 +48,15 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     let swf_data = std::fs::read(&input_path)?;
 
     let event_loop: EventLoop<RuffleEvent> = EventLoop::with_user_event();
-    let window_builder = WindowBuilder::new().with_title(format!(
-        "Ruffle - {}",
-        input_path.file_name().unwrap_or_default().to_string_lossy()
-    ));
-    let windowed_context = ContextBuilder::new()
-        .with_vsync(true)
-        .with_multisampling(4)
-        .with_srgb(true)
-        .with_stencil_buffer(8)
-        .build_windowed(window_builder, &event_loop)?;
+    let window = Rc::new(
+        WindowBuilder::new()
+            .with_title(format!(
+                "Ruffle - {}",
+                input_path.file_name().unwrap_or_default().to_string_lossy()
+            ))
+            .build(&event_loop)?,
+    );
+
     let audio: Box<dyn AudioBackend> = match audio::CpalAudioBackend::new() {
         Ok(audio) => Box::new(audio),
         Err(e) => {
@@ -66,7 +64,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
             Box::new(NullAudioBackend::new())
         }
     };
-    let renderer = Box::new(GliumRenderBackend::new(windowed_context)?);
+    let renderer = Box::new(WGPURenderBackend::new(window.clone())?);
     let (executor, chan) = GlutinAsyncExecutor::new(event_loop.create_proxy());
     let navigator = Box::new(navigator::ExternalNavigatorBackend::with_base_path(
         input_path
@@ -75,8 +73,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         chan,
         event_loop.create_proxy(),
     )); //TODO: actually implement this backend type
-    let display = renderer.display().clone();
-    let input = Box::new(input::WinitInputBackend::new(display.clone()));
+    let input = Box::new(input::WinitInputBackend::new(window.clone()));
     let player = Player::new(renderer, audio, navigator, input, swf_data)?;
 
     let logical_size: LogicalSize<u32> = {
@@ -85,13 +82,15 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
 
         (player_lock.movie_width(), player_lock.movie_height()).into()
     };
-    let scale_factor = display.gl_window().window().scale_factor();
+    let scale_factor = window.scale_factor();
 
     // Set initial size to movie dimensions.
-    display.gl_window().window().set_inner_size(logical_size);
-    display
-        .gl_window()
-        .resize(logical_size.to_physical(scale_factor));
+    window.set_inner_size(logical_size);
+    let size = logical_size.to_physical(scale_factor);
+    player
+        .lock()
+        .unwrap()
+        .set_viewport_dimensions(size.width, size.height);
 
     let mut mouse_pos = PhysicalPosition::new(0.0, 0.0);
     let mut time = Instant::now();
@@ -100,8 +99,8 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         event_loop.run(move |event, _window_target, control_flow| {
             *control_flow = ControlFlow::Wait;
             match event {
-                glutin::event::Event::LoopDestroyed => return,
-                glutin::event::Event::WindowEvent { event, .. } => match event {
+                winit::event::Event::LoopDestroyed => return,
+                winit::event::Event::WindowEvent { event, .. } => match event {
                     WindowEvent::Resized(size) => {
                         let mut player_lock = player.lock().unwrap();
                         player_lock.set_viewport_dimensions(size.width, size.height);
@@ -155,7 +154,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                     }
                     _ => (),
                 },
-                glutin::event::Event::UserEvent(RuffleEvent::TaskPoll) => executor
+                winit::event::Event::UserEvent(RuffleEvent::TaskPoll) => executor
                     .lock()
                     .expect("active executor reference")
                     .poll_all(),

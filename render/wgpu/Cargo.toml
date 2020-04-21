@@ -1,0 +1,17 @@
+[package]
+name = "ruffle_render_wgpu"
+version = "0.1.0"
+authors = ["Nathan Adams <dinnerbone@dinnerbone.com>"]
+edition = "2018"
+
+[dependencies]
+wgpu = "0.5"
+wgpu-native = "0.5"
+image = "0.23.4"
+jpeg-decoder = "0.1.18"
+log = "0.4"
+lyon = "0.15.6"
+ruffle_core = { path = "../../core" }
+futures = "0.3.4"
+bytemuck = "1.2.0"
+winit = "0.22"
