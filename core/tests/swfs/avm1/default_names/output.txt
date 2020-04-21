@@ -1,0 +1,52 @@
+/// Root frame 1 ()
+
+// instance1
+_level0.instance1
+
+// instance2
+_level0.instance2
+
+
+Symbol frame 1 (instance1)
+Symbol frame 1 (instance2)
+/// Children frame 1 (children)
+
+Symbol frame 1 (instance3)
+Symbol frame 1 (instance4)
+Symbol frame 1 (instance5)
+/// Children frame 1 (children2)
+
+Symbol frame 1 (instance6)
+Symbol frame 1 (instance7)
+/// Root frame 2
+/// Root frame 3
+/// Children frame 1 (instance11)
+
+Symbol frame 1 (instance12)
+Symbol frame 1 (instance13)
+/// Root frame 1 ()
+
+// instance1
+undefined
+
+// instance2
+undefined
+
+
+Symbol frame 1 (instance14)
+Symbol frame 1 (instance15)
+/// Children frame 1 (children)
+
+Symbol frame 1 (instance16)
+Symbol frame 1 (instance17)
+Symbol frame 1 (instance18)
+/// Children frame 1 (children2)
+
+Symbol frame 1 (instance19)
+Symbol frame 1 (instance20)
+/// Root frame 2
+/// Root frame 3
+/// Children frame 1 (instance24)
+
+Symbol frame 1 (instance25)
+Symbol frame 1 (instance26)
