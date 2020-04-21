@@ -281,7 +281,7 @@ impl Player {
             storage,
         };
 
-        player.mutate_with_update_context(|avm1, avm2, context| {
+        player.mutate_with_update_context(|avm1, _avm2, context| {
             let mut root: DisplayObject =
                 MovieClip::from_movie(context.gc_context, movie.clone()).into();
             root.set_depth(context.gc_context, 0);
