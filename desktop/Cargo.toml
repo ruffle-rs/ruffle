@@ -8,6 +8,7 @@ default-run = "ruffle_desktop"
 [dependencies]
 cpal = "0.11.0"
 ruffle_core = { path = "../core" }
+ruffle_render_glium = { path = "../render/glium" }
 glium = "0.27.0"
 glutin = "0.24"
 env_logger = "0.7.1"

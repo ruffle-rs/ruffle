@@ -8,6 +8,7 @@ members = [
     "scanner",
 
     "render/canvas",
+    "render/glium",
 ]
 
 # Don't optimize build scripts and macros.
