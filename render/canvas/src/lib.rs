@@ -1,10 +1,10 @@
-use crate::utils::JsResult;
 use ruffle_core::backend::render::{
     swf, swf::CharacterId, BitmapHandle, BitmapInfo, Color, Letterbox, RenderBackend, ShapeHandle,
     Transform,
 };
 use ruffle_core::color_transform::ColorTransform;
 use ruffle_core::shape_utils::DrawCommand;
+use ruffle_web_common::JsResult;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use wasm_bindgen::{JsCast, JsValue};

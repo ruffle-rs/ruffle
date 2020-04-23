@@ -1,4 +1,3 @@
-use crate::utils::JsResult;
 use fnv::FnvHashMap;
 use generational_arena::Arena;
 use ruffle_core::backend::audio::decoders::{AdpcmDecoder, Mp3Decoder};
@@ -6,6 +5,7 @@ use ruffle_core::backend::audio::swf::{self, AudioCompression};
 use ruffle_core::backend::audio::{
     AudioBackend, AudioStreamHandle, SoundHandle, SoundInstanceHandle,
 };
+use ruffle_web_common::JsResult;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use wasm_bindgen::{closure::Closure, prelude::*, JsCast};
