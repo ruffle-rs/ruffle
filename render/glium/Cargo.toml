@@ -1,0 +1,14 @@
+[package]
+name = "ruffle_render_glium"
+version = "0.1.0"
+authors = ["Mike Welsh <mwelsh@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+glium = "0.27.0"
+glutin = "0.24"
+image = "0.23.4"
+jpeg-decoder = "0.1.18"
+log = "0.4"
+lyon = "0.15.6"
+ruffle_core = { path = "../../core" }

@@ -5,12 +5,10 @@ mod custom_event;
 mod executor;
 mod input;
 mod navigator;
-mod render;
 mod task;
 
 use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
-use crate::render::GliumRenderBackend;
 use glutin::{
     dpi::{LogicalSize, PhysicalPosition},
     event::{ElementState, MouseButton, WindowEvent},
@@ -22,6 +20,7 @@ use ruffle_core::{
     backend::audio::{AudioBackend, NullAudioBackend},
     Player,
 };
+use ruffle_render_glium::GliumRenderBackend;
 use std::path::PathBuf;
 use std::time::Instant;
 use structopt::StructOpt;
