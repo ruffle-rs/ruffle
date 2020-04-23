@@ -2,16 +2,12 @@
 mod audio;
 mod input;
 mod navigator;
-mod render;
-mod utils;
 
-use crate::{
-    audio::WebAudioBackend, input::WebInputBackend, navigator::WebNavigatorBackend,
-    render::WebCanvasRenderBackend,
-};
+use crate::{audio::WebAudioBackend, input::WebInputBackend, navigator::WebNavigatorBackend};
 use generational_arena::{Arena, Index};
 use js_sys::Uint8Array;
 use ruffle_core::PlayerEvent;
+use ruffle_render_canvas::WebCanvasRenderBackend;
 use std::mem::drop;
 use std::sync::{Arc, Mutex};
 use std::{cell::RefCell, error::Error, num::NonZeroI32};

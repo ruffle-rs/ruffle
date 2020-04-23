@@ -6,6 +6,8 @@ members = [
     "swf",
     "web",
     "scanner",
+
+    "render/canvas",
 ]
 
 # Don't optimize build scripts and macros.

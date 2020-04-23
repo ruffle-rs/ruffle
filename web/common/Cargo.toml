@@ -1,0 +1,9 @@
+[package]
+name = "ruffle_web_common"
+version = "0.1.0"
+authors = ["Mike Welsh <mwelsh@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+log = "0.4"
+wasm-bindgen = "0.2.57"

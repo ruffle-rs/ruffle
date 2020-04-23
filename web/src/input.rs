@@ -1,6 +1,6 @@
-use crate::utils::JsResult;
 use ruffle_core::backend::input::{InputBackend, MouseCursor};
 use ruffle_core::events::KeyCode;
+use ruffle_web_common::JsResult;
 use std::collections::HashSet;
 use web_sys::HtmlCanvasElement;
 

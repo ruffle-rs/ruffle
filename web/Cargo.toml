@@ -12,7 +12,6 @@ lzma = ["ruffle_core/lzma"]
 default = ["console_error_panic_hook", "console_log"]
 
 [dependencies]
-base64 = "0.12.0"
 byteorder = "1.3.4"
 console_error_panic_hook = { version = "0.1.1", optional = true }
 console_log = { version = "0.2", optional = true }
@@ -20,16 +19,11 @@ fnv = "1.0.3"
 generational-arena = "0.2.7"
 js-sys = "0.3.25"
 log = "0.4"
-png = "0.16.3"
-svg = "0.8.0"
-percent-encoding = "2.1.0"
+ruffle_render_canvas = { path = "../render/canvas" }
+ruffle_web_common = { path = "common" }
 url = "2.1.1"
 wasm-bindgen = "0.2.57"
 wasm-bindgen-futures = "0.4.4"
-
-[dependencies.jpeg-decoder]
-version = "0.1.19"
-default-features = false # can't use rayon on web
 
 [dependencies.ruffle_core]
 path = "../core"
