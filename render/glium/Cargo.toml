@@ -10,5 +10,5 @@ glutin = "0.24"
 image = "0.23.4"
 jpeg-decoder = "0.1.18"
 log = "0.4"
-lyon = "0.15.6"
 ruffle_core = { path = "../../core" }
+ruffle_render_common_tess = { path = "../common_tess" }
