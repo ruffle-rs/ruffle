@@ -9,6 +9,7 @@ members = [
 
     "render/canvas",
     "render/glium",
+    "render/common_tess",
 ]
 
 # Don't optimize build scripts and macros.
