@@ -1590,6 +1590,7 @@ impl<'gc> Avm1<'gc> {
             ScriptObject::object(context.gc_context, Some(super_proto)).into();
 
         sub_prototype.set("constructor", superclass.into(), self, context)?;
+        sub_prototype.set("__constructor__", superclass.into(), self, context)?;
         subclass.set("prototype", sub_prototype.into(), self, context)?;
 
         Ok(())
@@ -2077,6 +2078,7 @@ impl<'gc> Avm1<'gc> {
 
         let this = prototype.new(self, context, prototype, &args)?;
 
+        this.set("__constructor__", constructor.into(), self, context)?;
         if self.current_swf_version() < 7 {
             this.set("constructor", constructor.into(), self, context)?;
         }
@@ -2119,6 +2121,7 @@ impl<'gc> Avm1<'gc> {
                 {
                     let this = prototype.new(self, context, prototype, &args)?;
 
+                    this.set("__constructor__", constructor.into(), self, context)?;
                     if self.current_swf_version() < 7 {
                         this.set("constructor", constructor.into(), self, context)?;
                     }
