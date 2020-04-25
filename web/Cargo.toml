@@ -21,6 +21,7 @@ js-sys = "0.3.25"
 log = "0.4"
 ruffle_render_canvas = { path = "../render/canvas" }
 ruffle_web_common = { path = "common" }
+ruffle_render_webgl = { path = "../render/webgl" }
 url = "2.1.1"
 wasm-bindgen = "0.2.57"
 wasm-bindgen-futures = "0.4.4"

@@ -8,6 +8,7 @@ use generational_arena::{Arena, Index};
 use js_sys::Uint8Array;
 use ruffle_core::PlayerEvent;
 use ruffle_render_canvas::WebCanvasRenderBackend;
+use ruffle_render_webgl::WebGlRenderBackend;
 use std::mem::drop;
 use std::sync::{Arc, Mutex};
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
@@ -101,7 +102,7 @@ impl Ruffle {
         swf_data.copy_to(&mut data[..]);
 
         let window = web_sys::window().ok_or_else(|| "Expected window")?;
-        let renderer = Box::new(WebCanvasRenderBackend::new(&canvas)?);
+        let renderer = Box::new(WebGlRenderBackend::new(&canvas)?);
         let audio = Box::new(WebAudioBackend::new()?);
         let navigator = Box::new(WebNavigatorBackend::new());
         let input = Box::new(WebInputBackend::new(&canvas));

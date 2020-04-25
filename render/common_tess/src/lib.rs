@@ -294,6 +294,12 @@ where
     mesh
 }
 
+impl Default for ShapeTessellator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 type Mesh = Vec<Draw>;
 
 pub struct Draw {
