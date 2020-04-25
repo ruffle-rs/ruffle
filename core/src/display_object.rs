@@ -911,8 +911,7 @@ macro_rules! impl_display_object {
         fn place_frame(&self) -> u16 {
             self.0.read().$field.place_frame()
         }
-        fn set_place_frame(&mut self,
-            context: gc_arena::MutationContext<'gc, '_>, frame: u16) {
+        fn set_place_frame(&mut self, context: gc_arena::MutationContext<'gc, '_>, frame: u16) {
             self.0.write(context).$field.set_place_frame(context, frame)
         }
         fn transform(&self) -> std::cell::Ref<crate::transform::Transform> {
@@ -921,23 +920,37 @@ macro_rules! impl_display_object {
         fn matrix(&self) -> std::cell::Ref<crate::matrix::Matrix> {
             std::cell::Ref::map(self.0.read(), |o| o.$field.matrix())
         }
-        fn matrix_mut(&mut self,
-            context: gc_arena::MutationContext<'gc, '_>) -> std::cell::RefMut<crate::matrix::Matrix> {
+        fn matrix_mut(
+            &mut self,
+            context: gc_arena::MutationContext<'gc, '_>,
+        ) -> std::cell::RefMut<crate::matrix::Matrix> {
             std::cell::RefMut::map(self.0.write(context), |o| o.$field.matrix_mut(context))
         }
-        fn set_matrix(&mut self,
-            context: gc_arena::MutationContext<'gc, '_>, matrix: &crate::matrix::Matrix) {
+        fn set_matrix(
+            &mut self,
+            context: gc_arena::MutationContext<'gc, '_>,
+            matrix: &crate::matrix::Matrix,
+        ) {
             self.0.write(context).$field.set_matrix(context, matrix)
         }
         fn color_transform(&self) -> std::cell::Ref<crate::color_transform::ColorTransform> {
             std::cell::Ref::map(self.0.read(), |o| o.$field.color_transform())
         }
-        fn color_transform_mut(&self, context: gc_arena::MutationContext<'gc, '_>) -> std::cell::RefMut<crate::color_transform::ColorTransform> {
+        fn color_transform_mut(
+            &self,
+            context: gc_arena::MutationContext<'gc, '_>,
+        ) -> std::cell::RefMut<crate::color_transform::ColorTransform> {
             std::cell::RefMut::map(self.0.write(context), |o| o.$field.color_transform_mut())
         }
-        fn set_color_transform(&mut self,
-            context: gc_arena::MutationContext<'gc, '_>, color_transform: &crate::color_transform::ColorTransform) {
-            self.0.write(context).$field.set_color_transform(context, color_transform)
+        fn set_color_transform(
+            &mut self,
+            context: gc_arena::MutationContext<'gc, '_>,
+            color_transform: &crate::color_transform::ColorTransform,
+        ) {
+            self.0
+                .write(context)
+                .$field
+                .set_color_transform(context, color_transform)
         }
         fn x(&self) -> f64 {
             self.0.read().$field.x()
@@ -978,70 +991,96 @@ macro_rules! impl_display_object {
         fn name(&self) -> std::cell::Ref<str> {
             std::cell::Ref::map(self.0.read(), |o| o.$field.name())
         }
-        fn set_name(&mut self,
-            context: gc_arena::MutationContext<'gc, '_>, name: &str) {
+        fn set_name(&mut self, context: gc_arena::MutationContext<'gc, '_>, name: &str) {
             self.0.write(context).$field.set_name(context, name)
         }
         fn clip_depth(&self) -> crate::prelude::Depth {
             self.0.read().$field.clip_depth()
         }
-        fn set_clip_depth(&mut self,
-            context: gc_arena::MutationContext<'gc, '_>, depth: crate::prelude::Depth) {
+        fn set_clip_depth(
+            &mut self,
+            context: gc_arena::MutationContext<'gc, '_>,
+            depth: crate::prelude::Depth,
+        ) {
             self.0.write(context).$field.set_clip_depth(context, depth)
         }
         fn parent(&self) -> Option<crate::display_object::DisplayObject<'gc>> {
             self.0.read().$field.parent()
         }
-        fn set_parent(&mut self,
-            context: gc_arena::MutationContext<'gc, '_>, parent: Option<crate::display_object::DisplayObject<'gc>>) {
+        fn set_parent(
+            &mut self,
+            context: gc_arena::MutationContext<'gc, '_>,
+            parent: Option<crate::display_object::DisplayObject<'gc>>,
+        ) {
             self.0.write(context).$field.set_parent(context, parent)
         }
         fn first_child(&self) -> Option<DisplayObject<'gc>> {
             self.0.read().$field.first_child()
         }
-        fn set_first_child(&mut self,
-            context: gc_arena::MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>) {
+        fn set_first_child(
+            &mut self,
+            context: gc_arena::MutationContext<'gc, '_>,
+            node: Option<DisplayObject<'gc>>,
+        ) {
             self.0.write(context).$field.set_first_child(context, node);
         }
         fn prev_sibling(&self) -> Option<DisplayObject<'gc>> {
             self.0.read().$field.prev_sibling()
         }
-        fn set_prev_sibling(&mut self,
-            context: gc_arena::MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>) {
+        fn set_prev_sibling(
+            &mut self,
+            context: gc_arena::MutationContext<'gc, '_>,
+            node: Option<DisplayObject<'gc>>,
+        ) {
             self.0.write(context).$field.set_prev_sibling(context, node);
         }
         fn next_sibling(&self) -> Option<DisplayObject<'gc>> {
             self.0.read().$field.next_sibling()
         }
-        fn set_next_sibling(&mut self,
-            context: gc_arena::MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>) {
+        fn set_next_sibling(
+            &mut self,
+            context: gc_arena::MutationContext<'gc, '_>,
+            node: Option<DisplayObject<'gc>>,
+        ) {
             self.0.write(context).$field.set_next_sibling(context, node);
         }
         fn removed(&self) -> bool {
             self.0.read().$field.removed()
         }
-        fn set_removed(&mut self,
-            context: gc_arena::MutationContext<'gc, '_>, value: bool) {
+        fn set_removed(&mut self, context: gc_arena::MutationContext<'gc, '_>, value: bool) {
             self.0.write(context).$field.set_removed(value)
         }
         fn visible(&self) -> bool {
             self.0.read().$field.visible()
         }
-        fn set_visible(&mut self,
-            context: gc_arena::MutationContext<'gc, '_>, value: bool) {
+        fn set_visible(&mut self, context: gc_arena::MutationContext<'gc, '_>, value: bool) {
             self.0.write(context).$field.set_visible(value);
         }
         fn transformed_by_script(&self) -> bool {
             self.0.read().$field.transformed_by_script()
         }
-        fn set_transformed_by_script(&self, context: gc_arena::MutationContext<'gc, '_>, value: bool) {
-            self.0.write(context).$field.set_transformed_by_script(value)
+        fn set_transformed_by_script(
+            &self,
+            context: gc_arena::MutationContext<'gc, '_>,
+            value: bool,
+        ) {
+            self.0
+                .write(context)
+                .$field
+                .set_transformed_by_script(value)
         }
         fn swf_version(&self) -> u8 {
             self.0.read().$field.swf_version()
         }
-        fn instantiate(&self, gc_context: gc_arena::MutationContext<'gc, '_>) -> crate::display_object::DisplayObject<'gc> {
-            Self(gc_arena::GcCell::allocate(gc_context, self.0.read().clone())).into()
+        fn instantiate(
+            &self,
+            gc_context: gc_arena::MutationContext<'gc, '_>,
+        ) -> crate::display_object::DisplayObject<'gc> {
+            Self(gc_arena::GcCell::allocate(
+                gc_context,
+                self.0.read().clone(),
+            ))
+            .into()
         }
         fn as_ptr(&self) -> *const crate::display_object::DisplayObjectPtr {
             self.0.as_ptr() as *const crate::display_object::DisplayObjectPtr
