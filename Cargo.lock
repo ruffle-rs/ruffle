@@ -976,11 +976,11 @@ dependencies = [
 
 [[package]]
 name = "lyon"
-version = "0.15.6"
+version = "0.15.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "lyon_algorithms 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lyon_tessellation 0.15.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lyon_tessellation 0.15.7 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1012,7 +1012,7 @@ dependencies = [
 
 [[package]]
 name = "lyon_tessellation"
-version = "0.15.6"
+version = "0.15.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "arrayvec 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1601,7 +1601,7 @@ dependencies = [
  "image 0.23.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "jpeg-decoder 0.1.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "lyon 0.15.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lyon 0.15.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "ruffle_core 0.1.0",
  "sample 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2503,11 +2503,11 @@ dependencies = [
 "checksum line_drawing 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "5cc7ad3d82c845bdb5dde34ffdcc7a5fb4d2996e1e1ee0f19c33bc80e15196b9"
 "checksum lock_api 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "79b2de95ecb4691949fea4716ca53cdbcfccb2c612e19644a8bad05edcf9f47b"
 "checksum log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)" = "14b6052be84e6b71ab17edffc2eeabf5c2c3ae1fdb464aae35ac50c67a44e1f7"
-"checksum lyon 0.15.6 (registry+https://github.com/rust-lang/crates.io-index)" = "a89cf1bab21c6b814fd68993c3c3e35d524e238bd26bb86a5596c92d6b1e2f4b"
+"checksum lyon 0.15.7 (registry+https://github.com/rust-lang/crates.io-index)" = "8e631d7a53ffb386b76a35c915826165323bbca04bd9eb6da95c1d74dd423b8d"
 "checksum lyon_algorithms 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d2e86e6055dbe55f459f98a65d990bbab535f4306d38e30459a3b7aec0bd027b"
 "checksum lyon_geom 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)" = "9e2a8bde54788e0eb4f1b9f072910bfa1cba95688698f7bb206d13a2f8fd06b3"
 "checksum lyon_path 0.15.2 (registry+https://github.com/rust-lang/crates.io-index)" = "c81a044414965c051b7b4785770820d23146480a2d8573cd825f03a00a5b8dd8"
-"checksum lyon_tessellation 0.15.6 (registry+https://github.com/rust-lang/crates.io-index)" = "e35e118c320753dc3c688f323e2c6efeb9eab313e8e0cfdb9127d4d2e0e85cd0"
+"checksum lyon_tessellation 0.15.7 (registry+https://github.com/rust-lang/crates.io-index)" = "78e96947cdc44b8213e6ec05da63e91377cb808fa4e08ee542bd6d93278201d7"
 "checksum lzma-sys 0.1.15 (registry+https://github.com/rust-lang/crates.io-index)" = "53e48818fd597d46155132bbbb9505d6d1b3d360b4ee25cfa91c406f8a90fe91"
 "checksum lzw 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)" = "7d947cbb889ed21c2a84be6ffbaebf5b4e0f4340638cba0444907e38b56be084"
 "checksum mach 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "b823e83b2affd8f40a9ee8c29dbc56404c1e34cd2710921f2801e2cf29527afa"
