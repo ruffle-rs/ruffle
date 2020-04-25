@@ -15,8 +15,8 @@ use core::fmt;
 use gc_arena::{Collect, MutationContext};
 use rand::rngs::SmallRng;
 use std::collections::BTreeMap;
+use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, Weak};
-use std::vec::Drain;
 
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
 /// `Player` crates this when it begins a tick and passes it through the call stack to
@@ -120,7 +120,8 @@ unsafe impl<'gc> Collect for QueuedActions<'gc> {
 
 /// Action and gotos need to be queued up to execute at the end of the frame.
 pub struct ActionQueue<'gc> {
-    queue: Vec<QueuedActions<'gc>>,
+    change_prototype_queue: VecDeque<QueuedActions<'gc>>,
+    action_queue: VecDeque<QueuedActions<'gc>>,
 }
 
 impl<'gc> ActionQueue<'gc> {
@@ -129,7 +130,8 @@ impl<'gc> ActionQueue<'gc> {
     /// Crates a new `ActionQueue` with an empty queue.
     pub fn new() -> Self {
         Self {
-            queue: Vec::with_capacity(Self::DEFAULT_CAPACITY),
+            change_prototype_queue: VecDeque::with_capacity(Self::DEFAULT_CAPACITY),
+            action_queue: VecDeque::with_capacity(Self::DEFAULT_CAPACITY),
         }
     }
 
@@ -142,18 +144,29 @@ impl<'gc> ActionQueue<'gc> {
         action_type: ActionType<'gc>,
         is_unload: bool,
     ) {
-        self.queue.push(QueuedActions {
-            clip,
-            action_type,
-            is_unload,
-        })
+        // Prototype change goes a higher priority queue.
+        if let ActionType::ChangePrototype { .. } = action_type {
+            self.change_prototype_queue.push_back(QueuedActions {
+                clip,
+                action_type,
+                is_unload,
+            })
+        } else {
+            self.action_queue.push_back(QueuedActions {
+                clip,
+                action_type,
+                is_unload,
+            })
+        }
     }
 
     /// Sorts and drains the actions from the queue.
-    pub fn drain(&mut self) -> Drain<QueuedActions<'gc>> {
-        self.queue
-            .sort_by(|a, b| a.action_type.priority().cmp(&b.action_type.priority()));
-        self.queue.drain(..)
+    pub fn pop_action(&mut self) -> Option<QueuedActions<'gc>> {
+        if !self.change_prototype_queue.is_empty() {
+            self.change_prototype_queue.pop_front()
+        } else {
+            self.action_queue.pop_front()
+        }
     }
 }
 
@@ -166,7 +179,8 @@ impl<'gc> Default for ActionQueue<'gc> {
 unsafe impl<'gc> Collect for ActionQueue<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.queue.iter().for_each(|o| o.trace(cc));
+        self.change_prototype_queue.iter().for_each(|o| o.trace(cc));
+        self.action_queue.iter().for_each(|o| o.trace(cc));
     }
 }
 
@@ -186,12 +200,6 @@ pub struct RenderContext<'a, 'gc> {
 
     /// The stack of clip depths, used in masking.
     pub clip_depth_stack: Vec<Depth>,
-}
-
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-enum ActionPriority {
-    ChangePrototypes,
-    Other,
 }
 
 /// The type of action being run.
@@ -216,15 +224,6 @@ pub enum ActionType<'gc> {
         method: &'static str,
         args: Vec<Value<'gc>>,
     },
-}
-
-impl ActionType<'_> {
-    fn priority(&self) -> ActionPriority {
-        match self {
-            ActionType::ChangePrototype { .. } => ActionPriority::ChangePrototypes,
-            _ => ActionPriority::Other,
-        }
-    }
 }
 
 impl fmt::Debug for ActionType<'_> {
