@@ -4,7 +4,7 @@ use crate::backend::input::{InputBackend, MouseCursor};
 use crate::backend::{
     audio::AudioBackend, navigator::NavigatorBackend, render::Letterbox, render::RenderBackend,
 };
-use crate::context::{ActionQueue, ActionType, QueuedActions, RenderContext, UpdateContext};
+use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::display_object::{MorphShape, MovieClip};
 use crate::events::{ButtonEvent, ButtonEventResult, ButtonKeyCode, ClipEvent, PlayerEvent};
 use crate::library::Library;
@@ -644,8 +644,8 @@ impl Player {
     }
 
     fn run_actions<'gc>(avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let queue: Vec<QueuedActions<'gc>> = context.action_queue.drain().collect();
-        for actions in queue {
+        // Note that actions can queue further actions, so a while loop is necessary here.
+        while let Some(actions) = context.action_queue.pop_action() {
             // We don't run frame actions if the clip was removed after it queued the action.
             if !actions.is_unload && actions.clip.removed() {
                 continue;
