@@ -34,7 +34,7 @@ pub fn call<'gc>(
     };
 
     match func.as_executable() {
-        Some(exec) => exec.exec(avm, action_context, this, args),
+        Some(exec) => exec.exec(avm, action_context, this, None, args),
         _ => Ok(Value::Undefined.into()),
     }
 }
@@ -70,7 +70,7 @@ pub fn apply<'gc>(
     }
 
     match func.as_executable() {
-        Some(exec) => exec.exec(avm, action_context, this, &child_args),
+        Some(exec) => exec.exec(avm, action_context, this, None, &child_args),
         _ => Ok(Value::Undefined.into()),
     }
 }

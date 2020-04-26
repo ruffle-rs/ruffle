@@ -118,11 +118,8 @@ pub fn broadcast_message<'gc>(
                 .resolve(avm, context)?;
 
             if let Value::Object(listener) = listener {
-                let handler = listener
-                    .get(&event_name, avm, context)?
-                    .resolve(avm, context)?;
-                handler
-                    .call(avm, context, listener, call_args)?
+                listener
+                    .call_method(&event_name, call_args, avm, context)?
                     .resolve(avm, context)?;
             }
         }

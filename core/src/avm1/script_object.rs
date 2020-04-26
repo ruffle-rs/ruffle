@@ -193,6 +193,7 @@ impl<'gc> ScriptObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
     ) -> Result<(), Error> {
         if name == "__proto__" {
             self.0.write(context.gc_context).prototype = value.as_object().ok();
@@ -211,21 +212,65 @@ impl<'gc> ScriptObject<'gc> {
                 }
             }
 
-            match self
+            //Before actually inserting a new property, we need to crawl the
+            //prototype chain for virtual setters, which kind of break how
+            //ECMAScript `[[Set]]` is supposed to work...
+            let is_vacant = !self
                 .0
-                .write(context.gc_context)
+                .read()
                 .values
-                .entry(name.to_owned(), avm.is_case_sensitive())
-            {
-                Entry::Occupied(mut entry) => {
-                    entry.get_mut().set(avm, context, this, value)?;
+                .contains_key(name, avm.is_case_sensitive());
+            let mut rval = None;
+
+            if is_vacant {
+                let mut proto: Option<Object<'gc>> = Some((*self).into());
+                while let Some(this_proto) = proto {
+                    if this_proto.has_own_virtual(avm, context, name)
+                        && this_proto.is_property_overwritable(avm, name)
+                    {
+                        break;
+                    }
+
+                    proto = this_proto.proto();
                 }
-                Entry::Vacant(entry) => {
-                    entry.insert(Property::Stored {
-                        value,
-                        attributes: Default::default(),
-                    });
+
+                if let Some(this_proto) = proto {
+                    rval = Some(this_proto.call_setter(
+                        name,
+                        value.clone(),
+                        avm,
+                        context,
+                        (*self).into(),
+                    )?);
                 }
+            }
+
+            //No `rval` signals we didn't call a virtual setter above. Normally,
+            //we'd resolve and return up there, but we have borrows that need
+            //to end before we can do so.
+            if rval.is_none() {
+                rval = match self
+                    .0
+                    .write(context.gc_context)
+                    .values
+                    .entry(name.to_owned(), avm.is_case_sensitive())
+                {
+                    Entry::Occupied(mut entry) => {
+                        Some(entry.get_mut().set(avm, context, this, base_proto, value)?)
+                    }
+                    Entry::Vacant(entry) => {
+                        entry.insert(Property::Stored {
+                            value,
+                            attributes: Default::default(),
+                        });
+
+                        None
+                    }
+                };
+            }
+
+            if let Some(rval) = rval {
+                rval.resolve(avm, context)?;
             }
         }
 
@@ -254,7 +299,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         }
 
         if let Some(value) = self.0.read().values.get(name, avm.is_case_sensitive()) {
-            return value.get(avm, context, this);
+            return value.get(avm, context, this, Some((*self).into()));
         }
 
         Ok(Value::Undefined.into())
@@ -272,7 +317,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        self.internal_set(name, value, avm, context, (*self).into())
+        self.internal_set(
+            name,
+            value,
+            avm,
+            context,
+            (*self).into(),
+            Some((*self).into()),
+        )
     }
 
     /// Call the underlying object.
@@ -285,9 +337,31 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         _avm: &mut Avm1<'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
+        _base_proto: Option<Object<'gc>>,
         _args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
         Ok(Value::Undefined.into())
+    }
+
+    fn call_setter(
+        &self,
+        name: &str,
+        value: Value<'gc>,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        this: Object<'gc>,
+    ) -> Result<ReturnValue<'gc>, Error> {
+        match self
+            .0
+            .write(context.gc_context)
+            .values
+            .get_mut(name, avm.is_case_sensitive())
+        {
+            Some(propref) if propref.is_virtual() => {
+                propref.set(avm, context, this, Some((*self).into()), value)
+            }
+            _ => Ok(Value::Undefined.into()),
+        }
     }
 
     #[allow(clippy::new_ret_no_self)]
@@ -442,6 +516,19 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .read()
             .values
             .contains_key(name, avm.is_case_sensitive())
+    }
+
+    fn has_own_virtual(
+        &self,
+        avm: &mut Avm1<'gc>,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
+        if let Some(slot) = self.0.read().values.get(name, avm.is_case_sensitive()) {
+            slot.is_virtual()
+        } else {
+            false
+        }
     }
 
     fn is_property_overwritable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {

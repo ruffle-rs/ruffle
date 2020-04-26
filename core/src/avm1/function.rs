@@ -224,6 +224,7 @@ impl<'gc> Executable<'gc> {
         avm: &mut Avm1<'gc>,
         ac: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
@@ -254,17 +255,18 @@ impl<'gc> Executable<'gc> {
 
                 let argcell = arguments.into();
                 let super_object: Option<Object<'gc>> = if !af.suppress_super {
-                    Some(SuperObject::from_child_object(this, avm, ac)?.into())
+                    Some(
+                        SuperObject::from_this_and_base_proto(
+                            this,
+                            base_proto.unwrap_or(this),
+                            avm,
+                            ac,
+                        )?
+                        .into(),
+                    )
                 } else {
                     None
                 };
-
-                if let Some(super_object) = super_object {
-                    super_object
-                        .as_super_object()
-                        .unwrap()
-                        .bind_this(ac.gc_context, super_object);
-                }
 
                 let effective_ver = if avm.current_swf_version() > 5 {
                     af.swf_version()
@@ -474,13 +476,25 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
         if let Some(exec) = self.as_executable() {
-            exec.exec(avm, context, this, args)
+            exec.exec(avm, context, this, base_proto, args)
         } else {
             Ok(Value::Undefined.into())
         }
+    }
+
+    fn call_setter(
+        &self,
+        name: &str,
+        value: Value<'gc>,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        this: Object<'gc>,
+    ) -> Result<ReturnValue<'gc>, Error> {
+        self.base.call_setter(name, value, avm, context, this)
     }
 
     #[allow(clippy::new_ret_no_self)]
@@ -585,6 +599,15 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         name: &str,
     ) -> bool {
         self.base.has_own_property(avm, context, name)
+    }
+
+    fn has_own_virtual(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
+        self.base.has_own_virtual(avm, context, name)
     }
 
     fn is_property_overwritable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {

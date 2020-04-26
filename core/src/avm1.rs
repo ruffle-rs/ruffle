@@ -1,5 +1,6 @@
 use crate::avm1::function::{Avm1Function, FunctionObject};
 use crate::avm1::globals::create_globals;
+use crate::avm1::object::search_prototype;
 use crate::avm1::return_value::ReturnValue;
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
@@ -310,16 +311,15 @@ impl<'gc> Avm1<'gc> {
             context.gc_context,
             Activation::from_nothing(swf_version, self.globals, context.gc_context, active_clip),
         ));
-        let callback = obj
-            .get(name, self, context)
-            .and_then(|prop| prop.resolve(self, context));
+        let search_result = search_prototype(Some(obj), name, self, context, obj)
+            .and_then(|r| Ok((r.0.resolve(self, context)?, r.1)));
         self.stack_frames.pop();
 
         // Run the callback.
         // The function exec pushes its own stack frame.
         // The function is now ready to execute with `run_stack_till_empty`.
-        if let Ok(callback) = callback {
-            let _ = callback.call(self, context, obj, args);
+        if let Ok((callback, base_proto)) = search_result {
+            let _ = callback.call(self, context, obj, base_proto, args);
         }
     }
 
@@ -376,7 +376,7 @@ impl<'gc> Avm1<'gc> {
         // Each callback exec pushes its own stack frame.
         // The functions are now ready to execute with `run_stack_till_empty`.
         for (listener, handler) in handlers.drain(..) {
-            let _ = handler.call(self, context, listener, &args);
+            let _ = handler.call(self, context, listener, None, &args);
         }
     }
 
@@ -1246,7 +1246,7 @@ impl<'gc> Avm1<'gc> {
             .resolve(fn_name.as_string()?, self, context)?
             .resolve(self, context)?;
         let this = self.target_clip_or_root().object().as_object()?;
-        target_fn.call(self, context, this, &args)?.push(self);
+        target_fn.call(self, context, this, None, &args)?.push(self);
 
         Ok(())
     }
@@ -1268,7 +1268,7 @@ impl<'gc> Avm1<'gc> {
             Value::Undefined | Value::Null => {
                 let this = self.target_clip_or_root().object();
                 if let Ok(this) = this.as_object() {
-                    object.call(self, context, this, &args)?.push(self);
+                    object.call(self, context, this, None, &args)?.push(self);
                 } else {
                     log::warn!(
                         "Attempted to call constructor of {:?} (missing method name)",
@@ -1279,16 +1279,9 @@ impl<'gc> Avm1<'gc> {
             }
             Value::String(name) => {
                 if name.is_empty() {
-                    object.call(self, context, object, &args)?.push(self);
+                    object.call(self, context, object, None, &args)?.push(self);
                 } else {
-                    let callable = object.get(&name, self, context)?.resolve(self, context)?;
-
-                    if let Value::Object(_) = callable {
-                    } else {
-                        log::warn!("Object method {} is not callable", name);
-                    }
-
-                    callable.call(self, context, object, &args)?.push(self);
+                    object.call_method(&name, &args, self, context)?.push(self);
                 }
             }
             _ => {
@@ -1597,6 +1590,7 @@ impl<'gc> Avm1<'gc> {
             ScriptObject::object(context.gc_context, Some(super_proto)).into();
 
         sub_prototype.set("constructor", superclass.into(), self, context)?;
+        sub_prototype.set("__constructor__", superclass.into(), self, context)?;
         subclass.set("prototype", sub_prototype.into(), self, context)?;
 
         Ok(())
@@ -2084,9 +2078,14 @@ impl<'gc> Avm1<'gc> {
 
         let this = prototype.new(self, context, prototype, &args)?;
 
+        this.set("__constructor__", constructor.into(), self, context)?;
+        if self.current_swf_version() < 7 {
+            this.set("constructor", constructor.into(), self, context)?;
+        }
+
         //TODO: What happens if you `ActionNewMethod` without a method name?
         constructor
-            .call(self, context, this, &args)?
+            .call(self, context, this, None, &args)?
             .resolve(self, context)?;
 
         self.push(this);
@@ -2121,8 +2120,14 @@ impl<'gc> Avm1<'gc> {
                     .as_object()
                 {
                     let this = prototype.new(self, context, prototype, &args)?;
+
+                    this.set("__constructor__", constructor.into(), self, context)?;
+                    if self.current_swf_version() < 7 {
+                        this.set("constructor", constructor.into(), self, context)?;
+                    }
+
                     constructor
-                        .call(self, context, this, &args)?
+                        .call(self, context, this, None, &args)?
                         .resolve(self, context)?;
                     ret = this.into();
                 } else {

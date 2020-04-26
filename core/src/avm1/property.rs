@@ -41,33 +41,33 @@ impl<'gc> Property<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
-            Property::Virtual { get, .. } => get.exec(avm, context, this, &[]),
+            Property::Virtual { get, .. } => get.exec(avm, context, this, base_proto, &[]),
             Property::Stored { value, .. } => Ok(value.to_owned().into()),
         }
     }
 
     /// Set a property slot.
     ///
-    /// This function returns `true` if the set has completed, or `false` if
-    /// it has not yet occured. If `false`, and you need to run code after the
-    /// set has occured, you must recursively execute the top-most frame via
-    /// `run_current_frame`.
+    /// This function returns the `ReturnValue` of the property's virtual
+    /// function, if any happen to exist. It should be resolved, and it's value
+    /// discarded.
     pub fn set(
         &mut self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
         new_value: impl Into<Value<'gc>>,
-    ) -> Result<bool, Error> {
+    ) -> Result<ReturnValue<'gc>, Error> {
         match self {
             Property::Virtual { set, .. } => {
                 if let Some(function) = set {
-                    let return_value = function.exec(avm, context, this, &[new_value.into()])?;
-                    Ok(return_value.is_immediate())
+                    function.exec(avm, context, this, base_proto, &[new_value.into()])
                 } else {
-                    Ok(true)
+                    Ok(Value::Undefined.into())
                 }
             }
             Property::Stored {
@@ -77,7 +77,7 @@ impl<'gc> Property<'gc> {
                     replace::<Value<'gc>>(value, new_value.into());
                 }
 
-                Ok(true)
+                Ok(Value::Undefined.into())
             }
         }
     }
@@ -122,6 +122,13 @@ impl<'gc> Property<'gc> {
                 attributes, set, ..
             } => !attributes.contains(ReadOnly) && !set.is_none(),
             Property::Stored { attributes, .. } => !attributes.contains(ReadOnly),
+        }
+    }
+
+    pub fn is_virtual(&self) -> bool {
+        match self {
+            Property::Virtual { .. } => true,
+            Property::Stored { .. } => false,
         }
     }
 }

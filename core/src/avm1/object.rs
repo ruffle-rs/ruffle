@@ -60,7 +60,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         if self.has_own_property(avm, context, name) {
             self.get_local(name, avm, context, (*self).into())
         } else {
-            search_prototype(self.proto(), name, avm, context, (*self).into())
+            Ok(search_prototype(self.proto(), name, avm, context, (*self).into())?.0)
         }
     }
 
@@ -83,7 +83,52 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
+    ) -> Result<ReturnValue<'gc>, Error>;
+
+    /// Call a method on the object.
+    ///
+    /// It is highly recommended to use this convenience method to perform
+    /// method calls. It is morally equivalent to an AVM1 `ActionCallMethod`
+    /// opcode. It will take care of retrieving the method, calculating it's
+    /// base prototype for `super` calls, and providing it with the correct
+    /// `this` parameter.
+    fn call_method(
+        &self,
+        name: &str,
+        args: &[Value<'gc>],
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<ReturnValue<'gc>, Error> {
+        let (method, base_proto) =
+            search_prototype(Some((*self).into()), name, avm, context, (*self).into())?;
+        let method = method.resolve(avm, context)?;
+
+        if let Value::Object(_) = method {
+        } else {
+            log::warn!("Object method {} is not callable", name);
+        }
+
+        method.call(avm, context, (*self).into(), base_proto, args)
+    }
+
+    /// Call a setter defined in this object.
+    ///
+    /// This function returns the `ReturnValue` of the called function; it
+    /// should be resolved and discarded. Attempts to call a non-virtual setter
+    /// or non-existent setter fail silently.
+    ///
+    /// The setter will be invoked with the provided `this`. It is assumed that
+    /// this function is being called on the appropriate `base_proto` and
+    /// `super` will be invoked following said guidance.
+    fn call_setter(
+        &self,
+        name: &str,
+        value: Value<'gc>,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error>;
 
     /// Construct a host object of some kind and return it's cell.
@@ -209,6 +254,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Checks if the object has a given named property on itself (and not,
     /// say, the object's prototype or superclass)
     fn has_own_property(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool;
+
+    /// Checks if the object has a given named property on itself that is
+    /// virtual.
+    fn has_own_virtual(
         &self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -385,13 +439,21 @@ impl<'gc> Object<'gc> {
     }
 }
 
+/// Perform a prototype lookup of a given object.
+///
+/// This function returns both the `ReturnValue` and the prototype that
+/// generated the value. If the property did not resolve, then it returns
+/// `undefined` and `None` for the prototype.
+///
+/// The second return value can and should be used to populate the `base_proto`
+/// property necessary to make `super` work.
 pub fn search_prototype<'gc>(
     mut proto: Option<Object<'gc>>,
     name: &str,
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<(ReturnValue<'gc>, Option<Object<'gc>>), Error> {
     let mut depth = 0;
 
     while proto.is_some() {
@@ -400,12 +462,12 @@ pub fn search_prototype<'gc>(
         }
 
         if proto.unwrap().has_own_property(avm, context, name) {
-            return proto.unwrap().get_local(name, avm, context, this);
+            return Ok((proto.unwrap().get_local(name, avm, context, this)?, proto));
         }
 
         proto = proto.unwrap().proto();
         depth += 1;
     }
 
-    Ok(Value::Undefined.into())
+    Ok((Value::Undefined.into(), None))
 }

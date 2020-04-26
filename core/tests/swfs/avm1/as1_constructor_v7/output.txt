@@ -1,0 +1,35 @@
+//function SuperClass() {}
+//sub_prototype = new SuperClass();
+//sub_prototype.constructor === SuperClass
+true
+//sub_prototype.constructor === Object
+false
+//sub_prototype.hasOwnProperty('constructor')
+false
+//function SubClass() {}
+//SubClass.prototype.constructor === SubClass
+true
+//SubClass.prototype.constructor === SuperClass
+false
+//SubClass.prototype.constructor === Object
+false
+//SubClass.prototype.hasOwnProperty('constructor')
+true
+//SubClass.prototype = sub_prototype
+//SubClass.prototype.constructor === SubClass
+false
+//SubClass.prototype.constructor === SuperClass
+true
+//SubClass.prototype.constructor === Object
+false
+//SubClass.prototype.hasOwnProperty('constructor')
+false
+//sc_instance = new SubClass();
+//sc_instance.constructor === SubClass
+false
+//sc_instance.constructor === SuperClass
+true
+//sc_instance.constructor === Object
+false
+//sc_instance.hasOwnProperty('constructor')
+false

@@ -825,22 +825,16 @@ pub fn xml_on_data<'gc>(
     let src = args.get(0).cloned().unwrap_or(Value::Undefined);
 
     if let Value::Undefined = src {
-        let on_load = this.get("onLoad", avm, ac)?.resolve(avm, ac)?;
-        on_load
-            .call(avm, ac, this, &[false.into()])?
+        this.call_method("onLoad", &[false.into()], avm, ac)?
             .resolve(avm, ac)?;
     } else {
         let src = src.coerce_to_string(avm, ac)?;
-        let parse_xml = this.get("parseXML", avm, ac)?.resolve(avm, ac)?;
-        parse_xml
-            .call(avm, ac, this, &[src.into()])?
+        this.call_method("parseXML", &[src.into()], avm, ac)?
             .resolve(avm, ac)?;
 
         this.set("loaded", true.into(), avm, ac)?;
 
-        let on_load = this.get("onLoad", avm, ac)?.resolve(avm, ac)?;
-        on_load
-            .call(avm, ac, this, &[true.into()])?
+        this.call_method("onLoad", &[true.into()], avm, ac)?
             .resolve(avm, ac)?;
     }
 
