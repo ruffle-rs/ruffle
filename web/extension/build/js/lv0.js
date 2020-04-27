@@ -16,13 +16,7 @@
  */
 function insert_ruffle(mutationsList,observer) {
     let nodesAdded = mutationsList.some(mutation => mutation.addedNodes.length > 0);
-    let ext_path = "";
     if (nodesAdded&&document.head) {
-        if (chrome && chrome.extension && chrome.extension.getURL) {
-            ext_path = chrome.extension.getURL("dist/ruffle.js").replace("dist/ruffle.js", "");
-        } else if (browser && browser.runtime && browser.runtime.getURL) {
-            ext_path = browser.runtime.getURL("dist/ruffle.js").replace("dist/ruffle.js", "");
-        }
         let setup_scriptelem = document.createElement("script");
         let setup_src = "var runtime_path = \"" +
             ext_path + "\";\nvar obfuscated_event_prefix = \"" +
@@ -36,9 +30,14 @@ function insert_ruffle(mutationsList,observer) {
     }
 }
 
-
 let page_optout = document.getElementsByTagName("html")[0].dataset.ruffleOptout !== undefined;
 let obfuscated_event_prefix = "rufEvent" + Math.floor(Math.random() * 100000000000);
+let ext_path = "";
+if (chrome && chrome.extension && chrome.extension.getURL) {
+    ext_path = chrome.extension.getURL("dist/ruffle.js").replace("dist/ruffle.js", "");
+} else if (browser && browser.runtime && browser.runtime.getURL) {
+    ext_path = browser.runtime.getURL("dist/ruffle.js").replace("dist/ruffle.js", "");
+}
 if (!(page_optout||window.RufflePlayer)) {
     const observer = new MutationObserver(insert_ruffle);
     observer.observe(document, {childList: true, subtree: true});
