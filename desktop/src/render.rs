@@ -836,8 +836,6 @@ impl RenderBackend for GliumRenderBackend {
         }
     }
 
-    fn draw_pause_overlay(&mut self) {}
-
     fn draw_letterbox(&mut self, letterbox: Letterbox) {
         let target = self.target.as_mut().unwrap();
         let black = Some((0.0, 0.0, 0.0, 1.0));

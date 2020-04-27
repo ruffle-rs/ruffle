@@ -610,13 +610,6 @@ impl RenderBackend for WebCanvasRenderBackend {
         }
     }
 
-    fn draw_pause_overlay(&mut self) {
-        let width = f64::from(self.canvas.width());
-        let height = f64::from(self.canvas.height());
-        self.context.set_fill_style(&"rgba(0, 0, 0, 1.0)".into());
-        self.context.fill_rect(0.0, 0.0, width, height);
-    }
-
     fn draw_letterbox(&mut self, letterbox: Letterbox) {
         self.context.reset_transform().unwrap();
         self.context.set_fill_style(&"black".into());

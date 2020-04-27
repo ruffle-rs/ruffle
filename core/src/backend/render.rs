@@ -26,7 +26,6 @@ pub trait RenderBackend {
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform);
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform);
     fn end_frame(&mut self);
-    fn draw_pause_overlay(&mut self);
     fn draw_letterbox(&mut self, letterbox: Letterbox);
     fn push_mask(&mut self);
     fn activate_mask(&mut self);
@@ -119,7 +118,6 @@ impl RenderBackend for NullRenderer {
     fn clear(&mut self, _color: Color) {}
     fn render_bitmap(&mut self, _bitmap: BitmapHandle, _transform: &Transform) {}
     fn render_shape(&mut self, _shape: ShapeHandle, _transform: &Transform) {}
-    fn draw_pause_overlay(&mut self) {}
     fn draw_letterbox(&mut self, _letterbox: Letterbox) {}
     fn push_mask(&mut self) {}
     fn activate_mask(&mut self) {}
