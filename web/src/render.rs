@@ -613,15 +613,8 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn draw_pause_overlay(&mut self) {
         let width = f64::from(self.canvas.width());
         let height = f64::from(self.canvas.height());
-        self.context.set_fill_style(&"rgba(0, 0, 0, 0.5)".into());
+        self.context.set_fill_style(&"rgba(0, 0, 0, 1.0)".into());
         self.context.fill_rect(0.0, 0.0, width, height);
-        self.context.set_text_align("center");
-        self.context.set_fill_style(&"white".into());
-        self.context
-            .set_font(&format!("bold {}px sans-serif", height * 0.1));
-        let _ = self
-            .context
-            .fill_text("Click to Play", width / 2.0, height / 2.0);
     }
 
     fn draw_letterbox(&mut self, letterbox: Letterbox) {
