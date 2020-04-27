@@ -62,7 +62,7 @@ all of the flash files and report on the success of such a task.
 ## Structure
 
 - `core` contains the core emulator and common code
-- `desktop` contains the desktop client (uses `glium`)
+- `desktop` contains the desktop client (uses `wgpu-rs`)
 - `web` contains the web client (uses `wasm-bindgen`)
 - `scanner` contains a utility to bulk parse swf files
 
