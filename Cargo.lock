@@ -1871,10 +1871,10 @@ dependencies = [
  "jpeg-decoder 0.1.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "lyon 0.15.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "raw-window-handle 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "ruffle_core 0.1.0",
  "wgpu 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "wgpu-native 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "winit 0.22.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

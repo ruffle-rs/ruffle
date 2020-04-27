@@ -64,7 +64,11 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
             Box::new(NullAudioBackend::new())
         }
     };
-    let renderer = Box::new(WGPURenderBackend::new(window.clone())?);
+    let initial_size = window.inner_size().to_logical(window.scale_factor());
+    let renderer = Box::new(WGPURenderBackend::new(
+        window.as_ref(),
+        (initial_size.width, initial_size.height),
+    )?);
     let (executor, chan) = GlutinAsyncExecutor::new(event_loop.create_proxy());
     let navigator = Box::new(navigator::ExternalNavigatorBackend::with_base_path(
         input_path

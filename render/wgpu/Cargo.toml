@@ -14,4 +14,4 @@ lyon = "0.15.6"
 ruffle_core = { path = "../../core" }
 futures = "0.3.4"
 bytemuck = "1.2.0"
-winit = "0.22"
+raw-window-handle = "0.3.3"

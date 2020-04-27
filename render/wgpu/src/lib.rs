@@ -14,9 +14,8 @@ use swf::{CharacterId, DefineBitsLossless, Glyph, Shape, Twips};
 
 use bytemuck::{Pod, Zeroable};
 use futures::executor::block_on;
-use std::rc::Rc;
+use raw_window_handle::HasRawWindowHandle;
 use wgpu::{vertex_attr_array, BindGroupDescriptor, BufferDescriptor, PipelineLayout, TimeOut};
-use winit::window::Window;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -328,9 +327,8 @@ fn create_gradient_pipeline(
 }
 
 impl WGPURenderBackend {
-    pub fn new(window: Rc<Window>) -> Result<Self, Error> {
-        let size = window.inner_size().to_logical(window.scale_factor());
-        let window_surface = wgpu::Surface::create(window.as_ref());
+    pub fn new<W: HasRawWindowHandle>(window: &W, size: (u32, u32)) -> Result<Self, Error> {
+        let window_surface = wgpu::Surface::create(window);
 
         let adapter = block_on(wgpu::Adapter::request(
             &wgpu::RequestAdapterOptions {
@@ -351,8 +349,8 @@ impl WGPURenderBackend {
         let swap_chain_desc = wgpu::SwapChainDescriptor {
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
             format: wgpu::TextureFormat::Bgra8Unorm,
-            width: size.width,
-            height: size.height,
+            width: size.0,
+            height: size.1,
             present_mode: wgpu::PresentMode::Mailbox,
         };
         let swap_chain = device.create_swap_chain(&window_surface, &swap_chain_desc);
@@ -433,8 +431,8 @@ impl WGPURenderBackend {
             depth_texture_view,
             current_frame: None,
             meshes: Vec::new(),
-            viewport_width: size.width as f32,
-            viewport_height: size.height as f32,
+            viewport_width: size.0 as f32,
+            viewport_height: size.1 as f32,
             view_matrix: [[0.0; 4]; 4],
             textures: Vec::new(),
         })
