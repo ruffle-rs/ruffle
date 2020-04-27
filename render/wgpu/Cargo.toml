@@ -15,3 +15,6 @@ ruffle_core = { path = "../../core" }
 futures = "0.3.4"
 bytemuck = "1.2.0"
 raw-window-handle = "0.3.3"
+
+[features]
+render_debug_labels = []

@@ -19,6 +19,16 @@ use wgpu::{vertex_attr_array, BindGroupDescriptor, BufferDescriptor, PipelineLay
 
 type Error = Box<dyn std::error::Error>;
 
+macro_rules! create_debug_label {
+    ($($arg:tt)*) => (
+        if cfg!(feature = "render_debug_labels") {
+            Some(format!($($arg)*))
+        } else {
+            None
+        }
+    )
+}
+
 pub struct WGPURenderBackend {
     window_surface: wgpu::Surface,
     device: wgpu::Device,
@@ -144,6 +154,7 @@ fn create_color_pipeline(
     fragment_shader: &wgpu::ShaderModule,
     depth_stencil_state: Option<wgpu::DepthStencilStateDescriptor>,
 ) -> (wgpu::BindGroupLayout, wgpu::RenderPipeline) {
+    let label = create_debug_label!("Color shape pipeline");
     let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         bindings: &[
             wgpu::BindGroupLayoutEntry {
@@ -157,7 +168,7 @@ fn create_color_pipeline(
                 ty: wgpu::BindingType::UniformBuffer { dynamic: false },
             },
         ],
-        label: None,
+        label: label.as_deref(),
     });
 
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -197,6 +208,7 @@ fn create_bitmap_pipeline(
     fragment_shader: &wgpu::ShaderModule,
     depth_stencil_state: Option<wgpu::DepthStencilStateDescriptor>,
 ) -> (wgpu::BindGroupLayout, wgpu::RenderPipeline) {
+    let label = create_debug_label!("Bitmap shape pipeline");
     let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         bindings: &[
             wgpu::BindGroupLayoutEntry {
@@ -229,7 +241,7 @@ fn create_bitmap_pipeline(
                 ty: wgpu::BindingType::Sampler { comparison: false },
             },
         ],
-        label: None,
+        label: label.as_deref(),
     });
 
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -269,6 +281,7 @@ fn create_gradient_pipeline(
     fragment_shader: &wgpu::ShaderModule,
     depth_stencil_state: Option<wgpu::DepthStencilStateDescriptor>,
 ) -> (wgpu::BindGroupLayout, wgpu::RenderPipeline) {
+    let label = create_debug_label!("Gradient shape pipeline");
     let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         bindings: &[
             wgpu::BindGroupLayoutEntry {
@@ -292,7 +305,7 @@ fn create_gradient_pipeline(
                 ty: wgpu::BindingType::UniformBuffer { dynamic: false },
             },
         ],
-        label: None,
+        label: label.as_deref(),
     });
 
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -399,8 +412,9 @@ impl WGPURenderBackend {
         let (gradient_bind_layout, gradient_pipeline) =
             create_gradient_pipeline(&device, &texture_vs, &gradient_fs, depth_stencil_state);
 
+        let depth_label = create_debug_label!("Depth texture");
         let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: None,
+            label: depth_label.as_deref(),
             size: wgpu::Extent3d {
                 width: swap_chain_desc.width,
                 height: swap_chain_desc.height,
@@ -445,14 +459,16 @@ impl WGPURenderBackend {
 
         use lyon::tessellation::{FillOptions, StrokeOptions};
 
+        let transforms_label = create_debug_label!("Shape {} transforms ubo", shape.id);
         let transforms_ubo = self.device.create_buffer(&BufferDescriptor {
-            label: None,
+            label: transforms_label.as_deref(),
             size: std::mem::size_of::<Transforms>() as u64,
             usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
         });
 
+        let colors_label = create_debug_label!("Shape {} colors ubo", shape.id);
         let colors_ubo = self.device.create_buffer(&BufferDescriptor {
-            label: Some("colors_ubo"),
+            label: colors_label.as_deref(),
             size: std::mem::size_of::<ColorAdjustments>() as u64,
             usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
         });
@@ -465,6 +481,7 @@ impl WGPURenderBackend {
 
         #[allow(clippy::too_many_arguments)]
         fn flush_draw(
+            shape_id: CharacterId,
             draw: IncompleteDrawType,
             draws: &mut Vec<Draw>,
             lyon_mesh: &mut VertexBuffers<GPUVertex, u16>,
@@ -479,15 +496,21 @@ impl WGPURenderBackend {
                 return;
             }
 
-            let vbo = device.create_buffer_with_data(
+            let vbo = create_buffer_with_data(
+                device,
                 bytemuck::cast_slice(&lyon_mesh.vertices),
                 wgpu::BufferUsage::VERTEX,
+                create_debug_label!("Shape {} ({}) vbo", shape_id, draw.name()),
             );
 
-            let ibo = device.create_buffer_with_data(
+            let ibo = create_buffer_with_data(
+                device,
                 bytemuck::cast_slice(&lyon_mesh.indices),
                 wgpu::BufferUsage::INDEX,
+                create_debug_label!("Shape {} ({}) ibo", shape_id, draw.name()),
             );
+
+            let draw_id = draws.len();
 
             draws.push(draw.build(
                 device,
@@ -499,6 +522,8 @@ impl WGPURenderBackend {
                 color_bind_layout,
                 bitmap_bind_layout,
                 gradient_bind_layout,
+                shape_id,
+                draw_id,
             ));
 
             *lyon_mesh = VertexBuffers::new();
@@ -530,6 +555,7 @@ impl WGPURenderBackend {
                     }
                     FillStyle::LinearGradient(gradient) => {
                         flush_draw(
+                            shape.id,
                             IncompleteDrawType::Color,
                             &mut draws,
                             &mut lyon_mesh,
@@ -585,6 +611,7 @@ impl WGPURenderBackend {
                         let matrix = swf_to_gl_matrix(gradient.matrix.clone());
 
                         flush_draw(
+                            shape.id,
                             IncompleteDrawType::Gradient {
                                 texture_transform: matrix,
                                 gradient: uniforms,
@@ -601,6 +628,7 @@ impl WGPURenderBackend {
                     }
                     FillStyle::RadialGradient(gradient) => {
                         flush_draw(
+                            shape.id,
                             IncompleteDrawType::Color,
                             &mut draws,
                             &mut lyon_mesh,
@@ -656,6 +684,7 @@ impl WGPURenderBackend {
                         let matrix = swf_to_gl_matrix(gradient.matrix.clone());
 
                         flush_draw(
+                            shape.id,
                             IncompleteDrawType::Gradient {
                                 texture_transform: matrix,
                                 gradient: uniforms,
@@ -675,6 +704,7 @@ impl WGPURenderBackend {
                         focal_point,
                     } => {
                         flush_draw(
+                            shape.id,
                             IncompleteDrawType::Color,
                             &mut draws,
                             &mut lyon_mesh,
@@ -730,6 +760,7 @@ impl WGPURenderBackend {
                         let matrix = swf_to_gl_matrix(gradient.matrix.clone());
 
                         flush_draw(
+                            shape.id,
                             IncompleteDrawType::Gradient {
                                 texture_transform: matrix,
                                 gradient: uniforms,
@@ -751,6 +782,7 @@ impl WGPURenderBackend {
                         is_repeating,
                     } => {
                         flush_draw(
+                            shape.id,
                             IncompleteDrawType::Color,
                             &mut draws,
                             &mut lyon_mesh,
@@ -788,6 +820,7 @@ impl WGPURenderBackend {
                         let texture_view = texture.texture.create_default_view();
 
                         flush_draw(
+                            shape.id,
                             IncompleteDrawType::Bitmap {
                                 texture_transform: swf_bitmap_to_gl_matrix(
                                     matrix.clone(),
@@ -868,6 +901,7 @@ impl WGPURenderBackend {
         }
 
         flush_draw(
+            shape.id,
             IncompleteDrawType::Color,
             &mut draws,
             &mut lyon_mesh,
@@ -883,6 +917,7 @@ impl WGPURenderBackend {
             draws,
             transforms: transforms_ubo,
             colors: colors_ubo,
+            shape_id: shape.id,
         });
 
         handle
@@ -906,8 +941,9 @@ impl RenderBackend for WGPURenderBackend {
             .device
             .create_swap_chain(&self.window_surface, &self.swap_chain_desc);
 
+        let label = create_debug_label!("Depth texture");
         let depth_texture = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: None,
+            label: label.as_deref(),
             size: wgpu::Extent3d {
                 width,
                 height,
@@ -984,8 +1020,9 @@ impl RenderBackend for WGPURenderBackend {
             as_rgba.push(255);
         }
 
+        let texture_label = create_debug_label!("JPEG (2) texture {}", id);
         let texture = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("JPEG2 image"),
+            label: texture_label.as_deref(),
             size: extent,
             array_layer_count: 1,
             mip_level_count: 1,
@@ -995,13 +1032,17 @@ impl RenderBackend for WGPURenderBackend {
             usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
         });
 
-        let buffer = self
-            .device
-            .create_buffer_with_data(&as_rgba[..], wgpu::BufferUsage::COPY_SRC);
+        let buffer = create_buffer_with_data(
+            &self.device,
+            &as_rgba[..],
+            wgpu::BufferUsage::COPY_SRC,
+            create_debug_label!("JPEG (2) transfer buffer {}", id),
+        );
+        let encoder_label = create_debug_label!("JPEG (2) encoder {}", id);
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("JPEG2 image encoder"),
+                label: encoder_label.as_deref(),
             });
 
         encoder.copy_buffer_to_texture(
@@ -1053,8 +1094,9 @@ impl RenderBackend for WGPURenderBackend {
             depth: 1,
         };
 
+        let texture_label = create_debug_label!("JPEG (3) texture {}", id);
         let texture = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: None,
+            label: texture_label.as_deref(),
             size: extent,
             array_layer_count: 1,
             mip_level_count: 1,
@@ -1064,12 +1106,18 @@ impl RenderBackend for WGPURenderBackend {
             usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
         });
 
-        let buffer = self
-            .device
-            .create_buffer_with_data(&rgba[..], wgpu::BufferUsage::COPY_SRC);
+        let buffer = create_buffer_with_data(
+            &self.device,
+            &rgba[..],
+            wgpu::BufferUsage::COPY_SRC,
+            create_debug_label!("JPEG (3) transfer buffer {}", id),
+        );
+        let encoder_label = create_debug_label!("JPEG (3) encoder {}", id);
         let mut encoder = self
             .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: encoder_label.as_deref(),
+            });
 
         encoder.copy_buffer_to_texture(
             wgpu::BufferCopyView {
@@ -1114,8 +1162,9 @@ impl RenderBackend for WGPURenderBackend {
             depth: 1,
         };
 
+        let texture_label = create_debug_label!("PNG texture {}", swf_tag.id);
         let texture = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: None,
+            label: texture_label.as_deref(),
             size: extent,
             array_layer_count: 1,
             mip_level_count: 1,
@@ -1125,12 +1174,18 @@ impl RenderBackend for WGPURenderBackend {
             usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
         });
 
-        let buffer = self
-            .device
-            .create_buffer_with_data(&decoded_data[..], wgpu::BufferUsage::COPY_SRC);
+        let buffer = create_buffer_with_data(
+            &self.device,
+            &decoded_data[..],
+            wgpu::BufferUsage::COPY_SRC,
+            create_debug_label!("PNG transfer buffer {}", swf_tag.id),
+        );
+        let encoder_label = create_debug_label!("PNG encoder {}", swf_tag.id);
         let mut encoder = self
             .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: encoder_label.as_deref(),
+            });
 
         encoder.copy_buffer_to_texture(
             wgpu::BufferCopyView {
@@ -1169,11 +1224,16 @@ impl RenderBackend for WGPURenderBackend {
     fn begin_frame(&mut self) {
         assert!(self.current_frame.is_none());
         self.current_frame = match self.swap_chain.get_next_texture() {
-            Ok(frame) => Some((
-                frame,
-                self.device
-                    .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None }),
-            )),
+            Ok(frame) => {
+                let label = create_debug_label!("Frame encoder");
+                Some((
+                    frame,
+                    self.device
+                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                            label: label.as_deref(),
+                        }),
+                ))
+            }
             Err(TimeOut) => {
                 log::warn!("Couldn't begin new render frame: timed out whilst aquiring new swapchain output");
                 None
@@ -1247,20 +1307,24 @@ impl RenderBackend for WGPURenderBackend {
             transform.color_transform.a_add,
         ];
 
-        let transforms_temp = self.device.create_buffer_with_data(
+        let transforms_temp = create_buffer_with_data(
+            &self.device,
             bytemuck::cast_slice(&[Transforms {
                 view_matrix: self.view_matrix,
                 world_matrix,
             }]),
             wgpu::BufferUsage::COPY_SRC,
+            create_debug_label!("Shape {} transforms transfer buffer", mesh.shape_id),
         );
 
-        let colors_temp = self.device.create_buffer_with_data(
+        let colors_temp = create_buffer_with_data(
+            &self.device,
             bytemuck::cast_slice(&[ColorAdjustments {
                 mult_color,
                 add_color,
             }]),
             wgpu::BufferUsage::COPY_SRC,
+            create_debug_label!("Shape {} colors transfer buffer", mesh.shape_id),
         );
 
         encoder.copy_buffer_to_buffer(
@@ -1372,6 +1436,7 @@ struct Mesh {
     draws: Vec<Draw>,
     transforms: wgpu::Buffer,
     colors: wgpu::Buffer,
+    shape_id: CharacterId,
 }
 
 #[derive(Debug)]
@@ -1415,6 +1480,14 @@ enum IncompleteDrawType {
 }
 
 impl IncompleteDrawType {
+    pub fn name(&self) -> &'static str {
+        match self {
+            IncompleteDrawType::Color => "Color",
+            IncompleteDrawType::Gradient { .. } => "Gradient",
+            IncompleteDrawType::Bitmap { .. } => "Bitmap",
+        }
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn build(
         self,
@@ -1427,9 +1500,13 @@ impl IncompleteDrawType {
         color_bind_layout: &wgpu::BindGroupLayout,
         bitmap_bind_layout: &wgpu::BindGroupLayout,
         gradient_bind_layout: &wgpu::BindGroupLayout,
+        shape_id: CharacterId,
+        draw_id: usize,
     ) -> Draw {
         match self {
             IncompleteDrawType::Color => {
+                let bind_group_label =
+                    create_debug_label!("Shape {} (color) draw {} bindgroup", shape_id, draw_id);
                 let bind_group = device.create_bind_group(&BindGroupDescriptor {
                     layout: color_bind_layout,
                     bindings: &[
@@ -1448,7 +1525,7 @@ impl IncompleteDrawType {
                             },
                         },
                     ],
-                    label: None,
+                    label: bind_group_label.as_deref(),
                 });
 
                 Draw {
@@ -1463,16 +1540,30 @@ impl IncompleteDrawType {
                 texture_transform,
                 gradient,
             } => {
-                let tex_transforms_ubo = device.create_buffer_with_data(
+                let tex_transforms_ubo = create_buffer_with_data(
+                    device,
                     bytemuck::cast_slice(&[texture_transform]),
                     wgpu::BufferUsage::UNIFORM,
+                    create_debug_label!(
+                        "Shape {} draw {} textransforms ubo transfer buffer",
+                        shape_id,
+                        draw_id
+                    ),
                 );
 
-                let gradient_ubo = device.create_buffer_with_data(
+                let gradient_ubo = create_buffer_with_data(
+                    device,
                     bytemuck::cast_slice(&[gradient]),
                     wgpu::BufferUsage::UNIFORM,
+                    create_debug_label!(
+                        "Shape {} draw {} gradient ubo transfer buffer",
+                        shape_id,
+                        draw_id
+                    ),
                 );
 
+                let bind_group_label =
+                    create_debug_label!("Shape {} (gradient) draw {} bindgroup", shape_id, draw_id);
                 let bind_group = device.create_bind_group(&BindGroupDescriptor {
                     layout: gradient_bind_layout,
                     bindings: &[
@@ -1505,7 +1596,7 @@ impl IncompleteDrawType {
                             },
                         },
                     ],
-                    label: None,
+                    label: bind_group_label.as_deref(),
                 });
 
                 Draw {
@@ -1526,9 +1617,15 @@ impl IncompleteDrawType {
                 texture_view,
                 id,
             } => {
-                let tex_transforms_ubo = device.create_buffer_with_data(
+                let tex_transforms_ubo = create_buffer_with_data(
+                    device,
                     bytemuck::cast_slice(&[texture_transform]),
                     wgpu::BufferUsage::UNIFORM,
+                    create_debug_label!(
+                        "Shape {} draw {} textransforms ubo transfer buffer",
+                        shape_id,
+                        draw_id
+                    ),
                 );
 
                 let address_mode = if is_repeating {
@@ -1555,6 +1652,8 @@ impl IncompleteDrawType {
                     compare: wgpu::CompareFunction::Undefined,
                 });
 
+                let bind_group_label =
+                    create_debug_label!("Shape {} (bitmap) draw {} bindgroup", shape_id, draw_id);
                 let bind_group = device.create_bind_group(&BindGroupDescriptor {
                     layout: bitmap_bind_layout,
                     bindings: &[
@@ -1588,7 +1687,7 @@ impl IncompleteDrawType {
                             resource: wgpu::BindingResource::Sampler(&sampler),
                         },
                     ],
-                    label: None,
+                    label: bind_group_label.as_deref(),
                 });
 
                 Draw {
@@ -1687,4 +1786,19 @@ impl StrokeVertexConstructor<GPUVertex> for RuffleVertexCtor {
             color: self.color,
         }
     }
+}
+
+fn create_buffer_with_data(
+    device: &wgpu::Device,
+    data: &[u8],
+    usage: wgpu::BufferUsage,
+    label: Option<String>,
+) -> wgpu::Buffer {
+    let mapped = device.create_buffer_mapped(&BufferDescriptor {
+        size: data.len() as u64,
+        usage,
+        label: label.as_deref(),
+    });
+    mapped.data.copy_from_slice(data);
+    mapped.finish()
 }
