@@ -59,6 +59,16 @@ impl Ruffle {
         Ruffle::new_internal(canvas, swf_data).map_err(|_| "Error creating player".into())
     }
 
+    pub fn play(&mut self) {
+        // Remove instance from the active list.
+        INSTANCES.with(|instances| {
+            let mut instances = instances.borrow_mut();
+            let instance = instances.get_mut(self.0).unwrap();
+            instance.core.lock().unwrap().set_is_playing(true);
+            log::info!("PLAY!");
+        });
+    }
+
     pub fn destroy(&mut self) -> Result<(), JsValue> {
         // Remove instance from the active list.
         if let Some(instance) = INSTANCES.with(|instances| {
@@ -180,7 +190,6 @@ impl Ruffle {
                         let mut instances = instances.borrow_mut();
                         if let Some(instance) = instances.get_mut(index) {
                             instance.has_focus = true;
-                            instance.core.lock().unwrap().set_is_playing(true);
                             if let Some(target) = js_event.current_target() {
                                 let _ = target
                                     .unchecked_ref::<Element>()

@@ -14,11 +14,16 @@ export class RufflePlayer extends HTMLElement {
     constructor(...args) {
         let self = super(...args);
 
-        self.shadow = self.attachShadow({mode: 'closed'});
+        self.shadow = self.attachShadow({ mode: 'closed' });
         self.shadow.appendChild(ruffle_shadow_template.content.cloneNode(true));
 
         self.dynamic_styles = self.shadow.getElementById("dynamic_styles");
         self.canvas = self.shadow.getElementById("player");
+        self.play_button = self.shadow.getElementById("play_button");
+        if (self.play_button) {
+            self.play_button.addEventListener("click", self.play_button_clicked.bind(self));
+        }
+
         self.instance = null;
 
         self.Ruffle = load_ruffle();
@@ -113,6 +118,15 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
+    play_button_clicked(event) {
+        if (this.instance) {
+            this.instance.play();
+            if (this.play_button) {
+                this.play_button.style.display = "none";
+            }
+        }
+    }
+
     async play_swf_data(data) {
         if (this.isConnected && !this.is_unused_fallback_object()) {
             console.log("Got SWF data");
@@ -127,9 +141,13 @@ export class RufflePlayer extends HTMLElement {
                 console.error("Serious error loading Ruffle: " + e);
                 throw e;
             });
-            
+
             this.instance = Ruffle.new(this.canvas, new Uint8Array(data));
             console.log("New Ruffle instance created.");
+
+            if (this.play_button) {
+                this.play_button.style.display = "block";
+            }
         } else {
             console.warn("Ignoring attempt to play a disconnected or suspended Ruffle element");
         }
