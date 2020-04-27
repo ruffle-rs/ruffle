@@ -606,10 +606,6 @@ impl Player {
         });
         transform_stack.pop();
 
-        if !self.is_playing() {
-            self.renderer.draw_pause_overlay();
-        }
-
         self.renderer.draw_letterbox(self.letterbox);
         self.renderer.end_frame();
     }
