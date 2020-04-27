@@ -608,13 +608,18 @@ impl AudioBackend for WebAudioBackend {
                     stream.audio_data.extend_from_slice(audio_data);
                 }
                 AudioCompression::Mp3 => {
-                    let num_sample_frames =
-                        u32::from(audio_data[0]) | (u32::from(audio_data[1]) << 8);
-                    stream.num_sample_frames += num_sample_frames;
-                    // MP3 streaming data:
-                    // First two bytes = number of samples
-                    // Second two bytes = 'latency seek' (amount to skip when seeking to this frame)
-                    stream.audio_data.extend_from_slice(&audio_data[4..]);
+                    // Sometimes you may get blocks with zero samples; this may be because
+                    // previous blocks had more samples than necessary, or because the stream
+                    // is stopping (silence).
+                    if audio_data.len() >= 4 {
+                        let num_sample_frames =
+                            u32::from(audio_data[0]) | (u32::from(audio_data[1]) << 8);
+                        stream.num_sample_frames += num_sample_frames;
+                        // MP3 streaming data:
+                        // First two bytes = number of samples
+                        // Second two bytes = 'latency seek' (amount to skip when seeking to this frame)
+                        stream.audio_data.extend_from_slice(&audio_data[4..]);
+                    }
                 }
                 AudioCompression::Adpcm => {
                     // For ADPCM data, we must keep track of where each block starts,
