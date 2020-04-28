@@ -12,22 +12,17 @@ use ruffle_core::shape_utils::{DrawCommand, DrawPath};
 use std::convert::TryInto;
 use swf::{CharacterId, DefineBitsLossless, Glyph, Shape, Twips};
 
+use crate::pipelines::{create_bitmap_pipeline, create_color_pipeline, create_gradient_pipeline};
 use bytemuck::{Pod, Zeroable};
 use futures::executor::block_on;
 use raw_window_handle::HasRawWindowHandle;
-use wgpu::{vertex_attr_array, BindGroupDescriptor, BufferDescriptor, PipelineLayout, TimeOut};
 
 type Error = Box<dyn std::error::Error>;
 
-macro_rules! create_debug_label {
-    ($($arg:tt)*) => (
-        if cfg!(feature = "render_debug_labels") {
-            Some(format!($($arg)*))
-        } else {
-            None
-        }
-    )
-}
+#[macro_use]
+mod macros;
+
+mod pipelines;
 
 pub struct WGPURenderBackend {
     window_surface: wgpu::Surface,
@@ -103,241 +98,6 @@ struct GradientUniforms {
 
 unsafe impl Pod for GradientUniforms {}
 unsafe impl Zeroable for GradientUniforms {}
-
-fn create_pipeline_descriptor<'a>(
-    vertex_shader: &'a wgpu::ShaderModule,
-    fragment_shader: &'a wgpu::ShaderModule,
-    pipeline_layout: &'a PipelineLayout,
-    depth_stencil_state: Option<wgpu::DepthStencilStateDescriptor>,
-    color_states: &'a [wgpu::ColorStateDescriptor],
-) -> wgpu::RenderPipelineDescriptor<'a> {
-    wgpu::RenderPipelineDescriptor {
-        layout: &pipeline_layout,
-        vertex_stage: wgpu::ProgrammableStageDescriptor {
-            module: &vertex_shader,
-            entry_point: "main",
-        },
-        fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
-            module: &fragment_shader,
-            entry_point: "main",
-        }),
-        rasterization_state: Some(wgpu::RasterizationStateDescriptor {
-            front_face: wgpu::FrontFace::Ccw,
-            cull_mode: wgpu::CullMode::None,
-            depth_bias: 0,
-            depth_bias_slope_scale: 0.0,
-            depth_bias_clamp: 0.0,
-        }),
-        primitive_topology: wgpu::PrimitiveTopology::TriangleList,
-        color_states,
-        depth_stencil_state,
-        sample_count: 1,
-        sample_mask: !0,
-        alpha_to_coverage_enabled: false,
-        vertex_state: wgpu::VertexStateDescriptor {
-            index_format: wgpu::IndexFormat::Uint16,
-            vertex_buffers: &[wgpu::VertexBufferDescriptor {
-                stride: std::mem::size_of::<GPUVertex>() as u64,
-                step_mode: wgpu::InputStepMode::Vertex,
-                attributes: &vertex_attr_array![
-                    0 => Float2,
-                    1 => Float4
-                ],
-            }],
-        },
-    }
-}
-
-fn create_color_pipeline(
-    device: &wgpu::Device,
-    vertex_shader: &wgpu::ShaderModule,
-    fragment_shader: &wgpu::ShaderModule,
-    depth_stencil_state: Option<wgpu::DepthStencilStateDescriptor>,
-) -> (wgpu::BindGroupLayout, wgpu::RenderPipeline) {
-    let label = create_debug_label!("Color shape pipeline");
-    let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        bindings: &[
-            wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 1,
-                visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-            },
-        ],
-        label: label.as_deref(),
-    });
-
-    let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        bind_group_layouts: &[&bind_group_layout],
-    });
-
-    let pipeline_descriptor = create_pipeline_descriptor(
-        vertex_shader,
-        fragment_shader,
-        &pipeline_layout,
-        depth_stencil_state,
-        &[wgpu::ColorStateDescriptor {
-            format: wgpu::TextureFormat::Bgra8Unorm,
-            color_blend: wgpu::BlendDescriptor {
-                src_factor: wgpu::BlendFactor::SrcAlpha,
-                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                operation: wgpu::BlendOperation::Add,
-            },
-            alpha_blend: wgpu::BlendDescriptor {
-                src_factor: wgpu::BlendFactor::SrcAlpha,
-                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                operation: wgpu::BlendOperation::Add,
-            },
-            write_mask: wgpu::ColorWrite::ALL,
-        }],
-    );
-
-    (
-        bind_group_layout,
-        device.create_render_pipeline(&pipeline_descriptor),
-    )
-}
-
-fn create_bitmap_pipeline(
-    device: &wgpu::Device,
-    vertex_shader: &wgpu::ShaderModule,
-    fragment_shader: &wgpu::ShaderModule,
-    depth_stencil_state: Option<wgpu::DepthStencilStateDescriptor>,
-) -> (wgpu::BindGroupLayout, wgpu::RenderPipeline) {
-    let label = create_debug_label!("Bitmap shape pipeline");
-    let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        bindings: &[
-            wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 1,
-                visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 2,
-                visibility: wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 3,
-                visibility: wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::SampledTexture {
-                    multisampled: false,
-                    component_type: wgpu::TextureComponentType::Float,
-                    dimension: wgpu::TextureViewDimension::D2,
-                },
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 4,
-                visibility: wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::Sampler { comparison: false },
-            },
-        ],
-        label: label.as_deref(),
-    });
-
-    let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        bind_group_layouts: &[&bind_group_layout],
-    });
-
-    let pipeline_descriptor = create_pipeline_descriptor(
-        vertex_shader,
-        fragment_shader,
-        &pipeline_layout,
-        depth_stencil_state,
-        &[wgpu::ColorStateDescriptor {
-            format: wgpu::TextureFormat::Bgra8Unorm,
-            color_blend: wgpu::BlendDescriptor {
-                src_factor: wgpu::BlendFactor::One,
-                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                operation: wgpu::BlendOperation::Add,
-            },
-            alpha_blend: wgpu::BlendDescriptor {
-                src_factor: wgpu::BlendFactor::SrcAlpha,
-                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                operation: wgpu::BlendOperation::Add,
-            },
-            write_mask: wgpu::ColorWrite::ALL,
-        }],
-    );
-
-    (
-        bind_group_layout,
-        device.create_render_pipeline(&pipeline_descriptor),
-    )
-}
-
-fn create_gradient_pipeline(
-    device: &wgpu::Device,
-    vertex_shader: &wgpu::ShaderModule,
-    fragment_shader: &wgpu::ShaderModule,
-    depth_stencil_state: Option<wgpu::DepthStencilStateDescriptor>,
-) -> (wgpu::BindGroupLayout, wgpu::RenderPipeline) {
-    let label = create_debug_label!("Gradient shape pipeline");
-    let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        bindings: &[
-            wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 1,
-                visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 2,
-                visibility: wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 3,
-                visibility: wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-            },
-        ],
-        label: label.as_deref(),
-    });
-
-    let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        bind_group_layouts: &[&bind_group_layout],
-    });
-
-    let pipeline_descriptor = create_pipeline_descriptor(
-        vertex_shader,
-        fragment_shader,
-        &pipeline_layout,
-        depth_stencil_state,
-        &[wgpu::ColorStateDescriptor {
-            format: wgpu::TextureFormat::Bgra8Unorm,
-            color_blend: wgpu::BlendDescriptor {
-                src_factor: wgpu::BlendFactor::SrcAlpha,
-                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                operation: wgpu::BlendOperation::Add,
-            },
-            alpha_blend: wgpu::BlendDescriptor {
-                src_factor: wgpu::BlendFactor::SrcAlpha,
-                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                operation: wgpu::BlendOperation::Add,
-            },
-            write_mask: wgpu::ColorWrite::ALL,
-        }],
-    );
-
-    (
-        bind_group_layout,
-        device.create_render_pipeline(&pipeline_descriptor),
-    )
-}
 
 impl WGPURenderBackend {
     pub fn new<W: HasRawWindowHandle>(window: &W, size: (u32, u32)) -> Result<Self, Error> {
@@ -460,14 +220,14 @@ impl WGPURenderBackend {
         use lyon::tessellation::{FillOptions, StrokeOptions};
 
         let transforms_label = create_debug_label!("Shape {} transforms ubo", shape.id);
-        let transforms_ubo = self.device.create_buffer(&BufferDescriptor {
+        let transforms_ubo = self.device.create_buffer(&wgpu::BufferDescriptor {
             label: transforms_label.as_deref(),
             size: std::mem::size_of::<Transforms>() as u64,
             usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
         });
 
         let colors_label = create_debug_label!("Shape {} colors ubo", shape.id);
-        let colors_ubo = self.device.create_buffer(&BufferDescriptor {
+        let colors_ubo = self.device.create_buffer(&wgpu::BufferDescriptor {
             label: colors_label.as_deref(),
             size: std::mem::size_of::<ColorAdjustments>() as u64,
             usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
@@ -1234,7 +994,7 @@ impl RenderBackend for WGPURenderBackend {
                         }),
                 ))
             }
-            Err(TimeOut) => {
+            Err(wgpu::TimeOut) => {
                 log::warn!("Couldn't begin new render frame: timed out whilst aquiring new swapchain output");
                 None
             }
@@ -1507,7 +1267,7 @@ impl IncompleteDrawType {
             IncompleteDrawType::Color => {
                 let bind_group_label =
                     create_debug_label!("Shape {} (color) draw {} bindgroup", shape_id, draw_id);
-                let bind_group = device.create_bind_group(&BindGroupDescriptor {
+                let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
                     layout: color_bind_layout,
                     bindings: &[
                         wgpu::Binding {
@@ -1564,7 +1324,7 @@ impl IncompleteDrawType {
 
                 let bind_group_label =
                     create_debug_label!("Shape {} (gradient) draw {} bindgroup", shape_id, draw_id);
-                let bind_group = device.create_bind_group(&BindGroupDescriptor {
+                let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
                     layout: gradient_bind_layout,
                     bindings: &[
                         wgpu::Binding {
@@ -1654,7 +1414,7 @@ impl IncompleteDrawType {
 
                 let bind_group_label =
                     create_debug_label!("Shape {} (bitmap) draw {} bindgroup", shape_id, draw_id);
-                let bind_group = device.create_bind_group(&BindGroupDescriptor {
+                let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
                     layout: bitmap_bind_layout,
                     bindings: &[
                         wgpu::Binding {
@@ -1794,7 +1554,7 @@ fn create_buffer_with_data(
     usage: wgpu::BufferUsage,
     label: Option<String>,
 ) -> wgpu::Buffer {
-    let mapped = device.create_buffer_mapped(&BufferDescriptor {
+    let mapped = device.create_buffer_mapped(&wgpu::BufferDescriptor {
         size: data.len() as u64,
         usage,
         label: label.as_deref(),
