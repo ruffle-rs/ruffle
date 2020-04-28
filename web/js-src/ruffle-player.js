@@ -35,6 +35,10 @@ export class RufflePlayer extends HTMLElement {
         this.update_styles();
     }
 
+    static get observedAttributes() {
+        return ["width", "height"];
+    }
+
     attributeChangedCallback(name, oldValue, newValue) {
         if (name === "width" || name === "height") {
             this.update_styles();

@@ -22,12 +22,12 @@ export default class RuffleEmbed extends RufflePlayer {
     }
 
     static get observedAttributes() {
-        return ["src"];
+        return ["src", "width", "height"];
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
         super.attributeChangedCallback(name, oldValue, newValue);
-        
+        console.log(name + " " + oldValue + " " + newValue);
         if (this.isConnected && name === "src") {
             this.stream_swf_url(this.attributes.src.value);
         }
