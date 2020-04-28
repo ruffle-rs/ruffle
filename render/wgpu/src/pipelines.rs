@@ -1,7 +1,83 @@
-use crate::GPUVertex;
+use crate::{Error, GPUVertex};
 use wgpu::vertex_attr_array;
 
-pub fn create_pipeline_descriptor<'a>(
+#[derive(Debug)]
+pub struct ShapePipeline {
+    pub pipeline: wgpu::RenderPipeline,
+    pub bind_layout: wgpu::BindGroupLayout,
+}
+
+#[derive(Debug)]
+pub struct Pipelines {
+    pub color: ShapePipeline,
+    pub bitmap: ShapePipeline,
+    pub gradient: ShapePipeline,
+}
+
+impl Pipelines {
+    pub fn new(device: &wgpu::Device) -> Result<Self, Error> {
+        let depth_stencil_state = Some(wgpu::DepthStencilStateDescriptor {
+            format: wgpu::TextureFormat::Depth32Float,
+            depth_write_enabled: true,
+            depth_compare: wgpu::CompareFunction::Greater,
+            stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
+            stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
+            stencil_read_mask: 0,
+            stencil_write_mask: 0,
+        });
+
+        let color_vs_bytes = include_bytes!("../shaders/color.vert.spv");
+        let color_vs = device.create_shader_module(&wgpu::read_spirv(std::io::Cursor::new(
+            &color_vs_bytes[..],
+        ))?);
+        let color_fs_bytes = include_bytes!("../shaders/color.frag.spv");
+        let color_fs = device.create_shader_module(&wgpu::read_spirv(std::io::Cursor::new(
+            &color_fs_bytes[..],
+        ))?);
+        let texture_vs_bytes = include_bytes!("../shaders/texture.vert.spv");
+        let texture_vs = device.create_shader_module(&wgpu::read_spirv(std::io::Cursor::new(
+            &texture_vs_bytes[..],
+        ))?);
+        let gradient_fs_bytes = include_bytes!("../shaders/gradient.frag.spv");
+        let gradient_fs = device.create_shader_module(&wgpu::read_spirv(std::io::Cursor::new(
+            &gradient_fs_bytes[..],
+        ))?);
+        let bitmap_fs_bytes = include_bytes!("../shaders/bitmap.frag.spv");
+        let bitmap_fs = device.create_shader_module(&wgpu::read_spirv(std::io::Cursor::new(
+            &bitmap_fs_bytes[..],
+        ))?);
+
+        let (color_bind_layout, color_pipeline) =
+            create_color_pipeline(&device, &color_vs, &color_fs, depth_stencil_state.clone());
+
+        let (bitmap_bind_layout, bitmap_pipeline) = create_bitmap_pipeline(
+            &device,
+            &texture_vs,
+            &bitmap_fs,
+            depth_stencil_state.clone(),
+        );
+
+        let (gradient_bind_layout, gradient_pipeline) =
+            create_gradient_pipeline(&device, &texture_vs, &gradient_fs, depth_stencil_state);
+
+        Ok(Self {
+            color: ShapePipeline {
+                pipeline: color_pipeline,
+                bind_layout: color_bind_layout,
+            },
+            bitmap: ShapePipeline {
+                pipeline: bitmap_pipeline,
+                bind_layout: bitmap_bind_layout,
+            },
+            gradient: ShapePipeline {
+                pipeline: gradient_pipeline,
+                bind_layout: gradient_bind_layout,
+            },
+        })
+    }
+}
+
+fn create_pipeline_descriptor<'a>(
     vertex_shader: &'a wgpu::ShaderModule,
     fragment_shader: &'a wgpu::ShaderModule,
     pipeline_layout: &'a wgpu::PipelineLayout,
@@ -45,7 +121,7 @@ pub fn create_pipeline_descriptor<'a>(
     }
 }
 
-pub fn create_color_pipeline(
+fn create_color_pipeline(
     device: &wgpu::Device,
     vertex_shader: &wgpu::ShaderModule,
     fragment_shader: &wgpu::ShaderModule,
@@ -99,7 +175,7 @@ pub fn create_color_pipeline(
     )
 }
 
-pub fn create_bitmap_pipeline(
+fn create_bitmap_pipeline(
     device: &wgpu::Device,
     vertex_shader: &wgpu::ShaderModule,
     fragment_shader: &wgpu::ShaderModule,
@@ -172,7 +248,7 @@ pub fn create_bitmap_pipeline(
     )
 }
 
-pub fn create_gradient_pipeline(
+fn create_gradient_pipeline(
     device: &wgpu::Device,
     vertex_shader: &wgpu::ShaderModule,
     fragment_shader: &wgpu::ShaderModule,

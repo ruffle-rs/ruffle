@@ -12,7 +12,7 @@ use ruffle_core::shape_utils::{DrawCommand, DrawPath};
 use std::convert::TryInto;
 use swf::{CharacterId, DefineBitsLossless, Glyph, Shape, Twips};
 
-use crate::pipelines::{create_bitmap_pipeline, create_color_pipeline, create_gradient_pipeline};
+use crate::pipelines::Pipelines;
 use bytemuck::{Pod, Zeroable};
 use futures::executor::block_on;
 use raw_window_handle::HasRawWindowHandle;
@@ -30,12 +30,7 @@ pub struct WGPURenderBackend {
     queue: wgpu::Queue,
     swap_chain_desc: wgpu::SwapChainDescriptor,
     swap_chain: wgpu::SwapChain,
-    color_bind_layout: wgpu::BindGroupLayout,
-    color_pipeline: wgpu::RenderPipeline,
-    bitmap_bind_layout: wgpu::BindGroupLayout,
-    bitmap_pipeline: wgpu::RenderPipeline,
-    gradient_bind_layout: wgpu::BindGroupLayout,
-    gradient_pipeline: wgpu::RenderPipeline,
+    pipelines: Pipelines,
     depth_texture_view: wgpu::TextureView,
     current_frame: Option<(wgpu::SwapChainOutput, wgpu::CommandEncoder)>,
     meshes: Vec<Mesh>,
@@ -128,49 +123,7 @@ impl WGPURenderBackend {
         };
         let swap_chain = device.create_swap_chain(&window_surface, &swap_chain_desc);
 
-        let color_vs_bytes = include_bytes!("../shaders/color.vert.spv");
-        let color_vs = device.create_shader_module(&wgpu::read_spirv(std::io::Cursor::new(
-            &color_vs_bytes[..],
-        ))?);
-        let color_fs_bytes = include_bytes!("../shaders/color.frag.spv");
-        let color_fs = device.create_shader_module(&wgpu::read_spirv(std::io::Cursor::new(
-            &color_fs_bytes[..],
-        ))?);
-        let texture_vs_bytes = include_bytes!("../shaders/texture.vert.spv");
-        let texture_vs = device.create_shader_module(&wgpu::read_spirv(std::io::Cursor::new(
-            &texture_vs_bytes[..],
-        ))?);
-        let gradient_fs_bytes = include_bytes!("../shaders/gradient.frag.spv");
-        let gradient_fs = device.create_shader_module(&wgpu::read_spirv(std::io::Cursor::new(
-            &gradient_fs_bytes[..],
-        ))?);
-        let bitmap_fs_bytes = include_bytes!("../shaders/bitmap.frag.spv");
-        let bitmap_fs = device.create_shader_module(&wgpu::read_spirv(std::io::Cursor::new(
-            &bitmap_fs_bytes[..],
-        ))?);
-
-        let depth_stencil_state = Some(wgpu::DepthStencilStateDescriptor {
-            format: wgpu::TextureFormat::Depth32Float,
-            depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Greater,
-            stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
-            stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
-            stencil_read_mask: 0,
-            stencil_write_mask: 0,
-        });
-
-        let (color_bind_layout, color_pipeline) =
-            create_color_pipeline(&device, &color_vs, &color_fs, depth_stencil_state.clone());
-
-        let (bitmap_bind_layout, bitmap_pipeline) = create_bitmap_pipeline(
-            &device,
-            &texture_vs,
-            &bitmap_fs,
-            depth_stencil_state.clone(),
-        );
-
-        let (gradient_bind_layout, gradient_pipeline) =
-            create_gradient_pipeline(&device, &texture_vs, &gradient_fs, depth_stencil_state);
+        let pipelines = Pipelines::new(&device)?;
 
         let depth_label = create_debug_label!("Depth texture");
         let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
@@ -196,12 +149,7 @@ impl WGPURenderBackend {
             queue,
             swap_chain_desc,
             swap_chain,
-            color_bind_layout,
-            color_pipeline,
-            bitmap_bind_layout,
-            bitmap_pipeline,
-            gradient_bind_layout,
-            gradient_pipeline,
+            pipelines,
             depth_texture_view,
             current_frame: None,
             meshes: Vec::new(),
@@ -248,9 +196,7 @@ impl WGPURenderBackend {
             device: &wgpu::Device,
             transforms_ubo: &wgpu::Buffer,
             colors_ubo: &wgpu::Buffer,
-            color_bind_layout: &wgpu::BindGroupLayout,
-            bitmap_bind_layout: &wgpu::BindGroupLayout,
-            gradient_bind_layout: &wgpu::BindGroupLayout,
+            pipelines: &Pipelines,
         ) {
             if lyon_mesh.vertices.is_empty() {
                 return;
@@ -279,9 +225,7 @@ impl WGPURenderBackend {
                 vbo,
                 ibo,
                 lyon_mesh.indices.len() as u32,
-                color_bind_layout,
-                bitmap_bind_layout,
-                gradient_bind_layout,
+                pipelines,
                 shape_id,
                 draw_id,
             ));
@@ -322,9 +266,7 @@ impl WGPURenderBackend {
                             &self.device,
                             &transforms_ubo,
                             &colors_ubo,
-                            &self.color_bind_layout,
-                            &self.bitmap_bind_layout,
-                            &self.gradient_bind_layout,
+                            &self.pipelines,
                         );
 
                         let mut buffers_builder = BuffersBuilder::new(
@@ -381,9 +323,7 @@ impl WGPURenderBackend {
                             &self.device,
                             &transforms_ubo,
                             &colors_ubo,
-                            &self.color_bind_layout,
-                            &self.bitmap_bind_layout,
-                            &self.gradient_bind_layout,
+                            &self.pipelines,
                         );
                     }
                     FillStyle::RadialGradient(gradient) => {
@@ -395,9 +335,7 @@ impl WGPURenderBackend {
                             &self.device,
                             &transforms_ubo,
                             &colors_ubo,
-                            &self.color_bind_layout,
-                            &self.bitmap_bind_layout,
-                            &self.gradient_bind_layout,
+                            &self.pipelines,
                         );
 
                         let mut buffers_builder = BuffersBuilder::new(
@@ -454,9 +392,7 @@ impl WGPURenderBackend {
                             &self.device,
                             &transforms_ubo,
                             &colors_ubo,
-                            &self.color_bind_layout,
-                            &self.bitmap_bind_layout,
-                            &self.gradient_bind_layout,
+                            &self.pipelines,
                         );
                     }
                     FillStyle::FocalGradient {
@@ -471,9 +407,7 @@ impl WGPURenderBackend {
                             &self.device,
                             &transforms_ubo,
                             &colors_ubo,
-                            &self.color_bind_layout,
-                            &self.bitmap_bind_layout,
-                            &self.gradient_bind_layout,
+                            &self.pipelines,
                         );
 
                         let mut buffers_builder = BuffersBuilder::new(
@@ -530,9 +464,7 @@ impl WGPURenderBackend {
                             &self.device,
                             &transforms_ubo,
                             &colors_ubo,
-                            &self.color_bind_layout,
-                            &self.bitmap_bind_layout,
-                            &self.gradient_bind_layout,
+                            &self.pipelines,
                         );
                     }
                     FillStyle::Bitmap {
@@ -549,9 +481,7 @@ impl WGPURenderBackend {
                             &self.device,
                             &transforms_ubo,
                             &colors_ubo,
-                            &self.color_bind_layout,
-                            &self.bitmap_bind_layout,
-                            &self.gradient_bind_layout,
+                            &self.pipelines,
                         );
 
                         let mut buffers_builder = BuffersBuilder::new(
@@ -597,9 +527,7 @@ impl WGPURenderBackend {
                             &self.device,
                             &transforms_ubo,
                             &colors_ubo,
-                            &self.color_bind_layout,
-                            &self.bitmap_bind_layout,
-                            &self.gradient_bind_layout,
+                            &self.pipelines,
                         );
                     }
                 },
@@ -668,9 +596,7 @@ impl WGPURenderBackend {
             &self.device,
             &transforms_ubo,
             &colors_ubo,
-            &self.color_bind_layout,
-            &self.bitmap_bind_layout,
-            &self.gradient_bind_layout,
+            &self.pipelines,
         );
 
         self.meshes.push(Mesh {
@@ -1124,13 +1050,13 @@ impl RenderBackend for WGPURenderBackend {
         for draw in &mesh.draws {
             match &draw.draw_type {
                 DrawType::Color => {
-                    render_pass.set_pipeline(&self.color_pipeline);
+                    render_pass.set_pipeline(&self.pipelines.color.pipeline);
                 }
                 DrawType::Gradient { .. } => {
-                    render_pass.set_pipeline(&self.gradient_pipeline);
+                    render_pass.set_pipeline(&self.pipelines.gradient.pipeline);
                 }
                 DrawType::Bitmap { .. } => {
-                    render_pass.set_pipeline(&self.bitmap_pipeline);
+                    render_pass.set_pipeline(&self.pipelines.bitmap.pipeline);
                 }
             }
 
@@ -1257,9 +1183,7 @@ impl IncompleteDrawType {
         vertex_buffer: wgpu::Buffer,
         index_buffer: wgpu::Buffer,
         index_count: u32,
-        color_bind_layout: &wgpu::BindGroupLayout,
-        bitmap_bind_layout: &wgpu::BindGroupLayout,
-        gradient_bind_layout: &wgpu::BindGroupLayout,
+        pipelines: &Pipelines,
         shape_id: CharacterId,
         draw_id: usize,
     ) -> Draw {
@@ -1268,7 +1192,7 @@ impl IncompleteDrawType {
                 let bind_group_label =
                     create_debug_label!("Shape {} (color) draw {} bindgroup", shape_id, draw_id);
                 let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    layout: color_bind_layout,
+                    layout: &pipelines.color.bind_layout,
                     bindings: &[
                         wgpu::Binding {
                             binding: 0,
@@ -1325,7 +1249,7 @@ impl IncompleteDrawType {
                 let bind_group_label =
                     create_debug_label!("Shape {} (gradient) draw {} bindgroup", shape_id, draw_id);
                 let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    layout: gradient_bind_layout,
+                    layout: &pipelines.gradient.bind_layout,
                     bindings: &[
                         wgpu::Binding {
                             binding: 0,
@@ -1415,7 +1339,7 @@ impl IncompleteDrawType {
                 let bind_group_label =
                     create_debug_label!("Shape {} (bitmap) draw {} bindgroup", shape_id, draw_id);
                 let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    layout: bitmap_bind_layout,
+                    layout: &pipelines.bitmap.bind_layout,
                     bindings: &[
                         wgpu::Binding {
                             binding: 0,
