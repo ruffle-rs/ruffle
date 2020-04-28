@@ -38,6 +38,12 @@ pub struct WGPURenderBackend {
     viewport_height: f32,
     view_matrix: [[f32; 4]; 4],
     textures: Vec<(swf::CharacterId, Texture)>,
+    num_masks: u32,
+    num_masks_active: u32,
+    write_stencil_mask: u32,
+    test_stencil_mask: u32,
+    next_stencil_mask: u32,
+    mask_stack: Vec<(u32, u32)>,
 }
 
 #[repr(C)]
@@ -137,7 +143,7 @@ impl WGPURenderBackend {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Depth32Float,
+            format: wgpu::TextureFormat::Depth24PlusStencil8,
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
         });
 
@@ -157,6 +163,12 @@ impl WGPURenderBackend {
             viewport_height: size.1 as f32,
             view_matrix: [[0.0; 4]; 4],
             textures: Vec::new(),
+            num_masks: 0,
+            num_masks_active: 0,
+            write_stencil_mask: 0,
+            test_stencil_mask: 0,
+            next_stencil_mask: 1,
+            mask_stack: Vec::new(),
         })
     }
 
@@ -639,7 +651,7 @@ impl RenderBackend for WGPURenderBackend {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Depth32Float,
+            format: wgpu::TextureFormat::Depth24PlusStencil8,
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
         });
 
@@ -925,6 +937,11 @@ impl RenderBackend for WGPURenderBackend {
                 None
             }
         };
+        self.num_masks = 0;
+        self.num_masks_active = 0;
+        self.write_stencil_mask = 0;
+        self.test_stencil_mask = 0;
+        self.next_stencil_mask = 1;
     }
 
     fn clear(&mut self, color: Color) {
@@ -1050,19 +1067,40 @@ impl RenderBackend for WGPURenderBackend {
         for draw in &mesh.draws {
             match &draw.draw_type {
                 DrawType::Color => {
-                    render_pass.set_pipeline(&self.pipelines.color.pipeline);
+                    render_pass.set_pipeline(&self.pipelines.color.pipeline_for(
+                        self.num_masks,
+                        self.num_masks_active,
+                        self.test_stencil_mask,
+                        self.write_stencil_mask,
+                    ));
                 }
                 DrawType::Gradient { .. } => {
-                    render_pass.set_pipeline(&self.pipelines.gradient.pipeline);
+                    render_pass.set_pipeline(&self.pipelines.gradient.pipeline_for(
+                        self.num_masks,
+                        self.num_masks_active,
+                        self.test_stencil_mask,
+                        self.write_stencil_mask,
+                    ));
                 }
                 DrawType::Bitmap { .. } => {
-                    render_pass.set_pipeline(&self.pipelines.bitmap.pipeline);
+                    render_pass.set_pipeline(&self.pipelines.bitmap.pipeline_for(
+                        self.num_masks,
+                        self.num_masks_active,
+                        self.test_stencil_mask,
+                        self.write_stencil_mask,
+                    ));
                 }
             }
 
             render_pass.set_bind_group(0, &draw.bind_group, &[]);
             render_pass.set_vertex_buffer(0, &draw.vertex_buffer, 0, 0);
             render_pass.set_index_buffer(&draw.index_buffer, 0, 0);
+
+            if self.num_masks_active < self.num_masks {
+                render_pass.set_stencil_reference(self.write_stencil_mask);
+            } else {
+                render_pass.set_stencil_reference(self.test_stencil_mask);
+            }
 
             render_pass.draw_indexed(0..draw.index_count, 0, 0..1);
         }
@@ -1076,11 +1114,63 @@ impl RenderBackend for WGPURenderBackend {
 
     fn draw_letterbox(&mut self, _letterbox: Letterbox) {}
 
-    fn push_mask(&mut self) {}
+    fn push_mask(&mut self) {
+        // Desktop draws the masker to the stencil buffer, one bit per mask.
+        // Masks-within-masks are handled as a bitmask.
+        // This does unfortunately mean we are limited in the number of masks at once (8 bits).
+        if self.next_stencil_mask >= 0x100 {
+            // If we've reached the limit of masks, clear the stencil buffer and start over.
+            // But this may not be correct if there is still a mask active (mask-within-mask).
+            if self.test_stencil_mask != 0 {
+                log::warn!(
+                    "Too many masks active for stencil buffer; possibly incorrect rendering"
+                );
+            }
+            self.next_stencil_mask = 1;
+            if let Some((swap_chain_output, encoder)) = &mut self.current_frame {
+                encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                        attachment: &swap_chain_output.view,
+                        load_op: wgpu::LoadOp::Load,
+                        store_op: wgpu::StoreOp::Store,
+                        clear_color: wgpu::Color::WHITE,
+                        resolve_target: None,
+                    }],
+                    depth_stencil_attachment: Some(
+                        wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                            attachment: &self.depth_texture_view,
+                            depth_load_op: wgpu::LoadOp::Load,
+                            depth_store_op: wgpu::StoreOp::Store,
+                            stencil_load_op: wgpu::LoadOp::Clear,
+                            stencil_store_op: wgpu::StoreOp::Store,
+                            clear_depth: 0.0,
+                            clear_stencil: self.test_stencil_mask,
+                        },
+                    ),
+                });
+            }
+        }
+        self.num_masks += 1;
+        self.mask_stack
+            .push((self.write_stencil_mask, self.test_stencil_mask));
+        self.write_stencil_mask = self.next_stencil_mask;
+        self.test_stencil_mask |= self.next_stencil_mask;
+        self.next_stencil_mask <<= 1;
+    }
 
-    fn activate_mask(&mut self) {}
+    fn activate_mask(&mut self) {
+        self.num_masks_active += 1;
+    }
 
-    fn pop_mask(&mut self) {}
+    fn pop_mask(&mut self) {
+        if !self.mask_stack.is_empty() {
+            self.num_masks -= 1;
+            self.num_masks_active -= 1;
+            let (write, test) = self.mask_stack.pop().unwrap();
+            self.write_stencil_mask = write;
+            self.test_stencil_mask = test;
+        }
+    }
 }
 
 fn point(x: Twips, y: Twips) -> lyon::math::Point {

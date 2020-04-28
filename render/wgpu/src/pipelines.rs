@@ -3,7 +3,8 @@ use wgpu::vertex_attr_array;
 
 #[derive(Debug)]
 pub struct ShapePipeline {
-    pub pipeline: wgpu::RenderPipeline,
+    pub write_mask_pipelines: Vec<wgpu::RenderPipeline>,
+    pub read_mask_pipelines: Vec<wgpu::RenderPipeline>,
     pub bind_layout: wgpu::BindGroupLayout,
 }
 
@@ -14,18 +15,24 @@ pub struct Pipelines {
     pub gradient: ShapePipeline,
 }
 
+impl ShapePipeline {
+    pub fn pipeline_for(
+        &self,
+        num_masks: u32,
+        num_masks_active: u32,
+        read_mask: u32,
+        write_mask: u32,
+    ) -> &wgpu::RenderPipeline {
+        if num_masks_active < num_masks {
+            &self.write_mask_pipelines[write_mask.trailing_zeros() as usize]
+        } else {
+            &self.read_mask_pipelines[read_mask as usize]
+        }
+    }
+}
+
 impl Pipelines {
     pub fn new(device: &wgpu::Device) -> Result<Self, Error> {
-        let depth_stencil_state = Some(wgpu::DepthStencilStateDescriptor {
-            format: wgpu::TextureFormat::Depth32Float,
-            depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Greater,
-            stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
-            stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
-            stencil_read_mask: 0,
-            stencil_write_mask: 0,
-        });
-
         let color_vs_bytes = include_bytes!("../shaders/color.vert.spv");
         let color_vs = device.create_shader_module(&wgpu::read_spirv(std::io::Cursor::new(
             &color_vs_bytes[..],
@@ -47,32 +54,10 @@ impl Pipelines {
             &bitmap_fs_bytes[..],
         ))?);
 
-        let (color_bind_layout, color_pipeline) =
-            create_color_pipeline(&device, &color_vs, &color_fs, depth_stencil_state.clone());
-
-        let (bitmap_bind_layout, bitmap_pipeline) = create_bitmap_pipeline(
-            &device,
-            &texture_vs,
-            &bitmap_fs,
-            depth_stencil_state.clone(),
-        );
-
-        let (gradient_bind_layout, gradient_pipeline) =
-            create_gradient_pipeline(&device, &texture_vs, &gradient_fs, depth_stencil_state);
-
         Ok(Self {
-            color: ShapePipeline {
-                pipeline: color_pipeline,
-                bind_layout: color_bind_layout,
-            },
-            bitmap: ShapePipeline {
-                pipeline: bitmap_pipeline,
-                bind_layout: bitmap_bind_layout,
-            },
-            gradient: ShapePipeline {
-                pipeline: gradient_pipeline,
-                bind_layout: gradient_bind_layout,
-            },
+            color: create_color_pipelines(&device, &color_vs, &color_fs),
+            bitmap: create_bitmap_pipeline(&device, &texture_vs, &bitmap_fs),
+            gradient: create_gradient_pipeline(&device, &texture_vs, &gradient_fs),
         })
     }
 }
@@ -121,14 +106,13 @@ fn create_pipeline_descriptor<'a>(
     }
 }
 
-fn create_color_pipeline(
+fn create_color_pipelines(
     device: &wgpu::Device,
     vertex_shader: &wgpu::ShaderModule,
     fragment_shader: &wgpu::ShaderModule,
-    depth_stencil_state: Option<wgpu::DepthStencilStateDescriptor>,
-) -> (wgpu::BindGroupLayout, wgpu::RenderPipeline) {
-    let label = create_debug_label!("Color shape pipeline");
-    let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+) -> ShapePipeline {
+    let label = create_debug_label!("Color shape bind group");
+    let bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         bindings: &[
             wgpu::BindGroupLayoutEntry {
                 binding: 0,
@@ -145,44 +129,108 @@ fn create_color_pipeline(
     });
 
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        bind_group_layouts: &[&bind_group_layout],
+        bind_group_layouts: &[&bind_layout],
     });
 
-    let pipeline_descriptor = create_pipeline_descriptor(
-        vertex_shader,
-        fragment_shader,
-        &pipeline_layout,
-        depth_stencil_state,
-        &[wgpu::ColorStateDescriptor {
-            format: wgpu::TextureFormat::Bgra8Unorm,
-            color_blend: wgpu::BlendDescriptor {
-                src_factor: wgpu::BlendFactor::SrcAlpha,
-                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                operation: wgpu::BlendOperation::Add,
-            },
-            alpha_blend: wgpu::BlendDescriptor {
-                src_factor: wgpu::BlendFactor::SrcAlpha,
-                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                operation: wgpu::BlendOperation::Add,
-            },
-            write_mask: wgpu::ColorWrite::ALL,
-        }],
-    );
+    let mut write_mask_pipelines = Vec::new();
+    let mut read_mask_pipelines = Vec::new();
 
-    (
-        bind_group_layout,
-        device.create_render_pipeline(&pipeline_descriptor),
-    )
+    for i in 0..8 {
+        write_mask_pipelines.push(device.create_render_pipeline(&create_pipeline_descriptor(
+            vertex_shader,
+            fragment_shader,
+            &pipeline_layout,
+            Some(wgpu::DepthStencilStateDescriptor {
+                format: wgpu::TextureFormat::Depth24PlusStencil8,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Always,
+                stencil_front: wgpu::StencilStateFaceDescriptor {
+                    compare: wgpu::CompareFunction::Always,
+                    fail_op: wgpu::StencilOperation::Keep,
+                    depth_fail_op: wgpu::StencilOperation::Keep,
+                    pass_op: wgpu::StencilOperation::Replace,
+                },
+                stencil_back: wgpu::StencilStateFaceDescriptor {
+                    compare: wgpu::CompareFunction::Always,
+                    fail_op: wgpu::StencilOperation::Keep,
+                    depth_fail_op: wgpu::StencilOperation::Keep,
+                    pass_op: wgpu::StencilOperation::Replace,
+                },
+                stencil_read_mask: 0,
+                stencil_write_mask: 1 << i,
+            }),
+            &[wgpu::ColorStateDescriptor {
+                format: wgpu::TextureFormat::Bgra8Unorm,
+                color_blend: wgpu::BlendDescriptor {
+                    src_factor: wgpu::BlendFactor::SrcAlpha,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                alpha_blend: wgpu::BlendDescriptor {
+                    src_factor: wgpu::BlendFactor::SrcAlpha,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                write_mask: wgpu::ColorWrite::empty(),
+            }],
+        )));
+    }
+
+    for i in 0..256 {
+        read_mask_pipelines.push(device.create_render_pipeline(&create_pipeline_descriptor(
+            vertex_shader,
+            fragment_shader,
+            &pipeline_layout,
+            Some(wgpu::DepthStencilStateDescriptor {
+                format: wgpu::TextureFormat::Depth24PlusStencil8,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Always,
+                stencil_front: wgpu::StencilStateFaceDescriptor {
+                    compare: wgpu::CompareFunction::Equal,
+                    fail_op: wgpu::StencilOperation::Keep,
+                    depth_fail_op: wgpu::StencilOperation::Keep,
+                    pass_op: wgpu::StencilOperation::Keep,
+                },
+                stencil_back: wgpu::StencilStateFaceDescriptor {
+                    compare: wgpu::CompareFunction::Equal,
+                    fail_op: wgpu::StencilOperation::Keep,
+                    depth_fail_op: wgpu::StencilOperation::Keep,
+                    pass_op: wgpu::StencilOperation::Keep,
+                },
+                stencil_read_mask: i,
+                stencil_write_mask: 0,
+            }),
+            &[wgpu::ColorStateDescriptor {
+                format: wgpu::TextureFormat::Bgra8Unorm,
+                color_blend: wgpu::BlendDescriptor {
+                    src_factor: wgpu::BlendFactor::SrcAlpha,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                alpha_blend: wgpu::BlendDescriptor {
+                    src_factor: wgpu::BlendFactor::SrcAlpha,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                write_mask: wgpu::ColorWrite::ALL,
+            }],
+        )));
+    }
+
+    ShapePipeline {
+        write_mask_pipelines,
+        read_mask_pipelines,
+        bind_layout,
+    }
 }
 
 fn create_bitmap_pipeline(
     device: &wgpu::Device,
     vertex_shader: &wgpu::ShaderModule,
     fragment_shader: &wgpu::ShaderModule,
-    depth_stencil_state: Option<wgpu::DepthStencilStateDescriptor>,
-) -> (wgpu::BindGroupLayout, wgpu::RenderPipeline) {
-    let label = create_debug_label!("Bitmap shape pipeline");
-    let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+) -> ShapePipeline {
+    let label = create_debug_label!("Bitmap shape bind group");
+    let bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         bindings: &[
             wgpu::BindGroupLayoutEntry {
                 binding: 0,
@@ -218,44 +266,108 @@ fn create_bitmap_pipeline(
     });
 
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        bind_group_layouts: &[&bind_group_layout],
+        bind_group_layouts: &[&bind_layout],
     });
 
-    let pipeline_descriptor = create_pipeline_descriptor(
-        vertex_shader,
-        fragment_shader,
-        &pipeline_layout,
-        depth_stencil_state,
-        &[wgpu::ColorStateDescriptor {
-            format: wgpu::TextureFormat::Bgra8Unorm,
-            color_blend: wgpu::BlendDescriptor {
-                src_factor: wgpu::BlendFactor::One,
-                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                operation: wgpu::BlendOperation::Add,
-            },
-            alpha_blend: wgpu::BlendDescriptor {
-                src_factor: wgpu::BlendFactor::SrcAlpha,
-                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                operation: wgpu::BlendOperation::Add,
-            },
-            write_mask: wgpu::ColorWrite::ALL,
-        }],
-    );
+    let mut write_mask_pipelines = Vec::new();
+    let mut read_mask_pipelines = Vec::new();
 
-    (
-        bind_group_layout,
-        device.create_render_pipeline(&pipeline_descriptor),
-    )
+    for i in 0..8 {
+        write_mask_pipelines.push(device.create_render_pipeline(&create_pipeline_descriptor(
+            vertex_shader,
+            fragment_shader,
+            &pipeline_layout,
+            Some(wgpu::DepthStencilStateDescriptor {
+                format: wgpu::TextureFormat::Depth24PlusStencil8,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Always,
+                stencil_front: wgpu::StencilStateFaceDescriptor {
+                    compare: wgpu::CompareFunction::Always,
+                    fail_op: wgpu::StencilOperation::Keep,
+                    depth_fail_op: wgpu::StencilOperation::Keep,
+                    pass_op: wgpu::StencilOperation::Replace,
+                },
+                stencil_back: wgpu::StencilStateFaceDescriptor {
+                    compare: wgpu::CompareFunction::Always,
+                    fail_op: wgpu::StencilOperation::Keep,
+                    depth_fail_op: wgpu::StencilOperation::Keep,
+                    pass_op: wgpu::StencilOperation::Replace,
+                },
+                stencil_read_mask: 0,
+                stencil_write_mask: 1 << i,
+            }),
+            &[wgpu::ColorStateDescriptor {
+                format: wgpu::TextureFormat::Bgra8Unorm,
+                color_blend: wgpu::BlendDescriptor {
+                    src_factor: wgpu::BlendFactor::SrcAlpha,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                alpha_blend: wgpu::BlendDescriptor {
+                    src_factor: wgpu::BlendFactor::SrcAlpha,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                write_mask: wgpu::ColorWrite::empty(),
+            }],
+        )));
+    }
+
+    for i in 0..256 {
+        read_mask_pipelines.push(device.create_render_pipeline(&create_pipeline_descriptor(
+            vertex_shader,
+            fragment_shader,
+            &pipeline_layout,
+            Some(wgpu::DepthStencilStateDescriptor {
+                format: wgpu::TextureFormat::Depth24PlusStencil8,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Always,
+                stencil_front: wgpu::StencilStateFaceDescriptor {
+                    compare: wgpu::CompareFunction::Equal,
+                    fail_op: wgpu::StencilOperation::Keep,
+                    depth_fail_op: wgpu::StencilOperation::Keep,
+                    pass_op: wgpu::StencilOperation::Keep,
+                },
+                stencil_back: wgpu::StencilStateFaceDescriptor {
+                    compare: wgpu::CompareFunction::Equal,
+                    fail_op: wgpu::StencilOperation::Keep,
+                    depth_fail_op: wgpu::StencilOperation::Keep,
+                    pass_op: wgpu::StencilOperation::Keep,
+                },
+                stencil_read_mask: i,
+                stencil_write_mask: 0,
+            }),
+            &[wgpu::ColorStateDescriptor {
+                format: wgpu::TextureFormat::Bgra8Unorm,
+                color_blend: wgpu::BlendDescriptor {
+                    src_factor: wgpu::BlendFactor::One,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                alpha_blend: wgpu::BlendDescriptor {
+                    src_factor: wgpu::BlendFactor::SrcAlpha,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                write_mask: wgpu::ColorWrite::ALL,
+            }],
+        )));
+    }
+
+    ShapePipeline {
+        write_mask_pipelines,
+        read_mask_pipelines,
+        bind_layout,
+    }
 }
 
 fn create_gradient_pipeline(
     device: &wgpu::Device,
     vertex_shader: &wgpu::ShaderModule,
     fragment_shader: &wgpu::ShaderModule,
-    depth_stencil_state: Option<wgpu::DepthStencilStateDescriptor>,
-) -> (wgpu::BindGroupLayout, wgpu::RenderPipeline) {
-    let label = create_debug_label!("Gradient shape pipeline");
-    let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+) -> ShapePipeline {
+    let label = create_debug_label!("Gradient shape bind group");
+    let bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         bindings: &[
             wgpu::BindGroupLayoutEntry {
                 binding: 0,
@@ -282,32 +394,97 @@ fn create_gradient_pipeline(
     });
 
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        bind_group_layouts: &[&bind_group_layout],
+        bind_group_layouts: &[&bind_layout],
     });
 
-    let pipeline_descriptor = create_pipeline_descriptor(
-        vertex_shader,
-        fragment_shader,
-        &pipeline_layout,
-        depth_stencil_state,
-        &[wgpu::ColorStateDescriptor {
-            format: wgpu::TextureFormat::Bgra8Unorm,
-            color_blend: wgpu::BlendDescriptor {
-                src_factor: wgpu::BlendFactor::SrcAlpha,
-                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                operation: wgpu::BlendOperation::Add,
-            },
-            alpha_blend: wgpu::BlendDescriptor {
-                src_factor: wgpu::BlendFactor::SrcAlpha,
-                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                operation: wgpu::BlendOperation::Add,
-            },
-            write_mask: wgpu::ColorWrite::ALL,
-        }],
-    );
+    let mut write_mask_pipelines = Vec::new();
+    let mut read_mask_pipelines = Vec::new();
 
-    (
-        bind_group_layout,
-        device.create_render_pipeline(&pipeline_descriptor),
-    )
+    for i in 0..8 {
+        write_mask_pipelines.push(device.create_render_pipeline(&create_pipeline_descriptor(
+            vertex_shader,
+            fragment_shader,
+            &pipeline_layout,
+            Some(wgpu::DepthStencilStateDescriptor {
+                format: wgpu::TextureFormat::Depth24PlusStencil8,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Always,
+                stencil_front: wgpu::StencilStateFaceDescriptor {
+                    compare: wgpu::CompareFunction::Always,
+                    fail_op: wgpu::StencilOperation::Keep,
+                    depth_fail_op: wgpu::StencilOperation::Keep,
+                    pass_op: wgpu::StencilOperation::Replace,
+                },
+                stencil_back: wgpu::StencilStateFaceDescriptor {
+                    compare: wgpu::CompareFunction::Always,
+                    fail_op: wgpu::StencilOperation::Keep,
+                    depth_fail_op: wgpu::StencilOperation::Keep,
+                    pass_op: wgpu::StencilOperation::Replace,
+                },
+                stencil_read_mask: 0,
+                stencil_write_mask: 1 << i,
+            }),
+            &[wgpu::ColorStateDescriptor {
+                format: wgpu::TextureFormat::Bgra8Unorm,
+                color_blend: wgpu::BlendDescriptor {
+                    src_factor: wgpu::BlendFactor::SrcAlpha,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                alpha_blend: wgpu::BlendDescriptor {
+                    src_factor: wgpu::BlendFactor::SrcAlpha,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                write_mask: wgpu::ColorWrite::empty(),
+            }],
+        )));
+    }
+
+    for i in 0..256 {
+        read_mask_pipelines.push(device.create_render_pipeline(&create_pipeline_descriptor(
+            vertex_shader,
+            fragment_shader,
+            &pipeline_layout,
+            Some(wgpu::DepthStencilStateDescriptor {
+                format: wgpu::TextureFormat::Depth24PlusStencil8,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Always,
+                stencil_front: wgpu::StencilStateFaceDescriptor {
+                    compare: wgpu::CompareFunction::Equal,
+                    fail_op: wgpu::StencilOperation::Keep,
+                    depth_fail_op: wgpu::StencilOperation::Keep,
+                    pass_op: wgpu::StencilOperation::Keep,
+                },
+                stencil_back: wgpu::StencilStateFaceDescriptor {
+                    compare: wgpu::CompareFunction::Equal,
+                    fail_op: wgpu::StencilOperation::Keep,
+                    depth_fail_op: wgpu::StencilOperation::Keep,
+                    pass_op: wgpu::StencilOperation::Keep,
+                },
+                stencil_read_mask: i,
+                stencil_write_mask: 0,
+            }),
+            &[wgpu::ColorStateDescriptor {
+                format: wgpu::TextureFormat::Bgra8Unorm,
+                color_blend: wgpu::BlendDescriptor {
+                    src_factor: wgpu::BlendFactor::SrcAlpha,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                alpha_blend: wgpu::BlendDescriptor {
+                    src_factor: wgpu::BlendFactor::SrcAlpha,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                write_mask: wgpu::ColorWrite::ALL,
+            }],
+        )));
+    }
+
+    ShapePipeline {
+        write_mask_pipelines,
+        read_mask_pipelines,
+        bind_layout,
+    }
 }
