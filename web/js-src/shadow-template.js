@@ -3,6 +3,9 @@ ruffle_shadow_tmpl.innerHTML = `
     <style>
         :host {
             display: inline-block;
+            /* Default width/height; this will get overridden by user styles/attributes */
+            width: 550px;
+            height: 400px;
         }
 
         #container {
@@ -18,7 +21,7 @@ ruffle_shadow_tmpl.innerHTML = `
         }
         
         #play_button {
-            position: relative;
+            position: absolute;
             width: 100%;
             height: 100%;
             cursor: pointer;
