@@ -5,7 +5,8 @@ use lyon::tessellation::{
 };
 use ruffle_core::backend::render::swf::{self, FillStyle};
 use ruffle_core::backend::render::{
-    BitmapHandle, BitmapInfo, Color, Letterbox, RenderBackend, ShapeHandle, Transform,
+    Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, Letterbox, RenderBackend, ShapeHandle,
+    Transform,
 };
 use ruffle_core::shape_utils::{DistilledShape, DrawPath};
 use std::convert::TryInto;
@@ -677,6 +678,86 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         handle
     }
 
+    fn register_bitmap(
+        &mut self,
+        id: swf::CharacterId,
+        bitmap: Bitmap,
+        debug_str: &str,
+    ) -> Result<BitmapInfo, Error> {
+        let extent = wgpu::Extent3d {
+            width: bitmap.width,
+            height: bitmap.height,
+            depth: 1,
+        };
+
+        let data = match bitmap.data {
+            BitmapFormat::Rgba(data) => data,
+            BitmapFormat::Rgb(data) => {
+                // Expand to RGBA.
+                let mut as_rgba =
+                    Vec::with_capacity(extent.width as usize * extent.height as usize * 4);
+                for i in (0..data.len()).step_by(3) {
+                    as_rgba.push(data[i]);
+                    as_rgba.push(data[i + 1]);
+                    as_rgba.push(data[i + 2]);
+                    as_rgba.push(255);
+                }
+                as_rgba
+            }
+        };
+
+        let texture_label = create_debug_label!("{} Texture {}", debug_str, id);
+        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
+            label: texture_label.as_deref(),
+            size: extent,
+            array_layer_count: 1,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
+        });
+
+        let buffer = create_buffer_with_data(
+            &self.device,
+            &data,
+            wgpu::BufferUsage::COPY_SRC,
+            create_debug_label!("{} transfer buffer {}", debug_str, id),
+        );
+
+        self.register_encoder.copy_buffer_to_texture(
+            wgpu::BufferCopyView {
+                buffer: &buffer,
+                offset: 0,
+                bytes_per_row: 4 * extent.width,
+                rows_per_image: 0,
+            },
+            wgpu::TextureCopyView {
+                texture: &texture,
+                mip_level: 0,
+                array_layer: 0,
+                origin: wgpu::Origin3d::ZERO,
+            },
+            extent,
+        );
+
+        let handle = BitmapHandle(self.textures.len());
+        self.textures.push((
+            id,
+            Texture {
+                texture,
+                width: bitmap.width,
+                height: bitmap.height,
+            },
+        ));
+
+        Ok(BitmapInfo {
+            handle,
+            width: bitmap.width.try_into().unwrap(),
+            height: bitmap.height.try_into().unwrap(),
+        })
+    }
+
     pub fn target(&self) -> &T {
         &self.target
     }
@@ -880,75 +961,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     fn register_bitmap_jpeg_2(&mut self, id: u16, data: &[u8]) -> BitmapInfo {
-        let data = ruffle_core::backend::render::remove_invalid_jpeg_data(data);
-
-        let mut decoder = jpeg_decoder::Decoder::new(&data[..]);
-        decoder.read_info().unwrap();
-        let metadata = decoder.info().unwrap();
-        let decoded_data = decoder.decode().expect("failed to decode image");
-        let extent = wgpu::Extent3d {
-            width: metadata.width as u32,
-            height: metadata.height as u32,
-            depth: 1,
-        };
-        let mut as_rgba = Vec::with_capacity((extent.width * extent.height * 4) as usize);
-        for i in (0..decoded_data.len()).step_by(3) {
-            as_rgba.push(decoded_data[i]);
-            as_rgba.push(decoded_data[i + 1]);
-            as_rgba.push(decoded_data[i + 2]);
-            as_rgba.push(255);
-        }
-
-        let texture_label = create_debug_label!("JPEG (2) texture {}", id);
-        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: texture_label.as_deref(),
-            size: extent,
-            array_layer_count: 1,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
-        });
-
-        let buffer = create_buffer_with_data(
-            &self.device,
-            &as_rgba[..],
-            wgpu::BufferUsage::COPY_SRC,
-            create_debug_label!("JPEG (2) transfer buffer {}", id),
-        );
-
-        self.register_encoder.copy_buffer_to_texture(
-            wgpu::BufferCopyView {
-                buffer: &buffer,
-                offset: 0,
-                bytes_per_row: 4 * extent.width,
-                rows_per_image: 0,
-            },
-            wgpu::TextureCopyView {
-                texture: &texture,
-                mip_level: 0,
-                array_layer: 0,
-                origin: wgpu::Origin3d::ZERO,
-            },
-            extent,
-        );
-
-        let handle = BitmapHandle(self.textures.len());
-        self.textures.push((
-            id,
-            Texture {
-                texture,
-                width: metadata.width.into(),
-                height: metadata.height.into(),
-            },
-        ));
-
-        BitmapInfo {
-            handle,
-            width: metadata.width,
-            height: metadata.height,
-        }
+        let bitmap = ruffle_core::backend::render::decode_define_bits_jpeg(data, None)
+            .expect("Invalid DefineBitsJpeg2 data");
+        self.register_bitmap(id, bitmap, "JPEG2")
+            .expect("Unable to register bitmap")
     }
 
     fn register_bitmap_jpeg_3(
@@ -957,126 +973,18 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         jpeg_data: &[u8],
         alpha_data: &[u8],
     ) -> BitmapInfo {
-        let (width, height, rgba) =
-            ruffle_core::backend::render::define_bits_jpeg_to_rgba(jpeg_data, alpha_data)
-                .expect("Error decoding DefineBitsJPEG3");
-        let extent = wgpu::Extent3d {
-            width: width as u32,
-            height: height as u32,
-            depth: 1,
-        };
-
-        let texture_label = create_debug_label!("JPEG (3) texture {}", id);
-        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: texture_label.as_deref(),
-            size: extent,
-            array_layer_count: 1,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
-        });
-
-        let buffer = create_buffer_with_data(
-            &self.device,
-            &rgba[..],
-            wgpu::BufferUsage::COPY_SRC,
-            create_debug_label!("JPEG (3) transfer buffer {}", id),
-        );
-
-        self.register_encoder.copy_buffer_to_texture(
-            wgpu::BufferCopyView {
-                buffer: &buffer,
-                offset: 0,
-                bytes_per_row: 4 * extent.width,
-                rows_per_image: 0,
-            },
-            wgpu::TextureCopyView {
-                texture: &texture,
-                mip_level: 0,
-                array_layer: 0,
-                origin: wgpu::Origin3d::ZERO,
-            },
-            extent,
-        );
-
-        let handle = BitmapHandle(self.textures.len());
-        self.textures.push((
-            id,
-            Texture {
-                texture,
-                width,
-                height,
-            },
-        ));
-
-        BitmapInfo {
-            handle,
-            width: width.try_into().unwrap(),
-            height: height.try_into().unwrap(),
-        }
+        let bitmap =
+            ruffle_core::backend::render::decode_define_bits_jpeg(jpeg_data, Some(alpha_data))
+                .expect("Invalid DefineBitsJpeg3 data");
+        self.register_bitmap(id, bitmap, "JPEG3")
+            .expect("Unable to register bitmap")
     }
 
     fn register_bitmap_png(&mut self, swf_tag: &DefineBitsLossless) -> BitmapInfo {
-        let decoded_data = ruffle_core::backend::render::define_bits_lossless_to_rgba(swf_tag)
-            .expect("Error decoding DefineBitsLossless");
-        let extent = wgpu::Extent3d {
-            width: swf_tag.width as u32,
-            height: swf_tag.height as u32,
-            depth: 1,
-        };
-
-        let texture_label = create_debug_label!("PNG texture {}", swf_tag.id);
-        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: texture_label.as_deref(),
-            size: extent,
-            array_layer_count: 1,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
-        });
-
-        let buffer = create_buffer_with_data(
-            &self.device,
-            &decoded_data[..],
-            wgpu::BufferUsage::COPY_SRC,
-            create_debug_label!("PNG transfer buffer {}", swf_tag.id),
-        );
-
-        self.register_encoder.copy_buffer_to_texture(
-            wgpu::BufferCopyView {
-                buffer: &buffer,
-                offset: 0,
-                bytes_per_row: 4 * extent.width,
-                rows_per_image: 0,
-            },
-            wgpu::TextureCopyView {
-                texture: &texture,
-                mip_level: 0,
-                array_layer: 0,
-                origin: wgpu::Origin3d::ZERO,
-            },
-            extent,
-        );
-
-        let handle = BitmapHandle(self.textures.len());
-        self.textures.push((
-            swf_tag.id,
-            Texture {
-                texture,
-                width: swf_tag.width.into(),
-                height: swf_tag.height.into(),
-            },
-        ));
-
-        BitmapInfo {
-            handle,
-            width: swf_tag.width,
-            height: swf_tag.height,
-        }
+        let bitmap = ruffle_core::backend::render::decode_define_bits_lossless(swf_tag)
+            .expect("Invalid DefineBitsJpeg2 data");
+        self.register_bitmap(swf_tag.id, bitmap, "PNG")
+            .expect("Unable to register bitmap")
     }
 
     fn begin_frame(&mut self, clear: Color) {

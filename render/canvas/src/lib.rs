@@ -1,6 +1,6 @@
 use ruffle_core::backend::render::{
-    swf, swf::CharacterId, BitmapHandle, BitmapInfo, Color, Letterbox, RenderBackend, ShapeHandle,
-    Transform,
+    swf, swf::CharacterId, Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, JpegTagFormat,
+    Letterbox, RenderBackend, ShapeHandle, Transform,
 };
 use ruffle_core::color_transform::ColorTransform;
 use ruffle_core::shape_utils::{DistilledShape, DrawCommand};
@@ -12,6 +12,8 @@ use web_sys::{
     CanvasGradient, CanvasPattern, CanvasRenderingContext2d, Element, HtmlCanvasElement,
     HtmlImageElement, Path2d, SvgsvgElement,
 };
+
+type Error = Box<dyn std::error::Error>;
 
 pub struct WebCanvasRenderBackend {
     canvas: HtmlCanvasElement,
@@ -222,19 +224,25 @@ impl WebCanvasRenderBackend {
     }
 
     /// Converts an RGBA image into a PNG encoded as a base64 data URI.
-    fn rgba_to_png_data_uri(
-        rgba: &[u8],
-        width: u32,
-        height: u32,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    fn bitmap_to_png_data_uri(bitmap: Bitmap) -> Result<String, Box<dyn std::error::Error>> {
         use png::Encoder;
         let mut png_data: Vec<u8> = vec![];
         {
-            let mut encoder = Encoder::new(&mut png_data, width, height);
-            encoder.set_color(png::ColorType::RGBA);
+            let mut encoder = Encoder::new(&mut png_data, bitmap.width, bitmap.height);
             encoder.set_depth(png::BitDepth::Eight);
+            let data = match bitmap.data {
+                BitmapFormat::Rgba(mut data) => {
+                    ruffle_core::backend::render::unmultiply_alpha_rgba(&mut data[..]);
+                    encoder.set_color(png::ColorType::RGBA);
+                    data
+                }
+                BitmapFormat::Rgb(data) => {
+                    encoder.set_color(png::ColorType::RGB);
+                    data
+                }
+            };
             let mut writer = encoder.write_header()?;
-            writer.write_image_data(&rgba)?;
+            writer.write_image_data(&data)?;
         }
 
         Ok(format!(
@@ -358,6 +366,62 @@ impl WebCanvasRenderBackend {
         self.context.set_filter("none");
         self.context.set_global_alpha(1.0);
     }
+
+    fn register_bitmap_pure_jpeg(
+        &mut self,
+        id: CharacterId,
+        data: &[u8],
+    ) -> Result<BitmapInfo, Box<Error>> {
+        let data = ruffle_core::backend::render::remove_invalid_jpeg_data(data);
+        let mut decoder = jpeg_decoder::Decoder::new(&data[..]);
+        decoder.read_info().unwrap();
+        let metadata = decoder.info().unwrap();
+
+        let image = HtmlImageElement::new().unwrap();
+        let jpeg_encoded = format!("data:image/jpeg;base64,{}", &base64::encode(&data[..]));
+        image.set_src(&jpeg_encoded);
+
+        let handle = BitmapHandle(self.bitmaps.len());
+        self.bitmaps.push(BitmapData {
+            image,
+            width: metadata.width.into(),
+            height: metadata.height.into(),
+            data: jpeg_encoded,
+        });
+        self.id_to_bitmap.insert(id, handle);
+        Ok(BitmapInfo {
+            handle,
+            width: metadata.width,
+            height: metadata.height,
+        })
+    }
+
+    fn register_bitmap_raw(
+        &mut self,
+        id: CharacterId,
+        bitmap: Bitmap,
+    ) -> Result<BitmapInfo, Box<Error>> {
+        let (width, height) = (bitmap.width, bitmap.height);
+        let png = Self::bitmap_to_png_data_uri(bitmap)?;
+
+        let image = HtmlImageElement::new().unwrap();
+        image.set_src(&png);
+
+        let handle = BitmapHandle(self.bitmaps.len());
+        self.bitmaps.push(BitmapData {
+            image,
+            width,
+            height,
+            data: png,
+        });
+
+        self.id_to_bitmap.insert(id, handle);
+        Ok(BitmapInfo {
+            handle,
+            width: width.try_into().expect("JPEG dimensions too large"),
+            height: height.try_into().expect("JPEG dimensions too large"),
+        })
+    }
 }
 
 impl RenderBackend for WebCanvasRenderBackend {
@@ -432,31 +496,19 @@ impl RenderBackend for WebCanvasRenderBackend {
         jpeg_tables: Option<&[u8]>,
     ) -> BitmapInfo {
         let data = ruffle_core::backend::render::glue_tables_to_jpeg(data, jpeg_tables);
-        self.register_bitmap_jpeg_2(id, &data[..])
+        self.register_bitmap_pure_jpeg(id, &data)
+            .expect("Unable to register JPEG")
     }
 
     fn register_bitmap_jpeg_2(&mut self, id: CharacterId, data: &[u8]) -> BitmapInfo {
-        let data = ruffle_core::backend::render::remove_invalid_jpeg_data(data);
-        let mut decoder = jpeg_decoder::Decoder::new(&data[..]);
-        decoder.read_info().unwrap();
-        let metadata = decoder.info().unwrap();
-
-        let image = HtmlImageElement::new().unwrap();
-        let jpeg_encoded = format!("data:image/jpeg;base64,{}", &base64::encode(&data[..]));
-        image.set_src(&jpeg_encoded);
-
-        let handle = BitmapHandle(self.bitmaps.len());
-        self.bitmaps.push(BitmapData {
-            image,
-            width: metadata.width.into(),
-            height: metadata.height.into(),
-            data: jpeg_encoded,
-        });
-        self.id_to_bitmap.insert(id, handle);
-        BitmapInfo {
-            handle,
-            width: metadata.width,
-            height: metadata.height,
+        if ruffle_core::backend::render::determine_jpeg_tag_format(data) == JpegTagFormat::Jpeg {
+            self.register_bitmap_pure_jpeg(id, data)
+                .expect("Unable to register JPEG")
+        } else {
+            let bitmap = ruffle_core::backend::render::decode_define_bits_jpeg(data, None)
+                .expect("Unable to decode DefineBitsJPEG2");
+            self.register_bitmap_raw(id, bitmap)
+                .expect("Unable to register bitmap")
         }
     }
 
@@ -466,41 +518,19 @@ impl RenderBackend for WebCanvasRenderBackend {
         jpeg_data: &[u8],
         alpha_data: &[u8],
     ) -> BitmapInfo {
-        let (width, height, mut rgba) =
-            ruffle_core::backend::render::define_bits_jpeg_to_rgba(jpeg_data, alpha_data)
-                .expect("Error decoding DefineBitsJPEG3");
-
-        ruffle_core::backend::render::unmultiply_alpha_rgba(&mut rgba[..]);
-        let png = Self::rgba_to_png_data_uri(&rgba[..], width, height).unwrap();
-
-        let image = HtmlImageElement::new().unwrap();
-        image.set_src(&png);
-
-        let handle = BitmapHandle(self.bitmaps.len());
-        self.bitmaps.push(BitmapData {
-            image,
-            width,
-            height,
-            data: png,
-        });
-
-        self.id_to_bitmap.insert(id, handle);
-        BitmapInfo {
-            handle,
-            width: width.try_into().expect("JPEG dimensions too large"),
-            height: height.try_into().expect("JPEG dimensions too large"),
-        }
+        let bitmap =
+            ruffle_core::backend::render::decode_define_bits_jpeg(jpeg_data, Some(alpha_data))
+                .expect("Unable to decode DefineBitsJPEG2");
+        self.register_bitmap_raw(id, bitmap)
+            .expect("Unable to register bitmap")
     }
 
     fn register_bitmap_png(&mut self, swf_tag: &swf::DefineBitsLossless) -> BitmapInfo {
-        let mut rgba = ruffle_core::backend::render::define_bits_lossless_to_rgba(swf_tag)
+        let bitmap = ruffle_core::backend::render::decode_define_bits_lossless(swf_tag)
             .expect("Error decoding DefineBitsLossless");
 
-        ruffle_core::backend::render::unmultiply_alpha_rgba(&mut rgba[..]);
-
         let png =
-            Self::rgba_to_png_data_uri(&rgba[..], swf_tag.width.into(), swf_tag.height.into())
-                .unwrap();
+            Self::bitmap_to_png_data_uri(bitmap).expect("Unable to encode bitmap as PNG data URI");
 
         let image = HtmlImageElement::new().unwrap();
         image.set_src(&png);

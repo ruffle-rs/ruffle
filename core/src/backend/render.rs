@@ -34,6 +34,8 @@ pub trait RenderBackend: Downcast {
 }
 impl_downcast!(RenderBackend);
 
+type Error = Box<dyn std::error::Error>;
+
 #[derive(Copy, Clone, Debug)]
 pub struct ShapeHandle(pub usize);
 
@@ -125,6 +127,60 @@ impl RenderBackend for NullRenderer {
     fn pop_mask(&mut self) {}
 }
 
+/// The format of image data in a DefineBitsJpeg2/3 tag.
+/// Generally this will be JPEG, but according to SWF19, these tags can also contain PNG and GIF data.
+/// SWF19 pp.138-139
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum JpegTagFormat {
+    Jpeg,
+    Png,
+    Gif,
+    Unknown,
+}
+
+/// Decoded bitmap data from an SWF tag.
+#[derive(Debug)]
+pub struct Bitmap {
+    pub width: u32,
+    pub height: u32,
+    pub data: BitmapFormat,
+}
+
+/// Decoded bitmap data from an SWF tag.
+/// The image data will have pre-multiplied alpha.
+#[derive(Debug)]
+pub enum BitmapFormat {
+    Rgb(Vec<u8>),
+    Rgba(Vec<u8>),
+}
+
+/// Determines the format of the image data in `data` from a DefineBitsJPEG2/3 tag.
+pub fn determine_jpeg_tag_format(data: &[u8]) -> JpegTagFormat {
+    match data {
+        [0xff, 0xd8, ..] => JpegTagFormat::Jpeg,
+        [0xff, 0xd9, 0xff, 0xd8, ..] => JpegTagFormat::Jpeg, // erroneous header in SWF
+        [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, ..] => JpegTagFormat::Png,
+        [0x47, 0x49, 0x46, 0x38, 0x39, 0x61, ..] => JpegTagFormat::Gif,
+        _ => JpegTagFormat::Unknown,
+    }
+}
+
+/// Decodes bitmap data from a DefineBitsJPEG2/3 tag.
+/// The data is returned with pre-multiplied alpha.
+pub fn decode_define_bits_jpeg(data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap, Error> {
+    let format = determine_jpeg_tag_format(data);
+    if format != JpegTagFormat::Jpeg && alpha_data.is_some() {
+        // Only DefineBitsJPEG3 with true JPEG data should have separate alpha data.
+        log::warn!("DefineBitsJPEG contains non-JPEG data with alpha; probably incorrect")
+    }
+    match format {
+        JpegTagFormat::Jpeg => decode_jpeg(data, alpha_data),
+        JpegTagFormat::Png => decode_png(data),
+        JpegTagFormat::Gif => Err("GIF data is currently unsupported".into()),
+        JpegTagFormat::Unknown => Err("Unknown bitmap data format".into()),
+    }
+}
+
 pub fn glue_swf_jpeg_to_tables(jpeg_tables: &[u8], jpeg_data: &[u8]) -> Vec<u8> {
     let mut full_jpeg = Vec::with_capacity(jpeg_tables.len() + jpeg_data.len() - 4);
     full_jpeg.extend_from_slice(&jpeg_tables[..jpeg_tables.len() - 2]);
@@ -176,47 +232,64 @@ pub fn remove_invalid_jpeg_data(mut data: &[u8]) -> std::borrow::Cow<[u8]> {
 }
 
 /// Decodes a JPEG with optional alpha data.
-/// The JPEG data will already be pre-multiplied by the alpha.
-pub fn define_bits_jpeg_to_rgba(
+/// The decoded bitmap will have pre-multiplied alpha.
+pub fn decode_jpeg(
     jpeg_data: &[u8],
-    alpha_data: &[u8],
-) -> Result<(u32, u32, Vec<u8>), Box<dyn std::error::Error>> {
+    alpha_data: Option<&[u8]>,
+) -> Result<Bitmap, Box<dyn std::error::Error>> {
     let jpeg_data = remove_invalid_jpeg_data(jpeg_data);
 
     let mut decoder = jpeg_decoder::Decoder::new(&jpeg_data[..]);
-    decoder.read_info().unwrap();
-    let metadata = decoder.info().unwrap();
-    let decoded_data = decoder.decode().expect("failed to decode image");
+    decoder.read_info()?;
+    let metadata = decoder.info().ok_or("Unable to get image info")?;
+    let decoded_data = decoder.decode()?;
 
     // Decompress the alpha data (DEFLATE compression).
-    let alpha_data = {
-        let mut data = vec![];
-        let mut decoder = libflate::zlib::Decoder::new(alpha_data)?;
-        decoder.read_to_end(&mut data)?;
-        data
-    };
+    if let Some(alpha_data) = alpha_data {
+        let alpha_data = {
+            let mut data = vec![];
+            let mut decoder = libflate::zlib::Decoder::new(alpha_data)?;
+            decoder.read_to_end(&mut data)?;
+            data
+        };
 
-    let mut rgba = Vec::with_capacity((decoded_data.len() / 3) * 4);
-    let mut i = 0;
-    let mut a = 0;
-    while i < decoded_data.len() {
-        rgba.push(decoded_data[i]);
-        rgba.push(decoded_data[i + 1]);
-        rgba.push(decoded_data[i + 2]);
-        rgba.push(alpha_data[a]);
-        i += 3;
-        a += 1;
+        if alpha_data.len() == decoded_data.len() / 3 {
+            let mut rgba = Vec::with_capacity((decoded_data.len() / 3) * 4);
+            let mut i = 0;
+            let mut a = 0;
+            while i < decoded_data.len() {
+                rgba.push(decoded_data[i]);
+                rgba.push(decoded_data[i + 1]);
+                rgba.push(decoded_data[i + 2]);
+                rgba.push(alpha_data[a]);
+                i += 3;
+                a += 1;
+            }
+            return Ok(Bitmap {
+                width: metadata.width.into(),
+                height: metadata.height.into(),
+                data: BitmapFormat::Rgba(rgba),
+            });
+        } else {
+            // Size isn't correct; fallback to RGB?
+            log::error!("Size mismatch in DefineBitsJPEG3 alpha data");
+        }
     }
 
-    Ok((metadata.width.into(), metadata.height.into(), rgba))
+    // No alpha.
+    Ok(Bitmap {
+        width: metadata.width.into(),
+        height: metadata.height.into(),
+        data: BitmapFormat::Rgb(decoded_data),
+    })
 }
 
 /// Decodes the bitmap data in DefineBitsLossless tag into RGBA.
 /// DefineBitsLossless is Zlib encoded pixel data (similar to PNG), possibly
 /// palletized.
-pub fn define_bits_lossless_to_rgba(
+pub fn decode_define_bits_lossless(
     swf_tag: &swf::DefineBitsLossless,
-) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+) -> Result<Bitmap, Box<dyn std::error::Error>> {
     // Decompress the image data (DEFLATE compression).
     let mut decoded_data = {
         let mut data = vec![];
@@ -326,7 +399,37 @@ pub fn define_bits_lossless_to_rgba(
         _ => unimplemented!("{:?} {:?}", swf_tag.version, swf_tag.format),
     };
 
-    Ok(out_data)
+    Ok(Bitmap {
+        width: swf_tag.width.into(),
+        height: swf_tag.height.into(),
+        data: BitmapFormat::Rgba(out_data),
+    })
+}
+
+/// Decodes the bitmap data in DefineBitsLossless tag into RGBA.
+/// DefineBitsLossless is Zlib encoded pixel data (similar to PNG), possibly
+/// palletized.
+pub fn decode_png(data: &[u8]) -> Result<Bitmap, Error> {
+    use png::{ColorType, Transformations};
+
+    let mut decoder = png::Decoder::new(data);
+    // EXPAND expands palettized types to RGB.
+    decoder.set_transformations(Transformations::EXPAND);
+    let (info, mut reader) = decoder.read_info()?;
+
+    let mut data = vec![0; info.buffer_size()];
+    reader.next_frame(&mut data)?;
+
+    Ok(Bitmap {
+        width: info.width,
+        height: info.height,
+        data: if info.color_type == ColorType::RGBA {
+            BitmapFormat::Rgba(data)
+        } else {
+            // EXPAND expands other types to RGB.
+            BitmapFormat::Rgb(data)
+        },
+    })
 }
 
 /// Images in SWFs are stored with premultiplied alpha.
