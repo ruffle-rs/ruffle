@@ -44,6 +44,9 @@ pub struct WGPURenderBackend {
     test_stencil_mask: u32,
     next_stencil_mask: u32,
     mask_stack: Vec<(u32, u32)>,
+    quad_vbo: wgpu::Buffer,
+    quad_ibo: wgpu::Buffer,
+    quad_tex_transforms: wgpu::Buffer,
 }
 
 #[repr(C)]
@@ -149,6 +152,8 @@ impl WGPURenderBackend {
 
         let depth_texture_view = depth_texture.create_default_view();
 
+        let (quad_vbo, quad_ibo, quad_tex_transforms) = create_quad_buffers(&device);
+
         Ok(Self {
             window_surface,
             device,
@@ -169,6 +174,9 @@ impl WGPURenderBackend {
             test_stencil_mask: 0,
             next_stencil_mask: 1,
             mask_stack: Vec::new(),
+            quad_vbo,
+            quad_ibo,
+            quad_tex_transforms,
         })
     }
 
@@ -800,7 +808,7 @@ impl RenderBackend for WGPURenderBackend {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            format: wgpu::TextureFormat::Rgba8Unorm,
             usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
         });
 
@@ -868,7 +876,7 @@ impl RenderBackend for WGPURenderBackend {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            format: wgpu::TextureFormat::Rgba8Unorm,
             usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
         });
 
@@ -972,7 +980,160 @@ impl RenderBackend for WGPURenderBackend {
         }
     }
 
-    fn render_bitmap(&mut self, _bitmap: BitmapHandle, _transform: &Transform) {}
+    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform) {
+        if let Some((_id, texture)) = self.textures.get(bitmap.0) {
+            let (swap_chain_output, encoder) =
+                if let Some((swap_chain_output, encoder)) = &mut self.current_frame {
+                    (swap_chain_output, encoder)
+                } else {
+                    return;
+                };
+
+            use ruffle_core::matrix::Matrix;
+            let transform = Transform {
+                matrix: transform.matrix
+                    * Matrix {
+                        a: texture.width as f32,
+                        d: texture.height as f32,
+                        ..Default::default()
+                    },
+                ..*transform
+            };
+
+            let world_matrix = [
+                [transform.matrix.a, transform.matrix.b, 0.0, 0.0],
+                [transform.matrix.c, transform.matrix.d, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [
+                    transform.matrix.tx.to_pixels() as f32,
+                    transform.matrix.ty.to_pixels() as f32,
+                    0.0,
+                    1.0,
+                ],
+            ];
+
+            let mult_color = [
+                transform.color_transform.r_mult,
+                transform.color_transform.g_mult,
+                transform.color_transform.b_mult,
+                transform.color_transform.a_mult,
+            ];
+
+            let add_color = [
+                transform.color_transform.r_add,
+                transform.color_transform.g_add,
+                transform.color_transform.b_add,
+                transform.color_transform.a_add,
+            ];
+
+            let transforms_ubo = create_buffer_with_data(
+                &self.device,
+                bytemuck::cast_slice(&[Transforms {
+                    view_matrix: self.view_matrix,
+                    world_matrix,
+                }]),
+                wgpu::BufferUsage::UNIFORM,
+                create_debug_label!("Bitmap {} transforms transfer buffer", bitmap.0),
+            );
+
+            let colors_ubo = create_buffer_with_data(
+                &self.device,
+                bytemuck::cast_slice(&[ColorAdjustments {
+                    mult_color,
+                    add_color,
+                }]),
+                wgpu::BufferUsage::UNIFORM,
+                create_debug_label!("Bitmap {} colors transfer buffer", bitmap.0),
+            );
+
+            let texture_view = texture.texture.create_default_view();
+            let sampler = self.device.create_sampler(&wgpu::SamplerDescriptor {
+                address_mode_u: wgpu::AddressMode::ClampToEdge,
+                address_mode_v: wgpu::AddressMode::ClampToEdge,
+                address_mode_w: wgpu::AddressMode::ClampToEdge,
+                mag_filter: wgpu::FilterMode::Linear,
+                min_filter: wgpu::FilterMode::Linear,
+                mipmap_filter: wgpu::FilterMode::Linear,
+                lod_min_clamp: 0.0,
+                lod_max_clamp: 100.0,
+                compare: wgpu::CompareFunction::Undefined,
+            });
+
+            let bind_group_label = create_debug_label!("Bitmap {} bind group", bitmap.0);
+            let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &self.pipelines.bitmap.bind_layout,
+                bindings: &[
+                    wgpu::Binding {
+                        binding: 0,
+                        resource: wgpu::BindingResource::Buffer {
+                            buffer: &transforms_ubo,
+                            range: 0..std::mem::size_of::<Transforms>() as u64,
+                        },
+                    },
+                    wgpu::Binding {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Buffer {
+                            buffer: &self.quad_tex_transforms,
+                            range: 0..std::mem::size_of::<TextureTransforms>() as u64,
+                        },
+                    },
+                    wgpu::Binding {
+                        binding: 2,
+                        resource: wgpu::BindingResource::Buffer {
+                            buffer: &colors_ubo,
+                            range: 0..std::mem::size_of::<ColorAdjustments>() as u64,
+                        },
+                    },
+                    wgpu::Binding {
+                        binding: 3,
+                        resource: wgpu::BindingResource::TextureView(&texture_view),
+                    },
+                    wgpu::Binding {
+                        binding: 4,
+                        resource: wgpu::BindingResource::Sampler(&sampler),
+                    },
+                ],
+                label: bind_group_label.as_deref(),
+            });
+
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                    attachment: &swap_chain_output.view,
+                    load_op: wgpu::LoadOp::Load,
+                    store_op: wgpu::StoreOp::Store,
+                    clear_color: wgpu::Color::WHITE,
+                    resolve_target: None,
+                }],
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                    attachment: &self.depth_texture_view,
+                    depth_load_op: wgpu::LoadOp::Load,
+                    depth_store_op: wgpu::StoreOp::Store,
+                    stencil_load_op: wgpu::LoadOp::Load,
+                    stencil_store_op: wgpu::StoreOp::Store,
+                    clear_depth: 0.0,
+                    clear_stencil: 0,
+                }),
+            });
+
+            render_pass.set_pipeline(&self.pipelines.bitmap.pipeline_for(
+                self.num_masks,
+                self.num_masks_active,
+                self.test_stencil_mask,
+                self.write_stencil_mask,
+            ));
+            render_pass.set_bind_group(0, &bind_group, &[]);
+            render_pass.set_vertex_buffer(0, &self.quad_vbo, 0, 0);
+            render_pass.set_index_buffer(&self.quad_ibo, 0, 0);
+
+            if self.num_masks_active < self.num_masks {
+                render_pass.set_stencil_reference(self.write_stencil_mask);
+            } else {
+                render_pass.set_stencil_reference(self.test_stencil_mask);
+            }
+
+            render_pass.draw_indexed(0..6, 0, 0..1);
+        }
+    }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
         let (swap_chain_output, encoder) =
@@ -1198,6 +1359,58 @@ fn ruffle_path_to_lyon_path(commands: Vec<DrawCommand>, is_closed: bool) -> Path
     }
 
     builder.build()
+}
+
+fn create_quad_buffers(device: &wgpu::Device) -> (wgpu::Buffer, wgpu::Buffer, wgpu::Buffer) {
+    let vertices = [
+        GPUVertex {
+            position: [0.0, 0.0],
+            color: [1.0, 1.0, 1.0, 1.0],
+        },
+        GPUVertex {
+            position: [1.0, 0.0],
+            color: [1.0, 1.0, 1.0, 1.0],
+        },
+        GPUVertex {
+            position: [1.0, 1.0],
+            color: [1.0, 1.0, 1.0, 1.0],
+        },
+        GPUVertex {
+            position: [0.0, 1.0],
+            color: [1.0, 1.0, 1.0, 1.0],
+        },
+    ];
+    let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
+
+    let vbo = create_buffer_with_data(
+        device,
+        bytemuck::cast_slice(&vertices),
+        wgpu::BufferUsage::VERTEX,
+        create_debug_label!("Quad vbo"),
+    );
+
+    let ibo = create_buffer_with_data(
+        device,
+        bytemuck::cast_slice(&indices),
+        wgpu::BufferUsage::INDEX,
+        create_debug_label!("Quad ibo"),
+    );
+
+    let tex_transforms = create_buffer_with_data(
+        device,
+        bytemuck::cast_slice(&[TextureTransforms {
+            u_matrix: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+        }]),
+        wgpu::BufferUsage::UNIFORM,
+        create_debug_label!("Quad tex transforms"),
+    );
+
+    (vbo, ibo, tex_transforms)
 }
 
 #[derive(Debug)]
