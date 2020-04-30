@@ -176,7 +176,7 @@ pub fn decode_define_bits_jpeg(data: &[u8], alpha_data: Option<&[u8]>) -> Result
     match format {
         JpegTagFormat::Jpeg => decode_jpeg(data, alpha_data),
         JpegTagFormat::Png => decode_png(data),
-        JpegTagFormat::Gif => Err("GIF data is currently unsupported".into()),
+        JpegTagFormat::Gif => decode_gif(data),
         JpegTagFormat::Unknown => Err("Unknown bitmap data format".into()),
     }
 }
@@ -429,6 +429,24 @@ pub fn decode_png(data: &[u8]) -> Result<Bitmap, Error> {
             // EXPAND expands other types to RGB.
             BitmapFormat::Rgb(data)
         },
+    })
+}
+
+/// Decodes the bitmap data in DefineBitsLossless tag into RGBA.
+/// DefineBitsLossless is Zlib encoded pixel data (similar to PNG), possibly
+/// palletized.
+pub fn decode_gif(data: &[u8]) -> Result<Bitmap, Error> {
+    use gif::SetParameter;
+
+    let mut decoder = gif::Decoder::new(data);
+    decoder.set(gif::ColorOutput::RGBA);
+    let mut reader = decoder.read_info()?;
+    let frame = reader.read_next_frame()?.ok_or("No frames in GIF")?;
+
+    Ok(Bitmap {
+        width: frame.width.into(),
+        height: frame.height.into(),
+        data: BitmapFormat::Rgba(frame.buffer.to_vec()),
     })
 }
 
