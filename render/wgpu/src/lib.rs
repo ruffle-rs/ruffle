@@ -81,6 +81,25 @@ struct ColorAdjustments {
     add_color: [f32; 4],
 }
 
+impl From<ColorTransform> for ColorAdjustments {
+    fn from(transform: ColorTransform) -> Self {
+        Self {
+            mult_color: [
+                transform.r_mult,
+                transform.g_mult,
+                transform.b_mult,
+                transform.a_mult,
+            ],
+            add_color: [
+                transform.r_add,
+                transform.g_add,
+                transform.b_add,
+                transform.a_add,
+            ],
+        }
+    }
+}
+
 unsafe impl Pod for ColorAdjustments {}
 unsafe impl Zeroable for ColorAdjustments {}
 
@@ -1111,20 +1130,6 @@ impl RenderBackend for WGPURenderBackend {
                 ],
             ];
 
-            let mult_color = [
-                transform.color_transform.r_mult,
-                transform.color_transform.g_mult,
-                transform.color_transform.b_mult,
-                transform.color_transform.a_mult,
-            ];
-
-            let add_color = [
-                transform.color_transform.r_add,
-                transform.color_transform.g_add,
-                transform.color_transform.b_add,
-                transform.color_transform.a_add,
-            ];
-
             let transforms_ubo = create_buffer_with_data(
                 &self.device,
                 bytemuck::cast_slice(&[Transforms {
@@ -1137,10 +1142,7 @@ impl RenderBackend for WGPURenderBackend {
 
             let colors_ubo = create_buffer_with_data(
                 &self.device,
-                bytemuck::cast_slice(&[ColorAdjustments {
-                    mult_color,
-                    add_color,
-                }]),
+                bytemuck::cast_slice(&[ColorAdjustments::from(transform.color_transform)]),
                 wgpu::BufferUsage::UNIFORM,
                 create_debug_label!("Bitmap {} colors transfer buffer", bitmap.0),
             );
@@ -1257,26 +1259,9 @@ impl RenderBackend for WGPURenderBackend {
         ];
 
         if transform.color_transform != mesh.colors_last {
-            let mult_color = [
-                transform.color_transform.r_mult,
-                transform.color_transform.g_mult,
-                transform.color_transform.b_mult,
-                transform.color_transform.a_mult,
-            ];
-
-            let add_color = [
-                transform.color_transform.r_add,
-                transform.color_transform.g_add,
-                transform.color_transform.b_add,
-                transform.color_transform.a_add,
-            ];
-
             let colors_temp = create_buffer_with_data(
                 &self.device,
-                bytemuck::cast_slice(&[ColorAdjustments {
-                    mult_color,
-                    add_color,
-                }]),
+                bytemuck::cast_slice(&[ColorAdjustments::from(transform.color_transform)]),
                 wgpu::BufferUsage::COPY_SRC,
                 create_debug_label!("Shape {} colors transfer buffer", mesh.shape_id),
             );
