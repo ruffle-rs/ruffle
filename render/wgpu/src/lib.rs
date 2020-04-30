@@ -627,6 +627,110 @@ impl WGPURenderBackend {
             [-1.0, 1.0, 0.0, 1.0],
         ];
     }
+
+    fn draw_rect(&mut self, x: f32, y: f32, width: f32, height: f32, color: Color) {
+        let (swap_chain_output, encoder) =
+            if let Some((swap_chain_output, encoder)) = &mut self.current_frame {
+                (swap_chain_output, encoder)
+            } else {
+                return;
+            };
+
+        let world_matrix = [
+            [width, 0.0, 0.0, 0.0],
+            [0.0, height, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [x, y, 0.0, 1.0],
+        ];
+
+        let mult_color = [
+            f32::from(color.r) / 255.0,
+            f32::from(color.g) / 255.0,
+            f32::from(color.b) / 255.0,
+            f32::from(color.a) / 255.0,
+        ];
+
+        let add_color = [0.0, 0.0, 0.0, 0.0];
+
+        let transforms_ubo = create_buffer_with_data(
+            &self.device,
+            bytemuck::cast_slice(&[Transforms {
+                view_matrix: self.view_matrix,
+                world_matrix,
+            }]),
+            wgpu::BufferUsage::UNIFORM,
+            create_debug_label!("Rectangle transfer buffer"),
+        );
+
+        let colors_ubo = create_buffer_with_data(
+            &self.device,
+            bytemuck::cast_slice(&[ColorAdjustments {
+                mult_color,
+                add_color,
+            }]),
+            wgpu::BufferUsage::UNIFORM,
+            create_debug_label!("Rectangle colors transfer buffer"),
+        );
+
+        let bind_group_label = create_debug_label!("Rectangle bind group");
+        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &self.pipelines.color.bind_layout,
+            bindings: &[
+                wgpu::Binding {
+                    binding: 0,
+                    resource: wgpu::BindingResource::Buffer {
+                        buffer: &transforms_ubo,
+                        range: 0..std::mem::size_of::<Transforms>() as u64,
+                    },
+                },
+                wgpu::Binding {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Buffer {
+                        buffer: &colors_ubo,
+                        range: 0..std::mem::size_of::<ColorAdjustments>() as u64,
+                    },
+                },
+            ],
+            label: bind_group_label.as_deref(),
+        });
+
+        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                attachment: &swap_chain_output.view,
+                load_op: wgpu::LoadOp::Load,
+                store_op: wgpu::StoreOp::Store,
+                clear_color: wgpu::Color::WHITE,
+                resolve_target: None,
+            }],
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                attachment: &self.depth_texture_view,
+                depth_load_op: wgpu::LoadOp::Load,
+                depth_store_op: wgpu::StoreOp::Store,
+                stencil_load_op: wgpu::LoadOp::Load,
+                stencil_store_op: wgpu::StoreOp::Store,
+                clear_depth: 0.0,
+                clear_stencil: 0,
+            }),
+        });
+
+        render_pass.set_pipeline(&self.pipelines.color.pipeline_for(
+            self.num_masks,
+            self.num_masks_active,
+            self.test_stencil_mask,
+            self.write_stencil_mask,
+        ));
+        render_pass.set_bind_group(0, &bind_group, &[]);
+        render_pass.set_vertex_buffer(0, &self.quad_vbo, 0, 0);
+        render_pass.set_index_buffer(&self.quad_ibo, 0, 0);
+
+        if self.num_masks_active < self.num_masks {
+            render_pass.set_stencil_reference(self.write_stencil_mask);
+        } else {
+            render_pass.set_stencil_reference(self.test_stencil_mask);
+        }
+
+        render_pass.draw_indexed(0..6, 0, 0..1);
+    }
 }
 
 impl RenderBackend for WGPURenderBackend {
@@ -1263,7 +1367,63 @@ impl RenderBackend for WGPURenderBackend {
         }
     }
 
-    fn draw_letterbox(&mut self, _letterbox: Letterbox) {}
+    fn draw_letterbox(&mut self, letterbox: Letterbox) {
+        match letterbox {
+            Letterbox::None => {}
+            Letterbox::Letterbox(margin) => {
+                self.draw_rect(
+                    0.0,
+                    0.0,
+                    self.viewport_width,
+                    margin,
+                    Color {
+                        r: 0,
+                        g: 0,
+                        b: 0,
+                        a: 255,
+                    },
+                );
+                self.draw_rect(
+                    0.0,
+                    self.viewport_height - margin,
+                    self.viewport_width,
+                    margin,
+                    Color {
+                        r: 0,
+                        g: 0,
+                        b: 0,
+                        a: 255,
+                    },
+                );
+            }
+            Letterbox::Pillarbox(margin) => {
+                self.draw_rect(
+                    0.0,
+                    0.0,
+                    margin,
+                    self.viewport_height,
+                    Color {
+                        r: 0,
+                        g: 0,
+                        b: 0,
+                        a: 255,
+                    },
+                );
+                self.draw_rect(
+                    self.viewport_width - margin,
+                    0.0,
+                    margin,
+                    self.viewport_height,
+                    Color {
+                        r: 0,
+                        g: 0,
+                        b: 0,
+                        a: 255,
+                    },
+                );
+            }
+        }
+    }
 
     fn push_mask(&mut self) {
         // Desktop draws the masker to the stencil buffer, one bit per mask.
