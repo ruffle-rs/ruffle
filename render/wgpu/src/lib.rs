@@ -20,6 +20,7 @@ use crate::shapes::{Draw, DrawType, GradientUniforms, IncompleteDrawType, Mesh};
 use crate::utils::{
     create_buffer_with_data, ruffle_path_to_lyon_path, swf_bitmap_to_gl_matrix, swf_to_gl_matrix,
 };
+use ruffle_core::color_transform::ColorTransform;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -184,12 +185,15 @@ impl WGPURenderBackend {
             usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
         });
 
-        let colors_label = create_debug_label!("Shape {} colors ubo", shape.id);
-        let colors_ubo = self.device.create_buffer(&wgpu::BufferDescriptor {
-            label: colors_label.as_deref(),
-            size: std::mem::size_of::<ColorAdjustments>() as u64,
-            usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
-        });
+        let colors_ubo = create_buffer_with_data(
+            &self.device,
+            bytemuck::cast_slice(&[ColorAdjustments {
+                mult_color: [1.0, 1.0, 1.0, 1.0],
+                add_color: [0.0, 0.0, 0.0, 0.0],
+            }]),
+            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+            create_debug_label!("Shape {} colors ubo", shape.id),
+        );
 
         let mut draws = Vec::new();
 
@@ -612,7 +616,8 @@ impl WGPURenderBackend {
         self.meshes.push(Mesh {
             draws,
             transforms: transforms_ubo,
-            colors: colors_ubo,
+            colors_buffer: colors_ubo,
+            colors_last: ColorTransform::default(),
             shape_id: shape.id,
         });
 
@@ -1237,7 +1242,7 @@ impl RenderBackend for WGPURenderBackend {
                 return;
             };
 
-        let mesh = &self.meshes[shape.0];
+        let mesh = &mut self.meshes[shape.0];
 
         let world_matrix = [
             [transform.matrix.a, transform.matrix.b, 0.0, 0.0],
@@ -1251,19 +1256,41 @@ impl RenderBackend for WGPURenderBackend {
             ],
         ];
 
-        let mult_color = [
-            transform.color_transform.r_mult,
-            transform.color_transform.g_mult,
-            transform.color_transform.b_mult,
-            transform.color_transform.a_mult,
-        ];
+        if transform.color_transform != mesh.colors_last {
+            let mult_color = [
+                transform.color_transform.r_mult,
+                transform.color_transform.g_mult,
+                transform.color_transform.b_mult,
+                transform.color_transform.a_mult,
+            ];
 
-        let add_color = [
-            transform.color_transform.r_add,
-            transform.color_transform.g_add,
-            transform.color_transform.b_add,
-            transform.color_transform.a_add,
-        ];
+            let add_color = [
+                transform.color_transform.r_add,
+                transform.color_transform.g_add,
+                transform.color_transform.b_add,
+                transform.color_transform.a_add,
+            ];
+
+            let colors_temp = create_buffer_with_data(
+                &self.device,
+                bytemuck::cast_slice(&[ColorAdjustments {
+                    mult_color,
+                    add_color,
+                }]),
+                wgpu::BufferUsage::COPY_SRC,
+                create_debug_label!("Shape {} colors transfer buffer", mesh.shape_id),
+            );
+
+            encoder.copy_buffer_to_buffer(
+                &colors_temp,
+                0,
+                &mesh.colors_buffer,
+                0,
+                std::mem::size_of::<ColorAdjustments>() as u64,
+            );
+
+            mesh.colors_last = transform.color_transform;
+        }
 
         let transforms_temp = create_buffer_with_data(
             &self.device,
@@ -1275,29 +1302,12 @@ impl RenderBackend for WGPURenderBackend {
             create_debug_label!("Shape {} transforms transfer buffer", mesh.shape_id),
         );
 
-        let colors_temp = create_buffer_with_data(
-            &self.device,
-            bytemuck::cast_slice(&[ColorAdjustments {
-                mult_color,
-                add_color,
-            }]),
-            wgpu::BufferUsage::COPY_SRC,
-            create_debug_label!("Shape {} colors transfer buffer", mesh.shape_id),
-        );
-
         encoder.copy_buffer_to_buffer(
             &transforms_temp,
             0,
             &mesh.transforms,
             0,
             std::mem::size_of::<Transforms>() as u64,
-        );
-        encoder.copy_buffer_to_buffer(
-            &colors_temp,
-            0,
-            &mesh.colors,
-            0,
-            std::mem::size_of::<ColorAdjustments>() as u64,
         );
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {

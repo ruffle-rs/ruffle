@@ -3,6 +3,7 @@ use crate::utils::create_buffer_with_data;
 use crate::{ColorAdjustments, TextureTransforms, Transforms};
 use bytemuck::{Pod, Zeroable};
 use ruffle_core::backend::audio::swf::CharacterId;
+use ruffle_core::color_transform::ColorTransform;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -23,7 +24,8 @@ unsafe impl Zeroable for GradientUniforms {}
 pub struct Mesh {
     pub draws: Vec<Draw>,
     pub transforms: wgpu::Buffer,
-    pub colors: wgpu::Buffer,
+    pub colors_buffer: wgpu::Buffer,
+    pub colors_last: ColorTransform,
     pub shape_id: CharacterId,
 }
 
