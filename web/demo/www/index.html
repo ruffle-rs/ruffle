@@ -110,12 +110,23 @@
     }
 
     @media only screen and (max-device-width: 600px) {
-      #file-picker {
+      #local-file-container {
+        display: none;
+      }
+      
+      #sample-swfs-label {
         display: none;
       }
 
+      #author-container {
+        font-size: 12px;
+        text-align: center;
+      }
+
       #nav {
-        min-height: 45px;
+        min-height: 85px;
+        flex-direction: column;
+        padding-bottom: 2px;
       }
     }
 
@@ -144,7 +155,7 @@
         <input type="file" id="local-file">
       </div>
       <div id="sample-swfs-container">
-        Sample SWF: 
+        <span id="sample-swfs-label">Sample SWF:</span>
         <select id="sample-swfs">
           <option value="none">None</option>
         </select>
