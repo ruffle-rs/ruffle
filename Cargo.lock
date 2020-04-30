@@ -1805,6 +1805,7 @@ dependencies = [
  "gc-arena 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gc-arena-derive 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "generational-arena 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gif 0.10.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "indexmap 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "jpeg-decoder 0.1.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "libflate 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
