@@ -1463,10 +1463,15 @@ impl<'gc> Avm1<'gc> {
     fn action_delete(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let name_val = self.pop();
         let name = name_val.as_string()?;
-        let object = self.pop().as_object()?;
+        let object = self.pop();
 
-        let success = object.delete(self, context.gc_context, name);
-        self.push(success);
+        if let Value::Object(object) = object {
+            let success = object.delete(self, context.gc_context, name);
+            self.push(success);
+        } else {
+            log::warn!("Cannot delete property {} from {:?}", name, object);
+            self.push(false);
+        }
 
         Ok(())
     }
