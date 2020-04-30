@@ -10,6 +10,7 @@ let jsonData;
 let container = document.getElementById('main');
 let author_container = document.getElementById("author-container");
 let author = document.getElementById("author");
+let sampleFileInputContainer = document.getElementById("sample-swfs-container");
 let sampleFileInput = document.getElementById("sample-swfs");
 let localFileInput = document.getElementById("local-file");
 
@@ -30,13 +31,16 @@ window.addEventListener('DOMContentLoaded', (event) => {
                     list.appendChild(temp);
                 });
                 document.getElementById("sample-swfs-container").style.display = "inline-block";
-                let rn = Math.floor(Math.random() * Math.floor(sampleFileInput.children.length));
+                let rn = Math.floor(Math.random() * Math.floor(sampleFileInput.children.length - 1));
                 sampleFileInput.selectedIndex = rn + 1;
                 loadRemoteFile(jsonData.swfs[rn].location);
                 author_container.style.display = "block";
                 author.innerHTML = jsonData.swfs[rn].author;
                 author.href = jsonData.swfs[rn].authorLink;
         }); 
+    }
+    else {
+        sampleFileInputContainer.style.display = "none";
     }
   });
 });
