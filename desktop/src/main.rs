@@ -13,7 +13,7 @@ use ruffle_core::{
     backend::audio::{AudioBackend, NullAudioBackend},
     Player,
 };
-use ruffle_render_wgpu::WGPURenderBackend;
+use ruffle_render_wgpu::WgpuRenderBackend;
 use std::path::PathBuf;
 use std::time::Instant;
 use structopt::StructOpt;
@@ -65,7 +65,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         }
     };
     let initial_size = window.inner_size().to_logical(window.scale_factor());
-    let renderer = Box::new(WGPURenderBackend::new(
+    let renderer = Box::new(WgpuRenderBackend::new(
         window.as_ref(),
         (initial_size.width, initial_size.height),
     )?);

@@ -30,7 +30,7 @@ mod utils;
 mod pipelines;
 mod shapes;
 
-pub struct WGPURenderBackend {
+pub struct WgpuRenderBackend {
     window_surface: wgpu::Surface,
     device: wgpu::Device,
     queue: wgpu::Queue,
@@ -115,7 +115,7 @@ struct GPUVertex {
 unsafe impl Pod for GPUVertex {}
 unsafe impl Zeroable for GPUVertex {}
 
-impl WGPURenderBackend {
+impl WgpuRenderBackend {
     pub fn new<W: HasRawWindowHandle>(window: &W, size: (u32, u32)) -> Result<Self, Error> {
         let window_surface = wgpu::Surface::create(window);
 
@@ -784,7 +784,7 @@ impl WGPURenderBackend {
     }
 }
 
-impl RenderBackend for WGPURenderBackend {
+impl RenderBackend for WgpuRenderBackend {
     fn set_viewport_dimensions(&mut self, width: u32, height: u32) {
         self.swap_chain_desc.width = width;
         self.swap_chain_desc.height = height;
