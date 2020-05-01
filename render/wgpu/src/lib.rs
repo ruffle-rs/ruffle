@@ -36,7 +36,9 @@ pub struct WGPURenderBackend {
     queue: wgpu::Queue,
     swap_chain_desc: wgpu::SwapChainDescriptor,
     swap_chain: wgpu::SwapChain,
+    msaa_sample_count: u32,
     pipelines: Pipelines,
+    frame_buffer_view: wgpu::TextureView,
     depth_texture_view: wgpu::TextureView,
     current_frame: Option<(wgpu::SwapChainOutput, wgpu::CommandEncoder)>,
     meshes: Vec<Mesh>,
@@ -142,19 +144,37 @@ impl WGPURenderBackend {
         };
         let swap_chain = device.create_swap_chain(&window_surface, &swap_chain_desc);
 
-        let pipelines = Pipelines::new(&device)?;
+        // TODO: Allow this to be set from command line/settings file.
+        let msaa_sample_count = 4;
+
+        let pipelines = Pipelines::new(&device, msaa_sample_count)?;
+
+        let extent = wgpu::Extent3d {
+            width: swap_chain_desc.width,
+            height: swap_chain_desc.height,
+            depth: 1,
+        };
+
+        let frame_buffer_label = create_debug_label!("Framebuffer texture");
+        let frame_buffer = device.create_texture(&wgpu::TextureDescriptor {
+            label: frame_buffer_label.as_deref(),
+            size: extent,
+            array_layer_count: 1,
+            mip_level_count: 1,
+            sample_count: msaa_sample_count,
+            dimension: wgpu::TextureDimension::D2,
+            format: swap_chain_desc.format,
+            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+        });
+        let frame_buffer_view = frame_buffer.create_default_view();
 
         let depth_label = create_debug_label!("Depth texture");
         let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
             label: depth_label.as_deref(),
-            size: wgpu::Extent3d {
-                width: swap_chain_desc.width,
-                height: swap_chain_desc.height,
-                depth: 1,
-            },
+            size: extent,
             array_layer_count: 1,
             mip_level_count: 1,
-            sample_count: 1,
+            sample_count: msaa_sample_count,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Depth24PlusStencil8,
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
@@ -170,7 +190,9 @@ impl WGPURenderBackend {
             queue,
             swap_chain_desc,
             swap_chain,
+            msaa_sample_count,
             pipelines,
+            frame_buffer_view,
             depth_texture_view,
             current_frame: None,
             meshes: Vec::new(),
@@ -718,13 +740,18 @@ impl WGPURenderBackend {
             label: bind_group_label.as_deref(),
         });
 
+        let (color_attachment, resolve_target) = if self.msaa_sample_count >= 2 {
+            (&self.frame_buffer_view, Some(&swap_chain_output.view))
+        } else {
+            (&swap_chain_output.view, None)
+        };
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                attachment: &swap_chain_output.view,
+                attachment: color_attachment,
                 load_op: wgpu::LoadOp::Load,
                 store_op: wgpu::StoreOp::Store,
                 clear_color: wgpu::Color::WHITE,
-                resolve_target: None,
+                resolve_target,
             }],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
                 attachment: &self.depth_texture_view,
@@ -765,6 +792,23 @@ impl RenderBackend for WGPURenderBackend {
             .device
             .create_swap_chain(&self.window_surface, &self.swap_chain_desc);
 
+        let label = create_debug_label!("Framebuffer texture");
+        let frame_buffer = self.device.create_texture(&wgpu::TextureDescriptor {
+            label: label.as_deref(),
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth: 1,
+            },
+            array_layer_count: 1,
+            mip_level_count: 1,
+            sample_count: self.msaa_sample_count,
+            dimension: wgpu::TextureDimension::D2,
+            format: self.swap_chain_desc.format,
+            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+        });
+        self.frame_buffer_view = frame_buffer.create_default_view();
+
         let label = create_debug_label!("Depth texture");
         let depth_texture = self.device.create_texture(&wgpu::TextureDescriptor {
             label: label.as_deref(),
@@ -775,13 +819,13 @@ impl RenderBackend for WGPURenderBackend {
             },
             array_layer_count: 1,
             mip_level_count: 1,
-            sample_count: 1,
+            sample_count: self.msaa_sample_count,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Depth24PlusStencil8,
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
         });
-
         self.depth_texture_view = depth_texture.create_default_view();
+
         self.viewport_width = width as f32;
         self.viewport_height = height as f32;
         self.build_matrices();
@@ -1072,9 +1116,14 @@ impl RenderBackend for WGPURenderBackend {
 
     fn clear(&mut self, color: Color) {
         if let Some((swap_chain_output, encoder)) = &mut self.current_frame {
+            let (color_attachment, resolve_target) = if self.msaa_sample_count >= 2 {
+                (&self.frame_buffer_view, Some(&swap_chain_output.view))
+            } else {
+                (&swap_chain_output.view, None)
+            };
             encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &swap_chain_output.view,
+                    attachment: color_attachment,
                     load_op: wgpu::LoadOp::Clear,
                     store_op: wgpu::StoreOp::Store,
                     clear_color: wgpu::Color {
@@ -1083,7 +1132,7 @@ impl RenderBackend for WGPURenderBackend {
                         b: f64::from(color.b) / 255.0,
                         a: f64::from(color.a) / 255.0,
                     },
-                    resolve_target: None,
+                    resolve_target,
                 }],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
                     attachment: &self.depth_texture_view,
@@ -1197,13 +1246,18 @@ impl RenderBackend for WGPURenderBackend {
                 label: bind_group_label.as_deref(),
             });
 
+            let (color_attachment, resolve_target) = if self.msaa_sample_count >= 2 {
+                (&self.frame_buffer_view, Some(&swap_chain_output.view))
+            } else {
+                (&swap_chain_output.view, None)
+            };
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &swap_chain_output.view,
+                    attachment: color_attachment,
                     load_op: wgpu::LoadOp::Load,
                     store_op: wgpu::StoreOp::Store,
                     clear_color: wgpu::Color::WHITE,
-                    resolve_target: None,
+                    resolve_target,
                 }],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
                     attachment: &self.depth_texture_view,
@@ -1295,13 +1349,18 @@ impl RenderBackend for WGPURenderBackend {
             std::mem::size_of::<Transforms>() as u64,
         );
 
+        let (color_attachment, resolve_target) = if self.msaa_sample_count >= 2 {
+            (&self.frame_buffer_view, Some(&swap_chain_output.view))
+        } else {
+            (&swap_chain_output.view, None)
+        };
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                attachment: &swap_chain_output.view,
+                attachment: color_attachment,
                 load_op: wgpu::LoadOp::Load,
                 store_op: wgpu::StoreOp::Store,
                 clear_color: wgpu::Color::WHITE,
-                resolve_target: None,
+                resolve_target,
             }],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
                 attachment: &self.depth_texture_view,
@@ -1434,13 +1493,18 @@ impl RenderBackend for WGPURenderBackend {
             }
             self.next_stencil_mask = 1;
             if let Some((swap_chain_output, encoder)) = &mut self.current_frame {
+                let (color_attachment, resolve_target) = if self.msaa_sample_count >= 2 {
+                    (&self.frame_buffer_view, Some(&swap_chain_output.view))
+                } else {
+                    (&swap_chain_output.view, None)
+                };
                 encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                     color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                        attachment: &swap_chain_output.view,
+                        attachment: color_attachment,
                         load_op: wgpu::LoadOp::Load,
                         store_op: wgpu::StoreOp::Store,
                         clear_color: wgpu::Color::WHITE,
-                        resolve_target: None,
+                        resolve_target,
                     }],
                     depth_stencil_attachment: Some(
                         wgpu::RenderPassDepthStencilAttachmentDescriptor {

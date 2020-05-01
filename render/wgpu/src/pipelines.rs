@@ -32,7 +32,7 @@ impl ShapePipeline {
 }
 
 impl Pipelines {
-    pub fn new(device: &wgpu::Device) -> Result<Self, Error> {
+    pub fn new(device: &wgpu::Device, msaa_sample_count: u32) -> Result<Self, Error> {
         let color_vs_bytes = include_bytes!("../shaders/color.vert.spv");
         let color_vs = device.create_shader_module(&wgpu::read_spirv(std::io::Cursor::new(
             &color_vs_bytes[..],
@@ -55,9 +55,14 @@ impl Pipelines {
         ))?);
 
         Ok(Self {
-            color: create_color_pipelines(&device, &color_vs, &color_fs),
-            bitmap: create_bitmap_pipeline(&device, &texture_vs, &bitmap_fs),
-            gradient: create_gradient_pipeline(&device, &texture_vs, &gradient_fs),
+            color: create_color_pipelines(&device, &color_vs, &color_fs, msaa_sample_count),
+            bitmap: create_bitmap_pipeline(&device, &texture_vs, &bitmap_fs, msaa_sample_count),
+            gradient: create_gradient_pipeline(
+                &device,
+                &texture_vs,
+                &gradient_fs,
+                msaa_sample_count,
+            ),
         })
     }
 }
@@ -68,6 +73,7 @@ fn create_pipeline_descriptor<'a>(
     pipeline_layout: &'a wgpu::PipelineLayout,
     depth_stencil_state: Option<wgpu::DepthStencilStateDescriptor>,
     color_states: &'a [wgpu::ColorStateDescriptor],
+    msaa_sample_count: u32,
 ) -> wgpu::RenderPipelineDescriptor<'a> {
     wgpu::RenderPipelineDescriptor {
         layout: &pipeline_layout,
@@ -89,7 +95,7 @@ fn create_pipeline_descriptor<'a>(
         primitive_topology: wgpu::PrimitiveTopology::TriangleList,
         color_states,
         depth_stencil_state,
-        sample_count: 1,
+        sample_count: msaa_sample_count,
         sample_mask: !0,
         alpha_to_coverage_enabled: false,
         vertex_state: wgpu::VertexStateDescriptor {
@@ -110,6 +116,7 @@ fn create_color_pipelines(
     device: &wgpu::Device,
     vertex_shader: &wgpu::ShaderModule,
     fragment_shader: &wgpu::ShaderModule,
+    msaa_sample_count: u32,
 ) -> ShapePipeline {
     let label = create_debug_label!("Color shape bind group");
     let bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -173,6 +180,7 @@ fn create_color_pipelines(
                 },
                 write_mask: wgpu::ColorWrite::empty(),
             }],
+            msaa_sample_count,
         )));
     }
 
@@ -214,6 +222,7 @@ fn create_color_pipelines(
                 },
                 write_mask: wgpu::ColorWrite::ALL,
             }],
+            msaa_sample_count,
         )));
     }
 
@@ -228,6 +237,7 @@ fn create_bitmap_pipeline(
     device: &wgpu::Device,
     vertex_shader: &wgpu::ShaderModule,
     fragment_shader: &wgpu::ShaderModule,
+    msaa_sample_count: u32,
 ) -> ShapePipeline {
     let label = create_debug_label!("Bitmap shape bind group");
     let bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -310,6 +320,7 @@ fn create_bitmap_pipeline(
                 },
                 write_mask: wgpu::ColorWrite::empty(),
             }],
+            msaa_sample_count,
         )));
     }
 
@@ -351,6 +362,7 @@ fn create_bitmap_pipeline(
                 },
                 write_mask: wgpu::ColorWrite::ALL,
             }],
+            msaa_sample_count,
         )));
     }
 
@@ -365,6 +377,7 @@ fn create_gradient_pipeline(
     device: &wgpu::Device,
     vertex_shader: &wgpu::ShaderModule,
     fragment_shader: &wgpu::ShaderModule,
+    msaa_sample_count: u32,
 ) -> ShapePipeline {
     let label = create_debug_label!("Gradient shape bind group");
     let bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -438,6 +451,7 @@ fn create_gradient_pipeline(
                 },
                 write_mask: wgpu::ColorWrite::empty(),
             }],
+            msaa_sample_count,
         )));
     }
 
@@ -479,6 +493,7 @@ fn create_gradient_pipeline(
                 },
                 write_mask: wgpu::ColorWrite::ALL,
             }],
+            msaa_sample_count,
         )));
     }
 
