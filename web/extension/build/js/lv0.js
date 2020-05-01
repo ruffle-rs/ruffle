@@ -14,18 +14,20 @@
  *    unintentionally.
  * 2. The ability to load extension resources such as .wasm files
  */
+function insert_script() {
+    let setup_scriptelem = document.createElement("script");
+    let setup_src = "var runtime_path = \"" +
+        ext_path + "\";\nvar obfuscated_event_prefix = \"" +
+        obfuscated_event_prefix + "\";";
+    let scriptelem = document.createElement("script");
+    setup_scriptelem.appendChild(document.createTextNode(setup_src));
+    document.head.appendChild(setup_scriptelem);
+    scriptelem.src=ext_path + "dist/ruffle.js";
+    document.head.appendChild(scriptelem);
+}
 function insert_ruffle(mutationsList,observer) {
-    let nodesAdded = mutationsList.some(mutation => mutation.addedNodes.length > 0);
-    if (nodesAdded&&document.head) {
-        let setup_scriptelem = document.createElement("script");
-        let setup_src = "var runtime_path = \"" +
-            ext_path + "\";\nvar obfuscated_event_prefix = \"" +
-            obfuscated_event_prefix + "\";";
-        let scriptelem = document.createElement("script");
-        setup_scriptelem.appendChild(document.createTextNode(setup_src));
-        document.head.appendChild(setup_scriptelem);
-        scriptelem.src=ext_path + "dist/ruffle.js";
-        document.head.appendChild(scriptelem);
+    if (document.head) {
+        insert_script();
         observer.disconnect();
     }
 }
@@ -39,6 +41,11 @@ if (chrome && chrome.extension && chrome.extension.getURL) {
     ext_path = browser.runtime.getURL("dist/ruffle.js").replace("dist/ruffle.js", "");
 }
 if (!(page_optout||window.RufflePlayer)) {
-    const observer = new MutationObserver(insert_ruffle);
-    observer.observe(document, {childList: true, subtree: true});
+    if (document.head) {
+        insert_script();
+    }
+    else {
+        const observer = new MutationObserver(insert_ruffle);
+        observer.observe(document, {childList: true, subtree: true});
+    }
 }
