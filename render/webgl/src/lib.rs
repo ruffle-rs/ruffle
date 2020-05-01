@@ -6,8 +6,8 @@ use ruffle_web_common::JsResult;
 use std::convert::TryInto;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
-    HtmlCanvasElement, WebGlBuffer, WebGlProgram, WebGlRenderingContext as Gl, WebGlShader,
-    WebGlTexture, WebGlUniformLocation,
+    HtmlCanvasElement, WebGl2RenderingContext as Gl2, WebGlBuffer, WebGlProgram,
+    WebGlRenderingContext as Gl, WebGlShader, WebGlTexture, WebGlUniformLocation,
 };
 
 type Error = Box<dyn std::error::Error>;
@@ -19,7 +19,11 @@ const GRADIENT_FRAGMENT_GLSL: &str = include_str!("../shaders/gradient.frag");
 const BITMAP_FRAGMENT_GLSL: &str = include_str!("../shaders/bitmap.frag");
 
 pub struct WebGlRenderBackend {
+    /// WebGL1 context
     gl: Gl,
+
+    // WebGL2 context, if available.
+    gl2: Option<Gl2>,
 
     vertex_position_location: u32,
     vertex_color_location: u32,
@@ -59,12 +63,24 @@ impl WebGlRenderBackend {
             js_sys::Reflect::set(&context_options, &JsValue::from(*name), value).warn_on_error();
         }
 
-        let gl = canvas
-            .get_context_with_context_options("webgl", &context_options)
-            .into_js_result()?
-            .ok_or("No context returned")?
-            .dyn_into::<Gl>()
-            .map_err(|_| "Expected GL context")?;
+        let (gl, gl2) = if let Ok(Some(gl)) =
+            canvas.get_context_with_context_options("webgl2", &context_options)
+        {
+            log::info!("Creating WebGL2 context.");
+            let gl2 = gl.dyn_into::<Gl2>().map_err(|_| "Expected GL context")?;
+            // WebGLRenderingContext inherits from WebGL2RenderingContext.
+            (gl2.clone().unchecked_into::<Gl>(), Some(gl2))
+        } else if let Ok(Some(gl)) =
+            canvas.get_context_with_context_options("webgl", &context_options)
+        {
+            log::info!("Falling back to WebGL1.");
+            (
+                gl.dyn_into::<Gl>().map_err(|_| "Expected GL context")?,
+                None,
+            )
+        } else {
+            return Err("Unable to create WebGL rendering context".into());
+        };
 
         let color_vertex = Self::compile_shader(&gl, Gl::VERTEX_SHADER, COLOR_VERTEX_GLSL)?;
         let texture_vertex = Self::compile_shader(&gl, Gl::VERTEX_SHADER, TEXTURE_VERTEX_GLSL)?;
@@ -113,6 +129,7 @@ impl WebGlRenderBackend {
 
         let mut renderer = Self {
             gl,
+            gl2,
 
             color_program,
             gradient_program,
