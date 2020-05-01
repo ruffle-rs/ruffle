@@ -112,22 +112,8 @@ impl WebGlRenderBackend {
         // Because we currently only use on vertex format, we can do this once on init.
         gl.enable_vertex_attrib_array(vertex_position_location as u32);
         gl.enable_vertex_attrib_array(vertex_color_location as u32);
-        gl.vertex_attrib_pointer_with_i32(
-            vertex_position_location,
-            2,
-            Gl::FLOAT,
-            false,
-            24, //std::mem::size_of::<Vertex>() as i32,
-            0,
-        );
-        gl.vertex_attrib_pointer_with_i32(
-            vertex_color_location,
-            4,
-            Gl::FLOAT,
-            false,
-            24, //std::mem::size_of::<Vertex>() as i32,
-            8,
-        );
+        gl.vertex_attrib_pointer_with_i32(vertex_position_location, 2, Gl::FLOAT, false, 12, 0);
+        gl.vertex_attrib_pointer_with_i32(vertex_color_location, 4, Gl::UNSIGNED_BYTE, true, 12, 8);
 
         gl.enable(Gl::BLEND);
         gl.blend_func(Gl::SRC_ALPHA, Gl::ONE_MINUS_SRC_ALPHA);
@@ -179,19 +165,19 @@ impl WebGlRenderBackend {
             let verts = [
                 Vertex {
                     position: [0.0, 0.0],
-                    color: [1.0, 1.0, 1.0, 1.0],
+                    color: 0xffffff,
                 },
                 Vertex {
                     position: [1.0, 0.0],
-                    color: [1.0, 1.0, 1.0, 1.0],
+                    color: 0xffffff,
                 },
                 Vertex {
                     position: [1.0, 1.0],
-                    color: [1.0, 1.0, 1.0, 1.0],
+                    color: 0xffffff,
                 },
                 Vertex {
                     position: [0.0, 1.0],
-                    color: [1.0, 1.0, 1.0, 1.0],
+                    color: 0xffffff,
                 },
             ];
             let verts_bytes = std::slice::from_raw_parts(
@@ -643,15 +629,15 @@ impl RenderBackend for WebGlRenderBackend {
                 2,
                 Gl::FLOAT,
                 false,
-                24, //std::mem::size_of::<Vertex>() as i32,
+                12,
                 0,
             );
             self.gl.vertex_attrib_pointer_with_i32(
                 self.vertex_color_location,
                 4,
-                Gl::FLOAT,
-                false,
-                24, //std::mem::size_of::<Vertex>() as i32,
+                Gl::UNSIGNED_BYTE,
+                true,
+                12,
                 8,
             );
 
@@ -866,10 +852,11 @@ struct Texture {
     texture: WebGlTexture,
 }
 
+#[repr(packed(1))]
 #[derive(Copy, Clone, Debug)]
 struct Vertex {
     position: [f32; 2],
-    color: [f32; 4],
+    color: u32,
 }
 
 #[derive(Clone, Debug)]

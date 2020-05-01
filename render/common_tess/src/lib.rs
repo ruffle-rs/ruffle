@@ -36,12 +36,10 @@ where
         match path {
             DrawPath::Fill { style, commands } => match style {
                 FillStyle::Color(color) => {
-                    let color = [
-                        f32::from(color.r) / 255.0,
-                        f32::from(color.g) / 255.0,
-                        f32::from(color.b) / 255.0,
-                        f32::from(color.a) / 255.0,
-                    ];
+                    let color = ((color.a as u32) << 24)
+                        | ((color.b as u32) << 16)
+                        | ((color.g as u32) << 8)
+                        | (color.r as u32);
 
                     let mut buffers_builder =
                         BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color });
@@ -59,12 +57,8 @@ where
                 FillStyle::LinearGradient(gradient) => {
                     flush_draw(DrawType::Color, &mut mesh, &mut lyon_mesh);
 
-                    let mut buffers_builder = BuffersBuilder::new(
-                        &mut lyon_mesh,
-                        RuffleVertexCtor {
-                            color: [1.0, 1.0, 1.0, 1.0],
-                        },
-                    );
+                    let mut buffers_builder =
+                        BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color: 0xffffff });
 
                     if let Err(e) = fill_tess.tessellate_path(
                         &ruffle_path_to_lyon_path(commands, true),
@@ -103,12 +97,8 @@ where
                 FillStyle::RadialGradient(gradient) => {
                     flush_draw(DrawType::Color, &mut mesh, &mut lyon_mesh);
 
-                    let mut buffers_builder = BuffersBuilder::new(
-                        &mut lyon_mesh,
-                        RuffleVertexCtor {
-                            color: [1.0, 1.0, 1.0, 1.0],
-                        },
-                    );
+                    let mut buffers_builder =
+                        BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color: 0xffffff });
 
                     if let Err(e) = fill_tess.tessellate_path(
                         &ruffle_path_to_lyon_path(commands, true),
@@ -150,12 +140,8 @@ where
                 } => {
                     flush_draw(DrawType::Color, &mut mesh, &mut lyon_mesh);
 
-                    let mut buffers_builder = BuffersBuilder::new(
-                        &mut lyon_mesh,
-                        RuffleVertexCtor {
-                            color: [1.0, 1.0, 1.0, 1.0],
-                        },
-                    );
+                    let mut buffers_builder =
+                        BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color: 0xffffff });
 
                     if let Err(e) = fill_tess.tessellate_path(
                         &ruffle_path_to_lyon_path(commands, true),
@@ -199,12 +185,8 @@ where
                 } => {
                     flush_draw(DrawType::Color, &mut mesh, &mut lyon_mesh);
 
-                    let mut buffers_builder = BuffersBuilder::new(
-                        &mut lyon_mesh,
-                        RuffleVertexCtor {
-                            color: [1.0, 1.0, 1.0, 1.0],
-                        },
-                    );
+                    let mut buffers_builder =
+                        BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color: 0xffffff });
 
                     if let Err(e) = fill_tess.tessellate_path(
                         &ruffle_path_to_lyon_path(commands, true),
@@ -237,12 +219,10 @@ where
                 commands,
                 is_closed,
             } => {
-                let color = [
-                    f32::from(style.color.r) / 255.0,
-                    f32::from(style.color.g) / 255.0,
-                    f32::from(style.color.b) / 255.0,
-                    f32::from(style.color.a) / 255.0,
-                ];
+                let color = ((style.color.a as u32) << 24)
+                    | ((style.color.b as u32) << 16)
+                    | ((style.color.g as u32) << 8)
+                    | (style.color.r as u32);
 
                 let mut buffers_builder =
                     BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color });
@@ -328,7 +308,7 @@ pub struct Gradient {
 #[derive(Copy, Clone, Debug)]
 pub struct Vertex {
     pub position: [f32; 2],
-    pub color: [f32; 4],
+    pub color: u32,
 }
 
 #[derive(Clone, Debug)]
@@ -417,7 +397,7 @@ fn ruffle_path_to_lyon_path(commands: Vec<DrawCommand>, is_closed: bool) -> Path
 }
 
 struct RuffleVertexCtor {
-    color: [f32; 4],
+    color: u32,
 }
 
 impl FillVertexConstructor<Vertex> for RuffleVertexCtor {
