@@ -253,7 +253,7 @@ impl WgpuRenderBackend {
             colors_ubo: &wgpu::Buffer,
             pipelines: &Pipelines,
         ) {
-            if lyon_mesh.vertices.is_empty() {
+            if lyon_mesh.vertices.is_empty() || lyon_mesh.indices.len() < 3 {
                 return;
             }
 
