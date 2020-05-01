@@ -47,19 +47,17 @@ pub struct WebGlRenderBackend {
 impl WebGlRenderBackend {
     pub fn new(canvas: &HtmlCanvasElement) -> Result<Self, Error> {
         // Create WebGL context.
+        let options = [
+            ("stencil", JsValue::TRUE),
+            ("alpha", JsValue::FALSE),
+            ("antialias", JsValue::TRUE),
+            ("depth", JsValue::FALSE),
+        ];
+
         let context_options = js_sys::Object::new();
-        js_sys::Reflect::set(
-            &context_options,
-            &"stencil".into(),
-            &wasm_bindgen::JsValue::TRUE,
-        )
-        .warn_on_error();
-        js_sys::Reflect::set(
-            &context_options,
-            &"alpha".into(),
-            &wasm_bindgen::JsValue::FALSE,
-        )
-        .warn_on_error();
+        for (name, value) in options.iter() {
+            js_sys::Reflect::set(&context_options, &JsValue::from(*name), value).warn_on_error();
+        }
 
         let gl = canvas
             .get_context_with_context_options("webgl", &context_options)
