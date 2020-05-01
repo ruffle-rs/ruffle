@@ -520,23 +520,21 @@ impl RenderBackend for WebCanvasRenderBackend {
         }
     }
 
-    fn begin_frame(&mut self) {
+    fn begin_frame(&mut self, clear: Color) {
         // Reset canvas transform in case it was left in a dirty state.
         self.context.reset_transform().unwrap();
+
+        let width = self.canvas.width();
+        let height = self.canvas.height();
+
+        let color = format!("rgb({}, {}, {})", clear.r, clear.g, clear.b);
+        self.context.set_fill_style(&color.into());
+        self.context
+            .fill_rect(0.0, 0.0, width.into(), height.into());
     }
 
     fn end_frame(&mut self) {
         // Noop
-    }
-
-    fn clear(&mut self, color: Color) {
-        let width = self.canvas.width();
-        let height = self.canvas.height();
-
-        let color = format!("rgb({}, {}, {})", color.r, color.g, color.b);
-        self.context.set_fill_style(&color.into());
-        self.context
-            .fill_rect(0.0, 0.0, width.into(), height.into());
     }
 
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform) {

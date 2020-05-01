@@ -21,8 +21,7 @@ pub trait RenderBackend {
     ) -> BitmapInfo;
     fn register_bitmap_png(&mut self, swf_tag: &swf::DefineBitsLossless) -> BitmapInfo;
 
-    fn begin_frame(&mut self);
-    fn clear(&mut self, color: Color);
+    fn begin_frame(&mut self, clear: Color);
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform);
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform);
     fn end_frame(&mut self);
@@ -113,9 +112,8 @@ impl RenderBackend for NullRenderer {
             height: 0,
         }
     }
-    fn begin_frame(&mut self) {}
+    fn begin_frame(&mut self, _clear: Color) {}
     fn end_frame(&mut self) {}
-    fn clear(&mut self, _color: Color) {}
     fn render_bitmap(&mut self, _bitmap: BitmapHandle, _transform: &Transform) {}
     fn render_shape(&mut self, _shape: ShapeHandle, _transform: &Transform) {}
     fn draw_letterbox(&mut self, _letterbox: Letterbox) {}

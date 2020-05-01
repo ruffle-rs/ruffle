@@ -1085,7 +1085,7 @@ impl RenderBackend for WgpuRenderBackend {
         }
     }
 
-    fn begin_frame(&mut self) {
+    fn begin_frame(&mut self, clear: Color) {
         assert!(self.current_frame.is_none());
         self.current_frame = match self.swap_chain.get_next_texture() {
             Ok(frame) => {
@@ -1108,9 +1108,7 @@ impl RenderBackend for WgpuRenderBackend {
         self.write_stencil_mask = 0;
         self.test_stencil_mask = 0;
         self.next_stencil_mask = 1;
-    }
 
-    fn clear(&mut self, color: Color) {
         if let Some((swap_chain_output, encoder)) = &mut self.current_frame {
             let (color_attachment, resolve_target) = if self.msaa_sample_count >= 2 {
                 (&self.frame_buffer_view, Some(&swap_chain_output.view))
@@ -1123,10 +1121,10 @@ impl RenderBackend for WgpuRenderBackend {
                     load_op: wgpu::LoadOp::Clear,
                     store_op: wgpu::StoreOp::Store,
                     clear_color: wgpu::Color {
-                        r: f64::from(color.r) / 255.0,
-                        g: f64::from(color.g) / 255.0,
-                        b: f64::from(color.b) / 255.0,
-                        a: f64::from(color.a) / 255.0,
+                        r: f64::from(clear.r) / 255.0,
+                        g: f64::from(clear.g) / 255.0,
+                        b: f64::from(clear.b) / 255.0,
+                        a: f64::from(clear.a) / 255.0,
                     },
                     resolve_target,
                 }],

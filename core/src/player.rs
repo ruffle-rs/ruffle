@@ -576,9 +576,7 @@ impl Player {
             valid: true,
         };
 
-        self.renderer.begin_frame();
-
-        self.renderer.clear(self.background_color.clone());
+        self.renderer.begin_frame(self.background_color.clone());
 
         let (renderer, transform_stack) = (&mut self.renderer, &mut self.transform_stack);
 

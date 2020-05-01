@@ -839,7 +839,7 @@ impl RenderBackend for WebGlRenderBackend {
         }
     }
 
-    fn begin_frame(&mut self) {
+    fn begin_frame(&mut self, clear: Color) {
         self.num_masks = 0;
         self.num_masks_active = 0;
         self.write_stencil_mask = 0;
@@ -857,6 +857,16 @@ impl RenderBackend for WebGlRenderBackend {
             let gl = &self.gl;
             gl.bind_framebuffer(Gl::FRAMEBUFFER, Some(&msaa_buffers.render_framebuffer));
         }
+
+        self.set_stencil_state();
+        self.gl.clear_color(
+            clear.r as f32 / 255.0,
+            clear.g as f32 / 255.0,
+            clear.b as f32 / 255.0,
+            clear.a as f32 / 255.0,
+        );
+        self.gl.stencil_mask(0xff);
+        self.gl.clear(Gl::COLOR_BUFFER_BIT | Gl::STENCIL_BUFFER_BIT);
     }
 
     fn end_frame(&mut self) {
@@ -934,19 +944,6 @@ impl RenderBackend for WebGlRenderBackend {
                 0,
             );
         }
-    }
-
-    fn clear(&mut self, color: Color) {
-        self.set_stencil_state();
-
-        self.gl.clear_color(
-            color.r as f32 / 255.0,
-            color.g as f32 / 255.0,
-            color.b as f32 / 255.0,
-            color.a as f32 / 255.0,
-        );
-        self.gl.stencil_mask(0xff);
-        self.gl.clear(Gl::COLOR_BUFFER_BIT | Gl::STENCIL_BUFFER_BIT);
     }
 
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform) {
