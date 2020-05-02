@@ -2,6 +2,7 @@ use ruffle_core::backend::render::swf::{self, FillStyle};
 use ruffle_core::backend::render::{
     BitmapHandle, BitmapInfo, Color, Letterbox, RenderBackend, ShapeHandle, Transform,
 };
+use ruffle_render_common_tess::{GradientSpread, GradientType, ShapeTessellator, Vertex};
 use ruffle_web_common::JsResult;
 use std::convert::TryInto;
 use wasm_bindgen::{JsCast, JsValue};
@@ -35,6 +36,8 @@ pub struct WebGlRenderBackend {
     color_program: ShaderProgram,
     bitmap_program: ShaderProgram,
     gradient_program: ShaderProgram,
+
+    shape_tessellator: ShapeTessellator,
 
     textures: Vec<(swf::CharacterId, Texture)>,
     meshes: Vec<Mesh>,
@@ -83,7 +86,7 @@ impl WebGlRenderBackend {
             // WebGLRenderingContext inherits from WebGL2RenderingContext, so cast it down.
             (
                 gl2.clone().unchecked_into::<Gl>(),
-                Some(gl2.clone()),
+                Some(gl2),
                 JsValue::UNDEFINED.unchecked_into(),
             )
         } else if let Ok(Some(gl)) =
@@ -140,6 +143,8 @@ impl WebGlRenderBackend {
             gradient_program,
             bitmap_program,
 
+            shape_tessellator: ShapeTessellator::new(),
+
             meshes: vec![],
             quad_shape: ShapeHandle(0),
             textures: vec![],
@@ -179,19 +184,19 @@ impl WebGlRenderBackend {
         let verts = [
             Vertex {
                 position: [0.0, 0.0],
-                color: 0xffffff,
+                color: 0xffff_ffff,
             },
             Vertex {
                 position: [1.0, 0.0],
-                color: 0xffffff,
+                color: 0xffff_ffff,
             },
             Vertex {
                 position: [1.0, 1.0],
-                color: 0xffffff,
+                color: 0xffff_ffff,
             },
             Vertex {
                 position: [0.0, 1.0],
-                color: 0xffffff,
+                color: 0xffff_ffff,
             },
         ];
         let (vertex_buffer, index_buffer) = unsafe {
@@ -274,8 +279,9 @@ impl WebGlRenderBackend {
 
         let handle = ShapeHandle(self.meshes.len());
 
-        let lyon_mesh = ruffle_render_common_tess::tessellate_shape(shape, |id| {
-            self.textures
+        let textures = &self.textures;
+        let lyon_mesh = self.shape_tessellator.tessellate_shape(shape, |id| {
+            textures
                 .iter()
                 .find(|(other_id, _tex)| *other_id == id)
                 .map(|tex| (tex.1.width, tex.1.height))
@@ -349,13 +355,25 @@ impl WebGlRenderBackend {
                     let num_colors = gradient.num_colors as usize;
                     ratios[..num_colors].copy_from_slice(&gradient.ratios[..num_colors]);
                     colors[..num_colors].copy_from_slice(&gradient.colors[..num_colors]);
+                    for i in num_colors..8 {
+                        ratios[i] = ratios[i - 1];
+                        colors[i] = colors[i - 1];
+                    }
                     let out_gradient = Gradient {
                         matrix: gradient.matrix,
-                        gradient_type: gradient.gradient_type,
+                        gradient_type: match gradient.gradient_type {
+                            GradientType::Linear => 0,
+                            GradientType::Radial => 1,
+                            GradientType::Focal => 2,
+                        },
                         ratios,
                         colors,
                         num_colors: gradient.num_colors,
-                        repeat_mode: gradient.repeat_mode,
+                        repeat_mode: match gradient.repeat_mode {
+                            GradientSpread::Pad => 0,
+                            GradientSpread::Repeat => 1,
+                            GradientSpread::Reflect => 2,
+                        },
                         focal_point: gradient.focal_point,
                     };
                     Draw {
@@ -925,13 +943,6 @@ struct Texture {
     width: u32,
     height: u32,
     texture: WebGlTexture,
-}
-
-#[repr(packed(1))]
-#[derive(Copy, Clone, Debug)]
-struct Vertex {
-    position: [f32; 2],
-    color: u32,
 }
 
 #[derive(Clone, Debug)]
