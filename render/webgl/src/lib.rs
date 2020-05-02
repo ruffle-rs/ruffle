@@ -19,6 +19,7 @@ const COLOR_FRAGMENT_GLSL: &str = include_str!("../shaders/color.frag");
 const TEXTURE_VERTEX_GLSL: &str = include_str!("../shaders/texture.vert");
 const GRADIENT_FRAGMENT_GLSL: &str = include_str!("../shaders/gradient.frag");
 const BITMAP_FRAGMENT_GLSL: &str = include_str!("../shaders/bitmap.frag");
+const NUM_VERTEX_ATTRIBUTES: u32 = 2;
 
 pub struct WebGlRenderBackend {
     /// WebGL1 context
@@ -32,9 +33,6 @@ pub struct WebGlRenderBackend {
 
     // The frame buffers used for resolving MSAA.
     msaa_buffers: Option<MsaaBuffers>,
-
-    vertex_position_location: u32,
-    vertex_color_location: u32,
 
     color_program: ShaderProgram,
     bitmap_program: ShaderProgram,
@@ -130,13 +128,6 @@ impl WebGlRenderBackend {
         let bitmap_program = ShaderProgram::new(&gl, &texture_vertex, &bitmap_fragment)?;
         let gradient_program = ShaderProgram::new(&gl, &texture_vertex, &gradient_fragment)?;
 
-        // This assumes we are using the same vertex format for all shaders.
-        let vertex_position_location =
-            gl.get_attrib_location(&color_program.program, "position") as u32;
-        let vertex_color_location = gl.get_attrib_location(&color_program.program, "color") as u32;
-        gl.enable_vertex_attrib_array(vertex_position_location as u32);
-        gl.enable_vertex_attrib_array(vertex_color_location as u32);
-
         gl.enable(Gl::BLEND);
         gl.blend_func(Gl::SRC_ALPHA, Gl::ONE_MINUS_SRC_ALPHA);
 
@@ -174,9 +165,6 @@ impl WebGlRenderBackend {
             blend_func: (Gl::SRC_ALPHA, Gl::ONE_MINUS_SRC_ALPHA),
             mult_color: None,
             add_color: None,
-
-            vertex_position_location,
-            vertex_color_location,
         };
 
         let quad_mesh = renderer.build_quad_mesh()?;
@@ -236,26 +224,35 @@ impl WebGlRenderBackend {
             (vertex_buffer, index_buffer)
         };
 
-        self.gl.vertex_attrib_pointer_with_i32(
-            self.vertex_position_location,
-            2,
-            Gl::FLOAT,
-            false,
-            12,
-            0,
-        );
-        self.gl.vertex_attrib_pointer_with_i32(
-            self.vertex_color_location,
-            4,
-            Gl::UNSIGNED_BYTE,
-            true,
-            12,
-            8,
-        );
-        self.gl
-            .enable_vertex_attrib_array(self.vertex_position_location as u32);
-        self.gl
-            .enable_vertex_attrib_array(self.vertex_color_location as u32);
+        let program = &self.bitmap_program;
+        if program.vertex_position_location != 0xffff_ffff {
+            self.gl.vertex_attrib_pointer_with_i32(
+                program.vertex_position_location,
+                2,
+                Gl::FLOAT,
+                false,
+                12,
+                0,
+            );
+            self.gl
+                .enable_vertex_attrib_array(program.vertex_position_location as u32);
+        }
+
+        if program.vertex_color_location != 0xffff_ffff {
+            self.gl.vertex_attrib_pointer_with_i32(
+                program.vertex_color_location,
+                4,
+                Gl::UNSIGNED_BYTE,
+                true,
+                12,
+                8,
+            );
+            self.gl
+                .enable_vertex_attrib_array(program.vertex_color_location as u32);
+        }
+        for i in program.num_vertex_attributes..NUM_VERTEX_ATTRIBUTES {
+            self.gl.disable_vertex_attrib_array(i);
+        }
 
         let quad_mesh = Mesh {
             draws: vec![Draw {
@@ -449,35 +446,17 @@ impl WebGlRenderBackend {
                 (vertex_buffer, index_buffer)
             };
 
-            self.gl.vertex_attrib_pointer_with_i32(
-                self.vertex_position_location,
-                2,
-                Gl::FLOAT,
-                false,
-                12,
-                0,
-            );
-            self.gl.vertex_attrib_pointer_with_i32(
-                self.vertex_color_location,
-                4,
-                Gl::UNSIGNED_BYTE,
-                true,
-                12,
-                8,
-            );
-            self.gl
-                .enable_vertex_attrib_array(self.vertex_position_location as u32);
-            self.gl
-                .enable_vertex_attrib_array(self.vertex_color_location as u32);
-
-            let out_draw = match draw.draw_type {
-                TessDrawType::Color => Draw {
-                    draw_type: DrawType::Color,
-                    vao,
-                    vertex_buffer,
-                    index_buffer,
-                    num_indices,
-                },
+            let (program, out_draw) = match draw.draw_type {
+                TessDrawType::Color => (
+                    &self.color_program,
+                    Draw {
+                        draw_type: DrawType::Color,
+                        vao,
+                        vertex_buffer,
+                        index_buffer,
+                        num_indices,
+                    },
+                ),
                 TessDrawType::Gradient(gradient) => {
                     let mut ratios = [0.0; 8];
                     let mut colors = [[0.0; 4]; 8];
@@ -505,29 +484,70 @@ impl WebGlRenderBackend {
                         },
                         focal_point: gradient.focal_point,
                     };
+                    (
+                        &self.gradient_program,
+                        Draw {
+                            draw_type: DrawType::Gradient(Box::new(out_gradient)),
+                            vao,
+                            vertex_buffer,
+                            index_buffer,
+                            num_indices,
+                        },
+                    )
+                }
+                TessDrawType::Bitmap(bitmap) => (
+                    &self.bitmap_program,
                     Draw {
-                        draw_type: DrawType::Gradient(Box::new(out_gradient)),
+                        draw_type: DrawType::Bitmap(Bitmap {
+                            matrix: bitmap.matrix,
+                            id: bitmap.id,
+                            is_smoothed: bitmap.is_smoothed,
+                            is_repeating: bitmap.is_repeating,
+                        }),
                         vao,
                         vertex_buffer,
                         index_buffer,
                         num_indices,
-                    }
-                }
-                TessDrawType::Bitmap(bitmap) => Draw {
-                    draw_type: DrawType::Bitmap(Bitmap {
-                        matrix: bitmap.matrix,
-                        id: bitmap.id,
-                        is_smoothed: bitmap.is_smoothed,
-                        is_repeating: bitmap.is_repeating,
-                    }),
-                    vao,
-                    vertex_buffer,
-                    index_buffer,
-                    num_indices,
-                },
+                    },
+                ),
             };
 
+            // Unfortunately it doesn't seem to be possible to ensure that vertex attributes will be in
+            // a guaranteed position between shaders in WebGL1 (no layout qualifiers in GLSL in OpenGL ES 1.0).
+            // Attributes can change between shaders, even if the vertex layout is otherwise "the same".
+            // This varies between platforms based on what the GLSL compiler decides to do.
+            if program.vertex_position_location != 0xffff_ffff {
+                self.gl.vertex_attrib_pointer_with_i32(
+                    program.vertex_position_location,
+                    2,
+                    Gl::FLOAT,
+                    false,
+                    12,
+                    0,
+                );
+                self.gl
+                    .enable_vertex_attrib_array(program.vertex_position_location as u32);
+            }
+
+            if program.vertex_color_location != 0xffff_ffff {
+                self.gl.vertex_attrib_pointer_with_i32(
+                    program.vertex_color_location,
+                    4,
+                    Gl::UNSIGNED_BYTE,
+                    true,
+                    12,
+                    8,
+                );
+                self.gl
+                    .enable_vertex_attrib_array(program.vertex_color_location as u32);
+            }
+
             draws.push(out_draw);
+            self.bind_vertex_array(None);
+
+            for i in program.num_vertex_attributes..NUM_VERTEX_ATTRIBUTES {
+                self.gl.disable_vertex_attrib_array(i);
+            }
         }
 
         self.meshes.push(Mesh { draws });
@@ -562,11 +582,11 @@ impl WebGlRenderBackend {
     }
 
     /// Binds a VAO.
-    fn bind_vertex_array(&self, vao: &WebGlVertexArrayObject) {
+    fn bind_vertex_array(&self, vao: Option<&WebGlVertexArrayObject>) {
         if let Some(gl2) = &self.gl2 {
-            gl2.bind_vertex_array(Some(&vao));
+            gl2.bind_vertex_array(vao);
         } else {
-            self.vao_ext.bind_vertex_array_oes(Some(&vao));
+            self.vao_ext.bind_vertex_array_oes(vao);
         };
     }
 
@@ -884,7 +904,7 @@ impl RenderBackend for WebGlRenderBackend {
 
             // Render the quad.
             let quad = &self.meshes[self.quad_shape.0];
-            self.bind_vertex_array(&quad.draws[0].vao);
+            self.bind_vertex_array(Some(&quad.draws[0].vao));
             self.gl.draw_elements_with_i32(
                 Gl::TRIANGLES,
                 quad.draws[0].num_indices,
@@ -969,7 +989,7 @@ impl RenderBackend for WebGlRenderBackend {
 
         let mesh = &self.meshes[shape.0];
         for draw in &mesh.draws {
-            self.bind_vertex_array(&draw.vao);
+            self.bind_vertex_array(Some(&draw.vao));
 
             let (program, src_blend, dst_blend) = match &draw.draw_type {
                 DrawType::Color => (&self.color_program, Gl::SRC_ALPHA, Gl::ONE_MINUS_SRC_ALPHA),
@@ -1240,6 +1260,9 @@ struct MsaaBuffers {
 struct ShaderProgram {
     program: WebGlProgram,
     uniforms: [Option<WebGlUniformLocation>; NUM_UNIFORMS],
+    vertex_position_location: u32,
+    vertex_color_location: u32,
+    num_vertex_attributes: u32,
 }
 
 // These should match the uniform names in the shaders.
@@ -1304,7 +1327,25 @@ impl ShaderProgram {
             uniforms[i] = gl.get_uniform_location(&program, UNIFORM_NAMES[i]);
         }
 
-        Ok(ShaderProgram { program, uniforms })
+        let vertex_position_location = gl.get_attrib_location(&program, "position") as u32;
+        let vertex_color_location = gl.get_attrib_location(&program, "color") as u32;
+        let num_vertex_attributes = if vertex_position_location != 0xffff_ffff {
+            1
+        } else {
+            0
+        } + if vertex_color_location != 0xffff_ffff {
+            1
+        } else {
+            0
+        };
+
+        Ok(ShaderProgram {
+            program,
+            uniforms,
+            vertex_position_location,
+            vertex_color_location,
+            num_vertex_attributes,
+        })
     }
 
     fn uniform1f(&self, gl: &Gl, uniform: ShaderUniform, value: f32) {
