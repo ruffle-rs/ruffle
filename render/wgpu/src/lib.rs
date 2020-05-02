@@ -786,6 +786,10 @@ impl WgpuRenderBackend {
 
 impl RenderBackend for WgpuRenderBackend {
     fn set_viewport_dimensions(&mut self, width: u32, height: u32) {
+        // Avoid panics from creating 0-sized framebuffers.
+        let width = std::cmp::max(width, 1);
+        let height = std::cmp::max(height, 1);
+
         self.swap_chain_desc.width = width;
         self.swap_chain_desc.height = height;
         self.swap_chain = self
