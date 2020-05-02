@@ -103,6 +103,7 @@ pub struct Player {
     swf: Arc<SwfMovie>,
 
     is_playing: bool,
+    needs_render: bool,
 
     audio: Audio,
     renderer: Renderer,
@@ -168,6 +169,7 @@ impl Player {
             swf: movie.clone(),
 
             is_playing: false,
+            needs_render: true,
 
             background_color: Color {
                 r: 255,
@@ -264,8 +266,6 @@ impl Player {
             self.global_time += dt as u64;
             let frame_time = 1000.0 / self.frame_rate;
 
-            let needs_render = self.frame_accumulator >= frame_time;
-
             const MAX_FRAMES_PER_TICK: u32 = 5; // Sanity cap on frame tick.
             let mut frame = 0;
             while frame < MAX_FRAMES_PER_TICK && self.frame_accumulator >= frame_time {
@@ -278,10 +278,6 @@ impl Player {
             // to prevent running at turbo speed.
             if self.frame_accumulator >= frame_time {
                 self.frame_accumulator = 0.0;
-            }
-
-            if needs_render {
-                self.render();
             }
 
             self.audio.tick();
@@ -314,6 +310,10 @@ impl Player {
         self.is_playing = v;
     }
 
+    pub fn needs_render(&self) -> bool {
+        self.needs_render
+    }
+
     pub fn movie_width(&self) -> u32 {
         self.movie_width
     }
@@ -333,7 +333,7 @@ impl Player {
     }
 
     pub fn handle_event(&mut self, event: PlayerEvent) {
-        let mut needs_render = false;
+        let mut needs_render = self.needs_render;
 
         // Update mouse position from mouse events.
         if let PlayerEvent::MouseMove { x, y }
@@ -442,10 +442,7 @@ impl Player {
             Self::run_actions(avm, context);
         });
         self.is_mouse_down = is_mouse_down;
-        if needs_render {
-            // Update display after mouse events.
-            self.render();
-        }
+        self.needs_render = needs_render;
     }
 
     /// Update dragged object, if any.
@@ -568,7 +565,8 @@ impl Player {
             for mut level in levels {
                 level.run_frame(avm, update_context);
             }
-        })
+        });
+        self.needs_render = true;
     }
 
     pub fn render(&mut self) {
@@ -608,6 +606,7 @@ impl Player {
 
         self.renderer.draw_letterbox(self.letterbox);
         self.renderer.end_frame();
+        self.needs_render = false;
     }
 
     pub fn audio(&self) -> &Audio {

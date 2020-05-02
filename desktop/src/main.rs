@@ -98,12 +98,31 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
 
     let mut mouse_pos = PhysicalPosition::new(0.0, 0.0);
     let mut time = Instant::now();
+    let mut next_frame_time = Instant::now();
     loop {
         // Poll UI events
         event_loop.run(move |event, _window_target, control_flow| {
-            *control_flow = ControlFlow::Wait;
             match event {
                 winit::event::Event::LoopDestroyed => return,
+
+                // Core loop
+                winit::event::Event::MainEventsCleared => {
+                    let new_time = Instant::now();
+                    let dt = new_time.duration_since(time).as_micros();
+                    if dt > 0 {
+                        time = new_time;
+                        let mut player_lock = player.lock().unwrap();
+                        player_lock.tick(dt as f64 / 1000.0);
+                        next_frame_time = new_time + player_lock.time_til_next_frame();
+                        if player_lock.needs_render() {
+                            window.request_redraw();
+                        }
+                    }
+                }
+
+                // Render
+                winit::event::Event::RedrawRequested(_) => player.lock().unwrap().render(),
+
                 winit::event::Event::WindowEvent { event, .. } => match event {
                     WindowEvent::Resized(size) => {
                         let mut player_lock = player.lock().unwrap();
@@ -111,6 +130,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                         player_lock
                             .renderer_mut()
                             .set_viewport_dimensions(size.width, size.height);
+                        window.request_redraw();
                     }
                     WindowEvent::CursorMoved { position, .. } => {
                         let mut player_lock = player.lock().unwrap();
@@ -120,6 +140,9 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                             y: position.y,
                         };
                         player_lock.handle_event(event);
+                        if player_lock.needs_render() {
+                            window.request_redraw();
+                        }
                     }
                     WindowEvent::MouseInput {
                         button: MouseButton::Left,
@@ -139,10 +162,16 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                             }
                         };
                         player_lock.handle_event(event);
+                        if player_lock.needs_render() {
+                            window.request_redraw();
+                        }
                     }
                     WindowEvent::CursorLeft { .. } => {
                         let mut player_lock = player.lock().unwrap();
-                        player_lock.handle_event(ruffle_core::PlayerEvent::MouseLeft)
+                        player_lock.handle_event(ruffle_core::PlayerEvent::MouseLeft);
+                        if player_lock.needs_render() {
+                            window.request_redraw();
+                        }
                     }
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                     WindowEvent::KeyboardInput { .. } | WindowEvent::ReceivedCharacter(_) => {
@@ -154,6 +183,9 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                             .handle_event(event)
                         {
                             player_lock.handle_event(event);
+                            if player_lock.needs_render() {
+                                window.request_redraw();
+                            }
                         }
                     }
                     _ => (),
@@ -166,16 +198,8 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
             }
 
             // After polling events, sleep the event loop until the next event or the next frame.
-            if *control_flow == ControlFlow::Wait {
-                let new_time = Instant::now();
-                let dt = new_time.duration_since(time).as_micros();
-                if dt > 0 {
-                    time = new_time;
-                    player.lock().unwrap().tick(dt as f64 / 1000.0);
-                }
-
-                *control_flow =
-                    ControlFlow::WaitUntil(new_time + player.lock().unwrap().time_til_next_frame());
+            if *control_flow != ControlFlow::Exit {
+                *control_flow = ControlFlow::WaitUntil(next_frame_time);
             }
         });
     }

@@ -414,7 +414,9 @@ impl Ruffle {
                     0.0
                 };
 
-                instance.core.lock().unwrap().tick(dt);
+                let mut core_lock = instance.core.lock().unwrap();
+                core_lock.tick(dt);
+                let mut needs_render = core_lock.needs_render();
 
                 // Check for canvas resize.
                 let canvas_width = instance.canvas.client_width();
@@ -439,16 +441,17 @@ impl Ruffle {
                     instance.canvas.set_width(viewport_width);
                     instance.canvas.set_height(viewport_height);
 
-                    let mut core_lock = instance.core.lock().unwrap();
                     core_lock.set_viewport_dimensions(viewport_width, viewport_height);
                     core_lock
                         .renderer_mut()
                         .set_viewport_dimensions(viewport_width, viewport_height);
 
                     // Force a re-render if we resize.
-                    core_lock.render();
+                    needs_render = true;
+                }
 
-                    drop(core_lock);
+                if needs_render {
+                    core_lock.render();
                 }
 
                 // Request next animation frame.
