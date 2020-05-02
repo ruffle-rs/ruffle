@@ -670,6 +670,16 @@ impl RenderBackend for WebGlRenderBackend {
             )
             .warn_on_error();
 
+        // You must set the texture parameters for non-power-of-2 textures to function in WebGL.
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_S, Gl::CLAMP_TO_EDGE as i32);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_T, Gl::CLAMP_TO_EDGE as i32);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MIN_FILTER, Gl::LINEAR as i32);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, Gl::LINEAR as i32);
+
         let handle = BitmapHandle(self.textures.len());
         self.textures.push((
             id,
@@ -712,6 +722,16 @@ impl RenderBackend for WebGlRenderBackend {
                 Some(&rgba),
             )
             .warn_on_error();
+
+        // You must set the texture parameters for non-power-of-2 textures to function in WebGL.
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_S, Gl::CLAMP_TO_EDGE as i32);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_T, Gl::CLAMP_TO_EDGE as i32);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MIN_FILTER, Gl::LINEAR as i32);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, Gl::LINEAR as i32);
 
         let handle = BitmapHandle(self.textures.len());
         self.textures.push((
@@ -1053,7 +1073,8 @@ impl RenderBackend for WebGlRenderBackend {
                         .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, filter);
                     self.gl
                         .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MIN_FILTER, filter);
-                    let wrap = if bitmap.is_repeating {
+                    // On WebGL1, you are unable to change the wrapping parameter causes non-power-of-2 textures.
+                    let wrap = if self.gl2.is_some() && bitmap.is_repeating {
                         Gl::MIRRORED_REPEAT as i32
                     } else {
                         Gl::CLAMP_TO_EDGE as i32
