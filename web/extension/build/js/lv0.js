@@ -14,24 +14,6 @@
  *    unintentionally.
  * 2. The ability to load extension resources such as .wasm files
  */
-function insert_script() {
-    let setup_scriptelem = document.createElement("script");
-    let setup_src = "var runtime_path = \"" +
-        ext_path + "\";\nvar obfuscated_event_prefix = \"" +
-        obfuscated_event_prefix + "\";";
-    let scriptelem = document.createElement("script");
-    setup_scriptelem.appendChild(document.createTextNode(setup_src));
-    document.head.appendChild(setup_scriptelem);
-    scriptelem.src=ext_path + "dist/ruffle.js";
-    document.head.appendChild(scriptelem);
-}
-function insert_ruffle(mutationsList,observer) {
-    if (document.head) {
-        insert_script();
-        observer.disconnect();
-    }
-}
-
 let page_optout = document.getElementsByTagName("html")[0].dataset.ruffleOptout !== undefined;
 let obfuscated_event_prefix = "rufEvent" + Math.floor(Math.random() * 100000000000);
 let ext_path = "";
@@ -41,11 +23,13 @@ if (chrome && chrome.extension && chrome.extension.getURL) {
     ext_path = browser.runtime.getURL("dist/ruffle.js").replace("dist/ruffle.js", "");
 }
 if (!(page_optout||window.RufflePlayer)) {
-    if (document.head) {
-        insert_script();
-    }
-    else {
-        const observer = new MutationObserver(insert_ruffle);
-        observer.observe(document, {childList: true, subtree: true});
-    }
+    let setup_scriptelem = document.createElement("script");
+    let setup_src = "var runtime_path = \"" +
+        ext_path + "\";\nvar obfuscated_event_prefix = \"" +
+        obfuscated_event_prefix + "\";";
+    let scriptelem = document.createElement("script");
+    setup_scriptelem.appendChild(document.createTextNode(setup_src));
+    (document.head || document.documentElement).appendChild(setup_scriptelem);
+    scriptelem.src=ext_path + "dist/ruffle.js";
+    (document.head || document.documentElement).appendChild(scriptelem);
 }
