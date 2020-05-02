@@ -33,6 +33,7 @@ pub struct WebGlRenderBackend {
 
     // The frame buffers used for resolving MSAA.
     msaa_buffers: Option<MsaaBuffers>,
+    msaa_sample_count: u32,
 
     color_program: ShaderProgram,
     bitmap_program: ShaderProgram,
@@ -79,16 +80,36 @@ impl WebGlRenderBackend {
         }
 
         // Attempt to create a WebGL2 context, but fall back to WebGL1 if unavailable.
-        let (gl, gl2, vao_ext) = if let Ok(Some(gl)) =
+        let (gl, gl2, vao_ext, msaa_sample_count) = if let Ok(Some(gl)) =
             canvas.get_context_with_context_options("webgl2", &context_options)
         {
             log::info!("Creating WebGL2 context.");
             let gl2 = gl.dyn_into::<Gl2>().map_err(|_| "Expected GL context")?;
+
+            // Determine MSAA sample count.
+            // Default to 4x MSAA on desktop, 2x on mobile/tablets.
+            let mut msaa_sample_count = if ruffle_web_common::is_mobile_or_tablet() {
+                log::info!("Running on a mobile device; defaulting to 2x MSAA");
+                2
+            } else {
+                4
+            };
+
+            // Ensure that we don't exceed the max MSAA of this device.
+            if let Ok(max_samples) = gl2.get_parameter(Gl2::MAX_SAMPLES) {
+                let max_samples: u32 = max_samples.as_f64().unwrap_or(0.0) as u32;
+                if max_samples > 0 && max_samples < msaa_sample_count {
+                    log::info!("Device only supports {}xMSAA", max_samples);
+                    msaa_sample_count = max_samples;
+                }
+            }
+
             // WebGLRenderingContext inherits from WebGL2RenderingContext, so cast it down.
             (
                 gl2.clone().unchecked_into::<Gl>(),
                 Some(gl2),
                 JsValue::UNDEFINED.unchecked_into(),
+                msaa_sample_count,
             )
         } else {
             // Fall back to WebGL1.
@@ -111,7 +132,7 @@ impl WebGlRenderBackend {
                     .into_js_result()?
                     .ok_or("VAO extension not found")?
                     .unchecked_into::<OesVertexArrayObject>();
-                (gl, None, vao)
+                (gl, None, vao, 1)
             } else {
                 return Err("Unable to create WebGL rendering context".into());
             }
@@ -140,6 +161,7 @@ impl WebGlRenderBackend {
             vao_ext,
 
             msaa_buffers: None,
+            msaa_sample_count,
 
             color_program,
             gradient_program,
@@ -284,7 +306,7 @@ impl WebGlRenderBackend {
     }
 
     fn build_msaa_buffers(&mut self) -> Result<(), Error> {
-        if self.gl2.is_none() {
+        if self.gl2.is_none() || self.msaa_sample_count <= 1 {
             self.gl.bind_framebuffer(Gl::FRAMEBUFFER, None);
             self.gl.bind_renderbuffer(Gl::RENDERBUFFER, None);
             return Ok(());
