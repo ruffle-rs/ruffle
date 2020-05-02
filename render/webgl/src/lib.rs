@@ -8,8 +8,8 @@ use std::convert::TryInto;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
     HtmlCanvasElement, OesVertexArrayObject, WebGl2RenderingContext as Gl2, WebGlBuffer,
-    WebGlProgram, WebGlRenderingContext as Gl, WebGlShader, WebGlTexture, WebGlUniformLocation,
-    WebGlVertexArrayObject,
+    WebGlFramebuffer, WebGlProgram, WebGlRenderbuffer, WebGlRenderingContext as Gl, WebGlShader,
+    WebGlTexture, WebGlUniformLocation, WebGlVertexArrayObject,
 };
 
 type Error = Box<dyn std::error::Error>;
@@ -29,6 +29,9 @@ pub struct WebGlRenderBackend {
 
     /// In WebGL1, VAOs are only available as an extension.
     vao_ext: OesVertexArrayObject,
+
+    // The frame buffers used for resolving MSAA.
+    msaa_buffers: Option<MsaaBuffers>,
 
     vertex_position_location: u32,
     vertex_color_location: u32,
@@ -68,7 +71,7 @@ impl WebGlRenderBackend {
         let options = [
             ("stencil", JsValue::TRUE),
             ("alpha", JsValue::FALSE),
-            ("antialias", JsValue::TRUE),
+            ("antialias", JsValue::FALSE),
             ("depth", JsValue::FALSE),
         ];
 
@@ -89,20 +92,31 @@ impl WebGlRenderBackend {
                 Some(gl2),
                 JsValue::UNDEFINED.unchecked_into(),
             )
-        } else if let Ok(Some(gl)) =
-            canvas.get_context_with_context_options("webgl", &context_options)
-        {
-            log::info!("Falling back to WebGL1.");
-            let gl = gl.dyn_into::<Gl>().map_err(|_| "Expected GL context")?;
-            // `dyn_into` doesn't work here; why?
-            let vao = gl
-                .get_extension("OES_vertex_array_object")
-                .into_js_result()?
-                .ok_or("VAO extension not found")?
-                .unchecked_into::<OesVertexArrayObject>();
-            (gl, None, vao)
         } else {
-            return Err("Unable to create WebGL rendering context".into());
+            // Fall back to WebGL1.
+            // Request antialiasing on WebGL1, because there isn't general MSAA support.
+            js_sys::Reflect::set(
+                &context_options,
+                &JsValue::from("antialias"),
+                &JsValue::TRUE,
+            )
+            .warn_on_error();
+
+            if let Ok(Some(gl)) = canvas.get_context_with_context_options("webgl", &context_options)
+            {
+                log::info!("Falling back to WebGL1.");
+
+                let gl = gl.dyn_into::<Gl>().map_err(|_| "Expected GL context")?;
+                // `dyn_into` doesn't work here; why?
+                let vao = gl
+                    .get_extension("OES_vertex_array_object")
+                    .into_js_result()?
+                    .ok_or("VAO extension not found")?
+                    .unchecked_into::<OesVertexArrayObject>();
+                (gl, None, vao)
+            } else {
+                return Err("Unable to create WebGL rendering context".into());
+            }
         };
 
         let color_vertex = Self::compile_shader(&gl, Gl::VERTEX_SHADER, COLOR_VERTEX_GLSL)?;
@@ -120,13 +134,8 @@ impl WebGlRenderBackend {
         let vertex_position_location =
             gl.get_attrib_location(&color_program.program, "position") as u32;
         let vertex_color_location = gl.get_attrib_location(&color_program.program, "color") as u32;
-
-        // Enable vertex attributes.
-        // Because we currently only use on vertex format, we can do this once on init.
         gl.enable_vertex_attrib_array(vertex_position_location as u32);
         gl.enable_vertex_attrib_array(vertex_color_location as u32);
-        gl.vertex_attrib_pointer_with_i32(vertex_position_location, 2, Gl::FLOAT, false, 12, 0);
-        gl.vertex_attrib_pointer_with_i32(vertex_color_location, 4, Gl::UNSIGNED_BYTE, true, 12, 8);
 
         gl.enable(Gl::BLEND);
         gl.blend_func(Gl::SRC_ALPHA, Gl::ONE_MINUS_SRC_ALPHA);
@@ -138,6 +147,8 @@ impl WebGlRenderBackend {
             gl,
             gl2,
             vao_ext,
+
+            msaa_buffers: None,
 
             color_program,
             gradient_program,
@@ -170,6 +181,7 @@ impl WebGlRenderBackend {
 
         let quad_mesh = renderer.build_quad_mesh()?;
         renderer.meshes.push(quad_mesh);
+        renderer.build_msaa_buffers()?;
         renderer.build_matrices();
 
         Ok(renderer)
@@ -272,6 +284,123 @@ impl WebGlRenderBackend {
             log::error!("{}", log);
         }
         Ok(shader)
+    }
+
+    fn build_msaa_buffers(&mut self) -> Result<(), Error> {
+        if self.gl2.is_none() {
+            self.gl.bind_framebuffer(Gl::FRAMEBUFFER, None);
+            self.gl.bind_renderbuffer(Gl::RENDERBUFFER, None);
+            return Ok(());
+        }
+
+        let gl = self.gl2.as_ref().unwrap();
+
+        // Delete previous buffers, if they exist.
+        if let Some(msaa_buffers) = self.msaa_buffers.take() {
+            gl.delete_renderbuffer(Some(&msaa_buffers.color_renderbuffer));
+            gl.delete_renderbuffer(Some(&msaa_buffers.stencil_renderbuffer));
+            gl.delete_framebuffer(Some(&msaa_buffers.render_framebuffer));
+            gl.delete_framebuffer(Some(&msaa_buffers.color_framebuffer));
+            gl.delete_texture(Some(&msaa_buffers.framebuffer_texture));
+        }
+
+        // Create frame and render buffers.
+        let render_framebuffer = gl
+            .create_framebuffer()
+            .ok_or("Unable to create framebuffer")?;
+        let color_framebuffer = gl
+            .create_framebuffer()
+            .ok_or("Unable to create framebuffer")?;
+
+        // Note for future self:
+        // Whenever we support playing transparent movies,
+        // switch this to RGBA and probably need to change shaders to all
+        // be premultiplied alpha.
+        let color_renderbuffer = gl
+            .create_renderbuffer()
+            .ok_or("Unable to create renderbuffer")?;
+        gl.bind_renderbuffer(Gl2::RENDERBUFFER, Some(&color_renderbuffer));
+        gl.renderbuffer_storage_multisample(
+            Gl2::RENDERBUFFER,
+            4,
+            Gl2::RGB8,
+            self.viewport_width as i32,
+            self.viewport_height as i32,
+        );
+
+        let stencil_renderbuffer = gl
+            .create_renderbuffer()
+            .ok_or("Unable to create renderbuffer")?;
+        gl.bind_renderbuffer(Gl2::RENDERBUFFER, Some(&stencil_renderbuffer));
+        gl.renderbuffer_storage_multisample(
+            Gl2::RENDERBUFFER,
+            4,
+            Gl2::STENCIL_INDEX8,
+            self.viewport_width as i32,
+            self.viewport_height as i32,
+        );
+
+        gl.bind_framebuffer(Gl2::FRAMEBUFFER, Some(&render_framebuffer));
+        gl.framebuffer_renderbuffer(
+            Gl2::FRAMEBUFFER,
+            Gl2::COLOR_ATTACHMENT0,
+            Gl2::RENDERBUFFER,
+            Some(&color_renderbuffer),
+        );
+        gl.framebuffer_renderbuffer(
+            Gl2::FRAMEBUFFER,
+            Gl2::STENCIL_ATTACHMENT,
+            Gl2::RENDERBUFFER,
+            Some(&stencil_renderbuffer),
+        );
+
+        let framebuffer_texture = gl.create_texture().ok_or("Unable to create texture")?;
+        gl.bind_texture(Gl2::TEXTURE_2D, Some(&framebuffer_texture));
+        gl.tex_parameteri(Gl2::TEXTURE_2D, Gl2::TEXTURE_MAG_FILTER, Gl::NEAREST as i32);
+        gl.tex_parameteri(Gl2::TEXTURE_2D, Gl2::TEXTURE_MIN_FILTER, Gl::NEAREST as i32);
+        gl.tex_parameteri(
+            Gl2::TEXTURE_2D,
+            Gl2::TEXTURE_WRAP_S,
+            Gl::CLAMP_TO_EDGE as i32,
+        );
+        gl.tex_parameteri(
+            Gl2::TEXTURE_2D,
+            Gl2::TEXTURE_WRAP_T,
+            Gl2::CLAMP_TO_EDGE as i32,
+        );
+        gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
+            Gl2::TEXTURE_2D,
+            0,
+            Gl2::RGB as i32,
+            self.viewport_width as i32,
+            self.viewport_height as i32,
+            0,
+            Gl2::RGB,
+            Gl2::UNSIGNED_BYTE,
+            None,
+        )
+        .into_js_result()?;
+        gl.bind_texture(Gl2::TEXTURE_2D, None);
+
+        gl.bind_framebuffer(Gl2::FRAMEBUFFER, Some(&color_framebuffer));
+        gl.framebuffer_texture_2d(
+            Gl2::FRAMEBUFFER,
+            Gl2::COLOR_ATTACHMENT0,
+            Gl2::TEXTURE_2D,
+            Some(&framebuffer_texture),
+            0,
+        );
+        gl.bind_framebuffer(Gl2::FRAMEBUFFER, None);
+
+        self.msaa_buffers = Some(MsaaBuffers {
+            render_framebuffer,
+            color_renderbuffer,
+            stencil_renderbuffer,
+            color_framebuffer,
+            framebuffer_texture,
+        });
+
+        Ok(())
     }
 
     fn register_shape_internal(&mut self, shape: &swf::Shape) -> ShapeHandle {
@@ -440,6 +569,35 @@ impl WebGlRenderBackend {
             self.vao_ext.bind_vertex_array_oes(Some(&vao));
         };
     }
+
+    fn set_stencil_state(&mut self) {
+        // Set stencil state for masking, if neccessary.
+        if self.mask_state_dirty {
+            if self.num_masks > 0 {
+                self.gl.enable(Gl::STENCIL_TEST);
+                if self.num_masks_active < self.num_masks {
+                    self.gl.stencil_mask(self.write_stencil_mask);
+                    self.gl
+                        .stencil_func(Gl::ALWAYS, self.write_stencil_mask as i32, 0xff);
+                    self.gl.stencil_op(Gl::KEEP, Gl::KEEP, Gl::REPLACE);
+                    self.gl.color_mask(false, false, false, false);
+                } else {
+                    self.gl.stencil_mask(0xff);
+                    self.gl.stencil_func(
+                        Gl::EQUAL,
+                        self.test_stencil_mask as i32,
+                        self.test_stencil_mask,
+                    );
+                    self.gl.stencil_op(Gl::KEEP, Gl::KEEP, Gl::KEEP);
+                    self.gl.color_mask(true, true, true, true);
+                }
+            } else {
+                self.gl.disable(Gl::STENCIL_TEST);
+                self.gl.color_mask(true, true, true, true);
+            }
+            self.mask_state_dirty = false;
+        }
+    }
 }
 
 impl RenderBackend for WebGlRenderBackend {
@@ -447,6 +605,7 @@ impl RenderBackend for WebGlRenderBackend {
         self.viewport_width = width as f32;
         self.viewport_height = height as f32;
         self.gl.viewport(0, 0, width as i32, height as i32);
+        self.build_msaa_buffers().unwrap();
         self.build_matrices();
     }
 
@@ -630,17 +789,101 @@ impl RenderBackend for WebGlRenderBackend {
 
         self.mult_color = None;
         self.add_color = None;
+
+        // Bind to MSAA render buffer if using MSAA.
+        if let Some(msaa_buffers) = &self.msaa_buffers {
+            let gl = &self.gl;
+            gl.bind_framebuffer(Gl::FRAMEBUFFER, Some(&msaa_buffers.render_framebuffer));
+        }
     }
 
-    fn end_frame(&mut self) {}
+    fn end_frame(&mut self) {
+        // Resolve MSAA, if we're using it (WebGL2).
+        if let (Some(ref gl), Some(ref msaa_buffers)) = (&self.gl2, &self.msaa_buffers) {
+            self.gl.disable(Gl::STENCIL_TEST);
+
+            // Resolve the MSAA in the render buffer.
+            gl.bind_framebuffer(
+                Gl2::READ_FRAMEBUFFER,
+                Some(&msaa_buffers.render_framebuffer),
+            );
+            gl.bind_framebuffer(Gl2::DRAW_FRAMEBUFFER, Some(&msaa_buffers.color_framebuffer));
+            gl.blit_framebuffer(
+                0,
+                0,
+                self.viewport_width as i32,
+                self.viewport_height as i32,
+                0,
+                0,
+                self.viewport_width as i32,
+                self.viewport_height as i32,
+                Gl2::COLOR_BUFFER_BIT,
+                Gl2::NEAREST,
+            );
+
+            // Render the resolved framebuffer texture to a quad on the screen.
+            gl.bind_framebuffer(Gl2::FRAMEBUFFER, None);
+            let program = &self.bitmap_program;
+            self.gl.use_program(Some(&program.program));
+
+            // Scale to fill screen.
+            program.uniform_matrix4fv(
+                &self.gl,
+                ShaderUniform::WorldMatrix,
+                &[
+                    [2.0, 0.0, 0.0, 0.0],
+                    [0.0, 2.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0],
+                    [-1.0, -1.0, 0.0, 1.0],
+                ],
+            );
+            program.uniform_matrix4fv(
+                &self.gl,
+                ShaderUniform::ViewMatrix,
+                &[
+                    [1.0, 0.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                ],
+            );
+            program.uniform4fv(&self.gl, ShaderUniform::MultColor, &[1.0, 1.0, 1.0, 1.0]);
+            program.uniform4fv(&self.gl, ShaderUniform::AddColor, &[0.0, 0.0, 0.0, 0.0]);
+
+            program.uniform_matrix3fv(
+                &self.gl,
+                ShaderUniform::TextureMatrix,
+                &[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+            );
+
+            // Bind the framebuffer texture.
+            self.gl.active_texture(Gl2::TEXTURE0);
+            self.gl
+                .bind_texture(Gl2::TEXTURE_2D, Some(&msaa_buffers.framebuffer_texture));
+            program.uniform1i(&self.gl, ShaderUniform::BitmapTexture, 0);
+
+            // Render the quad.
+            let quad = &self.meshes[self.quad_shape.0];
+            self.bind_vertex_array(&quad.draws[0].vao);
+            self.gl.draw_elements_with_i32(
+                Gl::TRIANGLES,
+                quad.draws[0].num_indices,
+                Gl::UNSIGNED_SHORT,
+                0,
+            );
+        }
+    }
 
     fn clear(&mut self, color: Color) {
+        self.set_stencil_state();
+
         self.gl.clear_color(
             color.r as f32 / 255.0,
             color.g as f32 / 255.0,
             color.b as f32 / 255.0,
             color.a as f32 / 255.0,
         );
+        self.gl.stencil_mask(0xff);
         self.gl.clear(Gl::COLOR_BUFFER_BIT | Gl::STENCIL_BUFFER_BIT);
     }
 
@@ -676,8 +919,6 @@ impl RenderBackend for WebGlRenderBackend {
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
-        let mesh = &self.meshes[shape.0];
-
         let world_matrix = [
             [transform.matrix.a, transform.matrix.b, 0.0, 0.0],
             [transform.matrix.c, transform.matrix.d, 0.0, 0.0],
@@ -704,33 +945,9 @@ impl RenderBackend for WebGlRenderBackend {
             transform.color_transform.a_add,
         ];
 
-        // Set masking state.
-        if self.mask_state_dirty {
-            if self.num_masks > 0 {
-                self.gl.enable(Gl::STENCIL_TEST);
-                if self.num_masks_active < self.num_masks {
-                    self.gl.stencil_mask(self.write_stencil_mask);
-                    self.gl
-                        .stencil_func(Gl::ALWAYS, self.write_stencil_mask as i32, 0xff);
-                    self.gl.stencil_op(Gl::KEEP, Gl::KEEP, Gl::REPLACE);
-                    self.gl.color_mask(false, false, false, false);
-                } else {
-                    self.gl.stencil_mask(0);
-                    self.gl.stencil_func(
-                        Gl::EQUAL,
-                        self.test_stencil_mask as i32,
-                        self.test_stencil_mask,
-                    );
-                    self.gl.stencil_op(Gl::KEEP, Gl::KEEP, Gl::KEEP);
-                    self.gl.color_mask(true, true, true, true);
-                }
-            } else {
-                self.gl.disable(Gl::STENCIL_TEST);
-                self.gl.color_mask(true, true, true, true);
-            }
-            self.mask_state_dirty = false;
-        }
+        self.set_stencil_state();
 
+        let mesh = &self.meshes[shape.0];
         for draw in &mesh.draws {
             self.bind_vertex_array(&draw.vao);
 
@@ -855,6 +1072,8 @@ impl RenderBackend for WebGlRenderBackend {
     }
 
     fn draw_letterbox(&mut self, letterbox: Letterbox) {
+        self.set_stencil_state();
+
         self.gl.clear_color(0.0, 0.0, 0.0, 0.0);
 
         match letterbox {
@@ -909,7 +1128,10 @@ impl RenderBackend for WebGlRenderBackend {
                 );
             }
             self.next_stencil_mask = 1;
+            self.gl.stencil_mask(0xff);
             self.gl.clear_stencil(self.test_stencil_mask as i32);
+            self.gl.clear(Gl::STENCIL_BUFFER_BIT);
+            self.gl.clear_stencil(0);
         }
         self.num_masks += 1;
         self.mask_stack
@@ -981,6 +1203,14 @@ enum DrawType {
     Color,
     Gradient(Box<Gradient>),
     Bitmap(Bitmap),
+}
+
+struct MsaaBuffers {
+    color_renderbuffer: WebGlRenderbuffer,
+    stencil_renderbuffer: WebGlRenderbuffer,
+    render_framebuffer: WebGlFramebuffer,
+    color_framebuffer: WebGlFramebuffer,
+    framebuffer_texture: WebGlTexture,
 }
 
 // Because the shaders are currently simple and few in number, we are using a
