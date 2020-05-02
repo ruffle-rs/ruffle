@@ -6,8 +6,9 @@ use ruffle_web_common::JsResult;
 use std::convert::TryInto;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
-    HtmlCanvasElement, WebGl2RenderingContext as Gl2, WebGlBuffer, WebGlProgram,
-    WebGlRenderingContext as Gl, WebGlShader, WebGlTexture, WebGlUniformLocation,
+    HtmlCanvasElement, OesVertexArrayObject, WebGl2RenderingContext as Gl2, WebGlBuffer,
+    WebGlProgram, WebGlRenderingContext as Gl, WebGlShader, WebGlTexture, WebGlUniformLocation,
+    WebGlVertexArrayObject,
 };
 
 type Error = Box<dyn std::error::Error>;
@@ -24,6 +25,9 @@ pub struct WebGlRenderBackend {
 
     // WebGL2 context, if available.
     gl2: Option<Gl2>,
+
+    /// In WebGL1, VAOs are only available as an extension.
+    vao_ext: OesVertexArrayObject,
 
     vertex_position_location: u32,
     vertex_color_location: u32,
@@ -70,21 +74,30 @@ impl WebGlRenderBackend {
             js_sys::Reflect::set(&context_options, &JsValue::from(*name), value).warn_on_error();
         }
 
-        let (gl, gl2) = if let Ok(Some(gl)) =
+        // Attempt to create a WebGL2 context, but fall back to WebGL1 if unavailable.
+        let (gl, gl2, vao_ext) = if let Ok(Some(gl)) =
             canvas.get_context_with_context_options("webgl2", &context_options)
         {
             log::info!("Creating WebGL2 context.");
             let gl2 = gl.dyn_into::<Gl2>().map_err(|_| "Expected GL context")?;
-            // WebGLRenderingContext inherits from WebGL2RenderingContext.
-            (gl2.clone().unchecked_into::<Gl>(), Some(gl2))
+            // WebGLRenderingContext inherits from WebGL2RenderingContext, so cast it down.
+            (
+                gl2.clone().unchecked_into::<Gl>(),
+                Some(gl2.clone()),
+                JsValue::UNDEFINED.unchecked_into(),
+            )
         } else if let Ok(Some(gl)) =
             canvas.get_context_with_context_options("webgl", &context_options)
         {
             log::info!("Falling back to WebGL1.");
-            (
-                gl.dyn_into::<Gl>().map_err(|_| "Expected GL context")?,
-                None,
-            )
+            let gl = gl.dyn_into::<Gl>().map_err(|_| "Expected GL context")?;
+            // `dyn_into` doesn't work here; why?
+            let vao = gl
+                .get_extension("OES_vertex_array_object")
+                .into_js_result()?
+                .ok_or("VAO extension not found")?
+                .unchecked_into::<OesVertexArrayObject>();
+            (gl, None, vao)
         } else {
             return Err("Unable to create WebGL rendering context".into());
         };
@@ -105,9 +118,6 @@ impl WebGlRenderBackend {
             gl.get_attrib_location(&color_program.program, "position") as u32;
         let vertex_color_location = gl.get_attrib_location(&color_program.program, "color") as u32;
 
-        let quad_mesh = Self::build_quad_mesh(&gl)?;
-        let quad_shape = ShapeHandle(0);
-
         // Enable vertex attributes.
         // Because we currently only use on vertex format, we can do this once on init.
         gl.enable_vertex_attrib_array(vertex_position_location as u32);
@@ -124,13 +134,14 @@ impl WebGlRenderBackend {
         let mut renderer = Self {
             gl,
             gl2,
+            vao_ext,
 
             color_program,
             gradient_program,
             bitmap_program,
 
-            meshes: vec![quad_mesh],
-            quad_shape,
+            meshes: vec![],
+            quad_shape: ShapeHandle(0),
             textures: vec![],
             viewport_width: 500.0,
             viewport_height: 500.0,
@@ -152,65 +163,98 @@ impl WebGlRenderBackend {
             vertex_color_location,
         };
 
+        let quad_mesh = renderer.build_quad_mesh()?;
+        renderer.meshes.push(quad_mesh);
         renderer.build_matrices();
+
         Ok(renderer)
     }
 
-    // Builds the quad mesh that is used for rendering bitmap display objects.
-    fn build_quad_mesh(gl: &Gl) -> Result<Mesh, Error> {
-        let quad_mesh = unsafe {
-            let vertex_buffer = gl.create_buffer().unwrap();
-            gl.bind_buffer(Gl::ARRAY_BUFFER, Some(&vertex_buffer));
+    fn build_quad_mesh(&mut self) -> Result<Mesh, Error> {
+        let vao = self.create_vertex_array()?;
 
-            let verts = [
-                Vertex {
-                    position: [0.0, 0.0],
-                    color: 0xffffff,
-                },
-                Vertex {
-                    position: [1.0, 0.0],
-                    color: 0xffffff,
-                },
-                Vertex {
-                    position: [1.0, 1.0],
-                    color: 0xffffff,
-                },
-                Vertex {
-                    position: [0.0, 1.0],
-                    color: 0xffffff,
-                },
-            ];
+        let vertex_buffer = self.gl.create_buffer().unwrap();
+        self.gl.bind_buffer(Gl::ARRAY_BUFFER, Some(&vertex_buffer));
+
+        let verts = [
+            Vertex {
+                position: [0.0, 0.0],
+                color: 0xffffff,
+            },
+            Vertex {
+                position: [1.0, 0.0],
+                color: 0xffffff,
+            },
+            Vertex {
+                position: [1.0, 1.0],
+                color: 0xffffff,
+            },
+            Vertex {
+                position: [0.0, 1.0],
+                color: 0xffffff,
+            },
+        ];
+        let (vertex_buffer, index_buffer) = unsafe {
             let verts_bytes = std::slice::from_raw_parts(
                 verts.as_ptr() as *const u8,
                 std::mem::size_of_val(&verts),
             );
-            gl.buffer_data_with_u8_array(Gl::ARRAY_BUFFER, verts_bytes, Gl::STATIC_DRAW);
+            self.gl
+                .buffer_data_with_u8_array(Gl::ARRAY_BUFFER, verts_bytes, Gl::STATIC_DRAW);
 
-            let index_buffer = gl.create_buffer().unwrap();
-            gl.bind_buffer(Gl::ELEMENT_ARRAY_BUFFER, Some(&index_buffer));
+            let index_buffer = self.gl.create_buffer().unwrap();
+            self.gl
+                .bind_buffer(Gl::ELEMENT_ARRAY_BUFFER, Some(&index_buffer));
             let indices = [0u16, 1, 2, 0, 2, 3];
             let indices_bytes = std::slice::from_raw_parts(
                 indices.as_ptr() as *const u8,
                 std::mem::size_of::<u16>() * indices.len(),
             );
-            gl.buffer_data_with_u8_array(Gl::ELEMENT_ARRAY_BUFFER, indices_bytes, Gl::STATIC_DRAW);
+            self.gl.buffer_data_with_u8_array(
+                Gl::ELEMENT_ARRAY_BUFFER,
+                indices_bytes,
+                Gl::STATIC_DRAW,
+            );
 
-            Mesh {
-                draws: vec![Draw {
-                    draw_type: DrawType::Bitmap(Bitmap {
-                        matrix: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
-                        id: 0,
-
-                        is_smoothed: true,
-                        is_repeating: false,
-                    }),
-                    vertex_buffer,
-                    index_buffer,
-                    num_indices: 6,
-                }],
-            }
+            (vertex_buffer, index_buffer)
         };
 
+        self.gl.vertex_attrib_pointer_with_i32(
+            self.vertex_position_location,
+            2,
+            Gl::FLOAT,
+            false,
+            12,
+            0,
+        );
+        self.gl.vertex_attrib_pointer_with_i32(
+            self.vertex_color_location,
+            4,
+            Gl::UNSIGNED_BYTE,
+            true,
+            12,
+            8,
+        );
+        self.gl
+            .enable_vertex_attrib_array(self.vertex_position_location as u32);
+        self.gl
+            .enable_vertex_attrib_array(self.vertex_color_location as u32);
+
+        let quad_mesh = Mesh {
+            draws: vec![Draw {
+                draw_type: DrawType::Bitmap(Bitmap {
+                    matrix: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+                    id: 0,
+
+                    is_smoothed: true,
+                    is_repeating: false,
+                }),
+                vao,
+                vertex_buffer,
+                index_buffer,
+                num_indices: 6,
+            }],
+        };
         Ok(quad_mesh)
     }
 
@@ -242,10 +286,11 @@ impl WebGlRenderBackend {
         for draw in lyon_mesh {
             let num_indices = draw.indices.len() as i32;
 
-            let (vertex_buffer, index_buffer) = unsafe {
-                let vertex_buffer = self.gl.create_buffer().unwrap();
-                self.gl.bind_buffer(Gl::ARRAY_BUFFER, Some(&vertex_buffer));
+            let vao = self.create_vertex_array().unwrap();
+            let vertex_buffer = self.gl.create_buffer().unwrap();
+            self.gl.bind_buffer(Gl::ARRAY_BUFFER, Some(&vertex_buffer));
 
+            let (vertex_buffer, index_buffer) = unsafe {
                 let verts_bytes = std::slice::from_raw_parts(
                     draw.vertices.as_ptr() as *const u8,
                     draw.vertices.len() * std::mem::size_of::<Vertex>(),
@@ -266,13 +311,34 @@ impl WebGlRenderBackend {
                     indices_bytes,
                     Gl::STATIC_DRAW,
                 );
-
                 (vertex_buffer, index_buffer)
             };
+
+            self.gl.vertex_attrib_pointer_with_i32(
+                self.vertex_position_location,
+                2,
+                Gl::FLOAT,
+                false,
+                12,
+                0,
+            );
+            self.gl.vertex_attrib_pointer_with_i32(
+                self.vertex_color_location,
+                4,
+                Gl::UNSIGNED_BYTE,
+                true,
+                12,
+                8,
+            );
+            self.gl
+                .enable_vertex_attrib_array(self.vertex_position_location as u32);
+            self.gl
+                .enable_vertex_attrib_array(self.vertex_color_location as u32);
 
             let out_draw = match draw.draw_type {
                 TessDrawType::Color => Draw {
                     draw_type: DrawType::Color,
+                    vao,
                     vertex_buffer,
                     index_buffer,
                     num_indices,
@@ -294,6 +360,7 @@ impl WebGlRenderBackend {
                     };
                     Draw {
                         draw_type: DrawType::Gradient(Box::new(out_gradient)),
+                        vao,
                         vertex_buffer,
                         index_buffer,
                         num_indices,
@@ -306,6 +373,7 @@ impl WebGlRenderBackend {
                         is_smoothed: bitmap.is_smoothed,
                         is_repeating: bitmap.is_repeating,
                     }),
+                    vao,
                     vertex_buffer,
                     index_buffer,
                     num_indices,
@@ -327,6 +395,32 @@ impl WebGlRenderBackend {
             [0.0, 0.0, 1.0, 0.0],
             [-1.0, 1.0, 0.0, 1.0],
         ];
+    }
+
+    /// Creates and binds a new VAO.
+    fn create_vertex_array(&self) -> Result<WebGlVertexArrayObject, Error> {
+        let vao = if let Some(gl2) = &self.gl2 {
+            let vao = gl2.create_vertex_array().ok_or("Unable to create VAO")?;
+            gl2.bind_vertex_array(Some(&vao));
+            vao
+        } else {
+            let vao = self
+                .vao_ext
+                .create_vertex_array_oes()
+                .ok_or("Unable to create VAO")?;
+            self.vao_ext.bind_vertex_array_oes(Some(&vao));
+            vao
+        };
+        Ok(vao)
+    }
+
+    /// Binds a VAO.
+    fn bind_vertex_array(&self, vao: &WebGlVertexArrayObject) {
+        if let Some(gl2) = &self.gl2 {
+            gl2.bind_vertex_array(Some(&vao));
+        } else {
+            self.vao_ext.bind_vertex_array_oes(Some(&vao));
+        };
     }
 }
 
@@ -620,26 +714,7 @@ impl RenderBackend for WebGlRenderBackend {
         }
 
         for draw in &mesh.draws {
-            self.gl
-                .bind_buffer(Gl::ARRAY_BUFFER, Some(&draw.vertex_buffer));
-            self.gl
-                .bind_buffer(Gl::ELEMENT_ARRAY_BUFFER, Some(&draw.index_buffer));
-            self.gl.vertex_attrib_pointer_with_i32(
-                self.vertex_position_location,
-                2,
-                Gl::FLOAT,
-                false,
-                12,
-                0,
-            );
-            self.gl.vertex_attrib_pointer_with_i32(
-                self.vertex_color_location,
-                4,
-                Gl::UNSIGNED_BYTE,
-                true,
-                12,
-                8,
-            );
+            self.bind_vertex_array(&draw.vao);
 
             let (program, src_blend, dst_blend) = match &draw.draw_type {
                 DrawType::Color => (&self.color_program, Gl::SRC_ALPHA, Gl::ONE_MINUS_SRC_ALPHA),
@@ -882,10 +957,12 @@ struct Mesh {
     draws: Vec<Draw>,
 }
 
+#[allow(dead_code)]
 struct Draw {
     draw_type: DrawType,
     vertex_buffer: WebGlBuffer,
     index_buffer: WebGlBuffer,
+    vao: WebGlVertexArrayObject,
     num_indices: i32,
 }
 

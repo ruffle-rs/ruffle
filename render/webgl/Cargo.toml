@@ -24,5 +24,5 @@ default-features = false
 
 [dependencies.web-sys]
 version = "0.3.34"
-features = ["HtmlCanvasElement", "HtmlElement", "Node", "WebGlBuffer", "WebGlProgram", "WebGlRenderingContext", 
-            "WebGl2RenderingContext", "WebGlShader", "WebGlTexture", "WebGlUniformLocation"]
+features = ["HtmlCanvasElement", "HtmlElement", "Node", "OesVertexArrayObject", "WebGlBuffer", "WebGlProgram", "WebGlRenderingContext",
+            "WebGl2RenderingContext", "WebGlShader", "WebGlTexture", "WebGlUniformLocation", "WebGlVertexArrayObject"]
