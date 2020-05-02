@@ -1,7 +1,6 @@
 //! Navigator backend for web
 
 use crate::custom_event::RuffleEvent;
-use glutin::event_loop::EventLoopProxy;
 use ruffle_core::backend::navigator::{
     Error, NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
 };
@@ -11,6 +10,7 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc::Sender;
 use std::time::{Duration, Instant};
 use url::Url;
+use winit::event_loop::EventLoopProxy;
 
 /// Implementation of `NavigatorBackend` for non-web environments that can call
 /// out to a web browser.

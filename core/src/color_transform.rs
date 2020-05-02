@@ -1,4 +1,4 @@
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct ColorTransform {
     pub r_mult: f32,
     pub g_mult: f32,
