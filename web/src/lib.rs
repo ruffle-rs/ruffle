@@ -6,8 +6,8 @@ mod navigator;
 use crate::{audio::WebAudioBackend, input::WebInputBackend, navigator::WebNavigatorBackend};
 use generational_arena::{Arena, Index};
 use js_sys::Uint8Array;
+use ruffle_core::backend::render::RenderBackend;
 use ruffle_core::PlayerEvent;
-use ruffle_render_canvas::WebCanvasRenderBackend;
 use std::mem::drop;
 use std::sync::{Arc, Mutex};
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
@@ -101,7 +101,7 @@ impl Ruffle {
         swf_data.copy_to(&mut data[..]);
 
         let window = web_sys::window().ok_or_else(|| "Expected window")?;
-        let renderer = Box::new(WebCanvasRenderBackend::new(&canvas)?);
+        let renderer = create_renderer(&canvas)?;
         let audio = Box::new(WebAudioBackend::new()?);
         let navigator = Box::new(WebNavigatorBackend::new());
         let input = Box::new(WebInputBackend::new(&canvas));
@@ -467,4 +467,25 @@ impl Ruffle {
             }
         });
     }
+}
+
+fn create_renderer(canvas: &HtmlCanvasElement) -> Result<Box<dyn RenderBackend>, Box<dyn Error>> {
+    #[cfg(not(any(feature = "canvas", feature = "webgl")))]
+    std::compile_error!("You must enable one of the render backend features (e.g., webgl).");
+
+    #[cfg(feature = "webgl")]
+    {
+        if let Ok(renderer) = ruffle_render_webgl::WebGlRenderBackend::new(canvas) {
+            return Ok(Box::new(renderer));
+        }
+    }
+
+    #[cfg(feature = "canvas")]
+    {
+        if let Ok(renderer) = ruffle_render_canvas::WebCanvasRenderBackend::new(canvas) {
+            return Ok(Box::new(renderer));
+        }
+    }
+
+    Err("Unable to create renderer".into())
 }

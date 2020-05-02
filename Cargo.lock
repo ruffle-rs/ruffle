@@ -1827,6 +1827,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "ruffle_render_webgl"
+version = "0.1.0"
+dependencies = [
+ "fnv 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jpeg-decoder 0.1.19 (registry+https://github.com/rust-lang/crates.io-index)",
+ "js-sys 0.3.39 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "percent-encoding 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "png 0.16.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ruffle_core 0.1.0",
+ "ruffle_render_common_tess 0.1.0",
+ "ruffle_web_common 0.1.0",
+ "wasm-bindgen 0.2.62 (registry+https://github.com/rust-lang/crates.io-index)",
+ "web-sys 0.3.39 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "ruffle_render_wgpu"
 version = "0.1.0"
 dependencies = [
@@ -1870,6 +1887,7 @@ dependencies = [
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "ruffle_core 0.1.0",
  "ruffle_render_canvas 0.1.0",
+ "ruffle_render_webgl 0.1.0",
  "ruffle_web_common 0.1.0",
  "url 2.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen 0.2.62 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1882,8 +1900,10 @@ dependencies = [
 name = "ruffle_web_common"
 version = "0.1.0"
 dependencies = [
+ "js-sys 0.3.39 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen 0.2.62 (registry+https://github.com/rust-lang/crates.io-index)",
+ "web-sys 0.3.39 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
