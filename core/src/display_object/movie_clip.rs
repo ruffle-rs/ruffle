@@ -637,6 +637,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
+        init_object: Option<Object<'gc>>,
     ) {
         if self.0.read().object.is_none() {
             // If we are running within the AVM, this must be an immediate action.
@@ -655,6 +656,16 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                         Some(prototype),
                     )
                     .into();
+                    if let Some(init_object) = init_object {
+                        for key in init_object.get_keys(avm) {
+                            if let Ok(value) = init_object
+                                .get(&key, avm, context)
+                                .and_then(|v| v.resolve(avm, context))
+                            {
+                                let _ = object.set(&key, value, avm, context);
+                            }
+                        }
+                    }
                     self.0.write(context.gc_context).object = Some(object);
                     if let Ok(result) = constructor.call(avm, context, object, None, &[]) {
                         let _ = result.resolve(avm, context);
@@ -663,12 +674,22 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 }
             }
 
-            let mut mc = self.0.write(context.gc_context);
             let object = StageObject::for_display_object(
                 context.gc_context,
                 display_object,
                 Some(context.system_prototypes.movie_clip),
             );
+            if let Some(init_object) = init_object {
+                for key in init_object.get_keys(avm) {
+                    if let Ok(value) = init_object
+                        .get(&key, avm, context)
+                        .and_then(|v| v.resolve(avm, context))
+                    {
+                        let _ = object.set(&key, value, avm, context);
+                    }
+                }
+            }
+            let mut mc = self.0.write(context.gc_context);
             mc.object = Some(object.into());
 
             let mut events = Vec::new();
@@ -936,7 +957,7 @@ impl<'gc> MovieClipData<'gc> {
                 }
                 // Run first frame.
                 child.apply_place_object(context.gc_context, place_object);
-                child.post_instantiation(avm, context, child);
+                child.post_instantiation(avm, context, child, None);
                 child.run_frame(avm, context);
             }
             Some(child)

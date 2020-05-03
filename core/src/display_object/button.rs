@@ -132,6 +132,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         _avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
+        _init_object: Option<Object<'gc>>,
     ) {
         let mut mc = self.0.write(context.gc_context);
         if mc.object.is_none() {
@@ -252,7 +253,7 @@ impl<'gc> ButtonData<'gc> {
                         &record.color_transform.clone().into(),
                     );
                     child.set_depth(context.gc_context, record.depth.into());
-                    child.post_instantiation(avm, context, child);
+                    child.post_instantiation(avm, context, child, None);
                     self.children.insert(record.depth.into(), child);
                 }
             }
@@ -282,7 +283,7 @@ impl<'gc> ButtonData<'gc> {
                                 child.set_matrix(context.gc_context, &record.matrix.clone().into());
                                 child.set_parent(context.gc_context, Some(self_display_object));
                                 child.set_depth(context.gc_context, record.depth.into());
-                                child.post_instantiation(avm, context, child);
+                                child.post_instantiation(avm, context, child, None);
                             }
                             self.hit_area.insert(record.depth.into(), child);
                         }
