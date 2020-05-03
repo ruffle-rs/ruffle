@@ -1,0 +1,5 @@
+// this.source
+from attachMovie
+
+// clip_istance.source
+from attachMovie
