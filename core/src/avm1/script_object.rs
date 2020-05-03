@@ -758,7 +758,7 @@ mod tests {
                 load_manager: &mut LoadManager::new(),
             };
 
-            root.post_instantiation(&mut avm, &mut context, root);
+            root.post_instantiation(&mut avm, &mut context, root, None);
 
             let object = ScriptObject::object(gc_context, Some(avm.prototypes().object)).into();
 

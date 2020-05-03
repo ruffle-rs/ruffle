@@ -239,7 +239,7 @@ impl Player {
             let mut root: DisplayObject =
                 MovieClip::from_movie(context.gc_context, movie.clone()).into();
             root.set_depth(context.gc_context, 0);
-            root.post_instantiation(avm, context, root);
+            root.post_instantiation(avm, context, root, None);
             context.levels.insert(0, root);
         });
 

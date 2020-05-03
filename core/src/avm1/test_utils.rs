@@ -58,7 +58,7 @@ where
             player: None,
             load_manager: &mut LoadManager::new(),
         };
-        root.post_instantiation(&mut avm, &mut context, root);
+        root.post_instantiation(&mut avm, &mut context, root, None);
 
         let globals = avm.global_object_cell();
         avm.insert_stack_frame(GcCell::allocate(

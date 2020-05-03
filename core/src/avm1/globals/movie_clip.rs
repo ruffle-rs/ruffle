@@ -163,18 +163,15 @@ fn attach_movie<'gc>(
         // Set name and attach to parent.
         new_clip.set_name(context.gc_context, &new_instance_name);
         movie_clip.add_child_from_avm(context, new_clip, depth);
-        new_clip.post_instantiation(avm, context, new_clip);
+        new_clip.post_instantiation(
+            avm,
+            context,
+            new_clip,
+            init_object.and_then(|v| v.as_object().ok()),
+        );
         new_clip.run_frame(avm, context);
 
-        // Copy properties from init_object to the movieclip.
-        let new_clip = new_clip.object().as_object().unwrap();
-        if let Some(Value::Object(o)) = init_object {
-            for k in o.get_keys(avm) {
-                let value = o.get(&k, avm, context)?.resolve(avm, context)?;
-                new_clip.set(&k, value, avm, context)?;
-            }
-        }
-        Ok(new_clip.into())
+        Ok(new_clip.object().as_object().unwrap().into())
     } else {
         log::warn!("Unable to attach '{}'", export_name);
         Ok(Value::Undefined.into())
@@ -208,7 +205,7 @@ fn create_empty_movie_clip<'gc>(
     // Set name and attach to parent.
     new_clip.set_name(context.gc_context, &new_instance_name);
     movie_clip.add_child_from_avm(context, new_clip.into(), depth);
-    new_clip.post_instantiation(avm, context, new_clip.into());
+    new_clip.post_instantiation(avm, context, new_clip.into(), None);
     new_clip.run_frame(avm, context);
 
     Ok(new_clip.object().into())
@@ -256,7 +253,7 @@ fn create_text_field<'gc>(
         EditText::new(context, movie, x, y, width, height).into();
     text_field.set_name(context.gc_context, &instance_name);
     movie_clip.add_child_from_avm(context, text_field, depth as Depth);
-    text_field.post_instantiation(avm, context, text_field);
+    text_field.post_instantiation(avm, context, text_field, None);
 
     if avm.current_swf_version() >= 8 {
         //SWF8+ returns the `TextField` instance here
@@ -324,18 +321,15 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
         // TODO: Any other properties we should copy...?
         // Definitely not ScriptObject properties.
 
-        new_clip.post_instantiation(avm, context, new_clip);
+        new_clip.post_instantiation(
+            avm,
+            context,
+            new_clip,
+            init_object.and_then(|v| v.as_object().ok()),
+        );
         new_clip.run_frame(avm, context);
 
-        // Copy properties from init_object to the movieclip.
-        let new_clip = new_clip.object().as_object().unwrap();
-        if let Some(Value::Object(o)) = init_object {
-            for k in o.get_keys(avm) {
-                let value = o.get(&k, avm, context)?.resolve(avm, context)?;
-                new_clip.set(&k, value, avm, context)?;
-            }
-        }
-        Ok(new_clip.into())
+        Ok(new_clip.object().as_object().unwrap().into())
     } else {
         log::warn!("Unable to duplicate clip '{}'", movie_clip.name());
         Ok(Value::Undefined.into())

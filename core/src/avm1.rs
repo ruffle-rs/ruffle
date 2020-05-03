@@ -985,7 +985,7 @@ impl<'gc> Avm1<'gc> {
 
             level.set_depth(context.gc_context, level_id as i32);
             context.levels.insert(level_id, level);
-            level.post_instantiation(self, context, level);
+            level.post_instantiation(self, context, level, None);
 
             level
         }
