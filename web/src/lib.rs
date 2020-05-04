@@ -7,6 +7,7 @@ use crate::{audio::WebAudioBackend, input::WebInputBackend, navigator::WebNaviga
 use generational_arena::{Arena, Index};
 use js_sys::Uint8Array;
 use ruffle_core::backend::render::RenderBackend;
+use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::PlayerEvent;
 use std::mem::drop;
 use std::sync::{Arc, Mutex};
@@ -97,8 +98,11 @@ impl Ruffle {
         console_error_panic_hook::set_once();
         let _ = console_log::init_with_level(log::Level::Trace);
 
-        let mut data = vec![0; swf_data.length() as usize];
-        swf_data.copy_to(&mut data[..]);
+        let movie = {
+            let mut data = vec![0; swf_data.length() as usize];
+            swf_data.copy_to(&mut data[..]);
+            SwfMovie::from_data(&data)?
+        };
 
         let window = web_sys::window().ok_or_else(|| "Expected window")?;
         let renderer = create_renderer(&canvas)?;
@@ -106,7 +110,7 @@ impl Ruffle {
         let navigator = Box::new(WebNavigatorBackend::new());
         let input = Box::new(WebInputBackend::new(&canvas));
 
-        let core = ruffle_core::Player::new(renderer, audio, navigator, input, data)?;
+        let core = ruffle_core::Player::new(renderer, audio, navigator, input, movie)?;
         let mut core_lock = core.lock().unwrap();
         let frame_rate = core_lock.frame_rate();
         core_lock.audio_mut().set_frame_rate(frame_rate);
