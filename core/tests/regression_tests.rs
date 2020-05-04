@@ -8,6 +8,7 @@ use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
 use ruffle_core::backend::{
     audio::NullAudioBackend, input::NullInputBackend, render::NullRenderer,
 };
+use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::Player;
 use std::cell::RefCell;
 use std::path::Path;
@@ -280,14 +281,14 @@ fn run_swf(swf_path: &str, num_frames: u32) -> Result<String, Error> {
     let _ = log::set_logger(&TRACE_LOGGER).map(|()| log::set_max_level(log::LevelFilter::Info));
 
     let base_path = Path::new(swf_path).parent().unwrap();
-    let swf_data = std::fs::read(swf_path)?;
     let (mut executor, channel) = NullExecutor::new();
+    let movie = SwfMovie::from_path(swf_path)?;
     let player = Player::new(
         Box::new(NullRenderer),
         Box::new(NullAudioBackend::new()),
         Box::new(NullNavigatorBackend::with_base_path(base_path, channel)),
         Box::new(NullInputBackend::new()),
-        swf_data,
+        movie,
     )?;
 
     for _ in 0..num_frames {

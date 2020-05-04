@@ -18,6 +18,7 @@ use std::path::PathBuf;
 use std::time::Instant;
 use structopt::StructOpt;
 
+use ruffle_core::tag_utils::SwfMovie;
 use std::rc::Rc;
 use winit::dpi::{LogicalSize, PhysicalPosition};
 use winit::event::{ElementState, MouseButton, WindowEvent};
@@ -45,7 +46,7 @@ fn main() {
 }
 
 fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
-    let swf_data = std::fs::read(&input_path)?;
+    let movie = SwfMovie::from_path(&input_path)?;
 
     let event_loop: EventLoop<RuffleEvent> = EventLoop::with_user_event();
     let window = Rc::new(
@@ -78,7 +79,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         event_loop.create_proxy(),
     )); //TODO: actually implement this backend type
     let input = Box::new(input::WinitInputBackend::new(window.clone()));
-    let player = Player::new(renderer, audio, navigator, input, swf_data)?;
+    let player = Player::new(renderer, audio, navigator, input, movie)?;
 
     let logical_size: LogicalSize<u32> = {
         let mut player_lock = player.lock().unwrap();

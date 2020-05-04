@@ -1,4 +1,5 @@
 use gc_arena::Collect;
+use std::path::Path;
 use std::sync::Arc;
 use swf::{Header, TagCode};
 
@@ -39,6 +40,12 @@ impl SwfMovie {
             header: self.header.clone(),
             data,
         }
+    }
+
+    /// Utility method to construct a movie from a file on disk.
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
+        let data = std::fs::read(path)?;
+        Self::from_data(&data)
     }
 
     /// Construct a movie based on the contents of the SWF datastream.
