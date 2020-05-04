@@ -17,6 +17,7 @@ use raw_window_handle::HasRawWindowHandle;
 
 use crate::pipelines::Pipelines;
 use crate::shapes::{Draw, DrawType, GradientUniforms, IncompleteDrawType, Mesh};
+use crate::target::{RenderTarget, RenderTargetFrame, SwapChainTarget};
 use crate::utils::{
     build_view_matrix, create_buffer_with_data, ruffle_path_to_lyon_path, swf_bitmap_to_gl_matrix,
     swf_to_gl_matrix,
@@ -31,18 +32,17 @@ mod utils;
 
 mod pipelines;
 mod shapes;
+mod target;
 
-pub struct WgpuRenderBackend {
-    window_surface: wgpu::Surface,
+pub struct WgpuRenderBackend<T: RenderTarget> {
     device: wgpu::Device,
     queue: wgpu::Queue,
-    swap_chain_desc: wgpu::SwapChainDescriptor,
-    swap_chain: wgpu::SwapChain,
+    target: T,
     msaa_sample_count: u32,
     pipelines: Pipelines,
     frame_buffer_view: wgpu::TextureView,
     depth_texture_view: wgpu::TextureView,
-    current_frame: Option<(wgpu::SwapChainOutput, wgpu::CommandEncoder)>,
+    current_frame: Option<(T::Frame, wgpu::CommandEncoder)>,
     register_encoder: wgpu::CommandEncoder,
     meshes: Vec<Mesh>,
     viewport_width: f32,
@@ -118,10 +118,8 @@ struct GPUVertex {
 unsafe impl Pod for GPUVertex {}
 unsafe impl Zeroable for GPUVertex {}
 
-impl WgpuRenderBackend {
-    pub fn new<W: HasRawWindowHandle>(window: &W, size: (u32, u32)) -> Result<Self, Error> {
-        let window_surface = wgpu::Surface::create(window);
-
+impl WgpuRenderBackend<SwapChainTarget> {
+    pub fn for_window<W: HasRawWindowHandle>(window: &W, size: (u32, u32)) -> Result<Self, Error> {
         let adapter = block_on(wgpu::Adapter::request(
             &wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
@@ -138,23 +136,21 @@ impl WgpuRenderBackend {
             limits: wgpu::Limits::default(),
         }));
 
-        let swap_chain_desc = wgpu::SwapChainDescriptor {
-            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
-            format: wgpu::TextureFormat::Bgra8Unorm,
-            width: size.0,
-            height: size.1,
-            present_mode: wgpu::PresentMode::Mailbox,
-        };
-        let swap_chain = device.create_swap_chain(&window_surface, &swap_chain_desc);
+        let target = SwapChainTarget::new(window, size, &device);
+        Self::new(device, queue, target)
+    }
+}
 
+impl<T: RenderTarget> WgpuRenderBackend<T> {
+    pub fn new(device: wgpu::Device, queue: wgpu::Queue, target: T) -> Result<Self, Error> {
         // TODO: Allow this to be set from command line/settings file.
         let msaa_sample_count = 4;
 
         let pipelines = Pipelines::new(&device, msaa_sample_count)?;
 
         let extent = wgpu::Extent3d {
-            width: swap_chain_desc.width,
-            height: swap_chain_desc.height,
+            width: target.width(),
+            height: target.height(),
             depth: 1,
         };
 
@@ -166,7 +162,7 @@ impl WgpuRenderBackend {
             mip_level_count: 1,
             sample_count: msaa_sample_count,
             dimension: wgpu::TextureDimension::D2,
-            format: swap_chain_desc.format,
+            format: target.format(),
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
         });
         let frame_buffer_view = frame_buffer.create_default_view();
@@ -192,12 +188,14 @@ impl WgpuRenderBackend {
 
         let (quad_vbo, quad_ibo, quad_tex_transforms) = create_quad_buffers(&device);
 
+        let viewport_width = target.width() as f32;
+        let viewport_height = target.height() as f32;
+        let view_matrix = build_view_matrix(target.width(), target.height());
+
         Ok(Self {
-            window_surface,
             device,
             queue,
-            swap_chain_desc,
-            swap_chain,
+            target,
             msaa_sample_count,
             pipelines,
             frame_buffer_view,
@@ -205,9 +203,9 @@ impl WgpuRenderBackend {
             current_frame: None,
             register_encoder,
             meshes: Vec::new(),
-            viewport_width: size.0 as f32,
-            viewport_height: size.1 as f32,
-            view_matrix: build_view_matrix(size.0, size.1),
+            viewport_width,
+            viewport_height,
+            view_matrix,
             textures: Vec::new(),
             num_masks: 0,
             num_masks_active: 0,
@@ -674,12 +672,12 @@ impl WgpuRenderBackend {
     }
 
     fn draw_rect(&mut self, x: f32, y: f32, width: f32, height: f32, color: Color) {
-        let (swap_chain_output, encoder) =
-            if let Some((swap_chain_output, encoder)) = &mut self.current_frame {
-                (swap_chain_output, encoder)
-            } else {
-                return;
-            };
+        let (frame_output, encoder) = if let Some((frame_output, encoder)) = &mut self.current_frame
+        {
+            (frame_output, encoder)
+        } else {
+            return;
+        };
 
         let world_matrix = [
             [width, 0.0, 0.0, 0.0],
@@ -740,9 +738,9 @@ impl WgpuRenderBackend {
         });
 
         let (color_attachment, resolve_target) = if self.msaa_sample_count >= 2 {
-            (&self.frame_buffer_view, Some(&swap_chain_output.view))
+            (&self.frame_buffer_view, Some(frame_output.view()))
         } else {
-            (&swap_chain_output.view, None)
+            (frame_output.view(), None)
         };
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
@@ -783,17 +781,13 @@ impl WgpuRenderBackend {
     }
 }
 
-impl RenderBackend for WgpuRenderBackend {
+impl<T: RenderTarget> RenderBackend for WgpuRenderBackend<T> {
     fn set_viewport_dimensions(&mut self, width: u32, height: u32) {
         // Avoid panics from creating 0-sized framebuffers.
         let width = std::cmp::max(width, 1);
         let height = std::cmp::max(height, 1);
 
-        self.swap_chain_desc.width = width;
-        self.swap_chain_desc.height = height;
-        self.swap_chain = self
-            .device
-            .create_swap_chain(&self.window_surface, &self.swap_chain_desc);
+        self.target.resize(&self.device, width, height);
 
         let label = create_debug_label!("Framebuffer texture");
         let frame_buffer = self.device.create_texture(&wgpu::TextureDescriptor {
@@ -807,7 +801,7 @@ impl RenderBackend for WgpuRenderBackend {
             mip_level_count: 1,
             sample_count: self.msaa_sample_count,
             dimension: wgpu::TextureDimension::D2,
-            format: self.swap_chain_desc.format,
+            format: self.target.format(),
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
         });
         self.frame_buffer_view = frame_buffer.create_default_view();
@@ -1073,7 +1067,7 @@ impl RenderBackend for WgpuRenderBackend {
 
     fn begin_frame(&mut self, clear: Color) {
         assert!(self.current_frame.is_none());
-        self.current_frame = match self.swap_chain.get_next_texture() {
+        self.current_frame = match self.target.get_next_texture() {
             Ok(frame) => {
                 let label = create_debug_label!("Frame encoder");
                 Some((
@@ -1095,11 +1089,11 @@ impl RenderBackend for WgpuRenderBackend {
         self.test_stencil_mask = 0;
         self.next_stencil_mask = 1;
 
-        if let Some((swap_chain_output, encoder)) = &mut self.current_frame {
+        if let Some((frame_output, encoder)) = &mut self.current_frame {
             let (color_attachment, resolve_target) = if self.msaa_sample_count >= 2 {
-                (&self.frame_buffer_view, Some(&swap_chain_output.view))
+                (&self.frame_buffer_view, Some(frame_output.view()))
             } else {
-                (&swap_chain_output.view, None)
+                (frame_output.view(), None)
             };
             encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
@@ -1129,9 +1123,9 @@ impl RenderBackend for WgpuRenderBackend {
 
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform) {
         if let Some((_id, texture)) = self.textures.get(bitmap.0) {
-            let (swap_chain_output, encoder) =
-                if let Some((swap_chain_output, encoder)) = &mut self.current_frame {
-                    (swap_chain_output, encoder)
+            let (frame_output, encoder) =
+                if let Some((frame_output, encoder)) = &mut self.current_frame {
+                    (frame_output, encoder)
                 } else {
                     return;
                 };
@@ -1227,9 +1221,9 @@ impl RenderBackend for WgpuRenderBackend {
             });
 
             let (color_attachment, resolve_target) = if self.msaa_sample_count >= 2 {
-                (&self.frame_buffer_view, Some(&swap_chain_output.view))
+                (&self.frame_buffer_view, Some(frame_output.view()))
             } else {
-                (&swap_chain_output.view, None)
+                (frame_output.view(), None)
             };
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
@@ -1271,12 +1265,12 @@ impl RenderBackend for WgpuRenderBackend {
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
-        let (swap_chain_output, encoder) =
-            if let Some((swap_chain_output, encoder)) = &mut self.current_frame {
-                (swap_chain_output, encoder)
-            } else {
-                return;
-            };
+        let (frame_output, encoder) = if let Some((frame_output, encoder)) = &mut self.current_frame
+        {
+            (frame_output, encoder)
+        } else {
+            return;
+        };
 
         let mesh = &mut self.meshes[shape.0];
 
@@ -1330,9 +1324,9 @@ impl RenderBackend for WgpuRenderBackend {
         );
 
         let (color_attachment, resolve_target) = if self.msaa_sample_count >= 2 {
-            (&self.frame_buffer_view, Some(&swap_chain_output.view))
+            (&self.frame_buffer_view, Some(frame_output.view()))
         } else {
-            (&swap_chain_output.view, None)
+            (frame_output.view(), None)
         };
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
@@ -1480,11 +1474,11 @@ impl RenderBackend for WgpuRenderBackend {
                 );
             }
             self.next_stencil_mask = 1;
-            if let Some((swap_chain_output, encoder)) = &mut self.current_frame {
+            if let Some((frame_output, encoder)) = &mut self.current_frame {
                 let (color_attachment, resolve_target) = if self.msaa_sample_count >= 2 {
-                    (&self.frame_buffer_view, Some(&swap_chain_output.view))
+                    (&self.frame_buffer_view, Some(frame_output.view()))
                 } else {
-                    (&swap_chain_output.view, None)
+                    (frame_output.view(), None)
                 };
                 encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                     color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {

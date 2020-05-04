@@ -66,7 +66,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
             Box::new(NullAudioBackend::new())
         }
     };
-    let renderer = Box::new(WgpuRenderBackend::new(
+    let renderer = Box::new(WgpuRenderBackend::for_window(
         window.as_ref(),
         (movie.width(), movie.height()),
     )?);
