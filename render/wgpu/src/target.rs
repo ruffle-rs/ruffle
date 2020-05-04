@@ -79,3 +79,83 @@ impl RenderTarget for SwapChainTarget {
         self.swap_chain.get_next_texture().map(SwapChainTargetFrame)
     }
 }
+
+#[derive(Debug)]
+pub struct TextureTarget {
+    size: wgpu::Extent3d,
+    texture: wgpu::Texture,
+    format: wgpu::TextureFormat,
+}
+
+#[derive(Debug)]
+pub struct TextureTargetFrame(wgpu::TextureView);
+
+impl RenderTargetFrame for TextureTargetFrame {
+    fn view(&self) -> &wgpu::TextureView {
+        &self.0
+    }
+}
+
+impl TextureTarget {
+    pub fn new(device: &wgpu::Device, size: (u32, u32)) -> Self {
+        let size = wgpu::Extent3d {
+            width: size.0,
+            height: size.1,
+            depth: 1,
+        };
+        let label = create_debug_label!("Render target texture");
+        let format = wgpu::TextureFormat::Bgra8Unorm;
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: label.as_deref(),
+            size,
+            array_layer_count: 1,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format,
+            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT | wgpu::TextureUsage::COPY_SRC,
+        });
+        Self {
+            size,
+            texture,
+            format,
+        }
+    }
+}
+
+impl RenderTarget for TextureTarget {
+    type Frame = TextureTargetFrame;
+
+    fn resize(&mut self, device: &wgpu::Device, width: u32, height: u32) {
+        self.size.width = width;
+        self.size.height = height;
+
+        let label = create_debug_label!("Render target texture");
+        self.texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: label.as_deref(),
+            size: self.size,
+            array_layer_count: 1,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: self.format,
+            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT | wgpu::TextureUsage::COPY_SRC,
+        });
+    }
+
+    fn format(&self) -> wgpu::TextureFormat {
+        self.format
+    }
+
+    fn width(&self) -> u32 {
+        self.size.width
+    }
+
+    fn height(&self) -> u32 {
+        self.size.height
+    }
+
+    fn get_next_texture(&mut self) -> Result<Self::Frame, wgpu::TimeOut> {
+        Ok(TextureTargetFrame(self.texture.create_default_view()))
+    }
+}

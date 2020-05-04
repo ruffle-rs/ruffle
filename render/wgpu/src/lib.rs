@@ -32,7 +32,7 @@ mod utils;
 
 mod pipelines;
 mod shapes;
-mod target;
+pub mod target;
 
 pub struct WgpuRenderBackend<T: RenderTarget> {
     device: wgpu::Device,
