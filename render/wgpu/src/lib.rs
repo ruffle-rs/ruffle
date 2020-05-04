@@ -18,7 +18,8 @@ use raw_window_handle::HasRawWindowHandle;
 use crate::pipelines::Pipelines;
 use crate::shapes::{Draw, DrawType, GradientUniforms, IncompleteDrawType, Mesh};
 use crate::utils::{
-    create_buffer_with_data, ruffle_path_to_lyon_path, swf_bitmap_to_gl_matrix, swf_to_gl_matrix,
+    build_view_matrix, create_buffer_with_data, ruffle_path_to_lyon_path, swf_bitmap_to_gl_matrix,
+    swf_to_gl_matrix,
 };
 use ruffle_core::color_transform::ColorTransform;
 
@@ -198,7 +199,7 @@ impl WgpuRenderBackend {
             meshes: Vec::new(),
             viewport_width: size.0 as f32,
             viewport_height: size.1 as f32,
-            view_matrix: [[0.0; 4]; 4],
+            view_matrix: build_view_matrix(size.0, size.1),
             textures: Vec::new(),
             num_masks: 0,
             num_masks_active: 0,
@@ -665,15 +666,6 @@ impl WgpuRenderBackend {
         handle
     }
 
-    fn build_matrices(&mut self) {
-        self.view_matrix = [
-            [1.0 / (self.viewport_width as f32 / 2.0), 0.0, 0.0, 0.0],
-            [0.0, -1.0 / (self.viewport_height as f32 / 2.0), 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [-1.0, 1.0, 0.0, 1.0],
-        ];
-    }
-
     fn draw_rect(&mut self, x: f32, y: f32, width: f32, height: f32, color: Color) {
         let (swap_chain_output, encoder) =
             if let Some((swap_chain_output, encoder)) = &mut self.current_frame {
@@ -832,7 +824,7 @@ impl RenderBackend for WgpuRenderBackend {
 
         self.viewport_width = width as f32;
         self.viewport_height = height as f32;
-        self.build_matrices();
+        self.view_matrix = build_view_matrix(width, height);
     }
 
     fn register_shape(&mut self, shape: &Shape) -> ShapeHandle {
