@@ -55,6 +55,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                 "Ruffle - {}",
                 input_path.file_name().unwrap_or_default().to_string_lossy()
             ))
+            .with_inner_size(LogicalSize::new(movie.width(), movie.height()))
             .build(&event_loop)?,
     );
 
@@ -65,10 +66,9 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
             Box::new(NullAudioBackend::new())
         }
     };
-    let initial_size = window.inner_size().to_logical(window.scale_factor());
     let renderer = Box::new(WgpuRenderBackend::new(
         window.as_ref(),
-        (initial_size.width, initial_size.height),
+        (movie.width(), movie.height()),
     )?);
     let (executor, chan) = GlutinAsyncExecutor::new(event_loop.create_proxy());
     let navigator = Box::new(navigator::ExternalNavigatorBackend::with_base_path(
@@ -80,18 +80,9 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     )); //TODO: actually implement this backend type
     let input = Box::new(input::WinitInputBackend::new(window.clone()));
     let player = Player::new(renderer, audio, navigator, input, movie)?;
+    player.lock().unwrap().set_is_playing(true); // Desktop player will auto-play.
 
-    let logical_size: LogicalSize<u32> = {
-        let mut player_lock = player.lock().unwrap();
-        player_lock.set_is_playing(true); // Desktop player will auto-play.
-
-        (player_lock.movie_width(), player_lock.movie_height()).into()
-    };
-    let scale_factor = window.scale_factor();
-
-    // Set initial size to movie dimensions.
-    window.set_inner_size(logical_size);
-    let size = logical_size.to_physical(scale_factor);
+    let size = window.inner_size();
     player
         .lock()
         .unwrap()

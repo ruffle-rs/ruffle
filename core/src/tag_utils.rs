@@ -89,6 +89,14 @@ impl SwfMovie {
     pub fn data(&self) -> &[u8] {
         &self.data
     }
+
+    pub fn width(&self) -> u32 {
+        (self.header.stage_size.x_max - self.header.stage_size.x_min).to_pixels() as u32
+    }
+
+    pub fn height(&self) -> u32 {
+        (self.header.stage_size.y_max - self.header.stage_size.y_min).to_pixels() as u32
+    }
 }
 
 /// A shared-ownership reference to some portion of an SWF datastream.

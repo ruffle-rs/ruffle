@@ -158,10 +158,8 @@ impl Player {
             movie.header().stage_size.y_max
         );
 
-        let movie_width =
-            (movie.header().stage_size.x_max - movie.header().stage_size.x_min).to_pixels() as u32;
-        let movie_height =
-            (movie.header().stage_size.y_max - movie.header().stage_size.y_min).to_pixels() as u32;
+        let movie_width = movie.width();
+        let movie_height = movie.height();
 
         let mut player = Player {
             player_version: NEWEST_PLAYER_VERSION,
