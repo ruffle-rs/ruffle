@@ -8,7 +8,7 @@ edition = "2018"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["console_error_panic_hook", "console_log", "webgl"]
+default = ["canvas", "console_error_panic_hook", "console_log", "webgl"]
 lzma = ["ruffle_core/lzma"]
 canvas = ["ruffle_render_canvas"]
 webgl = ["ruffle_render_webgl"]
