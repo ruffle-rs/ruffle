@@ -11,6 +11,7 @@ use ruffle_render_wgpu::WgpuRenderBackend;
 use std::error::Error;
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 use structopt::StructOpt;
 use walkdir::{DirEntry, WalkDir};
 
@@ -38,19 +39,14 @@ struct Opt {
 }
 
 fn take_screenshot(
-    adapter: &wgpu::Adapter,
+    device: Rc<wgpu::Device>,
+    queue: Rc<wgpu::Queue>,
     swf_path: &Path,
     frames: u32,
     progress: &Option<ProgressBar>,
 ) -> Result<Vec<RgbaImage>, Box<dyn std::error::Error>> {
     let movie = SwfMovie::from_path(&swf_path)?;
 
-    let (device, queue) = block_on(adapter.request_device(&wgpu::DeviceDescriptor {
-        extensions: wgpu::Extensions {
-            anisotropic_filtering: false,
-        },
-        limits: wgpu::Limits::default(),
-    }));
     let target = TextureTarget::new(&device, (movie.width(), movie.height()));
     let player = Player::new(
         Box::new(WgpuRenderBackend::new(device, queue, target)?),
@@ -124,7 +120,8 @@ fn find_files(root: &Path, with_progress: bool) -> Vec<DirEntry> {
 }
 
 fn capture_single_swf(
-    adapter: wgpu::Adapter,
+    device: Rc<wgpu::Device>,
+    queue: Rc<wgpu::Queue>,
     swf: &Path,
     frames: u32,
     output: Option<PathBuf>,
@@ -159,7 +156,7 @@ fn capture_single_swf(
         None
     };
 
-    let frames = take_screenshot(&adapter, &swf, frames, &progress)?;
+    let frames = take_screenshot(device, queue, &swf, frames, &progress)?;
 
     if let Some(progress) = &progress {
         progress.set_message(&swf.file_stem().unwrap().to_string_lossy());
@@ -200,7 +197,8 @@ fn capture_single_swf(
 }
 
 fn capture_multiple_swfs(
-    adapter: wgpu::Adapter,
+    device: Rc<wgpu::Device>,
+    queue: Rc<wgpu::Queue>,
     directory: &Path,
     frames: u32,
     output: &Path,
@@ -223,7 +221,13 @@ fn capture_multiple_swfs(
     };
 
     for file in &files {
-        let frames = take_screenshot(&adapter, &file.path(), frames, &progress)?;
+        let frames = take_screenshot(
+            device.clone(),
+            queue.clone(),
+            &file.path(),
+            frames,
+            &progress,
+        )?;
 
         if let Some(progress) = &progress {
             progress.set_message(&file.path().file_stem().unwrap().to_string_lossy());
@@ -293,10 +297,31 @@ fn main() -> Result<(), Box<dyn Error>> {
         "This tool requires hardware acceleration, but no compatible graphics device was found."
     })?;
 
+    let (device, queue) = block_on(adapter.request_device(&wgpu::DeviceDescriptor {
+        extensions: wgpu::Extensions {
+            anisotropic_filtering: false,
+        },
+        limits: wgpu::Limits::default(),
+    }));
+
     if opt.swf.is_file() {
-        capture_single_swf(adapter, &opt.swf, opt.frames, opt.output_path, !opt.silent)?;
+        capture_single_swf(
+            Rc::new(device),
+            Rc::new(queue),
+            &opt.swf,
+            opt.frames,
+            opt.output_path,
+            !opt.silent,
+        )?;
     } else if let Some(output) = opt.output_path {
-        capture_multiple_swfs(adapter, &opt.swf, opt.frames, &output, !opt.silent)?;
+        capture_multiple_swfs(
+            Rc::new(device),
+            Rc::new(queue),
+            &opt.swf,
+            opt.frames,
+            &output,
+            !opt.silent,
+        )?;
     } else {
         return Err("Output directory is required when exporting multiple files.".into());
     }

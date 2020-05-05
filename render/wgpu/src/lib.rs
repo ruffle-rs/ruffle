@@ -24,6 +24,7 @@ use crate::utils::{
 };
 use ruffle_core::color_transform::ColorTransform;
 use std::mem::replace;
+use std::rc::Rc;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -35,8 +36,8 @@ mod shapes;
 pub mod target;
 
 pub struct WgpuRenderBackend<T: RenderTarget> {
-    device: wgpu::Device,
-    queue: wgpu::Queue,
+    device: Rc<wgpu::Device>,
+    queue: Rc<wgpu::Queue>,
     target: T,
     msaa_sample_count: u32,
     pipelines: Pipelines,
@@ -137,12 +138,12 @@ impl WgpuRenderBackend<SwapChainTarget> {
         }));
 
         let target = SwapChainTarget::new(window, size, &device);
-        Self::new(device, queue, target)
+        Self::new(Rc::new(device), Rc::new(queue), target)
     }
 }
 
 impl<T: RenderTarget> WgpuRenderBackend<T> {
-    pub fn new(device: wgpu::Device, queue: wgpu::Queue, target: T) -> Result<Self, Error> {
+    pub fn new(device: Rc<wgpu::Device>, queue: Rc<wgpu::Queue>, target: T) -> Result<Self, Error> {
         // TODO: Allow this to be set from command line/settings file.
         let msaa_sample_count = 4;
 
