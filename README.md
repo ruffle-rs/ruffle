@@ -64,12 +64,21 @@ all of the flash files and report on the success of such a task.
 
 * `cargo run --package=ruffle_scanner -- folder/with/swfs/ results.csv`
 
+### Exporter
+
+If you have a swf and would like to capture an image of it, you may use the exporter tool.
+This currently requires hardware acceleration, but can be run headless (with no window).
+
+* `cargo run --package=exporter -- path/to/file.swf`
+* `cargo run --package=exporter -- path/to/file.swf path/to/screenshots --frames 5`
+
 ## Structure
 
 - `core` contains the core emulator and common code
 - `desktop` contains the desktop client (uses `wgpu-rs`)
 - `web` contains the web client (uses `wasm-bindgen`)
 - `scanner` contains a utility to bulk parse swf files
+- `exporter` contains a utility to generate PNG screenshots of a swf file
 
 ## Sponsors
 

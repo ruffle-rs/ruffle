@@ -6,6 +6,7 @@ members = [
     "swf",
     "web",
     "scanner",
+    "exporter",
 
     "render/canvas",
     "render/wgpu",
