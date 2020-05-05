@@ -17,6 +17,7 @@ wgpu = "0.5"
 wgpu-native = "0.5"
 path-slash = "0.1.1"
 walkdir = "2.3.1"
+indicatif = "0.14"
 
 [features]
 avm_debug = ["ruffle_core/avm_debug"]
