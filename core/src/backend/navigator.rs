@@ -300,10 +300,8 @@ impl NavigatorBackend for NullNavigatorBackend {
     }
 
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
-        self.channel
-            .as_ref()
-            .expect("Expected ability to execute futures")
-            .send(future)
-            .unwrap();
+        if let Some(channel) = self.channel.as_ref() {
+            channel.send(future).unwrap();
+        }
     }
 }
