@@ -671,6 +671,14 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         handle
     }
 
+    pub fn target(&self) -> &T {
+        &self.target
+    }
+
+    pub fn device(&self) -> &wgpu::Device {
+        &self.device
+    }
+
     fn draw_rect(&mut self, x: f32, y: f32, width: f32, height: f32, color: Color) {
         let (frame_output, encoder) = if let Some((frame_output, encoder)) = &mut self.current_frame
         {
@@ -781,7 +789,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
     }
 }
 
-impl<T: RenderTarget> RenderBackend for WgpuRenderBackend<T> {
+impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn set_viewport_dimensions(&mut self, width: u32, height: u32) {
         // Avoid panics from creating 0-sized framebuffers.
         let width = std::cmp::max(width, 1);
@@ -1399,7 +1407,11 @@ impl<T: RenderTarget> RenderBackend for WgpuRenderBackend<T> {
                     });
             let register_buffer =
                 replace(&mut self.register_encoder, new_register_encoder).finish();
-            self.queue.submit(&[register_buffer, encoder.finish()]);
+            self.target.submit(
+                &self.device,
+                &self.queue,
+                &[register_buffer, encoder.finish()],
+            );
         }
     }
 

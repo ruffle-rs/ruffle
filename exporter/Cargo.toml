@@ -1,0 +1,22 @@
+[package]
+name = "exporter"
+version = "0.1.0"
+authors = ["Nathan Adams <dinnerbone@dinnerbone.com>"]
+edition = "2018"
+
+[dependencies]
+ruffle_core = { path = "../core" }
+ruffle_render_wgpu = { path = "../render/wgpu" }
+env_logger = "0.7.1"
+image = "0.23.4"
+log = "0.4"
+sample = "0.10.0"
+structopt = "0.3.14"
+futures = "0.3.4"
+wgpu = "0.5"
+wgpu-native = "0.5"
+
+[features]
+avm_debug = ["ruffle_core/avm_debug"]
+render_debug_labels = ["ruffle_render_wgpu/render_debug_labels"]
+lzma = ["ruffle_core/lzma"]
