@@ -563,12 +563,17 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             continue;
                         }
 
-                        let texture = &self
+                        let texture = match self
                             .textures
                             .iter()
                             .find(|(other_id, _tex)| *other_id == *id)
-                            .unwrap()
-                            .1;
+                        {
+                            None => {
+                                log::error!("Couldn't fill shape with unknown bitmap {}", id);
+                                continue;
+                            }
+                            Some(t) => &t.1,
+                        };
                         let texture_view = texture.texture.create_default_view();
 
                         flush_draw(
