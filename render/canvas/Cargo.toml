@@ -8,7 +8,7 @@ edition = "2018"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-base64 = "0.12.0"
+base64 = "0.12.1"
 fnv = "1.0.3"
 js-sys = "0.3.25"
 log = "0.4" 
