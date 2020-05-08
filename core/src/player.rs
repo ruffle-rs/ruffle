@@ -1,3 +1,4 @@
+use crate::avm1::debug::VariableDumper;
 use crate::avm1::listeners::SystemListener;
 use crate::avm1::{Activation, Avm1, TObject, Value};
 use crate::backend::input::{InputBackend, MouseCursor};
@@ -6,7 +7,9 @@ use crate::backend::{
 };
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::display_object::{MorphShape, MovieClip};
-use crate::events::{ButtonEvent, ButtonEventResult, ButtonKeyCode, ClipEvent, PlayerEvent};
+use crate::events::{
+    ButtonEvent, ButtonEventResult, ButtonKeyCode, ClipEvent, KeyCode, PlayerEvent,
+};
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::prelude::*;
@@ -332,6 +335,37 @@ impl Player {
 
     pub fn handle_event(&mut self, event: PlayerEvent) {
         let mut needs_render = self.needs_render;
+
+        if let PlayerEvent::KeyDown {
+            key_code: KeyCode::V,
+        } = event
+        {
+            if self.input.is_key_down(KeyCode::Control) && self.input.is_key_down(KeyCode::Alt) {
+                self.mutate_with_update_context(|avm, context| {
+                    let mut dumper = VariableDumper::new("  ");
+                    dumper.print_variables(
+                        "Global Variables:",
+                        "_global",
+                        &avm.global_object_cell(),
+                        avm,
+                        context,
+                    );
+                    let levels = context.levels.clone();
+                    for (level, display_object) in levels {
+                        if let Ok(object) = display_object.object().as_object() {
+                            dumper.print_variables(
+                                &format!("Level #{}:", level),
+                                &format!("_level{}", level),
+                                &object,
+                                avm,
+                                context,
+                            );
+                        }
+                    }
+                    log::info!("Variable dump:\n{}", dumper.output());
+                });
+            }
+        }
 
         // Update mouse position from mouse events.
         if let PlayerEvent::MouseMove { x, y }

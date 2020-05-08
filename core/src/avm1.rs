@@ -25,6 +25,7 @@ mod test_utils;
 pub mod listeners;
 
 mod activation;
+pub mod debug;
 mod fscommand;
 pub mod function;
 pub mod globals;
