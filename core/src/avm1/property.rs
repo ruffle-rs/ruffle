@@ -6,7 +6,6 @@ use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, UpdateContext, Value};
 use core::fmt;
 use enumset::{EnumSet, EnumSetType};
-use std::mem::replace;
 
 /// Attributes of properties in the AVM runtime.
 /// The order is significant and should match the order used by `object::as_set_prop_flags`.
@@ -74,7 +73,7 @@ impl<'gc> Property<'gc> {
                 value, attributes, ..
             } => {
                 if !attributes.contains(ReadOnly) {
-                    replace::<Value<'gc>>(value, new_value.into());
+                    *value = new_value.into();
                 }
 
                 Ok(Value::Undefined.into())
