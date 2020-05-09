@@ -476,7 +476,7 @@ impl<'gc> DisplayPropertyMap<'gc> {
         set: Option<DisplaySetter<'gc>>,
     ) {
         let prop = DisplayProperty { get, set };
-        self.0.insert(name.to_string(), prop.clone(), false);
+        self.0.insert(name.to_string(), prop, false);
     }
 }
 
