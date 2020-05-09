@@ -1,8 +1,10 @@
 //! Classes that store formatting options
 use crate::avm1::{Avm1, Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
+use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
 use std::cmp::{min, Ordering};
+use std::sync::Arc;
 
 /// A set of text formatting options to be applied to some part, or the whole
 /// of, a given text field.
@@ -101,6 +103,50 @@ fn getbool_from_avm1_object<'gc>(
 }
 
 impl TextFormat {
+    /// Construct a `TextFormat` from an `EditText`'s SWF tag.
+    ///
+    /// This requires an `UpdateContext` as we will need to retrieve some font
+    /// information from the actually-referenced font.
+    pub fn from_swf_tag<'gc>(
+        et: swf::EditText,
+        swf_movie: Arc<SwfMovie>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Self {
+        let movie_library = context.library.library_for_movie_mut(swf_movie);
+
+        //TODO: How do we represent fonts referenced by character rather than
+        //by linkage name?
+        let font = et.font_class_name;
+        let align = et.layout.clone().map(|l| l.align);
+        let left_margin = et.layout.clone().map(|l| l.left_margin.to_pixels());
+        let right_margin = et.layout.clone().map(|l| l.right_margin.to_pixels());
+        let indent = et.layout.clone().map(|l| l.indent.to_pixels());
+        let leading = et.layout.map(|l| l.leading.to_pixels());
+
+        Self {
+            font,
+            size: et.height.map(|h| h.to_pixels()),
+            color: et.color,
+            align,
+            bold: None,      // TODO: Resolve a font and pull this from that font
+            italic: None,    // TODO: Resolve a font and pull this from that font
+            underline: None, // TODO: Resolve a font and pull this from that font
+            left_margin,
+            right_margin,
+            indent,
+            block_indent: Some(0.0), // TODO: This isn't specified by the tag itself
+            kerning: Some(true),     // TODO: this isn't specified by the tag itself
+            leading,
+            letter_spacing: Some(0.0), // TODO: This isn't specified by the tag itself
+            tab_stops: Some(vec![]),   // TODO: Are there default tab stops?
+            bullet: Some(false),       // TODO: Default tab stops?
+
+            // TODO: These are probably empty strings by default
+            url: Some("".to_string()),
+            target: Some("".to_string()),
+        }
+    }
+
     /// Construct a `TextFormat` from an object that is
     pub fn from_avm1_object<'gc>(
         object1: Object<'gc>,
@@ -641,6 +687,14 @@ impl FormatSpans {
             spans: spans.to_vec(),
             default_format: Default::default(),
         }
+    }
+
+    pub fn default_format(&self) -> &TextFormat {
+        &self.default_format
+    }
+
+    pub fn set_default_format(&mut self, tf: TextFormat) {
+        self.default_format = tf;
     }
 
     /// Find the index of the span that covers a given search position.

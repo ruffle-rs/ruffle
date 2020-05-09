@@ -4,7 +4,7 @@ use crate::avm1::{Avm1, Object, StageObject, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::font::{Font, Glyph};
-use crate::html::TextFormat;
+use crate::html::{FormatSpans, TextFormat};
 use crate::library::Library;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
@@ -42,10 +42,22 @@ pub struct EditTextData<'gc> {
     text: String,
 
     /// The current HTML document displayed by this `EditText`.
+    ///
+    /// The HTML representation of this `EditText` is lowered into an
+    /// appropriate set of format spans, which is used for actual rendering.
+    /// The HTML is only retained if there is also a stylesheet already defined
+    /// on the `EditText`, else it is discarded during the lowering process.
     document: XMLDocument<'gc>,
 
-    /// The text formatting for newly inserted text spans.
-    new_format: TextFormat,
+    /// The underlying text format spans of the `EditText`.
+    ///
+    /// This is generated from HTML (with optional CSS) or set directly, and
+    /// can be directly manipulated by ActionScript. It can also be raised to
+    /// an equivalent HTML representation, as long as no stylesheet is present.
+    ///
+    /// It is lowered further into layout boxes, which are used for actual
+    /// rendering.
+    text_spans: FormatSpans,
 
     /// If the text is in multi-line mode or single-line mode.
     is_multiline: bool,
@@ -71,6 +83,7 @@ impl<'gc> EditText<'gc> {
         let is_word_wrap = swf_tag.is_word_wrap;
         let document = XMLDocument::new(context.gc_context);
         let text = swf_tag.initial_text.clone().unwrap_or_default();
+        let default_format = TextFormat::from_swf_tag(swf_tag.clone(), swf_movie.clone(), context);
 
         if swf_tag.is_html {
             document
@@ -91,7 +104,7 @@ impl<'gc> EditText<'gc> {
                 base: Default::default(),
                 text,
                 document,
-                new_format: TextFormat::default(),
+                text_spans: FormatSpans::from_str_and_format("", default_format),
                 static_data: gc_arena::Gc::allocate(
                     context.gc_context,
                     EditTextStatic {
@@ -192,12 +205,12 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn new_text_format(self) -> TextFormat {
-        self.0.read().new_format.clone()
+        self.0.read().text_spans.default_format().clone()
     }
 
     pub fn set_new_text_format(self, tf: TextFormat, gc_context: MutationContext<'gc, '_>) {
         self.0.write(gc_context).cached_break_points = None;
-        self.0.write(gc_context).new_format = tf;
+        self.0.write(gc_context).text_spans.set_default_format(tf);
     }
 
     pub fn is_multiline(self) -> bool {
