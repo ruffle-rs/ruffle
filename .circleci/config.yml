@@ -311,11 +311,6 @@ jobs:
 workflows:
   version: 2
 
-  # Basic linux build on each push or pull request to the repo
-  commit_build:
-    jobs:
-      - build
-
   # Nightly builds
   nightly_build:
     triggers:
