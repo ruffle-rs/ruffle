@@ -613,20 +613,24 @@ impl TextSpan {
 }
 
 /// Struct which contains text formatted by `TextSpan`s.
+#[derive(Clone, Debug, Collect)]
+#[collect(require_static)]
 pub struct FormatSpans {
     text: String,
     spans: Vec<TextSpan>,
+    default_format: TextFormat,
 }
 
 impl FormatSpans {
-    pub fn from_str_and_format(text: &str, default_text_format: TextFormat) -> Self {
+    pub fn from_str_and_format(text: &str, default_format: TextFormat) -> Self {
         let mut span = TextSpan::with_length(text.len());
 
-        span.set_text_format(&default_text_format);
+        span.set_text_format(&default_format);
 
         FormatSpans {
             text: text.to_string(),
             spans: vec![span],
+            default_format,
         }
     }
 
@@ -635,6 +639,7 @@ impl FormatSpans {
         FormatSpans {
             text: text.to_string(),
             spans: spans.to_vec(),
+            default_format: Default::default(),
         }
     }
 
@@ -738,9 +743,10 @@ impl FormatSpans {
         }
 
         match span_length.cmp(&self.text.len()) {
-            Ordering::Less => self
-                .spans
-                .push(TextSpan::with_length(self.text.len() - span_length)),
+            Ordering::Less => self.spans.push(TextSpan::with_length_and_format(
+                self.text.len() - span_length,
+                self.default_format.clone(),
+            )),
             Ordering::Greater => {
                 let mut deficiency = span_length - self.text.len();
                 while deficiency > 0 && !self.spans.is_empty() {
@@ -763,7 +769,10 @@ impl FormatSpans {
 
         // TODO: Is this necessary?
         if self.spans.is_empty() {
-            self.spans.push(TextSpan::with_length(self.text.len()));
+            self.spans.push(TextSpan::with_length_and_format(
+                self.text.len(),
+                self.default_format.clone(),
+            ));
         }
 
         let mut i = 0;
