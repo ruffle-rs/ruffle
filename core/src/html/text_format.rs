@@ -2,7 +2,7 @@
 use crate::avm1::{Avm1, Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use gc_arena::Collect;
-use std::cmp::min;
+use std::cmp::{min, Ordering};
 
 /// A set of text formatting options to be applied to some part, or the whole
 /// of, a given text field.
@@ -639,12 +639,18 @@ impl FormatSpans {
     }
 
     /// Find the index of the span that covers a given search position.
-    pub fn resolve_position_as_span(&self, search_pos: usize) -> Option<usize> {
+    ///
+    /// This function returns both the index of the span which covers the
+    /// search position, but how far into the span it's position is.
+    ///
+    /// The index returned from this function is not valid across calls which
+    /// mutate spans.
+    pub fn resolve_position_as_span(&self, search_pos: usize) -> Option<(usize, usize)> {
         let mut position = 0;
 
         for (index, span) in self.spans.iter().enumerate() {
             if search_pos < position + span.span_length {
-                return Some(index);
+                return Some((index, search_pos - position));
             }
 
             position += span.span_length;
@@ -653,19 +659,141 @@ impl FormatSpans {
         None
     }
 
+    /// Create a text-span break at a particular position, if one does not
+    /// already exist.
+    ///
+    /// If `search_pos` is out of bounds for the underlying set of spans, then
+    /// this function returns `None`.
+    ///
+    /// The returned index refers to the index of the newly-created span at
+    /// `search_pos`. It will be invalidated if another span break is created
+    /// before `search_pos` or if the spans are normalized. If you need to
+    /// create multiple span breaks, you must either:
+    ///
+    ///  * Always create spans in order of increasing `search_pos`.
+    ///  * Discard the values returned by this function and redundantly resolve
+    ///    each span again once all breaks are completed.
+    pub fn ensure_span_break_at(&mut self, search_pos: usize) -> Option<usize> {
+        if let Some((first_span_pos, break_index)) = self.resolve_position_as_span(search_pos) {
+            if break_index == 0 {
+                return Some(first_span_pos);
+            }
+
+            let first_span = self.spans.get_mut(first_span_pos).unwrap();
+            let mut second_span = first_span.clone();
+            second_span.span_length = first_span.span_length - break_index;
+            first_span.span_length = break_index;
+
+            self.spans.insert(first_span_pos + 1, second_span);
+
+            Some(first_span_pos + 1)
+        } else {
+            None
+        }
+    }
+
+    /// Retrieve the range of spans that encompass the text range [from, to).
+    ///
+    /// The range returned by this function is the clopen set [span_from,
+    /// span_to) ready to be sliced as `&spans[span_from..span_to]`.
+    ///
+    /// The boundaries yielded by this function may extend beyond the text
+    /// range, but will always at least encompass all of the text. To get an
+    /// exact text range, you must first call `ensure_span_break_at` for both
+    /// `from` and `to`.
+    ///
+    /// The indexes returned from this function is not valid across calls which
+    /// mutate spans.
+    pub fn get_span_boundaries(&self, from: usize, to: usize) -> (usize, usize) {
+        let start_pos = self.resolve_position_as_span(from).unwrap_or((0, 0)).0;
+        let end_pos = min(
+            self.resolve_position_as_span(to.saturating_sub(1))
+                .map(|(pos, i)| (pos.saturating_add(1), i))
+                .unwrap_or_else(|| (self.spans.len(), 0))
+                .0,
+            self.spans.len(),
+        );
+
+        (start_pos, end_pos)
+    }
+
+    /// Adjust the format spans in several ways to ensure that other function
+    /// invariants are upheld.
+    ///
+    /// The particular variants that `normalize` attempts to uphold are:
+    ///
+    ///  * The length implied by the list of text spans must match the length
+    ///    of the string they are formatting.
+    ///  * Adjacent text spans contain different text formats. (Stated
+    ///    contrapositively, `normalize` attempts to merge text spans with
+    ///    identical formatting.)
+    ///  * There is always at least one text span.
+    ///
+    /// This function should always be called after mutating text spans in such
+    /// a way that might violate the above-mentioned invariants.
+    pub fn normalize(&mut self) {
+        let mut span_length = 0;
+        for span in self.spans.iter() {
+            span_length += span.span_length;
+        }
+
+        match span_length.cmp(&self.text.len()) {
+            Ordering::Less => self
+                .spans
+                .push(TextSpan::with_length(self.text.len() - span_length)),
+            Ordering::Greater => {
+                let mut deficiency = span_length - self.text.len();
+                while deficiency > 0 && !self.spans.is_empty() {
+                    let removed_length = {
+                        let last = self.spans.last_mut().unwrap();
+                        if last.span_length > deficiency {
+                            last.span_length -= deficiency;
+                            break;
+                        } else {
+                            last.span_length
+                        }
+                    };
+
+                    self.spans.pop();
+                    deficiency -= removed_length;
+                }
+            }
+            Ordering::Equal => {}
+        }
+
+        // TODO: Is this necessary?
+        if self.spans.is_empty() {
+            self.spans.push(TextSpan::with_length(self.text.len()));
+        }
+
+        let mut i = 0;
+        while i < self.spans.len() - 1 {
+            let remove_next = {
+                let spans = self.spans.get_mut(i..i + 2).unwrap();
+
+                if spans[0].can_merge(&spans[1]) {
+                    spans[0].span_length += spans[1].span_length;
+                    true
+                } else {
+                    false
+                }
+            };
+
+            if remove_next {
+                self.spans.remove(i + 1);
+            } else {
+                i += 1;
+            }
+        }
+    }
+
     /// Retrieve a text format covering all of the properties applied to text
     /// from the start index to the end index.
     ///
     /// Any property that differs between spans of text will result in a `None`
     /// in the final text format.
     pub fn get_text_format(&self, from: usize, to: usize) -> TextFormat {
-        let start_pos = self.resolve_position_as_span(from).unwrap_or(0);
-        let end_pos = min(
-            self.resolve_position_as_span(to - 1)
-                .map(|pos| pos + 1)
-                .unwrap_or_else(|| self.spans.len()),
-            self.spans.len(),
-        );
+        let (start_pos, end_pos) = self.get_span_boundaries(from, to);
         let mut merged_fmt = if let Some(start_span) = self.spans.get(start_pos) {
             start_span.get_text_format()
         } else {
@@ -679,5 +807,22 @@ impl FormatSpans {
         }
 
         merged_fmt
+    }
+
+    /// Change some portion of the text to have a particular set of text
+    /// attributes.
+    pub fn set_text_format(&mut self, from: usize, to: usize, fmt: &TextFormat) {
+        self.ensure_span_break_at(from);
+        self.ensure_span_break_at(to);
+
+        let (start_pos, end_pos) = self.get_span_boundaries(from, to);
+
+        if let Some(spans) = self.spans.get_mut(start_pos..end_pos) {
+            for span in spans {
+                span.set_text_format(fmt);
+            }
+        }
+
+        self.normalize();
     }
 }

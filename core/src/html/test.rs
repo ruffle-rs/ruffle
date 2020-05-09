@@ -265,16 +265,93 @@ fn formatspans_resolve_position() {
         ],
     );
 
-    assert_eq!(Some(0), fs.resolve_position_as_span(0));
-    assert_eq!(Some(0), fs.resolve_position_as_span(1));
-    assert_eq!(Some(1), fs.resolve_position_as_span(2));
-    assert_eq!(Some(1), fs.resolve_position_as_span(3));
-    assert_eq!(Some(1), fs.resolve_position_as_span(4));
-    assert_eq!(Some(2), fs.resolve_position_as_span(5));
-    assert_eq!(Some(3), fs.resolve_position_as_span(6));
-    assert_eq!(Some(4), fs.resolve_position_as_span(7));
-    assert_eq!(Some(4), fs.resolve_position_as_span(8));
+    assert_eq!(Some((0, 0)), fs.resolve_position_as_span(0));
+    assert_eq!(Some((0, 1)), fs.resolve_position_as_span(1));
+    assert_eq!(Some((1, 0)), fs.resolve_position_as_span(2));
+    assert_eq!(Some((1, 1)), fs.resolve_position_as_span(3));
+    assert_eq!(Some((1, 2)), fs.resolve_position_as_span(4));
+    assert_eq!(Some((2, 0)), fs.resolve_position_as_span(5));
+    assert_eq!(Some((3, 0)), fs.resolve_position_as_span(6));
+    assert_eq!(Some((4, 0)), fs.resolve_position_as_span(7));
+    assert_eq!(Some((4, 1)), fs.resolve_position_as_span(8));
     assert_eq!(None, fs.resolve_position_as_span(9));
+}
+
+#[test]
+fn formatspans_ensure_span_break() {
+    let mut fs = FormatSpans::from_str_and_spans(
+        "abcdefghi",
+        &[
+            TextSpan::with_length(2),
+            TextSpan::with_length(3),
+            TextSpan::with_length(1),
+            TextSpan::with_length(1),
+            TextSpan::with_length(2),
+        ],
+    );
+
+    let breakpoint = fs.ensure_span_break_at(4);
+    assert_eq!(Some(2), breakpoint);
+
+    assert_eq!(Some((0, 0)), fs.resolve_position_as_span(0));
+    assert_eq!(Some((0, 1)), fs.resolve_position_as_span(1));
+    assert_eq!(Some((1, 0)), fs.resolve_position_as_span(2));
+    assert_eq!(Some((1, 1)), fs.resolve_position_as_span(3));
+    assert_eq!(Some((2, 0)), fs.resolve_position_as_span(4));
+    assert_eq!(Some((3, 0)), fs.resolve_position_as_span(5));
+    assert_eq!(Some((4, 0)), fs.resolve_position_as_span(6));
+    assert_eq!(Some((5, 0)), fs.resolve_position_as_span(7));
+    assert_eq!(Some((5, 1)), fs.resolve_position_as_span(8));
+    assert_eq!(None, fs.resolve_position_as_span(9));
+}
+
+#[test]
+fn formatspans_ensure_span_break_redundant() {
+    let mut fs = FormatSpans::from_str_and_spans(
+        "abcdefghi",
+        &[
+            TextSpan::with_length(2),
+            TextSpan::with_length(3),
+            TextSpan::with_length(1),
+            TextSpan::with_length(1),
+            TextSpan::with_length(2),
+        ],
+    );
+
+    let breakpoint = fs.ensure_span_break_at(5);
+    assert_eq!(Some(2), breakpoint);
+
+    assert_eq!(Some((0, 0)), fs.resolve_position_as_span(0));
+    assert_eq!(Some((0, 1)), fs.resolve_position_as_span(1));
+    assert_eq!(Some((1, 0)), fs.resolve_position_as_span(2));
+    assert_eq!(Some((1, 1)), fs.resolve_position_as_span(3));
+    assert_eq!(Some((1, 2)), fs.resolve_position_as_span(4));
+    assert_eq!(Some((2, 0)), fs.resolve_position_as_span(5));
+    assert_eq!(Some((3, 0)), fs.resolve_position_as_span(6));
+    assert_eq!(Some((4, 0)), fs.resolve_position_as_span(7));
+    assert_eq!(Some((4, 1)), fs.resolve_position_as_span(8));
+    assert_eq!(None, fs.resolve_position_as_span(9));
+}
+
+#[test]
+fn formatspans_span_boundaries() {
+    let fs = FormatSpans::from_str_and_spans(
+        "abcdefghi",
+        &[
+            TextSpan::with_length(2),
+            TextSpan::with_length(3),
+            TextSpan::with_length(1),
+            TextSpan::with_length(1),
+            TextSpan::with_length(2),
+        ],
+    );
+
+    assert_eq!((0, 5), fs.get_span_boundaries(0, 9));
+    assert_eq!((0, 3), fs.get_span_boundaries(1, 6));
+    assert_eq!((1, 2), fs.get_span_boundaries(2, 3));
+    assert_eq!((1, 5), fs.get_span_boundaries(3, 11));
+    assert_eq!((1, 4), fs.get_span_boundaries(4, 7));
+    assert_eq!((2, 5), fs.get_span_boundaries(5, 8));
 }
 
 #[test]
@@ -309,4 +386,243 @@ fn formatspans_get_text_format() {
     let all = fs.get_text_format(0, 100);
     assert!(all.font.is_none());
     assert_eq!(tf1.size, all.size);
+}
+
+#[test]
+fn formatspans_normalize_no_spans() {
+    let mut fs = FormatSpans::from_str_and_spans("abcdefghi", &[]);
+
+    fs.normalize();
+
+    assert_eq!((0, 1), fs.get_span_boundaries(0, 9));
+}
+
+#[test]
+fn formatspans_normalize_no_text() {
+    let mut fs = FormatSpans::from_str_and_spans("", &[]);
+
+    fs.normalize();
+
+    assert_eq!((0, 1), fs.get_span_boundaries(0, 0));
+    assert_eq!(None, fs.resolve_position_as_span(5));
+}
+
+#[test]
+fn formatspans_normalize_short_spans() {
+    let mut tf1 = TextFormat::default();
+    tf1.font = Some("Same!".to_string());
+    tf1.size = Some(12.0);
+
+    let mut tf2 = TextFormat::default();
+    tf2.font = Some("Difference!".to_string());
+    tf2.size = Some(12.0);
+
+    let mut fs = FormatSpans::from_str_and_spans(
+        "abcdefghi",
+        &[
+            TextSpan::with_length_and_format(5, tf1),
+            TextSpan::with_length_and_format(1, tf2),
+        ],
+    );
+
+    fs.normalize();
+
+    assert_eq!((0, 1), fs.get_span_boundaries(0, 5));
+    assert_eq!((1, 2), fs.get_span_boundaries(5, 6));
+    assert_eq!((2, 3), fs.get_span_boundaries(6, 9));
+}
+
+#[test]
+fn formatspans_normalize_exact_spans() {
+    let mut tf1 = TextFormat::default();
+    tf1.font = Some("Same!".to_string());
+    tf1.size = Some(12.0);
+
+    let mut tf2 = TextFormat::default();
+    tf2.font = Some("Difference!".to_string());
+    tf2.size = Some(12.0);
+
+    let mut fs = FormatSpans::from_str_and_spans(
+        "abcdefghi",
+        &[
+            TextSpan::with_length_and_format(5, tf1),
+            TextSpan::with_length_and_format(4, tf2),
+        ],
+    );
+
+    fs.normalize();
+
+    assert_eq!((0, 1), fs.get_span_boundaries(0, 5));
+    assert_eq!((1, 2), fs.get_span_boundaries(5, 9));
+    assert_eq!(None, fs.resolve_position_as_span(50));
+}
+
+#[test]
+fn formatspans_normalize_long_spans() {
+    let mut tf1 = TextFormat::default();
+    tf1.font = Some("Same!".to_string());
+    tf1.size = Some(12.0);
+
+    let mut tf2 = TextFormat::default();
+    tf2.font = Some("Difference!".to_string());
+    tf2.size = Some(12.0);
+
+    let mut fs = FormatSpans::from_str_and_spans(
+        "abcdefghi",
+        &[
+            TextSpan::with_length_and_format(5, tf1.clone()),
+            TextSpan::with_length_and_format(2000, tf2),
+            TextSpan::with_length_and_format(5, tf1),
+        ],
+    );
+
+    fs.normalize();
+
+    assert_eq!((0, 1), fs.get_span_boundaries(0, 5));
+    assert_eq!((1, 2), fs.get_span_boundaries(5, 9));
+    assert_eq!(None, fs.resolve_position_as_span(50));
+}
+
+#[test]
+fn formatspans_normalize_merge_spans() {
+    let mut tf1 = TextFormat::default();
+    tf1.font = Some("Same!".to_string());
+    tf1.size = Some(12.0);
+
+    let mut fs = FormatSpans::from_str_and_spans(
+        "abcdefghi",
+        &[
+            TextSpan::with_length_and_format(5, tf1.clone()),
+            TextSpan::with_length_and_format(4, tf1),
+        ],
+    );
+
+    fs.normalize();
+
+    assert_eq!((0, 1), fs.get_span_boundaries(0, 9));
+}
+
+#[test]
+fn formatspans_normalize_merge_many_spans() {
+    let mut tf1 = TextFormat::default();
+    tf1.font = Some("Same!".to_string());
+    tf1.size = Some(12.0);
+
+    let mut fs = FormatSpans::from_str_and_spans(
+        "abcdefghi",
+        &[
+            TextSpan::with_length_and_format(1, tf1.clone()),
+            TextSpan::with_length_and_format(1, tf1.clone()),
+            TextSpan::with_length_and_format(2, tf1.clone()),
+            TextSpan::with_length_and_format(1, tf1.clone()),
+            TextSpan::with_length_and_format(1, tf1.clone()),
+            TextSpan::with_length_and_format(3, tf1),
+        ],
+    );
+
+    fs.normalize();
+
+    assert_eq!((0, 1), fs.get_span_boundaries(0, 9));
+}
+
+#[test]
+fn formatspans_normalize_long_spans_with_merge() {
+    let mut tf1 = TextFormat::default();
+    tf1.font = Some("Same!".to_string());
+    tf1.size = Some(12.0);
+
+    let mut tf2 = TextFormat::default();
+    tf2.font = Some("Difference!".to_string());
+    tf2.size = Some(12.0);
+
+    let mut fs = FormatSpans::from_str_and_spans(
+        "abcdefghi",
+        &[
+            TextSpan::with_length_and_format(5, tf1.clone()),
+            TextSpan::with_length_and_format(5, tf1),
+            TextSpan::with_length_and_format(2000, tf2),
+        ],
+    );
+
+    fs.normalize();
+
+    assert_eq!((0, 1), fs.get_span_boundaries(0, 9));
+    assert_eq!(None, fs.resolve_position_as_span(50));
+}
+
+#[test]
+fn formatspans_normalize_set_text_format_double_cut() {
+    let mut tf1 = TextFormat::default();
+    tf1.font = Some("Same!".to_string());
+
+    let mut tf2 = TextFormat::default();
+    tf2.font = Some("Difference!".to_string());
+
+    let mut fs = FormatSpans::from_str_and_spans(
+        "abcdefghi",
+        &[
+            TextSpan::with_length_and_format(5, tf1),
+            TextSpan::with_length_and_format(4, tf2),
+        ],
+    );
+
+    let mut tf3 = TextFormat::default();
+    tf3.font = Some("Another difference!".to_string());
+
+    fs.set_text_format(3, 7, &tf3);
+
+    assert_eq!((0, 1), fs.get_span_boundaries(0, 3));
+    assert_eq!((1, 2), fs.get_span_boundaries(3, 7));
+    assert_eq!((2, 3), fs.get_span_boundaries(7, 9));
+}
+
+#[test]
+fn formatspans_normalize_set_text_format_single_cut() {
+    let mut tf1 = TextFormat::default();
+    tf1.font = Some("Same!".to_string());
+
+    let mut tf2 = TextFormat::default();
+    tf2.font = Some("Difference!".to_string());
+
+    let mut fs = FormatSpans::from_str_and_spans(
+        "abcdefghi",
+        &[
+            TextSpan::with_length_and_format(5, tf1),
+            TextSpan::with_length_and_format(4, tf2),
+        ],
+    );
+
+    let mut tf3 = TextFormat::default();
+    tf3.font = Some("Another difference!".to_string());
+
+    fs.set_text_format(3, 5, &tf3);
+
+    assert_eq!((0, 1), fs.get_span_boundaries(0, 3));
+    assert_eq!((1, 2), fs.get_span_boundaries(3, 5));
+    assert_eq!((2, 3), fs.get_span_boundaries(5, 9));
+}
+
+#[test]
+fn formatspans_normalize_set_text_format_no_cut() {
+    let mut tf1 = TextFormat::default();
+    tf1.font = Some("Same!".to_string());
+
+    let mut tf2 = TextFormat::default();
+    tf2.font = Some("Difference!".to_string());
+
+    let mut fs = FormatSpans::from_str_and_spans(
+        "abcdefghi",
+        &[
+            TextSpan::with_length_and_format(5, tf1),
+            TextSpan::with_length_and_format(4, tf2),
+        ],
+    );
+
+    let mut tf3 = TextFormat::default();
+    tf3.font = Some("Another difference!".to_string());
+
+    fs.set_text_format(0, 5, &tf3);
+
+    assert_eq!((0, 1), fs.get_span_boundaries(0, 5));
+    assert_eq!((1, 2), fs.get_span_boundaries(5, 9));
 }
