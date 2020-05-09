@@ -2,6 +2,7 @@
 use crate::avm1::{Avm1, Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use gc_arena::Collect;
+use std::cmp::min;
 
 /// A set of text formatting options to be applied to some part, or the whole
 /// of, a given text field.
@@ -15,24 +16,24 @@ use gc_arena::Collect;
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 pub struct TextFormat {
-    font: Option<String>,
-    size: Option<f64>,
-    color: Option<swf::Color>,
-    align: Option<swf::TextAlign>,
-    bold: Option<bool>,
-    italic: Option<bool>,
-    underline: Option<bool>,
-    left_margin: Option<f64>,
-    right_margin: Option<f64>,
-    indent: Option<f64>,
-    block_indent: Option<f64>,
-    kerning: Option<bool>,
-    leading: Option<f64>,
-    letter_spacing: Option<f64>,
-    tab_stops: Option<Vec<f64>>,
-    bullet: Option<bool>,
-    url: Option<String>,
-    target: Option<String>,
+    pub font: Option<String>,
+    pub size: Option<f64>,
+    pub color: Option<swf::Color>,
+    pub align: Option<swf::TextAlign>,
+    pub bold: Option<bool>,
+    pub italic: Option<bool>,
+    pub underline: Option<bool>,
+    pub left_margin: Option<f64>,
+    pub right_margin: Option<f64>,
+    pub indent: Option<f64>,
+    pub block_indent: Option<f64>,
+    pub kerning: Option<bool>,
+    pub leading: Option<f64>,
+    pub letter_spacing: Option<f64>,
+    pub tab_stops: Option<Vec<f64>>,
+    pub bullet: Option<bool>,
+    pub url: Option<String>,
+    pub target: Option<String>,
 }
 
 impl Default for TextFormat {
@@ -263,6 +264,99 @@ impl TextFormat {
 
         Ok(object.into())
     }
+
+    /// Given two text formats, construct a new `TextFormat` where only
+    /// matching properties between the two formats are defined.
+    pub fn merge_matching_properties(self, rhs: TextFormat) -> Self {
+        TextFormat {
+            font: if self.font == rhs.font {
+                self.font
+            } else {
+                None
+            },
+            size: if self.size == rhs.size {
+                self.size
+            } else {
+                None
+            },
+            color: if self.color == rhs.color {
+                self.color
+            } else {
+                None
+            },
+            align: if self.align == rhs.align {
+                self.align
+            } else {
+                None
+            },
+            bold: if self.bold == rhs.bold {
+                self.bold
+            } else {
+                None
+            },
+            italic: if self.italic == rhs.italic {
+                self.italic
+            } else {
+                None
+            },
+            underline: if self.underline == rhs.underline {
+                self.underline
+            } else {
+                None
+            },
+            left_margin: if self.left_margin == rhs.left_margin {
+                self.left_margin
+            } else {
+                None
+            },
+            right_margin: if self.right_margin == rhs.right_margin {
+                self.right_margin
+            } else {
+                None
+            },
+            indent: if self.indent == rhs.indent {
+                self.indent
+            } else {
+                None
+            },
+            block_indent: if self.block_indent == rhs.block_indent {
+                self.block_indent
+            } else {
+                None
+            },
+            kerning: if self.kerning == rhs.kerning {
+                self.kerning
+            } else {
+                None
+            },
+            leading: if self.leading == rhs.leading {
+                self.leading
+            } else {
+                None
+            },
+            letter_spacing: if self.letter_spacing == rhs.letter_spacing {
+                self.letter_spacing
+            } else {
+                None
+            },
+            tab_stops: if self.tab_stops == rhs.tab_stops {
+                self.tab_stops
+            } else {
+                None
+            },
+            bullet: if self.bullet == rhs.bullet {
+                self.bullet
+            } else {
+                None
+            },
+            url: if self.url == rhs.url { self.url } else { None },
+            target: if self.target == rhs.target {
+                self.target
+            } else {
+                None
+            },
+        }
+    }
 }
 
 /// Represents the application of a `TextFormat` to a particular text span.
@@ -303,7 +397,55 @@ pub struct TextSpan {
     target: String,
 }
 
+impl Default for TextSpan {
+    fn default() -> Self {
+        Self {
+            span_length: 0,
+            font: "".to_string(),
+            size: 12.0,
+            color: swf::Color {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 0,
+            },
+            align: swf::TextAlign::Left,
+            bold: false,
+            italic: false,
+            underline: false,
+            left_margin: 0.0,
+            right_margin: 0.0,
+            indent: 0.0,
+            block_indent: 0.0,
+            kerning: false,
+            leading: 0.0,
+            letter_spacing: 0.0,
+            tab_stops: vec![],
+            bullet: false,
+            url: "".to_string(),
+            target: "".to_string(),
+        }
+    }
+}
+
 impl TextSpan {
+    pub fn with_length(length: usize) -> Self {
+        let mut data = Self::default();
+
+        data.span_length = length;
+
+        data
+    }
+
+    pub fn with_length_and_format(length: usize, tf: TextFormat) -> Self {
+        let mut data = Self::default();
+
+        data.span_length = length;
+        data.set_text_format(&tf);
+
+        data
+    }
+
     /// Split the text span in two at a particular point relative to the
     /// current text span's start.
     ///
@@ -444,5 +586,98 @@ impl TextSpan {
         if let Some(target) = &tf.target {
             self.target = target.clone();
         }
+    }
+
+    fn get_text_format(&self) -> TextFormat {
+        TextFormat {
+            font: Some(self.font.clone()),
+            size: Some(self.size),
+            color: Some(self.color.clone()),
+            align: Some(self.align),
+            bold: Some(self.bold),
+            italic: Some(self.italic),
+            underline: Some(self.underline),
+            left_margin: Some(self.left_margin),
+            right_margin: Some(self.right_margin),
+            indent: Some(self.indent),
+            block_indent: Some(self.block_indent),
+            kerning: Some(self.kerning),
+            leading: Some(self.leading),
+            letter_spacing: Some(self.letter_spacing),
+            tab_stops: Some(self.tab_stops.clone()),
+            bullet: Some(self.bold),
+            url: Some(self.url.clone()),
+            target: Some(self.target.clone()),
+        }
+    }
+}
+
+/// Struct which contains text formatted by `TextSpan`s.
+pub struct FormatSpans {
+    text: String,
+    spans: Vec<TextSpan>,
+}
+
+impl FormatSpans {
+    pub fn from_str_and_format(text: &str, default_text_format: TextFormat) -> Self {
+        let mut span = TextSpan::with_length(text.len());
+
+        span.set_text_format(&default_text_format);
+
+        FormatSpans {
+            text: text.to_string(),
+            spans: vec![span],
+        }
+    }
+
+    /// Construct a format span from it's raw parts.
+    pub fn from_str_and_spans(text: &str, spans: &[TextSpan]) -> Self {
+        FormatSpans {
+            text: text.to_string(),
+            spans: spans.to_vec(),
+        }
+    }
+
+    /// Find the index of the span that covers a given search position.
+    pub fn resolve_position_as_span(&self, search_pos: usize) -> Option<usize> {
+        let mut position = 0;
+
+        for (index, span) in self.spans.iter().enumerate() {
+            if search_pos < position + span.span_length {
+                return Some(index);
+            }
+
+            position += span.span_length;
+        }
+
+        None
+    }
+
+    /// Retrieve a text format covering all of the properties applied to text
+    /// from the start index to the end index.
+    ///
+    /// Any property that differs between spans of text will result in a `None`
+    /// in the final text format.
+    pub fn get_text_format(&self, from: usize, to: usize) -> TextFormat {
+        let start_pos = self.resolve_position_as_span(from).unwrap_or(0);
+        let end_pos = min(
+            self.resolve_position_as_span(to - 1)
+                .map(|pos| pos + 1)
+                .unwrap_or_else(|| self.spans.len()),
+            self.spans.len(),
+        );
+        let mut merged_fmt = if let Some(start_span) = self.spans.get(start_pos) {
+            start_span.get_text_format()
+        } else {
+            return Default::default();
+        };
+
+        if let Some(spans) = self.spans.get(start_pos + 1..end_pos) {
+            for span in spans {
+                merged_fmt = merged_fmt.merge_matching_properties(span.get_text_format());
+            }
+        }
+
+        merged_fmt
     }
 }
