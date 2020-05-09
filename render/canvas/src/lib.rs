@@ -176,7 +176,7 @@ impl WebCanvasRenderBackend {
             .map_err(|_| "Couldn't make SVG feColorMatrix element")?;
 
         filter
-            .append_child(&color_matrix.clone())
+            .append_child(&color_matrix)
             .map_err(|_| "append_child failed")?;
 
         svg.append_child(&filter)
