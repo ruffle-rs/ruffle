@@ -2,6 +2,7 @@
 use crate::avm1::{Avm1, Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use crate::tag_utils::SwfMovie;
+use crate::xml::{Step, XMLDocument, XMLName, XMLNode};
 use gc_arena::Collect;
 use std::cmp::{min, Ordering};
 use std::sync::Arc;
@@ -182,6 +183,135 @@ impl TextFormat {
             url: getstr_from_avm1_object(object1, "url", avm1, uc)?,
             target: getstr_from_avm1_object(object1, "target", avm1, uc)?,
         })
+    }
+
+    /// Extract text format parameters from presentational markup.
+    ///
+    /// This assumes the "legacy" HTML path that only supports a handful of
+    /// elements. The "stylesheet" HTML path will also require CSS style
+    /// calculation for each node, followed by style conversion.
+    pub fn from_presentational_markup(node: XMLNode<'_>) -> Self {
+        match node.tag_name() {
+            Some(name) if name == XMLName::from_str("p") => {
+                let mut tf = TextFormat::default();
+
+                match node.attribute_value(&XMLName::from_str("align")).as_deref() {
+                    Some("left") => tf.align = Some(swf::TextAlign::Left),
+                    Some("center") => tf.align = Some(swf::TextAlign::Center),
+                    Some("right") => tf.align = Some(swf::TextAlign::Right),
+                    _ => {}
+                }
+
+                tf
+            }
+            Some(name) if name == XMLName::from_str("a") => {
+                let mut tf = TextFormat::default();
+
+                if let Some(href) = node.attribute_value(&XMLName::from_str("href")) {
+                    tf.url = Some(href);
+                }
+
+                if let Some(target) = node.attribute_value(&XMLName::from_str("target")) {
+                    tf.target = Some(target);
+                }
+
+                tf
+            }
+            Some(name) if name == XMLName::from_str("font") => {
+                let mut tf = TextFormat::default();
+
+                if let Some(face) = node.attribute_value(&XMLName::from_str("face")) {
+                    tf.font = Some(face);
+                }
+
+                if let Some(size) = node.attribute_value(&XMLName::from_str("size")) {
+                    tf.size = size.parse().ok();
+                }
+
+                if let Some(color) = node.attribute_value(&XMLName::from_str("color")) {
+                    if color.starts_with('#') {
+                        let rval = color.get(1..3).and_then(|v| u8::from_str_radix(v, 16).ok());
+                        let gval = color.get(3..5).and_then(|v| u8::from_str_radix(v, 16).ok());
+                        let bval = color.get(5..7).and_then(|v| u8::from_str_radix(v, 16).ok());
+
+                        if let (Some(r), Some(g), Some(b)) = (rval, gval, bval) {
+                            tf.color = Some(swf::Color { r, g, b, a: 255 });
+                        }
+                    }
+                }
+
+                tf
+            }
+            Some(name) if name == XMLName::from_str("b") => {
+                let mut tf = TextFormat::default();
+
+                tf.bold = Some(true);
+
+                tf
+            }
+            Some(name) if name == XMLName::from_str("i") => {
+                let mut tf = TextFormat::default();
+
+                tf.italic = Some(true);
+
+                tf
+            }
+            Some(name) if name == XMLName::from_str("u") => {
+                let mut tf = TextFormat::default();
+
+                tf.underline = Some(true);
+
+                tf
+            }
+            Some(name) if name == XMLName::from_str("li") => {
+                let mut tf = TextFormat::default();
+
+                // TODO: Does `bullet` indicate the start of a new bullet in
+                // spans, or does it just mean each line gets a bullet, and
+                // this tag shouldn't touch formatting?
+                tf.bullet = Some(true);
+
+                tf
+            }
+            Some(name) if name == XMLName::from_str("textformat") => {
+                let mut tf = TextFormat::default();
+
+                //TODO: Spec says these are all in twips. That doesn't seem to
+                //match Flash 8.
+                if let Some(left_margin) = node.attribute_value(&XMLName::from_str("leftmargin")) {
+                    tf.left_margin = left_margin.parse().ok();
+                }
+
+                if let Some(right_margin) = node.attribute_value(&XMLName::from_str("rightmargin"))
+                {
+                    tf.right_margin = right_margin.parse().ok();
+                }
+
+                if let Some(indent) = node.attribute_value(&XMLName::from_str("indent")) {
+                    tf.indent = indent.parse().ok();
+                }
+
+                if let Some(blockindent) = node.attribute_value(&XMLName::from_str("blockindent")) {
+                    tf.block_indent = blockindent.parse().ok();
+                }
+
+                if let Some(leading) = node.attribute_value(&XMLName::from_str("leading")) {
+                    tf.leading = leading.parse().ok();
+                }
+
+                if let Some(tabstops) = node.attribute_value(&XMLName::from_str("tabstops")) {
+                    tf.tab_stops = Some(
+                        tabstops
+                            .split(',')
+                            .filter_map(|v| v.trim().parse().ok())
+                            .collect(),
+                    );
+                }
+
+                tf
+            }
+            _ => TextFormat::default(),
+        }
     }
 
     /// Construct a `TextFormat` AVM1 object from this text format object.
@@ -887,5 +1017,28 @@ impl FormatSpans {
         }
 
         self.normalize();
+    }
+
+    /// Lower an HTML tree into text-span representation.
+    ///
+    /// This is the "legacy" implementation of this process: it only looks for
+    /// a handful of presentational attributes in the HTML tree to generate
+    /// styling. There's also a `lower_from_css` that respects both
+    /// presentational markup and CSS stylesheets.
+    pub fn lower_from_html<'gc>(&mut self, tree: XMLDocument<'gc>) {
+        let mut format_stack = vec![];
+
+        for step in tree.as_node().walk().unwrap() {
+            match step {
+                Step::In(node) => format_stack.push(TextFormat::from_presentational_markup(node)),
+                Step::Around(node) if node.is_text() => {
+                    //TODO: Append a text node...
+                }
+                Step::Out(_) => {
+                    format_stack.pop();
+                }
+                _ => {}
+            };
+        }
     }
 }
