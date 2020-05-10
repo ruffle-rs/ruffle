@@ -12,8 +12,7 @@ pub struct GradientUniforms {
     pub num_colors: u32,
     pub repeat_mode: i32,
     pub focal_point: f32,
-    // TODO: pack this more efficiently. Alignment forces a float[16] to be aligned as a float4[16].
-    pub ratios: [[f32; 4]; 16],
+    pub ratios: [f32; 16],
     pub colors: [[f32; 4]; 16],
 }
 
@@ -142,7 +141,7 @@ impl IncompleteDrawType {
                 let gradient_ubo = create_buffer_with_data(
                     device,
                     bytemuck::cast_slice(&[gradient]),
-                    wgpu::BufferUsage::UNIFORM,
+                    wgpu::BufferUsage::STORAGE_READ,
                     create_debug_label!(
                         "Shape {} draw {} gradient ubo transfer buffer",
                         shape_id,

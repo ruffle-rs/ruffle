@@ -350,7 +350,7 @@ impl WgpuRenderBackend {
                         }
 
                         let mut colors: [[f32; 4]; 16] = Default::default();
-                        let mut ratios: [[f32; 4]; 16] = Default::default();
+                        let mut ratios: [f32; 16] = Default::default();
                         for (i, record) in gradient.records.iter().enumerate() {
                             if i >= 16 {
                                 // TODO: we need to support these!
@@ -362,7 +362,7 @@ impl WgpuRenderBackend {
                                 f32::from(record.color.b) / 255.0,
                                 f32::from(record.color.a) / 255.0,
                             ];
-                            ratios[i] = [f32::from(record.ratio) / 255.0, 0.0, 0.0, 0.0];
+                            ratios[i] = f32::from(record.ratio) / 255.0;
                         }
 
                         let uniforms = GradientUniforms {
@@ -419,7 +419,7 @@ impl WgpuRenderBackend {
                         }
 
                         let mut colors: [[f32; 4]; 16] = Default::default();
-                        let mut ratios: [[f32; 4]; 16] = Default::default();
+                        let mut ratios: [f32; 16] = Default::default();
                         for (i, record) in gradient.records.iter().enumerate() {
                             if i >= 16 {
                                 // TODO: we need to support these!
@@ -431,7 +431,7 @@ impl WgpuRenderBackend {
                                 f32::from(record.color.b) / 255.0,
                                 f32::from(record.color.a) / 255.0,
                             ];
-                            ratios[i] = [f32::from(record.ratio) / 255.0, 0.0, 0.0, 0.0];
+                            ratios[i] = f32::from(record.ratio) / 255.0;
                         }
 
                         let uniforms = GradientUniforms {
@@ -491,7 +491,7 @@ impl WgpuRenderBackend {
                         }
 
                         let mut colors: [[f32; 4]; 16] = Default::default();
-                        let mut ratios: [[f32; 4]; 16] = Default::default();
+                        let mut ratios: [f32; 16] = Default::default();
                         for (i, record) in gradient.records.iter().enumerate() {
                             if i >= 16 {
                                 // TODO: we need to support these!
@@ -503,7 +503,7 @@ impl WgpuRenderBackend {
                                 f32::from(record.color.b) / 255.0,
                                 f32::from(record.color.a) / 255.0,
                             ];
-                            ratios[i] = [f32::from(record.ratio) / 255.0, 0.0, 0.0, 0.0];
+                            ratios[i] = f32::from(record.ratio) / 255.0;
                         }
 
                         let uniforms = GradientUniforms {

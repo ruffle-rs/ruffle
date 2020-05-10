@@ -5,12 +5,12 @@ layout(set = 0, binding = 2) uniform Colors {
     vec4 add_color;
 };
 
-layout(set = 0, binding = 3) uniform Gradient {
+layout(std430, set = 0, binding = 3) buffer Gradient {
     int u_gradient_type;
     uint u_num_colors;
     int u_repeat_mode;
     float u_focal_point;
-    vec4 u_ratios[16];
+    float u_ratios[16];
     vec4 u_colors[16];
 };
 
