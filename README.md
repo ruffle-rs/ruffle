@@ -22,7 +22,7 @@ Ruffle is in the proof-of-concept stage and can currently run early Flash animat
 
 ## Nightly builds
 
-[Nightly builds](http://ruffle-rs.s3-website-us-west-1.amazonaws.com/) of Ruffle are available for desktop and web platforms.
+[Nightly builds](http://ruffle-rs.s3-website-us-west-1.amazonaws.com/) of Ruffle are available for desktop and web platforms including the browser extension.
 
 ## Building from source
 
@@ -50,6 +50,11 @@ Ruffle is in the proof-of-concept stage and can currently run early Flash animat
 * `npm install`
 * `npm run build`
 * Follow the wiki instructions for [using Ruffle on your own site](https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#web)
+
+#### Browser extension
+
+* Follow the wiki instructions for [building the Ruffle browser extension](https://github.com/ruffle-rs/ruffle/wiki/Building-Ruffle#building-the-web-extension)
+* Follow the wiki instructions for [using the Ruffle browser extension](https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#browser-extension)
 
 ### Scanner
 
