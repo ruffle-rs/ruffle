@@ -22,6 +22,7 @@ use crate::utils::{
     swf_to_gl_matrix,
 };
 use ruffle_core::color_transform::ColorTransform;
+use std::mem::replace;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -42,6 +43,7 @@ pub struct WgpuRenderBackend {
     frame_buffer_view: wgpu::TextureView,
     depth_texture_view: wgpu::TextureView,
     current_frame: Option<(wgpu::SwapChainOutput, wgpu::CommandEncoder)>,
+    register_encoder: wgpu::CommandEncoder,
     meshes: Vec<Mesh>,
     viewport_width: f32,
     viewport_height: f32,
@@ -181,6 +183,11 @@ impl WgpuRenderBackend {
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
         });
 
+        let register_encoder_label = create_debug_label!("Register encoder");
+        let register_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: register_encoder_label.as_deref(),
+        });
+
         let depth_texture_view = depth_texture.create_default_view();
 
         let (quad_vbo, quad_ibo, quad_tex_transforms) = create_quad_buffers(&device);
@@ -196,6 +203,7 @@ impl WgpuRenderBackend {
             frame_buffer_view,
             depth_texture_view,
             current_frame: None,
+            register_encoder,
             meshes: Vec::new(),
             viewport_width: size.0 as f32,
             viewport_height: size.1 as f32,
@@ -901,14 +909,8 @@ impl RenderBackend for WgpuRenderBackend {
             wgpu::BufferUsage::COPY_SRC,
             create_debug_label!("JPEG (2) transfer buffer {}", id),
         );
-        let encoder_label = create_debug_label!("JPEG (2) encoder {}", id);
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: encoder_label.as_deref(),
-            });
 
-        encoder.copy_buffer_to_texture(
+        self.register_encoder.copy_buffer_to_texture(
             wgpu::BufferCopyView {
                 buffer: &buffer,
                 offset: 0,
@@ -923,7 +925,6 @@ impl RenderBackend for WgpuRenderBackend {
             },
             extent,
         );
-        self.queue.submit(&[encoder.finish()]);
 
         let handle = BitmapHandle(self.textures.len());
         self.textures.push((
@@ -975,14 +976,8 @@ impl RenderBackend for WgpuRenderBackend {
             wgpu::BufferUsage::COPY_SRC,
             create_debug_label!("JPEG (3) transfer buffer {}", id),
         );
-        let encoder_label = create_debug_label!("JPEG (3) encoder {}", id);
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: encoder_label.as_deref(),
-            });
 
-        encoder.copy_buffer_to_texture(
+        self.register_encoder.copy_buffer_to_texture(
             wgpu::BufferCopyView {
                 buffer: &buffer,
                 offset: 0,
@@ -997,7 +992,6 @@ impl RenderBackend for WgpuRenderBackend {
             },
             extent,
         );
-        self.queue.submit(&[encoder.finish()]);
 
         let handle = BitmapHandle(self.textures.len());
         self.textures.push((
@@ -1043,14 +1037,8 @@ impl RenderBackend for WgpuRenderBackend {
             wgpu::BufferUsage::COPY_SRC,
             create_debug_label!("PNG transfer buffer {}", swf_tag.id),
         );
-        let encoder_label = create_debug_label!("PNG encoder {}", swf_tag.id);
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: encoder_label.as_deref(),
-            });
 
-        encoder.copy_buffer_to_texture(
+        self.register_encoder.copy_buffer_to_texture(
             wgpu::BufferCopyView {
                 buffer: &buffer,
                 offset: 0,
@@ -1065,7 +1053,6 @@ impl RenderBackend for WgpuRenderBackend {
             },
             extent,
         );
-        self.queue.submit(&[encoder.finish()]);
 
         let handle = BitmapHandle(self.textures.len());
         self.textures.push((
@@ -1410,7 +1397,15 @@ impl RenderBackend for WgpuRenderBackend {
 
     fn end_frame(&mut self) {
         if let Some((_frame, encoder)) = self.current_frame.take() {
-            self.queue.submit(&[encoder.finish()]);
+            let register_encoder_label = create_debug_label!("Register encoder");
+            let new_register_encoder =
+                self.device
+                    .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                        label: register_encoder_label.as_deref(),
+                    });
+            let register_buffer =
+                replace(&mut self.register_encoder, new_register_encoder).finish();
+            self.queue.submit(&[register_buffer, encoder.finish()]);
         }
     }
 
