@@ -124,7 +124,7 @@ impl WgpuRenderBackend {
 
         let adapter = block_on(wgpu::Adapter::request(
             &wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::Default,
+                power_preference: wgpu::PowerPreference::HighPerformance,
                 compatible_surface: None,
             },
             wgpu::BackendBit::PRIMARY,
