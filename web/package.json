@@ -2,5 +2,8 @@
   "name": "ruffle",
   "version": "0.1.0",
   "description": "Root project of ruffle web",
-  "devDependencies": {}
+  "devDependencies": {
+    "babel-eslint": "^10.1.0",
+    "eslint": "^7.0.0"
+  }
 }

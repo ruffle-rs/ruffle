@@ -1,3 +1,5 @@
+/* global runtime_path */
+
 /**
  * Conditional ruffle loader
  */
