@@ -5,7 +5,7 @@ pub trait RenderTargetFrame: Debug {
     fn view(&self) -> &wgpu::TextureView;
 }
 
-pub trait RenderTarget: Debug {
+pub trait RenderTarget: Debug + 'static {
     type Frame: RenderTargetFrame;
 
     fn resize(&mut self, device: &wgpu::Device, width: u32, height: u32);

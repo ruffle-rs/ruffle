@@ -58,7 +58,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub navigator: &'a mut (dyn NavigatorBackend + 'a),
 
     /// The renderer, used by the display objects to draw themselves.
-    pub renderer: &'a mut (dyn RenderBackend + 'a),
+    pub renderer: &'a mut dyn RenderBackend,
 
     /// The input backend, used to detect user interactions.
     pub input: &'a mut dyn InputBackend,
