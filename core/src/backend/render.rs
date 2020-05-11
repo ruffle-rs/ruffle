@@ -1,9 +1,10 @@
 use crate::shape_utils::DistilledShape;
 pub use crate::{transform::Transform, Color};
+use downcast_rs::Downcast;
 use std::io::Read;
 pub use swf;
 
-pub trait RenderBackend {
+pub trait RenderBackend: Downcast {
     fn set_viewport_dimensions(&mut self, width: u32, height: u32);
     fn register_shape(&mut self, shape: DistilledShape) -> ShapeHandle;
     fn register_glyph_shape(&mut self, shape: &swf::Glyph) -> ShapeHandle;
@@ -31,6 +32,7 @@ pub trait RenderBackend {
     fn activate_mask(&mut self);
     fn pop_mask(&mut self);
 }
+impl_downcast!(RenderBackend);
 
 #[derive(Copy, Clone, Debug)]
 pub struct ShapeHandle(pub usize);
