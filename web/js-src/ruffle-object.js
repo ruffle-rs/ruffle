@@ -28,8 +28,17 @@ export default class RuffleObject extends RufflePlayer {
     }
 
     static is_interdictable(elem) {
-        if (!elem.src && !elem.data) {
-            return false;
+        if (!elem.data) {
+            let has_movie = false;
+            let params = elem.getElementsByTagName("param");
+            for (let i = 0;i < params.length;i ++) {
+                if (params[i].name == "movie" && params[i].value) {
+                    has_movie = true;
+                }
+            }
+            if (!has_movie) {
+                return false;
+            }
         }
         if (elem.type === FLASH_MIMETYPE || elem.type === FUTURESPLASH_MIMETYPE || elem.type == FLASH7_AND_8_MIMETYPE || elem.type == FLASH_MOVIE_MIMETYPE) {
             return true;
