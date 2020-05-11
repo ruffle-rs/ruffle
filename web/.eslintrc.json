@@ -1,0 +1,16 @@
+{
+    "extends": "eslint:recommended",
+    "root": true,
+    "parser": "babel-eslint",
+    "parserOptions": {
+        "ecmaVersion": 8,
+        "sourceType": "module"
+    },
+    "env": {
+        "es2017": true
+    },
+    "rules": {
+        "no-console": "off",
+        "no-constant-condition": ["error", {"checkLoops": false}]
+    }
+}

@@ -1,3 +1,5 @@
+/* eslint-env node */
+
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
 const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
