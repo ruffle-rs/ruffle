@@ -29,6 +29,8 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
 
         self.instance = null;
 
+        self.original = null;
+
         self.Ruffle = load_ruffle();
 
         return self;
@@ -215,7 +217,12 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             }
 
             for (let node of Array.from(elem.children)) {
-                this.appendChild(node);
+                if (node.tagName.toLowerCase() != "object" && node.tagName.toLowerCase() != "embed" && node.parentElement.parentElement.tagName.toLowerCase() != "object") {
+                    this.appendChild(node);
+                }
+                else {
+                    console.log(node.tagName.toLowerCase() + " skipped");
+                }
             }
         }
     }

@@ -44,10 +44,19 @@ module.exports = class RuffleEmbed extends RufflePlayer {
         if (!elem.src) {
             return false;
         }
-        if (elem.parentElement && elem.parentElement.tagName == "object") {
-            /* Only polyfill top-level objects */
-            elem.src = "";
-            /* Set src to empty */
+        if (
+            elem.parentElement &&
+            elem.parentElement.tagName.toLowerCase() == "object"
+        ) {
+        /* Only polyfill top-level objects */
+            if (elem.hasAttribute("src")) {
+                elem.removeAttribute("src");
+            }
+            elem.height = 0;
+            elem.width = 0;
+            /* Turn element into dummy */
+            /* setting it to 0 width & height prevents it from *
+             * messing up display Netscape 4 style             */
             return false;
         }
         if (
@@ -68,6 +77,14 @@ module.exports = class RuffleEmbed extends RufflePlayer {
         let external_name = register_element("ruffle-embed", RuffleEmbed);
         let ruffle_obj = document.createElement(external_name);
         ruffle_obj.copy_element(elem);
+        ruffle_obj.original = elem;
+        /* Set original for detecting if original is (re)moved */
+        if (elem.hasAttribute("src")) {
+            elem.removeAttribute("src");
+        }
+        elem.width = 0;
+        elem.height = 0;
+        /* Turn the original embed into a dummy element */
 
         return ruffle_obj;
     }

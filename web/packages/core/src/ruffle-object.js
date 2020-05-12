@@ -48,8 +48,11 @@ module.exports = class RuffleObject extends RufflePlayer {
                 return false;
             }
         }
-        if (elem.parentElement && elem.parentElement.tagName == "object") {
-            /* Only polyfill top-level objects */
+        if (
+            elem.parentElement && 
+            elem.parentElement.tagName.toLowerCase() == "object"
+        ) {
+        /* Only polyfill top-level objects */
             let params = elem.getElementsByTagName("param");
             for (let i = 0; i < params.length; i++) {
                 if (params[i].name == "movie") {
@@ -57,8 +60,11 @@ module.exports = class RuffleObject extends RufflePlayer {
                 }
                 /* Remove movie param */
             }
-            elem.data = "";
-            /* Set data to empty */
+            if (elem.hasAttribute("data")) {
+                elem.removeAttribute("data");
+            }
+            elem.width = 0;
+            elem.height = 0;
             return false;
         }
         if (
@@ -109,7 +115,22 @@ module.exports = class RuffleObject extends RufflePlayer {
     static from_native_object_element(elem) {
         let external_name = register_element("ruffle-object", RuffleObject);
         let ruffle_obj = document.createElement(external_name);
+        let params = elem.getElementsByTagName("param");
         ruffle_obj.copy_element(elem);
+        ruffle_obj.original = elem;
+        /* Set original for detecting if original is (re)moved */
+        for (let i = 0;i < params.length;i ++) {
+            if (params[i].name == "movie") {
+                params[i].parentElement.removeChild(params[i]);
+            }
+            /* Remove movie param */
+        }
+        if (elem.hasAttribute("data")) {
+            elem.removeAttribute("data");
+        }
+        elem.height = 0;
+        elem.width = 0;
+        /* Turn original object into dummy element */
 
         return ruffle_obj;
     }
