@@ -3,7 +3,7 @@ import { register_element } from "./register-element";
 
 export default class RuffleObject extends RufflePlayer {
     constructor(...args) {
-        return super(...args);
+        super(...args);
     }
 
     connectedCallback() {
