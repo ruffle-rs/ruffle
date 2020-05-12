@@ -17,7 +17,7 @@ export class SourceAPI {
      * @param {string} source_name The name of this particular source.
      */
     constructor(source_name) {
-        this.name = name;
+        this.name = source_name;
     }
 
     get version() {
