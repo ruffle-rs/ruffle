@@ -1,17 +1,17 @@
 {
-  "name": "ruffle-extension",
-  "version": "0.1.0",
-  "description": "Extension packaging for Ruffle Flash Emulator",
-  "scripts": {
-    "build": "webpack",
-    "serve": "webpack-dev-server"
-  },
-  "devDependencies": {
-    "@wasm-tool/wasm-pack-plugin": "^1.2.0",
-    "clean-webpack-plugin": "^3.0.0",
-    "copy-webpack-plugin": "^5.1.0",
-    "webpack": "^4.41.2",
-    "webpack-cli": "^3.3.10",
-    "webpack-dev-server": "^3.9.0"
-  }
+    "name": "ruffle-extension",
+    "version": "0.1.0",
+    "description": "Extension packaging for Ruffle Flash Emulator",
+    "scripts": {
+        "build": "webpack",
+        "serve": "webpack-dev-server"
+    },
+    "devDependencies": {
+        "@wasm-tool/wasm-pack-plugin": "^1.2.0",
+        "clean-webpack-plugin": "^3.0.0",
+        "copy-webpack-plugin": "^5.1.0",
+        "webpack": "^4.41.2",
+        "webpack-cli": "^3.3.10",
+        "webpack-dev-server": "^3.9.0"
+    }
 }

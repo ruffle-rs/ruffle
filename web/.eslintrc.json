@@ -11,6 +11,6 @@
     },
     "rules": {
         "no-console": "off",
-        "no-constant-condition": ["error", {"checkLoops": false}]
+        "no-constant-condition": ["error", { "checkLoops": false }]
     }
 }

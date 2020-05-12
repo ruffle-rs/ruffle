@@ -14,14 +14,17 @@ export class RufflePlayer extends HTMLElement {
     constructor(...args) {
         let self = super(...args);
 
-        self.shadow = self.attachShadow({ mode: 'closed' });
+        self.shadow = self.attachShadow({ mode: "closed" });
         self.shadow.appendChild(ruffle_shadow_template.content.cloneNode(true));
 
         self.dynamic_styles = self.shadow.getElementById("dynamic_styles");
         self.container = self.shadow.getElementById("container");
         self.play_button = self.shadow.getElementById("play_button");
         if (self.play_button) {
-            self.play_button.addEventListener("click", self.play_button_clicked.bind(self));
+            self.play_button.addEventListener(
+                "click",
+                self.play_button_clicked.bind(self)
+            );
         }
 
         self.instance = null;
@@ -59,16 +62,24 @@ export class RufflePlayer extends HTMLElement {
         }
 
         if (this.attributes.width) {
-            let width = RufflePlayer.html_dimension_to_css_dimension(this.attributes.width.value);
+            let width = RufflePlayer.html_dimension_to_css_dimension(
+                this.attributes.width.value
+            );
             if (width !== null) {
-                this.dynamic_styles.sheet.insertRule(`:host { width: ${width}; }`);
+                this.dynamic_styles.sheet.insertRule(
+                    `:host { width: ${width}; }`
+                );
             }
         }
 
         if (this.attributes.height) {
-            let height = RufflePlayer.html_dimension_to_css_dimension(this.attributes.height.value);
+            let height = RufflePlayer.html_dimension_to_css_dimension(
+                this.attributes.height.value
+            );
             if (height !== null) {
-                this.dynamic_styles.sheet.insertRule(`:host { height: ${height}; }`);
+                this.dynamic_styles.sheet.insertRule(
+                    `:host { height: ${height}; }`
+                );
             }
         }
     }
@@ -76,7 +87,7 @@ export class RufflePlayer extends HTMLElement {
     /**
      * Determine if this element is the fallback content of another Ruffle
      * player.
-     * 
+     *
      * This heurustic assumes Ruffle objects will never use their fallback
      * content. If this changes, then this code also needs to change.
      */
@@ -111,10 +122,19 @@ export class RufflePlayer extends HTMLElement {
                     await this.play_swf_data(data);
                     console.log("Playing " + url);
                 } else {
-                    console.error("SWF load failed: " + response.status + " " + response.statusText + " for " + url);
+                    console.error(
+                        "SWF load failed: " +
+                            response.status +
+                            " " +
+                            response.statusText +
+                            " for " +
+                            url
+                    );
                 }
             } else {
-                console.warn("Ignoring attempt to play a disconnected or suspended Ruffle element");
+                console.warn(
+                    "Ignoring attempt to play a disconnected or suspended Ruffle element"
+                );
             }
         } catch (err) {
             console.error("Serious error occured loading SWF file: " + err);
@@ -153,7 +173,9 @@ export class RufflePlayer extends HTMLElement {
                 this.play_button.style.display = "block";
             }
         } else {
-            console.warn("Ignoring attempt to play a disconnected or suspended Ruffle element");
+            console.warn(
+                "Ignoring attempt to play a disconnected or suspended Ruffle element"
+            );
         }
     }
 
@@ -166,7 +188,10 @@ export class RufflePlayer extends HTMLElement {
             for (let attrib of elem.attributes) {
                 if (attrib.specified) {
                     // Issue 468: Chrome "Click to Active Flash" box stomps on title attribute
-                    if (attrib.name === "title" && attrib.value === "Adobe Flash Player") {
+                    if (
+                        attrib.name === "title" &&
+                        attrib.value === "Adobe Flash Player"
+                    ) {
                         continue;
                     }
 
@@ -174,7 +199,9 @@ export class RufflePlayer extends HTMLElement {
                         this.setAttribute(attrib.name, attrib.value);
                     } catch (err) {
                         // The embed may have invalid attributes, so handle these gracefully.
-                        console.warn(`Unable to set attribute ${attrib.name} on Ruffle instance`);
+                        console.warn(
+                            `Unable to set attribute ${attrib.name} on Ruffle instance`
+                        );
                     }
                 }
             }
@@ -198,7 +225,7 @@ export class RufflePlayer extends HTMLElement {
                 let out = match[1];
                 if (!match[3]) {
                     // Unitless -- add px for CSS.
-                    out += "px"
+                    out += "px";
                 }
                 return out;
             }
@@ -211,5 +238,9 @@ export class RufflePlayer extends HTMLElement {
  * Returns whether the given filename ends in an "swf" extension.
  */
 export function is_swf_filename(filename) {
-    return filename && typeof filename === "string" && filename.search(/\.swf\s*$/i) >= 0;
+    return (
+        filename &&
+        typeof filename === "string" &&
+        filename.search(/\.swf\s*$/i) >= 0
+    );
 }

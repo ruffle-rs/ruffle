@@ -1,26 +1,26 @@
 import RuffleObject from "./ruffle-object";
 import RuffleEmbed from "./ruffle-embed";
 import { install_plugin, FLASH_PLUGIN } from "./plugin-polyfill";
-import { public_path } from "./public-path"
+import { public_path } from "./public-path";
 
 if (!window.RufflePlayer) {
-    window.RufflePlayer={};
+    window.RufflePlayer = {};
 }
 let top_level_ruffle_config;
-let ruffle_script_src=public_path({}, "ruffle.js");
+let ruffle_script_src = public_path({}, "ruffle.js");
 if (window.RufflePlayer.config) {
-    top_level_ruffle_config=window.RufflePlayer.config;
-    ruffle_script_src=public_path(window.RufflePlayer.config, "ruffle.js");
+    top_level_ruffle_config = window.RufflePlayer.config;
+    ruffle_script_src = public_path(window.RufflePlayer.config, "ruffle.js");
 }
 /* public_path returns the directory where the file is, *
  * so we need to append the filename. We don't need to  *
  * worry about the directory not having a slash because *
  * public_path appends a slash.                         */
-ruffle_script_src+="ruffle.js";
+ruffle_script_src += "ruffle.js";
 
 /**
  * Polyfill native elements with Ruffle equivalents.
- * 
+ *
  * This polyfill isn't fool-proof: If there's a chance site JavaScript has
  * access to a pre-polyfill element, then this will break horribly. We can
  * keep native objects out of the DOM, and thus out of JavaScript's grubby
@@ -48,7 +48,10 @@ function replace_flash_instances() {
             }
         }
     } catch (err) {
-        console.error("Serious error encountered when polyfilling native Flash elements: " + err);
+        console.error(
+            "Serious error encountered when polyfilling native Flash elements: " +
+                err
+        );
     }
 }
 
@@ -56,18 +59,19 @@ function polyfill_static_content() {
     replace_flash_instances();
 }
 
-
 function polyfill_dynamic_content() {
     // Listen for changes to the DOM. If nodes are added, re-check for any Flash instances.
     const observer = new MutationObserver(function (mutationsList) {
         // If any nodes were added, re-run the polyfill to replace any new instances.
-        let nodesAdded = mutationsList.some(mutation => mutation.addedNodes.length > 0);
+        let nodesAdded = mutationsList.some(
+            (mutation) => mutation.addedNodes.length > 0
+        );
         if (nodesAdded) {
             replace_flash_instances();
         }
     });
 
-    observer.observe(document, { childList: true, subtree: true});
+    observer.observe(document, { childList: true, subtree: true });
 }
 
 function falsify_plugin_detection() {
@@ -75,39 +79,37 @@ function falsify_plugin_detection() {
 }
 
 function load_ruffle_player_into_frame(event) {
-    let current_frame=event.currentTarget.contentWindow;
+    let current_frame = event.currentTarget.contentWindow;
     let frame_document;
     console.log("Event handled");
     try {
-        frame_document=current_frame.document;
+        frame_document = current_frame.document;
         if (!frame_document) {
             console.log("Frame has no document.");
             return;
         }
-    }
-    catch(e) {
+    } catch (e) {
         console.log("Error Getting Frame: " + e.message);
         return;
     }
-    if(!current_frame.RufflePlayer) {
+    if (!current_frame.RufflePlayer) {
         /* Make sure we populate the frame's window.RufflePlayer.config */
-        current_frame.RufflePlayer={};
-        current_frame.RufflePlayer.config=top_level_ruffle_config;
+        current_frame.RufflePlayer = {};
+        current_frame.RufflePlayer.config = top_level_ruffle_config;
         let script = frame_document.createElement("script");
-        script.src=ruffle_script_src; /* Load this script(ruffle.js) into the frame */
+        script.src = ruffle_script_src; /* Load this script(ruffle.js) into the frame */
         frame_document.body.appendChild(script);
-    }
-    else {
+    } else {
         console.log("(i)frame already has RufflePlayer");
     }
     polyfill_frames_common(current_frame);
 }
 
 function polyfill_frames_common(depth) {
-    let current_iframes=depth.document.getElementsByTagName("iframe");
-    let current_frames=depth.document.getElementsByTagName("frame");
-    for (let i=0;i<current_iframes.length;i++) {
-        let current_frame=current_iframes[i];
+    let current_iframes = depth.document.getElementsByTagName("iframe");
+    let current_frames = depth.document.getElementsByTagName("frame");
+    for (let i = 0; i < current_iframes.length; i++) {
+        let current_frame = current_iframes[i];
         /* Apperently, using addEventListener attatches the event *
          * to the dummy document, which is overwritten when the   *
          * iframe is loaded, so we do this. It can only works if  *
@@ -117,12 +119,12 @@ function polyfill_frames_common(depth) {
          * of depth.frames to get the iframes at the depth.       *
          * Also, this way we should be able to handle frame       *
          * frame navigation, which is good.                       */
-        current_frame.onload=load_ruffle_player_into_frame;
+        current_frame.onload = load_ruffle_player_into_frame;
         polyfill_frames_common(current_frame.contentWindow);
     }
-    for (let i=0;i<current_frames.length;i++) {
-        let current_frame=current_frames[i];
-        current_frame.onload=load_ruffle_player_into_frame;
+    for (let i = 0; i < current_frames.length; i++) {
+        let current_frame = current_frames[i];
+        current_frame.onload = load_ruffle_player_into_frame;
         polyfill_frames_common(current_frame.contentWindow);
     }
 }
@@ -133,7 +135,9 @@ function polyfill_static_frames() {
 
 function ruffle_frame_listener(mutationsList) {
     /* Basically the same as the listener for dynamic embeds. */
-    let nodesAdded = mutationsList.some(mutation => mutation.addedNodes.length > 0);
+    let nodesAdded = mutationsList.some(
+        (mutation) => mutation.addedNodes.length > 0
+    );
     if (nodesAdded) {
         polyfill_frames_common(window);
     }
@@ -141,7 +145,7 @@ function ruffle_frame_listener(mutationsList) {
 
 function polyfill_dynamic_frames() {
     const observer = new MutationObserver(ruffle_frame_listener);
-    observer.observe(document, {childList: true, subtree: true});
+    observer.observe(document, { childList: true, subtree: true });
 }
 
 function polyfill_frames() {
@@ -155,7 +159,7 @@ let polyfills = {
     "static-content": polyfill_static_content,
     "dynamic-content": polyfill_dynamic_content,
     "plugin-detect": falsify_plugin_detection,
-    "frames": polyfill_frames
+    frames: polyfill_frames,
 };
 
 export function polyfill(polyfill_list) {
@@ -164,8 +168,12 @@ export function polyfill(polyfill_list) {
             continue;
         }
 
-        if (!Object.prototype.hasOwnProperty.call(polyfills, polyfill_list[i])) {
-            throw new Error("Requested nonexistent polyfill: " + polyfill_list[i]);
+        if (
+            !Object.prototype.hasOwnProperty.call(polyfills, polyfill_list[i])
+        ) {
+            throw new Error(
+                "Requested nonexistent polyfill: " + polyfill_list[i]
+            );
         }
 
         running_polyfills.push(polyfill_list[i]);
