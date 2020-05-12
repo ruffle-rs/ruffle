@@ -34,6 +34,9 @@ export default class RuffleEmbed extends RufflePlayer {
     }
 
     static is_interdictable(elem) {
+        if (!elem.src) {
+		return false;
+        }
         if (elem.type === FLASH_MIMETYPE || elem.type === FUTURESPLASH_MIMETYPE || elem.type == FLASH7_AND_8_MIMETYPE || elem.type == FLASH_MOVIE_MIMETYPE) {
             return true;
         } else if (elem.type === undefined || elem.type === "") {
