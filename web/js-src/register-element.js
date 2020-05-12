@@ -77,7 +77,7 @@ export function register_element(element_name, element_class) {
 
             return external_name;
         } catch (e) {
-            if (e instanceof NotSupportedError) {
+            if (e.name === "NotSupportedError") {
                 tries += 1;
             }
         }
