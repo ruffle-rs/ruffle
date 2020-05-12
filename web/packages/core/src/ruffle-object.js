@@ -11,6 +11,11 @@ const { register_element } = require("./register-element");
 
 module.exports = class RuffleObject extends RufflePlayer {
     constructor(...args) {
+        const observer = new MutationObserver(function (mutationsList, observer) {
+            /* handle if original object is (re)moved */
+            RufflePlayer.handle_player_changes(document.getElementsByTagName("ruffle-object"));
+        });
+        observer.observe(document, { childList: true, subtree: true });
         super(...args);
     }
 
@@ -36,6 +41,31 @@ module.exports = class RuffleObject extends RufflePlayer {
     }
 
     static is_interdictable(elem) {
+        if (
+            elem.parentElement &&
+            elem.parentElement.tagName.toLowerCase() == "object"
+        ) {
+        /* Only polyfill top-level objects */
+            let children = elem.getElementsByTagName("*");
+            for (let i = 0;i < children.length;i ++) {
+                if (
+                    children[i].tagName.toLowerCase() == "param" &&
+                    children[i].name == "movie"
+                ) {
+                    children[i].parentElement.removeChild(children[i]);
+                }
+                /* Remove movie param */
+                else if (children[i].tagName.toLowerCase() != "param") {
+                    /* Hide fallback content */
+                    children[i].style.display = "none";
+                }
+            }
+            if (elem.hasAttribute("data")) {
+                elem.removeAttribute("data");
+            }
+            elem.style.display = "none";
+            return false;
+        }
         if (!elem.data) {
             let has_movie = false;
             let params = elem.getElementsByTagName("param");
@@ -47,25 +77,6 @@ module.exports = class RuffleObject extends RufflePlayer {
             if (!has_movie) {
                 return false;
             }
-        }
-        if (
-            elem.parentElement && 
-            elem.parentElement.tagName.toLowerCase() == "object"
-        ) {
-        /* Only polyfill top-level objects */
-            let params = elem.getElementsByTagName("param");
-            for (let i = 0; i < params.length; i++) {
-                if (params[i].name == "movie") {
-                    params[i].parentElement.removeChild(params[i]);
-                }
-                /* Remove movie param */
-            }
-            if (elem.hasAttribute("data")) {
-                elem.removeAttribute("data");
-            }
-            elem.width = 0;
-            elem.height = 0;
-            return false;
         }
         if (
             elem.type.toLowerCase() === FLASH_MIMETYPE.toLowerCase() ||
@@ -128,8 +139,7 @@ module.exports = class RuffleObject extends RufflePlayer {
         if (elem.hasAttribute("data")) {
             elem.removeAttribute("data");
         }
-        elem.height = 0;
-        elem.width = 0;
+        elem.style.display = "none";
         /* Turn original object into dummy element */
 
         return ruffle_obj;

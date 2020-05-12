@@ -29,7 +29,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
 
         self.instance = null;
 
-        self.original = null;
+        self.original = self;
 
         self.Ruffle = load_ruffle();
 
@@ -246,6 +246,23 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             }
         }
         return null;
+    }
+
+    static handle_player_changes(players) {
+        for (let i = 0;i < players.length;i ++) {
+            if (players[i].parentElement.contains(players[i].original)) {
+            /* Original is still there */
+                continue;
+            }
+            /*else*/ if (document.body.contains(players[i].original)) {
+                console.log("Player moved");
+                players[i].original.insertAdjacentElement("beforebegin", players[i]);
+            }
+            else {
+                console.log("Player removed");
+                players[i].parentElement.removeChild(players[i]);
+            }
+        }
     }
 };
 

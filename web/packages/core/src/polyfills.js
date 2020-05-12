@@ -27,10 +27,6 @@ ruffle_script_src += "ruffle.js";
  * little hands, but only if we load first.
  */
 
-function insert_after(original_element, new_element) {
-    original_element.parentElement.insertBefore(new_element, original_element.nextSibling);
-}
-
 let objects;
 let embeds;
 function replace_flash_instances() {
@@ -43,13 +39,13 @@ function replace_flash_instances() {
         for (let elem of Array.from(objects)) {
             if (RuffleObject.is_interdictable(elem)) {
                 let ruffle_obj = RuffleObject.from_native_object_element(elem);
-                insert_after(elem, ruffle_obj);
+                elem.insertAdjacentElement("afterend", ruffle_obj);
             }
         }
         for (let elem of Array.from(embeds)) {
             if (RuffleEmbed.is_interdictable(elem)) {
                 let ruffle_obj = RuffleEmbed.from_native_embed_element(elem);
-                insert_after(elem, ruffle_obj);
+                elem.insertAdjacentElement("afterend", ruffle_obj);
             }
         }
     } catch (err) {

@@ -10,6 +10,11 @@ const { register_element } = require("./register-element");
 
 module.exports = class RuffleEmbed extends RufflePlayer {
     constructor(...args) {
+        const observer = new MutationObserver(function (mutationsList, observer) {
+            /* handle if original object is (re)moved */
+            RufflePlayer.handle_player_changes(document.getElementsByTagName("ruffle-embed"));
+        });
+        observer.observe(document, { childList: true, subtree: true });
         let self = super(...args);
 
         return self;
@@ -52,8 +57,7 @@ module.exports = class RuffleEmbed extends RufflePlayer {
             if (elem.hasAttribute("src")) {
                 elem.removeAttribute("src");
             }
-            elem.height = 0;
-            elem.width = 0;
+            elem.style.display = "none";
             /* Turn element into dummy */
             /* setting it to 0 width & height prevents it from *
              * messing up display Netscape 4 style             */
@@ -82,8 +86,7 @@ module.exports = class RuffleEmbed extends RufflePlayer {
         if (elem.hasAttribute("src")) {
             elem.removeAttribute("src");
         }
-        elem.width = 0;
-        elem.height = 0;
+        elem.style.display = "none";
         /* Turn the original embed into a dummy element */
 
         return ruffle_obj;
