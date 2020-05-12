@@ -122,15 +122,15 @@ export class Version {
                 } else if (is_numeric.test(this.pr_ident[i]) && is_numeric.test(fver.pr_ident[i])) {
                     if (parseInt(this.pr_ident[i]) > parseInt(fver.pr_ident[i])) {
                         return true;
-                    } else if (parseInt(this.pr_ident[i]) > parseInt(fver.pr_ident[i])) {
+                    } else if (parseInt(this.pr_ident[i]) < parseInt(fver.pr_ident[i])) {
                         return false;
                     }
-                } else if (!is_numeric.test(this.pr_ident[i]) && is_numeric.test(fver.pr_ident[i])) {
-                    return true;
+                } else if (is_numeric.test(this.pr_ident[i]) && !is_numeric.test(fver.pr_ident[i])) {
+                    return false;
                 } else if (!is_numeric.test(this.pr_ident[i]) && !is_numeric.test(fver.pr_ident[i])) {
                     if (this.pr_ident[i] > fver.pr_ident[i]) {
                         return true;
-                    } else if (this.pr_ident[i] > fver.pr_ident[i]) {
+                    } else if (this.pr_ident[i] < fver.pr_ident[i]) {
                         return false;
                     }
                 }
