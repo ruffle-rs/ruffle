@@ -3,7 +3,6 @@
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
-const webpack = require('webpack');
 const path = require('path');
 
 module.exports = (env, argv) => {

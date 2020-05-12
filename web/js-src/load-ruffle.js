@@ -12,8 +12,6 @@
  * download.
  */
 async function fetch_ruffle() {
-    let is_extension_running = false;
-
     try {
         //If runtime_path is defined then we are executing inside the extension
         //closure. In that case, we configure our local Webpack instance 
@@ -21,9 +19,7 @@ async function fetch_ruffle() {
     } catch (e) {
         //Checking an undefined closure variable usually throws ReferencError,
         //so we need to catch it here and continue onward.
-        if (e instanceof ReferenceError) {
-            is_extension_running = false;
-        } else {
+        if (!(e instanceof ReferenceError)) {
             throw e;
         }
     }
