@@ -258,5 +258,5 @@ export class PublicAPI {
         }
 
         return public_api;
-    };
+    }
 }

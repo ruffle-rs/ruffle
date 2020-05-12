@@ -126,7 +126,7 @@ class RufflePluginArray {
     get length() {
         return this.__plugins.length;
     }
-};
+}
 
 export const FLASH_PLUGIN = new RufflePlugin("Shockwave Flash", "Shockwave Flash 32.0 r0", "ruffle.js", [
     new RuffleMimeType("application/futuresplash", "Shockwave Flash", "spl"),
