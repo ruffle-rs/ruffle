@@ -48,6 +48,19 @@ module.exports = class RuffleObject extends RufflePlayer {
                 return false;
             }
         }
+        if (elem.parentElement && elem.parentElement.tagName == "object") {
+            /* Only polyfill top-level objects */
+            let params = elem.getElementsByTagName("param");
+            for (let i = 0; i < params.length; i++) {
+                if (params[i].name == "movie") {
+                    params[i].parentElement.removeChild(params[i]);
+                }
+                /* Remove movie param */
+            }
+            elem.data = "";
+            /* Set data to empty */
+            return false;
+        }
         if (
             elem.type.toLowerCase() === FLASH_MIMETYPE.toLowerCase() ||
             elem.type.toLowerCase() === FUTURESPLASH_MIMETYPE.toLowerCase() ||

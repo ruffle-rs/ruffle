@@ -44,6 +44,12 @@ module.exports = class RuffleEmbed extends RufflePlayer {
         if (!elem.src) {
             return false;
         }
+        if (elem.parentElement && elem.parentElement.tagName == "object") {
+            /* Only polyfill top-level objects */
+            elem.src = "";
+            /* Set src to empty */
+            return false;
+        }
         if (
             elem.type.toLowerCase() === FLASH_MIMETYPE.toLowerCase() ||
             elem.type.toLowerCase() === FUTURESPLASH_MIMETYPE.toLowerCase() ||
