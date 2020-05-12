@@ -164,7 +164,7 @@ export function polyfill(polyfill_list) {
             continue;
         }
 
-        if (!polyfills.hasOwnProperty(polyfill_list[i])) {
+        if (!Object.prototype.hasOwnProperty.call(polyfills, polyfill_list[i])) {
             throw new Error("Requested nonexistent polyfill: " + polyfill_list[i]);
         }
 
