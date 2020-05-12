@@ -5,13 +5,13 @@ var private_registry = {};
 
 /**
  * Lookup a previously registered custom element.
- * 
+ *
  * @param {string} element_name The internal element name, previously used to
  * register the element with the private registry.
- * 
+ *
  * @returns {object|null} The element data in the registry, or null if there is
  * no such element name registered.
- * 
+ *
  * The returned object will have `name`, `class`, and `internal_name`
  * properties listing the external name, implementing class, and internal name
  * respectively.
@@ -20,9 +20,9 @@ export function lookup_element(element_name) {
     let data = private_registry[element_name];
     if (data !== undefined) {
         return {
-            "internal_name": element_name,
-            "name": data.name,
-            "class": data.class
+            internal_name: element_name,
+            name: data.name,
+            class: data.class,
         };
     } else {
         return null;
@@ -31,21 +31,21 @@ export function lookup_element(element_name) {
 
 /**
  * Register a custom element.
- * 
+ *
  * This function is designed to be tolerant of naming conflicts. If
  * registration fails, we modify the name, and try again. As a result, this
  * function returns the real element name to use.
- * 
+ *
  * Calling this function multiple times will *not* register multiple elements.
  * We store a private registry mapping internal element names to DOM names.
  * Thus, the proper way to use this function is to call it every time you are
  * about to work with custom element names.
- * 
+ *
  * @param {string} element_name The internal name of the element.
  * @param {function} element_class The class of the element.
- * 
+ *
  * You must call this function with the same class every time.
- * 
+ *
  * @returns {string} The actual element name.
  * @throws Throws an error if two different elements were registered with the
  * same internal name.
@@ -70,9 +70,9 @@ export function register_element(element_name, element_class) {
 
             window.customElements.define(external_name, element_class);
             private_registry[element_name] = {
-                "class": element_class,
-                "name": external_name,
-                "internal_name": element_name
+                class: element_class,
+                name: external_name,
+                internal_name: element_name,
             };
 
             return external_name;

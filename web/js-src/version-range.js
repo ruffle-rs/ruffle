@@ -10,7 +10,7 @@ export class VersionRange {
 
     /**
      * Determine if a given version satisfies this range.
-     * 
+     *
      * @param {Version} fver A version object to test against.
      * @return {bool} Whether or not the given version matches this range.
      */
@@ -22,18 +22,25 @@ export class VersionRange {
                 let comparator = this.requirements[i][j][0];
                 let version = this.requirements[i][j][1];
 
-                matches = matches && version.is_stable_or_compatible_prerelease(fver);
+                matches =
+                    matches && version.is_stable_or_compatible_prerelease(fver);
 
                 if (comparator === "" || comparator === "=") {
                     matches = matches && version.is_equal(fver);
                 } else if (comparator === ">") {
                     matches = matches && version.has_precedence_over(fver);
                 } else if (comparator === ">=") {
-                    matches = matches && (version.has_precedence_over(fver) || version.is_equal(fver));
+                    matches =
+                        matches &&
+                        (version.has_precedence_over(fver) ||
+                            version.is_equal(fver));
                 } else if (comparator === "<") {
                     matches = matches && fver.has_precedence_over(version);
                 } else if (comparator === "<=") {
-                    matches = matches && (fver.has_precedence_over(version) || version.is_equal(fver));
+                    matches =
+                        matches &&
+                        (fver.has_precedence_over(version) ||
+                            version.is_equal(fver));
                 } else if (comparator === "^") {
                     matches = matches && version.is_compatible_with(fver);
                 }
@@ -45,7 +52,7 @@ export class VersionRange {
 
     /**
      * Parse a requirement string into a version range.
-     * 
+     *
      * @param {string} requirement The version requirements, consisting of a
      * series of space-separated strings, each one being a semver version
      * optionally prefixed by a comparator (e.g. <, <=, >, >=, =, or ^), or the
@@ -66,7 +73,9 @@ export class VersionRange {
             } else {
                 let match = /[0-9]/.exec(components[i]);
                 let comparator = components[i].slice(0, match.index).trim();
-                let version = Version.from_semver(components[i].slice(match.index).trim());
+                let version = Version.from_semver(
+                    components[i].slice(match.index).trim()
+                );
 
                 requirement_set.push([comparator, version]);
             }
