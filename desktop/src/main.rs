@@ -47,6 +47,7 @@ fn main() {
 
 fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     let movie = SwfMovie::from_path(&input_path)?;
+    let movie_size = LogicalSize::new(movie.width(), movie.height());
 
     let event_loop: EventLoop<RuffleEvent> = EventLoop::with_user_event();
     let window = Rc::new(
@@ -55,9 +56,10 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                 "Ruffle - {}",
                 input_path.file_name().unwrap_or_default().to_string_lossy()
             ))
-            .with_inner_size(LogicalSize::new(movie.width(), movie.height()))
+            .with_inner_size(movie_size)
             .build(&event_loop)?,
     );
+    let viewport_size = movie_size.to_physical(window.scale_factor());
 
     let audio: Box<dyn AudioBackend> = match audio::CpalAudioBackend::new() {
         Ok(audio) => Box::new(audio),
@@ -68,7 +70,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     };
     let renderer = Box::new(WgpuRenderBackend::for_window(
         window.as_ref(),
-        (movie.width(), movie.height()),
+        (viewport_size.width, viewport_size.height),
     )?);
     let (executor, chan) = GlutinAsyncExecutor::new(event_loop.create_proxy());
     let navigator = Box::new(navigator::ExternalNavigatorBackend::with_base_path(
@@ -82,11 +84,10 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     let player = Player::new(renderer, audio, navigator, input, movie)?;
     player.lock().unwrap().set_is_playing(true); // Desktop player will auto-play.
 
-    let size = window.inner_size();
     player
         .lock()
         .unwrap()
-        .set_viewport_dimensions(size.width, size.height);
+        .set_viewport_dimensions(viewport_size.width, viewport_size.height);
 
     let mut mouse_pos = PhysicalPosition::new(0.0, 0.0);
     let mut time = Instant::now();
