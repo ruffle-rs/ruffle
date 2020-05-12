@@ -93,7 +93,7 @@ export class PublicAPI {
         let newest_name = false, newest_version = Version.from_semver("0.0.0");
 
         for (let k in this.sources) {
-            if (this.sources.hasOwnProperty(k)) {
+            if (Object.prototype.hasOwnProperty.call(this.sources, k)) {
                 let k_version = Version.from_semver(this.sources[k].version);
                 if (k_version.has_precedence_over(newest_version)) {
                     newest_name = k;
@@ -160,7 +160,7 @@ export class PublicAPI {
         let valid_source = null;
 
         for (let k in this.sources) {
-            if (this.sources.hasOwnProperty(k)) {
+            if (Object.prototype.hasOwnProperty.call(this.sources, k)) {
                 let version = Version.from_semver(this.sources[k].version);
 
                 if (requirement.satisfied_by(version)) {
