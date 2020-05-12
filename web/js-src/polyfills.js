@@ -59,7 +59,7 @@ function polyfill_static_content() {
 
 function polyfill_dynamic_content() {
     // Listen for changes to the DOM. If nodes are added, re-check for any Flash instances.
-    const observer = new MutationObserver(function (mutationsList, observer) {
+    const observer = new MutationObserver(function (mutationsList) {
         // If any nodes were added, re-run the polyfill to replace any new instances.
         let nodesAdded = mutationsList.some(mutation => mutation.addedNodes.length > 0);
         if (nodesAdded) {
@@ -131,7 +131,7 @@ function polyfill_static_frames() {
     polyfill_frames_common(window);
 }
 
-function ruffle_frame_listener(mutationsList, observer) {
+function ruffle_frame_listener(mutationsList) {
     /* Basically the same as the listener for dynamic embeds. */
     let nodesAdded = mutationsList.some(mutation => mutation.addedNodes.length > 0);
     if (nodesAdded) {

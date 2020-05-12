@@ -39,7 +39,7 @@ export class RufflePlayer extends HTMLElement {
         return ["width", "height"];
     }
 
-    attributeChangedCallback(name, oldValue, newValue) {
+    attributeChangedCallback(name) {
         if (name === "width" || name === "height") {
             this.update_styles();
         }
@@ -122,7 +122,7 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
-    play_button_clicked(event) {
+    play_button_clicked() {
         if (this.instance) {
             this.instance.play();
             if (this.play_button) {

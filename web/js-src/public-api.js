@@ -1,6 +1,5 @@
 import { Version } from "./version.js";
 import { VersionRange } from "./version-range.js";
-import { RufflePlayer } from "./ruffle-player.js";
 
 /**
  * Represents the Ruffle public API.

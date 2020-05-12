@@ -14,7 +14,7 @@ let sampleFileInputContainer = document.getElementById("sample-swfs-container");
 let sampleFileInput = document.getElementById("sample-swfs");
 let localFileInput = document.getElementById("local-file");
 
-window.addEventListener('DOMContentLoaded', (event) => {
+window.addEventListener('DOMContentLoaded', () => {
   ruffle = window.RufflePlayer.newest();
   player = ruffle.create_player();
   player.id = "player";
@@ -87,7 +87,7 @@ function localFileSelected() {
     let file = localFileInput.files[0];
     if (file) {
         let fileReader = new FileReader();
-        fileReader.onload = e => {
+        fileReader.onload = () => {
             player.play_swf_data(fileReader.result);
         }
         fileReader.readAsArrayBuffer(file);
