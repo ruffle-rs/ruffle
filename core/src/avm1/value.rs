@@ -623,10 +623,8 @@ pub fn f64_to_string(n: f64) -> String {
 pub fn f64_to_wrapping_u16(n: f64) -> u16 {
     if !n.is_finite() {
         0
-    } else if n >= 0.0 {
-        (n % 65536.0) as u16
     } else {
-        ((n.trunc() % 65536.0) + 65536.0) as u16
+        n.trunc().rem_euclid(65536.0) as u16
     }
 }
 
@@ -642,10 +640,8 @@ pub fn f64_to_wrapping_i16(n: f64) -> i16 {
 pub fn f64_to_wrapping_u32(n: f64) -> u32 {
     if !n.is_finite() {
         0
-    } else if n >= 0.0 {
-        (n % 4294967296.0) as u32
     } else {
-        ((n.trunc() % 4294967296.0) + 4294967296.0) as u32
+        n.trunc().rem_euclid(4294967296.0) as u32
     }
 }
 
