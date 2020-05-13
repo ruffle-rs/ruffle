@@ -303,7 +303,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_fbits(&mut self, num_bits: u8, n: f32) -> Result<()> {
-        self.write_ubits(num_bits, (n * 65536f32) as u32)
+        self.write_sbits(num_bits, (n * 65536f32) as i32)
     }
 
     fn write_encoded_u32(&mut self, mut n: u32) -> Result<()> {
