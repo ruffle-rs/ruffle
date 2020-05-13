@@ -88,7 +88,7 @@ fn write_zlib_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
     Ok(())
 }
 
-#[cfg(feature = "libflate")]
+#[cfg(all(feature = "libflate", not(feature = "flate2")))]
 fn write_zlib_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
     use libflate::zlib::Encoder;
     let mut encoder = Encoder::new(&mut output)?;

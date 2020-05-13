@@ -133,7 +133,7 @@ fn make_zlib_reader<'a, R: Read + 'a>(input: R) -> Result<Box<dyn Read + 'a>> {
     Ok(Box::new(ZlibDecoder::new(input)))
 }
 
-#[cfg(feature = "libflate")]
+#[cfg(all(feature = "libflate", not(feature = "flate2")))]
 fn make_zlib_reader<'a, R: Read + 'a>(input: R) -> Result<Box<dyn Read + 'a>> {
     use libflate::zlib::Decoder;
     let decoder = Decoder::new(input)?;
