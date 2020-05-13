@@ -827,6 +827,10 @@ impl FormatSpans {
         self.default_format = tf;
     }
 
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+
     /// Find the index of the span that covers a given search position.
     ///
     /// This function returns both the index of the span which covers the
@@ -916,6 +920,9 @@ impl FormatSpans {
     ///  * Adjacent text spans contain different text formats. (Stated
     ///    contrapositively, `normalize` attempts to merge text spans with
     ///    identical formatting.)
+    ///  * All text spans have non-zero length, unless the associated string is
+    ///    legitimately empty, in which case the span list should be a *single*
+    ///    null-length span.
     ///  * There is always at least one text span.
     ///
     /// This function should always be called after mutating text spans in such
@@ -951,20 +958,25 @@ impl FormatSpans {
             Ordering::Equal => {}
         }
 
-        // TODO: Is this necessary?
-        if self.spans.is_empty() {
-            self.spans.push(TextSpan::with_length_and_format(
-                self.text.len(),
-                self.default_format.clone(),
-            ));
+        // Remove leading null-length spans. The null-length span removal in
+        // the loop below cannot cope with the situation where the first span
+        // is null-length, so we ensure it always gets a span with valid
+        // length.
+        while self
+            .spans
+            .get(0)
+            .map(|span| span.span_length == 0)
+            .unwrap_or(false)
+        {
+            self.spans.remove(0);
         }
 
         let mut i = 0;
-        while i < self.spans.len() - 1 {
+        while i < self.spans.len().saturating_sub(1) {
             let remove_next = {
                 let spans = self.spans.get_mut(i..i + 2).unwrap();
 
-                if spans[0].can_merge(&spans[1]) {
+                if spans[0].can_merge(&spans[1]) || spans[1].span_length == 0 {
                     spans[0].span_length += spans[1].span_length;
                     true
                 } else {
@@ -977,6 +989,16 @@ impl FormatSpans {
             } else {
                 i += 1;
             }
+        }
+
+        // Null span removal can possibly cause the span list to become empty.
+        // If that happens, then insert a new span. We don't care if it's a
+        // null span at this point.
+        if self.spans.is_empty() {
+            self.spans.push(TextSpan::with_length_and_format(
+                self.text.len(),
+                self.default_format.clone(),
+            ));
         }
     }
 
@@ -1015,6 +1037,66 @@ impl FormatSpans {
                 span.set_text_format(fmt);
             }
         }
+
+        self.normalize();
+    }
+
+    /// Replace the text in the range [from, to) with the contents of `with`.
+    ///
+    /// Attempts to remove degenerate ranges (e.g. [5, 2)) will fail silently.
+    ///
+    /// Text span formatting will be adjusted to match: specifically, the spans
+    /// corresponding to the range will be removed and replaced with a single
+    /// span for the newly inserted text. It's formatting will be determined by
+    /// either the formatting of the last span in the range, or if the range
+    /// extends beyond the end of the field, the default text format.
+    ///
+    /// (The text formatting behavior has been confirmed by manual testing with
+    /// Flash Player 8.)
+    pub fn replace_text(&mut self, from: usize, to: usize, with: &str) {
+        if to < from {
+            return;
+        }
+
+        if from < self.text.len() {
+            self.ensure_span_break_at(from);
+            self.ensure_span_break_at(to);
+
+            let (start_pos, end_pos) = self.get_span_boundaries(from, to);
+            let mut new_tf = self.default_format.clone();
+            if let Some(span) = self.spans.get(end_pos) {
+                new_tf = span.get_text_format();
+            }
+
+            self.spans.drain(start_pos..end_pos);
+            self.spans.insert(
+                start_pos,
+                TextSpan::with_length_and_format(with.len(), new_tf),
+            );
+        } else {
+            self.spans.push(TextSpan::with_length_and_format(
+                with.len(),
+                self.default_format.clone(),
+            ));
+        }
+
+        let mut new_string = String::new();
+        if let Some(text) = self.text.get(0..from) {
+            new_string.push_str(text);
+        } else {
+            // `get` will fail if `from` exceeds the bounds of the text, rather
+            // than just giving all of it to us. In that case, we append the
+            // entire string.
+            new_string.push_str(&self.text);
+        }
+
+        new_string.push_str(with);
+
+        if let Some(text) = self.text.get(to..) {
+            new_string.push_str(text);
+        }
+
+        self.text = new_string;
 
         self.normalize();
     }

@@ -626,3 +626,101 @@ fn formatspans_normalize_set_text_format_no_cut() {
     assert_eq!((0, 1), fs.get_span_boundaries(0, 5));
     assert_eq!((1, 2), fs.get_span_boundaries(5, 9));
 }
+
+#[test]
+fn formatspans_replace_text_inbounds() {
+    let mut tf1 = TextFormat::default();
+    tf1.font = Some("Same!".to_string());
+
+    let mut tf2 = TextFormat::default();
+    tf2.font = Some("Difference!".to_string());
+
+    let mut fs = FormatSpans::from_str_and_spans(
+        "abcdefghi",
+        &[
+            TextSpan::with_length_and_format(5, tf1),
+            TextSpan::with_length_and_format(4, tf2),
+        ],
+    );
+
+    fs.replace_text(3, 6, "123");
+
+    assert_eq!("abc123ghi", fs.text());
+
+    assert_eq!((0, 1), fs.get_span_boundaries(0, 3));
+    assert_eq!((1, 2), fs.get_span_boundaries(3, 9));
+}
+
+#[test]
+fn formatspans_replace_text_edgebounds() {
+    let mut tf1 = TextFormat::default();
+    tf1.font = Some("Same!".to_string());
+
+    let mut tf2 = TextFormat::default();
+    tf2.font = Some("Difference!".to_string());
+
+    let mut fs = FormatSpans::from_str_and_spans(
+        "abcdefghi",
+        &[
+            TextSpan::with_length_and_format(5, tf1),
+            TextSpan::with_length_and_format(4, tf2),
+        ],
+    );
+
+    fs.replace_text(8, 35, "123");
+
+    assert_eq!("abcdefgh123", fs.text());
+
+    assert_eq!((0, 1), fs.get_span_boundaries(0, 5));
+    assert_eq!((1, 2), fs.get_span_boundaries(5, 8));
+    assert_eq!((2, 3), fs.get_span_boundaries(8, 11));
+}
+
+#[test]
+fn formatspans_replace_text_oob() {
+    let mut tf1 = TextFormat::default();
+    tf1.font = Some("Same!".to_string());
+
+    let mut tf2 = TextFormat::default();
+    tf2.font = Some("Difference!".to_string());
+
+    let mut fs = FormatSpans::from_str_and_spans(
+        "abcdefghi",
+        &[
+            TextSpan::with_length_and_format(5, tf1),
+            TextSpan::with_length_and_format(4, tf2),
+        ],
+    );
+
+    fs.replace_text(24, 35, "123");
+
+    assert_eq!("abcdefghi123", fs.text());
+
+    assert_eq!((0, 1), fs.get_span_boundaries(0, 5));
+    assert_eq!((1, 2), fs.get_span_boundaries(5, 9));
+    assert_eq!((2, 3), fs.get_span_boundaries(9, 12));
+}
+
+#[test]
+fn formatspans_replace_text_degenerate() {
+    let mut tf1 = TextFormat::default();
+    tf1.font = Some("Same!".to_string());
+
+    let mut tf2 = TextFormat::default();
+    tf2.font = Some("Difference!".to_string());
+
+    let mut fs = FormatSpans::from_str_and_spans(
+        "abcdefghi",
+        &[
+            TextSpan::with_length_and_format(5, tf1),
+            TextSpan::with_length_and_format(4, tf2),
+        ],
+    );
+
+    fs.replace_text(52, 35, "123");
+
+    assert_eq!("abcdefghi", fs.text());
+
+    assert_eq!((0, 1), fs.get_span_boundaries(0, 5));
+    assert_eq!((1, 2), fs.get_span_boundaries(5, 9));
+}
