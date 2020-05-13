@@ -1053,7 +1053,13 @@ impl FormatSpans {
     ///
     /// (The text formatting behavior has been confirmed by manual testing with
     /// Flash Player 8.)
-    pub fn replace_text(&mut self, from: usize, to: usize, with: &str) {
+    pub fn replace_text(
+        &mut self,
+        from: usize,
+        to: usize,
+        with: &str,
+        new_tf: Option<&TextFormat>,
+    ) {
         if to < from {
             return;
         }
@@ -1063,10 +1069,10 @@ impl FormatSpans {
             self.ensure_span_break_at(to);
 
             let (start_pos, end_pos) = self.get_span_boundaries(from, to);
-            let mut new_tf = self.default_format.clone();
-            if let Some(span) = self.spans.get(end_pos) {
-                new_tf = span.get_text_format();
-            }
+            let mut new_tf = new_tf
+                .cloned()
+                .or_else(|| self.spans.get(end_pos).map(|span| span.get_text_format()))
+                .unwrap_or_else(|| self.default_format.clone());
 
             self.spans.drain(start_pos..end_pos);
             self.spans.insert(
@@ -1076,7 +1082,9 @@ impl FormatSpans {
         } else {
             self.spans.push(TextSpan::with_length_and_format(
                 with.len(),
-                self.default_format.clone(),
+                new_tf
+                    .cloned()
+                    .unwrap_or_else(|| self.default_format.clone()),
             ));
         }
 
@@ -1110,11 +1118,19 @@ impl FormatSpans {
     pub fn lower_from_html<'gc>(&mut self, tree: XMLDocument<'gc>) {
         let mut format_stack = vec![];
 
+        self.text = "".to_string();
+        self.spans = vec![];
+
         for step in tree.as_node().walk().unwrap() {
             match step {
                 Step::In(node) => format_stack.push(TextFormat::from_presentational_markup(node)),
                 Step::Around(node) if node.is_text() => {
-                    //TODO: Append a text node...
+                    self.replace_text(
+                        self.text.len(),
+                        self.text.len(),
+                        &node.node_value().unwrap(),
+                        format_stack.last(),
+                    );
                 }
                 Step::Out(_) => {
                     format_stack.pop();

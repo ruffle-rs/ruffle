@@ -643,7 +643,7 @@ fn formatspans_replace_text_inbounds() {
         ],
     );
 
-    fs.replace_text(3, 6, "123");
+    fs.replace_text(3, 6, "123", None);
 
     assert_eq!("abc123ghi", fs.text());
 
@@ -667,7 +667,7 @@ fn formatspans_replace_text_edgebounds() {
         ],
     );
 
-    fs.replace_text(8, 35, "123");
+    fs.replace_text(8, 35, "123", None);
 
     assert_eq!("abcdefgh123", fs.text());
 
@@ -692,7 +692,7 @@ fn formatspans_replace_text_oob() {
         ],
     );
 
-    fs.replace_text(24, 35, "123");
+    fs.replace_text(24, 35, "123", None);
 
     assert_eq!("abcdefghi123", fs.text());
 
@@ -717,7 +717,7 @@ fn formatspans_replace_text_degenerate() {
         ],
     );
 
-    fs.replace_text(52, 35, "123");
+    fs.replace_text(52, 35, "123", None);
 
     assert_eq!("abcdefghi", fs.text());
 
