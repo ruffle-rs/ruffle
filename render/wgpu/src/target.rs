@@ -1,5 +1,6 @@
 use futures::executor::block_on;
-use image::RgbaImage;
+use image::buffer::ConvertBuffer;
+use image::{Bgra, ImageBuffer, RgbaImage};
 use raw_window_handle::HasRawWindowHandle;
 use std::fmt::Debug;
 
@@ -109,6 +110,8 @@ pub struct TextureTarget {
 #[derive(Debug)]
 pub struct TextureTargetFrame(wgpu::TextureView);
 
+type BgraImage = ImageBuffer<Bgra<u8>, Vec<u8>>;
+
 impl RenderTargetFrame for TextureTargetFrame {
     fn view(&self) -> &wgpu::TextureView {
         &self.0
@@ -155,7 +158,12 @@ impl TextureTarget {
         device.poll(wgpu::Maintain::Wait);
         match block_on(buffer_future) {
             Ok(map) => {
-                RgbaImage::from_raw(self.size.width, self.size.height, Vec::from(map.as_slice()))
+                let bgra = BgraImage::from_raw(
+                    self.size.width,
+                    self.size.height,
+                    Vec::from(map.as_slice()),
+                );
+                bgra.map(|image| image.convert())
             }
             Err(e) => {
                 log::error!("Unknown error reading capture buffer: {:?}", e);
