@@ -9,11 +9,12 @@ use js_sys::Uint8Array;
 use ruffle_core::backend::render::RenderBackend;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::PlayerEvent;
+use ruffle_web_common::JsResult;
 use std::mem::drop;
 use std::sync::{Arc, Mutex};
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
-use web_sys::{Element, EventTarget, HtmlCanvasElement, KeyboardEvent, PointerEvent};
+use web_sys::{Element, EventTarget, HtmlCanvasElement, HtmlElement, KeyboardEvent, PointerEvent};
 
 thread_local! {
     /// We store the actual instances of the ruffle core in a static pool.
@@ -52,8 +53,8 @@ pub struct Ruffle(Index);
 
 #[wasm_bindgen]
 impl Ruffle {
-    pub fn new(canvas: HtmlCanvasElement, swf_data: Uint8Array) -> Result<Ruffle, JsValue> {
-        Ruffle::new_internal(canvas, swf_data).map_err(|_| "Error creating player".into())
+    pub fn new(parent: HtmlElement, swf_data: Uint8Array) -> Result<Ruffle, JsValue> {
+        Ruffle::new_internal(parent, swf_data).map_err(|_| "Error creating player".into())
     }
 
     pub fn play(&mut self) {
@@ -68,14 +69,24 @@ impl Ruffle {
 
     pub fn destroy(&mut self) -> Result<(), JsValue> {
         // Remove instance from the active list.
-        if let Some(instance) = INSTANCES.with(|instances| {
+        if let Some(mut instance) = INSTANCES.with(|instances| {
             let mut instances = instances.borrow_mut();
             instances.remove(self.0)
         }) {
+            instance.canvas.remove();
+
             // Stop all audio playing from the instance
             let mut player = instance.core.lock().unwrap();
             let audio = player.audio_mut();
             audio.stop_all_sounds();
+
+            // Clean up all event listeners.
+            instance.key_down_callback = None;
+            instance.key_up_callback = None;
+            instance.mouse_down_callback = None;
+            instance.mouse_move_callback = None;
+            instance.mouse_up_callback = None;
+            instance.window_mouse_down_callback = None;
 
             // Cancel the animation handler, if it's still active.
             if let Some(id) = instance.animation_handler_id {
@@ -91,10 +102,7 @@ impl Ruffle {
 }
 
 impl Ruffle {
-    fn new_internal(
-        canvas: HtmlCanvasElement,
-        swf_data: Uint8Array,
-    ) -> Result<Ruffle, Box<dyn Error>> {
+    fn new_internal(parent: HtmlElement, swf_data: Uint8Array) -> Result<Ruffle, Box<dyn Error>> {
         console_error_panic_hook::set_once();
         let _ = console_log::init_with_level(log::Level::Trace);
 
@@ -105,7 +113,13 @@ impl Ruffle {
         };
 
         let window = web_sys::window().ok_or_else(|| "Expected window")?;
-        let renderer = create_renderer(&canvas)?;
+        let document = window.document().ok_or("Expected document")?;
+
+        let (canvas, renderer) = create_renderer(&document)?;
+        parent
+            .append_child(&canvas.clone().into())
+            .into_js_result()?;
+
         let audio = Box::new(WebAudioBackend::new()?);
         let navigator = Box::new(WebNavigatorBackend::new());
         let input = Box::new(WebInputBackend::new(&canvas));
@@ -473,21 +487,38 @@ impl Ruffle {
     }
 }
 
-fn create_renderer(canvas: &HtmlCanvasElement) -> Result<Box<dyn RenderBackend>, Box<dyn Error>> {
+fn create_renderer(
+    document: &web_sys::Document,
+) -> Result<(HtmlCanvasElement, Box<dyn RenderBackend>), Box<dyn Error>> {
     #[cfg(not(any(feature = "canvas", feature = "webgl")))]
     std::compile_error!("You must enable one of the render backend features (e.g., webgl).");
 
+    // Try to create a backend, falling through to the next backend on failure.
+    // We must recreate the canvas each attempt, as only a single context may be created per canvas
+    // with `getContext`.
     #[cfg(feature = "webgl")]
     {
-        if let Ok(renderer) = ruffle_render_webgl::WebGlRenderBackend::new(canvas) {
-            return Ok(Box::new(renderer));
+        log::info!("Creating WebGL renderer...");
+        let canvas: HtmlCanvasElement = document
+            .create_element("canvas")
+            .into_js_result()?
+            .dyn_into()
+            .map_err(|_| "Expected HtmlCanvasElement")?;
+        if let Ok(renderer) = ruffle_render_webgl::WebGlRenderBackend::new(&canvas) {
+            return Ok((canvas, Box::new(renderer)));
         }
     }
 
     #[cfg(feature = "canvas")]
     {
-        if let Ok(renderer) = ruffle_render_canvas::WebCanvasRenderBackend::new(canvas) {
-            return Ok(Box::new(renderer));
+        log::info!("Falling back to Canvas renderer...");
+        let canvas: HtmlCanvasElement = document
+            .create_element("canvas")
+            .into_js_result()?
+            .dyn_into()
+            .map_err(|_| "Expected HtmlCanvasElement")?;
+        if let Ok(renderer) = ruffle_render_canvas::WebCanvasRenderBackend::new(&canvas) {
+            return Ok((canvas, Box::new(renderer)));
         }
     }
 
