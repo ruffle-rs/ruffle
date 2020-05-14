@@ -122,10 +122,12 @@ unsafe impl Zeroable for GPUVertex {}
 
 impl WgpuRenderBackend<SwapChainTarget> {
     pub fn for_window<W: HasRawWindowHandle>(window: &W, size: (u32, u32)) -> Result<Self, Error> {
+        let surface = wgpu::Surface::create(window);
+
         let adapter = block_on(wgpu::Adapter::request(
             &wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
-                compatible_surface: None,
+                compatible_surface: Some(&surface),
             },
             wgpu::BackendBit::PRIMARY,
         ))
@@ -138,7 +140,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
             limits: wgpu::Limits::default(),
         }));
 
-        let target = SwapChainTarget::new(window, size, &device);
+        let target = SwapChainTarget::new(surface, size, &device);
         Self::new(Rc::new(device), Rc::new(queue), target)
     }
 }
