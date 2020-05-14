@@ -1,7 +1,6 @@
 use futures::executor::block_on;
 use image::buffer::ConvertBuffer;
 use image::{Bgra, ImageBuffer, RgbaImage};
-use raw_window_handle::HasRawWindowHandle;
 use std::fmt::Debug;
 
 pub trait RenderTargetFrame: Debug {
@@ -46,8 +45,7 @@ impl RenderTargetFrame for SwapChainTargetFrame {
 }
 
 impl SwapChainTarget {
-    pub fn new<W: HasRawWindowHandle>(window: &W, size: (u32, u32), device: &wgpu::Device) -> Self {
-        let window_surface = wgpu::Surface::create(window);
+    pub fn new(surface: wgpu::Surface, size: (u32, u32), device: &wgpu::Device) -> Self {
         let swap_chain_desc = wgpu::SwapChainDescriptor {
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
             format: wgpu::TextureFormat::Bgra8Unorm,
@@ -55,9 +53,9 @@ impl SwapChainTarget {
             height: size.1,
             present_mode: wgpu::PresentMode::Mailbox,
         };
-        let swap_chain = device.create_swap_chain(&window_surface, &swap_chain_desc);
+        let swap_chain = device.create_swap_chain(&surface, &swap_chain_desc);
         Self {
-            window_surface,
+            window_surface: surface,
             swap_chain_desc,
             swap_chain,
         }
