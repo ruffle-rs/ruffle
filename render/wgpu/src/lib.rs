@@ -131,7 +131,9 @@ impl WgpuRenderBackend<SwapChainTarget> {
             },
             wgpu::BackendBit::PRIMARY,
         ))
-        .unwrap();
+        .ok_or_else(|| {
+            "Ruffle requires hardware acceleration, but no compatible graphics device was found."
+        })?;
 
         let (device, queue) = block_on(adapter.request_device(&wgpu::DeviceDescriptor {
             extensions: wgpu::Extensions {
