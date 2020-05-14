@@ -17,7 +17,7 @@ webgl = ["ruffle_render_webgl"]
 byteorder = "1.3.4"
 console_error_panic_hook = { version = "0.1.1", optional = true }
 console_log = { version = "0.2", optional = true }
-fnv = "1.0.3"
+fnv = "1.0.7"
 generational-arena = "0.2.7"
 js-sys = "0.3.25"
 log = "0.4"

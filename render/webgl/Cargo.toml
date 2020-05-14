@@ -5,7 +5,7 @@ authors = ["Mike Welsh <mwelsh@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-fnv = "1.0.3"
+fnv = "1.0.7"
 js-sys = "0.3.25"
 log = "0.4" 
 percent-encoding = "2.1.0"

@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 bitstream-io = "0.8.5"
-fnv = "1.0.3"
+fnv = "1.0.7"
 gc-arena = "0.2.0"
 gc-arena-derive = "0.2.0"
 generational-arena = "0.2.7"
