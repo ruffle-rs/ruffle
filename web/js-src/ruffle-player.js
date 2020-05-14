@@ -18,7 +18,7 @@ export class RufflePlayer extends HTMLElement {
         self.shadow.appendChild(ruffle_shadow_template.content.cloneNode(true));
 
         self.dynamic_styles = self.shadow.getElementById("dynamic_styles");
-        self.canvas = self.shadow.getElementById("player");
+        self.container = self.shadow.getElementById("container");
         self.play_button = self.shadow.getElementById("play_button");
         if (self.play_button) {
             self.play_button.addEventListener("click", self.play_button_clicked.bind(self));
@@ -146,7 +146,7 @@ export class RufflePlayer extends HTMLElement {
                 throw e;
             });
 
-            this.instance = Ruffle.new(this.canvas, new Uint8Array(data));
+            this.instance = Ruffle.new(this.container, new Uint8Array(data));
             console.log("New Ruffle instance created.");
 
             if (this.play_button) {
