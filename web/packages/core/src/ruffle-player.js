@@ -262,6 +262,14 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
                 console.log("Player removed");
                 players[i].parentElement.removeChild(players[i]);
             }
+            /* Todo: use players[i].original.style somehow(#502) */
+        }
+    }
+    static handleOriginalAttributeChanges(mutationsList) {
+        for (let i = 0; i < mutationsList.length; i++) {
+            if (mutationsList[i].target.style.display != "none") {
+                mutationsList[i].target.style.setProperty("display", "none", "important");
+            }
         }
     }
 };

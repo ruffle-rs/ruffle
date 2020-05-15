@@ -46,18 +46,22 @@ module.exports = class RuffleEmbed extends RufflePlayer {
     }
 
     static is_interdictable(elem) {
+        if (elem.hasAttribute("data-polyfilled")) {
+            return false;
+        }
         if (!elem.src) {
             return false;
         }
         if (
             elem.parentElement &&
-            elem.parentElement.tagName.toLowerCase() == "object"
+            elem.parentElement.tagName.toLowerCase() == "object" &&
+            !elem.parentElement.hasAttribute("data-broken")
         ) {
         /* Only polyfill top-level objects */
             if (elem.hasAttribute("src")) {
                 elem.removeAttribute("src");
             }
-            elem.style.display = "none";
+            elem.style.setProperty("display", "none", "important");
             /* Turn element into dummy */
             /* setting it to 0 width & height prevents it from *
              * messing up display Netscape 4 style             */
@@ -80,14 +84,23 @@ module.exports = class RuffleEmbed extends RufflePlayer {
     static from_native_embed_element(elem) {
         let external_name = register_element("ruffle-embed", RuffleEmbed);
         let ruffle_obj = document.createElement(external_name);
+        const observer = new MutationObserver(RufflePlayer.handleOriginalAttributeChanges);
         ruffle_obj.copy_element(elem);
         ruffle_obj.original = elem;
         /* Set original for detecting if original is (re)moved */
         if (elem.hasAttribute("src")) {
             elem.removeAttribute("src");
         }
-        elem.style.display = "none";
+        if (elem.hasAttribute("id")) {
+            elem.removeAttribute("id");
+        }
+        if (elem.hasAttribute("name")) {
+            elem.removeAttribute("name");
+        }
+        elem.setAttribute("data-polyfilled", "polyfilled");
+        elem.style.setProperty("display", "none", "important");
         /* Turn the original embed into a dummy element */
+        observer.observe(elem, { attributes: true });
 
         return ruffle_obj;
     }

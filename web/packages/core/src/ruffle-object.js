@@ -40,10 +40,19 @@ module.exports = class RuffleObject extends RufflePlayer {
         this.attributes.data = href;
     }
 
+    /* The data-broken attribute allows us to polyfill *
+     * child elements instead of skipping them when    *
+     * the parent object is broken(missing src, etc.)  */
+
     static is_interdictable(elem) {
+        if (elem.hasAttribute("data-polyfilled")) {
+        /* Don't polyfill an element twice */
+            return false;
+        }
         if (
             elem.parentElement &&
-            elem.parentElement.tagName.toLowerCase() == "object"
+            elem.parentElement.tagName.toLowerCase() == "object" &&
+            !elem.parentElement.hasAttribute("data-broken")
         ) {
         /* Only polyfill top-level objects */
             let children = elem.getElementsByTagName("*");
@@ -57,13 +66,13 @@ module.exports = class RuffleObject extends RufflePlayer {
                 /* Remove movie param */
                 else if (children[i].tagName.toLowerCase() != "param") {
                     /* Hide fallback content */
-                    children[i].style.display = "none";
+                    children[i].style.setProperty("display", "none", "important");
                 }
             }
             if (elem.hasAttribute("data")) {
                 elem.removeAttribute("data");
             }
-            elem.style.display = "none";
+            elem.style.setProperty("display", "none", "important");
             return false;
         }
         if (!elem.data) {
@@ -75,6 +84,7 @@ module.exports = class RuffleObject extends RufflePlayer {
                 }
             }
             if (!has_movie) {
+                elem.setAttribute("data-broken", "broken");
                 return false;
             }
         }
@@ -107,7 +117,8 @@ module.exports = class RuffleObject extends RufflePlayer {
                 return true;
             }
         }
-
+        /* Note: flash fallbacks inside of non-flash objects don't work
+*/
         return false;
     }
 
@@ -127,6 +138,7 @@ module.exports = class RuffleObject extends RufflePlayer {
         let external_name = register_element("ruffle-object", RuffleObject);
         let ruffle_obj = document.createElement(external_name);
         let params = elem.getElementsByTagName("param");
+        const observer = new MutationObserver(RufflePlayer.handleOriginalAttributeChanges);
         ruffle_obj.copy_element(elem);
         ruffle_obj.original = elem;
         /* Set original for detecting if original is (re)moved */
@@ -139,8 +151,16 @@ module.exports = class RuffleObject extends RufflePlayer {
         if (elem.hasAttribute("data")) {
             elem.removeAttribute("data");
         }
-        elem.style.display = "none";
+        if (elem.hasAttribute("id")) {
+            elem.removeAttribute("id");
+        }
+        if (elem.hasAttribute("name")) {
+            elem.removeAttribute("name");
+        }
+        elem.setAttribute("data-polyfilled", "polyfilled");
+        elem.style.setProperty("display", "none", "important");
         /* Turn original object into dummy element */
+        observer.observe(elem, { attributes: true });
 
         return ruffle_obj;
     }

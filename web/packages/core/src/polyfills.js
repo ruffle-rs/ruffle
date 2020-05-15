@@ -39,13 +39,23 @@ function replace_flash_instances() {
         for (let elem of Array.from(objects)) {
             if (RuffleObject.is_interdictable(elem)) {
                 let ruffle_obj = RuffleObject.from_native_object_element(elem);
-                elem.insertAdjacentElement("afterend", ruffle_obj);
+                let parent = elem;
+                while (parent.parentElement.tagName.toLowerCase() == "object") {
+                    parent = parent.parentElement;
+                }
+                /* Handle case where parent object is broken */
+                parent.insertAdjacentElement("afterend", ruffle_obj);
             }
         }
         for (let elem of Array.from(embeds)) {
             if (RuffleEmbed.is_interdictable(elem)) {
                 let ruffle_obj = RuffleEmbed.from_native_embed_element(elem);
-                elem.insertAdjacentElement("afterend", ruffle_obj);
+                let parent = elem;
+                while (parent.parentElement.tagName.toLowerCase() == "object") {
+                    parent = parent.parentElement;
+                }
+                /* Handle case where parent object is broken */
+                parent.insertAdjacentElement("afterend", ruffle_obj);
             }
         }
     } catch (err) {
