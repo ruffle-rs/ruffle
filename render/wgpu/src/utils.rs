@@ -1,7 +1,7 @@
 use lyon::lyon_algorithms::path::Path;
 use ruffle_core::shape_utils::DrawCommand;
 use ruffle_core::swf;
-use swf::Twips;
+use swf::{GradientSpread, Twips};
 macro_rules! create_debug_label {
     ($($arg:tt)*) => (
         if cfg!(feature = "render_debug_labels") {
@@ -125,4 +125,13 @@ pub fn build_view_matrix(viewport_width: u32, viewport_height: u32) -> [[f32; 4]
         [0.0, 0.0, 1.0, 0.0],
         [-1.0, 1.0, 0.0, 1.0],
     ]
+}
+
+/// Map for SWF gradient spread mode to the uniform value used by the gradient shader.
+pub fn gradient_spread_mode_index(spread: GradientSpread) -> i32 {
+    match spread {
+        GradientSpread::Pad => 0,
+        GradientSpread::Repeat => 1,
+        GradientSpread::Reflect => 2,
+    }
 }
