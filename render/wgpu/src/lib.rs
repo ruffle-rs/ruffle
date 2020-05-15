@@ -20,8 +20,8 @@ use crate::pipelines::Pipelines;
 use crate::shapes::{Draw, DrawType, GradientUniforms, IncompleteDrawType, Mesh};
 use crate::target::{RenderTarget, RenderTargetFrame, SwapChainTarget};
 use crate::utils::{
-    build_view_matrix, create_buffer_with_data, ruffle_path_to_lyon_path, swf_bitmap_to_gl_matrix,
-    swf_to_gl_matrix,
+    build_view_matrix, create_buffer_with_data, gradient_spread_mode_index,
+    ruffle_path_to_lyon_path, swf_bitmap_to_gl_matrix, swf_to_gl_matrix,
 };
 use ruffle_core::color_transform::ColorTransform;
 use std::mem::replace;
@@ -374,7 +374,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             ratios,
                             colors,
                             num_colors: gradient.records.len() as u32,
-                            repeat_mode: 0,
+                            repeat_mode: gradient_spread_mode_index(gradient.spread),
                             focal_point: 0.0,
                         };
                         let matrix = swf_to_gl_matrix(gradient.matrix.clone());
@@ -443,7 +443,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             ratios,
                             colors,
                             num_colors: gradient.records.len() as u32,
-                            repeat_mode: 0,
+                            repeat_mode: gradient_spread_mode_index(gradient.spread),
                             focal_point: 0.0,
                         };
                         let matrix = swf_to_gl_matrix(gradient.matrix.clone());
@@ -511,11 +511,11 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         }
 
                         let uniforms = GradientUniforms {
-                            gradient_type: 1,
+                            gradient_type: 2,
                             ratios,
                             colors,
                             num_colors: gradient.records.len() as u32,
-                            repeat_mode: 0,
+                            repeat_mode: gradient_spread_mode_index(gradient.spread),
                             focal_point: *focal_point,
                         };
                         let matrix = swf_to_gl_matrix(gradient.matrix.clone());
