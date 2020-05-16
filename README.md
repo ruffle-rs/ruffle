@@ -40,14 +40,14 @@ Ruffle is in the proof-of-concept stage and can currently run early Flash animat
 #### Running the web demo
 
 * `cd web/demo`
-* `npm install`
-* `npm run serve`
+* `npm run bootstrap`
+* `npm run demo`
 * Load indicated page in browser (usually http://localhost:8080)
 
 #### Hosting on your own site
 
 * `cd web/selfhosted`
-* `npm install`
+* `npm run bootstrap`
 * `npm run build`
 * Follow the wiki instructions for [using Ruffle on your own site](https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#web)
 

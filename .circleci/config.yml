@@ -59,47 +59,45 @@ jobs:
             cd linux
             tar -czvf ../workspace/linux.tar.gz *
 
-      # Build the web self-hosted binary
+      # Build web packages
       - run:
           name: Web Build
           command: |
-            cd web/selfhosted
-            npm install
+            cd web
+            npm run bootsrap
             npm run build -- --mode=production
-            cd dist
-            cp ../../../README.md .
-            cp ../../../LICENSE_APACHE .
-            cp ../../../LICENSE_MIT .
+
+      # Package the web self-hosted binary
+      - run:
+          name: Web Build
+          command: |
+            cd web/packages/selfhosted/dist
+            cp ../../../../README.md .
+            cp ../../../../LICENSE_APACHE .
+            cp ../../../../LICENSE_MIT .
             zip -r web.zip .
-            cd ../../..
+            cd ../../../..
             mkdir -p workspace/web
-            cp web/selfhosted/dist/web.zip workspace/web.zip
+            cp web/packages/selfhosted/dist/web.zip workspace/web.zip
 
       # Build the wasm demo binary
       - run:
           name: Web Demo Build
           command: |
-            cd web/demo
-            npm install
-            npm run build -- --mode=production
-            cd ../..
             mkdir -p workspace/web-demo
-            cp web/demo/dist/* workspace/web-demo
+            cp web/packages/demo/dist/* workspace/web-demo
 
       # Build the web extension
       - run:
           name: Extension Build
           command: |
-            cd web/extension
-            npm install
-            npm run build -- --mode=production
-            cd build
-            cp ../../../README.md .
-            cp ../../../LICENSE_APACHE .
-            cp ../../../LICENSE_MIT .
+            cd web/packages/extension/build
+            cp ../../../../README.md .
+            cp ../../../../LICENSE_APACHE .
+            cp ../../../../LICENSE_MIT .
             zip -r extension.zip .
-            cd ../../..
-            cp web/extension/build/extension.zip workspace
+            cd ../../../..
+            cp web/packages/extension/build/extension.zip workspace
 
       # Save cached assets
       - save_cache:

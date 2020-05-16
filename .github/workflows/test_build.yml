@@ -58,26 +58,9 @@ jobs:
         command: fmt
         args: --all -- --check
 
-    - name: Check javascript formatting
+    - name: Build web
       working-directory: web
       run: |
-        npm ci
+        npm run bootstrap
         npx eslint .
-
-    - name: Build web self-hosted
-      working-directory: web/selfhosted
-      run: |
-        npm ci
-        npm run build -- --mode=production
-
-    - name: Build web demo
-      working-directory: web/demo
-      run: |
-        npm ci
-        npm run build -- --mode=production
-
-    - name: Build browser extension
-      working-directory: web/extension
-      run: |
-        npm ci
-        npm run build -- --mode=production
+        npm run build
