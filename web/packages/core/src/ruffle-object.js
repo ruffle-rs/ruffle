@@ -11,9 +11,11 @@ const { register_element } = require("./register-element");
 
 module.exports = class RuffleObject extends RufflePlayer {
     constructor(...args) {
-        const observer = new MutationObserver(function (mutationsList, observer) {
+        const observer = new MutationObserver(function () {
             /* handle if original object is (re)moved */
-            RufflePlayer.handle_player_changes(document.getElementsByTagName("ruffle-object"));
+            RufflePlayer.handle_player_changes(
+                document.getElementsByTagName("ruffle-object")
+            );
         });
         observer.observe(document, { childList: true, subtree: true });
         super(...args);
@@ -46,7 +48,7 @@ module.exports = class RuffleObject extends RufflePlayer {
 
     static is_interdictable(elem) {
         if (elem.hasAttribute("data-polyfilled")) {
-        /* Don't polyfill an element twice */
+            /* Don't polyfill an element twice */
             return false;
         }
         if (
@@ -54,19 +56,22 @@ module.exports = class RuffleObject extends RufflePlayer {
             elem.parentElement.tagName.toLowerCase() == "object" &&
             !elem.parentElement.hasAttribute("data-broken")
         ) {
-        /* Only polyfill top-level objects */
+            /* Only polyfill top-level objects */
             let children = elem.getElementsByTagName("*");
-            for (let i = 0;i < children.length;i ++) {
+            for (let i = 0; i < children.length; i++) {
                 if (
                     children[i].tagName.toLowerCase() == "param" &&
                     children[i].name == "movie"
                 ) {
+                    /* Remove movie param */
                     children[i].parentElement.removeChild(children[i]);
-                }
-                /* Remove movie param */
-                else if (children[i].tagName.toLowerCase() != "param") {
+                } else if (children[i].tagName.toLowerCase() != "param") {
                     /* Hide fallback content */
-                    children[i].style.setProperty("display", "none", "important");
+                    children[i].style.setProperty(
+                        "display",
+                        "none",
+                        "important"
+                    );
                 }
             }
             if (elem.hasAttribute("data")) {
@@ -117,8 +122,7 @@ module.exports = class RuffleObject extends RufflePlayer {
                 return true;
             }
         }
-        /* Note: flash fallbacks inside of non-flash objects don't work
-*/
+        /* Note: flash fallbacks inside of non-flash objects don't work */
         return false;
     }
 
@@ -138,11 +142,13 @@ module.exports = class RuffleObject extends RufflePlayer {
         let external_name = register_element("ruffle-object", RuffleObject);
         let ruffle_obj = document.createElement(external_name);
         let params = elem.getElementsByTagName("param");
-        const observer = new MutationObserver(RufflePlayer.handleOriginalAttributeChanges);
+        const observer = new MutationObserver(
+            RufflePlayer.handleOriginalAttributeChanges
+        );
         ruffle_obj.copy_element(elem);
         ruffle_obj.original = elem;
         /* Set original for detecting if original is (re)moved */
-        for (let i = 0;i < params.length;i ++) {
+        for (let i = 0; i < params.length; i++) {
             if (params[i].name == "movie") {
                 params[i].parentElement.removeChild(params[i]);
             }

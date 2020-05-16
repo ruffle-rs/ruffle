@@ -10,9 +10,11 @@ const { register_element } = require("./register-element");
 
 module.exports = class RuffleEmbed extends RufflePlayer {
     constructor(...args) {
-        const observer = new MutationObserver(function (mutationsList, observer) {
+        const observer = new MutationObserver(function () {
             /* handle if original object is (re)moved */
-            RufflePlayer.handle_player_changes(document.getElementsByTagName("ruffle-embed"));
+            RufflePlayer.handle_player_changes(
+                document.getElementsByTagName("ruffle-embed")
+            );
         });
         observer.observe(document, { childList: true, subtree: true });
         let self = super(...args);
@@ -57,7 +59,7 @@ module.exports = class RuffleEmbed extends RufflePlayer {
             elem.parentElement.tagName.toLowerCase() == "object" &&
             !elem.parentElement.hasAttribute("data-broken")
         ) {
-        /* Only polyfill top-level objects */
+            /* Only polyfill top-level objects */
             if (elem.hasAttribute("src")) {
                 elem.removeAttribute("src");
             }
@@ -84,7 +86,9 @@ module.exports = class RuffleEmbed extends RufflePlayer {
     static from_native_embed_element(elem) {
         let external_name = register_element("ruffle-embed", RuffleEmbed);
         let ruffle_obj = document.createElement(external_name);
-        const observer = new MutationObserver(RufflePlayer.handleOriginalAttributeChanges);
+        const observer = new MutationObserver(
+            RufflePlayer.handleOriginalAttributeChanges
+        );
         ruffle_obj.copy_element(elem);
         ruffle_obj.original = elem;
         /* Set original for detecting if original is (re)moved */

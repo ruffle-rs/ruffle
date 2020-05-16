@@ -217,10 +217,14 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             }
 
             for (let node of Array.from(elem.children)) {
-                if (node.tagName.toLowerCase() != "object" && node.tagName.toLowerCase() != "embed" && node.parentElement.parentElement.tagName.toLowerCase() != "object") {
+                if (
+                    node.tagName.toLowerCase() != "object" &&
+                    node.tagName.toLowerCase() != "embed" &&
+                    node.parentElement.parentElement.tagName.toLowerCase() !=
+                        "object"
+                ) {
                     this.appendChild(node);
-                }
-                else {
+                } else {
                     console.log(node.tagName.toLowerCase() + " skipped");
                 }
             }
@@ -249,16 +253,18 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
     }
 
     static handle_player_changes(players) {
-        for (let i = 0;i < players.length;i ++) {
+        for (let i = 0; i < players.length; i++) {
             if (players[i].parentElement.contains(players[i].original)) {
-            /* Original is still there */
+                /* Original is still there */
                 continue;
             }
             /*else*/ if (document.body.contains(players[i].original)) {
                 console.log("Player moved");
-                players[i].original.insertAdjacentElement("beforebegin", players[i]);
-            }
-            else {
+                players[i].original.insertAdjacentElement(
+                    "afterend",
+                    players[i]
+                );
+            } else {
                 console.log("Player removed");
                 players[i].parentElement.removeChild(players[i]);
             }
@@ -268,7 +274,11 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
     static handleOriginalAttributeChanges(mutationsList) {
         for (let i = 0; i < mutationsList.length; i++) {
             if (mutationsList[i].target.style.display != "none") {
-                mutationsList[i].target.style.setProperty("display", "none", "important");
+                mutationsList[i].target.style.setProperty(
+                    "display",
+                    "none",
+                    "important"
+                );
             }
         }
     }
