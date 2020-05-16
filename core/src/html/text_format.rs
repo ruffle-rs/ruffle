@@ -1,6 +1,7 @@
 //! Classes that store formatting options
 use crate::avm1::{Avm1, Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
+use crate::html::iterators::TextSpanIter;
 use crate::tag_utils::SwfMovie;
 use crate::xml::{Step, XMLDocument, XMLName, XMLNode};
 use gc_arena::Collect;
@@ -113,7 +114,7 @@ impl TextFormat {
         swf_movie: Arc<SwfMovie>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Self {
-        let movie_library = context.library.library_for_movie_mut(swf_movie);
+        let _movie_library = context.library.library_for_movie_mut(swf_movie);
 
         //TODO: How do we represent fonts referenced by character rather than
         //by linkage name?
@@ -553,24 +554,24 @@ pub struct TextSpan {
     /// length of the underlying source string.
     span_length: usize,
 
-    font: String,
-    size: f64,
-    color: swf::Color,
-    align: swf::TextAlign,
-    bold: bool,
-    italic: bool,
-    underline: bool,
-    left_margin: f64,
-    right_margin: f64,
-    indent: f64,
-    block_indent: f64,
-    kerning: bool,
-    leading: f64,
-    letter_spacing: f64,
-    tab_stops: Vec<f64>,
-    bullet: bool,
-    url: String,
-    target: String,
+    pub font: String,
+    pub size: f64,
+    pub color: swf::Color,
+    pub align: swf::TextAlign,
+    pub bold: bool,
+    pub italic: bool,
+    pub underline: bool,
+    pub left_margin: f64,
+    pub right_margin: f64,
+    pub indent: f64,
+    pub block_indent: f64,
+    pub kerning: bool,
+    pub leading: f64,
+    pub letter_spacing: f64,
+    pub tab_stops: Vec<f64>,
+    pub bullet: bool,
+    pub url: String,
+    pub target: String,
 }
 
 impl Default for TextSpan {
@@ -764,7 +765,10 @@ impl TextSpan {
         }
     }
 
-    fn get_text_format(&self) -> TextFormat {
+    /// Convert the text span into a format.
+    ///
+    /// The text format returned will have all properties defined.
+    pub fn get_text_format(&self) -> TextFormat {
         TextFormat {
             font: Some(self.font.clone()),
             size: Some(self.size),
@@ -786,6 +790,11 @@ impl TextSpan {
             target: Some(self.target.clone()),
         }
     }
+
+    /// Return the length of the span.
+    pub fn span_length(&self) -> usize {
+        self.span_length
+    }
 }
 
 /// Struct which contains text formatted by `TextSpan`s.
@@ -797,7 +806,21 @@ pub struct FormatSpans {
     default_format: TextFormat,
 }
 
+impl Default for FormatSpans {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FormatSpans {
+    pub fn new() -> Self {
+        FormatSpans {
+            text: "".to_string(),
+            spans: vec![TextSpan::default()],
+            default_format: TextFormat::default(),
+        }
+    }
+
     pub fn from_str_and_format(text: &str, default_format: TextFormat) -> Self {
         let mut span = TextSpan::with_length(text.len());
 
@@ -827,8 +850,25 @@ impl FormatSpans {
         self.default_format = tf;
     }
 
+    /// Retrieve the text backing the format spans.
     pub fn text(&self) -> &str {
         &self.text
+    }
+
+    /// Retrieve the text span at a particular index.
+    ///
+    /// Text span indices are ephemeral and can change arbitrarily any time the
+    /// `FormatSpans` are mutated. You should not use this method directly; the
+    /// `iter_spans` method will yield the string and span data directly.
+    pub fn span(&self, index: usize) -> Option<&TextSpan> {
+        self.spans.get(index)
+    }
+
+    /// Retrieve the number of text spans currently present.
+    ///
+    /// Text span indicies are ephemeral, and thus, so is this span count.
+    pub fn span_count(&self) -> usize {
+        self.spans.len()
     }
 
     /// Find the index of the span that covers a given search position.
@@ -1107,6 +1147,20 @@ impl FormatSpans {
         self.text = new_string;
 
         self.normalize();
+    }
+
+    /// Iterate over all text spans in the current list of format spans.
+    ///
+    /// The iterator returned by this function yields a tuple for each span,
+    /// containing the following parameters:
+    ///
+    /// 1. The position of the first character covered by the span
+    /// 2. The end of the span (or, more specifically, the position of the last
+    ///    character covered by the span, plus one)
+    /// 3. The string contents of the text span
+    /// 4. The formatting applied to the text span.
+    pub fn iter_spans(&self) -> impl Iterator<Item = (usize, usize, &str, &TextSpan)> {
+        TextSpanIter::for_format_spans(self)
     }
 
     /// Lower an HTML tree into text-span representation.

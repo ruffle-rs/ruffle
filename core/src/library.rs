@@ -136,6 +136,14 @@ impl<'gc> MovieLibrary<'gc> {
         }
     }
 
+    pub fn get_font_by_name(&self, name: &str) -> Option<Font<'gc>> {
+        if let Some(&Character::Font(font)) = self.export_characters.get(name) {
+            Some(font)
+        } else {
+            None
+        }
+    }
+
     pub fn get_sound(&self, id: CharacterId) -> Option<SoundHandle> {
         if let Some(Character::Sound(sound)) = self.characters.get(&id) {
             Some(*sound)
