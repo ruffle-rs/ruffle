@@ -44,7 +44,7 @@ pub fn set_text<'gc>(
                 text_field.set_text(
                     value.coerce_to_string(avm, context)?.to_string(),
                     context.gc_context,
-                )
+                )?;
             }
         }
     }

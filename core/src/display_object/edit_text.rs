@@ -9,8 +9,12 @@ use crate::library::Library;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
+use crate::xml::{XMLDocument, XMLNode};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::sync::Arc;
+
+/// Boxed error type.
+pub type Error = Box<dyn std::error::Error>;
 
 /// A dynamic text field.
 /// The text in this text field can be changed dynamically.
@@ -37,6 +41,9 @@ pub struct EditTextData<'gc> {
     /// The current text displayed by this text field.
     text: String,
 
+    /// The current HTML document displayed by this `EditText`.
+    document: XMLDocument<'gc>,
+
     /// The text formatting for newly inserted text spans.
     new_format: TextFormat,
 
@@ -62,35 +69,28 @@ impl<'gc> EditText<'gc> {
     ) -> Self {
         let is_multiline = swf_tag.is_multiline;
         let is_word_wrap = swf_tag.is_word_wrap;
+        let document = XMLDocument::new(context.gc_context);
+        let text = swf_tag.initial_text.clone().unwrap_or_default();
 
-        let text = if swf_tag.is_html {
-            let mut result = String::new();
-            let tag_text = swf_tag.initial_text.clone().unwrap_or_default();
-            let mut chars = tag_text.chars().peekable();
-
-            while let Some(c) = chars.next() {
-                // TODO: SWF text fields can contain a limited subset of HTML (and often do in SWF versions >6).
-                // This is a quicky-and-dirty way to skip the HTML tags. This is obviously not correct
-                // and we will need to properly parse and handle the HTML at some point.
-                // See SWF19 pp. 173-174 for supported HTML tags.
-                if c == '<' {
-                    // Skip characters until we see a close bracket.
-                    chars.by_ref().find(|&x| x == '>');
-                } else {
-                    result.push(c);
-                }
-            }
-
-            result
+        if swf_tag.is_html {
+            document
+                .as_node()
+                .replace_with_str(context.gc_context, &text)
+                .unwrap();
         } else {
-            swf_tag.initial_text.clone().unwrap_or_default()
-        };
+            let tnode = XMLNode::new_text(context.gc_context, &text, document);
+            document
+                .as_node()
+                .append_child(context.gc_context, tnode)
+                .unwrap();
+        }
 
         EditText(GcCell::allocate(
             context.gc_context,
             EditTextData {
                 base: Default::default(),
                 text,
+                document,
                 new_format: TextFormat::default(),
                 static_data: gc_arena::Gc::allocate(
                     context.gc_context,
@@ -158,14 +158,37 @@ impl<'gc> EditText<'gc> {
         Self::from_swf_tag(context, swf_movie, swf_tag)
     }
 
-    // TODO: This needs to strip away HTML
     pub fn text(self) -> String {
         self.0.read().text.to_owned()
     }
 
-    pub fn set_text(self, text: String, gc_context: MutationContext<'gc, '_>) {
-        self.0.write(gc_context).cached_break_points = None;
-        self.0.write(gc_context).text = text;
+    pub fn set_text(self, text: String, gc_context: MutationContext<'gc, '_>) -> Result<(), Error> {
+        let mut edit_text = self.0.write(gc_context);
+        let mut child_ptr = edit_text
+            .document
+            .as_node()
+            .children()
+            .and_then(|mut ch| ch.next());
+
+        while let Some(child) = child_ptr {
+            edit_text
+                .document
+                .as_node()
+                .remove_child(gc_context, child)?;
+
+            child_ptr = child.next_sibling().unwrap();
+        }
+
+        let text_node = XMLNode::new_text(gc_context, &text, edit_text.document);
+        edit_text
+            .document
+            .as_node()
+            .append_child(gc_context, text_node)?;
+
+        edit_text.cached_break_points = None;
+        edit_text.text = text;
+
+        Ok(())
     }
 
     pub fn new_text_format(self) -> TextFormat {
@@ -303,7 +326,7 @@ impl<'gc> EditText<'gc> {
                     .height
                     .unwrap_or_else(|| Twips::from_pixels(font.scale().into()));
 
-                for natural_line in edit_text.text.split('\n') {
+                for natural_line in self.text().split('\n') {
                     if break_base != 0 {
                         breakpoints.push(break_base);
                     }
@@ -355,6 +378,7 @@ impl<'gc> EditText<'gc> {
     /// The returned tuple should be interpreted as width, then height.
     pub fn measure_text(self, context: &mut UpdateContext<'_, 'gc, '_>) -> (Twips, Twips) {
         let breakpoints = self.line_breaks_cached(context.gc_context, context.library);
+        let text = self.text();
 
         let edit_text = self.0.read();
         let static_data = &edit_text.static_data;
@@ -365,11 +389,11 @@ impl<'gc> EditText<'gc> {
             let mut start = 0;
             let mut chunks = vec![];
             for breakpoint in breakpoints {
-                chunks.push(&edit_text.text[start..breakpoint]);
+                chunks.push(&text[start..breakpoint]);
                 start = breakpoint;
             }
 
-            chunks.push(&edit_text.text[start..]);
+            chunks.push(&text[start..]);
 
             let height = static_data
                 .text
@@ -470,6 +494,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         context.transform_stack.push(&*self.transform());
 
         let mut text_transform = self.text_transform();
+        let text = self.text();
 
         let edit_text = self.0.read();
         let static_data = &edit_text.static_data;
@@ -491,11 +516,11 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             let mut start = 0;
             let mut chunks = vec![];
             for breakpoint in breakpoints {
-                chunks.push(&edit_text.text[start..breakpoint]);
+                chunks.push(&text[start..breakpoint]);
                 start = breakpoint;
             }
 
-            chunks.push(&edit_text.text[start..]);
+            chunks.push(&text[start..]);
 
             for chunk in chunks {
                 font.evaluate(
