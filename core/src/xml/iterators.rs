@@ -141,3 +141,35 @@ impl<'gc> Iterator for WalkIter<'gc> {
         }
     }
 }
+
+/// Iterator that yields indirect descendents of an XML node.
+pub struct AnscIter<'gc> {
+    next: Option<XMLNode<'gc>>,
+}
+
+impl<'gc> AnscIter<'gc> {
+    /// Construct a new `AnscIter` that lists the parents of an XML node.
+    ///
+    /// This function should be called with the parent of the node being
+    /// iterated.
+    pub fn for_node(next: Option<XMLNode<'gc>>) -> Self {
+        Self { next }
+    }
+}
+
+impl<'gc> Iterator for AnscIter<'gc> {
+    type Item = XMLNode<'gc>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let parent = self.next;
+
+        if let Some(parent) = parent {
+            match parent.parent() {
+                Ok(gp) => self.next = gp,
+                _ => self.next = None,
+            }
+        }
+
+        parent
+    }
+}

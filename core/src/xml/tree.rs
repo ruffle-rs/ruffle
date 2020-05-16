@@ -814,6 +814,21 @@ impl<'gc> XMLNode<'gc> {
         }
     }
 
+    /// Returns an iterator that yields ancestor nodes.
+    ///
+    /// Yields None if this node does not have a parent.
+    pub fn ancestors(self) -> Option<impl Iterator<Item = XMLNode<'gc>>> {
+        let parent = match *self.0.read() {
+            XMLNodeData::DocumentRoot { .. } => return None,
+            XMLNodeData::Element { parent, .. } => parent,
+            XMLNodeData::Text { parent, .. } => parent,
+            XMLNodeData::Comment { parent, .. } => parent,
+            XMLNodeData::DocType { parent, .. } => parent,
+        };
+
+        Some(xml::iterators::AnscIter::for_node(parent))
+    }
+
     /// Get the already-instantiated script object from the current node.
     fn get_script_object(self) -> Option<Object<'gc>> {
         match &*self.0.read() {
