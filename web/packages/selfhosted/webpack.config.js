@@ -13,18 +13,18 @@ module.exports = (env, argv) => {
     console.log(`Building ${mode}...`);
 
     return {
-        entry: path.resolve(__dirname, "js/index.js"),
+        entry: path.resolve(__dirname, "js/ruffle.js"),
         output: {
-            path: path.resolve(__dirname, "build/dist"),
+            path: path.resolve(__dirname, "dist"),
             filename: "ruffle.js",
-            chunkFilename: "core.ruffle.js",
-            jsonpFunction: "RufflePlayerExtensionLoader",
+            chunkFilename: "core.ruffle.[contenthash].js",
+            jsonpFunction: "RufflePlayerLoader",
         },
         mode: mode,
         plugins: [
             new CleanWebpackPlugin(),
             new WasmPackPlugin({
-                crateDirectory: path.resolve(__dirname, ".."),
+                crateDirectory: path.resolve(__dirname, "../.."),
                 outName: "ruffle",
                 forceMode: mode,
             }),
