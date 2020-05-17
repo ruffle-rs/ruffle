@@ -28,6 +28,7 @@
         "bootstrap": "lerna bootstrap --hoist",
         "build": "lerna run build --stream",
         "buildProduction": "lerna run build --stream -- --mode=production",
-        "demo": "lerna run --scope ruffle-demo serve --stream"
+        "demo": "lerna run --scope ruffle-demo serve --stream",
+        "test": "lerna run test --stream"
     }
 }
