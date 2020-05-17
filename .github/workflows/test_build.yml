@@ -64,3 +64,4 @@ jobs:
         npm run bootstrap
         npx eslint .
         npm run build
+        npm run test
