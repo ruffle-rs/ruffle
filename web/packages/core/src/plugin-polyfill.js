@@ -128,7 +128,7 @@ class RufflePluginArray {
     }
 }
 
-export const FLASH_PLUGIN = new RufflePlugin(
+exports.FLASH_PLUGIN = new RufflePlugin(
     "Shockwave Flash",
     "Shockwave Flash 32.0 r0",
     "ruffle.js",
@@ -164,7 +164,7 @@ export const FLASH_PLUGIN = new RufflePlugin(
  * that version of the plugin array. This allows the plugin polyfill to compose
  * across multiple plugin emulators with the first emulator's polyfill winning.
  */
-export function install_plugin(plugin) {
+exports.install_plugin = function install_plugin(plugin) {
     if (!navigator.plugins.install) {
         Object.defineProperty(navigator, "plugins", {
             value: new RufflePluginArray(navigator.plugins),
@@ -184,4 +184,4 @@ export function install_plugin(plugin) {
     for (var i = 0; i < plugin.length; i += 1) {
         navigator.mimeTypes.install(plugin[i]);
     }
-}
+};

@@ -1,5 +1,5 @@
-import { Version } from "./version.js";
-import { VersionRange } from "./version-range.js";
+const { Version } = require("./version.js");
+const { VersionRange } = require("./version-range.js");
 
 /**
  * Represents the Ruffle public API.
@@ -12,7 +12,7 @@ import { VersionRange } from "./version-range.js";
  * This API *is* versioned, in case we need to upgrade it. However, it must be
  * backwards- and forwards-compatible with all known sources.
  */
-export class PublicAPI {
+exports.PublicAPI = class PublicAPI {
     /**
      * Construct the Ruffle public API.
      *
@@ -272,4 +272,4 @@ export class PublicAPI {
 
         return public_api;
     }
-}
+};

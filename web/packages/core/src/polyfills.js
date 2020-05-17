@@ -1,7 +1,7 @@
-import RuffleObject from "./ruffle-object";
-import RuffleEmbed from "./ruffle-embed";
-import { install_plugin, FLASH_PLUGIN } from "./plugin-polyfill";
-import { public_path } from "./public-path";
+const RuffleObject = require("./ruffle-object");
+const RuffleEmbed = require("./ruffle-embed");
+const { install_plugin, FLASH_PLUGIN } = require("./plugin-polyfill");
+const { public_path } = require("./public-path");
 
 if (!window.RufflePlayer) {
     window.RufflePlayer = {};
@@ -162,7 +162,7 @@ let polyfills = {
     frames: polyfill_frames,
 };
 
-export function polyfill(polyfill_list) {
+exports.polyfill = function polyfill(polyfill_list) {
     for (let i = 0; i < polyfill_list.length; i += 1) {
         if (running_polyfills.indexOf(polyfill_list[i]) !== -1) {
             continue;
@@ -186,4 +186,4 @@ export function polyfill(polyfill_list) {
 
         this_polyfill();
     }
-}
+};

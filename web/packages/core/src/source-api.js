@@ -1,6 +1,6 @@
-import { polyfill } from "./polyfills";
-import { register_element } from "./register-element";
-import { RufflePlayer } from "./ruffle-player";
+const { polyfill } = require("./polyfills");
+const { register_element } = require("./register-element");
+const { RufflePlayer } = require("./ruffle-player");
 
 /**
  * Represents this particular version of Ruffle.
@@ -10,7 +10,7 @@ import { RufflePlayer } from "./ruffle-player";
  * negotiator (see `PublicAPI`) what this particular version of Ruffle is and
  * how to control it.
  */
-export class SourceAPI {
+exports.SourceAPI = class SourceAPI {
     /**
      * Construct a Source API.
      *
@@ -54,4 +54,4 @@ export class SourceAPI {
 
         return player;
     }
-}
+};

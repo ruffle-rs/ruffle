@@ -18,7 +18,7 @@
  * @param {string} source_name The name of the source.
  * @returns {string} The public path for the given source.
  */
-export function public_path(config, source_name) {
+exports.public_path = function public_path(config, source_name) {
     let public_path = "";
     if (
         config !== undefined &&
@@ -43,4 +43,4 @@ export function public_path(config, source_name) {
     }
 
     return public_path;
-}
+};

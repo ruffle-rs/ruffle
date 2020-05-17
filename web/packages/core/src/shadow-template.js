@@ -50,4 +50,4 @@ ruffle_shadow_tmpl.innerHTML = `
     </div>
 `;
 
-export default ruffle_shadow_tmpl;
+module.exports = ruffle_shadow_tmpl;

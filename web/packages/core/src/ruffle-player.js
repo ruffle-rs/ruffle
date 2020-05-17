@@ -1,16 +1,16 @@
-import load_ruffle from "./load-ruffle";
-import ruffle_shadow_template from "./shadow-template";
-import { lookup_element } from "./register-element";
+const load_ruffle = require("./load-ruffle");
+const ruffle_shadow_template = require("./shadow-template");
+const { lookup_element } = require("./register-element");
 
-export let FLASH_MIMETYPE = "application/x-shockwave-flash";
-export let FUTURESPLASH_MIMETYPE = "application/futuresplash";
-export let FLASH7_AND_8_MIMETYPE = "application/x-shockwave-flash2-preview";
-export let FLASH_MOVIE_MIMETYPE = "application/vnd.adobe.flash-movie";
-export let FLASH_ACTIVEX_CLASSID = "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000";
+exports.FLASH_MIMETYPE = "application/x-shockwave-flash";
+exports.FUTURESPLASH_MIMETYPE = "application/futuresplash";
+exports.FLASH7_AND_8_MIMETYPE = "application/x-shockwave-flash2-preview";
+exports.FLASH_MOVIE_MIMETYPE = "application/vnd.adobe.flash-movie";
+exports.FLASH_ACTIVEX_CLASSID = "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000";
 
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 
-export class RufflePlayer extends HTMLElement {
+exports.RufflePlayer = class RufflePlayer extends HTMLElement {
     constructor(...args) {
         let self = super(...args);
 
@@ -232,15 +232,15 @@ export class RufflePlayer extends HTMLElement {
         }
         return null;
     }
-}
+};
 
 /*
  * Returns whether the given filename ends in an "swf" extension.
  */
-export function is_swf_filename(filename) {
+exports.is_swf_filename = function is_swf_filename(filename) {
     return (
         filename &&
         typeof filename === "string" &&
         filename.search(/\.swf\s*$/i) >= 0
     );
-}
+};

@@ -1,9 +1,9 @@
-import { Version } from "./version";
+const { Version } = require("./version");
 
 /**
  * Represents a set of version requirements.
  */
-export class VersionRange {
+exports.VersionRange = class VersionRange {
     constructor(requirements) {
         this.requirements = requirements;
     }
@@ -88,4 +88,4 @@ export class VersionRange {
 
         return new VersionRange(requirement_set);
     }
-}
+};

@@ -1,4 +1,4 @@
-import { SourceAPI, PublicAPI } from "ruffle-selfhosted";
+const { SourceAPI, PublicAPI } = require("ruffle-selfhosted");
 
 window.RufflePlayer = PublicAPI.negotiate(
     window.RufflePlayer,

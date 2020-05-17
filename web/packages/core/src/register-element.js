@@ -16,7 +16,7 @@ var private_registry = {};
  * properties listing the external name, implementing class, and internal name
  * respectively.
  */
-export function lookup_element(element_name) {
+exports.lookup_element = function lookup_element(element_name) {
     let data = private_registry[element_name];
     if (data !== undefined) {
         return {
@@ -27,7 +27,7 @@ export function lookup_element(element_name) {
     } else {
         return null;
     }
-}
+};
 
 /**
  * Register a custom element.
@@ -50,7 +50,10 @@ export function lookup_element(element_name) {
  * @throws Throws an error if two different elements were registered with the
  * same internal name.
  */
-export function register_element(element_name, element_class) {
+exports.register_element = function register_element(
+    element_name,
+    element_class
+) {
     if (private_registry[element_name] !== undefined) {
         if (private_registry[element_name].class !== element_class) {
             throw new Error("Internal naming conflict on " + element_name);
@@ -82,4 +85,4 @@ export function register_element(element_name, element_class) {
             }
         }
     }
-}
+};

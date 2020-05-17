@@ -1,4 +1,4 @@
-import {
+const {
     FLASH_MIMETYPE,
     FUTURESPLASH_MIMETYPE,
     FLASH7_AND_8_MIMETYPE,
@@ -6,10 +6,10 @@ import {
     FLASH_ACTIVEX_CLASSID,
     is_swf_filename,
     RufflePlayer,
-} from "./ruffle-player.js";
-import { register_element } from "./register-element";
+} = require("./ruffle-player.js");
+const { register_element } = require("./register-element");
 
-export default class RuffleObject extends RufflePlayer {
+module.exports = class RuffleObject extends RufflePlayer {
     constructor(...args) {
         super(...args);
     }
@@ -93,4 +93,4 @@ export default class RuffleObject extends RufflePlayer {
 
         return ruffle_obj;
     }
-}
+};

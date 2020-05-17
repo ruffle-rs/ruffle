@@ -37,10 +37,10 @@ let last_loaded_ruffle = null;
  *
  * This function returns a promise which yields `Ruffle` asynchronously.
  */
-export default function load_ruffle() {
+module.exports = function load_ruffle() {
     if (last_loaded_ruffle == null) {
         last_loaded_ruffle = fetch_ruffle();
     }
 
     return last_loaded_ruffle;
-}
+};

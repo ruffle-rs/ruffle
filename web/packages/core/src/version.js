@@ -1,4 +1,4 @@
-export class Version {
+exports.Version = class Version {
     /**
      * Construct a Version from components.
      *
@@ -216,4 +216,4 @@ export class Version {
             );
         }
     }
-}
+};

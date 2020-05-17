@@ -1,1 +1,1 @@
-export * from "ruffle-core";
+module.exports = require("ruffle-core");
