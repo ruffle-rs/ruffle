@@ -1,6 +1,4 @@
-import { PublicAPI } from "ruffle-core/public-api";
-import { SourceAPI } from "ruffle-core/source-api";
-import { public_path } from "ruffle-core/public-path";
+import { PublicAPI, SourceAPI, public_path } from "ruffle-core";
 
 window.RufflePlayer = PublicAPI.negotiate(
     window.RufflePlayer,
