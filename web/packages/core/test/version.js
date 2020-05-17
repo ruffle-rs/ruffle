@@ -13,6 +13,7 @@ const testMatrix = [
         "1-rc.1",
         "1-beta.11",
         "1-beta.2",
+        "1-beta.01",
         "1-beta",
         "1-alpha.beta",
         "1-alpha.1",
@@ -33,6 +34,10 @@ describe("Version", function () {
             assert.deepEqual(
                 Version.from_semver("1.2.3"),
                 new Version(1, 2, 3, undefined, undefined)
+            );
+            assert.deepEqual(
+                Version.from_semver("1.09.3"),
+                new Version(1, 9, 3, undefined, undefined)
             );
             assert.deepEqual(
                 Version.from_semver("1.2.3-pr"),

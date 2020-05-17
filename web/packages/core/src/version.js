@@ -33,16 +33,16 @@ exports.Version = class Version {
             version_split = pr_split[0].split("."),
             version = [];
 
-        version.push(parseInt(version_split[0]));
+        version.push(parseInt(version_split[0], 10));
 
         if (version_split[1] != undefined) {
-            version.push(parseInt(version_split[1]));
+            version.push(parseInt(version_split[1], 10));
         } else {
             version.push(0);
         }
 
         if (version_split[2] != undefined) {
-            version.push(parseInt(version_split[2]));
+            version.push(parseInt(version_split[2], 10));
         } else {
             version.push(0);
         }
@@ -147,11 +147,13 @@ exports.Version = class Version {
                     is_numeric.test(fver.pr_ident[i])
                 ) {
                     if (
-                        parseInt(this.pr_ident[i]) > parseInt(fver.pr_ident[i])
+                        parseInt(this.pr_ident[i], 10) >
+                        parseInt(fver.pr_ident[i], 10)
                     ) {
                         return true;
                     } else if (
-                        parseInt(this.pr_ident[i]) < parseInt(fver.pr_ident[i])
+                        parseInt(this.pr_ident[i], 10) <
+                        parseInt(fver.pr_ident[i], 10)
                     ) {
                         return false;
                     }
