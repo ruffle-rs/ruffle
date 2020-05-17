@@ -799,7 +799,7 @@ impl AudioBackend for WebAudioBackend {
     }
 }
 
-#[wasm_bindgen(module = "/packages/core/ruffle-imports.js")]
+#[wasm_bindgen(module = "/packages/core/src/ruffle-imports.js")]
 extern "C" {
     /// Imported JS method to copy data into an `AudioBuffer`.
     /// We'd prefer to use `AudioBuffer.copyToChannel`, but this isn't supported
