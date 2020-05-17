@@ -1,6 +1,9 @@
 {
-  "name": "ruffle-core",
-  "version": "0.1.0",
-  "description": "Core bindings for Ruffle",
-  "private": true
+    "name": "ruffle-core",
+    "version": "0.1.0",
+    "description": "Core bindings for Ruffle",
+    "private": true,
+    "scripts": {
+        "build": "webpack"
+    }
 }

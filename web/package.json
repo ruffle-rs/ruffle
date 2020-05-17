@@ -26,8 +26,8 @@
     },
     "scripts": {
         "bootstrap": "npx lerna bootstrap --hoist",
-        "build": "npx lerna run build",
-        "buildProduction": "npx lerna run build -- --mode=production",
+        "build": "npx lerna run build --stream",
+        "buildProduction": "npx lerna run build --stream -- --mode=production",
         "demo": "npx lerna run --scope ruffle-demo serve --stream"
     }
 }

@@ -1,7 +1,6 @@
 /* eslint-env node */
 
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
-const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
 const path = require("path");
 
 module.exports = (env, argv) => {
@@ -21,13 +20,6 @@ module.exports = (env, argv) => {
             jsonpFunction: "RufflePlayerExtensionLoader",
         },
         mode: mode,
-        plugins: [
-            new CleanWebpackPlugin(),
-            new WasmPackPlugin({
-                crateDirectory: path.resolve(__dirname, "../.."),
-                outName: "ruffle",
-                forceMode: mode,
-            }),
-        ],
+        plugins: [new CleanWebpackPlugin()],
     };
 };
