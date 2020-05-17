@@ -87,11 +87,13 @@ exports.Version = class Version {
             (this.major !== 0 && this.major === fver.major) ||
             (this.major === 0 &&
                 fver.major === 0 &&
+                this.minor !== 0 &&
                 this.minor === fver.minor) ||
             (this.major === 0 &&
                 fver.major === 0 &&
                 this.minor === 0 &&
                 fver.minor === 0 &&
+                this.patch !== 0 &&
                 this.patch === fver.patch)
         );
     }
