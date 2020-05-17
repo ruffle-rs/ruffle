@@ -25,9 +25,9 @@
         "ruffle-selfhosted": "file:packages/selfhosted"
     },
     "scripts": {
-        "bootstrap": "npx lerna bootstrap --hoist",
-        "build": "npx lerna run build --stream",
-        "buildProduction": "npx lerna run build --stream -- --mode=production",
-        "demo": "npx lerna run --scope ruffle-demo serve --stream"
+        "bootstrap": "lerna bootstrap --hoist",
+        "build": "lerna run build --stream",
+        "buildProduction": "lerna run build --stream -- --mode=production",
+        "demo": "lerna run --scope ruffle-demo serve --stream"
     }
 }
