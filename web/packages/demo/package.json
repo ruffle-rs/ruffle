@@ -7,6 +7,6 @@
         "serve": "webpack-dev-server"
     },
     "dependencies": {
-        "ruffle-core": "file:../core"
+        "ruffle-selfhosted": "file:../selfhosted"
     }
 }
