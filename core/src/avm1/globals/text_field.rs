@@ -208,6 +208,38 @@ pub fn create_proto<'gc>(
             }
 
             Ok(Value::Undefined.into())
+        },
+        "getTextFormat" => |text_field: EditText<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args: &[Value<'gc>]| {
+            let (from, to) = match (args.get(0), args.get(1)) {
+                (Some(f), Some(t)) => (f.as_number(avm, context)? as usize, t.as_number(avm, context)? as usize),
+                (Some(f), None) => {
+                    let v = f.as_number(avm, context)? as usize;
+                    (v, v.saturating_add(1))
+                },
+                _ => (0, text_field.text_length())
+            };
+
+            Ok(text_field.text_format(from, to).as_avm1_object(avm, context)?.into())
+        },
+        "setTextFormat" => |text_field: EditText<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args: &[Value<'gc>]| {
+            let tf = args.last().cloned().unwrap_or(Value::Undefined);
+
+            if let Value::Object(tf) = tf {
+                let tf_parsed = TextFormat::from_avm1_object(tf, avm, context)?;
+
+                let (from, to) = match (args.get(0), args.get(1)) {
+                    (Some(f), Some(t)) if args.len() > 2 => (f.as_number(avm, context)? as usize, t.as_number(avm, context)? as usize),
+                    (Some(f), _) if args.len() > 1 => {
+                        let v = f.as_number(avm, context)? as usize;
+                        (v, v.saturating_add(1))
+                    },
+                    _ => (0, text_field.text_length())
+                };
+
+                text_field.set_text_format(from, to, tf_parsed, context);
+            }
+
+            Ok(Value::Undefined.into())
         }
     );
 

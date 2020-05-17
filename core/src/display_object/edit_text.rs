@@ -197,6 +197,10 @@ impl<'gc> EditText<'gc> {
         Ok(())
     }
 
+    pub fn text_length(self) -> usize {
+        self.0.read().text_spans.text().len()
+    }
+
     pub fn new_text_format(self) -> TextFormat {
         self.0.read().text_spans.default_format().clone()
     }
@@ -207,6 +211,23 @@ impl<'gc> EditText<'gc> {
             .text_spans
             .set_default_format(tf);
         self.relayout(context);
+    }
+
+    pub fn text_format(self, from: usize, to: usize) -> TextFormat {
+        self.0.read().text_spans.get_text_format(from, to)
+    }
+
+    pub fn set_text_format(
+        self,
+        from: usize,
+        to: usize,
+        tf: TextFormat,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) {
+        self.0
+            .write(context.gc_context)
+            .text_spans
+            .set_text_format(from, to, &tf);
     }
 
     pub fn is_multiline(self) -> bool {
