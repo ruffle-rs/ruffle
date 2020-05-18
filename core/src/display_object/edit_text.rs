@@ -248,6 +248,20 @@ impl<'gc> EditText<'gc> {
         self.relayout(context);
     }
 
+    pub fn replace_text(
+        self,
+        from: usize,
+        to: usize,
+        text: &str,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) {
+        self.0
+            .write(context.gc_context)
+            .text_spans
+            .replace_text(from, to, text, None);
+        self.relayout(context);
+    }
+
     /// Construct a base text transform for this `EditText`, to be used for
     /// evaluating fonts.
     ///

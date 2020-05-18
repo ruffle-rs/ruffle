@@ -240,6 +240,15 @@ pub fn create_proto<'gc>(
             }
 
             Ok(Value::Undefined.into())
+        },
+        "replaceText" => |text_field: EditText<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args: &[Value<'gc>]| {
+            let from = args.get(0).cloned().unwrap_or(Value::Undefined).as_number(avm, context)?;
+            let to = args.get(1).cloned().unwrap_or(Value::Undefined).as_number(avm, context)?;
+            let text = args.get(2).cloned().unwrap_or(Value::Undefined).coerce_to_string(avm, context)?;
+
+            text_field.replace_text(from as usize, to as usize, &text, context);
+
+            Ok(Value::Undefined.into())
         }
     );
 
