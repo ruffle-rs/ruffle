@@ -109,6 +109,7 @@ impl<T> From<(T, T)> for Size<T> {
     }
 }
 
+#[allow(dead_code)]
 impl<T> Size<T>
 where
     T: Clone,
@@ -119,18 +120,6 @@ where
 
     pub fn height(&self) -> T {
         self.height.clone()
-    }
-}
-
-impl<T> Size<T>
-where
-    T: Ord,
-{
-    pub fn max(self, rhs: Self) -> Self {
-        Self {
-            width: max(self.width, rhs.width),
-            height: max(self.height, rhs.height),
-        }
     }
 }
 
@@ -205,6 +194,7 @@ where
     }
 }
 
+#[allow(dead_code)]
 impl<T> BoxBounds<T>
 where
     T: Add<T, Output = T> + Sub<T, Output = T> + Clone,
@@ -229,6 +219,7 @@ where
     }
 }
 
+#[allow(dead_code)]
 impl<T> BoxBounds<T>
 where
     T: Clone,
@@ -269,12 +260,9 @@ where
     pub fn height(&self) -> T {
         self.extent_y() - self.offset_y()
     }
-
-    pub fn size(&self) -> Size<T> {
-        Size::from((self.width(), self.height()))
-    }
 }
 
+#[allow(dead_code)]
 impl<T> BoxBounds<T>
 where
     T: Add<T, Output = T> + Clone,

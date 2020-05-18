@@ -3,14 +3,13 @@ use crate::avm1::globals::text_field::attach_virtual_properties;
 use crate::avm1::{Avm1, Object, StageObject, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
-use crate::font::{Font, Glyph};
-use crate::html::{BoxBounds, FormatSpans, LayoutBox, Size, TextFormat};
-use crate::library::Library;
+use crate::font::Glyph;
+use crate::html::{BoxBounds, FormatSpans, LayoutBox, TextFormat};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
-use crate::xml::{XMLDocument, XMLNode};
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use crate::xml::XMLDocument;
+use gc_arena::{Collect, Gc, GcCell};
 use std::sync::Arc;
 use swf::Twips;
 
@@ -358,7 +357,7 @@ impl<'gc> EditText<'gc> {
 
     /// Render a layout box, plus it's children.
     fn render_layout_box(
-        &self,
+        self,
         context: &mut RenderContext<'_, 'gc>,
         lbox: GcCell<'gc, LayoutBox<'gc>>,
     ) {

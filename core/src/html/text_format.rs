@@ -606,14 +606,6 @@ impl Default for TextSpan {
 }
 
 impl TextSpan {
-    pub fn with_length(length: usize) -> Self {
-        let mut data = Self::default();
-
-        data.span_length = length;
-
-        data
-    }
-
     pub fn with_length_and_format(length: usize, tf: TextFormat) -> Self {
         let mut data = Self::default();
 
@@ -621,26 +613,6 @@ impl TextSpan {
         data.set_text_format(&tf);
 
         data
-    }
-
-    /// Split the text span in two at a particular point relative to the
-    /// current text span's start.
-    ///
-    /// The second span is returned and should be inserted into the list of
-    /// text spans appropriately. The first text span is changed in-line.
-    ///
-    /// If the split point exceeds the size of the current span, then no span
-    /// will be returned and no change will be made to the existing span.
-    fn split_at(&mut self, split_point: usize) -> Option<Self> {
-        if self.span_length <= split_point || split_point == 0 {
-            return None;
-        }
-
-        let mut new_span = self.clone();
-        new_span.span_length = self.span_length - split_point;
-        self.span_length = split_point;
-
-        Some(new_span)
     }
 
     /// Determine if this and another span have identical text formats.
@@ -667,25 +639,6 @@ impl TextSpan {
             && self.bullet == rhs.bullet
             && self.url == rhs.url
             && self.target == rhs.target
-    }
-
-    /// Merge two spans together.
-    ///
-    /// This function assumes the two spans are adjacent; if they are not, this
-    /// will break invariants of the text span system.
-    ///
-    /// If the spans do not have identical text formatting, this function will
-    /// refuse to merge them (see `can_merge`) and return the original `rhs`
-    /// span. If it consumes the span, and yields None, then the merge
-    /// completed successfully.
-    fn merge(&mut self, rhs: Self) -> Option<Self> {
-        if !self.can_merge(&rhs) {
-            return Some(rhs);
-        }
-
-        self.span_length += rhs.span_length;
-
-        None
     }
 
     /// Apply a text format to this text span.
@@ -821,19 +774,8 @@ impl FormatSpans {
         }
     }
 
-    pub fn from_str_and_format(text: &str, default_format: TextFormat) -> Self {
-        let mut span = TextSpan::with_length(text.len());
-
-        span.set_text_format(&default_format);
-
-        FormatSpans {
-            text: text.to_string(),
-            spans: vec![span],
-            default_format,
-        }
-    }
-
     /// Construct a format span from it's raw parts.
+    #[allow(dead_code)]
     pub fn from_str_and_spans(text: &str, spans: &[TextSpan]) -> Self {
         FormatSpans {
             text: text.to_string(),
@@ -862,13 +804,6 @@ impl FormatSpans {
     /// `iter_spans` method will yield the string and span data directly.
     pub fn span(&self, index: usize) -> Option<&TextSpan> {
         self.spans.get(index)
-    }
-
-    /// Retrieve the number of text spans currently present.
-    ///
-    /// Text span indicies are ephemeral, and thus, so is this span count.
-    pub fn span_count(&self) -> usize {
-        self.spans.len()
     }
 
     /// Find the index of the span that covers a given search position.
@@ -1109,7 +1044,7 @@ impl FormatSpans {
             self.ensure_span_break_at(to);
 
             let (start_pos, end_pos) = self.get_span_boundaries(from, to);
-            let mut new_tf = new_tf
+            let new_tf = new_tf
                 .cloned()
                 .or_else(|| self.spans.get(end_pos).map(|span| span.get_text_format()))
                 .unwrap_or_else(|| self.default_format.clone());

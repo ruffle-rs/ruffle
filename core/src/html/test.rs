@@ -257,11 +257,11 @@ fn formatspans_resolve_position() {
     let fs = FormatSpans::from_str_and_spans(
         "abcdefghi",
         &[
-            TextSpan::with_length(2),
-            TextSpan::with_length(3),
-            TextSpan::with_length(1),
-            TextSpan::with_length(1),
-            TextSpan::with_length(2),
+            TextSpan::with_length_and_format(2, Default::default()),
+            TextSpan::with_length_and_format(3, Default::default()),
+            TextSpan::with_length_and_format(1, Default::default()),
+            TextSpan::with_length_and_format(1, Default::default()),
+            TextSpan::with_length_and_format(2, Default::default()),
         ],
     );
 
@@ -282,11 +282,11 @@ fn formatspans_ensure_span_break() {
     let mut fs = FormatSpans::from_str_and_spans(
         "abcdefghi",
         &[
-            TextSpan::with_length(2),
-            TextSpan::with_length(3),
-            TextSpan::with_length(1),
-            TextSpan::with_length(1),
-            TextSpan::with_length(2),
+            TextSpan::with_length_and_format(2, Default::default()),
+            TextSpan::with_length_and_format(3, Default::default()),
+            TextSpan::with_length_and_format(1, Default::default()),
+            TextSpan::with_length_and_format(1, Default::default()),
+            TextSpan::with_length_and_format(2, Default::default()),
         ],
     );
 
@@ -310,11 +310,11 @@ fn formatspans_ensure_span_break_redundant() {
     let mut fs = FormatSpans::from_str_and_spans(
         "abcdefghi",
         &[
-            TextSpan::with_length(2),
-            TextSpan::with_length(3),
-            TextSpan::with_length(1),
-            TextSpan::with_length(1),
-            TextSpan::with_length(2),
+            TextSpan::with_length_and_format(2, Default::default()),
+            TextSpan::with_length_and_format(3, Default::default()),
+            TextSpan::with_length_and_format(1, Default::default()),
+            TextSpan::with_length_and_format(1, Default::default()),
+            TextSpan::with_length_and_format(2, Default::default()),
         ],
     );
 
@@ -338,11 +338,11 @@ fn formatspans_span_boundaries() {
     let fs = FormatSpans::from_str_and_spans(
         "abcdefghi",
         &[
-            TextSpan::with_length(2),
-            TextSpan::with_length(3),
-            TextSpan::with_length(1),
-            TextSpan::with_length(1),
-            TextSpan::with_length(2),
+            TextSpan::with_length_and_format(2, Default::default()),
+            TextSpan::with_length_and_format(3, Default::default()),
+            TextSpan::with_length_and_format(1, Default::default()),
+            TextSpan::with_length_and_format(1, Default::default()),
+            TextSpan::with_length_and_format(2, Default::default()),
         ],
     );
 
