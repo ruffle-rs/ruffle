@@ -373,7 +373,7 @@ impl<'gc> EditText<'gc> {
         if let Some((start, end, _tf, font, font_size)) = lbox.read().text_node() {
             if let Some(chunk) = edit_text.text_spans.text().get(start..end) {
                 font.evaluate(
-                    &chunk[start..end],
+                    &chunk,
                     self.text_transform(),
                     font_size,
                     |transform, glyph: &Glyph| {
