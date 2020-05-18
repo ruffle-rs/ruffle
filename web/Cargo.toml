@@ -18,7 +18,7 @@ byteorder = "1.3.4"
 console_error_panic_hook = { version = "0.1.1", optional = true }
 console_log = { version = "0.2", optional = true }
 fnv = "1.0.7"
-generational-arena = "0.2.7"
+generational-arena = "0.2.8"
 js-sys = "0.3.25"
 log = "0.4"
 ruffle_render_canvas = { path = "../render/canvas", optional = true }
