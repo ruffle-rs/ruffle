@@ -24,6 +24,14 @@ const testMatrix = [
     ["0.0.1", "0.0.1-dev", "0.0.1-5", "0.0.1-2"],
 ];
 
+function flatten(arr) {
+    return arr.reduce(function (flat, toFlatten) {
+        return flat.concat(
+            Array.isArray(toFlatten) ? flatten(toFlatten) : toFlatten
+        );
+    }, []);
+}
+
 describe("Version", function () {
     describe("#from_semver()", function () {
         it("should parse valid semver strings", function () {
@@ -98,7 +106,7 @@ describe("Version", function () {
 
     describe("#has_precedence_over()", function () {
         it("returns true when it should", function () {
-            const tests = testMatrix.flat();
+            const tests = flatten(testMatrix);
             for (let a = 0; a < tests.length; a++) {
                 for (let b = a + 1; b < tests.length; b++) {
                     if (
@@ -118,7 +126,7 @@ describe("Version", function () {
             }
         });
         it("returns false when it should", function () {
-            const tests = testMatrix.flat().reverse();
+            const tests = flatten(testMatrix).reverse();
             for (let a = 0; a < tests.length; a++) {
                 for (let b = a + 1; b < tests.length; b++) {
                     if (
@@ -141,7 +149,7 @@ describe("Version", function () {
 
     describe("#is_equal()", function () {
         it("returns true when it should", function () {
-            const tests = testMatrix.flat();
+            const tests = flatten(testMatrix);
             for (let version of tests) {
                 assert.isOk(
                     Version.from_semver(version).is_equal(
@@ -152,7 +160,7 @@ describe("Version", function () {
             }
         });
         it("returns false when it should", function () {
-            const tests = testMatrix.flat().reverse();
+            const tests = flatten(testMatrix).reverse();
             for (let a = 0; a < tests.length; a++) {
                 for (let b = a + 1; b < tests.length; b++) {
                     if (
@@ -177,7 +185,7 @@ describe("Version", function () {
 
     describe("#is_stable_or_compatible_prerelease()", function () {
         it("returns true for own versions", function () {
-            const tests = testMatrix.flat();
+            const tests = flatten(testMatrix);
             for (let version of tests) {
                 assert.isOk(
                     Version.from_semver(
