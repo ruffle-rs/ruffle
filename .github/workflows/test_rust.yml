@@ -1,4 +1,4 @@
-name: Test Build
+name: Test Rust
 
 on:
   push:
@@ -8,23 +8,17 @@ on:
 
 jobs:
   build:
-    name: Test rust ${{ matrix.rust_version }} / node ${{ matrix.node_version }} / ${{ matrix.os }}
+    name: Test rust ${{ matrix.rust_version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.rust_version == 'nightly' }}
     strategy:
       fail-fast: false
       matrix:
-        node_version: ['10', '12']
         rust_version: ['stable', 'beta', 'nightly']
         os: [ubuntu-latest, windows-latest, macOS-latest]
 
     steps:
     - uses: actions/checkout@v1
-    
-    - name: Use Node.js ${{ matrix.node_version }}
-      uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node_version }}
 
     - name: Use stable rust toolchain
       uses: actions-rs/toolchain@v1
@@ -36,10 +30,7 @@ jobs:
 
     - name: Install linux depencencies
       if: matrix.os == 'ubuntu-latest'
-      run: sudo apt-get -y install libasound2-dev 
-
-    - name: Install wasm-pack
-      run: cargo install wasm-pack 
+      run: sudo apt-get -y install libasound2-dev
 
     - name: Run all rust tests
       uses: actions-rs/cargo@v1
@@ -57,21 +48,3 @@ jobs:
       with:
         command: fmt
         args: --all -- --check
-
-    - name: Install web
-      working-directory: web
-      run: |
-        npm ci
-
-    - name: Install web/core
-      working-directory: web/packages/core
-      run: |
-        npm ci
-
-    - name: Build web
-      working-directory: web
-      run: |
-        npm run bootstrap
-        npx eslint .
-        npm run build
-        npm run test
