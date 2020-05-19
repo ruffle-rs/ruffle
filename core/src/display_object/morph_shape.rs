@@ -161,7 +161,7 @@ impl MorphShapeStatic {
                         .collect();
 
                     FillStyle::LinearGradient(Gradient {
-                        matrix: start.matrix.clone(),
+                        matrix: start.matrix,
                         spread: start.spread,
                         interpolation: start.interpolation,
                         records,

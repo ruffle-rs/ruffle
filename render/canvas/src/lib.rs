@@ -743,8 +743,8 @@ fn swf_shape_to_svg(
     pixelated_property_value: &str,
 ) -> ShapeData {
     use fnv::FnvHashSet;
-    use ruffle_core::matrix::Matrix;
     use ruffle_core::shape_utils::DrawPath;
+    use ruffle_core::swf::Matrix;
     use svg::node::element::{
         path::Data, Definitions, Image, LinearGradient, Path as SvgPath, Pattern, RadialGradient,
         Stop,
@@ -802,7 +802,7 @@ fn swf_shape_to_svg(
                             format!("rgba({},{},{},{})", r, g, b, f32::from(*a) / 255.0)
                         }
                         FillStyle::LinearGradient(gradient) => {
-                            let matrix: Matrix = Matrix::from(gradient.matrix.clone());
+                            let matrix: Matrix = gradient.matrix;
                             let shift = Matrix {
                                 a: 32768.0 / width,
                                 d: 32768.0 / height,
@@ -849,7 +849,7 @@ fn swf_shape_to_svg(
                             fill_id
                         }
                         FillStyle::RadialGradient(gradient) => {
-                            let matrix = Matrix::from(gradient.matrix.clone());
+                            let matrix = gradient.matrix;
                             let shift = Matrix {
                                 a: 32768.0,
                                 d: 32768.0,
@@ -900,7 +900,7 @@ fn swf_shape_to_svg(
                             gradient,
                             focal_point,
                         } => {
-                            let matrix = Matrix::from(gradient.matrix.clone());
+                            let matrix = gradient.matrix;
                             let shift = Matrix {
                                 a: 32768.0,
                                 d: 32768.0,
@@ -990,7 +990,7 @@ fn swf_shape_to_svg(
                                 defs = defs.add(bitmap_pattern);
                                 bitmap_defs.insert(*id);
                             }
-                            let a = Matrix::from(matrix.clone());
+                            let a = *matrix;
                             let bitmap_matrix = a;
 
                             let svg_pattern = Pattern::new()
@@ -1160,7 +1160,6 @@ fn swf_shape_to_canvas_commands(
     _pixelated_property_value: &str,
     context: &CanvasRenderingContext2d,
 ) -> Option<ShapeData> {
-    use ruffle_core::matrix::Matrix;
     use ruffle_core::shape_utils::DrawPath;
     use swf::{FillStyle, LineCapStyle, LineJoinStyle};
 
@@ -1240,7 +1239,7 @@ fn swf_shape_to_canvas_commands(
                         // when cached? (Issue #412)
                         image.set_src(*bitmap_data);
 
-                        let a = Matrix::from(matrix.clone());
+                        let a = *matrix;
 
                         let matrix = matrix_factory.create_svg_matrix();
 

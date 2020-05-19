@@ -830,23 +830,23 @@ impl<R: Read> Reader<R> {
 
     fn read_matrix(&mut self) -> Result<Matrix> {
         self.byte_align();
-        let mut m = Matrix::new();
+        let mut m = Matrix::identity();
         // Scale
         if self.read_bit()? {
             let num_bits = self.read_ubits(5)? as usize;
-            m.scale_x = self.read_fbits(num_bits)?;
-            m.scale_y = self.read_fbits(num_bits)?;
+            m.a = self.read_fbits(num_bits)?;
+            m.d = self.read_fbits(num_bits)?;
         }
         // Rotate/Skew
         if self.read_bit()? {
             let num_bits = self.read_ubits(5)? as usize;
-            m.rotate_skew_0 = self.read_fbits(num_bits)?;
-            m.rotate_skew_1 = self.read_fbits(num_bits)?;
+            m.b = self.read_fbits(num_bits)?;
+            m.c = self.read_fbits(num_bits)?;
         }
         // Translate (always present)
         let num_bits = self.read_ubits(5)? as usize;
-        m.translate_x = self.read_sbits_twips(num_bits)?;
-        m.translate_y = self.read_sbits_twips(num_bits)?;
+        m.tx = self.read_sbits_twips(num_bits)?;
+        m.ty = self.read_sbits_twips(num_bits)?;
         Ok(m)
     }
 
@@ -3092,12 +3092,12 @@ pub mod tests {
             assert_eq!(
                 matrix,
                 Matrix {
-                    translate_x: Twips::from_pixels(0.0),
-                    translate_y: Twips::from_pixels(0.0),
-                    scale_x: 1f32,
-                    scale_y: 1f32,
-                    rotate_skew_0: 0f32,
-                    rotate_skew_1: 0f32,
+                    tx: Twips::from_pixels(0.0),
+                    ty: Twips::from_pixels(0.0),
+                    a: 1f32,
+                    d: 1f32,
+                    b: 0f32,
+                    c: 0f32,
                 }
             );
         }
@@ -3173,7 +3173,7 @@ pub mod tests {
 
         let fill_style = FillStyle::Bitmap {
             id: 20,
-            matrix: Matrix::new(),
+            matrix: Matrix::identity(),
             is_smoothed: false,
             is_repeating: true,
         };
@@ -3182,8 +3182,8 @@ pub mod tests {
             fill_style
         );
 
-        let mut matrix = Matrix::new();
-        matrix.translate_x = Twips::from_pixels(1.0);
+        let mut matrix = Matrix::identity();
+        matrix.tx = Twips::from_pixels(1.0);
         let fill_style = FillStyle::Bitmap {
             id: 33,
             matrix,

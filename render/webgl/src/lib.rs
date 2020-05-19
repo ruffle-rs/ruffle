@@ -911,7 +911,7 @@ impl RenderBackend for WebGlRenderBackend {
             }
 
             // Scale the quad to the bitmap's dimensions.
-            use ruffle_core::matrix::Matrix;
+            use ruffle_core::swf::Matrix;
             let scale_transform = Transform {
                 matrix: transform.matrix
                     * Matrix {

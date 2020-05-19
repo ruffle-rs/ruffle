@@ -305,12 +305,12 @@ fn begin_gradient_fill<'gc>(
                 + height / 2.0;
             // TODO: This is wrong, doesn't account for rotations.
             Matrix {
-                translate_x: Twips::from_pixels(tx),
-                translate_y: Twips::from_pixels(ty),
-                scale_x: width as f32 / 1638.4,
-                scale_y: height as f32 / 1638.4,
-                rotate_skew_0: 0.0,
-                rotate_skew_1: 0.0,
+                tx: Twips::from_pixels(tx),
+                ty: Twips::from_pixels(ty),
+                a: width as f32 / 1638.4,
+                d: height as f32 / 1638.4,
+                b: 0.0,
+                c: 0.0,
             }
         } else {
             log::warn!(

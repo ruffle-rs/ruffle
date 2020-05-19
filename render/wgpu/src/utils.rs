@@ -56,15 +56,15 @@ pub fn ruffle_path_to_lyon_path(commands: Vec<DrawCommand>, is_closed: bool) -> 
 
 #[allow(clippy::many_single_char_names)]
 pub fn swf_to_gl_matrix(m: swf::Matrix) -> [[f32; 4]; 4] {
-    let tx = m.translate_x.get() as f32;
-    let ty = m.translate_y.get() as f32;
-    let det = m.scale_x * m.scale_y - m.rotate_skew_1 * m.rotate_skew_0;
-    let mut a = m.scale_y / det;
-    let mut b = -m.rotate_skew_1 / det;
-    let mut c = -(tx * m.scale_y - m.rotate_skew_1 * ty) / det;
-    let mut d = -m.rotate_skew_0 / det;
-    let mut e = m.scale_x / det;
-    let mut f = (tx * m.rotate_skew_0 - m.scale_x * ty) / det;
+    let tx = m.tx.get() as f32;
+    let ty = m.ty.get() as f32;
+    let det = m.a * m.d - m.c * m.b;
+    let mut a = m.d / det;
+    let mut b = -m.c / det;
+    let mut c = -(tx * m.d - m.c * ty) / det;
+    let mut d = -m.b / det;
+    let mut e = m.a / det;
+    let mut f = (tx * m.b - m.a * ty) / det;
 
     a *= 20.0 / 32768.0;
     b *= 20.0 / 32768.0;
@@ -92,15 +92,15 @@ pub fn swf_bitmap_to_gl_matrix(
     let bitmap_width = bitmap_width as f32;
     let bitmap_height = bitmap_height as f32;
 
-    let tx = m.translate_x.get() as f32;
-    let ty = m.translate_y.get() as f32;
-    let det = m.scale_x * m.scale_y - m.rotate_skew_1 * m.rotate_skew_0;
-    let mut a = m.scale_y / det;
-    let mut b = -m.rotate_skew_1 / det;
-    let mut c = -(tx * m.scale_y - m.rotate_skew_1 * ty) / det;
-    let mut d = -m.rotate_skew_0 / det;
-    let mut e = m.scale_x / det;
-    let mut f = (tx * m.rotate_skew_0 - m.scale_x * ty) / det;
+    let tx = m.tx.get() as f32;
+    let ty = m.ty.get() as f32;
+    let det = m.a * m.d - m.c * m.b;
+    let mut a = m.d / det;
+    let mut b = -m.c / det;
+    let mut c = -(tx * m.d - m.c * ty) / det;
+    let mut d = -m.b / det;
+    let mut e = m.a / det;
+    let mut f = (tx * m.b - m.a * ty) / det;
 
     a *= 20.0 / bitmap_width;
     b *= 20.0 / bitmap_width;

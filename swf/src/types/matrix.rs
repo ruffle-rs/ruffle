@@ -1,16 +1,38 @@
-use swf::Twips;
+use crate::Twips;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Matrix {
+    /// Serialized as `scale_x` in SWF files
     pub a: f32,
+
+    /// Serialized as `rotate_skew_0` in SWF files
     pub b: f32,
+
+    /// Serialized as `rotate_skew_1` in SWF files
     pub c: f32,
+
+    /// Serialized as `scale_y` in SWF files
     pub d: f32,
+
+    /// Serialized as `transform_x` in SWF files
     pub tx: Twips,
+
+    /// Serialized as `transform_y` in SWF files
     pub ty: Twips,
 }
 
 impl Matrix {
+    pub fn identity() -> Self {
+        Self {
+            a: 1.0,
+            c: 0.0,
+            tx: Twips::new(0),
+            b: 0.0,
+            d: 1.0,
+            ty: Twips::new(0),
+        }
+    }
+
     pub fn invert(&mut self) {
         let (tx, ty) = (self.tx.get() as f32, self.ty.get() as f32);
         let det = self.a * self.d - self.b * self.c;
@@ -30,19 +52,6 @@ impl Matrix {
             tx: Twips::new(out_tx),
             ty: Twips::new(out_ty),
         };
-    }
-}
-
-impl From<swf::Matrix> for Matrix {
-    fn from(matrix: swf::Matrix) -> Matrix {
-        Matrix {
-            a: matrix.scale_x,
-            b: matrix.rotate_skew_0,
-            c: matrix.rotate_skew_1,
-            d: matrix.scale_y,
-            tx: matrix.translate_x,
-            ty: matrix.translate_y,
-        }
     }
 }
 
@@ -77,14 +86,7 @@ impl std::ops::Mul<(Twips, Twips)> for Matrix {
 
 impl std::default::Default for Matrix {
     fn default() -> Matrix {
-        Matrix {
-            a: 1.0,
-            c: 0.0,
-            tx: Twips::new(0),
-            b: 0.0,
-            d: 1.0,
-            ty: Twips::new(0),
-        }
+        Matrix::identity()
     }
 }
 

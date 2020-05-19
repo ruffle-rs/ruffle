@@ -6,6 +6,10 @@
 use enumset::{EnumSet, EnumSetType};
 use std::collections::HashSet;
 
+mod matrix;
+
+pub use matrix::Matrix;
+
 /// A complete header and tags in the SWF file.
 /// This is returned by the `swf::read_swf` convenience method.
 #[derive(Debug, PartialEq)]
@@ -201,35 +205,6 @@ impl ColorTransform {
 }
 
 impl Default for ColorTransform {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct Matrix {
-    pub translate_x: Twips,
-    pub translate_y: Twips,
-    pub scale_x: f32,
-    pub scale_y: f32,
-    pub rotate_skew_0: f32,
-    pub rotate_skew_1: f32,
-}
-
-impl Matrix {
-    pub fn new() -> Matrix {
-        Matrix {
-            translate_x: Default::default(),
-            translate_y: Default::default(),
-            scale_x: 1f32,
-            scale_y: 1f32,
-            rotate_skew_0: 0f32,
-            rotate_skew_1: 0f32,
-        }
-    }
-}
-
-impl Default for Matrix {
     fn default() -> Self {
         Self::new()
     }

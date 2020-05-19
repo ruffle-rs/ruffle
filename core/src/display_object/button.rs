@@ -247,7 +247,7 @@ impl<'gc> ButtonData<'gc> {
                     .instantiate_by_id(record.id, context.gc_context)
                 {
                     child.set_parent(context.gc_context, Some(self_display_object));
-                    child.set_matrix(context.gc_context, &record.matrix.clone().into());
+                    child.set_matrix(context.gc_context, &record.matrix);
                     child.set_color_transform(
                         context.gc_context,
                         &record.color_transform.clone().into(),
@@ -280,7 +280,7 @@ impl<'gc> ButtonData<'gc> {
                     {
                         Ok(mut child) => {
                             {
-                                child.set_matrix(context.gc_context, &record.matrix.clone().into());
+                                child.set_matrix(context.gc_context, &record.matrix);
                                 child.set_parent(context.gc_context, Some(self_display_object));
                                 child.set_depth(context.gc_context, record.depth.into());
                                 child.post_instantiation(avm, context, child, None);

@@ -375,7 +375,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             repeat_mode: gradient_spread_mode_index(gradient.spread),
                             focal_point: 0.0,
                         };
-                        let matrix = swf_to_gl_matrix(gradient.matrix.clone());
+                        let matrix = swf_to_gl_matrix(gradient.matrix);
 
                         flush_draw(
                             shape.id,
@@ -444,7 +444,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             repeat_mode: gradient_spread_mode_index(gradient.spread),
                             focal_point: 0.0,
                         };
-                        let matrix = swf_to_gl_matrix(gradient.matrix.clone());
+                        let matrix = swf_to_gl_matrix(gradient.matrix);
 
                         flush_draw(
                             shape.id,
@@ -516,7 +516,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             repeat_mode: gradient_spread_mode_index(gradient.spread),
                             focal_point: *focal_point,
                         };
-                        let matrix = swf_to_gl_matrix(gradient.matrix.clone());
+                        let matrix = swf_to_gl_matrix(gradient.matrix);
 
                         flush_draw(
                             shape.id,
@@ -583,7 +583,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             shape.id,
                             IncompleteDrawType::Bitmap {
                                 texture_transform: swf_bitmap_to_gl_matrix(
-                                    matrix.clone(),
+                                    *matrix,
                                     texture.width,
                                     texture.height,
                                 ),
@@ -1057,7 +1057,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     return;
                 };
 
-            use ruffle_core::matrix::Matrix;
+            use ruffle_core::swf::Matrix;
             let transform = Transform {
                 matrix: transform.matrix
                     * Matrix {

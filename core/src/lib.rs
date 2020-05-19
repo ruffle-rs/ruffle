@@ -18,7 +18,6 @@ pub mod events;
 mod font;
 mod library;
 mod loader;
-pub mod matrix;
 mod player;
 mod prelude;
 mod property_map;
