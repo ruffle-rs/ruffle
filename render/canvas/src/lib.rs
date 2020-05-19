@@ -455,6 +455,26 @@ impl RenderBackend for WebCanvasRenderBackend {
         handle
     }
 
+    fn replace_shape(&mut self, shape: DistilledShape, handle: ShapeHandle) {
+        let mut bitmaps = HashMap::new();
+        for (id, handle) in &self.id_to_bitmap {
+            let bitmap_data = &self.bitmaps[handle.0];
+            bitmaps.insert(
+                *id,
+                (&bitmap_data.data[..], bitmap_data.width, bitmap_data.height),
+            );
+        }
+
+        let data = swf_shape_to_canvas_commands(
+            &shape,
+            &bitmaps,
+            self.pixelated_property_value,
+            &self.context,
+        )
+        .unwrap_or_else(|| swf_shape_to_svg(shape, &bitmaps, self.pixelated_property_value));
+        self.shapes[handle.0] = data;
+    }
+
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
         // Per SWF19 p.164, the FontBoundsTable can contain empty bounds for every glyph (reserved).
         // SWF19 says this is true through SWFv7, but it seems like it might be generally true?

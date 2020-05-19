@@ -423,10 +423,8 @@ impl WebGlRenderBackend {
         Ok(())
     }
 
-    fn register_shape_internal(&mut self, shape: DistilledShape) -> ShapeHandle {
+    fn register_shape_internal(&mut self, shape: DistilledShape) -> Mesh {
         use ruffle_render_common_tess::DrawType as TessDrawType;
-
-        let handle = ShapeHandle(self.meshes.len());
 
         let textures = &self.textures;
         let lyon_mesh = self.shape_tessellator.tessellate_shape(shape, |id| {
@@ -573,9 +571,7 @@ impl WebGlRenderBackend {
             }
         }
 
-        self.meshes.push(Mesh { draws });
-
-        handle
+        Mesh { draws }
     }
 
     fn build_matrices(&mut self) {
@@ -718,7 +714,15 @@ impl RenderBackend for WebGlRenderBackend {
     }
 
     fn register_shape(&mut self, shape: DistilledShape) -> ShapeHandle {
-        self.register_shape_internal(shape)
+        let handle = ShapeHandle(self.meshes.len());
+        let mesh = self.register_shape_internal(shape);
+        self.meshes.push(mesh);
+        handle
+    }
+
+    fn replace_shape(&mut self, shape: DistilledShape, handle: ShapeHandle) {
+        let mesh = self.register_shape_internal(shape);
+        self.meshes[handle.0] = mesh;
     }
 
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
@@ -741,7 +745,10 @@ impl RenderBackend for WebGlRenderBackend {
             },
             shape: glyph.shape_records.clone(),
         };
-        self.register_shape_internal((&shape).into())
+        let handle = ShapeHandle(self.meshes.len());
+        let mesh = self.register_shape_internal((&shape).into());
+        self.meshes.push(mesh);
+        handle
     }
 
     fn register_bitmap_jpeg(

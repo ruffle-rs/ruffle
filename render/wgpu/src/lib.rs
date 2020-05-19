@@ -226,9 +226,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
     }
 
     #[allow(clippy::cognitive_complexity)]
-    fn register_shape_internal(&mut self, shape: DistilledShape) -> ShapeHandle {
-        let handle = ShapeHandle(self.meshes.len());
-
+    fn register_shape_internal(&mut self, shape: DistilledShape) -> Mesh {
         use lyon::tessellation::{FillOptions, StrokeOptions};
 
         let transforms_label = create_debug_label!("Shape {} transforms ubo", shape.id);
@@ -671,15 +669,13 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             &self.pipelines,
         );
 
-        self.meshes.push(Mesh {
+        Mesh {
             draws,
             transforms: transforms_ubo,
             colors_buffer: colors_ubo,
             colors_last: ColorTransform::default(),
             shape_id: shape.id,
-        });
-
-        handle
+        }
     }
 
     fn register_bitmap(
@@ -928,7 +924,15 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     fn register_shape(&mut self, shape: DistilledShape) -> ShapeHandle {
-        self.register_shape_internal(shape)
+        let handle = ShapeHandle(self.meshes.len());
+        let mesh = self.register_shape_internal(shape);
+        self.meshes.push(mesh);
+        handle
+    }
+
+    fn replace_shape(&mut self, shape: DistilledShape, handle: ShapeHandle) {
+        let mesh = self.register_shape_internal(shape);
+        self.meshes[handle.0] = mesh;
     }
 
     fn register_glyph_shape(&mut self, glyph: &Glyph) -> ShapeHandle {
@@ -951,7 +955,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             },
             shape: glyph.shape_records.clone(),
         };
-        self.register_shape_internal((&shape).into())
+        let handle = ShapeHandle(self.meshes.len());
+        let mesh = self.register_shape_internal((&shape).into());
+        self.meshes.push(mesh);
+        handle
     }
 
     fn register_bitmap_jpeg(

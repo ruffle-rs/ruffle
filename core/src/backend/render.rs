@@ -7,6 +7,7 @@ pub use swf;
 pub trait RenderBackend: Downcast {
     fn set_viewport_dimensions(&mut self, width: u32, height: u32);
     fn register_shape(&mut self, shape: DistilledShape) -> ShapeHandle;
+    fn replace_shape(&mut self, shape: DistilledShape, handle: ShapeHandle);
     fn register_glyph_shape(&mut self, shape: &swf::Glyph) -> ShapeHandle;
     fn register_bitmap_jpeg(
         &mut self,
@@ -83,6 +84,7 @@ impl RenderBackend for NullRenderer {
     fn register_shape(&mut self, _shape: DistilledShape) -> ShapeHandle {
         ShapeHandle(0)
     }
+    fn replace_shape(&mut self, _shape: DistilledShape, _handle: ShapeHandle) {}
     fn register_glyph_shape(&mut self, _shape: &swf::Glyph) -> ShapeHandle {
         ShapeHandle(0)
     }
