@@ -1,6 +1,7 @@
+use crate::bounding_box::BoundingBox;
 use fnv::FnvHashMap;
 use std::num::NonZeroU32;
-use swf::{CharacterId, FillStyle, LineStyle, Rectangle, Shape, ShapeRecord, Twips};
+use swf::{CharacterId, FillStyle, LineStyle, Shape, ShapeRecord, Twips};
 
 pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectangle {
     let mut bounds = swf::Rectangle {
@@ -79,8 +80,8 @@ pub enum DrawPath<'a> {
 #[derive(Debug, PartialEq, Clone)]
 pub struct DistilledShape<'a> {
     pub paths: Vec<DrawPath<'a>>,
-    pub shape_bounds: Rectangle,
-    pub edge_bounds: Rectangle,
+    pub shape_bounds: BoundingBox,
+    pub edge_bounds: BoundingBox,
     pub id: CharacterId,
 }
 
@@ -88,8 +89,8 @@ impl<'a> From<&'a swf::Shape> for DistilledShape<'a> {
     fn from(shape: &'a Shape) -> Self {
         Self {
             paths: ShapeConverter::from_shape(shape).into_commands(),
-            shape_bounds: shape.shape_bounds.clone(),
-            edge_bounds: shape.edge_bounds.clone(),
+            shape_bounds: (&shape.shape_bounds).into(),
+            edge_bounds: (&shape.edge_bounds).into(),
             id: shape.id,
         }
     }

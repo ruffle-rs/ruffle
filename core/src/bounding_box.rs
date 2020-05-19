@@ -1,7 +1,7 @@
 use crate::matrix::Matrix;
 use swf::Twips;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct BoundingBox {
     pub x_min: Twips,
     pub y_min: Twips,
@@ -88,6 +88,18 @@ impl Default for BoundingBox {
 
 impl From<swf::Rectangle> for BoundingBox {
     fn from(rect: swf::Rectangle) -> Self {
+        Self {
+            x_min: rect.x_min,
+            y_min: rect.y_min,
+            x_max: rect.x_max,
+            y_max: rect.y_max,
+            valid: true,
+        }
+    }
+}
+
+impl From<&swf::Rectangle> for BoundingBox {
+    fn from(rect: &swf::Rectangle) -> Self {
         Self {
             x_min: rect.x_min,
             y_min: rect.y_min,
