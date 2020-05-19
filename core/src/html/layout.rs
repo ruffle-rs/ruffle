@@ -52,11 +52,12 @@ impl<'gc> LayoutContext<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         movie: Arc<SwfMovie>,
-        name: &str,
+        span: &TextSpan,
     ) -> Option<Font<'gc>> {
         let library = context.library.library_for_movie_mut(movie);
+
         if let Some(font) = library
-            .get_font_by_name(name)
+            .get_font_by_name(&span.font, span.bold, span.italic)
             .or_else(|| library.device_font())
         {
             self.font = Some(font);
@@ -210,7 +211,7 @@ impl<'gc> LayoutBox<'gc> {
         let mut layout_context: LayoutContext = Default::default();
 
         for (start, _end, text, span) in fs.iter_spans() {
-            if let Some(font) = layout_context.resolve_font(context, movie.clone(), &span.font) {
+            if let Some(font) = layout_context.resolve_font(context, movie.clone(), &span) {
                 let font_size = Twips::from_pixels(span.size);
                 let breakpoint_list =
                     font.split_wrapped_lines(&text, font_size, bounds, layout_context.cursor().x());

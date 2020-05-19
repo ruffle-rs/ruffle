@@ -27,6 +27,9 @@ struct FontData {
     /// Kerning infomration.
     /// Maps from a pair of unicode code points to horizontal offset value.
     kerning_pairs: fnv::FnvHashMap<(u16, u16), Twips>,
+
+    /// The identity of the font.
+    descriptor: FontDescriptor,
 }
 
 impl<'gc> Font<'gc> {
@@ -55,6 +58,9 @@ impl<'gc> Font<'gc> {
         } else {
             fnv::FnvHashMap::default()
         };
+
+        let descriptor = FontDescriptor::from_swf_tag(tag);
+
         Ok(Font(Gc::allocate(
             gc_context,
             FontData {
@@ -65,6 +71,7 @@ impl<'gc> Font<'gc> {
                 /// (SWF19 p.164)
                 scale: if tag.version >= 3 { 20480.0 } else { 1024.0 },
                 kerning_pairs,
+                descriptor,
             },
         )))
     }
@@ -228,10 +235,58 @@ impl<'gc> Font<'gc> {
 
         result
     }
+
+    pub fn descriptor(self) -> FontDescriptor {
+        self.0.descriptor.clone()
+    }
 }
 
 #[derive(Debug, Clone)]
 pub struct Glyph {
     pub shape: ShapeHandle,
     pub advance: i16,
+}
+
+/// Structure which identifies a particular font by name and properties.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Collect)]
+#[collect(require_static)]
+pub struct FontDescriptor {
+    name: String,
+    is_bold: bool,
+    is_italic: bool,
+}
+
+impl FontDescriptor {
+    /// Obtain a font descriptor from a SWF font tag.
+    pub fn from_swf_tag(val: &swf::Font) -> Self {
+        Self {
+            name: val.name.clone(),
+            is_bold: val.is_bold,
+            is_italic: val.is_italic,
+        }
+    }
+
+    /// Obtain a font descriptor from a name/bold/italic triplet.
+    pub fn from_parts(name: &str, is_bold: bool, is_italic: bool) -> Self {
+        Self {
+            name: name.to_string(),
+            is_bold,
+            is_italic,
+        }
+    }
+
+    /// Get the name of the font class this descriptor references.
+    pub fn class(&self) -> &str {
+        &self.name
+    }
+
+    /// Get the boldness of the described font.
+    pub fn bold(&self) -> bool {
+        self.is_bold
+    }
+
+    /// Get the italic-ness of the described font.
+    pub fn italic(&self) -> bool {
+        self.is_italic
+    }
 }
