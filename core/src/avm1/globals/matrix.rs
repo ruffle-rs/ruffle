@@ -59,19 +59,17 @@ pub fn matrix_to_object<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
     let proto = context.system_prototypes.matrix;
-    proto.new(
-        avm,
-        context,
-        proto,
-        &[
-            matrix.a.into(),
-            matrix.b.into(),
-            matrix.c.into(),
-            matrix.d.into(),
-            matrix.tx.to_pixels().into(),
-            matrix.ty.to_pixels().into(),
-        ],
-    )
+    let args = [
+        matrix.a.into(),
+        matrix.b.into(),
+        matrix.c.into(),
+        matrix.d.into(),
+        matrix.tx.to_pixels().into(),
+        matrix.ty.to_pixels().into(),
+    ];
+    let object = proto.new(avm, context, proto, &args)?;
+    let _ = constructor(avm, context, object, &args)?;
+    Ok(object)
 }
 
 pub fn apply_matrix_to_object<'gc>(
@@ -128,6 +126,203 @@ fn identity<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     apply_matrix_to_object(Matrix::identity(), this, avm, context)?;
+    Ok(Value::Undefined.into())
+}
+
+fn clone<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let proto = context.system_prototypes.matrix;
+    let args = [
+        this.get("a", avm, context)?.resolve(avm, context)?,
+        this.get("b", avm, context)?.resolve(avm, context)?,
+        this.get("c", avm, context)?.resolve(avm, context)?,
+        this.get("d", avm, context)?.resolve(avm, context)?,
+        this.get("tx", avm, context)?.resolve(avm, context)?,
+        this.get("ty", avm, context)?.resolve(avm, context)?,
+    ];
+    let cloned = proto.new(avm, context, proto, &args)?;
+    let _ = constructor(avm, context, cloned, &args)?;
+    Ok(cloned.into())
+}
+
+fn scale<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let scale_x = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .as_number(avm, context)?;
+    let scale_y = args
+        .get(1)
+        .unwrap_or(&Value::Undefined)
+        .as_number(avm, context)?;
+    let mut matrix = Matrix::scale(scale_x as f32, scale_y as f32);
+    matrix *= object_to_matrix(this, avm, context)?;
+    apply_matrix_to_object(matrix, this, avm, context)?;
+
+    Ok(Value::Undefined.into())
+}
+
+fn rotate<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let angle = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .as_number(avm, context)?;
+    let mut matrix = Matrix::rotate(angle as f32);
+    matrix *= object_to_matrix(this, avm, context)?;
+    apply_matrix_to_object(matrix, this, avm, context)?;
+
+    Ok(Value::Undefined.into())
+}
+
+fn translate<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let translate_x = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .as_number(avm, context)?;
+    let translate_y = args
+        .get(1)
+        .unwrap_or(&Value::Undefined)
+        .as_number(avm, context)?;
+    let mut matrix = Matrix::translate(
+        Twips::from_pixels(translate_x),
+        Twips::from_pixels(translate_y),
+    );
+    matrix *= object_to_matrix(this, avm, context)?;
+    apply_matrix_to_object(matrix, this, avm, context)?;
+
+    Ok(Value::Undefined.into())
+}
+
+fn concat<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let mut matrix = object_to_matrix(this, avm, context)?;
+    let other = value_to_matrix(
+        args.get(0).unwrap_or(&Value::Undefined).clone(),
+        avm,
+        context,
+    )?;
+    matrix = other * matrix;
+    apply_matrix_to_object(matrix, this, avm, context)?;
+
+    Ok(Value::Undefined.into())
+}
+
+fn invert<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let mut matrix = object_to_matrix(this, avm, context)?;
+    matrix.invert();
+    apply_matrix_to_object(matrix, this, avm, context)?;
+
+    Ok(Value::Undefined.into())
+}
+
+fn create_box<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let scale_x = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .as_number(avm, context)?;
+    let scale_y = args
+        .get(1)
+        .unwrap_or(&Value::Undefined)
+        .as_number(avm, context)?;
+    // [NA] Docs say rotation is optional and defaults to 0, but that's wrong?
+    let rotation = args
+        .get(2)
+        .unwrap_or(&Value::Undefined)
+        .as_number(avm, context)?;
+    let translate_x = if let Some(value) = args.get(3) {
+        value.as_number(avm, context)?
+    } else {
+        0.0
+    };
+    let translate_y = if let Some(value) = args.get(4) {
+        value.as_number(avm, context)?
+    } else {
+        0.0
+    };
+
+    let matrix = Matrix::create_box(
+        scale_x as f32,
+        scale_y as f32,
+        rotation as f32,
+        Twips::from_pixels(translate_x),
+        Twips::from_pixels(translate_y),
+    );
+    apply_matrix_to_object(matrix, this, avm, context)?;
+
+    Ok(Value::Undefined.into())
+}
+
+fn create_gradient_box<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let width = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .as_number(avm, context)?;
+    let height = args
+        .get(1)
+        .unwrap_or(&Value::Undefined)
+        .as_number(avm, context)?;
+    let rotation = if let Some(value) = args.get(2) {
+        value.as_number(avm, context)?
+    } else {
+        0.0
+    };
+    let translate_x = if let Some(value) = args.get(3) {
+        value.as_number(avm, context)?
+    } else {
+        0.0
+    };
+    let translate_y = if let Some(value) = args.get(4) {
+        value.as_number(avm, context)?
+    } else {
+        0.0
+    };
+
+    let matrix = Matrix::create_gradient_box(
+        width as f32,
+        height as f32,
+        rotation as f32,
+        Twips::from_pixels(translate_x),
+        Twips::from_pixels(translate_y),
+    );
+    apply_matrix_to_object(matrix, this, avm, context)?;
+
     Ok(Value::Undefined.into())
 }
 
@@ -196,6 +391,58 @@ pub fn create_proto<'gc>(
     object.force_set_function(
         "identity",
         identity,
+        gc_context,
+        EnumSet::empty(),
+        Some(fn_proto),
+    );
+
+    object.force_set_function("clone", clone, gc_context, EnumSet::empty(), Some(fn_proto));
+
+    object.force_set_function("scale", scale, gc_context, EnumSet::empty(), Some(fn_proto));
+
+    object.force_set_function(
+        "rotate",
+        rotate,
+        gc_context,
+        EnumSet::empty(),
+        Some(fn_proto),
+    );
+
+    object.force_set_function(
+        "translate",
+        translate,
+        gc_context,
+        EnumSet::empty(),
+        Some(fn_proto),
+    );
+
+    object.force_set_function(
+        "concat",
+        concat,
+        gc_context,
+        EnumSet::empty(),
+        Some(fn_proto),
+    );
+
+    object.force_set_function(
+        "invert",
+        invert,
+        gc_context,
+        EnumSet::empty(),
+        Some(fn_proto),
+    );
+
+    object.force_set_function(
+        "createBox",
+        create_box,
+        gc_context,
+        EnumSet::empty(),
+        Some(fn_proto),
+    );
+
+    object.force_set_function(
+        "createGradientBox",
+        create_gradient_box,
         gc_context,
         EnumSet::empty(),
         Some(fn_proto),

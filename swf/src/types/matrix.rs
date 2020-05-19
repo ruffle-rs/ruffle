@@ -33,6 +33,83 @@ impl Matrix {
         }
     }
 
+    pub fn scale(scale_x: f32, scale_y: f32) -> Self {
+        Self {
+            a: scale_x,
+            c: 0.0,
+            tx: Twips::new(0),
+            b: 0.0,
+            d: scale_y,
+            ty: Twips::new(0),
+        }
+    }
+
+    pub fn rotate(angle: f32) -> Self {
+        Self {
+            a: angle.cos(),
+            c: -angle.sin(),
+            tx: Twips::new(0),
+            b: angle.sin(),
+            d: angle.cos(),
+            ty: Twips::new(0),
+        }
+    }
+
+    pub fn translate(x: Twips, y: Twips) -> Self {
+        Self {
+            a: 1.0,
+            c: 0.0,
+            tx: x,
+            b: 0.0,
+            d: 1.0,
+            ty: y,
+        }
+    }
+
+    pub fn create_box(
+        scale_x: f32,
+        scale_y: f32,
+        rotation: f32,
+        translate_x: Twips,
+        translate_y: Twips,
+    ) -> Self {
+        if rotation != 0.0 {
+            Self {
+                a: rotation.cos() * scale_x,
+                c: -rotation.sin() * scale_x,
+                tx: translate_x,
+                b: rotation.sin() * scale_y,
+                d: rotation.cos() * scale_y,
+                ty: translate_y,
+            }
+        } else {
+            Self {
+                a: scale_x,
+                c: 0.0,
+                tx: translate_x,
+                b: 0.0,
+                d: scale_y,
+                ty: translate_y,
+            }
+        }
+    }
+
+    pub fn create_gradient_box(
+        width: f32,
+        height: f32,
+        rotation: f32,
+        translate_x: Twips,
+        translate_y: Twips,
+    ) -> Self {
+        Self::create_box(
+            width / 1638.4,
+            height / 1638.4,
+            rotation,
+            translate_x + Twips::from_pixels((width / 2.0) as f64),
+            translate_y + Twips::from_pixels((height / 2.0) as f64),
+        )
+    }
+
     pub fn invert(&mut self) {
         let (tx, ty) = (self.tx.get() as f32, self.ty.get() as f32);
         let det = self.a * self.d - self.b * self.c;
