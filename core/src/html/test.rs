@@ -253,6 +253,63 @@ fn textformat_merge() {
 }
 
 #[test]
+fn textformat_mix() {
+    let mut tf1 = TextFormat::default();
+    tf1.font = Some("First".to_string());
+    tf1.size = Some(10.0);
+    tf1.bold = None;
+    tf1.italic = None;
+
+    let mut tf2 = TextFormat::default();
+    tf2.font = Some("Second".to_string());
+    tf2.size = Some(10.0);
+    tf2.bold = Some(false);
+    tf2.italic = None;
+
+    let mixed = tf1.mix_with(tf2);
+
+    assert_eq!(mixed.font, Some("First".to_string()));
+    assert_eq!(mixed.size, Some(10.0));
+    assert_eq!(mixed.bold, Some(false));
+    assert_eq!(mixed.italic, None);
+}
+
+#[test]
+fn formatspans_set_default() {
+    let mut fs = FormatSpans::new();
+
+    let mut tf1 = TextFormat::default();
+    tf1.font = Some("First".to_string());
+    tf1.size = Some(10.0);
+    tf1.bold = None;
+    tf1.italic = None;
+
+    fs.set_default_format(tf1);
+
+    let out_tf1 = fs.default_format();
+
+    assert_eq!(out_tf1.font, Some("First".to_string()));
+    assert_eq!(out_tf1.size, Some(10.0));
+    assert_eq!(out_tf1.bold, None);
+    assert_eq!(out_tf1.italic, None);
+
+    let mut tf2 = TextFormat::default();
+    tf2.font = Some("Second".to_string());
+    tf2.size = Some(10.0);
+    tf2.bold = Some(false);
+    tf2.italic = None;
+
+    fs.set_default_format(tf2);
+
+    let out_tf2 = fs.default_format();
+
+    assert_eq!(out_tf2.font, Some("Second".to_string()));
+    assert_eq!(out_tf2.size, Some(10.0));
+    assert_eq!(out_tf2.bold, Some(false));
+    assert_eq!(out_tf2.italic, None);
+}
+
+#[test]
 fn formatspans_resolve_position() {
     let fs = FormatSpans::from_str_and_spans(
         "abcdefghi",

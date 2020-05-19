@@ -534,6 +534,33 @@ impl TextFormat {
             },
         }
     }
+
+    /// Given two text formats, construct a new `TextFormat` where properties
+    /// defined in either `TextFormat` are defined.
+    ///
+    /// Properties defined in both will resolve to the one defined in `self`.
+    pub fn mix_with(self, rhs: TextFormat) -> Self {
+        Self {
+            font: self.font.or(rhs.font),
+            size: self.size.or(rhs.size),
+            color: self.color.or(rhs.color),
+            align: self.align.or(rhs.align),
+            bold: self.bold.or(rhs.bold),
+            italic: self.italic.or(rhs.italic),
+            underline: self.underline.or(rhs.underline),
+            left_margin: self.left_margin.or(rhs.left_margin),
+            right_margin: self.right_margin.or(rhs.right_margin),
+            indent: self.indent.or(rhs.indent),
+            block_indent: self.block_indent.or(rhs.block_indent),
+            kerning: self.kerning.or(rhs.kerning),
+            leading: self.leading.or(rhs.leading),
+            letter_spacing: self.letter_spacing.or(rhs.letter_spacing),
+            tab_stops: self.tab_stops.or(rhs.tab_stops),
+            bullet: self.bullet.or(rhs.bullet),
+            url: self.url.or(rhs.url),
+            target: self.target.or(rhs.target),
+        }
+    }
 }
 
 /// Represents the application of a `TextFormat` to a particular text span.
@@ -789,7 +816,7 @@ impl FormatSpans {
     }
 
     pub fn set_default_format(&mut self, tf: TextFormat) {
-        self.default_format = tf;
+        self.default_format = tf.mix_with(self.default_format.clone());
     }
 
     /// Retrieve the text backing the format spans.
