@@ -57,14 +57,6 @@ if (!(page_optout || window.RufflePlayer)) {
      * and runs the plugin polyfill, which must run before any flash      *
      * detection scripts.                                                 */
     (document.head || document.documentElement).appendChild(setup_scriptelem);
-    window.RufflePlayer = {};
-    window.RufflePlayer.config = {
-        public_path: ext_path + "dist/",
-        polyfills: ["static-content", "dynamic-content"],
-        /* We only want "static-content" & "dynamic-content" because we *
-         * inject the plugin polyfill above & use all_frames in         *
-         * manifest.json for (i)frames.                                 */
-    };
     scriptelem.src = ext_path + "dist/ruffle.js";
     (document.head || document.documentElement).appendChild(scriptelem);
 }
