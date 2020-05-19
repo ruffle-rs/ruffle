@@ -40,16 +40,6 @@ jobs:
     - name: Install wasm-pack
       run: cargo install wasm-pack
 
-    - name: Install web
-      working-directory: web
-      run: |
-        npm ci
-
-    - name: Install web/core
-      working-directory: web/packages/core
-      run: |
-        npm ci
-
     - name: Build web
       working-directory: web
       run: |
