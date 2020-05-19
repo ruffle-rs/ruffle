@@ -265,4 +265,16 @@ impl<'gc> LayoutBox<'gc> {
             } => Some((*start, *end, &text_format, *font, font_size.0)),
         }
     }
+
+    /// Construct a duplicate layout box structure.
+    pub fn duplicate(&self, context: MutationContext<'gc, '_>) -> GcCell<'gc, Self> {
+        GcCell::allocate(
+            context,
+            Self {
+                bounds: self.bounds,
+                next_sibling: self.next_sibling.map(|ns| ns.read().duplicate(context)),
+                content: self.content.clone(),
+            },
+        )
+    }
 }

@@ -441,6 +441,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             .as_node()
             .duplicate(context.gc_context, true)
             .document();
+
+        text.layout = text.layout.map(|l| l.read().duplicate(context.gc_context));
     }
 
     fn object(&self) -> Value<'gc> {
