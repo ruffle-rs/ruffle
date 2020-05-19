@@ -17,6 +17,7 @@ pub(crate) mod display_object;
 mod function;
 mod key;
 mod math;
+mod matrix;
 pub(crate) mod mouse;
 pub(crate) mod movie_clip;
 mod movie_clip_loader;
@@ -127,6 +128,7 @@ pub struct SystemPrototypes<'gc> {
     pub string: Object<'gc>,
     pub number: Object<'gc>,
     pub boolean: Object<'gc>,
+    pub matrix: Object<'gc>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
@@ -144,6 +146,7 @@ unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
         self.string.trace(cc);
         self.number.trace(cc);
         self.boolean.trace(cc);
+        self.matrix.trace(cc);
     }
 }
 
@@ -183,6 +186,7 @@ pub fn create_globals<'gc>(
     let number_proto: Object<'gc> = number::create_proto(gc_context, object_proto, function_proto);
     let boolean_proto: Object<'gc> =
         boolean::create_proto(gc_context, object_proto, function_proto);
+    let matrix_proto: Object<'gc> = matrix::create_proto(gc_context, object_proto, function_proto);
 
     //TODO: These need to be constructors and should also set `.prototype` on each one
     let object = object::create_object_object(gc_context, object_proto, function_proto);
@@ -253,9 +257,17 @@ pub fn create_globals<'gc>(
     let boolean =
         boolean::create_boolean_object(gc_context, Some(boolean_proto), Some(function_proto));
 
+    let flash = ScriptObject::object(gc_context, Some(object_proto));
+    let geom = ScriptObject::object(gc_context, Some(object_proto));
+    let matrix = matrix::create_matrix_object(gc_context, Some(matrix_proto), Some(function_proto));
+
+    flash.define_value(gc_context, "geom", geom.into(), EnumSet::empty());
+    geom.define_value(gc_context, "Matrix", matrix.into(), EnumSet::empty());
+
     let listeners = SystemListeners::new(gc_context, Some(array_proto));
 
     let mut globals = ScriptObject::bare_object(gc_context);
+    globals.define_value(gc_context, "flash", flash.into(), EnumSet::empty());
     globals.define_value(gc_context, "Array", array.into(), EnumSet::empty());
     globals.define_value(gc_context, "Button", button.into(), EnumSet::empty());
     globals.define_value(gc_context, "Color", color.into(), EnumSet::empty());
@@ -381,6 +393,7 @@ pub fn create_globals<'gc>(
             string: string_proto,
             number: number_proto,
             boolean: boolean_proto,
+            matrix: matrix_proto,
         },
         globals.into(),
         listeners,
