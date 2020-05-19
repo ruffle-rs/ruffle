@@ -83,6 +83,7 @@ impl<'gc> EditText<'gc> {
         let default_format = TextFormat::from_swf_tag(swf_tag.clone(), swf_movie.clone(), context);
 
         let mut text_spans = FormatSpans::new();
+        text_spans.set_default_format(default_format.clone());
 
         if swf_tag.is_html {
             document
