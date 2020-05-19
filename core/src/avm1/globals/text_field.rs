@@ -48,6 +48,20 @@ pub fn set_text<'gc>(
     Ok(Value::Undefined.into())
 }
 
+pub fn get_length<'gc>(
+    _avm: &mut Avm1<'gc>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(display_object) = this.as_display_object() {
+        if let Some(text_field) = display_object.as_edit_text() {
+            return Ok((text_field.text_length() as f64).into());
+        }
+    }
+    Ok(Value::Undefined.into())
+}
+
 macro_rules! with_text_field {
     ( $gc_context: ident, $object:ident, $fn_proto: expr, $($name:expr => $fn:expr),* ) => {{
         $(
@@ -261,6 +275,13 @@ pub fn attach_virtual_properties<'gc>(gc_context: MutationContext<'gc, '_>, obje
         "text",
         Executable::Native(get_text),
         Some(Executable::Native(set_text)),
+        DontDelete | ReadOnly | DontEnum,
+    );
+    object.add_property(
+        gc_context,
+        "length",
+        Executable::Native(get_length),
+        None,
         DontDelete | ReadOnly | DontEnum,
     );
     object.add_property(
