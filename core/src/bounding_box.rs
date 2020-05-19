@@ -43,6 +43,22 @@ impl BoundingBox {
         }
     }
 
+    pub fn encompass(&mut self, x: Twips, y: Twips) {
+        if x < self.x_min {
+            self.x_min = x;
+        }
+        if x > self.x_max {
+            self.x_max = x;
+        }
+        if y < self.y_min {
+            self.y_min = y;
+        }
+        if y > self.y_max {
+            self.y_max = y;
+        }
+        self.valid = true;
+    }
+
     pub fn union(&mut self, other: &BoundingBox) {
         use std::cmp::{max, min};
         if self.valid && other.valid {

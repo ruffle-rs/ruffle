@@ -1,6 +1,8 @@
 //! `MovieClip` display object and support code.
 use crate::avm1::{Avm1, Object, StageObject, TObject, Value};
 use crate::backend::audio::AudioStreamHandle;
+
+use crate::backend::render::ShapeHandle;
 use crate::character::Character;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{
@@ -9,6 +11,7 @@ use crate::display_object::{
 use crate::events::{ButtonKeyCode, ClipEvent};
 use crate::font::Font;
 use crate::prelude::*;
+use crate::shape_utils::{DistilledShape, DrawCommand, DrawPath};
 use crate::tag_utils::{self, DecodeResult, SwfMovie, SwfSlice, SwfStream};
 use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
@@ -18,6 +21,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::convert::TryFrom;
 use std::sync::Arc;
 use swf::read::SwfRead;
+use swf::{FillStyle, LineStyle};
 
 type FrameNumber = u16;
 
@@ -42,6 +46,14 @@ pub struct MovieClipData<'gc> {
     clip_actions: SmallVec<[ClipAction; 2]>,
     flags: EnumSet<MovieClipFlags>,
     avm1_constructor: Option<Object<'gc>>,
+    custom_shape: Option<ShapeHandle>,
+    custom_shape_bounds: BoundingBox,
+    custom_edge_bounds: BoundingBox,
+    dirty_shape: bool,
+    custom_fills: Vec<(FillStyle, Vec<DrawCommand>)>,
+    custom_lines: Vec<(LineStyle, Vec<DrawCommand>)>,
+    current_fill: Option<(FillStyle, Vec<DrawCommand>)>,
+    current_line: Option<(LineStyle, Vec<DrawCommand>)>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -60,6 +72,14 @@ impl<'gc> MovieClip<'gc> {
                 clip_actions: SmallVec::new(),
                 flags: EnumSet::empty(),
                 avm1_constructor: None,
+                custom_shape: None,
+                custom_shape_bounds: BoundingBox::default(),
+                custom_edge_bounds: BoundingBox::default(),
+                dirty_shape: false,
+                custom_fills: Vec::new(),
+                custom_lines: Vec::new(),
+                current_fill: None,
+                current_line: None,
             },
         ))
     }
@@ -92,6 +112,14 @@ impl<'gc> MovieClip<'gc> {
                 clip_actions: SmallVec::new(),
                 flags: MovieClipFlags::Playing.into(),
                 avm1_constructor: None,
+                custom_shape: None,
+                custom_shape_bounds: BoundingBox::default(),
+                custom_edge_bounds: BoundingBox::default(),
+                dirty_shape: false,
+                custom_fills: Vec::new(),
+                custom_lines: Vec::new(),
+                current_fill: None,
+                current_line: None,
             },
         ))
     }
@@ -550,6 +578,132 @@ impl<'gc> MovieClip<'gc> {
 
         actions.into_iter()
     }
+
+    pub fn set_fill_style(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        style: Option<FillStyle>,
+    ) {
+        let mut mc = self.0.write(context.gc_context);
+
+        // TODO: If current_fill is not closed, we should close it and also close current_line
+
+        if let Some(existing) = mc.current_fill.take() {
+            mc.custom_fills.push(existing);
+        }
+        if let Some(style) = style {
+            mc.current_fill = Some((style, Vec::new()));
+        }
+
+        mc.dirty_shape = true;
+    }
+
+    pub fn clear(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let mut mc = self.0.write(context.gc_context);
+        mc.current_fill = None;
+        mc.current_line = None;
+        mc.custom_fills.clear();
+        mc.custom_lines.clear();
+        mc.custom_edge_bounds = BoundingBox::default();
+        mc.custom_shape_bounds = BoundingBox::default();
+        mc.dirty_shape = true;
+    }
+
+    pub fn set_line_style(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        style: Option<LineStyle>,
+    ) {
+        let mut mc = self.0.write(context.gc_context);
+
+        if let Some(existing) = mc.current_line.take() {
+            mc.custom_lines.push(existing);
+        }
+        if let Some(style) = style {
+            mc.current_line = Some((style, Vec::new()));
+        }
+
+        mc.dirty_shape = true;
+    }
+
+    pub fn draw_command(self, context: &mut UpdateContext<'_, 'gc, '_>, command: DrawCommand) {
+        let mut mc = self.0.write(context.gc_context);
+
+        let mut include_last = false;
+
+        match command {
+            DrawCommand::MoveTo { .. } => {}
+            DrawCommand::LineTo { x, y } => {
+                mc.custom_shape_bounds.encompass(x, y);
+                mc.custom_edge_bounds.encompass(x, y);
+                include_last = true;
+            }
+            DrawCommand::CurveTo { x1, y1, x2, y2 } => {
+                mc.custom_shape_bounds.encompass(x1, y1);
+                mc.custom_shape_bounds.encompass(x2, y2);
+                mc.custom_edge_bounds.encompass(x1, y1);
+                mc.custom_edge_bounds.encompass(x2, y2);
+                include_last = true;
+            }
+        }
+
+        if let Some((_, commands)) = &mut mc.current_line {
+            commands.push(command.clone());
+        }
+        if let Some((_, commands)) = &mut mc.current_fill {
+            commands.push(command);
+        }
+
+        if include_last {
+            if let Some(command) = mc
+                .current_fill
+                .as_ref()
+                .and_then(|(_, commands)| commands.last().cloned())
+            {
+                match command {
+                    DrawCommand::MoveTo { x, y } => {
+                        mc.custom_shape_bounds.encompass(x, y);
+                        mc.custom_edge_bounds.encompass(x, y);
+                    }
+                    DrawCommand::LineTo { x, y } => {
+                        mc.custom_shape_bounds.encompass(x, y);
+                        mc.custom_edge_bounds.encompass(x, y);
+                    }
+                    DrawCommand::CurveTo { x1, y1, x2, y2 } => {
+                        mc.custom_shape_bounds.encompass(x1, y1);
+                        mc.custom_shape_bounds.encompass(x2, y2);
+                        mc.custom_edge_bounds.encompass(x1, y1);
+                        mc.custom_edge_bounds.encompass(x2, y2);
+                    }
+                }
+            }
+
+            if let Some(command) = mc
+                .current_line
+                .as_ref()
+                .and_then(|(_, commands)| commands.last().cloned())
+            {
+                match command {
+                    DrawCommand::MoveTo { x, y } => {
+                        mc.custom_shape_bounds.encompass(x, y);
+                        mc.custom_edge_bounds.encompass(x, y);
+                    }
+                    DrawCommand::LineTo { x, y } => {
+                        mc.custom_shape_bounds.encompass(x, y);
+                        mc.custom_edge_bounds.encompass(x, y);
+                    }
+                    DrawCommand::CurveTo { x1, y1, x2, y2 } => {
+                        mc.custom_shape_bounds.encompass(x1, y1);
+                        mc.custom_shape_bounds.encompass(x2, y2);
+                        mc.custom_edge_bounds.encompass(x1, y1);
+                        mc.custom_edge_bounds.encompass(x2, y2);
+                    }
+                }
+            }
+        }
+
+        mc.dirty_shape = true;
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
@@ -587,17 +741,71 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         if is_load_frame {
             mc.run_clip_postaction((*self).into(), context, ClipEvent::Load);
         }
+
+        if mc.dirty_shape {
+            mc.dirty_shape = false;
+            let mut paths = Vec::new();
+
+            for (style, commands) in &mc.custom_fills {
+                paths.push(DrawPath::Fill {
+                    style,
+                    commands: commands.to_owned(),
+                })
+            }
+
+            // TODO: If the current_fill is not closed, we should automatically close current_line
+
+            if let Some((style, commands)) = &mc.current_fill {
+                paths.push(DrawPath::Fill {
+                    style,
+                    commands: commands.to_owned(),
+                })
+            }
+
+            for (style, commands) in &mc.custom_lines {
+                paths.push(DrawPath::Stroke {
+                    style,
+                    commands: commands.to_owned(),
+                    is_closed: false, // TODO: Determine this
+                })
+            }
+
+            if let Some((style, commands)) = &mc.current_line {
+                paths.push(DrawPath::Stroke {
+                    style,
+                    commands: commands.to_owned(),
+                    is_closed: false, // TODO: Determine this
+                })
+            }
+
+            let shape = DistilledShape {
+                paths,
+                shape_bounds: mc.custom_shape_bounds.clone(),
+                edge_bounds: mc.custom_shape_bounds.clone(),
+                id: mc.id(),
+            };
+
+            if let Some(handle) = mc.custom_shape {
+                context.renderer.replace_shape(shape, handle);
+            } else {
+                mc.custom_shape = Some(context.renderer.register_shape(shape));
+            }
+        }
     }
 
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
         context.transform_stack.push(&*self.transform());
         crate::display_object::render_children(context, &self.0.read().children);
+        if let Some(handle) = self.0.read().custom_shape {
+            context
+                .renderer
+                .render_shape(handle, context.transform_stack.transform());
+        }
         context.transform_stack.pop();
     }
 
     fn self_bounds(&self) -> BoundingBox {
-        // No inherent bounds; contains child DisplayObjects.
-        BoundingBox::default()
+        self.0.read().custom_shape_bounds.clone()
     }
 
     fn hit_test(&self, point: (Twips, Twips)) -> bool {
