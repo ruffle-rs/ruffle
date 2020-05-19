@@ -959,16 +959,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         id: u16,
         data: &[u8],
         jpeg_tables: Option<&[u8]>,
-    ) -> BitmapInfo {
+    ) -> Result<BitmapInfo, Error> {
         let data = ruffle_core::backend::render::glue_tables_to_jpeg(data, jpeg_tables);
         self.register_bitmap_jpeg_2(id, &data[..])
     }
 
-    fn register_bitmap_jpeg_2(&mut self, id: u16, data: &[u8]) -> BitmapInfo {
-        let bitmap = ruffle_core::backend::render::decode_define_bits_jpeg(data, None)
-            .expect("Invalid DefineBitsJpeg2 data");
+    fn register_bitmap_jpeg_2(&mut self, id: u16, data: &[u8]) -> Result<BitmapInfo, Error> {
+        let bitmap = ruffle_core::backend::render::decode_define_bits_jpeg(data, None)?;
         self.register_bitmap(id, bitmap, "JPEG2")
-            .expect("Unable to register bitmap")
     }
 
     fn register_bitmap_jpeg_3(
@@ -976,19 +974,15 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         id: u16,
         jpeg_data: &[u8],
         alpha_data: &[u8],
-    ) -> BitmapInfo {
+    ) -> Result<BitmapInfo, Error> {
         let bitmap =
-            ruffle_core::backend::render::decode_define_bits_jpeg(jpeg_data, Some(alpha_data))
-                .expect("Invalid DefineBitsJpeg3 data");
+            ruffle_core::backend::render::decode_define_bits_jpeg(jpeg_data, Some(alpha_data))?;
         self.register_bitmap(id, bitmap, "JPEG3")
-            .expect("Unable to register bitmap")
     }
 
-    fn register_bitmap_png(&mut self, swf_tag: &DefineBitsLossless) -> BitmapInfo {
-        let bitmap = ruffle_core::backend::render::decode_define_bits_lossless(swf_tag)
-            .expect("Invalid DefineBitsJpeg2 data");
+    fn register_bitmap_png(&mut self, swf_tag: &DefineBitsLossless) -> Result<BitmapInfo, Error> {
+        let bitmap = ruffle_core::backend::render::decode_define_bits_lossless(swf_tag)?;
         self.register_bitmap(swf_tag.id, bitmap, "PNG")
-            .expect("Unable to register bitmap")
     }
 
     fn begin_frame(&mut self, clear: Color) {
