@@ -13,15 +13,22 @@ pub trait RenderBackend: Downcast {
         id: swf::CharacterId,
         data: &[u8],
         jpeg_tables: Option<&[u8]>,
-    ) -> BitmapInfo;
-    fn register_bitmap_jpeg_2(&mut self, id: swf::CharacterId, data: &[u8]) -> BitmapInfo;
+    ) -> Result<BitmapInfo, Error>;
+    fn register_bitmap_jpeg_2(
+        &mut self,
+        id: swf::CharacterId,
+        data: &[u8],
+    ) -> Result<BitmapInfo, Error>;
     fn register_bitmap_jpeg_3(
         &mut self,
         id: swf::CharacterId,
         jpeg_data: &[u8],
         alpha_data: &[u8],
-    ) -> BitmapInfo;
-    fn register_bitmap_png(&mut self, swf_tag: &swf::DefineBitsLossless) -> BitmapInfo;
+    ) -> Result<BitmapInfo, Error>;
+    fn register_bitmap_png(
+        &mut self,
+        swf_tag: &swf::DefineBitsLossless,
+    ) -> Result<BitmapInfo, Error>;
 
     fn begin_frame(&mut self, clear: Color);
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform);
@@ -84,38 +91,45 @@ impl RenderBackend for NullRenderer {
         _id: swf::CharacterId,
         _data: &[u8],
         _jpeg_tables: Option<&[u8]>,
-    ) -> BitmapInfo {
-        BitmapInfo {
+    ) -> Result<BitmapInfo, Error> {
+        Ok(BitmapInfo {
             handle: BitmapHandle(0),
             width: 0,
             height: 0,
-        }
+        })
     }
-    fn register_bitmap_jpeg_2(&mut self, _id: swf::CharacterId, _data: &[u8]) -> BitmapInfo {
-        BitmapInfo {
+    fn register_bitmap_jpeg_2(
+        &mut self,
+        _id: swf::CharacterId,
+        _data: &[u8],
+    ) -> Result<BitmapInfo, Error> {
+        Ok(BitmapInfo {
             handle: BitmapHandle(0),
             width: 0,
             height: 0,
-        }
+        })
     }
     fn register_bitmap_jpeg_3(
         &mut self,
         _id: swf::CharacterId,
         _data: &[u8],
         _alpha_data: &[u8],
-    ) -> BitmapInfo {
-        BitmapInfo {
+    ) -> Result<BitmapInfo, Error> {
+        Ok(BitmapInfo {
             handle: BitmapHandle(0),
             width: 0,
             height: 0,
-        }
+        })
     }
-    fn register_bitmap_png(&mut self, _swf_tag: &swf::DefineBitsLossless) -> BitmapInfo {
-        BitmapInfo {
+    fn register_bitmap_png(
+        &mut self,
+        _swf_tag: &swf::DefineBitsLossless,
+    ) -> Result<BitmapInfo, Error> {
+        Ok(BitmapInfo {
             handle: BitmapHandle(0),
             width: 0,
             height: 0,
-        }
+        })
     }
     fn begin_frame(&mut self, _clear: Color) {}
     fn end_frame(&mut self) {}

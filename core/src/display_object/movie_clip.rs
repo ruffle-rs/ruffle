@@ -1367,7 +1367,9 @@ impl<'gc, 'a> MovieClipData<'gc> {
         version: u8,
     ) -> DecodeResult {
         let define_bits_lossless = reader.read_define_bits_lossless(version)?;
-        let bitmap_info = context.renderer.register_bitmap_png(&define_bits_lossless);
+        let bitmap_info = context
+            .renderer
+            .register_bitmap_png(&define_bits_lossless)?;
         let bitmap = crate::display_object::Bitmap::new(
             context,
             define_bits_lossless.id,
@@ -1523,7 +1525,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
                 .library
                 .library_for_movie_mut(self.movie())
                 .jpeg_tables(),
-        );
+        )?;
         let bitmap = crate::display_object::Bitmap::new(
             context,
             id,
@@ -1553,7 +1555,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .get_mut()
             .take(data_len as u64)
             .read_to_end(&mut jpeg_data)?;
-        let bitmap_info = context.renderer.register_bitmap_jpeg_2(id, &jpeg_data);
+        let bitmap_info = context.renderer.register_bitmap_jpeg_2(id, &jpeg_data)?;
         let bitmap = crate::display_object::Bitmap::new(
             context,
             id,
@@ -1591,7 +1593,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .read_to_end(&mut alpha_data)?;
         let bitmap_info = context
             .renderer
-            .register_bitmap_jpeg_3(id, &jpeg_data, &alpha_data);
+            .register_bitmap_jpeg_3(id, &jpeg_data, &alpha_data)?;
         let bitmap = Bitmap::new(
             context,
             id,
@@ -1630,7 +1632,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .read_to_end(&mut alpha_data)?;
         let bitmap_info = context
             .renderer
-            .register_bitmap_jpeg_3(id, &jpeg_data, &alpha_data);
+            .register_bitmap_jpeg_3(id, &jpeg_data, &alpha_data)?;
         let bitmap = Bitmap::new(
             context,
             id,

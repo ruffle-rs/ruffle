@@ -749,16 +749,18 @@ impl RenderBackend for WebGlRenderBackend {
         id: swf::CharacterId,
         data: &[u8],
         jpeg_tables: Option<&[u8]>,
-    ) -> BitmapInfo {
+    ) -> Result<BitmapInfo, Error> {
         let data = ruffle_core::backend::render::glue_tables_to_jpeg(data, jpeg_tables);
         self.register_bitmap_jpeg_2(id, &data[..])
     }
 
-    fn register_bitmap_jpeg_2(&mut self, id: swf::CharacterId, data: &[u8]) -> BitmapInfo {
-        let bitmap = ruffle_core::backend::render::decode_define_bits_jpeg(data, None)
-            .expect("Invalid DefineBitsJpeg2 data");
+    fn register_bitmap_jpeg_2(
+        &mut self,
+        id: swf::CharacterId,
+        data: &[u8],
+    ) -> Result<BitmapInfo, Error> {
+        let bitmap = ruffle_core::backend::render::decode_define_bits_jpeg(data, None)?;
         self.register_bitmap(id, bitmap)
-            .expect("Unable to register bitmap")
     }
 
     fn register_bitmap_jpeg_3(
@@ -766,19 +768,18 @@ impl RenderBackend for WebGlRenderBackend {
         id: swf::CharacterId,
         jpeg_data: &[u8],
         alpha_data: &[u8],
-    ) -> BitmapInfo {
+    ) -> Result<BitmapInfo, Error> {
         let bitmap =
-            ruffle_core::backend::render::decode_define_bits_jpeg(jpeg_data, Some(alpha_data))
-                .expect("Invalid DefineBitsJpeg3 data");
+            ruffle_core::backend::render::decode_define_bits_jpeg(jpeg_data, Some(alpha_data))?;
         self.register_bitmap(id, bitmap)
-            .expect("Unable to register bitmap")
     }
 
-    fn register_bitmap_png(&mut self, swf_tag: &swf::DefineBitsLossless) -> BitmapInfo {
-        let bitmap = ruffle_core::backend::render::decode_define_bits_lossless(swf_tag)
-            .expect("Error decoding DefineBitsLossless");
+    fn register_bitmap_png(
+        &mut self,
+        swf_tag: &swf::DefineBitsLossless,
+    ) -> Result<BitmapInfo, Error> {
+        let bitmap = ruffle_core::backend::render::decode_define_bits_lossless(swf_tag)?;
         self.register_bitmap(swf_tag.id, bitmap)
-            .expect("Unable to register bitmap")
     }
 
     fn begin_frame(&mut self, clear: Color) {
