@@ -114,11 +114,13 @@ impl TextFormat {
         swf_movie: Arc<SwfMovie>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Self {
-        let _movie_library = context.library.library_for_movie_mut(swf_movie);
+        let movie_library = context.library.library_for_movie_mut(swf_movie);
 
-        //TODO: How do we represent fonts referenced by character rather than
-        //by linkage name?
-        let font = et.font_class_name;
+        let font = et.font_id.and_then(|fid| movie_library.get_font(fid));
+        let font_class = et
+            .font_class_name
+            .clone()
+            .or_else(|| font.map(|font| font.descriptor().class().to_string()));
         let align = et.layout.clone().map(|l| l.align);
         let left_margin = et.layout.clone().map(|l| l.left_margin.to_pixels());
         let right_margin = et.layout.clone().map(|l| l.right_margin.to_pixels());
@@ -126,13 +128,13 @@ impl TextFormat {
         let leading = et.layout.map(|l| l.leading.to_pixels());
 
         Self {
-            font,
+            font: font_class,
             size: et.height.map(|h| h.to_pixels()),
             color: et.color,
             align,
-            bold: None,      // TODO: Resolve a font and pull this from that font
-            italic: None,    // TODO: Resolve a font and pull this from that font
-            underline: None, // TODO: Resolve a font and pull this from that font
+            bold: font.map(|font| font.descriptor().bold()),
+            italic: font.map(|font| font.descriptor().italic()),
+            underline: None, // TODO: What is this by default? False?
             left_margin,
             right_margin,
             indent,
