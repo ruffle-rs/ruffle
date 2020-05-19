@@ -5,6 +5,7 @@
     "private": true,
     "scripts": {
         "build": "webpack",
+        "prepare": "webpack",
         "test": "mocha"
     },
     "devDependencies": {

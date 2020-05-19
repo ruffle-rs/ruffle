@@ -41,7 +41,6 @@ Ruffle is in the proof-of-concept stage and can currently run early Flash animat
 
 * `cd web/demo`
 * `npm run bootstrap`
-* `npm run build`
 * `npm run demo`
 * Load indicated page in browser (usually http://localhost:8080)
 
