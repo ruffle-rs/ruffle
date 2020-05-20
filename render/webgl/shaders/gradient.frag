@@ -13,8 +13,17 @@ uniform vec4 u_colors[8];
 uniform int u_num_colors;
 uniform int u_repeat_mode;
 uniform float u_focal_point;
+uniform int u_interpolation;
 
 varying vec2 frag_uv;
+
+vec3 linear_to_srgb(vec3 linear)
+{
+    vec3 a = 12.92 * linear;
+    vec3 b = 1.055 * pow(linear, vec3(1.0 / 2.4)) - 0.055;
+    vec3 c = step(vec3(0.0031308), linear);
+    return mix(a, b, c);
+}
 
 void main() {
     float t;
@@ -90,5 +99,10 @@ void main() {
         color = u_colors[7];
     }
 
-    gl_FragColor = mult_color * color + add_color;
+    if( u_interpolation != 0 ) {
+        color = vec4(linear_to_srgb(vec3(color)), color.a);
+    }
+
+    gl_FragColor = mult_color * color + add_color;;
 }
+

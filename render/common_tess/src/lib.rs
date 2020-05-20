@@ -5,7 +5,7 @@ use lyon::tessellation::{
     FillAttributes, FillTessellator, StrokeAttributes, StrokeTessellator, StrokeVertexConstructor,
 };
 use lyon::tessellation::{FillOptions, StrokeOptions};
-use ruffle_core::backend::render::swf::{self, FillStyle, Twips};
+use ruffle_core::backend::render::swf::{self, FillStyle, GradientInterpolation, Twips};
 use ruffle_core::shape_utils::{DistilledShape, DrawCommand, DrawPath};
 
 pub struct ShapeTessellator {
@@ -102,6 +102,7 @@ impl ShapeTessellator {
                             matrix: swf_to_gl_matrix(gradient.matrix),
                             repeat_mode: gradient.spread,
                             focal_point: 0.0,
+                            interpolation: gradient.interpolation,
                         };
 
                         flush_draw(DrawType::Gradient(gradient), &mut mesh, &mut lyon_mesh);
@@ -144,6 +145,7 @@ impl ShapeTessellator {
                             matrix: swf_to_gl_matrix(gradient.matrix),
                             repeat_mode: gradient.spread,
                             focal_point: 0.0,
+                            interpolation: gradient.interpolation,
                         };
 
                         flush_draw(DrawType::Gradient(gradient), &mut mesh, &mut lyon_mesh);
@@ -189,6 +191,7 @@ impl ShapeTessellator {
                             matrix: swf_to_gl_matrix(gradient.matrix),
                             repeat_mode: gradient.spread,
                             focal_point: *focal_point,
+                            interpolation: gradient.interpolation,
                         };
 
                         flush_draw(DrawType::Gradient(gradient), &mut mesh, &mut lyon_mesh);
@@ -319,6 +322,7 @@ pub struct Gradient {
     pub num_colors: u32,
     pub repeat_mode: GradientSpread,
     pub focal_point: f32,
+    pub interpolation: GradientInterpolation,
 }
 
 #[derive(Copy, Clone, Debug)]

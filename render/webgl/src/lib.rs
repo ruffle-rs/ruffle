@@ -1,7 +1,7 @@
 use ruffle_core::backend::render::swf::{self, FillStyle};
 use ruffle_core::backend::render::{
-    Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, Letterbox, RenderBackend, ShapeHandle,
-    Transform,
+    srgb_to_linear, Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, Letterbox,
+    RenderBackend, ShapeHandle, Transform,
 };
 use ruffle_core::shape_utils::DistilledShape;
 use ruffle_render_common_tess::{GradientSpread, GradientType, ShapeTessellator, Vertex};
@@ -74,7 +74,6 @@ impl WebGlRenderBackend {
             ("antialias", JsValue::FALSE),
             ("depth", JsValue::FALSE),
         ];
-
         let context_options = js_sys::Object::new();
         for (name, value) in options.iter() {
             js_sys::Reflect::set(&context_options, &JsValue::from(*name), value).warn_on_error();
@@ -484,6 +483,12 @@ impl WebGlRenderBackend {
                     let num_colors = gradient.num_colors as usize;
                     ratios[..num_colors].copy_from_slice(&gradient.ratios[..num_colors]);
                     colors[..num_colors].copy_from_slice(&gradient.colors[..num_colors]);
+                    // Convert to linear color space if this is a linear-interpolated gradient.
+                    if gradient.interpolation == swf::GradientInterpolation::LinearRGB {
+                        for color in &mut colors[..num_colors] {
+                            *color = srgb_to_linear(*color);
+                        }
+                    }
                     for i in num_colors..8 {
                         ratios[i] = ratios[i - 1];
                         colors[i] = colors[i - 1];
@@ -504,6 +509,7 @@ impl WebGlRenderBackend {
                             GradientSpread::Reflect => 2,
                         },
                         focal_point: gradient.focal_point,
+                        interpolation: gradient.interpolation,
                     };
                     (
                         &self.gradient_program,
@@ -1032,6 +1038,11 @@ impl RenderBackend for WebGlRenderBackend {
                         ShaderUniform::GradientFocalPoint,
                         gradient.focal_point,
                     );
+                    program.uniform1i(
+                        &self.gl,
+                        ShaderUniform::GradientInterpolation,
+                        (gradient.interpolation == swf::GradientInterpolation::LinearRGB) as i32,
+                    );
                 }
                 DrawType::Bitmap(bitmap) => {
                     let texture = &self
@@ -1186,6 +1197,7 @@ struct Gradient {
     num_colors: u32,
     repeat_mode: i32,
     focal_point: f32,
+    interpolation: swf::GradientInterpolation,
 }
 
 #[derive(Clone, Debug)]
@@ -1235,7 +1247,7 @@ struct ShaderProgram {
 }
 
 // These should match the uniform names in the shaders.
-const NUM_UNIFORMS: usize = 12;
+const NUM_UNIFORMS: usize = 13;
 const UNIFORM_NAMES: [&str; NUM_UNIFORMS] = [
     "world_matrix",
     "view_matrix",
@@ -1248,6 +1260,7 @@ const UNIFORM_NAMES: [&str; NUM_UNIFORMS] = [
     "u_num_colors",
     "u_repeat_mode",
     "u_focal_point",
+    "u_interpolation",
     "u_texture",
 ];
 
@@ -1263,6 +1276,7 @@ enum ShaderUniform {
     GradientNumColors,
     GradientRepeatMode,
     GradientFocalPoint,
+    GradientInterpolation,
     BitmapTexture,
 }
 
