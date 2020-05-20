@@ -57,29 +57,37 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
     }
 
     update_styles() {
-        for (var i = 0; i < this.dynamic_styles.sheet.rules.length; i += 1) {
-            this.dynamic_styles.sheet.deleteRule(i);
-        }
-
-        if (this.attributes.width) {
-            let width = RufflePlayer.html_dimension_to_css_dimension(
-                this.attributes.width.value
-            );
-            if (width !== null) {
-                this.dynamic_styles.sheet.insertRule(
-                    `:host { width: ${width}; }`
-                );
+        if (this.dynamic_styles.sheet) {
+            if (this.dynamic_styles.sheet.rules) {
+                for (
+                    var i = 0;
+                    i < this.dynamic_styles.sheet.rules.length;
+                    i++
+                ) {
+                    this.dynamic_styles.sheet.deleteRule(i);
+                }
             }
-        }
 
-        if (this.attributes.height) {
-            let height = RufflePlayer.html_dimension_to_css_dimension(
-                this.attributes.height.value
-            );
-            if (height !== null) {
-                this.dynamic_styles.sheet.insertRule(
-                    `:host { height: ${height}; }`
+            if (this.attributes.width) {
+                let width = RufflePlayer.html_dimension_to_css_dimension(
+                    this.attributes.width.value
                 );
+                if (width !== null) {
+                    this.dynamic_styles.sheet.insertRule(
+                        `:host { width: ${width}; }`
+                    );
+                }
+            }
+
+            if (this.attributes.height) {
+                let height = RufflePlayer.html_dimension_to_css_dimension(
+                    this.attributes.height.value
+                );
+                if (height !== null) {
+                    this.dynamic_styles.sheet.insertRule(
+                        `:host { height: ${height}; }`
+                    );
+                }
             }
         }
     }
