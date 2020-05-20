@@ -8,6 +8,7 @@ use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::Player;
 use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_render_wgpu::WgpuRenderBackend;
+use std::cmp;
 use std::error::Error;
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
@@ -62,7 +63,8 @@ fn take_screenshot(
     )?;
 
     let mut result = Vec::new();
-    for i in 0..frames {
+
+    for i in 0..cmp::max(frames,skipframes) {
         if let Some(progress) = &progress {
             progress.set_message(&format!(
                 "{} frame {}",
@@ -72,10 +74,7 @@ fn take_screenshot(
         }
 
         player.lock().unwrap().run_frame();
-        
-
-      
-        if i > skipframes-frames{
+        if skipframes == 0 || i >= cmp::max(skipframes-frames , 0) {
             player.lock().unwrap().render();
             let mut player = player.lock().unwrap();
             let renderer = player
@@ -89,6 +88,7 @@ fn take_screenshot(
                 return Err(format!("Unable to capture frame {} of {:?}", i, swf_path).into());
             }
         }
+
         if let Some(progress) = &progress {
             progress.inc(1);
         }
