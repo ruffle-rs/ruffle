@@ -4,6 +4,6 @@ update_configs:
     directory: "/."
     update_schedule: "live"
   - package_manager: "javascript"
-    directory: "web/selfhosted"
+    directory: "web"
     update_schedule: "live"
 

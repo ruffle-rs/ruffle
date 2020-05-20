@@ -1,0 +1,15 @@
+{
+    "name": "ruffle-core",
+    "version": "0.1.0",
+    "description": "Core bindings for Ruffle",
+    "private": true,
+    "scripts": {
+        "build": "webpack",
+        "prepare": "webpack",
+        "test": "mocha"
+    },
+    "devDependencies": {
+        "chai": "^4.2.0",
+        "mocha": "^7.1.2"
+    }
+}

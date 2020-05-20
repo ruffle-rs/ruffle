@@ -1,0 +1,50 @@
+name: Test Rust
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    name: Test rust ${{ matrix.rust_version }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.rust_version == 'nightly' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        rust_version: ['stable', 'beta', 'nightly']
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Use stable rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: ${{ matrix.rust_version }}
+        override: true
+        components: rustfmt, clippy
+
+    - name: Install linux depencencies
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt-get -y install libasound2-dev
+
+    - name: Run all rust tests
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+
+    - name: Check clippy
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+        args: --all --tests -- -D warnings
+
+    - name: Check rust formatting
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --all -- --check

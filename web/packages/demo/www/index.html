@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html data-ruffle-optout>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ruffle Web Demo</title>
+  <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
+  <style>
+    body {
+      position: absolute;
+      top: 0;
+      left: 0;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      font-family: 'Lato', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: black;
+    }
+
+    #main {
+      margin: 15px;
+      width: 100%;
+      height: 100%;
+      align-self: center;
+      max-height: calc(100vh - 70px);
+    }
+
+    #container
+    {
+      height: calc(100vh - 70px);
+      width: 100vw;
+    }
+
+    #player {
+      width: 100vw;
+      height: calc(100vh - 70px);
+      display: block;
+    }
+
+    #nav {
+      width: 100%;
+      background: #37528C;
+      border: 0;
+      border-color: darkgray;
+      border-bottom: 2px #37528C;
+      border-style: solid;
+      box-shadow: 0 5px 5px #37528C;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-around;
+      align-items: center;
+      align-self: flex-start;
+      color: white;
+      min-height: 45px;
+    }
+
+    #title:hover {
+      opacity: 0.5;
+      cursor: pointer;
+    }
+
+    #title img {
+      display: inline-block;
+      height: 32px;
+      margin-top: 5px;
+    }
+
+    #file-picker {
+      margin-top: 7px;
+    }
+
+    #local-file-container {
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    #sample-swfs-container {
+      display: none;
+      vertical-align: middle;
+    }
+
+    #author-container {
+      display: none;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    #author {
+      padding-left: 5px;
+      color: #ffad33;
+    }
+
+    @media only screen and (max-width: 800px) {
+      #local-file-container,#sample-swfs-container {
+        display: block;
+      }
+
+      #nav {
+        min-height: 65px;
+      }
+
+      #player {
+        height: calc(100vh - 90px) !important;
+      }
+    }
+
+    @media only screen and (max-device-width: 600px) {
+      #local-file-container {
+        display: none;
+      }
+      
+      #sample-swfs-label {
+        display: none;
+      }
+
+      #author-container {
+        font-size: 12px;
+        text-align: center;
+      }
+
+      #nav {
+        min-height: 85px;
+        flex-direction: column;
+        padding-bottom: 2px;
+      }
+    }
+
+    select,
+    input {
+      margin: 0 5px;
+    }
+
+    #player {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="nav">
+    <div id="title">
+      <a href="https://ruffle.rs" target="_blank">
+      <img src="https://ruffle.rs/assets/logo.png" alt="Ruffle" data-canonical-src="https://ruffle.rs/assets/logo.png">
+      </a>
+    </div>
+    <div id="file-picker">
+      <div id="local-file-container">
+        Local SWF: 
+        <input type="file" id="local-file">
+      </div>
+      <div id="sample-swfs-container">
+        <span id="sample-swfs-label">Sample SWF:</span>
+        <select id="sample-swfs">
+          <option value="none">None</option>
+        </select>
+        <span id="author-container">Author: <a href="#" target="_blank" id="author"></a></span>
+      </div>
+    </div>
+  </div>
+  <div id="main">
+  </div>
+  <script src="./index.js"></script>
+</body>
+</html>

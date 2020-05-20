@@ -1,0 +1,12 @@
+{
+    "name": "ruffle-selfhosted",
+    "version": "0.1.0",
+    "description": "Put Flash back on the web with Ruffle on your own site",
+    "scripts": {
+        "build": "webpack",
+        "serve": "webpack-dev-server"
+    },
+    "dependencies": {
+        "ruffle-core": "file:../core"
+    }
+}

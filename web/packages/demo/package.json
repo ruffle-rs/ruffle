@@ -1,0 +1,12 @@
+{
+    "name": "ruffle-demo",
+    "version": "0.1.0",
+    "description": "Demo of Ruffle Flash emulator",
+    "scripts": {
+        "build": "webpack",
+        "serve": "webpack-dev-server"
+    },
+    "dependencies": {
+        "ruffle-selfhosted": "file:../selfhosted"
+    }
+}

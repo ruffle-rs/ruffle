@@ -1,0 +1,12 @@
+{
+    "name": "ruffle-extension",
+    "version": "0.1.0",
+    "description": "Extension packaging for Ruffle Flash Emulator",
+    "scripts": {
+        "build": "webpack",
+        "serve": "webpack-dev-server"
+    },
+    "dependencies": {
+        "ruffle-core": "file:../core"
+    }
+}
