@@ -6,17 +6,26 @@ layout(set = 0, binding = 2) uniform Colors {
 };
 
 layout(std430, set = 0, binding = 3) buffer Gradient {
+    vec4 u_colors[16];
+    float u_ratios[16];
     int u_gradient_type;
     uint u_num_colors;
     int u_repeat_mode;
+    int u_interpolation;
     float u_focal_point;
-    float u_ratios[16];
-    vec4 u_colors[16];
 };
 
 layout(location=0) in vec2 frag_uv;
 
 layout(location=0) out vec4 out_color;
+
+vec3 linear_to_srgb(vec3 linear)
+{
+    vec3 a = 12.92 * linear;
+    vec3 b = 1.055 * pow(linear, vec3(1.0 / 2.4)) - 0.055;
+    vec3 c = step(vec3(0.0031308), linear);
+    return mix(a, b, c);
+}
 
 void main() {
     vec4 color;
@@ -71,5 +80,8 @@ void main() {
     }
     float a = (t - u_ratios[i].x) / (u_ratios[j].x - u_ratios[i].x);
     color = mix(u_colors[i], u_colors[j], a);
+    if( u_interpolation != 0 ) {
+        color = vec4(linear_to_srgb(vec3(color)), color.a);
+    }
     out_color = mult_color * color + add_color;
 }

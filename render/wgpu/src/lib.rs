@@ -5,12 +5,12 @@ use lyon::tessellation::{
 };
 use ruffle_core::backend::render::swf::{self, FillStyle};
 use ruffle_core::backend::render::{
-    Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, Letterbox, RenderBackend, ShapeHandle,
-    Transform,
+    srgb_to_linear, Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, Letterbox,
+    RenderBackend, ShapeHandle, Transform,
 };
 use ruffle_core::shape_utils::{DistilledShape, DrawPath};
 use std::convert::TryInto;
-use swf::{CharacterId, DefineBitsLossless, Glyph};
+use swf::{CharacterId, DefineBitsLossless, Glyph, GradientInterpolation};
 
 use bytemuck::{Pod, Zeroable};
 use futures::executor::block_on;
@@ -351,30 +351,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             continue;
                         }
 
-                        let mut colors: [[f32; 4]; 16] = Default::default();
-                        let mut ratios: [f32; 16] = Default::default();
-                        for (i, record) in gradient.records.iter().enumerate() {
-                            if i >= 16 {
-                                // TODO: we need to support these!
-                                break;
-                            }
-                            colors[i] = [
-                                f32::from(record.color.r) / 255.0,
-                                f32::from(record.color.g) / 255.0,
-                                f32::from(record.color.b) / 255.0,
-                                f32::from(record.color.a) / 255.0,
-                            ];
-                            ratios[i] = f32::from(record.ratio) / 255.0;
-                        }
-
-                        let uniforms = GradientUniforms {
-                            gradient_type: 0,
-                            ratios,
-                            colors,
-                            num_colors: gradient.records.len() as u32,
-                            repeat_mode: gradient_spread_mode_index(gradient.spread),
-                            focal_point: 0.0,
-                        };
+                        let uniforms = swf_gradient_to_uniforms(0, gradient, 0.0);
                         let matrix = swf_to_gl_matrix(gradient.matrix);
 
                         flush_draw(
@@ -420,30 +397,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             continue;
                         }
 
-                        let mut colors: [[f32; 4]; 16] = Default::default();
-                        let mut ratios: [f32; 16] = Default::default();
-                        for (i, record) in gradient.records.iter().enumerate() {
-                            if i >= 16 {
-                                // TODO: we need to support these!
-                                break;
-                            }
-                            colors[i] = [
-                                f32::from(record.color.r) / 255.0,
-                                f32::from(record.color.g) / 255.0,
-                                f32::from(record.color.b) / 255.0,
-                                f32::from(record.color.a) / 255.0,
-                            ];
-                            ratios[i] = f32::from(record.ratio) / 255.0;
-                        }
-
-                        let uniforms = GradientUniforms {
-                            gradient_type: 1,
-                            ratios,
-                            colors,
-                            num_colors: gradient.records.len() as u32,
-                            repeat_mode: gradient_spread_mode_index(gradient.spread),
-                            focal_point: 0.0,
-                        };
+                        let uniforms = swf_gradient_to_uniforms(1, gradient, 0.0);
                         let matrix = swf_to_gl_matrix(gradient.matrix);
 
                         flush_draw(
@@ -492,30 +446,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             continue;
                         }
 
-                        let mut colors: [[f32; 4]; 16] = Default::default();
-                        let mut ratios: [f32; 16] = Default::default();
-                        for (i, record) in gradient.records.iter().enumerate() {
-                            if i >= 16 {
-                                // TODO: we need to support these!
-                                break;
-                            }
-                            colors[i] = [
-                                f32::from(record.color.r) / 255.0,
-                                f32::from(record.color.g) / 255.0,
-                                f32::from(record.color.b) / 255.0,
-                                f32::from(record.color.a) / 255.0,
-                            ];
-                            ratios[i] = f32::from(record.ratio) / 255.0;
-                        }
-
-                        let uniforms = GradientUniforms {
-                            gradient_type: 2,
-                            ratios,
-                            colors,
-                            num_colors: gradient.records.len() as u32,
-                            repeat_mode: gradient_spread_mode_index(gradient.spread),
-                            focal_point: *focal_point,
-                        };
+                        let uniforms = swf_gradient_to_uniforms(2, gradient, *focal_point);
                         let matrix = swf_to_gl_matrix(gradient.matrix);
 
                         flush_draw(
@@ -1506,6 +1437,46 @@ fn create_quad_buffers(device: &wgpu::Device) -> (wgpu::Buffer, wgpu::Buffer, wg
     );
 
     (vbo, ibo, tex_transforms)
+}
+
+/// Converts a gradient to the uniforms used by the shader.
+fn swf_gradient_to_uniforms(
+    gradient_type: i32,
+    gradient: &swf::Gradient,
+    focal_point: f32,
+) -> GradientUniforms {
+    let mut colors: [[f32; 4]; 16] = Default::default();
+    let mut ratios: [f32; 16] = Default::default();
+    for (i, record) in gradient.records.iter().enumerate() {
+        if i >= 16 {
+            // TODO: we need to support these!
+            break;
+        }
+        colors[i] = [
+            f32::from(record.color.r) / 255.0,
+            f32::from(record.color.g) / 255.0,
+            f32::from(record.color.b) / 255.0,
+            f32::from(record.color.a) / 255.0,
+        ];
+        ratios[i] = f32::from(record.ratio) / 255.0;
+    }
+
+    // Convert colors from sRGB to linear space if necessary.
+    if gradient.interpolation == GradientInterpolation::LinearRGB {
+        for color in &mut colors[0..gradient.records.len()] {
+            *color = srgb_to_linear(*color);
+        }
+    }
+
+    GradientUniforms {
+        gradient_type,
+        ratios,
+        colors,
+        interpolation: (gradient.interpolation == GradientInterpolation::LinearRGB) as i32,
+        num_colors: gradient.records.len() as u32,
+        repeat_mode: gradient_spread_mode_index(gradient.spread),
+        focal_point,
+    }
 }
 
 #[derive(Debug)]

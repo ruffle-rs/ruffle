@@ -8,12 +8,13 @@ use ruffle_core::color_transform::ColorTransform;
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct GradientUniforms {
+    pub colors: [[f32; 4]; 16],
+    pub ratios: [f32; 16],
     pub gradient_type: i32,
     pub num_colors: u32,
     pub repeat_mode: i32,
+    pub interpolation: i32,
     pub focal_point: f32,
-    pub ratios: [f32; 16],
-    pub colors: [[f32; 4]; 16],
 }
 
 unsafe impl Pod for GradientUniforms {}
