@@ -1,6 +1,7 @@
 //! MovieClip prototype
 
 use crate::avm1::globals::display_object::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
+use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
@@ -12,7 +13,7 @@ use crate::tag_utils::SwfSlice;
 use gc_arena::MutationContext;
 use swf::{
     FillStyle, Gradient, GradientInterpolation, GradientRecord, GradientSpread, LineCapStyle,
-    LineJoinStyle, LineStyle, Matrix, Twips,
+    LineJoinStyle, LineStyle, Twips,
 };
 
 /// Implements `MovieClip`
@@ -279,46 +280,7 @@ fn begin_gradient_fill<'gc>(
                 color: Color::from_rgb(rgb, (alpha / 100.0 * 255.0) as u8),
             });
         }
-        let matrix = if matrix_object
-            .get("matrixType", avm, context)?
-            .resolve(avm, context)?
-            .coerce_to_string(avm, context)?
-            == "box"
-        {
-            let width = matrix_object
-                .get("w", avm, context)?
-                .resolve(avm, context)?
-                .as_number(avm, context)?;
-            let height = matrix_object
-                .get("h", avm, context)?
-                .resolve(avm, context)?
-                .as_number(avm, context)?;
-            let tx = matrix_object
-                .get("x", avm, context)?
-                .resolve(avm, context)?
-                .as_number(avm, context)?
-                + width / 2.0;
-            let ty = matrix_object
-                .get("y", avm, context)?
-                .resolve(avm, context)?
-                .as_number(avm, context)?
-                + height / 2.0;
-            // TODO: This is wrong, doesn't account for rotations.
-            Matrix {
-                tx: Twips::from_pixels(tx),
-                ty: Twips::from_pixels(ty),
-                a: width as f32 / 1638.4,
-                d: height as f32 / 1638.4,
-                b: 0.0,
-                c: 0.0,
-            }
-        } else {
-            log::warn!(
-                "beginGradientFill() received unsupported matrix object {:?}",
-                matrix_object
-            );
-            return Ok(Value::Undefined.into());
-        };
+        let matrix = gradient_object_to_matrix(matrix_object, avm, context)?;
         let spread = match args
             .get(5)
             .and_then(|v| v.clone().coerce_to_string(avm, context).ok())

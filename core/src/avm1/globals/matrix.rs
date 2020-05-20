@@ -16,6 +16,50 @@ pub fn value_to_matrix<'gc>(
     object_to_matrix(value.as_object()?, avm, context)
 }
 
+pub fn gradient_object_to_matrix<'gc>(
+    object: Object<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+) -> Result<Matrix, Error> {
+    if object
+        .get("matrixType", avm, context)?
+        .resolve(avm, context)?
+        .coerce_to_string(avm, context)?
+        == "box"
+    {
+        let width = object
+            .get("w", avm, context)?
+            .resolve(avm, context)?
+            .as_number(avm, context)?;
+        let height = object
+            .get("h", avm, context)?
+            .resolve(avm, context)?
+            .as_number(avm, context)?;
+        let rotation = object
+            .get("r", avm, context)?
+            .resolve(avm, context)?
+            .as_number(avm, context)?;
+        let tx = object
+            .get("x", avm, context)?
+            .resolve(avm, context)?
+            .as_number(avm, context)?;
+        let ty = object
+            .get("y", avm, context)?
+            .resolve(avm, context)?
+            .as_number(avm, context)?;
+        Ok(Matrix::create_gradient_box(
+            width as f32,
+            height as f32,
+            rotation as f32,
+            Twips::from_pixels(tx),
+            Twips::from_pixels(ty),
+        ))
+    } else {
+        // TODO: You can apparently pass a 3x3 matrix here. Did anybody actually? How does it work?
+        object_to_matrix(object, avm, context)
+    }
+}
+
 pub fn object_to_matrix<'gc>(
     object: Object<'gc>,
     avm: &mut Avm1<'gc>,
@@ -53,6 +97,8 @@ pub fn object_to_matrix<'gc>(
     Ok(Matrix { a, b, c, d, tx, ty })
 }
 
+// We'll need this soon!
+#[allow(dead_code)]
 pub fn matrix_to_object<'gc>(
     matrix: Matrix,
     avm: &mut Avm1<'gc>,
