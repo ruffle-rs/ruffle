@@ -264,32 +264,12 @@ impl<'gc> EditText<'gc> {
         self.relayout(context);
     }
 
-    /// Construct a base text transform for this `EditText`, to be used for
-    /// evaluating fonts.
+    /// Construct a base text transform for a particular `EditText` span.
     ///
-    /// The `text_transform` constitutes the base transform that all text is
-    /// written into.
-    ///
-    /// The `text_transform` is separate from and relative to the base
+    /// This `text_transform` is separate from and relative to the base
     /// transform that this `EditText` automatically gets by virtue of being a
     /// `DisplayObject`.
-    pub fn text_transform(self) -> Transform {
-        let edit_text = self.0.read();
-        let static_data = &edit_text.static_data;
-
-        // TODO: Many of these properties should change be instance members instead
-        // of static data, because they can be altered via ActionScript.
-        let color = static_data
-            .text
-            .color
-            .as_ref()
-            .unwrap_or_else(|| &swf::Color {
-                r: 0,
-                g: 0,
-                b: 0,
-                a: 255,
-            });
-
+    pub fn text_transform(self, color: swf::Color) -> Transform {
         let mut transform: Transform = Default::default();
         transform.color_transform.r_mult = f32::from(color.r) / 255.0;
         transform.color_transform.g_mult = f32::from(color.g) / 255.0;
@@ -373,11 +353,11 @@ impl<'gc> EditText<'gc> {
         // We're cheating a bit and not actually rendering text using the OS/web.
         // Instead, we embed an SWF version of Noto Sans to use as the "device font", and render
         // it the same as any other SWF outline text.
-        if let Some((start, end, _tf, font, font_size)) = lbox.read().text_node() {
+        if let Some((start, end, _tf, font, font_size, color)) = lbox.read().text_node() {
             if let Some(chunk) = edit_text.text_spans.text().get(start..end) {
                 font.evaluate(
                     &chunk,
-                    self.text_transform(),
+                    self.text_transform(color),
                     font_size,
                     |transform, glyph: &Glyph| {
                         // Render glyph.

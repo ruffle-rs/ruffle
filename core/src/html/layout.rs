@@ -123,7 +123,7 @@ pub struct LayoutBox<'gc> {
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
-pub struct CollecTwips(Twips);
+pub struct Collec<T>(T);
 
 /// Represents different content modes of a given layout box.
 #[derive(Clone, Debug, Collect)]
@@ -138,7 +138,8 @@ pub enum LayoutContent<'gc> {
         end: usize,
         text_format: TextFormat,
         font: Font<'gc>,
-        font_size: CollecTwips,
+        font_size: Collec<Twips>,
+        color: Collec<swf::Color>,
     },
 }
 
@@ -151,6 +152,7 @@ impl<'gc> LayoutBox<'gc> {
         text_format: TextFormat,
         font: Font<'gc>,
         font_size: Twips,
+        color: swf::Color,
     ) -> GcCell<'gc, Self> {
         GcCell::allocate(
             mc,
@@ -162,7 +164,8 @@ impl<'gc> LayoutBox<'gc> {
                     end,
                     text_format,
                     font,
-                    font_size: CollecTwips(font_size),
+                    font_size: Collec(font_size),
+                    color: Collec(color),
                 },
             },
         )
@@ -192,6 +195,7 @@ impl<'gc> LayoutBox<'gc> {
             span.get_text_format(),
             lc.font().unwrap(),
             font_size,
+            span.color.clone(),
         );
         let mut write = new_text.write(mc);
 
@@ -254,7 +258,7 @@ impl<'gc> LayoutBox<'gc> {
     }
 
     /// Returns a reference to the text this box contains.
-    pub fn text_node(&self) -> Option<(usize, usize, &TextFormat, Font<'gc>, Twips)> {
+    pub fn text_node(&self) -> Option<(usize, usize, &TextFormat, Font<'gc>, Twips, swf::Color)> {
         match &self.content {
             LayoutContent::Text {
                 start,
@@ -262,7 +266,15 @@ impl<'gc> LayoutBox<'gc> {
                 text_format,
                 font,
                 font_size,
-            } => Some((*start, *end, &text_format, *font, font_size.0)),
+                color,
+            } => Some((
+                *start,
+                *end,
+                &text_format,
+                *font,
+                font_size.0,
+                color.0.clone(),
+            )),
         }
     }
 
