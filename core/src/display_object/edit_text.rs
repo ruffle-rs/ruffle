@@ -303,7 +303,6 @@ impl<'gc> EditText<'gc> {
     fn relayout(self, context: &mut UpdateContext<'_, 'gc, '_>) {
         let mut edit_text = self.0.write(context.gc_context);
         let movie = edit_text.static_data.swf.clone();
-        let library = context.library.library_for_movie(movie.clone()).unwrap();
 
         if edit_text.is_multiline {
             //TODO: this should control if bounds are set during layout
