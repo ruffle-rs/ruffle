@@ -1,0 +1,151 @@
+// new Matrix()
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+// new Matrix(1)
+(a=1, b=undefined, c=undefined, d=undefined, tx=undefined, ty=undefined)
+
+// new Matrix(1, 2)
+(a=1, b=2, c=undefined, d=undefined, tx=undefined, ty=undefined)
+
+// new Matrix(1, 2, 3)
+(a=1, b=2, c=3, d=undefined, tx=undefined, ty=undefined)
+
+// new Matrix(1, 2, 3, {})
+(a=1, b=2, c=3, d=[object Object], tx=undefined, ty=undefined)
+
+// new Matrix(1, 2, 3, 4, 5)
+(a=1, b=2, c=3, d=4, tx=5, ty=undefined)
+
+// new Matrix(1, 2, 3, 4, 5, 6)
+(a=1, b=2, c=3, d=4, tx=5, ty=6)
+
+// new Matrix(1, 2, 3, 4, 5, 6, 7)
+(a=1, b=2, c=3, d=4, tx=5, ty=6)
+
+// new Matrix(1, 2, 3, 4, 5, 6) .identity()
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+
+/// Clones
+// matrix
+(a=1, b=2, c=3, d=4, tx=5, ty=6)
+
+// cloned
+(a=1, b=2, c=3, d=4, tx=5, ty=6)
+
+// matrix === cloned
+false
+
+
+// matrix
+(a=1, b=2, c=[object Object], d=4, tx=5, ty=6)
+
+// cloned
+(a=1, b=2, c=[object Object], d=4, tx=5, ty=6)
+
+// matrix === cloned
+false
+
+
+/// scale
+// matrix
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+// matrix.scale(3, 5)
+(a=3, b=0, c=0, d=5, tx=0, ty=0)
+
+
+// matrix
+(a=2, b=0, c=0, d=2, tx=100, ty=100)
+
+// matrix.scale(7, 11)
+(a=14, b=0, c=0, d=22, tx=700, ty=1100)
+
+
+// matrix
+(a=1, b=2, c=3, d=4, tx=5, ty=6)
+
+// matrix.scale()
+(a=13, b=34, c=39, d=68, tx=65, ty=102)
+
+
+/// rotate
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+// matrix.rotate(0)
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+
+/// rotate
+// matrix
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+// matrix
+(a=1, b=2, c=3, d=4, tx=5, ty=6)
+
+// matrix.rotate(0)
+(a=1, b=2, c=3, d=4, tx=5, ty=6)
+
+
+// matrix
+(a=1, b=2, c=3, d=4, tx=5, ty=6)
+
+/// translate
+// matrix
+// matrix.translate(3, 5)
+(a=1, b=0, c=0, d=1, tx=3, ty=5)
+
+
+// matrix
+// matrix.translate(7, 11)
+(a=2, b=0, c=0, d=2, tx=107, ty=111)
+
+
+/// concat
+// matrix
+(a=11, b=13, c=17, d=19, tx=23, ty=29)
+
+// matrix
+(a=33, b=65, c=51, d=95, tx=69, ty=145)
+
+// matrix
+(a=33, b=65, c=51, d=95, tx=76, ty=154)
+
+
+/// invert
+// matrix
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+// matrix.invert()
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+
+// matrix
+(a=2, b=3, c=5, d=7, tx=9, ty=11)
+
+// matrix.invert()
+(a=-7, b=3, c=5, d=-2, tx=8, ty=-5)
+
+
+/// createBox
+// matrix = nw Matrix();
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+// matrix.createBox(2, 3)
+(a=NaN, b=NaN, c=NaN, d=NaN, tx=0, ty=0)
+
+// matrix.createBox(2, 3, 0)
+(a=2, b=0, c=0, d=3, tx=0, ty=0)
+
+
+/// createGradientBox
+// matrix = nw Matrix();
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+// matrix.createGradientBox(200, 300)
+(a=0.1220703125, b=0, c=0, d=0.18310546875, tx=100, ty=150)
+
+// matrix.createGradientBox(200, 300, 0)
+(a=0.1220703125, b=0, c=0, d=0.18310546875, tx=100, ty=150)
+
+
