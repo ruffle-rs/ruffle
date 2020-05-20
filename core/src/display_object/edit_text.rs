@@ -187,8 +187,9 @@ impl<'gc> EditText<'gc> {
     ) -> Result<(), Error> {
         let mut edit_text = self.0.write(context.gc_context);
         let len = edit_text.text_spans.text().len();
+        let tf = edit_text.text_spans.default_format().clone();
 
-        edit_text.text_spans.replace_text(0, len, &text, None);
+        edit_text.text_spans.replace_text(0, len, &text, Some(&tf));
 
         drop(edit_text);
 
@@ -228,6 +229,7 @@ impl<'gc> EditText<'gc> {
             .write(context.gc_context)
             .text_spans
             .set_text_format(from, to, &tf);
+        self.relayout(context);
     }
 
     pub fn is_multiline(self) -> bool {
