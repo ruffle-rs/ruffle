@@ -64,7 +64,7 @@ fn take_screenshot(
 
     let mut result = Vec::new();
 
-    for i in 0..cmp::max(frames,skipframes) {
+    for i in 0..cmp::max(frames, skipframes) {
         if let Some(progress) = &progress {
             progress.set_message(&format!(
                 "{} frame {}",
@@ -74,7 +74,7 @@ fn take_screenshot(
         }
 
         player.lock().unwrap().run_frame();
-        if skipframes == 0 || i >= cmp::max(skipframes-frames , 0) {
+        if skipframes == 0 || i >= cmp::max(skipframes - frames, 0) {
             player.lock().unwrap().render();
             let mut player = player.lock().unwrap();
             let renderer = player
