@@ -1,6 +1,7 @@
 use ruffle_core::backend::render::{
-    swf, swf::CharacterId, Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, JpegTagFormat,
-    Letterbox, RenderBackend, ShapeHandle, Transform,
+    swf::{self, CharacterId, GradientInterpolation},
+    Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, JpegTagFormat, Letterbox, RenderBackend,
+    ShapeHandle, Transform,
 };
 use ruffle_core::color_transform::ColorTransform;
 use ruffle_core::shape_utils::{DistilledShape, DrawCommand};
@@ -737,6 +738,7 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 }
 
+#[allow(clippy::cognitive_complexity)]
 fn swf_shape_to_svg(
     shape: DistilledShape,
     bitmaps: &HashMap<CharacterId, (&str, u32, u32)>,
@@ -746,8 +748,8 @@ fn swf_shape_to_svg(
     use ruffle_core::shape_utils::DrawPath;
     use ruffle_core::swf::Matrix;
     use svg::node::element::{
-        path::Data, Definitions, Image, LinearGradient, Path as SvgPath, Pattern, RadialGradient,
-        Stop,
+        path::Data, Definitions, Filter, Image, LinearGradient, Path as SvgPath, Pattern,
+        RadialGradient, Stop,
     };
     use svg::Document;
     use swf::{FillStyle, LineCapStyle, LineJoinStyle};
@@ -788,6 +790,7 @@ fn swf_shape_to_svg(
 
     let mut defs = Definitions::new();
     let mut num_defs = 0;
+    let mut has_linear_rgb_gradient = false;
 
     let mut svg_paths = vec![];
     for path in shape.paths {
@@ -795,228 +798,251 @@ fn swf_shape_to_svg(
             DrawPath::Fill { style, commands } => {
                 let mut svg_path = SvgPath::new();
 
-                svg_path = svg_path.set(
-                    "fill",
-                    match style {
-                        FillStyle::Color(Color { r, g, b, a }) => {
-                            format!("rgba({},{},{},{})", r, g, b, f32::from(*a) / 255.0)
-                        }
-                        FillStyle::LinearGradient(gradient) => {
-                            let matrix: Matrix = gradient.matrix;
-                            let shift = Matrix {
-                                a: 32768.0 / width,
-                                d: 32768.0 / height,
-                                tx: swf::Twips::new(-16384),
-                                ty: swf::Twips::new(-16384),
-                                ..Default::default()
-                            };
-                            let gradient_matrix = matrix * shift;
+                let fill = match style {
+                    FillStyle::Color(Color { r, g, b, a }) => {
+                        format!("rgba({},{},{},{})", r, g, b, f32::from(*a) / 255.0)
+                    }
+                    FillStyle::LinearGradient(gradient) => {
+                        let shift = Matrix {
+                            a: 32768.0 / width,
+                            d: 32768.0 / height,
+                            tx: swf::Twips::new(-16384),
+                            ty: swf::Twips::new(-16384),
+                            ..Default::default()
+                        };
+                        let gradient_matrix = gradient.matrix * shift;
 
-                            let mut svg_gradient = LinearGradient::new()
-                                .set("id", format!("f{}", num_defs))
-                                .set("gradientUnits", "userSpaceOnUse")
+                        let mut svg_gradient = LinearGradient::new()
+                            .set("id", format!("f{}", num_defs))
+                            .set("gradientUnits", "userSpaceOnUse")
+                            .set(
+                                "gradientTransform",
+                                format!(
+                                    "matrix({} {} {} {} {} {})",
+                                    gradient_matrix.a,
+                                    gradient_matrix.b,
+                                    gradient_matrix.c,
+                                    gradient_matrix.d,
+                                    gradient_matrix.tx.get(),
+                                    gradient_matrix.ty.get()
+                                ),
+                            );
+                        if gradient.interpolation == GradientInterpolation::LinearRGB {
+                            has_linear_rgb_gradient = true;
+                            svg_path = svg_path.set("filter", "url('#_linearrgb')");
+                        }
+                        for record in &gradient.records {
+                            let color =
+                                if gradient.interpolation == GradientInterpolation::LinearRGB {
+                                    srgb_to_linear(record.color.clone())
+                                } else {
+                                    record.color.clone()
+                                };
+                            let stop = Stop::new()
+                                .set("offset", format!("{}%", f32::from(record.ratio) / 2.55))
                                 .set(
-                                    "gradientTransform",
+                                    "stop-color",
                                     format!(
-                                        "matrix({} {} {} {} {} {})",
-                                        gradient_matrix.a,
-                                        gradient_matrix.b,
-                                        gradient_matrix.c,
-                                        gradient_matrix.d,
-                                        gradient_matrix.tx.get(),
-                                        gradient_matrix.ty.get()
+                                        "rgba({},{},{},{})",
+                                        color.r,
+                                        color.g,
+                                        color.b,
+                                        f32::from(color.a) / 255.0
                                     ),
                                 );
-                            for record in &gradient.records {
-                                let stop = Stop::new()
-                                    .set("offset", format!("{}%", f32::from(record.ratio) / 2.55))
-                                    .set(
-                                        "stop-color",
-                                        format!(
-                                            "rgba({},{},{},{})",
-                                            record.color.r,
-                                            record.color.g,
-                                            record.color.b,
-                                            f32::from(record.color.a) / 255.0
-                                        ),
-                                    );
-                                svg_gradient = svg_gradient.add(stop);
-                            }
-                            defs = defs.add(svg_gradient);
-
-                            let fill_id = format!("url(#f{})", num_defs);
-                            num_defs += 1;
-                            fill_id
+                            svg_gradient = svg_gradient.add(stop);
                         }
-                        FillStyle::RadialGradient(gradient) => {
-                            let matrix = gradient.matrix;
-                            let shift = Matrix {
-                                a: 32768.0,
-                                d: 32768.0,
-                                ..Default::default()
-                            };
-                            let gradient_matrix = matrix * shift;
+                        defs = defs.add(svg_gradient);
 
-                            let mut svg_gradient = RadialGradient::new()
-                                .set("id", format!("f{}", num_defs))
-                                .set("gradientUnits", "userSpaceOnUse")
-                                .set("cx", "0")
-                                .set("cy", "0")
-                                .set("r", "0.5")
+                        let fill_id = format!("url(#f{})", num_defs);
+                        num_defs += 1;
+                        fill_id
+                    }
+                    FillStyle::RadialGradient(gradient) => {
+                        let shift = Matrix {
+                            a: 32768.0,
+                            d: 32768.0,
+                            ..Default::default()
+                        };
+                        let gradient_matrix = gradient.matrix * shift;
+
+                        let mut svg_gradient = RadialGradient::new()
+                            .set("id", format!("f{}", num_defs))
+                            .set("gradientUnits", "userSpaceOnUse")
+                            .set("cx", "0")
+                            .set("cy", "0")
+                            .set("r", "0.5")
+                            .set(
+                                "gradientTransform",
+                                format!(
+                                    "matrix({} {} {} {} {} {})",
+                                    gradient_matrix.a,
+                                    gradient_matrix.b,
+                                    gradient_matrix.c,
+                                    gradient_matrix.d,
+                                    gradient_matrix.tx.get(),
+                                    gradient_matrix.ty.get()
+                                ),
+                            );
+                        if gradient.interpolation == GradientInterpolation::LinearRGB {
+                            has_linear_rgb_gradient = true;
+                            svg_path = svg_path.set("filter", "url('#_linearrgb')");
+                        }
+                        for record in &gradient.records {
+                            let color =
+                                if gradient.interpolation == GradientInterpolation::LinearRGB {
+                                    srgb_to_linear(record.color.clone())
+                                } else {
+                                    record.color.clone()
+                                };
+                            let stop = Stop::new()
+                                .set("offset", format!("{}%", f32::from(record.ratio) / 2.55))
                                 .set(
-                                    "gradientTransform",
+                                    "stop-color",
                                     format!(
-                                        "matrix({} {} {} {} {} {})",
-                                        gradient_matrix.a,
-                                        gradient_matrix.b,
-                                        gradient_matrix.c,
-                                        gradient_matrix.d,
-                                        gradient_matrix.tx.get(),
-                                        gradient_matrix.ty.get()
+                                        "rgba({},{},{},{})",
+                                        color.r,
+                                        color.g,
+                                        color.b,
+                                        f32::from(color.a) / 255.0
                                     ),
                                 );
-                            for record in &gradient.records {
-                                let stop = Stop::new()
-                                    .set("offset", format!("{}%", f32::from(record.ratio) / 2.55))
-                                    .set(
-                                        "stop-color",
-                                        format!(
-                                            "rgba({},{},{},{})",
-                                            record.color.r,
-                                            record.color.g,
-                                            record.color.b,
-                                            f32::from(record.color.a) / 255.0
-                                        ),
-                                    );
-                                svg_gradient = svg_gradient.add(stop);
-                            }
-                            defs = defs.add(svg_gradient);
-
-                            let fill_id = format!("url(#f{})", num_defs);
-                            num_defs += 1;
-                            fill_id
+                            svg_gradient = svg_gradient.add(stop);
                         }
-                        FillStyle::FocalGradient {
-                            gradient,
-                            focal_point,
-                        } => {
-                            let matrix = gradient.matrix;
-                            let shift = Matrix {
-                                a: 32768.0,
-                                d: 32768.0,
-                                ..Default::default()
-                            };
-                            let gradient_matrix = matrix * shift;
+                        defs = defs.add(svg_gradient);
 
-                            let mut svg_gradient = RadialGradient::new()
-                                .set("id", format!("f{}", num_defs))
-                                .set("fx", focal_point / 2.0)
-                                .set("gradientUnits", "userSpaceOnUse")
-                                .set("cx", "0")
-                                .set("cy", "0")
-                                .set("r", "0.5")
+                        let fill_id = format!("url(#f{})", num_defs);
+                        num_defs += 1;
+                        fill_id
+                    }
+                    FillStyle::FocalGradient {
+                        gradient,
+                        focal_point,
+                    } => {
+                        let shift = Matrix {
+                            a: 32768.0,
+                            d: 32768.0,
+                            ..Default::default()
+                        };
+                        let gradient_matrix = gradient.matrix * shift;
+
+                        let mut svg_gradient = RadialGradient::new()
+                            .set("id", format!("f{}", num_defs))
+                            .set("fx", focal_point / 2.0)
+                            .set("gradientUnits", "userSpaceOnUse")
+                            .set("cx", "0")
+                            .set("cy", "0")
+                            .set("r", "0.5")
+                            .set(
+                                "gradientTransform",
+                                format!(
+                                    "matrix({} {} {} {} {} {})",
+                                    gradient_matrix.a,
+                                    gradient_matrix.b,
+                                    gradient_matrix.c,
+                                    gradient_matrix.d,
+                                    gradient_matrix.tx.get(),
+                                    gradient_matrix.ty.get()
+                                ),
+                            );
+                        if gradient.interpolation == GradientInterpolation::LinearRGB {
+                            has_linear_rgb_gradient = true;
+                            svg_path = svg_path.set("filter", "url('#_linearrgb')");
+                        }
+                        for record in &gradient.records {
+                            let color =
+                                if gradient.interpolation == GradientInterpolation::LinearRGB {
+                                    srgb_to_linear(record.color.clone())
+                                } else {
+                                    record.color.clone()
+                                };
+                            let stop = Stop::new()
+                                .set("offset", format!("{}%", f32::from(record.ratio) / 2.55))
                                 .set(
-                                    "gradientTransform",
+                                    "stop-color",
                                     format!(
-                                        "matrix({} {} {} {} {} {})",
-                                        gradient_matrix.a,
-                                        gradient_matrix.b,
-                                        gradient_matrix.c,
-                                        gradient_matrix.d,
-                                        gradient_matrix.tx.get(),
-                                        gradient_matrix.ty.get()
+                                        "rgba({},{},{},{})",
+                                        color.r,
+                                        color.g,
+                                        color.b,
+                                        f32::from(color.a) / 255.0
                                     ),
                                 );
-                            for record in &gradient.records {
-                                let stop = Stop::new()
-                                    .set("offset", format!("{}%", f32::from(record.ratio) / 2.55))
-                                    .set(
-                                        "stop-color",
-                                        format!(
-                                            "rgba({},{},{},{})",
-                                            record.color.r,
-                                            record.color.g,
-                                            record.color.b,
-                                            f32::from(record.color.a) / 255.0
-                                        ),
-                                    );
-                                svg_gradient = svg_gradient.add(stop);
-                            }
-                            defs = defs.add(svg_gradient);
-
-                            let fill_id = format!("url(#f{})", num_defs);
-                            num_defs += 1;
-                            fill_id
+                            svg_gradient = svg_gradient.add(stop);
                         }
-                        FillStyle::Bitmap {
-                            id,
-                            matrix,
-                            is_smoothed,
-                            is_repeating,
-                        } => {
-                            let (bitmap_data, bitmap_width, bitmap_height) =
-                                bitmaps.get(&id).unwrap_or(&("", 0, 0));
+                        defs = defs.add(svg_gradient);
 
-                            if !bitmap_defs.contains(&id) {
-                                let mut image = Image::new()
+                        let fill_id = format!("url(#f{})", num_defs);
+                        num_defs += 1;
+                        fill_id
+                    }
+                    FillStyle::Bitmap {
+                        id,
+                        matrix,
+                        is_smoothed,
+                        is_repeating,
+                    } => {
+                        let (bitmap_data, bitmap_width, bitmap_height) =
+                            bitmaps.get(&id).unwrap_or(&("", 0, 0));
+
+                        if !bitmap_defs.contains(&id) {
+                            let mut image = Image::new()
+                                .set("width", *bitmap_width)
+                                .set("height", *bitmap_height)
+                                .set("xlink:href", *bitmap_data);
+
+                            if !*is_smoothed {
+                                image = image.set("image-rendering", pixelated_property_value);
+                            }
+
+                            let mut bitmap_pattern = Pattern::new()
+                                .set("id", format!("b{}", id))
+                                .set("patternUnits", "userSpaceOnUse");
+
+                            if !*is_repeating {
+                                bitmap_pattern = bitmap_pattern
+                                    .set("width", *bitmap_width)
+                                    .set("height", *bitmap_height);
+                            } else {
+                                bitmap_pattern = bitmap_pattern
                                     .set("width", *bitmap_width)
                                     .set("height", *bitmap_height)
-                                    .set("xlink:href", *bitmap_data);
-
-                                if !*is_smoothed {
-                                    image = image.set("image-rendering", pixelated_property_value);
-                                }
-
-                                let mut bitmap_pattern = Pattern::new()
-                                    .set("id", format!("b{}", id))
-                                    .set("patternUnits", "userSpaceOnUse");
-
-                                if !*is_repeating {
-                                    bitmap_pattern = bitmap_pattern
-                                        .set("width", *bitmap_width)
-                                        .set("height", *bitmap_height);
-                                } else {
-                                    bitmap_pattern = bitmap_pattern
-                                        .set("width", *bitmap_width)
-                                        .set("height", *bitmap_height)
-                                        .set(
-                                            "viewBox",
-                                            format!("0 0 {} {}", bitmap_width, bitmap_height),
-                                        );
-                                }
-
-                                bitmap_pattern = bitmap_pattern.add(image);
-
-                                defs = defs.add(bitmap_pattern);
-                                bitmap_defs.insert(*id);
+                                    .set(
+                                        "viewBox",
+                                        format!("0 0 {} {}", bitmap_width, bitmap_height),
+                                    );
                             }
-                            let a = *matrix;
-                            let bitmap_matrix = a;
 
-                            let svg_pattern = Pattern::new()
-                                .set("id", format!("f{}", num_defs))
-                                .set("xlink:href", format!("#b{}", id))
-                                .set(
-                                    "patternTransform",
-                                    format!(
-                                        "matrix({} {} {} {} {} {})",
-                                        bitmap_matrix.a,
-                                        bitmap_matrix.b,
-                                        bitmap_matrix.c,
-                                        bitmap_matrix.d,
-                                        bitmap_matrix.tx.get(),
-                                        bitmap_matrix.ty.get()
-                                    ),
-                                );
+                            bitmap_pattern = bitmap_pattern.add(image);
 
-                            defs = defs.add(svg_pattern);
-
-                            let fill_id = format!("url(#f{})", num_defs);
-                            num_defs += 1;
-                            fill_id
+                            defs = defs.add(bitmap_pattern);
+                            bitmap_defs.insert(*id);
                         }
-                    },
-                );
+
+                        let svg_pattern = Pattern::new()
+                            .set("id", format!("f{}", num_defs))
+                            .set("xlink:href", format!("#b{}", id))
+                            .set(
+                                "patternTransform",
+                                format!(
+                                    "matrix({} {} {} {} {} {})",
+                                    matrix.a,
+                                    matrix.b,
+                                    matrix.c,
+                                    matrix.d,
+                                    matrix.tx.get(),
+                                    matrix.ty.get()
+                                ),
+                            );
+
+                        defs = defs.add(svg_pattern);
+
+                        let fill_id = format!("url(#f{})", num_defs);
+                        num_defs += 1;
+                        fill_id
+                    }
+                };
+                svg_path = svg_path.set("fill", fill);
 
                 let mut data = Data::new();
                 for command in commands {
@@ -1096,6 +1122,27 @@ fn swf_shape_to_svg(
                 svg_paths.push(svg_path);
             }
         }
+    }
+
+    // If this shape contains a gradient in linear RGB space, add a filter to do the color space adjustment.
+    // We have to use a filter because browser don't seem to implement the `color-interpolation` SVG property.
+    if has_linear_rgb_gradient {
+        // Add a filter to convert from linear space to sRGB space.
+        let mut filter = Filter::new();
+        filter = filter.set("id", "_linearrgb");
+        filter = filter.set("color-interpolation-filters", "sRGB");
+        let text = svg::node::Text::new(
+            r#"
+            <feComponentTransfer>
+                <feFuncR type="gamma" exponent="0.4545454545"></feFuncR>
+                <feFuncG type="gamma" exponent="0.4545454545"></feFuncG>
+                <feFuncB type="gamma" exponent="0.4545454545"></feFuncB>
+            </feComponentTransfer>
+            "#,
+        );
+        filter = filter.add(text);
+        defs = defs.add(filter);
+        num_defs += 1;
     }
 
     if num_defs > 0 {
@@ -1320,4 +1367,21 @@ fn swf_shape_to_canvas_commands(
     }
 
     Some(canvas_data)
+}
+
+/// Converts an SWF color from sRGB space to linear color space.
+pub fn srgb_to_linear(mut color: swf::Color) -> swf::Color {
+    fn to_linear_channel(n: u8) -> u8 {
+        let mut n = f32::from(n) / 255.0;
+        n = if n <= 0.04045 {
+            n / 12.92
+        } else {
+            f32::powf((n + 0.055) / 1.055, 2.4)
+        };
+        (n.max(0.0).min(1.0) * 255.0).round() as u8
+    }
+    color.r = to_linear_channel(color.r);
+    color.g = to_linear_channel(color.g);
+    color.b = to_linear_channel(color.b);
+    color
 }
