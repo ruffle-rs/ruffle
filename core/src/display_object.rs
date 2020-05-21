@@ -831,6 +831,8 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
 
     fn mouse_pick(
         &self,
+        _avm: &mut Avm1<'gc>,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
         _self_node: DisplayObject<'gc>,
         _pos: (Twips, Twips),
     ) -> Option<DisplayObject<'gc>> {

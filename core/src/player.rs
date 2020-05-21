@@ -469,6 +469,24 @@ impl Player {
                         _ => (),
                     }
                 }
+
+                if let Some(clip) = node.clone().as_movie_clip() {
+                    match event {
+                        PlayerEvent::MouseDown { .. } => {
+                            is_mouse_down = true;
+                            needs_render = true;
+                            clip.run_clip_action(context, ClipEvent::Press);
+                        }
+
+                        PlayerEvent::MouseUp { .. } => {
+                            is_mouse_down = false;
+                            needs_render = true;
+                            clip.run_clip_action(context, ClipEvent::Release);
+                        }
+
+                        _ => (),
+                    }
+                }
             }
 
             Self::run_actions(avm, context);
@@ -518,9 +536,10 @@ impl Player {
         let hover_changed = self.mutate_with_update_context(|avm, context| {
             // Check hovered object.
             let mut new_hovered = None;
-            for (_depth, level) in context.levels.iter().rev() {
+            for (_depth, level) in context.levels.clone().iter().rev() {
                 if new_hovered.is_none() {
-                    new_hovered = level.mouse_pick(*level, (mouse_pos.0, mouse_pos.1));
+                    new_hovered =
+                        level.mouse_pick(avm, context, *level, (mouse_pos.0, mouse_pos.1));
                 } else {
                     break;
                 }
@@ -531,17 +550,29 @@ impl Player {
             if cur_hovered.map(|d| d.as_ptr()) != new_hovered.map(|d| d.as_ptr()) {
                 // RollOut of previous node.
                 if let Some(node) = cur_hovered {
-                    if let Some(mut button) = node.as_button() {
-                        button.handle_button_event(avm, context, ButtonEvent::RollOut);
+                    match node {
+                        DisplayObject::Button(mut button) => {
+                            button.handle_button_event(avm, context, ButtonEvent::RollOut);
+                        }
+                        DisplayObject::MovieClip(clip) => {
+                            clip.run_clip_action(context, ClipEvent::RollOut);
+                        }
+                        _ => (),
                     }
                 }
 
                 // RollOver on new node.
                 new_cursor = MouseCursor::Arrow;
                 if let Some(node) = new_hovered {
-                    if let Some(mut button) = node.as_button() {
-                        button.handle_button_event(avm, context, ButtonEvent::RollOver);
-                        new_cursor = MouseCursor::Hand;
+                    new_cursor = MouseCursor::Hand;
+                    match node {
+                        DisplayObject::Button(mut button) => {
+                            button.handle_button_event(avm, context, ButtonEvent::RollOver);
+                        }
+                        DisplayObject::MovieClip(clip) => {
+                            clip.run_clip_action(context, ClipEvent::RollOver);
+                        }
+                        _ => (),
                     }
                 }
 
