@@ -111,40 +111,23 @@ impl Drawing {
             if let Some(command) = self
                 .current_fill
                 .as_ref()
-                .and_then(|(_, commands)| commands.last().cloned())
+                .and_then(|(_, commands)| commands.last())
             {
-                self.stretch_bounds(command)
+                stretch_bounding_box(&mut self.edge_bounds, command);
+                stretch_bounding_box(&mut self.shape_bounds, command);
             }
 
             if let Some(command) = self
                 .current_line
                 .as_ref()
-                .and_then(|(_, commands)| commands.last().cloned())
+                .and_then(|(_, commands)| commands.last())
             {
-                self.stretch_bounds(command)
+                stretch_bounding_box(&mut self.edge_bounds, command);
+                stretch_bounding_box(&mut self.shape_bounds, command);
             }
         }
 
         self.dirty = true;
-    }
-
-    fn stretch_bounds(&mut self, command: DrawCommand) {
-        match command {
-            DrawCommand::MoveTo { x, y } => {
-                self.shape_bounds.encompass(x, y);
-                self.edge_bounds.encompass(x, y);
-            }
-            DrawCommand::LineTo { x, y } => {
-                self.shape_bounds.encompass(x, y);
-                self.edge_bounds.encompass(x, y);
-            }
-            DrawCommand::CurveTo { x1, y1, x2, y2 } => {
-                self.shape_bounds.encompass(x1, y1);
-                self.shape_bounds.encompass(x2, y2);
-                self.edge_bounds.encompass(x1, y1);
-                self.edge_bounds.encompass(x2, y2);
-            }
-        }
     }
 
     pub fn run_frame(&mut self, context: &mut UpdateContext) {
@@ -209,5 +192,20 @@ impl Drawing {
 
     pub fn self_bounds(&self) -> BoundingBox {
         self.shape_bounds.clone()
+    }
+}
+
+fn stretch_bounding_box(bounding_box: &mut BoundingBox, command: &DrawCommand) {
+    match *command {
+        DrawCommand::MoveTo { x, y } => {
+            bounding_box.encompass(x, y);
+        }
+        DrawCommand::LineTo { x, y } => {
+            bounding_box.encompass(x, y);
+        }
+        DrawCommand::CurveTo { x1, y1, x2, y2 } => {
+            bounding_box.encompass(x1, y1);
+            bounding_box.encompass(x2, y2);
+        }
     }
 }
