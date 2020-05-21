@@ -73,7 +73,7 @@ fn take_screenshot(
             ));
         }
         player.lock().unwrap().run_frame();
-        i >= skipframes {
+        if i >= skipframes {
             player.lock().unwrap().render();
             let mut player = player.lock().unwrap();
             let renderer = player
