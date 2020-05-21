@@ -12,6 +12,10 @@ use swf::Twips;
 /// Contains information relating to the current layout operation.
 pub struct LayoutContext<'gc> {
     /// The position to put text into.
+    ///
+    /// This cursor does not take indents, left margins, or alignment into
+    /// account. It's X coordinate is always relative to the start of the
+    /// current line, not the left edge of the text field being laid out.
     cursor: Position<Twips>,
 
     /// The resolved font object to use when measuring text.
@@ -22,6 +26,15 @@ pub struct LayoutContext<'gc> {
 
     /// The end of the current chain of layout boxes.
     last_box: Option<GcCell<'gc, LayoutBox<'gc>>>,
+
+    /// Whether or not we are laying out the first line of a paragraph.
+    is_first_line: bool,
+
+    /// All layout boxes in the current line being laid out.
+    current_line: Option<GcCell<'gc, LayoutBox<'gc>>>,
+
+    /// The right margin of the first span in the current line.
+    current_line_span: TextSpan,
 }
 
 impl<'gc> Default for LayoutContext<'gc> {
@@ -31,6 +44,9 @@ impl<'gc> Default for LayoutContext<'gc> {
             font: None,
             first_box: None,
             last_box: None,
+            is_first_line: true,
+            current_line: None,
+            current_line_span: Default::default(),
         }
     }
 }
@@ -44,10 +60,37 @@ impl<'gc> LayoutContext<'gc> {
         &mut self.cursor
     }
 
+    /// Apply all indents and alignment to the current line, if necessary.
+    fn fixup_line(&mut self, mc: MutationContext<'gc, '_>) {
+        let left_adjustment =
+            Self::left_alignment_offset(&self.current_line_span, self.is_first_line);
+        let mut line = self.current_line;
+        while let Some(linebox) = line {
+            let mut write = linebox.write(mc);
+            write.bounds += Position::from((left_adjustment, Twips::from_pixels(0.0)));
+            line = write.next_sibling();
+        }
+
+        self.current_line = None;
+    }
+
     /// Adjust the text layout cursor down to the next line.
-    fn newline(&mut self, font_size: Twips) {
+    ///
+    /// This function will also adjust any layout boxes on the current line to
+    /// their correct alignment and indentation.
+    fn newline(&mut self, mc: MutationContext<'gc, '_>, font_size: Twips) {
         self.cursor.set_x(Twips::from_pixels(0.0));
         self.cursor += (Twips::from_pixels(0.0), font_size).into();
+
+        self.fixup_line(mc);
+        self.is_first_line = false;
+    }
+
+    /// Enter a new span.
+    fn newspan(&mut self, first_span: &TextSpan) {
+        if self.current_line.is_none() {
+            self.current_line_span = first_span.clone();
+        }
     }
 
     fn font(&self) -> Option<Font<'gc>> {
@@ -73,6 +116,11 @@ impl<'gc> LayoutContext<'gc> {
         None
     }
 
+    /// Add a box to the current line of text.
+    ///
+    /// The box should have been positioned according to the current cursor
+    /// position. It will be adjusted some time later to properly position it
+    /// within the current layout box.
     fn append_box(
         &mut self,
         gc_context: MutationContext<'gc, '_>,
@@ -82,6 +130,10 @@ impl<'gc> LayoutContext<'gc> {
             self.first_box = Some(to_append);
         }
 
+        if self.current_line.is_none() {
+            self.current_line = Some(to_append);
+        }
+
         if let Some(last) = self.last_box {
             last.write(gc_context).next_sibling = Some(to_append);
         }
@@ -89,7 +141,36 @@ impl<'gc> LayoutContext<'gc> {
         self.last_box = Some(to_append);
     }
 
-    fn end_layout(self) -> Option<GcCell<'gc, LayoutBox<'gc>>> {
+    /// Calculate the left-align offset of a given line of text given the span
+    /// active at the start of the line and if we're at the start of a
+    /// paragraph.
+    fn left_alignment_offset(span: &TextSpan, is_first_line: bool) -> Twips {
+        if is_first_line {
+            Twips::from_pixels(span.left_margin + span.block_indent + span.indent)
+        } else {
+            Twips::from_pixels(span.left_margin + span.block_indent)
+        }
+    }
+
+    /// Calculate the left and right bounds of a wrapping operation based on
+    /// the current state of the layout operation.
+    ///
+    /// This function yields both a remaining line width and an offset into
+    /// that line. Those should be passed as the `width` and `offset`
+    /// parameters of `Font.wrap_line`.
+    ///
+    /// Offsets returned by this function should not be considered final;
+    fn wrap_dimensions(&self, current_span: &TextSpan, max_bounds: Twips) -> (Twips, Twips) {
+        let width = max_bounds - Twips::from_pixels(self.current_line_span.right_margin);
+        let offset = Self::left_alignment_offset(current_span, self.is_first_line);
+
+        (width, offset + self.cursor.x())
+    }
+
+    /// Destroy the layout context, returning the newly constructed layout list.
+    fn end_layout(mut self, mc: MutationContext<'gc, '_>) -> Option<GcCell<'gc, LayoutBox<'gc>>> {
+        self.fixup_line(mc);
+
         self.first_box
     }
 }
@@ -222,17 +303,17 @@ impl<'gc> LayoutBox<'gc> {
 
         for (start, _end, text, span) in fs.iter_spans() {
             if let Some(font) = layout_context.resolve_font(context, movie.clone(), &span) {
+                layout_context.newspan(span);
+
                 let font_size = Twips::from_pixels(span.size);
                 let mut last_breakpoint = 0;
+                let (mut width, mut offset) = layout_context.wrap_dimensions(&span, bounds);
 
-                while let Some(breakpoint) = font.wrap_line(
-                    &text[last_breakpoint..],
-                    font_size,
-                    bounds,
-                    layout_context.cursor().x(),
-                ) {
+                while let Some(breakpoint) =
+                    font.wrap_line(&text[last_breakpoint..], font_size, width, offset)
+                {
                     if breakpoint == last_breakpoint {
-                        last_breakpoint += 1;
+                        layout_context.newline(context.gc_context, font_size);
                         continue;
                     }
 
@@ -250,7 +331,11 @@ impl<'gc> LayoutBox<'gc> {
                         break;
                     }
 
-                    layout_context.newline(font_size);
+                    layout_context.newline(context.gc_context, font_size);
+                    let next_dim = layout_context.wrap_dimensions(&span, bounds);
+
+                    width = next_dim.0;
+                    offset = next_dim.1;
                 }
 
                 let span_end = text.len();
@@ -268,7 +353,7 @@ impl<'gc> LayoutBox<'gc> {
             }
         }
 
-        layout_context.end_layout()
+        layout_context.end_layout(context.gc_context)
     }
 
     pub fn bounds(&self) -> BoxBounds<Twips> {
