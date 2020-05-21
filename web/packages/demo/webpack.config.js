@@ -21,12 +21,14 @@ module.exports = (env, argv) => {
         mode: mode,
         plugins: [
             new CleanWebpackPlugin(),
-            new CopyWebpackPlugin([
-                {
-                    from: path.resolve(__dirname, "www/index.html"),
-                    to: "index.html",
-                },
-            ]),
+            new CopyWebpackPlugin({
+                patterns: [
+                    {
+                        from: path.resolve(__dirname, "www/index.html"),
+                        to: "index.html",
+                    },
+                ],
+            }),
         ],
     };
 };
