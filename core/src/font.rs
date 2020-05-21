@@ -174,24 +174,26 @@ impl<'gc> Font<'gc> {
         size
     }
 
-    /// Given a line of text, split it into the shortest number of lines that
-    /// are shorter than `width`.
+    /// Given a line of text, find the first breakpoint within the text.
     ///
     /// This function assumes only `" "` is valid whitespace to split words on,
-    /// and will not attempt to break words that are longer than `width`.
+    /// and will not attempt to break words that are longer than `width`, nor
+    /// will it break at newlines.
     ///
-    /// The given `offset` determines the start of the initial line.
+    /// The given `offset` determines the start of the initial line, while the
+    /// `width` indicates how long the line is supposed to be.
+    ///
+    /// This function yields `None` if the line is not broken.
     ///
     /// TODO: This function and, more generally, this entire file will need to
     /// be internationalized to implement AS3 `flash.text.engine`.
-    pub fn split_wrapped_lines(
+    pub fn wrap_line(
         self,
         text: &str,
         font_size: Twips,
         width: Twips,
         offset: Twips,
-    ) -> Vec<usize> {
-        let mut result = vec![];
+    ) -> Option<usize> {
         let mut current_width = width
             .checked_sub(offset)
             .unwrap_or_else(|| Twips::from_pixels(0.0));
@@ -200,29 +202,19 @@ impl<'gc> Font<'gc> {
         for word in text.split(' ') {
             let measure = self.measure(word, font_size);
             let line_start = current_word.as_ptr() as usize - text.as_ptr() as usize;
-            let line_end = if (line_start + current_word.len() + 1) < text.len() {
-                line_start + current_word.len() + 1
-            } else {
-                line_start + current_word.len()
-            };
+            let line_end = line_start + current_word.len();
             let word_start = word.as_ptr() as usize - text.as_ptr() as usize;
-            let word_end = if (word_start + word.len() + 1) < text.len() {
-                word_start + word.len() + 1
-            } else {
-                word_start + word.len()
-            };
+            let word_end = word_start + word.len();
 
             if measure.0 > current_width && measure.0 > width {
                 //Failsafe for if we get a word wider than the field.
                 if !current_word.is_empty() {
-                    result.push(line_end);
+                    return Some(line_end);
                 }
-                result.push(word_end);
-                current_word = &text[word_end..word_end];
-                current_width = width;
+                return Some(word_end);
             } else if measure.0 > current_width {
                 if !current_word.is_empty() {
-                    result.push(line_end);
+                    return Some(line_end);
                 }
 
                 current_word = &text[word_start..word_end];
@@ -233,7 +225,7 @@ impl<'gc> Font<'gc> {
             }
         }
 
-        result
+        None
     }
 
     pub fn descriptor(self) -> FontDescriptor {

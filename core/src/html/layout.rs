@@ -44,6 +44,12 @@ impl<'gc> LayoutContext<'gc> {
         &mut self.cursor
     }
 
+    /// Adjust the text layout cursor down to the next line.
+    fn newline(&mut self, font_size: Twips) {
+        self.cursor.set_x(Twips::from_pixels(0.0));
+        self.cursor += (Twips::from_pixels(0.0), font_size).into();
+    }
+
     fn font(&self) -> Option<Font<'gc>> {
         self.font
     }
@@ -217,36 +223,48 @@ impl<'gc> LayoutBox<'gc> {
         for (start, _end, text, span) in fs.iter_spans() {
             if let Some(font) = layout_context.resolve_font(context, movie.clone(), &span) {
                 let font_size = Twips::from_pixels(span.size);
-                let breakpoint_list =
-                    font.split_wrapped_lines(&text, font_size, bounds, layout_context.cursor().x());
-
-                let end = text.len();
-
                 let mut last_breakpoint = 0;
 
-                for breakpoint in breakpoint_list {
-                    if last_breakpoint != breakpoint {
-                        Self::append_text_fragment(
-                            context.gc_context,
-                            &mut layout_context,
-                            &text[last_breakpoint..breakpoint],
-                            start + last_breakpoint,
-                            start + breakpoint,
-                            span,
-                        );
+                while let Some(breakpoint) = font.wrap_line(
+                    &text[last_breakpoint..],
+                    font_size,
+                    bounds,
+                    layout_context.cursor().x(),
+                ) {
+                    if breakpoint == last_breakpoint {
+                        last_breakpoint += 1;
+                        continue;
                     }
 
+                    Self::append_text_fragment(
+                        context.gc_context,
+                        &mut layout_context,
+                        &text[last_breakpoint..breakpoint],
+                        start + last_breakpoint,
+                        start + breakpoint,
+                        span,
+                    );
+
                     last_breakpoint = breakpoint;
+                    if last_breakpoint >= text.len() {
+                        break;
+                    }
+
+                    layout_context.newline(font_size);
                 }
 
-                Self::append_text_fragment(
-                    context.gc_context,
-                    &mut layout_context,
-                    &text[last_breakpoint..end],
-                    start + last_breakpoint,
-                    start + end,
-                    span,
-                );
+                let span_end = text.len();
+
+                if last_breakpoint < span_end {
+                    Self::append_text_fragment(
+                        context.gc_context,
+                        &mut layout_context,
+                        &text[last_breakpoint..span_end],
+                        start + last_breakpoint,
+                        start + span_end,
+                        span,
+                    );
+                }
             }
         }
 
