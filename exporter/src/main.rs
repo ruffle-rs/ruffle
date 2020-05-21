@@ -62,7 +62,7 @@ fn take_screenshot(
     )?;
 
     let mut result = Vec::new();
-    let totalframes = frames + skipframes + 1;
+    let totalframes = frames + skipframes;
 
     for i in 0..totalframes {
         if let Some(progress) = &progress {
