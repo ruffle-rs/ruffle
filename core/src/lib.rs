@@ -14,6 +14,7 @@ mod bounding_box;
 mod character;
 pub mod color_transform;
 mod context;
+mod drawing;
 pub mod events;
 mod font;
 mod library;
