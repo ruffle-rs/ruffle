@@ -82,19 +82,22 @@ impl Drawing {
 
     pub fn draw_command(&mut self, command: DrawCommand) {
         let mut include_last = false;
+        let stroke_width = if let Some((style, _)) = &self.current_line {
+            style.width
+        } else {
+            Twips::zero()
+        };
 
         match command {
             DrawCommand::MoveTo { .. } => {}
-            DrawCommand::LineTo { x, y } => {
-                self.shape_bounds.encompass(x, y);
-                self.edge_bounds.encompass(x, y);
+            DrawCommand::LineTo { .. } => {
+                stretch_bounding_box(&mut self.shape_bounds, &command, stroke_width);
+                stretch_bounding_box(&mut self.edge_bounds, &command, Twips::zero());
                 include_last = true;
             }
-            DrawCommand::CurveTo { x1, y1, x2, y2 } => {
-                self.shape_bounds.encompass(x1, y1);
-                self.shape_bounds.encompass(x2, y2);
-                self.edge_bounds.encompass(x1, y1);
-                self.edge_bounds.encompass(x2, y2);
+            DrawCommand::CurveTo { .. } => {
+                stretch_bounding_box(&mut self.shape_bounds, &command, stroke_width);
+                stretch_bounding_box(&mut self.edge_bounds, &command, Twips::zero());
                 include_last = true;
             }
         }
@@ -114,8 +117,8 @@ impl Drawing {
                 .as_ref()
                 .and_then(|(_, commands)| commands.last())
             {
-                stretch_bounding_box(&mut self.edge_bounds, command);
-                stretch_bounding_box(&mut self.shape_bounds, command);
+                stretch_bounding_box(&mut self.shape_bounds, command, stroke_width);
+                stretch_bounding_box(&mut self.edge_bounds, command, Twips::zero());
             }
 
             if let Some(command) = self
@@ -123,8 +126,8 @@ impl Drawing {
                 .as_ref()
                 .and_then(|(_, commands)| commands.last())
             {
-                stretch_bounding_box(&mut self.edge_bounds, command);
-                stretch_bounding_box(&mut self.shape_bounds, command);
+                stretch_bounding_box(&mut self.shape_bounds, command, stroke_width);
+                stretch_bounding_box(&mut self.edge_bounds, command, Twips::zero());
             }
         }
 
@@ -171,7 +174,7 @@ impl Drawing {
             let shape = DistilledShape {
                 paths,
                 shape_bounds: self.shape_bounds.clone(),
-                edge_bounds: self.shape_bounds.clone(),
+                edge_bounds: self.edge_bounds.clone(),
                 id: 0,
             };
 
@@ -195,17 +198,26 @@ impl Drawing {
     }
 }
 
-fn stretch_bounding_box(bounding_box: &mut BoundingBox, command: &DrawCommand) {
+fn stretch_bounding_box(
+    bounding_box: &mut BoundingBox,
+    command: &DrawCommand,
+    stroke_width: Twips,
+) {
+    let radius = stroke_width / 2;
     match *command {
         DrawCommand::MoveTo { x, y } => {
-            bounding_box.encompass(x, y);
+            bounding_box.encompass(x - radius, y - radius);
+            bounding_box.encompass(x + radius, y + radius);
         }
         DrawCommand::LineTo { x, y } => {
-            bounding_box.encompass(x, y);
+            bounding_box.encompass(x - radius, y - radius);
+            bounding_box.encompass(x + radius, y + radius);
         }
         DrawCommand::CurveTo { x1, y1, x2, y2 } => {
-            bounding_box.encompass(x1, y1);
-            bounding_box.encompass(x2, y2);
+            bounding_box.encompass(x1 - radius, y1 - radius);
+            bounding_box.encompass(x1 + radius, y1 + radius);
+            bounding_box.encompass(x2 - radius, y2 - radius);
+            bounding_box.encompass(x2 + radius, y2 + radius);
         }
     }
 }
