@@ -2,7 +2,7 @@ use crate::backend::render::ShapeHandle;
 use crate::bounding_box::BoundingBox;
 use crate::context::{RenderContext, UpdateContext};
 use crate::shape_utils::{DistilledShape, DrawCommand, DrawPath};
-use swf::{FillStyle, LineStyle};
+use swf::{FillStyle, LineStyle, Twips};
 
 #[derive(Clone, Debug)]
 pub struct Drawing {
@@ -14,6 +14,7 @@ pub struct Drawing {
     lines: Vec<(LineStyle, Vec<DrawCommand>)>,
     current_fill: Option<(FillStyle, Vec<DrawCommand>)>,
     current_line: Option<(LineStyle, Vec<DrawCommand>)>,
+    cursor: (Twips, Twips),
 }
 
 impl Drawing {
@@ -27,6 +28,7 @@ impl Drawing {
             lines: Vec::new(),
             current_fill: None,
             current_line: None,
+            cursor: (Twips::zero(), Twips::zero()),
         }
     }
 
@@ -37,7 +39,13 @@ impl Drawing {
             self.fills.push(existing);
         }
         if let Some(style) = style {
-            self.current_fill = Some((style, Vec::new()));
+            self.current_fill = Some((
+                style,
+                vec![DrawCommand::MoveTo {
+                    x: self.cursor.0,
+                    y: self.cursor.1,
+                }],
+            ));
         }
 
         self.dirty = true;
@@ -51,6 +59,7 @@ impl Drawing {
         self.edge_bounds = BoundingBox::default();
         self.shape_bounds = BoundingBox::default();
         self.dirty = true;
+        self.cursor = (Twips::zero(), Twips::zero());
     }
 
     pub fn set_line_style(&mut self, style: Option<LineStyle>) {
@@ -58,7 +67,13 @@ impl Drawing {
             self.lines.push(existing);
         }
         if let Some(style) = style {
-            self.current_line = Some((style, Vec::new()));
+            self.current_line = Some((
+                style,
+                vec![DrawCommand::MoveTo {
+                    x: self.cursor.0,
+                    y: self.cursor.1,
+                }],
+            ));
         }
 
         self.dirty = true;
@@ -82,6 +97,8 @@ impl Drawing {
                 include_last = true;
             }
         }
+
+        self.cursor = command.end_point();
 
         if let Some((_, commands)) = &mut self.current_line {
             commands.push(command.clone());

@@ -72,6 +72,11 @@ impl Twips {
         Self(twips.into())
     }
 
+    /// Creates a new `Twips` object set to the value of 0.
+    pub fn zero() -> Self {
+        Self(0)
+    }
+
     /// Returns the number of twips.
     pub fn get(self) -> i32 {
         self.0

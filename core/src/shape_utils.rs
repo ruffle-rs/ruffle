@@ -116,6 +116,16 @@ pub enum DrawCommand {
     },
 }
 
+impl DrawCommand {
+    pub fn end_point(&self) -> (Twips, Twips) {
+        match self {
+            DrawCommand::MoveTo { x, y } => (*x, *y),
+            DrawCommand::LineTo { x, y } => (*x, *y),
+            DrawCommand::CurveTo { x2, y2, .. } => (*x2, *y2),
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 struct Point {
     x: Twips,
