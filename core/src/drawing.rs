@@ -1,15 +1,16 @@
 use crate::backend::render::ShapeHandle;
 use crate::bounding_box::BoundingBox;
-use crate::context::{RenderContext, UpdateContext};
+use crate::context::RenderContext;
 use crate::shape_utils::{DistilledShape, DrawCommand, DrawPath};
+use std::cell::Cell;
 use swf::{FillStyle, LineStyle, Twips};
 
 #[derive(Clone, Debug)]
 pub struct Drawing {
-    render_handle: Option<ShapeHandle>,
+    render_handle: Cell<Option<ShapeHandle>>,
     shape_bounds: BoundingBox,
     edge_bounds: BoundingBox,
-    dirty: bool,
+    dirty: Cell<bool>,
     fills: Vec<(FillStyle, Vec<DrawCommand>)>,
     lines: Vec<(LineStyle, Vec<DrawCommand>)>,
     current_fill: Option<(FillStyle, Vec<DrawCommand>)>,
@@ -20,10 +21,10 @@ pub struct Drawing {
 impl Drawing {
     pub fn new() -> Self {
         Self {
-            render_handle: None,
+            render_handle: Cell::new(None),
             shape_bounds: BoundingBox::default(),
             edge_bounds: BoundingBox::default(),
-            dirty: false,
+            dirty: Cell::new(false),
             fills: Vec::new(),
             lines: Vec::new(),
             current_fill: None,
@@ -48,7 +49,7 @@ impl Drawing {
             ));
         }
 
-        self.dirty = true;
+        self.dirty.set(true);
     }
 
     pub fn clear(&mut self) {
@@ -58,7 +59,7 @@ impl Drawing {
         self.lines.clear();
         self.edge_bounds = BoundingBox::default();
         self.shape_bounds = BoundingBox::default();
-        self.dirty = true;
+        self.dirty.set(true);
         self.cursor = (Twips::zero(), Twips::zero());
     }
 
@@ -76,7 +77,7 @@ impl Drawing {
             ));
         }
 
-        self.dirty = true;
+        self.dirty.set(true);
     }
 
     pub fn draw_command(&mut self, command: DrawCommand) {
@@ -127,12 +128,12 @@ impl Drawing {
             }
         }
 
-        self.dirty = true;
+        self.dirty.set(true);
     }
 
-    pub fn run_frame(&mut self, context: &mut UpdateContext) {
-        if self.dirty {
-            self.dirty = false;
+    pub fn render(&self, context: &mut RenderContext) {
+        if self.dirty.get() {
+            self.dirty.set(false);
             let mut paths = Vec::new();
 
             for (style, commands) in &self.fills {
@@ -174,16 +175,15 @@ impl Drawing {
                 id: 0,
             };
 
-            if let Some(handle) = self.render_handle {
+            if let Some(handle) = self.render_handle.get() {
                 context.renderer.replace_shape(shape, handle);
             } else {
-                self.render_handle = Some(context.renderer.register_shape(shape));
+                self.render_handle
+                    .set(Some(context.renderer.register_shape(shape)));
             }
         }
-    }
 
-    pub fn render(&self, context: &mut RenderContext) {
-        if let Some(handle) = self.render_handle {
+        if let Some(handle) = self.render_handle.get() {
             context
                 .renderer
                 .render_shape(handle, context.transform_stack.transform());

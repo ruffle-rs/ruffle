@@ -622,8 +622,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         if is_load_frame {
             mc.run_clip_postaction((*self).into(), context, ClipEvent::Load);
         }
-
-        mc.drawing.run_frame(context);
     }
 
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
