@@ -113,22 +113,7 @@ impl Drawing {
                 .as_ref()
                 .and_then(|(_, commands)| commands.last().cloned())
             {
-                match command {
-                    DrawCommand::MoveTo { x, y } => {
-                        self.shape_bounds.encompass(x, y);
-                        self.edge_bounds.encompass(x, y);
-                    }
-                    DrawCommand::LineTo { x, y } => {
-                        self.shape_bounds.encompass(x, y);
-                        self.edge_bounds.encompass(x, y);
-                    }
-                    DrawCommand::CurveTo { x1, y1, x2, y2 } => {
-                        self.shape_bounds.encompass(x1, y1);
-                        self.shape_bounds.encompass(x2, y2);
-                        self.edge_bounds.encompass(x1, y1);
-                        self.edge_bounds.encompass(x2, y2);
-                    }
-                }
+                self.stretch_bounds(command)
             }
 
             if let Some(command) = self
@@ -136,26 +121,30 @@ impl Drawing {
                 .as_ref()
                 .and_then(|(_, commands)| commands.last().cloned())
             {
-                match command {
-                    DrawCommand::MoveTo { x, y } => {
-                        self.shape_bounds.encompass(x, y);
-                        self.edge_bounds.encompass(x, y);
-                    }
-                    DrawCommand::LineTo { x, y } => {
-                        self.shape_bounds.encompass(x, y);
-                        self.edge_bounds.encompass(x, y);
-                    }
-                    DrawCommand::CurveTo { x1, y1, x2, y2 } => {
-                        self.shape_bounds.encompass(x1, y1);
-                        self.shape_bounds.encompass(x2, y2);
-                        self.edge_bounds.encompass(x1, y1);
-                        self.edge_bounds.encompass(x2, y2);
-                    }
-                }
+                self.stretch_bounds(command)
             }
         }
 
         self.dirty = true;
+    }
+
+    fn stretch_bounds(&mut self, command: DrawCommand) {
+        match command {
+            DrawCommand::MoveTo { x, y } => {
+                self.shape_bounds.encompass(x, y);
+                self.edge_bounds.encompass(x, y);
+            }
+            DrawCommand::LineTo { x, y } => {
+                self.shape_bounds.encompass(x, y);
+                self.edge_bounds.encompass(x, y);
+            }
+            DrawCommand::CurveTo { x1, y1, x2, y2 } => {
+                self.shape_bounds.encompass(x1, y1);
+                self.shape_bounds.encompass(x2, y2);
+                self.edge_bounds.encompass(x1, y1);
+                self.edge_bounds.encompass(x2, y2);
+            }
+        }
     }
 
     pub fn run_frame(&mut self, context: &mut UpdateContext) {
