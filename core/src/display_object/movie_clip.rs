@@ -44,6 +44,7 @@ pub struct MovieClipData<'gc> {
     children: BTreeMap<Depth, DisplayObject<'gc>>,
     object: Option<Object<'gc>>,
     clip_actions: SmallVec<[ClipAction; 2]>,
+    has_button_clip_event: bool,
     flags: EnumSet<MovieClipFlags>,
     avm1_constructor: Option<Object<'gc>>,
     drawing: Drawing,
@@ -63,6 +64,7 @@ impl<'gc> MovieClip<'gc> {
                 children: BTreeMap::new(),
                 object: None,
                 clip_actions: SmallVec::new(),
+                has_button_clip_event: false,
                 flags: EnumSet::empty(),
                 avm1_constructor: None,
                 drawing: Drawing::new(),
@@ -96,6 +98,7 @@ impl<'gc> MovieClip<'gc> {
                 children: BTreeMap::new(),
                 object: None,
                 clip_actions: SmallVec::new(),
+                has_button_clip_event: false,
                 flags: MovieClipFlags::Playing.into(),
                 avm1_constructor: None,
                 drawing: Drawing::new(),
@@ -459,7 +462,19 @@ impl<'gc> MovieClip<'gc> {
         gc_context: MutationContext<'gc, '_>,
         actions: SmallVec<[ClipAction; 2]>,
     ) {
-        self.0.write(gc_context).set_clip_actions(actions);
+        let mut mc = self.0.write(gc_context);
+        mc.has_button_clip_event = actions.iter().any(|a| {
+            a.events.iter().any(|e| match e {
+                ClipEvent::KeyPress { .. }
+                | ClipEvent::Press
+                | ClipEvent::Release
+                | ClipEvent::ReleaseOutside
+                | ClipEvent::RollOut
+                | ClipEvent::RollOver => true,
+                _ => false,
+            })
+        });
+        mc.set_clip_actions(actions);
     }
 
     /// Adds a script-created display object as a child to this clip.
@@ -585,6 +600,16 @@ impl<'gc> MovieClip<'gc> {
         let mut mc = self.0.write(context.gc_context);
         mc.drawing.draw_command(command);
     }
+
+    pub fn run_clip_action(
+        self,
+        context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
+        event: ClipEvent,
+    ) {
+        self.0
+            .write(context.gc_context)
+            .run_clip_action(self.into(), context, event);
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
@@ -641,13 +666,37 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn mouse_pick(
         &self,
-        _self_node: DisplayObject<'gc>,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        self_node: DisplayObject<'gc>,
         point: (Twips, Twips),
     ) -> Option<DisplayObject<'gc>> {
-        for child in self.0.read().children.values().rev() {
-            let result = child.mouse_pick(*child, point);
-            if result.is_some() {
-                return result;
+        if self.visible() && self.world_bounds().contains(point) {
+            if self.0.read().has_button_clip_event {
+                return Some(self_node);
+            }
+
+            if let Ok(object) = self.object().as_object() {
+                const MOUSE_EVENT_HANDLERS: [&str; 5] = [
+                    "onPress",
+                    "onRelease",
+                    "onReleaseOutside",
+                    "onRollOut",
+                    "onRollOver",
+                ];
+                if MOUSE_EVENT_HANDLERS
+                    .iter()
+                    .any(|handler| object.has_property(avm, context, handler))
+                {
+                    return Some(self_node);
+                }
+            }
+
+            for child in self.0.read().children.values().rev() {
+                let result = child.mouse_pick(avm, context, *child, point);
+                if result.is_some() {
+                    return result;
+                }
             }
         }
 

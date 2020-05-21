@@ -176,6 +176,8 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
 
     fn mouse_pick(
         &self,
+        _avm: &mut Avm1<'gc>,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
         self_node: DisplayObject<'gc>,
         point: (Twips, Twips),
     ) -> Option<DisplayObject<'gc>> {
