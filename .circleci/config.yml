@@ -64,7 +64,7 @@ jobs:
           name: Web Build
           command: |
             cd web
-            npm run bootsrap
+            npm run bootstrap
             npm run build -- --mode=production
 
       # Package the web self-hosted binary
