@@ -1,14 +1,17 @@
 //! `MovieClip` display object and support code.
 use crate::avm1::{Avm1, Object, StageObject, TObject, Value};
 use crate::backend::audio::AudioStreamHandle;
+
 use crate::character::Character;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{
     Bitmap, Button, DisplayObjectBase, EditText, Graphic, MorphShapeStatic, TDisplayObject, Text,
 };
+use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent};
 use crate::font::Font;
 use crate::prelude::*;
+use crate::shape_utils::DrawCommand;
 use crate::tag_utils::{self, DecodeResult, SwfMovie, SwfSlice, SwfStream};
 use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
@@ -18,6 +21,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::convert::TryFrom;
 use std::sync::Arc;
 use swf::read::SwfRead;
+use swf::{FillStyle, LineStyle};
 
 type FrameNumber = u16;
 
@@ -42,6 +46,7 @@ pub struct MovieClipData<'gc> {
     clip_actions: SmallVec<[ClipAction; 2]>,
     flags: EnumSet<MovieClipFlags>,
     avm1_constructor: Option<Object<'gc>>,
+    drawing: Drawing,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -60,6 +65,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_actions: SmallVec::new(),
                 flags: EnumSet::empty(),
                 avm1_constructor: None,
+                drawing: Drawing::new(),
             },
         ))
     }
@@ -92,6 +98,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_actions: SmallVec::new(),
                 flags: MovieClipFlags::Playing.into(),
                 avm1_constructor: None,
+                drawing: Drawing::new(),
             },
         ))
     }
@@ -550,6 +557,34 @@ impl<'gc> MovieClip<'gc> {
 
         actions.into_iter()
     }
+
+    pub fn set_fill_style(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        style: Option<FillStyle>,
+    ) {
+        let mut mc = self.0.write(context.gc_context);
+        mc.drawing.set_fill_style(style);
+    }
+
+    pub fn clear(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let mut mc = self.0.write(context.gc_context);
+        mc.drawing.clear();
+    }
+
+    pub fn set_line_style(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        style: Option<LineStyle>,
+    ) {
+        let mut mc = self.0.write(context.gc_context);
+        mc.drawing.set_line_style(style);
+    }
+
+    pub fn draw_command(self, context: &mut UpdateContext<'_, 'gc, '_>, command: DrawCommand) {
+        let mut mc = self.0.write(context.gc_context);
+        mc.drawing.draw_command(command);
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
@@ -592,12 +627,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
         context.transform_stack.push(&*self.transform());
         crate::display_object::render_children(context, &self.0.read().children);
+        self.0.read().drawing.render(context);
         context.transform_stack.pop();
     }
 
     fn self_bounds(&self) -> BoundingBox {
-        // No inherent bounds; contains child DisplayObjects.
-        BoundingBox::default()
+        self.0.read().drawing.self_bounds()
     }
 
     fn hit_test(&self, point: (Twips, Twips)) -> bool {

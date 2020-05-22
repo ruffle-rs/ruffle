@@ -1,7 +1,7 @@
-use crate::matrix::Matrix;
+use swf::Matrix;
 use swf::Twips;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct BoundingBox {
     pub x_min: Twips,
     pub y_min: Twips,
@@ -40,6 +40,29 @@ impl BoundingBox {
             x_max: max(pt0.0, max(pt1.0, max(pt2.0, pt3.0))),
             y_max: max(pt0.1, max(pt1.1, max(pt2.1, pt3.1))),
             valid: true,
+        }
+    }
+
+    pub fn encompass(&mut self, x: Twips, y: Twips) {
+        if self.valid {
+            if x < self.x_min {
+                self.x_min = x;
+            }
+            if x > self.x_max {
+                self.x_max = x;
+            }
+            if y < self.y_min {
+                self.y_min = y;
+            }
+            if y > self.y_max {
+                self.y_max = y;
+            }
+        } else {
+            self.x_min = x;
+            self.x_max = x;
+            self.y_min = y;
+            self.y_max = y;
+            self.valid = true;
         }
     }
 
@@ -88,6 +111,18 @@ impl Default for BoundingBox {
 
 impl From<swf::Rectangle> for BoundingBox {
     fn from(rect: swf::Rectangle) -> Self {
+        Self {
+            x_min: rect.x_min,
+            y_min: rect.y_min,
+            x_max: rect.x_max,
+            y_max: rect.y_max,
+            valid: true,
+        }
+    }
+}
+
+impl From<&swf::Rectangle> for BoundingBox {
+    fn from(rect: &swf::Rectangle) -> Self {
         Self {
             x_min: rect.x_min,
             y_min: rect.y_min,

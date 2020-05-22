@@ -1,15 +1,20 @@
 //! MovieClip prototype
 
 use crate::avm1::globals::display_object::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
+use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::backend::navigator::NavigationMethod;
 use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObject};
 use crate::prelude::*;
+use crate::shape_utils::DrawCommand;
 use crate::tag_utils::SwfSlice;
 use gc_arena::MutationContext;
-use swf::Twips;
+use swf::{
+    FillStyle, Gradient, GradientInterpolation, GradientRecord, GradientSpread, LineCapStyle,
+    LineJoinStyle, LineStyle, Twips,
+};
 
 /// Implements `MovieClip`
 pub fn constructor<'gc>(
@@ -123,10 +128,291 @@ pub fn create_proto<'gc>(
         "stopDrag" => stop_drag,
         "swapDepths" => swap_depths,
         "toString" => to_string,
-        "unloadMovie" => unload_movie
+        "unloadMovie" => unload_movie,
+        "beginFill" => begin_fill,
+        "beginGradientFill" => begin_gradient_fill,
+        "moveTo" => move_to,
+        "lineTo" => line_to,
+        "curveTo" => curve_to,
+        "endFill" => end_fill,
+        "lineStyle" => line_style,
+        "clear" => clear
     );
 
     object.into()
+}
+
+fn line_style<'gc>(
+    movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(width) = args.get(0) {
+        let width = Twips::from_pixels(width.as_number(avm, context)?.min(255.0).max(0.0));
+        let color = if let Some(rgb) = args.get(1) {
+            let rgb = rgb.coerce_to_u32(avm, context)?;
+            let alpha = if let Some(alpha) = args.get(2) {
+                alpha.as_number(avm, context)?.min(100.0).max(0.0)
+            } else {
+                100.0
+            } as f32
+                / 100.0
+                * 255.0;
+            Color::from_rgb(rgb, alpha as u8)
+        } else {
+            Color::from_rgb(0, 255)
+        };
+        let is_pixel_hinted = args
+            .get(3)
+            .map_or(false, |v| v.as_bool(avm.current_swf_version()));
+        let (allow_scale_x, allow_scale_y) = match args
+            .get(4)
+            .and_then(|v| v.clone().coerce_to_string(avm, context).ok())
+            .as_deref()
+        {
+            Some("normal") => (true, true),
+            Some("vertical") => (true, false),
+            Some("horizontal") => (false, true),
+            _ => (false, false),
+        };
+        let cap_style = match args
+            .get(5)
+            .and_then(|v| v.clone().coerce_to_string(avm, context).ok())
+            .as_deref()
+        {
+            Some("square") => LineCapStyle::Square,
+            Some("none") => LineCapStyle::None,
+            _ => LineCapStyle::Round,
+        };
+        let join_style = match args
+            .get(6)
+            .and_then(|v| v.clone().coerce_to_string(avm, context).ok())
+            .as_deref()
+        {
+            Some("miter") => {
+                if let Some(limit) = args.get(7) {
+                    LineJoinStyle::Miter(limit.as_number(avm, context)?.max(0.0).min(255.0) as f32)
+                } else {
+                    LineJoinStyle::Miter(3.0)
+                }
+            }
+            Some("bevel") => LineJoinStyle::Bevel,
+            _ => LineJoinStyle::Round,
+        };
+        movie_clip.set_line_style(
+            context,
+            Some(LineStyle {
+                width,
+                color,
+                start_cap: cap_style,
+                end_cap: cap_style,
+                join_style,
+                fill_style: None,
+                allow_scale_x,
+                allow_scale_y,
+                is_pixel_hinted,
+                allow_close: false,
+            }),
+        );
+    } else {
+        movie_clip.set_line_style(context, None);
+    }
+    Ok(Value::Undefined.into())
+}
+
+fn begin_fill<'gc>(
+    movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(rgb) = args.get(0) {
+        let rgb = rgb.coerce_to_u32(avm, context)?;
+        let alpha = if let Some(alpha) = args.get(1) {
+            alpha.as_number(avm, context)?.min(100.0).max(0.0)
+        } else {
+            100.0
+        } as f32
+            / 100.0
+            * 255.0;
+        movie_clip.set_fill_style(
+            context,
+            Some(FillStyle::Color(Color::from_rgb(rgb, alpha as u8))),
+        );
+    } else {
+        movie_clip.set_fill_style(context, None);
+    }
+    Ok(Value::Undefined.into())
+}
+
+fn begin_gradient_fill<'gc>(
+    movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let (Some(method), Some(colors), Some(alphas), Some(ratios), Some(matrix)) = (
+        args.get(0),
+        args.get(1),
+        args.get(2),
+        args.get(3),
+        args.get(4),
+    ) {
+        let method = method.clone().coerce_to_string(avm, context)?;
+        let colors = colors.as_object()?.array();
+        let alphas = alphas.as_object()?.array();
+        let ratios = ratios.as_object()?.array();
+        let matrix_object = matrix.as_object()?;
+        if colors.len() != alphas.len() || colors.len() != ratios.len() {
+            log::warn!(
+                "beginGradientFill() received different sized arrays for colors, alphas and ratios"
+            );
+            return Ok(Value::Undefined.into());
+        }
+        let mut records = Vec::with_capacity(colors.len());
+        for i in 0..colors.len() {
+            let ratio = ratios[i].as_number(avm, context)?.min(255.0).max(0.0);
+            let rgb = colors[i].coerce_to_u32(avm, context)?;
+            let alpha = alphas[i].as_number(avm, context)?.min(100.0).max(0.0);
+            records.push(GradientRecord {
+                ratio: ratio as u8,
+                color: Color::from_rgb(rgb, (alpha / 100.0 * 255.0) as u8),
+            });
+        }
+        let matrix = gradient_object_to_matrix(matrix_object, avm, context)?;
+        let spread = match args
+            .get(5)
+            .and_then(|v| v.clone().coerce_to_string(avm, context).ok())
+            .as_deref()
+        {
+            Some("reflect") => GradientSpread::Reflect,
+            Some("repeat") => GradientSpread::Repeat,
+            _ => GradientSpread::Pad,
+        };
+        let interpolation = match args
+            .get(6)
+            .and_then(|v| v.clone().coerce_to_string(avm, context).ok())
+            .as_deref()
+        {
+            Some("linearRGB") => GradientInterpolation::LinearRGB,
+            _ => GradientInterpolation::RGB,
+        };
+
+        let gradient = Gradient {
+            matrix,
+            spread,
+            interpolation,
+            records,
+        };
+        let style = match method.as_str() {
+            "linear" => FillStyle::LinearGradient(gradient),
+            "radial" => {
+                if let Some(focal_point) = args.get(7) {
+                    FillStyle::FocalGradient {
+                        gradient,
+                        focal_point: focal_point.as_number(avm, context)? as f32,
+                    }
+                } else {
+                    FillStyle::RadialGradient(gradient)
+                }
+            }
+            other => {
+                log::warn!("beginGradientFill() received invalid fill type {:?}", other);
+                return Ok(Value::Undefined.into());
+            }
+        };
+        movie_clip.set_fill_style(context, Some(style));
+    } else {
+        movie_clip.set_fill_style(context, None);
+    }
+    Ok(Value::Undefined.into())
+}
+
+fn move_to<'gc>(
+    movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let (Some(x), Some(y)) = (args.get(0), args.get(1)) {
+        let x = x.as_number(avm, context)?;
+        let y = y.as_number(avm, context)?;
+        movie_clip.draw_command(
+            context,
+            DrawCommand::MoveTo {
+                x: Twips::from_pixels(x),
+                y: Twips::from_pixels(y),
+            },
+        );
+    }
+    Ok(Value::Undefined.into())
+}
+
+fn line_to<'gc>(
+    movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let (Some(x), Some(y)) = (args.get(0), args.get(1)) {
+        let x = x.as_number(avm, context)?;
+        let y = y.as_number(avm, context)?;
+        movie_clip.draw_command(
+            context,
+            DrawCommand::LineTo {
+                x: Twips::from_pixels(x),
+                y: Twips::from_pixels(y),
+            },
+        );
+    }
+    Ok(Value::Undefined.into())
+}
+
+fn curve_to<'gc>(
+    movie_clip: MovieClip<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let (Some(x1), Some(y1), Some(x2), Some(y2)) =
+        (args.get(0), args.get(1), args.get(2), args.get(3))
+    {
+        let x1 = x1.as_number(avm, context)?;
+        let y1 = y1.as_number(avm, context)?;
+        let x2 = x2.as_number(avm, context)?;
+        let y2 = y2.as_number(avm, context)?;
+        movie_clip.draw_command(
+            context,
+            DrawCommand::CurveTo {
+                x1: Twips::from_pixels(x1),
+                y1: Twips::from_pixels(y1),
+                x2: Twips::from_pixels(x2),
+                y2: Twips::from_pixels(y2),
+            },
+        );
+    }
+    Ok(Value::Undefined.into())
+}
+
+fn end_fill<'gc>(
+    movie_clip: MovieClip<'gc>,
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    movie_clip.set_fill_style(context, None);
+    Ok(Value::Undefined.into())
+}
+
+fn clear<'gc>(
+    movie_clip: MovieClip<'gc>,
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    movie_clip.clear(context);
+    Ok(Value::Undefined.into())
 }
 
 fn attach_movie<'gc>(

@@ -72,6 +72,7 @@ swf_tests! {
     (execution_order3, "avm1/execution_order3", 5),
     (single_frame, "avm1/single_frame", 2),
     (looping, "avm1/looping", 6),
+    (matrix, "avm1/matrix", 1),
     (goto_advance1, "avm1/goto_advance1", 2),
     (goto_advance2, "avm1/goto_advance2", 2),
     (goto_both_ways1, "avm1/goto_both_ways1", 2),

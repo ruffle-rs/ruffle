@@ -475,31 +475,28 @@ impl<W: Write> Writer<W> {
     fn write_matrix(&mut self, m: &Matrix) -> Result<()> {
         self.flush_bits()?;
         // Scale
-        let has_scale = m.scale_x != 1f32 || m.scale_y != 1f32;
+        let has_scale = m.a != 1f32 || m.d != 1f32;
         self.write_bit(has_scale)?;
         if has_scale {
-            let num_bits = max(count_fbits(m.scale_x), count_fbits(m.scale_y));
+            let num_bits = max(count_fbits(m.a), count_fbits(m.d));
             self.write_ubits(5, num_bits.into())?;
-            self.write_fbits(num_bits, m.scale_x)?;
-            self.write_fbits(num_bits, m.scale_y)?;
+            self.write_fbits(num_bits, m.a)?;
+            self.write_fbits(num_bits, m.d)?;
         }
         // Rotate/Skew
-        let has_rotate_skew = m.rotate_skew_0 != 0f32 || m.rotate_skew_1 != 0f32;
+        let has_rotate_skew = m.b != 0f32 || m.c != 0f32;
         self.write_bit(has_rotate_skew)?;
         if has_rotate_skew {
-            let num_bits = max(count_fbits(m.rotate_skew_0), count_fbits(m.rotate_skew_1));
+            let num_bits = max(count_fbits(m.b), count_fbits(m.c));
             self.write_ubits(5, num_bits.into())?;
-            self.write_fbits(num_bits, m.rotate_skew_0)?;
-            self.write_fbits(num_bits, m.rotate_skew_1)?;
+            self.write_fbits(num_bits, m.b)?;
+            self.write_fbits(num_bits, m.c)?;
         }
         // Translate (always written)
-        let num_bits = max(
-            count_sbits_twips(m.translate_x),
-            count_sbits_twips(m.translate_y),
-        );
+        let num_bits = max(count_sbits_twips(m.tx), count_sbits_twips(m.ty));
         self.write_ubits(5, num_bits.into())?;
-        self.write_sbits_twips(num_bits, m.translate_x)?;
-        self.write_sbits_twips(num_bits, m.translate_y)?;
+        self.write_sbits_twips(num_bits, m.tx)?;
+        self.write_sbits_twips(num_bits, m.ty)?;
         Ok(())
     }
 
@@ -1911,7 +1908,7 @@ impl<W: Write> Writer<W> {
             if let Some(ref matrix) = place_object.matrix {
                 writer.write_matrix(matrix)?;
             } else {
-                writer.write_matrix(&Matrix::new())?;
+                writer.write_matrix(&Matrix::identity())?;
             }
             if let Some(ref color_transform) = place_object.color_transform {
                 writer.write_color_transform_no_alpha(color_transform)?;
@@ -3037,7 +3034,7 @@ mod tests {
             buf
         }
 
-        let m = Matrix::new();
+        let m = Matrix::identity();
         assert_eq!(write_to_buf(&m), [0]);
     }
 

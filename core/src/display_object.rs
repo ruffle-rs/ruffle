@@ -767,7 +767,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
         // PlaceObject tags only apply if this onject has not been dynamically moved by AS code.
         if !self.transformed_by_script() {
             if let Some(matrix) = &place_object.matrix {
-                self.set_matrix(gc_context, &matrix.clone().into());
+                self.set_matrix(gc_context, &matrix);
             }
             if let Some(color_transform) = &place_object.color_transform {
                 self.set_color_transform(gc_context, &color_transform.clone().into());
@@ -918,19 +918,19 @@ macro_rules! impl_display_object {
         fn transform(&self) -> std::cell::Ref<crate::transform::Transform> {
             std::cell::Ref::map(self.0.read(), |o| o.$field.transform())
         }
-        fn matrix(&self) -> std::cell::Ref<crate::matrix::Matrix> {
+        fn matrix(&self) -> std::cell::Ref<swf::Matrix> {
             std::cell::Ref::map(self.0.read(), |o| o.$field.matrix())
         }
         fn matrix_mut(
             &mut self,
             context: gc_arena::MutationContext<'gc, '_>,
-        ) -> std::cell::RefMut<crate::matrix::Matrix> {
+        ) -> std::cell::RefMut<swf::Matrix> {
             std::cell::RefMut::map(self.0.write(context), |o| o.$field.matrix_mut(context))
         }
         fn set_matrix(
             &mut self,
             context: gc_arena::MutationContext<'gc, '_>,
-            matrix: &crate::matrix::Matrix,
+            matrix: &swf::Matrix,
         ) {
             self.0.write(context).$field.set_matrix(context, matrix)
         }
