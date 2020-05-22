@@ -35,10 +35,13 @@ pub struct LayoutContext<'gc> {
 
     /// The right margin of the first span in the current line.
     current_line_span: TextSpan,
+
+    /// The total width of the text field being laid out.
+    max_bounds: Twips,
 }
 
-impl<'gc> Default for LayoutContext<'gc> {
-    fn default() -> Self {
+impl<'gc> LayoutContext<'gc> {
+    fn new(max_bounds: Twips) -> Self {
         Self {
             cursor: Default::default(),
             font: None,
@@ -47,11 +50,10 @@ impl<'gc> Default for LayoutContext<'gc> {
             is_first_line: true,
             current_line: None,
             current_line_span: Default::default(),
+            max_bounds,
         }
     }
-}
 
-impl<'gc> LayoutContext<'gc> {
     fn cursor(&self) -> &Position<Twips> {
         &self.cursor
     }
@@ -62,12 +64,31 @@ impl<'gc> LayoutContext<'gc> {
 
     /// Apply all indents and alignment to the current line, if necessary.
     fn fixup_line(&mut self, mc: MutationContext<'gc, '_>) {
-        let left_adjustment =
-            Self::left_alignment_offset(&self.current_line_span, self.is_first_line);
+        let mut line_bounds = BoxBounds::default();
         let mut line = self.current_line;
         while let Some(linebox) = line {
+            let read = linebox.read();
+            line_bounds += read.bounds();
+            line = read.next_sibling();
+        }
+
+        let left_adjustment =
+            Self::left_alignment_offset(&self.current_line_span, self.is_first_line);
+        let align_adjustment = match self.current_line_span.align {
+            swf::TextAlign::Left => Default::default(),
+            swf::TextAlign::Center => (self.max_bounds - left_adjustment - line_bounds.width()) / 2,
+            swf::TextAlign::Right => (self.max_bounds - left_adjustment - line_bounds.width()),
+            swf::TextAlign::Justify => {
+                log::error!("Justified text is unimplemented!");
+                Default::default()
+            }
+        };
+
+        line = self.current_line;
+        while let Some(linebox) = line {
             let mut write = linebox.write(mc);
-            write.bounds += Position::from((left_adjustment, Twips::from_pixels(0.0)));
+            write.bounds +=
+                Position::from((left_adjustment - align_adjustment, Twips::from_pixels(0.0)));
             line = write.next_sibling();
         }
 
@@ -160,8 +181,8 @@ impl<'gc> LayoutContext<'gc> {
     /// parameters of `Font.wrap_line`.
     ///
     /// Offsets returned by this function should not be considered final;
-    fn wrap_dimensions(&self, current_span: &TextSpan, max_bounds: Twips) -> (Twips, Twips) {
-        let width = max_bounds - Twips::from_pixels(self.current_line_span.right_margin);
+    fn wrap_dimensions(&self, current_span: &TextSpan) -> (Twips, Twips) {
+        let width = self.max_bounds - Twips::from_pixels(self.current_line_span.right_margin);
         let offset = Self::left_alignment_offset(current_span, self.is_first_line);
 
         (width, offset + self.cursor.x())
@@ -299,7 +320,7 @@ impl<'gc> LayoutBox<'gc> {
         movie: Arc<SwfMovie>,
         bounds: Twips,
     ) -> Option<GcCell<'gc, LayoutBox<'gc>>> {
-        let mut layout_context: LayoutContext = Default::default();
+        let mut layout_context = LayoutContext::new(bounds);
 
         for (start, _end, text, span) in fs.iter_spans() {
             if let Some(font) = layout_context.resolve_font(context, movie.clone(), &span) {
@@ -307,7 +328,7 @@ impl<'gc> LayoutBox<'gc> {
 
                 let font_size = Twips::from_pixels(span.size);
                 let mut last_breakpoint = 0;
-                let (mut width, mut offset) = layout_context.wrap_dimensions(&span, bounds);
+                let (mut width, mut offset) = layout_context.wrap_dimensions(&span);
 
                 while let Some(breakpoint) =
                     font.wrap_line(&text[last_breakpoint..], font_size, width, offset)
@@ -332,7 +353,7 @@ impl<'gc> LayoutBox<'gc> {
                     }
 
                     layout_context.newline(context.gc_context, font_size);
-                    let next_dim = layout_context.wrap_dimensions(&span, bounds);
+                    let next_dim = layout_context.wrap_dimensions(&span);
 
                     width = next_dim.0;
                     offset = next_dim.1;
