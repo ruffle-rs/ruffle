@@ -18,7 +18,7 @@ exports.VersionRange = class VersionRange {
         for (let i = 0; i < this.requirements.length; i += 1) {
             let matches = true;
 
-            for (let j = 0; i < this.requirements[i].length; j += 1) {
+            for (let j = 0; j < this.requirements[i].length; j += 1) {
                 let comparator = this.requirements[i][j][0];
                 let version = this.requirements[i][j][1];
 
@@ -28,22 +28,26 @@ exports.VersionRange = class VersionRange {
                 if (comparator === "" || comparator === "=") {
                     matches = matches && version.is_equal(fver);
                 } else if (comparator === ">") {
-                    matches = matches && version.has_precedence_over(fver);
-                } else if (comparator === ">=") {
-                    matches =
-                        matches &&
-                        (version.has_precedence_over(fver) ||
-                            version.is_equal(fver));
-                } else if (comparator === "<") {
                     matches = matches && fver.has_precedence_over(version);
-                } else if (comparator === "<=") {
+                } else if (comparator === ">=") {
                     matches =
                         matches &&
                         (fver.has_precedence_over(version) ||
                             version.is_equal(fver));
+                } else if (comparator === "<") {
+                    matches = matches && version.has_precedence_over(fver);
+                } else if (comparator === "<=") {
+                    matches =
+                        matches &&
+                        (version.has_precedence_over(fver) ||
+                            version.is_equal(fver));
                 } else if (comparator === "^") {
                     matches = matches && version.is_compatible_with(fver);
                 }
+            }
+
+            if (matches) {
+                return true;
             }
         }
 
@@ -70,7 +74,7 @@ exports.VersionRange = class VersionRange {
                     requirements.push(requirement_set);
                     requirement_set = [];
                 }
-            } else {
+            } else if (components[i].length > 0) {
                 let match = /[0-9]/.exec(components[i]);
                 let comparator = components[i].slice(0, match.index).trim();
                 let version = Version.from_semver(
@@ -83,9 +87,8 @@ exports.VersionRange = class VersionRange {
 
         if (requirement_set.length > 0) {
             requirements.push(requirement_set);
-            requirement_set = [];
         }
 
-        return new VersionRange(requirement_set);
+        return new VersionRange(requirements);
     }
 };
