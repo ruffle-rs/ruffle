@@ -33,6 +33,10 @@ struct Opt {
     #[structopt(short = "f", long = "frames", default_value = "1")]
     frames: u32,
 
+    /// Number of frames to skip
+    #[structopt(long = "skipframes", default_value = "0")]
+    skipframes: u32,
+
     /// Don't show a progress bar
     #[structopt(short, long)]
     silent: bool,
@@ -43,6 +47,7 @@ fn take_screenshot(
     queue: Rc<wgpu::Queue>,
     swf_path: &Path,
     frames: u32,
+    skipframes: u32,
     progress: &Option<ProgressBar>,
 ) -> Result<Vec<RgbaImage>, Box<dyn std::error::Error>> {
     let movie = SwfMovie::from_path(&swf_path)?;
@@ -57,7 +62,9 @@ fn take_screenshot(
     )?;
 
     let mut result = Vec::new();
-    for i in 0..frames {
+    let totalframes = frames + skipframes;
+
+    for i in 0..totalframes {
         if let Some(progress) = &progress {
             progress.set_message(&format!(
                 "{} frame {}",
@@ -65,20 +72,20 @@ fn take_screenshot(
                 i
             ));
         }
-
         player.lock().unwrap().run_frame();
-        player.lock().unwrap().render();
-
-        let mut player = player.lock().unwrap();
-        let renderer = player
-            .renderer_mut()
-            .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
-            .unwrap();
-        let target = renderer.target();
-        if let Some(image) = target.capture(renderer.device()) {
-            result.push(image);
-        } else {
-            return Err(format!("Unable to capture frame {} of {:?}", i, swf_path).into());
+        if i >= skipframes {
+            player.lock().unwrap().render();
+            let mut player = player.lock().unwrap();
+            let renderer = player
+                .renderer_mut()
+                .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
+                .unwrap();
+            let target = renderer.target();
+            if let Some(image) = target.capture(renderer.device()) {
+                result.push(image);
+            } else {
+                return Err(format!("Unable to capture frame {} of {:?}", i, swf_path).into());
+            }
         }
 
         if let Some(progress) = &progress {
@@ -124,6 +131,7 @@ fn capture_single_swf(
     queue: Rc<wgpu::Queue>,
     swf: &Path,
     frames: u32,
+    skipframes: u32,
     output: Option<PathBuf>,
     with_progress: bool,
 ) -> Result<(), Box<dyn Error>> {
@@ -156,7 +164,7 @@ fn capture_single_swf(
         None
     };
 
-    let frames = take_screenshot(device, queue, &swf, frames, &progress)?;
+    let frames = take_screenshot(device, queue, &swf, frames, skipframes, &progress)?;
 
     if let Some(progress) = &progress {
         progress.set_message(&swf.file_stem().unwrap().to_string_lossy());
@@ -201,6 +209,7 @@ fn capture_multiple_swfs(
     queue: Rc<wgpu::Queue>,
     directory: &Path,
     frames: u32,
+    skipframes: u32,
     output: &Path,
     with_progress: bool,
 ) -> Result<(), Box<dyn Error>> {
@@ -226,6 +235,7 @@ fn capture_multiple_swfs(
             queue.clone(),
             &file.path(),
             frames,
+            skipframes,
             &progress,
         )?;
 
@@ -310,6 +320,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             Rc::new(queue),
             &opt.swf,
             opt.frames,
+            opt.skipframes,
             opt.output_path,
             !opt.silent,
         )?;
@@ -319,6 +330,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             Rc::new(queue),
             &opt.swf,
             opt.frames,
+            opt.skipframes,
             &output,
             !opt.silent,
         )?;
