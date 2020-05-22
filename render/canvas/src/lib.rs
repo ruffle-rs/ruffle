@@ -1,5 +1,5 @@
 use ruffle_core::backend::render::{
-    swf::{self, CharacterId, GradientInterpolation},
+    swf::{self, CharacterId, GradientInterpolation, GradientSpread},
     Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, JpegTagFormat, Letterbox, RenderBackend,
     ShapeHandle, Transform,
 };
@@ -827,6 +827,11 @@ fn swf_shape_to_svg(
                                     gradient_matrix.ty.get()
                                 ),
                             );
+                        svg_gradient = match gradient.spread {
+                            GradientSpread::Pad => svg_gradient, // default
+                            GradientSpread::Reflect => svg_gradient.set("spreadMethod", "reflect"),
+                            GradientSpread::Repeat => svg_gradient.set("spreadMethod", "repeat"),
+                        };
                         if gradient.interpolation == GradientInterpolation::LinearRGB {
                             has_linear_rgb_gradient = true;
                             svg_path = svg_path.set("filter", "url('#_linearrgb')");
@@ -884,6 +889,11 @@ fn swf_shape_to_svg(
                                     gradient_matrix.ty.get()
                                 ),
                             );
+                        svg_gradient = match gradient.spread {
+                            GradientSpread::Pad => svg_gradient, // default
+                            GradientSpread::Reflect => svg_gradient.set("spreadMethod", "reflect"),
+                            GradientSpread::Repeat => svg_gradient.set("spreadMethod", "repeat"),
+                        };
                         if gradient.interpolation == GradientInterpolation::LinearRGB {
                             has_linear_rgb_gradient = true;
                             svg_path = svg_path.set("filter", "url('#_linearrgb')");
@@ -945,6 +955,11 @@ fn swf_shape_to_svg(
                                     gradient_matrix.ty.get()
                                 ),
                             );
+                        svg_gradient = match gradient.spread {
+                            GradientSpread::Pad => svg_gradient, // default
+                            GradientSpread::Reflect => svg_gradient.set("spreadMethod", "reflect"),
+                            GradientSpread::Repeat => svg_gradient.set("spreadMethod", "repeat"),
+                        };
                         if gradient.interpolation == GradientInterpolation::LinearRGB {
                             has_linear_rgb_gradient = true;
                             svg_path = svg_path.set("filter", "url('#_linearrgb')");
