@@ -282,3 +282,126 @@ impl FontDescriptor {
         self.is_italic
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::backend::render::{NullRenderer, RenderBackend};
+    use crate::font::Font;
+    use crate::player::{Player, DEVICE_FONT_TAG};
+    use gc_arena::{rootless_arena, MutationContext};
+    use swf::Twips;
+
+    fn with_device_font<F>(callback: F)
+    where
+        F: for<'gc> FnOnce(MutationContext<'gc, '_>, Font<'gc>),
+    {
+        rootless_arena(|mc| {
+            let mut renderer: Box<dyn RenderBackend> = Box::new(NullRenderer::new());
+            let device_font = Player::load_device_font(mc, DEVICE_FONT_TAG, &mut renderer).unwrap();
+
+            callback(mc, device_font);
+        })
+    }
+
+    #[test]
+    fn wrap_line_no_breakpoint() {
+        with_device_font(|_mc, df| {
+            let string = "abcdefghijklmnopqrstuv";
+            let breakpoint = df.wrap_line(
+                &string,
+                Twips::from_pixels(12.0),
+                Twips::from_pixels(200.0),
+                Twips::from_pixels(0.0),
+            );
+
+            assert_eq!(None, breakpoint);
+        });
+    }
+
+    #[test]
+    fn wrap_line_breakpoint_every_word() {
+        with_device_font(|_mc, df| {
+            let string = "abcd efgh ijkl mnop";
+            let mut last_bp = 0;
+            let breakpoint = df.wrap_line(
+                &string,
+                Twips::from_pixels(12.0),
+                Twips::from_pixels(30.0),
+                Twips::from_pixels(0.0),
+            );
+
+            assert_eq!(Some(4), breakpoint);
+
+            last_bp += breakpoint.unwrap() + 1;
+
+            let breakpoint2 = df.wrap_line(
+                &string[last_bp..],
+                Twips::from_pixels(12.0),
+                Twips::from_pixels(30.0),
+                Twips::from_pixels(0.0),
+            );
+
+            assert_eq!(Some(4), breakpoint2);
+
+            last_bp += breakpoint2.unwrap() + 1;
+
+            let breakpoint3 = df.wrap_line(
+                &string[last_bp..],
+                Twips::from_pixels(12.0),
+                Twips::from_pixels(30.0),
+                Twips::from_pixels(0.0),
+            );
+
+            assert_eq!(Some(4), breakpoint3);
+
+            last_bp += breakpoint3.unwrap() + 1;
+
+            let breakpoint4 = df.wrap_line(
+                &string[last_bp..],
+                Twips::from_pixels(12.0),
+                Twips::from_pixels(30.0),
+                Twips::from_pixels(0.0),
+            );
+
+            assert_eq!(None, breakpoint4);
+        });
+    }
+
+    #[test]
+    fn wrap_line_breakpoint_irregular_sized_words() {
+        with_device_font(|_mc, df| {
+            let string = "abcd i j kl mnop q rstuv";
+            let mut last_bp = 0;
+            let breakpoint = df.wrap_line(
+                &string,
+                Twips::from_pixels(12.0),
+                Twips::from_pixels(30.0),
+                Twips::from_pixels(0.0),
+            );
+
+            assert_eq!(Some(11), breakpoint);
+
+            last_bp += breakpoint.unwrap() + 1;
+
+            let breakpoint2 = df.wrap_line(
+                &string[last_bp..],
+                Twips::from_pixels(12.0),
+                Twips::from_pixels(30.0),
+                Twips::from_pixels(0.0),
+            );
+
+            assert_eq!(Some(6), breakpoint2);
+
+            last_bp += breakpoint2.unwrap() + 1;
+
+            let breakpoint3 = df.wrap_line(
+                &string[last_bp..],
+                Twips::from_pixels(12.0),
+                Twips::from_pixels(30.0),
+                Twips::from_pixels(0.0),
+            );
+
+            assert_eq!(None, breakpoint3);
+        });
+    }
+}
