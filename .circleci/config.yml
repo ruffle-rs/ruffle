@@ -65,7 +65,7 @@ jobs:
           command: |
             cd web
             npm run bootstrap
-            npm run build -- --mode=production
+            npm run buildProduction
 
       # Package the web self-hosted binary
       - run:
@@ -110,10 +110,10 @@ jobs:
       - persist_to_workspace:
           root: workspace
           paths:
-              - linux.tar.gz
-              - extension.zip
-              - web.zip
-              - web-demo
+            - linux.tar.gz
+            - extension.zip
+            - web.zip
+            - web-demo
 
   # OSX Build
   build_osx:
@@ -167,7 +167,7 @@ jobs:
       - persist_to_workspace:
           root: workspace
           paths:
-              - osx.tar.gz
+            - osx.tar.gz
 
   # Windows build
   build_windows:
@@ -227,7 +227,7 @@ jobs:
       - persist_to_workspace:
           root: workspace
           paths:
-              - windows.zip
+            - windows.zip
 
   # Upload builds to S3
   deploy:
