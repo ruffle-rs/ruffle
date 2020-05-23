@@ -1,7 +1,7 @@
 use crate::avm1::{Avm1, Object, StageObject, Value};
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
-use crate::events::{ButtonEvent, ButtonEventResult, ButtonKeyCode};
+use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -75,17 +75,6 @@ impl<'gc> Button<'gc> {
                 },
             },
         ))
-    }
-
-    pub fn handle_button_event(
-        &mut self,
-        avm: &mut Avm1<'gc>,
-        context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
-        event: ButtonEvent,
-    ) {
-        self.0
-            .write(context.gc_context)
-            .handle_button_event((*self).into(), avm, context, event)
     }
 
     pub fn set_sounds(self, gc_context: MutationContext<'gc, '_>, sounds: swf::ButtonSounds) {
@@ -189,26 +178,6 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         }
     }
 
-    fn propagate_button_event(
-        &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        event: ButtonEvent,
-    ) -> ButtonEventResult {
-        for child in self.children() {
-            if child.propagate_button_event(context, event) == ButtonEventResult::Handled {
-                return ButtonEventResult::Handled;
-            }
-        }
-        match event {
-            ButtonEvent::KeyPress { key_code } => self.0.write(context.gc_context).run_actions(
-                context,
-                swf::ButtonActionCondition::KeyPress,
-                Some(key_code),
-            ),
-            _ => ButtonEventResult::NotHandled,
-        }
-    }
-
     fn object(&self) -> Value<'gc> {
         self.0
             .read()
@@ -223,6 +192,28 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
 
     fn allow_as_mask(&self) -> bool {
         !self.0.read().children.is_empty()
+    }
+
+    /// Executes and propagates the given clip event.
+    /// Events execute inside-out; the deepest child will react first, followed by its parent, and
+    /// so forth.
+    fn handle_clip_event(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        event: ClipEvent,
+    ) -> ClipEventResult {
+        if event.propagates() {
+            for child in self.children() {
+                if child.handle_clip_event(avm, context, event) == ClipEventResult::Handled {
+                    return ClipEventResult::Handled;
+                }
+            }
+        }
+
+        self.0
+            .write(context.gc_context)
+            .handle_clip_event((*self).into(), avm, context, event)
     }
 }
 
@@ -307,57 +298,57 @@ impl<'gc> ButtonData<'gc> {
         }
     }
 
-    fn handle_button_event(
+    fn handle_clip_event(
         &mut self,
         self_display_object: DisplayObject<'gc>,
         avm: &mut Avm1<'gc>,
         context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
-        event: ButtonEvent,
-    ) {
+        event: ClipEvent,
+    ) -> ClipEventResult {
+        let mut handled = ClipEventResult::NotHandled;
+
+        // Translate the clip event to a button event, based on how the button state changes.
         let cur_state = self.state;
         let new_state = match event {
-            ButtonEvent::RollOut => ButtonState::Up,
-            ButtonEvent::RollOver => ButtonState::Over,
-            ButtonEvent::Press => ButtonState::Down,
-            ButtonEvent::Release => ButtonState::Over,
-            ButtonEvent::KeyPress { key_code } => {
-                self.run_actions(
+            ClipEvent::RollOut => ButtonState::Up,
+            ClipEvent::RollOver => ButtonState::Over,
+            ClipEvent::Press => ButtonState::Down,
+            ClipEvent::Release => ButtonState::Over,
+            ClipEvent::KeyPress { key_code } => {
+                handled = self.run_actions(
                     context,
                     swf::ButtonActionCondition::KeyPress,
                     Some(key_code),
                 );
                 cur_state
             }
+            _ => return ClipEventResult::NotHandled,
         };
 
-        let button_event_handler = match (cur_state, new_state) {
+        match (cur_state, new_state) {
             (ButtonState::Up, ButtonState::Over) => {
                 self.run_actions(context, swf::ButtonActionCondition::IdleToOverUp, None);
                 self.play_sound(context, self.static_data.read().up_to_over_sound.as_ref());
-                Some("onRollOver")
             }
             (ButtonState::Over, ButtonState::Up) => {
                 self.run_actions(context, swf::ButtonActionCondition::OverUpToIdle, None);
                 self.play_sound(context, self.static_data.read().over_to_up_sound.as_ref());
-                Some("onRollOut")
             }
             (ButtonState::Over, ButtonState::Down) => {
                 self.run_actions(context, swf::ButtonActionCondition::OverUpToOverDown, None);
                 self.play_sound(context, self.static_data.read().over_to_down_sound.as_ref());
-                Some("onPress")
             }
             (ButtonState::Down, ButtonState::Over) => {
                 self.run_actions(context, swf::ButtonActionCondition::OverDownToOverUp, None);
                 self.play_sound(context, self.static_data.read().down_to_over_sound.as_ref());
-                Some("onRelease")
             }
-            _ => None,
+            _ => (),
         };
 
         // Queue ActionScript-defined event handlers after the SWF defined ones.
         // (e.g., clip.onRelease = foo).
         if context.swf.version() >= 6 {
-            if let Some(name) = button_event_handler {
+            if let Some(name) = event.method_name() {
                 context.action_queue.queue_actions(
                     self_display_object,
                     ActionType::Method {
@@ -371,6 +362,8 @@ impl<'gc> ButtonData<'gc> {
         }
 
         self.set_state(self_display_object, avm, context, new_state);
+
+        handled
     }
 
     fn play_sound(
@@ -393,16 +386,20 @@ impl<'gc> ButtonData<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         condition: swf::ButtonActionCondition,
         key_code: Option<ButtonKeyCode>,
-    ) -> ButtonEventResult {
-        let mut handled = ButtonEventResult::NotHandled;
+    ) -> ClipEventResult {
+        let mut handled = ClipEventResult::NotHandled;
         if let Some(parent) = self.base.parent {
             for action in &self.static_data.read().actions {
                 if action.condition == condition
                     && (action.condition != swf::ButtonActionCondition::KeyPress
                         || action.key_code == key_code)
                 {
+                    // KeyPress events are consumed when a button handles them.
+                    if action.condition == swf::ButtonActionCondition::KeyPress {
+                        handled = ClipEventResult::Handled;
+                    }
+
                     // Note that AVM1 buttons run actions relative to their parent, not themselves.
-                    handled = ButtonEventResult::Handled;
                     context.action_queue.queue_actions(
                         parent,
                         ActionType::Normal {
