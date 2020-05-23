@@ -5,12 +5,12 @@ const fs = require("fs");
 
 use(chaiHtml);
 
-describe("Flash inside frame", () => {
+describe("Flash inside iframe", () => {
     it("loads the test", () => {
         open_test(browser, __dirname);
     });
 
-    it("polyfills inside a frame", () => {
+    it("polyfills inside an iframe", () => {
         browser.switchToFrame(browser.$("#test-frame"));
         browser.waitUntil(() =>
             browser.execute(() => document.readyState === "complete")
@@ -29,7 +29,6 @@ describe("Flash inside frame", () => {
 
         // Then reload
         browser.switchToParentFrame();
-        browser.switchToFrame(browser.$("#nav-frame"));
         browser.$("#reload-link").click();
 
         // And finally, check

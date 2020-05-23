@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>FAKE CONTENT</title>
+        <style>
+            * {
+                margin: 0;
+            }
+        </style>
+        <script>
+            window.RufflePlayer = window.RufflePlayer || {};
+            window.RufflePlayer.config = {
+                polyfills: [
+                    "static-content",
+                    "plugin-detect",
+                    "dynamic-content",
+                    "frames",
+                ],
+            };
+        </script>
+        <!--
+    Frame polyfilling depends on ruffle being loaded first,
+    so here we explicitly add it early and not after-load
+    -->
+        <script src="/dist/ruffle.js"></script>
+    </head>
+    <body>
+        <a href="inner.html" target="content" id="reload-link">Reload frame</a>
+        <iframe
+            width="550"
+            height="400"
+            src="inner.html"
+            scrolling="no"
+            frameborder="0"
+            name="content"
+            id="test-frame"
+        ></iframe>
+    </body>
+</html>
