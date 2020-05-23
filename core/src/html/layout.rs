@@ -99,7 +99,7 @@ impl<'gc> LayoutContext<'gc> {
             let font_size_adjustment = self.max_font_size - write.bounds.height();
 
             write.bounds +=
-                Position::from((left_adjustment - align_adjustment, font_size_adjustment));
+                Position::from((left_adjustment + align_adjustment, font_size_adjustment));
             line = write.next_sibling();
         }
 
