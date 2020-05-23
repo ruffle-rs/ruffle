@@ -28,8 +28,6 @@ function inject_ruffle(browser) {
 function inject_ruffle_and_wait(browser) {
     inject_ruffle(browser);
     wait_for_ruffle(browser);
-
-    console.log(browser.$("html").getHTML(true));
 }
 
 function open_test(browser, absolute_dir, file_name) {
