@@ -79,9 +79,10 @@ function falsify_plugin_detection() {
 }
 
 function load_ruffle_player_into_frame(event) {
-    let current_frame = event.currentTarget.contentWindow;
+    loadFrame(event.currentTarget.contentWindow);
+}
+function loadFrame(current_frame) {
     let frame_document;
-    console.log("Event handled");
     try {
         frame_document = current_frame.document;
         if (!frame_document) {
@@ -105,12 +106,11 @@ function load_ruffle_player_into_frame(event) {
     polyfill_frames_common(current_frame);
 }
 
-function polyfill_frames_common(depth) {
-    let current_iframes = depth.document.getElementsByTagName("iframe");
-    let current_frames = depth.document.getElementsByTagName("frame");
-    for (let i = 0; i < current_iframes.length; i++) {
-        let current_frame = current_iframes[i];
-        /* Apperently, using addEventListener attatches the event *
+function handleFrames(frameList) {
+    let originalOnLoad;
+    for (let i = 0; i < frameList.length; i++) {
+        let current_frame = frameList[i];
+        /* Apparently, using addEventListener attaches the event  *
          * to the dummy document, which is overwritten when the   *
          * iframe is loaded, so we do this. It can only works if  *
          * it's attached to the frame object itself, which is why *
@@ -119,14 +119,29 @@ function polyfill_frames_common(depth) {
          * of depth.frames to get the iframes at the depth.       *
          * Also, this way we should be able to handle frame       *
          * frame navigation, which is good.                       */
-        current_frame.onload = load_ruffle_player_into_frame;
+        setTimeout(function () {
+            if (
+                current_frame.contentDocument.readyState &&
+                current_frame.contentDocument.readyState == "complete"
+            ) {
+                loadFrame(current_frame.contentWindow);
+            }
+        }, 500);
+        if ((originalOnLoad = current_frame.onload)) {
+            current_frame.onload = function (event) {
+                originalOnLoad(event);
+                load_ruffle_player_into_frame(event);
+            };
+        } else {
+            current_frame.onload = load_ruffle_player_into_frame;
+        }
         polyfill_frames_common(current_frame.contentWindow);
     }
-    for (let i = 0; i < current_frames.length; i++) {
-        let current_frame = current_frames[i];
-        current_frame.onload = load_ruffle_player_into_frame;
-        polyfill_frames_common(current_frame.contentWindow);
-    }
+}
+
+function polyfill_frames_common(depth) {
+    handleFrames(depth.document.getElementsByTagName("iframe"));
+    handleFrames(depth.document.getElementsByTagName("frame"));
 }
 
 function polyfill_static_frames() {
