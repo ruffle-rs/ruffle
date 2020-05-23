@@ -62,6 +62,7 @@
     #title:hover {
       opacity: 0.5;
       cursor: pointer;
+      transition-duration: 0.5s;
     }
 
     #title img {
@@ -109,7 +110,7 @@
       }
     }
 
-    @media only screen and (max-device-width: 600px) {
+    @media only screen and (max-width: 600px) {
       #local-file-container {
         display: none;
       }
@@ -158,6 +159,10 @@
         <span id="sample-swfs-label">Sample SWF:</span>
         <select id="sample-swfs">
           <option value="none">None</option>
+          <optgroup id="anim-optgroup" label="Animations">
+          </optgroup>
+          <optgroup id="games-optgroup" label="Games">
+          </optgroup>
         </select>
         <span id="author-container">Author: <a href="#" target="_blank" id="author"></a></span>
       </div>
