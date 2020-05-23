@@ -16,6 +16,8 @@ let author = document.getElementById("author");
 let sampleFileInputContainer = document.getElementById("sample-swfs-container");
 let sampleFileInput = document.getElementById("sample-swfs");
 let localFileInput = document.getElementById("local-file");
+let animOptGroup = document.getElementById("anim-optgroup");
+let gamesOptGroup = document.getElementById("games-optgroup");
 
 window.addEventListener("DOMContentLoaded", () => {
     ruffle = window.RufflePlayer.newest();
@@ -25,19 +27,20 @@ window.addEventListener("DOMContentLoaded", () => {
     fetch("swfs.json").then((response) => {
         if (response.ok) {
             response.json().then((data) => {
-                const list = document.getElementById("sample-swfs");
                 jsonData = data;
                 jsonData.swfs.forEach((item) => {
                     let temp = document.createElement("option");
                     temp.innerHTML = item.title;
                     temp.setAttribute("value", item.location);
-                    list.appendChild(temp);
+                    if (item.type == "Animation") {
+                        animOptGroup.append(temp);
+                    } else if (item.type == "Game") {
+                        gamesOptGroup.appendChild(temp);
+                    }
                 });
-                document.getElementById("sample-swfs-container").style.display =
-                    "inline-block";
+                sampleFileInputContainer.style.display = "inline-block";
                 let rn = Math.floor(
-                    Math.random() *
-                        Math.floor(sampleFileInput.children.length - 1)
+                    Math.random() * Math.floor(jsonData.swfs.length)
                 );
                 sampleFileInput.selectedIndex = rn + 1;
                 loadRemoteFile(jsonData.swfs[rn].location);
@@ -69,16 +72,13 @@ if (window.location.search && window.location.search != "") {
 }
 
 function sampleFileSelected() {
-    let selected_value =
-        sampleFileInput.children[sampleFileInput.selectedIndex].value;
     let selected_index = sampleFileInput.selectedIndex - 1; //We subtract 1 here because the dropdown menu inlcudes a "None" option.
-    if (selected_value != "none") {
+    if (selected_index != -1) {
         author_container.style.display = "block";
         author.innerHTML = jsonData.swfs[selected_index].author;
         author.href = jsonData.swfs[selected_index].authorLink;
-
         localFileInput.value = null;
-        loadRemoteFile(selected_value);
+        loadRemoteFile(jsonData.swfs[selected_index].location);
     } else {
         replacePlayer();
     }
