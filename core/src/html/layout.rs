@@ -350,21 +350,24 @@ impl<'gc> LayoutBox<'gc> {
                 while let Some(breakpoint) =
                     font.wrap_line(&text[last_breakpoint..], font_size, width, offset)
                 {
-                    if breakpoint == last_breakpoint {
+                    if breakpoint == 0 {
                         layout_context.newline(context.gc_context);
+                        last_breakpoint += 1;
                         continue;
                     }
+
+                    let next_breakpoint = last_breakpoint + breakpoint;
 
                     Self::append_text_fragment(
                         context.gc_context,
                         &mut layout_context,
-                        &text[last_breakpoint..breakpoint],
+                        &text[last_breakpoint..next_breakpoint],
                         start + last_breakpoint,
-                        start + breakpoint,
+                        start + next_breakpoint,
                         span,
                     );
 
-                    last_breakpoint = breakpoint;
+                    last_breakpoint = next_breakpoint + 1;
                     if last_breakpoint >= text.len() {
                         break;
                     }
