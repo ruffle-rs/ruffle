@@ -96,13 +96,13 @@ impl<'gc> EditText<'gc> {
         }
 
         let bounds: BoxBounds<Twips> = swf_tag.bounds.clone().into();
-        let max_length = swf_tag
-            .max_length
-            .map(|ml| Twips::from_pixels(ml.into()))
-            .unwrap_or_else(|| bounds.width());
 
-        let layout =
-            LayoutBox::lower_from_text_spans(&text_spans, context, swf_movie.clone(), max_length);
+        let layout = LayoutBox::lower_from_text_spans(
+            &text_spans,
+            context,
+            swf_movie.clone(),
+            bounds.width(),
+        );
 
         EditText(GcCell::allocate(
             context.gc_context,
@@ -301,6 +301,7 @@ impl<'gc> EditText<'gc> {
     /// have already been calculated and applied to HTML trees lowered into the
     /// text-span representation.
     fn relayout(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let bounds = self.local_bounds();
         let mut edit_text = self.0.write(context.gc_context);
         let movie = edit_text.static_data.swf.clone();
 
@@ -308,16 +309,12 @@ impl<'gc> EditText<'gc> {
             //TODO: this should control if bounds are set during layout
         }
 
-        let bounds: BoxBounds<Twips> = edit_text.static_data.text.bounds.clone().into();
-        let max_length = edit_text
-            .static_data
-            .text
-            .max_length
-            .map(|ml| Twips::from_pixels(ml.into()))
-            .unwrap_or_else(|| bounds.width());
-
-        edit_text.layout =
-            LayoutBox::lower_from_text_spans(&edit_text.text_spans, context, movie, max_length);
+        edit_text.layout = LayoutBox::lower_from_text_spans(
+            &edit_text.text_spans,
+            context,
+            movie,
+            bounds.x_max - bounds.x_min,
+        );
     }
 
     /// Measure the width and height of the `EditText`'s current text load.
