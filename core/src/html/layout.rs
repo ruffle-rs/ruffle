@@ -6,6 +6,7 @@ use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::tag_utils::SwfMovie;
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::cmp::max;
 use std::sync::Arc;
 use swf::Twips;
 
@@ -20,6 +21,9 @@ pub struct LayoutContext<'gc> {
 
     /// The resolved font object to use when measuring text.
     font: Option<Font<'gc>>,
+
+    /// The highest font size observed within the current line.
+    max_font_size: Twips,
 
     /// The start of the current chain of layout boxes.
     first_box: Option<GcCell<'gc, LayoutBox<'gc>>>,
@@ -45,6 +49,7 @@ impl<'gc> LayoutContext<'gc> {
         Self {
             cursor: Default::default(),
             font: None,
+            max_font_size: Default::default(),
             first_box: None,
             last_box: None,
             is_first_line: true,
@@ -87,8 +92,14 @@ impl<'gc> LayoutContext<'gc> {
         line = self.current_line;
         while let Some(linebox) = line {
             let mut write = linebox.write(mc);
+
+            // TODO: This attempts to keep text of multiple font sizes vertically
+            // aligned correctly. It does not consider the baseline of the font,
+            // which is information we don't have yet.
+            let font_size_adjustment = self.max_font_size - write.bounds.height();
+
             write.bounds +=
-                Position::from((left_adjustment - align_adjustment, Twips::from_pixels(0.0)));
+                Position::from((left_adjustment - align_adjustment, font_size_adjustment));
             line = write.next_sibling();
         }
 
@@ -99,9 +110,9 @@ impl<'gc> LayoutContext<'gc> {
     ///
     /// This function will also adjust any layout boxes on the current line to
     /// their correct alignment and indentation.
-    fn newline(&mut self, mc: MutationContext<'gc, '_>, font_size: Twips) {
+    fn newline(&mut self, mc: MutationContext<'gc, '_>) {
         self.cursor.set_x(Twips::from_pixels(0.0));
-        self.cursor += (Twips::from_pixels(0.0), font_size).into();
+        self.cursor += (Twips::from_pixels(0.0), self.max_font_size).into();
 
         self.fixup_line(mc);
         self.is_first_line = false;
@@ -112,6 +123,8 @@ impl<'gc> LayoutContext<'gc> {
         if self.current_line.is_none() {
             self.current_line_span = first_span.clone();
         }
+
+        self.max_font_size = max(self.max_font_size, Twips::from_pixels(first_span.size));
     }
 
     fn font(&self) -> Option<Font<'gc>> {
@@ -334,7 +347,7 @@ impl<'gc> LayoutBox<'gc> {
                     font.wrap_line(&text[last_breakpoint..], font_size, width, offset)
                 {
                     if breakpoint == last_breakpoint {
-                        layout_context.newline(context.gc_context, font_size);
+                        layout_context.newline(context.gc_context);
                         continue;
                     }
 
@@ -352,7 +365,7 @@ impl<'gc> LayoutBox<'gc> {
                         break;
                     }
 
-                    layout_context.newline(context.gc_context, font_size);
+                    layout_context.newline(context.gc_context);
                     let next_dim = layout_context.wrap_dimensions(&span);
 
                     width = next_dim.0;
