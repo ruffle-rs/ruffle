@@ -7,9 +7,7 @@ use crate::backend::{
 };
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::display_object::{MorphShape, MovieClip};
-use crate::events::{
-    ButtonEvent, ButtonEventResult, ButtonKeyCode, ClipEvent, KeyCode, PlayerEvent,
-};
+use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEvent};
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::prelude::*;
@@ -385,7 +383,7 @@ impl Player {
             PlayerEvent::TextInput { codepoint }
                 if codepoint as u32 >= 32 && codepoint as u32 <= 126 =>
             {
-                Some(ButtonEvent::KeyPress {
+                Some(ClipEvent::KeyPress {
                     key_code: ButtonKeyCode::try_from(codepoint as u8).unwrap(),
                 })
             }
@@ -393,7 +391,7 @@ impl Player {
             // Special keys have custom values for keyPress.
             PlayerEvent::KeyDown { key_code } => {
                 if let Some(key_code) = crate::events::key_code_to_button_key_code(key_code) {
-                    Some(ButtonEvent::KeyPress { key_code })
+                    Some(ClipEvent::KeyPress { key_code })
                 } else {
                     None
                 }
@@ -402,12 +400,12 @@ impl Player {
         };
 
         if button_event.is_some() {
-            self.mutate_with_update_context(|_avm, context| {
+            self.mutate_with_update_context(|avm, context| {
                 let levels: Vec<DisplayObject<'_>> = context.levels.values().copied().collect();
                 for level in levels {
                     if let Some(button_event) = button_event {
-                        let state = level.propagate_button_event(context, button_event);
-                        if state == ButtonEventResult::Handled {
+                        let state = level.handle_clip_event(avm, context, button_event);
+                        if state == ClipEventResult::Handled {
                             return;
                         }
                     }
@@ -426,12 +424,12 @@ impl Player {
         };
 
         if clip_event.is_some() || mouse_event_name.is_some() {
-            self.mutate_with_update_context(|_avm, context| {
+            self.mutate_with_update_context(|avm, context| {
                 let levels: Vec<DisplayObject<'_>> = context.levels.values().copied().collect();
 
                 for level in levels {
                     if let Some(clip_event) = clip_event {
-                        level.propagate_clip_event(context, clip_event);
+                        level.handle_clip_event(avm, context, clip_event);
                     }
                 }
 
@@ -452,40 +450,20 @@ impl Player {
         let mut is_mouse_down = self.is_mouse_down;
         self.mutate_with_update_context(|avm, context| {
             if let Some(node) = context.mouse_hovered_object {
-                if let Some(mut button) = node.clone().as_button() {
-                    match event {
-                        PlayerEvent::MouseDown { .. } => {
-                            is_mouse_down = true;
-                            needs_render = true;
-                            button.handle_button_event(avm, context, ButtonEvent::Press);
-                        }
-
-                        PlayerEvent::MouseUp { .. } => {
-                            is_mouse_down = false;
-                            needs_render = true;
-                            button.handle_button_event(avm, context, ButtonEvent::Release);
-                        }
-
-                        _ => (),
+                match event {
+                    PlayerEvent::MouseDown { .. } => {
+                        is_mouse_down = true;
+                        needs_render = true;
+                        node.handle_clip_event(avm, context, ClipEvent::Press);
                     }
-                }
 
-                if let Some(clip) = node.clone().as_movie_clip() {
-                    match event {
-                        PlayerEvent::MouseDown { .. } => {
-                            is_mouse_down = true;
-                            needs_render = true;
-                            clip.run_clip_action(context, ClipEvent::Press);
-                        }
-
-                        PlayerEvent::MouseUp { .. } => {
-                            is_mouse_down = false;
-                            needs_render = true;
-                            clip.run_clip_action(context, ClipEvent::Release);
-                        }
-
-                        _ => (),
+                    PlayerEvent::MouseUp { .. } => {
+                        is_mouse_down = false;
+                        needs_render = true;
+                        node.handle_clip_event(avm, context, ClipEvent::Release);
                     }
+
+                    _ => (),
                 }
             }
 
@@ -550,30 +528,14 @@ impl Player {
             if cur_hovered.map(|d| d.as_ptr()) != new_hovered.map(|d| d.as_ptr()) {
                 // RollOut of previous node.
                 if let Some(node) = cur_hovered {
-                    match node {
-                        DisplayObject::Button(mut button) => {
-                            button.handle_button_event(avm, context, ButtonEvent::RollOut);
-                        }
-                        DisplayObject::MovieClip(clip) => {
-                            clip.run_clip_action(context, ClipEvent::RollOut);
-                        }
-                        _ => (),
-                    }
+                    node.handle_clip_event(avm, context, ClipEvent::RollOut);
                 }
 
                 // RollOver on new node.
                 new_cursor = MouseCursor::Arrow;
                 if let Some(node) = new_hovered {
                     new_cursor = MouseCursor::Hand;
-                    match node {
-                        DisplayObject::Button(mut button) => {
-                            button.handle_button_event(avm, context, ButtonEvent::RollOver);
-                        }
-                        DisplayObject::MovieClip(clip) => {
-                            clip.run_clip_action(context, ClipEvent::RollOver);
-                        }
-                        _ => (),
-                    }
+                    node.handle_clip_event(avm, context, ClipEvent::RollOver);
                 }
 
                 context.mouse_hovered_object = new_hovered;

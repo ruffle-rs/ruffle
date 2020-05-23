@@ -20,7 +20,7 @@ mod morph_shape;
 mod movie_clip;
 mod text;
 
-use crate::events::{ButtonEvent, ButtonEventResult, ClipEvent};
+use crate::events::{ClipEvent, ClipEventResult};
 pub use bitmap::Bitmap;
 pub use button::Button;
 pub use edit_text::EditText;
@@ -720,26 +720,13 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
     /// Executes and propagates the given clip event.
     /// Events execute inside-out; the deepest child will react first, followed by its parent, and
     /// so forth.
-    fn propagate_button_event(
+    fn handle_clip_event(
         &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        event: ButtonEvent,
-    ) -> ButtonEventResult {
-        for child in self.children() {
-            if child.propagate_button_event(context, event) == ButtonEventResult::Handled {
-                return ButtonEventResult::Handled;
-            }
-        }
-        ButtonEventResult::NotHandled
-    }
-
-    /// Executes and propagates the given clip event.
-    /// Events execute inside-out; the deepest child will react first, followed by its parent, and
-    /// so forth.
-    fn propagate_clip_event(&self, context: &mut UpdateContext<'_, 'gc, '_>, event: ClipEvent) {
-        for child in self.children() {
-            child.propagate_clip_event(context, event);
-        }
+        _avm: &mut Avm1<'gc>,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+        _event: ClipEvent,
+    ) -> ClipEventResult {
+        ClipEventResult::NotHandled
     }
 
     fn run_frame(&mut self, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>) {}

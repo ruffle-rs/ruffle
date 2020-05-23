@@ -12,27 +12,9 @@ pub enum PlayerEvent {
     TextInput { codepoint: char },
 }
 
-/// The events that an AVM1 button can fire.
-///
-/// In Flash, these are created using `on` code on the button instance:
-/// ```ignore
-/// on(release) {
-///     trace("Button clicked");
-/// }
-/// ```
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-#[allow(dead_code)]
-pub enum ButtonEvent {
-    Press,
-    Release,
-    RollOut,
-    RollOver,
-    KeyPress { key_code: ButtonKeyCode },
-}
-
 /// Whether this button event was handled by some child.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum ButtonEventResult {
+pub enum ClipEventResult {
     NotHandled,
     Handled,
 }
@@ -61,6 +43,57 @@ pub enum ClipEvent {
     Release,
     ReleaseOutside,
     Unload,
+}
+
+impl ClipEvent {
+    /// Method names for button event handles.
+    pub const BUTTON_EVENT_METHODS: [&'static str; 7] = [
+        "onDragOver",
+        "onDragOut",
+        "onPress",
+        "onRelease",
+        "onReleaseOutside",
+        "onRollOut",
+        "onRollOver",
+    ];
+
+    /// Indicates that the event should be propagated down to children.
+    pub fn propagates(self) -> bool {
+        matches!(
+            self,
+            Self::MouseUp | Self::MouseDown | Self::MouseMove | Self::KeyPress { .. } | Self::KeyDown | Self::KeyUp
+        )
+    }
+
+    /// Indicates whether this is an event type used by Buttons (i.e., on that can be used in an `on` handler in Flash).
+    pub fn is_button_event(self) -> bool {
+        matches!(self, Self::DragOut | Self::DragOver | Self::KeyPress { .. } | Self::Press | Self::RollOut | Self::RollOver | Self::Release | Self::ReleaseOutside)
+    }
+
+    /// Returns the method name of the event handler for this event.
+    pub fn method_name(self) -> Option<&'static str> {
+        match self {
+            ClipEvent::Construct => None,
+            ClipEvent::Data => Some("onData"),
+            ClipEvent::DragOut => Some("onDragOut"),
+            ClipEvent::DragOver => Some("onDragOver"),
+            ClipEvent::EnterFrame => Some("onEnterFrame"),
+            ClipEvent::Initialize => None,
+            ClipEvent::KeyDown => Some("onKeyDown"),
+            ClipEvent::KeyPress { .. } => None,
+            ClipEvent::KeyUp => Some("onKeyUp"),
+            ClipEvent::Load => Some("onLoad"),
+            ClipEvent::MouseDown => Some("onMouseDown"),
+            ClipEvent::MouseMove => Some("onMouseMove"),
+            ClipEvent::MouseUp => Some("onMouseUp"),
+            ClipEvent::Press => Some("onPress"),
+            ClipEvent::RollOut => Some("onRollOut"),
+            ClipEvent::RollOver => Some("onRollOver"),
+            ClipEvent::Release => Some("onRelease"),
+            ClipEvent::ReleaseOutside => Some("onReleaseOutside"),
+            ClipEvent::Unload => Some("onUnload"),
+        }
+    }
 }
 
 /// Flash virtual keycode.

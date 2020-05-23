@@ -8,7 +8,7 @@ use crate::display_object::{
     Bitmap, Button, DisplayObjectBase, EditText, Graphic, MorphShapeStatic, TDisplayObject, Text,
 };
 use crate::drawing::Drawing;
-use crate::events::{ButtonKeyCode, ClipEvent};
+use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::Font;
 use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
@@ -463,17 +463,9 @@ impl<'gc> MovieClip<'gc> {
         actions: SmallVec<[ClipAction; 2]>,
     ) {
         let mut mc = self.0.write(gc_context);
-        mc.has_button_clip_event = actions.iter().any(|a| {
-            a.events.iter().any(|e| match e {
-                ClipEvent::KeyPress { .. }
-                | ClipEvent::Press
-                | ClipEvent::Release
-                | ClipEvent::ReleaseOutside
-                | ClipEvent::RollOut
-                | ClipEvent::RollOver => true,
-                _ => false,
-            })
-        });
+        mc.has_button_clip_event = actions
+            .iter()
+            .any(|a| a.events.iter().copied().any(ClipEvent::is_button_event));
         mc.set_clip_actions(actions);
     }
 
@@ -601,14 +593,14 @@ impl<'gc> MovieClip<'gc> {
         mc.drawing.draw_command(command);
     }
 
-    pub fn run_clip_action(
+    pub fn run_clip_event(
         self,
         context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
         event: ClipEvent,
     ) {
         self.0
             .write(context.gc_context)
-            .run_clip_action(self.into(), context, event);
+            .run_clip_event(self.into(), context, event);
     }
 }
 
@@ -633,10 +625,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         let mut mc = self.0.write(context.gc_context);
         let is_load_frame = !mc.initialized();
         if is_load_frame {
-            mc.run_clip_action((*self).into(), context, ClipEvent::Load);
+            mc.run_clip_event((*self).into(), context, ClipEvent::Load);
             mc.set_initialized(true);
         } else {
-            mc.run_clip_action((*self).into(), context, ClipEvent::EnterFrame);
+            mc.run_clip_event((*self).into(), context, ClipEvent::EnterFrame);
         }
 
         // Run my SWF tags.
@@ -645,7 +637,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         if is_load_frame {
-            mc.run_clip_postaction((*self).into(), context, ClipEvent::Load);
+            mc.run_clip_postevent((*self).into(), context, ClipEvent::Load);
         }
     }
 
@@ -671,27 +663,24 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self_node: DisplayObject<'gc>,
         point: (Twips, Twips),
     ) -> Option<DisplayObject<'gc>> {
-        if self.visible() && self.world_bounds().contains(point) {
-            if self.0.read().has_button_clip_event {
-                return Some(self_node);
-            }
-
-            if let Ok(object) = self.object().as_object() {
-                const MOUSE_EVENT_HANDLERS: [&str; 5] = [
-                    "onPress",
-                    "onRelease",
-                    "onReleaseOutside",
-                    "onRollOut",
-                    "onRollOver",
-                ];
-                if MOUSE_EVENT_HANDLERS
-                    .iter()
-                    .any(|handler| object.has_property(avm, context, handler))
-                {
+        if self.visible() {
+            if self.world_bounds().contains(point) {
+                if self.0.read().has_button_clip_event {
                     return Some(self_node);
+                }
+
+                if let Ok(object) = self.object().as_object() {
+                    if ClipEvent::BUTTON_EVENT_METHODS
+                        .iter()
+                        .any(|handler| object.has_property(avm, context, handler))
+                    {
+                        return Some(self_node);
+                    }
                 }
             }
 
+            // Maybe we could skip recursing down at all if !world_bounds.contains(point),
+            // but a child button can have an invisible hit area outside the parent's bounds.
             for child in self.0.read().children.values().rev() {
                 let result = child.mouse_pick(avm, context, *child, point);
                 if result.is_some() {
@@ -703,13 +692,21 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         None
     }
 
-    fn propagate_clip_event(&self, context: &mut UpdateContext<'_, 'gc, '_>, event: ClipEvent) {
-        for child in self.children() {
-            child.propagate_clip_event(context, event);
+    fn handle_clip_event(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        event: ClipEvent,
+    ) -> ClipEventResult {
+        if event.propagates() {
+            for child in self.children() {
+                if child.handle_clip_event(avm, context, event) == ClipEventResult::Handled {
+                    return ClipEventResult::Handled;
+                }
+            }
         }
-        self.0
-            .read()
-            .run_clip_action((*self).into(), context, event);
+
+        self.0.read().run_clip_event((*self).into(), context, event)
     }
 
     fn as_movie_clip(&self) -> Option<MovieClip<'gc>> {
@@ -809,7 +806,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         {
             let mut mc = self.0.write(context.gc_context);
             mc.stop_audio_stream(context);
-            mc.run_clip_action((*self).into(), context, ClipEvent::Unload);
+            mc.run_clip_event((*self).into(), context, ClipEvent::Unload);
         }
         self.set_removed(context.gc_context, true);
     }
@@ -1323,12 +1320,14 @@ impl<'gc> MovieClipData<'gc> {
     }
 
     /// Run all actions for the given clip event.
-    fn run_clip_action(
+    fn run_clip_event(
         &self,
         self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         event: ClipEvent,
-    ) {
+    ) -> ClipEventResult {
+        let mut handled = ClipEventResult::NotHandled;
+
         // TODO: What's the behavior for loaded SWF files?
         if context.swf.version() >= 5 {
             for clip_action in self
@@ -1336,6 +1335,10 @@ impl<'gc> MovieClipData<'gc> {
                 .iter()
                 .filter(|action| action.events.contains(&event))
             {
+                // KeyPress events are consumed by a single instance.
+                if matches!(clip_action.event, ClipEvent::KeyPress { .. }) {
+                    handled = ClipEventResult::Handled;
+                }
                 context.action_queue.queue_actions(
                     self_display_object,
                     ActionType::Normal {
@@ -1348,28 +1351,7 @@ impl<'gc> MovieClipData<'gc> {
             // Queue ActionScript-defined event handlers after the SWF defined ones.
             // (e.g., clip.onEnterFrame = foo).
             if context.swf.version() >= 6 {
-                let name = match event {
-                    ClipEvent::Construct => None,
-                    ClipEvent::Data => Some("onData"),
-                    ClipEvent::DragOut => Some("onDragOut"),
-                    ClipEvent::DragOver => Some("onDragOver"),
-                    ClipEvent::EnterFrame => Some("onEnterFrame"),
-                    ClipEvent::Initialize => None,
-                    ClipEvent::KeyDown => Some("onKeyDown"),
-                    ClipEvent::KeyPress { .. } => None,
-                    ClipEvent::KeyUp => Some("onKeyUp"),
-                    ClipEvent::Load => Some("onLoad"),
-                    ClipEvent::MouseDown => Some("onMouseDown"),
-                    ClipEvent::MouseMove => Some("onMouseMove"),
-                    ClipEvent::MouseUp => Some("onMouseUp"),
-                    ClipEvent::Press => Some("onPress"),
-                    ClipEvent::RollOut => Some("onRollOut"),
-                    ClipEvent::RollOver => Some("onRollOver"),
-                    ClipEvent::Release => Some("onRelease"),
-                    ClipEvent::ReleaseOutside => Some("onReleaseOutside"),
-                    ClipEvent::Unload => Some("onUnload"),
-                };
-                if let Some(name) = name {
+                if let Some(name) = event.method_name() {
                     context.action_queue.queue_actions(
                         self_display_object,
                         ActionType::Method {
@@ -1382,6 +1364,8 @@ impl<'gc> MovieClipData<'gc> {
                 }
             }
         }
+
+        handled
     }
 
     /// Run clip actions that trigger after the clip's own actions.
@@ -1393,7 +1377,7 @@ impl<'gc> MovieClipData<'gc> {
     /// TODO: If it turns out other `Load` events need to be delayed, perhaps
     /// we should change which frame triggers a `Load` event, rather than
     /// making sure our actions run after the clip's.
-    fn run_clip_postaction(
+    fn run_clip_postevent(
         &self,
         self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
