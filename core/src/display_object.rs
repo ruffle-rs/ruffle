@@ -781,6 +781,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
                         .iter()
                         .cloned()
                         .map(|a| ClipAction::from_action_and_movie(a, clip.movie().unwrap()))
+                        .flatten()
                         .collect(),
                 );
             }
