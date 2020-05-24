@@ -247,6 +247,7 @@ impl<'gc> ButtonData<'gc> {
                     );
                     child.set_depth(context.gc_context, record.depth.into());
                     child.post_instantiation(avm, context, child, None);
+                    child.run_frame(avm, context);
                     self.children.insert(record.depth.into(), child);
                 }
             }
@@ -394,12 +395,8 @@ impl<'gc> ButtonData<'gc> {
                     && (action.condition != swf::ButtonActionCondition::KeyPress
                         || action.key_code == key_code)
                 {
-                    // KeyPress events are consumed when a button handles them.
-                    if action.condition == swf::ButtonActionCondition::KeyPress {
-                        handled = ClipEventResult::Handled;
-                    }
-
                     // Note that AVM1 buttons run actions relative to their parent, not themselves.
+                    handled = ClipEventResult::Handled;
                     context.action_queue.queue_actions(
                         parent,
                         ActionType::Normal {
