@@ -43,7 +43,7 @@ pub struct MovieClipData<'gc> {
     audio_stream: Option<AudioStreamHandle>,
     children: BTreeMap<Depth, DisplayObject<'gc>>,
     object: Option<Object<'gc>>,
-    clip_actions: SmallVec<[ClipAction; 2]>,
+    clip_actions: Vec<ClipAction>,
     has_button_clip_event: bool,
     flags: EnumSet<MovieClipFlags>,
     avm1_constructor: Option<Object<'gc>>,
@@ -63,7 +63,7 @@ impl<'gc> MovieClip<'gc> {
                 audio_stream: None,
                 children: BTreeMap::new(),
                 object: None,
-                clip_actions: SmallVec::new(),
+                clip_actions: Vec::new(),
                 has_button_clip_event: false,
                 flags: EnumSet::empty(),
                 avm1_constructor: None,
@@ -97,7 +97,7 @@ impl<'gc> MovieClip<'gc> {
                 audio_stream: None,
                 children: BTreeMap::new(),
                 object: None,
-                clip_actions: SmallVec::new(),
+                clip_actions: Vec::new(),
                 has_button_clip_event: false,
                 flags: MovieClipFlags::Playing.into(),
                 avm1_constructor: None,
@@ -457,15 +457,9 @@ impl<'gc> MovieClip<'gc> {
     /// Sets the clip actions (a.k.a. clip events) for this movieclip.
     /// Clip actions are created in the Flash IDE by using the `onEnterFrame`
     /// tag on a movieclip instance.
-    pub fn set_clip_actions(
-        self,
-        gc_context: MutationContext<'gc, '_>,
-        actions: SmallVec<[ClipAction; 2]>,
-    ) {
+    pub fn set_clip_actions(self, gc_context: MutationContext<'gc, '_>, actions: Vec<ClipAction>) {
         let mut mc = self.0.write(gc_context);
-        mc.has_button_clip_event = actions
-            .iter()
-            .any(|a| a.events.iter().copied().any(ClipEvent::is_button_event));
+        mc.has_button_clip_event = actions.iter().any(|a| a.event.is_button_event());
         mc.set_clip_actions(actions);
     }
 
@@ -778,7 +772,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             for clip_action in mc
                 .clip_actions()
                 .iter()
-                .filter(|action| action.events.contains(&ClipEvent::Construct))
+                .filter(|action| action.event == ClipEvent::Construct)
             {
                 events.push(clip_action.action_data.clone());
             }
@@ -1333,7 +1327,7 @@ impl<'gc> MovieClipData<'gc> {
             for clip_action in self
                 .clip_actions
                 .iter()
-                .filter(|action| action.events.contains(&event))
+                .filter(|action| action.event == event)
             {
                 // KeyPress events are consumed by a single instance.
                 if matches!(clip_action.event, ClipEvent::KeyPress { .. }) {
@@ -1397,7 +1391,7 @@ impl<'gc> MovieClipData<'gc> {
         &self.clip_actions
     }
 
-    pub fn set_clip_actions(&mut self, actions: SmallVec<[ClipAction; 2]>) {
+    pub fn set_clip_actions(&mut self, actions: Vec<ClipAction>) {
         self.clip_actions = actions;
     }
 
@@ -2386,60 +2380,60 @@ enum MovieClipFlags {
 /// an `onClipEvent`/`on` handler.
 #[derive(Debug, Clone)]
 pub struct ClipAction {
-    /// The events that trigger this handler.
-    events: SmallVec<[ClipEvent; 1]>,
+    /// The event that triggers this handler.
+    event: ClipEvent,
 
     /// The actions to run.
     action_data: SwfSlice,
 }
 
 impl ClipAction {
-    /// Build a clip action from a SWF movie and a parsed ClipAction.
+    /// Build a set of clip actions from a SWF movie and a parsed ClipAction.
     ///
     /// TODO: Our underlying SWF parser currently does not yield slices of the
     /// underlying movie, so we cannot convert those slices into a `SwfSlice`.
     /// Instead, we have to construct a fake `SwfMovie` just to hold one clip
     /// action.
-    pub fn from_action_and_movie(other: swf::ClipAction, movie: Arc<SwfMovie>) -> Self {
+    pub fn from_action_and_movie(
+        other: swf::ClipAction,
+        movie: Arc<SwfMovie>,
+    ) -> impl Iterator<Item = Self> {
         use swf::ClipEventFlag;
 
         let len = other.action_data.len();
-        Self {
-            events: other
-                .events
-                .into_iter()
-                .map(|event| match event {
-                    ClipEventFlag::Construct => ClipEvent::Construct,
-                    ClipEventFlag::Data => ClipEvent::Data,
-                    ClipEventFlag::DragOut => ClipEvent::DragOut,
-                    ClipEventFlag::DragOver => ClipEvent::DragOver,
-                    ClipEventFlag::EnterFrame => ClipEvent::EnterFrame,
-                    ClipEventFlag::Initialize => ClipEvent::Initialize,
-                    ClipEventFlag::KeyUp => ClipEvent::KeyUp,
-                    ClipEventFlag::KeyDown => ClipEvent::KeyDown,
-                    ClipEventFlag::KeyPress => ClipEvent::KeyPress {
-                        key_code: other
-                            .key_code
-                            .and_then(|k| ButtonKeyCode::try_from(k).ok())
-                            .unwrap_or(ButtonKeyCode::Unknown),
-                    },
-                    ClipEventFlag::Load => ClipEvent::Load,
-                    ClipEventFlag::MouseUp => ClipEvent::MouseUp,
-                    ClipEventFlag::MouseDown => ClipEvent::MouseDown,
-                    ClipEventFlag::MouseMove => ClipEvent::MouseMove,
-                    ClipEventFlag::Press => ClipEvent::Press,
-                    ClipEventFlag::RollOut => ClipEvent::RollOut,
-                    ClipEventFlag::RollOver => ClipEvent::RollOver,
-                    ClipEventFlag::Release => ClipEvent::Release,
-                    ClipEventFlag::ReleaseOutside => ClipEvent::ReleaseOutside,
-                    ClipEventFlag::Unload => ClipEvent::Unload,
-                })
-                .collect(),
+        let key_code = other.key_code;
+        let movie = Arc::new(movie.from_movie_and_subdata(other.action_data));
+        other.events.into_iter().map(move |event| Self {
+            event: match event {
+                ClipEventFlag::Construct => ClipEvent::Construct,
+                ClipEventFlag::Data => ClipEvent::Data,
+                ClipEventFlag::DragOut => ClipEvent::DragOut,
+                ClipEventFlag::DragOver => ClipEvent::DragOver,
+                ClipEventFlag::EnterFrame => ClipEvent::EnterFrame,
+                ClipEventFlag::Initialize => ClipEvent::Initialize,
+                ClipEventFlag::KeyUp => ClipEvent::KeyUp,
+                ClipEventFlag::KeyDown => ClipEvent::KeyDown,
+                ClipEventFlag::KeyPress => ClipEvent::KeyPress {
+                    key_code: key_code
+                        .and_then(|k| ButtonKeyCode::try_from(k).ok())
+                        .unwrap_or(ButtonKeyCode::Unknown),
+                },
+                ClipEventFlag::Load => ClipEvent::Load,
+                ClipEventFlag::MouseUp => ClipEvent::MouseUp,
+                ClipEventFlag::MouseDown => ClipEvent::MouseDown,
+                ClipEventFlag::MouseMove => ClipEvent::MouseMove,
+                ClipEventFlag::Press => ClipEvent::Press,
+                ClipEventFlag::RollOut => ClipEvent::RollOut,
+                ClipEventFlag::RollOver => ClipEvent::RollOver,
+                ClipEventFlag::Release => ClipEvent::Release,
+                ClipEventFlag::ReleaseOutside => ClipEvent::ReleaseOutside,
+                ClipEventFlag::Unload => ClipEvent::Unload,
+            },
             action_data: SwfSlice {
-                movie: Arc::new(movie.from_movie_and_subdata(other.action_data)),
+                movie: Arc::clone(&movie),
                 start: 0,
                 end: len,
             },
-        }
+        })
     }
 }
