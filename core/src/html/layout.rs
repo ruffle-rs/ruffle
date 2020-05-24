@@ -331,11 +331,15 @@ impl<'gc> LayoutBox<'gc> {
     }
 
     /// Construct a new layout hierarchy from text spans.
+    ///
+    /// The given `bounds` are optional; providing `None` bounds indicates a
+    /// field without automatic word wrapping.
     pub fn lower_from_text_spans(
         fs: &FormatSpans,
         context: &mut UpdateContext<'_, 'gc, '_>,
         movie: Arc<SwfMovie>,
         bounds: Twips,
+        is_word_wrap: bool,
     ) -> Option<GcCell<'gc, LayoutBox<'gc>>> {
         let mut layout_context = LayoutContext::new(bounds);
 
@@ -345,38 +349,41 @@ impl<'gc> LayoutBox<'gc> {
 
                 let font_size = Twips::from_pixels(span.size);
                 let mut last_breakpoint = 0;
-                let (mut width, mut offset) = layout_context.wrap_dimensions(&span);
 
-                while let Some(breakpoint) =
-                    font.wrap_line(&text[last_breakpoint..], font_size, width, offset)
-                {
-                    if breakpoint == 0 {
+                if is_word_wrap {
+                    let (mut width, mut offset) = layout_context.wrap_dimensions(&span);
+
+                    while let Some(breakpoint) =
+                        font.wrap_line(&text[last_breakpoint..], font_size, width, offset)
+                    {
+                        if breakpoint == 0 {
+                            layout_context.newline(context.gc_context);
+                            last_breakpoint += 1;
+                            continue;
+                        }
+
+                        let next_breakpoint = last_breakpoint + breakpoint;
+
+                        Self::append_text_fragment(
+                            context.gc_context,
+                            &mut layout_context,
+                            &text[last_breakpoint..next_breakpoint],
+                            start + last_breakpoint,
+                            start + next_breakpoint,
+                            span,
+                        );
+
+                        last_breakpoint = next_breakpoint + 1;
+                        if last_breakpoint >= text.len() {
+                            break;
+                        }
+
                         layout_context.newline(context.gc_context);
-                        last_breakpoint += 1;
-                        continue;
+                        let next_dim = layout_context.wrap_dimensions(&span);
+
+                        width = next_dim.0;
+                        offset = next_dim.1;
                     }
-
-                    let next_breakpoint = last_breakpoint + breakpoint;
-
-                    Self::append_text_fragment(
-                        context.gc_context,
-                        &mut layout_context,
-                        &text[last_breakpoint..next_breakpoint],
-                        start + last_breakpoint,
-                        start + next_breakpoint,
-                        span,
-                    );
-
-                    last_breakpoint = next_breakpoint + 1;
-                    if last_breakpoint >= text.len() {
-                        break;
-                    }
-
-                    layout_context.newline(context.gc_context);
-                    let next_dim = layout_context.wrap_dimensions(&span);
-
-                    width = next_dim.0;
-                    offset = next_dim.1;
                 }
 
                 let span_end = text.len();
@@ -399,6 +406,19 @@ impl<'gc> LayoutBox<'gc> {
 
     pub fn bounds(&self) -> BoxBounds<Twips> {
         self.bounds
+    }
+
+    /// Calculate the total bounds of a list of zero or more layout boxes.
+    pub fn total_bounds(mut list: Option<GcCell<'gc, Self>>) -> BoxBounds<Twips> {
+        let mut union = Default::default();
+
+        while let Some(lbox) = list {
+            let read = lbox.read();
+            union += read.bounds();
+            list = read.next_sibling();
+        }
+
+        union
     }
 
     /// Returns a reference to the text this box contains.

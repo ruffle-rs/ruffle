@@ -16,6 +16,16 @@ use swf::Twips;
 /// Boxed error type.
 pub type Error = Box<dyn std::error::Error>;
 
+/// The kind of autosizing behavior an `EditText` should have, if any
+#[derive(Copy, Clone, Debug, Collect)]
+#[collect(no_drop)]
+pub enum AutoSizeMode {
+    None,
+    Left,
+    Center,
+    Right,
+}
+
 /// A dynamic text field.
 /// The text in this text field can be changed dynamically.
 /// It may be selectable or editable by the user, depending on the text field properties.
@@ -62,10 +72,15 @@ pub struct EditTextData<'gc> {
     /// If the text is word-wrapped.
     is_word_wrap: bool,
 
+    /// Whether or not the width of the field should change in response to text
+    /// changes, and in what direction should added or removed width should
+    /// apply.
+    autosize: AutoSizeMode,
+
     /// The calculated layout box.
     layout: Option<GcCell<'gc, LayoutBox<'gc>>>,
 
-    // The AVM1 object handle
+    /// The AVM1 object handle
     object: Option<Object<'gc>>,
 }
 
@@ -102,6 +117,7 @@ impl<'gc> EditText<'gc> {
             context,
             swf_movie.clone(),
             bounds.width(),
+            swf_tag.is_word_wrap,
         );
 
         EditText(GcCell::allocate(
@@ -121,6 +137,7 @@ impl<'gc> EditText<'gc> {
                 is_word_wrap,
                 object: None,
                 layout,
+                autosize: AutoSizeMode::None,
             },
         ))
     }
@@ -250,6 +267,15 @@ impl<'gc> EditText<'gc> {
         self.relayout(context);
     }
 
+    pub fn autosize(self) -> AutoSizeMode {
+        self.0.read().autosize
+    }
+
+    pub fn set_autosize(self, asm: AutoSizeMode, context: &mut UpdateContext<'_, 'gc, '_>) {
+        self.0.write(context.gc_context).autosize = asm;
+        self.relayout(context);
+    }
+
     pub fn replace_text(
         self,
         from: usize,
@@ -300,21 +326,57 @@ impl<'gc> EditText<'gc> {
     /// the text, and no higher-level representation. Specifically, CSS should
     /// have already been calculated and applied to HTML trees lowered into the
     /// text-span representation.
-    fn relayout(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn relayout(mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         let bounds = self.local_bounds();
         let mut edit_text = self.0.write(context.gc_context);
+        let autosize = edit_text.autosize;
+        let is_word_wrap = edit_text.is_word_wrap;
         let movie = edit_text.static_data.swf.clone();
-
-        if edit_text.is_multiline {
-            //TODO: this should control if bounds are set during layout
-        }
 
         edit_text.layout = LayoutBox::lower_from_text_spans(
             &edit_text.text_spans,
             context,
             movie,
             bounds.x_max - bounds.x_min,
+            is_word_wrap,
         );
+
+        let intrinsic_bounds = LayoutBox::total_bounds(edit_text.layout);
+
+        drop(edit_text);
+
+        match autosize {
+            AutoSizeMode::None => {}
+            AutoSizeMode::Left => {
+                if !is_word_wrap {
+                    self.set_width(context.gc_context, intrinsic_bounds.width().to_pixels());
+                }
+
+                self.set_height(context.gc_context, intrinsic_bounds.height().to_pixels());
+            }
+            AutoSizeMode::Center => {
+                if !is_word_wrap {
+                    self.set_x(
+                        context.gc_context,
+                        (intrinsic_bounds.width().to_pixels() - self.x()) / 2.0,
+                    );
+                    self.set_width(context.gc_context, intrinsic_bounds.width().to_pixels());
+                }
+
+                self.set_height(context.gc_context, intrinsic_bounds.height().to_pixels());
+            }
+            AutoSizeMode::Right => {
+                if !is_word_wrap {
+                    self.set_x(
+                        context.gc_context,
+                        intrinsic_bounds.width().to_pixels() - self.x(),
+                    );
+                    self.set_width(context.gc_context, intrinsic_bounds.width().to_pixels());
+                }
+
+                self.set_height(context.gc_context, intrinsic_bounds.height().to_pixels());
+            }
+        }
     }
 
     /// Measure the width and height of the `EditText`'s current text load.

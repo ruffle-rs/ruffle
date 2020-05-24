@@ -23,7 +23,7 @@ mod text;
 use crate::events::{ClipEvent, ClipEventResult};
 pub use bitmap::Bitmap;
 pub use button::Button;
-pub use edit_text::EditText;
+pub use edit_text::{AutoSizeMode, EditText};
 pub use graphic::Graphic;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::MovieClip;

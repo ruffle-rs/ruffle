@@ -1,10 +1,9 @@
-use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::globals::display_object;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Object, ScriptObject, TObject, UpdateContext, Value};
-use crate::display_object::{EditText, TDisplayObject};
+use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
 use crate::html::TextFormat;
 use gc_arena::MutationContext;
 
@@ -41,7 +40,11 @@ pub fn set_text<'gc>(
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             if let Some(value) = args.get(0) {
-                text_field.set_text(value.coerce_to_string(avm, context)?.to_string(), context);
+                if let Err(err) =
+                    text_field.set_text(value.coerce_to_string(avm, context)?.to_string(), context)
+                {
+                    log::error!("Error when setting TextField.text: {}", err);
+                }
             }
         }
     }
@@ -195,6 +198,52 @@ pub fn set_word_wrap<'gc>(
     Ok(Value::Undefined.into())
 }
 
+pub fn auto_size<'gc>(
+    _avm: &mut Avm1<'gc>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(etext) = this
+        .as_display_object()
+        .and_then(|dobj| dobj.as_edit_text())
+    {
+        return Ok(match etext.autosize() {
+            AutoSizeMode::None => "none".to_string().into(),
+            AutoSizeMode::Left => "left".to_string().into(),
+            AutoSizeMode::Center => "center".to_string().into(),
+            AutoSizeMode::Right => "right".to_string().into(),
+        });
+    }
+
+    Ok(Value::Undefined.into())
+}
+
+pub fn set_auto_size<'gc>(
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(etext) = this
+        .as_display_object()
+        .and_then(|dobj| dobj.as_edit_text())
+    {
+        etext.set_autosize(
+            match args.get(0).cloned().unwrap_or(Value::Undefined) {
+                Value::String(s) if s == "left" => AutoSizeMode::Left,
+                Value::String(s) if s == "center" => AutoSizeMode::Center,
+                Value::String(s) if s == "right" => AutoSizeMode::Right,
+                Value::Bool(true) => AutoSizeMode::Left,
+                _ => AutoSizeMode::None,
+            },
+            context,
+        );
+    }
+
+    Ok(Value::Undefined.into())
+}
+
 pub fn create_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Object<'gc>,
@@ -225,9 +274,9 @@ pub fn create_proto<'gc>(
         },
         "getTextFormat" => |text_field: EditText<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args: &[Value<'gc>]| {
             let (from, to) = match (args.get(0), args.get(1)) {
-                (Some(f), Some(t)) => (f.as_number(avm, context)? as usize, t.as_number(avm, context)? as usize),
+                (Some(f), Some(t)) => (f.coerce_to_f64(avm, context)? as usize, t.coerce_to_f64(avm, context)? as usize),
                 (Some(f), None) => {
-                    let v = f.as_number(avm, context)? as usize;
+                    let v = f.coerce_to_f64(avm, context)? as usize;
                     (v, v.saturating_add(1))
                 },
                 _ => (0, text_field.text_length())
@@ -242,9 +291,9 @@ pub fn create_proto<'gc>(
                 let tf_parsed = TextFormat::from_avm1_object(tf, avm, context)?;
 
                 let (from, to) = match (args.get(0), args.get(1)) {
-                    (Some(f), Some(t)) if args.len() > 2 => (f.as_number(avm, context)? as usize, t.as_number(avm, context)? as usize),
+                    (Some(f), Some(t)) if args.len() > 2 => (f.coerce_to_f64(avm, context)? as usize, t.coerce_to_f64(avm, context)? as usize),
                     (Some(f), _) if args.len() > 1 => {
-                        let v = f.as_number(avm, context)? as usize;
+                        let v = f.coerce_to_f64(avm, context)? as usize;
                         (v, v.saturating_add(1))
                     },
                     _ => (0, text_field.text_length())
@@ -256,9 +305,9 @@ pub fn create_proto<'gc>(
             Ok(Value::Undefined.into())
         },
         "replaceText" => |text_field: EditText<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args: &[Value<'gc>]| {
-            let from = args.get(0).cloned().unwrap_or(Value::Undefined).as_number(avm, context)?;
-            let to = args.get(1).cloned().unwrap_or(Value::Undefined).as_number(avm, context)?;
-            let text = args.get(2).cloned().unwrap_or(Value::Undefined).coerce_to_string(avm, context)?;
+            let from = args.get(0).cloned().unwrap_or(Value::Undefined).coerce_to_f64(avm, context)?;
+            let to = args.get(1).cloned().unwrap_or(Value::Undefined).coerce_to_f64(avm, context)?;
+            let text = args.get(2).cloned().unwrap_or(Value::Undefined).coerce_to_string(avm, context)?.into_owned();
 
             text_field.replace_text(from as usize, to as usize, &text, context);
 
@@ -310,6 +359,13 @@ pub fn attach_virtual_properties<'gc>(gc_context: MutationContext<'gc, '_>, obje
         "wordWrap",
         Executable::Native(word_wrap),
         Some(Executable::Native(set_word_wrap)),
+        ReadOnly.into(),
+    );
+    object.add_property(
+        gc_context,
+        "autoSize",
+        Executable::Native(auto_size),
+        Some(Executable::Native(set_auto_size)),
         ReadOnly.into(),
     );
 }
