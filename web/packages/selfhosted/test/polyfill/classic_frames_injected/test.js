@@ -5,8 +5,7 @@ const fs = require("fs");
 
 use(chaiHtml);
 
-// TODO: Injected is broken today
-describe.skip("Flash inside frame with injected ruffle", () => {
+describe("Flash inside frame with injected ruffle", () => {
     it("loads the test", () => {
         open_test(browser, __dirname);
     });
