@@ -312,6 +312,12 @@ jobs:
 workflows:
   version: 2
 
+  commit:
+    jobs:
+      - build
+      - build_osx
+      - build_windows
+
   # Nightly builds
   nightly_build:
     triggers:
