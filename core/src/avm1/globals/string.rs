@@ -204,7 +204,7 @@ fn char_code_at<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_i32(avm, context)?;
-    let ret = if i > 0 {
+    let ret = if i >= 0 {
         this.encode_utf16()
             .nth(i as usize)
             .map(f64::from)
