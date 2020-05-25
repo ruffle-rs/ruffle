@@ -123,10 +123,15 @@ impl<'gc> EditText<'gc> {
             swf_tag.is_word_wrap,
         );
 
+        let mut base = DisplayObjectBase::default();
+
+        base.matrix_mut(context.gc_context).tx = bounds.x_min;
+        base.matrix_mut(context.gc_context).ty = bounds.y_min;
+
         EditText(GcCell::allocate(
             context.gc_context,
             EditTextData {
-                base: Default::default(),
+                base,
                 document,
                 text_spans,
                 static_data: gc_arena::Gc::allocate(
@@ -330,54 +335,54 @@ impl<'gc> EditText<'gc> {
     /// the text, and no higher-level representation. Specifically, CSS should
     /// have already been calculated and applied to HTML trees lowered into the
     /// text-span representation.
-    fn relayout(mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let bounds = self.local_bounds();
+    fn relayout(self, context: &mut UpdateContext<'_, 'gc, '_>) {
         let mut edit_text = self.0.write(context.gc_context);
         let autosize = edit_text.autosize;
         let is_word_wrap = edit_text.is_word_wrap;
         let movie = edit_text.static_data.swf.clone();
+        let width = edit_text.bounds.width();
 
         let (new_layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
             &edit_text.text_spans,
             context,
             movie,
-            bounds.x_max - bounds.x_min,
+            width,
             is_word_wrap,
         );
 
-
-        drop(edit_text);
+        edit_text.layout = new_layout;
 
         match autosize {
             AutoSizeMode::None => {}
             AutoSizeMode::Left => {
                 if !is_word_wrap {
-                    self.set_width(context.gc_context, intrinsic_bounds.width().to_pixels());
+                    edit_text.bounds.set_width(intrinsic_bounds.width());
                 }
 
-                self.set_height(context.gc_context, intrinsic_bounds.height().to_pixels());
+                edit_text.bounds.set_height(intrinsic_bounds.height());
+                edit_text.base.set_transformed_by_script(true);
             }
             AutoSizeMode::Center => {
                 if !is_word_wrap {
-                    self.set_x(
-                        context.gc_context,
-                        (intrinsic_bounds.width().to_pixels() - self.x()) / 2.0,
-                    );
-                    self.set_width(context.gc_context, intrinsic_bounds.width().to_pixels());
+                    let old_x = edit_text.bounds.x_min;
+                    edit_text
+                        .bounds
+                        .set_x((intrinsic_bounds.width() - old_x) / 2);
+                    edit_text.bounds.set_width(intrinsic_bounds.width());
                 }
 
-                self.set_height(context.gc_context, intrinsic_bounds.height().to_pixels());
+                edit_text.bounds.set_height(intrinsic_bounds.height());
+                edit_text.base.set_transformed_by_script(true);
             }
             AutoSizeMode::Right => {
                 if !is_word_wrap {
-                    self.set_x(
-                        context.gc_context,
-                        intrinsic_bounds.width().to_pixels() - self.x(),
-                    );
-                    self.set_width(context.gc_context, intrinsic_bounds.width().to_pixels());
+                    let old_x = edit_text.bounds.x_min;
+                    edit_text.bounds.set_x(intrinsic_bounds.width() - old_x);
+                    edit_text.bounds.set_width(intrinsic_bounds.width());
                 }
 
-                self.set_height(context.gc_context, intrinsic_bounds.height().to_pixels());
+                edit_text.bounds.set_height(intrinsic_bounds.height());
+                edit_text.base.set_transformed_by_script(true);
             }
         }
     }
@@ -497,7 +502,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn self_bounds(&self) -> BoundingBox {
-        self.0.read().bounds.clone().into()
+        self.0.read().bounds.clone()
     }
 
     fn x(&self) -> f64 {
@@ -508,7 +513,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         let mut write = self.0.write(gc_context);
 
         write.bounds.set_x(Twips::from_pixels(value));
-        write.base.set_transformed_by_script(true);
+        write.base.set_x(value);
     }
 
     fn y(&self) -> f64 {
@@ -519,14 +524,22 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         let mut write = self.0.write(gc_context);
 
         write.bounds.set_y(Twips::from_pixels(value));
-        write.base.set_transformed_by_script(true);
+        write.base.set_y(value);
+    }
+
+    fn width(&self) -> f64 {
+        self.0.read().bounds.width().to_pixels()
     }
 
     fn set_width(&mut self, gc_context: MutationContext<'gc, '_>, value: f64) {
         let mut write = self.0.write(gc_context);
-        
+
         write.bounds.set_width(Twips::from_pixels(value));
         write.base.set_transformed_by_script(true);
+    }
+
+    fn height(&self) -> f64 {
+        self.0.read().bounds.height().to_pixels()
     }
 
     fn set_height(&mut self, gc_context: MutationContext<'gc, '_>, value: f64) {
