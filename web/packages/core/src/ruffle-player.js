@@ -51,6 +51,9 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
     }
 
     disconnectedCallback() {
+        if (this.original != this) {
+            this.original.parentElement.removeChild(this.original);
+        }
         if (this.instance) {
             this.instance.destroy();
             this.instance = null;
