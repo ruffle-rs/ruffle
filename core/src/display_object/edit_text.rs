@@ -115,7 +115,7 @@ impl<'gc> EditText<'gc> {
 
         let bounds: BoundingBox = swf_tag.bounds.clone().into();
 
-        let layout = LayoutBox::lower_from_text_spans(
+        let (layout, _exterior_bounds) = LayoutBox::lower_from_text_spans(
             &text_spans,
             context,
             swf_movie.clone(),
@@ -337,7 +337,7 @@ impl<'gc> EditText<'gc> {
         let is_word_wrap = edit_text.is_word_wrap;
         let movie = edit_text.static_data.swf.clone();
 
-        edit_text.layout = LayoutBox::lower_from_text_spans(
+        let (new_layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
             &edit_text.text_spans,
             context,
             movie,
@@ -345,7 +345,6 @@ impl<'gc> EditText<'gc> {
             is_word_wrap,
         );
 
-        let intrinsic_bounds = LayoutBox::total_bounds(edit_text.layout);
 
         drop(edit_text);
 

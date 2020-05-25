@@ -11,7 +11,7 @@ use std::sync::Arc;
 use swf::Twips;
 
 /// Contains information relating to the current layout operation.
-pub struct LayoutContext<'gc> {
+pub struct LayoutContext<'a, 'gc> {
     /// The position to put text into.
     ///
     /// This cursor does not take indents, left margins, or alignment into
@@ -22,6 +22,9 @@ pub struct LayoutContext<'gc> {
     /// The resolved font object to use when measuring text.
     font: Option<Font<'gc>>,
 
+    /// The underlying bundle of text being formatted.
+    text: &'a str,
+
     /// The highest font size observed within the current line.
     max_font_size: Twips,
 
@@ -30,6 +33,10 @@ pub struct LayoutContext<'gc> {
 
     /// The end of the current chain of layout boxes.
     last_box: Option<GcCell<'gc, LayoutBox<'gc>>>,
+
+    /// The exterior bounds of all laid-out text, including left and right
+    /// margins.
+    exterior_bounds: BoxBounds<Twips>,
 
     /// Whether or not we are laying out the first line of a paragraph.
     is_first_line: bool,
@@ -44,14 +51,16 @@ pub struct LayoutContext<'gc> {
     max_bounds: Twips,
 }
 
-impl<'gc> LayoutContext<'gc> {
-    fn new(max_bounds: Twips) -> Self {
+impl<'a, 'gc> LayoutContext<'a, 'gc> {
+    fn new(max_bounds: Twips, text: &'a str) -> Self {
         Self {
             cursor: Default::default(),
             font: None,
+            text,
             max_font_size: Default::default(),
             first_box: None,
             last_box: None,
+            exterior_bounds: Default::default(),
             is_first_line: true,
             current_line: None,
             current_line_span: Default::default(),
@@ -73,21 +82,40 @@ impl<'gc> LayoutContext<'gc> {
         let mut line = self.current_line;
         while let Some(linebox) = line {
             let read = linebox.read();
-            line_bounds += read.bounds();
             line = read.next_sibling();
+
+            //Flash ignores trailing spaces when aligning lines, so should we
+            if line.is_none() {
+                let trimmed_bounds = {
+                    let (start, end, _tf, font, size, _color) = read.text_node().expect("text");
+                    read.bounds()
+                        .with_size(Size::from(font.measure(self.text[start..end].trim(), size)))
+                };
+                line_bounds += trimmed_bounds;
+            } else {
+                line_bounds += read.bounds();
+            }
         }
 
         let left_adjustment =
             Self::left_alignment_offset(&self.current_line_span, self.is_first_line);
-        let align_adjustment = match self.current_line_span.align {
-            swf::TextAlign::Left => Default::default(),
-            swf::TextAlign::Center => (self.max_bounds - left_adjustment - line_bounds.width()) / 2,
-            swf::TextAlign::Right => (self.max_bounds - left_adjustment - line_bounds.width()),
-            swf::TextAlign::Justify => {
-                log::error!("Justified text is unimplemented!");
-                Default::default()
-            }
-        };
+        let right_adjustment = Twips::from_pixels(self.current_line_span.right_margin);
+        let align_adjustment = max(
+            match self.current_line_span.align {
+                swf::TextAlign::Left => Default::default(),
+                swf::TextAlign::Center => {
+                    (self.max_bounds - left_adjustment - right_adjustment - line_bounds.width()) / 2
+                }
+                swf::TextAlign::Right => {
+                    self.max_bounds - left_adjustment - right_adjustment - line_bounds.width()
+                }
+                swf::TextAlign::Justify => {
+                    log::error!("Justified text is unimplemented!");
+                    Default::default()
+                }
+            },
+            Twips::from_pixels(0.0),
+        );
 
         line = self.current_line;
         while let Some(linebox) = line {
@@ -103,7 +131,11 @@ impl<'gc> LayoutContext<'gc> {
             line = write.next_sibling();
         }
 
+        line_bounds += Position::from((align_adjustment, Twips::from_pixels(0.0)));
+        line_bounds += Size::from((left_adjustment + right_adjustment, Twips::from_pixels(0.0)));
+
         self.current_line = None;
+        self.exterior_bounds += line_bounds;
     }
 
     /// Adjust the text layout cursor down to the next line.
@@ -206,10 +238,13 @@ impl<'gc> LayoutContext<'gc> {
     }
 
     /// Destroy the layout context, returning the newly constructed layout list.
-    fn end_layout(mut self, mc: MutationContext<'gc, '_>) -> Option<GcCell<'gc, LayoutBox<'gc>>> {
+    fn end_layout(
+        mut self,
+        mc: MutationContext<'gc, '_>,
+    ) -> (Option<GcCell<'gc, LayoutBox<'gc>>>, BoxBounds<Twips>) {
         self.fixup_line(mc);
 
-        self.first_box
+        (self.first_box, self.exterior_bounds)
     }
 }
 
@@ -302,10 +337,10 @@ impl<'gc> LayoutBox<'gc> {
     }
 
     ///
-    pub fn append_text_fragment(
+    pub fn append_text_fragment<'a>(
         mc: MutationContext<'gc, '_>,
-        lc: &mut LayoutContext<'gc>,
-        text: &str,
+        lc: &mut LayoutContext<'a, 'gc>,
+        text: &'a str,
         start: usize,
         end: usize,
         span: &TextSpan,
@@ -332,16 +367,16 @@ impl<'gc> LayoutBox<'gc> {
 
     /// Construct a new layout hierarchy from text spans.
     ///
-    /// The given `bounds` are optional; providing `None` bounds indicates a
-    /// field without automatic word wrapping.
+    /// The returned bounds will include both the text bounds itself, as well
+    /// as left and right margins on any of the lines.
     pub fn lower_from_text_spans(
         fs: &FormatSpans,
         context: &mut UpdateContext<'_, 'gc, '_>,
         movie: Arc<SwfMovie>,
         bounds: Twips,
         is_word_wrap: bool,
-    ) -> Option<GcCell<'gc, LayoutBox<'gc>>> {
-        let mut layout_context = LayoutContext::new(bounds);
+    ) -> (Option<GcCell<'gc, LayoutBox<'gc>>>, BoxBounds<Twips>) {
+        let mut layout_context = LayoutContext::new(bounds, fs.text());
 
         for (start, _end, text, span) in fs.iter_spans() {
             if let Some(font) = layout_context.resolve_font(context, movie.clone(), &span) {
@@ -406,19 +441,6 @@ impl<'gc> LayoutBox<'gc> {
 
     pub fn bounds(&self) -> BoxBounds<Twips> {
         self.bounds
-    }
-
-    /// Calculate the total bounds of a list of zero or more layout boxes.
-    pub fn total_bounds(mut list: Option<GcCell<'gc, Self>>) -> BoxBounds<Twips> {
-        let mut union = Default::default();
-
-        while let Some(lbox) = list {
-            let read = lbox.read();
-            union += read.bounds();
-            list = read.next_sibling();
-        }
-
-        union
     }
 
     /// Returns a reference to the text this box contains.
