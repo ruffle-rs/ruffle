@@ -9,7 +9,7 @@ use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use crate::xml::XMLDocument;
-use gc_arena::{Collect, Gc, GcCell};
+use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::sync::Arc;
 use swf::Twips;
 
@@ -80,6 +80,9 @@ pub struct EditTextData<'gc> {
     /// The calculated layout box.
     layout: Option<GcCell<'gc, LayoutBox<'gc>>>,
 
+    /// The current intrinsic bounds of the text field.
+    bounds: BoundingBox,
+
     /// The AVM1 object handle
     object: Option<Object<'gc>>,
 }
@@ -110,7 +113,7 @@ impl<'gc> EditText<'gc> {
             text_spans.replace_text(0, text_spans.text().len(), &text, Some(&default_format));
         }
 
-        let bounds: BoxBounds<Twips> = swf_tag.bounds.clone().into();
+        let bounds: BoundingBox = swf_tag.bounds.clone().into();
 
         let layout = LayoutBox::lower_from_text_spans(
             &text_spans,
@@ -137,6 +140,7 @@ impl<'gc> EditText<'gc> {
                 is_word_wrap,
                 object: None,
                 layout,
+                bounds,
                 autosize: AutoSizeMode::None,
             },
         ))
@@ -434,7 +438,7 @@ impl<'gc> EditText<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
-    impl_display_object!(base);
+    impl_display_object_sansbounds!(base);
 
     fn id(&self) -> CharacterId {
         self.0.read().static_data.text.id
@@ -494,7 +498,43 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn self_bounds(&self) -> BoundingBox {
-        self.0.read().static_data.text.bounds.clone().into()
+        self.0.read().bounds.clone().into()
+    }
+
+    fn x(&self) -> f64 {
+        self.0.read().bounds.x_min.to_pixels()
+    }
+
+    fn set_x(&mut self, gc_context: MutationContext<'gc, '_>, value: f64) {
+        let mut write = self.0.write(gc_context);
+
+        write.bounds.set_x(Twips::from_pixels(value));
+        write.base.set_transformed_by_script(true);
+    }
+
+    fn y(&self) -> f64 {
+        self.0.read().bounds.y_min.to_pixels()
+    }
+
+    fn set_y(&mut self, gc_context: MutationContext<'gc, '_>, value: f64) {
+        let mut write = self.0.write(gc_context);
+
+        write.bounds.set_y(Twips::from_pixels(value));
+        write.base.set_transformed_by_script(true);
+    }
+
+    fn set_width(&mut self, gc_context: MutationContext<'gc, '_>, value: f64) {
+        let mut write = self.0.write(gc_context);
+        
+        write.bounds.set_width(Twips::from_pixels(value));
+        write.base.set_transformed_by_script(true);
+    }
+
+    fn set_height(&mut self, gc_context: MutationContext<'gc, '_>, value: f64) {
+        let mut write = self.0.write(gc_context);
+
+        write.bounds.set_height(Twips::from_pixels(value));
+        write.base.set_transformed_by_script(true);
     }
 
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {

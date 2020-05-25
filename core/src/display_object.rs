@@ -903,9 +903,9 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
 
 pub enum DisplayObjectPtr {}
 
-// To use this macro: `use crate::impl_display_object;` or `use crate::prelude::*;`
+// To use this macro: `use crate::impl_display_object_sansbounds;` or `use crate::prelude::*;`
 #[macro_export]
-macro_rules! impl_display_object {
+macro_rules! impl_display_object_sansbounds {
     ($field:ident) => {
         fn depth(&self) -> crate::prelude::Depth {
             self.0.read().$field.depth()
@@ -956,18 +956,6 @@ macro_rules! impl_display_object {
                 .write(context)
                 .$field
                 .set_color_transform(context, color_transform)
-        }
-        fn x(&self) -> f64 {
-            self.0.read().$field.x()
-        }
-        fn set_x(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>, value: f64) {
-            self.0.write(gc_context).$field.set_x(value)
-        }
-        fn y(&self) -> f64 {
-            self.0.read().$field.y()
-        }
-        fn set_y(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>, value: f64) {
-            self.0.write(gc_context).$field.set_y(value)
         }
         fn rotation(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>) -> f64 {
             self.0.write(gc_context).$field.rotation()
@@ -1089,6 +1077,27 @@ macro_rules! impl_display_object {
         }
         fn as_ptr(&self) -> *const crate::display_object::DisplayObjectPtr {
             self.0.as_ptr() as *const crate::display_object::DisplayObjectPtr
+        }
+    };
+}
+
+// To use this macro: `use crate::impl_display_object;` or `use crate::prelude::*;`
+#[macro_export]
+macro_rules! impl_display_object {
+    ($field:ident) => {
+        impl_display_object_sansbounds!($field);
+
+        fn x(&self) -> f64 {
+            self.0.read().$field.x()
+        }
+        fn set_x(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>, value: f64) {
+            self.0.write(gc_context).$field.set_x(value)
+        }
+        fn y(&self) -> f64 {
+            self.0.read().$field.y()
+        }
+        fn set_y(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>, value: f64) {
+            self.0.write(gc_context).$field.set_y(value)
         }
     };
 }
