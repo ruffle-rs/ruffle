@@ -221,7 +221,14 @@ impl<'gc> Font<'gc> {
                 current_width = width;
             } else {
                 current_word = &text[line_start..word_end];
-                current_width -= measure.0;
+
+                let measure_with_space = self.measure(
+                    text.get(word_start..word_end + 1).unwrap_or(word),
+                    font_size,
+                );
+                current_width = current_width
+                    .checked_sub(measure_with_space.0)
+                    .unwrap_or_else(|| Twips::from_pixels(0.0));
             }
         }
 
@@ -379,7 +386,7 @@ mod tests {
                 Twips::from_pixels(0.0),
             );
 
-            assert_eq!(Some(11), breakpoint);
+            assert_eq!(Some(6), breakpoint);
 
             last_bp += breakpoint.unwrap() + 1;
 
@@ -390,7 +397,7 @@ mod tests {
                 Twips::from_pixels(0.0),
             );
 
-            assert_eq!(Some(6), breakpoint2);
+            assert_eq!(Some(4), breakpoint2);
 
             last_bp += breakpoint2.unwrap() + 1;
 
@@ -401,7 +408,18 @@ mod tests {
                 Twips::from_pixels(0.0),
             );
 
-            assert_eq!(None, breakpoint3);
+            assert_eq!(Some(4), breakpoint3);
+
+            last_bp += breakpoint3.unwrap() + 1;
+
+            let breakpoint4 = df.wrap_line(
+                &string[last_bp..],
+                Twips::from_pixels(12.0),
+                Twips::from_pixels(30.0),
+                Twips::from_pixels(0.0),
+            );
+
+            assert_eq!(None, breakpoint4);
         });
     }
 }
