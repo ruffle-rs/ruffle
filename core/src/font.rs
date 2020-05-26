@@ -181,7 +181,10 @@ impl<'gc> Font<'gc> {
     /// will it break at newlines.
     ///
     /// The given `offset` determines the start of the initial line, while the
-    /// `width` indicates how long the line is supposed to be.
+    /// `width` indicates how long the line is supposed to be. Be careful to
+    /// note that it is possible for this function to return `0`; that
+    /// indicates that the string itself cannot fit on the line and should
+    /// break onto the next one.
     ///
     /// This function yields `None` if the line is not broken.
     ///
@@ -194,9 +197,11 @@ impl<'gc> Font<'gc> {
         width: Twips,
         offset: Twips,
     ) -> Option<usize> {
-        let mut current_width = width
-            .checked_sub(offset)
-            .unwrap_or_else(|| Twips::from_pixels(0.0));
+        let mut remaining_width = width - offset;
+        if remaining_width < Twips::from_pixels(0.0) {
+            return Some(0);
+        }
+
         let mut current_word = &text[0..0];
 
         for word in text.split(' ') {
@@ -206,29 +211,32 @@ impl<'gc> Font<'gc> {
             let word_start = word.as_ptr() as usize - text.as_ptr() as usize;
             let word_end = word_start + word.len();
 
-            if measure.0 > current_width && measure.0 > width {
+            if measure.0 > remaining_width && measure.0 > width {
                 //Failsafe for if we get a word wider than the field.
+                //TODO: Flash breaks words here, we should do that too.
                 if !current_word.is_empty() {
                     return Some(line_end);
                 }
                 return Some(word_end);
-            } else if measure.0 > current_width {
-                if !current_word.is_empty() {
-                    return Some(line_end);
-                }
-
-                current_word = &text[word_start..word_end];
-                current_width = width;
+            } else if measure.0 > remaining_width {
+                //The word is wider than our remaining width, return the end of
+                //the line.
+                return Some(line_end);
             } else {
+                //Space remains for our current word, move up the word pointer.
                 current_word = &text[line_start..word_end];
 
                 let measure_with_space = self.measure(
                     text.get(word_start..word_end + 1).unwrap_or(word),
                     font_size,
                 );
-                current_width = current_width
-                    .checked_sub(measure_with_space.0)
-                    .unwrap_or_else(|| Twips::from_pixels(0.0));
+
+                //If the additional space were to cause an overflow, then
+                //return now.
+                remaining_width -= measure_with_space.0;
+                if remaining_width < Twips::from_pixels(0.0) {
+                    return Some(word_end);
+                }
             }
         }
 
@@ -371,6 +379,21 @@ mod tests {
             );
 
             assert_eq!(None, breakpoint4);
+        });
+    }
+
+    #[test]
+    fn wrap_line_breakpoint_no_room() {
+        with_device_font(|_mc, df| {
+            let string = "abcd efgh ijkl mnop";
+            let breakpoint = df.wrap_line(
+                &string,
+                Twips::from_pixels(12.0),
+                Twips::from_pixels(30.0),
+                Twips::from_pixels(29.0),
+            );
+
+            assert_eq!(Some(0), breakpoint);
         });
     }
 
