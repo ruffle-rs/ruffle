@@ -64,6 +64,12 @@ jobs:
           name: Web Build
           command: |
             cd web
+
+            # Workaround for chrome not existing on circleCI.
+            # We aren't running tests, so we don't need to install chromedriver,
+            # and this file tells chromedriver to require existing chrome installation.
+            rm packages/selfhosted/.npmrc
+
             npm run bootstrap
             npm run buildProduction
 
