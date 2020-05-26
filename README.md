@@ -32,29 +32,9 @@ Ruffle is in the proof-of-concept stage and can currently run early Flash animat
 
 * `cargo run --package=ruffle_desktop -- test.swf`
 
-### Web
-
-* Install [Node.js](https://nodejs.org/en/)
-* Install [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
-
-#### Running the web demo
-
-* `cd web/demo`
-* `npm run bootstrap`
-* `npm run demo`
-* Load indicated page in browser (usually http://localhost:8080)
-
-#### Hosting on your own site
-
-* `cd web/selfhosted`
-* `npm run bootstrap`
-* `npm run build`
-* Follow the wiki instructions for [using Ruffle on your own site](https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#web)
-
-#### Browser extension
-
-* Follow the wiki instructions for [building the Ruffle browser extension](https://github.com/ruffle-rs/ruffle/wiki/Building-Ruffle#building-the-web-extension)
-* Follow the wiki instructions for [using the Ruffle browser extension](https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#browser-extension)
+### Web or Extension
+Follow [the instructions in the web directory](web/README.md#building-from-source) for building
+either the web or browser extension version of Ruffle.
 
 ### Scanner
 
@@ -76,7 +56,7 @@ This currently requires hardware acceleration, but can be run headless (with no 
 
 - `core` contains the core emulator and common code
 - `desktop` contains the desktop client (uses `wgpu-rs`)
-- `web` contains the web client (uses `wasm-bindgen`)
+- [`web`](web) contains the web client and browser extension (uses `wasm-bindgen`)
 - `scanner` contains a utility to bulk parse swf files
 - `exporter` contains a utility to generate PNG screenshots of a swf file
 
@@ -99,7 +79,7 @@ Sincere thanks to the diamond level sponsors of Ruffle:
   <a href="https://www.crazygames.com">
     <img src="assets/crazygames_logo.png" alt="Crazy Games">
   </a>
-</a>
+</p>
 
 ## License
 
