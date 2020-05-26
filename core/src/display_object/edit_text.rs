@@ -549,6 +549,17 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         write.base.set_transformed_by_script(true);
     }
 
+    fn set_matrix(&mut self, context: MutationContext<'gc, '_>, matrix: &Matrix) {
+        let mut write = self.0.write(context);
+
+        let new_width = write.bounds.width().to_pixels() * matrix.a as f64;
+        let new_height = write.bounds.height().to_pixels() * matrix.d as f64;
+
+        write.bounds.set_width(Twips::from_pixels(new_width));
+        write.bounds.set_height(Twips::from_pixels(new_height));
+        write.base.set_matrix(context, matrix);
+    }
+
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
         context.transform_stack.push(&*self.transform());
 

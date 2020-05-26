@@ -931,13 +931,6 @@ macro_rules! impl_display_object_sansbounds {
         ) -> std::cell::RefMut<swf::Matrix> {
             std::cell::RefMut::map(self.0.write(context), |o| o.$field.matrix_mut(context))
         }
-        fn set_matrix(
-            &mut self,
-            context: gc_arena::MutationContext<'gc, '_>,
-            matrix: &swf::Matrix,
-        ) {
-            self.0.write(context).$field.set_matrix(context, matrix)
-        }
         fn color_transform(&self) -> std::cell::Ref<crate::color_transform::ColorTransform> {
             std::cell::Ref::map(self.0.read(), |o| o.$field.color_transform())
         }
@@ -1098,6 +1091,13 @@ macro_rules! impl_display_object {
         }
         fn set_y(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>, value: f64) {
             self.0.write(gc_context).$field.set_y(value)
+        }
+        fn set_matrix(
+            &mut self,
+            context: gc_arena::MutationContext<'gc, '_>,
+            matrix: &swf::Matrix,
+        ) {
+            self.0.write(context).$field.set_matrix(context, matrix)
         }
     };
 }
