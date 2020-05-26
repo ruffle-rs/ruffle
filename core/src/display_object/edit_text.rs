@@ -164,9 +164,9 @@ impl<'gc> EditText<'gc> {
             id: 0, //TODO: Dynamic text fields don't have a character ID?
             bounds: swf::Rectangle {
                 x_min: Twips::from_pixels(x),
-                x_max: Twips::from_pixels(x + height),
+                x_max: Twips::from_pixels(x + width),
                 y_min: Twips::from_pixels(y),
-                y_max: Twips::from_pixels(y + width),
+                y_max: Twips::from_pixels(y + height),
             },
             font_id: None,
             font_class_name: None,
