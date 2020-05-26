@@ -102,7 +102,7 @@ pub fn create<'gc>(
     system.define_value(
         gc_context,
         "capabilities",
-        Undefined,
+        crate::avm1::globals::system_capabilities::create(gc_context, proto, fn_proto).into(),
         DontDelete | ReadOnly | DontEnum,
     );
 

@@ -28,6 +28,7 @@ mod rectangle;
 mod sound;
 mod stage;
 pub(crate) mod string;
+pub(crate) mod system_capabilities;
 pub(crate) mod system;
 pub(crate) mod text_field;
 mod text_format;
