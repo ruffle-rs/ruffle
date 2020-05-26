@@ -393,8 +393,17 @@ impl<'gc> LayoutBox<'gc> {
                     {
                         if breakpoint == 0 {
                             layout_context.newline(context.gc_context);
-                            last_breakpoint += 1;
-                            continue;
+
+                            let next_dim = layout_context.wrap_dimensions(&span);
+
+                            width = next_dim.0;
+                            offset = next_dim.1;
+
+                            if last_breakpoint >= text.len() {
+                                break;
+                            } else {
+                                continue;
+                            }
                         }
 
                         let next_breakpoint = last_breakpoint + breakpoint;
