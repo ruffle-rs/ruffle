@@ -2,6 +2,7 @@
     "name": "ruffle-selfhosted",
     "version": "0.1.0",
     "description": "Put Flash back on the web with Ruffle on your own site",
+    "license": "(MIT OR Apache-2.0)",
     "scripts": {
         "build": "webpack",
         "serve": "webpack-dev-server",

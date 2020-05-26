@@ -2,6 +2,7 @@
     "name": "ruffle-extension",
     "version": "0.1.0",
     "description": "Extension packaging for Ruffle Flash Emulator",
+    "license": "(MIT OR Apache-2.0)",
     "scripts": {
         "build": "webpack",
         "serve": "webpack-dev-server"
