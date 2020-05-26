@@ -28,6 +28,7 @@ mod rectangle;
 mod sound;
 mod stage;
 pub(crate) mod string;
+pub(crate) mod system;
 pub(crate) mod text_field;
 mod text_format;
 mod xml;
@@ -275,6 +276,8 @@ pub fn create_globals<'gc>(
     let rectangle =
         rectangle::create_rectangle_object(gc_context, Some(rectangle_proto), Some(function_proto));
 
+    let system = system::create(gc_context, Some(object_proto), Some(function_proto));
+
     flash.define_value(gc_context, "geom", geom.into(), EnumSet::empty());
     geom.define_value(gc_context, "Matrix", matrix.into(), EnumSet::empty());
     geom.define_value(gc_context, "Point", point.into(), EnumSet::empty());
@@ -309,6 +312,7 @@ pub fn create_globals<'gc>(
     globals.define_value(gc_context, "String", string.into(), EnumSet::empty());
     globals.define_value(gc_context, "Number", number.into(), EnumSet::empty());
     globals.define_value(gc_context, "Boolean", boolean.into(), EnumSet::empty());
+    globals.define_value(gc_context, "System", system.into(), EnumSet::empty());
 
     globals.define_value(
         gc_context,
