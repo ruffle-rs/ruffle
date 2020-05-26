@@ -1,6 +1,7 @@
 /* eslint-env node */
 
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
+const CopyPlugin = require("copy-webpack-plugin");
 const path = require("path");
 
 module.exports = (env, argv) => {
@@ -20,6 +21,11 @@ module.exports = (env, argv) => {
             jsonpFunction: "RufflePlayerLoader",
         },
         mode: mode,
-        plugins: [new CleanWebpackPlugin()],
+        plugins: [
+            new CleanWebpackPlugin(),
+            new CopyPlugin({
+                patterns: [{ from: "LICENSE*" }, { from: "README.md" }],
+            }),
+        ],
     };
 };
