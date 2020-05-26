@@ -425,7 +425,7 @@ impl<'gc> EditText<'gc> {
                     &chunk,
                     self.text_transform(color),
                     font_size,
-                    |transform, glyph: &Glyph| {
+                    |transform, glyph: &Glyph, _advance| {
                         // Render glyph.
                         context.transform_stack.push(transform);
                         context

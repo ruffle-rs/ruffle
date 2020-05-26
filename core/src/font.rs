@@ -138,7 +138,7 @@ impl<'gc> Font<'gc> {
         height: Twips,
         mut glyph_func: FGlyph,
     ) where
-        FGlyph: FnMut(&Transform, &Glyph),
+        FGlyph: FnMut(&Transform, &Glyph, Twips),
     {
         transform.matrix.ty += height;
         let scale = height.get() as f32 / self.scale();
@@ -149,13 +149,16 @@ impl<'gc> Font<'gc> {
         let has_kerning_info = self.has_kerning_info();
         while let Some(c) = chars.next() {
             if let Some(glyph) = self.get_glyph_for_char(c) {
-                glyph_func(&transform, &glyph);
-                // Step horizontally.
                 let mut advance = Twips::new(glyph.advance);
                 if has_kerning_info {
                     advance += self.get_kerning_offset(c, chars.peek().cloned().unwrap_or('\0'));
                 }
-                transform.matrix.tx += Twips::new((advance.get() as f32 * scale) as i32);
+                let twips_advance = Twips::new((advance.get() as f32 * scale) as i32);
+
+                glyph_func(&transform, &glyph, twips_advance);
+
+                // Step horizontally.
+                transform.matrix.tx += twips_advance;
             }
         }
     }
@@ -164,12 +167,17 @@ impl<'gc> Font<'gc> {
     pub fn measure(self, text: &str, font_size: Twips) -> (Twips, Twips) {
         let mut size = (Twips::new(0), Twips::new(0));
 
-        self.evaluate(text, Default::default(), font_size, |transform, _glyph| {
-            let tx = transform.matrix.tx;
-            let ty = transform.matrix.ty;
-            size.0 = std::cmp::max(size.0, tx);
-            size.1 = std::cmp::max(size.1, ty);
-        });
+        self.evaluate(
+            text,
+            Default::default(),
+            font_size,
+            |transform, _glyph, advance| {
+                let tx = transform.matrix.tx;
+                let ty = transform.matrix.ty;
+                size.0 = std::cmp::max(size.0, tx + advance);
+                size.1 = std::cmp::max(size.1, ty);
+            },
+        );
 
         size
     }
@@ -341,7 +349,7 @@ mod tests {
             let breakpoint = df.wrap_line(
                 &string,
                 Twips::from_pixels(12.0),
-                Twips::from_pixels(30.0),
+                Twips::from_pixels(35.0),
                 Twips::from_pixels(0.0),
             );
 
@@ -352,7 +360,7 @@ mod tests {
             let breakpoint2 = df.wrap_line(
                 &string[last_bp..],
                 Twips::from_pixels(12.0),
-                Twips::from_pixels(30.0),
+                Twips::from_pixels(35.0),
                 Twips::from_pixels(0.0),
             );
 
@@ -363,7 +371,7 @@ mod tests {
             let breakpoint3 = df.wrap_line(
                 &string[last_bp..],
                 Twips::from_pixels(12.0),
-                Twips::from_pixels(30.0),
+                Twips::from_pixels(35.0),
                 Twips::from_pixels(0.0),
             );
 
@@ -374,7 +382,7 @@ mod tests {
             let breakpoint4 = df.wrap_line(
                 &string[last_bp..],
                 Twips::from_pixels(12.0),
-                Twips::from_pixels(30.0),
+                Twips::from_pixels(35.0),
                 Twips::from_pixels(0.0),
             );
 
@@ -405,7 +413,7 @@ mod tests {
             let breakpoint = df.wrap_line(
                 &string,
                 Twips::from_pixels(12.0),
-                Twips::from_pixels(30.0),
+                Twips::from_pixels(35.0),
                 Twips::from_pixels(0.0),
             );
 
@@ -416,7 +424,7 @@ mod tests {
             let breakpoint2 = df.wrap_line(
                 &string[last_bp..],
                 Twips::from_pixels(12.0),
-                Twips::from_pixels(30.0),
+                Twips::from_pixels(35.0),
                 Twips::from_pixels(0.0),
             );
 
@@ -427,7 +435,7 @@ mod tests {
             let breakpoint3 = df.wrap_line(
                 &string[last_bp..],
                 Twips::from_pixels(12.0),
-                Twips::from_pixels(30.0),
+                Twips::from_pixels(35.0),
                 Twips::from_pixels(0.0),
             );
 
@@ -438,11 +446,22 @@ mod tests {
             let breakpoint4 = df.wrap_line(
                 &string[last_bp..],
                 Twips::from_pixels(12.0),
-                Twips::from_pixels(30.0),
+                Twips::from_pixels(35.0),
                 Twips::from_pixels(0.0),
             );
 
-            assert_eq!(None, breakpoint4);
+            assert_eq!(Some(1), breakpoint4);
+
+            last_bp += breakpoint4.unwrap() + 1;
+
+            let breakpoint5 = df.wrap_line(
+                &string[last_bp..],
+                Twips::from_pixels(12.0),
+                Twips::from_pixels(35.0),
+                Twips::from_pixels(0.0),
+            );
+
+            assert_eq!(None, breakpoint5);
         });
     }
 }
