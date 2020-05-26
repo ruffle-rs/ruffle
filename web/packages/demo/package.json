@@ -3,6 +3,7 @@
     "version": "0.1.0",
     "description": "Demo of Ruffle Flash emulator",
     "license": "(MIT OR Apache-2.0)",
+    "private": true,
     "scripts": {
         "build": "webpack",
         "serve": "webpack-dev-server"
