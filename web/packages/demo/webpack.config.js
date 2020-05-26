@@ -27,6 +27,12 @@ module.exports = (env, argv) => {
                         from: path.resolve(__dirname, "www/index.html"),
                         to: "index.html",
                     },
+                    {
+                        from: "LICENSE**",
+                    },
+                    {
+                        from: "README.md",
+                    },
                 ],
             }),
         ],

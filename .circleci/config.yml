@@ -72,9 +72,6 @@ jobs:
           name: Web Build
           command: |
             cd web/packages/selfhosted/dist
-            cp ../../../../README.md .
-            cp ../../../../LICENSE_APACHE .
-            cp ../../../../LICENSE_MIT .
             zip -r web.zip .
             cd ../../../..
             mkdir -p workspace/web
@@ -92,9 +89,6 @@ jobs:
           name: Extension Build
           command: |
             cd web/packages/extension/build
-            cp ../../../../README.md .
-            cp ../../../../LICENSE_APACHE .
-            cp ../../../../LICENSE_MIT .
             zip -r extension.zip .
             cd ../../../..
             cp web/packages/extension/build/extension.zip workspace
