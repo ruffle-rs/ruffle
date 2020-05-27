@@ -1,251 +1,279 @@
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute::{DontDelete, DontEnum, ReadOnly};
-use crate::avm1::{ScriptObject, TObject};
+use crate::avm1::{ScriptObject, TObject, Avm1, Value, Error};
 use gc_arena::MutationContext;
-use crate::avm1::globals::system_capabilities::Language::English;
+use crate::context::UpdateContext;
+use crate::avm1::return_value::ReturnValue;
+use crate::avm1::globals::system::SystemCapabilities;
+use crate::avm1::function::Executable;
 
-#[allow(dead_code)]
-enum Language {
-    Czech,
-    Danish,
-    Dutch,
-    English,
-    Finnish,
-    French,
-    German,
-    Hungarian,
-    Italian,
-    Japanese,
-    Korean,
-    Norwegian,
-    Unknown,
-    Polish,
-    Portuguese,
-    Russian,
-    SimplifiedChinese,
-    Spanish,
-    Swedish,
-    TraditionalChinese,
-    Turkish
-}
-
-impl Language {
-    fn get_language_code(&self) -> &str {
-        return match self {
-            Language::Czech => "cs",
-            Language::Danish => "da",
-            Language::Dutch => "nl",
-            Language::English => {
-                // TODO: return "en-US" for player_version < 7
-                "en"
-            }
-            Language::Finnish => "fi",
-            Language::French => "fr",
-            Language::German => "de",
-            Language::Hungarian => "hu",
-            Language::Italian => "it",
-            Language::Japanese => "ja",
-            Language::Korean => "ko",
-            Language::Norwegian => "no",
-            Language::Unknown => "xu",
-            Language::Polish => "pl",
-            Language::Portuguese => "pt",
-            Language::Russian => "ru",
-            Language::SimplifiedChinese => "zh-CN",
-            Language::Spanish => "es",
-            Language::Swedish => "sv",
-            Language::TraditionalChinese => "zh-TW",
-            Language::Turkish => "tr"
+macro_rules! capabilities_func {
+    ($func_name: ident, $capability: expr) => {
+        pub fn $func_name<'gc>(
+            _avm: &mut Avm1<'gc>,
+            context: &mut UpdateContext<'_, 'gc, '_>,
+            _this: Object<'gc>,
+            _args: &[Value<'gc>],
+        ) -> Result<ReturnValue<'gc>, Error> {
+            Ok(context.system.capabilities.contains($capability).into())
         }
-    }
+    };
 }
 
+macro_rules! inverse_capabilities_func {
+    ($func_name: ident, $capability: expr) => {
+        pub fn $func_name<'gc>(
+            _avm: &mut Avm1<'gc>,
+            context: &mut UpdateContext<'_, 'gc, '_>,
+            _this: Object<'gc>,
+            _args: &[Value<'gc>],
+        ) -> Result<ReturnValue<'gc>, Error> {
+            Ok((!context.system.capabilities.contains($capability)).into())
+        }
+    };
+}
+
+macro_rules! capabilities_prop {
+    ($gc_ctx: expr, $capabilities: expr, $($name:expr => $func:expr),* ) => {{
+        $(
+            $capabilities.add_property(
+                $gc_ctx,
+                $name,
+                Executable::Native($func),
+                None,
+                DontDelete | ReadOnly | DontEnum
+            );
+        )*
+    }};
+}
+
+capabilities_func!(get_has_accessibility, SystemCapabilities::Accessibility);
+capabilities_func!(get_has_audio, SystemCapabilities::Audio);
+capabilities_func!(get_has_audio_encoder, SystemCapabilities::AudioEncoder);
+capabilities_func!(get_has_embedded_video, SystemCapabilities::EmbeddedVideo);
+
+capabilities_func!(get_has_ime, SystemCapabilities::IME);
+capabilities_func!(get_has_mp3, SystemCapabilities::MP3);
+capabilities_func!(get_has_printing, SystemCapabilities::Printing);
+capabilities_func!(get_has_screen_broadcast, SystemCapabilities::ScreenBroadcast);
+capabilities_func!(get_has_screen_playback, SystemCapabilities::ScreenPlayback);
+capabilities_func!(get_has_streaming_audio, SystemCapabilities::StreamingAudio);
+capabilities_func!(get_has_streaming_video, SystemCapabilities::StreamingVideo);
+capabilities_func!(get_has_video_encoder, SystemCapabilities::VideoEncoder);
+capabilities_func!(get_is_debugger, SystemCapabilities::Debugger);
+inverse_capabilities_func!(get_is_local_file_read_disabled, SystemCapabilities::LocalFileRead);
+inverse_capabilities_func!(get_is_av_hardware_disabled, SystemCapabilities::AvHardware);
+
+pub fn get_player_type<'gc>(
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    Ok(context.system.player_type.get_player_name().into())
+}
+
+pub fn get_screen_color<'gc>(
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    Ok(context.system.screen_color.get_color_code().into())
+}
+
+pub fn get_language<'gc>(
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    Ok(context.system.language.get_language_code().into())
+}
+
+pub fn get_screen_resolution_x<'gc>(
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    Ok(context.system.screen_resolution.0.into())
+}
+
+pub fn get_screen_resolution_y<'gc>(
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    Ok(context.system.screen_resolution.1.into())
+}
+
+pub fn get_pixel_aspect_ratio<'gc>(
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    Ok(context.system.aspect_ratio.into())
+}
+
+pub fn get_screen_dpi<'gc>(
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    Ok(context.system.dpi.into())
+}
+
+pub fn get_manufacturer<'gc>(
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    Ok(context.system.manufacturer.get_manufacturer_string().into())
+}
+
+pub fn get_os_name<'gc>(
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    Ok(context.system.os.get_os_name().into())
+}
+
+pub fn get_version<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    Ok(format!("{} {},0,0,0", context.system.manufacturer.get_platform_name(), avm.player_version).into())
+}
+
+pub fn get_server_string<'gc>(
+    _avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    Ok(context.system.get_server_string().into())
+}
+
+
+//TODO: Capabilities should be a global to access this too
 pub fn create<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
     let capabilities = ScriptObject::object(gc_context, proto);
 
-    capabilities.define_value(
-        gc_context,
-        "avHardwareDisable",
-        true.into(),
-        DontDelete | ReadOnly | DontEnum,
+    capabilities_prop!(gc_context, capabilities,
+        "hasAccessibility" => get_has_accessibility,
+        "hasAudio" => get_has_audio,
+        "hasAudioEncoder" => get_has_audio_encoder,
+        "hasEmbeddedVideo" => get_has_embedded_video,
+        "hasIME" => get_has_ime,
+        "hasMP3" => get_has_mp3,
+        "hasPrinting" => get_has_printing,
+        "hasScreenBroadcast" => get_has_screen_broadcast,
+        "hasScreenPlayback" => get_has_screen_playback,
+        "hasStreamingAudio" => get_has_streaming_audio,
+        "hasStreamingVideo" => get_has_streaming_video,
+        "hasVideoEncoder" => get_has_video_encoder,
+        "isDebugger" => get_is_debugger,
+        "avHardwareDisable" => get_is_av_hardware_disabled,
+        "localFileReadDisable" => get_is_local_file_read_disabled
     );
 
-    capabilities.define_value(
-        gc_context,
-        "hasAccessibility",
-        false.into(),
-        DontDelete | ReadOnly | DontEnum,
-    );
-
-    capabilities.define_value(
-        gc_context,
-        "hasAudio",
-        true.into(),
-        DontDelete | ReadOnly | DontEnum,
-    );
-
-    capabilities.define_value(
-        gc_context,
-        "hasAudioEncoder",
-        false.into(),
-        DontDelete | ReadOnly | DontEnum,
-    );
-
-    capabilities.define_value(
-        gc_context,
-        "hasEmbeddedVideo",
-        false.into(),
-        DontDelete | ReadOnly | DontEnum,
-    );
-
-    capabilities.define_value(
-        gc_context,
-        "hasIME",
-        true.into(),
-        DontDelete | ReadOnly | DontEnum,
-    );
-
-    capabilities.define_value(
-        gc_context,
-        "hasMP3",
-        true.into(),
-        DontDelete | ReadOnly | DontEnum,
-    );
-
-    capabilities.define_value(
-        gc_context,
-        "hasPrinting",
-        false.into(),
-        DontDelete | ReadOnly | DontEnum,
-    );
-
-    capabilities.define_value(
-        gc_context,
-        "hasScreenBroadcast",
-        false.into(),
-        DontDelete | ReadOnly | DontEnum,
-    );
-
-    capabilities.define_value(
-        gc_context,
-        "hasScreenPlayback",
-        false.into(),
-        DontDelete | ReadOnly | DontEnum,
-    );
-
-    capabilities.define_value(
-        gc_context,
-        "hasStreamingAudio",
-        false.into(),
-        DontDelete | ReadOnly | DontEnum,
-    );
-
-    capabilities.define_value(
-        gc_context,
-        "hasStreamingVideo",
-        false.into(),
-        DontDelete | ReadOnly | DontEnum,
-    );
-
-    capabilities.define_value(
-        gc_context,
-        "hasVideoEncoder",
-        false.into(),
-        DontDelete | ReadOnly | DontEnum,
-    );
-
-    capabilities.define_value(
-        gc_context,
-        "isDebugger",
-        false.into(),
-        DontDelete | ReadOnly | DontEnum,
-    );
-
-    // TODO: note for fp <7 this should be the locale on windows and the ui lang for >= 7
-    capabilities.define_value(
+    capabilities.add_property(
         gc_context,
         "language",
-        English.get_language_code().into(),
+        Executable::Native(get_language),
+        None,
         DontDelete | ReadOnly | DontEnum,
     );
 
-    capabilities.define_value(
-        gc_context,
-        "localFileReadDisable",
-        true.into(),
-        DontDelete | ReadOnly | DontEnum,
-    );
-
-    capabilities.define_value(
+    capabilities.add_property(
         gc_context,
         "manufacturer",
-        "Macromedia Linux".into(),
+        Executable::Native(get_manufacturer),
+        None,
         DontDelete | ReadOnly | DontEnum,
     );
 
-    capabilities.define_value(
+    capabilities.add_property(
         gc_context,
         "os",
-        "Linux".into(),
+        Executable::Native(get_os_name),
+        None,
         DontDelete | ReadOnly | DontEnum,
     );
 
-    capabilities.define_value(
+    capabilities.add_property(
         gc_context,
         "pixelAspectRatio",
-        1.into(),
+        Executable::Native(get_pixel_aspect_ratio),
+        None,
         DontDelete | ReadOnly | DontEnum,
     );
 
-    capabilities.define_value(
+    capabilities.add_property(
         gc_context,
         "playerType",
-        "StandAlone".into(),
+        Executable::Native(get_player_type),
+        None,
         DontDelete | ReadOnly | DontEnum,
     );
 
-    capabilities.define_value(
+    capabilities.add_property(
         gc_context,
         "screenColor",
-        "color".into(),
+        Executable::Native(get_screen_color),
+        None,
         DontDelete | ReadOnly | DontEnum,
     );
 
-    capabilities.define_value(
+    capabilities.add_property(
         gc_context,
         "screenDPI",
-        false.into(),
+        Executable::Native(get_screen_dpi),
+        None,
         DontDelete | ReadOnly | DontEnum,
     );
 
-    capabilities.define_value(
+    capabilities.add_property(
         gc_context,
         "screenResolutionX",
-        1920.into(),
+        Executable::Native(get_screen_resolution_x),
+        None,
         DontDelete | ReadOnly | DontEnum,
     );
 
-    capabilities.define_value(
+    capabilities.add_property(
         gc_context,
         "screenResolutionY",
-        1080.into(),
+        Executable::Native(get_screen_resolution_y),
+        None,
         DontDelete | ReadOnly | DontEnum,
     );
 
-    capabilities.define_value(
+    capabilities.add_property(
         gc_context,
         "serverString",
-        "MP3=t&AE=f".into(),
+        Executable::Native(get_server_string),
+        None,
         DontDelete | ReadOnly | DontEnum,
     );
 
-    capabilities.define_value(
+    capabilities.add_property(
         gc_context,
         "version",
-        "WIN 8,0,0,0".into(),
+        Executable::Native(get_version),
+        None,
         DontDelete | ReadOnly | DontEnum,
     );
 

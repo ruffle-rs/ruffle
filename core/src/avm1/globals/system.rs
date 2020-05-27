@@ -7,6 +7,157 @@ use gc_arena::MutationContext;
 use num_enum::TryFromPrimitive;
 use std::convert::TryFrom;
 use crate::avm1::function::Executable;
+use enumset::{EnumSet, EnumSetType};
+
+/// The available host operating systems
+pub enum OperatingSystem {
+    WindowsXp,
+    Windows2k,
+    WindowsNt,
+    Windows98,
+    Windows95,
+    WindowsCE,
+    Linux,
+    MacOS
+}
+
+impl OperatingSystem {
+    pub fn get_os_name(&self) -> &str {
+        match self {
+            OperatingSystem::WindowsXp => "Windows XP",
+            OperatingSystem::Windows2k => "Windows 2000",
+            OperatingSystem::WindowsNt => "Windows NT",
+            OperatingSystem::Windows98 => "Windows 98/ME",
+            OperatingSystem::Windows95 => "Windows 95",
+            OperatingSystem::WindowsCE => "Windows CE",
+            OperatingSystem::Linux => "Linux",
+            OperatingSystem::MacOS => "MacOS",
+        }
+    }
+}
+
+/// The available player manufacturers
+pub enum Manufacturer {
+    Windows,
+    Macintosh,
+    Linux,
+    Other(String),
+}
+
+impl Manufacturer {
+    pub fn get_manufacturer_string(&self) -> String {
+        let os_part = match self {
+            Manufacturer::Windows => "Windows",
+            Manufacturer::Macintosh => "Macintosh",
+            Manufacturer::Linux => "Linux",
+            Manufacturer::Other(name) => name.as_str(),
+        };
+
+        //TODO: this should be adobe in (what version?)
+        format!("Macromedia {}", os_part)
+    }
+
+    pub fn get_platform_name(&self) -> &str {
+        match self {
+            Manufacturer::Windows => "WIN",
+            Manufacturer::Macintosh => "MAC",
+            Manufacturer::Linux => "LNX",
+            _ => ""
+        }
+    }
+}
+
+/// The language of the host os
+pub enum Language {
+    Czech,
+    Danish,
+    Dutch,
+    English,
+    Finnish,
+    French,
+    German,
+    Hungarian,
+    Italian,
+    Japanese,
+    Korean,
+    Norwegian,
+    Unknown,
+    Polish,
+    Portuguese,
+    Russian,
+    SimplifiedChinese,
+    Spanish,
+    Swedish,
+    TraditionalChinese,
+    Turkish
+}
+
+impl Language {
+    pub fn get_language_code(&self) -> &str {
+        return match self {
+            Language::Czech => "cs",
+            Language::Danish => "da",
+            Language::Dutch => "nl",
+            Language::English => {
+                // TODO: return "en-US" for player_version < 7
+                "en"
+            }
+            Language::Finnish => "fi",
+            Language::French => "fr",
+            Language::German => "de",
+            Language::Hungarian => "hu",
+            Language::Italian => "it",
+            Language::Japanese => "ja",
+            Language::Korean => "ko",
+            Language::Norwegian => "no",
+            Language::Unknown => "xu",
+            Language::Polish => "pl",
+            Language::Portuguese => "pt",
+            Language::Russian => "ru",
+            Language::SimplifiedChinese => "zh-CN",
+            Language::Spanish => "es",
+            Language::Swedish => "sv",
+            Language::TraditionalChinese => "zh-TW",
+            Language::Turkish => "tr"
+        }
+    }
+}
+
+/// The supported colors of the screen
+pub enum ScreenColor {
+    Color,
+    Gray,
+    BlackWhite,
+}
+
+impl ScreenColor {
+    pub fn get_color_code(&self) -> &str {
+        return match self {
+            ScreenColor::Color => "color",
+            ScreenColor::Gray => "gray",
+            ScreenColor::BlackWhite => "bw",
+        }
+    }
+}
+
+/// The type of the player
+pub enum PlayerType {
+    StandAlone,
+    External,
+    PlugIn,
+    ActiveX,
+}
+
+impl PlayerType {
+    pub fn get_player_name(&self) -> &str {
+        return match self {
+            PlayerType::StandAlone => "StandAlone",
+            PlayerType::External => "External",
+            PlayerType::PlugIn => "PlugIn",
+            PlayerType::ActiveX => "ActiveX",
+        }
+    }
+}
 
 #[derive(Debug, Copy, Clone, TryFromPrimitive)]
 #[repr(u8)]
@@ -17,6 +168,25 @@ enum SettingsPanel {
     Camera = 3,
 }
 
+#[derive(EnumSetType, Debug)]
+pub enum SystemCapabilities {
+    AvHardware,
+    Accessibility,
+    Audio,
+    AudioEncoder,
+    EmbeddedVideo,
+    IME,
+    MP3,
+    Printing,
+    ScreenBroadcast,
+    ScreenPlayback,
+    StreamingAudio,
+    StreamingVideo,
+    VideoEncoder,
+    Debugger,
+    LocalFileRead,
+}
+
 /// The properties modified by 'System'
 pub struct SystemProperties {
     /// If true then settings should be saved and read from the exact same domain of the player
@@ -24,7 +194,73 @@ pub struct SystemProperties {
     pub exact_settings: bool,
     /// If true then the system codepage should be used instead of unicode for text files
     /// If false then unicode should be used
-    pub use_codepage: bool
+    pub use_codepage: bool,
+    /// The capabilities of the player
+    pub capabilities: EnumSet<SystemCapabilities>,
+    /// The type of the player
+    pub player_type: PlayerType,
+    /// The type of screen available to the player
+    pub screen_color: ScreenColor,
+    /// The language of the host os
+    pub language: Language,
+    /// The resolution of the available screen
+    pub screen_resolution: (u32, u32),
+    /// The aspect ratio of the screens pixels
+    pub aspect_ratio: f32,
+    /// The dpi of the screen
+    pub dpi: f32,
+    /// The manufacturer of the player
+    pub manufacturer: Manufacturer,
+    /// The os of the host
+    pub os: OperatingSystem,
+}
+
+impl SystemProperties {
+    pub fn has_capability(&self, cap: SystemCapabilities) -> bool {
+        self.capabilities.contains(cap)
+    }
+
+    pub fn not_has_capability(&self, cap: SystemCapabilities) -> bool {
+        !self.capabilities.contains(cap)
+    }
+
+    fn encode_bool(&self, b: bool) -> &str {
+        match b {
+            true => "t",
+            false => "f"
+        }
+    }
+
+    pub fn get_server_string(&self) -> String {
+        //TODO: url encode string params
+        //TODO: check the order, this should match flash
+
+        format!("AVD={}&ACC={}&A={}&AE={}&EV={}&IME={}&MP3={}&PR={}&SB={}&SP={}&SA={}&SV={}&VE={}&DEB={}&LFD={}&M={}&OS={}&AR={}&PT={}&COL={}&DP={}&R={}x{}",
+            self.encode_bool(self.not_has_capability(SystemCapabilities::AvHardware)),
+            self.encode_bool(self.has_capability(SystemCapabilities::Accessibility)),
+            self.encode_bool(self.has_capability(SystemCapabilities::Audio)),
+            self.encode_bool(self.has_capability(SystemCapabilities::AudioEncoder)),
+            self.encode_bool(self.has_capability(SystemCapabilities::EmbeddedVideo)),
+            self.encode_bool(self.has_capability(SystemCapabilities::IME)),
+            self.encode_bool(self.has_capability(SystemCapabilities::MP3)),
+            self.encode_bool(self.has_capability(SystemCapabilities::Printing)),
+            self.encode_bool(self.has_capability(SystemCapabilities::ScreenBroadcast)),
+            self.encode_bool(self.has_capability(SystemCapabilities::ScreenPlayback)),
+            self.encode_bool(self.has_capability(SystemCapabilities::StreamingAudio)),
+            self.encode_bool(self.has_capability(SystemCapabilities::StreamingVideo)),
+            self.encode_bool(self.has_capability(SystemCapabilities::VideoEncoder)),
+            self.encode_bool(self.has_capability(SystemCapabilities::Debugger)),
+            self.encode_bool(self.not_has_capability(SystemCapabilities::LocalFileRead)),
+            self.manufacturer.get_manufacturer_string(),
+            self.os.get_os_name(),
+            self.aspect_ratio,
+            self.player_type.get_player_name(),
+            self.screen_color.get_color_code(),
+            self.dpi,
+            self.screen_resolution.0,
+            self.screen_resolution.1
+        )
+    }
 }
 
 impl Default for SystemProperties {
@@ -33,7 +269,18 @@ impl Default for SystemProperties {
             //TODO: default to true on fp>=7, false <= 6
             exact_settings: true,
             //TODO: default to false on fp>=7, true <= 6
-            use_codepage: false
+            use_codepage: false,
+            capabilities: EnumSet::empty(),
+            player_type: PlayerType::StandAlone,
+            screen_color: ScreenColor::Color,
+            // TODO: note for fp <7 this should be the locale and the ui lang for >= 7, on windows
+            language: Language::English,
+            screen_resolution: (0, 0),
+            aspect_ratio: 1 as f32,
+            dpi: 1 as f32,
+            //TODO: default to current
+            manufacturer: Manufacturer::Linux,
+            os: OperatingSystem::Linux,
         }
     }
 }
@@ -50,7 +297,7 @@ pub fn set_clipboard<'gc>(
         .to_owned()
         .coerce_to_string(avm, action_context)?;
 
-    log::warn!("System.setClipboard({}) not yet implemented", new_content);
+    action_context.input.set_clipboard_content(new_content);
 
     Ok(Value::Undefined.into())
 }
