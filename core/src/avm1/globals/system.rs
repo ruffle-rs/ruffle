@@ -66,7 +66,6 @@ pub fn show_settings<'gc>(
 
     let panel = args
         .get(0)
-        // .map(|value| value.as_number(avm, action_context))
         .map(|v| match v {
             Value::Number(x) => SettingsPanel::try_from(*x as u8).unwrap_or(last_panel),
             _ => last_panel,
