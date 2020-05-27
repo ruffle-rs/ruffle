@@ -557,6 +557,13 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         write.bounds.set_width(Twips::from_pixels(new_width));
         write.bounds.set_height(Twips::from_pixels(new_height));
+
+        let new_x = write.bounds.x_min + matrix.tx;
+        let new_y = write.bounds.y_min + matrix.tx;
+
+        write.bounds.set_x(new_x);
+        write.bounds.set_y(new_y);
+
         write.base.set_matrix(context, matrix);
     }
 
