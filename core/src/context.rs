@@ -17,6 +17,7 @@ use rand::rngs::SmallRng;
 use std::collections::BTreeMap;
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, Weak};
+use crate::avm1::globals::system::SystemProperties;
 
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
 /// `Player` crates this when it begins a tick and passes it through the call stack to
@@ -96,6 +97,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// This is required for asynchronous behavior, such as fetching data from
     /// a URL.
     pub load_manager: &'a mut LoadManager<'gc>,
+
+    /// The system properties
+    pub system: &'a mut SystemProperties,
 }
 
 /// A queued ActionScript call.

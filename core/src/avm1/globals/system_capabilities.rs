@@ -1,12 +1,7 @@
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute::{DontDelete, DontEnum, ReadOnly};
-use crate::avm1::return_value::ReturnValue;
-use crate::avm1::value::Value::{Bool, Undefined};
-use crate::avm1::{Avm1, Error, ScriptObject, TObject, Value};
-use crate::context::UpdateContext;
+use crate::avm1::{ScriptObject, TObject};
 use gc_arena::MutationContext;
-use num_enum::TryFromPrimitive;
-use std::convert::TryFrom;
 use crate::avm1::globals::system_capabilities::Language::English;
 
 #[allow(dead_code)]
@@ -68,7 +63,6 @@ impl Language {
 pub fn create<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Option<Object<'gc>>,
-    fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
     let capabilities = ScriptObject::object(gc_context, proto);
 
