@@ -90,14 +90,12 @@ jobs:
             mkdir -p workspace/web-demo
             cp web/packages/demo/dist/* workspace/web-demo
 
-      # Build the web extension
+      # Build the web extensions
       - run:
-          name: Extension Build
+          name: Extension Builds
           command: |
-            cd web/packages/extension/build
-            zip -r extension.zip .
-            cd ../../../..
-            cp web/packages/extension/build/extension.zip workspace
+            cp web/packages/extension/dist/ruffle_extension.zip workspace/extension.zip
+            cp web/packages/extension/dist/firefox_unsigned.xpi workspace
 
       # Save cached assets
       - save_cache:
@@ -112,6 +110,7 @@ jobs:
           paths:
             - linux.tar.gz
             - extension.zip
+            - firefox_unsigned.xpi
             - web.zip
             - web-demo
 
@@ -288,6 +287,9 @@ jobs:
             mkdir -p builds/extension
             cp -f workspace/extension.zip builds/extension/ruffle_extension_latest.zip
             cp -f workspace/extension.zip builds/extension/ruffle_extension_${BUILD_ID}.zip
+            mkdir -p builds/firefox_extension
+            cp -f workspace/firefox_unsigned.xpi builds/firefox_extension/ruffle_firefox_latest.xpi
+            cp -f workspace/firefox_unsigned.xpi builds/firefox_extension/ruffle_firefox_${BUILD_ID}.xpi
 
             # Only keep a certain # of builds.
             ls -1t builds/linux/* | tail -n +${NUM_BUILDS} | xargs rm -f
@@ -295,6 +297,7 @@ jobs:
             ls -1t builds/windows/* | tail -n +${NUM_BUILDS} | xargs rm -f
             ls -1t builds/web/* | tail -n +${NUM_BUILDS} | xargs rm -f
             ls -1t builds/extension/* | tail -n +${NUM_BUILDS} | xargs rm -f
+            ls -1t builds/firefox_extension/* | tail -n +${NUM_BUILDS} | xargs rm -f
 
             # Copy over web demo.
             cp -rf workspace/web-demo builds
