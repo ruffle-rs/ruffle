@@ -5,10 +5,14 @@
     "license": "(MIT OR Apache-2.0)",
     "private": true,
     "scripts": {
-        "build": "webpack",
-        "serve": "webpack-dev-server"
+        "build": "node tools/build_all.js"
     },
     "dependencies": {
         "ruffle-core": "file:../core"
+    },
+    "devDependencies": {
+        "archiver": "^4.0.1",
+        "sign-addon": "^2.0.5",
+        "webpack": "^4.43.0"
     }
 }

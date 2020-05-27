@@ -13,26 +13,26 @@ will always take precedence and disable the other.
 
 The browser extension is built to work in both Chrome and Firefox.
 
-We do not yet have a signed release of the extension, so you must load it as a temporary "unpacked" extension.
+We do not yet have a signed release of the extension, so you must load it as a temporary extension.
 
 Before you can install the extension, you must either download the
 [latest build](https://ruffle-rs.s3-us-west-1.amazonaws.com/builds/extension/ruffle_extension_latest.zip)
-or [build it yourself](../../README.md). For the purposes of these instructions, you want the extension as a loose
-folder and not a packed zip.
+or [build it yourself](../../README.md).
 
 ### Chrome
 
+-   Unpack `dist/ruffle_extension.zip` somewhere
 -   Navigate to chrome://extensions/
 -   Turn on Developer mode in the top right corner.
 -   Click Load unpacked.
--   Select the extension folder.
+-   Select the folder you unpacked the extension to.
 
 ### Firefox
 
--   Navigate to about:debugging
+-   Navigate to about:debugging.
 -   Click on This Firefox.
 -   Click Load Temporary Add-on...
--   Select manifest.json from your extension folder.
+-   Select the `.xpi` from the `dist` folder.
 
 ## Building, testing or contributing
 
