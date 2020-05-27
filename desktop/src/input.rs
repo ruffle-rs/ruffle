@@ -4,12 +4,14 @@ use std::collections::HashSet;
 use std::rc::Rc;
 use winit::event::{ElementState, VirtualKeyCode, WindowEvent};
 use winit::window::Window;
+use clipboard::{ClipboardContext, ClipboardProvider};
 
 pub struct WinitInputBackend {
     keys_down: HashSet<VirtualKeyCode>,
     window: Rc<Window>,
     cursor_visible: bool,
     last_key: KeyCode,
+    clipboard: ClipboardContext,
 }
 
 impl WinitInputBackend {
@@ -19,6 +21,7 @@ impl WinitInputBackend {
             cursor_visible: true,
             last_key: KeyCode::Unknown,
             window,
+            clipboard: ClipboardProvider::new().unwrap()
         }
     }
 
@@ -195,6 +198,14 @@ impl InputBackend for WinitInputBackend {
             MouseCursor::Grab => CursorIcon::Grab,
         };
         self.window.set_cursor_icon(icon);
+    }
+
+    fn set_clipboard_content(&mut self, content: String) {
+        self.clipboard.set_contents(content).unwrap();
+    }
+
+    fn clear_clipboard(&mut self) {
+        self.clipboard.set_contents("".into()).unwrap();
     }
 }
 
