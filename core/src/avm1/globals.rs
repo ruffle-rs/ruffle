@@ -31,6 +31,7 @@ pub(crate) mod string;
 pub(crate) mod system_capabilities;
 pub(crate) mod system;
 pub(crate) mod text_field;
+pub(crate) mod system_ime;
 mod text_format;
 mod xml;
 

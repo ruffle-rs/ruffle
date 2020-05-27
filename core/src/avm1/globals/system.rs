@@ -426,7 +426,7 @@ pub fn create<'gc>(
     system.define_value(
         gc_context,
         "IME",
-        Value::Undefined,
+        crate::avm1::globals::system_ime::create(gc_context, proto, fn_proto).into(),
         DontDelete | ReadOnly | DontEnum,
     );
 
