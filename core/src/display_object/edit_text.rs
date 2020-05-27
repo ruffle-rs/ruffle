@@ -356,6 +356,9 @@ impl<'gc> EditText<'gc> {
             AutoSizeMode::None => {}
             AutoSizeMode::Left => {
                 if !is_word_wrap {
+                    let old_x = edit_text.bounds.x_min;
+                    edit_text.bounds.set_x(old_x);
+                    edit_text.base.set_x(old_x.to_pixels());
                     edit_text.bounds.set_width(intrinsic_bounds.width());
                 }
 
@@ -365,9 +368,9 @@ impl<'gc> EditText<'gc> {
             AutoSizeMode::Center => {
                 if !is_word_wrap {
                     let old_x = edit_text.bounds.x_min;
-                    edit_text
-                        .bounds
-                        .set_x((intrinsic_bounds.width() - old_x) / 2);
+                    let new_x = (intrinsic_bounds.width() - old_x) / 2;
+                    edit_text.bounds.set_x(new_x);
+                    edit_text.base.set_x(new_x.to_pixels());
                     edit_text.bounds.set_width(intrinsic_bounds.width());
                 }
 
@@ -377,7 +380,9 @@ impl<'gc> EditText<'gc> {
             AutoSizeMode::Right => {
                 if !is_word_wrap {
                     let old_x = edit_text.bounds.x_min;
-                    edit_text.bounds.set_x(intrinsic_bounds.width() - old_x);
+                    let new_x = intrinsic_bounds.width() - old_x;
+                    edit_text.bounds.set_x(new_x);
+                    edit_text.base.set_x(new_x.to_pixels());
                     edit_text.bounds.set_width(intrinsic_bounds.width());
                 }
 
