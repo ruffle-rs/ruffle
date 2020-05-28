@@ -145,7 +145,14 @@ impl<'gc> MovieClip<'gc> {
         let mut reader = data.read_from(self.0.read().tag_stream_pos);
         let mut cur_frame = 1;
         let mut ids = fnv::FnvHashMap::default();
-        let tag_callback = |reader: &mut _, tag_code, tag_len| match tag_code {
+        let tag_callback = |reader: &mut SwfStream<&[u8]>, tag_code, tag_len| match tag_code {
+            TagCode::FileAttributes => {
+                let attributes = reader.read_file_attributes()?;
+                if attributes.is_action_script_3 {
+                    log::warn!("This SWF contains ActionScript 3 which is not yet supported by Ruffle. The movie may not work as intended.");
+                }
+                Ok(())
+            }
             TagCode::DefineBits => self
                 .0
                 .write(context.gc_context)

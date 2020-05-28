@@ -154,7 +154,8 @@ impl Player {
         let movie = Arc::new(movie);
 
         info!(
-            "{}x{}",
+            "Loaded SWF version {}, with a resolution of {}x{}",
+            movie.header().version,
             movie.header().stage_size.x_max,
             movie.header().stage_size.y_max
         );

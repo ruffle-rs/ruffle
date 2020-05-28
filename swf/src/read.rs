@@ -595,14 +595,7 @@ impl<R: Read> Reader<R> {
             Some(TagCode::ExportAssets) => Tag::ExportAssets(tag_reader.read_export_assets()?),
 
             Some(TagCode::FileAttributes) => {
-                let flags = tag_reader.read_u32()?;
-                Tag::FileAttributes(FileAttributes {
-                    use_direct_blit: (flags & 0b01000000) != 0,
-                    use_gpu: (flags & 0b00100000) != 0,
-                    has_metadata: (flags & 0b00010000) != 0,
-                    is_action_script_3: (flags & 0b00001000) != 0,
-                    use_network_sandbox: (flags & 0b00000001) != 0,
-                })
+                Tag::FileAttributes(tag_reader.read_file_attributes()?)
             }
 
             Some(TagCode::Protect) => {
@@ -2044,6 +2037,17 @@ impl<R: Read> Reader<R> {
             num_frames: self.read_u16()?,
             tags: self.read_tag_list()?,
         }))
+    }
+
+    pub fn read_file_attributes(&mut self) -> Result<FileAttributes> {
+        let flags = self.read_u32()?;
+        Ok(FileAttributes {
+            use_direct_blit: (flags & 0b01000000) != 0,
+            use_gpu: (flags & 0b00100000) != 0,
+            has_metadata: (flags & 0b00010000) != 0,
+            is_action_script_3: (flags & 0b00001000) != 0,
+            use_network_sandbox: (flags & 0b00000001) != 0,
+        })
     }
 
     pub fn read_export_assets(&mut self) -> Result<ExportAssets> {
