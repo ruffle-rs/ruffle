@@ -202,7 +202,7 @@ function open_settings_page() {
     try {
         browser.runtime.openOptionsPage();
     } catch {
-        chrome.tabs.create({'url': "/settings.htm"});
+        chrome.tabs.create({ url: "/settings.htm" });
     }
 }
 
