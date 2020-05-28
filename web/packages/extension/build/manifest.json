@@ -1,0 +1,38 @@
+{
+    "manifest_version": 2,
+    "name": "Ruffle",
+    "version": "0.1.0",
+    "description": "Puts Flash back on the web where it belongs.",
+    "default_locale": "en",
+    "icons": {
+        "16": "icons/16.png",
+        "32": "icons/32.png",
+        "48": "icons/48.png",
+        "128": "icons/128.png",
+        "180": "icons/180.png"
+    },
+    "permissions": [ "storage" ],
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "js": ["js/lv0.js"],
+            "all_frames": true,
+            "run_at": "document_start"
+        }
+    ],
+    "web_accessible_resources": ["dist/*"],
+    "content_security_policy": "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'unsafe-inline'",
+    "browser_action": {
+        "default_popup": "popup.html",
+        "browser_style": true
+    },
+    "options_ui": {
+        "page": "settings.htm",
+        "open_in_tab": true
+    },
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "ruffle-player-extension@ruffle.rs"
+        }
+    }
+}
