@@ -19,7 +19,48 @@
  * prefix that is only shared within the injected closure. This isn't entirely
  * foolproof, but is designed to
  */
-chrome.storage.sync.get(["ruffle_enable", "ignore_optout"], function (data) {
+
+function get_sync_storage(key, callback) {
+    if (
+        chrome &&
+        chrome.storage &&
+        chrome.storage.sync &&
+        chrome.storage.sync.get
+    ) {
+        chrome.storage.sync.get(key, callback);
+    } else if (
+        browser &&
+        browser.storage &&
+        browser.storage.sync &&
+        browser.storage.sync.get
+    ) {
+        browser.storage.sync.get(key, callback);
+    } else {
+        console.error("Couldn't read setting: " + key);
+    }
+}
+
+function set_message_listener(listener) {
+    if (
+        chrome &&
+        chrome.runtime &&
+        chrome.runtime.onMessage &&
+        chrome.runtime.onMessage.addListener
+    ) {
+        chrome.runtime.onMessage.addListener(listener);
+    } else if (
+        browser &&
+        browser.runtime &&
+        browser.runtime.onMessage &&
+        browser.runtime.onMessage.addListener
+    ) {
+        browser.runtime.onMessage.addListener(listener);
+    } else {
+        console.error("Couldn't add message listener");
+    }
+}
+
+get_sync_storage(["ruffle_enable", "ignore_optout"], function (data) {
     let page_optout = document.documentElement.hasAttribute(
         "data-ruffle-optout"
     );
@@ -47,9 +88,9 @@ chrome.storage.sync.get(["ruffle_enable", "ignore_optout"], function (data) {
 
     if (data) {
         should_load_untrusted_world =
-            data.ruffle_enable === "on" &&
+            data.ruffle_enable == "on" &&
             !(
-                (page_optout && data.ignore_optout !== "on") ||
+                (page_optout && data.ignore_optout != "on") ||
                 window.RufflePlayer
             );
     } else {
@@ -104,11 +145,7 @@ chrome.storage.sync.get(["ruffle_enable", "ignore_optout"], function (data) {
         return JSON.parse(resp_event.detail);
     }
 
-    chrome.runtime.onMessage.addListener(function (
-        request,
-        sender,
-        response_callback
-    ) {
+    set_message_listener(function (request, sender, response_callback) {
         if (should_load_untrusted_world) {
             let response_promise = marshal_message_into_untrusted_world(
                 request
