@@ -24,7 +24,7 @@ path = "../../core"
 default-features = false
 
 [dependencies.web-sys]
-version = "0.3.34"
+version = "0.3.40"
 features = ["HtmlCanvasElement", "HtmlElement", "Node", "OesVertexArrayObject", "WebGlBuffer", "WebGlFramebuffer", "WebGlProgram", 
             "WebGlRenderbuffer", "WebGlRenderingContext", "WebGl2RenderingContext", "WebGlShader", "WebGlTexture", "WebGlUniformLocation", 
             "WebGlVertexArrayObject"]
