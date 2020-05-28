@@ -40,5 +40,11 @@
     },
     "open_settings_page": {
         "message": "Open Settings Page"
+    },
+    "settings_page": {
+        "message": "Settings Page"
+    },
+    "description": {
+        "message": "Puts Flash back on the web where it belongs."
     }
 }
