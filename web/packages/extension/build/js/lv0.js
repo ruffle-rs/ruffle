@@ -49,8 +49,8 @@ chrome.storage.sync.get(["ruffle_enable", "ignore_optout"], function (data) {
         should_load_untrusted_world =
             data.ruffle_enable === "on" &&
             !(
-                page_optout ||
-                data.ignore_optout === "on" ||
+                (page_optout &&
+                data.ignore_optout !== "on") ||
                 window.RufflePlayer
             );
     } else {
