@@ -6,7 +6,10 @@ async function run() {
     console.log("Creating generic extension...");
 
     const dist = path.resolve(__dirname, "../dist");
-    fs.mkdirSync(dist);
+    if (!fs.existsSync(dist)) {
+        fs.mkdirSync(dist);
+    }
+
     const version = require("../package.json").version;
     const manifest = createManifest({ version });
 
