@@ -67,18 +67,12 @@ get_sync_storage(["ruffle_enable", "ignore_optout"], function (data) {
         ignore_optout_checkbox.checked = true;
     }
     save_button.onclick = function () {
-        set_sync_storage(
-            { ruffle_enable: play_flash_checkbox.checked ? "on" : "" },
-            function () {
-                console.log("ruffle_enable updated");
-            }
-        );
-        set_sync_storage(
-            { ignore_optout: ignore_optout_checkbox.checked ? "on" : "" },
-            function () {
-                console.log("ignore_optout updated");
-            }
-        );
+        set_sync_storage({
+            ruffle_enable: play_flash_checkbox.checked ? "on" : "",
+        });
+        set_sync_storage({
+            ignore_optout: ignore_optout_checkbox.checked ? "on" : "",
+        });
         alert("Settings Saved");
     };
 });
