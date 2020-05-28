@@ -16,6 +16,7 @@ module.exports = (env, argv) => {
         entry: {
             ruffle: path.resolve(__dirname, "js/index.js"),
             popup: path.resolve(__dirname, "js/popup.js"),
+            settings: path.resolve(__dirname, "js/settings.js"),
         },
         output: {
             path: path.resolve(__dirname, "build/dist"),

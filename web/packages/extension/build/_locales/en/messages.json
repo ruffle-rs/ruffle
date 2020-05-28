@@ -2,6 +2,9 @@
     "settings_ruffle_enable": {
         "message": "Play Flash content in Ruffle"
     },
+    "settings_page_ignore_optout": {
+        "message": "Play Flash content even on sites that disable Ruffle"
+    },
     "settings_ignore_optout": {
         "message": "Ignore website compatibility warnings"
     },

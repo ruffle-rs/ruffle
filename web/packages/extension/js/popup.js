@@ -60,7 +60,7 @@ function bind_boolean_setting(checkbox_elem) {
 
     checkbox_elem.addEventListener("click", function () {
         let setting = {};
-        setting[name] = checkbox_elem.checked ? checkbox_elem.value : "";
+        setting[name] = checkbox_elem.checked ? "on" : "";
         settings_dict[name] = setting[name];
         on_settings_change_intent();
 

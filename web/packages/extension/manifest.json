@@ -25,6 +25,10 @@
         "default_popup": "popup.html",
         "browser_style": true
     },
+    "options_ui": {
+        "page": "settings.htm",
+        "open_in_tab": true
+    },
     "browser_specific_settings": {
         "gecko": {
             "id": "ruffle-player-extension@ruffle.rs"
