@@ -7,7 +7,9 @@ window.RufflePlayer = PublicAPI.negotiate(
 );
 
 if (obfuscated_event_prefix) {
-    document.addEventListener(obfuscated_event_prefix + "_request", function (e) {
+    document.addEventListener(obfuscated_event_prefix + "_request", function (
+        e
+    ) {
         let body = JSON.parse(e.detail);
         let response = {};
 
@@ -15,7 +17,9 @@ if (obfuscated_event_prefix) {
             //response.page_options = page_options;
         }
 
-        let event = new CustomEvent(obfuscated_event_prefix + "_response", {"detail": JSON.stringify(response)});
+        let event = new CustomEvent(obfuscated_event_prefix + "_response", {
+            detail: JSON.stringify(response),
+        });
         document.dispatchEvent(event);
     });
 }

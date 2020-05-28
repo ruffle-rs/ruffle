@@ -2,5 +2,8 @@
     "env": {
         "browser": true,
         "webextensions": true
+    },
+    "globals": {
+        "obfuscated_event_prefix": true
     }
 }
