@@ -198,10 +198,21 @@ async function query_current_tab() {
     }
 }
 
+function open_settings_page() {
+    try {
+        browser.runtime.openOptionsPage();
+    } catch {
+        chrome.tabs.create({'url': "/settings.htm"});
+    }
+}
+
 document.addEventListener("DOMContentLoaded", function () {
+    var settings_button = document.getElementById("settingsbutton");
     bind_boolean_setting(document.getElementById("ruffle_enable"));
     bind_boolean_setting(document.getElementById("ignore_optout"));
     bind_settings_apply_button(document.getElementById("reload"));
+    settings_button.innerHTML = chrome.i18n.getMessage("open_settings_page");
+    settings_button.onclick = open_settings_page;
 
     query_current_tab();
 });
