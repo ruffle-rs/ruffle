@@ -3,9 +3,14 @@ use crate::prelude::*;
 use crate::transform::Transform;
 use gc_arena::{Collect, Gc, MutationContext};
 
-/// Certain Flash routines measure text up to the nearest whole pixel.
-fn round_to_pixel(t: Twips) -> Twips {
+/// Certain Flash routines measure text by rounding down to the nearest whole pixel.
+fn round_down_to_pixel(t: Twips) -> Twips {
     Twips::from_pixels(t.to_pixels().floor())
+}
+
+/// Certain Flash routines measure text by rounding up to the nearest whole pixel.
+pub fn round_up_to_pixel(t: Twips) -> Twips {
+    Twips::from_pixels(t.to_pixels().ceil())
 }
 
 type Error = Box<dyn std::error::Error>;
@@ -32,6 +37,18 @@ struct FontData {
     /// Kerning infomration.
     /// Maps from a pair of unicode code points to horizontal offset value.
     kerning_pairs: fnv::FnvHashMap<(u16, u16), Twips>,
+
+    /// The distance from the top of each glyph to the baseline of the font, in
+    /// EM-square coordinates.
+    ascent: u16,
+
+    /// The distance from the baseline of the font to the bottom of each glyph,
+    /// in EM-square coordinates.
+    descent: u16,
+
+    /// The distance between the bottom of any one glyph and the top of
+    /// another, in EM-square coordinates.
+    leading: i16,
 
     /// The identity of the font.
     descriptor: FontDescriptor,
@@ -65,6 +82,11 @@ impl<'gc> Font<'gc> {
         };
 
         let descriptor = FontDescriptor::from_swf_tag(tag);
+        let (ascent, descent, leading) = if let Some(layout) = &tag.layout {
+            (layout.ascent, layout.descent, layout.leading)
+        } else {
+            (0, 0, 0)
+        };
 
         Ok(Font(Gc::allocate(
             gc_context,
@@ -76,6 +98,9 @@ impl<'gc> Font<'gc> {
                 /// (SWF19 p.164)
                 scale: if tag.version >= 3 { 20480.0 } else { 1024.0 },
                 kerning_pairs,
+                ascent,
+                descent,
+                leading,
                 descriptor,
             },
         )))
@@ -117,6 +142,13 @@ impl<'gc> Font<'gc> {
             .get(&(left_code_point, right_code_point))
             .cloned()
             .unwrap_or_default()
+    }
+
+    /// Return the leading for this font at a given height.
+    pub fn get_leading_for_height(self, height: Twips) -> Twips {
+        let scale = height.get() as f32 / self.scale();
+
+        Twips::new((self.0.leading as f32 * scale) as i32)
     }
 
     /// Returns whether this font contains kerning information.
@@ -179,8 +211,8 @@ impl<'gc> Font<'gc> {
             |transform, _glyph, advance| {
                 let tx = transform.matrix.tx;
                 let ty = transform.matrix.ty;
-                size.0 = std::cmp::max(size.0, round_to_pixel(tx + advance));
-                size.1 = std::cmp::max(size.1, round_to_pixel(ty));
+                size.0 = std::cmp::max(size.0, round_down_to_pixel(tx + advance));
+                size.1 = std::cmp::max(size.1, round_down_to_pixel(ty));
             },
         );
 

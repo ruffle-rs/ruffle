@@ -1,7 +1,7 @@
 //! Layout box structure
 
 use crate::context::UpdateContext;
-use crate::font::Font;
+use crate::font::{round_up_to_pixel, Font};
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::tag_utils::SwfMovie;
@@ -117,6 +117,14 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             Twips::from_pixels(0.0),
         );
 
+        // Flash appears to round up the font's leading to the nearest pixel
+        // and adds one. I'm not sure why.
+        let font_leading_adjustment = round_up_to_pixel(
+            self.font
+                .map(|f| f.get_leading_for_height(self.max_font_size))
+                .unwrap_or_else(|| Twips::new(0)),
+        ) + Twips::from_pixels(1.0);
+
         line = self.current_line;
         while let Some(linebox) = line {
             let mut write = linebox.write(mc);
@@ -126,8 +134,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             // which is information we don't have yet.
             let font_size_adjustment = self.max_font_size - write.bounds.height();
 
-            write.bounds +=
-                Position::from((left_adjustment + align_adjustment, font_size_adjustment));
+            write.bounds += Position::from((
+                left_adjustment + align_adjustment,
+                font_size_adjustment + font_leading_adjustment,
+            ));
             line = write.next_sibling();
         }
 

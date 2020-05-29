@@ -197,6 +197,7 @@ swf_tests! {
     (as1_constructor_v6, "avm1/as1_constructor_v6", 1),
     (as1_constructor_v7, "avm1/as1_constructor_v7", 1),
     (issue_710, "avm1/issue_710", 1),
+    (edittext_font_size, "avm1/edittext_font_size", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
