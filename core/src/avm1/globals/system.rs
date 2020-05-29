@@ -253,34 +253,32 @@ impl SystemProperties {
     }
 
     pub fn get_server_string(&self) -> String {
-        //TODO: url encode string params
         //TODO: check the order, this should match flash
 
-        format!("AVD={}&ACC={}&A={}&AE={}&EV={}&IME={}&MP3={}&PR={}&SB={}&SP={}&SA={}&SV={}&VE={}&DEB={}&LFD={}&M={}&OS={}&AR={}&PT={}&COL={}&DP={}&R={}x{}",
-            self.encode_bool(self.not_has_capability(SystemCapabilities::AvHardware)),
-            self.encode_bool(self.has_capability(SystemCapabilities::Accessibility)),
-            self.encode_bool(self.has_capability(SystemCapabilities::Audio)),
-            self.encode_bool(self.has_capability(SystemCapabilities::AudioEncoder)),
-            self.encode_bool(self.has_capability(SystemCapabilities::EmbeddedVideo)),
-            self.encode_bool(self.has_capability(SystemCapabilities::IME)),
-            self.encode_bool(self.has_capability(SystemCapabilities::MP3)),
-            self.encode_bool(self.has_capability(SystemCapabilities::Printing)),
-            self.encode_bool(self.has_capability(SystemCapabilities::ScreenBroadcast)),
-            self.encode_bool(self.has_capability(SystemCapabilities::ScreenPlayback)),
-            self.encode_bool(self.has_capability(SystemCapabilities::StreamingAudio)),
-            self.encode_bool(self.has_capability(SystemCapabilities::StreamingVideo)),
-            self.encode_bool(self.has_capability(SystemCapabilities::VideoEncoder)),
-            self.encode_bool(self.has_capability(SystemCapabilities::Debugger)),
-            self.encode_bool(self.not_has_capability(SystemCapabilities::LocalFileRead)),
-            self.manufacturer.get_manufacturer_string(),
-            self.os.get_os_name(),
-            self.aspect_ratio,
-            self.player_type.get_player_name(),
-            self.screen_color.get_color_code(),
-            self.dpi,
-            self.screen_resolution.0,
-            self.screen_resolution.1
-        )
+        url::form_urlencoded::Serializer::new(String::new())
+            .append_pair("AVD", self.encode_bool(self.not_has_capability(SystemCapabilities::AvHardware)))
+            .append_pair("ACC", self.encode_bool(self.not_has_capability(SystemCapabilities::Accessibility)))
+            .append_pair("A", self.encode_bool(self.has_capability(SystemCapabilities::Audio)))
+            .append_pair("AE", self.encode_bool(self.has_capability(SystemCapabilities::AudioEncoder)))
+            .append_pair("EV", self.encode_bool(self.has_capability(SystemCapabilities::EmbeddedVideo)))
+            .append_pair("IME", self.encode_bool(self.has_capability(SystemCapabilities::IME)))
+            .append_pair("MP3", self.encode_bool(self.has_capability(SystemCapabilities::MP3)))
+            .append_pair("PR", self.encode_bool(self.has_capability(SystemCapabilities::Printing)))
+            .append_pair("SB", self.encode_bool(self.has_capability(SystemCapabilities::ScreenBroadcast)))
+            .append_pair("SP", self.encode_bool(self.has_capability(SystemCapabilities::ScreenPlayback)))
+            .append_pair("SA", self.encode_bool(self.has_capability(SystemCapabilities::StreamingAudio)))
+            .append_pair("SV", self.encode_bool(self.has_capability(SystemCapabilities::StreamingVideo)))
+            .append_pair("VE", self.encode_bool(self.has_capability(SystemCapabilities::VideoEncoder)))
+            .append_pair("DEB", self.encode_bool(self.has_capability(SystemCapabilities::Debugger)))
+            .append_pair("LFD", self.encode_bool(self.not_has_capability(SystemCapabilities::LocalFileRead)))
+            .append_pair("M", &self.manufacturer.get_manufacturer_string())
+            .append_pair("OS", self.os.get_os_name())
+            .append_pair("AR", &self.aspect_ratio.to_string())
+            .append_pair("PT", self.player_type.get_player_name())
+            .append_pair("COL", self.screen_color.get_color_code())
+            .append_pair("DP", &self.dpi.to_string())
+            .append_pair("R", &format!("{}x{}", self.screen_resolution.0, self.screen_resolution.1))
+            .finish()
     }
 }
 
