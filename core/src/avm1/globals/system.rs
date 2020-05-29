@@ -9,6 +9,25 @@ use std::convert::TryFrom;
 use crate::avm1::function::Executable;
 use enumset::{EnumSet, EnumSetType};
 
+/// Available type of sandbox for a given SWF
+pub enum SandboxType {
+    Remote,
+    LocalWithFile,
+    LocalWithNetwork,
+    LocalTrusted
+}
+
+impl SandboxType {
+    pub fn get_sandbox_name(&self) -> &str {
+        match self {
+            SandboxType::Remote => "remote",
+            SandboxType::LocalWithFile => "localWithFile",
+            SandboxType::LocalWithNetwork => "localWithNetwork",
+            SandboxType::LocalTrusted => "localTrusted",
+        }
+    }
+}
+
 /// The available host operating systems
 pub enum OperatingSystem {
     WindowsXp,
@@ -213,6 +232,8 @@ pub struct SystemProperties {
     pub manufacturer: Manufacturer,
     /// The os of the host
     pub os: OperatingSystem,
+    /// The type of the player sandbox
+    pub sandbox_type: SandboxType,
 }
 
 impl SystemProperties {
@@ -281,6 +302,7 @@ impl Default for SystemProperties {
             //TODO: default to current
             manufacturer: Manufacturer::Linux,
             os: OperatingSystem::Linux,
+            sandbox_type: SandboxType::LocalTrusted,
         }
     }
 }
@@ -412,7 +434,7 @@ pub fn create<'gc>(
     system.define_value(
         gc_context,
         "security",
-        Value::Undefined,
+        crate::avm1::globals::system_security::create(gc_context, proto, fn_proto).into(),
         DontDelete | ReadOnly | DontEnum,
     );
 
