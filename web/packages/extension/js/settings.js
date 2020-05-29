@@ -52,6 +52,7 @@ get_sync_storage(["ruffle_enable", "ignore_optout"], function (data) {
     var play_flash_message = get_i18n_string("settings_ruffle_enable");
     var ignore_optout_message = get_i18n_string("settings_page_ignore_optout");
     var title_text = get_i18n_string("settings_page");
+    var save_text = get_i18n_string("save_settings");
     var play_flash_label = document.getElementById("enablelabel");
     var ignore_optout_label = document.getElementById("ignorelabel");
     var play_flash_checkbox = document.getElementById("enable");
@@ -62,6 +63,7 @@ get_sync_storage(["ruffle_enable", "ignore_optout"], function (data) {
     document.title = title_text;
     play_flash_label.innerHTML = play_flash_message + "<br />";
     ignore_optout_label.innerHTML = ignore_optout_message + "<br />";
+    save_button.value = save_text;
     if (data.ruffle_enable == "on") {
         play_flash_checkbox.checked = true;
     }
