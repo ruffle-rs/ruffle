@@ -898,7 +898,7 @@ impl<R: Read> Reader<R> {
                     .into_iter()
                     .collect(),
                 key_code: None,
-                action_data: action_data,
+                action_data,
             }],
         })
     }
