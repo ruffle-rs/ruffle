@@ -142,7 +142,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         }
 
         line_bounds += Position::from((align_adjustment, Twips::from_pixels(0.0)));
-        line_bounds += Size::from((left_adjustment + right_adjustment, Twips::from_pixels(0.0)));
+        line_bounds += Size::from((left_adjustment + right_adjustment, font_leading_adjustment));
 
         self.current_line = None;
         self.exterior_bounds += line_bounds;
