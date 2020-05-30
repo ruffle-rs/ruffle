@@ -266,6 +266,9 @@ async function query_current_tab() {
         }
     } catch (e) {
         ruffle_status.textContent = get_i18n_string("status_result_protected");
+        if (reload_button) {
+            reload_button.disabled = true;
+        }
         throw e;
     }
 }
