@@ -80,6 +80,9 @@ pub struct EditTextData<'gc> {
     /// The calculated layout box.
     layout: Option<GcCell<'gc, LayoutBox<'gc>>>,
 
+    /// The intrinsic bounds of the laid-out text.
+    intrinsic_bounds: BoxBounds<Twips>,
+
     /// The current intrinsic bounds of the text field.
     bounds: BoundingBox,
 
@@ -115,7 +118,7 @@ impl<'gc> EditText<'gc> {
 
         let bounds: BoundingBox = swf_tag.bounds.clone().into();
 
-        let (layout, _exterior_bounds) = LayoutBox::lower_from_text_spans(
+        let (layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
             &text_spans,
             context,
             swf_movie.clone(),
@@ -145,6 +148,7 @@ impl<'gc> EditText<'gc> {
                 is_word_wrap,
                 object: None,
                 layout,
+                intrinsic_bounds,
                 bounds,
                 autosize: AutoSizeMode::None,
             },
@@ -351,6 +355,7 @@ impl<'gc> EditText<'gc> {
         );
 
         edit_text.layout = new_layout;
+        edit_text.intrinsic_bounds = intrinsic_bounds;
 
         match autosize {
             AutoSizeMode::None => {}
@@ -397,16 +402,11 @@ impl<'gc> EditText<'gc> {
     /// The returned tuple should be interpreted as width, then height.
     pub fn measure_text(self, _context: &mut UpdateContext<'_, 'gc, '_>) -> (Twips, Twips) {
         let edit_text = self.0.read();
-        let mut bounds: BoxBounds<Twips> = Default::default();
-        let mut ptr = edit_text.layout;
 
-        while let Some(layout_box) = ptr {
-            bounds += layout_box.read().bounds();
-
-            ptr = layout_box.read().next_sibling();
-        }
-
-        (bounds.width(), bounds.height())
+        (
+            edit_text.intrinsic_bounds.width(),
+            edit_text.intrinsic_bounds.height(),
+        )
     }
 
     /// Render a layout box, plus it's children.
