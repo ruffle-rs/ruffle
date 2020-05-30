@@ -154,7 +154,7 @@ function bind_settings_apply_button(elem) {
 
     elem.addEventListener("click", function () {
         reload_tab(active_tab.id, function () {
-            window.setTimeout(query_current_tab, 1000);
+            window.setInterval(query_current_tab, 1000);
         });
     });
 
