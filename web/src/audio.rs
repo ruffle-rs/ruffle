@@ -813,6 +813,7 @@ extern "C" {
 
 // Janky resmapling code.
 // TODO: Clean this up.
+#[allow(unused_assignments)]
 fn resample(
     mut input: impl Iterator<Item = [i16; 2]>,
     input_sample_rate: u16,

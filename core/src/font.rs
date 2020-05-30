@@ -179,7 +179,7 @@ impl<'gc> Font<'gc> {
     pub fn split_wrapped_lines(self, text: &str, height: Twips, width: Twips) -> Vec<usize> {
         let mut result = vec![];
         let mut current_width = width;
-        let mut current_word = &text[0..0];
+        let mut current_word = text;
 
         for word in text.split(' ') {
             let measure = self.measure(word, height);
