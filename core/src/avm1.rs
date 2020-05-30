@@ -2075,26 +2075,33 @@ impl<'gc> Avm1<'gc> {
         let object = value_object::ValueObject::boxed(self, context, object_val);
         let constructor = object
             .get(&method_name.as_string()?, self, context)?
-            .resolve(self, context)?
-            .as_object()?;
-        let prototype = constructor
-            .get("prototype", self, context)?
-            .resolve(self, context)?
-            .as_object()?;
-
-        let this = prototype.new(self, context, prototype, &args)?;
-
-        this.set("__constructor__", constructor.into(), self, context)?;
-        if self.current_swf_version() < 7 {
-            this.set("constructor", constructor.into(), self, context)?;
-        }
-
-        //TODO: What happens if you `ActionNewMethod` without a method name?
-        constructor
-            .call(self, context, this, None, &args)?
             .resolve(self, context)?;
+        if let Value::Object(constructor) = constructor {
+            let prototype = constructor
+                .get("prototype", self, context)?
+                .resolve(self, context)?
+                .as_object()?;
 
-        self.push(this);
+            let this = prototype.new(self, context, prototype, &args)?;
+
+            this.set("__constructor__", constructor.into(), self, context)?;
+            if self.current_swf_version() < 7 {
+                this.set("constructor", constructor.into(), self, context)?;
+            }
+
+            //TODO: What happens if you `ActionNewMethod` without a method name?
+            constructor
+                .call(self, context, this, None, &args)?
+                .resolve(self, context)?;
+
+            self.push(this);
+        } else {
+            log::warn!(
+                "Tried to construct with non-object constructor {:?}",
+                constructor
+            );
+            self.push(Value::Undefined);
+        }
 
         Ok(())
     }
