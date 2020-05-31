@@ -1,11 +1,11 @@
+use crate::avm1::function::Executable;
+use crate::avm1::globals::system::SystemCapabilities;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute::{DontDelete, DontEnum, ReadOnly};
-use crate::avm1::{ScriptObject, TObject, Avm1, Value, Error};
-use gc_arena::MutationContext;
-use crate::context::UpdateContext;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::globals::system::SystemCapabilities;
-use crate::avm1::function::Executable;
+use crate::avm1::{Avm1, Error, ScriptObject, TObject, Value};
+use crate::context::UpdateContext;
+use gc_arena::MutationContext;
 
 macro_rules! capabilities_func {
     ($func_name: ident, $capability: expr) => {
@@ -55,15 +55,20 @@ capabilities_func!(get_has_embedded_video, SystemCapabilities::EmbeddedVideo);
 capabilities_func!(get_has_ime, SystemCapabilities::IME);
 capabilities_func!(get_has_mp3, SystemCapabilities::MP3);
 capabilities_func!(get_has_printing, SystemCapabilities::Printing);
-capabilities_func!(get_has_screen_broadcast, SystemCapabilities::ScreenBroadcast);
+capabilities_func!(
+    get_has_screen_broadcast,
+    SystemCapabilities::ScreenBroadcast
+);
 capabilities_func!(get_has_screen_playback, SystemCapabilities::ScreenPlayback);
 capabilities_func!(get_has_streaming_audio, SystemCapabilities::StreamingAudio);
 capabilities_func!(get_has_streaming_video, SystemCapabilities::StreamingVideo);
 capabilities_func!(get_has_video_encoder, SystemCapabilities::VideoEncoder);
 capabilities_func!(get_is_debugger, SystemCapabilities::Debugger);
-inverse_capabilities_func!(get_is_local_file_read_disabled, SystemCapabilities::LocalFileRead);
+inverse_capabilities_func!(
+    get_is_local_file_read_disabled,
+    SystemCapabilities::LocalFileRead
+);
 inverse_capabilities_func!(get_is_av_hardware_disabled, SystemCapabilities::AvHardware);
-
 
 pub fn get_player_type<'gc>(
     _avm: &mut Avm1<'gc>,
@@ -89,7 +94,11 @@ pub fn get_language<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    Ok(context.system.language.get_language_code(avm.player_version).into())
+    Ok(context
+        .system
+        .language
+        .get_language_code(avm.player_version)
+        .into())
 }
 
 pub fn get_screen_resolution_x<'gc>(
@@ -134,7 +143,11 @@ pub fn get_manufacturer<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    Ok(context.system.manufacturer.get_manufacturer_string(avm.player_version).into())
+    Ok(context
+        .system
+        .manufacturer
+        .get_manufacturer_string(avm.player_version)
+        .into())
 }
 
 pub fn get_os_name<'gc>(
@@ -163,7 +176,6 @@ pub fn get_server_string<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     Ok(context.system.get_server_string(avm).into())
 }
-
 
 pub fn create<'gc>(
     gc_context: MutationContext<'gc, '_>,

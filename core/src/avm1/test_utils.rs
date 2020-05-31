@@ -14,6 +14,7 @@ use gc_arena::{rootless_arena, GcCell, MutationContext};
 use rand::{rngs::SmallRng, SeedableRng};
 use std::collections::BTreeMap;
 use std::sync::Arc;
+use crate::avm1::globals::system::SystemProperties;
 
 pub fn with_avm<F, R>(swf_version: u8, test: F) -> R
 where
@@ -57,6 +58,7 @@ where
             stage_size: (Twips::from_pixels(550.0), Twips::from_pixels(400.0)),
             player: None,
             load_manager: &mut LoadManager::new(),
+            system: &mut SystemProperties::default(),
         };
         root.post_instantiation(&mut avm, &mut context, root, None);
 

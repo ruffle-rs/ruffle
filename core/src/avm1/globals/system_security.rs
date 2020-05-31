@@ -1,11 +1,11 @@
+use crate::avm1::function::Executable;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute::{DontDelete, DontEnum, ReadOnly};
-use crate::avm1::{ScriptObject, TObject, Avm1, Value, Error};
+use crate::avm1::return_value::ReturnValue;
+use crate::avm1::{Avm1, Error, ScriptObject, TObject, Value};
+use crate::context::UpdateContext;
 use gc_arena::MutationContext;
 use std::convert::Into;
-use crate::context::UpdateContext;
-use crate::avm1::return_value::ReturnValue;
-use crate::avm1::function::Executable;
 
 fn allow_domain<'gc>(
     _avm: &mut Avm1<'gc>,
@@ -46,7 +46,6 @@ fn get_sandbox_type<'gc>(
     Ok(context.system.sandbox_type.get_sandbox_name().into())
 }
 
-
 pub fn create<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Option<Object<'gc>>,
@@ -59,7 +58,7 @@ pub fn create<'gc>(
         allow_domain,
         gc_context,
         DontDelete | ReadOnly | DontEnum,
-        fn_proto
+        fn_proto,
     );
 
     security.force_set_function(
@@ -67,7 +66,7 @@ pub fn create<'gc>(
         allow_insecure_domain,
         gc_context,
         DontDelete | ReadOnly | DontEnum,
-        fn_proto
+        fn_proto,
     );
 
     security.force_set_function(
@@ -75,7 +74,7 @@ pub fn create<'gc>(
         load_policy_file,
         gc_context,
         DontDelete | ReadOnly | DontEnum,
-        fn_proto
+        fn_proto,
     );
 
     security.add_property(

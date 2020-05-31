@@ -1,6 +1,7 @@
 //! Contexts and helper types passed between functions.
 use crate::avm1;
 
+use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::listeners::SystemListener;
 use crate::avm1::{Object, Value};
 use crate::backend::input::InputBackend;
@@ -17,7 +18,6 @@ use rand::rngs::SmallRng;
 use std::collections::BTreeMap;
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, Weak};
-use crate::avm1::globals::system::SystemProperties;
 
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
 /// `Player` crates this when it begins a tick and passes it through the call stack to

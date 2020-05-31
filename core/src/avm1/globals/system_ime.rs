@@ -1,12 +1,12 @@
+use crate::avm1::listeners::Listeners;
 use crate::avm1::object::Object;
+use crate::avm1::property::Attribute;
 use crate::avm1::property::Attribute::{DontDelete, DontEnum, ReadOnly};
-use crate::avm1::{ScriptObject, TObject, Avm1, Value, Error};
+use crate::avm1::return_value::ReturnValue;
+use crate::avm1::{Avm1, Error, ScriptObject, TObject, Value};
+use crate::context::UpdateContext;
 use gc_arena::MutationContext;
 use std::convert::Into;
-use crate::context::UpdateContext;
-use crate::avm1::return_value::ReturnValue;
-use crate::avm1::property::Attribute;
-use crate::avm1::listeners::Listeners;
 
 fn on_ime_composition<'gc>(
     _avm: &mut Avm1<'gc>,
@@ -135,7 +135,7 @@ pub fn create<'gc>(
         on_ime_composition,
         gc_context,
         DontDelete | DontEnum,
-        fn_proto
+        fn_proto,
     );
 
     ime.force_set_function(
@@ -143,16 +143,15 @@ pub fn create<'gc>(
         do_conversion,
         gc_context,
         DontDelete | DontEnum,
-        fn_proto
+        fn_proto,
     );
-
 
     ime.force_set_function(
         "getConversionMode",
         get_conversion_mode,
         gc_context,
         DontDelete | DontEnum,
-        fn_proto
+        fn_proto,
     );
 
     ime.force_set_function(
@@ -160,7 +159,7 @@ pub fn create<'gc>(
         get_enabled,
         gc_context,
         DontDelete | DontEnum,
-        fn_proto
+        fn_proto,
     );
 
     ime.force_set_function(
@@ -168,7 +167,7 @@ pub fn create<'gc>(
         set_composition_string,
         gc_context,
         DontDelete | DontEnum,
-        fn_proto
+        fn_proto,
     );
 
     ime.force_set_function(
@@ -176,7 +175,7 @@ pub fn create<'gc>(
         set_conversion_mode,
         gc_context,
         DontDelete | DontEnum,
-        fn_proto
+        fn_proto,
     );
 
     ime.force_set_function(
@@ -184,7 +183,7 @@ pub fn create<'gc>(
         set_enabled,
         gc_context,
         DontDelete | DontEnum,
-        fn_proto
+        fn_proto,
     );
 
     ime.into()

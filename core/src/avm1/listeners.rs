@@ -136,7 +136,7 @@ impl<'gc> Listeners<'gc> {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SystemListener {
     Mouse,
-    Ime
+    Ime,
 }
 
 #[derive(Clone, Collect, Debug, Copy)]

@@ -1,20 +1,20 @@
+use crate::avm1::function::Executable;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute::{DontDelete, DontEnum, ReadOnly};
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
+use enumset::{EnumSet, EnumSetType};
 use gc_arena::MutationContext;
 use num_enum::TryFromPrimitive;
 use std::convert::TryFrom;
-use crate::avm1::function::Executable;
-use enumset::{EnumSet, EnumSetType};
 
 /// Available type of sandbox for a given SWF
 pub enum SandboxType {
     Remote,
     LocalWithFile,
     LocalWithNetwork,
-    LocalTrusted
+    LocalTrusted,
 }
 
 impl SandboxType {
@@ -37,7 +37,7 @@ pub enum OperatingSystem {
     Windows95,
     WindowsCE,
     Linux,
-    MacOS
+    MacOS,
 }
 
 impl OperatingSystem {
@@ -84,7 +84,7 @@ impl Manufacturer {
             Manufacturer::Windows => "WIN",
             Manufacturer::Macintosh => "MAC",
             Manufacturer::Linux => "LNX",
-            _ => ""
+            _ => "",
         }
     }
 }
@@ -111,12 +111,12 @@ pub enum Language {
     Spanish,
     Swedish,
     TraditionalChinese,
-    Turkish
+    Turkish,
 }
 
 impl Language {
     pub fn get_language_code(&self, player_version: u8) -> &str {
-        return match self {
+        match self {
             Language::Czech => "cs",
             Language::Danish => "da",
             Language::Dutch => "nl",
@@ -143,7 +143,7 @@ impl Language {
             Language::Spanish => "es",
             Language::Swedish => "sv",
             Language::TraditionalChinese => "zh-TW",
-            Language::Turkish => "tr"
+            Language::Turkish => "tr",
         }
     }
 }
@@ -157,7 +157,7 @@ pub enum ScreenColor {
 
 impl ScreenColor {
     pub fn get_color_code(&self) -> &str {
-        return match self {
+        match self {
             ScreenColor::Color => "color",
             ScreenColor::Gray => "gray",
             ScreenColor::BlackWhite => "bw",
@@ -175,7 +175,7 @@ pub enum PlayerType {
 
 impl PlayerType {
     pub fn get_player_name(&self) -> &str {
-        return match self {
+        match self {
             PlayerType::StandAlone => "StandAlone",
             PlayerType::External => "External",
             PlayerType::PlugIn => "PlugIn",
@@ -244,7 +244,11 @@ pub struct SystemProperties {
 
 impl SystemProperties {
     pub fn get_version_string(&self, avm: &Avm1) -> String {
-        format!("{} {},0,0,0", self.manufacturer.get_platform_name(), avm.player_version)
+        format!(
+            "{} {},0,0,0",
+            self.manufacturer.get_platform_name(),
+            avm.player_version
+        )
     }
 
     pub fn has_capability(&self, cap: SystemCapabilities) -> bool {
@@ -258,14 +262,14 @@ impl SystemProperties {
     fn encode_capability(&self, cap: SystemCapabilities) -> &str {
         match self.has_capability(cap) {
             true => "t",
-            false => "f"
+            false => "f",
         }
     }
 
     fn encode_not_capability(&self, cap: SystemCapabilities) -> &str {
         match self.has_capability(cap) {
             true => "t",
-            false => "f"
+            false => "f",
         }
     }
 
@@ -274,30 +278,69 @@ impl SystemProperties {
     }
 
     pub fn get_server_string(&self, avm: &Avm1) -> String {
-
         url::form_urlencoded::Serializer::new(String::new())
             .append_pair("A", self.encode_capability(SystemCapabilities::Audio))
-            .append_pair("SA", self.encode_capability(SystemCapabilities::StreamingAudio))
-            .append_pair("SV", self.encode_capability(SystemCapabilities::StreamingVideo))
-            .append_pair("EV", self.encode_capability(SystemCapabilities::EmbeddedVideo))
+            .append_pair(
+                "SA",
+                self.encode_capability(SystemCapabilities::StreamingAudio),
+            )
+            .append_pair(
+                "SV",
+                self.encode_capability(SystemCapabilities::StreamingVideo),
+            )
+            .append_pair(
+                "EV",
+                self.encode_capability(SystemCapabilities::EmbeddedVideo),
+            )
             .append_pair("MP3", self.encode_capability(SystemCapabilities::MP3))
-            .append_pair("AE", self.encode_capability(SystemCapabilities::AudioEncoder))
-            .append_pair("VE", self.encode_capability(SystemCapabilities::VideoEncoder))
-            .append_pair("ACC", self.encode_not_capability(SystemCapabilities::Accessibility))
+            .append_pair(
+                "AE",
+                self.encode_capability(SystemCapabilities::AudioEncoder),
+            )
+            .append_pair(
+                "VE",
+                self.encode_capability(SystemCapabilities::VideoEncoder),
+            )
+            .append_pair(
+                "ACC",
+                self.encode_not_capability(SystemCapabilities::Accessibility),
+            )
             .append_pair("PR", self.encode_capability(SystemCapabilities::Printing))
-            .append_pair("SP", self.encode_capability(SystemCapabilities::ScreenPlayback))
-            .append_pair("SB", self.encode_capability(SystemCapabilities::ScreenBroadcast))
+            .append_pair(
+                "SP",
+                self.encode_capability(SystemCapabilities::ScreenPlayback),
+            )
+            .append_pair(
+                "SB",
+                self.encode_capability(SystemCapabilities::ScreenBroadcast),
+            )
             .append_pair("DEB", self.encode_capability(SystemCapabilities::Debugger))
-            .append_pair("M", &self.encode_string(self.manufacturer.get_manufacturer_string(avm.player_version).as_str()))
-            .append_pair("R", &format!("{}x{}", self.screen_resolution.0, self.screen_resolution.1))
+            .append_pair(
+                "M",
+                &self.encode_string(
+                    self.manufacturer
+                        .get_manufacturer_string(avm.player_version)
+                        .as_str(),
+                ),
+            )
+            .append_pair(
+                "R",
+                &format!("{}x{}", self.screen_resolution.0, self.screen_resolution.1),
+            )
             .append_pair("COL", self.screen_color.get_color_code())
             .append_pair("AR", &self.aspect_ratio.to_string())
             .append_pair("OS", &self.encode_string(self.os.get_os_name()))
             .append_pair("L", self.language.get_language_code(avm.player_version))
             .append_pair("IME", self.encode_capability(SystemCapabilities::IME))
             .append_pair("PT", self.player_type.get_player_name())
-            .append_pair("AVD", self.encode_not_capability(SystemCapabilities::AvHardware))
-            .append_pair("LFD", self.encode_not_capability(SystemCapabilities::LocalFileRead))
+            .append_pair(
+                "AVD",
+                self.encode_not_capability(SystemCapabilities::AvHardware),
+            )
+            .append_pair(
+                "LFD",
+                self.encode_not_capability(SystemCapabilities::LocalFileRead),
+            )
             .append_pair("DP", &self.dpi.to_string())
             .finish()
     }
@@ -316,8 +359,8 @@ impl Default for SystemProperties {
             // TODO: note for fp <7 this should be the locale and the ui lang for >= 7, on windows
             language: Language::English,
             screen_resolution: (0, 0),
-            aspect_ratio: 1 as f32,
-            dpi: 1 as f32,
+            aspect_ratio: 1_f32,
+            dpi: 1_f32,
             manufacturer: Manufacturer::Linux,
             os: OperatingSystem::Linux,
             sandbox_type: SandboxType::LocalTrusted,
@@ -431,7 +474,7 @@ pub fn create<'gc>(
     fn_proto: Option<Object<'gc>>,
     security: Object<'gc>,
     capabilities: Object<'gc>,
-    ime: Object<'gc>
+    ime: Object<'gc>,
 ) -> Object<'gc> {
     let mut system = ScriptObject::object(gc_context, proto);
 
@@ -442,7 +485,6 @@ pub fn create<'gc>(
         Some(Executable::Native(set_exact_settings)),
         DontDelete | DontEnum,
     );
-
 
     system.add_property(
         gc_context,

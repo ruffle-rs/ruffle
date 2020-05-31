@@ -1,4 +1,5 @@
 use crate::avm1::debug::VariableDumper;
+use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::listeners::SystemListener;
 use crate::avm1::{Activation, Avm1, TObject, Value};
 use crate::backend::input::{InputBackend, MouseCursor};
@@ -20,8 +21,6 @@ use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex, Weak};
-use crate::avm1::globals::system::SystemProperties;
-
 
 static DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
 
@@ -237,7 +236,7 @@ impl Player {
             navigator,
             input,
             self_reference: None,
-            system: SystemProperties::default()
+            system: SystemProperties::default(),
         };
 
         player.mutate_with_update_context(|avm, context| {
@@ -881,7 +880,7 @@ impl Player {
                 system_prototypes: avm.prototypes().clone(),
                 player,
                 load_manager,
-                system: system_properties
+                system: system_properties,
             };
 
             let ret = f(avm, &mut update_context);
