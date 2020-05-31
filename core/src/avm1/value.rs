@@ -681,20 +681,26 @@ mod test {
     #[test]
     fn to_primitive_num() {
         with_avm(6, |avm, context, _this| {
-            let t = Value::Bool(true);
-            let u = Value::Undefined;
-            let f = Value::Bool(false);
-            let n = Value::Null;
+            let true_value = Value::Bool(true);
+            let undefined = Value::Undefined;
+            let false_value = Value::Bool(false);
+            let null = Value::Null;
 
-            assert_eq!(t.to_primitive_num(avm, context).unwrap(), t);
-            assert_eq!(u.to_primitive_num(avm, context).unwrap(), u);
-            assert_eq!(f.to_primitive_num(avm, context).unwrap(), f);
-            assert_eq!(n.to_primitive_num(avm, context).unwrap(), n);
+            assert_eq!(
+                true_value.to_primitive_num(avm, context).unwrap(),
+                true_value
+            );
+            assert_eq!(undefined.to_primitive_num(avm, context).unwrap(), undefined);
+            assert_eq!(
+                false_value.to_primitive_num(avm, context).unwrap(),
+                false_value
+            );
+            assert_eq!(null.to_primitive_num(avm, context).unwrap(), null);
 
             let (protos, global, _) = create_globals(context.gc_context);
             let vglobal = Value::Object(global);
 
-            assert_eq!(vglobal.to_primitive_num(avm, context).unwrap(), u);
+            assert_eq!(vglobal.to_primitive_num(avm, context).unwrap(), undefined);
 
             fn value_of_impl<'gc>(
                 _: &mut Avm1<'gc>,
