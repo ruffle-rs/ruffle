@@ -131,9 +131,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
             log::warn!("Super method {} is not callable", name);
         }
 
-        method
-            .call(avm, context, child, base_proto, args)?
-            .resolve(avm, context)
+        method.call(avm, context, child, base_proto, args)
     }
 
     fn call_setter(

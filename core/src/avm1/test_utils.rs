@@ -91,7 +91,7 @@ macro_rules! test_method {
                             $(
                                 args.push($arg.into());
                             )*
-                            assert_eq!(function.call(avm, context, object, None, &args)?, ReturnValue::Immediate($out.into()), "{:?} => {:?} in swf {}", args, $out, version);
+                            assert_eq!(function.call(avm, context, object, None, &args)?, $out.into(), "{:?} => {:?} in swf {}", args, $out, version);
                         )*
 
                         Ok(())

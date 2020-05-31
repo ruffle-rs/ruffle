@@ -794,7 +794,6 @@ fn sort_compare_custom<'gc>(
     let args = [a.clone(), b.clone()];
     let ret = compare_fn
         .call(avm, context, this, None, &args)
-        .and_then(|v| v.resolve(avm, context))
         .unwrap_or(Value::Undefined);
     match ret {
         Value::Number(n) if n > 0.0 => Ordering::Greater,

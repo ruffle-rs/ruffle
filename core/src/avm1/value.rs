@@ -252,7 +252,6 @@ impl<'gc> Value<'gc> {
                 value_of_impl
                     .resolve(avm, context)?
                     .call(avm, context, *object, base_proto, &fake_args)?
-                    .resolve(avm, context)?
             }
             val => val.to_owned(),
         })
@@ -484,7 +483,6 @@ impl<'gc> Value<'gc> {
                 match to_string_impl
                     .resolve(avm, context)?
                     .call(avm, context, object, base_proto, &fake_args)?
-                    .resolve(avm, context)?
                 {
                     Value::String(s) => s,
                     _ => "[type Object]".to_string(),
@@ -583,11 +581,11 @@ impl<'gc> Value<'gc> {
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         if let Value::Object(object) = self {
-            Ok(object.call(avm, context, this, base_proto, args)?.into())
+            object.call(avm, context, this, base_proto, args)
         } else {
-            Ok(Value::Undefined.into())
+            Ok(Value::Undefined)
         }
     }
 
