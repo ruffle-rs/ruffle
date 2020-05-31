@@ -34,11 +34,9 @@ pub fn value_to_point<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<(f64, f64), Error> {
-    if let Value::Object(object) = value {
-        object_to_point(object, avm, context)
-    } else {
-        Ok((NAN, NAN))
-    }
+    let x = value.get("x", avm, context)?.as_number(avm, context)?;
+    let y = value.get("y", avm, context)?.as_number(avm, context)?;
+    Ok((x, y))
 }
 
 pub fn object_to_point<'gc>(
@@ -98,7 +96,7 @@ fn equals<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    if let Some(Value::Object(other)) = args.get(0) {
+    if let Some(other) = args.get(0) {
         let this_x = this.get("x", avm, context)?;
         let this_y = this.get("y", avm, context)?;
         let other_x = other.get("x", avm, context)?;
@@ -155,14 +153,8 @@ fn distance<'gc>(
 
     let a = args.get(0).unwrap_or(&Value::Undefined);
     let b = args.get(1).unwrap_or(&Value::Undefined);
-    let delta = a
-        .call_method("subtract", &[b.to_owned()], avm, context)?;
-    if let Value::Object(object) = delta {
-        let length = object.get("length", avm, context)?;
-        Ok(length.into())
-    } else {
-        Ok(Value::Undefined.into())
-    }
+    let delta = a.call_method("subtract", &[b.to_owned()], avm, context)?;
+    Ok(delta.get("length", avm, context)?.into())
 }
 
 fn polar<'gc>(
