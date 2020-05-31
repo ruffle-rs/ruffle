@@ -696,7 +696,6 @@ impl Player {
                     ));
                     if let Ok(prototype) = constructor
                         .get("prototype", avm, context)
-                        .and_then(|v| v.resolve(avm, context))
                         .and_then(|v| v.as_object())
                     {
                         if let Value::Object(object) = actions.clip.object() {

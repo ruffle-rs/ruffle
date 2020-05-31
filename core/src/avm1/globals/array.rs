@@ -377,7 +377,6 @@ pub fn concat<'gc>(
     for i in 0..this.length() {
         let old = this
             .get(&i.to_string(), avm, context)
-            .and_then(|v| v.resolve(avm, context))
             .unwrap_or(Value::Undefined);
         array.define_value(
             context.gc_context,
@@ -398,7 +397,6 @@ pub fn concat<'gc>(
                 for i in 0..object.length() {
                     let old = object
                         .get(&i.to_string(), avm, context)
-                        .and_then(|v| v.resolve(avm, context))
                         .unwrap_or(Value::Undefined);
                     array.define_value(
                         context.gc_context,
@@ -770,16 +768,8 @@ fn sort_compare_fields<'a, 'gc: 'a>(
         for (field_name, compare_fn) in field_names.iter().zip(compare_fns.iter_mut()) {
             let a_object = ValueObject::boxed(avm, context, a.clone());
             let b_object = ValueObject::boxed(avm, context, b.clone());
-            let a_prop = a_object
-                .get(field_name, avm, context)
-                .unwrap()
-                .resolve(avm, context)
-                .unwrap();
-            let b_prop = b_object
-                .get(field_name, avm, context)
-                .unwrap()
-                .resolve(avm, context)
-                .unwrap();
+            let a_prop = a_object.get(field_name, avm, context).unwrap();
+            let b_prop = b_object.get(field_name, avm, context).unwrap();
 
             let result = compare_fn(avm, context, &a_prop, &b_prop);
             if result != Ordering::Equal {

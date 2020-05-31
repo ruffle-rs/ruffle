@@ -69,7 +69,6 @@ impl<'gc> SuperObject<'gc> {
         if let Some(super_proto) = self.super_proto() {
             Ok(super_proto
                 .get("__constructor__", avm, context)?
-                .resolve(avm, context)?
                 .as_object()
                 .ok())
         } else {

@@ -46,14 +46,8 @@ pub fn object_to_point<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<(f64, f64), Error> {
-    let x = object
-        .get("x", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let y = object
-        .get("y", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
+    let x = object.get("x", avm, context)?.as_number(avm, context)?;
+    let y = object.get("y", avm, context)?.as_number(avm, context)?;
     Ok((x, y))
 }
 
@@ -91,10 +85,7 @@ fn clone<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     let proto = context.system_prototypes.point;
-    let args = [
-        this.get("x", avm, context)?.resolve(avm, context)?,
-        this.get("y", avm, context)?.resolve(avm, context)?,
-    ];
+    let args = [this.get("x", avm, context)?, this.get("y", avm, context)?];
     let cloned = proto.new(avm, context, proto, &args)?;
     let _ = constructor(avm, context, cloned, &args)?;
 
@@ -108,10 +99,10 @@ fn equals<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(Value::Object(other)) = args.get(0) {
-        let this_x = this.get("x", avm, context)?.resolve(avm, context)?;
-        let this_y = this.get("y", avm, context)?.resolve(avm, context)?;
-        let other_x = other.get("x", avm, context)?.resolve(avm, context)?;
-        let other_y = other.get("y", avm, context)?.resolve(avm, context)?;
+        let this_x = this.get("x", avm, context)?;
+        let this_y = this.get("y", avm, context)?;
+        let other_x = other.get("x", avm, context)?;
+        let other_y = other.get("y", avm, context)?;
         return Ok((this_x == other_x && this_y == other_y).into());
     }
 
@@ -124,14 +115,8 @@ fn add<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let this_x = this
-        .get("x", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let this_y = this
-        .get("y", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
+    let this_x = this.get("x", avm, context)?.as_number(avm, context)?;
+    let this_y = this.get("y", avm, context)?.as_number(avm, context)?;
     let other = value_to_point(
         args.get(0).unwrap_or(&Value::Undefined).to_owned(),
         avm,
@@ -147,14 +132,8 @@ fn subtract<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let this_x = this
-        .get("x", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let this_y = this
-        .get("y", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
+    let this_x = this.get("x", avm, context)?.as_number(avm, context)?;
+    let this_y = this.get("y", avm, context)?.as_number(avm, context)?;
     let other = value_to_point(
         args.get(0).unwrap_or(&Value::Undefined).to_owned(),
         avm,
@@ -180,7 +159,7 @@ fn distance<'gc>(
         .call_method("subtract", &[b.to_owned()], avm, context)?
         .resolve(avm, context)?;
     if let Value::Object(object) = delta {
-        let length = object.get("length", avm, context)?.resolve(avm, context)?;
+        let length = object.get("length", avm, context)?;
         Ok(length.into())
     } else {
         Ok(Value::Undefined.into())
@@ -230,11 +209,9 @@ fn to_string<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     let x = this
         .get("x", avm, context)?
-        .resolve(avm, context)?
         .coerce_to_string(avm, context)?;
     let y = this
         .get("y", avm, context)?
-        .resolve(avm, context)?
         .coerce_to_string(avm, context)?;
 
     Ok(format!("(x={}, y={})", x, y).into())
@@ -257,10 +234,7 @@ fn normalize<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let current_length = this
-        .get("length", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
+    let current_length = this.get("length", avm, context)?.as_number(avm, context)?;
     if current_length.is_finite() {
         let point = object_to_point(this, avm, context)?;
         let new_length = args

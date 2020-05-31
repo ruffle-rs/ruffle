@@ -119,10 +119,7 @@ impl<'gc> Listeners<'gc> {
 
         for i in 0..listeners.length() {
             if let Ok(listener) = listeners.array_element(i).as_object() {
-                if let Ok(handler) = listener
-                    .get(method, avm, context)
-                    .and_then(|v| v.resolve(avm, context))
-                {
+                if let Ok(handler) = listener.get(method, avm, context) {
                     handlers.push((listener, handler));
                 }
             }

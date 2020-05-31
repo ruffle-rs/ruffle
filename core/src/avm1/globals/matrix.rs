@@ -23,30 +23,14 @@ pub fn gradient_object_to_matrix<'gc>(
 ) -> Result<Matrix, Error> {
     if object
         .get("matrixType", avm, context)?
-        .resolve(avm, context)?
         .coerce_to_string(avm, context)?
         == "box"
     {
-        let width = object
-            .get("w", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?;
-        let height = object
-            .get("h", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?;
-        let rotation = object
-            .get("r", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?;
-        let tx = object
-            .get("x", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?;
-        let ty = object
-            .get("y", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?;
+        let width = object.get("w", avm, context)?.as_number(avm, context)?;
+        let height = object.get("h", avm, context)?.as_number(avm, context)?;
+        let rotation = object.get("r", avm, context)?.as_number(avm, context)?;
+        let tx = object.get("x", avm, context)?.as_number(avm, context)?;
+        let ty = object.get("y", avm, context)?.as_number(avm, context)?;
         Ok(Matrix::create_gradient_box(
             width as f32,
             height as f32,
@@ -65,34 +49,12 @@ pub fn object_to_matrix<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Matrix, Error> {
-    let a = object
-        .get("a", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)? as f32;
-    let b = object
-        .get("b", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)? as f32;
-    let c = object
-        .get("c", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)? as f32;
-    let d = object
-        .get("d", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)? as f32;
-    let tx = Twips::from_pixels(
-        object
-            .get("tx", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?,
-    );
-    let ty = Twips::from_pixels(
-        object
-            .get("ty", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?,
-    );
+    let a = object.get("a", avm, context)?.as_number(avm, context)? as f32;
+    let b = object.get("b", avm, context)?.as_number(avm, context)? as f32;
+    let c = object.get("c", avm, context)?.as_number(avm, context)? as f32;
+    let d = object.get("d", avm, context)?.as_number(avm, context)? as f32;
+    let tx = Twips::from_pixels(object.get("tx", avm, context)?.as_number(avm, context)?);
+    let ty = Twips::from_pixels(object.get("ty", avm, context)?.as_number(avm, context)?);
 
     Ok(Matrix { a, b, c, d, tx, ty })
 }
@@ -183,12 +145,12 @@ fn clone<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     let proto = context.system_prototypes.matrix;
     let args = [
-        this.get("a", avm, context)?.resolve(avm, context)?,
-        this.get("b", avm, context)?.resolve(avm, context)?,
-        this.get("c", avm, context)?.resolve(avm, context)?,
-        this.get("d", avm, context)?.resolve(avm, context)?,
-        this.get("tx", avm, context)?.resolve(avm, context)?,
-        this.get("ty", avm, context)?.resolve(avm, context)?,
+        this.get("a", avm, context)?,
+        this.get("b", avm, context)?,
+        this.get("c", avm, context)?,
+        this.get("d", avm, context)?,
+        this.get("tx", avm, context)?,
+        this.get("ty", avm, context)?,
     ];
     let cloned = proto.new(avm, context, proto, &args)?;
     let _ = constructor(avm, context, cloned, &args)?;
@@ -380,27 +342,21 @@ fn to_string<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     let a = this
         .get("a", avm, context)?
-        .resolve(avm, context)?
         .coerce_to_string(avm, context)?;
     let b = this
         .get("b", avm, context)?
-        .resolve(avm, context)?
         .coerce_to_string(avm, context)?;
     let c = this
         .get("c", avm, context)?
-        .resolve(avm, context)?
         .coerce_to_string(avm, context)?;
     let d = this
         .get("d", avm, context)?
-        .resolve(avm, context)?
         .coerce_to_string(avm, context)?;
     let tx = this
         .get("tx", avm, context)?
-        .resolve(avm, context)?
         .coerce_to_string(avm, context)?;
     let ty = this
         .get("ty", avm, context)?
-        .resolve(avm, context)?
         .coerce_to_string(avm, context)?;
 
     Ok(format!("(a={}, b={}, c={}, d={}, tx={}, ty={})", a, b, c, d, tx, ty).into())

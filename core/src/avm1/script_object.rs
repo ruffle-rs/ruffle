@@ -777,7 +777,7 @@ mod tests {
         with_object(0, |avm, context, object| {
             assert_eq!(
                 object.get("not_defined", avm, context).unwrap(),
-                ReturnValue::Immediate(Value::Undefined)
+                Value::Undefined
             );
         })
     }
@@ -795,13 +795,10 @@ mod tests {
                 .set("natural", "natural".into(), avm, context)
                 .unwrap();
 
-            assert_eq!(
-                object.get("forced", avm, context).unwrap(),
-                ReturnValue::Immediate("forced".into())
-            );
+            assert_eq!(object.get("forced", avm, context).unwrap(), "forced".into());
             assert_eq!(
                 object.get("natural", avm, context).unwrap(),
-                ReturnValue::Immediate("natural".into())
+                "natural".into()
             );
         })
     }
@@ -831,11 +828,11 @@ mod tests {
 
             assert_eq!(
                 object.get("normal", avm, context).unwrap(),
-                ReturnValue::Immediate("replaced".into())
+                "replaced".into()
             );
             assert_eq!(
                 object.get("readonly", avm, context).unwrap(),
-                ReturnValue::Immediate("initial".into())
+                "initial".into()
             );
         })
     }
@@ -851,10 +848,7 @@ mod tests {
             );
 
             assert_eq!(object.delete(avm, context.gc_context, "test"), false);
-            assert_eq!(
-                object.get("test", avm, context).unwrap(),
-                ReturnValue::Immediate("initial".into())
-            );
+            assert_eq!(object.get("test", avm, context).unwrap(), "initial".into());
 
             object
                 .as_script_object()
@@ -863,10 +857,7 @@ mod tests {
                 .unwrap();
 
             assert_eq!(object.delete(avm, context.gc_context, "test"), false);
-            assert_eq!(
-                object.get("test", avm, context).unwrap(),
-                ReturnValue::Immediate("replaced".into())
-            );
+            assert_eq!(object.get("test", avm, context).unwrap(), "replaced".into());
         })
     }
 
@@ -885,17 +876,11 @@ mod tests {
                 EnumSet::empty(),
             );
 
-            assert_eq!(
-                object.get("test", avm, context).unwrap(),
-                ReturnValue::Immediate("Virtual!".into())
-            );
+            assert_eq!(object.get("test", avm, context).unwrap(), "Virtual!".into());
 
             // This set should do nothing
             object.set("test", "Ignored!".into(), avm, context).unwrap();
-            assert_eq!(
-                object.get("test", avm, context).unwrap(),
-                ReturnValue::Immediate("Virtual!".into())
-            );
+            assert_eq!(object.get("test", avm, context).unwrap(), "Virtual!".into());
         })
     }
 
@@ -944,19 +929,19 @@ mod tests {
 
             assert_eq!(
                 object.get("virtual", avm, context).unwrap(),
-                ReturnValue::Immediate(Value::Undefined)
+                Value::Undefined
             );
             assert_eq!(
                 object.get("virtual_un", avm, context).unwrap(),
-                ReturnValue::Immediate("Virtual!".into())
+                "Virtual!".into()
             );
             assert_eq!(
                 object.get("stored", avm, context).unwrap(),
-                ReturnValue::Immediate(Value::Undefined)
+                Value::Undefined
             );
             assert_eq!(
                 object.get("stored_un", avm, context).unwrap(),
-                ReturnValue::Immediate("Stored!".into())
+                "Stored!".into()
             );
         })
     }

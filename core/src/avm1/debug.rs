@@ -104,10 +104,7 @@ impl<'a> VariableDumper<'a> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
-        match object
-            .get(&key, avm, context)
-            .and_then(|v| v.resolve(avm, context))
-        {
+        match object.get(&key, avm, context) {
             Ok(value) => {
                 self.print_value(&value, avm, context);
             }

@@ -83,7 +83,7 @@ macro_rules! test_method {
                 for version in &$versions {
                     let _ = with_avm(*version, |avm, context, _root| -> Result<(), Error> {
                         let object = $object(avm, context);
-                        let function = object.get($name, avm, context)?.unwrap_immediate();
+                        let function = object.get($name, avm, context)?;
 
                         $(
                             #[allow(unused_mut)]

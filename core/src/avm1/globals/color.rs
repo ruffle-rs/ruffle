@@ -81,7 +81,7 @@ fn target<'gc>(
     // The target path resolves based on the active tellTarget clip of the stack frame.
     // This means calls on the same `Color` object could set the color of different clips
     // depending on which timeline its called from!
-    let target = this.get("target", avm, context)?.resolve(avm, context)?;
+    let target = this.get("target", avm, context)?;
     // Undefined or empty target is no-op.
     if target != Value::Undefined && !matches!(&target, &Value::String(ref s) if s.is_empty()) {
         let start_clip = avm.target_clip_or_root();
@@ -177,7 +177,6 @@ fn set_transform<'gc>(
         if transform.has_own_property(avm, context, property) {
             let n = transform
                 .get(property, avm, context)?
-                .resolve(avm, context)?
                 .as_number(avm, context)?;
             *out = f32::from(crate::avm1::value::f64_to_wrapping_i16(n * 2.56)) / 256.0
         }
@@ -195,7 +194,6 @@ fn set_transform<'gc>(
         if transform.has_own_property(avm, context, property) {
             let n = transform
                 .get(property, avm, context)?
-                .resolve(avm, context)?
                 .as_number(avm, context)?;
             *out = f32::from(crate::avm1::value::f64_to_wrapping_i16(n)) / 255.0
         }

@@ -55,16 +55,13 @@ pub fn apply<'gc>(
     let length = match args_object {
         Value::Object(a) => a
             .get("length", avm, action_context)?
-            .resolve(avm, action_context)?
             .as_number(avm, action_context)? as usize,
         _ => 0,
     };
 
     while child_args.len() < length {
         let args = args_object.as_object()?;
-        let next_arg = args
-            .get(&format!("{}", child_args.len()), avm, action_context)?
-            .resolve(avm, action_context)?;
+        let next_arg = args.get(&format!("{}", child_args.len()), avm, action_context)?;
 
         child_args.push(next_arg);
     }
