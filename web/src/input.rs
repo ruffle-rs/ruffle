@@ -183,6 +183,10 @@ impl InputBackend for WebInputBackend {
         self.cursor = cursor;
         self.update_mouse_cursor();
     }
+
+    fn set_clipboard_content(&mut self, _content: String) {
+        log::warn!("set clipboard not implemented");
+    }
 }
 
 /// Converts a Web `KeyboardEvent.code` value into a Ruffle `KeyCode`.
