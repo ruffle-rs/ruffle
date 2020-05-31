@@ -1,5 +1,4 @@
 use crate::avm1::object::search_prototype;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, TObject, UpdateContext};
 use std::f64::NAN;
 
@@ -595,11 +594,11 @@ impl<'gc> Value<'gc> {
         args: &[Value<'gc>],
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         if let Value::Object(object) = self {
-            Ok(object.call_method(name, args, avm, context)?.into())
+            object.call_method(name, args, avm, context)
         } else {
-            Ok(Value::Undefined.into())
+            Ok(Value::Undefined)
         }
     }
 }
