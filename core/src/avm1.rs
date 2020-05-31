@@ -1241,7 +1241,8 @@ impl<'gc> Avm1<'gc> {
             .resolve(fn_name.as_string()?, self, context)?
             .resolve(self, context)?;
         let this = self.target_clip_or_root().object().as_object()?;
-        target_fn.call(self, context, this, None, &args)?.push(self);
+        let result = target_fn.call(self, context, this, None, &args)?;
+        self.push(result);
 
         Ok(())
     }

@@ -112,9 +112,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             log::warn!("Object method {} is not callable", name);
         }
 
-        method
-            .call(avm, context, (*self).into(), base_proto, args)?
-            .resolve(avm, context)
+        method.call(avm, context, (*self).into(), base_proto, args)
     }
 
     /// Call a setter defined in this object.
