@@ -24,6 +24,7 @@ mod movie_clip_loader;
 pub(crate) mod number;
 mod object;
 mod point;
+mod rectangle;
 mod sound;
 mod stage;
 pub(crate) mod string;
@@ -131,6 +132,8 @@ pub struct SystemPrototypes<'gc> {
     pub boolean: Object<'gc>,
     pub matrix: Object<'gc>,
     pub point: Object<'gc>,
+    pub rectangle: Object<'gc>,
+    pub rectangle_constructor: Object<'gc>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
@@ -150,6 +153,8 @@ unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
         self.boolean.trace(cc);
         self.matrix.trace(cc);
         self.point.trace(cc);
+        self.rectangle.trace(cc);
+        self.rectangle_constructor.trace(cc);
     }
 }
 
@@ -191,6 +196,8 @@ pub fn create_globals<'gc>(
         boolean::create_proto(gc_context, object_proto, function_proto);
     let matrix_proto: Object<'gc> = matrix::create_proto(gc_context, object_proto, function_proto);
     let point_proto: Object<'gc> = point::create_proto(gc_context, object_proto, function_proto);
+    let rectangle_proto: Object<'gc> =
+        rectangle::create_proto(gc_context, object_proto, function_proto);
 
     //TODO: These need to be constructors and should also set `.prototype` on each one
     let object = object::create_object_object(gc_context, object_proto, function_proto);
@@ -265,10 +272,13 @@ pub fn create_globals<'gc>(
     let geom = ScriptObject::object(gc_context, Some(object_proto));
     let matrix = matrix::create_matrix_object(gc_context, Some(matrix_proto), Some(function_proto));
     let point = point::create_point_object(gc_context, Some(point_proto), Some(function_proto));
+    let rectangle =
+        rectangle::create_rectangle_object(gc_context, Some(rectangle_proto), Some(function_proto));
 
     flash.define_value(gc_context, "geom", geom.into(), EnumSet::empty());
     geom.define_value(gc_context, "Matrix", matrix.into(), EnumSet::empty());
     geom.define_value(gc_context, "Point", point.into(), EnumSet::empty());
+    geom.define_value(gc_context, "Rectangle", rectangle.into(), EnumSet::empty());
 
     let listeners = SystemListeners::new(gc_context, Some(array_proto));
 
@@ -401,6 +411,8 @@ pub fn create_globals<'gc>(
             boolean: boolean_proto,
             matrix: matrix_proto,
             point: point_proto,
+            rectangle: rectangle_proto,
+            rectangle_constructor: rectangle,
         },
         globals.into(),
         listeners,

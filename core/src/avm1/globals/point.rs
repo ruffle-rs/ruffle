@@ -14,8 +14,16 @@ pub fn point_to_object<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    let proto = context.system_prototypes.point;
     let args = [point.0.into(), point.1.into()];
+    construct_new_point(&args, avm, context)
+}
+
+pub fn construct_new_point<'gc>(
+    args: &[Value<'gc>],
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+) -> Result<Object<'gc>, Error> {
+    let proto = context.system_prototypes.point;
     let object = proto.new(avm, context, proto, &args)?;
     let _ = constructor(avm, context, object, &args)?;
     Ok(object)
