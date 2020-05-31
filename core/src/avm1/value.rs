@@ -1,4 +1,3 @@
-use crate::avm1::object::search_prototype;
 use crate::avm1::{Avm1, Error, Object, TObject, UpdateContext};
 use std::f64::NAN;
 
@@ -243,15 +242,7 @@ impl<'gc> Value<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         Ok(match self {
-            Value::Object(object) => {
-                let (value_of_impl, base_proto) =
-                    search_prototype(Some(*object), "valueOf", avm, context, *object)?;
-
-                let fake_args = Vec::new();
-                value_of_impl
-                    .resolve(avm, context)?
-                    .call(avm, context, *object, base_proto, &fake_args)?
-            }
+            Value::Object(object) => object.call_method("valueOf", &[], avm, context)?,
             val => val.to_owned(),
         })
     }
@@ -475,18 +466,10 @@ impl<'gc> Value<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<String, Error> {
         Ok(match self {
-            Value::Object(object) => {
-                let (to_string_impl, base_proto) =
-                    search_prototype(Some(object), "toString", avm, context, object)?;
-                let fake_args = Vec::new();
-                match to_string_impl
-                    .resolve(avm, context)?
-                    .call(avm, context, object, base_proto, &fake_args)?
-                {
-                    Value::String(s) => s,
-                    _ => "[type Object]".to_string(),
-                }
-            }
+            Value::Object(object) => match object.call_method("toString", &[], avm, context)? {
+                Value::String(s) => s,
+                _ => "[type Object]".to_string(),
+            },
             _ => self.into_string(avm.current_swf_version()),
         })
     }
