@@ -293,16 +293,18 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         if name == "__proto__" {
-            return Ok(self.proto().map_or(Value::Undefined, Value::Object).into());
+            return Ok(self.proto().map_or(Value::Undefined, Value::Object));
         }
 
         if let Some(value) = self.0.read().values.get(name, avm.is_case_sensitive()) {
-            return value.get(avm, context, this, Some((*self).into()));
+            return value
+                .get(avm, context, this, Some((*self).into()))?
+                .resolve(avm, context);
         }
 
-        Ok(Value::Undefined.into())
+        Ok(Value::Undefined)
     }
 
     /// Set a named property on the object.

@@ -69,8 +69,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         // Property search order for DisplayObjects:
         if self.has_own_property(avm, context, name) {
             // 1) Actual properties on the underlying object
-            self.get_local(name, avm, context, (*self).into())?
-                .resolve(avm, context)
+            self.get_local(name, avm, context, (*self).into())
         } else if let Some(property) = props.read().get_by_name(&name) {
             // 2) Display object properties such as _x, _y
             let val = property.get(avm, context, self.display_object)?;
@@ -99,7 +98,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         self.base.get_local(name, avm, context, this)
     }
 
