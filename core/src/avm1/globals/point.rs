@@ -156,8 +156,7 @@ fn distance<'gc>(
     let a = args.get(0).unwrap_or(&Value::Undefined);
     let b = args.get(1).unwrap_or(&Value::Undefined);
     let delta = a
-        .call_method("subtract", &[b.to_owned()], avm, context)?
-        .resolve(avm, context)?;
+        .call_method("subtract", &[b.to_owned()], avm, context)?;
     if let Value::Object(object) = delta {
         let length = object.get("length", avm, context)?;
         Ok(length.into())
