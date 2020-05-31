@@ -108,9 +108,7 @@ pub fn broadcast_message<'gc>(
             let listener = listeners.get(&format!("{}", i), avm, context)?;
 
             if let Value::Object(listener) = listener {
-                listener
-                    .call_method(&event_name, call_args, avm, context)?
-                    .resolve(avm, context)?;
+                listener.call_method(&event_name, call_args, avm, context)?;
             }
         }
     }

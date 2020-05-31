@@ -102,7 +102,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         args: &[Value<'gc>],
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         let (method, base_proto) =
             search_prototype(Some((*self).into()), name, avm, context, (*self).into())?;
         let method = method.resolve(avm, context)?;
@@ -112,7 +112,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             log::warn!("Object method {} is not callable", name);
         }
 
-        method.call(avm, context, (*self).into(), base_proto, args)
+        method
+            .call(avm, context, (*self).into(), base_proto, args)?
+            .resolve(avm, context)
     }
 
     /// Call a setter defined in this object.

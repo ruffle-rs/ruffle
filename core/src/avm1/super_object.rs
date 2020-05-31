@@ -120,7 +120,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         args: &[Value<'gc>],
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         let child = self.0.read().child;
         let super_proto = self.super_proto();
         let (method, base_proto) = search_prototype(super_proto, name, avm, context, child)?;
@@ -131,7 +131,9 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
             log::warn!("Super method {} is not callable", name);
         }
 
-        method.call(avm, context, child, base_proto, args)
+        method
+            .call(avm, context, child, base_proto, args)?
+            .resolve(avm, context)
     }
 
     fn call_setter(

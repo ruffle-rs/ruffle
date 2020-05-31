@@ -825,17 +825,14 @@ pub fn xml_on_data<'gc>(
     let src = args.get(0).cloned().unwrap_or(Value::Undefined);
 
     if let Value::Undefined = src {
-        this.call_method("onLoad", &[false.into()], avm, ac)?
-            .resolve(avm, ac)?;
+        this.call_method("onLoad", &[false.into()], avm, ac)?;
     } else {
         let src = src.coerce_to_string(avm, ac)?;
-        this.call_method("parseXML", &[src.into()], avm, ac)?
-            .resolve(avm, ac)?;
+        this.call_method("parseXML", &[src.into()], avm, ac)?;
 
         this.set("loaded", true.into(), avm, ac)?;
 
-        this.call_method("onLoad", &[true.into()], avm, ac)?
-            .resolve(avm, ac)?;
+        this.call_method("onLoad", &[true.into()], avm, ac)?;
     }
 
     Ok(Value::Undefined.into())
