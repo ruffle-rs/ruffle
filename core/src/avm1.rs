@@ -185,10 +185,7 @@ impl<'gc> Avm1<'gc> {
             form_values.insert(
                 k,
                 v.ok()
-                    .unwrap_or_else(|| Value::Undefined.into())
-                    .resolve(self, context)
-                    .ok()
-                    .unwrap_or(Value::Undefined)
+                    .unwrap_or_else(|| Value::Undefined)
                     .clone()
                     .into_string(swf_version),
             );
@@ -787,10 +784,7 @@ impl<'gc> Avm1<'gc> {
                 {
                     child.object()
                 } else {
-                    object
-                        .get(&name, self, context)
-                        .unwrap()
-                        .resolve(self, context)?
+                    object.get(&name, self, context).unwrap()
                 }
             };
 
@@ -861,7 +855,7 @@ impl<'gc> Avm1<'gc> {
                     self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
                 {
                     if object.has_property(self, context, var_name) {
-                        return object.get(var_name, self, context);
+                        return Ok(object.get(var_name, self, context)?.into());
                     }
                 }
                 current_scope = scope.read().parent_cell();
@@ -1301,10 +1295,7 @@ impl<'gc> Avm1<'gc> {
         let obj = self.pop().as_object()?;
         let constr = self.pop().as_object()?;
 
-        let prototype = constr
-            .get("prototype", self, context)?
-            .resolve(self, context)?
-            .as_object()?;
+        let prototype = constr.get("prototype", self, context)?.as_object()?;
 
         if obj.is_instance_of(self, context, constr, prototype)? {
             self.push(obj);
@@ -1588,8 +1579,7 @@ impl<'gc> Avm1<'gc> {
         //e.g. `class Whatever extends Object.prototype` or `class Whatever extends 5`
         let super_proto = superclass
             .get("prototype", self, context)?
-            .resolve(self, context)
-            .and_then(|val| val.as_object())
+            .as_object()
             .unwrap_or(self.prototypes.object);
 
         let sub_prototype: Object<'gc> =
@@ -1608,7 +1598,8 @@ impl<'gc> Avm1<'gc> {
         let object_val = self.pop();
         let object = value_object::ValueObject::boxed(self, context, object_val);
 
-        object.get(&name, self, context)?.push(self);
+        let result = object.get(&name, self, context)?;
+        self.push(result);
 
         Ok(())
     }
@@ -1926,10 +1917,7 @@ impl<'gc> Avm1<'gc> {
             interfaces.push(self.pop().as_object()?);
         }
 
-        let mut prototype = constr
-            .get("prototype", self, context)?
-            .resolve(self, context)?
-            .as_object()?;
+        let mut prototype = constr.get("prototype", self, context)?.as_object()?;
 
         prototype.set_interfaces(context.gc_context, interfaces);
 
@@ -1943,10 +1931,7 @@ impl<'gc> Avm1<'gc> {
         let constr = self.pop().as_object()?;
         let obj = self.pop().as_object()?;
 
-        let prototype = constr
-            .get("prototype", self, context)?
-            .resolve(self, context)?
-            .as_object()?;
+        let prototype = constr.get("prototype", self, context)?.as_object()?;
         let is_instance_of = obj.is_instance_of(self, context, constr, prototype)?;
 
         self.push(is_instance_of);
@@ -2073,14 +2058,9 @@ impl<'gc> Avm1<'gc> {
         }
 
         let object = value_object::ValueObject::boxed(self, context, object_val);
-        let constructor = object
-            .get(&method_name.as_string()?, self, context)?
-            .resolve(self, context)?;
+        let constructor = object.get(&method_name.as_string()?, self, context)?;
         if let Value::Object(constructor) = constructor {
-            let prototype = constructor
-                .get("prototype", self, context)?
-                .resolve(self, context)?
-                .as_object()?;
+            let prototype = constructor.get("prototype", self, context)?.as_object()?;
 
             let this = prototype.new(self, context, prototype, &args)?;
 
@@ -2127,11 +2107,7 @@ impl<'gc> Avm1<'gc> {
                 .resolve(self, context)?
                 .as_object()
             {
-                if let Ok(prototype) = constructor
-                    .get("prototype", self, context)?
-                    .resolve(self, context)?
-                    .as_object()
-                {
+                if let Ok(prototype) = constructor.get("prototype", self, context)?.as_object() {
                     let this = prototype.new(self, context, prototype, &args)?;
 
                     this.set("__constructor__", constructor.into(), self, context)?;

@@ -238,7 +238,7 @@ impl<'gc> Scope<'gc> {
         this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error> {
         if self.locals().has_property(avm, context, name) {
-            return self.locals().get(name, avm, context);
+            return Ok(self.locals().get(name, avm, context)?.into());
         }
         if let Some(scope) = self.parent() {
             return scope.resolve(name, avm, context, this);

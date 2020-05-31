@@ -729,7 +729,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
                 if let Ok(prototype) = constructor
                     .get("prototype", avm, context)
-                    .and_then(|v| v.resolve(avm, context))
                     .and_then(|v| v.as_object())
                 {
                     let object: Object<'gc> = StageObject::for_display_object(
@@ -740,10 +739,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     .into();
                     if let Some(init_object) = init_object {
                         for key in init_object.get_keys(avm) {
-                            if let Ok(value) = init_object
-                                .get(&key, avm, context)
-                                .and_then(|v| v.resolve(avm, context))
-                            {
+                            if let Ok(value) = init_object.get(&key, avm, context) {
                                 let _ = object.set(&key, value, avm, context);
                             }
                         }
@@ -763,10 +759,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             );
             if let Some(init_object) = init_object {
                 for key in init_object.get_keys(avm) {
-                    if let Ok(value) = init_object
-                        .get(&key, avm, context)
-                        .and_then(|v| v.resolve(avm, context))
-                    {
+                    if let Ok(value) = init_object.get(&key, avm, context) {
                         let _ = object.set(&key, value, avm, context);
                     }
                 }

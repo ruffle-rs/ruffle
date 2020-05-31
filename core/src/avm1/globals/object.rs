@@ -243,14 +243,10 @@ pub fn as_set_prop_flags<'gc>(
             //Convert to native array.
             //TODO: Can we make this an iterator?
             let mut array = vec![];
-            let length = ob
-                .get("length", avm, ac)?
-                .resolve(avm, ac)?
-                .as_number(avm, ac)? as usize;
+            let length = ob.get("length", avm, ac)?.as_number(avm, ac)? as usize;
             for i in 0..length {
                 array.push(
                     ob.get(&format!("{}", i), avm, ac)?
-                        .resolve(avm, ac)?
                         .coerce_to_string(avm, ac)?,
                 )
             }

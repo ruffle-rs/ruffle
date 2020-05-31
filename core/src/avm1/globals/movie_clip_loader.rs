@@ -35,9 +35,7 @@ pub fn add_listener<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     let new_listener = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let listeners = this
-        .get("_listeners", avm, context)?
-        .resolve(avm, context)?;
+    let listeners = this.get("_listeners", avm, context)?;
 
     if let Value::Object(listeners) = listeners {
         let length = listeners.length();
@@ -55,18 +53,14 @@ pub fn remove_listener<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     let old_listener = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let listeners = this
-        .get("_listeners", avm, context)?
-        .resolve(avm, context)?;
+    let listeners = this.get("_listeners", avm, context)?;
 
     if let Value::Object(listeners) = listeners {
         let length = listeners.length();
         let mut position = None;
 
         for i in 0..length {
-            let other_listener = listeners
-                .get(&format!("{}", i), avm, context)?
-                .resolve(avm, context)?;
+            let other_listener = listeners.get(&format!("{}", i), avm, context)?;
             if old_listener == other_listener {
                 position = Some(i);
                 break;
@@ -108,14 +102,10 @@ pub fn broadcast_message<'gc>(
         .coerce_to_string(avm, context)?;
     let call_args = &args[0..];
 
-    let listeners = this
-        .get("_listeners", avm, context)?
-        .resolve(avm, context)?;
+    let listeners = this.get("_listeners", avm, context)?;
     if let Value::Object(listeners) = listeners {
         for i in 0..listeners.length() {
-            let listener = listeners
-                .get(&format!("{}", i), avm, context)?
-                .resolve(avm, context)?;
+            let listener = listeners.get(&format!("{}", i), avm, context)?;
 
             if let Value::Object(listener) = listener {
                 listener

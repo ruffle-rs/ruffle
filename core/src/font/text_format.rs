@@ -66,7 +66,7 @@ fn getstr_from_avm1_object<'gc>(
     avm1: &mut Avm1<'gc>,
     uc: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Option<String>, Error> {
-    Ok(match object.get(name, avm1, uc)?.resolve(avm1, uc)? {
+    Ok(match object.get(name, avm1, uc)? {
         Value::Undefined => None,
         Value::Null => None,
         v => Some(v.coerce_to_string(avm1, uc)?),
@@ -79,7 +79,7 @@ fn getfloat_from_avm1_object<'gc>(
     avm1: &mut Avm1<'gc>,
     uc: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Option<f64>, Error> {
-    Ok(match object.get(name, avm1, uc)?.resolve(avm1, uc)? {
+    Ok(match object.get(name, avm1, uc)? {
         Value::Undefined => None,
         Value::Null => None,
         v => Some(v.as_number(avm1, uc)?),
@@ -92,7 +92,7 @@ fn getbool_from_avm1_object<'gc>(
     avm1: &mut Avm1<'gc>,
     uc: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Option<bool>, Error> {
-    Ok(match object.get(name, avm1, uc)?.resolve(avm1, uc)? {
+    Ok(match object.get(name, avm1, uc)? {
         Value::Undefined => None,
         Value::Null => None,
         v => Some(v.as_bool(avm1.current_swf_version())),

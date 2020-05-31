@@ -63,29 +63,32 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         name: &str,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         let props = avm.display_properties;
         let case_sensitive = avm.is_case_sensitive();
         // Property search order for DisplayObjects:
         if self.has_own_property(avm, context, name) {
             // 1) Actual properties on the underlying object
-            self.get_local(name, avm, context, (*self).into())
+            self.get_local(name, avm, context, (*self).into())?
+                .resolve(avm, context)
         } else if let Some(property) = props.read().get_by_name(&name) {
             // 2) Display object properties such as _x, _y
             let val = property.get(avm, context, self.display_object)?;
-            Ok(val.into())
+            Ok(val)
         } else if let Some(child) = self.display_object.get_child_by_name(name, case_sensitive) {
             // 3) Child display objects with the given instance name
-            Ok(child.object().into())
+            Ok(child.object())
         } else if let Some(level) =
             self.display_object
                 .get_level_by_path(name, context, case_sensitive)
         {
             // 4) _levelN
-            Ok(level.object().into())
+            Ok(level.object())
         } else {
             // 5) Prototype
-            Ok(search_prototype(self.proto(), name, avm, context, (*self).into())?.0)
+            search_prototype(self.proto(), name, avm, context, (*self).into())?
+                .0
+                .resolve(avm, context)
         }
         // 6) TODO: __resolve?
     }

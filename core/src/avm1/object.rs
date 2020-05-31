@@ -56,11 +56,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: &str,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         if self.has_own_property(avm, context, name) {
-            self.get_local(name, avm, context, (*self).into())
+            self.get_local(name, avm, context, (*self).into())?
+                .resolve(avm, context)
         } else {
-            Ok(search_prototype(self.proto(), name, avm, context, (*self).into())?.0)
+            search_prototype(self.proto(), name, avm, context, (*self).into())?
+                .0
+                .resolve(avm, context)
         }
     }
 
@@ -332,10 +335,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                         return Ok(true);
                     }
 
-                    if let Value::Object(o) = interface
-                        .get("prototype", avm, context)?
-                        .resolve(avm, context)?
-                    {
+                    if let Value::Object(o) = interface.get("prototype", avm, context)? {
                         proto_stack.push(o);
                     }
                 }

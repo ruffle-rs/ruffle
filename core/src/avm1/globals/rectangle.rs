@@ -59,19 +59,15 @@ fn to_string<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     let x = this
         .get("x", avm, context)?
-        .resolve(avm, context)?
         .coerce_to_string(avm, context)?;
     let y = this
         .get("y", avm, context)?
-        .resolve(avm, context)?
         .coerce_to_string(avm, context)?;
     let width = this
         .get("width", avm, context)?
-        .resolve(avm, context)?
         .coerce_to_string(avm, context)?;
     let height = this
         .get("height", avm, context)?
-        .resolve(avm, context)?
         .coerce_to_string(avm, context)?;
 
     Ok(format!("(x={}, y={}, w={}, h={})", x, y, width, height).into())
@@ -96,14 +92,8 @@ fn is_empty<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let width = this
-        .get("width", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let height = this
-        .get("height", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
+    let width = this.get("width", avm, context)?.as_number(avm, context)?;
+    let height = this.get("height", avm, context)?.as_number(avm, context)?;
     Ok((width <= 0.0 || height <= 0.0 || width.is_nan() || height.is_nan()).into())
 }
 
@@ -128,10 +118,10 @@ fn clone<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     let proto = context.system_prototypes.rectangle;
     let args = [
-        this.get("x", avm, context)?.resolve(avm, context)?,
-        this.get("y", avm, context)?.resolve(avm, context)?,
-        this.get("width", avm, context)?.resolve(avm, context)?,
-        this.get("height", avm, context)?.resolve(avm, context)?,
+        this.get("x", avm, context)?,
+        this.get("y", avm, context)?,
+        this.get("width", avm, context)?,
+        this.get("height", avm, context)?,
     ];
     let cloned = proto.new(avm, context, proto, &args)?;
     let _ = constructor(avm, context, cloned, &args)?;
@@ -160,24 +150,10 @@ fn contains<'gc>(
         return Ok(Value::Undefined.into());
     }
 
-    let left = this
-        .get("x", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let right = left
-        + this
-            .get("width", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?;
-    let top = this
-        .get("y", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let bottom = top
-        + this
-            .get("height", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?;
+    let left = this.get("x", avm, context)?.as_number(avm, context)?;
+    let right = left + this.get("width", avm, context)?.as_number(avm, context)?;
+    let top = this.get("y", avm, context)?.as_number(avm, context)?;
+    let bottom = top + this.get("height", avm, context)?.as_number(avm, context)?;
 
     Ok((x >= left && x < right && y >= top && y < bottom).into())
 }
@@ -197,24 +173,10 @@ fn contains_point<'gc>(
         return Ok(Value::Undefined.into());
     }
 
-    let left = this
-        .get("x", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let right = left
-        + this
-            .get("width", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?;
-    let top = this
-        .get("y", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let bottom = top
-        + this
-            .get("height", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?;
+    let left = this.get("x", avm, context)?.as_number(avm, context)?;
+    let right = left + this.get("width", avm, context)?.as_number(avm, context)?;
+    let top = this.get("y", avm, context)?.as_number(avm, context)?;
+    let bottom = top + this.get("height", avm, context)?.as_number(avm, context)?;
 
     Ok((x >= left && x < right && y >= top && y < bottom).into())
 }
@@ -231,43 +193,15 @@ fn contains_rectangle<'gc>(
         return Ok(Value::Undefined.into());
     };
 
-    let this_left = this
-        .get("x", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let this_top = this
-        .get("y", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let this_right = this_left
-        + this
-            .get("width", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?;
-    let this_bottom = this_top
-        + this
-            .get("height", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?;
+    let this_left = this.get("x", avm, context)?.as_number(avm, context)?;
+    let this_top = this.get("y", avm, context)?.as_number(avm, context)?;
+    let this_right = this_left + this.get("width", avm, context)?.as_number(avm, context)?;
+    let this_bottom = this_top + this.get("height", avm, context)?.as_number(avm, context)?;
 
-    let other_left = other
-        .get("x", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let other_top = other
-        .get("y", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let other_right = other_left
-        + other
-            .get("width", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?;
-    let other_bottom = other_top
-        + other
-            .get("height", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?;
+    let other_left = other.get("x", avm, context)?.as_number(avm, context)?;
+    let other_top = other.get("y", avm, context)?.as_number(avm, context)?;
+    let other_right = other_left + other.get("width", avm, context)?.as_number(avm, context)?;
+    let other_bottom = other_top + other.get("height", avm, context)?.as_number(avm, context)?;
 
     if other_left.is_nan() || other_top.is_nan() || other_right.is_nan() || other_bottom.is_nan() {
         return Ok(Value::Undefined.into());
@@ -292,43 +226,15 @@ fn intersects<'gc>(
         return Ok(false.into());
     };
 
-    let this_left = this
-        .get("x", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let this_top = this
-        .get("y", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let this_right = this_left
-        + this
-            .get("width", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?;
-    let this_bottom = this_top
-        + this
-            .get("height", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?;
+    let this_left = this.get("x", avm, context)?.as_number(avm, context)?;
+    let this_top = this.get("y", avm, context)?.as_number(avm, context)?;
+    let this_right = this_left + this.get("width", avm, context)?.as_number(avm, context)?;
+    let this_bottom = this_top + this.get("height", avm, context)?.as_number(avm, context)?;
 
-    let other_left = other
-        .get("x", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let other_top = other
-        .get("y", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let other_right = other_left
-        + other
-            .get("width", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?;
-    let other_bottom = other_top
-        + other
-            .get("height", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?;
+    let other_left = other.get("x", avm, context)?.as_number(avm, context)?;
+    let other_top = other.get("y", avm, context)?.as_number(avm, context)?;
+    let other_right = other_left + other.get("width", avm, context)?.as_number(avm, context)?;
+    let other_bottom = other_top + other.get("height", avm, context)?.as_number(avm, context)?;
 
     Ok((this_left < other_right
         && this_right > other_left
@@ -343,44 +249,18 @@ fn union<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let this_left = this
-        .get("x", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let this_top = this
-        .get("y", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let this_right = this_left
-        + this
-            .get("width", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?;
-    let this_bottom = this_top
-        + this
-            .get("height", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?;
+    let this_left = this.get("x", avm, context)?.as_number(avm, context)?;
+    let this_top = this.get("y", avm, context)?.as_number(avm, context)?;
+    let this_right = this_left + this.get("width", avm, context)?.as_number(avm, context)?;
+    let this_bottom = this_top + this.get("height", avm, context)?.as_number(avm, context)?;
 
     let (other_left, other_top, other_width, other_height) =
         if let Some(Value::Object(other)) = args.get(0) {
             (
-                other
-                    .get("x", avm, context)?
-                    .resolve(avm, context)?
-                    .as_number(avm, context)?,
-                other
-                    .get("y", avm, context)?
-                    .resolve(avm, context)?
-                    .as_number(avm, context)?,
-                other
-                    .get("width", avm, context)?
-                    .resolve(avm, context)?
-                    .as_number(avm, context)?,
-                other
-                    .get("height", avm, context)?
-                    .resolve(avm, context)?
-                    .as_number(avm, context)?,
+                other.get("x", avm, context)?.as_number(avm, context)?,
+                other.get("y", avm, context)?.as_number(avm, context)?,
+                other.get("width", avm, context)?.as_number(avm, context)?,
+                other.get("height", avm, context)?.as_number(avm, context)?,
             )
         } else {
             (NAN, NAN, NAN, NAN)
@@ -435,22 +315,10 @@ fn inflate<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let x = this
-        .get("x", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let y = this
-        .get("y", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let width = this
-        .get("width", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let height = this
-        .get("height", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
+    let x = this.get("x", avm, context)?.as_number(avm, context)?;
+    let y = this.get("y", avm, context)?.as_number(avm, context)?;
+    let width = this.get("width", avm, context)?.as_number(avm, context)?;
+    let height = this.get("height", avm, context)?.as_number(avm, context)?;
     let horizontal = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -486,22 +354,10 @@ fn inflate_point<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let x = this
-        .get("x", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let y = this
-        .get("y", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let width = this
-        .get("width", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let height = this
-        .get("height", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
+    let x = this.get("x", avm, context)?.as_number(avm, context)?;
+    let y = this.get("y", avm, context)?.as_number(avm, context)?;
+    let width = this.get("width", avm, context)?.as_number(avm, context)?;
+    let height = this.get("height", avm, context)?.as_number(avm, context)?;
     let (horizontal, vertical) = value_to_point(
         args.get(0).unwrap_or(&Value::Undefined).to_owned(),
         avm,
@@ -532,14 +388,8 @@ fn offset<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let x = this
-        .get("x", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let y = this
-        .get("y", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
+    let x = this.get("x", avm, context)?.as_number(avm, context)?;
+    let y = this.get("y", avm, context)?.as_number(avm, context)?;
     let horizontal = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -563,14 +413,8 @@ fn offset_point<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let x = this
-        .get("x", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let y = this
-        .get("y", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
+    let x = this.get("x", avm, context)?.as_number(avm, context)?;
+    let y = this.get("y", avm, context)?.as_number(avm, context)?;
     let (horizontal, vertical) = value_to_point(
         args.get(0).unwrap_or(&Value::Undefined).to_owned(),
         avm,
@@ -589,44 +433,18 @@ fn intersection<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let this_left = this
-        .get("x", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let this_top = this
-        .get("y", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let this_right = this_left
-        + this
-            .get("width", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?;
-    let this_bottom = this_top
-        + this
-            .get("height", avm, context)?
-            .resolve(avm, context)?
-            .as_number(avm, context)?;
+    let this_left = this.get("x", avm, context)?.as_number(avm, context)?;
+    let this_top = this.get("y", avm, context)?.as_number(avm, context)?;
+    let this_right = this_left + this.get("width", avm, context)?.as_number(avm, context)?;
+    let this_bottom = this_top + this.get("height", avm, context)?.as_number(avm, context)?;
 
     let (other_left, other_top, other_width, other_height) =
         if let Some(Value::Object(other)) = args.get(0) {
             (
-                other
-                    .get("x", avm, context)?
-                    .resolve(avm, context)?
-                    .as_number(avm, context)?,
-                other
-                    .get("y", avm, context)?
-                    .resolve(avm, context)?
-                    .as_number(avm, context)?,
-                other
-                    .get("width", avm, context)?
-                    .resolve(avm, context)?
-                    .as_number(avm, context)?,
-                other
-                    .get("height", avm, context)?
-                    .resolve(avm, context)?
-                    .as_number(avm, context)?,
+                other.get("x", avm, context)?.as_number(avm, context)?,
+                other.get("y", avm, context)?.as_number(avm, context)?,
+                other.get("width", avm, context)?.as_number(avm, context)?,
+                other.get("height", avm, context)?.as_number(avm, context)?,
             )
         } else {
             (NAN, NAN, NAN, NAN)
@@ -679,14 +497,14 @@ fn equals<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(Value::Object(other)) = args.get(0) {
-        let this_x = this.get("x", avm, context)?.resolve(avm, context)?;
-        let this_y = this.get("y", avm, context)?.resolve(avm, context)?;
-        let this_width = this.get("width", avm, context)?.resolve(avm, context)?;
-        let this_height = this.get("height", avm, context)?.resolve(avm, context)?;
-        let other_x = other.get("x", avm, context)?.resolve(avm, context)?;
-        let other_y = other.get("y", avm, context)?.resolve(avm, context)?;
-        let other_width = other.get("width", avm, context)?.resolve(avm, context)?;
-        let other_height = other.get("height", avm, context)?.resolve(avm, context)?;
+        let this_x = this.get("x", avm, context)?;
+        let this_y = this.get("y", avm, context)?;
+        let this_width = this.get("width", avm, context)?;
+        let this_height = this.get("height", avm, context)?;
+        let other_x = other.get("x", avm, context)?;
+        let other_y = other.get("y", avm, context)?;
+        let other_width = other.get("width", avm, context)?;
+        let other_height = other.get("height", avm, context)?;
         let proto = context.system_prototypes.rectangle;
         let constructor = context.system_prototypes.rectangle_constructor;
         return Ok((this_x == other_x
@@ -706,7 +524,7 @@ fn get_left<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    Ok(this.get("x", avm, context)?.resolve(avm, context)?.into())
+    Ok(this.get("x", avm, context)?.into())
 }
 
 fn set_left<'gc>(
@@ -716,14 +534,8 @@ fn set_left<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     let new_left = args.get(0).unwrap_or(&Value::Undefined).to_owned();
-    let old_left = this
-        .get("x", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let width = this
-        .get("width", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
+    let old_left = this.get("x", avm, context)?.as_number(avm, context)?;
+    let width = this.get("width", avm, context)?.as_number(avm, context)?;
     this.set("x", new_left.clone(), avm, context)?;
     this.set(
         "width",
@@ -740,7 +552,7 @@ fn get_top<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    Ok(this.get("y", avm, context)?.resolve(avm, context)?.into())
+    Ok(this.get("y", avm, context)?.into())
 }
 
 fn set_top<'gc>(
@@ -750,14 +562,8 @@ fn set_top<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     let new_top = args.get(0).unwrap_or(&Value::Undefined).to_owned();
-    let old_top = this
-        .get("y", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let height = this
-        .get("height", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
+    let old_top = this.get("y", avm, context)?.as_number(avm, context)?;
+    let height = this.get("height", avm, context)?.as_number(avm, context)?;
     this.set("y", new_top.clone(), avm, context)?;
     this.set(
         "height",
@@ -774,14 +580,8 @@ fn get_right<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let x = this
-        .get("x", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let width = this
-        .get("width", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
+    let x = this.get("x", avm, context)?.as_number(avm, context)?;
+    let width = this.get("width", avm, context)?.as_number(avm, context)?;
     Ok((x + width).into())
 }
 
@@ -796,10 +596,7 @@ fn set_right<'gc>(
     } else {
         NAN
     };
-    let x = this
-        .get("x", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
+    let x = this.get("x", avm, context)?.as_number(avm, context)?;
 
     this.set("width", Value::Number(right - x), avm, context)?;
 
@@ -812,14 +609,8 @@ fn get_bottom<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let y = this
-        .get("y", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let height = this
-        .get("height", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
+    let y = this.get("y", avm, context)?.as_number(avm, context)?;
+    let height = this.get("height", avm, context)?.as_number(avm, context)?;
     Ok((y + height).into())
 }
 
@@ -834,10 +625,7 @@ fn set_bottom<'gc>(
     } else {
         NAN
     };
-    let y = this
-        .get("y", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
+    let y = this.get("y", avm, context)?.as_number(avm, context)?;
 
     this.set("height", Value::Number(bottom - y), avm, context)?;
 
@@ -850,8 +638,8 @@ fn get_size<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let width = this.get("width", avm, context)?.resolve(avm, context)?;
-    let height = this.get("height", avm, context)?.resolve(avm, context)?;
+    let width = this.get("width", avm, context)?;
+    let height = this.get("height", avm, context)?;
     let point = construct_new_point(&[width, height], avm, context)?;
     Ok(point.into())
 }
@@ -864,8 +652,8 @@ fn set_size<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     let (width, height) = if let Some(Value::Object(object)) = args.get(0) {
         (
-            object.get("x", avm, context)?.resolve(avm, context)?,
-            object.get("y", avm, context)?.resolve(avm, context)?,
+            object.get("x", avm, context)?,
+            object.get("y", avm, context)?,
         )
     } else {
         (Value::Undefined, Value::Undefined)
@@ -883,8 +671,8 @@ fn get_top_left<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let x = this.get("x", avm, context)?.resolve(avm, context)?;
-    let y = this.get("y", avm, context)?.resolve(avm, context)?;
+    let x = this.get("x", avm, context)?;
+    let y = this.get("y", avm, context)?;
     let point = construct_new_point(&[x, y], avm, context)?;
     Ok(point.into())
 }
@@ -897,28 +685,16 @@ fn set_top_left<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     let (new_left, new_top) = if let Some(Value::Object(object)) = args.get(0) {
         (
-            object.get("x", avm, context)?.resolve(avm, context)?,
-            object.get("y", avm, context)?.resolve(avm, context)?,
+            object.get("x", avm, context)?,
+            object.get("y", avm, context)?,
         )
     } else {
         (Value::Undefined, Value::Undefined)
     };
-    let old_left = this
-        .get("x", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let width = this
-        .get("width", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let old_top = this
-        .get("y", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let height = this
-        .get("height", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
+    let old_left = this.get("x", avm, context)?.as_number(avm, context)?;
+    let width = this.get("width", avm, context)?.as_number(avm, context)?;
+    let old_top = this.get("y", avm, context)?.as_number(avm, context)?;
+    let height = this.get("height", avm, context)?.as_number(avm, context)?;
 
     this.set("x", new_left.clone(), avm, context)?;
     this.set("y", new_top.clone(), avm, context)?;
@@ -944,22 +720,10 @@ fn get_bottom_right<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let x = this
-        .get("x", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let y = this
-        .get("y", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let width = this
-        .get("width", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let height = this
-        .get("height", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
+    let x = this.get("x", avm, context)?.as_number(avm, context)?;
+    let y = this.get("y", avm, context)?.as_number(avm, context)?;
+    let width = this.get("width", avm, context)?.as_number(avm, context)?;
+    let height = this.get("height", avm, context)?.as_number(avm, context)?;
     let point = point_to_object((x + width, y + height), avm, context)?;
     Ok(point.into())
 }
@@ -975,14 +739,8 @@ fn set_bottom_right<'gc>(
         avm,
         context,
     )?;
-    let top = this
-        .get("x", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
-    let left = this
-        .get("y", avm, context)?
-        .resolve(avm, context)?
-        .as_number(avm, context)?;
+    let top = this.get("x", avm, context)?.as_number(avm, context)?;
+    let left = this.get("y", avm, context)?.as_number(avm, context)?;
 
     this.set("width", Value::Number(bottom - top), avm, context)?;
     this.set("height", Value::Number(right - left), avm, context)?;
