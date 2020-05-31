@@ -87,7 +87,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Result<ReturnValue<'gc>, Error>;
+    ) -> Result<Value<'gc>, Error>;
 
     /// Call a method on the object.
     ///

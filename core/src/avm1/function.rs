@@ -478,11 +478,12 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         if let Some(exec) = self.as_executable() {
-            exec.exec(avm, context, this, base_proto, args)
+            exec.exec(avm, context, this, base_proto, args)?
+                .resolve(avm, context)
         } else {
-            Ok(Value::Undefined.into())
+            Ok(Value::Undefined)
         }
     }
 
