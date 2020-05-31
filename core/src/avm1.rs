@@ -1278,7 +1278,8 @@ impl<'gc> Avm1<'gc> {
                     let result = object.call(self, context, object, None, &args)?;
                     self.push(result);
                 } else {
-                    object.call_method(&name, &args, self, context)?.push(self);
+                    let result = object.call_method(&name, &args, self, context)?;
+                    self.push(result);
                 }
             }
             _ => {

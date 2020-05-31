@@ -599,7 +599,7 @@ impl<'gc> Value<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
         if let Value::Object(object) = self {
-            object.call_method(name, args, avm, context)
+            Ok(object.call_method(name, args, avm, context)?.into())
         } else {
             Ok(Value::Undefined.into())
         }
