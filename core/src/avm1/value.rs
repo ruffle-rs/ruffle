@@ -585,7 +585,7 @@ impl<'gc> Value<'gc> {
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
         if let Value::Object(object) = self {
-            object.call(avm, context, this, base_proto, args)
+            Ok(object.call(avm, context, this, base_proto, args)?.into())
         } else {
             Ok(Value::Undefined.into())
         }

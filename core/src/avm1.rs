@@ -1263,7 +1263,8 @@ impl<'gc> Avm1<'gc> {
             Value::Undefined | Value::Null => {
                 let this = self.target_clip_or_root().object();
                 if let Ok(this) = this.as_object() {
-                    object.call(self, context, this, None, &args)?.push(self);
+                    let result = object.call(self, context, this, None, &args)?;
+                    self.push(result);
                 } else {
                     log::warn!(
                         "Attempted to call constructor of {:?} (missing method name)",
@@ -1274,7 +1275,8 @@ impl<'gc> Avm1<'gc> {
             }
             Value::String(name) => {
                 if name.is_empty() {
-                    object.call(self, context, object, None, &args)?.push(self);
+                    let result = object.call(self, context, object, None, &args)?;
+                    self.push(result);
                 } else {
                     object.call_method(&name, &args, self, context)?.push(self);
                 }
@@ -2070,9 +2072,7 @@ impl<'gc> Avm1<'gc> {
             }
 
             //TODO: What happens if you `ActionNewMethod` without a method name?
-            constructor
-                .call(self, context, this, None, &args)?
-                .resolve(self, context)?;
+            constructor.call(self, context, this, None, &args)?;
 
             self.push(this);
         } else {
@@ -2115,9 +2115,7 @@ impl<'gc> Avm1<'gc> {
                         this.set("constructor", constructor.into(), self, context)?;
                     }
 
-                    constructor
-                        .call(self, context, this, None, &args)?
-                        .resolve(self, context)?;
+                    constructor.call(self, context, this, None, &args)?;
                     ret = this.into();
                 } else {
                     log::warn!("NewObject: Constructor has invalid prototype: {}", fn_name);

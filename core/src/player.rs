@@ -719,9 +719,7 @@ impl Player {
                                     actions.clip,
                                 ),
                             ));
-                            if let Ok(result) = constructor.call(avm, context, object, None, &[]) {
-                                let _ = result.resolve(avm, context);
-                            }
+                            let _ = constructor.call(avm, context, object, None, &[]);
                         }
                     }
                 }

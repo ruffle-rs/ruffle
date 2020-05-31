@@ -745,9 +745,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                         }
                     }
                     self.0.write(context.gc_context).object = Some(object);
-                    if let Ok(result) = constructor.call(avm, context, object, None, &[]) {
-                        let _ = result.resolve(avm, context);
-                    }
+                    let _ = constructor.call(avm, context, object, None, &[]);
                     return;
                 }
             }

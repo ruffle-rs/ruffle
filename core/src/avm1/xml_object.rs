@@ -83,7 +83,7 @@ impl<'gc> TObject<'gc> for XMLObject<'gc> {
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         self.base().call(avm, context, this, base_proto, args)
     }
 

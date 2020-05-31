@@ -106,11 +106,11 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         _this: Object<'gc>,
         _base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         if let Some(constr) = self.super_constr(avm, context)? {
             constr.call(avm, context, self.0.read().child, self.super_proto(), args)
         } else {
-            Ok(Value::Undefined.into())
+            Ok(Value::Undefined)
         }
     }
 

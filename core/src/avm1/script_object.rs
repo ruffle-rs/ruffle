@@ -341,8 +341,8 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         _this: Object<'gc>,
         _base_proto: Option<Object<'gc>>,
         _args: &[Value<'gc>],
-    ) -> Result<ReturnValue<'gc>, Error> {
-        Ok(Value::Undefined.into())
+    ) -> Result<Value<'gc>, Error> {
+        Ok(Value::Undefined)
     }
 
     fn call_setter(
