@@ -64,7 +64,7 @@ pub enum Manufacturer {
 }
 
 impl Manufacturer {
-    pub fn get_manufacturer_string(&self) -> String {
+    pub fn get_manufacturer_string(&self, version: u8) -> String {
         let os_part = match self {
             Manufacturer::Windows => "Windows",
             Manufacturer::Macintosh => "Macintosh",
@@ -72,8 +72,11 @@ impl Manufacturer {
             Manufacturer::Other(name) => name.as_str(),
         };
 
-        //TODO: this should be adobe in (what version?)
-        format!("Macromedia {}", os_part)
+        if version <= 8 {
+            format!("Macromedia {}", os_part)
+        } else {
+            format!("Adobe {}", os_part)
+        }
     }
 
     pub fn get_platform_name(&self) -> &str {
@@ -112,14 +115,17 @@ pub enum Language {
 }
 
 impl Language {
-    pub fn get_language_code(&self) -> &str {
+    pub fn get_language_code(&self, player_version: u8) -> &str {
         return match self {
             Language::Czech => "cs",
             Language::Danish => "da",
             Language::Dutch => "nl",
             Language::English => {
-                // TODO: return "en-US" for player_version < 7
-                "en"
+                if player_version < 7 {
+                    "en-US"
+                } else {
+                    "en"
+                }
             }
             Language::Finnish => "fi",
             Language::French => "fr",
@@ -237,6 +243,10 @@ pub struct SystemProperties {
 }
 
 impl SystemProperties {
+    pub fn get_version_string(&self, avm: &Avm1) -> String {
+        format!("{} {},0,0,0", self.manufacturer.get_platform_name(), avm.player_version)
+    }
+
     pub fn has_capability(&self, cap: SystemCapabilities) -> bool {
         self.capabilities.contains(cap)
     }
@@ -245,39 +255,50 @@ impl SystemProperties {
         !self.capabilities.contains(cap)
     }
 
-    fn encode_bool(&self, b: bool) -> &str {
-        match b {
+    fn encode_capability(&self, cap: SystemCapabilities) -> &str {
+        match self.has_capability(cap) {
             true => "t",
             false => "f"
         }
     }
 
-    pub fn get_server_string(&self) -> String {
-        //TODO: check the order, this should match flash
+    fn encode_not_capability(&self, cap: SystemCapabilities) -> &str {
+        match self.has_capability(cap) {
+            true => "t",
+            false => "f"
+        }
+    }
+
+    fn encode_string(&self, s: &str) -> String {
+        percent_encoding::utf8_percent_encode(s, percent_encoding::NON_ALPHANUMERIC).to_string()
+    }
+
+    pub fn get_server_string(&self, avm: &Avm1) -> String {
 
         url::form_urlencoded::Serializer::new(String::new())
-            .append_pair("AVD", self.encode_bool(self.not_has_capability(SystemCapabilities::AvHardware)))
-            .append_pair("ACC", self.encode_bool(self.not_has_capability(SystemCapabilities::Accessibility)))
-            .append_pair("A", self.encode_bool(self.has_capability(SystemCapabilities::Audio)))
-            .append_pair("AE", self.encode_bool(self.has_capability(SystemCapabilities::AudioEncoder)))
-            .append_pair("EV", self.encode_bool(self.has_capability(SystemCapabilities::EmbeddedVideo)))
-            .append_pair("IME", self.encode_bool(self.has_capability(SystemCapabilities::IME)))
-            .append_pair("MP3", self.encode_bool(self.has_capability(SystemCapabilities::MP3)))
-            .append_pair("PR", self.encode_bool(self.has_capability(SystemCapabilities::Printing)))
-            .append_pair("SB", self.encode_bool(self.has_capability(SystemCapabilities::ScreenBroadcast)))
-            .append_pair("SP", self.encode_bool(self.has_capability(SystemCapabilities::ScreenPlayback)))
-            .append_pair("SA", self.encode_bool(self.has_capability(SystemCapabilities::StreamingAudio)))
-            .append_pair("SV", self.encode_bool(self.has_capability(SystemCapabilities::StreamingVideo)))
-            .append_pair("VE", self.encode_bool(self.has_capability(SystemCapabilities::VideoEncoder)))
-            .append_pair("DEB", self.encode_bool(self.has_capability(SystemCapabilities::Debugger)))
-            .append_pair("LFD", self.encode_bool(self.not_has_capability(SystemCapabilities::LocalFileRead)))
-            .append_pair("M", &self.manufacturer.get_manufacturer_string())
-            .append_pair("OS", self.os.get_os_name())
-            .append_pair("AR", &self.aspect_ratio.to_string())
-            .append_pair("PT", self.player_type.get_player_name())
-            .append_pair("COL", self.screen_color.get_color_code())
-            .append_pair("DP", &self.dpi.to_string())
+            .append_pair("A", self.encode_capability(SystemCapabilities::Audio))
+            .append_pair("SA", self.encode_capability(SystemCapabilities::StreamingAudio))
+            .append_pair("SV", self.encode_capability(SystemCapabilities::StreamingVideo))
+            .append_pair("EV", self.encode_capability(SystemCapabilities::EmbeddedVideo))
+            .append_pair("MP3", self.encode_capability(SystemCapabilities::MP3))
+            .append_pair("AE", self.encode_capability(SystemCapabilities::AudioEncoder))
+            .append_pair("VE", self.encode_capability(SystemCapabilities::VideoEncoder))
+            .append_pair("ACC", self.encode_not_capability(SystemCapabilities::Accessibility))
+            .append_pair("PR", self.encode_capability(SystemCapabilities::Printing))
+            .append_pair("SP", self.encode_capability(SystemCapabilities::ScreenPlayback))
+            .append_pair("SB", self.encode_capability(SystemCapabilities::ScreenBroadcast))
+            .append_pair("DEB", self.encode_capability(SystemCapabilities::Debugger))
+            .append_pair("M", &self.encode_string(self.manufacturer.get_manufacturer_string(avm.player_version).as_str()))
             .append_pair("R", &format!("{}x{}", self.screen_resolution.0, self.screen_resolution.1))
+            .append_pair("COL", self.screen_color.get_color_code())
+            .append_pair("AR", &self.aspect_ratio.to_string())
+            .append_pair("OS", &self.encode_string(self.os.get_os_name()))
+            .append_pair("L", self.language.get_language_code(avm.player_version))
+            .append_pair("IME", self.encode_capability(SystemCapabilities::IME))
+            .append_pair("PT", self.player_type.get_player_name())
+            .append_pair("AVD", self.encode_not_capability(SystemCapabilities::AvHardware))
+            .append_pair("LFD", self.encode_not_capability(SystemCapabilities::LocalFileRead))
+            .append_pair("DP", &self.dpi.to_string())
             .finish()
     }
 }
@@ -297,7 +318,6 @@ impl Default for SystemProperties {
             screen_resolution: (0, 0),
             aspect_ratio: 1 as f32,
             dpi: 1 as f32,
-            //TODO: default to current
             manufacturer: Manufacturer::Linux,
             os: OperatingSystem::Linux,
             sandbox_type: SandboxType::LocalTrusted,
@@ -409,6 +429,9 @@ pub fn create<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Option<Object<'gc>>,
     fn_proto: Option<Object<'gc>>,
+    security: Object<'gc>,
+    capabilities: Object<'gc>,
+    ime: Object<'gc>
 ) -> Object<'gc> {
     let mut system = ScriptObject::object(gc_context, proto);
 
@@ -432,21 +455,21 @@ pub fn create<'gc>(
     system.define_value(
         gc_context,
         "security",
-        crate::avm1::globals::system_security::create(gc_context, proto, fn_proto).into(),
+        security.into(),
         DontDelete | ReadOnly | DontEnum,
     );
 
     system.define_value(
         gc_context,
         "capabilities",
-        crate::avm1::globals::system_capabilities::create(gc_context, proto).into(),
+        capabilities.into(),
         DontDelete | ReadOnly | DontEnum,
     );
 
     system.define_value(
         gc_context,
         "IME",
-        crate::avm1::globals::system_ime::create(gc_context, proto, fn_proto).into(),
+        ime.into(),
         DontDelete | ReadOnly | DontEnum,
     );
 

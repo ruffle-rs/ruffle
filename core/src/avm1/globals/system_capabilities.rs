@@ -15,7 +15,7 @@ macro_rules! capabilities_func {
             _this: Object<'gc>,
             _args: &[Value<'gc>],
         ) -> Result<ReturnValue<'gc>, Error> {
-            Ok(context.system.capabilities.contains($capability).into())
+            Ok(context.system.has_capability($capability).into())
         }
     };
 }
@@ -28,7 +28,7 @@ macro_rules! inverse_capabilities_func {
             _this: Object<'gc>,
             _args: &[Value<'gc>],
         ) -> Result<ReturnValue<'gc>, Error> {
-            Ok((!context.system.capabilities.contains($capability)).into())
+            Ok(context.system.not_has_capability($capability).into())
         }
     };
 }
@@ -64,6 +64,7 @@ capabilities_func!(get_is_debugger, SystemCapabilities::Debugger);
 inverse_capabilities_func!(get_is_local_file_read_disabled, SystemCapabilities::LocalFileRead);
 inverse_capabilities_func!(get_is_av_hardware_disabled, SystemCapabilities::AvHardware);
 
+
 pub fn get_player_type<'gc>(
     _avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
@@ -83,12 +84,12 @@ pub fn get_screen_color<'gc>(
 }
 
 pub fn get_language<'gc>(
-    _avm: &mut Avm1<'gc>,
+    avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    Ok(context.system.language.get_language_code().into())
+    Ok(context.system.language.get_language_code(avm.player_version).into())
 }
 
 pub fn get_screen_resolution_x<'gc>(
@@ -128,12 +129,12 @@ pub fn get_screen_dpi<'gc>(
 }
 
 pub fn get_manufacturer<'gc>(
-    _avm: &mut Avm1<'gc>,
+    avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    Ok(context.system.manufacturer.get_manufacturer_string().into())
+    Ok(context.system.manufacturer.get_manufacturer_string(avm.player_version).into())
 }
 
 pub fn get_os_name<'gc>(
@@ -151,20 +152,19 @@ pub fn get_version<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    Ok(format!("{} {},0,0,0", context.system.manufacturer.get_platform_name(), avm.player_version).into())
+    Ok(context.system.get_version_string(avm).into())
 }
 
 pub fn get_server_string<'gc>(
-    _avm: &mut Avm1<'gc>,
+    avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    Ok(context.system.get_server_string().into())
+    Ok(context.system.get_server_string(avm).into())
 }
 
 
-//TODO: Capabilities should be a global to access this too
 pub fn create<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Option<Object<'gc>>,

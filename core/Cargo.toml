@@ -27,6 +27,7 @@ quick-xml = "0.18.1"
 downcast-rs = "1.1.1"
 url = "2.1.0"
 weak-table = "0.2.3"
+percent-encoding = "2.1.0"
 
 [dependencies.jpeg-decoder]
 version = "0.1.19"

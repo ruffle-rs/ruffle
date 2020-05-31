@@ -5,6 +5,8 @@ use gc_arena::MutationContext;
 use std::convert::Into;
 use crate::context::UpdateContext;
 use crate::avm1::return_value::ReturnValue;
+use crate::avm1::property::Attribute;
+use crate::avm1::listeners::Listeners;
 
 fn on_ime_composition<'gc>(
     _avm: &mut Avm1<'gc>,
@@ -73,14 +75,17 @@ pub fn create<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Option<Object<'gc>>,
     fn_proto: Option<Object<'gc>>,
+    listener: &Listeners<'gc>,
 ) -> Object<'gc> {
     let mut ime = ScriptObject::object(gc_context, proto);
+
+    register_listener!(gc_context, ime, listener, fn_proto, ime);
 
     ime.define_value(
         gc_context,
         "ALPHANUMERIC_FULL",
         "ALPHANUMERIC_FULL".into(),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DontDelete | ReadOnly | DontEnum,
     );
 
     ime.define_value(
@@ -132,8 +137,6 @@ pub fn create<'gc>(
         DontDelete | DontEnum,
         fn_proto
     );
-
-    //TODO: listener macro
 
     ime.force_set_function(
         "doConversion",
