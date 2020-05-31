@@ -61,13 +61,12 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
         _avm: &mut Avm1<'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         Ok(self
             .node()
             .attribute_value(&XMLName::from_str(name))
             .map(|s| s.into())
-            .unwrap_or_else(|| Value::Undefined)
-            .into())
+            .unwrap_or_else(|| Value::Undefined))
     }
 
     fn set(

@@ -84,8 +84,8 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         _avm: &mut Avm1<'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error> {
-        Ok(Value::Undefined.into())
+    ) -> Result<Value<'gc>, Error> {
+        Ok(Value::Undefined)
     }
 
     fn set(

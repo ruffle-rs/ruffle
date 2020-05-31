@@ -124,7 +124,7 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         self.0.read().base.get_local(name, avm, context, this)
     }
 

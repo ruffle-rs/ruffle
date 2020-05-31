@@ -135,7 +135,7 @@ impl<'gc> TObject<'gc> for SoundObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         self.base().get_local(name, avm, context, this)
     }
 

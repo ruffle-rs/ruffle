@@ -61,7 +61,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         if let Some(mut node) = self.document().get_node_by_id(name) {
             Ok(node
                 .script_object(context.gc_context, Some(avm.prototypes().xml_node))

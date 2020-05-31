@@ -48,7 +48,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error>;
+    ) -> Result<Value<'gc>, Error>;
 
     /// Retrieve a named property from the object, or it's prototype.
     fn get(
@@ -58,8 +58,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         if self.has_own_property(avm, context, name) {
-            self.get_local(name, avm, context, (*self).into())?
-                .resolve(avm, context)
+            self.get_local(name, avm, context, (*self).into())
         } else {
             search_prototype(self.proto(), name, avm, context, (*self).into())?
                 .0
@@ -462,7 +461,10 @@ pub fn search_prototype<'gc>(
         }
 
         if proto.unwrap().has_own_property(avm, context, name) {
-            return Ok((proto.unwrap().get_local(name, avm, context, this)?, proto));
+            return Ok((
+                proto.unwrap().get_local(name, avm, context, this)?.into(),
+                proto,
+            ));
         }
 
         proto = proto.unwrap().proto();
