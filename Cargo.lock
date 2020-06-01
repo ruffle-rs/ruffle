@@ -573,7 +573,7 @@ dependencies = [
  "path-slash 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "ruffle_core 0.1.0",
  "ruffle_render_wgpu 0.1.0",
- "sample 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sample 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "walkdir 2.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "wgpu 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1856,7 +1856,7 @@ dependencies = [
  "lyon 0.15.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "ruffle_core 0.1.0",
  "ruffle_render_wgpu 0.1.0",
- "sample 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sample 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 2.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "webbrowser 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2016,7 +2016,7 @@ dependencies = [
 
 [[package]]
 name = "sample"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -2929,7 +2929,7 @@ dependencies = [
 "checksum rusttype 0.8.3 (registry+https://github.com/rust-lang/crates.io-index)" = "9f61411055101f7b60ecf1041d87fb74205fb20b0c7a723f07ef39174cf6b4c0"
 "checksum ryu 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "ed3d612bc64430efeb3f7ee6ef26d590dce0c43249217bddc62112540c7941e1"
 "checksum same-file 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)" = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
-"checksum sample 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)" = "cc0966ad788ec7289562643e05c611b7853e0618b7f9306aafd2fc727abfe168"
+"checksum sample 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "36ba94921dc69eb59cf881cda681c5556026835c83ca5a7663947557fafe7402"
 "checksum scoped-tls 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ea6a9290e3c9cf0f18145ef7ffa62d68ee0bf5fcd651017e586dc7fd5da448c2"
 "checksum scoped_threadpool 0.1.9 (registry+https://github.com/rust-lang/crates.io-index)" = "1d51f5df5af43ab3f1360b429fa5e0152ac5ce8c0bd6485cae490332e96846a8"
 "checksum scopeguard 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
