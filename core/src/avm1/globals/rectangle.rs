@@ -104,7 +104,7 @@ fn is_empty<'gc>(
         .get("height", avm, context)?
         .resolve(avm, context)?
         .as_number(avm, context)?;
-    Ok((width == 0.0 || height == 0.0 || width.is_nan() || height.is_nan()).into())
+    Ok((width <= 0.0 || height <= 0.0 || width.is_nan() || height.is_nan()).into())
 }
 
 fn set_empty<'gc>(
@@ -144,6 +144,8 @@ fn contains<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
+    // TODO: This arbitrarily should return `false` or `undefined` for different invalid-values.
+    // I can't find any rhyme or reason for it.
     let x = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -632,7 +634,7 @@ fn intersection<'gc>(
     let other_right = other_left + other_width;
     let other_bottom = other_top + other_height;
 
-    let (left, top, right, bottom) = if this_left.is_nan()
+    let (mut left, mut top, mut right, mut bottom) = if this_left.is_nan()
         || other_left.is_nan()
         || this_top.is_nan()
         || other_top.is_nan()
@@ -650,6 +652,13 @@ fn intersection<'gc>(
             this_bottom.min(other_bottom),
         )
     };
+
+    if right <= left || bottom <= top {
+        right = 0.0;
+        left = 0.0;
+        bottom = 0.0;
+        top = 0.0;
+    }
 
     let proto = context.system_prototypes.rectangle;
     let args = [

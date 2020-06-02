@@ -378,6 +378,9 @@ true
 // new Rectangle(1, 2, undefined, undefined).isEmpty()
 true
 
+// new Rectangle(1, 2, -1, -2).isEmpty()
+true
+
 
 /// setEmpty
 
@@ -428,6 +431,9 @@ true
 
 // rect.contains(5, Infinity)
 false
+
+// rect.contains()
+undefined
 
 
 /// containsPoint
@@ -596,6 +602,9 @@ undefined
 
  // rect.intersection((x=-1, y=-3, w=5, h=7))
 (top=3, right=4, bottom=4, left=1, topLeft=(x=1, y=3), bottomRight=(x=4, y=4), width=3, height=1, size=(x=3, y=1), x=1, y=3)
+
+ // rect.intersection((x=30, y=50, w=1, h=1))
+(top=0, right=0, bottom=0, left=0, topLeft=(x=0, y=0), bottomRight=(x=0, y=0), width=0, height=0, size=(x=0, y=0), x=0, y=0)
 
  // rect.intersection([object Object])
 (top=5, right=6, bottom=6, left=3, topLeft=(x=3, y=5), bottomRight=(x=6, y=6), width=3, height=1, size=(x=3, y=1), x=3, y=5)
