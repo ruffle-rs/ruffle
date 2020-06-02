@@ -344,7 +344,7 @@ impl<'gc> EditText<'gc> {
         let autosize = edit_text.autosize;
         let is_word_wrap = edit_text.is_word_wrap;
         let movie = edit_text.static_data.swf.clone();
-        let width = edit_text.bounds.width();
+        let width = edit_text.bounds.width() - Twips::from_pixels(7.0);
 
         let (new_layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
             &edit_text.text_spans,
@@ -573,7 +573,11 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
-        context.transform_stack.push(&*self.transform());
+        let mut transform = self.transform().clone();
+        transform.matrix.tx += Twips::from_pixels(3.0);
+        transform.matrix.ty += Twips::from_pixels(3.0);
+
+        context.transform_stack.push(&transform);
 
         let mut ptr = self.0.read().layout;
 
