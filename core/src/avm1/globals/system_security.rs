@@ -1,9 +1,9 @@
 use crate::avm1::function::Executable;
 use crate::avm1::object::Object;
-use crate::avm1::property::Attribute::{DontDelete, DontEnum, ReadOnly};
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
+use enumset::EnumSet;
 use gc_arena::MutationContext;
 use std::convert::Into;
 
@@ -43,7 +43,7 @@ fn get_sandbox_type<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    Ok(context.system.sandbox_type.get_sandbox_name().into())
+    Ok(context.system.sandbox_type.to_string().into())
 }
 
 pub fn create<'gc>(
@@ -57,7 +57,7 @@ pub fn create<'gc>(
         "allowDomain",
         allow_domain,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        EnumSet::empty(),
         fn_proto,
     );
 
@@ -65,7 +65,7 @@ pub fn create<'gc>(
         "allowInsecureDomain",
         allow_insecure_domain,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        EnumSet::empty(),
         fn_proto,
     );
 
@@ -73,7 +73,7 @@ pub fn create<'gc>(
         "loadPolicyFile",
         load_policy_file,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        EnumSet::empty(),
         fn_proto,
     );
 
@@ -82,7 +82,7 @@ pub fn create<'gc>(
         "sandboxType",
         Executable::Native(get_sandbox_type),
         None,
-        DontDelete | ReadOnly | DontEnum,
+        EnumSet::empty(),
     );
 
     security.into()

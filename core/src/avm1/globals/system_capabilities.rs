@@ -1,10 +1,10 @@
 use crate::avm1::function::Executable;
 use crate::avm1::globals::system::SystemCapabilities;
 use crate::avm1::object::Object;
-use crate::avm1::property::Attribute::{DontDelete, DontEnum, ReadOnly};
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
+use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 macro_rules! capabilities_func {
@@ -28,7 +28,7 @@ macro_rules! inverse_capabilities_func {
             _this: Object<'gc>,
             _args: &[Value<'gc>],
         ) -> Result<ReturnValue<'gc>, Error> {
-            Ok(context.system.not_has_capability($capability).into())
+            Ok((!context.system.has_capability($capability)).into())
         }
     };
 }
@@ -41,7 +41,7 @@ macro_rules! capabilities_prop {
                 $name,
                 Executable::Native($func),
                 None,
-                DontDelete | ReadOnly | DontEnum
+                EnumSet::empty()
             );
         )*
     }};
@@ -76,7 +76,7 @@ pub fn get_player_type<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    Ok(context.system.player_type.get_player_name().into())
+    Ok(context.system.player_type.to_string().into())
 }
 
 pub fn get_screen_color<'gc>(
@@ -85,7 +85,7 @@ pub fn get_screen_color<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    Ok(context.system.screen_color.get_color_code().into())
+    Ok(context.system.screen_color.to_string().into())
 }
 
 pub fn get_language<'gc>(
@@ -156,7 +156,7 @@ pub fn get_os_name<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    Ok(context.system.os.get_os_name().into())
+    Ok(context.system.os.to_string().into())
 }
 
 pub fn get_version<'gc>(
@@ -206,7 +206,7 @@ pub fn create<'gc>(
         "language",
         Executable::Native(get_language),
         None,
-        DontDelete | ReadOnly | DontEnum,
+        EnumSet::empty(),
     );
 
     capabilities.add_property(
@@ -214,7 +214,7 @@ pub fn create<'gc>(
         "manufacturer",
         Executable::Native(get_manufacturer),
         None,
-        DontDelete | ReadOnly | DontEnum,
+        EnumSet::empty(),
     );
 
     capabilities.add_property(
@@ -222,7 +222,7 @@ pub fn create<'gc>(
         "os",
         Executable::Native(get_os_name),
         None,
-        DontDelete | ReadOnly | DontEnum,
+        EnumSet::empty(),
     );
 
     capabilities.add_property(
@@ -230,7 +230,7 @@ pub fn create<'gc>(
         "pixelAspectRatio",
         Executable::Native(get_pixel_aspect_ratio),
         None,
-        DontDelete | ReadOnly | DontEnum,
+        EnumSet::empty(),
     );
 
     capabilities.add_property(
@@ -238,7 +238,7 @@ pub fn create<'gc>(
         "playerType",
         Executable::Native(get_player_type),
         None,
-        DontDelete | ReadOnly | DontEnum,
+        EnumSet::empty(),
     );
 
     capabilities.add_property(
@@ -246,7 +246,7 @@ pub fn create<'gc>(
         "screenColor",
         Executable::Native(get_screen_color),
         None,
-        DontDelete | ReadOnly | DontEnum,
+        EnumSet::empty(),
     );
 
     capabilities.add_property(
@@ -254,7 +254,7 @@ pub fn create<'gc>(
         "screenDPI",
         Executable::Native(get_screen_dpi),
         None,
-        DontDelete | ReadOnly | DontEnum,
+        EnumSet::empty(),
     );
 
     capabilities.add_property(
@@ -262,7 +262,7 @@ pub fn create<'gc>(
         "screenResolutionX",
         Executable::Native(get_screen_resolution_x),
         None,
-        DontDelete | ReadOnly | DontEnum,
+        EnumSet::empty(),
     );
 
     capabilities.add_property(
@@ -270,7 +270,7 @@ pub fn create<'gc>(
         "screenResolutionY",
         Executable::Native(get_screen_resolution_y),
         None,
-        DontDelete | ReadOnly | DontEnum,
+        EnumSet::empty(),
     );
 
     capabilities.add_property(
@@ -278,7 +278,7 @@ pub fn create<'gc>(
         "serverString",
         Executable::Native(get_server_string),
         None,
-        DontDelete | ReadOnly | DontEnum,
+        EnumSet::empty(),
     );
 
     capabilities.add_property(
@@ -286,7 +286,7 @@ pub fn create<'gc>(
         "version",
         Executable::Native(get_version),
         None,
-        DontDelete | ReadOnly | DontEnum,
+        EnumSet::empty(),
     );
 
     capabilities.into()

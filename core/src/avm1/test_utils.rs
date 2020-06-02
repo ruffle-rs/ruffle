@@ -1,4 +1,5 @@
 use crate::avm1::activation::Activation;
+use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::{Avm1, Object, UpdateContext};
 use crate::backend::audio::NullAudioBackend;
 use crate::backend::input::NullInputBackend;
@@ -14,7 +15,6 @@ use gc_arena::{rootless_arena, GcCell, MutationContext};
 use rand::{rngs::SmallRng, SeedableRng};
 use std::collections::BTreeMap;
 use std::sync::Arc;
-use crate::avm1::globals::system::SystemProperties;
 
 pub fn with_avm<F, R>(swf_version: u8, test: F) -> R
 where

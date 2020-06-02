@@ -704,6 +704,7 @@ mod tests {
     use super::*;
 
     use crate::avm1::activation::Activation;
+    use crate::avm1::globals::system::SystemProperties;
     use crate::avm1::property::Attribute::*;
     use crate::backend::audio::NullAudioBackend;
     use crate::backend::input::NullInputBackend;
@@ -718,7 +719,6 @@ mod tests {
     use rand::{rngs::SmallRng, SeedableRng};
     use std::collections::BTreeMap;
     use std::sync::Arc;
-    use crate::avm1::globals::system::SystemProperties;
 
     fn with_object<F, R>(swf_version: u8, test: F) -> R
     where

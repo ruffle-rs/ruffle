@@ -1,9 +1,9 @@
 use crate::avm1::function::Executable;
 use crate::avm1::object::Object;
-use crate::avm1::property::Attribute::{DontDelete, DontEnum, ReadOnly};
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
+use core::fmt;
 use enumset::{EnumSet, EnumSetType};
 use gc_arena::MutationContext;
 use num_enum::TryFromPrimitive;
@@ -17,14 +17,14 @@ pub enum SandboxType {
     LocalTrusted,
 }
 
-impl SandboxType {
-    pub fn get_sandbox_name(&self) -> &str {
-        match self {
+impl fmt::Display for SandboxType {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt.write_str(match self {
             SandboxType::Remote => "remote",
             SandboxType::LocalWithFile => "localWithFile",
             SandboxType::LocalWithNetwork => "localWithNetwork",
             SandboxType::LocalTrusted => "localTrusted",
-        }
+        })
     }
 }
 
@@ -36,22 +36,24 @@ pub enum OperatingSystem {
     Windows98,
     Windows95,
     WindowsCE,
+    WindowsUnknown,
     Linux,
     MacOS,
 }
 
-impl OperatingSystem {
-    pub fn get_os_name(&self) -> &str {
-        match self {
+impl fmt::Display for OperatingSystem {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt.write_str(match self {
             OperatingSystem::WindowsXp => "Windows XP",
             OperatingSystem::Windows2k => "Windows 2000",
             OperatingSystem::WindowsNt => "Windows NT",
             OperatingSystem::Windows98 => "Windows 98/ME",
             OperatingSystem::Windows95 => "Windows 95",
             OperatingSystem::WindowsCE => "Windows CE",
+            OperatingSystem::WindowsUnknown => "Windows",
             OperatingSystem::Linux => "Linux",
             OperatingSystem::MacOS => "MacOS",
-        }
+        })
     }
 }
 
@@ -155,16 +157,15 @@ pub enum ScreenColor {
     BlackWhite,
 }
 
-impl ScreenColor {
-    pub fn get_color_code(&self) -> &str {
-        match self {
+impl fmt::Display for ScreenColor {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt.write_str(match self {
             ScreenColor::Color => "color",
             ScreenColor::Gray => "gray",
             ScreenColor::BlackWhite => "bw",
-        }
+        })
     }
 }
-
 /// The type of the player
 pub enum PlayerType {
     StandAlone,
@@ -173,14 +174,14 @@ pub enum PlayerType {
     ActiveX,
 }
 
-impl PlayerType {
-    pub fn get_player_name(&self) -> &str {
-        match self {
+impl fmt::Display for PlayerType {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt.write_str(match self {
             PlayerType::StandAlone => "StandAlone",
             PlayerType::External => "External",
             PlayerType::PlugIn => "PlugIn",
             PlayerType::ActiveX => "ActiveX",
-        }
+        })
     }
 }
 
@@ -255,10 +256,6 @@ impl SystemProperties {
         self.capabilities.contains(cap)
     }
 
-    pub fn not_has_capability(&self, cap: SystemCapabilities) -> bool {
-        !self.capabilities.contains(cap)
-    }
-
     fn encode_capability(&self, cap: SystemCapabilities) -> &str {
         match self.has_capability(cap) {
             true => "t",
@@ -268,8 +265,8 @@ impl SystemProperties {
 
     fn encode_not_capability(&self, cap: SystemCapabilities) -> &str {
         match self.has_capability(cap) {
-            true => "t",
-            false => "f",
+            true => "f",
+            false => "t",
         }
     }
 
@@ -327,12 +324,12 @@ impl SystemProperties {
                 "R",
                 &format!("{}x{}", self.screen_resolution.0, self.screen_resolution.1),
             )
-            .append_pair("COL", self.screen_color.get_color_code())
+            .append_pair("COL", &self.screen_color.to_string())
             .append_pair("AR", &self.aspect_ratio.to_string())
-            .append_pair("OS", &self.encode_string(self.os.get_os_name()))
+            .append_pair("OS", &self.encode_string(&self.os.to_string()))
             .append_pair("L", self.language.get_language_code(avm.player_version))
             .append_pair("IME", self.encode_capability(SystemCapabilities::IME))
-            .append_pair("PT", self.player_type.get_player_name())
+            .append_pair("PT", &self.player_type.to_string())
             .append_pair(
                 "AVD",
                 self.encode_not_capability(SystemCapabilities::AvHardware),
@@ -386,21 +383,20 @@ pub fn set_clipboard<'gc>(
 }
 
 pub fn show_settings<'gc>(
-    _avm: &mut Avm1<'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    avm: &mut Avm1<'gc>,
+    action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     //TODO: should default to the last panel displayed
-    let last_panel = SettingsPanel::Privacy;
+    let last_panel_pos = 0;
 
-    let panel = args
+    let panel_pos = args
         .get(0)
-        .map(|v| match v {
-            Value::Number(x) => SettingsPanel::try_from(*x as u8).unwrap_or(last_panel),
-            _ => last_panel,
-        })
-        .unwrap_or(last_panel);
+        .unwrap_or(&Value::Number(last_panel_pos as f64))
+        .coerce_to_i32(avm, action_context)?;
+
+    let panel = SettingsPanel::try_from(panel_pos as u8).unwrap_or(SettingsPanel::Privacy);
 
     log::warn!("System.showSettings({:?}) not not implemented", panel);
     Ok(Value::Undefined.into())
@@ -483,7 +479,7 @@ pub fn create<'gc>(
         "exactSettings",
         Executable::Native(get_exact_settings),
         Some(Executable::Native(set_exact_settings)),
-        DontDelete | DontEnum,
+        EnumSet::empty(),
     );
 
     system.add_property(
@@ -491,35 +487,25 @@ pub fn create<'gc>(
         "useCodepage",
         Executable::Native(get_use_code_page),
         Some(Executable::Native(set_use_code_page)),
-        DontDelete | DontEnum,
+        EnumSet::empty(),
     );
 
-    system.define_value(
-        gc_context,
-        "security",
-        security.into(),
-        DontDelete | ReadOnly | DontEnum,
-    );
+    system.define_value(gc_context, "security", security.into(), EnumSet::empty());
 
     system.define_value(
         gc_context,
         "capabilities",
         capabilities.into(),
-        DontDelete | ReadOnly | DontEnum,
+        EnumSet::empty(),
     );
 
-    system.define_value(
-        gc_context,
-        "IME",
-        ime.into(),
-        DontDelete | ReadOnly | DontEnum,
-    );
+    system.define_value(gc_context, "IME", ime.into(), EnumSet::empty());
 
     system.force_set_function(
         "setClipboard",
         set_clipboard,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        EnumSet::empty(),
         fn_proto,
     );
 
@@ -527,7 +513,7 @@ pub fn create<'gc>(
         "showSettings",
         show_settings,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        EnumSet::empty(),
         fn_proto,
     );
 
@@ -536,7 +522,7 @@ pub fn create<'gc>(
         "onStatus",
         on_status,
         gc_context,
-        DontDelete | DontEnum,
+        EnumSet::empty(),
         fn_proto,
     );
 

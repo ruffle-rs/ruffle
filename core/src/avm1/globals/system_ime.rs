@@ -134,7 +134,7 @@ pub fn create<'gc>(
         "onIMEComposition",
         on_ime_composition,
         gc_context,
-        DontDelete | DontEnum,
+        DontDelete | ReadOnly | DontEnum,
         fn_proto,
     );
 
@@ -142,7 +142,7 @@ pub fn create<'gc>(
         "doConversion",
         do_conversion,
         gc_context,
-        DontDelete | DontEnum,
+        DontDelete | ReadOnly | DontEnum,
         fn_proto,
     );
 
@@ -150,7 +150,7 @@ pub fn create<'gc>(
         "getConversionMode",
         get_conversion_mode,
         gc_context,
-        DontDelete | DontEnum,
+        DontDelete | ReadOnly | DontEnum,
         fn_proto,
     );
 
@@ -158,7 +158,7 @@ pub fn create<'gc>(
         "getEnabled",
         get_enabled,
         gc_context,
-        DontDelete | DontEnum,
+        DontDelete | ReadOnly | DontEnum,
         fn_proto,
     );
 
@@ -166,7 +166,7 @@ pub fn create<'gc>(
         "setCompositionString",
         set_composition_string,
         gc_context,
-        DontDelete | DontEnum,
+        DontDelete | ReadOnly | DontEnum,
         fn_proto,
     );
 
@@ -174,7 +174,7 @@ pub fn create<'gc>(
         "setConversionMode",
         set_conversion_mode,
         gc_context,
-        DontDelete | DontEnum,
+        DontDelete | ReadOnly | DontEnum,
         fn_proto,
     );
 
@@ -182,7 +182,7 @@ pub fn create<'gc>(
         "setEnabled",
         set_enabled,
         gc_context,
-        DontDelete | DontEnum,
+        DontDelete | ReadOnly | DontEnum,
         fn_proto,
     );
 
