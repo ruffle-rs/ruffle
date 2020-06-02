@@ -231,6 +231,18 @@ fn bounds_size_addassign() {
 }
 
 #[test]
+fn bounds_with_size() {
+    let pos1 = Position::from((Twips::new(0), Twips::new(5760)));
+    let size1 = Size::from((Twips::new(7900), Twips::new(500)));
+    let bounds1 = BoxBounds::from_position_and_size(pos1, size1);
+
+    let size2 = Size::from((Twips::new(7780), Twips::new(500)));
+    let bounds2 = bounds1.with_size(size2);
+
+    assert_eq!(bounds2.into_position_and_size(), (pos1, size2))
+}
+
+#[test]
 fn textformat_merge() {
     let mut tf1 = TextFormat::default();
     tf1.font = Some("First".to_string());
