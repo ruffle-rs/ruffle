@@ -104,6 +104,28 @@ fn getbool_from_avm1_object<'gc>(
     })
 }
 
+fn getfloatarray_from_avm1_object<'gc>(
+    object: Object<'gc>,
+    name: &str,
+    avm1: &mut Avm1<'gc>,
+    uc: &mut UpdateContext<'_, 'gc, '_>,
+) -> Result<Option<Vec<f64>>, Error> {
+    Ok(match object.get(name, avm1, uc)? {
+        Value::Undefined => None,
+        Value::Null => None,
+        v => {
+            let mut output = Vec::new();
+            let v = v.as_object()?;
+
+            for i in 0..v.length() {
+                output.push(v.array_element(i).as_number(avm1, uc)?);
+            }
+
+            Some(output)
+        }
+    })
+}
+
 impl TextFormat {
     /// Construct a `TextFormat` from an `EditText`'s SWF tag.
     ///
@@ -181,7 +203,7 @@ impl TextFormat {
             kerning: getbool_from_avm1_object(object1, "kerning", avm1, uc)?,
             leading: getfloat_from_avm1_object(object1, "leading", avm1, uc)?,
             letter_spacing: getfloat_from_avm1_object(object1, "letterSpacing", avm1, uc)?,
-            tab_stops: None,
+            tab_stops: getfloatarray_from_avm1_object(object1, "tabStops", avm1, uc)?,
             bullet: getbool_from_avm1_object(object1, "bullet", avm1, uc)?,
             url: getstr_from_avm1_object(object1, "url", avm1, uc)?,
             target: getstr_from_avm1_object(object1, "target", avm1, uc)?,
@@ -412,6 +434,20 @@ impl TextFormat {
             avm1,
             uc,
         )?;
+
+        if let Some(ts) = &self.tab_stops {
+            let tab_stops = ScriptObject::array(uc.gc_context, Some(avm1.prototypes().array));
+
+            tab_stops.set_length(uc.gc_context, ts.len());
+
+            for (index, tab) in ts.iter().enumerate() {
+                tab_stops.set_array_element(index, (*tab).into(), uc.gc_context);
+            }
+
+            object.set("tabStops", tab_stops.into(), avm1, uc)?;
+        } else {
+            object.set("tabStops", Value::Null, avm1, uc)?;
+        }
 
         Ok(object.into())
     }
