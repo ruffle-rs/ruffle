@@ -193,23 +193,22 @@ impl TextFormat {
     /// This assumes the "legacy" HTML path that only supports a handful of
     /// elements. The "stylesheet" HTML path will also require CSS style
     /// calculation for each node, followed by style conversion.
-    pub fn from_presentational_markup(node: XMLNode<'_>) -> Self {
+    ///
+    /// This function accepts a `TextFormat`, which should be a text format
+    /// loaded with all of the *currently existing* styles at this point in the
+    /// lowering process. Any property not implied by markup will be retained
+    /// in this format.
+    pub fn from_presentational_markup(node: XMLNode<'_>, mut tf: TextFormat) -> Self {
         match node.tag_name() {
             Some(name) if name == XMLName::from_str("p") => {
-                let mut tf = TextFormat::default();
-
                 match node.attribute_value(&XMLName::from_str("align")).as_deref() {
                     Some("left") => tf.align = Some(swf::TextAlign::Left),
                     Some("center") => tf.align = Some(swf::TextAlign::Center),
                     Some("right") => tf.align = Some(swf::TextAlign::Right),
                     _ => {}
                 }
-
-                tf
             }
             Some(name) if name == XMLName::from_str("a") => {
-                let mut tf = TextFormat::default();
-
                 if let Some(href) = node.attribute_value(&XMLName::from_str("href")) {
                     tf.url = Some(href);
                 }
@@ -217,12 +216,8 @@ impl TextFormat {
                 if let Some(target) = node.attribute_value(&XMLName::from_str("target")) {
                     tf.target = Some(target);
                 }
-
-                tf
             }
             Some(name) if name == XMLName::from_str("font") => {
-                let mut tf = TextFormat::default();
-
                 if let Some(face) = node.attribute_value(&XMLName::from_str("face")) {
                     tf.font = Some(face);
                 }
@@ -242,43 +237,20 @@ impl TextFormat {
                         }
                     }
                 }
-
-                tf
             }
             Some(name) if name == XMLName::from_str("b") => {
-                let mut tf = TextFormat::default();
-
                 tf.bold = Some(true);
-
-                tf
             }
             Some(name) if name == XMLName::from_str("i") => {
-                let mut tf = TextFormat::default();
-
                 tf.italic = Some(true);
-
-                tf
             }
             Some(name) if name == XMLName::from_str("u") => {
-                let mut tf = TextFormat::default();
-
                 tf.underline = Some(true);
-
-                tf
             }
             Some(name) if name == XMLName::from_str("li") => {
-                let mut tf = TextFormat::default();
-
-                // TODO: Does `bullet` indicate the start of a new bullet in
-                // spans, or does it just mean each line gets a bullet, and
-                // this tag shouldn't touch formatting?
                 tf.bullet = Some(true);
-
-                tf
             }
             Some(name) if name == XMLName::from_str("textformat") => {
-                let mut tf = TextFormat::default();
-
                 //TODO: Spec says these are all in twips. That doesn't seem to
                 //match Flash 8.
                 if let Some(left_margin) = node.attribute_value(&XMLName::from_str("leftmargin")) {
@@ -310,11 +282,11 @@ impl TextFormat {
                             .collect(),
                     );
                 }
-
-                tf
             }
-            _ => TextFormat::default(),
+            _ => {}
         }
+
+        tf
     }
 
     /// Construct a `TextFormat` AVM1 object from this text format object.
@@ -1134,14 +1106,20 @@ impl FormatSpans {
     /// styling. There's also a `lower_from_css` that respects both
     /// presentational markup and CSS stylesheets.
     pub fn lower_from_html<'gc>(&mut self, tree: XMLDocument<'gc>) {
-        let mut format_stack = vec![];
+        let mut format_stack = vec![self.default_format.clone()];
 
         self.text = "".to_string();
         self.spans = vec![];
 
         for step in tree.as_node().walk().unwrap() {
             match step {
-                Step::In(node) => format_stack.push(TextFormat::from_presentational_markup(node)),
+                Step::In(node) => format_stack.push(TextFormat::from_presentational_markup(
+                    node,
+                    format_stack
+                        .last()
+                        .cloned()
+                        .unwrap_or_else(Default::default),
+                )),
                 Step::Around(node) if node.is_text() => {
                     self.replace_text(
                         self.text.len(),
