@@ -432,7 +432,9 @@ impl<'gc> LayoutBox<'gc> {
                             }
                         }
 
-                        let next_breakpoint = last_breakpoint + breakpoint;
+                        // This ensures that the space causing the line break
+                        // is included in the line it broke.
+                        let next_breakpoint = min(last_breakpoint + breakpoint + 1, text.len());
 
                         Self::append_text_fragment(
                             context.gc_context,
@@ -443,7 +445,7 @@ impl<'gc> LayoutBox<'gc> {
                             span,
                         );
 
-                        last_breakpoint = next_breakpoint + 1;
+                        last_breakpoint = next_breakpoint;
                         if last_breakpoint >= text.len() {
                             break;
                         }
