@@ -88,7 +88,18 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             self.font
                 .map(|f| f.get_leading_for_height(self.max_font_size))
                 .unwrap_or_else(|| Twips::new(0)),
-        ) + Twips::from_pixels(self.current_line_span.leading)
+        )
+    }
+
+    /// Calculate the line-to-line leading present on ths line, including the
+    /// font-leading above.
+    fn line_leading_adjustment(&self) -> Twips {
+        round_down_to_pixel(
+            self.font
+                .map(|f| f.get_leading_for_height(self.max_font_size))
+                .unwrap_or_else(|| Twips::new(0))
+                + Twips::from_pixels(self.current_line_span.leading),
+        )
     }
 
     /// Apply all indents and alignment to the current line, if necessary.
@@ -180,7 +191,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         self.cursor.set_x(Twips::from_pixels(0.0));
         self.cursor += (
             Twips::from_pixels(0.0),
-            self.max_font_size + self.font_leading_adjustment(),
+            self.max_font_size + self.line_leading_adjustment(),
         )
             .into();
 
