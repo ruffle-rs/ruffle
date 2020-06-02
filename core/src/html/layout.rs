@@ -36,7 +36,11 @@ pub struct LayoutContext<'a, 'gc> {
 
     /// The exterior bounds of all laid-out text, including left and right
     /// margins.
-    exterior_bounds: BoxBounds<Twips>,
+    ///
+    /// None indicates that no bounds have yet to be calculated. If the layout
+    /// ends without a line having been generated, the default bounding box
+    /// should be used.
+    exterior_bounds: Option<BoxBounds<Twips>>,
 
     /// Whether or not we are laying out the first line of a paragraph.
     is_first_line: bool,
@@ -60,7 +64,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             max_font_size: Default::default(),
             first_box: None,
             last_box: None,
-            exterior_bounds: Default::default(),
+            exterior_bounds: None,
             is_first_line: true,
             current_line: None,
             current_line_span: Default::default(),
@@ -78,8 +82,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
     /// Apply all indents and alignment to the current line, if necessary.
     fn fixup_line(&mut self, mc: MutationContext<'gc, '_>) {
-        let mut line_bounds = BoxBounds::default();
         let mut line = self.current_line;
+        let mut line_bounds = None;
         while let Some(linebox) = line {
             let read = linebox.read();
             line = read.next_sibling();
@@ -92,10 +96,14 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                         .with_size(Size::from(font.measure(self.text[start..end].trim(), size)))
                 };
                 line_bounds += trimmed_bounds;
+            if let Some(mut line_bounds) = line_bounds {
+                line_bounds += write.bounds;
             } else {
-                line_bounds += read.bounds();
+                line_bounds = Some(write.bounds);
             }
         }
+
+        let mut line_bounds = line_bounds.unwrap_or_else(Default::default);
 
         let left_adjustment =
             Self::left_alignment_offset(&self.current_line_span, self.is_first_line);
@@ -145,7 +153,12 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         line_bounds += Size::from((left_adjustment + right_adjustment, font_leading_adjustment));
 
         self.current_line = None;
-        self.exterior_bounds += line_bounds;
+
+        if let Some(eb) = &mut self.exterior_bounds {
+            *eb += line_bounds;
+        } else {
+            self.exterior_bounds = Some(line_bounds);
+        }
     }
 
     /// Adjust the text layout cursor down to the next line.
@@ -254,7 +267,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     ) -> (Option<GcCell<'gc, LayoutBox<'gc>>>, BoxBounds<Twips>) {
         self.fixup_line(mc);
 
-        (self.first_box, self.exterior_bounds)
+        (
+            self.first_box,
+            self.exterior_bounds.unwrap_or_else(Default::default),
+        )
     }
 }
 
