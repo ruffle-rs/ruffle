@@ -1,7 +1,7 @@
 //! Layout box structure
 
 use crate::context::UpdateContext;
-use crate::font::{round_up_to_pixel, Font};
+use crate::font::{round_down_to_pixel, Font};
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::tag_utils::SwfMovie;
@@ -84,11 +84,11 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn font_leading_adjustment(&self) -> Twips {
         // Flash appears to round up the font's leading to the nearest pixel
         // and adds one. I'm not sure why.
-        round_up_to_pixel(
+        round_down_to_pixel(
             self.font
                 .map(|f| f.get_leading_for_height(self.max_font_size))
                 .unwrap_or_else(|| Twips::new(0)),
-        ) + Twips::from_pixels(1.0 + self.current_line_span.leading)
+        ) + Twips::from_pixels(self.current_line_span.leading)
     }
 
     /// Apply all indents and alignment to the current line, if necessary.

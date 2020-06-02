@@ -4,13 +4,8 @@ use crate::transform::Transform;
 use gc_arena::{Collect, Gc, MutationContext};
 
 /// Certain Flash routines measure text by rounding down to the nearest whole pixel.
-fn round_down_to_pixel(t: Twips) -> Twips {
+pub fn round_down_to_pixel(t: Twips) -> Twips {
     Twips::from_pixels(t.to_pixels().floor())
-}
-
-/// Certain Flash routines measure text by rounding up to the nearest whole pixel.
-pub fn round_up_to_pixel(t: Twips) -> Twips {
-    Twips::from_pixels(t.to_pixels().ceil())
 }
 
 type Error = Box<dyn std::error::Error>;
