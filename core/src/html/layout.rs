@@ -180,9 +180,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         self.cursor.set_x(Twips::from_pixels(0.0));
         self.cursor += (
             Twips::from_pixels(0.0),
-            self.max_font_size
-                + Twips::from_pixels(self.current_line_span.leading)
-                + self.font_leading_adjustment(),
+            self.max_font_size + self.font_leading_adjustment(),
         )
             .into();
 
