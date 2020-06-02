@@ -241,7 +241,6 @@ impl<'gc> EditText<'gc> {
             .write(context.gc_context)
             .text_spans
             .set_default_format(tf);
-        self.relayout(context);
     }
 
     pub fn text_format(self, from: usize, to: usize) -> TextFormat {
