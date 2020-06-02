@@ -93,6 +93,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
     /// Apply all indents and alignment to the current line, if necessary.
     fn fixup_line(&mut self, mc: MutationContext<'gc, '_>) {
+        if self.current_line.is_none() {
+            return;
+        }
+
         let mut line = self.current_line;
         let mut line_bounds = None;
         while let Some(linebox) = line {
