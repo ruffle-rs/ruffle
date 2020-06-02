@@ -6,7 +6,7 @@ use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::tag_utils::SwfMovie;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::cmp::max;
+use std::cmp::{max, min};
 use std::sync::Arc;
 use swf::Twips;
 
@@ -80,6 +80,17 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         &mut self.cursor
     }
 
+    /// Calculate the font-provided leading present on this line.
+    fn font_leading_adjustment(&self) -> Twips {
+        // Flash appears to round up the font's leading to the nearest pixel
+        // and adds one. I'm not sure why.
+        round_up_to_pixel(
+            self.font
+                .map(|f| f.get_leading_for_height(self.max_font_size))
+                .unwrap_or_else(|| Twips::new(0)),
+        ) + Twips::from_pixels(1.0 + self.current_line_span.leading)
+    }
+
     /// Apply all indents and alignment to the current line, if necessary.
     fn fixup_line(&mut self, mc: MutationContext<'gc, '_>) {
         let mut line = self.current_line;
@@ -125,13 +136,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             Twips::from_pixels(0.0),
         );
 
-        // Flash appears to round up the font's leading to the nearest pixel
-        // and adds one. I'm not sure why.
-        let font_leading_adjustment = round_up_to_pixel(
-            self.font
-                .map(|f| f.get_leading_for_height(self.max_font_size))
-                .unwrap_or_else(|| Twips::new(0)),
-        ) + Twips::from_pixels(1.0);
+        let font_leading_adjustment = self.font_leading_adjustment();
 
         line = self.current_line;
         while let Some(linebox) = line {
@@ -166,14 +171,17 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// This function will also adjust any layout boxes on the current line to
     /// their correct alignment and indentation.
     fn newline(&mut self, mc: MutationContext<'gc, '_>) {
+        self.fixup_line(mc);
+
         self.cursor.set_x(Twips::from_pixels(0.0));
         self.cursor += (
             Twips::from_pixels(0.0),
-            self.max_font_size + Twips::from_pixels(self.current_line_span.leading),
+            self.max_font_size
+                + Twips::from_pixels(self.current_line_span.leading)
+                + self.font_leading_adjustment(),
         )
             .into();
 
-        self.fixup_line(mc);
         self.is_first_line = false;
     }
 
