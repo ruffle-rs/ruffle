@@ -85,17 +85,17 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         let mut line = self.current_line;
         let mut line_bounds = None;
         while let Some(linebox) = line {
-            let read = linebox.read();
-            line = read.next_sibling();
+            let mut write = linebox.write(mc);
+            line = write.next_sibling();
+            let (start, end, _tf, font, size, _color) = write.text_node().expect("text");
 
             //Flash ignores trailing spaces when aligning lines, so should we
-            if line.is_none() {
-                let trimmed_bounds = {
-                    let (start, end, _tf, font, size, _color) = read.text_node().expect("text");
-                    read.bounds()
-                        .with_size(Size::from(font.measure(self.text[start..end].trim(), size)))
-                };
-                line_bounds += trimmed_bounds;
+            if self.current_line_span.align != swf::TextAlign::Left {
+                write.bounds = write.bounds.with_size(Size::from(
+                    font.measure(self.text[start..end].trim_end(), size),
+                ));
+            }
+
             if let Some(mut line_bounds) = line_bounds {
                 line_bounds += write.bounds;
             } else {
