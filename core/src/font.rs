@@ -245,11 +245,15 @@ impl<'gc> Font<'gc> {
         let mut current_word = &text[0..0];
 
         for word in text.split(' ') {
-            let measure = self.measure(word, font_size);
             let line_start = current_word.as_ptr() as usize - text.as_ptr() as usize;
             let line_end = line_start + current_word.len();
             let word_start = word.as_ptr() as usize - text.as_ptr() as usize;
             let word_end = word_start + word.len();
+
+            let measure = self.measure(
+                text.get(word_start..word_end + 1).unwrap_or(word),
+                font_size,
+            );
 
             if measure.0 > remaining_width && measure.0 > width {
                 //Failsafe for if we get a word wider than the field.
@@ -266,14 +270,9 @@ impl<'gc> Font<'gc> {
                 //Space remains for our current word, move up the word pointer.
                 current_word = &text[line_start..word_end];
 
-                let measure_with_space = self.measure(
-                    text.get(word_start..word_end + 1).unwrap_or(word),
-                    font_size,
-                );
-
                 //If the additional space were to cause an overflow, then
                 //return now.
-                remaining_width -= measure_with_space.0;
+                remaining_width -= measure.0;
                 if remaining_width < Twips::from_pixels(0.0) {
                     return Some(word_end);
                 }
@@ -440,7 +439,7 @@ mod tests {
     #[test]
     fn wrap_line_breakpoint_irregular_sized_words() {
         with_device_font(|_mc, df| {
-            let string = "abcd i j kl mnop q rstuv";
+            let string = "abcdi j kl mnop q rstuv";
             let mut last_bp = 0;
             let breakpoint = df.wrap_line(
                 &string,
@@ -449,7 +448,7 @@ mod tests {
                 Twips::from_pixels(0.0),
             );
 
-            assert_eq!(Some(6), breakpoint);
+            assert_eq!(Some(5), breakpoint);
 
             last_bp += breakpoint.unwrap() + 1;
 
