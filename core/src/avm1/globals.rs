@@ -280,8 +280,6 @@ pub fn create_globals<'gc>(
     let rectangle =
         rectangle::create_rectangle_object(gc_context, Some(rectangle_proto), Some(function_proto));
 
-    let system = system::create(gc_context, Some(object_proto), Some(function_proto));
-
     flash.define_value(gc_context, "geom", geom.into(), EnumSet::empty());
     geom.define_value(gc_context, "Matrix", matrix.into(), EnumSet::empty());
     geom.define_value(gc_context, "Point", point.into(), EnumSet::empty());
