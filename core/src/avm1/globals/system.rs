@@ -257,16 +257,18 @@ impl SystemProperties {
     }
 
     fn encode_capability(&self, cap: SystemCapabilities) -> &str {
-        match self.has_capability(cap) {
-            true => "t",
-            false => "f",
+        if self.has_capability(cap) {
+            "t"
+        } else {
+            "f"
         }
     }
 
     fn encode_not_capability(&self, cap: SystemCapabilities) -> &str {
-        match self.has_capability(cap) {
-            true => "f",
-            false => "t",
+        if self.has_capability(cap) {
+            "f"
+        } else {
+            "t"
         }
     }
 
