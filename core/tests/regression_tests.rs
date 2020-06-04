@@ -200,6 +200,7 @@ swf_tests! {
     (edittext_font_size, "avm1/edittext_font_size", 1),
     (edittext_html_defaults, "avm1/edittext_html_defaults", 1),
     (edittext_align, "avm1/edittext_align", 1),
+    (edittext_leading, "avm1/edittext_leading", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
