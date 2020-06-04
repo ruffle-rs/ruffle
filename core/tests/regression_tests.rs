@@ -199,6 +199,7 @@ swf_tests! {
     (issue_710, "avm1/issue_710", 1),
     (edittext_font_size, "avm1/edittext_font_size", 1),
     (edittext_html_defaults, "avm1/edittext_html_defaults", 1),
+    (edittext_align, "avm1/edittext_align", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
@@ -209,7 +210,6 @@ swf_tests_approx! {
     (stage_object_properties, "avm1/stage_object_properties", 4, 0.051),
     (stage_object_properties_swf6, "avm1/stage_object_properties_swf6", 4, 0.051),
     (movieclip_getbounds, "avm1/movieclip_getbounds", 1, 0.051),
-    (edittext_align, "avm1/edittext_align", 1, 1.0),
 }
 
 /// Wrapper around string slice that makes debug output `{:?}` to print string same way as `{}`.
