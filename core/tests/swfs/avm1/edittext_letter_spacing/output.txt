@@ -1,0 +1,15 @@
+//Creating left aligned text w/ wordwrap, multiline & long text
+//field.textWidth
+388
+//field.textHeight
+60
+//Creating left aligned text w/ wordwrap, multiline, 0.1px letter spacing & long text
+//field.textWidth
+397
+//field.textHeight
+60
+//Creating left aligned text w/ wordwrap, multiline, 0.5px letter spacing & long text
+//field.textWidth
+398
+//field.textHeight
+75
