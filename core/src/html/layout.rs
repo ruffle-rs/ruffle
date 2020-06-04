@@ -181,8 +181,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             line = write.next_sibling();
         }
 
-        line_bounds += Position::from((align_adjustment, Twips::from_pixels(0.0)));
-        line_bounds += Size::from((left_adjustment + right_adjustment, font_leading_adjustment));
+        line_bounds +=
+            Position::from((left_adjustment + align_adjustment, Twips::from_pixels(0.0)));
+        line_bounds += Size::from((Twips::from_pixels(0.0), font_leading_adjustment));
 
         self.current_line = None;
 
