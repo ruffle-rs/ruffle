@@ -204,13 +204,18 @@ function tab_sendmessage() {
     });
 }
 
+let got_status = false;
+
 async function query_current_tab() {
     let ruffle_status = document.getElementById("ruffle_status");
     if (ruffle_status === null) {
         /*debugger;*/
     }
 
-    ruffle_status.textContent = get_i18n_string("status_init");
+    if (!got_status) {
+        ruffle_status.textContent = get_i18n_string("status_init");
+    }
+
     let tabs = null;
 
     try {
