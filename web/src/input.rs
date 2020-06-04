@@ -59,7 +59,7 @@ impl InputBackend for WebInputBackend {
         match key {
             KeyCode::Unknown => false,
             KeyCode::Backspace => self.keys_down.contains("Backspace"),
-            KeyCode::Return => self.keys_down.contains("Return"),
+            KeyCode::Return => self.keys_down.contains("Enter"),
             KeyCode::Shift => {
                 self.keys_down.contains("ShiftLeft") || self.keys_down.contains("ShiftRight")
             }
