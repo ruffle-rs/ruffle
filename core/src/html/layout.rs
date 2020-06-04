@@ -118,13 +118,16 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         while let Some(linebox) = line {
             let mut write = linebox.write(mc);
             line = write.next_sibling();
-            let (start, end, _tf, font, size, _color) = write.text_node().expect("text");
+            let (start, end, _tf, font, size, letter_spacing, _color) =
+                write.text_node().expect("text");
 
             //Flash ignores trailing spaces when aligning lines, so should we
             if self.current_line_span.align != swf::TextAlign::Left {
-                write.bounds = write.bounds.with_size(Size::from(
-                    font.measure(self.text[start..end].trim_end(), size),
-                ));
+                write.bounds = write.bounds.with_size(Size::from(font.measure(
+                    self.text[start..end].trim_end(),
+                    size,
+                    letter_spacing,
+                )));
             }
 
             if let Some(mut line_bounds) = line_bounds {
@@ -356,6 +359,7 @@ pub enum LayoutContent<'gc> {
         text_format: TextFormat,
         font: Font<'gc>,
         font_size: Collec<Twips>,
+        letter_spacing: Collec<Twips>,
         color: Collec<swf::Color>,
     },
 }
@@ -366,11 +370,12 @@ impl<'gc> LayoutBox<'gc> {
         mc: MutationContext<'gc, '_>,
         start: usize,
         end: usize,
-        text_format: TextFormat,
         font: Font<'gc>,
-        font_size: Twips,
-        color: swf::Color,
+        span: &TextSpan,
     ) -> GcCell<'gc, Self> {
+        let font_size = Twips::from_pixels(span.size);
+        let letter_spacing = Twips::from_pixels(span.letter_spacing);
+
         GcCell::allocate(
             mc,
             Self {
@@ -379,10 +384,11 @@ impl<'gc> LayoutBox<'gc> {
                 content: LayoutContent::Text {
                     start,
                     end,
-                    text_format,
+                    text_format: span.get_text_format(),
                     font,
                     font_size: Collec(font_size),
-                    color: Collec(color),
+                    letter_spacing: Collec(letter_spacing),
+                    color: Collec(span.color.clone()),
                 },
             },
         )
@@ -403,17 +409,10 @@ impl<'gc> LayoutBox<'gc> {
         span: &TextSpan,
     ) {
         let font_size = Twips::from_pixels(span.size);
-        let text_size = Size::from(lc.font().unwrap().measure(text, font_size));
+        let letter_spacing = Twips::from_pixels(span.letter_spacing);
+        let text_size = Size::from(lc.font().unwrap().measure(text, font_size, letter_spacing));
         let text_bounds = BoxBounds::from_position_and_size(*lc.cursor(), text_size);
-        let new_text = Self::from_text(
-            mc,
-            start,
-            end,
-            span.get_text_format(),
-            lc.font().unwrap(),
-            font_size,
-            span.color.clone(),
-        );
+        let new_text = Self::from_text(mc, start, end, lc.font().unwrap(), span);
         let mut write = new_text.write(mc);
 
         write.bounds = text_bounds;
@@ -440,14 +439,19 @@ impl<'gc> LayoutBox<'gc> {
                 layout_context.newspan(span);
 
                 let font_size = Twips::from_pixels(span.size);
+                let letter_spacing = Twips::from_pixels(span.letter_spacing);
                 let mut last_breakpoint = 0;
 
                 if is_word_wrap {
                     let (mut width, mut offset) = layout_context.wrap_dimensions(&span);
 
-                    while let Some(breakpoint) =
-                        font.wrap_line(&text[last_breakpoint..], font_size, width, offset)
-                    {
+                    while let Some(breakpoint) = font.wrap_line(
+                        &text[last_breakpoint..],
+                        font_size,
+                        letter_spacing,
+                        width,
+                        offset,
+                    ) {
                         if breakpoint == 0 {
                             layout_context.newline(context.gc_context);
 
@@ -512,7 +516,17 @@ impl<'gc> LayoutBox<'gc> {
     }
 
     /// Returns a reference to the text this box contains.
-    pub fn text_node(&self) -> Option<(usize, usize, &TextFormat, Font<'gc>, Twips, swf::Color)> {
+    pub fn text_node(
+        &self,
+    ) -> Option<(
+        usize,
+        usize,
+        &TextFormat,
+        Font<'gc>,
+        Twips,
+        Twips,
+        swf::Color,
+    )> {
         match &self.content {
             LayoutContent::Text {
                 start,
@@ -520,6 +534,7 @@ impl<'gc> LayoutBox<'gc> {
                 text_format,
                 font,
                 font_size,
+                letter_spacing,
                 color,
             } => Some((
                 *start,
@@ -527,6 +542,7 @@ impl<'gc> LayoutBox<'gc> {
                 &text_format,
                 *font,
                 font_size.0,
+                letter_spacing.0,
                 color.0.clone(),
             )),
         }
