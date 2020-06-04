@@ -45,6 +45,14 @@ pub struct LayoutContext<'a, 'gc> {
     /// Whether or not we are laying out the first line of a paragraph.
     is_first_line: bool,
 
+    /// Whether or not we encountered a line break of any kind during layout.
+    ///
+    /// Flash always applies at least one count of the line leading to the
+    /// total text bounds of the laid-out text, even if there are no line
+    /// breaks to host that leading. This flags that we need to add leading to
+    /// the singular line if we have yet to process a newline.
+    has_line_break: bool,
+
     /// All layout boxes in the current line being laid out.
     current_line: Option<GcCell<'gc, LayoutBox<'gc>>>,
 
@@ -66,6 +74,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             last_box: None,
             exterior_bounds: None,
             is_first_line: true,
+            has_line_break: false,
             current_line: None,
             current_line_span: Default::default(),
             max_bounds,
@@ -99,7 +108,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     }
 
     /// Apply all indents and alignment to the current line, if necessary.
-    fn fixup_line(&mut self, mc: MutationContext<'gc, '_>) {
+    fn fixup_line(&mut self, mc: MutationContext<'gc, '_>, with_leading: bool) {
         if self.current_line.is_none() {
             return;
         }
@@ -147,7 +156,11 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             Twips::from_pixels(0.0),
         );
 
-        let font_leading_adjustment = self.font_leading_adjustment();
+        let font_leading_adjustment = if with_leading {
+            self.line_leading_adjustment()
+        } else {
+            self.font_leading_adjustment()
+        };
 
         line = self.current_line;
         while let Some(linebox) = line {
@@ -182,7 +195,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// This function will also adjust any layout boxes on the current line to
     /// their correct alignment and indentation.
     fn newline(&mut self, mc: MutationContext<'gc, '_>) {
-        self.fixup_line(mc);
+        self.fixup_line(mc, false);
 
         self.cursor.set_x(Twips::from_pixels(0.0));
         self.cursor += (
@@ -192,6 +205,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             .into();
 
         self.is_first_line = false;
+        self.has_line_break = true;
     }
 
     /// Enter a new span.
@@ -282,7 +296,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         mut self,
         mc: MutationContext<'gc, '_>,
     ) -> (Option<GcCell<'gc, LayoutBox<'gc>>>, BoxBounds<Twips>) {
-        self.fixup_line(mc);
+        self.fixup_line(mc, !self.has_line_break);
 
         (
             self.first_box,
