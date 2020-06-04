@@ -3,7 +3,7 @@ use crate::avm1::globals::text_field::attach_virtual_properties;
 use crate::avm1::{Avm1, Object, StageObject, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
-use crate::font::Glyph;
+use crate::font::{round_down_to_pixel, Glyph};
 use crate::html::{BoxBounds, FormatSpans, LayoutBox, TextFormat};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
@@ -403,8 +403,8 @@ impl<'gc> EditText<'gc> {
         let edit_text = self.0.read();
 
         (
-            edit_text.intrinsic_bounds.width(),
-            edit_text.intrinsic_bounds.height(),
+            round_down_to_pixel(edit_text.intrinsic_bounds.width()),
+            round_down_to_pixel(edit_text.intrinsic_bounds.height()),
         )
     }
 
