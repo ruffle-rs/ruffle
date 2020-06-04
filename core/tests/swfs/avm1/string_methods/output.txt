@@ -56,6 +56,30 @@ PQR
 // String.fromCharCode(80, 0, 82)
 P
 
+// charCodeAt
+// s.charCodeAt(0)
+102
+// s.charCodeAt(3)
+55357
+// s.charCodeAt(4)
+56843
+// s.charCodeAt(5)
+102
+// s.charCodeAt(6)
+111
+// s.charCodeAt()
+102
+// s.charCodeAt(-1)
+NaN
+// s.charCodeAt(9)
+NaN
+// s.charCodeAt("1")
+111
+// s.charCodeAt(undefined)
+102
+// s.charCodeAt(NaN)
+102
+
 // indexOf 
 // s.indexOf("test")
 3
@@ -188,7 +212,7 @@ HELLO𝔄hello
 // s.split(",")
 5
 A,,b,c,
-// s.split(",", 2
+// s.split(",", 2)
 2
 A,
 // s.split(",", 0)
