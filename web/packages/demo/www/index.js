@@ -32,6 +32,7 @@ window.addEventListener("DOMContentLoaded", () => {
                     let temp = document.createElement("option");
                     temp.innerHTML = item.title;
                     temp.setAttribute("value", item.location);
+                    temp.swfData = item;
                     if (item.type == "Animation") {
                         animOptGroup.append(temp);
                     } else if (item.type == "Game") {
@@ -39,14 +40,12 @@ window.addEventListener("DOMContentLoaded", () => {
                     }
                 });
                 sampleFileInputContainer.style.display = "inline-block";
+                // Load a random file.
                 let rn = Math.floor(
                     Math.random() * Math.floor(jsonData.swfs.length)
                 );
                 sampleFileInput.selectedIndex = rn + 1;
-                loadRemoteFile(jsonData.swfs[rn].location);
-                author_container.style.display = "block";
-                author.innerHTML = jsonData.swfs[rn].author;
-                author.href = jsonData.swfs[rn].authorLink;
+                sampleFileSelected();
             });
         } else {
             sampleFileInputContainer.style.display = "none";
@@ -72,13 +71,13 @@ if (window.location.search && window.location.search != "") {
 }
 
 function sampleFileSelected() {
-    let selected_index = sampleFileInput.selectedIndex - 1; //We subtract 1 here because the dropdown menu inlcudes a "None" option.
-    if (selected_index != -1) {
+    let swfData = sampleFileInput[sampleFileInput.selectedIndex].swfData;
+    if (swfData) {
         author_container.style.display = "block";
-        author.innerHTML = jsonData.swfs[selected_index].author;
-        author.href = jsonData.swfs[selected_index].authorLink;
+        author.innerHTML = swfData.author;
+        author.href = swfData.authorLink;
         localFileInput.value = null;
-        loadRemoteFile(jsonData.swfs[selected_index].location);
+        loadRemoteFile(swfData.location);
     } else {
         replacePlayer();
     }
