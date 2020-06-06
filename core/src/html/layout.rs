@@ -194,6 +194,14 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         }
     }
 
+    /// Adjust the text layout cursor down to the next line in response to an
+    /// explicit newline.
+    fn explicit_newline(&mut self, mc: MutationContext<'gc, '_>) {
+        self.newline(mc);
+
+        self.is_first_line = true;
+    }
+
     /// Adjust the text layout cursor down to the next line.
     ///
     /// This function will also adjust any layout boxes on the current line to
@@ -210,6 +218,30 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         self.is_first_line = false;
         self.has_line_break = true;
+    }
+
+    /// Adjust the text layout cursor in response to a tab.
+    ///
+    /// Tabs can do two separate things in Flash, depending on whether or not
+    /// tab stops have been manually determined. If they have been, then the
+    /// text cursor goes to the next closest tab stop that has not yet been
+    /// passed, or if no such stop exists, tabs do nothing. If no tab stops
+    /// exist, then the cursor is advanced to some position modulo the natural
+    /// tab index.
+    fn tab(&mut self) {
+        if self.current_line_span.tab_stops.is_empty() {
+            let modulo_factor = Twips::from_pixels(self.current_line_span.size * 2.75);
+            let stop_modulo_tab =
+                ((self.cursor.x().get() / modulo_factor.get()) + 1) * modulo_factor.get();
+            self.cursor.set_x(Twips::new(stop_modulo_tab));
+        } else {
+            for stop in self.current_line_span.tab_stops.iter() {
+                let twips_stop = Twips::from_pixels(*stop);
+                if twips_stop > self.cursor.x() {
+                    self.cursor.set_x(twips_stop);
+                }
+            }
+        }
     }
 
     /// Enter a new span.
@@ -435,76 +467,96 @@ impl<'gc> LayoutBox<'gc> {
     ) -> (Option<GcCell<'gc, LayoutBox<'gc>>>, BoxBounds<Twips>) {
         let mut layout_context = LayoutContext::new(bounds, fs.text());
 
-        for (start, _end, text, span) in fs.iter_spans() {
+        for (span_start, _end, span_text, span) in fs.iter_spans() {
             if let Some(font) = layout_context.resolve_font(context, movie.clone(), &span) {
                 layout_context.newspan(span);
 
                 let font_size = Twips::from_pixels(span.size);
                 let letter_spacing = Twips::from_pixels(span.letter_spacing);
-                let mut last_breakpoint = 0;
 
-                if is_word_wrap {
-                    let (mut width, mut offset) = layout_context.wrap_dimensions(&span);
+                for text in span_text.split(&['\n', '\t'][..]) {
+                    let slice_start = text.as_ptr() as usize - span_text.as_ptr() as usize;
+                    let delimiter = if slice_start > 0 {
+                        span_text
+                            .get(slice_start - 1..)
+                            .and_then(|s| s.chars().next())
+                    } else {
+                        None
+                    };
 
-                    while let Some(breakpoint) = font.wrap_line(
-                        &text[last_breakpoint..],
-                        font_size,
-                        letter_spacing,
-                        width,
-                        offset,
-                    ) {
-                        if breakpoint == 0 {
+                    match delimiter {
+                        Some('\n') => layout_context.explicit_newline(context.gc_context),
+                        Some('\t') => layout_context.tab(),
+                        _ => {}
+                    }
+
+                    let start = span_start + slice_start;
+
+                    let mut last_breakpoint = 0;
+
+                    if is_word_wrap {
+                        let (mut width, mut offset) = layout_context.wrap_dimensions(&span);
+
+                        while let Some(breakpoint) = font.wrap_line(
+                            &text[last_breakpoint..],
+                            font_size,
+                            letter_spacing,
+                            width,
+                            offset,
+                        ) {
+                            if breakpoint == 0 {
+                                layout_context.newline(context.gc_context);
+
+                                let next_dim = layout_context.wrap_dimensions(&span);
+
+                                width = next_dim.0;
+                                offset = next_dim.1;
+
+                                if last_breakpoint >= text.len() {
+                                    break;
+                                } else {
+                                    continue;
+                                }
+                            }
+
+                            // This ensures that the space causing the line break
+                            // is included in the line it broke.
+                            let next_breakpoint = min(last_breakpoint + breakpoint + 1, text.len());
+
+                            Self::append_text_fragment(
+                                context.gc_context,
+                                &mut layout_context,
+                                &text[last_breakpoint..next_breakpoint],
+                                start + last_breakpoint,
+                                start + next_breakpoint,
+                                span,
+                            );
+
+                            last_breakpoint = next_breakpoint;
+                            if last_breakpoint >= text.len() {
+                                break;
+                            }
+
                             layout_context.newline(context.gc_context);
-
                             let next_dim = layout_context.wrap_dimensions(&span);
 
                             width = next_dim.0;
                             offset = next_dim.1;
-
-                            if last_breakpoint >= text.len() {
-                                break;
-                            } else {
-                                continue;
-                            }
                         }
+                    }
 
-                        // This ensures that the space causing the line break
-                        // is included in the line it broke.
-                        let next_breakpoint = min(last_breakpoint + breakpoint + 1, text.len());
+                    let span_end = text.len();
 
+                    if last_breakpoint < span_end {
                         Self::append_text_fragment(
                             context.gc_context,
                             &mut layout_context,
-                            &text[last_breakpoint..next_breakpoint],
+                            &text[last_breakpoint..span_end],
                             start + last_breakpoint,
-                            start + next_breakpoint,
+                            start + span_end,
                             span,
                         );
-
-                        last_breakpoint = next_breakpoint;
-                        if last_breakpoint >= text.len() {
-                            break;
-                        }
-
-                        layout_context.newline(context.gc_context);
-                        let next_dim = layout_context.wrap_dimensions(&span);
-
-                        width = next_dim.0;
-                        offset = next_dim.1;
                     }
-                }
-
-                let span_end = text.len();
-
-                if last_breakpoint < span_end {
-                    Self::append_text_fragment(
-                        context.gc_context,
-                        &mut layout_context,
-                        &text[last_breakpoint..span_end],
-                        start + last_breakpoint,
-                        start + span_end,
-                        span,
-                    );
                 }
             }
         }
