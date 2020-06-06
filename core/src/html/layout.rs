@@ -130,8 +130,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                 )));
             }
 
-            if let Some(mut line_bounds) = line_bounds {
-                line_bounds += write.bounds;
+            if let Some(line_bounds) = &mut line_bounds {
+                *line_bounds += write.bounds;
             } else {
                 line_bounds = Some(write.bounds);
             }
