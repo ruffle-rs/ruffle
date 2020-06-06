@@ -239,6 +239,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                 let twips_stop = Twips::from_pixels(*stop);
                 if twips_stop > self.cursor.x() {
                     self.cursor.set_x(twips_stop);
+                    break;
                 }
             }
         }
