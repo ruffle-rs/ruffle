@@ -230,7 +230,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// tab index.
     fn tab(&mut self) {
         if self.current_line_span.tab_stops.is_empty() {
-            let modulo_factor = Twips::from_pixels(self.current_line_span.size * 2.75);
+            let modulo_factor = Twips::from_pixels(self.current_line_span.size * 2.7);
             let stop_modulo_tab =
                 ((self.cursor.x().get() / modulo_factor.get()) + 1) * modulo_factor.get();
             self.cursor.set_x(Twips::new(stop_modulo_tab));
