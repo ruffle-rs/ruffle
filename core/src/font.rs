@@ -240,6 +240,7 @@ impl<'gc> Font<'gc> {
         letter_spacing: Twips,
         width: Twips,
         offset: Twips,
+        mut is_start_of_line: bool,
     ) -> Option<usize> {
         let mut remaining_width = width - offset;
         if remaining_width < Twips::from_pixels(0.0) {
@@ -260,13 +261,20 @@ impl<'gc> Font<'gc> {
                 letter_spacing,
             );
 
-            if measure.0 > remaining_width && measure.0 > width {
+            if is_start_of_line && measure.0 > remaining_width {
                 //Failsafe for if we get a word wider than the field.
-                //TODO: Flash breaks words here, we should do that too.
-                if !current_word.is_empty() {
-                    return Some(line_end);
+                let mut last_passing_breakpoint = (Twips::new(0), Twips::new(0));
+                let mut frag_end = word_start;
+                while last_passing_breakpoint.0 < remaining_width {
+                    frag_end += 1;
+                    last_passing_breakpoint = self.measure(
+                        text.get(word_start..frag_end).unwrap(),
+                        font_size,
+                        letter_spacing,
+                    );
                 }
-                return Some(word_end);
+
+                return Some(frag_end - 1);
             } else if measure.0 > remaining_width {
                 //The word is wider than our remaining width, return the end of
                 //the line.
@@ -274,6 +282,7 @@ impl<'gc> Font<'gc> {
             } else {
                 //Space remains for our current word, move up the word pointer.
                 current_word = &text[line_start..word_end];
+                is_start_of_line = is_start_of_line && current_word.trim().is_empty();
 
                 //If the additional space were to cause an overflow, then
                 //return now.
@@ -372,6 +381,7 @@ mod tests {
                 Twips::from_pixels(0.0),
                 Twips::from_pixels(200.0),
                 Twips::from_pixels(0.0),
+                true,
             );
 
             assert_eq!(None, breakpoint);
@@ -389,6 +399,7 @@ mod tests {
                 Twips::from_pixels(0.0),
                 Twips::from_pixels(35.0),
                 Twips::from_pixels(0.0),
+                true,
             );
 
             assert_eq!(Some(4), breakpoint);
@@ -401,6 +412,7 @@ mod tests {
                 Twips::from_pixels(0.0),
                 Twips::from_pixels(35.0),
                 Twips::from_pixels(0.0),
+                true,
             );
 
             assert_eq!(Some(4), breakpoint2);
@@ -413,6 +425,7 @@ mod tests {
                 Twips::from_pixels(0.0),
                 Twips::from_pixels(35.0),
                 Twips::from_pixels(0.0),
+                true,
             );
 
             assert_eq!(Some(4), breakpoint3);
@@ -425,6 +438,7 @@ mod tests {
                 Twips::from_pixels(0.0),
                 Twips::from_pixels(35.0),
                 Twips::from_pixels(0.0),
+                true,
             );
 
             assert_eq!(None, breakpoint4);
@@ -441,6 +455,7 @@ mod tests {
                 Twips::from_pixels(0.0),
                 Twips::from_pixels(30.0),
                 Twips::from_pixels(29.0),
+                false,
             );
 
             assert_eq!(Some(0), breakpoint);
@@ -456,8 +471,9 @@ mod tests {
                 &string,
                 Twips::from_pixels(12.0),
                 Twips::from_pixels(0.0),
-                Twips::from_pixels(35.0),
+                Twips::from_pixels(37.0),
                 Twips::from_pixels(0.0),
+                true,
             );
 
             assert_eq!(Some(5), breakpoint);
@@ -468,8 +484,9 @@ mod tests {
                 &string[last_bp..],
                 Twips::from_pixels(12.0),
                 Twips::from_pixels(0.0),
-                Twips::from_pixels(35.0),
+                Twips::from_pixels(37.0),
                 Twips::from_pixels(0.0),
+                true,
             );
 
             assert_eq!(Some(4), breakpoint2);
@@ -480,8 +497,9 @@ mod tests {
                 &string[last_bp..],
                 Twips::from_pixels(12.0),
                 Twips::from_pixels(0.0),
-                Twips::from_pixels(35.0),
+                Twips::from_pixels(37.0),
                 Twips::from_pixels(0.0),
+                true,
             );
 
             assert_eq!(Some(4), breakpoint3);
@@ -492,8 +510,9 @@ mod tests {
                 &string[last_bp..],
                 Twips::from_pixels(12.0),
                 Twips::from_pixels(0.0),
-                Twips::from_pixels(35.0),
+                Twips::from_pixels(37.0),
                 Twips::from_pixels(0.0),
+                true,
             );
 
             assert_eq!(Some(1), breakpoint4);
@@ -504,8 +523,9 @@ mod tests {
                 &string[last_bp..],
                 Twips::from_pixels(12.0),
                 Twips::from_pixels(0.0),
-                Twips::from_pixels(35.0),
+                Twips::from_pixels(37.0),
                 Twips::from_pixels(0.0),
+                true,
             );
 
             assert_eq!(None, breakpoint5);

@@ -340,6 +340,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             self.exterior_bounds.unwrap_or_else(Default::default),
         )
     }
+
+    fn is_start_of_line(&self) -> bool {
+        self.current_line.is_none()
+    }
 }
 
 /// A `LayoutBox` represents a series of nested content boxes, each of which
@@ -504,6 +508,7 @@ impl<'gc> LayoutBox<'gc> {
                             letter_spacing,
                             width,
                             offset,
+                            layout_context.is_start_of_line(),
                         ) {
                             if breakpoint == 0 {
                                 layout_context.newline(context.gc_context);
