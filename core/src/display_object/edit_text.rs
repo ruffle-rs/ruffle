@@ -228,6 +228,26 @@ impl<'gc> EditText<'gc> {
         Ok(())
     }
 
+    pub fn html_tree(self) -> XMLDocument<'gc> {
+        //TODO: This should raise the text span representation.
+        self.0.read().document
+    }
+
+    pub fn set_html_tree(
+        &mut self,
+        doc: XMLDocument<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) {
+        let mut write = self.0.write(context.gc_context);
+
+        write.document = doc;
+        write.text_spans.lower_from_html(doc);
+
+        drop(write);
+
+        self.relayout(context);
+    }
+
     pub fn text_length(self) -> usize {
         self.0.read().text_spans.text().len()
     }

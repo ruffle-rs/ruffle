@@ -5,6 +5,7 @@ use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
 use crate::html::TextFormat;
+use crate::xml::XMLDocument;
 use gc_arena::MutationContext;
 
 /// Implements `TextField`
@@ -45,6 +46,75 @@ pub fn set_text<'gc>(
                 {
                     log::error!("Error when setting TextField.text: {}", err);
                 }
+            }
+        }
+    }
+    Ok(Value::Undefined.into())
+}
+
+pub fn get_html<'gc>(
+    _avm: &mut Avm1<'gc>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(display_object) = this.as_display_object() {
+        if let Some(_text_field) = display_object.as_edit_text() {
+            return Ok(true.into());
+        }
+    }
+    Ok(Value::Undefined.into())
+}
+
+pub fn set_html<'gc>(
+    _avm: &mut Avm1<'gc>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(display_object) = this.as_display_object() {
+        if let Some(_text_field) = display_object.as_edit_text() {
+            if let Some(_value) = args.get(0) {
+                //TODO: Do something with this bool value
+            }
+        }
+    }
+    Ok(Value::Undefined.into())
+}
+
+pub fn get_html_text<'gc>(
+    _avm: &mut Avm1<'gc>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(display_object) = this.as_display_object() {
+        if let Some(text_field) = display_object.as_edit_text() {
+            let html_tree = text_field.html_tree().as_node();
+
+            return Ok(html_tree.into_string(&mut |_node| true)?.into());
+        }
+    }
+    Ok(Value::Undefined.into())
+}
+
+pub fn set_html_text<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(display_object) = this.as_display_object() {
+        if let Some(mut text_field) = display_object.as_edit_text() {
+            if let Some(value) = args.get(0) {
+                let html_string = value.clone().coerce_to_string(avm, context)?;
+                let document = XMLDocument::new(context.gc_context);
+
+                document
+                    .as_node()
+                    .replace_with_str(context.gc_context, &html_string)?;
+
+                text_field.set_html_tree(document, context);
             }
         }
     }
@@ -324,6 +394,20 @@ pub fn attach_virtual_properties<'gc>(gc_context: MutationContext<'gc, '_>, obje
         "text",
         Executable::Native(get_text),
         Some(Executable::Native(set_text)),
+        DontDelete | ReadOnly | DontEnum,
+    );
+    object.add_property(
+        gc_context,
+        "html",
+        Executable::Native(get_html),
+        Some(Executable::Native(set_html)),
+        DontDelete | ReadOnly | DontEnum,
+    );
+    object.add_property(
+        gc_context,
+        "htmlText",
+        Executable::Native(get_html_text),
+        Some(Executable::Native(set_html_text)),
         DontDelete | ReadOnly | DontEnum,
     );
     object.add_property(
