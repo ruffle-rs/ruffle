@@ -1149,6 +1149,10 @@ impl FormatSpans {
 
         for step in tree.as_node().walk().unwrap() {
             match step {
+                Step::In(node) if node.tag_name().unwrap().node_name().as_str() == "br" => {
+                    self.replace_text(self.text.len(), self.text.len(), "\n", format_stack.last());
+                }
+                Step::Out(node) if node.tag_name().unwrap().node_name().as_str() == "br" => {}
                 Step::In(node) => format_stack.push(TextFormat::from_presentational_markup(
                     node,
                     format_stack
