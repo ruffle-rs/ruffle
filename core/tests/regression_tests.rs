@@ -213,6 +213,7 @@ swf_tests_approx! {
     (movieclip_getbounds, "avm1/movieclip_getbounds", 1, 0.051),
     (edittext_letter_spacing, "avm1/edittext_letter_spacing", 1, 1.0),
     (edittext_margins, "avm1/edittext_margins", 1, 1.0),
+    (edittext_tab_stops, "avm1/edittext_tab_stops", 1, 5.0),
 }
 
 /// Wrapper around string slice that makes debug output `{:?}` to print string same way as `{}`.
