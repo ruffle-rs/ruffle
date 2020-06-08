@@ -24,7 +24,7 @@ use std::rc::Rc;
 use winit::dpi::{LogicalSize, PhysicalPosition};
 use winit::event::{ElementState, MouseButton, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
-use winit::window::WindowBuilder;
+use winit::window::{WindowBuilder, Icon};
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "basic")]
@@ -50,6 +50,9 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     let movie = SwfMovie::from_path(&input_path)?;
     let movie_size = LogicalSize::new(movie.width(), movie.height());
 
+    let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
+    let icon = Icon::from_rgba(icon_bytes.to_vec(), 32, 32)?;
+
     let event_loop: EventLoop<RuffleEvent> = EventLoop::with_user_event();
     let window = Rc::new(
         WindowBuilder::new()
@@ -57,6 +60,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                 "Ruffle - {}",
                 input_path.file_name().unwrap_or_default().to_string_lossy()
             ))
+            .with_window_icon(Some(icon))
             .with_inner_size(movie_size)
             .build(&event_loop)?,
     );
