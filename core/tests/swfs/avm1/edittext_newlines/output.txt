@@ -1,0 +1,30 @@
+//Sample text with wordwrap
+//field.textWidth
+163
+//field.textHeight
+52
+//Sample text without wordwrap
+//field.textWidth
+380
+//field.textHeight
+18
+//Newline-having text with wordwrap
+//field.textWidth
+163
+//field.textHeight
+89
+//Newline-having text without wordwrap
+//field.textWidth
+251
+//field.textHeight
+52
+//Newline-having HTML with wordwrap
+//field.textWidth
+164
+//field.textHeight
+107
+//Newline-having HTML without wordwrap
+//field.textWidth
+741
+//field.textHeight
+18
