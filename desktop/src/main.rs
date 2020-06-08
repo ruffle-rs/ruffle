@@ -1,3 +1,4 @@
+#![windows_subsystem = "windows"]
 #![allow(clippy::unneeded_field_pattern)]
 
 mod audio;
