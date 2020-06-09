@@ -1869,7 +1869,7 @@ dependencies = [
  "sample 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 2.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "webbrowser 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "webbrowser 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "winit 0.22.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -2548,7 +2548,7 @@ dependencies = [
 
 [[package]]
 name = "webbrowser"
-version = "0.5.2"
+version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "widestring 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3028,7 +3028,7 @@ dependencies = [
 "checksum wayland-sys 0.23.6 (registry+https://github.com/rust-lang/crates.io-index)" = "d94e89a86e6d6d7c7c9b19ebf48a03afaac4af6bc22ae570e9a24124b75358f4"
 "checksum weak-table 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "6a5862bb244c852a56c6f3c39668ff181271bda44513ef30d2073a3eedd9898d"
 "checksum web-sys 0.3.40 (registry+https://github.com/rust-lang/crates.io-index)" = "7b72fe77fd39e4bd3eaa4412fd299a0be6b3dfe9d2597e2f1c20beb968f41d17"
-"checksum webbrowser 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "97d468a911faaaeb783693b004e1c62e0063e646b0afae5c146cd144e566e66d"
+"checksum webbrowser 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)" = "a83a4b8838569b89d2a3e7353995088e3b80c420a1269cd3d92ba8196875fc16"
 "checksum wgpu 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "dbf715eb8571da470b856ecc67b057221360d9fce16f3e38001b2fb158d04012"
 "checksum wgpu-core 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)" = "50212a35d2c20de1c421d9a0d831f494a85f9afab240e19aae499cff9d0526f2"
 "checksum wgpu-native 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "19a5051a357d071fd69c24671e0ea6d644a83c7418e47eac3511427379007403"
