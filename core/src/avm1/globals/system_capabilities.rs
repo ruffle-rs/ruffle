@@ -198,95 +198,18 @@ pub fn create<'gc>(
         "hasVideoEncoder" => get_has_video_encoder,
         "isDebugger" => get_is_debugger,
         "avHardwareDisable" => get_is_av_hardware_disabled,
-        "localFileReadDisable" => get_is_local_file_read_disabled
-    );
-
-    capabilities.add_property(
-        gc_context,
-        "language",
-        Executable::Native(get_language),
-        None,
-        EnumSet::empty(),
-    );
-
-    capabilities.add_property(
-        gc_context,
-        "manufacturer",
-        Executable::Native(get_manufacturer),
-        None,
-        EnumSet::empty(),
-    );
-
-    capabilities.add_property(
-        gc_context,
-        "os",
-        Executable::Native(get_os_name),
-        None,
-        EnumSet::empty(),
-    );
-
-    capabilities.add_property(
-        gc_context,
-        "pixelAspectRatio",
-        Executable::Native(get_pixel_aspect_ratio),
-        None,
-        EnumSet::empty(),
-    );
-
-    capabilities.add_property(
-        gc_context,
-        "playerType",
-        Executable::Native(get_player_type),
-        None,
-        EnumSet::empty(),
-    );
-
-    capabilities.add_property(
-        gc_context,
-        "screenColor",
-        Executable::Native(get_screen_color),
-        None,
-        EnumSet::empty(),
-    );
-
-    capabilities.add_property(
-        gc_context,
-        "screenDPI",
-        Executable::Native(get_screen_dpi),
-        None,
-        EnumSet::empty(),
-    );
-
-    capabilities.add_property(
-        gc_context,
-        "screenResolutionX",
-        Executable::Native(get_screen_resolution_x),
-        None,
-        EnumSet::empty(),
-    );
-
-    capabilities.add_property(
-        gc_context,
-        "screenResolutionY",
-        Executable::Native(get_screen_resolution_y),
-        None,
-        EnumSet::empty(),
-    );
-
-    capabilities.add_property(
-        gc_context,
-        "serverString",
-        Executable::Native(get_server_string),
-        None,
-        EnumSet::empty(),
-    );
-
-    capabilities.add_property(
-        gc_context,
-        "version",
-        Executable::Native(get_version),
-        None,
-        EnumSet::empty(),
+        "localFileReadDisable" => get_is_local_file_read_disabled,
+        "language" => get_language,
+        "manufacturer" => get_manufacturer,
+        "os" => get_os_name,
+        "pixelAspectRatio" => get_pixel_aspect_ratio,
+        "playerType"=>get_player_type,
+        "screenColor" => get_screen_color,
+        "screenDPI" => get_screen_dpi,
+        "screenResolutionX" => get_screen_resolution_x,
+        "screenResolutionY" => get_screen_resolution_y,
+        "serverString" => get_server_string,
+        "version" => get_version
     );
 
     capabilities.into()
