@@ -12,7 +12,7 @@ use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use crate::xml::XMLDocument;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
-use std::sync::Arc;
+use std::{cell::Ref, sync::Arc};
 use swf::Twips;
 
 /// Boxed error type.
@@ -99,6 +99,9 @@ pub struct EditTextData<'gc> {
 
     /// The AVM1 object handle
     object: Option<Object<'gc>>,
+
+    /// The variable path that this text field is bound to (AVM1 only).
+    variable: Option<String>,
 }
 
 impl<'gc> EditText<'gc> {
@@ -146,6 +149,12 @@ impl<'gc> EditText<'gc> {
         base.matrix_mut(context.gc_context).tx = bounds.x_min;
         base.matrix_mut(context.gc_context).ty = bounds.y_min;
 
+        let variable = if !swf_tag.variable_name.is_empty() {
+            Some(swf_tag.variable_name.clone())
+        } else {
+            None
+        };
+
         let et = EditText(GcCell::allocate(
             context.gc_context,
             EditTextData {
@@ -169,6 +178,7 @@ impl<'gc> EditText<'gc> {
                 intrinsic_bounds,
                 bounds,
                 autosize: AutoSizeMode::None,
+                variable,
             },
         ));
 
@@ -404,6 +414,26 @@ impl<'gc> EditText<'gc> {
 
         base_width
     }
+
+    /// Returns the variable that this text field is bound to.
+    pub fn variable(&self) -> Option<Ref<str>> {
+        let text = self.0.read();
+        if text.variable.is_some() {
+            Some(Ref::map(text, |text| text.variable.as_deref().unwrap()))
+        } else {
+            None
+        }
+    }
+
+    pub fn set_variable(self, variable: Option<String>, context: &mut UpdateContext<'_, 'gc, '_>) {
+        self.0.write(context.gc_context).variable = variable
+    }
+
+    /// Construct a base text transform for this `EditText`, to be used for
+    /// evaluating fonts.
+    ///
+    /// The `text_transform` constitutes the base transform that all text is
+    /// written into.
 
     /// Redraw the border of this `EditText`.
     fn redraw_border(self, context: MutationContext<'gc, '_>) {
