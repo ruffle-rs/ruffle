@@ -11,7 +11,6 @@ function is_ruffle_loaded(browser) {
 
 function wait_for_ruffle(browser) {
     browser.waitUntil(() => is_ruffle_loaded(browser), {
-        timeout: 5000,
         timeoutMsg: "Expected Ruffle to load",
     });
 }
