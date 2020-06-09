@@ -9,6 +9,25 @@ use gc_arena::MutationContext;
 use num_enum::TryFromPrimitive;
 use std::convert::TryFrom;
 
+/// Available cpu architectures
+pub enum CpuArchitecture {
+    PowerPC,
+    X86,
+    SPARC,
+    ARM,
+}
+
+impl fmt::Display for CpuArchitecture {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            CpuArchitecture::PowerPC => "PowerPC",
+            CpuArchitecture::X86 => "x86",
+            CpuArchitecture::SPARC => "SPARC",
+            CpuArchitecture::ARM => "ARM",
+        })
+    }
+}
+
 /// Available type of sandbox for a given SWF
 pub enum SandboxType {
     Remote,
@@ -211,6 +230,11 @@ pub enum SystemCapabilities {
     VideoEncoder,
     Debugger,
     LocalFileRead,
+    Process64Bit,
+    Process32Bit,
+    AcrobatEmbedded,
+    TLS,
+    WindowLess,
 }
 
 /// The properties modified by 'System'
@@ -241,6 +265,10 @@ pub struct SystemProperties {
     pub os: OperatingSystem,
     /// The type of the player sandbox
     pub sandbox_type: SandboxType,
+    /// The cpu architecture of the platform
+    pub cpu_architecture: CpuArchitecture,
+    /// The highest supported h264 decoder level
+    pub idc_level: String,
 }
 
 impl SystemProperties {
@@ -363,6 +391,8 @@ impl Default for SystemProperties {
             manufacturer: Manufacturer::Linux,
             os: OperatingSystem::Linux,
             sandbox_type: SandboxType::LocalTrusted,
+            cpu_architecture: CpuArchitecture::X86,
+            idc_level: "5.1".into(),
         }
     }
 }
