@@ -118,7 +118,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         while let Some(linebox) = line {
             let mut write = linebox.write(mc);
             line = write.next_sibling();
-            let (start, end, _tf, font, size, letter_spacing, _color) =
+            let (start, end, _tf, font, size, letter_spacing, kerning, _color) =
                 write.text_node().expect("text");
 
             //Flash ignores trailing spaces when aligning lines, so should we
@@ -127,6 +127,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                     self.text[start..end].trim_end(),
                     size,
                     letter_spacing,
+                    kerning,
                 )));
             }
 
@@ -398,6 +399,7 @@ pub enum LayoutContent<'gc> {
         font: Font<'gc>,
         font_size: Collec<Twips>,
         letter_spacing: Collec<Twips>,
+        kerning: bool,
         color: Collec<swf::Color>,
     },
 }
@@ -426,6 +428,7 @@ impl<'gc> LayoutBox<'gc> {
                     font,
                     font_size: Collec(font_size),
                     letter_spacing: Collec(letter_spacing),
+                    kerning: span.kerning,
                     color: Collec(span.color.clone()),
                 },
             },
@@ -448,7 +451,12 @@ impl<'gc> LayoutBox<'gc> {
     ) {
         let font_size = Twips::from_pixels(span.size);
         let letter_spacing = Twips::from_pixels(span.letter_spacing);
-        let text_size = Size::from(lc.font().unwrap().measure(text, font_size, letter_spacing));
+        let text_size = Size::from(lc.font().unwrap().measure(
+            text,
+            font_size,
+            letter_spacing,
+            span.kerning,
+        ));
         let text_bounds = BoxBounds::from_position_and_size(*lc.cursor(), text_size);
         let new_text = Self::from_text(mc, start, end, lc.font().unwrap(), span);
         let mut write = new_text.write(mc);
@@ -506,6 +514,7 @@ impl<'gc> LayoutBox<'gc> {
                             &text[last_breakpoint..],
                             font_size,
                             letter_spacing,
+                            span.kerning,
                             width,
                             offset,
                             layout_context.is_start_of_line(),
@@ -584,6 +593,7 @@ impl<'gc> LayoutBox<'gc> {
         Font<'gc>,
         Twips,
         Twips,
+        bool,
         swf::Color,
     )> {
         match &self.content {
@@ -594,6 +604,7 @@ impl<'gc> LayoutBox<'gc> {
                 font,
                 font_size,
                 letter_spacing,
+                kerning,
                 color,
             } => Some((
                 *start,
@@ -602,6 +613,7 @@ impl<'gc> LayoutBox<'gc> {
                 *font,
                 font_size.0,
                 letter_spacing.0,
+                *kerning,
                 color.0.clone(),
             )),
         }

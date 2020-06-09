@@ -169,6 +169,7 @@ impl<'gc> Font<'gc> {
         mut transform: Transform,
         height: Twips,
         letter_spacing: Twips,
+        kerning: bool,
         mut glyph_func: FGlyph,
     ) where
         FGlyph: FnMut(&Transform, &Glyph, Twips),
@@ -183,7 +184,7 @@ impl<'gc> Font<'gc> {
         while let Some(c) = chars.next() {
             if let Some(glyph) = self.get_glyph_for_char(c) {
                 let mut advance = Twips::new(glyph.advance);
-                if has_kerning_info {
+                if has_kerning_info && kerning {
                     advance += self.get_kerning_offset(c, chars.peek().cloned().unwrap_or('\0'));
                 }
                 let twips_advance =
@@ -198,7 +199,13 @@ impl<'gc> Font<'gc> {
     }
 
     /// Measure a particular string's metrics (width and height).
-    pub fn measure(self, text: &str, font_size: Twips, letter_spacing: Twips) -> (Twips, Twips) {
+    pub fn measure(
+        self,
+        text: &str,
+        font_size: Twips,
+        letter_spacing: Twips,
+        kerning: bool,
+    ) -> (Twips, Twips) {
         let mut size = (Twips::new(0), Twips::new(0));
 
         self.evaluate(
@@ -206,6 +213,7 @@ impl<'gc> Font<'gc> {
             Default::default(),
             font_size,
             letter_spacing,
+            kerning,
             |transform, _glyph, advance| {
                 let tx = transform.matrix.tx;
                 let ty = transform.matrix.ty;
@@ -238,6 +246,7 @@ impl<'gc> Font<'gc> {
         text: &str,
         font_size: Twips,
         letter_spacing: Twips,
+        kerning: bool,
         width: Twips,
         offset: Twips,
         mut is_start_of_line: bool,
@@ -259,6 +268,7 @@ impl<'gc> Font<'gc> {
                 text.get(word_start..word_end + 1).unwrap_or(word),
                 font_size,
                 letter_spacing,
+                kerning,
             );
 
             if is_start_of_line && measure.0 > remaining_width {
@@ -271,6 +281,7 @@ impl<'gc> Font<'gc> {
                         text.get(word_start..frag_end).unwrap(),
                         font_size,
                         letter_spacing,
+                        kerning,
                     );
                 }
 
@@ -379,6 +390,7 @@ mod tests {
                 &string,
                 Twips::from_pixels(12.0),
                 Twips::from_pixels(0.0),
+                true,
                 Twips::from_pixels(200.0),
                 Twips::from_pixels(0.0),
                 true,
@@ -397,6 +409,7 @@ mod tests {
                 &string,
                 Twips::from_pixels(12.0),
                 Twips::from_pixels(0.0),
+                true,
                 Twips::from_pixels(35.0),
                 Twips::from_pixels(0.0),
                 true,
@@ -410,6 +423,7 @@ mod tests {
                 &string[last_bp..],
                 Twips::from_pixels(12.0),
                 Twips::from_pixels(0.0),
+                true,
                 Twips::from_pixels(35.0),
                 Twips::from_pixels(0.0),
                 true,
@@ -423,6 +437,7 @@ mod tests {
                 &string[last_bp..],
                 Twips::from_pixels(12.0),
                 Twips::from_pixels(0.0),
+                true,
                 Twips::from_pixels(35.0),
                 Twips::from_pixels(0.0),
                 true,
@@ -436,6 +451,7 @@ mod tests {
                 &string[last_bp..],
                 Twips::from_pixels(12.0),
                 Twips::from_pixels(0.0),
+                true,
                 Twips::from_pixels(35.0),
                 Twips::from_pixels(0.0),
                 true,
@@ -453,6 +469,7 @@ mod tests {
                 &string,
                 Twips::from_pixels(12.0),
                 Twips::from_pixels(0.0),
+                true,
                 Twips::from_pixels(30.0),
                 Twips::from_pixels(29.0),
                 false,
@@ -471,6 +488,7 @@ mod tests {
                 &string,
                 Twips::from_pixels(12.0),
                 Twips::from_pixels(0.0),
+                true,
                 Twips::from_pixels(37.0),
                 Twips::from_pixels(0.0),
                 true,
@@ -484,6 +502,7 @@ mod tests {
                 &string[last_bp..],
                 Twips::from_pixels(12.0),
                 Twips::from_pixels(0.0),
+                true,
                 Twips::from_pixels(37.0),
                 Twips::from_pixels(0.0),
                 true,
@@ -497,6 +516,7 @@ mod tests {
                 &string[last_bp..],
                 Twips::from_pixels(12.0),
                 Twips::from_pixels(0.0),
+                true,
                 Twips::from_pixels(37.0),
                 Twips::from_pixels(0.0),
                 true,
@@ -510,6 +530,7 @@ mod tests {
                 &string[last_bp..],
                 Twips::from_pixels(12.0),
                 Twips::from_pixels(0.0),
+                true,
                 Twips::from_pixels(37.0),
                 Twips::from_pixels(0.0),
                 true,
@@ -523,6 +544,7 @@ mod tests {
                 &string[last_bp..],
                 Twips::from_pixels(12.0),
                 Twips::from_pixels(0.0),
+                true,
                 Twips::from_pixels(37.0),
                 Twips::from_pixels(0.0),
                 true,
