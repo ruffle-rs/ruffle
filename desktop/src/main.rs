@@ -24,7 +24,7 @@ use std::rc::Rc;
 use winit::dpi::{LogicalSize, PhysicalPosition};
 use winit::event::{ElementState, MouseButton, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
-use winit::window::{WindowBuilder, Icon};
+use winit::window::{Icon, WindowBuilder};
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "basic")]
