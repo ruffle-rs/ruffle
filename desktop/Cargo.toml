@@ -19,7 +19,7 @@ lyon = "0.15.8"
 sample = "0.11.0"
 structopt = "0.3.14"
 winit = "0.22"
-webbrowser = "0.5.2"
+webbrowser = "0.5.4"
 url = "2.1.1"
 
 [target.'cfg(windows)'.build-dependencies]
