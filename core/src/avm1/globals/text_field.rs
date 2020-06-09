@@ -312,6 +312,46 @@ pub fn set_multiline<'gc>(
     Ok(Value::Undefined.into())
 }
 
+fn variable<'gc>(
+    _avm: &mut Avm1<'gc>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
+    if let Some(etext) = this
+        .as_display_object()
+        .and_then(|dobj| dobj.as_edit_text())
+    {
+        if let Some(variable) = etext.variable() {
+            return Ok(variable.to_string().into());
+        }
+    }
+
+    // Unset `variable` retuns null, not undefined
+    Ok(Value::Null.into())
+}
+
+fn set_variable<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
+    let variable = match args.get(0) {
+        None | Some(Value::Undefined) | Some(Value::Null) => None,
+        Some(v) => Some(v.coerce_to_string(avm, context)?),
+    };
+
+    if let Some(etext) = this
+        .as_display_object()
+        .and_then(|dobj| dobj.as_edit_text())
+    {
+        etext.set_variable(variable.map(|v| v.into_owned()), context);
+    }
+
+    Ok(Value::Undefined.into())
+}
+
 pub fn word_wrap<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
@@ -468,6 +508,13 @@ pub fn attach_virtual_properties<'gc>(gc_context: MutationContext<'gc, '_>, obje
         Executable::Native(multiline),
         Some(Executable::Native(set_multiline)),
         ReadOnly.into(),
+    );
+    object.add_property(
+        gc_context,
+        "variable",
+        Executable::Native(variable),
+        Some(Executable::Native(set_variable)),
+        DontDelete | ReadOnly | DontEnum,
     );
     object.add_property(
         gc_context,
