@@ -1,7 +1,7 @@
 //! Layout box structure
 
 use crate::context::UpdateContext;
-use crate::font::Font;
+use crate::font::{EvalParameters, Font};
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::tag_utils::SwfMovie;
@@ -124,16 +124,13 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         while let Some(linebox) = line {
             let mut write = linebox.write(mc);
             line = write.next_sibling();
-            let (start, end, _tf, font, size, letter_spacing, kerning, _color) =
-                write.text_node().expect("text");
+            let (start, end, _tf, font, params, _color) = write.text_node().expect("text");
 
             //Flash ignores trailing spaces when aligning lines, so should we
             if self.current_line_span.align != swf::TextAlign::Left {
                 write.bounds = write.bounds.with_size(Size::from(font.measure(
                     self.text[start..end].trim_end(),
-                    size,
-                    letter_spacing,
-                    kerning,
+                    params,
                     false,
                 )));
             }
@@ -342,15 +339,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         end: usize,
         span: &TextSpan,
     ) {
-        let font_size = Twips::from_pixels(span.size);
-        let letter_spacing = Twips::from_pixels(span.letter_spacing);
-        let text_size = Size::from(self.font.unwrap().measure(
-            text,
-            font_size,
-            letter_spacing,
-            span.kerning,
-            false,
-        ));
+        let params = EvalParameters::from_span(span);
+        let text_size = Size::from(self.font.unwrap().measure(text, params, false));
         let text_bounds = BoxBounds::from_position_and_size(self.cursor, text_size);
         let new_text = LayoutBox::from_text(mc, start, end, self.font.unwrap(), span);
         let mut write = new_text.write(mc);
@@ -480,9 +470,7 @@ pub enum LayoutContent<'gc> {
         end: usize,
         text_format: TextFormat,
         font: Font<'gc>,
-        font_size: Collec<Twips>,
-        letter_spacing: Collec<Twips>,
-        kerning: bool,
+        params: EvalParameters,
         color: Collec<swf::Color>,
     },
 }
@@ -496,8 +484,7 @@ impl<'gc> LayoutBox<'gc> {
         font: Font<'gc>,
         span: &TextSpan,
     ) -> GcCell<'gc, Self> {
-        let font_size = Twips::from_pixels(span.size);
-        let letter_spacing = Twips::from_pixels(span.letter_spacing);
+        let params = EvalParameters::from_span(span);
 
         GcCell::allocate(
             mc,
@@ -509,9 +496,7 @@ impl<'gc> LayoutBox<'gc> {
                     end,
                     text_format: span.get_text_format(),
                     font,
-                    font_size: Collec(font_size),
-                    letter_spacing: Collec(letter_spacing),
-                    kerning: span.kerning,
+                    params,
                     color: Collec(span.color.clone()),
                 },
             },
@@ -540,8 +525,7 @@ impl<'gc> LayoutBox<'gc> {
             if let Some(font) = layout_context.resolve_font(context, movie.clone(), &span) {
                 layout_context.newspan(span);
 
-                let font_size = Twips::from_pixels(span.size);
-                let letter_spacing = Twips::from_pixels(span.letter_spacing);
+                let params = EvalParameters::from_span(span);
 
                 for text in span_text.split(&['\n', '\t'][..]) {
                     let slice_start = text.as_ptr() as usize - span_text.as_ptr() as usize;
@@ -568,9 +552,7 @@ impl<'gc> LayoutBox<'gc> {
 
                         while let Some(breakpoint) = font.wrap_line(
                             &text[last_breakpoint..],
-                            font_size,
-                            letter_spacing,
-                            span.kerning,
+                            params,
                             width,
                             offset,
                             layout_context.is_start_of_line(),
@@ -645,9 +627,7 @@ impl<'gc> LayoutBox<'gc> {
         usize,
         &TextFormat,
         Font<'gc>,
-        Twips,
-        Twips,
-        bool,
+        EvalParameters,
         swf::Color,
     )> {
         match &self.content {
@@ -656,20 +636,9 @@ impl<'gc> LayoutBox<'gc> {
                 end,
                 text_format,
                 font,
-                font_size,
-                letter_spacing,
-                kerning,
+                params,
                 color,
-            } => Some((
-                *start,
-                *end,
-                &text_format,
-                *font,
-                font_size.0,
-                letter_spacing.0,
-                *kerning,
-                color.0.clone(),
-            )),
+            } => Some((*start, *end, &text_format, *font, *params, color.0.clone())),
         }
     }
 

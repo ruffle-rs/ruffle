@@ -9,7 +9,7 @@ pub use dimensions::BoxBounds;
 pub use dimensions::Position;
 pub use dimensions::Size;
 pub use layout::LayoutBox;
-pub use text_format::{FormatSpans, TextFormat};
+pub use text_format::{FormatSpans, TextFormat, TextSpan};
 
 #[cfg(test)]
 mod test;
