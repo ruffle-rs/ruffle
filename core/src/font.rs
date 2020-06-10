@@ -199,12 +199,16 @@ impl<'gc> Font<'gc> {
     }
 
     /// Measure a particular string's metrics (width and height).
+    ///
+    /// The `round` flag causes the returned coordinates to be rounded down to
+    /// the nearest pixel.
     pub fn measure(
         self,
         text: &str,
         font_size: Twips,
         letter_spacing: Twips,
         kerning: bool,
+        round: bool,
     ) -> (Twips, Twips) {
         let mut size = (Twips::new(0), Twips::new(0));
 
@@ -217,8 +221,14 @@ impl<'gc> Font<'gc> {
             |transform, _glyph, advance| {
                 let tx = transform.matrix.tx;
                 let ty = transform.matrix.ty;
-                size.0 = std::cmp::max(size.0, round_down_to_pixel(tx + advance));
-                size.1 = std::cmp::max(size.1, round_down_to_pixel(ty));
+
+                if round {
+                    size.0 = std::cmp::max(size.0, round_down_to_pixel(tx + advance));
+                    size.1 = std::cmp::max(size.1, round_down_to_pixel(ty));
+                } else {
+                    size.0 = std::cmp::max(size.0, tx + advance);
+                    size.1 = std::cmp::max(size.1, ty);
+                }
             },
         );
 
@@ -269,6 +279,7 @@ impl<'gc> Font<'gc> {
                 font_size,
                 letter_spacing,
                 kerning,
+                true,
             );
 
             if is_start_of_line && measure.0 > remaining_width {
@@ -282,6 +293,7 @@ impl<'gc> Font<'gc> {
                         font_size,
                         letter_spacing,
                         kerning,
+                        true,
                     );
                 }
 

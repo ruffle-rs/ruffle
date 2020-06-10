@@ -81,14 +81,6 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         }
     }
 
-    fn cursor(&self) -> &Position<Twips> {
-        &self.cursor
-    }
-
-    fn cursor_mut(&mut self) -> &mut Position<Twips> {
-        &mut self.cursor
-    }
-
     /// Calculate the font-provided leading present on this line.
     fn font_leading_adjustment(&self) -> Twips {
         // Flash appears to round up the font's leading to the nearest pixel
@@ -108,13 +100,27 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     }
 
     /// Apply all indents and alignment to the current line, if necessary.
-    fn fixup_line(&mut self, mc: MutationContext<'gc, '_>, with_leading: bool) {
+    ///
+    /// The `only_line` parameter should be flagged if this is the only line in
+    /// the layout operation (e.g. layout is ending and no newlines have been
+    /// encountered yet).
+    ///
+    /// The `final_line_of_para` parameter should be flagged if this the final
+    /// line in the paragraph or layout operation (e.g. it wasn't caused by an
+    /// automatic newline and no more text is to be expected).
+    fn fixup_line(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        only_line: bool,
+        final_line_of_para: bool,
+    ) {
         if self.current_line.is_none() {
             return;
         }
 
         let mut line = self.current_line;
         let mut line_bounds = None;
+        let mut box_count: i32 = 0;
         while let Some(linebox) = line {
             let mut write = linebox.write(mc);
             line = write.next_sibling();
@@ -128,6 +134,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                     size,
                     letter_spacing,
                     kerning,
+                    false,
                 )));
             }
 
@@ -136,6 +143,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             } else {
                 line_bounds = Some(write.bounds);
             }
+
+            box_count += 1;
         }
 
         let mut line_bounds = line_bounds.unwrap_or_else(Default::default);
@@ -143,30 +152,34 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         let left_adjustment =
             Self::left_alignment_offset(&self.current_line_span, self.is_first_line);
         let right_adjustment = Twips::from_pixels(self.current_line_span.right_margin);
+
+        let misalignment =
+            self.max_bounds - left_adjustment - right_adjustment - line_bounds.width();
         let align_adjustment = max(
             match self.current_line_span.align {
-                swf::TextAlign::Left => Default::default(),
-                swf::TextAlign::Center => {
-                    (self.max_bounds - left_adjustment - right_adjustment - line_bounds.width()) / 2
-                }
-                swf::TextAlign::Right => {
-                    self.max_bounds - left_adjustment - right_adjustment - line_bounds.width()
-                }
-                swf::TextAlign::Justify => {
-                    log::error!("Justified text is unimplemented!");
-                    Default::default()
-                }
+                swf::TextAlign::Left | swf::TextAlign::Justify => Default::default(),
+                swf::TextAlign::Center => (misalignment) / 2,
+                swf::TextAlign::Right => misalignment,
+            },
+            Twips::from_pixels(0.0),
+        );
+        let interim_adjustment = max(
+            if !final_line_of_para && self.current_line_span.align == swf::TextAlign::Justify {
+                misalignment / max(box_count.saturating_sub(1), 1)
+            } else {
+                Twips::from_pixels(0.0)
             },
             Twips::from_pixels(0.0),
         );
 
-        let font_leading_adjustment = if with_leading {
+        let font_leading_adjustment = if only_line {
             self.line_leading_adjustment()
         } else {
             self.font_leading_adjustment()
         };
 
         line = self.current_line;
+        box_count = 0;
         while let Some(linebox) = line {
             let mut write = linebox.write(mc);
 
@@ -176,10 +189,12 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             let font_size_adjustment = self.max_font_size - write.bounds.height();
 
             write.bounds += Position::from((
-                left_adjustment + align_adjustment,
+                left_adjustment + align_adjustment + (interim_adjustment * box_count),
                 font_size_adjustment + font_leading_adjustment,
             ));
+
             line = write.next_sibling();
+            box_count += 1;
         }
 
         line_bounds +=
@@ -197,10 +212,21 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
     /// Adjust the text layout cursor down to the next line in response to an
     /// explicit newline.
+    ///
+    /// This function will also adjust any layout boxes on the current line to
+    /// their correct alignment and indentation.
     fn explicit_newline(&mut self, mc: MutationContext<'gc, '_>) {
-        self.newline(mc);
+        self.fixup_line(mc, false, true);
+
+        self.cursor.set_x(Twips::from_pixels(0.0));
+        self.cursor += (
+            Twips::from_pixels(0.0),
+            self.max_font_size + self.line_leading_adjustment(),
+        )
+            .into();
 
         self.is_first_line = true;
+        self.has_line_break = true;
     }
 
     /// Adjust the text layout cursor down to the next line.
@@ -208,7 +234,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// This function will also adjust any layout boxes on the current line to
     /// their correct alignment and indentation.
     fn newline(&mut self, mc: MutationContext<'gc, '_>) {
-        self.fixup_line(mc, false);
+        self.fixup_line(mc, false, false);
 
         self.cursor.set_x(Twips::from_pixels(0.0));
         self.cursor += (
@@ -255,10 +281,6 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         self.max_font_size = max(self.max_font_size, Twips::from_pixels(first_span.size));
     }
 
-    fn font(&self) -> Option<Font<'gc>> {
-        self.font
-    }
-
     fn resolve_font(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -276,6 +298,67 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         }
 
         None
+    }
+
+    /// Append text to the current line of the ongoing layout operation.
+    ///
+    /// The text given may or may not be separated into fragments, depending on
+    /// what the layout calls for.
+    fn append_text(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        text: &'a str,
+        start: usize,
+        end: usize,
+        span: &TextSpan,
+    ) {
+        if self.current_line_span.align == swf::TextAlign::Justify {
+            for word in text.split(" ") {
+                let word_start = word.as_ptr() as usize - text.as_ptr() as usize;
+                let word_end = min(word_start + word.len() + 1, text.len());
+
+                self.append_text_fragment(
+                    mc,
+                    text.get(word_start..word_end).unwrap(),
+                    start + word_start,
+                    start + word_end,
+                    span,
+                );
+            }
+        } else {
+            self.append_text_fragment(mc, text, start, end, span);
+        }
+    }
+
+    /// Append text fragments to the current line of the given layout context.
+    ///
+    /// This function bypasses the text fragmentation necessary for justify to
+    /// work and it should only be called internally.
+    fn append_text_fragment(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        text: &'a str,
+        start: usize,
+        end: usize,
+        span: &TextSpan,
+    ) {
+        let font_size = Twips::from_pixels(span.size);
+        let letter_spacing = Twips::from_pixels(span.letter_spacing);
+        let text_size = Size::from(self.font.unwrap().measure(
+            text,
+            font_size,
+            letter_spacing,
+            span.kerning,
+            false,
+        ));
+        let text_bounds = BoxBounds::from_position_and_size(self.cursor, text_size);
+        let new_text = LayoutBox::from_text(mc, start, end, self.font.unwrap(), span);
+        let mut write = new_text.write(mc);
+
+        write.bounds = text_bounds;
+
+        self.cursor += Position::from((text_size.width(), Twips::default()));
+        self.append_box(mc, new_text);
     }
 
     /// Add a box to the current line of text.
@@ -334,7 +417,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         mut self,
         mc: MutationContext<'gc, '_>,
     ) -> (Option<GcCell<'gc, LayoutBox<'gc>>>, BoxBounds<Twips>) {
-        self.fixup_line(mc, !self.has_line_break);
+        self.fixup_line(mc, !self.has_line_break, true);
 
         (
             self.first_box,
@@ -440,33 +523,6 @@ impl<'gc> LayoutBox<'gc> {
         self.next_sibling
     }
 
-    ///
-    pub fn append_text_fragment<'a>(
-        mc: MutationContext<'gc, '_>,
-        lc: &mut LayoutContext<'a, 'gc>,
-        text: &'a str,
-        start: usize,
-        end: usize,
-        span: &TextSpan,
-    ) {
-        let font_size = Twips::from_pixels(span.size);
-        let letter_spacing = Twips::from_pixels(span.letter_spacing);
-        let text_size = Size::from(lc.font().unwrap().measure(
-            text,
-            font_size,
-            letter_spacing,
-            span.kerning,
-        ));
-        let text_bounds = BoxBounds::from_position_and_size(*lc.cursor(), text_size);
-        let new_text = Self::from_text(mc, start, end, lc.font().unwrap(), span);
-        let mut write = new_text.write(mc);
-
-        write.bounds = text_bounds;
-
-        *lc.cursor_mut() += Position::from((text_size.width(), Twips::default()));
-        lc.append_box(mc, new_text);
-    }
-
     /// Construct a new layout hierarchy from text spans.
     ///
     /// The returned bounds will include both the text bounds itself, as well
@@ -538,9 +594,8 @@ impl<'gc> LayoutBox<'gc> {
                             // is included in the line it broke.
                             let next_breakpoint = min(last_breakpoint + breakpoint + 1, text.len());
 
-                            Self::append_text_fragment(
+                            layout_context.append_text(
                                 context.gc_context,
-                                &mut layout_context,
                                 &text[last_breakpoint..next_breakpoint],
                                 start + last_breakpoint,
                                 start + next_breakpoint,
@@ -563,9 +618,8 @@ impl<'gc> LayoutBox<'gc> {
                     let span_end = text.len();
 
                     if last_breakpoint < span_end {
-                        Self::append_text_fragment(
+                        layout_context.append_text(
                             context.gc_context,
-                            &mut layout_context,
                             &text[last_breakpoint..span_end],
                             start + last_breakpoint,
                             start + span_end,
