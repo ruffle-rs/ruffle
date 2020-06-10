@@ -1,3 +1,4 @@
+use clipboard::{ClipboardContext, ClipboardProvider};
 use ruffle_core::backend::input::{InputBackend, MouseCursor};
 use ruffle_core::events::{KeyCode, PlayerEvent};
 use std::collections::HashSet;
@@ -10,6 +11,7 @@ pub struct WinitInputBackend {
     window: Rc<Window>,
     cursor_visible: bool,
     last_key: KeyCode,
+    clipboard: ClipboardContext,
 }
 
 impl WinitInputBackend {
@@ -19,6 +21,7 @@ impl WinitInputBackend {
             cursor_visible: true,
             last_key: KeyCode::Unknown,
             window,
+            clipboard: ClipboardProvider::new().unwrap(),
         }
     }
 
@@ -195,6 +198,10 @@ impl InputBackend for WinitInputBackend {
             MouseCursor::Grab => CursorIcon::Grab,
         };
         self.window.set_cursor_icon(icon);
+    }
+
+    fn set_clipboard_content(&mut self, content: String) {
+        self.clipboard.set_contents(content).unwrap();
     }
 }
 

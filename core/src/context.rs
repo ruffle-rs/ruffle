@@ -1,6 +1,7 @@
 //! Contexts and helper types passed between functions.
 use crate::avm1;
 
+use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::listeners::SystemListener;
 use crate::avm1::{Object, Value};
 use crate::backend::input::InputBackend;
@@ -96,6 +97,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// This is required for asynchronous behavior, such as fetching data from
     /// a URL.
     pub load_manager: &'a mut LoadManager<'gc>,
+
+    /// The system properties
+    pub system: &'a mut SystemProperties,
 }
 
 /// A queued ActionScript call.

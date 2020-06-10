@@ -1,4 +1,5 @@
 use crate::avm1::activation::Activation;
+use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::{Avm1, Object, UpdateContext};
 use crate::backend::audio::NullAudioBackend;
 use crate::backend::input::NullInputBackend;
@@ -57,6 +58,7 @@ where
             stage_size: (Twips::from_pixels(550.0), Twips::from_pixels(400.0)),
             player: None,
             load_manager: &mut LoadManager::new(),
+            system: &mut SystemProperties::default(),
         };
         root.post_instantiation(&mut avm, &mut context, root, None);
 

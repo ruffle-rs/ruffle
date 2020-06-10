@@ -28,6 +28,10 @@ mod rectangle;
 mod sound;
 mod stage;
 pub(crate) mod string;
+pub(crate) mod system;
+pub(crate) mod system_capabilities;
+pub(crate) mod system_ime;
+pub(crate) mod system_security;
 pub(crate) mod text_field;
 mod text_format;
 mod xml;
@@ -271,6 +275,7 @@ pub fn create_globals<'gc>(
     let flash = ScriptObject::object(gc_context, Some(object_proto));
     let geom = ScriptObject::object(gc_context, Some(object_proto));
     let matrix = matrix::create_matrix_object(gc_context, Some(matrix_proto), Some(function_proto));
+
     let point = point::create_point_object(gc_context, Some(point_proto), Some(function_proto));
     let rectangle =
         rectangle::create_rectangle_object(gc_context, Some(rectangle_proto), Some(function_proto));
@@ -309,6 +314,26 @@ pub fn create_globals<'gc>(
     globals.define_value(gc_context, "String", string.into(), EnumSet::empty());
     globals.define_value(gc_context, "Number", number.into(), EnumSet::empty());
     globals.define_value(gc_context, "Boolean", boolean.into(), EnumSet::empty());
+
+    let system_security =
+        system_security::create(gc_context, Some(object_proto), Some(function_proto));
+    let system_capabilities = system_capabilities::create(gc_context, Some(object_proto));
+    let system_ime = system_ime::create(
+        gc_context,
+        Some(object_proto),
+        Some(function_proto),
+        &listeners.ime,
+    );
+
+    let system = system::create(
+        gc_context,
+        Some(object_proto),
+        Some(function_proto),
+        system_security,
+        system_capabilities,
+        system_ime,
+    );
+    globals.define_value(gc_context, "System", system.into(), EnumSet::empty());
 
     globals.define_value(
         gc_context,

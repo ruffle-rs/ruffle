@@ -1,4 +1,5 @@
 use crate::avm1::debug::VariableDumper;
+use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::listeners::SystemListener;
 use crate::avm1::{Activation, Avm1, TObject, Value};
 use crate::backend::input::{InputBackend, MouseCursor};
@@ -135,6 +136,8 @@ pub struct Player {
     /// The current mouse cursor icon.
     mouse_cursor: MouseCursor,
 
+    system: SystemProperties,
+
     /// Self-reference to ourselves.
     ///
     /// This is a weak reference that is upgraded and handed out in various
@@ -233,6 +236,7 @@ impl Player {
             navigator,
             input,
             self_reference: None,
+            system: SystemProperties::default(),
         };
 
         player.mutate_with_update_context(|avm, context| {
@@ -831,6 +835,7 @@ impl Player {
             stage_width,
             stage_height,
             player,
+            system_properties,
         ) = (
             self.player_version,
             self.global_time,
@@ -845,6 +850,7 @@ impl Player {
             Twips::from_pixels(self.movie_width.into()),
             Twips::from_pixels(self.movie_height.into()),
             self.self_reference.clone(),
+            &mut self.system,
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -874,6 +880,7 @@ impl Player {
                 system_prototypes: avm.prototypes().clone(),
                 player,
                 load_manager,
+                system: system_properties,
             };
 
             let ret = f(avm, &mut update_context);
