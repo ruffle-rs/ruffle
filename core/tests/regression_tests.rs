@@ -199,7 +199,6 @@ swf_tests! {
     (issue_710, "avm1/issue_710", 1),
     (edittext_font_size, "avm1/edittext_font_size", 1),
     (edittext_html_defaults, "avm1/edittext_html_defaults", 1),
-    (edittext_align, "avm1/edittext_align", 1),
     (edittext_leading, "avm1/edittext_leading", 1),
     #[ignore] (edittext_newlines, "avm1/edittext_newlines", 1),
 }
@@ -213,7 +212,8 @@ swf_tests_approx! {
     (stage_object_properties_swf6, "avm1/stage_object_properties_swf6", 4, 0.051),
     (movieclip_getbounds, "avm1/movieclip_getbounds", 1, 0.051),
     (edittext_letter_spacing, "avm1/edittext_letter_spacing", 1, 1.0),
-    (edittext_margins, "avm1/edittext_margins", 1, 1.0),
+    (edittext_align, "avm1/edittext_align", 1, 3.0),
+    (edittext_margins, "avm1/edittext_margins", 1, 3.0),
     (edittext_tab_stops, "avm1/edittext_tab_stops", 1, 5.0),
 }
 
