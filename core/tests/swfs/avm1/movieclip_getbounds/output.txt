@@ -40,6 +40,12 @@
 145.75
 469.5
 
+// clip4.getBounds(_root)
+236.2
+330.2
+286.2
+380.2
+
 // clip.getBounds('/')
 3.5
 50
@@ -123,6 +129,12 @@ undefined
 210.05
 145.75
 469.5
+
+// clip4.getRect(_root)
+236.2
+330.2
+286.2
+380.2
 
 // clip.getRect('/')
 3.5
