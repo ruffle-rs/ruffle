@@ -313,7 +313,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         span: &TextSpan,
     ) {
         if self.current_line_span.align == swf::TextAlign::Justify {
-            for word in text.split(" ") {
+            for word in text.split(' ') {
                 let word_start = word.as_ptr() as usize - text.as_ptr() as usize;
                 let word_end = min(word_start + word.len() + 1, text.len());
 
