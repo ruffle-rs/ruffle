@@ -68,13 +68,15 @@ impl BoundingBox {
 
     pub fn union(&mut self, other: &BoundingBox) {
         use std::cmp::{max, min};
-        if self.valid && other.valid {
-            self.x_min = min(self.x_min, other.x_min);
-            self.x_max = max(self.x_max, other.x_max);
-            self.y_min = min(self.y_min, other.y_min);
-            self.y_max = max(self.y_max, other.y_max);
-        } else {
-            *self = other.clone();
+        if other.valid {
+            if self.valid {
+                self.x_min = min(self.x_min, other.x_min);
+                self.x_max = max(self.x_max, other.x_max);
+                self.y_min = min(self.y_min, other.y_min);
+                self.y_max = max(self.y_max, other.y_max);
+            } else {
+                *self = other.clone();
+            }
         }
     }
 
