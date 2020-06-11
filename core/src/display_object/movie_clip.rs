@@ -795,6 +795,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn unload(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        for mut child in self.children() {
+            child.unload(context);
+        }
         {
             let mut mc = self.0.write(context.gc_context);
             mc.stop_audio_stream(context);

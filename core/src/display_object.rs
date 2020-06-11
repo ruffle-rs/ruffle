@@ -732,6 +732,9 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
     fn run_frame(&mut self, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>) {}
     fn render(&self, _context: &mut RenderContext<'_, 'gc>) {}
     fn unload(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        for mut child in self.children() {
+            child.unload(context);
+        }
         self.set_removed(context.gc_context, true);
     }
     fn as_button(&self) -> Option<Button<'gc>> {
