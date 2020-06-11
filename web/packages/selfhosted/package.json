@@ -27,7 +27,7 @@
         "@wdio/sync": "^6.1.8",
         "chai": "^4.2.0",
         "chromedriver": "^83.0.0",
-        "mocha": "^7.1.2",
+        "mocha": "^8.0.1",
         "wdio-chromedriver-service": "^6.0.3",
         "chai-html": "^1.3.0"
     }
