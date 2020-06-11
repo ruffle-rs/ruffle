@@ -295,11 +295,9 @@ impl<'gc> Font<'gc> {
             return Some(0);
         }
 
-        let mut current_word = &text[0..0];
+        let mut line_end = 0;
 
         for word in text.split(' ') {
-            let line_start = current_word.as_ptr() as usize - text.as_ptr() as usize;
-            let line_end = line_start + current_word.len();
             let word_start = word.as_ptr() as usize - text.as_ptr() as usize;
             let word_end = word_start + word.len();
 
@@ -316,7 +314,7 @@ impl<'gc> Font<'gc> {
                 while last_passing_breakpoint.0 < remaining_width {
                     frag_end += 1;
                     last_passing_breakpoint =
-                        self.measure(text.get(word_start..frag_end).unwrap(), params, true);
+                        self.measure(&text[word_start..frag_end], params, true);
                 }
 
                 return Some(frag_end - 1);
@@ -326,8 +324,8 @@ impl<'gc> Font<'gc> {
                 return Some(line_end);
             } else {
                 //Space remains for our current word, move up the word pointer.
-                current_word = &text[line_start..word_end];
-                is_start_of_line = is_start_of_line && current_word.trim().is_empty();
+                line_end = word_end;
+                is_start_of_line = is_start_of_line && text[0..line_end].trim().is_empty();
 
                 //If the additional space were to cause an overflow, then
                 //return now.
