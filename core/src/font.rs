@@ -364,8 +364,14 @@ pub struct FontDescriptor {
 impl FontDescriptor {
     /// Obtain a font descriptor from a SWF font tag.
     pub fn from_swf_tag(val: &swf::Font) -> Self {
+        let mut name = val.name.clone();
+
+        if let Some(first_null) = name.find('\0') {
+            name.truncate(first_null);
+        };
+
         Self {
-            name: val.name.clone(),
+            name,
             is_bold: val.is_bold,
             is_italic: val.is_italic,
         }
@@ -373,8 +379,14 @@ impl FontDescriptor {
 
     /// Obtain a font descriptor from a name/bold/italic triplet.
     pub fn from_parts(name: &str, is_bold: bool, is_italic: bool) -> Self {
+        let mut name = name.to_string();
+
+        if let Some(first_null) = name.find('\0') {
+            name.truncate(first_null);
+        };
+
         Self {
-            name: name.to_string(),
+            name,
             is_bold,
             is_italic,
         }
