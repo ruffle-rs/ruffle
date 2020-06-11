@@ -14,6 +14,7 @@ use crate::loader::LoadManager;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::transform::TransformStack;
+use enumset::EnumSet;
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
@@ -245,6 +246,15 @@ impl Player {
             root.set_depth(context.gc_context, 0);
             root.post_instantiation(avm, context, root, None);
             context.levels.insert(0, root);
+
+            if let Ok(object) = root.object().as_object() {
+                object.define_value(
+                    context.gc_context,
+                    "$version",
+                    context.system.get_version_string(avm).into(),
+                    EnumSet::empty(),
+                );
+            }
         });
 
         player.build_matrices();
