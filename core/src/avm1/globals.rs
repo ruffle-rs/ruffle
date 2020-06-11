@@ -33,6 +33,7 @@ pub(crate) mod system;
 pub(crate) mod system_capabilities;
 pub(crate) mod system_ime;
 pub(crate) mod system_security;
+pub(crate) mod shared_object;
 pub(crate) mod text_field;
 mod text_format;
 mod xml;
@@ -144,6 +145,7 @@ pub struct SystemPrototypes<'gc> {
     pub point: Object<'gc>,
     pub rectangle: Object<'gc>,
     pub rectangle_constructor: Object<'gc>,
+    pub shared_object: Object<'gc>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
@@ -165,6 +167,7 @@ unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
         self.point.trace(cc);
         self.rectangle.trace(cc);
         self.rectangle_constructor.trace(cc);
+        self.shared_object.trace(cc);
     }
 }
 
@@ -321,6 +324,11 @@ pub fn create_globals<'gc>(
     globals.define_value(gc_context, "Number", number.into(), EnumSet::empty());
     globals.define_value(gc_context, "Boolean", boolean.into(), EnumSet::empty());
 
+    let shared_object_proto = shared_object::create_proto(gc_context, object_proto, function_proto);
+
+    let shared_obj = shared_object::create_shared_object_object(gc_context, Some(shared_object_proto), Some(function_proto));
+    globals.define_value(gc_context, "SharedObject", shared_obj.into(), EnumSet::empty());
+
     let system_security =
         system_security::create(gc_context, Some(object_proto), Some(function_proto));
     let system_capabilities = system_capabilities::create(gc_context, Some(object_proto));
@@ -444,6 +452,7 @@ pub fn create_globals<'gc>(
             point: point_proto,
             rectangle: rectangle_proto,
             rectangle_constructor: rectangle,
+            shared_object: shared_object_proto,
         },
         globals.into(),
         listeners,
