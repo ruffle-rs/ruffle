@@ -454,6 +454,7 @@ fn attach_movie<'gc>(
             context,
             new_clip,
             init_object.and_then(|v| v.as_object().ok()),
+            true,
         );
         new_clip.run_frame(avm, context);
 
@@ -491,7 +492,7 @@ fn create_empty_movie_clip<'gc>(
     // Set name and attach to parent.
     new_clip.set_name(context.gc_context, &new_instance_name);
     movie_clip.add_child_from_avm(context, new_clip.into(), depth);
-    new_clip.post_instantiation(avm, context, new_clip.into(), None);
+    new_clip.post_instantiation(avm, context, new_clip.into(), None, true);
     new_clip.run_frame(avm, context);
 
     Ok(new_clip.object().into())
@@ -539,7 +540,7 @@ fn create_text_field<'gc>(
         EditText::new(context, movie, x, y, width, height).into();
     text_field.set_name(context.gc_context, &instance_name);
     movie_clip.add_child_from_avm(context, text_field, depth as Depth);
-    text_field.post_instantiation(avm, context, text_field, None);
+    text_field.post_instantiation(avm, context, text_field, None, true);
 
     if avm.current_swf_version() >= 8 {
         //SWF8+ returns the `TextField` instance here
@@ -612,6 +613,7 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
             context,
             new_clip,
             init_object.and_then(|v| v.as_object().ok()),
+            true,
         );
         new_clip.run_frame(avm, context);
 

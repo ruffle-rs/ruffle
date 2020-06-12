@@ -720,11 +720,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
         init_object: Option<Object<'gc>>,
+        instantiated_from_avm: bool,
     ) {
         if self.0.read().object.is_none() {
             // If we are running within the AVM, this must be an immediate action.
             // If we are not, then this must be queued to be ran first-thing
-            if avm.has_stack_frame() && self.0.read().avm1_constructor.is_some() {
+            if instantiated_from_avm && self.0.read().avm1_constructor.is_some() {
                 let constructor = self.0.read().avm1_constructor.unwrap();
 
                 if let Ok(prototype) = constructor
@@ -1033,7 +1034,7 @@ impl<'gc> MovieClipData<'gc> {
                 }
                 // Run first frame.
                 child.apply_place_object(context.gc_context, place_object);
-                child.post_instantiation(avm, context, child, None);
+                child.post_instantiation(avm, context, child, None, false);
                 child.run_frame(avm, context);
             }
             Some(child)
