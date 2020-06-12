@@ -22,6 +22,7 @@ use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex, Weak};
+use crate::backend::storage::{StorageBackend, MemoryStorageBackend};
 
 static DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
 
@@ -89,6 +90,7 @@ type Audio = Box<dyn AudioBackend>;
 type Navigator = Box<dyn NavigatorBackend>;
 type Renderer = Box<dyn RenderBackend>;
 type Input = Box<dyn InputBackend>;
+type Storage = Box<dyn StorageBackend>;
 
 pub struct Player {
     /// The version of the player we're emulating.
@@ -115,6 +117,8 @@ pub struct Player {
     transform_stack: TransformStack,
     view_matrix: Matrix,
     inverse_view_matrix: Matrix,
+
+    storage: Storage,
 
     rng: SmallRng,
 
@@ -157,6 +161,7 @@ impl Player {
         navigator: Navigator,
         input: Input,
         movie: SwfMovie,
+        storage: Storage
     ) -> Result<Arc<Mutex<Self>>, Error> {
         let movie = Arc::new(movie);
 
@@ -187,6 +192,7 @@ impl Player {
             transform_stack: TransformStack::new(),
             view_matrix: Default::default(),
             inverse_view_matrix: Default::default(),
+
 
             rng: SmallRng::from_seed([0u8; 16]), // TODO(Herschel): Get a proper seed on all platforms.
 
@@ -242,6 +248,7 @@ impl Player {
             self_reference: None,
             system: SystemProperties::default(),
             instance_counter: 0,
+            storage
         };
 
         player.mutate_with_update_context(|avm, context| {
@@ -849,7 +856,11 @@ impl Player {
             stage_height,
             player,
             system_properties,
+<<<<<<< HEAD
             instance_counter,
+=======
+            storage,
+>>>>>>> 0ca1eb0... core: Add inital storage backend implementation
         ) = (
             self.player_version,
             self.global_time,
@@ -865,7 +876,11 @@ impl Player {
             Twips::from_pixels(self.movie_height.into()),
             self.self_reference.clone(),
             &mut self.system,
+<<<<<<< HEAD
             &mut self.instance_counter,
+=======
+            self.storage.deref_mut(),
+>>>>>>> 0ca1eb0... core: Add inital storage backend implementation
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -896,7 +911,11 @@ impl Player {
                 player,
                 load_manager,
                 system: system_properties,
+<<<<<<< HEAD
                 instance_counter,
+=======
+                storage
+>>>>>>> 0ca1eb0... core: Add inital storage backend implementation
             };
 
             let ret = f(avm, &mut update_context);

@@ -18,6 +18,7 @@ use rand::rngs::SmallRng;
 use std::collections::BTreeMap;
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, Weak};
+use crate::backend::storage::StorageBackend;
 
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
 /// `Player` crates this when it begins a tick and passes it through the call stack to
@@ -63,6 +64,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The input backend, used to detect user interactions.
     pub input: &'a mut dyn InputBackend,
+
+    /// The storage backend, used for storing persistent state
+    pub storage: &'a mut dyn StorageBackend,
 
     /// The RNG, used by the AVM `RandomNumber` opcode,  `Math.random(),` and `random()`.
     pub rng: &'a mut SmallRng,
