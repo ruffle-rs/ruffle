@@ -1,7 +1,7 @@
 ﻿class aaclass extends MovieClip {
 	function aaclass() {
-		trace("aaclass constructor");
 		super();
+		trace("aaclass constructor");
 		
 		trace("");
 		trace("// trace(this._name)");
