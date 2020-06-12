@@ -100,57 +100,35 @@ _level0.b.box
 root first frame end
 
 
-a first frame
+aaclass constructor
 
 // trace(this._name)
-a
+d
+
+aaclass test()
+
+// trace(this._name)
+d
 
 // trace(this.box)
-_level0.a.box
+_level0.d.box
 
-// trace(this.custom)
-true
-
-// trace(this.box.custom)
-undefined
-
-// trace(this.box.box)
-_level0.a.box.box
-
-// trace(this.oldbox)
-_level0.a.box
-
-// trace(this.box === this.oldbox)
-true
-
-a first frame end
+aaclass test() end
+aaclass constructor end
 
 
+root frame 2
 aa first frame
 
 // trace(this._name)
-box
+d
 
 // trace(this.box)
-_level0.a.box.box
+_level0.d.box
 
 // trace(this.custom)
 undefined
 
 aa first frame end
-
-
-b first frame
-
-// trace(this._name)
-b
-
-// trace(this.box)
-_level0.b.box
-
-// trace(this.custom)
-true
-
-b first frame end
 
 
