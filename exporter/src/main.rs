@@ -15,6 +15,21 @@ use std::rc::Rc;
 use structopt::StructOpt;
 use walkdir::{DirEntry, WalkDir};
 
+#[derive(StructOpt, Debug, Copy, Clone)]
+struct SizeOpt {
+    /// The amount to scale the page size with
+    #[structopt(long = "scale", default_value = "1.0")]
+    scale: f32,
+
+    /// Optionaly override the output width
+    #[structopt(long = "width")]
+    width: Option<u32>,
+
+    /// Optionaly override the output height
+    #[structopt(long = "height")]
+    height: Option<u32>,
+}
+
 #[derive(StructOpt, Debug)]
 struct Opt {
     /// The file or directory of files to export frames from
@@ -40,6 +55,9 @@ struct Opt {
     /// Don't show a progress bar
     #[structopt(short, long)]
     silent: bool,
+    
+    #[structopt(flatten)]
+    size: SizeOpt
 }
 
 fn take_screenshot(
@@ -49,10 +67,17 @@ fn take_screenshot(
     frames: u32,
     skipframes: u32,
     progress: &Option<ProgressBar>,
+    size: SizeOpt,
 ) -> Result<Vec<RgbaImage>, Box<dyn std::error::Error>> {
     let movie = SwfMovie::from_path(&swf_path)?;
 
-    let target = TextureTarget::new(&device, (movie.width(), movie.height()));
+    let width = size.width.unwrap_or(movie.width());
+    let width = (width as f32 * size.scale).round() as u32;
+
+    let height = size.height.unwrap_or(movie.height());
+    let height = (height as f32 * size.scale).round() as u32;
+
+    let target = TextureTarget::new(&device, (width, height));
     let player = Player::new(
         Box::new(WgpuRenderBackend::new(device, queue, target)?),
         Box::new(NullAudioBackend::new()),
@@ -60,6 +85,8 @@ fn take_screenshot(
         Box::new(NullInputBackend::new()),
         movie,
     )?;
+
+    player.lock().unwrap().set_viewport_dimensions(width, height);
 
     let mut result = Vec::new();
     let totalframes = frames + skipframes;
@@ -134,6 +161,7 @@ fn capture_single_swf(
     skipframes: u32,
     output: Option<PathBuf>,
     with_progress: bool,
+    size: SizeOpt,
 ) -> Result<(), Box<dyn Error>> {
     let output = output.unwrap_or_else(|| {
         let mut result = PathBuf::new();
@@ -164,7 +192,15 @@ fn capture_single_swf(
         None
     };
 
-    let frames = take_screenshot(device, queue, &swf, frames, skipframes, &progress)?;
+    let frames = take_screenshot(
+        device,
+        queue, 
+        &swf, 
+        frames, 
+        skipframes, 
+        &progress,
+        size
+    )?;
 
     if let Some(progress) = &progress {
         progress.set_message(&swf.file_stem().unwrap().to_string_lossy());
@@ -212,6 +248,7 @@ fn capture_multiple_swfs(
     skipframes: u32,
     output: &Path,
     with_progress: bool,
+    size: SizeOpt,
 ) -> Result<(), Box<dyn Error>> {
     let files = find_files(directory, with_progress);
 
@@ -237,6 +274,7 @@ fn capture_multiple_swfs(
             frames,
             skipframes,
             &progress,
+            size
         )?;
 
         if let Some(progress) = &progress {
@@ -323,6 +361,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             opt.skipframes,
             opt.output_path,
             !opt.silent,
+            opt.size,
         )?;
     } else if let Some(output) = opt.output_path {
         capture_multiple_swfs(
@@ -333,6 +372,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             opt.skipframes,
             &output,
             !opt.silent,
+            opt.size,
         )?;
     } else {
         return Err("Output directory is required when exporting multiple files.".into());
