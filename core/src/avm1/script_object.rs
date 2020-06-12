@@ -762,7 +762,7 @@ mod tests {
                 system: &mut SystemProperties::default(),
             };
 
-            root.post_instantiation(&mut avm, &mut context, root, None);
+            root.post_instantiation(&mut avm, &mut context, root, None, false);
 
             let object = ScriptObject::object(gc_context, Some(avm.prototypes().object)).into();
 

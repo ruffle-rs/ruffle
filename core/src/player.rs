@@ -244,11 +244,11 @@ impl Player {
             let mut root: DisplayObject =
                 MovieClip::from_movie(context.gc_context, movie.clone()).into();
             root.set_depth(context.gc_context, 0);
-            root.post_instantiation(avm, context, root, None);
+            root.post_instantiation(avm, context, root, None, false);
             context.levels.insert(0, root);
 
             if let Ok(object) = root.object().as_object() {
-                object.define_value(
+                let _ = object.define_value(
                     context.gc_context,
                     "$version",
                     context.system.get_version_string(avm).into(),

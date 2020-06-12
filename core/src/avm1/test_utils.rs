@@ -60,7 +60,7 @@ where
             load_manager: &mut LoadManager::new(),
             system: &mut SystemProperties::default(),
         };
-        root.post_instantiation(&mut avm, &mut context, root, None);
+        root.post_instantiation(&mut avm, &mut context, root, None, false);
 
         let globals = avm.global_object_cell();
         avm.insert_stack_frame(GcCell::allocate(

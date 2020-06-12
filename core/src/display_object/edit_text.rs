@@ -433,6 +433,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
         _init_object: Option<Object<'gc>>,
+        _instantiated_from_avm: bool,
     ) {
         let mut text = self.0.write(context.gc_context);
         if text.object.is_none() {
