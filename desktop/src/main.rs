@@ -7,6 +7,7 @@ mod executor;
 mod input;
 mod navigator;
 mod task;
+mod storage;
 
 use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
@@ -25,6 +26,7 @@ use winit::dpi::{LogicalSize, PhysicalPosition};
 use winit::event::{ElementState, MouseButton, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Icon, WindowBuilder};
+use crate::storage::DiskStorageBackend;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "basic")]
@@ -86,7 +88,8 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         event_loop.create_proxy(),
     )); //TODO: actually implement this backend type
     let input = Box::new(input::WinitInputBackend::new(window.clone()));
-    let player = Player::new(renderer, audio, navigator, input, movie)?;
+    let storage = Box::new(DiskStorageBackend::new());
+    let player = Player::new(renderer, audio, navigator, input, movie, storage)?;
     player.lock().unwrap().set_is_playing(true); // Desktop player will auto-play.
 
     player
