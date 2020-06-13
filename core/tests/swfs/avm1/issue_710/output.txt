@@ -1,0 +1,4 @@
+// '_root.foo'()
+foo
+// '/:foo'()
+foo
