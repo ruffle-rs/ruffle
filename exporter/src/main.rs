@@ -55,9 +55,9 @@ struct Opt {
     /// Don't show a progress bar
     #[structopt(short, long)]
     silent: bool,
-    
+
     #[structopt(flatten)]
-    size: SizeOpt
+    size: SizeOpt,
 }
 
 fn take_screenshot(
@@ -71,10 +71,10 @@ fn take_screenshot(
 ) -> Result<Vec<RgbaImage>, Box<dyn std::error::Error>> {
     let movie = SwfMovie::from_path(&swf_path)?;
 
-    let width = size.width.unwrap_or(movie.width());
+    let width = size.width.unwrap_or_else(|| movie.width());
     let width = (width as f32 * size.scale).round() as u32;
 
-    let height = size.height.unwrap_or(movie.height());
+    let height = size.height.unwrap_or_else(|| movie.height());
     let height = (height as f32 * size.scale).round() as u32;
 
     let target = TextureTarget::new(&device, (width, height));
@@ -86,7 +86,10 @@ fn take_screenshot(
         movie,
     )?;
 
-    player.lock().unwrap().set_viewport_dimensions(width, height);
+    player
+        .lock()
+        .unwrap()
+        .set_viewport_dimensions(width, height);
 
     let mut result = Vec::new();
     let totalframes = frames + skipframes;
@@ -156,30 +159,25 @@ fn find_files(root: &Path, with_progress: bool) -> Vec<DirEntry> {
 fn capture_single_swf(
     device: Rc<wgpu::Device>,
     queue: Rc<wgpu::Queue>,
-    swf: &Path,
-    frames: u32,
-    skipframes: u32,
-    output: Option<PathBuf>,
-    with_progress: bool,
-    size: SizeOpt,
+    opt: &Opt,
 ) -> Result<(), Box<dyn Error>> {
-    let output = output.unwrap_or_else(|| {
+    let output = opt.output_path.clone().unwrap_or_else(|| {
         let mut result = PathBuf::new();
-        if frames == 1 {
-            result.set_file_name(swf.file_stem().unwrap());
+        if opt.frames == 1 {
+            result.set_file_name(opt.swf.file_stem().unwrap());
             result.set_extension("png");
         } else {
-            result.set_file_name(swf.file_stem().unwrap());
+            result.set_file_name(opt.swf.file_stem().unwrap());
         }
         result
     });
 
-    if frames > 1 {
+    if opt.frames > 1 {
         let _ = create_dir_all(&output);
     }
 
-    let progress = if with_progress {
-        let progress = ProgressBar::new(frames as u64);
+    let progress = if !opt.silent {
+        let progress = ProgressBar::new(opt.frames as u64);
         progress.set_style(
             ProgressStyle::default_bar()
                 .template(
@@ -194,16 +192,16 @@ fn capture_single_swf(
 
     let frames = take_screenshot(
         device,
-        queue, 
-        &swf, 
-        frames, 
-        skipframes, 
+        queue,
+        &opt.swf,
+        opt.frames,
+        opt.skipframes,
         &progress,
-        size
+        opt.size,
     )?;
 
     if let Some(progress) = &progress {
-        progress.set_message(&swf.file_stem().unwrap().to_string_lossy());
+        progress.set_message(&opt.swf.file_stem().unwrap().to_string_lossy());
     }
 
     if frames.len() == 1 {
@@ -219,14 +217,14 @@ fn capture_single_swf(
     let message = if frames.len() == 1 {
         format!(
             "Saved first frame of {} to {}",
-            swf.to_string_lossy(),
+            opt.swf.to_string_lossy(),
             output.to_string_lossy()
         )
     } else {
         format!(
             "Saved first {} frames of {} to {}",
             frames.len(),
-            swf.to_string_lossy(),
+            opt.swf.to_string_lossy(),
             output.to_string_lossy()
         )
     };
@@ -243,17 +241,13 @@ fn capture_single_swf(
 fn capture_multiple_swfs(
     device: Rc<wgpu::Device>,
     queue: Rc<wgpu::Queue>,
-    directory: &Path,
-    frames: u32,
-    skipframes: u32,
-    output: &Path,
-    with_progress: bool,
-    size: SizeOpt,
+    opt: &Opt,
 ) -> Result<(), Box<dyn Error>> {
-    let files = find_files(directory, with_progress);
+    let output = opt.output_path.clone().unwrap();
+    let files = find_files(&opt.swf, !opt.silent);
 
-    let progress = if with_progress {
-        let progress = ProgressBar::new((files.len() as u64) * (frames as u64));
+    let progress = if !opt.silent {
+        let progress = ProgressBar::new((files.len() as u64) * (opt.frames as u64));
         progress.set_style(
             ProgressStyle::default_bar()
                 .template(
@@ -271,10 +265,10 @@ fn capture_multiple_swfs(
             device.clone(),
             queue.clone(),
             &file.path(),
-            frames,
-            skipframes,
+            opt.frames,
+            opt.skipframes,
             &progress,
-            size
+            opt.size,
         )?;
 
         if let Some(progress) = &progress {
@@ -283,12 +277,12 @@ fn capture_multiple_swfs(
 
         let mut relative_path = file
             .path()
-            .strip_prefix(directory)
+            .strip_prefix(&opt.swf)
             .unwrap_or_else(|_| &file.path())
             .to_path_buf();
 
         if frames.len() == 1 {
-            let mut destination = PathBuf::from(output);
+            let mut destination = PathBuf::from(&output);
             relative_path.set_extension("png");
             destination.push(relative_path);
             if let Some(parent) = destination.parent() {
@@ -296,7 +290,7 @@ fn capture_multiple_swfs(
             }
             frames.get(0).unwrap().save(&destination)?;
         } else {
-            let mut parent = PathBuf::from(output);
+            let mut parent = PathBuf::from(&output);
             relative_path.set_extension("");
             parent.push(&relative_path);
             let _ = create_dir_all(&parent);
@@ -308,7 +302,7 @@ fn capture_multiple_swfs(
         }
     }
 
-    let message = if frames == 1 {
+    let message = if opt.frames == 1 {
         format!(
             "Saved first frame of {} files to {}",
             files.len(),
@@ -317,7 +311,7 @@ fn capture_multiple_swfs(
     } else {
         format!(
             "Saved first {} frames of {} files to {}",
-            frames,
+            opt.frames,
             files.len(),
             output.to_string_lossy()
         )
@@ -353,27 +347,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     }));
 
     if opt.swf.is_file() {
-        capture_single_swf(
-            Rc::new(device),
-            Rc::new(queue),
-            &opt.swf,
-            opt.frames,
-            opt.skipframes,
-            opt.output_path,
-            !opt.silent,
-            opt.size,
-        )?;
-    } else if let Some(output) = opt.output_path {
-        capture_multiple_swfs(
-            Rc::new(device),
-            Rc::new(queue),
-            &opt.swf,
-            opt.frames,
-            opt.skipframes,
-            &output,
-            !opt.silent,
-            opt.size,
-        )?;
+        capture_single_swf(Rc::new(device), Rc::new(queue), &opt)?;
+    } else if opt.output_path.is_some() {
+        capture_multiple_swfs(Rc::new(device), Rc::new(queue), &opt)?;
     } else {
         return Err("Output directory is required when exporting multiple files.".into());
     }
