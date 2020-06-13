@@ -22,7 +22,7 @@ use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex, Weak};
-use crate::backend::storage::{StorageBackend, MemoryStorageBackend};
+use crate::backend::storage::StorageBackend;
 
 static DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
 

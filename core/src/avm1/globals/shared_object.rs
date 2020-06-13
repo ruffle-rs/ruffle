@@ -57,7 +57,6 @@ fn parse_json<'gc>(json_obj: JsonValue, avm: &mut Avm1<'gc>, object: Object<'gc>
                 );
             },
             JsonValue::Number(f) => {
-                log::warn!("[SharedObject] {} = {}", entry.0, f);
                 let val: f64 = f.clone().into();
                 object.define_value(
                     context.gc_context,
@@ -67,7 +66,6 @@ fn parse_json<'gc>(json_obj: JsonValue, avm: &mut Avm1<'gc>, object: Object<'gc>
                 );
             },
             JsonValue::Boolean(b) => {
-                log::warn!("[SharedObject] {} = {}", entry.0, b);
                 object.define_value(
                     context.gc_context,
                     entry.0,
@@ -110,6 +108,7 @@ pub fn get_local<'gc>(
         obj.into(),
         EnumSet::empty(),
     );
+    //TODO: use args
 
 
     let saved = action_context.storage.get_string("tmp".to_string());
@@ -120,7 +119,6 @@ pub fn get_local<'gc>(
         parse_json(js, avm, data, action_context);
     }
 
-    // log::warn!("SharedObject.getLocal() not implemented");
     Ok(obj.into())
 }
 
@@ -141,6 +139,28 @@ pub fn get_max_size<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     log::warn!("SharedObject.getMaxSize() not implemented");
+    Ok(Value::Undefined.into())
+}
+
+
+pub fn add_listener<'gc>(
+    _avm: &mut Avm1<'gc>,
+    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    log::warn!("SharedObject.addListener() not implemented");
+    Ok(Value::Undefined.into())
+}
+
+
+pub fn remove_listener<'gc>(
+    _avm: &mut Avm1<'gc>,
+    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    log::warn!("SharedObject.removeListener() not implemented");
     Ok(Value::Undefined.into())
 }
 
@@ -196,7 +216,22 @@ pub fn create_shared_object_object<'gc>(
         EnumSet::empty(),
         fn_proto
     );
-    // TODO: listeners, might not have _listeners prop
+
+    object.force_set_function(
+        "addListener",
+        add_listener,
+        gc_context,
+        EnumSet::empty(),
+        fn_proto
+    );
+
+    object.force_set_function(
+        "removeListener",
+        remove_listener,
+        gc_context,
+        EnumSet::empty(),
+        fn_proto
+    );
 
     shared_obj
 }
