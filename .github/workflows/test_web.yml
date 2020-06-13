@@ -44,6 +44,6 @@ jobs:
       working-directory: web
       run: |
         npm run bootstrap
-        npx eslint .
+        npm run format:check
         npm run build
         npm run test
