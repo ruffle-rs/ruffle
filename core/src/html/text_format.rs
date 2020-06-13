@@ -1173,6 +1173,10 @@ impl FormatSpans {
                         format_stack.last(),
                     );
                 }
+                Step::Out(node) if node.tag_name().unwrap().node_name().as_str() == "p" => {
+                    self.replace_text(self.text.len(), self.text.len(), "\n", format_stack.last());
+                    format_stack.pop();
+                }
                 Step::Out(_) => {
                     format_stack.pop();
                 }
