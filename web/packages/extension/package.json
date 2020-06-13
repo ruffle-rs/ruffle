@@ -8,11 +8,6 @@
         "build": "node tools/build_all.js"
     },
     "dependencies": {
-        "ruffle-core": "file:../core"
-    },
-    "devDependencies": {
-        "archiver": "^4.0.1",
-        "sign-addon": "^2.0.5",
-        "webpack": "^4.43.0"
+        "ruffle-core": "^0.1.0"
     }
 }
