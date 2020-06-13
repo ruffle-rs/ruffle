@@ -37,6 +37,7 @@
         "buildProduction": "lerna run build --stream -- --mode=production",
         "demo": "lerna run --scope ruffle-demo serve --stream",
         "test": "lerna run test --stream",
-        "format": "eslint . --fix && prettier . --write"
+        "format": "eslint . --fix && prettier . --write",
+        "format:check": "eslint ."
     }
 }
