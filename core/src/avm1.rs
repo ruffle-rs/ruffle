@@ -1233,13 +1233,9 @@ impl<'gc> Avm1<'gc> {
         }
 
         let target_fn = self
-            .stack_frames
-            .last()
-            .unwrap()
-            .clone()
-            .read()
-            .resolve(fn_name.as_string()?, self, context)?
+            .get_variable(context, &fn_name.as_string()?)?
             .resolve(self, context)?;
+
         let this = self.target_clip_or_root().object().as_object()?;
         let result = target_fn.call(self, context, this, None, &args)?;
         self.push(result);
