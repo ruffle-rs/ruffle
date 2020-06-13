@@ -10,7 +10,7 @@
         "test": "mocha"
     },
     "devDependencies": {
-        "chai": "^4.2.0",
+        "webpack-cli": "^3.3.11",
         "mocha": "^8.0.1"
     }
 }
