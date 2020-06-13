@@ -28,7 +28,7 @@ impl Default for MemoryStorageBackend {
 
 impl StorageBackend for MemoryStorageBackend {
     fn get_string(&self, name: String) -> Option<String> {
-        self.map.get(&name).map(|s| s.clone())
+        self.map.get(&name).cloned()
     }
 
     fn put_string(&mut self, name: String, value: String) -> bool {

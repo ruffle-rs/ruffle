@@ -34,7 +34,7 @@ impl StorageBackend for DiskStorageBackend {
         let base_path = Path::new(&self.base_path);
         let full_path = base_path.join(Path::new(&name));
 
-        match File::open(full_path.clone()) {
+        match File::open(full_path) {
             Ok(mut file) => {
                 let mut buffer = String::new();
                 if let Err(r) = file.read_to_string(&mut buffer) {

@@ -15,6 +15,7 @@ use gc_arena::{rootless_arena, GcCell, MutationContext};
 use rand::{rngs::SmallRng, SeedableRng};
 use std::collections::BTreeMap;
 use std::sync::Arc;
+use crate::backend::storage::MemoryStorageBackend;
 
 pub fn with_avm<F, R>(swf_version: u8, test: F) -> R
 where
@@ -60,6 +61,7 @@ where
             load_manager: &mut LoadManager::new(),
             system: &mut SystemProperties::default(),
             instance_counter: &mut 0,
+            storage: &mut MemoryStorageBackend::default(),
         };
         root.post_instantiation(&mut avm, &mut context, root, None, false);
         root.set_name(context.gc_context, "");

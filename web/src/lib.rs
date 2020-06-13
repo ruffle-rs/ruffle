@@ -15,6 +15,7 @@ use std::sync::{Arc, Mutex};
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
 use web_sys::{Element, EventTarget, HtmlCanvasElement, HtmlElement, KeyboardEvent, PointerEvent};
+use ruffle_core::backend::storage::MemoryStorageBackend;
 
 thread_local! {
     /// We store the actual instances of the ruffle core in a static pool.
@@ -123,8 +124,9 @@ impl Ruffle {
         let audio = Box::new(WebAudioBackend::new()?);
         let navigator = Box::new(WebNavigatorBackend::new());
         let input = Box::new(WebInputBackend::new(&canvas));
+        let storage = Box::new(MemoryStorageBackend::default());
 
-        let core = ruffle_core::Player::new(renderer, audio, navigator, input, movie)?;
+        let core = ruffle_core::Player::new(renderer, audio, navigator, input, movie, storage)?;
         let mut core_lock = core.lock().unwrap();
         let frame_rate = core_lock.frame_rate();
         core_lock.audio_mut().set_frame_rate(frame_rate);

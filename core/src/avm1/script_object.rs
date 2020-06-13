@@ -721,6 +721,7 @@ mod tests {
     use rand::{rngs::SmallRng, SeedableRng};
     use std::collections::BTreeMap;
     use std::sync::Arc;
+    use crate::backend::storage::MemoryStorageBackend;
 
     fn with_object<F, R>(swf_version: u8, test: F) -> R
     where
@@ -763,6 +764,7 @@ mod tests {
                 load_manager: &mut LoadManager::new(),
                 system: &mut SystemProperties::default(),
                 instance_counter: &mut 0,
+                storage: &mut MemoryStorageBackend::default(),
             };
 
             root.post_instantiation(&mut avm, &mut context, root, None, false);

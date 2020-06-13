@@ -14,6 +14,7 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use structopt::StructOpt;
 use walkdir::{DirEntry, WalkDir};
+use ruffle_core::backend::storage::MemoryStorageBackend;
 
 #[derive(StructOpt, Debug, Copy, Clone)]
 struct SizeOpt {
@@ -84,6 +85,7 @@ fn take_screenshot(
         Box::new(NullNavigatorBackend::new()),
         Box::new(NullInputBackend::new()),
         movie,
+        Box::new(MemoryStorageBackend::default())
     )?;
 
     player

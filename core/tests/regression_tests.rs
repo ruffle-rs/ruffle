@@ -12,6 +12,7 @@ use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::Player;
 use std::cell::RefCell;
 use std::path::Path;
+use ruffle_core::backend::storage::MemoryStorageBackend;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -294,6 +295,7 @@ fn run_swf(swf_path: &str, num_frames: u32) -> Result<String, Error> {
         Box::new(NullNavigatorBackend::with_base_path(base_path, channel)),
         Box::new(NullInputBackend::new()),
         movie,
+        Box::new(MemoryStorageBackend::default())
     )?;
 
     for _ in 0..num_frames {
