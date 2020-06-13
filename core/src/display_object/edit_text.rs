@@ -174,7 +174,7 @@ impl<'gc> EditText<'gc> {
             },
             font_id: None,
             font_class_name: None,
-            height: Some(Twips::from_pixels(height)),
+            height: Some(Twips::from_pixels(12.0)),
             color: Some(swf::Color {
                 r: 0,
                 g: 0,

@@ -142,26 +142,30 @@ impl TextFormat {
         let font_class = et
             .font_class_name
             .clone()
-            .or_else(|| font.map(|font| font.descriptor().class().to_string()));
+            .or_else(|| font.map(|font| font.descriptor().class().to_string()))
+            .unwrap_or_else(|| "Times New Roman".to_string());
         let align = et.layout.clone().map(|l| l.align);
         let left_margin = et.layout.clone().map(|l| l.left_margin.to_pixels());
         let right_margin = et.layout.clone().map(|l| l.right_margin.to_pixels());
         let indent = et.layout.clone().map(|l| l.indent.to_pixels());
         let leading = et.layout.map(|l| l.leading.to_pixels());
 
+        // TODO: Text fields that don't specify a font are assumed to be 12px
+        // Times New Roman non-bold, non-italic. This will need to be revised
+        // when we start supporting device fonts.
         Self {
-            font: font_class,
+            font: Some(font_class),
             size: et.height.map(|h| h.to_pixels()),
             color: et.color,
             align,
-            bold: font.map(|font| font.descriptor().bold()),
-            italic: font.map(|font| font.descriptor().italic()),
-            underline: None, // TODO: What is this by default? False?
+            bold: Some(font.map(|font| font.descriptor().bold()).unwrap_or(false)),
+            italic: Some(font.map(|font| font.descriptor().italic()).unwrap_or(false)),
+            underline: Some(false),
             left_margin,
             right_margin,
             indent,
             block_indent: Some(0.0), // TODO: This isn't specified by the tag itself
-            kerning: Some(true),     // TODO: this isn't specified by the tag itself
+            kerning: Some(false),
             leading,
             letter_spacing: Some(0.0), // TODO: This isn't specified by the tag itself
             tab_stops: Some(vec![]),   // TODO: Are there default tab stops?
@@ -258,6 +262,21 @@ impl TextFormat {
                             tf.color = Some(swf::Color { r, g, b, a: 255 });
                         }
                     }
+                }
+
+                if let Some(letter_spacing) =
+                    node.attribute_value(&XMLName::from_str("letterSpacing"))
+                {
+                    tf.letter_spacing = letter_spacing.parse().ok();
+                }
+
+                tf.kerning = match node
+                    .attribute_value(&XMLName::from_str("kerning"))
+                    .as_deref()
+                {
+                    Some("1") => Some(true),
+                    Some("0") => Some(false),
+                    _ => tf.kerning,
                 }
             }
             Some(name) if name == XMLName::from_str("b") => {
@@ -1143,6 +1162,7 @@ impl FormatSpans {
     /// presentational markup and CSS stylesheets.
     pub fn lower_from_html<'gc>(&mut self, tree: XMLDocument<'gc>) {
         let mut format_stack = vec![self.default_format.clone()];
+        let mut last_successful_format = None;
 
         self.text = "".to_string();
         self.spans = vec![];
@@ -1167,9 +1187,15 @@ impl FormatSpans {
                         &node.node_value().unwrap(),
                         format_stack.last(),
                     );
+                    last_successful_format = format_stack.last().cloned();
                 }
                 Step::Out(node) if node.tag_name().unwrap().node_name().as_str() == "p" => {
-                    self.replace_text(self.text.len(), self.text.len(), "\n", format_stack.last());
+                    self.replace_text(
+                        self.text.len(),
+                        self.text.len(),
+                        "\n",
+                        last_successful_format.as_ref(),
+                    );
                     format_stack.pop();
                 }
                 Step::Out(_) => {

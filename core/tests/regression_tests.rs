@@ -198,7 +198,7 @@ swf_tests! {
     (as1_constructor_v7, "avm1/as1_constructor_v7", 1),
     (issue_710, "avm1/issue_710", 1),
     (edittext_font_size, "avm1/edittext_font_size", 1),
-    (edittext_html_defaults, "avm1/edittext_html_defaults", 1),
+    (edittext_default_format, "avm1/edittext_default_format", 1),
     (edittext_leading, "avm1/edittext_leading", 1),
     #[ignore] (edittext_newlines, "avm1/edittext_newlines", 1),
 }
