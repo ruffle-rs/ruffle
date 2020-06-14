@@ -29,7 +29,7 @@ jobs:
             rustup component add --toolchain stable rustfmt
             rustup run stable cargo fmt --version
             sudo apt-get update
-            sudo apt-get -y install libasound2-dev # Required for cpal crate on Linux
+            sudo apt-get -y install libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev
             curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
             sudo apt-get install -y nodejs
             curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
