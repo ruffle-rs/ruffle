@@ -1189,7 +1189,10 @@ impl FormatSpans {
                     );
                     last_successful_format = format_stack.last().cloned();
                 }
-                Step::Out(node) if node.tag_name().unwrap().node_name().as_str() == "p" => {
+                Step::Out(node)
+                    if node.tag_name().unwrap().node_name().as_str() == "p"
+                        || node.tag_name().unwrap().node_name().as_str() == "li" =>
+                {
                     self.replace_text(
                         self.text.len(),
                         self.text.len(),

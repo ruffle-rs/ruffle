@@ -99,6 +99,18 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             + Twips::from_pixels(self.current_line_span.leading)
     }
 
+    /// Determine the effective alignment mode for the current line of text.
+    ///
+    /// This function primarily exists to ensure all bulleted lists are
+    /// left-aligned, as no other alignment is respected otherwise.
+    fn effective_alignment(&self) -> swf::TextAlign {
+        if self.current_line_span.bullet {
+            swf::TextAlign::Left
+        } else {
+            self.current_line_span.align
+        }
+    }
+
     /// Apply all indents and alignment to the current line, if necessary.
     ///
     /// The `only_line` parameter should be flagged if this is the only line in
@@ -153,7 +165,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         let misalignment =
             self.max_bounds - left_adjustment - right_adjustment - line_bounds.width();
         let align_adjustment = max(
-            match self.current_line_span.align {
+            match self.effective_alignment() {
                 swf::TextAlign::Left | swf::TextAlign::Justify => Default::default(),
                 swf::TextAlign::Center => (misalignment) / 2,
                 swf::TextAlign::Right => misalignment,
@@ -161,7 +173,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             Twips::from_pixels(0.0),
         );
         let interim_adjustment = max(
-            if !final_line_of_para && self.current_line_span.align == swf::TextAlign::Justify {
+            if !final_line_of_para && self.effective_alignment() == swf::TextAlign::Justify {
                 misalignment / max(box_count.saturating_sub(1), 1)
             } else {
                 Twips::from_pixels(0.0)
@@ -309,7 +321,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         end: usize,
         span: &TextSpan,
     ) {
-        if self.current_line_span.align == swf::TextAlign::Justify {
+        if self.effective_alignment() == swf::TextAlign::Justify {
             for word in text.split(' ') {
                 let word_start = word.as_ptr() as usize - text.as_ptr() as usize;
                 let word_end = min(word_start + word.len() + 1, text.len());
@@ -380,10 +392,18 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// active at the start of the line and if we're at the start of a
     /// paragraph.
     fn left_alignment_offset(span: &TextSpan, is_first_line: bool) -> Twips {
-        if is_first_line {
-            Twips::from_pixels(span.left_margin + span.block_indent + span.indent)
+        if span.bullet {
+            if is_first_line {
+                Twips::from_pixels(35.0 + span.left_margin + span.block_indent + span.indent)
+            } else {
+                Twips::from_pixels(35.0 + span.left_margin + span.block_indent)
+            }
         } else {
-            Twips::from_pixels(span.left_margin + span.block_indent)
+            if is_first_line {
+                Twips::from_pixels(span.left_margin + span.block_indent + span.indent)
+            } else {
+                Twips::from_pixels(span.left_margin + span.block_indent)
+            }
         }
     }
 
