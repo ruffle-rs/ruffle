@@ -3,9 +3,11 @@ use crate::avm1::globals::text_field::attach_virtual_properties;
 use crate::avm1::{Avm1, Object, StageObject, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
+use crate::drawing::Drawing;
 use crate::font::{round_down_to_pixel, Glyph};
-use crate::html::{BoxBounds, FormatSpans, LayoutBox, TextFormat};
+use crate::html::{BoxBounds, FormatSpans, LayoutBox, Position, TextFormat};
 use crate::prelude::*;
+use crate::shape_utils::DrawCommand;
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use crate::xml::XMLDocument;
@@ -72,6 +74,12 @@ pub struct EditTextData<'gc> {
     /// If the text is word-wrapped.
     is_word_wrap: bool,
 
+    /// If the text field should have a border.
+    has_border: bool,
+
+    /// The current border drawing.
+    drawing: Drawing,
+
     /// Whether or not the width of the field should change in response to text
     /// changes, and in what direction should added or removed width should
     /// apply.
@@ -126,12 +134,14 @@ impl<'gc> EditText<'gc> {
             swf_tag.is_word_wrap,
         );
 
+        let has_border = swf_tag.has_border;
+
         let mut base = DisplayObjectBase::default();
 
         base.matrix_mut(context.gc_context).tx = bounds.x_min;
         base.matrix_mut(context.gc_context).ty = bounds.y_min;
 
-        EditText(GcCell::allocate(
+        let et = EditText(GcCell::allocate(
             context.gc_context,
             EditTextData {
                 base,
@@ -146,13 +156,19 @@ impl<'gc> EditText<'gc> {
                 ),
                 is_multiline,
                 is_word_wrap,
+                has_border,
+                drawing: Drawing::new(),
                 object: None,
                 layout,
                 intrinsic_bounds,
                 bounds,
                 autosize: AutoSizeMode::None,
             },
-        ))
+        ));
+
+        et.redraw_border(context.gc_context);
+
+        et
     }
 
     /// Create a new, dynamic `EditText`.
@@ -352,6 +368,42 @@ impl<'gc> EditText<'gc> {
         base_width
     }
 
+    /// Redraw the border of this `EditText`.
+    fn redraw_border(self, context: MutationContext<'gc, '_>) {
+        let mut write = self.0.write(context);
+
+        write.drawing.clear();
+
+        if write.has_border {
+            let bounds = write.bounds.clone();
+
+            write.drawing.set_line_style(Some(swf::LineStyle::new_v1(
+                Twips::new(1),
+                swf::Color::from_rgb(0, 0xFF),
+            )));
+            write.drawing.draw_command(DrawCommand::MoveTo {
+                x: Twips::new(0),
+                y: Twips::new(0),
+            });
+            write.drawing.draw_command(DrawCommand::LineTo {
+                x: Twips::new(0),
+                y: bounds.y_max - bounds.y_min,
+            });
+            write.drawing.draw_command(DrawCommand::LineTo {
+                x: bounds.x_max - bounds.x_min,
+                y: bounds.y_max - bounds.y_min,
+            });
+            write.drawing.draw_command(DrawCommand::LineTo {
+                x: bounds.x_max - bounds.x_min,
+                y: Twips::new(0),
+            });
+            write.drawing.draw_command(DrawCommand::LineTo {
+                x: Twips::new(0),
+                y: Twips::new(0),
+            });
+        }
+    }
+
     /// Relayout the `EditText`.
     ///
     /// This function operats exclusively with the text-span representation of
@@ -538,6 +590,9 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         write.bounds.set_x(Twips::from_pixels(value));
         write.base.set_x(value);
+
+        drop(write);
+        self.redraw_border(gc_context);
     }
 
     fn y(&self) -> f64 {
@@ -549,6 +604,9 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         write.bounds.set_y(Twips::from_pixels(value));
         write.base.set_y(value);
+
+        drop(write);
+        self.redraw_border(gc_context);
     }
 
     fn width(&self) -> f64 {
@@ -560,6 +618,9 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         write.bounds.set_width(Twips::from_pixels(value));
         write.base.set_transformed_by_script(true);
+
+        drop(write);
+        self.redraw_border(gc_context);
     }
 
     fn height(&self) -> f64 {
@@ -571,6 +632,9 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         write.bounds.set_height(Twips::from_pixels(value));
         write.base.set_transformed_by_script(true);
+
+        drop(write);
+        self.redraw_border(gc_context);
     }
 
     fn set_matrix(&mut self, context: MutationContext<'gc, '_>, matrix: &Matrix) {
@@ -589,14 +653,22 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         write.bounds.set_y(new_y);
 
         write.base.set_matrix(context, matrix);
+
+        drop(write);
+        self.redraw_border(context);
     }
 
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
-        let mut transform = self.transform().clone();
-        transform.matrix.tx += Twips::from_pixels(3.0);
-        transform.matrix.ty += Twips::from_pixels(3.0);
-
+        let transform = self.transform().clone();
         context.transform_stack.push(&transform);
+
+        self.0.read().drawing.render(context);
+
+        let text_transform = Transform::from(Position::from((
+            Twips::from_pixels(3.0),
+            Twips::from_pixels(0.0),
+        )));
+        context.transform_stack.push(&text_transform);
 
         let mut ptr = self.0.read().layout;
 
@@ -606,6 +678,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             ptr = lbox.read().next_sibling();
         }
 
+        context.transform_stack.pop();
         context.transform_stack.pop();
     }
 
