@@ -121,6 +121,38 @@ pub fn set_html_text<'gc>(
     Ok(Value::Undefined.into())
 }
 
+pub fn get_border<'gc>(
+    _avm: &mut Avm1<'gc>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(display_object) = this.as_display_object() {
+        if let Some(text_field) = display_object.as_edit_text() {
+            return Ok(text_field.has_border().into());
+        }
+    }
+
+    Ok(Value::Undefined.into())
+}
+
+pub fn set_border<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(display_object) = this.as_display_object() {
+        if let Some(text_field) = display_object.as_edit_text() {
+            if let Some(value) = args.get(0) {
+                let has_border = value.as_bool(avm.current_swf_version());
+                text_field.set_has_border(context.gc_context, has_border);
+            }
+        }
+    }
+    Ok(Value::Undefined.into())
+}
+
 pub fn get_length<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
@@ -450,6 +482,13 @@ pub fn attach_virtual_properties<'gc>(gc_context: MutationContext<'gc, '_>, obje
         "autoSize",
         Executable::Native(auto_size),
         Some(Executable::Native(set_auto_size)),
+        ReadOnly.into(),
+    );
+    object.add_property(
+        gc_context,
+        "border",
+        Executable::Native(get_border),
+        Some(Executable::Native(set_border)),
         ReadOnly.into(),
     );
 }

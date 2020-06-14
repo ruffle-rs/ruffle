@@ -324,6 +324,15 @@ impl<'gc> EditText<'gc> {
         self.relayout(context);
     }
 
+    pub fn has_border(self) -> bool {
+        self.0.read().has_border
+    }
+
+    pub fn set_has_border(self, context: MutationContext<'gc, '_>, has_border: bool) {
+        self.0.write(context).has_border = has_border;
+        self.redraw_border(context);
+    }
+
     pub fn replace_text(
         self,
         from: usize,
