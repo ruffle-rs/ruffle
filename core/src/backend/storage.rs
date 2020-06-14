@@ -4,11 +4,13 @@ use std::collections::HashMap;
 pub trait StorageBackend: Downcast {
     fn get_string(&self, name: String) -> Option<String>;
 
-    fn put_string(&mut self, name: String, value: String);
+    fn put_string(&mut self, name: String, value: String) -> bool;
 
     fn get_size(&self, name: String) -> Option<usize> {
         self.get_string(name).map(|x| x.as_bytes().len())
     }
+
+    fn remove_key(&mut self, name: String);
 }
 impl_downcast!(StorageBackend);
 
@@ -29,8 +31,13 @@ impl StorageBackend for MemoryStorageBackend {
         self.map.get(&name).map(|s| s.clone())
     }
 
-    fn put_string(&mut self, name: String, value: String) {
+    fn put_string(&mut self, name: String, value: String) -> bool {
         self.map.insert(name, value);
+        true
+    }
+
+    fn remove_key(&mut self, name: String) {
+        self.map.remove(&name);
     }
 }
 

@@ -99,12 +99,18 @@ pub fn get_local<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-
-    //TODO: use args and restore existing state (after disk backend)
-
+    // Data property only should exist when created with getLocal/Remote
     let so = avm.prototypes().shared_object;
-    let obj = so.new(avm, action_context, so, &[])?;
-    let _ = constructor(avm, action_context, obj, &[])?;
+    let obj = so.new(avm, context, so, &[])?;
+    let _ = crate::avm1::globals::object::constructor(avm, context, obj, &[])?;
+
+    obj.define_value(
+        context.gc_context,
+        "data",
+        obj.into(),
+        EnumSet::empty(),
+    );
+
 
     let saved = action_context.storage.get_string("tmp".to_string());
     if let Some(saved_data) = saved {
@@ -202,13 +208,14 @@ pub fn clear<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
 
-    //TODO: does this remove elements not in data prop (e.g. recreate entire obj) or does it just remove children of prop
-
     let data = this.get("data", avm, action_context).unwrap().as_object().unwrap();
 
     for k in &data.get_keys(avm) {
         data.delete(avm, action_context.gc_context, k);
     }
+
+    //TODO
+    action_context.storage.remove_key("tmp".into());
 
     Ok(Value::Undefined.into())
 }
@@ -258,21 +265,19 @@ fn recursive_serialize<'gc>(avm: &mut Avm1<'gc>, action_context: &mut UpdateCont
 }
 
 pub fn flush<'gc>(
-    _avm: &mut Avm1<'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    avm: &mut Avm1<'gc>,
+    action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     //TODO: consider args
-    let data = _this.get("data", _avm, _action_context).unwrap().as_object().unwrap();
+    let data = _this.get("data", avm, action_context).unwrap().as_object().unwrap();
     let mut data_json = JsonValue::new_object();
 
-    recursive_serialize(_avm, _action_context,data, &mut data_json);
+    recursive_serialize(avm, action_context, data, &mut data_json);
 
     //TODO: somehow need to know the name of where to save it to (hidden property?)
-    _action_context.storage.put_string("tmp".into(), data_json.dump());
-    //TODO: return value
-    Ok(Value::Undefined.into())
+    Ok(action_context.storage.put_string("tmp".into(), data_json.dump()).into())
 }
 
 pub fn get_size<'gc>(
@@ -417,24 +422,10 @@ pub fn create_proto<'gc>(
 }
 
 pub fn constructor<'gc>(
-    avm: &mut Avm1<'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
-    this: Object<'gc>,
+    _avm: &mut Avm1<'gc>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-
-
-    let so = avm.prototypes().object;
-    let obj = so.new(avm, context, so, &[])?;
-    let _ = crate::avm1::globals::object::constructor(avm, context, obj, &[])?;
-
-    //TODO: verify args, esp. this
-    this.define_value(
-        context.gc_context,
-        "data",
-        obj.into(),
-        EnumSet::empty(),
-    );
-
     Ok(Value::Undefined.into())
 }
