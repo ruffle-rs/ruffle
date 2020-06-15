@@ -88,7 +88,9 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         event_loop.create_proxy(),
     )); //TODO: actually implement this backend type
     let input = Box::new(input::WinitInputBackend::new(window.clone()));
-    let storage = Box::new(DiskStorageBackend::new(input_path.file_name().unwrap_or_default().as_ref()));
+    let storage = Box::new(DiskStorageBackend::new(
+        input_path.file_name().unwrap_or_default().as_ref(),
+    ));
     let player = Player::new(renderer, audio, navigator, input, movie, storage)?;
     player.lock().unwrap().set_is_playing(true); // Desktop player will auto-play.
 

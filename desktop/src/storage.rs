@@ -10,7 +10,10 @@ pub struct DiskStorageBackend {
 
 impl DiskStorageBackend {
     pub fn new(scope: &Path) -> Self {
-        let base_path = dirs::data_local_dir().unwrap().join(Path::new("ruffle")).join(scope);
+        let base_path = dirs::data_local_dir()
+            .unwrap()
+            .join(Path::new("ruffle"))
+            .join(scope);
 
         // Create a base dir if one doesn't exist yet
         if !&base_path.exists() {
