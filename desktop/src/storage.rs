@@ -27,9 +27,9 @@ impl DiskStorageBackend {
 }
 
 impl StorageBackend for DiskStorageBackend {
-    fn get_string(&self, name: String) -> Option<String> {
+    fn get_string(&self, name: &String) -> Option<String> {
         let base_path = Path::new(&self.base_path);
-        let full_path = base_path.join(Path::new(&name));
+        let full_path = base_path.join(Path::new(name));
 
         match File::open(full_path) {
             Ok(mut file) => {
@@ -48,18 +48,30 @@ impl StorageBackend for DiskStorageBackend {
         }
     }
 
-    fn put_string(&mut self, name: String, value: String) {
+
+    fn put_string(&mut self, name: &String, value: String) -> bool {
         let base_path = Path::new(&self.base_path);
-        let full_path = base_path.join(Path::new(&name));
+        let full_path = base_path.join(Path::new(name));
 
         match File::create(full_path.clone()) {
             Ok(mut file) => {
                 if let Err(r) = file.write_all(value.as_bytes()) {
-                    log::warn!("Unable to write file content {:?}", r)
+                    log::warn!("Unable to write file content {:?}", r);
+                    false
+                } else {
+                    true
                 }
             }
-            Err(r) => log::warn!("Unable to save file {:?}", r),
+            Err(r) => {
+                log::warn!("Unable to save file {:?}", r);
+                false
+            },
         }
+    }
+
+    fn remove_key(&mut self, name: &String) {
+        let base_path = Path::new(&self.base_path);
+        let full_path = base_path.join(Path::new(name));
 
         log::info!("[storage] Saved {} to {:?}", value, full_path);
     }

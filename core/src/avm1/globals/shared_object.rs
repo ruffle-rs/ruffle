@@ -316,7 +316,43 @@ pub fn get_disk_usage<'gc>(
     Ok(Value::Undefined.into())
 }
 
-fn parse_json<'gc>(
+/// Serialize an Object and any children to a JSON object
+/// It would be best if this was implemented via serde but due to avm and context it can't
+/// Undefined fields aren't serialized
+fn recursive_serialize<'gc>(
+    avm: &mut Avm1<'gc>,
+    action_context: &mut UpdateContext<'_, 'gc, '_>,
+    obj: Object<'gc>,
+    json_obj: &mut JsonValue,
+) {
+    for k in &obj.get_keys(avm) {
+        let elem = obj.get(k, avm, action_context).unwrap();
+
+        match elem {
+            Value::Undefined => {},
+            Value::Null => json_obj[k] = JsonValue::Null,
+            Value::Bool(b) => json_obj[k] = b.into(),
+            Value::Number(f) => json_obj[k] = f.into(),
+            Value::String(s) => json_obj[k] = s.into(),
+            Value::Object(o) => {
+                // Don't attempt to serialize functions, etc
+                if !o
+                    .is_instance_of(avm, action_context, o, avm.prototypes.function)
+                    .unwrap()
+                {
+                    let mut sub_data_json = JsonValue::new_object();
+                    recursive_serialize(avm, action_context, o, &mut sub_data_json);
+                    json_obj[k] = sub_data_json;
+                }
+            }
+        }
+    }
+}
+
+/// Deserialize an Object and any children from a JSON object
+/// It would be best if this was implemented via serde but due to avm and context it can't
+/// Undefined fields aren't deserialized
+fn recursive_deserialize<'gc>(
     json_obj: JsonValue,
     avm: &mut Avm1<'gc>,
     object: Object<'gc>,
@@ -362,10 +398,10 @@ fn parse_json<'gc>(
                 );
             }
             JsonValue::Object(o) => {
-                let so = avm.prototypes().object;
+                let so = avm.prototypes.object;
                 let obj = so.new(avm, context, so, &[]).unwrap();
                 let _ = crate::avm1::globals::object::constructor(avm, context, obj, &[]).unwrap();
-                parse_json(JsonValue::Object(o.clone()), avm, obj, context);
+                recursive_deserialize(JsonValue::Object(o.clone()), avm, obj, context);
 
                 object.define_value(
                     context.gc_context,
@@ -383,40 +419,46 @@ pub fn get_local<'gc>(
     avm: &mut Avm1<'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
+    let name = args.get(0)
+        .unwrap_or(&Value::Undefined)
+        .to_owned()
+        .coerce_to_string(avm, action_context)?;
+
+    if args.len() > 1 {
+        log::warn!("SharedObject.getLocal() doesn't support localPath or secure yet");
+    }
+
     // Data property only should exist when created with getLocal/Remote
-    //TODO: use args
-    let name = "tmp".to_string();
+    let so = avm.prototypes.shared_object;
+    let this = so.new(avm, action_context, so, &[])?;
+    let _ = constructor(avm, action_context, this, &[])?;
 
-    let so = avm.prototypes().shared_object;
-    let obj = so.new(avm, action_context, so, &[])?;
-    let _ = constructor(avm, action_context, obj, &[])?;
+    // Set the internal name
+    let obj_so = this.as_shared_object().unwrap();
+    obj_so.set_name(action_context.gc_context, name.clone());
 
-    obj.define_value(
-        context.gc_context,
+    // Create the data object
+    let data_proto = avm.prototypes.object;
+    let data = data_proto.new(avm, action_context, so, &[])?;
+    let _ = crate::avm1::globals::object::constructor(avm, action_context, data, &[])?;
+
+    // Load the data object from storage if it existed prior
+    if let Some(saved) = action_context.storage.get_string(&name) {
+        if let Ok(json_data) = json::parse(&saved) {
+            recursive_deserialize(json_data, avm, data, action_context);
+        }
+    }
+
+    this.define_value(
+        action_context.gc_context,
         "data",
-        obj.into(),
+        data.into(),
         EnumSet::empty(),
     );
 
-    let obj_so = obj.as_shared_object().unwrap();
-    obj_so.set_name(action_context.gc_context, name.clone());
-
-    //TODO: this should take &String
-    let saved = action_context.storage.get_string(name.clone());
-    if let Some(saved_data) = saved {
-        let data = obj
-            .get("data", avm, action_context)
-            .unwrap()
-            .as_object()
-            .unwrap();
-        //TODO: error handle
-        let js = json::parse(&saved_data).unwrap();
-        parse_json(js, avm, data, action_context);
-    }
-
-    Ok(obj.into())
+    Ok(this.into())
 }
 
 pub fn get_remote<'gc>(
@@ -537,7 +579,6 @@ pub fn clear<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-
     let data = this
         .get("data", avm, action_context)
         .unwrap()
@@ -548,8 +589,10 @@ pub fn clear<'gc>(
         data.delete(avm, action_context.gc_context, k);
     }
 
-    //TODO
-    action_context.storage.remove_key("tmp".into());
+    let so = this.as_shared_object().unwrap();
+    let name = so.get_name();
+
+    action_context.storage.remove_key(&name);
 
     Ok(Value::Undefined.into())
 }
@@ -574,79 +617,37 @@ pub fn connect<'gc>(
     Ok(Value::Undefined.into())
 }
 
-fn recursive_serialize<'gc>(
-    avm: &mut Avm1<'gc>,
-    action_context: &mut UpdateContext<'_, 'gc, '_>,
-    obj: Object<'gc>,
-    json_obj: &mut JsonValue,
-) {
-    for k in &obj.get_keys(avm) {
-        let elem = obj.get(k, avm, action_context).unwrap();
-
-        match elem {
-            //TODO: should never happen
-            Value::Undefined => log::warn!(" [SharedObject] {} = Undef", k),
-            Value::Null => json_obj[k] = JsonValue::Null,
-            Value::Bool(b) => json_obj[k] = b.into(),
-            Value::Number(f) => json_obj[k] = f.into(),
-            Value::String(s) => json_obj[k] = s.into(),
-            Value::Object(o) => {
-                // Don't attempt to serialize functions, etc
-                if !o
-                    .is_instance_of(avm, action_context, o, avm.prototypes().function)
-                    .unwrap()
-                {
-                    let mut sub_data_json = JsonValue::new_object();
-                    recursive_serialize(avm, action_context, o, &mut sub_data_json);
-                    json_obj[k] = sub_data_json;
-                }
-            }
-        }
-    }
-}
-
 pub fn flush<'gc>(
     avm: &mut Avm1<'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    //TODO: consider args
-    let data = _this
-        .get("data", _avm, _action_context)
+    let data = this
+        .get("data", avm, action_context)
         .unwrap()
         .as_object()
         .unwrap();
-    let mut data_json = JsonValue::new_object();
 
+    let mut data_json = JsonValue::new_object();
     recursive_serialize(avm, action_context, data, &mut data_json);
 
     let this_obj = this.as_shared_object().unwrap();
     let name = this_obj.get_name();
 
-    //TODO: take &STring
-    _action_context
+    Ok(action_context
         .storage
-        .put_string(name.clone(), data_json.dump());
-    Ok(action_context.storage.put_string("tmp".into(), data_json.dump()).into())
+        .put_string(&name, data_json.dump()).into())
 }
 
 pub fn get_size<'gc>(
-    avm: &mut Avm1<'gc>,
-    action_context: &mut UpdateContext<'_, 'gc, '_>,
+    _avm: &mut Avm1<'gc>,
+    _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
-    args: &[Value<'gc>],
+    _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let name = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .to_owned()
-        .coerce_to_string(avm, action_context)?;
-
-    // TODO: what does this return if the item dosent exist
-    let size = action_context.storage.get_size(name).unwrap_or(0) as f64;
-
-    Ok(size.into())
+    log::warn!("SharedObject.getSize() not implemented");
+    Ok(Value::Undefined.into())
 }
 
 pub fn send<'gc>(
