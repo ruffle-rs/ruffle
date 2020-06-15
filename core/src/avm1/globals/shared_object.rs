@@ -1,16 +1,13 @@
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
+use crate::avm1::{Avm1, Error, Object, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
-use gc_arena::{GcCell, MutationContext, Collect};
-use crate::avm1::property::Attribute;
-use crate::display_object::DisplayObject;
-use crate::avm1::sound_object::SoundObject;
+use gc_arena::MutationContext;
+
 use crate::avm1::shared_object::SharedObject;
 
 use json::JsonValue;
-use std::fmt;
 
 pub fn delete_all<'gc>(
     _avm: &mut Avm1<'gc>,
@@ -45,7 +42,7 @@ fn recursive_serialize<'gc>(
         let elem = obj.get(k, avm, action_context).unwrap();
 
         match elem {
-            Value::Undefined => {},
+            Value::Undefined => {}
             Value::Null => json_obj[k] = JsonValue::Null,
             Value::Bool(b) => json_obj[k] = b.into(),
             Value::Number(f) => json_obj[k] = f.into(),
@@ -137,7 +134,8 @@ pub fn get_local<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let name = args.get(0)
+    let name = args
+        .get(0)
         .unwrap_or(&Value::Undefined)
         .to_owned()
         .coerce_to_string(avm, action_context)?;
@@ -411,8 +409,8 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let shared_obj =  SharedObject::empty_shared_obj(gc_context, Some(proto));
-    let mut object =  shared_obj.as_script_object().unwrap();
+    let shared_obj = SharedObject::empty_shared_obj(gc_context, Some(proto));
+    let mut object = shared_obj.as_script_object().unwrap();
 
     object.force_set_function("clear", clear, gc_context, EnumSet::empty(), Some(fn_proto));
 

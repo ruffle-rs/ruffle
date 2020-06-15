@@ -4,9 +4,9 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
+use crate::avm1::shared_object::SharedObject;
 use crate::avm1::super_object::SuperObject;
 use crate::avm1::value_object::ValueObject;
-use crate::avm1::shared_object::SharedObject;
 
 use crate::avm1::xml_attributes_object::XMLAttributesObject;
 use crate::avm1::xml_idmap_object::XMLIDMapObject;
@@ -15,7 +15,7 @@ use crate::avm1::{Avm1, ScriptObject, SoundObject, StageObject, UpdateContext, V
 use crate::display_object::DisplayObject;
 use crate::xml::XMLNode;
 use enumset::EnumSet;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::borrow::Cow;
 use std::fmt::Debug;

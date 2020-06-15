@@ -1,14 +1,13 @@
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::Executable;
+use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
+use crate::avm1::sound_object::SoundObject;
 use crate::avm1::{Avm1, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
-use enumset::EnumSet;
-use gc_arena::{GcCell, MutationContext, Collect};
-use crate::avm1::property::Attribute;
 use crate::display_object::DisplayObject;
-use crate::avm1::sound_object::SoundObject;
+use enumset::EnumSet;
+use gc_arena::{Collect, GcCell, MutationContext};
 
-use json::JsonValue;
 use std::fmt;
 
 /// A SharedObject
@@ -57,7 +56,12 @@ impl<'gc> SharedObject<'gc> {
     }
 
     pub fn get_name(&self) -> String {
-        self.0.read().name.as_ref().cloned().unwrap_or("".to_owned())
+        self.0
+            .read()
+            .name
+            .as_ref()
+            .cloned()
+            .unwrap_or_else(|| "".to_string())
     }
 
     fn base(self) -> ScriptObject<'gc> {
@@ -116,7 +120,10 @@ impl<'gc> TObject<'gc> for SharedObject<'gc> {
         _this: Object<'gc>,
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
-        Ok(SharedObject::empty_shared_obj(context.gc_context, Some(avm.prototypes.shared_object)).into())
+        Ok(
+            SharedObject::empty_shared_obj(context.gc_context, Some(avm.prototypes.shared_object))
+                .into(),
+        )
     }
 
     fn delete(
