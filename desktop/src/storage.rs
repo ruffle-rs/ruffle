@@ -1,12 +1,12 @@
-use std::string::ToString;
 use ruffle_core::backend::storage::StorageBackend;
-use std::path::Path;
 use std::fs;
 use std::fs::File;
-use std::io::{Write, Read};
+use std::io::{Read, Write};
+use std::path::Path;
+use std::string::ToString;
 
 pub struct DiskStorageBackend {
-    base_path: String
+    base_path: String,
 }
 
 impl DiskStorageBackend {
@@ -22,12 +22,9 @@ impl DiskStorageBackend {
             }
         }
 
-        DiskStorageBackend {
-            base_path: bp
-        }
+        DiskStorageBackend { base_path: bp }
     }
 }
-
 
 impl StorageBackend for DiskStorageBackend {
     fn get_string(&self, name: String) -> Option<String> {
@@ -61,10 +58,9 @@ impl StorageBackend for DiskStorageBackend {
                     log::warn!("Unable to write file content {:?}", r)
                 }
             }
-            Err(r) =>  log::warn!("Unable to save file {:?}", r)
+            Err(r) => log::warn!("Unable to save file {:?}", r),
         }
 
         log::info!("[storage] Saved {} to {:?}", value, full_path);
     }
 }
-

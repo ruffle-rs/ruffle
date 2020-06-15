@@ -4,6 +4,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use ruffle_core::backend::audio::NullAudioBackend;
 use ruffle_core::backend::input::NullInputBackend;
 use ruffle_core::backend::navigator::NullNavigatorBackend;
+use ruffle_core::backend::storage::MemoryStorageBackend;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::Player;
 use ruffle_render_wgpu::target::TextureTarget;
@@ -14,7 +15,6 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use structopt::StructOpt;
 use walkdir::{DirEntry, WalkDir};
-use ruffle_core::backend::storage::MemoryStorageBackend;
 
 #[derive(StructOpt, Debug, Copy, Clone)]
 struct SizeOpt {
@@ -85,7 +85,7 @@ fn take_screenshot(
         Box::new(NullNavigatorBackend::new()),
         Box::new(NullInputBackend::new()),
         movie,
-        Box::new(MemoryStorageBackend::default())
+        Box::new(MemoryStorageBackend::default()),
     )?;
 
     player

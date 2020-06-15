@@ -6,8 +6,8 @@ mod custom_event;
 mod executor;
 mod input;
 mod navigator;
-mod task;
 mod storage;
+mod task;
 
 use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
@@ -20,13 +20,13 @@ use std::path::PathBuf;
 use std::time::Instant;
 use structopt::StructOpt;
 
+use crate::storage::DiskStorageBackend;
 use ruffle_core::tag_utils::SwfMovie;
 use std::rc::Rc;
 use winit::dpi::{LogicalSize, PhysicalPosition};
 use winit::event::{ElementState, MouseButton, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Icon, WindowBuilder};
-use crate::storage::DiskStorageBackend;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "basic")]
