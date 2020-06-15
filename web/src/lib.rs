@@ -10,6 +10,7 @@ use generational_arena::{Arena, Index};
 use js_sys::Uint8Array;
 use ruffle_core::backend::render::RenderBackend;
 use ruffle_core::backend::storage::MemoryStorageBackend;
+use ruffle_core::backend::storage::StorageBackend;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::PlayerEvent;
 use ruffle_web_common::JsResult;
@@ -18,8 +19,6 @@ use std::sync::{Arc, Mutex};
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
 use web_sys::{Element, EventTarget, HtmlCanvasElement, HtmlElement, KeyboardEvent, PointerEvent};
-use ruffle_core::backend::storage::StorageBackend;
-
 
 thread_local! {
     /// We store the actual instances of the ruffle core in a static pool.
@@ -98,7 +97,8 @@ impl Ruffle {
                 if let Some(window) = web_sys::window() {
                     return window.cancel_animation_frame(id.into());
                 }
-            } }
+            }
+        }
 
         // Player is dropped at this point.
         Ok(())
@@ -133,7 +133,9 @@ impl Ruffle {
         let local_storage = window
             .local_storage()
             .unwrap()
-            .map(|s| Box::new(LocalStorageBackend::new(s, current_domain)) as Box<dyn StorageBackend>)
+            .map(|s| {
+                Box::new(LocalStorageBackend::new(s, current_domain)) as Box<dyn StorageBackend>
+            })
             .unwrap_or_else(|| Box::new(MemoryStorageBackend::default()));
 
         let core =
