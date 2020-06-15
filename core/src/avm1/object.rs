@@ -6,7 +6,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::super_object::SuperObject;
 use crate::avm1::value_object::ValueObject;
-use crate::avm1::globals::shared_object::SharedObject;
+use crate::avm1::shared_object::SharedObject;
 
 use crate::avm1::xml_attributes_object::XMLAttributesObject;
 use crate::avm1::xml_idmap_object::XMLIDMapObject;

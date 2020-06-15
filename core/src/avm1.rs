@@ -43,6 +43,7 @@ mod value_object;
 pub mod xml_attributes_object;
 pub mod xml_idmap_object;
 pub mod xml_object;
+pub mod shared_object;
 
 #[cfg(test)]
 mod tests;
