@@ -2,7 +2,9 @@
 mod audio;
 mod input;
 mod navigator;
+mod storage;
 
+use crate::storage::LocalStorageBackend;
 use crate::{audio::WebAudioBackend, input::WebInputBackend, navigator::WebNavigatorBackend};
 use generational_arena::{Arena, Index};
 use js_sys::Uint8Array;
@@ -101,7 +103,7 @@ impl Ruffle {
         Ok(())
     }
 }
-
+use ruffle_core::backend::storage::StorageBackend;
 impl Ruffle {
     fn new_internal(parent: HtmlElement, swf_data: Uint8Array) -> Result<Ruffle, Box<dyn Error>> {
         console_error_panic_hook::set_once();
@@ -124,9 +126,15 @@ impl Ruffle {
         let audio = Box::new(WebAudioBackend::new()?);
         let navigator = Box::new(WebNavigatorBackend::new());
         let input = Box::new(WebInputBackend::new(&canvas));
-        let storage = Box::new(MemoryStorageBackend::default());
 
-        let core = ruffle_core::Player::new(renderer, audio, navigator, input, movie, storage)?;
+        let local_storage = window
+            .local_storage()
+            .unwrap()
+            .map(|s| Box::new(LocalStorageBackend::new(s)) as Box<dyn StorageBackend>)
+            .unwrap_or_else(|| Box::new(MemoryStorageBackend::default()));
+
+        let core =
+            ruffle_core::Player::new(renderer, audio, navigator, input, movie, local_storage)?;
         let mut core_lock = core.lock().unwrap();
         let frame_rate = core_lock.frame_rate();
         core_lock.audio_mut().set_frame_rate(frame_rate);
