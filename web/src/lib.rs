@@ -18,6 +18,8 @@ use std::sync::{Arc, Mutex};
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
 use web_sys::{Element, EventTarget, HtmlCanvasElement, HtmlElement, KeyboardEvent, PointerEvent};
+use ruffle_core::backend::storage::StorageBackend;
+
 
 thread_local! {
     /// We store the actual instances of the ruffle core in a static pool.
@@ -96,14 +98,13 @@ impl Ruffle {
                 if let Some(window) = web_sys::window() {
                     return window.cancel_animation_frame(id.into());
                 }
-            }
-        }
+            } }
 
         // Player is dropped at this point.
         Ok(())
     }
 }
-use ruffle_core::backend::storage::StorageBackend;
+
 impl Ruffle {
     fn new_internal(parent: HtmlElement, swf_data: Uint8Array) -> Result<Ruffle, Box<dyn Error>> {
         console_error_panic_hook::set_once();
@@ -127,10 +128,12 @@ impl Ruffle {
         let navigator = Box::new(WebNavigatorBackend::new());
         let input = Box::new(WebInputBackend::new(&canvas));
 
+        let current_domain = window.location().href().unwrap();
+
         let local_storage = window
             .local_storage()
             .unwrap()
-            .map(|s| Box::new(LocalStorageBackend::new(s)) as Box<dyn StorageBackend>)
+            .map(|s| Box::new(LocalStorageBackend::new(s, current_domain)) as Box<dyn StorageBackend>)
             .unwrap_or_else(|| Box::new(MemoryStorageBackend::default()));
 
         let core =
