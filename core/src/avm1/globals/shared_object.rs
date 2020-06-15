@@ -1,12 +1,300 @@
-use crate::avm1::{ScriptObject, Avm1, Value, Error, TObject};
-use gc_arena::MutationContext;
 use crate::avm1::function::{Executable, FunctionObject};
-use enumset::EnumSet;
-use crate::context::UpdateContext;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::object::Object;
-use json::JsonValue;
+use crate::avm1::{Avm1, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
+use crate::context::UpdateContext;
+use enumset::EnumSet;
+use gc_arena::{GcCell, MutationContext, Collect};
+use crate::avm1::property::Attribute;
+use crate::display_object::DisplayObject;
+use crate::avm1::sound_object::SoundObject;
 
+use json::JsonValue;
+use std::fmt;
+
+/// A SharedObject
+#[derive(Clone, Copy, Collect)]
+#[collect(no_drop)]
+pub struct SharedObject<'gc>(GcCell<'gc, SharedObjectData<'gc>>);
+
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
+pub struct SharedObjectData<'gc> {
+    /// The underlying script object.
+    base: ScriptObject<'gc>,
+
+    /// The local name of this shared object
+    name: Option<String>,
+}
+
+impl fmt::Debug for SharedObject<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let this = self.0.read();
+        f.debug_struct("SharedObject")
+            .field("name", &this.name)
+            .finish()
+    }
+}
+
+impl<'gc> SharedObject<'gc> {
+    fn empty_shared_obj(
+        gc_context: MutationContext<'gc, '_>,
+        proto: Option<Object<'gc>>,
+    ) -> Self {
+        SharedObject(GcCell::allocate(
+            gc_context,
+            SharedObjectData {
+                base: ScriptObject::object(gc_context, proto),
+                name: None,
+            },
+        ))
+    }
+    //TODO: any need for these
+
+    //TODO: use enum Remote(url), Local(name)
+
+    fn set_name(&self, gc_context: MutationContext<'gc, '_>, name: String) {
+        self.0.write(gc_context).name = Some(name);
+    }
+
+    fn get_name(&self) -> String {
+        self.0.read().name.as_ref().cloned().unwrap_or("".to_owned())
+    }
+
+    fn base(self) -> ScriptObject<'gc> {
+        self.0.read().base
+    }
+}
+
+impl<'gc> TObject<'gc> for SharedObject<'gc> {
+    fn get_local(
+        &self,
+        name: &str,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        this: Object<'gc>,
+    ) -> Result<Value<'gc>, Error> {
+        self.base().get_local(name, avm, context, this)
+    }
+
+    fn set(
+        &self,
+        name: &str,
+        value: Value<'gc>,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        self.base().set(name, value, avm, context)
+    }
+
+    fn call(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
+        args: &[Value<'gc>],
+    ) -> Result<Value<'gc>, Error> {
+        self.base().call(avm, context, this, base_proto, args)
+    }
+
+    fn call_setter(
+        &self,
+        name: &str,
+        value: Value<'gc>,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        this: Object<'gc>,
+    ) -> Result<ReturnValue<'gc>, Error> {
+        self.base().call_setter(name, value, avm, context, this)
+    }
+
+    #[allow(clippy::new_ret_no_self)]
+    fn new(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        _this: Object<'gc>,
+        _args: &[Value<'gc>],
+    ) -> Result<Object<'gc>, Error> {
+         Ok(SharedObject::empty_shared_obj(context.gc_context, Some(avm.prototypes.shared_object)).into())
+    }
+
+    fn delete(
+        &self,
+        avm: &mut Avm1<'gc>,
+        gc_context: MutationContext<'gc, '_>,
+        name: &str,
+    ) -> bool {
+        self.base().delete(avm, gc_context, name)
+    }
+
+    fn proto(&self) -> Option<Object<'gc>> {
+        self.base().proto()
+    }
+
+    fn set_proto(&self, gc_context: MutationContext<'gc, '_>, prototype: Option<Object<'gc>>) {
+        self.base().set_proto(gc_context, prototype);
+    }
+
+    fn define_value(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        name: &str,
+        value: Value<'gc>,
+        attributes: EnumSet<Attribute>,
+    ) {
+        self.base()
+            .define_value(gc_context, name, value, attributes)
+    }
+
+    fn set_attributes(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        name: Option<&str>,
+        set_attributes: EnumSet<Attribute>,
+        clear_attributes: EnumSet<Attribute>,
+    ) {
+        self.base()
+            .set_attributes(gc_context, name, set_attributes, clear_attributes)
+    }
+
+    fn add_property(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        name: &str,
+        get: Executable<'gc>,
+        set: Option<Executable<'gc>>,
+        attributes: EnumSet<Attribute>,
+    ) {
+        self.base()
+            .add_property(gc_context, name, get, set, attributes)
+    }
+
+    fn add_property_with_case(
+        &self,
+        avm: &mut Avm1<'gc>,
+        gc_context: MutationContext<'gc, '_>,
+        name: &str,
+        get: Executable<'gc>,
+        set: Option<Executable<'gc>>,
+        attributes: EnumSet<Attribute>,
+    ) {
+        self.base()
+            .add_property_with_case(avm, gc_context, name, get, set, attributes)
+    }
+
+    fn has_property(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
+        self.base().has_property(avm, context, name)
+    }
+
+    fn has_own_property(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
+        self.base().has_own_property(avm, context, name)
+    }
+
+    fn has_own_virtual(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+    ) -> bool {
+        self.base().has_own_virtual(avm, context, name)
+    }
+
+    fn is_property_overwritable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
+        self.base().is_property_overwritable(avm, name)
+    }
+
+    fn is_property_enumerable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
+        self.base().is_property_enumerable(avm, name)
+    }
+
+    fn get_keys(&self, avm: &mut Avm1<'gc>) -> Vec<String> {
+        self.base().get_keys(avm)
+    }
+
+    fn as_string(&self) -> String {
+        self.base().as_string()
+    }
+
+    fn type_of(&self) -> &'static str {
+        self.base().type_of()
+    }
+
+    fn interfaces(&self) -> Vec<Object<'gc>> {
+        self.base().interfaces()
+    }
+
+    fn set_interfaces(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        iface_list: Vec<Object<'gc>>,
+    ) {
+        self.base().set_interfaces(gc_context, iface_list)
+    }
+
+    fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
+        Some(self.base())
+    }
+
+    fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
+        None
+    }
+
+    fn as_executable(&self) -> Option<Executable<'gc>> {
+        None
+    }
+
+    fn as_sound_object(&self) -> Option<SoundObject<'gc>> {
+        None
+    }
+
+    fn as_shared_object(&self) -> Option<SharedObject<'gc>> {
+        Some(*self)
+    }
+
+    fn as_ptr(&self) -> *const ObjectPtr {
+        self.0.as_ptr() as *const ObjectPtr
+    }
+
+    fn length(&self) -> usize {
+        self.base().length()
+    }
+
+    fn array(&self) -> Vec<Value<'gc>> {
+        self.base().array()
+    }
+
+    fn set_length(&self, gc_context: MutationContext<'gc, '_>, length: usize) {
+        self.base().set_length(gc_context, length)
+    }
+
+    fn array_element(&self, index: usize) -> Value<'gc> {
+        self.base().array_element(index)
+    }
+
+    fn set_array_element(
+        &self,
+        index: usize,
+        value: Value<'gc>,
+        gc_context: MutationContext<'gc, '_>,
+    ) -> usize {
+        self.base().set_array_element(index, value, gc_context)
+    }
+
+    fn delete_array_element(&self, index: usize, gc_context: MutationContext<'gc, '_>) {
+        self.base().delete_array_element(index, gc_context)
+    }
+}
 
 pub fn delete_all<'gc>(
     _avm: &mut Avm1<'gc>,
@@ -28,65 +316,65 @@ pub fn get_disk_usage<'gc>(
     Ok(Value::Undefined.into())
 }
 
-fn parse_json<'gc>(json_obj: JsonValue, avm: &mut Avm1<'gc>, object: Object<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) {
+fn parse_json<'gc>(
+    json_obj: JsonValue,
+    avm: &mut Avm1<'gc>,
+    object: Object<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+) {
     for entry in json_obj.entries() {
         match entry.1 {
             JsonValue::Null => {
-                object.define_value(
-                    context.gc_context,
-                    entry.0,
-                    Value::Null,
-                    EnumSet::empty()
-                );
-            },
+                object.define_value(context.gc_context, entry.0, Value::Null, EnumSet::empty());
+            }
             JsonValue::Short(s) => {
                 let val: String = s.as_str().to_string();
                 object.define_value(
                     context.gc_context,
                     entry.0,
                     Value::String(val),
-                    EnumSet::empty()
+                    EnumSet::empty(),
                 );
-            },
+            }
             JsonValue::String(s) => {
                 object.define_value(
                     context.gc_context,
                     entry.0,
                     Value::String(s.clone()),
-                    EnumSet::empty()
+                    EnumSet::empty(),
                 );
-            },
+            }
             JsonValue::Number(f) => {
                 let val: f64 = f.clone().into();
                 object.define_value(
                     context.gc_context,
                     entry.0,
                     Value::Number(val),
-                    EnumSet::empty()
+                    EnumSet::empty(),
                 );
-            },
+            }
             JsonValue::Boolean(b) => {
                 object.define_value(
                     context.gc_context,
                     entry.0,
                     Value::Bool(*b),
-                    EnumSet::empty()
+                    EnumSet::empty(),
                 );
-            },
+            }
             JsonValue::Object(o) => {
                 let so = avm.prototypes().object;
                 let obj = so.new(avm, context, so, &[]).unwrap();
                 let _ = crate::avm1::globals::object::constructor(avm, context, obj, &[]).unwrap();
-                parse_json(JsonValue::Object(o.clone()),  avm,obj, context);
+                parse_json(JsonValue::Object(o.clone()), avm, obj, context);
 
                 object.define_value(
                     context.gc_context,
                     entry.0,
                     Value::Object(obj),
-                    EnumSet::empty()
+                    EnumSet::empty(),
                 );
-            },
-            JsonValue::Array(_) => {},
+            }
+            JsonValue::Array(_) => {}
         }
     }
 }
@@ -98,9 +386,12 @@ pub fn get_local<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     // Data property only should exist when created with getLocal/Remote
+    //TODO: use args
+    let name = "tmp".to_string();
+
     let so = avm.prototypes().shared_object;
-    let obj = so.new(avm, context, so, &[])?;
-    let _ = crate::avm1::globals::object::constructor(avm, context, obj, &[])?;
+    let obj = so.new(avm, action_context, so, &[])?;
+    let _ = constructor(avm, action_context, obj, &[])?;
 
     obj.define_value(
         context.gc_context,
@@ -108,12 +399,18 @@ pub fn get_local<'gc>(
         obj.into(),
         EnumSet::empty(),
     );
-    //TODO: use args
 
+    let obj_so = obj.as_shared_object().unwrap();
+    obj_so.set_name(action_context.gc_context, name.clone());
 
-    let saved = action_context.storage.get_string("tmp".to_string());
+    //TODO: this should take &String
+    let saved = action_context.storage.get_string(name.clone());
     if let Some(saved_data) = saved {
-        let data = obj.get("data", avm, action_context).unwrap().as_object().unwrap();
+        let data = obj
+            .get("data", avm, action_context)
+            .unwrap()
+            .as_object()
+            .unwrap();
         //TODO: error handle
         let js = json::parse(&saved_data).unwrap();
         parse_json(js, avm, data, action_context);
@@ -142,7 +439,6 @@ pub fn get_max_size<'gc>(
     Ok(Value::Undefined.into())
 }
 
-
 pub fn add_listener<'gc>(
     _avm: &mut Avm1<'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
@@ -152,7 +448,6 @@ pub fn add_listener<'gc>(
     log::warn!("SharedObject.addListener() not implemented");
     Ok(Value::Undefined.into())
 }
-
 
 pub fn remove_listener<'gc>(
     _avm: &mut Avm1<'gc>,
@@ -182,7 +477,7 @@ pub fn create_shared_object_object<'gc>(
         delete_all,
         gc_context,
         EnumSet::empty(),
-        fn_proto
+        fn_proto,
     );
 
     object.force_set_function(
@@ -190,7 +485,7 @@ pub fn create_shared_object_object<'gc>(
         get_disk_usage,
         gc_context,
         EnumSet::empty(),
-        fn_proto
+        fn_proto,
     );
 
     object.force_set_function(
@@ -198,7 +493,7 @@ pub fn create_shared_object_object<'gc>(
         get_local,
         gc_context,
         EnumSet::empty(),
-        fn_proto
+        fn_proto,
     );
 
     object.force_set_function(
@@ -206,7 +501,7 @@ pub fn create_shared_object_object<'gc>(
         get_remote,
         gc_context,
         EnumSet::empty(),
-        fn_proto
+        fn_proto,
     );
 
     object.force_set_function(
@@ -214,7 +509,7 @@ pub fn create_shared_object_object<'gc>(
         get_max_size,
         gc_context,
         EnumSet::empty(),
-        fn_proto
+        fn_proto,
     );
 
     object.force_set_function(
@@ -222,7 +517,7 @@ pub fn create_shared_object_object<'gc>(
         add_listener,
         gc_context,
         EnumSet::empty(),
-        fn_proto
+        fn_proto,
     );
 
     object.force_set_function(
@@ -230,7 +525,7 @@ pub fn create_shared_object_object<'gc>(
         remove_listener,
         gc_context,
         EnumSet::empty(),
-        fn_proto
+        fn_proto,
     );
 
     shared_obj
@@ -243,7 +538,11 @@ pub fn clear<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
 
-    let data = this.get("data", avm, action_context).unwrap().as_object().unwrap();
+    let data = this
+        .get("data", avm, action_context)
+        .unwrap()
+        .as_object()
+        .unwrap();
 
     for k in &data.get_keys(avm) {
         data.delete(avm, action_context.gc_context, k);
@@ -275,7 +574,12 @@ pub fn connect<'gc>(
     Ok(Value::Undefined.into())
 }
 
-fn recursive_serialize<'gc>(avm: &mut Avm1<'gc>, action_context: &mut UpdateContext<'_, 'gc, '_>, obj: Object<'gc>, json_obj: &mut JsonValue) {
+fn recursive_serialize<'gc>(
+    avm: &mut Avm1<'gc>,
+    action_context: &mut UpdateContext<'_, 'gc, '_>,
+    obj: Object<'gc>,
+    json_obj: &mut JsonValue,
+) {
     for k in &obj.get_keys(avm) {
         let elem = obj.get(k, avm, action_context).unwrap();
 
@@ -288,13 +592,15 @@ fn recursive_serialize<'gc>(avm: &mut Avm1<'gc>, action_context: &mut UpdateCont
             Value::String(s) => json_obj[k] = s.into(),
             Value::Object(o) => {
                 // Don't attempt to serialize functions, etc
-                if !o.is_instance_of(avm, action_context, o, avm.prototypes().function).unwrap() {
-
+                if !o
+                    .is_instance_of(avm, action_context, o, avm.prototypes().function)
+                    .unwrap()
+                {
                     let mut sub_data_json = JsonValue::new_object();
                     recursive_serialize(avm, action_context, o, &mut sub_data_json);
                     json_obj[k] = sub_data_json;
                 }
-            },
+            }
         }
     }
 }
@@ -306,12 +612,22 @@ pub fn flush<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     //TODO: consider args
-    let data = _this.get("data", avm, action_context).unwrap().as_object().unwrap();
+    let data = _this
+        .get("data", _avm, _action_context)
+        .unwrap()
+        .as_object()
+        .unwrap();
     let mut data_json = JsonValue::new_object();
 
     recursive_serialize(avm, action_context, data, &mut data_json);
 
-    //TODO: somehow need to know the name of where to save it to (hidden property?)
+    let this_obj = this.as_shared_object().unwrap();
+    let name = this_obj.get_name();
+
+    //TODO: take &STring
+    _action_context
+        .storage
+        .put_string(name.clone(), data_json.dump());
     Ok(action_context.storage.put_string("tmp".into(), data_json.dump()).into())
 }
 
@@ -321,8 +637,8 @@ pub fn get_size<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-
-    let name = args.get(0)
+    let name = args
+        .get(0)
         .unwrap_or(&Value::Undefined)
         .to_owned()
         .coerce_to_string(avm, action_context)?;
@@ -378,24 +694,12 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let shared_obj = ScriptObject::object(gc_context, Some(proto));
-    let mut object = shared_obj.as_script_object().unwrap();
+    let shared_obj =  SharedObject::empty_shared_obj(gc_context, Some(proto));
+    let mut object =  shared_obj.as_script_object().unwrap();
 
-    object.force_set_function(
-        "clear",
-        clear,
-        gc_context,
-        EnumSet::empty(),
-        Some(fn_proto),
-    );
+    object.force_set_function("clear", clear, gc_context, EnumSet::empty(), Some(fn_proto));
 
-    object.force_set_function(
-        "close",
-        close,
-        gc_context,
-        EnumSet::empty(),
-        Some(fn_proto),
-    );
+    object.force_set_function("close", close, gc_context, EnumSet::empty(), Some(fn_proto));
 
     object.force_set_function(
         "connect",
@@ -405,13 +709,7 @@ pub fn create_proto<'gc>(
         Some(fn_proto),
     );
 
-    object.force_set_function(
-        "flush",
-        flush,
-        gc_context,
-        EnumSet::empty(),
-        Some(fn_proto),
-    );
+    object.force_set_function("flush", flush, gc_context, EnumSet::empty(), Some(fn_proto));
 
     object.force_set_function(
         "getSize",
@@ -421,13 +719,7 @@ pub fn create_proto<'gc>(
         Some(fn_proto),
     );
 
-    object.force_set_function(
-        "send",
-        send,
-        gc_context,
-        EnumSet::empty(),
-        Some(fn_proto),
-    );
+    object.force_set_function("send", send, gc_context, EnumSet::empty(), Some(fn_proto));
 
     object.force_set_function(
         "setFps",

@@ -15,13 +15,13 @@ pub trait StorageBackend: Downcast {
 impl_downcast!(StorageBackend);
 
 pub struct MemoryStorageBackend {
-    pub map: HashMap<String, String>
+    pub map: HashMap<String, String>,
 }
 
 impl Default for MemoryStorageBackend {
     fn default() -> Self {
         MemoryStorageBackend {
-            map: HashMap::new()
+            map: HashMap::new(),
         }
     }
 }
@@ -65,5 +65,3 @@ impl StorageBackend for MemoryStorageBackend {
 // struct LocalStorageBackend {}
 //
 // //TODO: check the issue about this, need to prefix with url of site somehow to avoid collisions
-
-

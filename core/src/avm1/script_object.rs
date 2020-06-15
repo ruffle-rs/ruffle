@@ -712,6 +712,7 @@ mod tests {
     use crate::backend::input::NullInputBackend;
     use crate::backend::navigator::NullNavigatorBackend;
     use crate::backend::render::NullRenderer;
+    use crate::backend::storage::MemoryStorageBackend;
     use crate::display_object::MovieClip;
     use crate::library::Library;
     use crate::loader::LoadManager;
@@ -721,7 +722,6 @@ mod tests {
     use rand::{rngs::SmallRng, SeedableRng};
     use std::collections::BTreeMap;
     use std::sync::Arc;
-    use crate::backend::storage::MemoryStorageBackend;
 
     fn with_object<F, R>(swf_version: u8, test: F) -> R
     where

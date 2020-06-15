@@ -5,6 +5,7 @@ use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::listeners::SystemListener;
 use crate::avm1::{Object, Value};
 use crate::backend::input::InputBackend;
+use crate::backend::storage::StorageBackend;
 use crate::backend::{audio::AudioBackend, navigator::NavigatorBackend, render::RenderBackend};
 use crate::library::Library;
 use crate::loader::LoadManager;
@@ -18,7 +19,6 @@ use rand::rngs::SmallRng;
 use std::collections::BTreeMap;
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, Weak};
-use crate::backend::storage::StorageBackend;
 
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
 /// `Player` crates this when it begins a tick and passes it through the call stack to

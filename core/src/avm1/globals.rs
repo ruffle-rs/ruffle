@@ -26,6 +26,7 @@ pub(crate) mod number;
 mod object;
 mod point;
 mod rectangle;
+pub(crate) mod shared_object;
 mod sound;
 mod stage;
 pub(crate) mod string;
@@ -33,7 +34,6 @@ pub(crate) mod system;
 pub(crate) mod system_capabilities;
 pub(crate) mod system_ime;
 pub(crate) mod system_security;
-pub(crate) mod shared_object;
 pub(crate) mod text_field;
 mod text_format;
 mod xml;
@@ -326,8 +326,17 @@ pub fn create_globals<'gc>(
 
     let shared_object_proto = shared_object::create_proto(gc_context, object_proto, function_proto);
 
-    let shared_obj = shared_object::create_shared_object_object(gc_context, Some(shared_object_proto), Some(function_proto));
-    globals.define_value(gc_context, "SharedObject", shared_obj.into(), EnumSet::empty());
+    let shared_obj = shared_object::create_shared_object_object(
+        gc_context,
+        Some(shared_object_proto),
+        Some(function_proto),
+    );
+    globals.define_value(
+        gc_context,
+        "SharedObject",
+        shared_obj.into(),
+        EnumSet::empty(),
+    );
 
     let system_security =
         system_security::create(gc_context, Some(object_proto), Some(function_proto));
