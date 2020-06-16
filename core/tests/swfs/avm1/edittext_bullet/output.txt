@@ -1,0 +1,25 @@
+//Bullet-bearing HTML
+//field.textWidth
+125
+//field.textHeight
+160
+//Bullet-bearing HTML with left margin
+//field.textWidth
+96
+//field.textHeight
+179
+//Bullet-bearing HTML with indent
+//field.textWidth
+124
+//field.textHeight
+160
+//Bullet-bearing HTML with block indent
+//field.textWidth
+96
+//field.textHeight
+179
+//Bullet-bearing HTML with right margin
+//field.textWidth
+96
+//field.textHeight
+179

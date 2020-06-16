@@ -215,6 +215,7 @@ swf_tests_approx! {
     (edittext_align, "avm1/edittext_align", 1, 3.0),
     (edittext_margins, "avm1/edittext_margins", 1, 3.0),
     (edittext_tab_stops, "avm1/edittext_tab_stops", 1, 5.0),
+    (edittext_bullet, "avm1/edittext_bullet", 1, 3.0),
 }
 
 /// Wrapper around string slice that makes debug output `{:?}` to print string same way as `{}`.
