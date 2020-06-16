@@ -504,22 +504,22 @@ impl<'gc> EditText<'gc> {
         // We're cheating a bit and not actually rendering text using the OS/web.
         // Instead, we embed an SWF version of Noto Sans to use as the "device font", and render
         // it the same as any other SWF outline text.
-        if let Some((start, end, _tf, font, params, color)) = lbox.read().text_node() {
-            if let Some(chunk) = edit_text.text_spans.text().get(start..end) {
-                font.evaluate(
-                    &chunk,
-                    self.text_transform(color),
-                    params,
-                    |transform, glyph: &Glyph, _advance| {
-                        // Render glyph.
-                        context.transform_stack.push(transform);
-                        context
-                            .renderer
-                            .render_shape(glyph.shape, context.transform_stack.transform());
-                        context.transform_stack.pop();
-                    },
-                );
-            }
+        if let Some((text, _tf, font, params, color)) =
+            lbox.read().as_renderable_text(edit_text.text_spans.text())
+        {
+            font.evaluate(
+                text,
+                self.text_transform(color),
+                params,
+                |transform, glyph: &Glyph, _advance| {
+                    // Render glyph.
+                    context.transform_stack.push(transform);
+                    context
+                        .renderer
+                        .render_shape(glyph.shape, context.transform_stack.transform());
+                    context.transform_stack.pop();
+                },
+            );
         }
 
         context.transform_stack.pop();

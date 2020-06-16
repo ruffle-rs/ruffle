@@ -12,6 +12,9 @@ use swf::Twips;
 
 /// Contains information relating to the current layout operation.
 pub struct LayoutContext<'a, 'gc> {
+    /// The movie this layout context is pulling fonts from.
+    movie: Arc<SwfMovie>,
+
     /// The position to put text into.
     ///
     /// This cursor does not take indents, left margins, or alignment into
@@ -64,8 +67,9 @@ pub struct LayoutContext<'a, 'gc> {
 }
 
 impl<'a, 'gc> LayoutContext<'a, 'gc> {
-    fn new(max_bounds: Twips, text: &'a str) -> Self {
+    fn new(movie: Arc<SwfMovie>, max_bounds: Twips, text: &'a str) -> Self {
         Self {
+            movie,
             cursor: Default::default(),
             font: None,
             text,
@@ -122,7 +126,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// automatic newline and no more text is to be expected).
     fn fixup_line(
         &mut self,
-        mc: MutationContext<'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         only_line: bool,
         final_line_of_para: bool,
     ) {
@@ -134,14 +138,15 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         let mut line_bounds = None;
         let mut box_count: i32 = 0;
         while let Some(linebox) = line {
-            let mut write = linebox.write(mc);
+            let mut write = linebox.write(context.gc_context);
             line = write.next_sibling();
-            let (start, end, _tf, font, params, _color) = write.text_node().expect("text");
+            let (text, _tf, font, params, _color) =
+                write.as_renderable_text(self.text).expect("text");
 
             //Flash ignores trailing spaces when aligning lines, so should we
             if self.current_line_span.align != swf::TextAlign::Left {
                 write.bounds = write.bounds.with_size(Size::from(font.measure(
-                    self.text[start..end].trim_end(),
+                    text.trim_end(),
                     params,
                     false,
                 )));
@@ -187,20 +192,31 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             self.font_leading_adjustment()
         };
 
+        if self.current_line_span.bullet {
+            self.append_bullet(context, &self.current_line_span.clone());
+        }
+
         line = self.current_line;
         box_count = 0;
         while let Some(linebox) = line {
-            let mut write = linebox.write(mc);
+            let mut write = linebox.write(context.gc_context);
 
             // TODO: This attempts to keep text of multiple font sizes vertically
             // aligned correctly. It does not consider the baseline of the font,
             // which is information we don't have yet.
             let font_size_adjustment = self.max_font_size - write.bounds.height();
 
-            write.bounds += Position::from((
-                left_adjustment + align_adjustment + (interim_adjustment * box_count),
-                font_size_adjustment + font_leading_adjustment,
-            ));
+            if write.is_text_box() {
+                write.bounds += Position::from((
+                    left_adjustment + align_adjustment + (interim_adjustment * box_count),
+                    font_size_adjustment + font_leading_adjustment,
+                ));
+            } else if write.is_bullet() {
+                write.bounds += Position::from((
+                    Default::default(),
+                    font_size_adjustment + font_leading_adjustment,
+                ));
+            }
 
             line = write.next_sibling();
             box_count += 1;
@@ -224,8 +240,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     ///
     /// This function will also adjust any layout boxes on the current line to
     /// their correct alignment and indentation.
-    fn explicit_newline(&mut self, mc: MutationContext<'gc, '_>) {
-        self.fixup_line(mc, false, true);
+    fn explicit_newline(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        self.fixup_line(context, false, true);
 
         self.cursor.set_x(Twips::from_pixels(0.0));
         self.cursor += (
@@ -242,8 +258,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     ///
     /// This function will also adjust any layout boxes on the current line to
     /// their correct alignment and indentation.
-    fn newline(&mut self, mc: MutationContext<'gc, '_>) {
-        self.fixup_line(mc, false, false);
+    fn newline(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        self.fixup_line(context, false, false);
 
         self.cursor.set_x(Twips::from_pixels(0.0));
         self.cursor += (
@@ -293,10 +309,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn resolve_font(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        movie: Arc<SwfMovie>,
         span: &TextSpan,
     ) -> Option<Font<'gc>> {
-        let library = context.library.library_for_movie_mut(movie);
+        let library = context.library.library_for_movie_mut(self.movie.clone());
 
         if let Some(font) = library
             .get_font_by_name(&span.font, span.bold, span.italic)
@@ -363,6 +378,35 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         self.append_box(mc, new_text);
     }
 
+    /// Append a bullet to the start of the current line.
+    ///
+    /// The bullet will always be placed at the start of the current line. It
+    /// should be appended after line fixup has completed, but before the text
+    /// cursor is moved down.
+    fn append_bullet(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, span: &TextSpan) {
+        let library = context.library.library_for_movie_mut(self.movie.clone());
+
+        if let Some(bullet_font) = library
+            .get_font_by_name(&span.font, span.bold, span.italic)
+            .or_else(|| library.device_font())
+            .or(self.font)
+        {
+            let mut bullet_cursor = self.cursor;
+
+            bullet_cursor.set_x(Twips::from_pixels(18.0));
+
+            let params = EvalParameters::from_span(span);
+            let text_size = Size::from(bullet_font.measure("\u{2022}", params, false));
+            let text_bounds = BoxBounds::from_position_and_size(bullet_cursor, text_size);
+            let new_bullet = LayoutBox::from_bullet(context.gc_context, bullet_font, span);
+            let mut write = new_bullet.write(context.gc_context);
+
+            write.bounds = text_bounds;
+
+            self.append_box(context.gc_context, new_bullet);
+        }
+    }
+
     /// Add a box to the current line of text.
     ///
     /// The box should have been positioned according to the current cursor
@@ -398,12 +442,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             } else {
                 Twips::from_pixels(35.0 + span.left_margin + span.block_indent)
             }
+        } else if is_first_line {
+            Twips::from_pixels(span.left_margin + span.block_indent + span.indent)
         } else {
-            if is_first_line {
-                Twips::from_pixels(span.left_margin + span.block_indent + span.indent)
-            } else {
-                Twips::from_pixels(span.left_margin + span.block_indent)
-            }
+            Twips::from_pixels(span.left_margin + span.block_indent)
         }
     }
 
@@ -425,9 +467,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// Destroy the layout context, returning the newly constructed layout list.
     fn end_layout(
         mut self,
-        mc: MutationContext<'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> (Option<GcCell<'gc, LayoutBox<'gc>>>, BoxBounds<Twips>) {
-        self.fixup_line(mc, !self.has_line_break, true);
+        self.fixup_line(context, !self.has_line_break, true);
 
         (
             self.first_box,
@@ -483,20 +525,51 @@ pub struct Collec<T>(T);
 pub enum LayoutContent<'gc> {
     /// A layout box containing some part of a text span.
     ///
-    /// The text is assumed to be pulled from the same `FormatSpans`
+    /// The text is assumed to be pulled from the same `FormatSpans` that
+    /// generated this layout box.
     Text {
         /// The start position of the text to render.
         start: usize,
+
+        /// The end position of the text to render.
         end: usize,
+
+        /// The formatting options for the text box.
         text_format: TextFormat,
+
+        /// The font that was resolved at the time of layout for this text.
         font: Font<'gc>,
+
+        /// All parameters used to evaluate the font at the time of layout for
+        /// this text.
         params: EvalParameters,
+
+        /// The color to render the font with.
+        color: Collec<swf::Color>,
+    },
+
+    /// A layout box containing a bullet.
+    ///
+    /// This is almost identical to `Text`, but the text contents are assumed
+    /// to be U+2022.
+    Bullet {
+        /// The formatting options for the text box.
+        text_format: TextFormat,
+
+        /// The font that was resolved at the time of layout for this text.
+        font: Font<'gc>,
+
+        /// All parameters used to evaluate the font at the time of layout for
+        /// this text.
+        params: EvalParameters,
+
+        /// The color to render the font with.
         color: Collec<swf::Color>,
     },
 }
 
 impl<'gc> LayoutBox<'gc> {
-    /// Construct a text box for an HTML text node.
+    /// Construct a text box for a text node.
     pub fn from_text(
         mc: MutationContext<'gc, '_>,
         start: usize,
@@ -523,6 +596,29 @@ impl<'gc> LayoutBox<'gc> {
         )
     }
 
+    /// Construct a bullet.
+    pub fn from_bullet(
+        mc: MutationContext<'gc, '_>,
+        font: Font<'gc>,
+        span: &TextSpan,
+    ) -> GcCell<'gc, Self> {
+        let params = EvalParameters::from_span(span);
+
+        GcCell::allocate(
+            mc,
+            Self {
+                bounds: Default::default(),
+                next_sibling: None,
+                content: LayoutContent::Bullet {
+                    text_format: span.get_text_format(),
+                    font,
+                    params,
+                    color: Collec(span.color.clone()),
+                },
+            },
+        )
+    }
+
     /// Returns the next sibling box.
     pub fn next_sibling(&self) -> Option<GcCell<'gc, LayoutBox<'gc>>> {
         self.next_sibling
@@ -539,10 +635,10 @@ impl<'gc> LayoutBox<'gc> {
         bounds: Twips,
         is_word_wrap: bool,
     ) -> (Option<GcCell<'gc, LayoutBox<'gc>>>, BoxBounds<Twips>) {
-        let mut layout_context = LayoutContext::new(bounds, fs.text());
+        let mut layout_context = LayoutContext::new(movie, bounds, fs.text());
 
         for (span_start, _end, span_text, span) in fs.iter_spans() {
-            if let Some(font) = layout_context.resolve_font(context, movie.clone(), &span) {
+            if let Some(font) = layout_context.resolve_font(context, &span) {
                 layout_context.newspan(span);
 
                 let params = EvalParameters::from_span(span);
@@ -558,7 +654,7 @@ impl<'gc> LayoutBox<'gc> {
                     };
 
                     match delimiter {
-                        Some('\n') => layout_context.explicit_newline(context.gc_context),
+                        Some('\n') => layout_context.explicit_newline(context),
                         Some('\t') => layout_context.tab(),
                         _ => {}
                     }
@@ -578,7 +674,7 @@ impl<'gc> LayoutBox<'gc> {
                             layout_context.is_start_of_line(),
                         ) {
                             if breakpoint == 0 {
-                                layout_context.newline(context.gc_context);
+                                layout_context.newline(context);
 
                                 let next_dim = layout_context.wrap_dimensions(&span);
 
@@ -609,7 +705,7 @@ impl<'gc> LayoutBox<'gc> {
                                 break;
                             }
 
-                            layout_context.newline(context.gc_context);
+                            layout_context.newline(context);
                             let next_dim = layout_context.wrap_dimensions(&span);
 
                             width = next_dim.0;
@@ -632,7 +728,7 @@ impl<'gc> LayoutBox<'gc> {
             }
         }
 
-        layout_context.end_layout(context.gc_context)
+        layout_context.end_layout(context)
     }
 
     pub fn bounds(&self) -> BoxBounds<Twips> {
@@ -640,16 +736,10 @@ impl<'gc> LayoutBox<'gc> {
     }
 
     /// Returns a reference to the text this box contains.
-    pub fn text_node(
+    pub fn as_renderable_text<'a>(
         &self,
-    ) -> Option<(
-        usize,
-        usize,
-        &TextFormat,
-        Font<'gc>,
-        EvalParameters,
-        swf::Color,
-    )> {
+        text: &'a str,
+    ) -> Option<(&'a str, &TextFormat, Font<'gc>, EvalParameters, swf::Color)> {
         match &self.content {
             LayoutContent::Text {
                 start,
@@ -658,7 +748,33 @@ impl<'gc> LayoutBox<'gc> {
                 font,
                 params,
                 color,
-            } => Some((*start, *end, &text_format, *font, *params, color.0.clone())),
+            } => Some((
+                text.get(*start..*end)?,
+                &text_format,
+                *font,
+                *params,
+                color.0.clone(),
+            )),
+            LayoutContent::Bullet {
+                text_format,
+                font,
+                params,
+                color,
+            } => Some(("\u{2022}", &text_format, *font, *params, color.0.clone())),
+        }
+    }
+
+    pub fn is_text_box(&self) -> bool {
+        match &self.content {
+            LayoutContent::Text { .. } => true,
+            LayoutContent::Bullet { .. } => false,
+        }
+    }
+
+    pub fn is_bullet(&self) -> bool {
+        match &self.content {
+            LayoutContent::Text { .. } => false,
+            LayoutContent::Bullet { .. } => true,
         }
     }
 
