@@ -300,6 +300,11 @@ pub fn decode_jpeg(
     })
 }
 
+fn rgb5_component(compressed: u16, shift: u16) -> u8 {
+    let component = compressed >> shift & 0x1F;
+    ((component * 255 + 15) / 31) as u8
+}
+
 /// Decodes the bitmap data in DefineBitsLossless tag into RGBA.
 /// DefineBitsLossless is Zlib encoded pixel data (similar to PNG), possibly
 /// palletized.
@@ -316,7 +321,19 @@ pub fn decode_define_bits_lossless(
 
     // Swizzle/de-palettize the bitmap.
     let out_data = match (swf_tag.version, swf_tag.format) {
-        (1, swf::BitmapFormat::Rgb15) => unimplemented!("15-bit PNG"),
+        (1, swf::BitmapFormat::Rgb15) => {
+            let mut out_data: Vec<u8> = Vec::with_capacity(decoded_data.len() * 2);
+            let mut i = 0;
+            while i < decoded_data.len() {
+                let compressed: u16 = ((decoded_data[i] as u16) << 8) | decoded_data[i + 1] as u16;
+                out_data.push(rgb5_component(compressed, 10));
+                out_data.push(rgb5_component(compressed, 5));
+                out_data.push(rgb5_component(compressed, 0));
+                out_data.push(0xff);
+                i += 2;
+            }
+            out_data
+        }
         (1, swf::BitmapFormat::Rgb32) => {
             let mut i = 0;
             while i < decoded_data.len() {
