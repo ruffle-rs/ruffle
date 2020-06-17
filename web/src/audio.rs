@@ -127,9 +127,9 @@ impl WebAudioBackend {
         &mut self,
         handle: SoundHandle,
         settings: Option<&swf::SoundInfo>,
-    ) -> SoundInstanceHandle {
+    ) -> Result<SoundInstanceHandle, Error> {
         let sound = self.sounds.get(handle).unwrap();
-        match &sound.source {
+        let handle = match &sound.source {
             SoundSource::AudioBuffer(audio_buffer) => {
                 let audio_buffer = audio_buffer.borrow();
                 let node = self.context.create_buffer_source().unwrap();
@@ -219,7 +219,9 @@ impl WebAudioBackend {
                         sound.format.sample_rate.into(),
                         std::io::Cursor::new(audio_data.to_vec()), //&sound.data[..]
                     )),
-                    _ => unimplemented!(),
+                    compression => {
+                        return Err(format!("Unimplemented codec: {:?}", compression).into())
+                    }
                 };
 
                 let decoder: Decoder =
@@ -261,7 +263,8 @@ impl WebAudioBackend {
                     instance_handle
                 })
             }
-        }
+        };
+        Ok(handle)
     }
 
     /// Wires up the envelope for Flash event sounds using `ChannelSplitter`, `Gain`, and `ChannelMerger` nodes.
@@ -344,9 +347,9 @@ impl WebAudioBackend {
         audio_data: &[u8],
         num_sample_frames: u32,
         adpcm_block_offsets: Option<&[usize]>,
-    ) -> AudioBufferPtr {
+    ) -> Result<AudioBufferPtr, Error> {
         if format.compression == AudioCompression::Mp3 {
-            return self.decompress_mp3_to_audio_buffer(format, audio_data, num_sample_frames);
+            return Ok(self.decompress_mp3_to_audio_buffer(format, audio_data, num_sample_frames));
         }
 
         self.left_samples.clear();
@@ -397,7 +400,7 @@ impl WebAudioBackend {
                     }
                 }
             }
-            _ => unimplemented!("{:?}", format.compression),
+            compression => return Err(format!("Unimplemented codec: {:?}", compression).into()),
         }
 
         // This sucks. Firefox and Safari don't like low sample rates,
@@ -447,7 +450,7 @@ impl WebAudioBackend {
             },
         );
 
-        Rc::new(RefCell::new(audio_buffer))
+        Ok(Rc::new(RefCell::new(audio_buffer)))
     }
 
     fn decompress_mp3_to_audio_buffer(
@@ -558,7 +561,7 @@ impl AudioBackend for WebAudioBackend {
                 data,
                 sound.num_samples,
                 None,
-            )),
+            )?),
             num_sample_frames: sound.num_samples,
             skip_sample_frames,
         };
@@ -641,7 +644,7 @@ impl AudioBackend for WebAudioBackend {
 
         if let Some(mut stream) = stream_data {
             if !stream.audio_data.is_empty() {
-                let audio_buffer = self.decompress_to_audio_buffer(
+                if let Ok(audio_buffer) = self.decompress_to_audio_buffer(
                     &stream.format,
                     &stream.audio_data[..],
                     stream.num_sample_frames,
@@ -651,16 +654,17 @@ impl AudioBackend for WebAudioBackend {
                     } else {
                         None
                     },
-                );
-                stream.audio_data = vec![];
-                self.stream_data.insert(clip_id, stream.clone());
-                let handle = self.sounds.insert(Sound {
-                    format: stream.format,
-                    source: SoundSource::AudioBuffer(audio_buffer),
-                    num_sample_frames: stream.num_sample_frames,
-                    skip_sample_frames: stream.skip_sample_frames,
-                });
-                self.id_to_sound.insert(clip_id, handle);
+                ) {
+                    stream.audio_data = vec![];
+                    self.stream_data.insert(clip_id, stream.clone());
+                    let handle = self.sounds.insert(Sound {
+                        format: stream.format,
+                        source: SoundSource::AudioBuffer(audio_buffer),
+                        num_sample_frames: stream.num_sample_frames,
+                        skip_sample_frames: stream.skip_sample_frames,
+                    });
+                    self.id_to_sound.insert(clip_id, handle);
+                }
             }
         }
     }
@@ -670,7 +674,8 @@ impl AudioBackend for WebAudioBackend {
         sound: SoundHandle,
         sound_info: &swf::SoundInfo,
     ) -> Result<SoundInstanceHandle, Error> {
-        Ok(self.start_sound_internal(sound, Some(sound_info)))
+        let handle = self.start_sound_internal(sound, Some(sound_info))?;
+        Ok(handle)
     }
 
     fn start_stream(
@@ -712,7 +717,7 @@ impl AudioBackend for WebAudioBackend {
                     });
                 }
             }
-            let handle = self.start_sound_internal(handle, sound_info.as_ref());
+            let handle = self.start_sound_internal(handle, sound_info.as_ref())?;
             Ok(handle)
         } else {
             let msg = format!("Missing stream for clip {}", clip_id);
