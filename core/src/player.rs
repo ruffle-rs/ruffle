@@ -248,7 +248,7 @@ impl Player {
             context.levels.insert(0, root);
 
             if let Ok(object) = root.object().as_object() {
-                let _ = object.define_value(
+                object.define_value(
                     context.gc_context,
                     "$version",
                     context.system.get_version_string(avm).into(),
