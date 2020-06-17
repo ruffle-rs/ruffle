@@ -669,8 +669,8 @@ impl AudioBackend for WebAudioBackend {
         &mut self,
         sound: SoundHandle,
         sound_info: &swf::SoundInfo,
-    ) -> SoundInstanceHandle {
-        self.start_sound_internal(sound, Some(sound_info))
+    ) -> Result<SoundInstanceHandle, Error> {
+        Ok(self.start_sound_internal(sound, Some(sound_info)))
     }
 
     fn start_stream(
@@ -679,7 +679,7 @@ impl AudioBackend for WebAudioBackend {
         clip_frame: u16,
         _clip_data: ruffle_core::tag_utils::SwfSlice,
         _stream_info: &swf::SoundStreamHead,
-    ) -> AudioStreamHandle {
+    ) -> Result<AudioStreamHandle, Error> {
         if let Some(&handle) = self.id_to_sound.get(&clip_id) {
             let mut sound_info = None;
             if clip_frame > 1 {
@@ -712,11 +712,12 @@ impl AudioBackend for WebAudioBackend {
                     });
                 }
             }
-            self.start_sound_internal(handle, sound_info.as_ref())
+            let handle = self.start_sound_internal(handle, sound_info.as_ref());
+            Ok(handle)
         } else {
-            log::error!("Missing stream for clip {}", clip_id);
-            // TODO: Return dummy sound.
-            panic!();
+            let msg = format!("Missing stream for clip {}", clip_id);
+            log::error!("{}", msg);
+            Err(msg.into())
         }
     }
 

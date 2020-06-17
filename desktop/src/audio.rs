@@ -23,6 +23,8 @@ pub struct CpalAudioBackend {
 
 type Signal = Box<dyn Send + sample::signal::Signal<Frame = [i16; 2]>>;
 
+type Error = Box<dyn std::error::Error>;
+
 /// Contains the data and metadata for a sound in an SWF file.
 /// A `Sound` is defined by the `DefineSound` SWF tags.
 struct Sound {
@@ -61,7 +63,7 @@ struct SoundInstance {
 }
 
 impl CpalAudioBackend {
-    pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new() -> Result<Self, Error> {
         // Initialize cpal on a separate thread to issues on Windows with cpal + winit:
         // https://github.com/RustAudio/cpal/pull/348
         // TODO: Revert back to doing this on the same thread when the above is fixed.
@@ -76,7 +78,7 @@ impl CpalAudioBackend {
         }
     }
 
-    fn init() -> Result<Self, Box<dyn std::error::Error>> {
+    fn init() -> Result<Self, Error> {
         // Create CPAL audio device.
         let host = cpal::default_host();
         let event_loop = host.event_loop();
@@ -155,8 +157,8 @@ impl CpalAudioBackend {
     fn make_seekable_decoder(
         format: &swf::SoundFormat,
         data: Cursor<VecAsRef>,
-    ) -> Box<dyn Send + SeekableDecoder> {
-        match format.compression {
+    ) -> Result<Box<dyn Send + SeekableDecoder>, Error> {
+        let decoder: Box<dyn Send + SeekableDecoder> = match format.compression {
             AudioCompression::Uncompressed => Box::new(PcmDecoder::new(
                 data,
                 format.is_stereo,
@@ -174,13 +176,15 @@ impl CpalAudioBackend {
                 data,
             )),
             _ => {
-                log::error!(
+                let msg = format!(
                     "start_stream: Unhandled audio compression {:?}",
                     format.compression
                 );
-                unimplemented!()
+                log::error!("{}", msg);
+                return Err(msg.into());
             }
-        }
+        };
+        Ok(decoder)
     }
 
     /// Resamples a stream.
@@ -207,9 +211,9 @@ impl CpalAudioBackend {
         sound: &Sound,
         settings: &swf::SoundInfo,
         data: Cursor<VecAsRef>,
-    ) -> Box<dyn Send + sample::signal::Signal<Frame = [i16; 2]>> {
+    ) -> Result<Box<dyn Send + sample::signal::Signal<Frame = [i16; 2]>>, Error> {
         // Instantiate a decoder for the compression that the sound data uses.
-        let decoder = Self::make_seekable_decoder(&sound.format, data);
+        let decoder = Self::make_seekable_decoder(&sound.format, data)?;
 
         // Wrap the decoder in the event sound signal (controls looping/envelope)
         let signal = EventSoundSignal::new_with_settings(
@@ -221,7 +225,7 @@ impl CpalAudioBackend {
         // Convert the `Decoder` to a `Signal`, and resample it the the output
         // sample rate.
         let signal = self.make_resampler(&sound.format, signal);
-        Box::new(signal)
+        Ok(Box::new(signal))
     }
 
     /// Creates a `sample::signal::Signal` that decodes and resamples a "stream" sound.
@@ -229,15 +233,15 @@ impl CpalAudioBackend {
         &self,
         format: &swf::SoundFormat,
         data_stream: SwfSlice,
-    ) -> Box<dyn 'a + Send + sample::signal::Signal<Frame = [i16; 2]>> {
+    ) -> Result<Box<dyn 'a + Send + sample::signal::Signal<Frame = [i16; 2]>>, Error> {
         // Instantiate a decoder for the compression that the sound data uses.
-        let clip_stream_decoder = decoders::make_stream_decoder(format, data_stream);
+        let clip_stream_decoder = decoders::make_stream_decoder(format, data_stream)?;
 
         // Convert the `Decoder` to a `Signal`, and resample it the the output
         // sample rate.
         let signal = sample::signal::from_iter(clip_stream_decoder);
         let signal = Box::new(self.make_resampler(format, signal));
-        Box::new(signal)
+        Ok(Box::new(signal))
     }
 
     /// Creates a `sample::signal::Signal` that decodes and resamples the audio stream
@@ -246,15 +250,15 @@ impl CpalAudioBackend {
         &self,
         format: &swf::SoundFormat,
         data_stream: R,
-    ) -> Box<dyn 'a + Send + sample::signal::Signal<Frame = [i16; 2]>> {
+    ) -> Result<Box<dyn 'a + Send + sample::signal::Signal<Frame = [i16; 2]>>, Error> {
         // Instantiate a decoder for the compression that the sound data uses.
-        let decoder = decoders::make_decoder(format, data_stream);
+        let decoder = decoders::make_decoder(format, data_stream)?;
 
         // Convert the `Decoder` to a `Signal`, and resample it the the output
         // sample rate.
         let signal = sample::signal::from_iter(decoder);
         let signal = self.make_resampler(format, signal);
-        Box::new(signal)
+        Ok(Box::new(signal))
     }
 
     /// Callback to the audio thread.
@@ -301,10 +305,7 @@ impl CpalAudioBackend {
 }
 
 impl AudioBackend for CpalAudioBackend {
-    fn register_sound(
-        &mut self,
-        swf_sound: &swf::Sound,
-    ) -> Result<SoundHandle, Box<dyn std::error::Error>> {
+    fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, Error> {
         // Slice off latency seek for MP3 data.
         let (skip_sample_frames, data) = if swf_sound.format.compression == AudioCompression::Mp3 {
             let skip_sample_frames =
@@ -329,21 +330,22 @@ impl AudioBackend for CpalAudioBackend {
         _clip_frame: u16,
         clip_data: SwfSlice,
         stream_info: &swf::SoundStreamHead,
-    ) -> AudioStreamHandle {
+    ) -> Result<AudioStreamHandle, Error> {
         let format = &stream_info.stream_format;
 
         // The audio data for stream sounds is distributed among the frames of a
         // movie clip. The stream tag reader will parse through the SWF and
         // feed the decoder audio data on the fly.
-        let signal = self.make_signal_from_stream(format, clip_data);
+        let signal = self.make_signal_from_stream(format, clip_data)?;
 
         let mut sound_instances = self.sound_instances.lock().unwrap();
-        sound_instances.insert(SoundInstance {
+        let handle = sound_instances.insert(SoundInstance {
             handle: None,
             clip_id: Some(clip_id),
             signal,
             active: true,
-        })
+        });
+        Ok(handle)
     }
 
     fn stop_stream(&mut self, stream: AudioStreamHandle) {
@@ -355,7 +357,7 @@ impl AudioBackend for CpalAudioBackend {
         &mut self,
         sound_handle: SoundHandle,
         settings: &swf::SoundInfo,
-    ) -> SoundInstanceHandle {
+    ) -> Result<SoundInstanceHandle, Error> {
         let sound = &self.sounds[sound_handle];
         let data = Cursor::new(VecAsRef(Arc::clone(&sound.data)));
         // Create a signal that decodes and resamples the sound.
@@ -366,20 +368,21 @@ impl AudioBackend for CpalAudioBackend {
             && settings.envelope.is_none()
         {
             // For simple event sounds, just use the same signal as streams.
-            self.make_signal_from_simple_event_sound(&sound.format, data)
+            self.make_signal_from_simple_event_sound(&sound.format, data)?
         } else {
             // For event sounds with envelopes/other properties, wrap it in `EventSoundSignal`.
-            self.make_signal_from_event_sound(&sound, settings, data)
+            self.make_signal_from_event_sound(&sound, settings, data)?
         };
 
         // Add sound instance to active list.
         let mut sound_instances = self.sound_instances.lock().unwrap();
-        sound_instances.insert(SoundInstance {
+        let handle = sound_instances.insert(SoundInstance {
             handle: Some(sound_handle),
             clip_id: None,
             signal,
             active: true,
-        })
+        });
+        Ok(handle)
     }
 
     fn stop_sound(&mut self, sound: SoundInstanceHandle) {
