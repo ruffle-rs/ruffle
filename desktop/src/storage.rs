@@ -48,7 +48,6 @@ impl StorageBackend for DiskStorageBackend {
         }
     }
 
-
     fn put_string(&mut self, name: &str, value: String) -> bool {
         let full_path = self.base_path.join(Path::new(name));
 
@@ -64,13 +63,12 @@ impl StorageBackend for DiskStorageBackend {
             Err(r) => {
                 log::warn!("Unable to save file {:?}", r);
                 false
-            },
+            }
         }
     }
 
     fn remove_key(&mut self, name: &str) {
         let full_path = self.base_path.join(Path::new(name));
-
-        log::info!("[storage] Saved {} to {:?}", value, full_path);
+        let _ = fs::remove_file(full_path);
     }
 }

@@ -334,7 +334,7 @@ pub fn connect<'gc>(
 pub fn flush<'gc>(
     avm: &mut Avm1<'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     let data = this
@@ -351,7 +351,8 @@ pub fn flush<'gc>(
 
     Ok(action_context
         .storage
-        .put_string(&name, data_json.dump()).into())
+        .put_string(&name, data_json.dump())
+        .into())
 }
 
 pub fn get_size<'gc>(
