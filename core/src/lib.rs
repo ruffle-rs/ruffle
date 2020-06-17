@@ -18,7 +18,7 @@ mod drawing;
 pub mod events;
 mod font;
 mod library;
-mod loader;
+pub mod loader;
 mod player;
 mod prelude;
 mod property_map;
