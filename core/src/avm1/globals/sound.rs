@@ -390,7 +390,9 @@ fn start<'gc>(
                     envelope: None,
                 },
             );
-            sound_object.set_sound_instance(context.gc_context, Some(sound_instance));
+            if let Ok(sound_instance) = sound_instance {
+                sound_object.set_sound_instance(context.gc_context, Some(sound_instance));
+            }
         } else {
             log::warn!("Sound.start: No sound is attached");
         }

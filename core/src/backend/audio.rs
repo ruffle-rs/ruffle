@@ -35,8 +35,11 @@ pub trait AudioBackend {
 
     /// Starts playing a sound instance that is not tied to a MovieClip timeline.
     /// In Flash, this is known as an "Event" sound.
-    fn start_sound(&mut self, sound: SoundHandle, settings: &swf::SoundInfo)
-        -> SoundInstanceHandle;
+    fn start_sound(
+        &mut self,
+        sound: SoundHandle,
+        settings: &swf::SoundInfo,
+    ) -> Result<SoundInstanceHandle, Error>;
 
     fn start_stream(
         &mut self,
@@ -44,7 +47,7 @@ pub trait AudioBackend {
         clip_frame: u16,
         clip_data: crate::tag_utils::SwfSlice,
         handle: &swf::SoundStreamHead,
-    ) -> AudioStreamHandle;
+    ) -> Result<AudioStreamHandle, Error>;
 
     /// Stops a playing sound instance.
     /// No-op if the sound is not playing.
@@ -108,8 +111,8 @@ impl AudioBackend for NullAudioBackend {
         &mut self,
         _sound: SoundHandle,
         _sound_info: &swf::SoundInfo,
-    ) -> SoundInstanceHandle {
-        SoundInstanceHandle::from_raw_parts(0, 0)
+    ) -> Result<SoundInstanceHandle, Error> {
+        Ok(SoundInstanceHandle::from_raw_parts(0, 0))
     }
 
     fn start_stream(
@@ -118,8 +121,8 @@ impl AudioBackend for NullAudioBackend {
         _stream_start_frame: u16,
         _clip_data: crate::tag_utils::SwfSlice,
         _handle: &swf::SoundStreamHead,
-    ) -> AudioStreamHandle {
-        self.streams.insert(())
+    ) -> Result<AudioStreamHandle, Error> {
+        Ok(self.streams.insert(()))
     }
 
     fn stop_sound(&mut self, _sound: SoundInstanceHandle) {}

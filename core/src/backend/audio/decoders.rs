@@ -12,6 +12,8 @@ use crate::tag_utils::SwfSlice;
 use std::io::{Cursor, Read};
 use swf::{AudioCompression, SoundFormat, TagCode};
 
+type Error = Box<dyn std::error::Error>;
+
 /// An audio decoder. Can be used as an `Iterator` to return stero sample frames.
 /// If the sound is mono, the sample is duplicated across both channels.
 pub trait Decoder: Iterator<Item = [i16; 2]> {
@@ -26,8 +28,8 @@ pub trait Decoder: Iterator<Item = [i16; 2]> {
 pub fn make_decoder<'a, R: 'a + Send + Read>(
     format: &SoundFormat,
     data: R,
-) -> Box<dyn 'a + Send + Decoder> {
-    match format.compression {
+) -> Result<Box<dyn 'a + Send + Decoder>, Error> {
+    let decoder: Box<dyn 'a + Send + Decoder> = match format.compression {
         AudioCompression::UncompressedUnknownEndian => {
             // Cross fingers that it's little endian.
             log::warn!("make_decoder: PCM sound is unknown endian; assuming little endian");
@@ -55,13 +57,15 @@ pub fn make_decoder<'a, R: 'a + Send + Read>(
             data,
         )),
         _ => {
-            log::error!(
+            let msg = format!(
                 "make_decoder: Unhandled audio compression {:?}",
                 format.compression
             );
-            unimplemented!()
+            log::error!("{}", msg);
+            return Err(msg.into());
         }
-    }
+    };
+    Ok(decoder)
 }
 
 /// A "stream" sound is a sound that has its data distributed across `SoundStreamBlock` tags,
@@ -84,12 +88,12 @@ struct StandardStreamDecoder {
 impl StandardStreamDecoder {
     /// Constructs a new `StandardStreamDecoder.
     /// `swf_data` should be the tag data of the MovieClip that contains the stream.
-    fn new(format: &SoundFormat, swf_data: SwfSlice) -> Self {
+    fn new(format: &SoundFormat, swf_data: SwfSlice) -> Result<Self, Error> {
         // Create a tag reader to get the audio data from SoundStreamBlock tags.
         let tag_reader = StreamTagReader::new(format.compression, swf_data);
         // Wrap the tag reader in the decoder.
-        let decoder = make_decoder(format, tag_reader);
-        Self { decoder }
+        let decoder = make_decoder(format, tag_reader)?;
+        Ok(Self { decoder })
     }
 }
 
@@ -179,12 +183,13 @@ impl Iterator for AdpcmStreamDecoder {
 pub fn make_stream_decoder(
     format: &swf::SoundFormat,
     swf_data: SwfSlice,
-) -> Box<dyn Decoder + Send> {
-    if format.compression == AudioCompression::Adpcm {
+) -> Result<Box<dyn Decoder + Send>, Error> {
+    let decoder: Box<dyn Decoder + Send> = if format.compression == AudioCompression::Adpcm {
         Box::new(AdpcmStreamDecoder::new(format, swf_data))
     } else {
-        Box::new(StandardStreamDecoder::new(format, swf_data))
-    }
+        Box::new(StandardStreamDecoder::new(format, swf_data)?)
+    };
+    Ok(decoder)
 }
 
 /// Adds seeking ability to decoders where the underline stream is `std::io::Seek`.

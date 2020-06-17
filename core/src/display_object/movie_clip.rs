@@ -1910,11 +1910,17 @@ impl<'gc, 'a> MovieClipData<'gc> {
             self.static_data.swf.version(),
         );
         let sound = reader.read_define_sound()?;
-        let handle = context.audio.register_sound(&sound).unwrap();
-        context
-            .library
-            .library_for_movie_mut(self.movie())
-            .register_character(sound.id, Character::Sound(handle));
+        if let Ok(handle) = context.audio.register_sound(&sound) {
+            context
+                .library
+                .library_for_movie_mut(self.movie())
+                .register_character(sound.id, Character::Sound(handle));
+        } else {
+            log::error!(
+                "MovieClip::define_sound: Unable to register sound ID {}",
+                sound.id
+            );
+        }
         Ok(())
     }
 
@@ -2188,7 +2194,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
                 slice,
                 &stream_info,
             );
-            self.audio_stream = Some(audio_stream);
+            self.audio_stream = audio_stream.ok();
         }
 
         Ok(())
@@ -2211,13 +2217,13 @@ impl<'gc, 'a> MovieClipData<'gc> {
             match start_sound.sound_info.event {
                 // "Event" sounds always play, independent of the timeline.
                 SoundEvent::Event => {
-                    context.audio.start_sound(handle, &start_sound.sound_info);
+                    let _ = context.audio.start_sound(handle, &start_sound.sound_info);
                 }
 
                 // "Start" sounds only play if an instance of the same sound is not already playing.
                 SoundEvent::Start => {
                     if !context.audio.is_sound_playing_with_handle(handle) {
-                        context.audio.start_sound(handle, &start_sound.sound_info);
+                        let _ = context.audio.start_sound(handle, &start_sound.sound_info);
                     }
                 }
 
