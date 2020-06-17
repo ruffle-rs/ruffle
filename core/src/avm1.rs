@@ -368,6 +368,11 @@ impl<'gc> Avm1<'gc> {
         !self.stack_frames.is_empty()
     }
 
+    /// Remove the current stack frame.
+    pub fn pop_stack_frame(&mut self) {
+        self.stack_frames.pop();
+    }
+
     /// Get the currently executing SWF version.
     pub fn current_swf_version(&self) -> u8 {
         self.current_stack_frame()
@@ -1032,6 +1037,57 @@ impl<'gc> Avm1<'gc> {
         let scope = stack_frame.scope_cell();
         scope.read().set(path, value, self, context, this)?;
         Ok(())
+    }
+
+    pub fn resolve_text_field_variable_path<'s>(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        path: &'s str,
+    ) -> Result<Option<(Object<'gc>, &'s str)>, Error<'gc>> {
+        // Resolve a variable path for a GetVariable action.
+        let start = self.target_clip_or_root();
+
+        // Find the right-most : or . in the path.
+        // If we have one, we must resolve as a target path.
+        // We also check for a / to skip some unnecessary work later.
+        let mut has_slash = false;
+        let mut var_iter = path.as_bytes().rsplitn(2, |c| match c {
+            b':' | b'.' => true,
+            b'/' => {
+                has_slash = true;
+                false
+            }
+            _ => false,
+        });
+
+        let b = var_iter.next();
+        let a = var_iter.next();
+        if let (Some(path), Some(var_name)) = (a, b) {
+            // We have a . or :, so this is a path to an object plus a variable name.
+            // We resolve it directly on the targeted object.
+            let path = unsafe { std::str::from_utf8_unchecked(path) };
+            let var_name = unsafe { std::str::from_utf8_unchecked(var_name) };
+
+            let mut current_scope = Some(self.current_stack_frame().unwrap().read().scope_cell());
+            while let Some(scope) = current_scope {
+                if let Some(object) =
+                    self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
+                {
+                    return Ok(Some((object, var_name)));
+                }
+                current_scope = scope.read().parent_cell();
+            }
+
+            return Ok(None);
+        }
+
+        // Finally! It's a plain old variable name.
+        // Resolve using scope chain, as normal.
+        if let Value::Object(object) = start.object() {
+            Ok(Some((object, path)))
+        } else {
+            Ok(None)
+        }
     }
 
     /// Resolve a level by ID.

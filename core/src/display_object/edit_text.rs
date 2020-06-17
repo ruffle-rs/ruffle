@@ -1,6 +1,6 @@
 //! `EditText` display object and support code.
 use crate::avm1::globals::text_field::attach_virtual_properties;
-use crate::avm1::{Avm1, Object, StageObject, Value};
+use crate::avm1::{Activation, Avm1, Object, StageObject, TObject, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::drawing::Drawing;
@@ -610,7 +610,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
     fn post_instantiation(
         &mut self,
-        _avm: &mut Avm1<'gc>,
+        avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
         _init_object: Option<Object<'gc>>,
@@ -641,6 +641,41 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         let mut new_layout = Vec::new();
         for layout_box in text.layout.iter() {
             new_layout.push(layout_box.duplicate(context.gc_context));
+        }
+
+        // If this text field has a variable set, initialize text field binding
+        if let Some(var_path) = self.variable() {
+            let var_path = (*var_path).to_string();
+            avm.insert_stack_frame(GcCell::allocate(
+                context.gc_context,
+                Activation::from_nothing(
+                    context.swf.header().version,
+                    avm.global_object_cell(),
+                    context.gc_context,
+                    self.parent().unwrap(),
+                ),
+            ));
+
+            if let Ok(Some((object, property))) =
+                avm.resolve_text_field_variable_path(context, &*var_path)
+            {
+                // If the property exists on the object, we overwrite the text with the property's value.
+                if object.has_property(avm, context, property) {
+                    let value = object.get(property, avm, context).unwrap();
+                    let _ = self.set_text(
+                        value
+                            .coerce_to_string(avm, context)
+                            .unwrap_or_default()
+                            .into_owned(),
+                        context,
+                    );
+                } else {
+                    // Otherwise, we initialize the proprty with the text field's text.
+                    let _ = object.set(property, self.text().clone().into(), avm, context);
+                }
+            }
+
+            avm.pop_stack_frame();
         }
     }
 
