@@ -48,7 +48,7 @@ fn recursive_serialize<'gc>(
             Value::Number(f) => json_obj[k] = f.into(),
             Value::String(s) => json_obj[k] = s.into(),
             Value::Object(o) => {
-                // Don't attempt to serialize functions, etc
+                // Don't attempt to serialize functions
                 if !o
                     .is_instance_of(avm, action_context, o, avm.prototypes.function)
                     .unwrap()

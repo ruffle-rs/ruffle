@@ -23,6 +23,7 @@ pub struct SharedObjectData<'gc> {
 
     /// The local name of this shared object
     name: Option<String>,
+    // In future this will also handle remote SharedObjects
 }
 
 impl fmt::Debug for SharedObject<'_> {
@@ -47,9 +48,6 @@ impl<'gc> SharedObject<'gc> {
             },
         ))
     }
-    //TODO: any need for these
-
-    //TODO: use enum Remote(url), Local(name)
 
     pub fn set_name(&self, gc_context: MutationContext<'gc, '_>, name: String) {
         self.0.write(gc_context).name = Some(name);
