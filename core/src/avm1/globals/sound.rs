@@ -11,7 +11,7 @@ use gc_arena::MutationContext;
 
 /// Implements `Sound`
 pub fn constructor<'gc>(
-    _avm: &mut Avm1<'gc>,
+    avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -20,7 +20,7 @@ pub fn constructor<'gc>(
     // `Sound.setTransform`, `Sound.stop`, etc. will affect all sounds owned by this clip.
     let owner = args
         .get(0)
-        .and_then(|o| o.as_object().ok())
+        .map(|o| o.as_object(avm, context))
         .and_then(|o| o.as_display_object());
 
     let sound = this.as_sound_object().unwrap();

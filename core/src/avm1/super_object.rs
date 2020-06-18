@@ -67,10 +67,11 @@ impl<'gc> SuperObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Option<Object<'gc>>, Error> {
         if let Some(super_proto) = self.super_proto() {
-            Ok(super_proto
-                .get("__constructor__", avm, context)?
-                .as_object()
-                .ok())
+            Ok(Some(
+                super_proto
+                    .get("__constructor__", avm, context)?
+                    .as_object(avm, context),
+            ))
         } else {
             Ok(None)
         }

@@ -202,16 +202,18 @@ fn set_transform<'gc>(
 
     if let Some(target) = target(avm, context, this)? {
         let mut color_transform = target.color_transform_mut(context.gc_context);
-        if let Ok(transform) = args.get(0).unwrap_or(&Value::Undefined).as_object() {
-            set_color_mult(avm, context, transform, "ra", &mut color_transform.r_mult)?;
-            set_color_mult(avm, context, transform, "ga", &mut color_transform.g_mult)?;
-            set_color_mult(avm, context, transform, "ba", &mut color_transform.b_mult)?;
-            set_color_mult(avm, context, transform, "aa", &mut color_transform.a_mult)?;
-            set_color_add(avm, context, transform, "rb", &mut color_transform.r_add)?;
-            set_color_add(avm, context, transform, "gb", &mut color_transform.g_add)?;
-            set_color_add(avm, context, transform, "bb", &mut color_transform.b_add)?;
-            set_color_add(avm, context, transform, "ab", &mut color_transform.a_add)?;
-        }
+        let transform = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .as_object(avm, context);
+        set_color_mult(avm, context, transform, "ra", &mut color_transform.r_mult)?;
+        set_color_mult(avm, context, transform, "ga", &mut color_transform.g_mult)?;
+        set_color_mult(avm, context, transform, "ba", &mut color_transform.b_mult)?;
+        set_color_mult(avm, context, transform, "aa", &mut color_transform.a_mult)?;
+        set_color_add(avm, context, transform, "rb", &mut color_transform.r_add)?;
+        set_color_add(avm, context, transform, "gb", &mut color_transform.g_add)?;
+        set_color_add(avm, context, transform, "bb", &mut color_transform.b_add)?;
+        set_color_add(avm, context, transform, "ab", &mut color_transform.a_add)?;
     }
 
     Ok(Value::Undefined.into())

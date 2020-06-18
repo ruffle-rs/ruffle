@@ -670,13 +670,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     return Some(self_node);
                 }
 
-                if let Ok(object) = self.object().as_object() {
-                    if ClipEvent::BUTTON_EVENT_METHODS
-                        .iter()
-                        .any(|handler| object.has_property(avm, context, handler))
-                    {
-                        return Some(self_node);
-                    }
+                let object = self.object().as_object(avm, context);
+                if ClipEvent::BUTTON_EVENT_METHODS
+                    .iter()
+                    .any(|handler| object.has_property(avm, context, handler))
+                {
+                    return Some(self_node);
                 }
             }
 
@@ -732,7 +731,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
                 if let Ok(prototype) = constructor
                     .get("prototype", avm, context)
-                    .and_then(|v| v.as_object())
+                    .map(|v| v.as_object(avm, context))
                 {
                     let object: Object<'gc> = StageObject::for_display_object(
                         context.gc_context,

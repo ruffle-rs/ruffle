@@ -69,18 +69,25 @@ pub fn define_display_object_proto<'gc>(
     object.add_property(
         gc_context,
         "_parent",
-        Executable::Native(|_avm, _context, this, _args| {
-            Ok(this
-                .as_display_object()
-                .and_then(|mc| mc.parent())
-                .and_then(|dn| dn.object().as_object().ok())
-                .map(Value::Object)
-                .unwrap_or(Value::Undefined)
-                .into())
-        }),
+        Executable::Native(get_parent),
         None,
         DontDelete | ReadOnly | DontEnum,
     );
+}
+
+pub fn get_parent<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    Ok(this
+        .as_display_object()
+        .and_then(|mc| mc.parent())
+        .map(|dn| dn.object().as_object(avm, context))
+        .map(Value::Object)
+        .unwrap_or(Value::Undefined)
+        .into())
 }
 
 pub fn get_depth<'gc>(

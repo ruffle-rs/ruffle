@@ -882,10 +882,11 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
 
         parent
             .or_else(|| {
-                self.object()
-                    .as_object()
-                    .ok()
-                    .and_then(|o| o.as_display_object())
+                if let Value::Object(object) = self.object() {
+                    object.as_display_object()
+                } else {
+                    None
+                }
             })
             .expect("All objects must have root")
     }
