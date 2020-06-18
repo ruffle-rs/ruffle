@@ -435,6 +435,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         _init_object: Option<Object<'gc>>,
         _instantiated_from_avm: bool,
     ) {
+        self.set_default_instance_name(context);
+
         let mut text = self.0.write(context.gc_context);
         if text.object.is_none() {
             let object = StageObject::for_display_object(

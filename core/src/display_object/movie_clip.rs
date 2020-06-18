@@ -722,6 +722,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         init_object: Option<Object<'gc>>,
         instantiated_from_avm: bool,
     ) {
+        self.set_default_instance_name(context);
+
         if self.0.read().object.is_none() {
             // If we are running within the AVM, this must be an immediate action.
             // If we are not, then this must be queued to be ran first-thing

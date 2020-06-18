@@ -100,6 +100,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The system properties
     pub system: &'a mut SystemProperties,
+
+    /// The current instance ID. Used to generate default `instanceN` names.
+    pub instance_counter: &'a mut i32,
 }
 
 /// A queued ActionScript call.

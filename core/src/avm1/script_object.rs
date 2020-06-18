@@ -760,9 +760,11 @@ mod tests {
                 player: None,
                 load_manager: &mut LoadManager::new(),
                 system: &mut SystemProperties::default(),
+                instance_counter: &mut 0,
             };
 
             root.post_instantiation(&mut avm, &mut context, root, None, false);
+            root.set_name(context.gc_context, "");
 
             let object = ScriptObject::object(gc_context, Some(avm.prototypes().object)).into();
 
