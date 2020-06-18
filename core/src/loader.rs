@@ -17,7 +17,7 @@ use url::form_urlencoded;
 pub type Handle = Index;
 
 #[derive(Error, Debug)]
-pub enum LoaderError {
+pub enum Error {
     #[error("Load cancelled")]
     Cancelled,
 
@@ -93,9 +93,9 @@ impl<'gc> LoadManager<'gc> {
         &mut self,
         player: Weak<Mutex<Player>>,
         target_clip: DisplayObject<'gc>,
-        fetch: OwnedFuture<Vec<u8>, LoaderError>,
+        fetch: OwnedFuture<Vec<u8>, Error>,
         target_broadcaster: Option<Object<'gc>>,
-    ) -> OwnedFuture<(), LoaderError> {
+    ) -> OwnedFuture<(), Error> {
         let loader = Loader::Movie {
             self_handle: None,
             target_clip,
@@ -139,8 +139,8 @@ impl<'gc> LoadManager<'gc> {
         &mut self,
         player: Weak<Mutex<Player>>,
         target_object: Object<'gc>,
-        fetch: OwnedFuture<Vec<u8>, LoaderError>,
-    ) -> OwnedFuture<(), LoaderError> {
+        fetch: OwnedFuture<Vec<u8>, Error>,
+    ) -> OwnedFuture<(), Error> {
         let loader = Loader::Form {
             self_handle: None,
             target_object,
@@ -161,8 +161,8 @@ impl<'gc> LoadManager<'gc> {
         player: Weak<Mutex<Player>>,
         target_node: XMLNode<'gc>,
         active_clip: DisplayObject<'gc>,
-        fetch: OwnedFuture<Vec<u8>, LoaderError>,
-    ) -> OwnedFuture<(), LoaderError> {
+        fetch: OwnedFuture<Vec<u8>, Error>,
+    ) -> OwnedFuture<(), Error> {
         let loader = Loader::XML {
             self_handle: None,
             active_clip,
@@ -275,11 +275,11 @@ impl<'gc> Loader<'gc> {
     pub fn movie_loader(
         &mut self,
         player: Weak<Mutex<Player>>,
-        fetch: OwnedFuture<Vec<u8>, LoaderError>,
-    ) -> OwnedFuture<(), LoaderError> {
+        fetch: OwnedFuture<Vec<u8>, Error>,
+    ) -> OwnedFuture<(), Error> {
         let handle = match self {
             Loader::Movie { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
-            _ => return Box::pin(async { Err(LoaderError::NotMovieLoader) }),
+            _ => return Box::pin(async { Err(Error::NotMovieLoader) }),
         };
 
         let player = player
@@ -288,14 +288,14 @@ impl<'gc> Loader<'gc> {
 
         Box::pin(async move {
             player.lock().expect("Could not lock player!!").update(
-                |avm, uc| -> Result<(), LoaderError> {
+                |avm, uc| -> Result<(), Error> {
                     let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
                         Some(Loader::Movie {
                             target_clip,
                             target_broadcaster,
                             ..
                         }) => (*target_clip, *target_broadcaster),
-                        None => return Err(LoaderError::Cancelled),
+                        None => return Err(Error::Cancelled),
                         _ => unreachable!(),
                     };
 
@@ -315,7 +315,7 @@ impl<'gc> Loader<'gc> {
                             &["onLoadStart".into(), Value::Object(broadcaster)],
                         );
                         avm.run_stack_till_empty(uc)
-                            .map_err(|e| LoaderError::Avm1Error(e))?;
+                            .map_err(|e| Error::Avm1Error(e))?;
                     }
 
                     Ok(())
@@ -336,7 +336,7 @@ impl<'gc> Loader<'gc> {
                                 target_broadcaster,
                                 ..
                             }) => (*target_clip, *target_broadcaster),
-                            None => return Err(LoaderError::Cancelled),
+                            None => return Err(Error::Cancelled),
                             _ => unreachable!(),
                         };
 
@@ -355,7 +355,7 @@ impl<'gc> Loader<'gc> {
                                 ],
                             );
                             avm.run_stack_till_empty(uc)
-                                .map_err(|e| LoaderError::Avm1Error(e))?;
+                                .map_err(|e| Error::Avm1Error(e))?;
                         }
 
                         let mut mc = clip
@@ -389,7 +389,7 @@ impl<'gc> Loader<'gc> {
                                 &["onLoadComplete".into(), Value::Object(broadcaster)],
                             );
                             avm.run_stack_till_empty(uc)
-                                .map_err(|e| LoaderError::Avm1Error(e))?;
+                                .map_err(|e| Error::Avm1Error(e))?;
                         }
 
                         if let Some(Loader::Movie { load_complete, .. }) =
@@ -407,14 +407,14 @@ impl<'gc> Loader<'gc> {
                 //This also can get errors from decoding an invalid SWF file,
                 //too. We should distinguish those to player code.
                 player.lock().expect("Could not lock player!!").update(
-                    |avm, uc| -> Result<(), LoaderError> {
+                    |avm, uc| -> Result<(), Error> {
                         let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
                             Some(Loader::Movie {
                                 target_clip,
                                 target_broadcaster,
                                 ..
                             }) => (*target_clip, *target_broadcaster),
-                            None => return Err(LoaderError::Cancelled),
+                            None => return Err(Error::Cancelled),
                             _ => unreachable!(),
                         };
 
@@ -432,7 +432,7 @@ impl<'gc> Loader<'gc> {
                                 ],
                             );
                             avm.run_stack_till_empty(uc)
-                                .map_err(|e| LoaderError::Avm1Error(e))?;
+                                .map_err(|e| Error::Avm1Error(e))?;
                         }
 
                         if let Some(Loader::Movie { load_complete, .. }) =
@@ -451,11 +451,11 @@ impl<'gc> Loader<'gc> {
     pub fn form_loader(
         &mut self,
         player: Weak<Mutex<Player>>,
-        fetch: OwnedFuture<Vec<u8>, LoaderError>,
-    ) -> OwnedFuture<(), LoaderError> {
+        fetch: OwnedFuture<Vec<u8>, Error>,
+    ) -> OwnedFuture<(), Error> {
         let handle = match self {
             Loader::Form { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
-            _ => return Box::pin(async { Err(LoaderError::NotFormLoader) }),
+            _ => return Box::pin(async { Err(Error::NotFormLoader) }),
         };
 
         let player = player
@@ -469,13 +469,13 @@ impl<'gc> Loader<'gc> {
                 let loader = uc.load_manager.get_loader(handle);
                 let that = match loader {
                     Some(Loader::Form { target_object, .. }) => *target_object,
-                    None => return Err(LoaderError::Cancelled),
-                    _ => return Err(LoaderError::NotMovieLoader),
+                    None => return Err(Error::Cancelled),
+                    _ => return Err(Error::NotMovieLoader),
                 };
 
                 for (k, v) in form_urlencoded::parse(&data) {
                     that.set(&k, v.into_owned().into(), avm, uc)
-                        .map_err(|e| LoaderError::Avm1Error(e))?;
+                        .map_err(|e| Error::Avm1Error(e))?;
                 }
 
                 Ok(())
@@ -529,11 +529,11 @@ impl<'gc> Loader<'gc> {
     pub fn xml_loader(
         &mut self,
         player: Weak<Mutex<Player>>,
-        fetch: OwnedFuture<Vec<u8>, LoaderError>,
-    ) -> OwnedFuture<(), LoaderError> {
+        fetch: OwnedFuture<Vec<u8>, Error>,
+    ) -> OwnedFuture<(), Error> {
         let handle = match self {
             Loader::XML { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
-            _ => return Box::pin(async { Err(LoaderError::NotXmlLoader) }),
+            _ => return Box::pin(async { Err(Error::NotXmlLoader) }),
         };
 
         let player = player
@@ -546,14 +546,14 @@ impl<'gc> Loader<'gc> {
                 let xmlstring = String::from_utf8(data)?;
 
                 player.lock().expect("Could not lock player!!").update(
-                    |avm, uc| -> Result<(), LoaderError> {
+                    |avm, uc| -> Result<(), Error> {
                         let (mut node, active_clip) = match uc.load_manager.get_loader(handle) {
                             Some(Loader::XML {
                                 target_node,
                                 active_clip,
                                 ..
                             }) => (*target_node, *active_clip),
-                            None => return Err(LoaderError::Cancelled),
+                            None => return Err(Error::Cancelled),
                             _ => unreachable!(),
                         };
 
@@ -568,7 +568,7 @@ impl<'gc> Loader<'gc> {
                             &[200.into()],
                         );
                         avm.run_stack_till_empty(uc)
-                            .map_err(|e| LoaderError::Avm1Error(e))?;
+                            .map_err(|e| Error::Avm1Error(e))?;
 
                         avm.insert_stack_frame_for_method(
                             active_clip,
@@ -579,21 +579,21 @@ impl<'gc> Loader<'gc> {
                             &[xmlstring.into()],
                         );
                         avm.run_stack_till_empty(uc)
-                            .map_err(|e| LoaderError::Avm1Error(e))?;
+                            .map_err(|e| Error::Avm1Error(e))?;
 
                         Ok(())
                     },
                 )?;
             } else {
                 player.lock().expect("Could not lock player!!").update(
-                    |avm, uc| -> Result<(), LoaderError> {
+                    |avm, uc| -> Result<(), Error> {
                         let (mut node, active_clip) = match uc.load_manager.get_loader(handle) {
                             Some(Loader::XML {
                                 target_node,
                                 active_clip,
                                 ..
                             }) => (*target_node, *active_clip),
-                            None => return Err(LoaderError::Cancelled),
+                            None => return Err(Error::Cancelled),
                             _ => unreachable!(),
                         };
 
@@ -608,7 +608,7 @@ impl<'gc> Loader<'gc> {
                             &[404.into()],
                         );
                         avm.run_stack_till_empty(uc)
-                            .map_err(|e| LoaderError::Avm1Error(e))?;
+                            .map_err(|e| Error::Avm1Error(e))?;
 
                         avm.insert_stack_frame_for_method(
                             active_clip,
@@ -619,7 +619,7 @@ impl<'gc> Loader<'gc> {
                             &[],
                         );
                         avm.run_stack_till_empty(uc)
-                            .map_err(|e| LoaderError::Avm1Error(e))?;
+                            .map_err(|e| Error::Avm1Error(e))?;
 
                         Ok(())
                     },

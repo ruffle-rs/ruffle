@@ -1,7 +1,7 @@
 //! Task state information
 
 use ruffle_core::backend::navigator::OwnedFuture;
-use ruffle_core::loader::LoaderError;
+use ruffle_core::loader::Error;
 use std::task::{Context, Poll};
 
 /// Indicates the state of a given task.
@@ -23,12 +23,12 @@ pub struct Task {
     state: TaskState,
 
     /// The future to poll in order to progress the task.
-    future: OwnedFuture<(), LoaderError>,
+    future: OwnedFuture<(), Error>,
 }
 
 impl Task {
     /// Box an owned future into a task structure.
-    pub fn from_future(future: OwnedFuture<(), LoaderError>) -> Self {
+    pub fn from_future(future: OwnedFuture<(), Error>) -> Self {
         Self {
             state: TaskState::Ready,
             future,
@@ -55,7 +55,7 @@ impl Task {
     ///
     /// This wrapper function ensures that futures cannot be polled after they
     /// have completed. Future polls will return `Ok(())`.
-    pub fn poll(&mut self, context: &mut Context) -> Poll<Result<(), LoaderError>> {
+    pub fn poll(&mut self, context: &mut Context) -> Poll<Result<(), Error>> {
         if self.is_completed() {
             return Poll::Ready(Ok(()));
         }

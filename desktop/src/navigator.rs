@@ -4,7 +4,7 @@ use crate::custom_event::RuffleEvent;
 use ruffle_core::backend::navigator::{
     NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
 };
-use ruffle_core::loader::LoaderError;
+use ruffle_core::loader::Error;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -17,7 +17,7 @@ use winit::event_loop::EventLoopProxy;
 /// out to a web browser.
 pub struct ExternalNavigatorBackend {
     /// Sink for tasks sent to us through `spawn_future`.
-    channel: Sender<OwnedFuture<(), LoaderError>>,
+    channel: Sender<OwnedFuture<(), Error>>,
 
     /// Event sink to trigger a new task poll.
     event_loop: EventLoopProxy<RuffleEvent>,
@@ -32,7 +32,7 @@ pub struct ExternalNavigatorBackend {
 impl ExternalNavigatorBackend {
     #[allow(dead_code)]
     pub fn new(
-        channel: Sender<OwnedFuture<(), LoaderError>>,
+        channel: Sender<OwnedFuture<(), Error>>,
         event_loop: EventLoopProxy<RuffleEvent>,
     ) -> Self {
         Self {
@@ -46,7 +46,7 @@ impl ExternalNavigatorBackend {
     /// Construct a navigator backend with fetch and async capability.
     pub fn with_base_path<P: AsRef<Path>>(
         path: P,
-        channel: Sender<OwnedFuture<(), LoaderError>>,
+        channel: Sender<OwnedFuture<(), Error>>,
         event_loop: EventLoopProxy<RuffleEvent>,
     ) -> Self {
         let mut relative_base_path = PathBuf::new();
@@ -111,16 +111,16 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         Instant::now().duration_since(self.start_time)
     }
 
-    fn fetch(&self, url: &str, _options: RequestOptions) -> OwnedFuture<Vec<u8>, LoaderError> {
+    fn fetch(&self, url: &str, _options: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
         // Load from local filesystem.
         // TODO: Support network loads, honor sandbox type (local-with-filesystem, local-with-network, remote, ...)
         let mut path = self.relative_base_path.clone();
         path.push(url);
 
-        Box::pin(async move { fs::read(path).map_err(LoaderError::NetworkError) })
+        Box::pin(async move { fs::read(path).map_err(Error::NetworkError) })
     }
 
-    fn spawn_future(&mut self, future: OwnedFuture<(), LoaderError>) {
+    fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
         self.channel.send(future).expect("working channel send");
 
         if self.event_loop.send_event(RuffleEvent::TaskPoll).is_err() {

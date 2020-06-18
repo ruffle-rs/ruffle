@@ -1,6 +1,6 @@
 //! Browser-related platform functions
 
-use crate::loader::LoaderError;
+use crate::loader::Error;
 use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::future::Future;
@@ -121,7 +121,7 @@ pub trait NavigatorBackend {
         &self,
         url: &str,
         request_options: RequestOptions,
-    ) -> OwnedFuture<Vec<u8>, LoaderError>;
+    ) -> OwnedFuture<Vec<u8>, Error>;
 
     /// Get the amount of time since the SWF was launched.
     /// Used by the `getTimer` ActionScript call.
@@ -135,16 +135,16 @@ pub trait NavigatorBackend {
     ///
     /// TODO: For some reason, `wasm_bindgen_futures` wants unpinnable futures.
     /// This seems highly limiting.
-    fn spawn_future(&mut self, future: OwnedFuture<(), LoaderError>);
+    fn spawn_future(&mut self, future: OwnedFuture<(), Error>);
 }
 
 /// A null implementation of an event loop that only supports blocking.
 pub struct NullExecutor {
     /// The list of outstanding futures spawned on this executor.
-    futures_queue: VecDeque<OwnedFuture<(), LoaderError>>,
+    futures_queue: VecDeque<OwnedFuture<(), Error>>,
 
     /// The source of any additional futures.
-    channel: Receiver<OwnedFuture<(), LoaderError>>,
+    channel: Receiver<OwnedFuture<(), Error>>,
 }
 
 unsafe fn do_nothing(_data: *const ()) {}
@@ -160,7 +160,7 @@ impl NullExecutor {
     ///
     /// The sender yielded as part of construction should be given to a
     /// `NullNavigatorBackend` so that it can spawn futures on this executor.
-    pub fn new() -> (Self, Sender<OwnedFuture<(), LoaderError>>) {
+    pub fn new() -> (Self, Sender<OwnedFuture<(), Error>>) {
         let (send, recv) = channel();
 
         (
@@ -194,7 +194,7 @@ impl NullExecutor {
     /// stop polling futures and return that error. Otherwise, it will yield
     /// `Ok`, indicating that no errors occured. More work may still be
     /// available,
-    pub fn poll_all(&mut self) -> Result<(), LoaderError> {
+    pub fn poll_all(&mut self) -> Result<(), Error> {
         self.flush_channel();
 
         let mut unfinished_futures = VecDeque::new();
@@ -229,7 +229,7 @@ impl NullExecutor {
     }
 
     /// Block until all futures complete or an error occurs.
-    pub fn block_all(&mut self) -> Result<(), LoaderError> {
+    pub fn block_all(&mut self) -> Result<(), Error> {
         while self.has_work() {
             self.poll_all()?;
         }
@@ -244,7 +244,7 @@ impl NullExecutor {
 /// futures and runs them to completion, blockingly.
 pub struct NullNavigatorBackend {
     /// The channel upon which all spawned futures will be sent.
-    channel: Option<Sender<OwnedFuture<(), LoaderError>>>,
+    channel: Option<Sender<OwnedFuture<(), Error>>>,
 
     /// The base path for all relative fetches.
     relative_base_path: PathBuf,
@@ -263,7 +263,7 @@ impl NullNavigatorBackend {
     /// Construct a navigator backend with fetch and async capability.
     pub fn with_base_path<P: AsRef<Path>>(
         path: P,
-        channel: Sender<OwnedFuture<(), LoaderError>>,
+        channel: Sender<OwnedFuture<(), Error>>,
     ) -> Self {
         let mut relative_base_path = PathBuf::new();
 
@@ -291,18 +291,18 @@ impl NavigatorBackend for NullNavigatorBackend {
     ) {
     }
 
-    fn fetch(&self, url: &str, _opts: RequestOptions) -> OwnedFuture<Vec<u8>, LoaderError> {
+    fn fetch(&self, url: &str, _opts: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
         let mut path = self.relative_base_path.clone();
         path.push(url);
 
-        Box::pin(async move { fs::read(path).map_err(LoaderError::NetworkError) })
+        Box::pin(async move { fs::read(path).map_err(Error::NetworkError) })
     }
 
     fn time_since_launch(&mut self) -> Duration {
         Duration::from_millis(0)
     }
 
-    fn spawn_future(&mut self, future: OwnedFuture<(), LoaderError>) {
+    fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
         if let Some(channel) = self.channel.as_ref() {
             channel.send(future).unwrap();
         }
