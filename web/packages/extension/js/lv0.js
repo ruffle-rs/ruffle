@@ -19,46 +19,11 @@
  * prefix that is only shared within the injected closure. This isn't entirely
  * foolproof, but is designed to
  */
-
-function get_sync_storage(key, callback) {
-    if (
-        chrome &&
-        chrome.storage &&
-        chrome.storage.sync &&
-        chrome.storage.sync.get
-    ) {
-        chrome.storage.sync.get(key, callback);
-    } else if (
-        browser &&
-        browser.storage &&
-        browser.storage.sync &&
-        browser.storage.sync.get
-    ) {
-        browser.storage.sync.get(key, callback);
-    } else {
-        console.error("Couldn't read setting: " + key);
-    }
-}
-
-function set_message_listener(listener) {
-    if (
-        chrome &&
-        chrome.runtime &&
-        chrome.runtime.onMessage &&
-        chrome.runtime.onMessage.addListener
-    ) {
-        chrome.runtime.onMessage.addListener(listener);
-    } else if (
-        browser &&
-        browser.runtime &&
-        browser.runtime.onMessage &&
-        browser.runtime.onMessage.addListener
-    ) {
-        browser.runtime.onMessage.addListener(listener);
-    } else {
-        console.error("Couldn't add message listener");
-    }
-}
+const {
+    get_sync_storage,
+    set_message_listener,
+    get_extension_url,
+} = require("./util.js");
 
 get_sync_storage(["ruffle_enable", "ignore_optout"], function (data) {
     let page_optout = document.documentElement.hasAttribute(
@@ -179,16 +144,7 @@ get_sync_storage(["ruffle_enable", "ignore_optout"], function (data) {
         }
     });
 
-    let ext_path = "";
-    if (chrome && chrome.extension && chrome.extension.getURL) {
-        ext_path = chrome.extension
-            .getURL("dist/ruffle.js")
-            .replace("dist/ruffle.js", "");
-    } else if (browser && browser.runtime && browser.runtime.getURL) {
-        ext_path = browser.runtime
-            .getURL("dist/ruffle.js")
-            .replace("dist/ruffle.js", "");
-    }
+    let ext_path = get_extension_url();
 
     if (should_load_untrusted_world) {
         let setup_scriptelem = document.createElement("script");

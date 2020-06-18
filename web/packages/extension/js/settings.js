@@ -1,52 +1,8 @@
-function get_sync_storage(key, callback) {
-    if (
-        chrome &&
-        chrome.storage &&
-        chrome.storage.sync &&
-        chrome.storage.sync.get
-    ) {
-        chrome.storage.sync.get(key, callback);
-    } else if (
-        browser &&
-        browser.storage &&
-        browser.storage.sync &&
-        browser.storage.sync.get
-    ) {
-        browser.storage.sync.get(key, callback);
-    } else {
-        console.error("Couldn't read setting: " + key);
-    }
-}
-
-function get_i18n_string(key) {
-    if (chrome && chrome.i18n && chrome.i18n.getMessage) {
-        return chrome.i18n.getMessage(key);
-    } else if (browser && browser.i18n && browser.i18n.getMessage) {
-        return browser.i18n.getMessage(key);
-    } else {
-        console.error("Can't get i18n message: " + key);
-    }
-}
-
-function set_sync_storage(key) {
-    if (
-        chrome &&
-        chrome.storage &&
-        chrome.storage.sync &&
-        chrome.storage.sync.set
-    ) {
-        chrome.storage.sync.set(key);
-    } else if (
-        browser &&
-        browser.storage &&
-        browser.storage.sync &&
-        browser.storage.sync.set
-    ) {
-        browser.storage.sync.set(key);
-    } else {
-        console.error("Can't set settings.");
-    }
-}
+const {
+    get_sync_storage,
+    get_i18n_string,
+    set_sync_storage,
+} = require("./util.js");
 
 get_sync_storage(["ruffle_enable", "ignore_optout"], function (data) {
     var play_flash_message = get_i18n_string("settings_ruffle_enable");
