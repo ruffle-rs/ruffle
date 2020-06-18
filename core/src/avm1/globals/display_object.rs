@@ -84,7 +84,7 @@ pub fn get_parent<'gc>(
     Ok(this
         .as_display_object()
         .and_then(|mc| mc.parent())
-        .map(|dn| dn.object().as_object(avm, context))
+        .map(|dn| dn.object().coerce_to_object(avm, context))
         .map(Value::Object)
         .unwrap_or(Value::Undefined)
         .into())

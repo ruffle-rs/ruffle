@@ -70,7 +70,7 @@ impl<'gc> SuperObject<'gc> {
             Ok(Some(
                 super_proto
                     .get("__constructor__", avm, context)?
-                    .as_object(avm, context),
+                    .coerce_to_object(avm, context),
             ))
         } else {
             Ok(None)

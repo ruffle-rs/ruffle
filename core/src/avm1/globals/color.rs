@@ -205,7 +205,7 @@ fn set_transform<'gc>(
         let transform = args
             .get(0)
             .unwrap_or(&Value::Undefined)
-            .as_object(avm, context);
+            .coerce_to_object(avm, context);
         set_color_mult(avm, context, transform, "ra", &mut color_transform.r_mult)?;
         set_color_mult(avm, context, transform, "ga", &mut color_transform.g_mult)?;
         set_color_mult(avm, context, transform, "ba", &mut color_transform.b_mult)?;

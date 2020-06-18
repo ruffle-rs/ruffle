@@ -118,7 +118,7 @@ impl<'gc> Listeners<'gc> {
         let mut handlers = Vec::with_capacity(listeners.length());
 
         for i in 0..listeners.length() {
-            let listener = listeners.array_element(i).as_object(avm, context);
+            let listener = listeners.array_element(i).coerce_to_object(avm, context);
             if let Ok(handler) = listener.get(method, avm, context) {
                 handlers.push((listener, handler));
             }

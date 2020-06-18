@@ -196,7 +196,7 @@ impl<'gc> ScriptObject<'gc> {
         base_proto: Option<Object<'gc>>,
     ) -> Result<(), Error> {
         if name == "__proto__" {
-            self.0.write(context.gc_context).prototype = Some(value.as_object(avm, context));
+            self.0.write(context.gc_context).prototype = Some(value.coerce_to_object(avm, context));
         } else if let Ok(index) = name.parse::<usize>() {
             self.set_array_element(index, value.to_owned(), context.gc_context);
         } else {

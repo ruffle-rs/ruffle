@@ -114,7 +114,7 @@ fn is_prototype_of<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     match args.get(0) {
         Some(val) => {
-            let ob = val.as_object(avm, context);
+            let ob = val.coerce_to_object(avm, context);
             Ok(Value::Bool(this.is_prototype_of(ob)).into())
         }
         _ => Ok(Value::Bool(false).into()),
@@ -148,7 +148,7 @@ pub fn register_class<'gc>(
             if let Some(constructor) = args.get(1) {
                 movie_clip.set_avm1_constructor(
                     context.gc_context,
-                    Some(constructor.as_object(avm, context)),
+                    Some(constructor.coerce_to_object(avm, context)),
                 );
             } else {
                 movie_clip.set_avm1_constructor(context.gc_context, None);
@@ -236,7 +236,7 @@ pub fn as_set_prop_flags<'gc>(
     let mut object = args
         .get(0)
         .ok_or_else(|| my_error.unwrap_err())?
-        .as_object(avm, ac);
+        .coerce_to_object(avm, ac);
     let properties = match args.get(1).ok_or_else(|| my_error_2.unwrap_err())? {
         Value::Object(ob) => {
             //Convert to native array.
