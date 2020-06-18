@@ -158,7 +158,10 @@ fn distance<'gc>(
         return Ok(NAN.into());
     }
 
-    let a = args.get(0).unwrap_or(&Value::Undefined);
+    let a = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_object(avm, context);
     let b = args.get(1).unwrap_or(&Value::Undefined);
     let delta = a.call_method("subtract", &[b.to_owned()], avm, context)?;
     Ok(delta

@@ -571,20 +571,6 @@ impl<'gc> Value<'gc> {
             Ok(Value::Undefined)
         }
     }
-
-    pub fn call_method(
-        &self,
-        name: &str,
-        args: &[Value<'gc>],
-        avm: &mut Avm1<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
-        if let Value::Object(object) = self {
-            object.call_method(name, args, avm, context)
-        } else {
-            Ok(Value::Undefined)
-        }
-    }
 }
 
 /// Converts an `f64` to a String with (hopefully) the same output as Flash.
