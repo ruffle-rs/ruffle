@@ -412,7 +412,7 @@ impl<'gc> XMLNode<'gc> {
         new_child_position: usize,
     ) -> Result<(), Error> {
         if GcCell::ptr_eq(self.0, child.0) {
-            return Err("Cannot adopt child into itself".into());
+            return Err(Error::CannotAdoptSelf);
         }
 
         let (mut document, new_prev, new_next) = match &mut *self.0.write(mc) {
@@ -436,7 +436,7 @@ impl<'gc> XMLNode<'gc> {
                     XMLNodeData::DocType {
                         document, parent, ..
                     } => Ok((document, parent)),
-                    XMLNodeData::DocumentRoot { .. } => Err("Cannot adopt other document roots"),
+                    XMLNodeData::DocumentRoot { .. } => Err(Error::CannotAdoptRoot),
                 }?;
 
                 if let Some(parent) = child_parent {
@@ -457,7 +457,7 @@ impl<'gc> XMLNode<'gc> {
 
                 (*document, new_prev, new_next)
             }
-            _ => return Err("Cannot adopt children into non-child-bearing node".into()),
+            _ => return Err(Error::CannotAdoptHere),
         };
 
         if child.is_doctype() {
@@ -476,7 +476,7 @@ impl<'gc> XMLNode<'gc> {
     /// If the node cannot have a parent, then this function yields Err.
     pub fn parent(self) -> Result<Option<XMLNode<'gc>>, Error> {
         match *self.0.read() {
-            XMLNodeData::DocumentRoot { .. } => Err("Document roots cannot have parents".into()),
+            XMLNodeData::DocumentRoot { .. } => Err(Error::RootCantHaveParent),
             XMLNodeData::Element { parent, .. } => Ok(parent),
             XMLNodeData::Text { parent, .. } => Ok(parent),
             XMLNodeData::Comment { parent, .. } => Ok(parent),
@@ -489,7 +489,7 @@ impl<'gc> XMLNode<'gc> {
     /// If the node cannot have siblings, then this function yields Err.
     pub fn prev_sibling(self) -> Result<Option<XMLNode<'gc>>, Error> {
         match *self.0.read() {
-            XMLNodeData::DocumentRoot { .. } => Err("Document roots cannot have siblings".into()),
+            XMLNodeData::DocumentRoot { .. } => Err(Error::RootCantHaveSiblings),
             XMLNodeData::Element { prev_sibling, .. } => Ok(prev_sibling),
             XMLNodeData::Text { prev_sibling, .. } => Ok(prev_sibling),
             XMLNodeData::Comment { prev_sibling, .. } => Ok(prev_sibling),
@@ -504,9 +504,7 @@ impl<'gc> XMLNode<'gc> {
         new_prev: Option<XMLNode<'gc>>,
     ) -> Result<(), Error> {
         match &mut *self.0.write(mc) {
-            XMLNodeData::DocumentRoot { .. } => {
-                return Err("Document roots cannot have siblings".into())
-            }
+            XMLNodeData::DocumentRoot { .. } => return Err(Error::RootCantHaveSiblings),
             XMLNodeData::Element { prev_sibling, .. } => *prev_sibling = new_prev,
             XMLNodeData::Text { prev_sibling, .. } => *prev_sibling = new_prev,
             XMLNodeData::Comment { prev_sibling, .. } => *prev_sibling = new_prev,
@@ -521,7 +519,7 @@ impl<'gc> XMLNode<'gc> {
     /// If the node cannot have siblings, then this function yields Err.
     pub fn next_sibling(self) -> Result<Option<XMLNode<'gc>>, Error> {
         match *self.0.read() {
-            XMLNodeData::DocumentRoot { .. } => Err("Document roots cannot have siblings".into()),
+            XMLNodeData::DocumentRoot { .. } => Err(Error::RootCantHaveSiblings),
             XMLNodeData::Element { next_sibling, .. } => Ok(next_sibling),
             XMLNodeData::Text { next_sibling, .. } => Ok(next_sibling),
             XMLNodeData::Comment { next_sibling, .. } => Ok(next_sibling),
@@ -536,9 +534,7 @@ impl<'gc> XMLNode<'gc> {
         new_next: Option<XMLNode<'gc>>,
     ) -> Result<(), Error> {
         match &mut *self.0.write(mc) {
-            XMLNodeData::DocumentRoot { .. } => {
-                return Err("Document roots cannot have siblings".into())
-            }
+            XMLNodeData::DocumentRoot { .. } => return Err(Error::RootCantHaveSiblings),
             XMLNodeData::Element { next_sibling, .. } => *next_sibling = new_next,
             XMLNodeData::Text { next_sibling, .. } => *next_sibling = new_next,
             XMLNodeData::Comment { next_sibling, .. } => *next_sibling = new_next,
@@ -576,9 +572,7 @@ impl<'gc> XMLNode<'gc> {
     /// Unset the parent of this node.
     fn disown_parent(&mut self, mc: MutationContext<'gc, '_>) -> Result<(), Error> {
         match &mut *self.0.write(mc) {
-            XMLNodeData::DocumentRoot { .. } => {
-                return Err("Document roots cannot have parents".into())
-            }
+            XMLNodeData::DocumentRoot { .. } => return Err(Error::RootCantHaveParent),
             XMLNodeData::Element { parent, .. } => *parent = None,
             XMLNodeData::Text { parent, .. } => *parent = None,
             XMLNodeData::Comment { parent, .. } => *parent = None,
@@ -627,13 +621,9 @@ impl<'gc> XMLNode<'gc> {
             match &mut *self.0.write(mc) {
                 XMLNodeData::DocumentRoot { children, .. } => children.remove(position),
                 XMLNodeData::Element { children, .. } => children.remove(position),
-                XMLNodeData::Text { .. } => return Err("Text node has no child nodes!".into()),
-                XMLNodeData::Comment { .. } => {
-                    return Err("Comment node has no child nodes!".into())
-                }
-                XMLNodeData::DocType { .. } => {
-                    return Err("DocType node has no child nodes!".into())
-                }
+                XMLNodeData::Text { .. } => return Err(Error::TextNodeCantHaveChildren),
+                XMLNodeData::Comment { .. } => return Err(Error::CommentNodeCantHaveChildren),
+                XMLNodeData::DocType { .. } => return Err(Error::DocTypeCantHaveChildren),
             };
         }
 
@@ -656,7 +646,7 @@ impl<'gc> XMLNode<'gc> {
         child: XMLNode<'gc>,
     ) -> Result<(), Error> {
         if GcCell::ptr_eq(self.0, child.0) {
-            return Err("Cannot insert child into itself".into());
+            return Err(Error::CannotInsertIntoSelf);
         }
 
         match &mut *self.0.write(mc) {
@@ -668,7 +658,7 @@ impl<'gc> XMLNode<'gc> {
             } => {
                 children.insert(position, child);
             }
-            _ => return Err("Not an Element".into()),
+            _ => return Err(Error::NotAnElement),
         };
 
         self.adopt_child(mc, child, position)?;
@@ -699,19 +689,15 @@ impl<'gc> XMLNode<'gc> {
             match &mut *self.0.write(mc) {
                 XMLNodeData::Element { children, .. } => children.remove(position),
                 XMLNodeData::DocumentRoot { children, .. } => children.remove(position),
-                XMLNodeData::Text { .. } => return Err("Text node has no child nodes!".into()),
-                XMLNodeData::Comment { .. } => {
-                    return Err("Comment node has no child nodes!".into())
-                }
-                XMLNodeData::DocType { .. } => {
-                    return Err("DocType node has no child nodes!".into())
-                }
+                XMLNodeData::Text { .. } => return Err(Error::TextNodeCantHaveChildren),
+                XMLNodeData::Comment { .. } => return Err(Error::CommentNodeCantHaveChildren),
+                XMLNodeData::DocType { .. } => return Err(Error::DocTypeCantHaveChildren),
             };
 
             child.disown_siblings(mc)?;
             child.disown_parent(mc)?;
         } else {
-            return Err("Child node is not a child of this one!".into());
+            return Err(Error::CantRemoveNonChild);
         }
 
         Ok(())
