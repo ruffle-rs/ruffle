@@ -13,12 +13,34 @@ pub fn value_to_matrix<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Matrix, Error> {
-    let a = value.get("a", avm, context)?.as_number(avm, context)? as f32;
-    let b = value.get("b", avm, context)?.as_number(avm, context)? as f32;
-    let c = value.get("c", avm, context)?.as_number(avm, context)? as f32;
-    let d = value.get("d", avm, context)?.as_number(avm, context)? as f32;
-    let tx = Twips::from_pixels(value.get("tx", avm, context)?.as_number(avm, context)?);
-    let ty = Twips::from_pixels(value.get("ty", avm, context)?.as_number(avm, context)?);
+    let a = value
+        .coerce_to_object(avm, context)
+        .get("a", avm, context)?
+        .as_number(avm, context)? as f32;
+    let b = value
+        .coerce_to_object(avm, context)
+        .get("b", avm, context)?
+        .as_number(avm, context)? as f32;
+    let c = value
+        .coerce_to_object(avm, context)
+        .get("c", avm, context)?
+        .as_number(avm, context)? as f32;
+    let d = value
+        .coerce_to_object(avm, context)
+        .get("d", avm, context)?
+        .as_number(avm, context)? as f32;
+    let tx = Twips::from_pixels(
+        value
+            .coerce_to_object(avm, context)
+            .get("tx", avm, context)?
+            .as_number(avm, context)?,
+    );
+    let ty = Twips::from_pixels(
+        value
+            .coerce_to_object(avm, context)
+            .get("ty", avm, context)?
+            .as_number(avm, context)?,
+    );
 
     Ok(Matrix { a, b, c, d, tx, ty })
 }

@@ -1233,7 +1233,10 @@ impl<'gc> Avm1<'gc> {
             .get_variable(context, &fn_name.as_string()?)?
             .resolve(self, context)?;
 
-        let this = self.target_clip_or_root().object().coerce_to_object(self, context);
+        let this = self
+            .target_clip_or_root()
+            .object()
+            .coerce_to_object(self, context);
         let result = target_fn.call(self, context, this, None, &args)?;
         self.push(result);
 
@@ -1255,7 +1258,10 @@ impl<'gc> Avm1<'gc> {
 
         match method_name {
             Value::Undefined | Value::Null => {
-                let this = self.target_clip_or_root().object().coerce_to_object(self, context);
+                let this = self
+                    .target_clip_or_root()
+                    .object()
+                    .coerce_to_object(self, context);
                 let result = object.call(self, context, this, None, &args)?;
                 self.push(result);
             }

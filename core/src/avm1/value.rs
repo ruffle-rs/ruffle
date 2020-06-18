@@ -557,19 +557,6 @@ impl<'gc> Value<'gc> {
         ValueObject::boxed(avm, context, self.to_owned())
     }
 
-    pub fn get(
-        &self,
-        name: &str,
-        avm: &mut Avm1<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
-        if let Value::Object(object) = self {
-            object.get(name, avm, context)
-        } else {
-            Ok(Value::Undefined)
-        }
-    }
-
     pub fn call(
         &self,
         avm: &mut Avm1<'gc>,
