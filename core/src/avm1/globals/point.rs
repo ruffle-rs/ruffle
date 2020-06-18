@@ -34,8 +34,14 @@ pub fn value_to_point<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<(f64, f64), Error> {
-    let x = value.get("x", avm, context)?.as_number(avm, context)?;
-    let y = value.get("y", avm, context)?.as_number(avm, context)?;
+    let x = value
+        .coerce_to_object(avm, context)
+        .get("x", avm, context)?
+        .as_number(avm, context)?;
+    let y = value
+        .coerce_to_object(avm, context)
+        .get("y", avm, context)?
+        .as_number(avm, context)?;
     Ok((x, y))
 }
 
@@ -99,6 +105,7 @@ fn equals<'gc>(
     if let Some(other) = args.get(0) {
         let this_x = this.get("x", avm, context)?;
         let this_y = this.get("y", avm, context)?;
+        let other = other.coerce_to_object(avm, context);
         let other_x = other.get("x", avm, context)?;
         let other_y = other.get("y", avm, context)?;
         return Ok((this_x == other_x && this_y == other_y).into());
@@ -154,7 +161,10 @@ fn distance<'gc>(
     let a = args.get(0).unwrap_or(&Value::Undefined);
     let b = args.get(1).unwrap_or(&Value::Undefined);
     let delta = a.call_method("subtract", &[b.to_owned()], avm, context)?;
-    Ok(delta.get("length", avm, context)?.into())
+    Ok(delta
+        .coerce_to_object(avm, context)
+        .get("length", avm, context)?
+        .into())
 }
 
 fn polar<'gc>(
