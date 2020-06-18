@@ -1879,6 +1879,7 @@ dependencies = [
  "ruffle_macros 0.1.0",
  "smallvec 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "swf 0.1.2",
+ "thiserror 1.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 2.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "weak-table 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
