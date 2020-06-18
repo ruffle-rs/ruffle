@@ -670,7 +670,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     return Some(self_node);
                 }
 
-                let object = self.object().as_object(avm, context);
+                let object = self.object().coerce_to_object(avm, context);
                 if ClipEvent::BUTTON_EVENT_METHODS
                     .iter()
                     .any(|handler| object.has_property(avm, context, handler))
@@ -731,7 +731,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
                 if let Ok(prototype) = constructor
                     .get("prototype", avm, context)
-                    .map(|v| v.as_object(avm, context))
+                    .map(|v| v.coerce_to_object(avm, context))
                 {
                     let object: Object<'gc> = StageObject::for_display_object(
                         context.gc_context,

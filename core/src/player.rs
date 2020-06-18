@@ -252,7 +252,7 @@ impl Player {
             root.set_name(context.gc_context, "");
             context.levels.insert(0, root);
 
-            let object = root.object().as_object(avm, context);
+            let object = root.object().coerce_to_object(avm, context);
             object.define_value(
                 context.gc_context,
                 "$version",
@@ -369,7 +369,7 @@ impl Player {
                     );
                     let levels = context.levels.clone();
                     for (level, display_object) in levels {
-                        let object = display_object.object().as_object(avm, context);
+                        let object = display_object.object().coerce_to_object(avm, context);
                         dumper.print_variables(
                             &format!("Level #{}:", level),
                             &format!("_level{}", level),
@@ -713,7 +713,7 @@ impl Player {
                     ));
                     if let Ok(prototype) = constructor
                         .get("prototype", avm, context)
-                        .map(|v| v.as_object(avm, context))
+                        .map(|v| v.coerce_to_object(avm, context))
                     {
                         if let Value::Object(object) = actions.clip.object() {
                             object.set_proto(context.gc_context, Some(prototype));

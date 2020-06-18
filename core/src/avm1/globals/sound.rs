@@ -20,7 +20,7 @@ pub fn constructor<'gc>(
     // `Sound.setTransform`, `Sound.stop`, etc. will affect all sounds owned by this clip.
     let owner = args
         .get(0)
-        .map(|o| o.as_object(avm, context))
+        .map(|o| o.coerce_to_object(avm, context))
         .and_then(|o| o.as_display_object());
 
     let sound = this.as_sound_object().unwrap();

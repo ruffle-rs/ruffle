@@ -70,7 +70,7 @@ where
             Activation::from_nothing(swf_version, globals, gc_context, root),
         ));
 
-        let this = root.object().as_object(&mut avm, &mut context);
+        let this = root.object().coerce_to_object(&mut avm, &mut context);
 
         test(&mut avm, &mut context, this)
     }

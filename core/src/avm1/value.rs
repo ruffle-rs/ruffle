@@ -549,7 +549,7 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn as_object(
+    pub fn coerce_to_object(
         &self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,

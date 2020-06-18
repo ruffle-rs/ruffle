@@ -241,7 +241,7 @@ impl<'gc> Avm1<'gc> {
             action_context.gc_context,
             Scope::from_global_object(self.globals),
         );
-        let clip_obj = active_clip.object().as_object(self, action_context);
+        let clip_obj = active_clip.object().coerce_to_object(self, action_context);
         let child_scope = GcCell::allocate(
             action_context.gc_context,
             Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
@@ -272,7 +272,7 @@ impl<'gc> Avm1<'gc> {
             action_context.gc_context,
             Scope::from_global_object(self.globals),
         );
-        let clip_obj = active_clip.object().as_object(self, action_context);
+        let clip_obj = active_clip.object().coerce_to_object(self, action_context);
         let child_scope = GcCell::allocate(
             action_context.gc_context,
             Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
@@ -685,7 +685,7 @@ impl<'gc> Avm1<'gc> {
         // `"undefined"`, for example.
         let path = target.coerce_to_string(self, context)?;
         let root = start.root();
-        let start = start.object().as_object(self, context);
+        let start = start.object().coerce_to_object(self, context);
         Ok(self
             .resolve_target_path(context, root, start, &path)?
             .and_then(|o| o.as_display_object()))
@@ -717,7 +717,7 @@ impl<'gc> Avm1<'gc> {
         let mut path = path.as_bytes();
         let (mut object, mut is_slash_path) = if path[0] == b'/' {
             path = &path[1..];
-            (root.object().as_object(self, context), true)
+            (root.object().coerce_to_object(self, context), true)
         } else {
             (start, false)
         };
@@ -1233,7 +1233,7 @@ impl<'gc> Avm1<'gc> {
             .get_variable(context, &fn_name.as_string()?)?
             .resolve(self, context)?;
 
-        let this = self.target_clip_or_root().object().as_object(self, context);
+        let this = self.target_clip_or_root().object().coerce_to_object(self, context);
         let result = target_fn.call(self, context, this, None, &args)?;
         self.push(result);
 
@@ -1255,7 +1255,7 @@ impl<'gc> Avm1<'gc> {
 
         match method_name {
             Value::Undefined | Value::Null => {
-                let this = self.target_clip_or_root().object().as_object(self, context);
+                let this = self.target_clip_or_root().object().coerce_to_object(self, context);
                 let result = object.call(self, context, this, None, &args)?;
                 self.push(result);
             }
@@ -1281,12 +1281,12 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_cast_op(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        let obj = self.pop().as_object(self, context);
-        let constr = self.pop().as_object(self, context);
+        let obj = self.pop().coerce_to_object(self, context);
+        let constr = self.pop().coerce_to_object(self, context);
 
         let prototype = constr
             .get("prototype", self, context)?
-            .as_object(self, context);
+            .coerce_to_object(self, context);
 
         if obj.is_instance_of(self, context, constr, prototype)? {
             self.push(obj);
@@ -1563,14 +1563,14 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_extends(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        let superclass = self.pop().as_object(self, context);
-        let subclass = self.pop().as_object(self, context);
+        let superclass = self.pop().coerce_to_object(self, context);
+        let subclass = self.pop().coerce_to_object(self, context);
 
         //TODO: What happens if we try to extend an object which has no `prototype`?
         //e.g. `class Whatever extends Object.prototype` or `class Whatever extends 5`
         let super_proto = superclass
             .get("prototype", self, context)?
-            .as_object(self, context);
+            .coerce_to_object(self, context);
 
         let sub_prototype: Object<'gc> =
             ScriptObject::object(context.gc_context, Some(super_proto)).into();
@@ -1728,7 +1728,7 @@ impl<'gc> Avm1<'gc> {
                     .as_movie_clip()
                     .unwrap()
                     .object()
-                    .as_object(self, context);
+                    .coerce_to_object(self, context);
                 let (url, opts) = self.locals_into_request_options(
                     context,
                     url,
@@ -1896,19 +1896,19 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let constr = self.pop().as_object(self, context);
+        let constr = self.pop().coerce_to_object(self, context);
         let count = self.pop().as_i64()?; //TODO: Is this coercion actually performed by Flash?
         let mut interfaces = vec![];
 
         //TODO: If one of the interfaces is not an object, do we leave the
         //whole stack dirty, or...?
         for _ in 0..count {
-            interfaces.push(self.pop().as_object(self, context));
+            interfaces.push(self.pop().coerce_to_object(self, context));
         }
 
         let mut prototype = constr
             .get("prototype", self, context)?
-            .as_object(self, context);
+            .coerce_to_object(self, context);
 
         prototype.set_interfaces(context.gc_context, interfaces);
 
@@ -1919,12 +1919,12 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let constr = self.pop().as_object(self, context);
-        let obj = self.pop().as_object(self, context);
+        let constr = self.pop().coerce_to_object(self, context);
+        let obj = self.pop().coerce_to_object(self, context);
 
         let prototype = constr
             .get("prototype", self, context)?
-            .as_object(self, context);
+            .coerce_to_object(self, context);
         let is_instance_of = obj.is_instance_of(self, context, constr, prototype)?;
 
         self.push(is_instance_of);
@@ -2055,7 +2055,7 @@ impl<'gc> Avm1<'gc> {
         if let Value::Object(constructor) = constructor {
             let prototype = constructor
                 .get("prototype", self, context)?
-                .as_object(self, context);
+                .coerce_to_object(self, context);
 
             let this = prototype.new(self, context, prototype, &args)?;
 
@@ -2098,10 +2098,10 @@ impl<'gc> Avm1<'gc> {
                 .read()
                 .resolve(fn_name, self, context)?
                 .resolve(self, context)?
-                .as_object(self, context);
+                .coerce_to_object(self, context);
             let prototype = constructor
                 .get("prototype", self, context)?
-                .as_object(self, context);
+                .coerce_to_object(self, context);
             let this = prototype.new(self, context, prototype, &args)?;
 
             this.set("__constructor__", constructor.into(), self, context)?;
@@ -2254,7 +2254,7 @@ impl<'gc> Avm1<'gc> {
         let name_val = self.pop();
         let name = name_val.coerce_to_string(self, context)?;
 
-        let object = self.pop().as_object(self, context);
+        let object = self.pop().coerce_to_object(self, context);
         object.set(&name, value, self, context)?;
 
         Ok(())
@@ -2311,7 +2311,7 @@ impl<'gc> Avm1<'gc> {
         let base_clip = self.base_clip();
         let new_target_clip;
         let root = base_clip.root();
-        let start = base_clip.object().as_object(self, context);
+        let start = base_clip.object().coerce_to_object(self, context);
         if target.is_empty() {
             new_target_clip = Some(base_clip);
         } else if let Some(clip) = self
@@ -2339,7 +2339,7 @@ impl<'gc> Avm1<'gc> {
             .target_clip()
             .unwrap_or_else(|| sf.base_clip().root())
             .object()
-            .as_object(self, context);
+            .coerce_to_object(self, context);
 
         sf.set_scope(Scope::new_target_scope(scope, clip_obj, context.gc_context));
         Ok(())
@@ -2386,7 +2386,7 @@ impl<'gc> Avm1<'gc> {
             .target_clip()
             .unwrap_or_else(|| sf.base_clip().root())
             .object()
-            .as_object(self, context);
+            .coerce_to_object(self, context);
         sf.set_scope(Scope::new_target_scope(scope, clip_obj, context.gc_context));
         Ok(())
     }
@@ -2554,7 +2554,7 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         // TODO(Herschel)
-        let _clip = self.pop().as_object(self, context);
+        let _clip = self.pop().coerce_to_object(self, context);
         self.push(Value::Undefined);
         Err("Unimplemented action: TargetPath".into())
     }
@@ -2640,7 +2640,7 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         actions: &[u8],
     ) -> Result<(), Error> {
-        let object = self.pop().as_object(self, context);
+        let object = self.pop().coerce_to_object(self, context);
         let block = self
             .current_stack_frame()
             .unwrap()

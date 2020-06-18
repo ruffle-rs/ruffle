@@ -60,7 +60,7 @@ pub fn apply<'gc>(
     };
 
     while child_args.len() < length {
-        let args = args_object.as_object(avm, action_context);
+        let args = args_object.coerce_to_object(avm, action_context);
         let next_arg = args.get(&format!("{}", child_args.len()), avm, action_context)?;
 
         child_args.push(next_arg);
