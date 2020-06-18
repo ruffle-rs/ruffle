@@ -76,9 +76,8 @@ pub fn hit_test<'gc>(
         let other = args
             .get(0)
             .unwrap()
-            .as_object()
-            .ok()
-            .and_then(|o| o.as_display_object());
+            .as_object(avm, context)
+            .as_display_object();
         if let Some(other) = other {
             return Ok(other
                 .world_bounds()
@@ -260,10 +259,10 @@ fn begin_gradient_fill<'gc>(
         args.get(4),
     ) {
         let method = method.clone().coerce_to_string(avm, context)?;
-        let colors = colors.as_object()?.array();
-        let alphas = alphas.as_object()?.array();
-        let ratios = ratios.as_object()?.array();
-        let matrix_object = matrix.as_object()?;
+        let colors = colors.as_object(avm, context).array();
+        let alphas = alphas.as_object(avm, context).array();
+        let ratios = ratios.as_object(avm, context).array();
+        let matrix_object = matrix.as_object(avm, context);
         if colors.len() != alphas.len() || colors.len() != ratios.len() {
             log::warn!(
                 "beginGradientFill() received different sized arrays for colors, alphas and ratios"
@@ -449,16 +448,11 @@ fn attach_movie<'gc>(
         // Set name and attach to parent.
         new_clip.set_name(context.gc_context, &new_instance_name);
         movie_clip.add_child_from_avm(context, new_clip, depth);
-        new_clip.post_instantiation(
-            avm,
-            context,
-            new_clip,
-            init_object.and_then(|v| v.as_object().ok()),
-            true,
-        );
+        let init_object = init_object.map(|v| v.as_object(avm, context));
+        new_clip.post_instantiation(avm, context, new_clip, init_object, true);
         new_clip.run_frame(avm, context);
 
-        Ok(new_clip.object().as_object().unwrap().into())
+        Ok(new_clip.object().as_object(avm, context).into())
     } else {
         log::warn!("Unable to attach '{}'", export_name);
         Ok(Value::Undefined.into())
@@ -608,16 +602,11 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
         // TODO: Any other properties we should copy...?
         // Definitely not ScriptObject properties.
 
-        new_clip.post_instantiation(
-            avm,
-            context,
-            new_clip,
-            init_object.and_then(|v| v.as_object().ok()),
-            true,
-        );
+        let init_object = init_object.map(|v| v.as_object(avm, context));
+        new_clip.post_instantiation(avm, context, new_clip, init_object, true);
         new_clip.run_frame(avm, context);
 
-        Ok(new_clip.object().as_object().unwrap().into())
+        Ok(new_clip.object().as_object(avm, context).into())
     } else {
         log::warn!("Unable to duplicate clip '{}'", movie_clip.name());
         Ok(Value::Undefined.into())
@@ -1019,11 +1008,11 @@ fn load_variables<'gc>(
     let method = NavigationMethod::from_method_str(&method.coerce_to_string(avm, context)?);
     let (url, opts) = avm.locals_into_request_options(context, url, method);
     let fetch = context.navigator.fetch(url, opts);
-    let process = context.load_manager.load_form_into_object(
-        context.player.clone().unwrap(),
-        target.object().as_object()?,
-        fetch,
-    );
+    let target = target.object().as_object(avm, context);
+    let process =
+        context
+            .load_manager
+            .load_form_into_object(context.player.clone().unwrap(), target, fetch);
 
     context.navigator.spawn_future(process);
 

@@ -107,18 +107,14 @@ fn is_property_enumerable<'gc>(
 
 /// Implements `Object.prototype.isPrototypeOf`
 fn is_prototype_of<'gc>(
-    _: &mut Avm1<'gc>,
-    _: &mut UpdateContext<'_, 'gc, '_>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     match args.get(0) {
         Some(val) => {
-            let ob = match val.as_object() {
-                Ok(ob) => ob,
-                Err(_) => return Ok(Value::Bool(false).into()),
-            };
-
+            let ob = val.as_object(avm, context);
             Ok(Value::Bool(this.is_prototype_of(ob)).into())
         }
         _ => Ok(Value::Bool(false).into()),
@@ -150,7 +146,10 @@ pub fn register_class<'gc>(
             .get_character_by_export_name(&class_name)
         {
             if let Some(constructor) = args.get(1) {
-                movie_clip.set_avm1_constructor(context.gc_context, Some(constructor.as_object()?));
+                movie_clip.set_avm1_constructor(
+                    context.gc_context,
+                    Some(constructor.as_object(avm, context)),
+                );
             } else {
                 movie_clip.set_avm1_constructor(context.gc_context, None);
             }
@@ -237,7 +236,7 @@ pub fn as_set_prop_flags<'gc>(
     let mut object = args
         .get(0)
         .ok_or_else(|| my_error.unwrap_err())?
-        .as_object()?;
+        .as_object(avm, ac);
     let properties = match args.get(1).ok_or_else(|| my_error_2.unwrap_err())? {
         Value::Object(ob) => {
             //Convert to native array.

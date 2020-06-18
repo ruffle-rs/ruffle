@@ -252,14 +252,13 @@ impl Player {
             root.set_name(context.gc_context, "");
             context.levels.insert(0, root);
 
-            if let Ok(object) = root.object().as_object() {
-                object.define_value(
-                    context.gc_context,
-                    "$version",
-                    context.system.get_version_string(avm).into(),
-                    EnumSet::empty(),
-                );
-            }
+            let object = root.object().as_object(avm, context);
+            object.define_value(
+                context.gc_context,
+                "$version",
+                context.system.get_version_string(avm).into(),
+                EnumSet::empty(),
+            );
         });
 
         player.build_matrices();
@@ -370,15 +369,14 @@ impl Player {
                     );
                     let levels = context.levels.clone();
                     for (level, display_object) in levels {
-                        if let Ok(object) = display_object.object().as_object() {
-                            dumper.print_variables(
-                                &format!("Level #{}:", level),
-                                &format!("_level{}", level),
-                                &object,
-                                avm,
-                                context,
-                            );
-                        }
+                        let object = display_object.object().as_object(avm, context);
+                        dumper.print_variables(
+                            &format!("Level #{}:", level),
+                            &format!("_level{}", level),
+                            &object,
+                            avm,
+                            context,
+                        );
                     }
                     log::info!("Variable dump:\n{}", dumper.output());
                 });
@@ -715,7 +713,7 @@ impl Player {
                     ));
                     if let Ok(prototype) = constructor
                         .get("prototype", avm, context)
-                        .and_then(|v| v.as_object())
+                        .map(|v| v.as_object(avm, context))
                     {
                         if let Value::Object(object) = actions.clip.object() {
                             object.set_proto(context.gc_context, Some(prototype));

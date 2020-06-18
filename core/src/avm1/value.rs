@@ -1,3 +1,4 @@
+use crate::avm1::value_object::ValueObject;
 use crate::avm1::{Avm1, Error, Object, TObject, UpdateContext};
 use std::f64::NAN;
 
@@ -548,12 +549,12 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn as_object(&self) -> Result<Object<'gc>, Error> {
-        if let Value::Object(object) = self {
-            Ok(*object)
-        } else {
-            Err(format!("Expected Object, found {:?}", self).into())
-        }
+    pub fn as_object(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Object<'gc> {
+        ValueObject::boxed(avm, context, self.to_owned())
     }
 
     pub fn get(
