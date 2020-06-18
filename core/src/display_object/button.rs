@@ -124,6 +124,8 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         _init_object: Option<Object<'gc>>,
         _instantiated_from_avm: bool,
     ) {
+        self.set_default_instance_name(context);
+
         let mut mc = self.0.write(context.gc_context);
         if mc.object.is_none() {
             let object = StageObject::for_display_object(

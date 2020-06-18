@@ -139,6 +139,9 @@ pub struct Player {
 
     system: SystemProperties,
 
+    /// The current instance ID. Used to generate default `instanceN` names.
+    instance_counter: i32,
+
     /// Self-reference to ourselves.
     ///
     /// This is a weak reference that is upgraded and handed out in various
@@ -238,6 +241,7 @@ impl Player {
             input,
             self_reference: None,
             system: SystemProperties::default(),
+            instance_counter: 0,
         };
 
         player.mutate_with_update_context(|avm, context| {
@@ -245,6 +249,7 @@ impl Player {
                 MovieClip::from_movie(context.gc_context, movie.clone()).into();
             root.set_depth(context.gc_context, 0);
             root.post_instantiation(avm, context, root, None, false);
+            root.set_name(context.gc_context, "");
             context.levels.insert(0, root);
 
             if let Ok(object) = root.object().as_object() {
@@ -846,6 +851,7 @@ impl Player {
             stage_height,
             player,
             system_properties,
+            instance_counter,
         ) = (
             self.player_version,
             self.global_time,
@@ -861,6 +867,7 @@ impl Player {
             Twips::from_pixels(self.movie_height.into()),
             self.self_reference.clone(),
             &mut self.system,
+            &mut self.instance_counter,
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -891,6 +898,7 @@ impl Player {
                 player,
                 load_manager,
                 system: system_properties,
+                instance_counter,
             };
 
             let ret = f(avm, &mut update_context);
