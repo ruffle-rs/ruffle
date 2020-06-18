@@ -9,38 +9,38 @@ use crate::tag_utils::SwfMovie;
 use crate::xml::XMLNode;
 use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
-use std::fmt;
 use std::string::FromUtf8Error;
 use std::sync::{Arc, Mutex, Weak};
+use thiserror::Error;
 use url::form_urlencoded;
 
 pub type Handle = Index;
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum LoaderError {
+    #[error("Load cancelled")]
     Cancelled,
-    NotMovieLoader,
-    NotFormLoader,
-    NotXmlLoader,
-    InvalidSwf(crate::tag_utils::Error),
-    InvalidXmlEncoding(FromUtf8Error),
-    NetworkError(std::io::Error),
-    Avm1Error(Box<dyn std::error::Error>),
-}
 
-impl fmt::Display for LoaderError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            LoaderError::Cancelled => f.write_str("Load cancelled"),
-            LoaderError::NotMovieLoader => f.write_str("Non-movie loader spawned as movie loader"),
-            LoaderError::NotFormLoader => f.write_str("Non-form loader spawned as form loader"),
-            LoaderError::NotXmlLoader => f.write_str("Non-XML loader spawned as XML loader"),
-            LoaderError::InvalidSwf(error) => write!(f, "Invalid SWF: {}", error),
-            LoaderError::InvalidXmlEncoding(error) => write!(f, "Invalid XML encoding: {}", error),
-            LoaderError::NetworkError(error) => write!(f, "Network error: {}", error),
-            LoaderError::Avm1Error(error) => write!(f, "Could not run avm1 script: {}", error),
-        }
-    }
+    #[error("Non-movie loader spawned as movie loader")]
+    NotMovieLoader,
+
+    #[error("Non-form loader spawned as form loader")]
+    NotFormLoader,
+
+    #[error("Non-XML loader spawned as XML loader")]
+    NotXmlLoader,
+
+    #[error("Invalid SWF")]
+    InvalidSwf(#[from] crate::tag_utils::Error),
+
+    #[error("Invalid XML encoding")]
+    InvalidXmlEncoding(#[from] FromUtf8Error),
+
+    #[error("Network error")]
+    NetworkError(#[from] std::io::Error),
+
+    #[error("Error running avm1 script: {0}")]
+    Avm1Error(Box<dyn std::error::Error>),
 }
 
 /// Holds all in-progress loads for the player.
@@ -322,12 +322,7 @@ impl<'gc> Loader<'gc> {
                 },
             )?;
 
-            let data = (fetch.await).and_then(|data| {
-                Ok((
-                    data.len(),
-                    SwfMovie::from_data(&data).map_err(|e| LoaderError::InvalidSwf(e))?,
-                ))
-            });
+            let data = (fetch.await).and_then(|data| Ok((data.len(), SwfMovie::from_data(&data)?)));
             if let Ok((length, movie)) = data {
                 let movie = Arc::new(movie);
 
@@ -548,7 +543,7 @@ impl<'gc> Loader<'gc> {
         Box::pin(async move {
             let data = fetch.await;
             if let Ok(data) = data {
-                let xmlstring = String::from_utf8(data).map_err(LoaderError::InvalidXmlEncoding)?;
+                let xmlstring = String::from_utf8(data)?;
 
                 player.lock().expect("Could not lock player!!").update(
                     |avm, uc| -> Result<(), LoaderError> {
