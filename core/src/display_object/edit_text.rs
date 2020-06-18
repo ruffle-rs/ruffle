@@ -522,6 +522,10 @@ impl<'gc> EditText<'gc> {
             );
         }
 
+        if let Some(drawing) = lbox.read().as_renderable_drawing() {
+            drawing.render(context);
+        }
+
         context.transform_stack.pop();
     }
 }

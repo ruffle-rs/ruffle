@@ -1,6 +1,7 @@
 //! Layout box structure
 
 use crate::context::UpdateContext;
+use crate::drawing::Drawing;
 use crate::font::{EvalParameters, Font};
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
@@ -566,6 +567,13 @@ pub enum LayoutContent<'gc> {
         /// The color to render the font with.
         color: Collec<swf::Color>,
     },
+
+    /// A layout box containing a drawing.
+    ///
+    /// The drawing will be rendered with it's origin at the position of the
+    /// layout box's bounds. The size of those bounds do not affect the
+    /// rendering of the drawing.
+    Drawing(Drawing),
 }
 
 impl<'gc> LayoutBox<'gc> {
@@ -615,6 +623,18 @@ impl<'gc> LayoutBox<'gc> {
                     params,
                     color: Collec(span.color.clone()),
                 },
+            },
+        )
+    }
+
+    /// Construct a drawing.
+    pub fn from_drawing(mc: MutationContext<'gc, '_>, drawing: Drawing) -> GcCell<'gc, Self> {
+        GcCell::allocate(
+            mc,
+            Self {
+                bounds: Default::default(),
+                next_sibling: None,
+                content: LayoutContent::Drawing(drawing),
             },
         )
     }
@@ -735,7 +755,8 @@ impl<'gc> LayoutBox<'gc> {
         self.bounds
     }
 
-    /// Returns a reference to the text this box contains.
+    /// Returns a reference to the text this box contains, as well as font
+    /// rendering parameters, if the layout box has any.
     pub fn as_renderable_text<'a>(
         &self,
         text: &'a str,
@@ -761,6 +782,16 @@ impl<'gc> LayoutBox<'gc> {
                 params,
                 color,
             } => Some(("\u{2022}", &text_format, *font, *params, color.0.clone())),
+            LayoutContent::Drawing(..) => None,
+        }
+    }
+
+    /// Returns a reference to the drawing this box contains, if it has one.
+    pub fn as_renderable_drawing(&self) -> Option<&Drawing> {
+        match &self.content {
+            LayoutContent::Text { .. } => None,
+            LayoutContent::Bullet { .. } => None,
+            LayoutContent::Drawing(drawing) => Some(drawing),
         }
     }
 
@@ -768,6 +799,7 @@ impl<'gc> LayoutBox<'gc> {
         match &self.content {
             LayoutContent::Text { .. } => true,
             LayoutContent::Bullet { .. } => false,
+            LayoutContent::Drawing(..) => false,
         }
     }
 
@@ -775,6 +807,7 @@ impl<'gc> LayoutBox<'gc> {
         match &self.content {
             LayoutContent::Text { .. } => false,
             LayoutContent::Bullet { .. } => true,
+            LayoutContent::Drawing(..) => false,
         }
     }
 
