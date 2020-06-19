@@ -14,6 +14,7 @@ use crate::xml::XMLNode;
 use enumset::EnumSet;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
+use std::borrow::Cow;
 use std::fmt::Debug;
 
 /// Represents an object that can be directly interacted with by the AVM
@@ -281,7 +282,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_keys(&self, avm: &mut Avm1<'gc>) -> Vec<String>;
 
     /// Coerce the object into a string.
-    fn as_string(&self) -> String;
+    fn as_string(&self) -> Cow<str>;
 
     /// Get the object's type string.
     fn type_of(&self) -> &'static str;

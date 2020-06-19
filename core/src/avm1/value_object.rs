@@ -7,6 +7,7 @@ use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, UpdateContext, Value};
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::borrow::Cow;
 use std::fmt;
 
 /// An Object that serves as a box for a primitive value.
@@ -293,8 +294,8 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
         self.0.read().base.get_keys(avm)
     }
 
-    fn as_string(&self) -> String {
-        self.0.read().base.as_string()
+    fn as_string(&self) -> Cow<str> {
+        Cow::Owned(self.0.read().base.as_string().into_owned())
     }
 
     fn type_of(&self) -> &'static str {

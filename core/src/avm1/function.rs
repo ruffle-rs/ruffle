@@ -11,6 +11,7 @@ use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::tag_utils::SwfSlice;
 use enumset::EnumSet;
 use gc_arena::{Collect, CollectionContext, GcCell, MutationContext};
+use std::borrow::Cow;
 use std::fmt;
 use swf::avm1::types::FunctionParam;
 
@@ -623,8 +624,8 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.base.get_keys(avm)
     }
 
-    fn as_string(&self) -> String {
-        "[type Function]".to_string()
+    fn as_string(&self) -> Cow<str> {
+        Cow::Borrowed("[type Function]")
     }
 
     fn type_of(&self) -> &'static str {

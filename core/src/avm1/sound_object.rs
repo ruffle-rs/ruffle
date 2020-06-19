@@ -9,6 +9,7 @@ use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::borrow::Cow;
 use std::fmt;
 
 /// A SounObject that is tied to a sound from the AudioBackend.
@@ -285,8 +286,8 @@ impl<'gc> TObject<'gc> for SoundObject<'gc> {
         self.base().get_keys(avm)
     }
 
-    fn as_string(&self) -> String {
-        self.base().as_string()
+    fn as_string(&self) -> Cow<str> {
+        Cow::Owned(self.base().as_string().into_owned())
     }
 
     fn type_of(&self) -> &'static str {
