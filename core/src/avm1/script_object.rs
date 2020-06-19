@@ -6,6 +6,7 @@ use crate::property_map::{Entry, PropertyMap};
 use core::fmt;
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::borrow::Cow;
 
 pub const TYPE_OF_OBJECT: &str = "object";
 
@@ -576,8 +577,8 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         out_keys
     }
 
-    fn as_string(&self) -> String {
-        "[object Object]".to_string()
+    fn as_string(&self) -> Cow<str> {
+        Cow::Borrowed("[object Object]")
     }
 
     fn type_of(&self) -> &'static str {

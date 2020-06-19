@@ -10,6 +10,7 @@ use crate::display_object::{DisplayObject, MovieClip};
 use crate::property_map::PropertyMap;
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::borrow::Cow;
 use std::fmt;
 
 /// The type string for MovieClip objects.
@@ -340,8 +341,8 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.base.set_interfaces(context, iface_list)
     }
 
-    fn as_string(&self) -> String {
-        self.display_object.path()
+    fn as_string(&self) -> Cow<str> {
+        Cow::Owned(self.display_object.path())
     }
 
     fn type_of(&self) -> &'static str {

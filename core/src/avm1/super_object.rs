@@ -10,6 +10,7 @@ use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::borrow::Cow;
 
 /// Implementation of the `super` object in AS2.
 ///
@@ -268,8 +269,8 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         vec![]
     }
 
-    fn as_string(&self) -> String {
-        self.0.read().child.as_string()
+    fn as_string(&self) -> Cow<str> {
+        Cow::Owned(self.0.read().child.as_string().into_owned())
     }
 
     fn type_of(&self) -> &'static str {
