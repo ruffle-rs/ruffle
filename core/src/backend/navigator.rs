@@ -118,7 +118,7 @@ pub trait NavigatorBackend {
     );
 
     /// Fetch data at a given URL and return it some time in the future.
-    fn fetch(&self, url: String, request_options: RequestOptions) -> OwnedFuture<Vec<u8>, Error>;
+    fn fetch(&self, url: &str, request_options: RequestOptions) -> OwnedFuture<Vec<u8>, Error>;
 
     /// Get the amount of time since the SWF was launched.
     /// Used by the `getTimer` ActionScript call.
@@ -288,7 +288,7 @@ impl NavigatorBackend for NullNavigatorBackend {
     ) {
     }
 
-    fn fetch(&self, url: String, _opts: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
+    fn fetch(&self, url: &str, _opts: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
         let mut path = self.relative_base_path.clone();
         path.push(url);
 

@@ -167,7 +167,7 @@ fn line_style<'gc>(
             .map_or(false, |v| v.as_bool(avm.current_swf_version()));
         let (allow_scale_x, allow_scale_y) = match args
             .get(4)
-            .and_then(|v| v.clone().coerce_to_string(avm, context).ok())
+            .and_then(|v| v.coerce_to_string(avm, context).ok())
             .as_deref()
         {
             Some("normal") => (true, true),
@@ -177,7 +177,7 @@ fn line_style<'gc>(
         };
         let cap_style = match args
             .get(5)
-            .and_then(|v| v.clone().coerce_to_string(avm, context).ok())
+            .and_then(|v| v.coerce_to_string(avm, context).ok())
             .as_deref()
         {
             Some("square") => LineCapStyle::Square,
@@ -186,7 +186,7 @@ fn line_style<'gc>(
         };
         let join_style = match args
             .get(6)
-            .and_then(|v| v.clone().coerce_to_string(avm, context).ok())
+            .and_then(|v| v.coerce_to_string(avm, context).ok())
             .as_deref()
         {
             Some("miter") => {
@@ -258,7 +258,7 @@ fn begin_gradient_fill<'gc>(
         args.get(3),
         args.get(4),
     ) {
-        let method = method.clone().coerce_to_string(avm, context)?;
+        let method = method.coerce_to_string(avm, context)?;
         let colors = colors.coerce_to_object(avm, context).array();
         let alphas = alphas.coerce_to_object(avm, context).array();
         let ratios = ratios.coerce_to_object(avm, context).array();
@@ -282,7 +282,7 @@ fn begin_gradient_fill<'gc>(
         let matrix = gradient_object_to_matrix(matrix_object, avm, context)?;
         let spread = match args
             .get(5)
-            .and_then(|v| v.clone().coerce_to_string(avm, context).ok())
+            .and_then(|v| v.coerce_to_string(avm, context).ok())
             .as_deref()
         {
             Some("reflect") => GradientSpread::Reflect,
@@ -291,7 +291,7 @@ fn begin_gradient_fill<'gc>(
         };
         let interpolation = match args
             .get(6)
-            .and_then(|v| v.clone().coerce_to_string(avm, context).ok())
+            .and_then(|v| v.coerce_to_string(avm, context).ok())
             .as_deref()
         {
             Some("linearRGB") => GradientInterpolation::LinearRGB,
@@ -304,7 +304,7 @@ fn begin_gradient_fill<'gc>(
             interpolation,
             records,
         };
-        let style = match method.as_str() {
+        let style = match method.as_ref() {
             "linear" => FillStyle::LinearGradient(gradient),
             "radial" => {
                 if let Some(focal_point) = args.get(7) {
@@ -422,8 +422,8 @@ fn attach_movie<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     let (export_name, new_instance_name, depth) = match &args[0..3] {
         [export_name, new_instance_name, depth] => (
-            export_name.clone().coerce_to_string(avm, context)?,
-            new_instance_name.clone().coerce_to_string(avm, context)?,
+            export_name.coerce_to_string(avm, context)?,
+            new_instance_name.coerce_to_string(avm, context)?,
             depth.as_i32().unwrap_or(0).wrapping_add(AVM_DEPTH_BIAS),
         ),
         _ => {
@@ -467,7 +467,7 @@ fn create_empty_movie_clip<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     let (new_instance_name, depth) = match &args[0..2] {
         [new_instance_name, depth] => (
-            new_instance_name.clone().coerce_to_string(avm, context)?,
+            new_instance_name.coerce_to_string(avm, context)?,
             depth.as_i32().unwrap_or(0).wrapping_add(AVM_DEPTH_BIAS),
         ),
         _ => {
@@ -499,11 +499,7 @@ fn create_text_field<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     let movie = avm.base_clip().movie().unwrap();
-    let instance_name = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .coerce_to_string(avm, context)?;
+    let instance_name = args.get(0).cloned().unwrap_or(Value::Undefined);
     let depth = args
         .get(1)
         .cloned()
@@ -532,7 +528,10 @@ fn create_text_field<'gc>(
 
     let mut text_field: DisplayObject<'gc> =
         EditText::new(context, movie, x, y, width, height).into();
-    text_field.set_name(context.gc_context, &instance_name);
+    text_field.set_name(
+        context.gc_context,
+        &instance_name.coerce_to_string(avm, context)?,
+    );
     movie_clip.add_child_from_avm(context, text_field, depth as Depth);
     text_field.post_instantiation(avm, context, text_field, None, true);
 
@@ -563,7 +562,7 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     let (new_instance_name, depth) = match &args[0..2] {
         [new_instance_name, depth] => (
-            new_instance_name.clone().coerce_to_string(avm, context)?,
+            new_instance_name.coerce_to_string(avm, context)?,
             depth.as_i32().unwrap_or(0).wrapping_add(depth_bias),
         ),
         _ => {
@@ -698,7 +697,7 @@ pub fn goto_frame<'gc>(
         }
         val => {
             // Coerce to string and search for a frame label.
-            let frame_label = val.clone().coerce_to_string(avm, context)?;
+            let frame_label = val.coerce_to_string(avm, context)?;
             if let Some(mut frame) = movie_clip.frame_label_to_number(&frame_label) {
                 frame = frame.wrapping_add(scene_offset);
                 movie_clip.goto_frame(avm, context, frame, stop);
@@ -894,7 +893,7 @@ fn get_bounds<'gc>(
         Some(Value::String(s)) if s.is_empty() => None,
         Some(Value::Object(o)) if o.as_display_object().is_some() => o.as_display_object(),
         Some(val) => {
-            let path = val.clone().coerce_to_string(avm, context)?;
+            let path = val.coerce_to_string(avm, context)?;
             avm.resolve_target_display_object(context, movie_clip.into(), path.into())?
         }
         None => Some(movie_clip.into()),
@@ -972,15 +971,12 @@ fn load_movie<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let url = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .coerce_to_string(avm, context)?;
+    let url_val = args.get(0).cloned().unwrap_or(Value::Undefined);
+    let url = url_val.coerce_to_string(avm, context)?;
     let method = args.get(1).cloned().unwrap_or(Value::Undefined);
     let method = NavigationMethod::from_method_str(&method.coerce_to_string(avm, context)?);
     let (url, opts) = avm.locals_into_request_options(context, url, method);
-    let fetch = context.navigator.fetch(url, opts);
+    let fetch = context.navigator.fetch(&url, opts);
     let process = context.load_manager.load_movie_into_clip(
         context.player.clone().unwrap(),
         DisplayObject::MovieClip(target),
@@ -999,15 +995,12 @@ fn load_variables<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let url = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .coerce_to_string(avm, context)?;
+    let url_val = args.get(0).cloned().unwrap_or(Value::Undefined);
+    let url = url_val.coerce_to_string(avm, context)?;
     let method = args.get(1).cloned().unwrap_or(Value::Undefined);
     let method = NavigationMethod::from_method_str(&method.coerce_to_string(avm, context)?);
     let (url, opts) = avm.locals_into_request_options(context, url, method);
-    let fetch = context.navigator.fetch(url, opts);
+    let fetch = context.navigator.fetch(&url, opts);
     let target = target.object().coerce_to_object(avm, context);
     let process =
         context

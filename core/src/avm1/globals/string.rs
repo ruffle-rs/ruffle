@@ -19,7 +19,7 @@ pub fn string<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     let value = match args.get(0).cloned() {
         Some(Value::String(s)) => s,
-        Some(o) => o.coerce_to_string(avm, ac)?,
+        Some(v) => v.coerce_to_string(avm, ac)?.to_string(),
         _ => String::new(),
     };
 
@@ -177,13 +177,15 @@ fn char_at<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     // TODO: Will return REPLACEMENT_CHAR if this indexes a character outside the BMP, losing info about the surrogate.
     // When we improve our string representation, the unpaired surrogate should be returned.
-    let this = Value::from(this).coerce_to_string(avm, context)?;
+    let this_val = Value::from(this);
+    let string = this_val.coerce_to_string(avm, context)?;
     let i = args
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_i32(avm, context)?;
     let ret = if i >= 0 {
-        this.encode_utf16()
+        string
+            .encode_utf16()
             .nth(i as usize)
             .map(|c| utf16_code_unit_to_char(c).to_string())
             .unwrap_or_default()
@@ -199,7 +201,8 @@ fn char_code_at<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let this = Value::from(this).coerce_to_string(avm, context)?;
+    let this_val = Value::from(this);
+    let this = this_val.coerce_to_string(avm, context)?;
     let i = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -221,9 +224,11 @@ fn concat<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let mut ret = Value::from(this).coerce_to_string(avm, context)?;
+    let mut ret = Value::from(this)
+        .coerce_to_string(avm, context)?
+        .to_string();
     for arg in args {
-        let s = arg.clone().coerce_to_string(avm, context)?;
+        let s = arg.coerce_to_string(avm, context)?;
         ret.push_str(&s)
     }
     Ok(ret.into())
@@ -359,7 +364,8 @@ fn slice<'gc>(
         return Ok(Value::Undefined.into());
     }
 
-    let this = Value::from(this).coerce_to_string(avm, context)?;
+    let this_val = Value::from(this);
+    let this = this_val.coerce_to_string(avm, context)?;
     let this_len = this.encode_utf16().count();
     let start_index = string_wrapping_index(
         args.get(0)
@@ -389,19 +395,17 @@ fn split<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let this = Value::from(this).coerce_to_string(avm, context)?;
-    let delimiter = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .clone()
-        .coerce_to_string(avm, context)?;
+    let this_val = Value::from(this);
+    let this = this_val.coerce_to_string(avm, context)?;
+    let delimiter_val = args.get(0).unwrap_or(&Value::Undefined);
+    let delimiter = delimiter_val.coerce_to_string(avm, context)?;
     let limit = match args.get(1) {
         None | Some(Value::Undefined) => std::usize::MAX,
         Some(n) => std::cmp::max(0, n.coerce_to_i32(avm, context)?) as usize,
     };
     let array = ScriptObject::array(context.gc_context, Some(avm.prototypes.array));
     if !delimiter.is_empty() {
-        for (i, token) in this.split(&delimiter).take(limit).enumerate() {
+        for (i, token) in this.split(delimiter.as_ref()).take(limit).enumerate() {
             array.set_array_element(i, token.to_string().into(), context.gc_context);
         }
     } else {
@@ -425,7 +429,8 @@ fn substr<'gc>(
         return Ok(Value::Undefined.into());
     }
 
-    let this = Value::from(this).coerce_to_string(avm, context)?;
+    let this_val = Value::from(this);
+    let this = this_val.coerce_to_string(avm, context)?;
     let this_len = this.encode_utf16().count();
     let start_index =
         string_wrapping_index(args.get(0).unwrap().coerce_to_i32(avm, context)?, this_len);
@@ -449,7 +454,8 @@ fn substring<'gc>(
         return Ok(Value::Undefined.into());
     }
 
-    let this = Value::from(this).coerce_to_string(avm, context)?;
+    let this_val = Value::from(this);
+    let this = this_val.coerce_to_string(avm, context)?;
     let this_len = this.encode_utf16().count();
     let mut start_index = string_index(args.get(0).unwrap().coerce_to_i32(avm, context)?, this_len);
 
@@ -476,7 +482,8 @@ fn to_lower_case<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let this = Value::from(this).coerce_to_string(avm, context)?;
+    let this_val = Value::from(this);
+    let this = this_val.coerce_to_string(avm, context)?;
     Ok(this
         .chars()
         .map(string_utils::swf_char_to_lowercase)
@@ -509,7 +516,8 @@ fn to_upper_case<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let this = Value::from(this).coerce_to_string(avm, context)?;
+    let this_val = Value::from(this);
+    let this = this_val.coerce_to_string(avm, context)?;
     Ok(this
         .chars()
         .map(string_utils::swf_char_to_uppercase)

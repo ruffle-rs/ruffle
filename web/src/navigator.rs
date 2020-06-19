@@ -92,7 +92,8 @@ impl NavigatorBackend for WebNavigatorBackend {
         Duration::from_millis(dt as u64)
     }
 
-    fn fetch(&self, url: String, options: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
+    fn fetch(&self, url: &str, options: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
+        let url = url.to_string();
         Box::pin(async move {
             let mut init = RequestInit::new();
 

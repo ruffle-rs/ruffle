@@ -12,6 +12,7 @@ use crate::xml::{XMLDocument, XMLNode};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 use quick_xml::Error as ParseError;
+use std::borrow::Cow;
 
 pub const XML_NO_ERROR: f64 = 0.0;
 #[allow(dead_code)]
@@ -49,7 +50,7 @@ pub fn xmlnode_constructor<'gc>(
 
     match (
         args.get(0).map(|v| v.as_number(avm, ac).map(|v| v as u32)),
-        args.get(1).map(|v| v.clone().coerce_to_string(avm, ac)),
+        args.get(1).map(|v| v.coerce_to_string(avm, ac)),
         this.as_xml_node(),
     ) {
         (Some(Ok(1)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
@@ -143,7 +144,7 @@ pub fn xmlnode_get_namespace_for_prefix<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     if let (Some(xmlnode), Some(prefix_string)) = (
         this.as_xml_node(),
-        args.get(0).map(|v| v.clone().coerce_to_string(avm, ac)),
+        args.get(0).map(|v| v.coerce_to_string(avm, ac)),
     ) {
         if let Some(uri) = xmlnode.lookup_uri_for_namespace(&prefix_string?) {
             Ok(uri.into())
@@ -163,7 +164,7 @@ pub fn xmlnode_get_prefix_for_namespace<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     if let (Some(xmlnode), Some(uri_string)) = (
         this.as_xml_node(),
-        args.get(0).map(|v| v.clone().coerce_to_string(avm, ac)),
+        args.get(0).map(|v| v.coerce_to_string(avm, ac)),
     ) {
         if let Some(prefix) = xmlnode.lookup_namespace_for_uri(&uri_string?) {
             Ok(prefix.into())
@@ -680,7 +681,7 @@ pub fn xml_constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     match (
-        args.get(0).map(|v| v.clone().coerce_to_string(avm, ac)),
+        args.get(0).map(|v| v.coerce_to_string(avm, ac)),
         this.as_xml_node(),
     ) {
         (Some(Ok(ref string)), Some(ref mut this_node)) => {
@@ -718,7 +719,7 @@ pub fn xml_create_element<'gc>(
 
     let nodename = args
         .get(0)
-        .map(|v| v.clone().coerce_to_string(avm, ac).unwrap_or_default())
+        .map(|v| v.coerce_to_string(avm, ac).unwrap_or_default())
         .unwrap_or_default();
     let mut xml_node = XMLNode::new_element(ac.gc_context, &nodename, document)?;
     let object = XMLObject::from_xml_node(ac.gc_context, xml_node, Some(avm.prototypes().xml_node));
@@ -742,7 +743,7 @@ pub fn xml_create_text_node<'gc>(
 
     let text_node = args
         .get(0)
-        .map(|v| v.clone().coerce_to_string(avm, ac).unwrap_or_default())
+        .map(|v| v.coerce_to_string(avm, ac).unwrap_or_default())
         .unwrap_or_default();
     let mut xml_node = XMLNode::new_text(ac.gc_context, &text_node, document);
     let object = XMLObject::from_xml_node(ac.gc_context, xml_node, Some(avm.prototypes().xml_node));
@@ -760,10 +761,10 @@ pub fn xml_parse_xml<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(mut node) = this.as_xml_node() {
         let xmlstring =
-            if let Some(Ok(xmlstring)) = args.get(0).map(|s| s.clone().coerce_to_string(avm, ac)) {
+            if let Some(Ok(xmlstring)) = args.get(0).map(|s| s.coerce_to_string(avm, ac)) {
                 xmlstring
             } else {
-                "".to_string()
+                Cow::Borrowed("")
             };
 
         if let Some(children) = node.children() {
@@ -802,7 +803,7 @@ pub fn xml_load<'gc>(
 
         this.set("loaded", false.into(), avm, ac)?;
 
-        let fetch = ac.navigator.fetch(url, RequestOptions::get());
+        let fetch = ac.navigator.fetch(&url, RequestOptions::get());
         let target_clip = avm.target_clip_or_root();
         let process = ac.load_manager.load_xml_into_node(
             ac.player.clone().unwrap(),

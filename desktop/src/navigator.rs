@@ -110,7 +110,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         Instant::now().duration_since(self.start_time)
     }
 
-    fn fetch(&self, url: String, _options: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
+    fn fetch(&self, url: &str, _options: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
         // Load from local filesystem.
         // TODO: Support network loads, honor sandbox type (local-with-filesystem, local-with-network, remote, ...)
         let mut path = self.relative_base_path.clone();

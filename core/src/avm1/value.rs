@@ -1,5 +1,6 @@
 use crate::avm1::value_object::ValueObject;
 use crate::avm1::{Avm1, Error, Object, TObject, UpdateContext};
+use std::borrow::Cow;
 use std::f64::NAN;
 
 #[derive(Debug, Clone)]
@@ -22,6 +23,12 @@ impl<'gc> From<String> for Value<'gc> {
 impl<'gc> From<&str> for Value<'gc> {
     fn from(string: &str) -> Self {
         Value::String(string.to_owned())
+    }
+}
+
+impl<'gc> From<Cow<'_, str>> for Value<'gc> {
+    fn from(string: Cow<str>) -> Self {
+        Value::String(string.to_string())
     }
 }
 
@@ -461,17 +468,17 @@ impl<'gc> Value<'gc> {
     }
 
     /// Coerce a value to a string.
-    pub fn coerce_to_string(
-        self,
+    pub fn coerce_to_string<'a>(
+        &'a self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<String, Error> {
+    ) -> Result<Cow<'a, str>, Error> {
         Ok(match self {
             Value::Object(object) => match object.call_method("toString", &[], avm, context)? {
-                Value::String(s) => s,
-                _ => "[type Object]".to_string(),
+                Value::String(s) => Cow::Owned(s),
+                _ => Cow::Borrowed("[type Object]"),
             },
-            _ => self.into_string(avm.current_swf_version()),
+            _ => Cow::Owned(self.to_owned().into_string(avm.current_swf_version())),
         })
     }
 

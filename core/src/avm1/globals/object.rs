@@ -6,6 +6,7 @@ use crate::avm1::{Avm1, Error, Object, TObject, UpdateContext, Value};
 use crate::character::Character;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
+use std::borrow::Cow;
 
 /// Implements `Object`
 pub fn constructor<'gc>(
@@ -26,8 +27,8 @@ pub fn add_property<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     let name = args
         .get(0)
-        .and_then(|v| v.to_owned().coerce_to_string(avm, context).ok())
-        .unwrap_or_else(|| "undefined".to_string());
+        .and_then(|v| v.coerce_to_string(avm, context).ok())
+        .unwrap_or_else(|| Cow::Borrowed("undefined"));
     let getter = args.get(1).unwrap_or(&Value::Undefined);
     let setter = args.get(2).unwrap_or(&Value::Undefined);
 
@@ -246,7 +247,8 @@ pub fn as_set_prop_flags<'gc>(
             for i in 0..length {
                 array.push(
                     ob.get(&format!("{}", i), avm, ac)?
-                        .coerce_to_string(avm, ac)?,
+                        .coerce_to_string(avm, ac)?
+                        .to_string(),
                 )
             }
 

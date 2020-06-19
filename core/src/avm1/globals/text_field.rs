@@ -41,10 +41,7 @@ pub fn set_text<'gc>(
         if let Some(text_field) = display_object.as_edit_text() {
             if let Some(value) = args.get(0) {
                 text_field.set_text(
-                    value
-                        .to_owned()
-                        .coerce_to_string(avm, context)
-                        .unwrap_or_else(|_| "undefined".to_string()),
+                    value.coerce_to_string(avm, context)?.to_string(),
                     context.gc_context,
                 )
             }

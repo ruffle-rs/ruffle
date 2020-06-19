@@ -57,20 +57,19 @@ fn to_string<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let x = this
-        .get("x", avm, context)?
-        .coerce_to_string(avm, context)?;
-    let y = this
-        .get("y", avm, context)?
-        .coerce_to_string(avm, context)?;
-    let width = this
-        .get("width", avm, context)?
-        .coerce_to_string(avm, context)?;
-    let height = this
-        .get("height", avm, context)?
-        .coerce_to_string(avm, context)?;
+    let x = this.get("x", avm, context)?;
+    let y = this.get("y", avm, context)?;
+    let width = this.get("width", avm, context)?;
+    let height = this.get("height", avm, context)?;
 
-    Ok(format!("(x={}, y={}, w={}, h={})", x, y, width, height).into())
+    Ok(format!(
+        "(x={}, y={}, w={}, h={})",
+        x.coerce_to_string(avm, context)?,
+        y.coerce_to_string(avm, context)?,
+        width.coerce_to_string(avm, context)?,
+        height.coerce_to_string(avm, context)?
+    )
+    .into())
 }
 
 pub fn create_rectangle_object<'gc>(

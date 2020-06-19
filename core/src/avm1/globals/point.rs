@@ -211,14 +211,15 @@ fn to_string<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let x = this
-        .get("x", avm, context)?
-        .coerce_to_string(avm, context)?;
-    let y = this
-        .get("y", avm, context)?
-        .coerce_to_string(avm, context)?;
+    let x = this.get("x", avm, context)?;
+    let y = this.get("y", avm, context)?;
 
-    Ok(format!("(x={}, y={})", x, y).into())
+    Ok(format!(
+        "(x={}, y={})",
+        x.coerce_to_string(avm, context)?,
+        y.coerce_to_string(avm, context)?
+    )
+    .into())
 }
 
 fn length<'gc>(

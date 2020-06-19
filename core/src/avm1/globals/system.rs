@@ -406,8 +406,8 @@ pub fn set_clipboard<'gc>(
     let new_content = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .to_owned()
-        .coerce_to_string(avm, action_context)?;
+        .coerce_to_string(avm, action_context)?
+        .to_string();
 
     action_context.input.set_clipboard_content(new_content);
 
