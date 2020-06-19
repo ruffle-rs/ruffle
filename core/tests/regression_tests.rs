@@ -201,6 +201,7 @@ swf_tests! {
     (edittext_default_format, "avm1/edittext_default_format", 1),
     (edittext_leading, "avm1/edittext_leading", 1),
     #[ignore] (edittext_newlines, "avm1/edittext_newlines", 1),
+    (edittext_html_entity, "avm1/edittext_html_entity", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

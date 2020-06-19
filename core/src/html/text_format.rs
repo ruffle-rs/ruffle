@@ -8,6 +8,43 @@ use gc_arena::Collect;
 use std::cmp::{min, Ordering};
 use std::sync::Arc;
 
+/// Replace HTML entities with their equivalent characters.
+///
+/// Unknown entities will be ignored.
+fn process_html_entity(src: &str) -> String {
+    let mut result_str = String::new();
+    let mut is_entity = false;
+    let mut current_entity: Option<String> = None;
+
+    for ch in src.chars() {
+        if is_entity {
+            if ch == ';' {
+                match current_entity.as_deref() {
+                    Some("amp") => result_str.push('&'),
+                    Some("lt") => result_str.push('<'),
+                    Some("gt") => result_str.push('>'),
+                    Some("quot") => result_str.push('"'),
+                    Some("apos") => result_str.push('\''),
+                    Some("nbsp") => result_str.push('\u{00A0}'),
+                    _ => {}
+                };
+
+                current_entity = None;
+                is_entity = false;
+            } else {
+                current_entity.as_mut().unwrap().push(ch);
+            }
+        } else if ch == '&' {
+            is_entity = true;
+            current_entity = Some(String::new());
+        } else {
+            result_str.push(ch);
+        }
+    }
+
+    result_str
+}
+
 /// A set of text formatting options to be applied to some part, or the whole
 /// of, a given text field.
 ///
@@ -1184,7 +1221,7 @@ impl FormatSpans {
                     self.replace_text(
                         self.text.len(),
                         self.text.len(),
-                        &node.node_value().unwrap(),
+                        &process_html_entity(&node.node_value().unwrap()),
                         format_stack.last(),
                     );
                     last_successful_format = format_stack.last().cloned();
