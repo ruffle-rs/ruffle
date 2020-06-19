@@ -79,7 +79,7 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
         self.node().set_attribute_value(
             context.gc_context,
             &XMLName::from_str(name),
-            &value.clone().coerce_to_string(avm, context)?,
+            &value.coerce_to_string(avm, context)?,
         );
         self.base().set(name, value, avm, context)
     }

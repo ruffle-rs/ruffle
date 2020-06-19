@@ -4,6 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::{Avm1, Error, Object, Value};
 use crate::context::UpdateContext;
 use gc_arena::{Collect, GcCell};
+use std::borrow::Cow;
 use std::fmt;
 
 /// Represents the return value of a function call.
@@ -138,6 +139,12 @@ impl<'gc> From<String> for ReturnValue<'gc> {
 impl<'gc> From<&str> for ReturnValue<'gc> {
     fn from(string: &str) -> Self {
         ReturnValue::Immediate(Value::String(string.to_owned()))
+    }
+}
+
+impl<'gc> From<Cow<'_, str>> for ReturnValue<'gc> {
+    fn from(string: Cow<str>) -> Self {
+        ReturnValue::Immediate(Value::String(string.to_string()))
     }
 }
 

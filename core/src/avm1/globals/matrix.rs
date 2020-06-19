@@ -369,26 +369,23 @@ fn to_string<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let a = this
-        .get("a", avm, context)?
-        .coerce_to_string(avm, context)?;
-    let b = this
-        .get("b", avm, context)?
-        .coerce_to_string(avm, context)?;
-    let c = this
-        .get("c", avm, context)?
-        .coerce_to_string(avm, context)?;
-    let d = this
-        .get("d", avm, context)?
-        .coerce_to_string(avm, context)?;
-    let tx = this
-        .get("tx", avm, context)?
-        .coerce_to_string(avm, context)?;
-    let ty = this
-        .get("ty", avm, context)?
-        .coerce_to_string(avm, context)?;
+    let a = this.get("a", avm, context)?;
+    let b = this.get("b", avm, context)?;
+    let c = this.get("c", avm, context)?;
+    let d = this.get("d", avm, context)?;
+    let tx = this.get("tx", avm, context)?;
+    let ty = this.get("ty", avm, context)?;
 
-    Ok(format!("(a={}, b={}, c={}, d={}, tx={}, ty={})", a, b, c, d, tx, ty).into())
+    Ok(format!(
+        "(a={}, b={}, c={}, d={}, tx={}, ty={})",
+        a.coerce_to_string(avm, context)?,
+        b.coerce_to_string(avm, context)?,
+        c.coerce_to_string(avm, context)?,
+        d.coerce_to_string(avm, context)?,
+        tx.coerce_to_string(avm, context)?,
+        ty.coerce_to_string(avm, context)?
+    )
+    .into())
 }
 
 pub fn create_matrix_object<'gc>(

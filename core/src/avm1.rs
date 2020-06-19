@@ -52,6 +52,7 @@ pub use globals::SystemPrototypes;
 pub use object::{Object, ObjectPtr, TObject};
 use scope::Scope;
 pub use script_object::ScriptObject;
+use smallvec::alloc::borrow::Cow;
 pub use sound_object::SoundObject;
 pub use stage_object::StageObject;
 pub use value::Value;
@@ -196,12 +197,12 @@ impl<'gc> Avm1<'gc> {
 
     /// Construct request options for a fetch operation that may send locals as
     /// form data in the request body or URL.
-    pub fn locals_into_request_options(
+    pub fn locals_into_request_options<'a>(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        url: String,
+        url: Cow<'a, str>,
         method: Option<NavigationMethod>,
-    ) -> (String, RequestOptions) {
+    ) -> (Cow<'a, str>, RequestOptions) {
         match method {
             Some(method) => {
                 let vars = self.locals_into_form_values(context);
@@ -210,12 +211,14 @@ impl<'gc> Avm1<'gc> {
                     .finish();
 
                 match method {
-                    NavigationMethod::GET if url.find('?').is_none() => {
-                        (format!("{}?{}", url, qstring), RequestOptions::get())
-                    }
-                    NavigationMethod::GET => {
-                        (format!("{}&{}", url, qstring), RequestOptions::get())
-                    }
+                    NavigationMethod::GET if url.find('?').is_none() => (
+                        Cow::Owned(format!("{}?{}", url, qstring)),
+                        RequestOptions::get(),
+                    ),
+                    NavigationMethod::GET => (
+                        Cow::Owned(format!("{}&{}", url, qstring)),
+                        RequestOptions::get(),
+                    ),
                     NavigationMethod::POST => (
                         url,
                         RequestOptions::post(Some((
@@ -1070,7 +1073,7 @@ impl<'gc> Avm1<'gc> {
 
         // TODO(Herschel):
         if let Value::String(a) = a {
-            let mut s = b.coerce_to_string(self, context)?;
+            let mut s = b.coerce_to_string(self, context)?.to_string();
             s.push_str(&a);
             self.push(s);
         } else if let Value::String(mut b) = b {
@@ -1222,7 +1225,8 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let fn_name = self.pop().coerce_to_string(self, context)?;
+        let fn_name_value = self.pop();
+        let fn_name = fn_name_value.coerce_to_string(self, context)?;
         let mut args = Vec::new();
         let num_args = self.pop().as_i64()?; // TODO(Herschel): max arg count?
         for _ in 0..num_args {
@@ -1427,7 +1431,8 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let value = self.pop();
-        let name = self.pop().coerce_to_string(self, context)?;
+        let name_val = self.pop();
+        let name = name_val.coerce_to_string(self, context)?;
         self.current_stack_frame()
             .unwrap()
             .read()
@@ -1439,7 +1444,8 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let name = self.pop().coerce_to_string(self, context)?;
+        let name_val = self.pop();
+        let name = name_val.coerce_to_string(self, context)?;
         self.current_stack_frame().unwrap().read().define(
             &name,
             Value::Undefined,
@@ -1674,7 +1680,7 @@ impl<'gc> Avm1<'gc> {
         if target.starts_with("_level") && target.len() > 6 {
             let url = url.to_string();
             let level_id = target[6..].parse::<u32>()?;
-            let fetch = context.navigator.fetch(url, RequestOptions::get());
+            let fetch = context.navigator.fetch(&url, RequestOptions::get());
             let level = self.resolve_level(level_id, context);
 
             let process = context.load_manager.load_movie_into_clip(
@@ -1736,10 +1742,10 @@ impl<'gc> Avm1<'gc> {
                     .coerce_to_object(self, context);
                 let (url, opts) = self.locals_into_request_options(
                     context,
-                    url,
+                    Cow::Owned(url),
                     NavigationMethod::from_send_vars_method(swf_method),
                 );
-                let fetch = context.navigator.fetch(url, opts);
+                let fetch = context.navigator.fetch(&url, opts);
                 let process = context.load_manager.load_form_into_object(
                     context.player.clone().unwrap(),
                     target_obj,
@@ -1754,10 +1760,10 @@ impl<'gc> Avm1<'gc> {
             if let Some(clip_target) = clip_target {
                 let (url, opts) = self.locals_into_request_options(
                     context,
-                    url,
+                    Cow::Owned(url),
                     NavigationMethod::from_send_vars_method(swf_method),
                 );
-                let fetch = context.navigator.fetch(url, opts);
+                let fetch = context.navigator.fetch(&url, opts);
                 let process = context.load_manager.load_movie_into_clip(
                     context.player.clone().unwrap(),
                     clip_target,
@@ -2086,14 +2092,13 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_new_object(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        let fn_name = self.pop().coerce_to_string(self, context)?;
+        let fn_name_val = self.pop();
+        let fn_name = fn_name_val.coerce_to_string(self, context)?;
         let num_args = self.pop().as_i64()?;
         let mut args = Vec::new();
         for _ in 0..num_args {
             args.push(self.pop());
         }
-
-        let mut ret = Value::Undefined;
 
         let constructor = self
             .stack_frames
@@ -2115,9 +2120,8 @@ impl<'gc> Avm1<'gc> {
         }
 
         constructor.call(self, context, this, None, &args)?;
-        ret = this.into();
 
-        self.push(ret);
+        self.push(this);
 
         Ok(())
     }
@@ -2291,7 +2295,8 @@ impl<'gc> Avm1<'gc> {
     ) -> Result<(), Error> {
         // Flash 4-style variable
         let value = self.pop();
-        let var_path = self.pop().coerce_to_string(self, context)?;
+        let var_path_val = self.pop();
+        let var_path = var_path_val.coerce_to_string(self, context)?;
         self.set_variable(context, &var_path, value)
     }
 
@@ -2579,8 +2584,9 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_to_string(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        let val = self.pop().coerce_to_string(self, context)?;
-        self.push(val);
+        let val = self.pop();
+        let string = val.coerce_to_string(self, context)?;
+        self.push(string);
         Ok(())
     }
 
@@ -2589,7 +2595,7 @@ impl<'gc> Avm1<'gc> {
         // trace always prints "undefined" even though SWF6 and below normally
         // coerce undefined to "".
         let out = if val == Value::Undefined {
-            "undefined".to_string()
+            Cow::Borrowed("undefined")
         } else {
             val.coerce_to_string(self, context)?
         };

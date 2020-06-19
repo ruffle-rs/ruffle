@@ -6,6 +6,7 @@ use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
+use smallvec::alloc::borrow::Cow;
 use std::cmp::Ordering;
 
 // Flags used by `Array.sort` and `sortOn`.
@@ -235,18 +236,17 @@ pub fn join<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     let separator = args
         .get(0)
-        .and_then(|v| v.to_owned().coerce_to_string(avm, context).ok())
-        .unwrap_or_else(|| ",".to_owned());
+        .and_then(|v| v.coerce_to_string(avm, context).ok())
+        .unwrap_or_else(|| Cow::Borrowed(","));
     let values: Vec<Value<'gc>> = this.array();
 
     Ok(values
         .iter()
         .map(|v| {
-            v.to_owned()
-                .coerce_to_string(avm, context)
-                .unwrap_or_else(|_| "undefined".to_string())
+            v.coerce_to_string(avm, context)
+                .unwrap_or_else(|_| Cow::Borrowed("undefined"))
         })
-        .collect::<Vec<String>>()
+        .collect::<Vec<Cow<str>>>()
         .join(&separator)
         .into())
 }
@@ -493,13 +493,13 @@ fn sort_on<'gc>(
             // Array of field names.
             let mut field_names = vec![];
             for name in array.array() {
-                field_names.push(name.coerce_to_string(avm, context)?);
+                field_names.push(name.coerce_to_string(avm, context)?.to_string());
             }
             field_names
         }
         Some(field_name) => {
             // Single field.
-            vec![field_name.clone().coerce_to_string(avm, context)?]
+            vec![field_name.coerce_to_string(avm, context)?.to_string()]
         }
         None => return Ok(Value::Undefined.into()),
     };
@@ -714,8 +714,8 @@ fn sort_compare_string<'gc>(
     a: &Value<'gc>,
     b: &Value<'gc>,
 ) -> Ordering {
-    let a_str = a.clone().coerce_to_string(avm, context);
-    let b_str = b.clone().coerce_to_string(avm, context);
+    let a_str = a.coerce_to_string(avm, context);
+    let b_str = b.coerce_to_string(avm, context);
     // TODO: Handle errors.
     if let (Ok(a_str), Ok(b_str)) = (a_str, b_str) {
         a_str.cmp(&b_str)
@@ -730,8 +730,8 @@ fn sort_compare_string_ignore_case<'gc>(
     a: &Value<'gc>,
     b: &Value<'gc>,
 ) -> Ordering {
-    let a_str = a.clone().coerce_to_string(avm, context);
-    let b_str = b.clone().coerce_to_string(avm, context);
+    let a_str = a.coerce_to_string(avm, context);
+    let b_str = b.coerce_to_string(avm, context);
     // TODO: Handle errors.
     if let (Ok(a_str), Ok(b_str)) = (a_str, b_str) {
         crate::string_utils::swf_string_cmp_ignore_case(&a_str, &b_str)

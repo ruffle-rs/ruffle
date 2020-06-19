@@ -95,11 +95,8 @@ pub fn broadcast_message<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let event_name = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .coerce_to_string(avm, context)?;
+    let event_name_val = args.get(0).cloned().unwrap_or(Value::Undefined);
+    let event_name = event_name_val.coerce_to_string(avm, context)?;
     let call_args = &args[0..];
 
     let listeners = this.get("_listeners", avm, context)?;
@@ -122,11 +119,8 @@ pub fn load_clip<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let url = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .coerce_to_string(avm, context)?;
+    let url_val = args.get(0).cloned().unwrap_or(Value::Undefined);
+    let url = url_val.coerce_to_string(avm, context)?;
     let target = args.get(1).cloned().unwrap_or(Value::Undefined);
 
     if let Value::Object(target) = target {
@@ -134,7 +128,7 @@ pub fn load_clip<'gc>(
             .as_display_object()
             .and_then(|dobj| dobj.as_movie_clip())
         {
-            let fetch = context.navigator.fetch(url, RequestOptions::get());
+            let fetch = context.navigator.fetch(&url, RequestOptions::get());
             let process = context.load_manager.load_movie_into_clip(
                 context.player.clone().unwrap(),
                 DisplayObject::MovieClip(movieclip),
