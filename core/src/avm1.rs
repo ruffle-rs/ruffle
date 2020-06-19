@@ -1222,7 +1222,7 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let fn_name = self.pop();
+        let fn_name = self.pop().coerce_to_string(self, context)?;
         let mut args = Vec::new();
         let num_args = self.pop().as_i64()?; // TODO(Herschel): max arg count?
         for _ in 0..num_args {
@@ -1230,7 +1230,7 @@ impl<'gc> Avm1<'gc> {
         }
 
         let target_fn = self
-            .get_variable(context, &fn_name.as_string()?)?
+            .get_variable(context, &fn_name)?
             .resolve(self, context)?;
 
         let this = self
@@ -1427,12 +1427,11 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let value = self.pop();
-        let name = self.pop();
-        self.current_stack_frame().unwrap().read().define(
-            name.as_string()?,
-            value,
-            context.gc_context,
-        );
+        let name = self.pop().coerce_to_string(self, context)?;
+        self.current_stack_frame()
+            .unwrap()
+            .read()
+            .define(&name, value, context.gc_context);
         Ok(())
     }
 
@@ -1440,9 +1439,9 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let name = self.pop();
+        let name = self.pop().coerce_to_string(self, context)?;
         self.current_stack_frame().unwrap().read().define(
-            name.as_string()?,
+            &name,
             Value::Undefined,
             context.gc_context,
         );
@@ -1451,11 +1450,11 @@ impl<'gc> Avm1<'gc> {
 
     fn action_delete(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let name_val = self.pop();
-        let name = name_val.as_string()?;
+        let name = name_val.coerce_to_string(self, context)?;
         let object = self.pop();
 
         if let Value::Object(object) = object {
-            let success = object.delete(self, context.gc_context, name);
+            let success = object.delete(self, context.gc_context, &name);
             self.push(success);
         } else {
             log::warn!("Cannot delete property {} from {:?}", name, object);
@@ -1467,7 +1466,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_delete_2(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let name_val = self.pop();
-        let name = name_val.as_string()?;
+        let name = name_val.coerce_to_string(self, context)?;
 
         //Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
         //a boolean based on if the delete actually deleted something.
@@ -1475,12 +1474,12 @@ impl<'gc> Avm1<'gc> {
             .current_stack_frame()
             .unwrap()
             .read()
-            .is_defined(self, context, name);
+            .is_defined(self, context, &name);
 
         self.current_stack_frame().unwrap().read().scope().delete(
             self,
             context,
-            name,
+            &name,
             context.gc_context,
         );
         self.push(did_exist);
@@ -1508,13 +1507,13 @@ impl<'gc> Avm1<'gc> {
 
     fn action_enumerate(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let name_value = self.pop();
-        let name = name_value.as_string()?;
+        let name = name_value.coerce_to_string(self, context)?;
         self.push(Value::Null); // Sentinel that indicates end of enumeration
         let object = self
             .current_stack_frame()
             .unwrap()
             .read()
-            .resolve(name, self, context)?
+            .resolve(&name, self, context)?
             .resolve(self, context)?;
 
         match object {
@@ -1523,7 +1522,7 @@ impl<'gc> Avm1<'gc> {
                     self.push(k);
                 }
             }
-            _ => log::error!("Cannot enumerate properties of {}", name_value.as_string()?),
+            _ => log::error!("Cannot enumerate properties of {}", name),
         };
 
         Ok(())
@@ -2057,7 +2056,8 @@ impl<'gc> Avm1<'gc> {
         }
 
         let object = value_object::ValueObject::boxed(self, context, object_val);
-        let constructor = object.get(&method_name.as_string()?, self, context)?;
+        let constructor =
+            object.get(&method_name.coerce_to_string(self, context)?, self, context)?;
         if let Value::Object(constructor) = constructor {
             let prototype = constructor
                 .get("prototype", self, context)?
@@ -2086,7 +2086,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_new_object(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        let fn_name = self.pop();
+        let fn_name = self.pop().coerce_to_string(self, context)?;
         let num_args = self.pop().as_i64()?;
         let mut args = Vec::new();
         for _ in 0..num_args {
@@ -2095,31 +2095,27 @@ impl<'gc> Avm1<'gc> {
 
         let mut ret = Value::Undefined;
 
-        if let Ok(fn_name) = fn_name.as_string() {
-            let constructor = self
-                .stack_frames
-                .last()
-                .unwrap()
-                .clone()
-                .read()
-                .resolve(fn_name, self, context)?
-                .resolve(self, context)?
-                .coerce_to_object(self, context);
-            let prototype = constructor
-                .get("prototype", self, context)?
-                .coerce_to_object(self, context);
-            let this = prototype.new(self, context, prototype, &args)?;
+        let constructor = self
+            .stack_frames
+            .last()
+            .unwrap()
+            .clone()
+            .read()
+            .resolve(&fn_name, self, context)?
+            .resolve(self, context)?
+            .coerce_to_object(self, context);
+        let prototype = constructor
+            .get("prototype", self, context)?
+            .coerce_to_object(self, context);
+        let this = prototype.new(self, context, prototype, &args)?;
 
-            this.set("__constructor__", constructor.into(), self, context)?;
-            if self.current_swf_version() < 7 {
-                this.set("constructor", constructor.into(), self, context)?;
-            }
-
-            constructor.call(self, context, this, None, &args)?;
-            ret = this.into();
-        } else {
-            log::warn!("NewObject: Expected String for object name: {:?}", fn_name);
+        this.set("__constructor__", constructor.into(), self, context)?;
+        if self.current_swf_version() < 7 {
+            this.set("constructor", constructor.into(), self, context)?;
         }
+
+        constructor.call(self, context, this, None, &args)?;
+        ret = this.into();
 
         self.push(ret);
 
