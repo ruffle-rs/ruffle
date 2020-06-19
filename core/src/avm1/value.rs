@@ -400,24 +400,6 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    /// Coerce a value to a string without calling object methods.
-    pub fn into_string(self, swf_version: u8) -> String {
-        match self {
-            Value::Undefined => {
-                if swf_version >= 7 {
-                    "undefined".to_string()
-                } else {
-                    "".to_string()
-                }
-            }
-            Value::Null => "null".to_string(),
-            Value::Bool(v) => v.to_string(),
-            Value::Number(v) => f64_to_string(v),
-            Value::String(v) => v,
-            Value::Object(object) => object.as_string(),
-        }
-    }
-
     /// Coerce a number to an `u16` following the ECMAScript specifications for `ToUInt16`.
     /// The value will be wrapped modulo 2^16.
     /// This will call `valueOf` and do any conversions that are necessary.
@@ -478,7 +460,18 @@ impl<'gc> Value<'gc> {
                 Value::String(s) => Cow::Owned(s),
                 _ => Cow::Borrowed("[type Object]"),
             },
-            _ => Cow::Owned(self.to_owned().into_string(avm.current_swf_version())),
+            Value::Undefined => {
+                if avm.current_swf_version() >= 7 {
+                    Cow::Borrowed("undefined")
+                } else {
+                    Cow::Borrowed("")
+                }
+            }
+            Value::Null => Cow::Borrowed("null"),
+            Value::Bool(true) => Cow::Borrowed("true"),
+            Value::Bool(false) => Cow::Borrowed("false"),
+            Value::Number(v) => Cow::Owned(f64_to_string(*v)),
+            Value::String(v) => Cow::Borrowed(v),
         })
     }
 
