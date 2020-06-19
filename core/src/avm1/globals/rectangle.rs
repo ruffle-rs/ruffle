@@ -91,8 +91,12 @@ fn is_empty<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let width = this.get("width", avm, context)?.as_number(avm, context)?;
-    let height = this.get("height", avm, context)?.as_number(avm, context)?;
+    let width = this
+        .get("width", avm, context)?
+        .coerce_to_f64(avm, context)?;
+    let height = this
+        .get("height", avm, context)?
+        .coerce_to_f64(avm, context)?;
     Ok((width <= 0.0 || height <= 0.0 || width.is_nan() || height.is_nan()).into())
 }
 
@@ -139,20 +143,26 @@ fn contains<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .to_owned()
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     let y = args
         .get(1)
         .unwrap_or(&Value::Undefined)
         .to_owned()
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     if x.is_nan() || y.is_nan() {
         return Ok(Value::Undefined.into());
     }
 
-    let left = this.get("x", avm, context)?.as_number(avm, context)?;
-    let right = left + this.get("width", avm, context)?.as_number(avm, context)?;
-    let top = this.get("y", avm, context)?.as_number(avm, context)?;
-    let bottom = top + this.get("height", avm, context)?.as_number(avm, context)?;
+    let left = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
+    let right = left
+        + this
+            .get("width", avm, context)?
+            .coerce_to_f64(avm, context)?;
+    let top = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
+    let bottom = top
+        + this
+            .get("height", avm, context)?
+            .coerce_to_f64(avm, context)?;
 
     Ok((x >= left && x < right && y >= top && y < bottom).into())
 }
@@ -172,10 +182,16 @@ fn contains_point<'gc>(
         return Ok(Value::Undefined.into());
     }
 
-    let left = this.get("x", avm, context)?.as_number(avm, context)?;
-    let right = left + this.get("width", avm, context)?.as_number(avm, context)?;
-    let top = this.get("y", avm, context)?.as_number(avm, context)?;
-    let bottom = top + this.get("height", avm, context)?.as_number(avm, context)?;
+    let left = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
+    let right = left
+        + this
+            .get("width", avm, context)?
+            .coerce_to_f64(avm, context)?;
+    let top = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
+    let bottom = top
+        + this
+            .get("height", avm, context)?
+            .coerce_to_f64(avm, context)?;
 
     Ok((x >= left && x < right && y >= top && y < bottom).into())
 }
@@ -192,15 +208,27 @@ fn contains_rectangle<'gc>(
         return Ok(Value::Undefined.into());
     };
 
-    let this_left = this.get("x", avm, context)?.as_number(avm, context)?;
-    let this_top = this.get("y", avm, context)?.as_number(avm, context)?;
-    let this_right = this_left + this.get("width", avm, context)?.as_number(avm, context)?;
-    let this_bottom = this_top + this.get("height", avm, context)?.as_number(avm, context)?;
+    let this_left = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
+    let this_top = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
+    let this_right = this_left
+        + this
+            .get("width", avm, context)?
+            .coerce_to_f64(avm, context)?;
+    let this_bottom = this_top
+        + this
+            .get("height", avm, context)?
+            .coerce_to_f64(avm, context)?;
 
-    let other_left = other.get("x", avm, context)?.as_number(avm, context)?;
-    let other_top = other.get("y", avm, context)?.as_number(avm, context)?;
-    let other_right = other_left + other.get("width", avm, context)?.as_number(avm, context)?;
-    let other_bottom = other_top + other.get("height", avm, context)?.as_number(avm, context)?;
+    let other_left = other.get("x", avm, context)?.coerce_to_f64(avm, context)?;
+    let other_top = other.get("y", avm, context)?.coerce_to_f64(avm, context)?;
+    let other_right = other_left
+        + other
+            .get("width", avm, context)?
+            .coerce_to_f64(avm, context)?;
+    let other_bottom = other_top
+        + other
+            .get("height", avm, context)?
+            .coerce_to_f64(avm, context)?;
 
     if other_left.is_nan() || other_top.is_nan() || other_right.is_nan() || other_bottom.is_nan() {
         return Ok(Value::Undefined.into());
@@ -225,15 +253,27 @@ fn intersects<'gc>(
         return Ok(false.into());
     };
 
-    let this_left = this.get("x", avm, context)?.as_number(avm, context)?;
-    let this_top = this.get("y", avm, context)?.as_number(avm, context)?;
-    let this_right = this_left + this.get("width", avm, context)?.as_number(avm, context)?;
-    let this_bottom = this_top + this.get("height", avm, context)?.as_number(avm, context)?;
+    let this_left = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
+    let this_top = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
+    let this_right = this_left
+        + this
+            .get("width", avm, context)?
+            .coerce_to_f64(avm, context)?;
+    let this_bottom = this_top
+        + this
+            .get("height", avm, context)?
+            .coerce_to_f64(avm, context)?;
 
-    let other_left = other.get("x", avm, context)?.as_number(avm, context)?;
-    let other_top = other.get("y", avm, context)?.as_number(avm, context)?;
-    let other_right = other_left + other.get("width", avm, context)?.as_number(avm, context)?;
-    let other_bottom = other_top + other.get("height", avm, context)?.as_number(avm, context)?;
+    let other_left = other.get("x", avm, context)?.coerce_to_f64(avm, context)?;
+    let other_top = other.get("y", avm, context)?.coerce_to_f64(avm, context)?;
+    let other_right = other_left
+        + other
+            .get("width", avm, context)?
+            .coerce_to_f64(avm, context)?;
+    let other_bottom = other_top
+        + other
+            .get("height", avm, context)?
+            .coerce_to_f64(avm, context)?;
 
     Ok((this_left < other_right
         && this_right > other_left
@@ -248,18 +288,28 @@ fn union<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let this_left = this.get("x", avm, context)?.as_number(avm, context)?;
-    let this_top = this.get("y", avm, context)?.as_number(avm, context)?;
-    let this_right = this_left + this.get("width", avm, context)?.as_number(avm, context)?;
-    let this_bottom = this_top + this.get("height", avm, context)?.as_number(avm, context)?;
+    let this_left = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
+    let this_top = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
+    let this_right = this_left
+        + this
+            .get("width", avm, context)?
+            .coerce_to_f64(avm, context)?;
+    let this_bottom = this_top
+        + this
+            .get("height", avm, context)?
+            .coerce_to_f64(avm, context)?;
 
     let (other_left, other_top, other_width, other_height) =
         if let Some(Value::Object(other)) = args.get(0) {
             (
-                other.get("x", avm, context)?.as_number(avm, context)?,
-                other.get("y", avm, context)?.as_number(avm, context)?,
-                other.get("width", avm, context)?.as_number(avm, context)?,
-                other.get("height", avm, context)?.as_number(avm, context)?,
+                other.get("x", avm, context)?.coerce_to_f64(avm, context)?,
+                other.get("y", avm, context)?.coerce_to_f64(avm, context)?,
+                other
+                    .get("width", avm, context)?
+                    .coerce_to_f64(avm, context)?,
+                other
+                    .get("height", avm, context)?
+                    .coerce_to_f64(avm, context)?,
             )
         } else {
             (NAN, NAN, NAN, NAN)
@@ -314,20 +364,24 @@ fn inflate<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let x = this.get("x", avm, context)?.as_number(avm, context)?;
-    let y = this.get("y", avm, context)?.as_number(avm, context)?;
-    let width = this.get("width", avm, context)?.as_number(avm, context)?;
-    let height = this.get("height", avm, context)?.as_number(avm, context)?;
+    let x = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
+    let y = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
+    let width = this
+        .get("width", avm, context)?
+        .coerce_to_f64(avm, context)?;
+    let height = this
+        .get("height", avm, context)?
+        .coerce_to_f64(avm, context)?;
     let horizontal = args
         .get(0)
         .unwrap_or(&Value::Undefined)
         .to_owned()
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     let vertical = args
         .get(1)
         .unwrap_or(&Value::Undefined)
         .to_owned()
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
 
     this.set("x", Value::Number(x - horizontal), avm, context)?;
     this.set("y", Value::Number(y - vertical), avm, context)?;
@@ -353,10 +407,14 @@ fn inflate_point<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let x = this.get("x", avm, context)?.as_number(avm, context)?;
-    let y = this.get("y", avm, context)?.as_number(avm, context)?;
-    let width = this.get("width", avm, context)?.as_number(avm, context)?;
-    let height = this.get("height", avm, context)?.as_number(avm, context)?;
+    let x = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
+    let y = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
+    let width = this
+        .get("width", avm, context)?
+        .coerce_to_f64(avm, context)?;
+    let height = this
+        .get("height", avm, context)?
+        .coerce_to_f64(avm, context)?;
     let (horizontal, vertical) = value_to_point(
         args.get(0).unwrap_or(&Value::Undefined).to_owned(),
         avm,
@@ -387,18 +445,18 @@ fn offset<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let x = this.get("x", avm, context)?.as_number(avm, context)?;
-    let y = this.get("y", avm, context)?.as_number(avm, context)?;
+    let x = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
+    let y = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
     let horizontal = args
         .get(0)
         .unwrap_or(&Value::Undefined)
         .to_owned()
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     let vertical = args
         .get(1)
         .unwrap_or(&Value::Undefined)
         .to_owned()
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
 
     this.set("x", Value::Number(x + horizontal), avm, context)?;
     this.set("y", Value::Number(y + vertical), avm, context)?;
@@ -412,8 +470,8 @@ fn offset_point<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let x = this.get("x", avm, context)?.as_number(avm, context)?;
-    let y = this.get("y", avm, context)?.as_number(avm, context)?;
+    let x = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
+    let y = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
     let (horizontal, vertical) = value_to_point(
         args.get(0).unwrap_or(&Value::Undefined).to_owned(),
         avm,
@@ -432,18 +490,28 @@ fn intersection<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let this_left = this.get("x", avm, context)?.as_number(avm, context)?;
-    let this_top = this.get("y", avm, context)?.as_number(avm, context)?;
-    let this_right = this_left + this.get("width", avm, context)?.as_number(avm, context)?;
-    let this_bottom = this_top + this.get("height", avm, context)?.as_number(avm, context)?;
+    let this_left = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
+    let this_top = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
+    let this_right = this_left
+        + this
+            .get("width", avm, context)?
+            .coerce_to_f64(avm, context)?;
+    let this_bottom = this_top
+        + this
+            .get("height", avm, context)?
+            .coerce_to_f64(avm, context)?;
 
     let (other_left, other_top, other_width, other_height) =
         if let Some(Value::Object(other)) = args.get(0) {
             (
-                other.get("x", avm, context)?.as_number(avm, context)?,
-                other.get("y", avm, context)?.as_number(avm, context)?,
-                other.get("width", avm, context)?.as_number(avm, context)?,
-                other.get("height", avm, context)?.as_number(avm, context)?,
+                other.get("x", avm, context)?.coerce_to_f64(avm, context)?,
+                other.get("y", avm, context)?.coerce_to_f64(avm, context)?,
+                other
+                    .get("width", avm, context)?
+                    .coerce_to_f64(avm, context)?,
+                other
+                    .get("height", avm, context)?
+                    .coerce_to_f64(avm, context)?,
             )
         } else {
             (NAN, NAN, NAN, NAN)
@@ -533,12 +601,14 @@ fn set_left<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     let new_left = args.get(0).unwrap_or(&Value::Undefined).to_owned();
-    let old_left = this.get("x", avm, context)?.as_number(avm, context)?;
-    let width = this.get("width", avm, context)?.as_number(avm, context)?;
+    let old_left = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
+    let width = this
+        .get("width", avm, context)?
+        .coerce_to_f64(avm, context)?;
     this.set("x", new_left.clone(), avm, context)?;
     this.set(
         "width",
-        Value::Number(width + (old_left - new_left.as_number(avm, context)?)),
+        Value::Number(width + (old_left - new_left.coerce_to_f64(avm, context)?)),
         avm,
         context,
     )?;
@@ -561,12 +631,14 @@ fn set_top<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     let new_top = args.get(0).unwrap_or(&Value::Undefined).to_owned();
-    let old_top = this.get("y", avm, context)?.as_number(avm, context)?;
-    let height = this.get("height", avm, context)?.as_number(avm, context)?;
+    let old_top = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
+    let height = this
+        .get("height", avm, context)?
+        .coerce_to_f64(avm, context)?;
     this.set("y", new_top.clone(), avm, context)?;
     this.set(
         "height",
-        Value::Number(height + (old_top - new_top.as_number(avm, context)?)),
+        Value::Number(height + (old_top - new_top.coerce_to_f64(avm, context)?)),
         avm,
         context,
     )?;
@@ -579,8 +651,10 @@ fn get_right<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let x = this.get("x", avm, context)?.as_number(avm, context)?;
-    let width = this.get("width", avm, context)?.as_number(avm, context)?;
+    let x = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
+    let width = this
+        .get("width", avm, context)?
+        .coerce_to_f64(avm, context)?;
     Ok((x + width).into())
 }
 
@@ -591,11 +665,11 @@ fn set_right<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     let right = if let Some(arg) = args.get(0) {
-        arg.as_number(avm, context)?
+        arg.coerce_to_f64(avm, context)?
     } else {
         NAN
     };
-    let x = this.get("x", avm, context)?.as_number(avm, context)?;
+    let x = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
 
     this.set("width", Value::Number(right - x), avm, context)?;
 
@@ -608,8 +682,10 @@ fn get_bottom<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let y = this.get("y", avm, context)?.as_number(avm, context)?;
-    let height = this.get("height", avm, context)?.as_number(avm, context)?;
+    let y = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
+    let height = this
+        .get("height", avm, context)?
+        .coerce_to_f64(avm, context)?;
     Ok((y + height).into())
 }
 
@@ -620,11 +696,11 @@ fn set_bottom<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     let bottom = if let Some(arg) = args.get(0) {
-        arg.as_number(avm, context)?
+        arg.coerce_to_f64(avm, context)?
     } else {
         NAN
     };
-    let y = this.get("y", avm, context)?.as_number(avm, context)?;
+    let y = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
 
     this.set("height", Value::Number(bottom - y), avm, context)?;
 
@@ -690,22 +766,26 @@ fn set_top_left<'gc>(
     } else {
         (Value::Undefined, Value::Undefined)
     };
-    let old_left = this.get("x", avm, context)?.as_number(avm, context)?;
-    let width = this.get("width", avm, context)?.as_number(avm, context)?;
-    let old_top = this.get("y", avm, context)?.as_number(avm, context)?;
-    let height = this.get("height", avm, context)?.as_number(avm, context)?;
+    let old_left = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
+    let width = this
+        .get("width", avm, context)?
+        .coerce_to_f64(avm, context)?;
+    let old_top = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
+    let height = this
+        .get("height", avm, context)?
+        .coerce_to_f64(avm, context)?;
 
     this.set("x", new_left.clone(), avm, context)?;
     this.set("y", new_top.clone(), avm, context)?;
     this.set(
         "width",
-        Value::Number(width + (old_left - new_left.as_number(avm, context)?)),
+        Value::Number(width + (old_left - new_left.coerce_to_f64(avm, context)?)),
         avm,
         context,
     )?;
     this.set(
         "height",
-        Value::Number(height + (old_top - new_top.as_number(avm, context)?)),
+        Value::Number(height + (old_top - new_top.coerce_to_f64(avm, context)?)),
         avm,
         context,
     )?;
@@ -719,10 +799,14 @@ fn get_bottom_right<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let x = this.get("x", avm, context)?.as_number(avm, context)?;
-    let y = this.get("y", avm, context)?.as_number(avm, context)?;
-    let width = this.get("width", avm, context)?.as_number(avm, context)?;
-    let height = this.get("height", avm, context)?.as_number(avm, context)?;
+    let x = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
+    let y = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
+    let width = this
+        .get("width", avm, context)?
+        .coerce_to_f64(avm, context)?;
+    let height = this
+        .get("height", avm, context)?
+        .coerce_to_f64(avm, context)?;
     let point = point_to_object((x + width, y + height), avm, context)?;
     Ok(point.into())
 }
@@ -738,8 +822,8 @@ fn set_bottom_right<'gc>(
         avm,
         context,
     )?;
-    let top = this.get("x", avm, context)?.as_number(avm, context)?;
-    let left = this.get("y", avm, context)?.as_number(avm, context)?;
+    let top = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
+    let left = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
 
     this.set("width", Value::Number(bottom - top), avm, context)?;
     this.set("height", Value::Number(right - left), avm, context)?;

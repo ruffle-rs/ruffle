@@ -92,7 +92,7 @@ pub fn constructor<'gc>(
 
     if args.len() == 1 {
         let arg = args.get(0).unwrap();
-        if let Ok(length) = arg.as_number(avm, context) {
+        if let Ok(length) = arg.coerce_to_f64(avm, context) {
             if length >= 0.0 {
                 this.set_length(context.gc_context, length as usize);
                 consumed = true;
@@ -270,12 +270,12 @@ pub fn slice<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     let start = args
         .get(0)
-        .and_then(|v| v.as_number(avm, context).ok())
+        .and_then(|v| v.coerce_to_f64(avm, context).ok())
         .map(|v| make_index_absolute(v as i32, this.length()))
         .unwrap_or(0);
     let end = args
         .get(1)
-        .and_then(|v| v.as_number(avm, context).ok())
+        .and_then(|v| v.coerce_to_f64(avm, context).ok())
         .map(|v| make_index_absolute(v as i32, this.length()))
         .unwrap_or_else(|| this.length());
 
@@ -306,12 +306,12 @@ pub fn splice<'gc>(
     let old_length = this.length();
     let start = args
         .get(0)
-        .and_then(|v| v.as_number(avm, context).ok())
+        .and_then(|v| v.coerce_to_f64(avm, context).ok())
         .map(|v| make_index_absolute(v as i32, old_length))
         .unwrap_or(0);
     let count = args
         .get(1)
-        .and_then(|v| v.as_number(avm, context).ok())
+        .and_then(|v| v.coerce_to_f64(avm, context).ok())
         .map(|v| v as i32)
         .unwrap_or(old_length as i32);
     if count < 0 {

@@ -361,11 +361,11 @@ fn start<'gc>(
     let start_offset = args
         .get(0)
         .unwrap_or(&Value::Number(0.0))
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     let loops = args
         .get(1)
         .unwrap_or(&Value::Number(1.0))
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
 
     let loops = if loops >= 1.0 && loops <= f64::from(std::i16::MAX) {
         loops as u16

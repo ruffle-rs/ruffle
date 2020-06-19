@@ -142,7 +142,7 @@ fn set_rgb<'gc>(
         let rgb = args
             .get(0)
             .unwrap_or(&Value::Undefined)
-            .as_number(avm, context)? as i32;
+            .coerce_to_f64(avm, context)? as i32;
         let r = (((rgb >> 16) & 0xff) as f32) / 255.0;
         let g = (((rgb >> 8) & 0xff) as f32) / 255.0;
         let b = ((rgb & 0xff) as f32) / 255.0;
@@ -177,7 +177,7 @@ fn set_transform<'gc>(
         if transform.has_own_property(avm, context, property) {
             let n = transform
                 .get(property, avm, context)?
-                .as_number(avm, context)?;
+                .coerce_to_f64(avm, context)?;
             *out = f32::from(crate::avm1::value::f64_to_wrapping_i16(n * 2.56)) / 256.0
         }
         Ok(())
@@ -194,7 +194,7 @@ fn set_transform<'gc>(
         if transform.has_own_property(avm, context, property) {
             let n = transform
                 .get(property, avm, context)?
-                .as_number(avm, context)?;
+                .coerce_to_f64(avm, context)?;
             *out = f32::from(crate::avm1::value::f64_to_wrapping_i16(n)) / 255.0
         }
         Ok(())

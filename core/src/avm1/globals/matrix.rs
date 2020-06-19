@@ -16,30 +16,30 @@ pub fn value_to_matrix<'gc>(
     let a = value
         .coerce_to_object(avm, context)
         .get("a", avm, context)?
-        .as_number(avm, context)? as f32;
+        .coerce_to_f64(avm, context)? as f32;
     let b = value
         .coerce_to_object(avm, context)
         .get("b", avm, context)?
-        .as_number(avm, context)? as f32;
+        .coerce_to_f64(avm, context)? as f32;
     let c = value
         .coerce_to_object(avm, context)
         .get("c", avm, context)?
-        .as_number(avm, context)? as f32;
+        .coerce_to_f64(avm, context)? as f32;
     let d = value
         .coerce_to_object(avm, context)
         .get("d", avm, context)?
-        .as_number(avm, context)? as f32;
+        .coerce_to_f64(avm, context)? as f32;
     let tx = Twips::from_pixels(
         value
             .coerce_to_object(avm, context)
             .get("tx", avm, context)?
-            .as_number(avm, context)?,
+            .coerce_to_f64(avm, context)?,
     );
     let ty = Twips::from_pixels(
         value
             .coerce_to_object(avm, context)
             .get("ty", avm, context)?
-            .as_number(avm, context)?,
+            .coerce_to_f64(avm, context)?,
     );
 
     Ok(Matrix { a, b, c, d, tx, ty })
@@ -55,11 +55,11 @@ pub fn gradient_object_to_matrix<'gc>(
         .coerce_to_string(avm, context)?
         == "box"
     {
-        let width = object.get("w", avm, context)?.as_number(avm, context)?;
-        let height = object.get("h", avm, context)?.as_number(avm, context)?;
-        let rotation = object.get("r", avm, context)?.as_number(avm, context)?;
-        let tx = object.get("x", avm, context)?.as_number(avm, context)?;
-        let ty = object.get("y", avm, context)?.as_number(avm, context)?;
+        let width = object.get("w", avm, context)?.coerce_to_f64(avm, context)?;
+        let height = object.get("h", avm, context)?.coerce_to_f64(avm, context)?;
+        let rotation = object.get("r", avm, context)?.coerce_to_f64(avm, context)?;
+        let tx = object.get("x", avm, context)?.coerce_to_f64(avm, context)?;
+        let ty = object.get("y", avm, context)?.coerce_to_f64(avm, context)?;
         Ok(Matrix::create_gradient_box(
             width as f32,
             height as f32,
@@ -78,12 +78,20 @@ pub fn object_to_matrix<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Matrix, Error> {
-    let a = object.get("a", avm, context)?.as_number(avm, context)? as f32;
-    let b = object.get("b", avm, context)?.as_number(avm, context)? as f32;
-    let c = object.get("c", avm, context)?.as_number(avm, context)? as f32;
-    let d = object.get("d", avm, context)?.as_number(avm, context)? as f32;
-    let tx = Twips::from_pixels(object.get("tx", avm, context)?.as_number(avm, context)?);
-    let ty = Twips::from_pixels(object.get("ty", avm, context)?.as_number(avm, context)?);
+    let a = object.get("a", avm, context)?.coerce_to_f64(avm, context)? as f32;
+    let b = object.get("b", avm, context)?.coerce_to_f64(avm, context)? as f32;
+    let c = object.get("c", avm, context)?.coerce_to_f64(avm, context)? as f32;
+    let d = object.get("d", avm, context)?.coerce_to_f64(avm, context)? as f32;
+    let tx = Twips::from_pixels(
+        object
+            .get("tx", avm, context)?
+            .coerce_to_f64(avm, context)?,
+    );
+    let ty = Twips::from_pixels(
+        object
+            .get("ty", avm, context)?
+            .coerce_to_f64(avm, context)?,
+    );
 
     Ok(Matrix { a, b, c, d, tx, ty })
 }
@@ -195,11 +203,11 @@ fn scale<'gc>(
     let scale_x = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     let scale_y = args
         .get(1)
         .unwrap_or(&Value::Undefined)
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     let mut matrix = Matrix::scale(scale_x as f32, scale_y as f32);
     matrix *= object_to_matrix(this, avm, context)?;
     apply_matrix_to_object(matrix, this, avm, context)?;
@@ -216,7 +224,7 @@ fn rotate<'gc>(
     let angle = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     let mut matrix = Matrix::rotate(angle as f32);
     matrix *= object_to_matrix(this, avm, context)?;
     apply_matrix_to_object(matrix, this, avm, context)?;
@@ -233,11 +241,11 @@ fn translate<'gc>(
     let translate_x = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     let translate_y = args
         .get(1)
         .unwrap_or(&Value::Undefined)
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     let mut matrix = Matrix::translate(
         Twips::from_pixels(translate_x),
         Twips::from_pixels(translate_y),
@@ -288,23 +296,23 @@ fn create_box<'gc>(
     let scale_x = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     let scale_y = args
         .get(1)
         .unwrap_or(&Value::Undefined)
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     // [NA] Docs say rotation is optional and defaults to 0, but that's wrong?
     let rotation = args
         .get(2)
         .unwrap_or(&Value::Undefined)
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     let translate_x = if let Some(value) = args.get(3) {
-        value.as_number(avm, context)?
+        value.coerce_to_f64(avm, context)?
     } else {
         0.0
     };
     let translate_y = if let Some(value) = args.get(4) {
-        value.as_number(avm, context)?
+        value.coerce_to_f64(avm, context)?
     } else {
         0.0
     };
@@ -330,23 +338,23 @@ fn create_gradient_box<'gc>(
     let width = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     let height = args
         .get(1)
         .unwrap_or(&Value::Undefined)
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     let rotation = if let Some(value) = args.get(2) {
-        value.as_number(avm, context)?
+        value.coerce_to_f64(avm, context)?
     } else {
         0.0
     };
     let translate_x = if let Some(value) = args.get(3) {
-        value.as_number(avm, context)?
+        value.coerce_to_f64(avm, context)?
     } else {
         0.0
     };
     let translate_y = if let Some(value) = args.get(4) {
-        value.as_number(avm, context)?
+        value.coerce_to_f64(avm, context)?
     } else {
         0.0
     };

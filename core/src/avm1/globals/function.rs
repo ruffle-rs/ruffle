@@ -55,7 +55,7 @@ pub fn apply<'gc>(
     let length = match args_object {
         Value::Object(a) => a
             .get("length", avm, action_context)?
-            .as_number(avm, action_context)? as usize,
+            .coerce_to_f64(avm, action_context)? as usize,
         _ => 0,
     };
 

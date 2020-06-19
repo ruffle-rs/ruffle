@@ -243,7 +243,7 @@ pub fn as_set_prop_flags<'gc>(
             //Convert to native array.
             //TODO: Can we make this an iterator?
             let mut array = vec![];
-            let length = ob.get("length", avm, ac)?.as_number(avm, ac)? as usize;
+            let length = ob.get("length", avm, ac)?.coerce_to_f64(avm, ac)? as usize;
             for i in 0..length {
                 array.push(
                     ob.get(&format!("{}", i), avm, ac)?
@@ -261,13 +261,13 @@ pub fn as_set_prop_flags<'gc>(
     let set_attributes = EnumSet::<Attribute>::from_u128(
         args.get(2)
             .unwrap_or(&Value::Number(0.0))
-            .as_number(avm, ac)? as u128,
+            .coerce_to_f64(avm, ac)? as u128,
     );
 
     let clear_attributes = EnumSet::<Attribute>::from_u128(
         args.get(3)
             .unwrap_or(&Value::Number(0.0))
-            .as_number(avm, ac)? as u128,
+            .coerce_to_f64(avm, ac)? as u128,
     );
 
     match properties {

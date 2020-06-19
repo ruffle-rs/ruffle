@@ -13,7 +13,7 @@ macro_rules! wrap_std {
                 $name,
                 |avm, context, _this, args| -> Result<ReturnValue<'gc>, Error> {
                     if let Some(input) = args.get(0) {
-                        Ok($std(input.as_number(avm, context)?).into())
+                        Ok($std(input.coerce_to_f64(avm, context)?).into())
                     } else {
                         Ok(NAN.into())
                     }
@@ -35,11 +35,11 @@ fn atan2<'gc>(
     if let Some(y) = args.get(0) {
         if let Some(x) = args.get(1) {
             return Ok(y
-                .as_number(avm, context)?
-                .atan2(x.as_number(avm, context)?)
+                .coerce_to_f64(avm, context)?
+                .atan2(x.coerce_to_f64(avm, context)?)
                 .into());
         } else {
-            return Ok(y.as_number(avm, context)?.atan2(0.0).into());
+            return Ok(y.coerce_to_f64(avm, context)?.atan2(0.0).into());
         }
     }
     Ok(NAN.into())
@@ -53,11 +53,11 @@ fn pow<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(y) = args.get(0) {
         if let Some(x) = args.get(1) {
-            let x = x.as_number(avm, context)?;
+            let x = x.coerce_to_f64(avm, context)?;
             if x.is_nan() {
                 return Ok(NAN.into());
             }
-            return Ok(y.as_number(avm, context)?.powf(x).into());
+            return Ok(y.coerce_to_f64(avm, context)?.powf(x).into());
         }
     }
     Ok(NAN.into())
@@ -70,7 +70,7 @@ fn round<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(x) = args.get(0) {
-        let x = x.as_number(avm, context)?;
+        let x = x.coerce_to_f64(avm, context)?;
         // Note that Flash Math.round always rounds toward infinity,
         // unlike Rust f32::round which rounds away from zero.
         let ret = (x + 0.5).floor();
@@ -90,9 +90,9 @@ fn max<'gc>(
             match a.abstract_lt(b.to_owned(), avm, context)? {
                 Value::Bool(value) => {
                     if value {
-                        Ok(b.as_number(avm, context)?.into())
+                        Ok(b.coerce_to_f64(avm, context)?.into())
                     } else {
-                        Ok(a.as_number(avm, context)?.into())
+                        Ok(a.coerce_to_f64(avm, context)?.into())
                     }
                 }
                 _ => Ok(NAN.into()),
@@ -115,9 +115,9 @@ fn min<'gc>(
             match a.abstract_lt(b.to_owned(), avm, context)? {
                 Value::Bool(value) => {
                     if value {
-                        Ok(a.as_number(avm, context)?.into())
+                        Ok(a.coerce_to_f64(avm, context)?.into())
                     } else {
-                        Ok(b.as_number(avm, context)?.into())
+                        Ok(b.coerce_to_f64(avm, context)?.into())
                     }
                 }
                 _ => Ok(NAN.into()),

@@ -82,7 +82,7 @@ fn getfloat_from_avm1_object<'gc>(
     Ok(match object.get(name, avm1, uc)? {
         Value::Undefined => None,
         Value::Null => None,
-        v => Some(v.as_number(avm1, uc)?),
+        v => Some(v.coerce_to_f64(avm1, uc)?),
     })
 }
 

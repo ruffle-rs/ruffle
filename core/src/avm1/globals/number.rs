@@ -17,7 +17,7 @@ pub fn number<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     let value = if let Some(val) = args.get(0) {
-        val.as_number(avm, context)?
+        val.coerce_to_f64(avm, context)?
     } else {
         0.0
     };
@@ -132,7 +132,7 @@ fn to_string<'gc>(
         let radix = args
             .get(0)
             .unwrap_or(&Value::Undefined)
-            .as_number(avm, context)?;
+            .coerce_to_f64(avm, context)?;
         if radix >= 2.0 && radix <= 36.0 {
             radix as u32
         } else {

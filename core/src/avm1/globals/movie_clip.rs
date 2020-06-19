@@ -55,8 +55,8 @@ pub fn hit_test<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if args.len() > 1 {
-        let x = args.get(0).unwrap().as_number(avm, context)?;
-        let y = args.get(1).unwrap().as_number(avm, context)?;
+        let x = args.get(0).unwrap().coerce_to_f64(avm, context)?;
+        let y = args.get(1).unwrap().coerce_to_f64(avm, context)?;
         let shape = args
             .get(2)
             .map(|v| v.as_bool(avm.current_swf_version()))
@@ -148,11 +148,11 @@ fn line_style<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(width) = args.get(0) {
-        let width = Twips::from_pixels(width.as_number(avm, context)?.min(255.0).max(0.0));
+        let width = Twips::from_pixels(width.coerce_to_f64(avm, context)?.min(255.0).max(0.0));
         let color = if let Some(rgb) = args.get(1) {
             let rgb = rgb.coerce_to_u32(avm, context)?;
             let alpha = if let Some(alpha) = args.get(2) {
-                alpha.as_number(avm, context)?.min(100.0).max(0.0)
+                alpha.coerce_to_f64(avm, context)?.min(100.0).max(0.0)
             } else {
                 100.0
             } as f32
@@ -191,7 +191,9 @@ fn line_style<'gc>(
         {
             Some("miter") => {
                 if let Some(limit) = args.get(7) {
-                    LineJoinStyle::Miter(limit.as_number(avm, context)?.max(0.0).min(255.0) as f32)
+                    LineJoinStyle::Miter(
+                        limit.coerce_to_f64(avm, context)?.max(0.0).min(255.0) as f32
+                    )
                 } else {
                     LineJoinStyle::Miter(3.0)
                 }
@@ -229,7 +231,7 @@ fn begin_fill<'gc>(
     if let Some(rgb) = args.get(0) {
         let rgb = rgb.coerce_to_u32(avm, context)?;
         let alpha = if let Some(alpha) = args.get(1) {
-            alpha.as_number(avm, context)?.min(100.0).max(0.0)
+            alpha.coerce_to_f64(avm, context)?.min(100.0).max(0.0)
         } else {
             100.0
         } as f32
@@ -271,9 +273,9 @@ fn begin_gradient_fill<'gc>(
         }
         let mut records = Vec::with_capacity(colors.len());
         for i in 0..colors.len() {
-            let ratio = ratios[i].as_number(avm, context)?.min(255.0).max(0.0);
+            let ratio = ratios[i].coerce_to_f64(avm, context)?.min(255.0).max(0.0);
             let rgb = colors[i].coerce_to_u32(avm, context)?;
-            let alpha = alphas[i].as_number(avm, context)?.min(100.0).max(0.0);
+            let alpha = alphas[i].coerce_to_f64(avm, context)?.min(100.0).max(0.0);
             records.push(GradientRecord {
                 ratio: ratio as u8,
                 color: Color::from_rgb(rgb, (alpha / 100.0 * 255.0) as u8),
@@ -310,7 +312,7 @@ fn begin_gradient_fill<'gc>(
                 if let Some(focal_point) = args.get(7) {
                     FillStyle::FocalGradient {
                         gradient,
-                        focal_point: focal_point.as_number(avm, context)? as f32,
+                        focal_point: focal_point.coerce_to_f64(avm, context)? as f32,
                     }
                 } else {
                     FillStyle::RadialGradient(gradient)
@@ -335,8 +337,8 @@ fn move_to<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let (Some(x), Some(y)) = (args.get(0), args.get(1)) {
-        let x = x.as_number(avm, context)?;
-        let y = y.as_number(avm, context)?;
+        let x = x.coerce_to_f64(avm, context)?;
+        let y = y.coerce_to_f64(avm, context)?;
         movie_clip.draw_command(
             context,
             DrawCommand::MoveTo {
@@ -355,8 +357,8 @@ fn line_to<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let (Some(x), Some(y)) = (args.get(0), args.get(1)) {
-        let x = x.as_number(avm, context)?;
-        let y = y.as_number(avm, context)?;
+        let x = x.coerce_to_f64(avm, context)?;
+        let y = y.coerce_to_f64(avm, context)?;
         movie_clip.draw_command(
             context,
             DrawCommand::LineTo {
@@ -377,10 +379,10 @@ fn curve_to<'gc>(
     if let (Some(x1), Some(y1), Some(x2), Some(y2)) =
         (args.get(0), args.get(1), args.get(2), args.get(3))
     {
-        let x1 = x1.as_number(avm, context)?;
-        let y1 = y1.as_number(avm, context)?;
-        let x2 = x2.as_number(avm, context)?;
-        let y2 = y2.as_number(avm, context)?;
+        let x1 = x1.coerce_to_f64(avm, context)?;
+        let y1 = y1.coerce_to_f64(avm, context)?;
+        let x2 = x2.coerce_to_f64(avm, context)?;
+        let y2 = y2.coerce_to_f64(avm, context)?;
         movie_clip.draw_command(
             context,
             DrawCommand::CurveTo {
@@ -508,27 +510,27 @@ fn create_text_field<'gc>(
         .get(1)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     let x = args
         .get(2)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     let y = args
         .get(3)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     let width = args
         .get(4)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     let height = args
         .get(5)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
 
     let mut text_field: DisplayObject<'gc> =
         EditText::new(context, movie, x, y, width, height).into();

@@ -1081,7 +1081,7 @@ impl<'gc> Avm1<'gc> {
             b.push_str(&a.coerce_to_string(self, context)?);
             self.push(b);
         } else {
-            let result = b.as_number(self, context)? + a.as_number(self, context)?;
+            let result = b.coerce_to_f64(self, context)? + a.coerce_to_f64(self, context)?;
             self.push(result);
         }
         Ok(())
@@ -1102,7 +1102,7 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         // TODO(Herschel): Results on incorrect operands?
-        let val = (self.pop().as_number(self, context)? as u8) as char;
+        let val = (self.pop().coerce_to_f64(self, context)? as u8) as char;
         self.push(val.to_string());
         Ok(())
     }
@@ -1240,7 +1240,7 @@ impl<'gc> Avm1<'gc> {
         let fn_name_value = self.pop();
         let fn_name = fn_name_value.coerce_to_string(self, context)?;
         let mut args = Vec::new();
-        let num_args = self.pop().as_number(self, context)? as i64; // TODO(Herschel): max arg count?
+        let num_args = self.pop().coerce_to_f64(self, context)? as i64; // TODO(Herschel): max arg count?
         for _ in 0..num_args {
             args.push(self.pop());
         }
@@ -1266,7 +1266,7 @@ impl<'gc> Avm1<'gc> {
         let method_name = self.pop();
         let object_val = self.pop();
         let object = value_object::ValueObject::boxed(self, context, object_val);
-        let num_args = self.pop().as_number(self, context)? as i64; // TODO(Herschel): max arg count?
+        let num_args = self.pop().coerce_to_f64(self, context)? as i64; // TODO(Herschel): max arg count?
         let mut args = Vec::new();
         for _ in 0..num_args {
             args.push(self.pop());
@@ -1337,7 +1337,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_decrement(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        let a = self.pop().as_number(self, context)?;
+        let a = self.pop().coerce_to_f64(self, context)?;
         self.push(a - 1.0);
         Ok(())
     }
@@ -1507,8 +1507,8 @@ impl<'gc> Avm1<'gc> {
 
     fn action_divide(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         // AS1 divide
-        let a = self.pop().as_number(self, context)?;
-        let b = self.pop().as_number(self, context)?;
+        let a = self.pop().coerce_to_f64(self, context)?;
+        let b = self.pop().coerce_to_f64(self, context)?;
 
         // TODO(Herschel): SWF19: "If A is zero, the result NaN, Infinity, or -Infinity is pushed to the in SWF 5 and later.
         // In SWF 4, the result is the string #ERROR#.""
@@ -1884,13 +1884,13 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_increment(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        let a = self.pop().as_number(self, context)?;
+        let a = self.pop().coerce_to_f64(self, context)?;
         self.push(a + 1.0);
         Ok(())
     }
 
     fn action_init_array(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        let num_elements = self.pop().as_number(self, context)? as i64;
+        let num_elements = self.pop().coerce_to_f64(self, context)? as i64;
         let array = ScriptObject::array(context.gc_context, Some(self.prototypes.array));
 
         for i in 0..num_elements {
@@ -1905,7 +1905,7 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let num_props = self.pop().as_number(self, context)? as i64;
+        let num_props = self.pop().coerce_to_f64(self, context)? as i64;
         let object = ScriptObject::object(context.gc_context, Some(self.prototypes.object));
         for _ in 0..num_props {
             let value = self.pop();
@@ -1924,7 +1924,7 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let constr = self.pop().coerce_to_object(self, context);
-        let count = self.pop().as_number(self, context)? as i64; //TODO: Is this coercion actually performed by Flash?
+        let count = self.pop().coerce_to_f64(self, context)? as i64; //TODO: Is this coercion actually performed by Flash?
         let mut interfaces = vec![];
 
         //TODO: If one of the interfaces is not an object, do we leave the
@@ -2006,7 +2006,7 @@ impl<'gc> Avm1<'gc> {
     ) -> Result<(), Error> {
         // TODO(Herschel): Results on incorrect operands?
         use std::convert::TryFrom;
-        let val = char::try_from(self.pop().as_number(self, context)? as u32)?;
+        let val = char::try_from(self.pop().coerce_to_f64(self, context)? as u32)?;
         self.push(val.to_string());
         Ok(())
     }
@@ -2028,8 +2028,8 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         // TODO(Herschel): Result with incorrect operands?
-        let len = self.pop().as_number(self, context)? as usize;
-        let start = self.pop().as_number(self, context)? as usize;
+        let len = self.pop().coerce_to_f64(self, context)? as usize;
+        let start = self.pop().coerce_to_f64(self, context)? as usize;
         let val = self.pop();
         let s = val.coerce_to_string(self, context)?;
         let result = s[len..len + start].to_string(); // TODO(Herschel): Flash uses UTF-16 internally.
@@ -2049,16 +2049,16 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_multiply(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        let a = self.pop().as_number(self, context)?;
-        let b = self.pop().as_number(self, context)?;
+        let a = self.pop().coerce_to_f64(self, context)?;
+        let b = self.pop().coerce_to_f64(self, context)?;
         self.push(a * b);
         Ok(())
     }
 
     fn action_modulo(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         // TODO: Wrong operands?
-        let a = self.pop().as_number(self, context)?;
-        let b = self.pop().as_number(self, context)?;
+        let a = self.pop().coerce_to_f64(self, context)?;
+        let b = self.pop().coerce_to_f64(self, context)?;
         self.push(b % a);
         Ok(())
     }
@@ -2086,7 +2086,7 @@ impl<'gc> Avm1<'gc> {
     fn action_new_method(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let method_name = self.pop();
         let object_val = self.pop();
-        let num_args = self.pop().as_number(self, context)? as i64;
+        let num_args = self.pop().coerce_to_f64(self, context)? as i64;
         let mut args = Vec::new();
         for _ in 0..num_args {
             args.push(self.pop());
@@ -2125,7 +2125,7 @@ impl<'gc> Avm1<'gc> {
     fn action_new_object(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let fn_name_val = self.pop();
         let fn_name = fn_name_val.coerce_to_string(self, context)?;
-        let num_args = self.pop().as_number(self, context)? as i64;
+        let num_args = self.pop().coerce_to_f64(self, context)? as i64;
         let mut args = Vec::new();
         for _ in 0..num_args {
             args.push(self.pop());
@@ -2522,8 +2522,8 @@ impl<'gc> Avm1<'gc> {
     ) -> Result<(), Error> {
         // SWFv4 substring
         // TODO(Herschel): Result with incorrect operands?
-        let len = self.pop().as_number(self, context)? as usize;
-        let start = self.pop().as_number(self, context)? as usize;
+        let len = self.pop().coerce_to_f64(self, context)? as usize;
+        let start = self.pop().coerce_to_f64(self, context)? as usize;
         let val = self.pop();
         let s = val.coerce_to_string(self, context)?;
         // This is specifically a non-UTF8 aware substring.
@@ -2584,8 +2584,8 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_subtract(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        let a = self.pop().as_number(self, context)?;
-        let b = self.pop().as_number(self, context)?;
+        let a = self.pop().coerce_to_f64(self, context)?;
+        let b = self.pop().coerce_to_f64(self, context)?;
         self.push(b - a);
         Ok(())
     }
@@ -2606,13 +2606,13 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_to_integer(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        let val = self.pop().as_number(self, context)?;
+        let val = self.pop().coerce_to_f64(self, context)?;
         self.push(val.trunc());
         Ok(())
     }
 
     fn action_to_number(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        let val = self.pop().as_number(self, context)?;
+        let val = self.pop().coerce_to_f64(self, context)?;
         self.push(val);
         Ok(())
     }
@@ -2667,7 +2667,7 @@ impl<'gc> Avm1<'gc> {
         r: &mut Reader<'_>,
     ) -> Result<(), Error> {
         // TODO(Herschel): Always true for now.
-        let _frame_num = self.pop().as_number(self, context)? as u16;
+        let _frame_num = self.pop().coerce_to_f64(self, context)? as u16;
         let loaded = true;
         if !loaded {
             // Note that the offset is given in # of actions, NOT in bytes.
@@ -2753,28 +2753,28 @@ pub fn start_drag<'gc>(
         let mut x_min = args
             .get(1)
             .unwrap_or(&Value::Undefined)
-            .as_number(avm, context)
+            .coerce_to_f64(avm, context)
             .map(|n| if n.is_finite() { n } else { 0.0 })
             .map(Twips::from_pixels)
             .unwrap_or_default();
         let mut y_min = args
             .get(2)
             .unwrap_or(&Value::Undefined)
-            .as_number(avm, context)
+            .coerce_to_f64(avm, context)
             .map(|n| if n.is_finite() { n } else { 0.0 })
             .map(Twips::from_pixels)
             .unwrap_or_default();
         let mut x_max = args
             .get(3)
             .unwrap_or(&Value::Undefined)
-            .as_number(avm, context)
+            .coerce_to_f64(avm, context)
             .map(|n| if n.is_finite() { n } else { 0.0 })
             .map(Twips::from_pixels)
             .unwrap_or_default();
         let mut y_max = args
             .get(4)
             .unwrap_or(&Value::Undefined)
-            .as_number(avm, context)
+            .coerce_to_f64(avm, context)
             .map(|n| if n.is_finite() { n } else { 0.0 })
             .map(Twips::from_pixels)
             .unwrap_or_default();

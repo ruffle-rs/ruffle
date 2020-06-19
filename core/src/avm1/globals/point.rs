@@ -37,11 +37,11 @@ pub fn value_to_point<'gc>(
     let x = value
         .coerce_to_object(avm, context)
         .get("x", avm, context)?
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     let y = value
         .coerce_to_object(avm, context)
         .get("y", avm, context)?
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     Ok((x, y))
 }
 
@@ -50,8 +50,8 @@ pub fn object_to_point<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<(f64, f64), Error> {
-    let x = object.get("x", avm, context)?.as_number(avm, context)?;
-    let y = object.get("y", avm, context)?.as_number(avm, context)?;
+    let x = object.get("x", avm, context)?.coerce_to_f64(avm, context)?;
+    let y = object.get("y", avm, context)?.coerce_to_f64(avm, context)?;
     Ok((x, y))
 }
 
@@ -120,8 +120,8 @@ fn add<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let this_x = this.get("x", avm, context)?.as_number(avm, context)?;
-    let this_y = this.get("y", avm, context)?.as_number(avm, context)?;
+    let this_x = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
+    let this_y = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
     let other = value_to_point(
         args.get(0).unwrap_or(&Value::Undefined).to_owned(),
         avm,
@@ -137,8 +137,8 @@ fn subtract<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let this_x = this.get("x", avm, context)?.as_number(avm, context)?;
-    let this_y = this.get("y", avm, context)?.as_number(avm, context)?;
+    let this_x = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
+    let this_y = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
     let other = value_to_point(
         args.get(0).unwrap_or(&Value::Undefined).to_owned(),
         avm,
@@ -179,11 +179,11 @@ fn polar<'gc>(
     let length = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     let angle = args
         .get(1)
         .unwrap_or(&Value::Undefined)
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     let point = point_to_object((length * angle.cos(), length * angle.sin()), avm, context)?;
     Ok(point.into())
 }
@@ -200,7 +200,7 @@ fn interpolate<'gc>(
 
     let a = value_to_point(args.get(0).unwrap().to_owned(), avm, context)?;
     let b = value_to_point(args.get(1).unwrap().to_owned(), avm, context)?;
-    let f = args.get(2).unwrap().as_number(avm, context)?;
+    let f = args.get(2).unwrap().coerce_to_f64(avm, context)?;
     let result = (b.0 - (b.0 - a.0) * f, b.1 - (b.1 - a.1) * f);
     Ok(point_to_object(result, avm, context)?.into())
 }
@@ -239,13 +239,15 @@ fn normalize<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let current_length = this.get("length", avm, context)?.as_number(avm, context)?;
+    let current_length = this
+        .get("length", avm, context)?
+        .coerce_to_f64(avm, context)?;
     if current_length.is_finite() {
         let point = object_to_point(this, avm, context)?;
         let new_length = args
             .get(0)
             .unwrap_or(&Value::Undefined)
-            .as_number(avm, context)?;
+            .coerce_to_f64(avm, context)?;
         let (x, y) = if current_length == 0.0 {
             (point.0 * new_length, point.1 * new_length)
         } else {
@@ -272,11 +274,11 @@ fn offset<'gc>(
     let dx = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
     let dy = args
         .get(1)
         .unwrap_or(&Value::Undefined)
-        .as_number(avm, context)?;
+        .coerce_to_f64(avm, context)?;
 
     this.set("x", (point.0 + dx).into(), avm, context)?;
     this.set("y", (point.1 + dy).into(), avm, context)?;

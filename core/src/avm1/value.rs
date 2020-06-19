@@ -220,7 +220,7 @@ impl<'gc> Value<'gc> {
     }
 
     /// ECMA-262 2nd edition s. 9.3 ToNumber
-    pub fn as_number(
+    pub fn coerce_to_f64(
         &self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -333,19 +333,19 @@ impl<'gc> Value<'gc> {
             (Value::Undefined, Value::Null) => Ok(true.into()),
             (Value::Null, Value::Undefined) => Ok(true.into()),
             (Value::Number(_), Value::String(_)) => Ok(self.abstract_eq(
-                Value::Number(other.as_number(avm, context)?),
+                Value::Number(other.coerce_to_f64(avm, context)?),
                 avm,
                 context,
                 true,
             )?),
             (Value::String(_), Value::Number(_)) => {
-                Ok(Value::Number(self.as_number(avm, context)?)
+                Ok(Value::Number(self.coerce_to_f64(avm, context)?)
                     .abstract_eq(other, avm, context, true)?)
             }
-            (Value::Bool(_), _) => Ok(Value::Number(self.as_number(avm, context)?)
+            (Value::Bool(_), _) => Ok(Value::Number(self.coerce_to_f64(avm, context)?)
                 .abstract_eq(other, avm, context, true)?),
             (_, Value::Bool(_)) => Ok(self.abstract_eq(
-                Value::Number(other.as_number(avm, context)?),
+                Value::Number(other.coerce_to_f64(avm, context)?),
                 avm,
                 context,
                 true,
@@ -409,7 +409,7 @@ impl<'gc> Value<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<u16, Error> {
-        self.as_number(avm, context).map(f64_to_wrapping_u16)
+        self.coerce_to_f64(avm, context).map(f64_to_wrapping_u16)
     }
 
     /// Coerce a number to an `i16` following the wrapping behavior ECMAScript specifications.
@@ -421,7 +421,7 @@ impl<'gc> Value<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<i16, Error> {
-        self.as_number(avm, context).map(f64_to_wrapping_i16)
+        self.coerce_to_f64(avm, context).map(f64_to_wrapping_i16)
     }
 
     /// Coerce a number to an `i32` following the ECMAScript specifications for `ToInt32`.
@@ -434,7 +434,7 @@ impl<'gc> Value<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<i32, Error> {
-        self.as_number(avm, context).map(f64_to_wrapping_i32)
+        self.coerce_to_f64(avm, context).map(f64_to_wrapping_i32)
     }
 
     /// Coerce a number to an `u32` following the ECMAScript specifications for `ToUInt32`.
@@ -446,7 +446,7 @@ impl<'gc> Value<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<u32, Error> {
-        self.as_number(avm, context).map(f64_to_wrapping_u32)
+        self.coerce_to_f64(avm, context).map(f64_to_wrapping_u32)
     }
 
     /// Coerce a value to a string.
@@ -666,14 +666,14 @@ mod test {
             let f = Value::Bool(false);
             let n = Value::Null;
 
-            assert_eq!(t.as_number(avm, context).unwrap(), 1.0);
-            assert!(u.as_number(avm, context).unwrap().is_nan());
-            assert_eq!(f.as_number(avm, context).unwrap(), 0.0);
-            assert!(n.as_number(avm, context).unwrap().is_nan());
+            assert_eq!(t.coerce_to_f64(avm, context).unwrap(), 1.0);
+            assert!(u.coerce_to_f64(avm, context).unwrap().is_nan());
+            assert_eq!(f.coerce_to_f64(avm, context).unwrap(), 0.0);
+            assert!(n.coerce_to_f64(avm, context).unwrap().is_nan());
 
             let bo = Value::Object(ScriptObject::bare_object(context.gc_context).into());
 
-            assert!(bo.as_number(avm, context).unwrap().is_nan());
+            assert!(bo.coerce_to_f64(avm, context).unwrap().is_nan());
         });
     }
 
@@ -686,14 +686,14 @@ mod test {
             let f = Value::Bool(false);
             let n = Value::Null;
 
-            assert_eq!(t.as_number(avm, context).unwrap(), 1.0);
-            assert_eq!(u.as_number(avm, context).unwrap(), 0.0);
-            assert_eq!(f.as_number(avm, context).unwrap(), 0.0);
-            assert_eq!(n.as_number(avm, context).unwrap(), 0.0);
+            assert_eq!(t.coerce_to_f64(avm, context).unwrap(), 1.0);
+            assert_eq!(u.coerce_to_f64(avm, context).unwrap(), 0.0);
+            assert_eq!(f.coerce_to_f64(avm, context).unwrap(), 0.0);
+            assert_eq!(n.coerce_to_f64(avm, context).unwrap(), 0.0);
 
             let bo = Value::Object(ScriptObject::bare_object(context.gc_context).into());
 
-            assert_eq!(bo.as_number(avm, context).unwrap(), 0.0);
+            assert_eq!(bo.coerce_to_f64(avm, context).unwrap(), 0.0);
         });
     }
 
