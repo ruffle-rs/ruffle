@@ -542,13 +542,6 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn as_string(&self) -> Result<&String, Error> {
-        match self {
-            Value::String(s) => Ok(s),
-            _ => Err(format!("Expected String, found {:?}", self).into()),
-        }
-    }
-
     pub fn coerce_to_object(
         &self,
         avm: &mut Avm1<'gc>,
