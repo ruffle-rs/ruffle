@@ -424,7 +424,9 @@ fn attach_movie<'gc>(
         [export_name, new_instance_name, depth] => (
             export_name.coerce_to_string(avm, context)?,
             new_instance_name.coerce_to_string(avm, context)?,
-            depth.as_i32().unwrap_or(0).wrapping_add(AVM_DEPTH_BIAS),
+            depth
+                .coerce_to_i32(avm, context)?
+                .wrapping_add(AVM_DEPTH_BIAS),
         ),
         _ => {
             log::error!("MovieClip.attachMovie: Too few parameters");
@@ -468,7 +470,9 @@ fn create_empty_movie_clip<'gc>(
     let (new_instance_name, depth) = match &args[0..2] {
         [new_instance_name, depth] => (
             new_instance_name.coerce_to_string(avm, context)?,
-            depth.as_i32().unwrap_or(0).wrapping_add(AVM_DEPTH_BIAS),
+            depth
+                .coerce_to_i32(avm, context)?
+                .wrapping_add(AVM_DEPTH_BIAS),
         ),
         _ => {
             log::error!("MovieClip.attachMovie: Too few parameters");
@@ -563,7 +567,7 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
     let (new_instance_name, depth) = match &args[0..2] {
         [new_instance_name, depth] => (
             new_instance_name.coerce_to_string(avm, context)?,
-            depth.as_i32().unwrap_or(0).wrapping_add(depth_bias),
+            depth.coerce_to_i32(avm, context)?.wrapping_add(depth_bias),
         ),
         _ => {
             log::error!("MovieClip.attachMovie: Too few parameters");
