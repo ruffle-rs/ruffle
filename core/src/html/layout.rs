@@ -5,11 +5,32 @@ use crate::drawing::Drawing;
 use crate::font::{EvalParameters, Font};
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
+use crate::shape_utils::DrawCommand;
 use crate::tag_utils::SwfMovie;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cmp::{max, min};
 use std::sync::Arc;
 use swf::Twips;
+
+/// Draw an underline on a particular drawing.
+///
+/// This will not draw underlines shorter than a pixel in width.
+fn draw_underline(drawing: &mut Drawing, starting_pos: Position<Twips>, width: Twips) {
+    if width < Twips::from_pixels(1.0) {
+        return;
+    }
+
+    let ending_pos = starting_pos + Position::from((width, Twips::zero()));
+
+    drawing.draw_command(DrawCommand::MoveTo {
+        x: starting_pos.x(),
+        y: starting_pos.y(),
+    });
+    drawing.draw_command(DrawCommand::LineTo {
+        x: ending_pos.x(),
+        y: ending_pos.y(),
+    });
+}
 
 /// Contains information relating to the current layout operation.
 pub struct LayoutContext<'a, 'gc> {
@@ -114,6 +135,74 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         } else {
             self.current_line_span.align
         }
+    }
+
+    /// Construct an underline drawing for the current line of text and add it
+    /// to the line.
+    fn append_underlines(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let mut starting_pos: Option<Position<Twips>> = None;
+        let mut current_width: Option<Twips> = None;
+        let mut line_drawing = Drawing::new();
+        let mut line = self.current_line;
+
+        line_drawing.set_line_style(Some(swf::LineStyle::new_v1(
+            Twips::new(1),
+            swf::Color::from_rgb(0, 255),
+        )));
+
+        while let Some(linebox) = line {
+            let read = linebox.read();
+
+            if read.is_text_box() {
+                if let Some((_t, tf, font, params, _color)) = read.as_renderable_text(self.text) {
+                    let underline_baseline =
+                        font.get_baseline_for_height(params.height()) + Twips::from_pixels(2.0);
+                    let mut line_extended = false;
+
+                    if let Some(starting_pos) = starting_pos {
+                        if tf.underline.unwrap_or(false)
+                            && underline_baseline + read.bounds().origin().y() == starting_pos.y()
+                        {
+                            //Underline is at the same baseline, extend it
+                            current_width = Some(read.bounds().extent_x() - starting_pos.x());
+
+                            line_extended = true;
+                        }
+                    }
+
+                    if !line_extended {
+                        //For whatever reason, we cannot extend the current underline.
+                        //This can happen if we don't have an underline to extend, the
+                        //underlines don't match, or this span doesn't call for one.
+                        if let (Some(pos), Some(width)) = (starting_pos, current_width) {
+                            draw_underline(&mut line_drawing, pos, width);
+
+                            starting_pos = None;
+                            current_width = None;
+                        }
+
+                        if tf.underline.unwrap_or(false) {
+                            starting_pos = Some(
+                                read.bounds().origin()
+                                    + Position::from((Twips::zero(), underline_baseline)),
+                            );
+                            current_width = Some(read.bounds().width());
+                        }
+                    }
+                }
+            }
+
+            line = read.next_sibling();
+        }
+
+        if let (Some(starting_pos), Some(current_width)) = (starting_pos, current_width) {
+            draw_underline(&mut line_drawing, starting_pos, current_width);
+        }
+
+        self.append_box(
+            context.gc_context,
+            LayoutBox::from_drawing(context.gc_context, line_drawing),
+        );
     }
 
     /// Apply all indents and alignment to the current line, if necessary.
@@ -222,6 +311,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             line = write.next_sibling();
             box_count += 1;
         }
+
+        self.append_underlines(context);
 
         line_bounds +=
             Position::from((left_adjustment + align_adjustment, Twips::from_pixels(0.0)));

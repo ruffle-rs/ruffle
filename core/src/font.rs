@@ -50,6 +50,11 @@ impl EvalParameters {
             kerning: span.kerning,
         }
     }
+
+    /// Get the height the font would be evaluated at.
+    pub fn height(&self) -> Twips {
+        self.height
+    }
 }
 
 #[derive(Debug, Clone, Collect, Copy)]
@@ -186,6 +191,13 @@ impl<'gc> Font<'gc> {
         let scale = height.get() as f32 / self.scale();
 
         Twips::new((self.0.leading as f32 * scale) as i32)
+    }
+
+    /// Get the baseline from the top of the glyph at a given height.
+    pub fn get_baseline_for_height(self, height: Twips) -> Twips {
+        let scale = height.get() as f32 / self.scale();
+
+        Twips::new((self.0.ascent as f32 * scale) as i32)
     }
 
     /// Returns whether this font contains kerning information.
