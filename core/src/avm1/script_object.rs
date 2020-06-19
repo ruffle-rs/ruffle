@@ -203,7 +203,7 @@ impl<'gc> ScriptObject<'gc> {
         } else {
             if name == "length" {
                 let length = value
-                    .as_number(avm, context)
+                    .coerce_to_f64(avm, context)
                     .map(|v| v.abs() as i32)
                     .unwrap_or(0);
                 if length > 0 {

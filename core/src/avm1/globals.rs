@@ -90,7 +90,7 @@ pub fn is_nan<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(val) = args.get(0) {
-        Ok(val.as_number(avm, action_context)?.is_nan().into())
+        Ok(val.coerce_to_f64(avm, action_context)?.is_nan().into())
     } else {
         Ok(true.into())
     }

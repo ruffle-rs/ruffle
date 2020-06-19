@@ -49,7 +49,8 @@ pub fn xmlnode_constructor<'gc>(
     let blank_document = XMLDocument::new(ac.gc_context);
 
     match (
-        args.get(0).map(|v| v.as_number(avm, ac).map(|v| v as u32)),
+        args.get(0)
+            .map(|v| v.coerce_to_f64(avm, ac).map(|v| v as u32)),
         args.get(1).map(|v| v.coerce_to_string(avm, ac)),
         this.as_xml_node(),
     ) {

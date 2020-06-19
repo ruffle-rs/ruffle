@@ -14,7 +14,7 @@ pub fn is_down<'gc>(
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(key) = args
         .get(0)
-        .and_then(|v| v.as_number(avm, context).ok())
+        .and_then(|v| v.coerce_to_f64(avm, context).ok())
         .and_then(|k| KeyCode::try_from(k as u8).ok())
     {
         Ok(context.input.is_key_down(key).into())

@@ -857,7 +857,7 @@ fn property_coerce_to_number<'gc>(
     value: Value<'gc>,
 ) -> Result<Option<f64>, Error> {
     if value != Value::Undefined && value != Value::Null {
-        let n = value.as_number(avm, context)?;
+        let n = value.coerce_to_f64(avm, context)?;
         if n.is_finite() {
             return Ok(Some(n));
         }

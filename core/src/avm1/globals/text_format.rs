@@ -34,7 +34,7 @@ fn map_defined_to_number<'gc>(
         Some(Value::Undefined) => Value::Null,
         Some(Value::Null) => Value::Null,
         None => Value::Null,
-        Some(v) => v.as_number(avm, ac)?.into(),
+        Some(v) => v.coerce_to_f64(avm, ac)?.into(),
     };
 
     this.set(name, val, avm, ac)?;
