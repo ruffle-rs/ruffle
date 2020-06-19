@@ -506,42 +506,6 @@ impl<'gc> Value<'gc> {
         )
     }
 
-    /// Casts a Number into an `i32` following the ECMA-262 `ToInt32` specs.
-    /// The number will have 32-bit wrapping semantics if it is outside the range of an `i32`.
-    /// NaN and Infinities will return 0.
-    /// This is written to avoid undefined behavior when casting out-of-bounds floats to ints in Rust.
-    /// (see https://github.com/rust-lang/rust/issues/10184)
-    #[allow(clippy::unreadable_literal)]
-    pub fn as_i32(&self) -> Result<i32, Error> {
-        self.as_f64().map(f64_to_wrapping_i32)
-    }
-
-    /// Casts a Number into an `i32` following the ECMA-262 `ToUInt32` specs.
-    /// The number will have 32-bit wrapping semantics if it is outside the range of an `u32`.
-    /// NaN and Infinities will return 0.
-    /// This is written to avoid undefined behavior when casting out-of-bounds floats to ints in Rust.
-    /// (see https://github.com/rust-lang/rust/issues/10184)
-    #[allow(clippy::unreadable_literal)]
-    pub fn as_u32(&self) -> Result<u32, Error> {
-        self.as_f64().map(f64_to_wrapping_u32)
-    }
-
-    pub fn as_i64(&self) -> Result<i64, Error> {
-        self.as_f64().map(|n| n as i64)
-    }
-
-    #[allow(dead_code)]
-    pub fn as_usize(&self) -> Result<usize, Error> {
-        self.as_f64().map(|n| n as usize)
-    }
-
-    pub fn as_f64(&self) -> Result<f64, Error> {
-        match *self {
-            Value::Number(v) => Ok(v),
-            _ => Err(format!("Expected Number, found {:?}", self).into()),
-        }
-    }
-
     pub fn coerce_to_object(
         &self,
         avm: &mut Avm1<'gc>,

@@ -47,6 +47,7 @@ pub mod xml_object;
 mod tests;
 
 use crate::avm1::listeners::SystemListener;
+use crate::avm1::value::f64_to_wrapping_u32;
 pub use activation::Activation;
 pub use globals::SystemPrototypes;
 pub use object::{Object, ObjectPtr, TObject};
@@ -1098,10 +1099,10 @@ impl<'gc> Avm1<'gc> {
 
     fn action_ascii_to_char(
         &mut self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         // TODO(Herschel): Results on incorrect operands?
-        let val = (self.pop().as_f64()? as u8) as char;
+        let val = (self.pop().as_number(self, context)? as u8) as char;
         self.push(val.to_string());
         Ok(())
     }
@@ -1143,49 +1144,52 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_bit_and(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let a = self.pop().as_u32()?;
-        let b = self.pop().as_u32()?;
+    fn action_bit_and(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let a = self.pop().coerce_to_u32(self, context)?;
+        let b = self.pop().coerce_to_u32(self, context)?;
         let result = a & b;
         self.push(result);
         Ok(())
     }
 
-    fn action_bit_lshift(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let a = self.pop().as_i32()? & 0b11111; // Only 5 bits used for shift count
-        let b = self.pop().as_i32()?;
+    fn action_bit_lshift(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let a = self.pop().coerce_to_i32(self, context)? & 0b11111; // Only 5 bits used for shift count
+        let b = self.pop().coerce_to_i32(self, context)?;
         let result = b << a;
         self.push(result);
         Ok(())
     }
 
-    fn action_bit_or(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let a = self.pop().as_u32()?;
-        let b = self.pop().as_u32()?;
+    fn action_bit_or(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let a = self.pop().coerce_to_u32(self, context)?;
+        let b = self.pop().coerce_to_u32(self, context)?;
         let result = a | b;
         self.push(result);
         Ok(())
     }
 
-    fn action_bit_rshift(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let a = self.pop().as_i32()? & 0b11111; // Only 5 bits used for shift count
-        let b = self.pop().as_i32()?;
+    fn action_bit_rshift(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let a = self.pop().coerce_to_i32(self, context)? & 0b11111; // Only 5 bits used for shift count
+        let b = self.pop().coerce_to_i32(self, context)?;
         let result = b >> a;
         self.push(result);
         Ok(())
     }
 
-    fn action_bit_urshift(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let a = self.pop().as_u32()? & 0b11111; // Only 5 bits used for shift count
-        let b = self.pop().as_u32()?;
+    fn action_bit_urshift(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let a = self.pop().coerce_to_u32(self, context)? & 0b11111; // Only 5 bits used for shift count
+        let b = self.pop().coerce_to_u32(self, context)?;
         let result = b >> a;
         self.push(result);
         Ok(())
     }
 
-    fn action_bit_xor(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let a = self.pop().as_u32()?;
-        let b = self.pop().as_u32()?;
+    fn action_bit_xor(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let a = self.pop().coerce_to_u32(self, context)?;
+        let b = self.pop().coerce_to_u32(self, context)?;
         let result = b ^ a;
         self.push(result);
         Ok(())
@@ -1197,7 +1201,8 @@ impl<'gc> Avm1<'gc> {
         let clip = self.target_clip_or_root();
         if let Some(clip) = clip.as_movie_clip() {
             // Use frame # if parameter is a number, otherwise cast to string and check for frame labels.
-            let frame = if let Ok(frame) = frame.as_u32() {
+            let frame = if let Value::Number(frame) = frame {
+                let frame = f64_to_wrapping_u32(frame);
                 if frame >= 1 && frame <= u32::from(clip.total_frames()) {
                     Some(frame as u16)
                 } else {
@@ -1235,7 +1240,7 @@ impl<'gc> Avm1<'gc> {
         let fn_name_value = self.pop();
         let fn_name = fn_name_value.coerce_to_string(self, context)?;
         let mut args = Vec::new();
-        let num_args = self.pop().as_i64()?; // TODO(Herschel): max arg count?
+        let num_args = self.pop().as_number(self, context)? as i64; // TODO(Herschel): max arg count?
         for _ in 0..num_args {
             args.push(self.pop());
         }
@@ -1261,7 +1266,7 @@ impl<'gc> Avm1<'gc> {
         let method_name = self.pop();
         let object_val = self.pop();
         let object = value_object::ValueObject::boxed(self, context, object_val);
-        let num_args = self.pop().as_i64()?; // TODO(Herschel): max arg count?
+        let num_args = self.pop().as_number(self, context)? as i64; // TODO(Herschel): max arg count?
         let mut args = Vec::new();
         for _ in 0..num_args {
             args.push(self.pop());
@@ -1885,7 +1890,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_init_array(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
-        let num_elements = self.pop().as_i64()?;
+        let num_elements = self.pop().as_number(self, context)? as i64;
         let array = ScriptObject::array(context.gc_context, Some(self.prototypes.array));
 
         for i in 0..num_elements {
@@ -1900,7 +1905,7 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let num_props = self.pop().as_i64()?;
+        let num_props = self.pop().as_number(self, context)? as i64;
         let object = ScriptObject::object(context.gc_context, Some(self.prototypes.object));
         for _ in 0..num_props {
             let value = self.pop();
@@ -1919,7 +1924,7 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let constr = self.pop().coerce_to_object(self, context);
-        let count = self.pop().as_i64()?; //TODO: Is this coercion actually performed by Flash?
+        let count = self.pop().as_number(self, context)? as i64; //TODO: Is this coercion actually performed by Flash?
         let mut interfaces = vec![];
 
         //TODO: If one of the interfaces is not an object, do we leave the
@@ -1995,10 +2000,13 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_mb_ascii_to_char(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
+    fn action_mb_ascii_to_char(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
         // TODO(Herschel): Results on incorrect operands?
         use std::convert::TryFrom;
-        let val = char::try_from(self.pop().as_f64()? as u32)?;
+        let val = char::try_from(self.pop().as_number(self, context)? as u32)?;
         self.push(val.to_string());
         Ok(())
     }
@@ -2020,8 +2028,8 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         // TODO(Herschel): Result with incorrect operands?
-        let len = self.pop().as_f64()? as usize;
-        let start = self.pop().as_f64()? as usize;
+        let len = self.pop().as_number(self, context)? as usize;
+        let start = self.pop().as_number(self, context)? as usize;
         let val = self.pop();
         let s = val.coerce_to_string(self, context)?;
         let result = s[len..len + start].to_string(); // TODO(Herschel): Flash uses UTF-16 internally.
@@ -2078,7 +2086,7 @@ impl<'gc> Avm1<'gc> {
     fn action_new_method(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let method_name = self.pop();
         let object_val = self.pop();
-        let num_args = self.pop().as_i64()?;
+        let num_args = self.pop().as_number(self, context)? as i64;
         let mut args = Vec::new();
         for _ in 0..num_args {
             args.push(self.pop());
@@ -2117,7 +2125,7 @@ impl<'gc> Avm1<'gc> {
     fn action_new_object(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let fn_name_val = self.pop();
         let fn_name = fn_name_val.coerce_to_string(self, context)?;
-        let num_args = self.pop().as_i64()?;
+        let num_args = self.pop().as_number(self, context)? as i64;
         let mut args = Vec::new();
         for _ in 0..num_args {
             args.push(self.pop());
@@ -2294,7 +2302,7 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let value = self.pop();
-        let prop_index = self.pop().as_u32()? as usize;
+        let prop_index = self.pop().coerce_to_u32(self, context)? as usize;
         let path = self.pop();
         if let Some(target) = self.target_clip() {
             if let Some(clip) = self.resolve_target_display_object(context, target, path)? {
@@ -2514,8 +2522,8 @@ impl<'gc> Avm1<'gc> {
     ) -> Result<(), Error> {
         // SWFv4 substring
         // TODO(Herschel): Result with incorrect operands?
-        let len = self.pop().as_f64()? as usize;
-        let start = self.pop().as_f64()? as usize;
+        let len = self.pop().as_number(self, context)? as usize;
+        let start = self.pop().as_number(self, context)? as usize;
         let val = self.pop();
         let s = val.coerce_to_string(self, context)?;
         // This is specifically a non-UTF8 aware substring.
@@ -2654,12 +2662,12 @@ impl<'gc> Avm1<'gc> {
 
     fn action_wait_for_frame_2(
         &mut self,
-        _context: &mut UpdateContext,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         num_actions_to_skip: u8,
         r: &mut Reader<'_>,
     ) -> Result<(), Error> {
         // TODO(Herschel): Always true for now.
-        let _frame_num = self.pop().as_f64()? as u16;
+        let _frame_num = self.pop().as_number(self, context)? as u16;
         let loaded = true;
         if !loaded {
             // Note that the offset is given in # of actions, NOT in bytes.
