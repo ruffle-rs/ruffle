@@ -177,7 +177,6 @@ impl<'gc> Avm1<'gc> {
         let scope = stack_frame.scope();
         let locals = scope.locals();
         let keys = locals.get_keys(self);
-        let swf_version = self.current_swf_version();
 
         for k in keys {
             let v = locals.get(&k, self, context);
@@ -187,8 +186,9 @@ impl<'gc> Avm1<'gc> {
                 k,
                 v.ok()
                     .unwrap_or_else(|| Value::Undefined)
-                    .clone()
-                    .into_string(swf_version),
+                    .coerce_to_string(self, context)
+                    .unwrap_or_else(|_| Cow::Borrowed("undefined"))
+                    .to_string(),
             );
         }
 
@@ -1096,17 +1096,24 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_ascii_to_char(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
+    fn action_ascii_to_char(
+        &mut self,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
         // TODO(Herschel): Results on incorrect operands?
         let val = (self.pop().as_f64()? as u8) as char;
         self.push(val.to_string());
         Ok(())
     }
 
-    fn action_char_to_ascii(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
+    fn action_char_to_ascii(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
         // TODO(Herschel): Results on incorrect operands?
-        let s = self.pop().into_string(self.current_swf_version());
-        let result = s.bytes().next().unwrap_or(0);
+        let val = self.pop();
+        let string = val.coerce_to_string(self, context)?;
+        let result = string.bytes().next().unwrap_or(0);
         self.push(result);
         Ok(())
     }
@@ -1715,13 +1722,14 @@ impl<'gc> Avm1<'gc> {
         // TODO: Support `LoadVariablesFlag`, `LoadTargetFlag`
         // TODO: What happens if there's only one string?
         let target = self.pop();
-        let url = self.pop().into_string(self.current_swf_version());
+        let url_val = self.pop();
+        let url = url_val.coerce_to_string(self, context)?;
 
         if let Some(fscommand) = fscommand::parse(&url) {
             return fscommand::handle(fscommand, self, context);
         }
 
-        let window_target = target.clone().into_string(self.current_swf_version());
+        let window_target = target.coerce_to_string(self, context)?;
         let clip_target: Option<DisplayObject<'gc>> = if is_target_sprite {
             if let Value::Object(target) = target {
                 target.as_display_object()
@@ -1742,7 +1750,7 @@ impl<'gc> Avm1<'gc> {
                     .coerce_to_object(self, context);
                 let (url, opts) = self.locals_into_request_options(
                     context,
-                    Cow::Owned(url),
+                    url,
                     NavigationMethod::from_send_vars_method(swf_method),
                 );
                 let fetch = context.navigator.fetch(&url, opts);
@@ -1760,7 +1768,7 @@ impl<'gc> Avm1<'gc> {
             if let Some(clip_target) = clip_target {
                 let (url, opts) = self.locals_into_request_options(
                     context,
-                    Cow::Owned(url),
+                    url,
                     NavigationMethod::from_send_vars_method(swf_method),
                 );
                 let fetch = context.navigator.fetch(&url, opts);
@@ -1780,9 +1788,11 @@ impl<'gc> Avm1<'gc> {
                 None => None,
             };
 
-            context
-                .navigator
-                .navigate_to_url(url, Some(window_target), vars);
+            context.navigator.navigate_to_url(
+                url.to_string(),
+                Some(window_target.to_string()),
+                vars,
+            );
         }
 
         Ok(())
@@ -1894,7 +1904,8 @@ impl<'gc> Avm1<'gc> {
         let object = ScriptObject::object(context.gc_context, Some(self.prototypes.object));
         for _ in 0..num_props {
             let value = self.pop();
-            let name = self.pop().into_string(self.current_swf_version());
+            let name_val = self.pop();
+            let name = name_val.coerce_to_string(self, context)?;
             object.set(&name, value, self, context)?;
         }
 
@@ -1992,28 +2003,40 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_mb_char_to_ascii(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
+    fn action_mb_char_to_ascii(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
         // TODO(Herschel): Results on incorrect operands?
-        let s = self.pop().into_string(self.current_swf_version());
+        let val = self.pop();
+        let s = val.coerce_to_string(self, context)?;
         let result = s.chars().next().unwrap_or('\0') as u32;
         self.push(result);
         Ok(())
     }
 
-    fn action_mb_string_extract(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
+    fn action_mb_string_extract(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
         // TODO(Herschel): Result with incorrect operands?
         let len = self.pop().as_f64()? as usize;
         let start = self.pop().as_f64()? as usize;
-        let s = self.pop().into_string(self.current_swf_version());
+        let val = self.pop();
+        let s = val.coerce_to_string(self, context)?;
         let result = s[len..len + start].to_string(); // TODO(Herschel): Flash uses UTF-16 internally.
         self.push(result);
         Ok(())
     }
 
-    fn action_mb_string_length(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
+    fn action_mb_string_length(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
         // TODO(Herschel): Result with non-string operands?
-        let val = self.pop().into_string(self.current_swf_version()).len();
-        self.push(val as f64);
+        let val = self.pop();
+        let len = val.coerce_to_string(self, context)?.len();
+        self.push(len as f64);
         Ok(())
     }
 
@@ -2463,13 +2486,12 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_string_add(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
+    fn action_string_add(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         // SWFv4 string concatenation
         // TODO(Herschel): Result with non-string operands?
-        let swf_version = self.current_swf_version();
-        let a = self.pop().into_string(swf_version);
-        let mut b = self.pop().into_string(swf_version);
-        b.push_str(&a);
+        let a = self.pop();
+        let mut b = self.pop().coerce_to_string(self, context)?.to_string();
+        b.push_str(&a.coerce_to_string(self, context)?);
         self.push(b);
         Ok(())
     }
@@ -2486,12 +2508,16 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_string_extract(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
+    fn action_string_extract(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
         // SWFv4 substring
         // TODO(Herschel): Result with incorrect operands?
         let len = self.pop().as_f64()? as usize;
         let start = self.pop().as_f64()? as usize;
-        let s = self.pop().into_string(self.current_swf_version());
+        let val = self.pop();
+        let s = val.coerce_to_string(self, context)?;
         // This is specifically a non-UTF8 aware substring.
         // SWFv4 only used ANSI strings.
         let result = s
@@ -2520,16 +2546,16 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
-    fn action_string_length(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
+    fn action_string_length(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
         // AS1 strlen
         // Only returns byte length.
         // TODO(Herschel): Result with non-string operands?
-        let val = self
-            .pop()
-            .into_string(self.current_swf_version())
-            .bytes()
-            .len() as f64;
-        self.push(val);
+        let val = self.pop();
+        let len = val.coerce_to_string(self, context)?.bytes().len() as f64;
+        self.push(len);
         Ok(())
     }
 
