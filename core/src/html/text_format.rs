@@ -109,16 +109,16 @@ fn getfloatarray_from_avm1_object<'gc>(
     name: &str,
     avm1: &mut Avm1<'gc>,
     uc: &mut UpdateContext<'_, 'gc, '_>,
-) -> Result<Option<Vec<f64>>, Error> {
+) -> Result<Option<Vec<f64>>, crate::avm1::error::Error> {
     Ok(match object.get(name, avm1, uc)? {
         Value::Undefined => None,
         Value::Null => None,
         v => {
             let mut output = Vec::new();
-            let v = v.as_object()?;
+            let v = v.coerce_to_object(avm1, uc);
 
             for i in 0..v.length() {
-                output.push(v.array_element(i).as_number(avm1, uc)?);
+                output.push(v.array_element(i).coerce_to_f64(avm1, uc)?);
             }
 
             Some(output)

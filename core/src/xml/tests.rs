@@ -10,7 +10,7 @@ fn parse_single_element() {
     rootless_arena(|mc| {
         let xml = XMLDocument::new(mc);
         xml.as_node()
-            .replace_with_str(mc, "<test></test>")
+            .replace_with_str(mc, "<test></test>", true)
             .expect("Parsed document");
         let mut roots = xml
             .as_node()
@@ -37,6 +37,7 @@ fn double_ended_children() {
             .replace_with_str(
                 mc,
                 "<test></test><test2></test2><test3></test3><test4></test4><test5></test5>",
+                true,
             )
             .expect("Parsed document");
 
@@ -80,6 +81,7 @@ fn walk() {
             .replace_with_str(
                 mc,
                 "<test><test2></test2></test><test3>test</test3><test4><test5></test5></test4>",
+                true,
             )
             .expect("Parsed document");
 
@@ -161,7 +163,7 @@ fn round_trip_tostring() {
     rootless_arena(|mc| {
         let xml = XMLDocument::new(mc);
         xml.as_node()
-            .replace_with_str(mc, test_string)
+            .replace_with_str(mc, test_string, true)
             .expect("Parsed document");
 
         let result = xml
@@ -181,7 +183,7 @@ fn round_trip_filtered_tostring() {
     rootless_arena(|mc| {
         let xml = XMLDocument::new(mc);
         xml.as_node()
-            .replace_with_str(mc, test_string)
+            .replace_with_str(mc, test_string, true)
             .expect("Parsed document");
 
         let result = xml

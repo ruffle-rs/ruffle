@@ -91,8 +91,16 @@ pub fn get_html_text<'gc>(
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             let html_tree = text_field.html_tree().as_node();
+            let html_string_result = html_tree.into_string(&mut |_node| true);
 
-            return Ok(html_tree.into_string(&mut |_node| true)?.into());
+            if let Err(err) = &html_string_result {
+                log::warn!(
+                    "Serialization error when reading TextField.htmlText: {}",
+                    err
+                );
+            }
+
+            return Ok(html_string_result.unwrap_or_else(|_| "".to_string()).into());
         }
     }
     Ok(Value::Undefined.into())
@@ -107,12 +115,16 @@ pub fn set_html_text<'gc>(
     if let Some(display_object) = this.as_display_object() {
         if let Some(mut text_field) = display_object.as_edit_text() {
             if let Some(value) = args.get(0) {
-                let html_string = value.clone().coerce_to_string(avm, context)?;
+                let html_string = value.clone().coerce_to_string(avm, context)?.into_owned();
                 let document = XMLDocument::new(context.gc_context);
 
-                document
-                    .as_node()
-                    .replace_with_str(context.gc_context, &html_string)?;
+                if let Err(err) =
+                    document
+                        .as_node()
+                        .replace_with_str(context.gc_context, &html_string, false)
+                {
+                    log::warn!("Parsing error when setting TextField.htmlText: {}", err);
+                }
 
                 text_field.set_html_tree(document, context);
             }

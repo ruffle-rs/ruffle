@@ -217,10 +217,15 @@ impl<'gc> XMLNode<'gc> {
     /// may work but will be incorrect.
     ///
     /// Also, this method does not yet actually remove existing node contents.
+    ///
+    /// If `process_entity` is `true`, then entities will be processed by this
+    /// function. Invalid or unrecognized entities will cause parsing to fail
+    /// with an `Err`.
     pub fn replace_with_str(
         &mut self,
         mc: MutationContext<'gc, '_>,
         data: &str,
+        process_entity: bool,
     ) -> Result<(), Error> {
         let mut parser = Reader::from_str(data);
         let mut buf = Vec::new();
@@ -250,7 +255,7 @@ impl<'gc> XMLNode<'gc> {
                     open_tags.pop();
                 }
                 Event::Text(bt) => {
-                    let child = XMLNode::text_from_text_event(mc, bt, document)?;
+                    let child = XMLNode::text_from_text_event(mc, bt, document, process_entity)?;
                     if child.node_value().as_deref() != Some("") {
                         self.add_child_to_tree(mc, &mut open_tags, child)?;
                     }
@@ -321,7 +326,14 @@ impl<'gc> XMLNode<'gc> {
         mc: MutationContext<'gc, '_>,
         bt: BytesText<'a>,
         document: XMLDocument<'gc>,
+        process_entity: bool,
     ) -> Result<Self, Error> {
+        let contents = if process_entity {
+            String::from_utf8(bt.unescaped()?.into_owned())?
+        } else {
+            String::from_utf8(bt.escaped().to_vec())?
+        };
+
         Ok(XMLNode(GcCell::allocate(
             mc,
             XMLNodeData::Text {
@@ -331,7 +343,7 @@ impl<'gc> XMLNode<'gc> {
                 parent: None,
                 prev_sibling: None,
                 next_sibling: None,
-                contents: String::from_utf8(bt.unescaped()?.into_owned())?,
+                contents,
             },
         )))
     }

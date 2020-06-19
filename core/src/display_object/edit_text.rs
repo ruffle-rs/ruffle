@@ -117,7 +117,7 @@ impl<'gc> EditText<'gc> {
         if swf_tag.is_html {
             document
                 .as_node()
-                .replace_with_str(context.gc_context, &text)
+                .replace_with_str(context.gc_context, &text, false)
                 .unwrap();
             text_spans.lower_from_html(document);
         } else {
@@ -249,6 +249,16 @@ impl<'gc> EditText<'gc> {
         self.0.read().document
     }
 
+    /// Set the HTML tree for the given display object.
+    ///
+    /// The document is not rendered directly: instead, it is lowered to text
+    /// spans which drive the actual layout process. User code is capable of
+    /// altering text spans directly, thus the HTML tree will be discarded and
+    /// regenerated.
+    ///
+    /// In stylesheet mode, the opposite is true: text spans are an
+    /// intermediate, user-facing text span APIs don't work, and the document
+    /// is retained.
     pub fn set_html_tree(
         &mut self,
         doc: XMLDocument<'gc>,
