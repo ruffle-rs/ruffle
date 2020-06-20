@@ -450,7 +450,7 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         return_value: Value<'gc>,
-    ) -> Result<(), ExecutionError> {
+    ) {
         if let Some(frame) = self.current_stack_frame() {
             self.stack_frames.pop();
 
@@ -463,8 +463,6 @@ impl<'gc> Avm1<'gc> {
                 self.push(return_value);
             }
         }
-
-        Ok(())
     }
 
     /// Execute the AVM stack until it is exhausted.
@@ -530,7 +528,7 @@ impl<'gc> Avm1<'gc> {
 
         if reader.pos() >= (data.end - data.start) {
             //Executing beyond the end of a function constitutes an implicit return.
-            self.retire_stack_frame(context, Value::Undefined)?;
+            self.retire_stack_frame(context, Value::Undefined);
         } else if let Some(action) = reader.read_action()? {
             avm_debug!("Action: {:?}", action);
 
@@ -660,7 +658,7 @@ impl<'gc> Avm1<'gc> {
             }
         } else {
             //The explicit end opcode was encountered so return here
-            self.retire_stack_frame(context, Value::Undefined)?;
+            self.retire_stack_frame(context, Value::Undefined);
         }
 
         Ok(())
@@ -2300,9 +2298,7 @@ impl<'gc> Avm1<'gc> {
 
     fn action_return(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let return_value = self.pop();
-        if let Err(e) = self.retire_stack_frame(context, return_value) {
-            log::warn!("Couldn't return from stack frame: {}", e);
-        }
+        self.retire_stack_frame(context, return_value);
 
         Ok(())
     }
