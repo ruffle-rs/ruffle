@@ -225,7 +225,7 @@ impl<'gc> Value<'gc> {
         &self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<f64, Error> {
+    ) -> Result<f64, Error<'gc>> {
         Ok(match self {
             Value::Object(_) => self
                 .to_primitive_num(avm, context)?
@@ -249,7 +249,7 @@ impl<'gc> Value<'gc> {
         &self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(match self {
             Value::Object(object) => object.call_method("valueOf", &[], avm, context)?,
             val => val.to_owned(),
@@ -263,7 +263,7 @@ impl<'gc> Value<'gc> {
         other: Value<'gc>,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let prim_self = self.to_primitive_num(avm, context)?;
         let prim_other = other.to_primitive_num(avm, context)?;
 
@@ -304,7 +304,7 @@ impl<'gc> Value<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         coerced: bool,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         match (self, &other) {
             (Value::Undefined, Value::Undefined) => Ok(true.into()),
             (Value::Null, Value::Null) => Ok(true.into()),
@@ -410,7 +410,7 @@ impl<'gc> Value<'gc> {
         &self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<u16, Error> {
+    ) -> Result<u16, Error<'gc>> {
         self.coerce_to_f64(avm, context).map(f64_to_wrapping_u16)
     }
 
@@ -422,7 +422,7 @@ impl<'gc> Value<'gc> {
         &self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<i16, Error> {
+    ) -> Result<i16, Error<'gc>> {
         self.coerce_to_f64(avm, context).map(f64_to_wrapping_i16)
     }
 
@@ -435,7 +435,7 @@ impl<'gc> Value<'gc> {
         &self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<i32, Error> {
+    ) -> Result<i32, Error<'gc>> {
         self.coerce_to_f64(avm, context).map(f64_to_wrapping_i32)
     }
 
@@ -447,7 +447,7 @@ impl<'gc> Value<'gc> {
         &self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<u32, Error> {
+    ) -> Result<u32, Error<'gc>> {
         self.coerce_to_f64(avm, context).map(f64_to_wrapping_u32)
     }
 
@@ -456,7 +456,7 @@ impl<'gc> Value<'gc> {
         &'a self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Cow<'a, str>, Error> {
+    ) -> Result<Cow<'a, str>, Error<'gc>> {
         Ok(match self {
             Value::Object(object) => match object.call_method("toString", &[], avm, context)? {
                 Value::String(s) => Cow::Owned(s),
@@ -523,7 +523,7 @@ impl<'gc> Value<'gc> {
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         if let Value::Object(object) = self {
             object.call(avm, context, this, base_proto, args)
         } else {
@@ -607,7 +607,7 @@ mod test {
 
     #[test]
     fn to_primitive_num() {
-        with_avm(6, |avm, context, _this| {
+        with_avm(6, |avm, context, _this| -> Result<(), Error> {
             let true_value = Value::Bool(true);
             let undefined = Value::Undefined;
             let false_value = Value::Bool(false);
@@ -634,7 +634,7 @@ mod test {
                 _: &mut UpdateContext<'_, 'gc, '_>,
                 _: Object<'gc>,
                 _: &[Value<'gc>],
-            ) -> Result<ReturnValue<'gc>, Error> {
+            ) -> Result<ReturnValue<'gc>, Error<'gc>> {
                 Ok(5.0.into())
             }
 
@@ -657,13 +657,15 @@ mod test {
                 Value::Object(o).to_primitive_num(avm, context).unwrap(),
                 Value::Number(5.0)
             );
+
+            Ok(())
         });
     }
 
     #[test]
     #[allow(clippy::float_cmp)]
     fn to_number_swf7() {
-        with_avm(7, |avm, context, _this| {
+        with_avm(7, |avm, context, _this| -> Result<(), Error> {
             let t = Value::Bool(true);
             let u = Value::Undefined;
             let f = Value::Bool(false);
@@ -677,13 +679,15 @@ mod test {
             let bo = Value::Object(ScriptObject::bare_object(context.gc_context).into());
 
             assert!(bo.coerce_to_f64(avm, context).unwrap().is_nan());
+
+            Ok(())
         });
     }
 
     #[test]
     #[allow(clippy::float_cmp)]
     fn to_number_swf6() {
-        with_avm(6, |avm, context, _this| {
+        with_avm(6, |avm, context, _this| -> Result<(), Error> {
             let t = Value::Bool(true);
             let u = Value::Undefined;
             let f = Value::Bool(false);
@@ -697,12 +701,14 @@ mod test {
             let bo = Value::Object(ScriptObject::bare_object(context.gc_context).into());
 
             assert_eq!(bo.coerce_to_f64(avm, context).unwrap(), 0.0);
+
+            Ok(())
         });
     }
 
     #[test]
     fn abstract_lt_num() {
-        with_avm(8, |avm, context, _this| {
+        with_avm(8, |avm, context, _this| -> Result<(), Error> {
             let a = Value::Number(1.0);
             let b = Value::Number(2.0);
 
@@ -725,12 +731,14 @@ mod test {
                 a.abstract_lt(zero, avm, context).unwrap(),
                 Value::Bool(false)
             );
+
+            Ok(())
         });
     }
 
     #[test]
     fn abstract_gt_num() {
-        with_avm(8, |avm, context, _this| {
+        with_avm(8, |avm, context, _this| -> Result<(), Error> {
             let a = Value::Number(1.0);
             let b = Value::Number(2.0);
 
@@ -762,26 +770,32 @@ mod test {
                 zero.abstract_lt(a, avm, context).unwrap(),
                 Value::Bool(true)
             );
+
+            Ok(())
         });
     }
 
     #[test]
     fn abstract_lt_str() {
-        with_avm(8, |avm, context, _this| {
+        with_avm(8, |avm, context, _this| -> Result<(), Error> {
             let a = Value::String("a".to_owned());
             let b = Value::String("b".to_owned());
 
-            assert_eq!(a.abstract_lt(b, avm, context).unwrap(), Value::Bool(true))
+            assert_eq!(a.abstract_lt(b, avm, context).unwrap(), Value::Bool(true));
+
+            Ok(())
         })
     }
 
     #[test]
     fn abstract_gt_str() {
-        with_avm(8, |avm, context, _this| {
+        with_avm(8, |avm, context, _this| -> Result<(), Error> {
             let a = Value::String("a".to_owned());
             let b = Value::String("b".to_owned());
 
-            assert_eq!(b.abstract_lt(a, avm, context).unwrap(), Value::Bool(false))
+            assert_eq!(b.abstract_lt(a, avm, context).unwrap(), Value::Bool(false));
+
+            Ok(())
         })
     }
 

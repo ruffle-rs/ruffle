@@ -1,7 +1,8 @@
+use crate::avm1::Value;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum Error {
+pub enum Error<'gc> {
     #[error("Prototype recursion limit has been exceeded")]
     PrototypeRecursionLimit,
 
@@ -16,9 +17,12 @@ pub enum Error {
 
     #[error("Attempted to execute the same frame twice. This is probably a bug in Ruffle, please report it to https://github.com/ruffle-rs/ruffle/issues and include the swf that triggered it.")]
     AlreadyExecutingFrame,
+
+    #[error("A script has thrown a custom error.")]
+    ThrownValue(Value<'gc>),
 }
 
-impl Error {
+impl Error<'_> {
     pub fn is_halting(&self) -> bool {
         match self {
             Error::PrototypeRecursionLimit => true,
@@ -26,6 +30,7 @@ impl Error {
             Error::NoStackFrame => true,
             Error::FrameNotOnStack => true,
             Error::AlreadyExecutingFrame => false,
+            Error::ThrownValue(_) => false,
         }
     }
 }

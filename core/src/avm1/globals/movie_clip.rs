@@ -23,7 +23,7 @@ pub fn constructor<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(Value::Undefined.into())
 }
 
@@ -32,7 +32,7 @@ macro_rules! with_movie_clip {
         $(
             $object.force_set_function(
                 $name,
-                |avm, context: &mut UpdateContext<'_, 'gc, '_>, this, args| -> Result<ReturnValue<'gc>, Error> {
+                |avm, context: &mut UpdateContext<'_, 'gc, '_>, this, args| -> Result<ReturnValue<'gc>, Error<'gc>> {
                     if let Some(display_object) = this.as_display_object() {
                         if let Some(movie_clip) = display_object.as_movie_clip() {
                             return $fn(movie_clip, avm, context, args);
@@ -54,7 +54,7 @@ pub fn hit_test<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if args.len() > 1 {
         let x = args.get(0).unwrap().coerce_to_f64(avm, context)?;
         let y = args.get(1).unwrap().coerce_to_f64(avm, context)?;
@@ -147,7 +147,7 @@ fn line_style<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(width) = args.get(0) {
         let width = Twips::from_pixels(width.coerce_to_f64(avm, context)?.min(255.0).max(0.0));
         let color = if let Some(rgb) = args.get(1) {
@@ -228,7 +228,7 @@ fn begin_fill<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(rgb) = args.get(0) {
         let rgb = rgb.coerce_to_u32(avm, context)?;
         let alpha = if let Some(alpha) = args.get(1) {
@@ -253,7 +253,7 @@ fn begin_gradient_fill<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let (Some(method), Some(colors), Some(alphas), Some(ratios), Some(matrix)) = (
         args.get(0),
         args.get(1),
@@ -336,7 +336,7 @@ fn move_to<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let (Some(x), Some(y)) = (args.get(0), args.get(1)) {
         let x = x.coerce_to_f64(avm, context)?;
         let y = y.coerce_to_f64(avm, context)?;
@@ -356,7 +356,7 @@ fn line_to<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let (Some(x), Some(y)) = (args.get(0), args.get(1)) {
         let x = x.coerce_to_f64(avm, context)?;
         let y = y.coerce_to_f64(avm, context)?;
@@ -376,7 +376,7 @@ fn curve_to<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let (Some(x1), Some(y1), Some(x2), Some(y2)) =
         (args.get(0), args.get(1), args.get(2), args.get(3))
     {
@@ -402,7 +402,7 @@ fn end_fill<'gc>(
     _avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     movie_clip.set_fill_style(context, None);
     Ok(Value::Undefined.into())
 }
@@ -412,7 +412,7 @@ fn clear<'gc>(
     _avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     movie_clip.clear(context);
     Ok(Value::Undefined.into())
 }
@@ -422,7 +422,7 @@ fn attach_movie<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let (export_name, new_instance_name, depth) = match &args[0..3] {
         [export_name, new_instance_name, depth] => (
             export_name.coerce_to_string(avm, context)?,
@@ -469,7 +469,7 @@ fn create_empty_movie_clip<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let (new_instance_name, depth) = match &args[0..2] {
         [new_instance_name, depth] => (
             new_instance_name.coerce_to_string(avm, context)?,
@@ -504,7 +504,7 @@ fn create_text_field<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let movie = avm.base_clip().movie().unwrap();
     let instance_name = args.get(0).cloned().unwrap_or(Value::Undefined);
     let depth = args
@@ -559,7 +559,7 @@ fn duplicate_movie_clip<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     // duplicateMovieClip method uses biased depth compared to CloneSprite
     duplicate_movie_clip_with_bias(movie_clip, avm, context, args, AVM_DEPTH_BIAS)
 }
@@ -570,7 +570,7 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
     depth_bias: i32,
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let (new_instance_name, depth) = match &args[0..2] {
         [new_instance_name, depth] => (
             new_instance_name.coerce_to_string(avm, context)?,
@@ -628,7 +628,7 @@ fn get_bytes_loaded<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     // TODO find a correct value
     Ok(1.0.into())
 }
@@ -638,7 +638,7 @@ fn get_bytes_total<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     // TODO find a correct value
     Ok(1.0.into())
 }
@@ -648,7 +648,7 @@ fn get_next_highest_depth<'gc>(
     avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if avm.current_swf_version() >= 7 {
         let depth = std::cmp::max(
             movie_clip
@@ -668,7 +668,7 @@ fn goto_and_play<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     goto_frame(movie_clip, avm, context, args, false, 0)
 }
 
@@ -677,7 +677,7 @@ fn goto_and_stop<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     goto_frame(movie_clip, avm, context, args, true, 0)
 }
 
@@ -688,7 +688,7 @@ pub fn goto_frame<'gc>(
     args: &[Value<'gc>],
     stop: bool,
     scene_offset: u16,
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     match args.get(0).cloned().unwrap_or(Value::Undefined) {
         // Goto only runs if n is an integer
         Value::Number(n) if n.fract() == 0.0 => {
@@ -723,7 +723,7 @@ fn next_frame<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     movie_clip.next_frame(avm, context);
     Ok(Value::Undefined.into())
 }
@@ -733,7 +733,7 @@ fn play<'gc>(
     _avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     movie_clip.play(context);
     Ok(Value::Undefined.into())
 }
@@ -743,7 +743,7 @@ fn prev_frame<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     movie_clip.prev_frame(avm, context);
     Ok(Value::Undefined.into())
 }
@@ -753,7 +753,7 @@ fn remove_movie_clip<'gc>(
     _avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     // removeMovieClip method uses biased depth compared to RemoveSprite
     remove_movie_clip_with_bias(movie_clip, context, AVM_DEPTH_BIAS)
 }
@@ -762,7 +762,7 @@ pub fn remove_movie_clip_with_bias<'gc>(
     movie_clip: MovieClip<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     depth_bias: i32,
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let depth = movie_clip.depth().wrapping_add(depth_bias);
     // Can only remove positive depths (when offset by the AVM depth bias).
     // Generally this prevents you from removing non-dynamically created clips,
@@ -786,7 +786,7 @@ fn start_drag<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     crate::avm1::start_drag(movie_clip.into(), avm, context, args);
     Ok(Value::Undefined.into())
 }
@@ -796,7 +796,7 @@ fn stop<'gc>(
     _avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     movie_clip.stop(context);
     Ok(Value::Undefined.into())
 }
@@ -806,7 +806,7 @@ fn stop_drag<'gc>(
     _avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     // It doesn't matter which clip we call this on; it simply stops any active drag.
     *context.drag_object = None;
     Ok(Value::Undefined.into())
@@ -817,7 +817,7 @@ fn swap_depths<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let arg = args.get(0).cloned().unwrap_or(Value::Undefined);
 
     let parent = if let Some(parent) = movie_clip.parent().and_then(|o| o.as_movie_clip()) {
@@ -862,7 +862,7 @@ fn to_string<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(movie_clip.path().into())
 }
 
@@ -871,7 +871,7 @@ fn local_to_global<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Value::Object(point) = args.get(0).unwrap_or(&Value::Undefined) {
         // localToGlobal does no coercion; it fails if the properties are not numbers.
         // It does not search the prototype chain.
@@ -899,7 +899,7 @@ fn get_bounds<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let target = match args.get(0) {
         Some(Value::String(s)) if s.is_empty() => None,
         Some(Value::Object(o)) if o.as_display_object().is_some() => o.as_display_object(),
@@ -942,7 +942,7 @@ fn get_rect<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     // TODO: This should get the bounds ignoring strokes. Always equal to or smaller than getBounds.
     // Just defer to getBounds for now. Will have to store edge_bounds vs. shape_bounds in Graphic.
     get_bounds(movie_clip, avm, context, args)
@@ -953,7 +953,7 @@ fn global_to_local<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Value::Object(point) = args.get(0).unwrap_or(&Value::Undefined) {
         // globalToLocal does no coercion; it fails if the properties are not numbers.
         // It does not search the prototype chain.
@@ -981,7 +981,7 @@ fn load_movie<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let url_val = args.get(0).cloned().unwrap_or(Value::Undefined);
     let url = url_val.coerce_to_string(avm, context)?;
     let method = args.get(1).cloned().unwrap_or(Value::Undefined);
@@ -1005,7 +1005,7 @@ fn load_variables<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let url_val = args.get(0).cloned().unwrap_or(Value::Undefined);
     let url = url_val.coerce_to_string(avm, context)?;
     let method = args.get(1).cloned().unwrap_or(Value::Undefined);
@@ -1028,7 +1028,7 @@ fn unload_movie<'gc>(
     _avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     target.unload(context);
     target.replace_with_movie(context.gc_context, None);
 

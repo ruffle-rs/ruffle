@@ -35,7 +35,7 @@ pub type NativeFunction<'gc> = fn(
     &mut UpdateContext<'_, 'gc, '_>,
     Object<'gc>,
     &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error>;
+) -> Result<ReturnValue<'gc>, Error<'gc>>;
 
 /// Represents a function defined in the AVM1 runtime, either through
 /// `DefineFunction` or `DefineFunction2`.
@@ -228,7 +228,7 @@ impl<'gc> Executable<'gc> {
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
         match self {
             Executable::Native(nf) => nf(avm, ac, this, args),
             Executable::Action(af) => {
@@ -459,7 +459,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         self.base.get_local(name, avm, context, this)
     }
 
@@ -469,7 +469,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         value: Value<'gc>,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         self.base.set(name, value, avm, context)
     }
 
@@ -480,7 +480,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(exec) = self.as_executable() {
             exec.exec(avm, context, this, base_proto, args)?
                 .resolve(avm, context)
@@ -496,7 +496,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
         self.base.call_setter(name, value, avm, context, this)
     }
 
@@ -507,7 +507,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         prototype: Object<'gc>,
         _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         let base = ScriptObject::object(context.gc_context, Some(prototype));
         let fn_object = FunctionObject {
             base,

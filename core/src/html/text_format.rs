@@ -87,7 +87,7 @@ fn getstr_from_avm1_object<'gc>(
     name: &str,
     avm1: &mut Avm1<'gc>,
     uc: &mut UpdateContext<'_, 'gc, '_>,
-) -> Result<Option<String>, crate::avm1::error::Error> {
+) -> Result<Option<String>, crate::avm1::error::Error<'gc>> {
     Ok(match object.get(name, avm1, uc)? {
         Value::Undefined => None,
         Value::Null => None,
@@ -100,7 +100,7 @@ fn getfloat_from_avm1_object<'gc>(
     name: &str,
     avm1: &mut Avm1<'gc>,
     uc: &mut UpdateContext<'_, 'gc, '_>,
-) -> Result<Option<f64>, crate::avm1::error::Error> {
+) -> Result<Option<f64>, crate::avm1::error::Error<'gc>> {
     Ok(match object.get(name, avm1, uc)? {
         Value::Undefined => None,
         Value::Null => None,
@@ -113,7 +113,7 @@ fn getbool_from_avm1_object<'gc>(
     name: &str,
     avm1: &mut Avm1<'gc>,
     uc: &mut UpdateContext<'_, 'gc, '_>,
-) -> Result<Option<bool>, crate::avm1::error::Error> {
+) -> Result<Option<bool>, crate::avm1::error::Error<'gc>> {
     Ok(match object.get(name, avm1, uc)? {
         Value::Undefined => None,
         Value::Null => None,
@@ -126,7 +126,7 @@ fn getfloatarray_from_avm1_object<'gc>(
     name: &str,
     avm1: &mut Avm1<'gc>,
     uc: &mut UpdateContext<'_, 'gc, '_>,
-) -> Result<Option<Vec<f64>>, crate::avm1::error::Error> {
+) -> Result<Option<Vec<f64>>, crate::avm1::error::Error<'gc>> {
     Ok(match object.get(name, avm1, uc)? {
         Value::Undefined => None,
         Value::Null => None,
@@ -199,7 +199,7 @@ impl TextFormat {
         object1: Object<'gc>,
         avm1: &mut Avm1<'gc>,
         uc: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Self, crate::avm1::error::Error> {
+    ) -> Result<Self, crate::avm1::error::Error<'gc>> {
         Ok(Self {
             font: getstr_from_avm1_object(object1, "font", avm1, uc)?,
             size: getfloat_from_avm1_object(object1, "size", avm1, uc)?,
@@ -352,7 +352,7 @@ impl TextFormat {
         &self,
         avm1: &mut Avm1<'gc>,
         uc: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Object<'gc>, crate::avm1::error::Error> {
+    ) -> Result<Object<'gc>, crate::avm1::error::Error<'gc>> {
         let object = ScriptObject::object(uc.gc_context, Some(avm1.prototypes().text_format));
 
         object.set(

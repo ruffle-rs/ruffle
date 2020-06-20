@@ -13,7 +13,7 @@ fn allow_domain<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("System.security.allowDomain() not implemented");
     Ok(Value::Undefined.into())
 }
@@ -23,7 +23,7 @@ fn allow_insecure_domain<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("System.security.allowInsecureDomain() not implemented");
     Ok(Value::Undefined.into())
 }
@@ -33,7 +33,7 @@ fn load_policy_file<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("System.security.allowInsecureDomain() not implemented");
     Ok(Value::Undefined.into())
 }
@@ -43,7 +43,7 @@ fn escape_domain<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("System.security.escapeDomain() not implemented");
     Ok(Value::Undefined.into())
 }
@@ -53,7 +53,7 @@ fn get_sandbox_type<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(context.system.sandbox_type.to_string().into())
 }
 
@@ -62,7 +62,7 @@ fn get_choose_local_swf_path<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("System.security.chooseLocalSwfPath() not implemented");
     Ok(Value::Undefined.into())
 }
@@ -72,7 +72,7 @@ fn policy_file_resolver<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("System.security.chooseLocalSwfPath() not implemented");
     Ok(Value::Undefined.into())
 }

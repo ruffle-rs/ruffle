@@ -14,7 +14,11 @@ pub fn parse(url: &str) -> Option<&str> {
 }
 
 /// TODO: FSCommand URL handling
-pub fn handle(fscommand: &str, _avm: &mut Avm1, _ac: &mut UpdateContext) -> Result<(), Error> {
+pub fn handle<'gc>(
+    fscommand: &str,
+    _avm: &mut Avm1,
+    _ac: &mut UpdateContext,
+) -> Result<(), Error<'gc>> {
     log::warn!("Unhandled FSCommand: {}", fscommand);
 
     //This should be an error.

@@ -237,7 +237,7 @@ impl<'gc> Scope<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
         if self.locals().has_property(avm, context, name) {
             return Ok(self.locals().get(name, avm, context)?.into());
         }
@@ -280,7 +280,7 @@ impl<'gc> Scope<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         if self.class == ScopeClass::Target
             || (self.locals().has_property(avm, context, name)
                 && self.locals().is_property_overwritable(avm, name))

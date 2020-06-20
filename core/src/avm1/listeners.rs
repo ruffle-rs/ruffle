@@ -15,7 +15,7 @@ macro_rules! register_listener {
             context: &mut UpdateContext<'_, 'gc, '_>,
             _this: Object<'gc>,
             args: &[Value<'gc>],
-        ) -> Result<ReturnValue<'gc>, Error> {
+        ) -> Result<ReturnValue<'gc>, Error<'gc>> {
             avm.system_listeners
                 .$system_listeners_key
                 .add_listener(context, args)
@@ -26,7 +26,7 @@ macro_rules! register_listener {
             context: &mut UpdateContext<'_, 'gc, '_>,
             _this: Object<'gc>,
             args: &[Value<'gc>],
-        ) -> Result<ReturnValue<'gc>, Error> {
+        ) -> Result<ReturnValue<'gc>, Error<'gc>> {
             let listener = avm.system_listeners.$system_listeners_key;
             listener.remove_listener(avm, context, args)
         }
@@ -65,7 +65,7 @@ impl<'gc> Listeners<'gc> {
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         args: &[Value<'gc>],
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
         let listeners = self.0;
         let listener = args.get(0).unwrap_or(&Value::Undefined).to_owned();
         for i in 0..listeners.length() {
@@ -83,7 +83,7 @@ impl<'gc> Listeners<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         args: &[Value<'gc>],
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
         let listeners = self.0;
         let listener = args.get(0).unwrap_or(&Value::Undefined).to_owned();
         for index in 0..listeners.length() {

@@ -403,7 +403,7 @@ pub fn set_clipboard<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let new_content = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -420,7 +420,7 @@ pub fn show_settings<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     //TODO: should default to the last panel displayed
     let last_panel_pos = 0;
 
@@ -440,7 +440,7 @@ pub fn set_use_code_page<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let value = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -457,7 +457,7 @@ pub fn get_use_code_page<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(action_context.system.use_codepage.into())
 }
 
@@ -466,7 +466,7 @@ pub fn set_exact_settings<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let value = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -483,7 +483,7 @@ pub fn get_exact_settings<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(action_context.system.exact_settings.into())
 }
 
@@ -492,7 +492,7 @@ pub fn on_status<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("System.onStatus() not implemented");
     Ok(Value::Undefined.into())
 }

@@ -42,7 +42,7 @@ impl<'gc> Property<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
         match self {
             Property::Virtual { get, .. } => get.exec(avm, context, this, base_proto, &[]),
             Property::Stored { value, .. } => Ok(value.to_owned().into()),
@@ -61,7 +61,7 @@ impl<'gc> Property<'gc> {
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         new_value: impl Into<Value<'gc>>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
         match self {
             Property::Virtual { set, .. } => {
                 if let Some(function) = set {

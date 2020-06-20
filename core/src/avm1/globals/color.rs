@@ -16,7 +16,7 @@ pub fn constructor<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     // The target display object that this color will modify.
     let target = args.get(0).cloned().unwrap_or(Value::Undefined);
     // Set undocumented `target` property
@@ -78,7 +78,7 @@ fn target<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
-) -> Result<Option<DisplayObject<'gc>>, Error> {
+) -> Result<Option<DisplayObject<'gc>>, Error<'gc>> {
     // The target path resolves based on the active tellTarget clip of the stack frame.
     // This means calls on the same `Color` object could set the color of different clips
     // depending on which timeline its called from!
@@ -97,7 +97,7 @@ fn get_rgb<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(target) = target(avm, context, this)? {
         let color_transform = target.color_transform();
         let r = ((color_transform.r_add * 255.0) as i32) << 16;
@@ -114,7 +114,7 @@ fn get_transform<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(target) = target(avm, context, this)? {
         let color_transform = target.color_transform();
         let out = ScriptObject::object(context.gc_context, Some(avm.prototypes.object));
@@ -137,7 +137,7 @@ fn set_rgb<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(target) = target(avm, context, this)? {
         let mut color_transform = target.color_transform_mut(context.gc_context);
         let rgb = args
@@ -163,7 +163,7 @@ fn set_transform<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     // TODO: These map from the 0-100% range for mult and the -255-255 range for addition used by ActionScript
     // to the 16-bit range used by the internal representations of the Flash Player.
     // This will get slightly simpler when we change ColorTransform to the proper representation (see #193).
@@ -173,7 +173,7 @@ fn set_transform<'gc>(
         transform: Object<'gc>,
         property: &str,
         out: &mut f32,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         // The parameters are set only if the property exists on the object itself (prototype excluded).
         if transform.has_own_property(avm, context, property) {
             let n = transform
@@ -190,7 +190,7 @@ fn set_transform<'gc>(
         transform: Object<'gc>,
         property: &str,
         out: &mut f32,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         // The parameters are set only if the property exists on the object itself (prototype excluded).
         if transform.has_own_property(avm, context, property) {
             let n = transform

@@ -1,4 +1,5 @@
 use crate::avm1::activation::Activation;
+use crate::avm1::error::Error;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::{Avm1, Object, UpdateContext};
 use crate::backend::audio::NullAudioBackend;
@@ -17,13 +18,21 @@ use rand::{rngs::SmallRng, SeedableRng};
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
-pub fn with_avm<F, R>(swf_version: u8, test: F) -> R
+pub fn with_avm<F>(swf_version: u8, test: F)
 where
-    F: for<'a, 'gc> FnOnce(&mut Avm1<'gc>, &mut UpdateContext<'a, 'gc, '_>, Object<'gc>) -> R,
+    F: for<'a, 'gc> FnOnce(
+        &mut Avm1<'gc>,
+        &mut UpdateContext<'a, 'gc, '_>,
+        Object<'gc>,
+    ) -> Result<(), Error<'gc>>,
 {
-    fn in_the_arena<'gc, F, R>(swf_version: u8, test: F, gc_context: MutationContext<'gc, '_>) -> R
+    fn in_the_arena<'gc, F>(swf_version: u8, test: F, gc_context: MutationContext<'gc, '_>)
     where
-        F: for<'a> FnOnce(&mut Avm1<'gc>, &mut UpdateContext<'a, 'gc, '_>, Object<'gc>) -> R,
+        F: for<'a> FnOnce(
+            &mut Avm1<'gc>,
+            &mut UpdateContext<'a, 'gc, '_>,
+            Object<'gc>,
+        ) -> Result<(), Error<'gc>>,
     {
         let mut avm = Avm1::new(gc_context, swf_version);
         let swf = Arc::new(SwfMovie::empty(swf_version));
@@ -75,7 +84,9 @@ where
 
         let this = root.object().coerce_to_object(&mut avm, &mut context);
 
-        test(&mut avm, &mut context, this)
+        if let Err(e) = test(&mut avm, &mut context, this) {
+            panic!("Encountered exception during test: {}", e);
+        }
     }
 
     rootless_arena(|gc_context| in_the_arena(swf_version, test, gc_context))
@@ -84,11 +95,11 @@ where
 macro_rules! test_method {
     ( $test: ident, $name: expr, $object: expr, $($versions: expr => { $([$($arg: expr),*] => $out: expr),* }),* ) => {
         #[test]
-        fn $test() -> Result<(), Error> {
+        fn $test() {
             use $crate::avm1::test_utils::*;
             $(
                 for version in &$versions {
-                    let _ = with_avm(*version, |avm, context, _root| -> Result<(), Error> {
+                    with_avm(*version, |avm, context, _root| -> Result<(), Error> {
                         let object = $object(avm, context);
                         let function = object.get($name, avm, context)?;
 
@@ -102,11 +113,9 @@ macro_rules! test_method {
                         )*
 
                         Ok(())
-                    })?;
+                    });
                 }
             )*
-
-            Ok(())
         }
     };
 }

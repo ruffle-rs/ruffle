@@ -88,7 +88,7 @@ impl<'gc> ReturnValue<'gc> {
         self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         use ReturnValue::*;
 
         match self {

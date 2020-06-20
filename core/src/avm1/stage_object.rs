@@ -65,7 +65,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         name: &str,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let props = avm.display_properties;
         let case_sensitive = avm.is_case_sensitive();
         // Property search order for DisplayObjects:
@@ -100,7 +100,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         self.base.get_local(name, avm, context, this)
     }
 
@@ -110,7 +110,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         value: Value<'gc>,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         let props = avm.display_properties;
         if self.base.has_own_property(avm, context, name) {
             // 1) Actual proeprties on the underlying object
@@ -146,7 +146,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         self.base.call(avm, context, this, base_proto, args)
     }
 
@@ -157,7 +157,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
         self.base.call_setter(name, value, avm, context, this)
     }
 
@@ -168,7 +168,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         //TODO: Create a StageObject of some kind
         self.base.new(avm, context, this, args)
     }
@@ -381,14 +381,14 @@ pub type DisplayGetter<'gc> = fn(
     &mut Avm1<'gc>,
     &mut UpdateContext<'_, 'gc, '_>,
     DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error>;
+) -> Result<Value<'gc>, Error<'gc>>;
 
 pub type DisplaySetter<'gc> = fn(
     &mut Avm1<'gc>,
     &mut UpdateContext<'_, 'gc, '_>,
     DisplayObject<'gc>,
     Value<'gc>,
-) -> Result<(), Error>;
+) -> Result<(), Error<'gc>>;
 
 impl<'gc> DisplayProperty<'gc> {
     pub fn get(
@@ -396,7 +396,7 @@ impl<'gc> DisplayProperty<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: DisplayObject<'gc>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         (self.get)(avm, context, this)
     }
 
@@ -406,7 +406,7 @@ impl<'gc> DisplayProperty<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: DisplayObject<'gc>,
         value: Value<'gc>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         self.set
             .map(|f| f(avm, context, this, value))
             .unwrap_or(Ok(()))
@@ -488,7 +488,7 @@ fn x<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this.x().into())
 }
 
@@ -497,7 +497,7 @@ fn set_x<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(avm, context, val)? {
         this.set_x(context.gc_context, val);
     }
@@ -508,7 +508,7 @@ fn y<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this.y().into())
 }
 
@@ -517,7 +517,7 @@ fn set_y<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(avm, context, val)? {
         this.set_y(context.gc_context, val);
     }
@@ -528,7 +528,7 @@ fn x_scale<'gc>(
     _avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let val = this.scale_x(context.gc_context) * 100.0;
     Ok(val.into())
 }
@@ -538,7 +538,7 @@ fn set_x_scale<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(avm, context, val)? {
         this.set_scale_x(context.gc_context, val / 100.0);
     }
@@ -549,7 +549,7 @@ fn y_scale<'gc>(
     _avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let scale_y = this.scale_y(context.gc_context) * 100.0;
     Ok(scale_y.into())
 }
@@ -559,7 +559,7 @@ fn set_y_scale<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(avm, context, val)? {
         this.set_scale_y(context.gc_context, val / 100.0);
     }
@@ -570,7 +570,7 @@ fn current_frame<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this
         .as_movie_clip()
         .map(MovieClip::current_frame)
@@ -582,7 +582,7 @@ fn total_frames<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this
         .as_movie_clip()
         .map(MovieClip::total_frames)
@@ -594,7 +594,7 @@ fn alpha<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let val = this.alpha() * 100.0;
     Ok(val.into())
 }
@@ -604,7 +604,7 @@ fn set_alpha<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
     val: Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(avm, context, val)? {
         this.set_alpha(context.gc_context, val / 100.0);
     }
@@ -615,7 +615,7 @@ fn visible<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let val = this.visible();
     Ok(val.into())
 }
@@ -625,7 +625,7 @@ fn set_visible<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     // Because this property dates to the era of Flash 4, this is actually coerced to an integer.
     // `_visible = "false";` coerces to NaN and has no effect.
     if let Some(n) = property_coerce_to_number(avm, context, val)? {
@@ -638,7 +638,7 @@ fn width<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this.width().into())
 }
 
@@ -647,7 +647,7 @@ fn set_width<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(avm, context, val)? {
         this.set_width(context.gc_context, val);
     }
@@ -658,7 +658,7 @@ fn height<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this.height().into())
 }
 
@@ -667,7 +667,7 @@ fn set_height<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(avm, context, val)? {
         this.set_height(context.gc_context, val);
     }
@@ -678,7 +678,7 @@ fn rotation<'gc>(
     _avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this.rotation(context.gc_context).to_degrees().into())
 }
 
@@ -687,7 +687,7 @@ fn set_rotation<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
     degrees: Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     if let Some(mut degrees) = property_coerce_to_number(avm, context, degrees)? {
         // Normalize into the range of [-180, 180].
         degrees %= 360.0;
@@ -705,7 +705,7 @@ fn target<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this.slash_path().into())
 }
 
@@ -713,7 +713,7 @@ fn frames_loaded<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this
         .as_movie_clip()
         .map(MovieClip::frames_loaded)
@@ -725,7 +725,7 @@ fn name<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok((*this.name()).into())
 }
 
@@ -734,7 +734,7 @@ fn set_name<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     let name = val.coerce_to_string(avm, context)?;
     this.set_name(context.gc_context, &name);
     Ok(())
@@ -744,7 +744,7 @@ fn drop_target<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Unimplemented property _droptarget");
     Ok("".into())
 }
@@ -753,7 +753,7 @@ fn url<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Unimplemented property _url");
     Ok("".into())
 }
@@ -762,7 +762,7 @@ fn high_quality<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Unimplemented property _highquality");
     Ok(1.into())
 }
@@ -772,7 +772,7 @@ fn set_high_quality<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
     _val: Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     log::warn!("Unimplemented property _highquality");
     Ok(())
 }
@@ -781,7 +781,7 @@ fn focus_rect<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Unimplemented property _focusrect");
     Ok(Value::Null)
 }
@@ -791,7 +791,7 @@ fn set_focus_rect<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
     _val: Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     log::warn!("Unimplemented property _focusrect");
     Ok(())
 }
@@ -800,7 +800,7 @@ fn sound_buf_time<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Unimplemented property _soundbuftime");
     Ok(5.into())
 }
@@ -810,7 +810,7 @@ fn set_sound_buf_time<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
     _val: Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     log::warn!("Unimplemented property _soundbuftime");
     Ok(())
 }
@@ -819,7 +819,7 @@ fn quality<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Unimplemented property _quality");
     Ok("HIGH".into())
 }
@@ -829,7 +829,7 @@ fn set_quality<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
     _val: Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     log::warn!("Unimplemented property _quality");
     Ok(())
 }
@@ -838,7 +838,7 @@ fn x_mouse<'gc>(
     _avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let local = this.global_to_local(*context.mouse_position);
     Ok(local.0.to_pixels().into())
 }
@@ -847,7 +847,7 @@ fn y_mouse<'gc>(
     _avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let local = this.global_to_local(*context.mouse_position);
     Ok(local.1.to_pixels().into())
 }
@@ -856,7 +856,7 @@ fn property_coerce_to_number<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     value: Value<'gc>,
-) -> Result<Option<f64>, Error> {
+) -> Result<Option<f64>, Error<'gc>> {
     if value != Value::Undefined && value != Value::Null {
         let n = value.coerce_to_f64(avm, context)?;
         if n.is_finite() {

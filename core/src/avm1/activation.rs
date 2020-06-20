@@ -319,7 +319,7 @@ impl<'gc> Activation<'gc> {
         name: &str,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
         if name == "this" {
             return Ok(Value::Object(self.this).into());
         }
@@ -407,7 +407,7 @@ impl<'gc> Activation<'gc> {
     /// Attempts to lock the activation frame for execution.
     ///
     /// If this frame is already executing, that is an error condition.
-    pub fn lock(&mut self) -> Result<(), Error> {
+    pub fn lock(&mut self) -> Result<(), Error<'gc>> {
         if self.is_executing {
             return Err(Error::AlreadyExecutingFrame);
         }

@@ -81,7 +81,7 @@ fn add_listener<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("Stage.addListener: unimplemented");
     Ok(Value::Undefined.into())
 }
@@ -91,7 +91,7 @@ fn align<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("Stage.align: unimplemented");
     Ok("".into())
 }
@@ -101,7 +101,7 @@ fn set_align<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("Stage.align: unimplemented");
     Ok(Value::Undefined.into())
 }
@@ -111,7 +111,7 @@ fn height<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(context.stage_size.1.to_pixels().into())
 }
 
@@ -120,7 +120,7 @@ fn remove_listener<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("Stage.removeListener: unimplemented");
     Ok("".into())
 }
@@ -130,7 +130,7 @@ fn scale_mode<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("Stage.scaleMode: unimplemented");
     Ok("noScale".into())
 }
@@ -140,7 +140,7 @@ fn set_scale_mode<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("Stage.scaleMode: unimplemented");
     Ok(Value::Undefined.into())
 }
@@ -150,7 +150,7 @@ fn show_menu<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("Stage.showMenu: unimplemented");
     Ok(true.into())
 }
@@ -160,7 +160,7 @@ fn set_show_menu<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("Stage.showMenu: unimplemented");
     Ok(Value::Undefined.into())
 }
@@ -170,6 +170,6 @@ fn width<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(context.stage_size.0.to_pixels().into())
 }

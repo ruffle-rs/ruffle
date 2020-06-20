@@ -63,7 +63,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(mut node) = self.document().get_node_by_id(name) {
             Ok(node
                 .script_object(context.gc_context, Some(avm.prototypes().xml_node))
@@ -79,7 +79,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         value: Value<'gc>,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         self.base().set(name, value, avm, context)
     }
 
@@ -90,7 +90,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         self.base().call(avm, context, this, base_proto, args)
     }
 
@@ -101,7 +101,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
         self.base().call_setter(name, value, avm, context, this)
     }
 
@@ -112,7 +112,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
         _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         //TODO: `new xmlnode.attributes()` returns undefined, not an object
         log::warn!("Cannot create new XML Attributes object");
         Ok(Value::Undefined.coerce_to_object(avm, context))

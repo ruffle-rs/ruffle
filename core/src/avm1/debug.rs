@@ -195,10 +195,11 @@ impl<'a> VariableDumper<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::avm1::error::Error;
     use crate::avm1::function::Executable;
     use crate::avm1::return_value::ReturnValue;
     use crate::avm1::test_utils::with_avm;
-    use crate::avm1::{Error, ScriptObject};
+    use crate::avm1::ScriptObject;
     use enumset::EnumSet;
 
     fn throw_error<'gc>(
@@ -206,12 +207,12 @@ mod tests {
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
         _args: &[Value<'gc>],
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
         Err(Error::PrototypeRecursionLimit)
     }
 
     #[test]
-    fn dump_undefined() -> Result<(), Error> {
+    fn dump_undefined() {
         with_avm(19, |avm, context, _root| -> Result<(), Error> {
             assert_eq!(
                 VariableDumper::dump(&Value::Undefined, " ", avm, context),
@@ -222,7 +223,7 @@ mod tests {
     }
 
     #[test]
-    fn dump_null() -> Result<(), Error> {
+    fn dump_null() {
         with_avm(19, |avm, context, _root| -> Result<(), Error> {
             assert_eq!(
                 VariableDumper::dump(&Value::Null, " ", avm, context),
@@ -233,7 +234,7 @@ mod tests {
     }
 
     #[test]
-    fn dump_bool() -> Result<(), Error> {
+    fn dump_bool() {
         with_avm(19, |avm, context, _root| -> Result<(), Error> {
             assert_eq!(
                 VariableDumper::dump(&Value::Bool(true), " ", avm, context),
@@ -248,7 +249,7 @@ mod tests {
     }
 
     #[test]
-    fn dump_number() -> Result<(), Error> {
+    fn dump_number() {
         with_avm(19, |avm, context, _root| -> Result<(), Error> {
             assert_eq!(
                 VariableDumper::dump(&Value::Number(1000.0), " ", avm, context),
@@ -263,7 +264,7 @@ mod tests {
     }
 
     #[test]
-    fn dump_string() -> Result<(), Error> {
+    fn dump_string() {
         with_avm(19, |avm, context, _root| -> Result<(), Error> {
             assert_eq!(
                 VariableDumper::dump(&Value::String("".to_string()), " ", avm, context),
@@ -289,7 +290,7 @@ mod tests {
     }
 
     #[test]
-    fn dump_empty_object() -> Result<(), Error> {
+    fn dump_empty_object() {
         with_avm(19, |avm, context, _root| -> Result<(), Error> {
             let object = ScriptObject::object(context.gc_context, None);
             assert_eq!(
@@ -301,7 +302,7 @@ mod tests {
     }
 
     #[test]
-    fn dump_object() -> Result<(), Error> {
+    fn dump_object() {
         with_avm(19, |avm, context, _root| -> Result<(), Error> {
             let object = ScriptObject::object(context.gc_context, None);
             let child = ScriptObject::object(context.gc_context, None);
@@ -319,7 +320,7 @@ mod tests {
     }
 
     #[test]
-    fn dump_object_with_error() -> Result<(), Error> {
+    fn dump_object_with_error() {
         with_avm(19, |avm, context, _root| -> Result<(), Error> {
             let object = ScriptObject::object(context.gc_context, None);
             object.add_property(
@@ -338,7 +339,7 @@ mod tests {
     }
 
     #[test]
-    fn dump_variables() -> Result<(), Error> {
+    fn dump_variables() {
         with_avm(19, |avm, context, _root| -> Result<(), Error> {
             let object = ScriptObject::object(context.gc_context, None);
             let child = ScriptObject::object(context.gc_context, None);

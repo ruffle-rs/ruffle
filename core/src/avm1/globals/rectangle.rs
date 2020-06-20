@@ -16,7 +16,7 @@ fn constructor<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if args.is_empty() {
         this.set("x", 0.into(), avm, context)?;
         this.set("y", 0.into(), avm, context)?;
@@ -57,7 +57,7 @@ fn to_string<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let x = this.get("x", avm, context)?;
     let y = this.get("y", avm, context)?;
     let width = this.get("width", avm, context)?;
@@ -91,7 +91,7 @@ fn is_empty<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let width = this
         .get("width", avm, context)?
         .coerce_to_f64(avm, context)?;
@@ -106,7 +106,7 @@ fn set_empty<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     this.set("x", 0.into(), avm, context)?;
     this.set("y", 0.into(), avm, context)?;
     this.set("width", 0.into(), avm, context)?;
@@ -119,7 +119,7 @@ fn clone<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let proto = context.system_prototypes.rectangle;
     let args = [
         this.get("x", avm, context)?,
@@ -137,7 +137,7 @@ fn contains<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     // TODO: This arbitrarily should return `false` or `undefined` for different invalid-values.
     // I can't find any rhyme or reason for it.
     let x = args
@@ -173,7 +173,7 @@ fn contains_point<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let (x, y) = value_to_point(
         args.get(0).unwrap_or(&Value::Undefined).to_owned(),
         avm,
@@ -202,7 +202,7 @@ fn contains_rectangle<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let other = if let Some(Value::Object(other)) = args.get(0) {
         other
     } else {
@@ -247,7 +247,7 @@ fn intersects<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let other = if let Some(Value::Object(other)) = args.get(0) {
         other
     } else {
@@ -288,7 +288,7 @@ fn union<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let this_left = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
     let this_top = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
     let this_right = this_left
@@ -364,7 +364,7 @@ fn inflate<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let x = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
     let y = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
     let width = this
@@ -407,7 +407,7 @@ fn inflate_point<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let x = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
     let y = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
     let width = this
@@ -445,7 +445,7 @@ fn offset<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let x = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
     let y = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
     let horizontal = args
@@ -470,7 +470,7 @@ fn offset_point<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let x = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
     let y = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
     let (horizontal, vertical) = value_to_point(
@@ -490,7 +490,7 @@ fn intersection<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let this_left = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
     let this_top = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
     let this_right = this_left
@@ -563,7 +563,7 @@ fn equals<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(Value::Object(other)) = args.get(0) {
         let this_x = this.get("x", avm, context)?;
         let this_y = this.get("y", avm, context)?;
@@ -591,7 +591,7 @@ fn get_left<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(this.get("x", avm, context)?.into())
 }
 
@@ -600,7 +600,7 @@ fn set_left<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let new_left = args.get(0).unwrap_or(&Value::Undefined).to_owned();
     let old_left = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
     let width = this
@@ -621,7 +621,7 @@ fn get_top<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(this.get("y", avm, context)?.into())
 }
 
@@ -630,7 +630,7 @@ fn set_top<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let new_top = args.get(0).unwrap_or(&Value::Undefined).to_owned();
     let old_top = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
     let height = this
@@ -651,7 +651,7 @@ fn get_right<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let x = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
     let width = this
         .get("width", avm, context)?
@@ -664,7 +664,7 @@ fn set_right<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let right = if let Some(arg) = args.get(0) {
         arg.coerce_to_f64(avm, context)?
     } else {
@@ -682,7 +682,7 @@ fn get_bottom<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let y = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
     let height = this
         .get("height", avm, context)?
@@ -695,7 +695,7 @@ fn set_bottom<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let bottom = if let Some(arg) = args.get(0) {
         arg.coerce_to_f64(avm, context)?
     } else {
@@ -713,7 +713,7 @@ fn get_size<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let width = this.get("width", avm, context)?;
     let height = this.get("height", avm, context)?;
     let point = construct_new_point(&[width, height], avm, context)?;
@@ -725,7 +725,7 @@ fn set_size<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let (width, height) = if let Some(Value::Object(object)) = args.get(0) {
         (
             object.get("x", avm, context)?,
@@ -746,7 +746,7 @@ fn get_top_left<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let x = this.get("x", avm, context)?;
     let y = this.get("y", avm, context)?;
     let point = construct_new_point(&[x, y], avm, context)?;
@@ -758,7 +758,7 @@ fn set_top_left<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let (new_left, new_top) = if let Some(Value::Object(object)) = args.get(0) {
         (
             object.get("x", avm, context)?,
@@ -799,7 +799,7 @@ fn get_bottom_right<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let x = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
     let y = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
     let width = this
@@ -817,7 +817,7 @@ fn set_bottom_right<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let (bottom, right) = value_to_point(
         args.get(0).unwrap_or(&Value::Undefined).to_owned(),
         avm,

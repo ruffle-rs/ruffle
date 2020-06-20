@@ -13,7 +13,7 @@ pub fn value_to_matrix<'gc>(
     value: Value<'gc>,
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
-) -> Result<Matrix, Error> {
+) -> Result<Matrix, Error<'gc>> {
     let a = value
         .coerce_to_object(avm, context)
         .get("a", avm, context)?
@@ -50,7 +50,7 @@ pub fn gradient_object_to_matrix<'gc>(
     object: Object<'gc>,
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
-) -> Result<Matrix, Error> {
+) -> Result<Matrix, Error<'gc>> {
     if object
         .get("matrixType", avm, context)?
         .coerce_to_string(avm, context)?
@@ -78,7 +78,7 @@ pub fn object_to_matrix<'gc>(
     object: Object<'gc>,
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
-) -> Result<Matrix, Error> {
+) -> Result<Matrix, Error<'gc>> {
     let a = object.get("a", avm, context)?.coerce_to_f64(avm, context)? as f32;
     let b = object.get("b", avm, context)?.coerce_to_f64(avm, context)? as f32;
     let c = object.get("c", avm, context)?.coerce_to_f64(avm, context)? as f32;
@@ -103,7 +103,7 @@ pub fn matrix_to_object<'gc>(
     matrix: Matrix,
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
-) -> Result<Object<'gc>, Error> {
+) -> Result<Object<'gc>, Error<'gc>> {
     let proto = context.system_prototypes.matrix;
     let args = [
         matrix.a.into(),
@@ -123,7 +123,7 @@ pub fn apply_matrix_to_object<'gc>(
     object: Object<'gc>,
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     object.set("a", matrix.a.into(), avm, context)?;
     object.set("b", matrix.b.into(), avm, context)?;
     object.set("c", matrix.c.into(), avm, context)?;
@@ -138,7 +138,7 @@ fn constructor<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if args.is_empty() {
         apply_matrix_to_object(Matrix::identity(), this, avm, context)?;
     } else {
@@ -170,7 +170,7 @@ fn identity<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     apply_matrix_to_object(Matrix::identity(), this, avm, context)?;
     Ok(Value::Undefined.into())
 }
@@ -180,7 +180,7 @@ fn clone<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let proto = context.system_prototypes.matrix;
     let args = [
         this.get("a", avm, context)?,
@@ -200,7 +200,7 @@ fn scale<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let scale_x = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -221,7 +221,7 @@ fn rotate<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let angle = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -238,7 +238,7 @@ fn translate<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let translate_x = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -262,7 +262,7 @@ fn concat<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let mut matrix = object_to_matrix(this, avm, context)?;
     let other = value_to_matrix(
         args.get(0).unwrap_or(&Value::Undefined).clone(),
@@ -280,7 +280,7 @@ fn invert<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let mut matrix = object_to_matrix(this, avm, context)?;
     matrix.invert();
     apply_matrix_to_object(matrix, this, avm, context)?;
@@ -293,7 +293,7 @@ fn create_box<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let scale_x = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -335,7 +335,7 @@ fn create_gradient_box<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let width = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -377,7 +377,7 @@ fn to_string<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let a = this.get("a", avm, context)?;
     let b = this.get("b", avm, context)?;
     let c = this.get("c", avm, context)?;

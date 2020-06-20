@@ -53,7 +53,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<Value<'gc>, Error>;
+    ) -> Result<Value<'gc>, Error<'gc>>;
 
     /// Retrieve a named property from the object, or it's prototype.
     fn get(
@@ -61,7 +61,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: &str,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         if self.has_own_property(avm, context, name) {
             self.get_local(name, avm, context, (*self).into())
         } else {
@@ -78,7 +78,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error>;
+    ) -> Result<(), Error<'gc>>;
 
     /// Call the underlying object.
     ///
@@ -92,7 +92,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Result<Value<'gc>, Error>;
+    ) -> Result<Value<'gc>, Error<'gc>>;
 
     /// Call a method on the object.
     ///
@@ -107,7 +107,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         args: &[Value<'gc>],
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let (method, base_proto) =
             search_prototype(Some((*self).into()), name, avm, context, (*self).into())?;
         let method = method.resolve(avm, context)?;
@@ -136,7 +136,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error>;
+    ) -> Result<ReturnValue<'gc>, Error<'gc>>;
 
     /// Construct a host object of some kind and return it's cell.
     ///
@@ -155,7 +155,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error>;
+    ) -> Result<Object<'gc>, Error<'gc>>;
 
     /// Delete a named property from the object.
     ///
@@ -318,7 +318,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         context: &mut UpdateContext<'_, 'gc, '_>,
         constructor: Object<'gc>,
         prototype: Object<'gc>,
-    ) -> Result<bool, Error> {
+    ) -> Result<bool, Error<'gc>> {
         let mut proto_stack = vec![];
         if let Some(p) = self.proto() {
             proto_stack.push(p);
@@ -462,7 +462,7 @@ pub fn search_prototype<'gc>(
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
-) -> Result<(ReturnValue<'gc>, Option<Object<'gc>>), Error> {
+) -> Result<(ReturnValue<'gc>, Option<Object<'gc>>), Error<'gc>> {
     let mut depth = 0;
 
     while proto.is_some() {

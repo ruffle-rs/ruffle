@@ -24,6 +24,6 @@ pub fn constructor<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(Value::Undefined.into())
 }

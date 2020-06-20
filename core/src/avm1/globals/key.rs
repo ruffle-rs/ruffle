@@ -12,7 +12,7 @@ pub fn is_down<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(key) = args
         .get(0)
         .and_then(|v| v.coerce_to_f64(avm, context).ok())
@@ -29,7 +29,7 @@ pub fn get_code<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let code: u8 = context.input.get_last_key_code().into();
     Ok(code.into())
 }

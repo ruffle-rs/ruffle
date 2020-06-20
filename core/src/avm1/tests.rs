@@ -1,11 +1,12 @@
 use crate::avm1::activation::Activation;
+use crate::avm1::error::Error;
 use crate::avm1::test_utils::with_avm;
 use crate::avm1::TObject;
 use gc_arena::GcCell;
 
 #[test]
 fn locals_into_form_values() {
-    with_avm(19, |avm, context, _this| {
+    with_avm(19, |avm, context, _this| -> Result<(), Error> {
         let my_activation = Activation::from_nothing(
             19,
             avm.global_object_cell(),
@@ -26,5 +27,7 @@ fn locals_into_form_values() {
         assert_eq!(my_local_values.len(), 2);
         assert_eq!(my_local_values.get("value1"), Some(&"string".to_string()));
         assert_eq!(my_local_values.get("value2"), Some(&"2".to_string()));
+
+        Ok(())
     });
 }

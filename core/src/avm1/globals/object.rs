@@ -15,7 +15,7 @@ pub fn constructor<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(Value::Undefined.into())
 }
 
@@ -25,7 +25,7 @@ pub fn add_property<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let name = args
         .get(0)
         .and_then(|v| v.coerce_to_string(avm, context).ok())
@@ -75,7 +75,7 @@ pub fn has_own_property<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     match args.get(0) {
         Some(Value::String(name)) => {
             Ok(Value::Bool(this.has_own_property(avm, context, name)).into())
@@ -90,7 +90,7 @@ fn to_string<'gc>(
     _: &mut UpdateContext<'_, 'gc, '_>,
     _: Object<'gc>,
     _: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(ReturnValue::Immediate("[object Object]".into()))
 }
 
@@ -100,7 +100,7 @@ fn is_property_enumerable<'gc>(
     _: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     match args.get(0) {
         Some(Value::String(name)) => Ok(Value::Bool(this.is_property_enumerable(avm, name)).into()),
         _ => Ok(Value::Bool(false).into()),
@@ -113,7 +113,7 @@ fn is_prototype_of<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     match args.get(0) {
         Some(val) => {
             let ob = val.coerce_to_object(avm, context);
@@ -129,7 +129,7 @@ fn value_of<'gc>(
     _: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(ReturnValue::Immediate(this.into()))
 }
 
@@ -139,7 +139,7 @@ pub fn register_class<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(class_name) = args.get(0).cloned() {
         let class_name = class_name.coerce_to_string(avm, context)?;
         if let Some(Character::MovieClip(movie_clip)) = context
@@ -228,7 +228,7 @@ pub fn as_set_prop_flags<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     _: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let mut object = if let Some(object) = args.get(0).map(|v| v.coerce_to_object(avm, ac)) {
         object
     } else {
