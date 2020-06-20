@@ -1,8 +1,9 @@
+use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::globals::system::SystemCapabilities;
 use crate::avm1::object::Object;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, ScriptObject, TObject, Value};
+use crate::avm1::{Avm1, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;

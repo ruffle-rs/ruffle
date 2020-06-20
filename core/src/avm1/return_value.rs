@@ -1,7 +1,9 @@
 //! Return value enum
 
 use crate::avm1::activation::Activation;
-use crate::avm1::{Avm1, Error, Object, Value};
+use crate::avm1::error::Error;
+use crate::avm1::error::ExecutionError;
+use crate::avm1::{Avm1, Object, Value};
 use crate::context::UpdateContext;
 use gc_arena::{Collect, GcCell};
 use std::borrow::Cow;
@@ -93,7 +95,18 @@ impl<'gc> ReturnValue<'gc> {
         match self {
             Immediate(val) => Ok(val),
             ResultOf(frame) => {
-                avm.run_current_frame(context, frame)?;
+                match avm.run_current_frame(context, frame) {
+                    Err(ExecutionError::ScriptError(e)) => {
+                        return Err(e);
+                    }
+                    Err(e) => {
+                        log::warn!(
+                            "Couldn't resolve value, encountered an avm1 execution error: {}",
+                            e
+                        );
+                    }
+                    _ => {}
+                }
 
                 Ok(avm.pop())
             }

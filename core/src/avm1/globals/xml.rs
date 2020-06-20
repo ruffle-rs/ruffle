@@ -1,11 +1,12 @@
 //! XML/XMLNode global classes
 
+use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::script_object::ScriptObject;
 use crate::avm1::xml_object::XMLObject;
-use crate::avm1::{Avm1, Error, Object, TObject, UpdateContext, Value};
+use crate::avm1::{Avm1, Object, TObject, UpdateContext, Value};
 use crate::backend::navigator::RequestOptions;
 use crate::xml;
 use crate::xml::{XMLDocument, XMLNode};
@@ -55,7 +56,7 @@ pub fn xmlnode_constructor<'gc>(
         this.as_xml_node(),
     ) {
         (Some(Ok(1)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
-            let mut xmlelement = XMLNode::new_element(ac.gc_context, strval, blank_document)?;
+            let mut xmlelement = XMLNode::new_element(ac.gc_context, strval, blank_document);
             xmlelement.introduce_script_object(ac.gc_context, this);
             this_node.swap(ac.gc_context, xmlelement);
         }
@@ -84,7 +85,9 @@ pub fn xmlnode_append_child<'gc>(
     ) {
         if let Ok(None) = child_xmlnode.parent() {
             let position = xmlnode.children_len();
-            xmlnode.insert_child(ac.gc_context, position, child_xmlnode)?;
+            if let Err(e) = xmlnode.insert_child(ac.gc_context, position, child_xmlnode) {
+                log::warn!("Couldn't insert_child inside of XMLNode.appendChild: {}", e);
+            }
         }
     }
 
@@ -106,7 +109,12 @@ pub fn xmlnode_insert_before<'gc>(
     ) {
         if let Ok(None) = child_xmlnode.parent() {
             if let Some(position) = xmlnode.child_position(insertpoint_xmlnode) {
-                xmlnode.insert_child(ac.gc_context, position, child_xmlnode)?;
+                if let Err(e) = xmlnode.insert_child(ac.gc_context, position, child_xmlnode) {
+                    log::warn!(
+                        "Couldn't insert_child inside of XMLNode.insertBefore: {}",
+                        e
+                    );
+                }
             }
         }
     }
@@ -691,7 +699,9 @@ pub fn xml_constructor<'gc>(
             xmlnode.introduce_script_object(ac.gc_context, this);
             this_node.swap(ac.gc_context, xmlnode);
 
-            this_node.replace_with_str(ac.gc_context, string)?;
+            if let Err(e) = this_node.replace_with_str(ac.gc_context, string) {
+                log::warn!("Couldn't replace_with_str inside of XML constructor: {}", e);
+            }
         }
         (None, Some(ref mut this_node)) => {
             let xmldoc = XMLDocument::new(ac.gc_context);
@@ -722,7 +732,7 @@ pub fn xml_create_element<'gc>(
         .get(0)
         .map(|v| v.coerce_to_string(avm, ac).unwrap_or_default())
         .unwrap_or_default();
-    let mut xml_node = XMLNode::new_element(ac.gc_context, &nodename, document)?;
+    let mut xml_node = XMLNode::new_element(ac.gc_context, &nodename, document);
     let object = XMLObject::from_xml_node(ac.gc_context, xml_node, Some(avm.prototypes().xml_node));
 
     xml_node.introduce_script_object(ac.gc_context, object);

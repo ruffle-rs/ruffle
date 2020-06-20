@@ -1,12 +1,13 @@
 //! Code relating to executable functions + calling conventions.
 
 use crate::avm1::activation::Activation;
+use crate::avm1::error::Error;
 use crate::avm1::property::{Attribute, Attribute::*};
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
 use crate::avm1::super_object::SuperObject;
 use crate::avm1::value::Value;
-use crate::avm1::{Avm1, Error, Object, ObjectPtr, ScriptObject, TObject, UpdateContext};
+use crate::avm1::{Avm1, Object, ObjectPtr, ScriptObject, TObject, UpdateContext};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::tag_utils::SwfSlice;
 use enumset::EnumSet;

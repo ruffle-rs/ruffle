@@ -1,7 +1,8 @@
+use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject, NativeFunction};
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, Object, ObjectPtr, TObject, UpdateContext, Value};
+use crate::avm1::{Avm1, Object, ObjectPtr, TObject, UpdateContext, Value};
 use crate::property_map::{Entry, PropertyMap};
 use core::fmt;
 use enumset::EnumSet;

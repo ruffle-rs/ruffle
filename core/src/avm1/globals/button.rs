@@ -1,8 +1,9 @@
 //! Button/SimpleButton prototype
 
+use crate::avm1::error::Error;
 use crate::avm1::globals::display_object;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, Object, ScriptObject, UpdateContext, Value};
+use crate::avm1::{Avm1, Object, ScriptObject, UpdateContext, Value};
 use gc_arena::MutationContext;
 
 pub fn create_proto<'gc>(

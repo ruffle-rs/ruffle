@@ -1,7 +1,8 @@
 //! Represents AVM1 scope chain resolution.
 
+use crate::avm1::error::Error;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{Avm1, Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
 use std::cell::Ref;

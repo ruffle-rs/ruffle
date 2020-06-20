@@ -1,10 +1,11 @@
 //! Object impl for boxed values
 
+use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::object::{ObjectPtr, TObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, Object, ScriptObject, UpdateContext, Value};
+use crate::avm1::{Avm1, Object, ScriptObject, UpdateContext, Value};
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::borrow::Cow;

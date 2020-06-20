@@ -1,10 +1,11 @@
 //! `MovieClipLoader` impl
 
+use crate::avm1::error::Error;
 use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::script_object::ScriptObject;
-use crate::avm1::{Avm1, Error, Object, UpdateContext, Value};
+use crate::avm1::{Avm1, Object, UpdateContext, Value};
 use crate::backend::navigator::RequestOptions;
 use crate::display_object::{DisplayObject, TDisplayObject};
 use enumset::EnumSet;

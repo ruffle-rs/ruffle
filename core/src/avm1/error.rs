@@ -1,6 +1,12 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
+pub enum Error {
+    #[error("Prototype recursion limit has been exceeded")]
+    PrototypeRecursionLimit,
+}
+
+#[derive(Error, Debug)]
 pub enum ExecutionError {
     #[error("Couldn't parse SWF")]
     InvalidSwf(#[from] swf::error::Error),
@@ -15,5 +21,5 @@ pub enum ExecutionError {
     AlreadyExecutingFrame,
 
     #[error("Script error")]
-    ScriptError(Box<dyn std::error::Error>),
+    ScriptError(#[from] Error),
 }

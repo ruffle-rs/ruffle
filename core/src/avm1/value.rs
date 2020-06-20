@@ -1,5 +1,6 @@
+use crate::avm1::error::Error;
 use crate::avm1::value_object::ValueObject;
-use crate::avm1::{Avm1, Error, Object, TObject, UpdateContext};
+use crate::avm1::{Avm1, Object, TObject, UpdateContext};
 use std::borrow::Cow;
 use std::f64::NAN;
 
@@ -591,13 +592,14 @@ pub fn f64_to_wrapping_i32(n: f64) -> i32 {
 
 #[cfg(test)]
 mod test {
+    use crate::avm1::error::Error;
     use crate::avm1::function::{Executable, FunctionObject};
     use crate::avm1::globals::create_globals;
     use crate::avm1::object::{Object, TObject};
     use crate::avm1::return_value::ReturnValue;
     use crate::avm1::script_object::ScriptObject;
     use crate::avm1::test_utils::with_avm;
-    use crate::avm1::{Avm1, Error, Value};
+    use crate::avm1::{Avm1, Value};
     use crate::context::UpdateContext;
     use enumset::EnumSet;
     use std::f64::{INFINITY, NAN, NEG_INFINITY};
