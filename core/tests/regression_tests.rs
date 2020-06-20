@@ -173,6 +173,8 @@ swf_tests! {
     (define_function2_preload, "avm1/define_function2_preload", 1),
     (define_function2_preload_order, "avm1/define_function2_preload_order", 1),
     (mcl_as_broadcaster, "avm1/mcl_as_broadcaster", 1),
+    (uncaught_exception, "avm1/uncaught_exception", 1),
+    (uncaught_exception_bubbled, "avm1/uncaught_exception_bubbled", 1),
     (loadmovie, "avm1/loadmovie", 2),
     (loadmovienum, "avm1/loadmovienum", 2),
     (loadmovie_method, "avm1/loadmovie_method", 2),

@@ -499,9 +499,17 @@ impl<'gc> Avm1<'gc> {
             return Ok(());
         }
         while !self.stack_frames.is_empty() {
-            self.with_current_reader_mut(context, |this, r, context| {
+            if let Err(e) = self.with_current_reader_mut(context, |this, r, context| {
                 this.do_next_action(context, r)
-            })?;
+            }) {
+                if let Error::ThrownValue(error) = &e {
+                    let string = error
+                        .coerce_to_string(self, context)
+                        .unwrap_or_else(|_| Cow::Borrowed("undefined"));
+                    log::info!(target: "avm_trace", "{}", string);
+                }
+                return Err(e);
+            }
         }
 
         // Operand stack should be empty at this point.
@@ -688,10 +696,14 @@ impl<'gc> Avm1<'gc> {
                     num_actions_to_skip,
                 } => self.action_wait_for_frame_2(context, num_actions_to_skip, reader),
                 Action::With { actions } => self.action_with(context, actions),
+                Action::Throw => self.action_throw(context),
                 _ => self.unknown_op(context, action),
             };
             if let Err(e) = result {
-                log::error!("AVM1 error: {}", e);
+                match &e {
+                    Error::ThrownValue(_) => {}
+                    e => log::error!("AVM1 error: {}", e),
+                }
                 if e.is_halting() {
                     self.halt();
                 }
@@ -2847,6 +2859,18 @@ impl<'gc> Avm1<'gc> {
             skip_actions(r, num_actions_to_skip);
         }
         Ok(())
+    }
+
+    fn action_throw(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error<'gc>> {
+        let value = self.pop();
+        avm_debug!(
+            "Thrown exception: {}",
+            value
+                .coerce_to_string(self, context)
+                .unwrap_or_else(|_| Cow::Borrowed("undefined"))
+        );
+        self.retire_stack_frame(context, Value::Undefined);
+        Err(Error::ThrownValue(value))
     }
 
     fn action_with(
