@@ -196,7 +196,7 @@ impl<'gc> ScriptObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         if name == "__proto__" {
             self.0.write(context.gc_context).prototype = Some(value.coerce_to_object(avm, context));
         } else if let Ok(index) = name.parse::<usize>() {
@@ -295,7 +295,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         if name == "__proto__" {
             return Ok(self.proto().map_or(Value::Undefined, Value::Object));
         }
@@ -320,7 +320,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         value: Value<'gc>,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         self.internal_set(
             name,
             value,
@@ -343,7 +343,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         _this: Object<'gc>,
         _base_proto: Option<Object<'gc>>,
         _args: &[Value<'gc>],
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Undefined)
     }
 
@@ -354,7 +354,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
         match self
             .0
             .write(context.gc_context)
@@ -375,7 +375,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         match self.0.read().array {
             ArrayStorage::Vector(_) => {
                 Ok(ScriptObject::array(context.gc_context, Some(this)).into())

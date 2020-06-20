@@ -1,8 +1,9 @@
+use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::sound_object::SoundObject;
-use crate::avm1::{Avm1, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
+use crate::avm1::{Avm1, Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use enumset::EnumSet;
@@ -75,7 +76,7 @@ impl<'gc> TObject<'gc> for SharedObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         self.base().get_local(name, avm, context, this)
     }
 
@@ -85,7 +86,7 @@ impl<'gc> TObject<'gc> for SharedObject<'gc> {
         value: Value<'gc>,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         self.base().set(name, value, avm, context)
     }
 
@@ -96,7 +97,7 @@ impl<'gc> TObject<'gc> for SharedObject<'gc> {
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         self.base().call(avm, context, this, base_proto, args)
     }
 
@@ -107,7 +108,7 @@ impl<'gc> TObject<'gc> for SharedObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
         self.base().call_setter(name, value, avm, context, this)
     }
 
@@ -118,7 +119,7 @@ impl<'gc> TObject<'gc> for SharedObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
         _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(
             SharedObject::empty_shared_obj(context.gc_context, Some(avm.prototypes.shared_object))
                 .into(),

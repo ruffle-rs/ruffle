@@ -16,7 +16,7 @@ pub fn constructor<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     // 1st parameter is the movie clip that "owns" all sounds started by this object.
     // `Sound.setTransform`, `Sound.stop`, etc. will affect all sounds owned by this clip.
     let owner = args
@@ -165,7 +165,7 @@ fn attach_sound<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let name = args.get(0).unwrap_or(&Value::Undefined);
     if let Some(sound_object) = this.as_sound_object() {
         let name = name.coerce_to_string(avm, context)?;
@@ -205,7 +205,7 @@ fn duration<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if avm.current_swf_version() >= 6 {
         if let Some(sound_object) = this.as_sound_object() {
             return Ok(sound_object.duration().into());
@@ -222,7 +222,7 @@ fn get_bytes_loaded<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if avm.current_swf_version() >= 6 {
         log::warn!("Sound.getBytesLoaded: Unimplemented");
         Ok(1.into())
@@ -236,7 +236,7 @@ fn get_bytes_total<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if avm.current_swf_version() >= 6 {
         log::warn!("Sound.getBytesTotal: Unimplemented");
         Ok(1.into())
@@ -250,7 +250,7 @@ fn get_pan<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("Sound.getPan: Unimplemented");
     Ok(0.into())
 }
@@ -260,7 +260,7 @@ fn get_transform<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("Sound.getTransform: Unimplemented");
     Ok(Value::Undefined.into())
 }
@@ -270,7 +270,7 @@ fn get_volume<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("Sound.getVolume: Unimplemented");
     Ok(100.into())
 }
@@ -280,7 +280,7 @@ fn id3<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if avm.current_swf_version() >= 6 {
         log::warn!("Sound.id3: Unimplemented");
     }
@@ -292,7 +292,7 @@ fn load_sound<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if avm.current_swf_version() >= 6 {
         log::warn!("Sound.loadSound: Unimplemented");
     }
@@ -304,7 +304,7 @@ fn position<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if avm.current_swf_version() >= 6 {
         if let Some(sound_object) = this.as_sound_object() {
             // TODO: The position is "sticky"; even if the sound is no longer playing, it should return
@@ -328,7 +328,7 @@ fn set_pan<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("Sound.setPan: Unimplemented");
     Ok(Value::Undefined.into())
 }
@@ -338,7 +338,7 @@ fn set_transform<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("Sound.setTransform: Unimplemented");
     Ok(Value::Undefined.into())
 }
@@ -348,7 +348,7 @@ fn set_volume<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("Sound.setVolume: Unimplemented");
     Ok(Value::Undefined.into())
 }
@@ -358,7 +358,7 @@ fn start<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let start_offset = args
         .get(0)
         .unwrap_or(&Value::Number(0.0))
@@ -409,7 +409,7 @@ fn stop<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(sound) = this.as_sound_object() {
         if let Some(name) = args.get(0) {
             // Usage 1: Stop all instances of a particular sound, using the name parameter.

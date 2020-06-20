@@ -47,7 +47,7 @@ impl<'gc> SuperObject<'gc> {
         base_proto: Object<'gc>,
         _avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, Error<'gc>> {
         Ok(Self(GcCell::allocate(
             context.gc_context,
             SuperObjectData {
@@ -67,7 +67,7 @@ impl<'gc> SuperObject<'gc> {
         self,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Option<Object<'gc>>, Error> {
+    ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         if let Some(super_proto) = self.super_proto() {
             Ok(Some(
                 super_proto
@@ -87,7 +87,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         _avm: &mut Avm1<'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Undefined)
     }
 
@@ -97,7 +97,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         _value: Value<'gc>,
         _avm: &mut Avm1<'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         //TODO: What happens if you set `super.__proto__`?
         Ok(())
     }
@@ -109,7 +109,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         _this: Object<'gc>,
         _base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(constr) = self.super_constr(avm, context)? {
             constr.call(avm, context, self.0.read().child, self.super_proto(), args)
         } else {
@@ -123,7 +123,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         args: &[Value<'gc>],
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let child = self.0.read().child;
         let super_proto = self.super_proto();
         let (method, base_proto) = search_prototype(super_proto, name, avm, context, child)?;
@@ -144,7 +144,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
         self.0
             .read()
             .child
@@ -158,7 +158,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         if let Some(proto) = self.proto() {
             proto.new(avm, context, this, args)
         } else {

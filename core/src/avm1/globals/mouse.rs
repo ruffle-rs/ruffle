@@ -11,7 +11,7 @@ pub fn show_mouse<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let was_visible = context.input.mouse_visible();
     context.input.show_mouse();
     if was_visible {
@@ -26,7 +26,7 @@ pub fn hide_mouse<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let was_visible = context.input.mouse_visible();
     context.input.hide_mouse();
     if was_visible {

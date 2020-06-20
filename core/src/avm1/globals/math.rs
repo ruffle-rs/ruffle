@@ -12,7 +12,7 @@ macro_rules! wrap_std {
         $(
             $object.force_set_function(
                 $name,
-                |avm, context, _this, args| -> Result<ReturnValue<'gc>, Error> {
+                |avm, context, _this, args| -> Result<ReturnValue<'gc>, Error<'gc>> {
                     if let Some(input) = args.get(0) {
                         Ok($std(input.coerce_to_f64(avm, context)?).into())
                     } else {
@@ -32,7 +32,7 @@ fn atan2<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(y) = args.get(0) {
         if let Some(x) = args.get(1) {
             return Ok(y
@@ -51,7 +51,7 @@ fn pow<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(y) = args.get(0) {
         if let Some(x) = args.get(1) {
             let x = x.coerce_to_f64(avm, context)?;
@@ -69,7 +69,7 @@ fn round<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(x) = args.get(0) {
         let x = x.coerce_to_f64(avm, context)?;
         // Note that Flash Math.round always rounds toward infinity,
@@ -85,7 +85,7 @@ fn max<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(a) = args.get(0) {
         return if let Some(b) = args.get(1) {
             match a.abstract_lt(b.to_owned(), avm, context)? {
@@ -110,7 +110,7 @@ fn min<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(a) = args.get(0) {
         return if let Some(b) = args.get(1) {
             match a.abstract_lt(b.to_owned(), avm, context)? {
@@ -135,7 +135,7 @@ pub fn random<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(action_context.rng.gen_range(0.0f64, 1.0f64).into())
 }
 
@@ -479,7 +479,7 @@ mod tests {
 
     #[test]
     fn test_atan2_nan() {
-        with_avm(19, |avm, context, _root| {
+        with_avm(19, |avm, context, _root| -> Result<(), Error> {
             let math = create(
                 context.gc_context,
                 Some(avm.prototypes().object),
@@ -499,12 +499,13 @@ mod tests {
                 atan2(avm, context, math, &[Value::Undefined, 1.0.into()]).unwrap(),
                 NAN.into()
             );
+            Ok(())
         });
     }
 
     #[test]
     fn test_atan2_valid() {
-        with_avm(19, |avm, context, _root| {
+        with_avm(19, |avm, context, _root| -> Result<(), Error> {
             let math = create(
                 context.gc_context,
                 Some(avm.prototypes().object),
@@ -519,6 +520,7 @@ mod tests {
                 atan2(avm, context, math, &[1.0.into(), 2.0.into()]).unwrap(),
                 f64::atan2(1.0, 2.0).into()
             );
+            Ok(())
         });
     }
 }

@@ -16,7 +16,7 @@ pub fn constructor<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let listeners = ScriptObject::array(context.gc_context, Some(avm.prototypes().array));
     this.define_value(
         context.gc_context,
@@ -34,7 +34,7 @@ pub fn add_listener<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let new_listener = args.get(0).cloned().unwrap_or(Value::Undefined);
     let listeners = this.get("_listeners", avm, context)?;
 
@@ -52,7 +52,7 @@ pub fn remove_listener<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let old_listener = args.get(0).cloned().unwrap_or(Value::Undefined);
     let listeners = this.get("_listeners", avm, context)?;
 
@@ -95,7 +95,7 @@ pub fn broadcast_message<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let event_name_val = args.get(0).cloned().unwrap_or(Value::Undefined);
     let event_name = event_name_val.coerce_to_string(avm, context)?;
     let call_args = &args[0..];
@@ -119,7 +119,7 @@ pub fn load_clip<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let url_val = args.get(0).cloned().unwrap_or(Value::Undefined);
     let url = url_val.coerce_to_string(avm, context)?;
     let target = args.get(1).cloned().unwrap_or(Value::Undefined);
@@ -151,7 +151,7 @@ pub fn unload_clip<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let target = args.get(0).cloned().unwrap_or(Value::Undefined);
 
     if let Value::Object(target) = target {
@@ -174,7 +174,7 @@ pub fn get_progress<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let target = args.get(0).cloned().unwrap_or(Value::Undefined);
 
     if let Value::Object(target) = target {

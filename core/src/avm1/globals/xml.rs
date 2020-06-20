@@ -46,7 +46,7 @@ pub fn xmlnode_constructor<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let blank_document = XMLDocument::new(ac.gc_context);
 
     match (
@@ -77,7 +77,7 @@ pub fn xmlnode_append_child<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let (Some(mut xmlnode), Some(child_xmlnode)) = (
         this.as_xml_node(),
         args.get(0)
@@ -99,7 +99,7 @@ pub fn xmlnode_insert_before<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let (Some(mut xmlnode), Some(child_xmlnode), Some(insertpoint_xmlnode)) = (
         this.as_xml_node(),
         args.get(0)
@@ -127,7 +127,7 @@ pub fn xmlnode_clone_node<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let (Some(xmlnode), deep) = (
         this.as_xml_node(),
         args.get(0)
@@ -150,7 +150,7 @@ pub fn xmlnode_get_namespace_for_prefix<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let (Some(xmlnode), Some(prefix_string)) = (
         this.as_xml_node(),
         args.get(0).map(|v| v.coerce_to_string(avm, ac)),
@@ -170,7 +170,7 @@ pub fn xmlnode_get_prefix_for_namespace<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let (Some(xmlnode), Some(uri_string)) = (
         this.as_xml_node(),
         args.get(0).map(|v| v.coerce_to_string(avm, ac)),
@@ -190,7 +190,7 @@ pub fn xmlnode_has_child_nodes<'gc>(
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(xmlnode) = this.as_xml_node() {
         Ok((xmlnode.children_len() > 0).into())
     } else {
@@ -203,7 +203,7 @@ pub fn xmlnode_remove_node<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         if let Ok(Some(mut parent)) = node.parent() {
             if let Err(e) = parent.remove_child(ac.gc_context, node) {
@@ -220,7 +220,7 @@ pub fn xmlnode_to_string<'gc>(
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         let result = node.into_string(&mut is_as2_compatible);
 
@@ -240,7 +240,7 @@ pub fn xmlnode_local_name<'gc>(
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(this
         .as_xml_node()
         .and_then(|n| n.tag_name())
@@ -253,7 +253,7 @@ pub fn xmlnode_node_name<'gc>(
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(this
         .as_xml_node()
         .and_then(|n| n.tag_name())
@@ -266,7 +266,7 @@ pub fn xmlnode_node_type<'gc>(
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(this
         .as_xml_node()
         .map(|n| {
@@ -286,7 +286,7 @@ pub fn xmlnode_node_value<'gc>(
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(this
         .as_xml_node()
         .and_then(|n| n.node_value())
@@ -299,7 +299,7 @@ pub fn xmlnode_prefix<'gc>(
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(this
         .as_xml_node()
         .and_then(|n| n.tag_name())
@@ -316,7 +316,7 @@ pub fn xmlnode_child_nodes<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         let array = ScriptObject::array(ac.gc_context, Some(avm.prototypes.array));
         if let Some(children) = node.children() {
@@ -349,7 +349,7 @@ pub fn xmlnode_first_child<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         if let Some(mut children) = node.children() {
             return Ok(children
@@ -371,7 +371,7 @@ pub fn xmlnode_last_child<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         if let Some(mut children) = node.children() {
             return Ok(children
@@ -393,7 +393,7 @@ pub fn xmlnode_parent_node<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         return Ok(node
             .parent()
@@ -414,7 +414,7 @@ pub fn xmlnode_previous_sibling<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         let mut prev = node.prev_sibling().unwrap_or(None);
         while let Some(my_prev) = prev {
@@ -441,7 +441,7 @@ pub fn xmlnode_next_sibling<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         let mut next = node.next_sibling().unwrap_or(None);
         while let Some(my_next) = next {
@@ -468,7 +468,7 @@ pub fn xmlnode_attributes<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(mut node) = this.as_xml_node() {
         return Ok(node
             .attribute_script_object(ac.gc_context)
@@ -484,7 +484,7 @@ pub fn xmlnode_namespace_uri<'gc>(
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         if let Some(name) = node.tag_name() {
             return Ok(node
@@ -688,7 +688,7 @@ pub fn xml_constructor<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     match (
         args.get(0).map(|v| v.coerce_to_string(avm, ac)),
         this.as_xml_node(),
@@ -721,7 +721,7 @@ pub fn xml_create_element<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let document = if let Some(node) = this.as_xml_node() {
         node.document()
     } else {
@@ -745,7 +745,7 @@ pub fn xml_create_text_node<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let document = if let Some(node) = this.as_xml_node() {
         node.document()
     } else {
@@ -769,7 +769,7 @@ pub fn xml_parse_xml<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(mut node) = this.as_xml_node() {
         let xmlstring =
             if let Some(Ok(xmlstring)) = args.get(0).map(|s| s.coerce_to_string(avm, ac)) {
@@ -802,7 +802,7 @@ pub fn xml_load<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let url = args.get(0).cloned().unwrap_or(Value::Undefined);
 
     if let Value::Null = url {
@@ -836,7 +836,7 @@ pub fn xml_on_data<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let src = args.get(0).cloned().unwrap_or(Value::Undefined);
 
     if let Value::Undefined = src {
@@ -858,7 +858,7 @@ pub fn xml_doc_type_decl<'gc>(
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         if let Some(doctype) = node.document().doctype() {
             let result = doctype.into_string(&mut |_| true);
@@ -880,7 +880,7 @@ pub fn xml_xml_decl<'gc>(
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         let result = node.document().xmldecl_string();
 
@@ -899,7 +899,7 @@ pub fn xml_id_map<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         return Ok(node.document().idmap_script_object(ac.gc_context).into());
     }
@@ -912,7 +912,7 @@ pub fn xml_status<'gc>(
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         return match node.document().last_parse_error() {
             None => Ok(XML_NO_ERROR.into()),

@@ -126,7 +126,7 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         self.0.read().base.get_local(name, avm, context, this)
     }
 
@@ -136,7 +136,7 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
         value: Value<'gc>,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         self.0.read().base.set(name, value, avm, context)
     }
 
@@ -147,7 +147,7 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         self.0
             .read()
             .base
@@ -161,7 +161,7 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
         self.0
             .read()
             .base
@@ -175,7 +175,7 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(ValueObject::empty_box(context.gc_context, Some(this)))
     }
 

@@ -1,6 +1,7 @@
+use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, Object, TObject, Value};
+use crate::avm1::{Avm1, Object, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
@@ -14,7 +15,7 @@ pub fn delete_all<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("SharedObject.deleteAll() not implemented");
     Ok(Value::Undefined.into())
 }
@@ -24,7 +25,7 @@ pub fn get_disk_usage<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("SharedObject.getDiskUsage() not implemented");
     Ok(Value::Undefined.into())
 }
@@ -133,7 +134,7 @@ pub fn get_local<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let name = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -188,7 +189,7 @@ pub fn get_remote<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("SharedObject.getRemote() not implemented");
     Ok(Value::Undefined.into())
 }
@@ -198,7 +199,7 @@ pub fn get_max_size<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("SharedObject.getMaxSize() not implemented");
     Ok(Value::Undefined.into())
 }
@@ -208,7 +209,7 @@ pub fn add_listener<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("SharedObject.addListener() not implemented");
     Ok(Value::Undefined.into())
 }
@@ -218,7 +219,7 @@ pub fn remove_listener<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("SharedObject.removeListener() not implemented");
     Ok(Value::Undefined.into())
 }
@@ -300,7 +301,7 @@ pub fn clear<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let data = this
         .get("data", avm, action_context)?
         .coerce_to_object(avm, action_context);
@@ -322,7 +323,7 @@ pub fn close<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("SharedObject.close() not implemented");
     Ok(Value::Undefined.into())
 }
@@ -332,7 +333,7 @@ pub fn connect<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("SharedObject.connect() not implemented");
     Ok(Value::Undefined.into())
 }
@@ -342,7 +343,7 @@ pub fn flush<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let data = this
         .get("data", avm, action_context)?
         .coerce_to_object(avm, action_context);
@@ -364,7 +365,7 @@ pub fn get_size<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("SharedObject.getSize() not implemented");
     Ok(Value::Undefined.into())
 }
@@ -374,7 +375,7 @@ pub fn send<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("SharedObject.send() not implemented");
     Ok(Value::Undefined.into())
 }
@@ -384,7 +385,7 @@ pub fn set_fps<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("SharedObject.setFps() not implemented");
     Ok(Value::Undefined.into())
 }
@@ -394,7 +395,7 @@ pub fn on_status<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("SharedObject.onStatus() not implemented");
     Ok(Value::Undefined.into())
 }
@@ -404,7 +405,7 @@ pub fn on_sync<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     log::warn!("SharedObject.onSync() not implemented");
     Ok(Value::Undefined.into())
 }
@@ -473,6 +474,6 @@ pub fn constructor<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(Value::Undefined.into())
 }

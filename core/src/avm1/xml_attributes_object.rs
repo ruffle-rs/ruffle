@@ -63,7 +63,7 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
         _avm: &mut Avm1<'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(self
             .node()
             .attribute_value(&XMLName::from_str(name))
@@ -77,7 +77,7 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
         value: Value<'gc>,
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         self.node().set_attribute_value(
             context.gc_context,
             &XMLName::from_str(name),
@@ -93,7 +93,7 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         self.base().call(avm, context, this, base_proto, args)
     }
 
@@ -104,7 +104,7 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
         self.base().call_setter(name, value, avm, context, this)
     }
 
@@ -115,7 +115,7 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
         _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         //TODO: `new xmlnode.attributes()` returns undefined, not an object
         log::warn!("Cannot create new XML Attributes object");
         Ok(Value::Undefined.coerce_to_object(avm, context))

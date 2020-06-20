@@ -15,7 +15,7 @@ pub fn boolean<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let (ret_value, cons_value) = if let Some(val) = args.get(0) {
         let b = Value::Bool(val.as_bool(avm.current_swf_version()));
         (b.clone(), b)
@@ -78,7 +78,7 @@ pub fn to_string<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(vbox) = this.as_value_object() {
         // Must be a bool.
         // Boolean.prototype.toString.call(x) returns undefined for non-bools.
@@ -95,7 +95,7 @@ pub fn value_of<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(vbox) = this.as_value_object() {
         // Must be a bool.
         // Boolean.prototype.valueOf.call(x) returns undefined for non-bools.

@@ -11,7 +11,7 @@ fn map_defined_to_string<'gc>(
     avm: &mut Avm1<'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     val: Option<Value<'gc>>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     let val = match val {
         Some(Value::Undefined) => Value::Null,
         Some(Value::Null) => Value::Null,
@@ -30,7 +30,7 @@ fn map_defined_to_number<'gc>(
     avm: &mut Avm1<'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     val: Option<Value<'gc>>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     let val = match val {
         Some(Value::Undefined) => Value::Null,
         Some(Value::Null) => Value::Null,
@@ -49,7 +49,7 @@ fn map_defined_to_bool<'gc>(
     avm: &mut Avm1<'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     val: Option<Value<'gc>>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     let val = match val {
         Some(Value::Undefined) => Value::Null,
         Some(Value::Null) => Value::Null,
@@ -68,7 +68,7 @@ pub fn constructor<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     map_defined_to_string("font", this, avm, ac, args.get(0).cloned())?;
     map_defined_to_number("size", this, avm, ac, args.get(1).cloned())?;
     map_defined_to_number("color", this, avm, ac, args.get(2).cloned())?;

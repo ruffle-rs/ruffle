@@ -14,7 +14,7 @@ pub fn point_to_object<'gc>(
     point: (f64, f64),
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
-) -> Result<Object<'gc>, Error> {
+) -> Result<Object<'gc>, Error<'gc>> {
     let args = [point.0.into(), point.1.into()];
     construct_new_point(&args, avm, context)
 }
@@ -23,7 +23,7 @@ pub fn construct_new_point<'gc>(
     args: &[Value<'gc>],
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
-) -> Result<Object<'gc>, Error> {
+) -> Result<Object<'gc>, Error<'gc>> {
     let proto = context.system_prototypes.point;
     let object = proto.new(avm, context, proto, &args)?;
     let _ = constructor(avm, context, object, &args)?;
@@ -34,7 +34,7 @@ pub fn value_to_point<'gc>(
     value: Value<'gc>,
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
-) -> Result<(f64, f64), Error> {
+) -> Result<(f64, f64), Error<'gc>> {
     let x = value
         .coerce_to_object(avm, context)
         .get("x", avm, context)?
@@ -50,7 +50,7 @@ pub fn object_to_point<'gc>(
     object: Object<'gc>,
     avm: &mut Avm1<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
-) -> Result<(f64, f64), Error> {
+) -> Result<(f64, f64), Error<'gc>> {
     let x = object.get("x", avm, context)?.coerce_to_f64(avm, context)?;
     let y = object.get("y", avm, context)?.coerce_to_f64(avm, context)?;
     Ok((x, y))
@@ -61,7 +61,7 @@ fn constructor<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if args.is_empty() {
         this.set("x", 0.into(), avm, context)?;
         this.set("y", 0.into(), avm, context)?;
@@ -88,7 +88,7 @@ fn clone<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let proto = context.system_prototypes.point;
     let args = [this.get("x", avm, context)?, this.get("y", avm, context)?];
     let cloned = proto.new(avm, context, proto, &args)?;
@@ -102,7 +102,7 @@ fn equals<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(other) = args.get(0) {
         let this_x = this.get("x", avm, context)?;
         let this_y = this.get("y", avm, context)?;
@@ -120,7 +120,7 @@ fn add<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let this_x = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
     let this_y = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
     let other = value_to_point(
@@ -137,7 +137,7 @@ fn subtract<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let this_x = this.get("x", avm, context)?.coerce_to_f64(avm, context)?;
     let this_y = this.get("y", avm, context)?.coerce_to_f64(avm, context)?;
     let other = value_to_point(
@@ -154,7 +154,7 @@ fn distance<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if args.len() < 2 {
         return Ok(NAN.into());
     }
@@ -176,7 +176,7 @@ fn polar<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let length = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -194,7 +194,7 @@ fn interpolate<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if args.len() < 3 {
         return Ok(point_to_object((NAN, NAN), avm, context)?.into());
     }
@@ -211,7 +211,7 @@ fn to_string<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let x = this.get("x", avm, context)?;
     let y = this.get("y", avm, context)?;
 
@@ -228,7 +228,7 @@ fn length<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let point = value_to_point(this.into(), avm, context)?;
     let length = (point.0 * point.0 + point.1 * point.1).sqrt();
     Ok(length.into())
@@ -239,7 +239,7 @@ fn normalize<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let current_length = this
         .get("length", avm, context)?
         .coerce_to_f64(avm, context)?;
@@ -270,7 +270,7 @@ fn offset<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let point = value_to_point(this.into(), avm, context)?;
     let dx = args
         .get(0)

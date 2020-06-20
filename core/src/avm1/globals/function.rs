@@ -12,7 +12,7 @@ pub fn constructor<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(Value::Undefined.into())
 }
 
@@ -22,7 +22,7 @@ pub fn call<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     func: Object<'gc>,
     myargs: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let this = match myargs.get(0) {
         Some(Value::Object(this)) => *this,
         _ => avm.globals,
@@ -46,7 +46,7 @@ pub fn apply<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     func: Object<'gc>,
     myargs: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let this = match myargs.get(0) {
         Some(Value::Object(this)) => *this,
         _ => avm.globals,
@@ -79,7 +79,7 @@ fn to_string<'gc>(
     _: &mut UpdateContext<'_, 'gc, '_>,
     _: Object<'gc>,
     _: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<ReturnValue<'gc>, Error<'gc>> {
     Ok(ReturnValue::Immediate("[type Function]".into()))
 }
 

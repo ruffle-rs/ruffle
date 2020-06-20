@@ -39,8 +39,16 @@ pub enum Error {
     #[error("Network error")]
     NetworkError(#[from] std::io::Error),
 
+    // TODO: We can't support lifetimes on this error object yet (or we'll need some backends inside
+    // the GC arena). We're losing info here. How do we fix that?
     #[error("Error running avm1 script: {0}")]
-    Avm1Error(#[from] crate::avm1::error::Error),
+    Avm1Error(String),
+}
+
+impl From<crate::avm1::error::Error<'_>> for Error {
+    fn from(error: crate::avm1::error::Error<'_>) -> Self {
+        Error::Avm1Error(error.to_string())
+    }
 }
 
 /// Holds all in-progress loads for the player.
