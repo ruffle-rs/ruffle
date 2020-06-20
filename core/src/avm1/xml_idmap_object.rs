@@ -1,10 +1,11 @@
 //! AVM1 object type to represent the attributes of XML nodes
 
+use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::object::{ObjectPtr, TObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, Object, ScriptObject, UpdateContext, Value};
+use crate::avm1::{Avm1, Object, ScriptObject, UpdateContext, Value};
 use crate::xml::{XMLDocument, XMLNode};
 use enumset::EnumSet;
 use gc_arena::{Collect, MutationContext};
@@ -107,13 +108,14 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
     #[allow(clippy::new_ret_no_self)]
     fn new(
         &self,
-        _avm: &mut Avm1<'gc>,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
         //TODO: `new xmlnode.attributes()` returns undefined, not an object
-        Err("Cannot create new XML Attributes object".into())
+        log::warn!("Cannot create new XML Attributes object");
+        Ok(Value::Undefined.coerce_to_object(avm, context))
     }
 
     fn delete(

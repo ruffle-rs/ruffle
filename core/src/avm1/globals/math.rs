@@ -1,7 +1,8 @@
+use crate::avm1::error::Error;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{Avm1, ScriptObject, TObject, UpdateContext, Value};
 use gc_arena::MutationContext;
 use rand::Rng;
 use std::f64::{INFINITY, NAN, NEG_INFINITY};

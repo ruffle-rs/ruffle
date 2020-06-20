@@ -1,9 +1,10 @@
 //! User-defined properties
 
 use self::Attribute::*;
+use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, Object, UpdateContext, Value};
+use crate::avm1::{Avm1, Object, UpdateContext, Value};
 use core::fmt;
 use enumset::{EnumSet, EnumSetType};
 

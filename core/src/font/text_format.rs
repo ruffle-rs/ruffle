@@ -2,8 +2,6 @@
 use crate::avm1::{Avm1, Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 
-type Error = Box<dyn std::error::Error>;
-
 /// A set of text formatting options to be applied to some part, or the whole
 /// of, a given text field.
 ///
@@ -65,7 +63,7 @@ fn getstr_from_avm1_object<'gc>(
     name: &str,
     avm1: &mut Avm1<'gc>,
     uc: &mut UpdateContext<'_, 'gc, '_>,
-) -> Result<Option<String>, Error> {
+) -> Result<Option<String>, crate::avm1::error::Error> {
     Ok(match object.get(name, avm1, uc)? {
         Value::Undefined => None,
         Value::Null => None,
@@ -78,7 +76,7 @@ fn getfloat_from_avm1_object<'gc>(
     name: &str,
     avm1: &mut Avm1<'gc>,
     uc: &mut UpdateContext<'_, 'gc, '_>,
-) -> Result<Option<f64>, Error> {
+) -> Result<Option<f64>, crate::avm1::error::Error> {
     Ok(match object.get(name, avm1, uc)? {
         Value::Undefined => None,
         Value::Null => None,
@@ -91,7 +89,7 @@ fn getbool_from_avm1_object<'gc>(
     name: &str,
     avm1: &mut Avm1<'gc>,
     uc: &mut UpdateContext<'_, 'gc, '_>,
-) -> Result<Option<bool>, Error> {
+) -> Result<Option<bool>, crate::avm1::error::Error> {
     Ok(match object.get(name, avm1, uc)? {
         Value::Undefined => None,
         Value::Null => None,
@@ -105,7 +103,7 @@ impl TextFormat {
         object1: Object<'gc>,
         avm1: &mut Avm1<'gc>,
         uc: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, crate::avm1::error::Error> {
         Ok(Self {
             font: getstr_from_avm1_object(object1, "font", avm1, uc)?,
             size: getfloat_from_avm1_object(object1, "size", avm1, uc)?,
@@ -142,7 +140,7 @@ impl TextFormat {
         &self,
         avm1: &mut Avm1<'gc>,
         uc: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, crate::avm1::error::Error> {
         let object = ScriptObject::object(uc.gc_context, Some(avm1.prototypes().text_format));
 
         object.set(

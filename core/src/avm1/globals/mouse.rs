@@ -1,7 +1,8 @@
+use crate::avm1::error::Error;
 use crate::avm1::listeners::Listeners;
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{Avm1, Object, ScriptObject, TObject, UpdateContext, Value};
 
 use gc_arena::MutationContext;
 

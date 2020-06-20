@@ -164,8 +164,8 @@ impl<'gc> XMLNode<'gc> {
         mc: MutationContext<'gc, '_>,
         element_name: &str,
         document: XMLDocument<'gc>,
-    ) -> Result<Self, Error> {
-        Ok(XMLNode(GcCell::allocate(
+    ) -> Self {
+        XMLNode(GcCell::allocate(
             mc,
             XMLNodeData::Element {
                 script_object: None,
@@ -178,7 +178,7 @@ impl<'gc> XMLNode<'gc> {
                 attributes_script_object: None,
                 children: Vec::new(),
             },
-        )))
+        ))
     }
 
     /// Construct a new XML root node.

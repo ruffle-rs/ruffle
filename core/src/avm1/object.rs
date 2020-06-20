@@ -1,5 +1,6 @@
 //! Object trait to expose objects to AVM
 
+use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
@@ -8,7 +9,7 @@ use crate::avm1::value_object::ValueObject;
 use crate::avm1::xml_attributes_object::XMLAttributesObject;
 use crate::avm1::xml_idmap_object::XMLIDMapObject;
 use crate::avm1::xml_object::XMLObject;
-use crate::avm1::{Avm1, Error, ScriptObject, SoundObject, StageObject, UpdateContext, Value};
+use crate::avm1::{Avm1, ScriptObject, SoundObject, StageObject, UpdateContext, Value};
 use crate::display_object::DisplayObject;
 use crate::xml::XMLNode;
 use enumset::EnumSet;
@@ -458,7 +459,7 @@ pub fn search_prototype<'gc>(
 
     while proto.is_some() {
         if depth == 255 {
-            return Err("Encountered an excessively deep prototype chain.".into());
+            return Err(Error::PrototypeRecursionLimit);
         }
 
         if proto.unwrap().has_own_property(avm, context, name) {

@@ -1,10 +1,11 @@
 //! AVM1 Sound object
 //! TODO: Sound position, transform, loadSound
 
+use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, Object, SoundObject, TObject, UpdateContext, Value};
+use crate::avm1::{Avm1, Object, SoundObject, TObject, UpdateContext, Value};
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
 use gc_arena::MutationContext;

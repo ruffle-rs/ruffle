@@ -207,7 +207,7 @@ mod tests {
         _this: Object<'gc>,
         _args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error> {
-        Err("Error message!".into())
+        Err(Error::PrototypeRecursionLimit)
     }
 
     #[test]
@@ -331,7 +331,7 @@ mod tests {
             );
             assert_eq!(
                 VariableDumper::dump(&object.into(), " ", avm, context),
-                "[object #0] {\n broken_value: Error: \"Error message!\"\n}"
+                "[object #0] {\n broken_value: Error: \"Prototype recursion limit has been exceeded\"\n}"
             );
             Ok(())
         })

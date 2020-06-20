@@ -1,8 +1,9 @@
 //! Object prototype
+use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::{self, *};
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, Object, TObject, UpdateContext, Value};
+use crate::avm1::{Avm1, Object, TObject, UpdateContext, Value};
 use crate::character::Character;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
@@ -228,18 +229,15 @@ pub fn as_set_prop_flags<'gc>(
     _: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    //This exists because `.into` won't work inline
-    let my_error: Result<ReturnValue<'gc>, Error> =
-        Err("ASSetPropFlags called without object to apply to!".into());
-    let my_error_2: Result<ReturnValue<'gc>, Error> =
-        Err("ASSetPropFlags called without object list!".into());
+    let mut object = if let Some(object) = args.get(0).map(|v| v.coerce_to_object(avm, ac)) {
+        object
+    } else {
+        log::warn!("ASSetPropFlags called without object to apply to!");
+        return Ok(Value::Undefined.into());
+    };
 
-    let mut object = args
-        .get(0)
-        .ok_or_else(|| my_error.unwrap_err())?
-        .coerce_to_object(avm, ac);
-    let properties = match args.get(1).ok_or_else(|| my_error_2.unwrap_err())? {
-        Value::Object(ob) => {
+    let properties = match args.get(1) {
+        Some(Value::Object(ob)) => {
             //Convert to native array.
             //TODO: Can we make this an iterator?
             let mut array = vec![];
@@ -254,8 +252,12 @@ pub fn as_set_prop_flags<'gc>(
 
             Some(array)
         }
-        Value::String(s) => Some(s.split(',').map(String::from).collect()),
-        _ => None,
+        Some(Value::String(s)) => Some(s.split(',').map(String::from).collect()),
+        Some(_) => None,
+        None => {
+            log::warn!("ASSetPropFlags called without object list!");
+            return Ok(Value::Undefined.into());
+        }
     };
 
     let set_attributes = EnumSet::<Attribute>::from_u128(

@@ -1,9 +1,10 @@
 //! AVM1 object type to represent Sound objects.
 
+use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
+use crate::avm1::{Avm1, Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;

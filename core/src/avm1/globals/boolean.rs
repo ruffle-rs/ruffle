@@ -1,9 +1,10 @@
 //! `Boolean` class impl
 
+use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::value_object::ValueObject;
-use crate::avm1::{Avm1, Error, Object, TObject, Value};
+use crate::avm1::{Avm1, Object, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;

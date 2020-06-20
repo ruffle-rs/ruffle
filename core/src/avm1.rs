@@ -47,7 +47,7 @@ pub mod xml_object;
 #[cfg(test)]
 mod tests;
 
-use crate::avm1::error::ExecutionError;
+use crate::avm1::error::{Error, ExecutionError};
 use crate::avm1::listeners::SystemListener;
 use crate::avm1::value::f64_to_wrapping_u32;
 pub use activation::Activation;
@@ -114,8 +114,6 @@ unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
         }
     }
 }
-
-type Error = Box<dyn std::error::Error>;
 
 impl<'gc> Avm1<'gc> {
     pub fn new(gc_context: MutationContext<'gc, '_>, player_version: u8) -> Self {
@@ -1066,7 +1064,7 @@ impl<'gc> Avm1<'gc> {
         action: swf::avm1::types::Action,
     ) -> Result<(), Error> {
         log::error!("Unknown AVM1 opcode: {:?}", action);
-        Err("Unknown op".into())
+        Ok(())
     }
 
     fn action_add(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
@@ -1300,11 +1298,11 @@ impl<'gc> Avm1<'gc> {
                 }
             }
             _ => {
-                return Err(format!(
+                self.push(Value::Undefined);
+                log::warn!(
                     "Invalid method name, expected string but found {:?}",
                     method_name
-                )
-                .into())
+                );
             }
         }
 
@@ -1700,17 +1698,25 @@ impl<'gc> Avm1<'gc> {
     ) -> Result<(), Error> {
         if target.starts_with("_level") && target.len() > 6 {
             let url = url.to_string();
-            let level_id = target[6..].parse::<u32>()?;
-            let fetch = context.navigator.fetch(&url, RequestOptions::get());
-            let level = self.resolve_level(level_id, context);
+            match target[6..].parse::<u32>() {
+                Ok(level_id) => {
+                    let fetch = context.navigator.fetch(&url, RequestOptions::get());
+                    let level = self.resolve_level(level_id, context);
 
-            let process = context.load_manager.load_movie_into_clip(
-                context.player.clone().unwrap(),
-                level,
-                fetch,
-                None,
-            );
-            context.navigator.spawn_future(process);
+                    let process = context.load_manager.load_movie_into_clip(
+                        context.player.clone().unwrap(),
+                        level,
+                        fetch,
+                        None,
+                    );
+                    context.navigator.spawn_future(process);
+                }
+                Err(e) => log::warn!(
+                    "Couldn't parse level id {} for action_get_url: {}",
+                    target,
+                    e
+                ),
+            }
 
             return Ok(());
         }
@@ -2015,8 +2021,11 @@ impl<'gc> Avm1<'gc> {
     ) -> Result<(), Error> {
         // TODO(Herschel): Results on incorrect operands?
         use std::convert::TryFrom;
-        let val = char::try_from(self.pop().coerce_to_f64(self, context)? as u32)?;
-        self.push(val.to_string());
+        let result = char::try_from(self.pop().coerce_to_f64(self, context)? as u32);
+        match result {
+            Ok(val) => self.push(val.to_string()),
+            Err(e) => log::warn!("Couldn't parse char for action_mb_ascii_to_char: {}", e),
+        }
         Ok(())
     }
 
@@ -2254,7 +2263,8 @@ impl<'gc> Avm1<'gc> {
     }
 
     fn action_push_duplicate(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
-        let val = self.stack.last().ok_or("Stack underflow")?.clone();
+        let val = self.pop();
+        self.push(val.clone());
         self.push(val);
         Ok(())
     }
@@ -2290,7 +2300,9 @@ impl<'gc> Avm1<'gc> {
 
     fn action_return(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
         let return_value = self.pop();
-        self.retire_stack_frame(context, return_value)?;
+        if let Err(e) = self.retire_stack_frame(context, return_value) {
+            log::warn!("Couldn't return from stack frame: {}", e);
+        }
 
         Ok(())
     }
@@ -2496,8 +2508,9 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         register: u8,
     ) -> Result<(), Error> {
-        // Does NOT pop the value from the stack.
-        let val = self.stack.last().ok_or("Stack underflow")?.clone();
+        // The value must remain on the stack.
+        let val = self.pop();
+        self.push(val.clone());
         self.set_current_register(register, val, context);
 
         Ok(())
@@ -2606,7 +2619,8 @@ impl<'gc> Avm1<'gc> {
         // TODO(Herschel)
         let _clip = self.pop().coerce_to_object(self, context);
         self.push(Value::Undefined);
-        Err("Unimplemented action: TargetPath".into())
+        log::warn!("Unimplemented action: TargetPath");
+        Ok(())
     }
 
     fn toggle_quality(&mut self, _context: &mut UpdateContext) -> Result<(), Error> {
@@ -2664,7 +2678,7 @@ impl<'gc> Avm1<'gc> {
         if !loaded {
             // Note that the offset is given in # of actions, NOT in bytes.
             // Read the actions and toss them away.
-            skip_actions(r, num_actions_to_skip)?;
+            skip_actions(r, num_actions_to_skip);
         }
         Ok(())
     }
@@ -2681,7 +2695,7 @@ impl<'gc> Avm1<'gc> {
         if !loaded {
             // Note that the offset is given in # of actions, NOT in bytes.
             // Read the actions and toss them away.
-            skip_actions(r, num_actions_to_skip)?;
+            skip_actions(r, num_actions_to_skip);
         }
         Ok(())
     }
@@ -2723,12 +2737,12 @@ pub fn is_swf_case_sensitive(swf_version: u8) -> bool {
 
 /// Utility function used by `Avm1::action_wait_for_frame` and
 /// `Avm1::action_wait_for_frame_2`.
-fn skip_actions(reader: &mut Reader<'_>, num_actions_to_skip: u8) -> Result<(), Error> {
+fn skip_actions(reader: &mut Reader<'_>, num_actions_to_skip: u8) {
     for _ in 0..num_actions_to_skip {
-        reader.read_action()?;
+        if let Err(e) = reader.read_action() {
+            log::warn!("Couldn't skip action: {}", e);
+        }
     }
-
-    Ok(())
 }
 
 /// Starts draggining this display object, making it follow the cursor.
