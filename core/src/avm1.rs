@@ -96,6 +96,10 @@ pub struct Avm1<'gc> {
     /// The register slots (also shared across functions).
     /// `ActionDefineFunction2` defined functions do not use these slots.
     registers: [Value<'gc>; 4],
+
+    /// If a serious error has occured, or a user has requested it, the AVM may be halted.
+    /// This will completely prevent any further actions from being executed.
+    halted: bool,
 }
 
 unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
@@ -134,6 +138,7 @@ impl<'gc> Avm1<'gc> {
                 Value::Undefined,
                 Value::Undefined,
             ],
+            halted: false,
         }
     }
 
@@ -241,6 +246,11 @@ impl<'gc> Avm1<'gc> {
         code: SwfSlice,
         action_context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
+        if self.halted {
+            // We've been told to ignore all future execution.
+            return;
+        }
+
         let global_scope = GcCell::allocate(
             action_context.gc_context,
             Scope::from_global_object(self.globals),
@@ -272,6 +282,11 @@ impl<'gc> Avm1<'gc> {
         code: SwfSlice,
         action_context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
+        if self.halted {
+            // We've been told to ignore all future execution.
+            return;
+        }
+
         let global_scope = GcCell::allocate(
             action_context.gc_context,
             Scope::from_global_object(self.globals),
@@ -307,6 +322,11 @@ impl<'gc> Avm1<'gc> {
         name: &str,
         args: &[Value<'gc>],
     ) {
+        if self.halted {
+            // We've been told to ignore all future execution.
+            return;
+        }
+
         // Grab the property with the given name.
         // Requires a dummy stack frame.
         self.stack_frames.push(GcCell::allocate(
@@ -427,6 +447,12 @@ impl<'gc> Avm1<'gc> {
         frame_ref.unlock_execution();
         frame_ref.set_pc(read.pos());
 
+        if let Err(error) = &r {
+            if error.is_halting() {
+                self.halt();
+            }
+        }
+
         r
     }
 
@@ -463,6 +489,10 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
+        if self.halted {
+            // We've been told to ignore all future execution.
+            return Ok(());
+        }
         while !self.stack_frames.is_empty() {
             self.with_current_reader_mut(context, |this, r, context| {
                 this.do_next_action(context, r)
@@ -486,6 +516,11 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         stop_frame: GcCell<'gc, Activation<'gc>>,
     ) -> Result<(), Error> {
+        if self.halted {
+            // We've been told to ignore all future execution.
+            return Ok(());
+        }
+
         let mut stop_frame_id = None;
         for (index, frame) in self.stack_frames.iter().enumerate() {
             if GcCell::ptr_eq(stop_frame, *frame) {
@@ -507,6 +542,7 @@ impl<'gc> Avm1<'gc> {
 
             Ok(())
         } else {
+            self.halt();
             Err(Error::FrameNotOnStack)
         }
     }
@@ -517,6 +553,10 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut Reader<'_>,
     ) -> Result<(), Error> {
+        if self.halted {
+            // We've been told to ignore all future execution.
+            return Ok(());
+        }
         let data = self.current_stack_frame().unwrap().read().data();
 
         if reader.pos() >= (data.end - data.start) {
@@ -647,6 +687,9 @@ impl<'gc> Avm1<'gc> {
             };
             if let Err(e) = result {
                 log::error!("AVM1 error: {}", e);
+                if e.is_halting() {
+                    self.halt();
+                }
                 return Err(e);
             }
         } else {
@@ -655,6 +698,19 @@ impl<'gc> Avm1<'gc> {
         }
 
         Ok(())
+    }
+
+    /// Halts the AVM, preventing execution of any further actions.
+    ///
+    /// If the AVM is currently evaluating an action, it will continue until it realizes that it has
+    /// been halted. If an immediate stop is required, an Error must be raised inside of the execution.
+    ///
+    /// This is most often used when serious errors or infinite loops are encountered.
+    pub fn halt(&mut self) {
+        if !self.halted {
+            self.halted = true;
+            log::error!("No more actions will be executed in this movie.")
+        }
     }
 
     /// Resolves a target value to a display object, relative to a starting display object.

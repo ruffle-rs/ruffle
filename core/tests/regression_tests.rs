@@ -114,7 +114,7 @@ swf_tests! {
     (movieclip_prototype_extension, "avm1/movieclip_prototype_extension", 1),
     (movieclip_hittest, "avm1/movieclip_hittest", 1),
     #[ignore] (textfield_text, "avm1/textfield_text", 1),
-    (recursive_prototypes, "avm1/recursive_prototypes", 1),
+    (recursive_prototypes, "avm1/recursive_prototypes", 2),
     (stage_object_children, "avm1/stage_object_children", 2),
     (has_own_property, "avm1/has_own_property", 1),
     (extends_chain, "avm1/extends_chain", 1),
