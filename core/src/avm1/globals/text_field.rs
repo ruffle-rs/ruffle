@@ -84,13 +84,13 @@ pub fn set_html<'gc>(
 
 pub fn get_html_text<'gc>(
     _avm: &mut Avm1<'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
-            let html_tree = text_field.html_tree().as_node();
+            let html_tree = text_field.html_tree(context).as_node();
             let html_string_result = html_tree.into_string(&mut |_node| true);
 
             if let Err(err) = &html_string_result {

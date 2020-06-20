@@ -4,7 +4,7 @@ use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
 use crate::tag_utils::SwfMovie;
 use crate::xml::{Step, XMLDocument, XMLName, XMLNode};
-use gc_arena::Collect;
+use gc_arena::{Collect, MutationContext};
 use std::cmp::{min, Ordering};
 use std::sync::Arc;
 
@@ -1244,5 +1244,289 @@ impl FormatSpans {
                 _ => {}
             };
         }
+    }
+
+    #[allow(clippy::float_cmp)]
+    pub fn raise_to_html<'gc>(&self, mc: MutationContext<'gc, '_>) -> XMLDocument<'gc> {
+        let document = XMLDocument::new(mc);
+        let mut root = document.as_node();
+
+        let mut last_span = self.span(0);
+
+        //HTML elements are nested roughly in this order.
+        //Some of them nest within themselves, but we only store the last one,
+        //as Flash doesn't seem to un-nest them at all.
+        let mut last_text_format_element = None;
+        let mut last_paragraph = None;
+        let mut last_font = None;
+        let mut last_a = None;
+        let mut last_b = None;
+        let mut last_i = None;
+        let mut last_u = None;
+
+        for (_start, _end, text, span) in self.iter_spans() {
+            let ls = &last_span.unwrap();
+
+            if ls.left_margin != span.left_margin
+                || ls.right_margin != span.right_margin
+                || ls.indent != span.indent
+                || ls.block_indent != span.block_indent
+                || ls.leading != span.leading
+                || ls.tab_stops != span.tab_stops
+                || last_text_format_element.is_none()
+            {
+                let new_tf = XMLNode::new_element(mc, "TEXTFORMAT", document);
+
+                if ls.left_margin != 0.0 {
+                    new_tf.set_attribute_value(
+                        mc,
+                        &XMLName::from_str("LEFTMARGIN"),
+                        &format!("{}", span.left_margin),
+                    );
+                }
+
+                if ls.right_margin != 0.0 {
+                    new_tf.set_attribute_value(
+                        mc,
+                        &XMLName::from_str("RIGHTMARGIN"),
+                        &format!("{}", span.right_margin),
+                    );
+                }
+
+                if ls.indent != 0.0 {
+                    new_tf.set_attribute_value(
+                        mc,
+                        &XMLName::from_str("INDENT"),
+                        &format!("{}", span.indent),
+                    );
+                }
+
+                if ls.block_indent != 0.0 {
+                    new_tf.set_attribute_value(
+                        mc,
+                        &XMLName::from_str("BLOCKINDENT"),
+                        &format!("{}", span.block_indent),
+                    );
+                }
+
+                if ls.leading != 0.0 {
+                    new_tf.set_attribute_value(
+                        mc,
+                        &XMLName::from_str("LEADING"),
+                        &format!("{}", span.leading),
+                    );
+                }
+
+                if !ls.tab_stops.is_empty() {
+                    new_tf.set_attribute_value(
+                        mc,
+                        &XMLName::from_str("TABSTOPS"),
+                        &span
+                            .tab_stops
+                            .iter()
+                            .map(|s| format!("{}", s))
+                            .collect::<Vec<_>>()
+                            .join(","),
+                    );
+                }
+
+                last_text_format_element = Some(new_tf);
+                last_paragraph = None;
+                last_font = None;
+                last_a = None;
+                last_b = None;
+                last_i = None;
+                last_u = None;
+
+                root.append_child(mc, new_tf).unwrap();
+            }
+
+            if ls.align != span.align || last_paragraph.is_none() {
+                let new_p = XMLNode::new_element(mc, "P", document);
+
+                new_p.set_attribute_value(
+                    mc,
+                    &XMLName::from_str("ALIGN"),
+                    match span.align {
+                        swf::TextAlign::Left => "LEFT",
+                        swf::TextAlign::Center => "CENTER",
+                        swf::TextAlign::Right => "RIGHT",
+                        swf::TextAlign::Justify => "JUSTIFY",
+                    },
+                );
+
+                last_text_format_element
+                    .unwrap_or(root)
+                    .append_child(mc, new_p)
+                    .unwrap();
+                last_paragraph = Some(new_p);
+                last_font = None;
+                last_a = None;
+                last_b = None;
+                last_i = None;
+                last_u = None;
+            }
+
+            if ls.font != span.font
+                || ls.size != span.size
+                || ls.color != span.color
+                || ls.letter_spacing != span.letter_spacing
+                || ls.kerning != span.kerning
+                || last_font.is_none()
+            {
+                let new_font = XMLNode::new_element(mc, "FONT", document);
+
+                if ls.font != span.font || last_font.is_none() {
+                    new_font.set_attribute_value(mc, &XMLName::from_str("FACE"), &span.font);
+                }
+
+                if ls.size != span.size || last_font.is_none() {
+                    new_font.set_attribute_value(
+                        mc,
+                        &XMLName::from_str("SIZE"),
+                        &format!("{}", span.size),
+                    );
+                }
+
+                if ls.color != span.color || last_font.is_none() {
+                    new_font.set_attribute_value(
+                        mc,
+                        &XMLName::from_str("COLOR"),
+                        &format!(
+                            "#{:0>2X}{:0>2X}{:0>2X}",
+                            span.color.r, span.color.g, span.color.b
+                        ),
+                    );
+                }
+
+                if ls.letter_spacing != span.letter_spacing || last_font.is_none() {
+                    new_font.set_attribute_value(
+                        mc,
+                        &XMLName::from_str("LETTERSPACING"),
+                        &format!("{}", span.letter_spacing),
+                    );
+                }
+
+                if ls.kerning != span.kerning || last_font.is_none() {
+                    new_font.set_attribute_value(
+                        mc,
+                        &XMLName::from_str("KERNING"),
+                        if span.kerning { "1" } else { "0" },
+                    );
+                }
+
+                last_font
+                    .or(last_paragraph)
+                    .or(last_text_format_element)
+                    .unwrap_or(root)
+                    .append_child(mc, new_font)
+                    .unwrap();
+
+                last_font = Some(new_font);
+                last_a = None;
+                last_b = None;
+                last_i = None;
+                last_u = None;
+            }
+
+            if span.url != "" && (ls.url != span.url || last_a.is_none()) {
+                let new_a = XMLNode::new_element(mc, "A", document);
+
+                new_a.set_attribute_value(mc, &XMLName::from_str("HREF"), &span.url);
+
+                if span.target != "" {
+                    new_a.set_attribute_value(mc, &XMLName::from_str("TARGET"), &span.target);
+                }
+
+                last_font
+                    .or(last_paragraph)
+                    .or(last_text_format_element)
+                    .unwrap_or(root)
+                    .append_child(mc, new_a)
+                    .unwrap();
+
+                last_b = None;
+                last_i = None;
+                last_u = None;
+            } else if span.url == "" && (ls.url != span.url || last_a.is_some()) {
+                last_a = None;
+                last_b = None;
+                last_i = None;
+                last_u = None;
+            }
+
+            if span.bold && last_b.is_none() {
+                let new_b = XMLNode::new_element(mc, "B", document);
+
+                last_a
+                    .or(last_font)
+                    .or(last_paragraph)
+                    .or(last_text_format_element)
+                    .unwrap_or(root)
+                    .append_child(mc, new_b)
+                    .unwrap();
+
+                last_b = Some(new_b);
+                last_i = None;
+                last_u = None;
+            } else if !span.bold && last_b.is_some() {
+                last_b = None;
+                last_i = None;
+                last_u = None;
+            }
+
+            if span.italic && last_i.is_none() {
+                let new_i = XMLNode::new_element(mc, "I", document);
+
+                last_b
+                    .or(last_a)
+                    .or(last_font)
+                    .or(last_paragraph)
+                    .or(last_text_format_element)
+                    .unwrap_or(root)
+                    .append_child(mc, new_i)
+                    .unwrap();
+
+                last_i = Some(new_i);
+                last_u = None;
+            } else if !span.italic && last_i.is_some() {
+                last_i = None;
+                last_u = None;
+            }
+
+            if span.underline && last_u.is_none() {
+                let new_u = XMLNode::new_element(mc, "U", document);
+
+                last_i
+                    .or(last_b)
+                    .or(last_a)
+                    .or(last_font)
+                    .or(last_paragraph)
+                    .or(last_text_format_element)
+                    .unwrap_or(root)
+                    .append_child(mc, new_u)
+                    .unwrap();
+
+                last_u = Some(new_u);
+            } else if !span.underline && last_u.is_some() {
+                last_u = None;
+            }
+
+            let span_text = XMLNode::new_text(mc, text, document);
+            last_u
+                .or(last_i)
+                .or(last_b)
+                .or(last_a)
+                .or(last_font)
+                .or(last_paragraph)
+                .or(last_text_format_element)
+                .unwrap_or(root)
+                .append_child(mc, span_text)
+                .unwrap();
+
+            last_span = Some(span);
+        }
+
+        document
     }
 }

@@ -244,9 +244,8 @@ impl<'gc> EditText<'gc> {
         Ok(())
     }
 
-    pub fn html_tree(self) -> XMLDocument<'gc> {
-        //TODO: This should raise the text span representation.
-        self.0.read().document
+    pub fn html_tree(self, context: &mut UpdateContext<'_, 'gc, '_>) -> XMLDocument<'gc> {
+        self.0.read().text_spans.raise_to_html(context.gc_context)
     }
 
     /// Set the HTML tree for the given display object.
