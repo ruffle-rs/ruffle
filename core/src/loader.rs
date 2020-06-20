@@ -1,6 +1,5 @@
 //! Management of async loaders
 
-use crate::avm1::error::ExecutionError;
 use crate::avm1::{Object, TObject, Value};
 use crate::backend::navigator::OwnedFuture;
 use crate::context::{ActionQueue, ActionType};
@@ -41,7 +40,7 @@ pub enum Error {
     NetworkError(#[from] std::io::Error),
 
     #[error("Error running avm1 script: {0}")]
-    Avm1Error(#[from] crate::avm1::error::ExecutionError),
+    Avm1Error(#[from] crate::avm1::error::Error),
 }
 
 /// Holds all in-progress loads for the player.
@@ -471,8 +470,7 @@ impl<'gc> Loader<'gc> {
                 };
 
                 for (k, v) in form_urlencoded::parse(&data) {
-                    that.set(&k, v.into_owned().into(), avm, uc)
-                        .map_err(|e| Error::Avm1Error(ExecutionError::ScriptError(e)))?;
+                    that.set(&k, v.into_owned().into(), avm, uc)?;
                 }
 
                 Ok(())

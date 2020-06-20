@@ -4,22 +4,16 @@ use thiserror::Error;
 pub enum Error {
     #[error("Prototype recursion limit has been exceeded")]
     PrototypeRecursionLimit,
-}
 
-#[derive(Error, Debug)]
-pub enum ExecutionError {
-    #[error("Couldn't parse SWF")]
+    #[error("Couldn't parse SWF. This may or may not be a bug in Ruffle, please help us by reporting it to https://github.com/ruffle-rs/ruffle/issues and include the swf that triggered it.")]
     InvalidSwf(#[from] swf::error::Error),
 
-    #[error("No stack frame to execute")]
+    #[error("No stack frame to execute. This is probably a bug in Ruffle, please report it to https://github.com/ruffle-rs/ruffle/issues and include the swf that triggered it.")]
     NoStackFrame,
 
-    #[error("Attempted to run a frame not on the current interpreter stack")]
+    #[error("Attempted to run a frame not on the current interpreter stack. This is probably a bug in Ruffle, please report it to https://github.com/ruffle-rs/ruffle/issues and include the swf that triggered it.")]
     FrameNotOnStack,
 
-    #[error("Attempted to execute the same frame twice")]
+    #[error("Attempted to execute the same frame twice. This is probably a bug in Ruffle, please report it to https://github.com/ruffle-rs/ruffle/issues and include the swf that triggered it.")]
     AlreadyExecutingFrame,
-
-    #[error("Script error")]
-    ScriptError(#[from] Error),
 }
