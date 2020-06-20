@@ -26,6 +26,7 @@ pub mod listeners;
 
 mod activation;
 pub mod debug;
+pub mod error;
 mod fscommand;
 pub mod function;
 pub mod globals;
@@ -46,6 +47,7 @@ pub mod xml_object;
 #[cfg(test)]
 mod tests;
 
+use crate::avm1::error::ExecutionError;
 use crate::avm1::listeners::SystemListener;
 use crate::avm1::value::f64_to_wrapping_u32;
 pub use activation::Activation;
@@ -401,12 +403,19 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         func: F,
-    ) -> Result<R, Error>
+    ) -> Result<R, ExecutionError>
     where
-        F: FnOnce(&mut Self, &mut Reader<'_>, &mut UpdateContext<'_, 'gc, '_>) -> Result<R, Error>,
+        F: FnOnce(
+            &mut Self,
+            &mut Reader<'_>,
+            &mut UpdateContext<'_, 'gc, '_>,
+        ) -> Result<R, ExecutionError>,
     {
         let (frame_cell, swf_version, data, pc) = {
-            let frame = self.stack_frames.last().ok_or("No stack frame to read!")?;
+            let frame = self
+                .stack_frames
+                .last()
+                .ok_or(ExecutionError::NoStackFrame)?;
             let mut frame_ref = frame.write(context.gc_context);
             frame_ref.lock()?;
 
@@ -443,7 +452,7 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         return_value: Value<'gc>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ExecutionError> {
         if let Some(frame) = self.current_stack_frame() {
             self.stack_frames.pop();
 
@@ -464,7 +473,7 @@ impl<'gc> Avm1<'gc> {
     pub fn run_stack_till_empty(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ExecutionError> {
         while !self.stack_frames.is_empty() {
             self.with_current_reader_mut(context, |this, r, context| {
                 this.do_next_action(context, r)
@@ -487,7 +496,7 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         stop_frame: GcCell<'gc, Activation<'gc>>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ExecutionError> {
         let mut stop_frame_id = None;
         for (index, frame) in self.stack_frames.iter().enumerate() {
             if GcCell::ptr_eq(stop_frame, *frame) {
@@ -509,7 +518,7 @@ impl<'gc> Avm1<'gc> {
 
             Ok(())
         } else {
-            Err("Attempted to run a frame not on the current interpreter stack".into())
+            Err(ExecutionError::FrameNotOnStack)
         }
     }
 
@@ -518,7 +527,7 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut Reader<'_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ExecutionError> {
         let data = self.current_stack_frame().unwrap().read().data();
 
         if reader.pos() >= (data.end - data.start) {
@@ -647,9 +656,9 @@ impl<'gc> Avm1<'gc> {
                 Action::With { actions } => self.action_with(context, actions),
                 _ => self.unknown_op(context, action),
             };
-            if let Err(ref e) = result {
+            if let Err(e) = result {
                 log::error!("AVM1 error: {}", e);
-                return result;
+                return Err(ExecutionError::ScriptError(e));
             }
         } else {
             //The explicit end opcode was encountered so return here

@@ -1,5 +1,6 @@
 //! Management of async loaders
 
+use crate::avm1::error::ExecutionError;
 use crate::avm1::{Object, TObject, Value};
 use crate::backend::navigator::OwnedFuture;
 use crate::context::{ActionQueue, ActionType};
@@ -40,7 +41,7 @@ pub enum Error {
     NetworkError(#[from] std::io::Error),
 
     #[error("Error running avm1 script: {0}")]
-    Avm1Error(Box<dyn std::error::Error>),
+    Avm1Error(#[from] crate::avm1::error::ExecutionError),
 }
 
 /// Holds all in-progress loads for the player.
@@ -314,8 +315,7 @@ impl<'gc> Loader<'gc> {
                             "broadcastMessage",
                             &["onLoadStart".into(), Value::Object(broadcaster)],
                         );
-                        avm.run_stack_till_empty(uc)
-                            .map_err(|e| Error::Avm1Error(e))?;
+                        avm.run_stack_till_empty(uc)?;
                     }
 
                     Ok(())
@@ -354,8 +354,7 @@ impl<'gc> Loader<'gc> {
                                     length.into(),
                                 ],
                             );
-                            avm.run_stack_till_empty(uc)
-                                .map_err(|e| Error::Avm1Error(e))?;
+                            avm.run_stack_till_empty(uc)?;
                         }
 
                         let mut mc = clip
@@ -388,8 +387,7 @@ impl<'gc> Loader<'gc> {
                                 "broadcastMessage",
                                 &["onLoadComplete".into(), Value::Object(broadcaster)],
                             );
-                            avm.run_stack_till_empty(uc)
-                                .map_err(|e| Error::Avm1Error(e))?;
+                            avm.run_stack_till_empty(uc)?;
                         }
 
                         if let Some(Loader::Movie { load_complete, .. }) =
@@ -431,8 +429,7 @@ impl<'gc> Loader<'gc> {
                                     "LoadNeverCompleted".into(),
                                 ],
                             );
-                            avm.run_stack_till_empty(uc)
-                                .map_err(|e| Error::Avm1Error(e))?;
+                            avm.run_stack_till_empty(uc)?;
                         }
 
                         if let Some(Loader::Movie { load_complete, .. }) =
@@ -475,7 +472,7 @@ impl<'gc> Loader<'gc> {
 
                 for (k, v) in form_urlencoded::parse(&data) {
                     that.set(&k, v.into_owned().into(), avm, uc)
-                        .map_err(|e| Error::Avm1Error(e))?;
+                        .map_err(|e| Error::Avm1Error(ExecutionError::ScriptError(e)))?;
                 }
 
                 Ok(())
@@ -567,8 +564,7 @@ impl<'gc> Loader<'gc> {
                             "onHTTPStatus",
                             &[200.into()],
                         );
-                        avm.run_stack_till_empty(uc)
-                            .map_err(|e| Error::Avm1Error(e))?;
+                        avm.run_stack_till_empty(uc)?;
 
                         avm.insert_stack_frame_for_method(
                             active_clip,
@@ -578,8 +574,7 @@ impl<'gc> Loader<'gc> {
                             "onData",
                             &[xmlstring.into()],
                         );
-                        avm.run_stack_till_empty(uc)
-                            .map_err(|e| Error::Avm1Error(e))?;
+                        avm.run_stack_till_empty(uc)?;
 
                         Ok(())
                     },
@@ -607,8 +602,7 @@ impl<'gc> Loader<'gc> {
                             "onHTTPStatus",
                             &[404.into()],
                         );
-                        avm.run_stack_till_empty(uc)
-                            .map_err(|e| Error::Avm1Error(e))?;
+                        avm.run_stack_till_empty(uc)?;
 
                         avm.insert_stack_frame_for_method(
                             active_clip,
@@ -618,8 +612,7 @@ impl<'gc> Loader<'gc> {
                             "onData",
                             &[],
                         );
-                        avm.run_stack_till_empty(uc)
-                            .map_err(|e| Error::Avm1Error(e))?;
+                        avm.run_stack_till_empty(uc)?;
 
                         Ok(())
                     },
