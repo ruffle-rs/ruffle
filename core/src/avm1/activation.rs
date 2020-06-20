@@ -1,5 +1,6 @@
 //! Activation records
 
+use crate::avm1::error::ExecutionError;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
 use crate::avm1::{Avm1, Error, Object, Value};
@@ -406,9 +407,9 @@ impl<'gc> Activation<'gc> {
     /// Attempts to lock the activation frame for execution.
     ///
     /// If this frame is already executing, that is an error condition.
-    pub fn lock(&mut self) -> Result<(), Error> {
+    pub fn lock(&mut self) -> Result<(), ExecutionError> {
         if self.is_executing {
-            return Err("Attempted to execute the same frame twice".into());
+            return Err(ExecutionError::AlreadyExecutingFrame);
         }
 
         self.is_executing = true;
