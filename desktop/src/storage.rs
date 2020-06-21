@@ -16,7 +16,7 @@ impl DiskStorageBackend {
             .join(scope);
 
         // Create a base dir if one doesn't exist yet
-        if !&base_path.exists() {
+        if !base_path.exists() {
             log::info!("Creating storage dir");
             if let Err(r) = fs::create_dir_all(&base_path) {
                 log::warn!("Unable to create storage dir {}", r);

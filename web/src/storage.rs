@@ -16,7 +16,7 @@ impl StorageBackend for LocalStorageBackend {
     fn get_string(&self, name: &str) -> Option<String> {
         self.storage
             .get(&format!("{}-{}", self.prefix, name))
-            .unwrap()
+            .unwrap_or_default()
     }
 
     fn put_string(&mut self, name: &str, value: String) -> bool {

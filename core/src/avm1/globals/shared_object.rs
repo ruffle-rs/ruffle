@@ -39,23 +39,23 @@ fn recursive_serialize<'gc>(
     json_obj: &mut JsonValue,
 ) {
     for k in &obj.get_keys(avm) {
-        let elem = obj.get(k, avm, action_context).unwrap();
-
-        match elem {
-            Value::Undefined => {}
-            Value::Null => json_obj[k] = JsonValue::Null,
-            Value::Bool(b) => json_obj[k] = b.into(),
-            Value::Number(f) => json_obj[k] = f.into(),
-            Value::String(s) => json_obj[k] = s.into(),
-            Value::Object(o) => {
-                // Don't attempt to serialize functions
-                if !o
-                    .is_instance_of(avm, action_context, o, avm.prototypes.function)
-                    .unwrap()
-                {
-                    let mut sub_data_json = JsonValue::new_object();
-                    recursive_serialize(avm, action_context, o, &mut sub_data_json);
-                    json_obj[k] = sub_data_json;
+        if let Ok(elem) = obj.get(k, avm, action_context) {
+            match elem {
+                Value::Undefined => {}
+                Value::Null => json_obj[k] = JsonValue::Null,
+                Value::Bool(b) => json_obj[k] = b.into(),
+                Value::Number(f) => json_obj[k] = f.into(),
+                Value::String(s) => json_obj[k] = s.into(),
+                Value::Object(o) => {
+                    // Don't attempt to serialize functions
+                    if !o
+                        .is_instance_of(avm, action_context, o, avm.prototypes.function)
+                        .unwrap_or_default()
+                    {
+                        let mut sub_data_json = JsonValue::new_object();
+                        recursive_serialize(avm, action_context, o, &mut sub_data_json);
+                        json_obj[k] = sub_data_json;
+                    }
                 }
             }
         }
@@ -293,11 +293,7 @@ pub fn clear<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let data = this
-        .get("data", avm, action_context)
-        .unwrap()
-        .as_object()
-        .unwrap();
+    let data = this.get("data", avm, action_context)?.as_object()?;
 
     for k in &data.get_keys(avm) {
         data.delete(avm, action_context.gc_context, k);
@@ -337,11 +333,7 @@ pub fn flush<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let data = this
-        .get("data", avm, action_context)
-        .unwrap()
-        .as_object()
-        .unwrap();
+    let data = this.get("data", avm, action_context)?.as_object()?;
 
     let mut data_json = JsonValue::new_object();
     recursive_serialize(avm, action_context, data, &mut data_json);
