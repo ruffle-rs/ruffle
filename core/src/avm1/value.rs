@@ -297,6 +297,7 @@ impl<'gc> Value<'gc> {
     }
 
     /// ECMA-262 2nd edition s. 11.9.3 Abstract equality comparison algorithm
+    #[allow(clippy::unknown_clippy_lints, clippy::unnested_or_patterns)]
     pub fn abstract_eq(
         &self,
         other: Value<'gc>,
