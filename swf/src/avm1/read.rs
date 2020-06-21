@@ -362,7 +362,7 @@ impl<'a> Reader<'a> {
         let catch_length = usize::from(self.read_u16()?);
         let finally_length = usize::from(self.read_u16()?);
         *length += try_length + catch_length + finally_length;
-        let catch_var = if flags & 0b100 != 0 {
+        let catch_var = if flags & 0b100 == 0 {
             CatchVar::Var(self.read_c_string()?)
         } else {
             CatchVar::Register(self.read_u8()?)
