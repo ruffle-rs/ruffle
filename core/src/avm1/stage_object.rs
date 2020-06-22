@@ -20,7 +20,11 @@ pub const TYPE_OF_MOVIE_CLIP: &str = "movieclip";
 /// A ScriptObject that is inherently tied to a display node.
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
-pub struct StageObject<'gc> {
+pub struct StageObject<'gc>(GcCell<'gc, StageObjectData<'gc>>);
+
+#[derive(Collect)]
+#[collect(no_drop)]
+pub struct StageObjectData<'gc> {
     /// The underlying script object.
     ///
     /// This is used to handle "expando properties" on AVM1 display nodes, as
@@ -43,18 +47,22 @@ impl<'gc> StageObject<'gc> {
         //TODO: Do other display node objects have different typestrings?
         base.set_type_of(gc_context, TYPE_OF_MOVIE_CLIP);
 
-        Self {
-            base,
-            display_object,
-        }
+        Self(GcCell::allocate(
+            gc_context,
+            StageObjectData {
+                base,
+                display_object,
+            },
+        ))
     }
 }
 
 impl fmt::Debug for StageObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let o = self.0.read();
         f.debug_struct("StageObject")
-            .field("base", &self.base)
-            .field("display_object", &self.display_object)
+            .field("base", &o.base)
+            .field("display_object", &o.display_object)
             .finish()
     }
 }
@@ -66,6 +74,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
+        let obj = self.0.read();
         let props = avm.display_properties;
         let case_sensitive = avm.is_case_sensitive();
         // Property search order for DisplayObjects:
@@ -74,13 +83,13 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             self.get_local(name, avm, context, (*self).into())
         } else if let Some(property) = props.read().get_by_name(&name) {
             // 2) Display object properties such as _x, _y
-            let val = property.get(avm, context, self.display_object)?;
+            let val = property.get(avm, context, obj.display_object)?;
             Ok(val)
-        } else if let Some(child) = self.display_object.get_child_by_name(name, case_sensitive) {
+        } else if let Some(child) = obj.display_object.get_child_by_name(name, case_sensitive) {
             // 3) Child display objects with the given instance name
             Ok(child.object())
         } else if let Some(level) =
-            self.display_object
+            obj.display_object
                 .get_level_by_path(name, context, case_sensitive)
         {
             // 4) _levelN
@@ -101,7 +110,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.base.get_local(name, avm, context, this)
+        self.0.read().base.get_local(name, avm, context, this)
     }
 
     fn set(
@@ -111,10 +120,11 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
+        let obj = self.0.read();
         let props = avm.display_properties;
-        if self.base.has_own_property(avm, context, name) {
+        if obj.base.has_own_property(avm, context, name) {
             // 1) Actual proeprties on the underlying object
-            self.base.internal_set(
+            obj.base.internal_set(
                 name,
                 value,
                 avm,
@@ -124,11 +134,11 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             )
         } else if let Some(property) = props.read().get_by_name(&name) {
             // 2) Display object properties such as _x, _y
-            property.set(avm, context, self.display_object, value)?;
+            property.set(avm, context, obj.display_object, value)?;
             Ok(())
         } else {
             // 3) TODO: Prototype
-            self.base.internal_set(
+            obj.base.internal_set(
                 name,
                 value,
                 avm,
@@ -147,7 +157,10 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.base.call(avm, context, this, base_proto, args)
+        self.0
+            .read()
+            .base
+            .call(avm, context, this, base_proto, args)
     }
 
     fn call_setter(
@@ -158,7 +171,10 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-        self.base.call_setter(name, value, avm, context, this)
+        self.0
+            .read()
+            .base
+            .call_setter(name, value, avm, context, this)
     }
 
     #[allow(clippy::new_ret_no_self)]
@@ -170,7 +186,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         //TODO: Create a StageObject of some kind
-        self.base.new(avm, context, this, args)
+        self.0.read().base.new(avm, context, this, args)
     }
 
     fn delete(
@@ -179,15 +195,15 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         gc_context: MutationContext<'gc, '_>,
         name: &str,
     ) -> bool {
-        self.base.delete(avm, gc_context, name)
+        self.0.read().base.delete(avm, gc_context, name)
     }
 
     fn proto(&self) -> Option<Object<'gc>> {
-        self.base.proto()
+        self.0.read().base.proto()
     }
 
     fn set_proto(&self, gc_context: MutationContext<'gc, '_>, prototype: Option<Object<'gc>>) {
-        self.base.set_proto(gc_context, prototype);
+        self.0.read().base.set_proto(gc_context, prototype);
     }
 
     fn define_value(
@@ -197,7 +213,10 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         value: Value<'gc>,
         attributes: EnumSet<Attribute>,
     ) {
-        self.base.define_value(gc_context, name, value, attributes)
+        self.0
+            .read()
+            .base
+            .define_value(gc_context, name, value, attributes)
     }
 
     fn set_attributes(
@@ -207,8 +226,12 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         set_attributes: EnumSet<Attribute>,
         clear_attributes: EnumSet<Attribute>,
     ) {
-        self.base
-            .set_attributes(gc_context, name, set_attributes, clear_attributes)
+        self.0.write(gc_context).base.set_attributes(
+            gc_context,
+            name,
+            set_attributes,
+            clear_attributes,
+        )
     }
 
     fn add_property(
@@ -219,7 +242,9 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         set: Option<Executable<'gc>>,
         attributes: EnumSet<Attribute>,
     ) {
-        self.base
+        self.0
+            .read()
+            .base
             .add_property(gc_context, name, get, set, attributes)
     }
 
@@ -232,7 +257,9 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         set: Option<Executable<'gc>>,
         attributes: EnumSet<Attribute>,
     ) {
-        self.base
+        self.0
+            .read()
+            .base
             .add_property_with_case(avm, gc_context, name, get, set, attributes)
     }
 
@@ -242,12 +269,13 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
-        if self.base.has_property(avm, context, name) {
+        let obj = self.0.read();
+        if obj.base.has_property(avm, context, name) {
             return true;
         }
 
         let case_sensitive = avm.is_case_sensitive();
-        if self
+        if obj
             .display_object
             .get_child_by_name(name, case_sensitive)
             .is_some()
@@ -255,7 +283,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             return true;
         }
 
-        if self
+        if obj
             .display_object
             .get_level_by_path(name, context, case_sensitive)
             .is_some()
@@ -273,7 +301,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         name: &str,
     ) -> bool {
         // Note that `hasOwnProperty` does NOT return true for child display objects.
-        self.base.has_own_property(avm, context, name)
+        self.0.read().base.has_own_property(avm, context, name)
     }
 
     fn has_own_virtual(
@@ -282,23 +310,24 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
-        self.base.has_own_virtual(avm, context, name)
+        self.0.read().base.has_own_virtual(avm, context, name)
     }
 
     fn is_property_enumerable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
-        self.base.is_property_enumerable(avm, name)
+        self.0.read().base.is_property_enumerable(avm, name)
     }
 
     fn is_property_overwritable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
-        self.base.is_property_overwritable(avm, name)
+        self.0.read().base.is_property_overwritable(avm, name)
     }
 
     fn get_keys(&self, avm: &mut Avm1<'gc>) -> Vec<String> {
         // Keys from the underlying object are listed first, followed by
         // child display objects in order from highest depth to lowest depth.
-        let mut keys = self.base.get_keys(avm);
+        let obj = self.0.read();
+        let mut keys = obj.base.get_keys(avm);
         keys.extend(
-            self.display_object
+            obj.display_object
                 .children()
                 .map(|child| child.name().to_string()),
         );
@@ -306,19 +335,19 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     }
 
     fn length(&self) -> usize {
-        self.base.length()
+        self.0.read().base.length()
     }
 
     fn set_length(&self, gc_context: MutationContext<'gc, '_>, new_length: usize) {
-        self.base.set_length(gc_context, new_length)
+        self.0.read().base.set_length(gc_context, new_length)
     }
 
     fn array(&self) -> Vec<Value<'gc>> {
-        self.base.array()
+        self.0.read().base.array()
     }
 
     fn array_element(&self, index: usize) -> Value<'gc> {
-        self.base.array_element(index)
+        self.0.read().base.array_element(index)
     }
 
     fn set_array_element(
@@ -327,41 +356,47 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         value: Value<'gc>,
         gc_context: MutationContext<'gc, '_>,
     ) -> usize {
-        self.base.set_array_element(index, value, gc_context)
+        self.0
+            .read()
+            .base
+            .set_array_element(index, value, gc_context)
     }
 
     fn delete_array_element(&self, index: usize, gc_context: MutationContext<'gc, '_>) {
-        self.base.delete_array_element(index, gc_context)
+        self.0.read().base.delete_array_element(index, gc_context)
     }
 
     fn interfaces(&self) -> Vec<Object<'gc>> {
-        self.base.interfaces()
+        self.0.read().base.interfaces()
     }
 
     fn set_interfaces(&mut self, context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
-        self.base.set_interfaces(context, iface_list)
+        self.0
+            .write(context)
+            .base
+            .set_interfaces(context, iface_list)
     }
 
     fn as_string(&self) -> Cow<str> {
-        Cow::Owned(self.display_object.path())
+        Cow::Owned(self.0.read().display_object.path())
     }
 
     fn type_of(&self) -> &'static str {
-        self.base.type_of()
+        self.0.read().base.type_of()
     }
     fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
-        Some(self.base)
+        Some(self.0.read().base)
     }
 
     fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
-        Some(self.display_object)
+        Some(self.0.read().display_object)
     }
     fn as_executable(&self) -> Option<Executable<'gc>> {
         None
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.base.as_ptr() as *const ObjectPtr
+        self.0.read().base.as_ptr() as *const ObjectPtr
     }
 }
 
