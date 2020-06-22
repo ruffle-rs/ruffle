@@ -115,7 +115,12 @@ pub fn set_html_text<'gc>(
     if let Some(display_object) = this.as_display_object() {
         if let Some(mut text_field) = display_object.as_edit_text() {
             if let Some(value) = args.get(0) {
-                let html_string = value.clone().coerce_to_string(avm, context)?.into_owned();
+                let html_string = value
+                    .clone()
+                    .coerce_to_string(avm, context)?
+                    .into_owned()
+                    .replace("<sbr>", "\n")
+                    .replace("<br>", "\n");
                 let document = XMLDocument::new(context.gc_context);
 
                 if let Err(err) =
