@@ -407,6 +407,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         if let Some(font) = library
             .get_font_by_name(&span.font, span.bold, span.italic)
+            .filter(|f| f.has_glyphs())
             .or_else(|| library.device_font())
         {
             self.font = Some(font);
@@ -480,6 +481,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         if let Some(bullet_font) = library
             .get_font_by_name(&span.font, span.bold, span.italic)
+            .filter(|f| f.has_glyphs())
             .or_else(|| library.device_font())
             .or(self.font)
         {
