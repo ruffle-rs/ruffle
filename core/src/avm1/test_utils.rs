@@ -14,7 +14,7 @@ use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use gc_arena::{rootless_arena, GcCell, MutationContext};
 use rand::{rngs::SmallRng, SeedableRng};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
 pub fn with_avm<F, R>(swf_version: u8, test: F) -> R
@@ -62,6 +62,7 @@ where
             system: &mut SystemProperties::default(),
             instance_counter: &mut 0,
             storage: &mut MemoryStorageBackend::default(),
+            shared_objects: &mut HashMap::new(),
         };
         root.post_instantiation(&mut avm, &mut context, root, None, false);
         root.set_name(context.gc_context, "");

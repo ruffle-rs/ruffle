@@ -16,8 +16,8 @@ use crate::transform::TransformStack;
 use core::fmt;
 use gc_arena::{Collect, MutationContext};
 use rand::rngs::SmallRng;
-use std::collections::BTreeMap;
 use std::collections::VecDeque;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Mutex, Weak};
 
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
@@ -107,6 +107,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The current instance ID. Used to generate default `instanceN` names.
     pub instance_counter: &'a mut i32,
+
+    /// Shared objects cache
+    pub shared_objects: &'a mut HashMap<String, Object<'gc>>,
 }
 
 /// A queued ActionScript call.

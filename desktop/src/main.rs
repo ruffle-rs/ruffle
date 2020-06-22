@@ -106,7 +106,10 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         // Poll UI events
         event_loop.run(move |event, _window_target, control_flow| {
             match event {
-                winit::event::Event::LoopDestroyed => return,
+                winit::event::Event::LoopDestroyed => {
+                    player.lock().unwrap().flush_shared_objects();
+                    return;
+                }
 
                 // Core loop
                 winit::event::Event::MainEventsCleared => {

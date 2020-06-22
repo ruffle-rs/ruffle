@@ -1,6 +1,7 @@
 use crate::avm1::debug::VariableDumper;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::listeners::SystemListener;
+use crate::avm1::object::Object;
 use crate::avm1::{Activation, Avm1, TObject, Value};
 use crate::backend::input::{InputBackend, MouseCursor};
 use crate::backend::storage::StorageBackend;
@@ -19,7 +20,7 @@ use enumset::EnumSet;
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::convert::TryFrom;
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex, Weak};
@@ -57,11 +58,14 @@ struct GcRootData<'gc> {
     /// Object which manages asynchronous processes that need to interact with
     /// data in the GC arena.
     load_manager: LoadManager<'gc>,
+
+    shared_objects: HashMap<String, Object<'gc>>,
 }
 
 impl<'gc> GcRootData<'gc> {
     /// Splits out parameters for creating an `UpdateContext`
     /// (because we can borrow fields of `self` independently)
+    #[allow(clippy::type_complexity)]
     fn update_context_params(
         &mut self,
     ) -> (
@@ -71,6 +75,7 @@ impl<'gc> GcRootData<'gc> {
         &mut Avm1<'gc>,
         &mut Option<DragObject<'gc>>,
         &mut LoadManager<'gc>,
+        &mut HashMap<String, Object<'gc>>,
     ) {
         (
             &mut self.levels,
@@ -79,6 +84,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.avm,
             &mut self.drag_object,
             &mut self.load_manager,
+            &mut self.shared_objects,
         )
     }
 }
@@ -222,6 +228,7 @@ impl Player {
                         avm: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
                         action_queue: ActionQueue::new(),
                         load_manager: LoadManager::new(),
+                        shared_objects: HashMap::new(),
                     },
                 ))
             }),
@@ -879,7 +886,7 @@ impl Player {
         self.gc_arena.mutate(|gc_context, gc_root| {
             let mut root_data = gc_root.0.write(gc_context);
             let mouse_hovered_object = root_data.mouse_hovered_object;
-            let (levels, library, action_queue, avm, drag_object, load_manager) =
+            let (levels, library, action_queue, avm, drag_object, load_manager, shared_objects) =
                 root_data.update_context_params();
 
             let mut update_context = UpdateContext {
@@ -906,6 +913,7 @@ impl Player {
                 system: system_properties,
                 instance_counter,
                 storage,
+                shared_objects,
             };
 
             let ret = f(avm, &mut update_context);
@@ -961,6 +969,15 @@ impl Player {
         self.gc_arena.collect_debt();
 
         rval
+    }
+
+    pub fn flush_shared_objects(&mut self) {
+        self.update(|avm, update_context| {
+            let shared_objects = update_context.shared_objects.clone();
+            for so in shared_objects.values() {
+                let _ = crate::avm1::globals::shared_object::flush(avm, update_context, *so, &[]);
+            }
+        });
     }
 }
 

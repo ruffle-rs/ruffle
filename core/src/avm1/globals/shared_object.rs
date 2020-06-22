@@ -140,6 +140,11 @@ pub fn get_local<'gc>(
         .to_owned()
         .coerce_to_string(avm, action_context)?;
 
+    //Check if this is referencing an existing shared object
+    if let Some(so) = action_context.shared_objects.get(&name) {
+        return Ok(Value::Object(*so).into());
+    }
+
     if args.len() > 1 {
         log::warn!("SharedObject.getLocal() doesn't support localPath or secure yet");
     }
@@ -171,6 +176,8 @@ pub fn get_local<'gc>(
         data.into(),
         EnumSet::empty(),
     );
+
+    action_context.shared_objects.insert(name, this);
 
     Ok(this.into())
 }
@@ -217,14 +224,14 @@ pub fn remove_listener<'gc>(
 
 pub fn create_shared_object_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    array_proto: Option<Object<'gc>>,
+    shared_object_proto: Option<Object<'gc>>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
     let shared_obj = FunctionObject::function(
         gc_context,
         Executable::Native(constructor),
         fn_proto,
-        array_proto,
+        shared_object_proto,
     );
     let mut object = shared_obj.as_script_object().unwrap();
 
