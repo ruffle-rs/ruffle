@@ -247,6 +247,10 @@ pub trait SwfRead<R: Read> {
     }
 
     fn read_f64(&mut self) -> io::Result<f64> {
+        self.get_inner().read_f64::<LittleEndian>()
+    }
+
+    fn read_f64_me(&mut self) -> io::Result<f64> {
         // Flash weirdly stores f64 as two LE 32-bit chunks.
         // First word is the hi-word, second word is the lo-word.
         let mut num = [0u8; 8];
