@@ -135,6 +135,7 @@ pub fn construct_global_scope<'gc>(
     constant(mc, gs, "", "undefined", Value::Undefined);
     constant(mc, gs, "", "null", Value::Null);
     constant(mc, gs, "", "NaN", NAN.into());
+    constant(mc, gs, "", "Infinity", f64::INFINITY.into());
 
     // package `flash.events`
     let eventdispatcher_proto =
