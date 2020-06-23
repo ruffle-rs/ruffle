@@ -7,6 +7,7 @@ use crate::avm1::{Object, Value};
 use crate::backend::input::InputBackend;
 use crate::backend::storage::StorageBackend;
 use crate::backend::{audio::AudioBackend, navigator::NavigatorBackend, render::RenderBackend};
+use crate::display_object::EditText;
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::player::Player;
@@ -110,6 +111,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// Shared objects cache
     pub shared_objects: &'a mut HashMap<String, Object<'gc>>,
+
+    /// Text fields with unbound variable bindings.
+    pub unbound_text_fields: &'a mut Vec<EditText<'gc>>,
 }
 
 /// A queued ActionScript call.

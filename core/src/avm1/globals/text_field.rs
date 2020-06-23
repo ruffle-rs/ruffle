@@ -47,6 +47,7 @@ pub fn set_text<'gc>(
                 {
                     log::error!("Error when setting TextField.text: {}", err);
                 }
+                text_field.propagate_text_binding(avm, context);
             }
         }
     }
@@ -346,7 +347,7 @@ fn set_variable<'gc>(
         .as_display_object()
         .and_then(|dobj| dobj.as_edit_text())
     {
-        etext.set_variable(variable.map(|v| v.into_owned()), context);
+        etext.set_variable(variable.map(|v| v.into_owned()), avm, context);
     }
 
     Ok(Value::Undefined.into())

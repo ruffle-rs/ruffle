@@ -1,6 +1,6 @@
 //! `EditText` display object and support code.
 use crate::avm1::globals::text_field::attach_virtual_properties;
-use crate::avm1::{Activation, Avm1, Object, StageObject, TObject, Value};
+use crate::avm1::{Avm1, Object, StageObject, TObject, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::drawing::Drawing;
@@ -102,6 +102,12 @@ pub struct EditTextData<'gc> {
 
     /// The variable path that this text field is bound to (AVM1 only).
     variable: Option<String>,
+
+    /// The display object that the variable binding is bound to.
+    bound_stage_object: Option<StageObject<'gc>>,
+
+    /// Whether this text field is firing is variable binding (to prevent infinite loops).
+    firing_variable_binding: bool,
 }
 
 impl<'gc> EditText<'gc> {
@@ -179,6 +185,8 @@ impl<'gc> EditText<'gc> {
                 bounds,
                 autosize: AutoSizeMode::None,
                 variable,
+                bound_stage_object: None,
+                firing_variable_binding: false,
             },
         ));
 
@@ -425,8 +433,34 @@ impl<'gc> EditText<'gc> {
         }
     }
 
-    pub fn set_variable(self, variable: Option<String>, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.0.write(context.gc_context).variable = variable
+    pub fn set_variable(
+        self,
+        variable: Option<String>,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) {
+        // Clear previous binding.
+        if let Some(stage_object) = self.0.write(context.gc_context).bound_stage_object.take() {
+            stage_object.clear_text_field_binding(context.gc_context, self);
+        } else {
+            context
+                .unbound_text_fields
+                .retain(|&text_field| !DisplayObject::ptr_eq(text_field.into(), self.into()));
+        }
+
+        // Setup new binding.
+        let text = self
+            .0
+            .read()
+            .static_data
+            .text
+            .initial_text
+            .clone()
+            .unwrap_or_default();
+        let _ = self.set_text(text, context);
+
+        self.0.write(context.gc_context).variable = variable;
+        self.try_bind_text_field_variable(avm, context, true);
     }
 
     /// Construct a base text transform for this `EditText`, to be used for
@@ -587,6 +621,120 @@ impl<'gc> EditText<'gc> {
 
         context.transform_stack.pop();
     }
+
+    /// Attempts to bind this text field to a property of a display object.
+    /// If we find a parent display object matching the given path, we register oursevles and a property name with it.
+    /// `set_text` will be called by the stage object whenever the property changes.
+    /// If we don't find a display object, we register ourselves on a list of pending unbound text fields.
+    /// Whenever a display object is created, the unbound list is checked to see if the new object should be bound.
+    /// This is called when the text field is created, and, if the text field is in the unbound list, anytime a display object is created.
+    pub fn try_bind_text_field_variable(
+        self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        set_initial_value: bool,
+    ) -> bool {
+        let mut bound = false;
+        if let Some(var_path) = self.variable() {
+            // Any previous binding should have been cleared.
+            debug_assert!(self.0.read().bound_stage_object.is_none());
+
+            // Avoid double-borrows by copying the string.
+            // TODO: Can we avoid this somehow? Maybe when we have a better string type.
+            let variable = (*var_path).to_string();
+            drop(var_path);
+
+            let parent = self.parent().unwrap();
+
+            avm.insert_stack_frame_for_display_object(
+                parent,
+                context.swf.header().version,
+                context,
+            );
+
+            if let Ok(Some((object, property))) =
+                avm.resolve_text_field_variable_path(context, parent, &variable)
+            {
+                // If this text field was just created, we immediately propagate the text to the variable (or vice versa).
+                if set_initial_value {
+                    // If the property exists on the object, we overwrite the text with the property's value.
+                    if object.has_property(avm, context, property) {
+                        let value = object.get(property, avm, context).unwrap();
+                        let _ = self.set_text(
+                            value
+                                .coerce_to_string(avm, context)
+                                .unwrap_or_default()
+                                .into_owned(),
+                            context,
+                        );
+                    } else {
+                        // Otherwise, we initialize the proprty with the text field's text.
+                        let _ = object.set(property, self.text().clone().into(), avm, context);
+                    }
+                }
+
+                if let Some(stage_object) = object.as_stage_object() {
+                    self.0.write(context.gc_context).bound_stage_object = Some(stage_object);
+                    stage_object.register_text_field_binding(context.gc_context, self, property);
+                    bound = true;
+                }
+            }
+
+            avm.pop_stack_frame();
+        }
+
+        bound
+    }
+
+    /// Unsets a bound display object from this text field.
+    /// Does not change the unbound text field list.
+    /// Caller is responsible for adding this text field to the unbound list, if necessary.
+    pub fn clear_bound_stage_object(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        self.0.write(context.gc_context).bound_stage_object = None;
+    }
+
+    /// Propagates a text change to the bound display object.
+    ///
+    pub fn propagate_text_binding(
+        self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) {
+        if !self.0.read().firing_variable_binding {
+            self.0.write(context.gc_context).firing_variable_binding = true;
+            if let Some(variable) = self.variable() {
+                // Avoid double-borrows by copying the string.
+                // TODO: Can we avoid this somehow? Maybe when we have a better string type.
+                let variable_path = variable.to_string();
+                drop(variable);
+
+                if let Ok(Some((object, property))) = avm.resolve_text_field_variable_path(
+                    context,
+                    self.parent().unwrap(),
+                    &variable_path,
+                ) {
+                    let text = if avm.current_swf_version() >= 6 {
+                        let html_tree = self.html_tree(context).as_node();
+                        let html_string_result = html_tree.into_string(&mut |_node| true);
+                        html_string_result.unwrap_or_default()
+                    } else {
+                        self.text()
+                    };
+
+                    // Note that this can call virtual setters, even though the opposite direction won't work
+                    // (virtual property changes do not affect the text field)
+                    avm.insert_stack_frame_for_display_object(
+                        self.parent().unwrap(),
+                        context.swf.header().version,
+                        context,
+                    );
+                    let _ = object.set(property, text.into(), avm, context);
+                    avm.pop_stack_frame();
+                }
+            }
+            self.0.write(context.gc_context).firing_variable_binding = false;
+        }
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
@@ -642,41 +790,15 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         for layout_box in text.layout.iter() {
             new_layout.push(layout_box.duplicate(context.gc_context));
         }
+        drop(text);
 
-        // If this text field has a variable set, initialize text field binding
-        if let Some(var_path) = self.variable() {
-            let var_path = (*var_path).to_string();
-            avm.insert_stack_frame(GcCell::allocate(
-                context.gc_context,
-                Activation::from_nothing(
-                    context.swf.header().version,
-                    avm.global_object_cell(),
-                    context.gc_context,
-                    self.parent().unwrap(),
-                ),
-            ));
-
-            if let Ok(Some((object, property))) =
-                avm.resolve_text_field_variable_path(context, &*var_path)
-            {
-                // If the property exists on the object, we overwrite the text with the property's value.
-                if object.has_property(avm, context, property) {
-                    let value = object.get(property, avm, context).unwrap();
-                    let _ = self.set_text(
-                        value
-                            .coerce_to_string(avm, context)
-                            .unwrap_or_default()
-                            .into_owned(),
-                        context,
-                    );
-                } else {
-                    // Otherwise, we initialize the proprty with the text field's text.
-                    let _ = object.set(property, self.text().clone().into(), avm, context);
-                }
-            }
-
-            avm.pop_stack_frame();
+        // If this text field has a variable set, initialize text field binding.
+        if !self.try_bind_text_field_variable(avm, context, true) {
+            context.unbound_text_fields.push(*self);
         }
+
+        // People can bind to properties of TextFields the same as other display objects.
+        self.bind_text_field_variables(avm, context);
     }
 
     fn object(&self) -> Value<'gc> {
@@ -788,6 +910,27 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
     fn allow_as_mask(&self) -> bool {
         false
+    }
+
+    fn unload(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        // Unbind any display objects bound to this text.
+        if let Some(stage_object) = self.0.write(context.gc_context).bound_stage_object.take() {
+            stage_object.clear_text_field_binding(context.gc_context, *self);
+        }
+
+        // Unregister any text fields that may be bound to *this* text field.
+        if let Value::Object(object) = self.object() {
+            if let Some(stage_object) = object.as_stage_object() {
+                stage_object.unregister_text_field_bindings(context);
+            }
+        }
+        if self.variable().is_some() {
+            context
+                .unbound_text_fields
+                .retain(|&text_field| !DisplayObject::ptr_eq(text_field.into(), (*self).into()));
+        }
+
+        self.set_removed(context.gc_context, true);
     }
 }
 

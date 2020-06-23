@@ -731,12 +731,23 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
 
     fn run_frame(&mut self, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>) {}
     fn render(&self, _context: &mut RenderContext<'_, 'gc>) {}
+
     fn unload(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        // Unload children.
         for mut child in self.children() {
             child.unload(context);
         }
+
+        // Unregister any text field variable bindings, and replace them on the unbound list.
+        if let Value::Object(object) = self.object() {
+            if let Some(stage_object) = object.as_stage_object() {
+                stage_object.unregister_text_field_bindings(context);
+            }
+        }
+
         self.set_removed(context.gc_context, true);
     }
+
     fn as_button(&self) -> Option<Button<'gc>> {
         None
     }
@@ -897,6 +908,25 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
             let name = format!("instance{}", *context.instance_counter);
             self.set_name(context.gc_context, &name);
             *context.instance_counter = context.instance_counter.wrapping_add(1);
+        }
+    }
+
+    fn bind_text_field_variables(
+        &self,
+        avm: &mut Avm1<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) {
+        // Check all unbound text fields to see if they apply to this object.
+        // TODO: Replace with `Vec::drain_filter` when stable.
+        let mut i = 0;
+        let mut len = context.unbound_text_fields.len();
+        while i < len {
+            if context.unbound_text_fields[i].try_bind_text_field_variable(avm, context, false) {
+                context.unbound_text_fields.swap_remove(i);
+                len -= 1;
+            } else {
+                i += 1;
+            }
         }
     }
 }

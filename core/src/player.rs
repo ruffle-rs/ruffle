@@ -9,7 +9,7 @@ use crate::backend::{
     audio::AudioBackend, navigator::NavigatorBackend, render::Letterbox, render::RenderBackend,
 };
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
-use crate::display_object::{MorphShape, MovieClip};
+use crate::display_object::{EditText, MorphShape, MovieClip};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEvent};
 use crate::library::Library;
 use crate::loader::LoadManager;
@@ -60,6 +60,9 @@ struct GcRootData<'gc> {
     load_manager: LoadManager<'gc>,
 
     shared_objects: HashMap<String, Object<'gc>>,
+
+    /// Text fields with unbound variable bindings.
+    unbound_text_fields: Vec<EditText<'gc>>,
 }
 
 impl<'gc> GcRootData<'gc> {
@@ -76,6 +79,7 @@ impl<'gc> GcRootData<'gc> {
         &mut Option<DragObject<'gc>>,
         &mut LoadManager<'gc>,
         &mut HashMap<String, Object<'gc>>,
+        &mut Vec<EditText<'gc>>,
     ) {
         (
             &mut self.levels,
@@ -85,6 +89,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.drag_object,
             &mut self.load_manager,
             &mut self.shared_objects,
+            &mut self.unbound_text_fields,
         )
     }
 }
@@ -229,6 +234,7 @@ impl Player {
                         action_queue: ActionQueue::new(),
                         load_manager: LoadManager::new(),
                         shared_objects: HashMap::new(),
+                        unbound_text_fields: Vec::new(),
                     },
                 ))
             }),
@@ -896,8 +902,16 @@ impl Player {
         self.gc_arena.mutate(|gc_context, gc_root| {
             let mut root_data = gc_root.0.write(gc_context);
             let mouse_hovered_object = root_data.mouse_hovered_object;
-            let (levels, library, action_queue, avm, drag_object, load_manager, shared_objects) =
-                root_data.update_context_params();
+            let (
+                levels,
+                library,
+                action_queue,
+                avm,
+                drag_object,
+                load_manager,
+                shared_objects,
+                unbound_text_fields,
+            ) = root_data.update_context_params();
 
             let mut update_context = UpdateContext {
                 player_version,
@@ -924,6 +938,7 @@ impl Player {
                 instance_counter,
                 storage,
                 shared_objects,
+                unbound_text_fields,
             };
 
             let ret = f(avm, &mut update_context);

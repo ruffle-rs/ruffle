@@ -771,6 +771,7 @@ mod tests {
                 instance_counter: &mut 0,
                 storage: &mut MemoryStorageBackend::default(),
                 shared_objects: &mut HashMap::new(),
+                unbound_text_fields: &mut Vec::new(),
             };
 
             root.post_instantiation(&mut avm, &mut context, root, None, false);
