@@ -1,0 +1,72 @@
+Initial value set by text field:
+theVar: Hello
+text1.text: Hello
+text2.text: Hello
+
+theVar = 'Test1'
+theVar: Test1
+text1.text: Test1
+text2.text: Test1
+
+text1.text = 'Test2'
+theVar: Test2
+text1.text: Test2
+text2.text: Test2
+
+text1.variable: theVar
+text1.variable = 'foo'
+text1.variable: foo
+foo: Hello
+text1.text: Hello
+text2.text: Test2
+
+Initial text set by variable:
+mc.theVar: mc theVar
+text1.text: mc theVar
+text2.text: mc theVar
+
+mc.theVar = 'Test1'
+mc.theVar: Test1
+text1.text: Test1
+text2.text: Test1
+
+text1.text = 'Test2'
+mc.theVar: Test2
+text1.text: Test2
+text2.text: Test2
+
+text1.text = 'Reset'
+
+Movie clip recreated:
+mc.theVar: 
+text1.text: Reset
+text2.text: Test2
+
+mc.theVar = 'Test1'
+mc.theVar: Test1
+text1.text: Test1
+text2.text: Test1
+
+text1.text = 'Test2'
+mc.theVar: Test2
+text1.text: Test2
+text2.text: Test2
+
+obj = {theVar: 'obj'};
+Object:
+obj.theVar: obj
+text1.text: obj
+
+obj.theVar = 'wont change text'
+obj.theVar: wont change text
+text1.text: obj
+
+text1.text = 'will change var'
+obj.theVar: will change var
+text1.text: will change var
+
+theVar: Test2
+var theVar = 'definelocal'
+theVar: definelocal
+text2.text: definelocal
+
