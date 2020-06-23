@@ -277,6 +277,46 @@ impl<'gc> Avm1<'gc> {
         ));
     }
 
+    /// Add a stack frame that executes code in timeline scope
+    pub fn insert_stack_frame_for_display_object(
+        &mut self,
+        active_clip: DisplayObject<'gc>,
+        swf_version: u8,
+        action_context: &mut UpdateContext<'_, 'gc, '_>,
+    ) {
+        use crate::tag_utils::SwfMovie;
+        use std::sync::Arc;
+
+        let clip_obj = match active_clip.object() {
+            Value::Object(o) => o,
+            _ => panic!("No script object for display object"),
+        };
+        let global_scope = GcCell::allocate(
+            action_context.gc_context,
+            Scope::from_global_object(self.globals),
+        );
+        let child_scope = GcCell::allocate(
+            action_context.gc_context,
+            Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
+        );
+        self.stack_frames.push(GcCell::allocate(
+            action_context.gc_context,
+            Activation::from_action(
+                swf_version,
+                SwfSlice {
+                    movie: Arc::new(SwfMovie::empty(swf_version)),
+                    start: 0,
+                    end: 0,
+                },
+                child_scope,
+                self.constant_pool,
+                active_clip,
+                clip_obj,
+                None,
+            ),
+        ));
+    }
+
     /// Add a stack frame that executes code in initializer scope
     pub fn insert_stack_frame_for_init_action(
         &mut self,
@@ -1039,13 +1079,18 @@ impl<'gc> Avm1<'gc> {
         Ok(())
     }
 
+    /// Resolves a path for text field variable binding.
+    /// Returns the parent object that owns the variable, and the variable name.
+    /// Returns `None` if the path does not yet point to a valid object.
+    /// TODO: This can probably be merged with some of the above `resolve_target_path` methods.
     pub fn resolve_text_field_variable_path<'s>(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
+        text_field_parent: DisplayObject<'gc>,
         path: &'s str,
     ) -> Result<Option<(Object<'gc>, &'s str)>, Error<'gc>> {
         // Resolve a variable path for a GetVariable action.
-        let start = self.target_clip_or_root();
+        let start = text_field_parent;
 
         // Find the right-most : or . in the path.
         // If we have one, we must resolve as a target path.

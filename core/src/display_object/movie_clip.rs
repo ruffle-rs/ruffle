@@ -1092,6 +1092,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 false,
             );
         }
+
+        self.bind_text_field_variables(avm, context);
     }
 
     fn object(&self) -> Value<'gc> {
@@ -1106,6 +1108,14 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         for mut child in self.children() {
             child.unload(context);
         }
+
+        // Unregister any text field variable bindings.
+        if let Value::Object(object) = self.object() {
+            if let Some(stage_object) = object.as_stage_object() {
+                stage_object.unregister_text_field_bindings(context);
+            }
+        }
+
         {
             let mut mc = self.0.write(context.gc_context);
             mc.stop_audio_stream(context);

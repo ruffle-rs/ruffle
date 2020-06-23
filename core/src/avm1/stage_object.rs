@@ -7,7 +7,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Value};
 use crate::context::UpdateContext;
-use crate::display_object::{DisplayObject, MovieClip};
+use crate::display_object::{DisplayObject, EditText, MovieClip};
 use crate::property_map::PropertyMap;
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -33,6 +33,8 @@ pub struct StageObjectData<'gc> {
 
     /// The display node this stage object
     display_object: DisplayObject<'gc>,
+
+    text_field_bindings: Vec<TextFieldBinding<'gc>>,
 }
 
 impl<'gc> StageObject<'gc> {
@@ -52,9 +54,63 @@ impl<'gc> StageObject<'gc> {
             StageObjectData {
                 base,
                 display_object,
+                text_field_bindings: Vec::new(),
             },
         ))
     }
+
+    /// Registers a text field variable binding for this stage object.
+    /// Whenever a property with the given name is changed, we should change the text in the text field.
+    pub fn register_text_field_binding(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        text_field: EditText<'gc>,
+        variable_name: &str,
+    ) {
+        self.0
+            .write(gc_context)
+            .text_field_bindings
+            .push(TextFieldBinding {
+                text_field,
+                variable_name: variable_name.to_string(),
+            })
+    }
+
+    /// Removes a text field binding for the given text field.
+    /// Does not place the text field on the unbound list.
+    /// Caller is responsible for placing the text field on the unbound list, if necessary.
+    pub fn clear_text_field_binding(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        text_field: EditText<'gc>,
+    ) {
+        self.0
+            .write(gc_context)
+            .text_field_bindings
+            .retain(|binding| DisplayObject::ptr_eq(text_field.into(), binding.text_field.into()));
+    }
+
+    /// Clears all text field bindings from this stage object, and places the textfields on the unbound list.
+    /// This is called when the object is removed from the stage.
+    pub fn unregister_text_field_bindings(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        for binding in self
+            .0
+            .write(context.gc_context)
+            .text_field_bindings
+            .drain(..)
+        {
+            binding.text_field.clear_bound_stage_object(context);
+            context.unbound_text_fields.push(binding.text_field);
+        }
+    }
+}
+
+/// A binding from a property of this StageObject to an EditText text field.
+#[derive(Collect)]
+#[collect(no_drop)]
+struct TextFieldBinding<'gc> {
+    text_field: EditText<'gc>,
+    variable_name: String,
 }
 
 impl fmt::Debug for StageObject<'_> {
@@ -122,7 +178,19 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     ) -> Result<(), Error<'gc>> {
         let obj = self.0.read();
         let props = avm.display_properties;
-        if obj.base.has_own_property(avm, context, name) {
+
+        // Check if a text field is bound to this property and update the text if so.
+        for binding in obj
+            .text_field_bindings
+            .iter()
+            .filter(|binding| binding.variable_name == name)
+        {
+            let _ = binding
+                .text_field
+                .set_text(value.coerce_to_string(avm, context)?.into_owned(), context);
+        }
+
+        let result = if obj.base.has_own_property(avm, context, name) {
             // 1) Actual proeprties on the underlying object
             obj.base.internal_set(
                 name,
@@ -146,7 +214,9 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
                 (*self).into(),
                 Some((*self).into()),
             )
-        }
+        };
+
+        result
     }
 
     fn call(
@@ -386,6 +456,11 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     }
     fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
         Some(self.0.read().base)
+    }
+
+    /// Get the underlying stage object, if it exists.
+    fn as_stage_object(&self) -> Option<StageObject<'gc>> {
+        Some(*self)
     }
 
     fn as_display_object(&self) -> Option<DisplayObject<'gc>> {

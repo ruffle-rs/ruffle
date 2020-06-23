@@ -357,6 +357,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
+    /// Get the underlying stage object, if it exists.
+    fn as_stage_object(&self) -> Option<StageObject<'gc>> {
+        None
+    }
+
     /// Get the underlying super object, if it exists.
     fn as_super_object(&self) -> Option<SuperObject<'gc>> {
         None
