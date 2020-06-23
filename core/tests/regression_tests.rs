@@ -273,6 +273,7 @@ swf_tests! {
     (as3_es4_interfaces, "avm2/es4_interfaces", 1),
     (as3_istype, "avm2/istype", 1),
     (as3_instanceof, "avm2/instanceof", 1),
+    (as3_truthiness, "avm2/truthiness", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
