@@ -225,18 +225,25 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn as_bool(&self) -> Result<bool, Error> {
-        if let Value::Bool(b) = self {
-            Ok(*b)
-        } else {
-            Err(format!("Expected Boolean, found {:?}", self).into())
-        }
-    }
-
     pub fn as_namespace(&self) -> Result<&Namespace<'gc>, Error> {
         match self {
             Value::Namespace(ns) => Ok(ns),
             _ => Err(format!("Expected Namespace, found {:?}", self).into()),
+        }
+    }
+
+    /// Coerce the value to a boolean.
+    ///
+    /// Boolean coercion happens according to the rules specified in the ES4
+    /// draft proposals, which appear to be identical to ECMA-262 Edition 3.
+    pub fn coerce_to_boolean(&self) -> bool {
+        match self {
+            Value::Undefined | Value::Null => false,
+            Value::Bool(b) => *b,
+            Value::Number(f) => !f.is_nan() && f.abs() != 0.0,
+            Value::String(s) => !s.is_empty(),
+            Value::Namespace(_) => true,
+            Value::Object(_) => true,
         }
     }
 }
