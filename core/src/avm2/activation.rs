@@ -1321,7 +1321,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         offset: i32,
         reader: &mut Reader<Cursor<&[u8]>>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let value = self.context.avm2.pop().as_bool()?;
+        let value = self.context.avm2.pop().coerce_to_boolean();
 
         if value {
             reader.seek(offset as i64)?;
@@ -1335,7 +1335,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         offset: i32,
         reader: &mut Reader<Cursor<&[u8]>>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let value = self.context.avm2.pop().as_bool()?;
+        let value = self.context.avm2.pop().coerce_to_boolean();
 
         if !value {
             reader.seek(offset as i64)?;

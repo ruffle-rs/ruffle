@@ -124,16 +124,17 @@ pub fn set_property_is_enumerable<'gc>(
     let this = this?;
     let name: Result<&Value<'gc>, Error> = args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.as_string()?;
-    let is_enum = args
-        .get(1)
-        .cloned()
-        .unwrap_or(Value::Bool(true))
-        .as_bool()?;
 
-    if let Some(ns) = this.resolve_any(name)? {
-        if !ns.is_private() {
-            let qname = QName::new(ns, name);
-            this.set_local_property_is_enumerable(activation.context.gc_context, &qname, is_enum)?;
+    if let Some(Value::Bool(is_enum)) = args.get(1) {
+        if let Some(ns) = this.resolve_any(name)? {
+            if !ns.is_private() {
+                let qname = QName::new(ns, name);
+                this.set_local_property_is_enumerable(
+                    activation.context.gc_context,
+                    &qname,
+                    *is_enum,
+                )?;
+            }
         }
     }
 
