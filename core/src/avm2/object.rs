@@ -2,7 +2,6 @@
 
 use crate::avm2::function::{Avm2ClassEntry, Avm2MethodEntry, Executable, FunctionObject};
 use crate::avm2::names::{Multiname, Namespace, QName};
-use crate::avm2::return_value::ReturnValue;
 use crate::avm2::scope::Scope;
 use crate::avm2::script_object::ScriptObject;
 use crate::avm2::value::{abc_default_value, Value};
@@ -33,7 +32,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: &QName,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnValue<'gc>, Error>;
+    ) -> Result<Value<'gc>, Error>;
 
     /// Retrieve a property by it's QName.
     fn get_property(
@@ -42,7 +41,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: &QName,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         if !self.has_instantiated_property(name) {
             for abc_trait in self.get_trait(name)? {
                 self.install_trait(avm, context, &abc_trait, reciever)?;
@@ -59,7 +58,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             return proto.get_property(reciever, name, avm, context);
         }
 
-        Ok(Value::Undefined.into())
+        Ok(Value::Undefined)
     }
 
     /// Retrieve the base prototype that a particular QName trait is defined in.
@@ -79,9 +78,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Set a property on this specific object.
-    ///
-    /// This function returns a `ReturnValue` which should be resolved. The
-    /// resulting `Value` is unimportant and should be discarded.
     fn set_property_local(
         self,
         reciever: Object<'gc>,
@@ -89,7 +85,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnValue<'gc>, Error>;
+    ) -> Result<(), Error>;
 
     /// Set a property by it's QName.
     fn set_property(
@@ -107,10 +103,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
 
         if self.has_own_virtual_setter(name) {
-            self.set_property_local(reciever, name, value, avm, context)?
-                .resolve(avm, context)?;
-
-            return Ok(());
+            return self.set_property_local(reciever, name, value, avm, context);
         }
 
         let mut proto = self.proto();
@@ -125,17 +118,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             proto = my_proto.proto();
         }
 
-        reciever
-            .set_property_local(reciever, name, value, avm, context)?
-            .resolve(avm, context)?;
-
-        Ok(())
+        reciever.set_property_local(reciever, name, value, avm, context)
     }
 
     /// Init a property on this specific object.
-    ///
-    /// This function returns a `ReturnValue` which should be resolved. The
-    /// resulting `Value` is unimportant and should be discarded.
     fn init_property_local(
         self,
         reciever: Object<'gc>,
@@ -143,7 +129,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnValue<'gc>, Error>;
+    ) -> Result<(), Error>;
 
     /// Init a property by it's QName.
     fn init_property(
@@ -161,10 +147,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
 
         if self.has_own_virtual_setter(name) {
-            self.init_property_local(reciever, name, value, avm, context)?
-                .resolve(avm, context)?;
-
-            return Ok(());
+            return self.init_property_local(reciever, name, value, avm, context);
         }
 
         let mut proto = self.proto();
@@ -179,11 +162,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             proto = my_proto.proto();
         }
 
-        reciever
-            .init_property_local(reciever, name, value, avm, context)?
-            .resolve(avm, context)?;
-
-        Ok(())
+        reciever.init_property_local(reciever, name, value, avm, context)
     }
 
     /// Retrieve a slot by it's index.
@@ -521,7 +500,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 )?;
                 let super_class: Result<Object<'gc>, Error> = self
                     .get_property(reciever, &super_name, avm, context)?
-                    .resolve(avm, context)?
                     .as_object()
                     .map_err(|_e| {
                         format!("Could not resolve superclass {:?}", super_name.local_name()).into()
@@ -582,7 +560,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         _avm: &mut Avm2<'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _base_proto: Option<Object<'gc>>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         Err("Object is not callable".into())
     }
 

@@ -32,9 +32,11 @@ fn call<'gc>(
 
     if let Some(func) = func {
         if args.len() > 1 {
-            func.call(this, &args[1..], avm, context, base_proto)
+            Ok(func
+                .call(this, &args[1..], avm, context, base_proto)?
+                .into())
         } else {
-            func.call(this, &[], avm, context, base_proto)
+            Ok(func.call(this, &[], avm, context, base_proto)?.into())
         }
     } else {
         Err("Not a callable function".into())

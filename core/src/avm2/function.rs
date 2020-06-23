@@ -284,7 +284,6 @@ impl<'gc> FunctionObject<'gc> {
                 avm,
                 context,
             )?
-            .resolve(avm, context)?
             .as_object()
             .map_err(|_| {
                 let super_name = QName::from_abc_multiname(
@@ -443,7 +442,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         name: &QName,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         self.0
             .read()
             .base
@@ -457,11 +456,16 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnValue<'gc>, Error> {
-        self.0
+    ) -> Result<(), Error> {
+        let rv = self
+            .0
             .write(context.gc_context)
             .base
-            .set_property_local(reciever, name, value, avm, context)
+            .set_property_local(reciever, name, value, avm, context)?;
+
+        rv.resolve(avm, context)?;
+
+        Ok(())
     }
 
     fn init_property_local(
@@ -471,11 +475,16 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnValue<'gc>, Error> {
-        self.0
+    ) -> Result<(), Error> {
+        let rv = self
+            .0
             .write(context.gc_context)
             .base
-            .init_property_local(reciever, name, value, avm, context)
+            .init_property_local(reciever, name, value, avm, context)?;
+
+        rv.resolve(avm, context)?;
+
+        Ok(())
     }
 
     fn is_property_overwritable(self, gc_context: MutationContext<'gc, '_>, name: &QName) -> bool {
@@ -603,9 +612,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         base_proto: Option<Object<'gc>>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         if let Some(exec) = &self.0.read().exec {
-            exec.exec(reciever, arguments, avm, context, base_proto)
+            exec.exec(reciever, arguments, avm, context, base_proto)?
+                .resolve(avm, context)
         } else {
             Err("Not a callable function!".into())
         }

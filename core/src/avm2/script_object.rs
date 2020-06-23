@@ -76,7 +76,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         name: &QName,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         self.0
             .read()
             .get_property_local(reciever, name, avm, context)
@@ -89,10 +89,15 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnValue<'gc>, Error> {
-        self.0
+    ) -> Result<(), Error> {
+        let rv = self
+            .0
             .write(context.gc_context)
-            .set_property_local(reciever, name, value, avm, context)
+            .set_property_local(reciever, name, value, avm, context)?;
+
+        rv.resolve(avm, context)?;
+
+        Ok(())
     }
 
     fn init_property_local(
@@ -102,10 +107,15 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         value: Value<'gc>,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnValue<'gc>, Error> {
-        self.0
+    ) -> Result<(), Error> {
+        let rv = self
+            .0
             .write(context.gc_context)
-            .init_property_local(reciever, name, value, avm, context)
+            .init_property_local(reciever, name, value, avm, context)?;
+
+        rv.resolve(avm, context)?;
+
+        Ok(())
     }
 
     fn is_property_overwritable(self, gc_context: MutationContext<'gc, '_>, name: &QName) -> bool {
@@ -417,7 +427,7 @@ impl<'gc> ScriptObjectData<'gc> {
         name: &QName,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         let prop = self.values.get(name);
 
         if let Some(prop) = prop {
@@ -428,9 +438,10 @@ impl<'gc> ScriptObjectData<'gc> {
                 avm.current_stack_frame()
                     .and_then(|sf| sf.read().base_proto())
                     .or(self.proto),
-            )
+            )?
+            .resolve(avm, context)
         } else {
-            Ok(Value::Undefined.into())
+            Ok(Value::Undefined)
         }
     }
 

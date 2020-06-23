@@ -641,10 +641,9 @@ impl<'gc> Avm2<'gc> {
         let receiver = self.pop().as_object().ok();
         let function = self.pop().as_object()?;
         let base_proto = receiver.and_then(|r| r.proto());
+        let value = function.call(receiver, &args, self, context, base_proto)?;
 
-        function
-            .call(receiver, &args, self, context, base_proto)?
-            .push(self);
+        self.push(value);
 
         Ok(())
     }
@@ -661,10 +660,9 @@ impl<'gc> Avm2<'gc> {
             .get_method(index.0)
             .ok_or_else(|| format!("Object method {} does not exist", index.0).into());
         let base_proto = receiver.proto();
+        let value = function?.call(Some(receiver), &args, self, context, base_proto)?;
 
-        function?
-            .call(Some(receiver), &args, self, context, base_proto)?
-            .push(self);
+        self.push(value);
 
         Ok(())
     }
@@ -685,12 +683,10 @@ impl<'gc> Avm2<'gc> {
         let base_proto = receiver.get_base_proto(&name)?;
         let function = receiver
             .get_property(receiver, &name, self, context)?
-            .resolve(self, context)?
             .as_object()?;
+        let value = function.call(Some(receiver), &args, self, context, base_proto)?;
 
-        function
-            .call(Some(receiver), &args, self, context, base_proto)?
-            .push(self);
+        self.push(value);
 
         Ok(())
     }
@@ -709,10 +705,10 @@ impl<'gc> Avm2<'gc> {
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
         let function = receiver
             .get_property(receiver, &name?, self, context)?
-            .resolve(self, context)?
             .as_object()?;
+        let value = function.call(None, &args, self, context, None)?;
 
-        function.call(None, &args, self, context, None)?.push(self);
+        self.push(value);
 
         Ok(())
     }
@@ -733,12 +729,9 @@ impl<'gc> Avm2<'gc> {
         let base_proto = receiver.get_base_proto(&name)?;
         let function = receiver
             .get_property(receiver, &name, self, context)?
-            .resolve(self, context)?
             .as_object()?;
 
-        function
-            .call(Some(receiver), &args, self, context, base_proto)?
-            .resolve(self, context)?;
+        function.call(Some(receiver), &args, self, context, base_proto)?;
 
         Ok(())
     }
@@ -760,10 +753,9 @@ impl<'gc> Avm2<'gc> {
             self.system_prototypes.function,
             None,
         );
+        let value = function.call(Some(receiver), &args, self, context, receiver.proto())?;
 
-        function
-            .call(Some(receiver), &args, self, context, receiver.proto())?
-            .push(self);
+        self.push(value);
 
         Ok(())
     }
@@ -796,12 +788,11 @@ impl<'gc> Avm2<'gc> {
 
         let function = base
             .get_property(receiver, &name?, self, context)?
-            .resolve(self, context)?
             .as_object()?;
 
-        function
-            .call(Some(receiver), &args, self, context, Some(base_proto))?
-            .push(self);
+        let value = function.call(Some(receiver), &args, self, context, Some(base_proto))?;
+
+        self.push(value);
 
         Ok(())
     }
@@ -834,12 +825,9 @@ impl<'gc> Avm2<'gc> {
 
         let function = base
             .get_property(receiver, &name?, self, context)?
-            .resolve(self, context)?
             .as_object()?;
 
-        function
-            .call(Some(receiver), &args, self, context, Some(base_proto))?
-            .resolve(self, context)?;
+        function.call(Some(receiver), &args, self, context, Some(base_proto))?;
 
         Ok(())
     }
@@ -866,9 +854,7 @@ impl<'gc> Avm2<'gc> {
             format!("Could not resolve property {:?}", multiname.local_name()).into()
         });
 
-        let value = object
-            .get_property(object, &name?, self, context)?
-            .resolve(self, context)?;
+        let value = object.get_property(object, &name?, self, context)?;
         self.push(value);
 
         Ok(())
@@ -960,9 +946,7 @@ impl<'gc> Avm2<'gc> {
             .into()
         });
 
-        let value = base
-            .get_property(object, &name?, self, context)?
-            .resolve(self, context)?;
+        let value = base.get_property(object, &name?, self, context)?;
 
         self.push(value);
 
@@ -1191,12 +1175,10 @@ impl<'gc> Avm2<'gc> {
                 self,
                 context,
             )?
-            .resolve(self, context)?
             .as_object()?;
 
         let object = proto.construct(self, context, &args)?;
-        ctor.call(Some(object), &args, self, context, object.proto())?
-            .resolve(self, context)?;
+        ctor.call(Some(object), &args, self, context, object.proto())?;
 
         self.push(object);
 
@@ -1219,7 +1201,6 @@ impl<'gc> Avm2<'gc> {
             });
         let mut ctor = source
             .get_property(source, &ctor_name?, self, context)?
-            .resolve(self, context)?
             .as_object()?;
         let proto = ctor
             .get_property(
@@ -1228,12 +1209,10 @@ impl<'gc> Avm2<'gc> {
                 self,
                 context,
             )?
-            .resolve(self, context)?
             .as_object()?;
 
         let object = proto.construct(self, context, &args)?;
-        ctor.call(Some(object), &args, self, context, Some(proto))?
-            .resolve(self, context)?;
+        ctor.call(Some(object), &args, self, context, Some(proto))?;
 
         self.push(object);
 
@@ -1263,12 +1242,9 @@ impl<'gc> Avm2<'gc> {
 
         let function = base_proto
             .get_property(receiver, &name, self, context)?
-            .resolve(self, context)?
             .as_object()?;
 
-        function
-            .call(Some(receiver), &args, self, context, Some(base_proto))?
-            .resolve(self, context)?;
+        function.call(Some(receiver), &args, self, context, Some(base_proto))?;
 
         Ok(())
     }
@@ -1345,9 +1321,7 @@ impl<'gc> Avm2<'gc> {
         let (new_class, class_init) =
             FunctionObject::from_abc_class(self, context, class_entry, base_class, scope)?;
 
-        class_init
-            .call(Some(new_class), &[], self, context, None)?
-            .resolve(self, context)?;
+        class_init.call(Some(new_class), &[], self, context, None)?;
 
         self.push(new_class);
 
@@ -1500,9 +1474,7 @@ impl<'gc> Avm2<'gc> {
 
         let name = object.get_enumerant_name(cur_index as u32);
         let value = if let Some(name) = name {
-            object
-                .get_property(object, &name, self, context)?
-                .resolve(self, context)?
+            object.get_property(object, &name, self, context)?
         } else {
             Value::Undefined
         };
