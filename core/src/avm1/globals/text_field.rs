@@ -376,62 +376,11 @@ pub fn create_proto<'gc>(
         gc_context,
         object,
         Some(fn_proto),
-        "getNewTextFormat" => |text_field: EditText<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, _args| {
-            let tf = text_field.new_text_format();
-
-            Ok(tf.as_avm1_object(avm, context)?.into())
-        },
-        "setNewTextFormat" => |text_field: EditText<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args: &[Value<'gc>]| {
-            let tf = args.get(0).cloned().unwrap_or(Value::Undefined);
-
-            if let Value::Object(tf) = tf {
-                let tf_parsed = TextFormat::from_avm1_object(tf, avm, context)?;
-                text_field.set_new_text_format(tf_parsed, context);
-            }
-
-            Ok(Value::Undefined.into())
-        },
-        "getTextFormat" => |text_field: EditText<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args: &[Value<'gc>]| {
-            let (from, to) = match (args.get(0), args.get(1)) {
-                (Some(f), Some(t)) => (f.coerce_to_f64(avm, context)? as usize, t.coerce_to_f64(avm, context)? as usize),
-                (Some(f), None) => {
-                    let v = f.coerce_to_f64(avm, context)? as usize;
-                    (v, v.saturating_add(1))
-                },
-                _ => (0, text_field.text_length())
-            };
-
-            Ok(text_field.text_format(from, to).as_avm1_object(avm, context)?.into())
-        },
-        "setTextFormat" => |text_field: EditText<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args: &[Value<'gc>]| {
-            let tf = args.last().cloned().unwrap_or(Value::Undefined);
-
-            if let Value::Object(tf) = tf {
-                let tf_parsed = TextFormat::from_avm1_object(tf, avm, context)?;
-
-                let (from, to) = match (args.get(0), args.get(1)) {
-                    (Some(f), Some(t)) if args.len() > 2 => (f.coerce_to_f64(avm, context)? as usize, t.coerce_to_f64(avm, context)? as usize),
-                    (Some(f), _) if args.len() > 1 => {
-                        let v = f.coerce_to_f64(avm, context)? as usize;
-                        (v, v.saturating_add(1))
-                    },
-                    _ => (0, text_field.text_length())
-                };
-
-                text_field.set_text_format(from, to, tf_parsed, context);
-            }
-
-            Ok(Value::Undefined.into())
-        },
-        "replaceText" => |text_field: EditText<'gc>, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>, args: &[Value<'gc>]| {
-            let from = args.get(0).cloned().unwrap_or(Value::Undefined).coerce_to_f64(avm, context)?;
-            let to = args.get(1).cloned().unwrap_or(Value::Undefined).coerce_to_f64(avm, context)?;
-            let text = args.get(2).cloned().unwrap_or(Value::Undefined).coerce_to_string(avm, context)?.into_owned();
-
-            text_field.replace_text(from as usize, to as usize, &text, context);
-
-            Ok(Value::Undefined.into())
-        }
+        "getNewTextFormat" => get_new_text_format,
+        "setNewTextFormat" => set_new_text_format,
+        "getTextFormat" => get_text_format,
+        "setTextFormat" => set_text_format,
+        "replaceText" => replace_text
     );
 
     object.into()
@@ -508,4 +457,112 @@ pub fn attach_virtual_properties<'gc>(gc_context: MutationContext<'gc, '_>, obje
         Some(Executable::Native(set_border)),
         ReadOnly.into(),
     );
+}
+
+fn get_new_text_format<'gc>(
+    text_field: EditText<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let tf = text_field.new_text_format();
+
+    Ok(tf.as_avm1_object(avm, context)?.into())
+}
+
+fn set_new_text_format<'gc>(
+    text_field: EditText<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let tf = args.get(0).cloned().unwrap_or(Value::Undefined);
+
+    if let Value::Object(tf) = tf {
+        let tf_parsed = TextFormat::from_avm1_object(tf, avm, context)?;
+        text_field.set_new_text_format(tf_parsed, context);
+    }
+
+    Ok(Value::Undefined.into())
+}
+
+fn get_text_format<'gc>(
+    text_field: EditText<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let (from, to) = match (args.get(0), args.get(1)) {
+        (Some(f), Some(t)) => (
+            f.coerce_to_f64(avm, context)? as usize,
+            t.coerce_to_f64(avm, context)? as usize,
+        ),
+        (Some(f), None) => {
+            let v = f.coerce_to_f64(avm, context)? as usize;
+            (v, v.saturating_add(1))
+        }
+        _ => (0, text_field.text_length()),
+    };
+
+    Ok(text_field
+        .text_format(from, to)
+        .as_avm1_object(avm, context)?
+        .into())
+}
+
+fn set_text_format<'gc>(
+    text_field: EditText<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let tf = args.last().cloned().unwrap_or(Value::Undefined);
+
+    if let Value::Object(tf) = tf {
+        let tf_parsed = TextFormat::from_avm1_object(tf, avm, context)?;
+
+        let (from, to) = match (args.get(0), args.get(1)) {
+            (Some(f), Some(t)) if args.len() > 2 => (
+                f.coerce_to_f64(avm, context)? as usize,
+                t.coerce_to_f64(avm, context)? as usize,
+            ),
+            (Some(f), _) if args.len() > 1 => {
+                let v = f.coerce_to_f64(avm, context)? as usize;
+                (v, v.saturating_add(1))
+            }
+            _ => (0, text_field.text_length()),
+        };
+
+        text_field.set_text_format(from, to, tf_parsed, context);
+    }
+
+    Ok(Value::Undefined.into())
+}
+
+fn replace_text<'gc>(
+    text_field: EditText<'gc>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    let from = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_f64(avm, context)?;
+    let to = args
+        .get(1)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_f64(avm, context)?;
+    let text = args
+        .get(2)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_string(avm, context)?
+        .into_owned();
+
+    text_field.replace_text(from as usize, to as usize, &text, context);
+
+    Ok(Value::Undefined.into())
 }
