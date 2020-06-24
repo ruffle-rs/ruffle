@@ -7,7 +7,6 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
 use crate::avm2::Error;
-use crate::context::UpdateContext;
 use gc_arena::{Collect, MutationContext};
 use std::f64::NAN;
 use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
@@ -293,21 +292,17 @@ impl<'gc> Value<'gc> {
     pub fn coerce_to_primitive(
         &self,
         hint: Hint,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         match self {
             Value::Object(o) if hint == Hint::String => {
                 let mut prim = self.clone();
                 let mut object = *o;
 
-                if let Value::Object(f) = object.get_property(
-                    *o,
-                    &QName::dynamic_name("toString"),
-                    activation,
-                    context,
-                )? {
-                    prim = f.call(Some(*o), &[], activation, context, None)?;
+                if let Value::Object(f) =
+                    object.get_property(*o, &QName::dynamic_name("toString"), activation)?
+                {
+                    prim = f.call(Some(*o), &[], activation, None)?;
                 }
 
                 if prim.is_primitive() {
@@ -315,9 +310,9 @@ impl<'gc> Value<'gc> {
                 }
 
                 if let Value::Object(f) =
-                    object.get_property(*o, &QName::dynamic_name("valueOf"), activation, context)?
+                    object.get_property(*o, &QName::dynamic_name("valueOf"), activation)?
                 {
-                    prim = f.call(Some(*o), &[], activation, context, None)?;
+                    prim = f.call(Some(*o), &[], activation, None)?;
                 }
 
                 if prim.is_primitive() {
@@ -331,22 +326,19 @@ impl<'gc> Value<'gc> {
                 let mut object = *o;
 
                 if let Value::Object(f) =
-                    object.get_property(*o, &QName::dynamic_name("valueOf"), activation, context)?
+                    object.get_property(*o, &QName::dynamic_name("valueOf"), activation)?
                 {
-                    prim = f.call(Some(*o), &[], activation, context, None)?;
+                    prim = f.call(Some(*o), &[], activation, None)?;
                 }
 
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
 
-                if let Value::Object(f) = object.get_property(
-                    *o,
-                    &QName::dynamic_name("toString"),
-                    activation,
-                    context,
-                )? {
-                    prim = f.call(Some(*o), &[], activation, context, None)?;
+                if let Value::Object(f) =
+                    object.get_property(*o, &QName::dynamic_name("toString"), activation)?
+                {
+                    prim = f.call(Some(*o), &[], activation, None)?;
                 }
 
                 if prim.is_primitive() {
@@ -367,11 +359,7 @@ impl<'gc> Value<'gc> {
     ///
     /// Numerical conversions occur according to ECMA-262 3rd Edition's
     /// ToNumber algorithm which appears to match AVM2.
-    pub fn coerce_to_number(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<f64, Error> {
+    pub fn coerce_to_number(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<f64, Error> {
         Ok(match self {
             Value::Undefined => f64::NAN,
             Value::Null => 0.0,
@@ -427,13 +415,14 @@ impl<'gc> Value<'gc> {
                     sign * digits.parse().unwrap_or(f64::NAN)
                 }
             }
-            Value::Namespace(ns) => {
-                Value::String(AvmString::new(context.gc_context, ns.as_uri().to_string()))
-                    .coerce_to_number(activation, context)?
-            }
+            Value::Namespace(ns) => Value::String(AvmString::new(
+                activation.context.gc_context,
+                ns.as_uri().to_string(),
+            ))
+            .coerce_to_number(activation)?,
             Value::Object(_) => self
-                .coerce_to_primitive(Hint::Number, activation, context)?
-                .coerce_to_number(activation, context)?,
+                .coerce_to_primitive(Hint::Number, activation)?
+                .coerce_to_number(activation)?,
         })
     }
 }
