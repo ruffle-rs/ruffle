@@ -1,0 +1,30 @@
+//if (true)
+Value is truthy
+//if (false)
+Value is falsy
+//if (null)
+Value is falsy
+//if (undefined)
+Value is falsy
+//if ("")
+Value is falsy
+//if ("str")
+Value is truthy
+//if ("true")
+Value is truthy
+//if ("false")
+Value is truthy
+//if (0.0)
+Value is falsy
+//if (NaN)
+Value is falsy
+//if (-0.0)
+Value is falsy
+//if (Infinity)
+Value is truthy
+//if (1.0)
+Value is truthy
+//if (-1.0)
+Value is truthy
+//if (new Object())
+Value is truthy

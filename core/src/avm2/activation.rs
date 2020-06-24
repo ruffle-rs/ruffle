@@ -474,6 +474,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::NewFunction { index } => self.op_new_function(method, index),
                 Op::NewClass { index } => self.op_new_class(method, index),
                 Op::CoerceA => self.op_coerce_a(),
+                Op::ConvertB => self.op_convert_b(),
                 Op::Jump { offset } => self.op_jump(offset, reader),
                 Op::IfTrue { offset } => self.op_if_true(offset, reader),
                 Op::IfFalse { offset } => self.op_if_false(offset, reader),
@@ -1304,6 +1305,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_coerce_a(&mut self) -> Result<FrameControl<'gc>, Error> {
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_convert_b(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value = self.avm2.pop().coerce_to_boolean();
+
+        self.avm2.push(value);
+
         Ok(FrameControl::Continue)
     }
 
