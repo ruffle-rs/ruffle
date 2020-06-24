@@ -209,9 +209,12 @@ impl<'gc> Value<'gc> {
     }
 
     /// Coerce a value into a string.
-    pub fn coerce_string(self) -> AvmString<'gc> {
+    pub fn coerce_string(self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
         match self {
             Value::String(s) => s,
+            Value::Number(n) if n == (f64::INFINITY) => "Infinity".into(),
+            Value::Number(n) if n == (f64::INFINITY * -1.0) => "-Infinity".into(),
+            Value::Number(n) => AvmString::new(mc, format!("{}", n)),
             Value::Bool(true) => "true".into(),
             Value::Bool(false) => "false".into(),
             _ => "".into(),

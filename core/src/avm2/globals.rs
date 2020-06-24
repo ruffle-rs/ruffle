@@ -18,12 +18,12 @@ mod function;
 mod object;
 
 fn trace<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(s) = args.get(0) {
-        log::info!(target: "avm_trace", "{}", s.clone().coerce_string());
+        log::info!(target: "avm_trace", "{}", s.clone().coerce_string(activation.context.gc_context));
     }
 
     Ok(Value::Undefined)

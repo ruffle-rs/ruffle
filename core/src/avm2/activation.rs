@@ -1309,9 +1309,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_convert_b(&mut self) -> Result<FrameControl<'gc>, Error> {
-        let value = self.avm2.pop().coerce_to_boolean();
+        let value = self.context.avm2.pop().coerce_to_boolean();
 
-        self.avm2.push(value);
+        self.context.avm2.push(value);
 
         Ok(FrameControl::Continue)
     }
@@ -1394,9 +1394,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_not(&mut self) -> Result<FrameControl<'gc>, Error> {
-        let value = self.avm2.pop().coerce_to_boolean();
+        let value = self.context.avm2.pop().coerce_to_boolean();
 
-        self.avm2.push(!value);
+        self.context.avm2.push(!value);
 
         Ok(FrameControl::Continue)
     }
