@@ -144,6 +144,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         let mut current_width: Option<Twips> = None;
         let mut line_drawing = Drawing::new();
         let mut line = self.current_line;
+        let mut has_underline: bool = false;
 
         line_drawing.set_line_style(Some(swf::LineStyle::new_v1(
             Twips::new(1),
@@ -176,7 +177,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                         //underlines don't match, or this span doesn't call for one.
                         if let (Some(pos), Some(width)) = (starting_pos, current_width) {
                             draw_underline(&mut line_drawing, pos, width);
-
+                            has_underline = true;
                             starting_pos = None;
                             current_width = None;
                         }
@@ -197,12 +198,15 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         if let (Some(starting_pos), Some(current_width)) = (starting_pos, current_width) {
             draw_underline(&mut line_drawing, starting_pos, current_width);
+            has_underline = true;
         }
 
-        self.append_box(
-            context.gc_context,
-            LayoutBox::from_drawing(context.gc_context, line_drawing),
-        );
+        if has_underline {
+            self.append_box(
+                context.gc_context,
+                LayoutBox::from_drawing(context.gc_context, line_drawing),
+            );
+        }
     }
 
     /// Apply all indents and alignment to the current line, if necessary.
