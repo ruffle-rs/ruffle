@@ -35,6 +35,7 @@ mod property;
 mod return_value;
 mod scope;
 pub mod script_object;
+pub mod shared_object;
 mod sound_object;
 mod stage_object;
 mod super_object;

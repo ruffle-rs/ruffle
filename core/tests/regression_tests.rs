@@ -5,6 +5,7 @@
 use approx::assert_abs_diff_eq;
 use log::{Metadata, Record};
 use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
+use ruffle_core::backend::storage::MemoryStorageBackend;
 use ruffle_core::backend::{
     audio::NullAudioBackend, input::NullInputBackend, render::NullRenderer,
 };
@@ -294,6 +295,7 @@ fn run_swf(swf_path: &str, num_frames: u32) -> Result<String, Error> {
         Box::new(NullNavigatorBackend::with_base_path(base_path, channel)),
         Box::new(NullInputBackend::new()),
         movie,
+        Box::new(MemoryStorageBackend::default()),
     )?;
 
     for _ in 0..num_frames {

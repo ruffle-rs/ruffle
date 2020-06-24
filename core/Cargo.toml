@@ -29,6 +29,7 @@ url = "2.1.0"
 weak-table = "0.2.3"
 percent-encoding = "2.1.0"
 thiserror = "1.0"
+json = "0.12.4"
 
 [dependencies.jpeg-decoder]
 version = "0.1.19"

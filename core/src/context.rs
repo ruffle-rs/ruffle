@@ -5,6 +5,7 @@ use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::listeners::SystemListener;
 use crate::avm1::{Object, Value};
 use crate::backend::input::InputBackend;
+use crate::backend::storage::StorageBackend;
 use crate::backend::{audio::AudioBackend, navigator::NavigatorBackend, render::RenderBackend};
 use crate::library::Library;
 use crate::loader::LoadManager;
@@ -15,8 +16,8 @@ use crate::transform::TransformStack;
 use core::fmt;
 use gc_arena::{Collect, MutationContext};
 use rand::rngs::SmallRng;
-use std::collections::BTreeMap;
 use std::collections::VecDeque;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Mutex, Weak};
 
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
@@ -64,6 +65,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// The input backend, used to detect user interactions.
     pub input: &'a mut dyn InputBackend,
 
+    /// The storage backend, used for storing persistent state
+    pub storage: &'a mut dyn StorageBackend,
+
     /// The RNG, used by the AVM `RandomNumber` opcode,  `Math.random(),` and `random()`.
     pub rng: &'a mut SmallRng,
 
@@ -103,6 +107,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The current instance ID. Used to generate default `instanceN` names.
     pub instance_counter: &'a mut i32,
+
+    /// Shared objects cache
+    pub shared_objects: &'a mut HashMap<String, Object<'gc>>,
 }
 
 /// A queued ActionScript call.

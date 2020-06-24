@@ -4,6 +4,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use ruffle_core::backend::audio::NullAudioBackend;
 use ruffle_core::backend::input::NullInputBackend;
 use ruffle_core::backend::navigator::NullNavigatorBackend;
+use ruffle_core::backend::storage::MemoryStorageBackend;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::Player;
 use ruffle_render_wgpu::target::TextureTarget;
@@ -84,6 +85,7 @@ fn take_screenshot(
         Box::new(NullNavigatorBackend::new()),
         Box::new(NullInputBackend::new()),
         movie,
+        Box::new(MemoryStorageBackend::default()),
     )?;
 
     player

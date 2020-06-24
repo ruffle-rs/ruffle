@@ -5,6 +5,7 @@ use crate::backend::audio::NullAudioBackend;
 use crate::backend::input::NullInputBackend;
 use crate::backend::navigator::NullNavigatorBackend;
 use crate::backend::render::NullRenderer;
+use crate::backend::storage::MemoryStorageBackend;
 use crate::context::ActionQueue;
 use crate::display_object::{MovieClip, TDisplayObject};
 use crate::library::Library;
@@ -13,7 +14,7 @@ use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use gc_arena::{rootless_arena, GcCell, MutationContext};
 use rand::{rngs::SmallRng, SeedableRng};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
 pub fn with_avm<F, R>(swf_version: u8, test: F) -> R
@@ -60,6 +61,8 @@ where
             load_manager: &mut LoadManager::new(),
             system: &mut SystemProperties::default(),
             instance_counter: &mut 0,
+            storage: &mut MemoryStorageBackend::default(),
+            shared_objects: &mut HashMap::new(),
         };
         root.post_instantiation(&mut avm, &mut context, root, None, false);
         root.set_name(context.gc_context, "");

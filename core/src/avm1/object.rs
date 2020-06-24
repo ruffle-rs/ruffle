@@ -4,8 +4,10 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
+use crate::avm1::shared_object::SharedObject;
 use crate::avm1::super_object::SuperObject;
 use crate::avm1::value_object::ValueObject;
+
 use crate::avm1::xml_attributes_object::XMLAttributesObject;
 use crate::avm1::xml_idmap_object::XMLIDMapObject;
 use crate::avm1::xml_object::XMLObject;
@@ -33,6 +35,7 @@ use std::fmt::Debug;
         XMLIDMapObject(XMLIDMapObject<'gc>),
         ValueObject(ValueObject<'gc>),
         FunctionObject(FunctionObject<'gc>),
+        SharedObject(SharedObject<'gc>)
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -376,6 +379,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying `ValueObject`, if it exists.
     fn as_value_object(&self) -> Option<ValueObject<'gc>> {
+        None
+    }
+
+    /// Get the underlying `SharedObject`, if it exists
+    fn as_shared_object(&self) -> Option<SharedObject<'gc>> {
         None
     }
 

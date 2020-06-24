@@ -6,6 +6,7 @@ mod custom_event;
 mod executor;
 mod input;
 mod navigator;
+mod storage;
 mod task;
 
 use crate::custom_event::RuffleEvent;
@@ -19,6 +20,7 @@ use std::path::PathBuf;
 use std::time::Instant;
 use structopt::StructOpt;
 
+use crate::storage::DiskStorageBackend;
 use ruffle_core::tag_utils::SwfMovie;
 use std::rc::Rc;
 use winit::dpi::{LogicalSize, PhysicalPosition};
@@ -86,7 +88,10 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         event_loop.create_proxy(),
     )); //TODO: actually implement this backend type
     let input = Box::new(input::WinitInputBackend::new(window.clone()));
-    let player = Player::new(renderer, audio, navigator, input, movie)?;
+    let storage = Box::new(DiskStorageBackend::new(
+        input_path.file_name().unwrap_or_default().as_ref(),
+    ));
+    let player = Player::new(renderer, audio, navigator, input, movie, storage)?;
     player.lock().unwrap().set_is_playing(true); // Desktop player will auto-play.
 
     player
@@ -101,7 +106,10 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         // Poll UI events
         event_loop.run(move |event, _window_target, control_flow| {
             match event {
-                winit::event::Event::LoopDestroyed => return,
+                winit::event::Event::LoopDestroyed => {
+                    player.lock().unwrap().flush_shared_objects();
+                    return;
+                }
 
                 // Core loop
                 winit::event::Event::MainEventsCleared => {
