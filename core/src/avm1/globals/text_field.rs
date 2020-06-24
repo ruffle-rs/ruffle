@@ -443,28 +443,28 @@ pub fn attach_virtual_properties<'gc>(gc_context: MutationContext<'gc, '_>, obje
         "text",
         Executable::Native(get_text),
         Some(Executable::Native(set_text)),
-        DontDelete | ReadOnly | DontEnum,
+        ReadOnly.into(),
     );
     object.add_property(
         gc_context,
         "html",
         Executable::Native(get_html),
         Some(Executable::Native(set_html)),
-        DontDelete | ReadOnly | DontEnum,
+        ReadOnly.into(),
     );
     object.add_property(
         gc_context,
         "htmlText",
         Executable::Native(get_html_text),
         Some(Executable::Native(set_html_text)),
-        DontDelete | ReadOnly | DontEnum,
+        ReadOnly.into(),
     );
     object.add_property(
         gc_context,
         "length",
         Executable::Native(get_length),
         None,
-        DontDelete | ReadOnly | DontEnum,
+        ReadOnly.into(),
     );
     object.add_property(
         gc_context,
