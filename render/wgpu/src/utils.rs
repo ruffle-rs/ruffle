@@ -33,10 +33,21 @@ pub fn point(x: Twips, y: Twips) -> lyon::math::Point {
 
 pub fn ruffle_path_to_lyon_path(commands: Vec<DrawCommand>, is_closed: bool) -> Path {
     let mut builder = Path::builder();
-    for cmd in commands {
+    let mut cmds = commands.into_iter().peekable();
+    while let Some(cmd) = cmds.next() {
         match cmd {
             DrawCommand::MoveTo { x, y } => {
-                builder.move_to(point(x, y));
+                // Lyon (incorrectly?) will make a 0-length line segment if you have consecutive MoveTos.
+                // Filter out consecutive MoveTos, only committing the last one.
+                let mut cursor_pos = (x, y);
+                while let Some(DrawCommand::MoveTo { x, y }) = cmds.peek() {
+                    cursor_pos = (*x, *y);
+                    cmds.next();
+                }
+
+                if cmds.peek().is_some() {
+                    builder.move_to(point(cursor_pos.0, cursor_pos.1));
+                }
             }
             DrawCommand::LineTo { x, y } => {
                 builder.line_to(point(x, y));
