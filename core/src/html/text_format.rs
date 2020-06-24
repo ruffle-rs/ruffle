@@ -54,7 +54,7 @@ fn process_html_entity(src: &str) -> String {
 /// means that multiple regions of text apply. When setting the format of a
 /// particular region of text, `None` means that the existing setting for that
 /// property will be retained.
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Debug, Collect, Default)]
 #[collect(require_static)]
 pub struct TextFormat {
     pub font: Option<String>,
@@ -75,31 +75,6 @@ pub struct TextFormat {
     pub bullet: Option<bool>,
     pub url: Option<String>,
     pub target: Option<String>,
-}
-
-impl Default for TextFormat {
-    fn default() -> Self {
-        Self {
-            font: None,
-            size: None,
-            color: None,
-            align: None,
-            bold: None,
-            italic: None,
-            underline: None,
-            left_margin: None,
-            right_margin: None,
-            indent: None,
-            block_indent: None,
-            kerning: None,
-            leading: None,
-            letter_spacing: None,
-            tab_stops: None,
-            bullet: None,
-            url: None,
-            target: None,
-        }
-    }
 }
 
 fn getstr_from_avm1_object<'gc>(
