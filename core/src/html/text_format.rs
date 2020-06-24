@@ -5,44 +5,49 @@ use crate::html::iterators::TextSpanIter;
 use crate::tag_utils::SwfMovie;
 use crate::xml::{Step, XMLDocument, XMLName, XMLNode};
 use gc_arena::{Collect, MutationContext};
+use std::borrow::Cow;
 use std::cmp::{min, Ordering};
 use std::sync::Arc;
 
 /// Replace HTML entities with their equivalent characters.
 ///
 /// Unknown entities will be ignored.
-fn process_html_entity(src: &str) -> String {
-    let mut result_str = String::new();
-    let mut is_entity = false;
-    let mut current_entity: Option<String> = None;
+fn process_html_entity(src: &str) -> Cow<str> {
+    if let Some(amp_index) = src.bytes().position(|c| c == b'&') {
+        // Contains entities; copy and replace.
+        let mut result_str = String::with_capacity(src.len());
 
-    for ch in src.chars() {
-        if is_entity {
-            if ch == ';' {
-                match current_entity.as_deref() {
-                    Some("amp") => result_str.push('&'),
-                    Some("lt") => result_str.push('<'),
-                    Some("gt") => result_str.push('>'),
-                    Some("quot") => result_str.push('"'),
-                    Some("apos") => result_str.push('\''),
-                    Some("nbsp") => result_str.push('\u{00A0}'),
-                    _ => {}
-                };
+        // Copy initial segment.
+        result_str.push_str(&src[0..amp_index]);
 
-                current_entity = None;
-                is_entity = false;
+        let mut entity_start = None;
+        for (i, ch) in src.char_indices() {
+            if let Some(start) = entity_start {
+                if ch == ';' {
+                    match &src[start + 1..i] {
+                        "amp" => result_str.push('&'),
+                        "lt" => result_str.push('<'),
+                        "gt" => result_str.push('>'),
+                        "quot" => result_str.push('"'),
+                        "apos" => result_str.push('\''),
+                        "nbsp" => result_str.push('\u{00A0}'),
+                        _ => {}
+                    };
+
+                    entity_start = None;
+                }
+            } else if ch == '&' {
+                entity_start = Some(i);
             } else {
-                current_entity.as_mut().unwrap().push(ch);
+                result_str.push(ch);
             }
-        } else if ch == '&' {
-            is_entity = true;
-            current_entity = Some(String::new());
-        } else {
-            result_str.push(ch);
         }
-    }
 
-    result_str
+        Cow::Owned(result_str)
+    } else {
+        // No entities; return borrow.
+        Cow::Borrowed(src)
+    }
 }
 
 /// A set of text formatting options to be applied to some part, or the whole
