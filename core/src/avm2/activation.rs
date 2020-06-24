@@ -475,7 +475,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::NewClass { index } => self.op_new_class(method, index),
                 Op::CoerceA => self.op_coerce_a(),
                 Op::ConvertB => self.op_convert_b(),
-                Op::ConvertD => self.op_convert_d(context),
+                Op::ConvertD => self.op_convert_d(),
                 Op::Jump { offset } => self.op_jump(offset, reader),
                 Op::IfTrue { offset } => self.op_if_true(offset, reader),
                 Op::IfFalse { offset } => self.op_if_false(offset, reader),
@@ -526,7 +526,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_push_byte(&mut self, value: u8) -> Result<FrameControl<'gc>, Error> {
-        self.context.avm2.push(value);
+        //TODO: Adobe Animate CC appears to generate signed byte values, and
+        //JPEXS appears to take them.
+        self.context.avm2.push(value as i8 as f64);
         Ok(FrameControl::Continue)
     }
 
@@ -1317,13 +1319,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_convert_d(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error> {
-        let value = self.avm2.pop().coerce_to_number(self, context)?;
+    fn op_convert_d(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value = self.context.avm2.pop().coerce_to_number(self)?;
 
-        self.avm2.push(Value::Number(value));
+        self.context.avm2.push(Value::Number(value));
 
         Ok(FrameControl::Continue)
     }
