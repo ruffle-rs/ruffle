@@ -402,12 +402,16 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         span: &TextSpan,
+        is_device_font: bool,
     ) -> Option<Font<'gc>> {
         let library = context.library.library_for_movie_mut(self.movie.clone());
 
+        // If this text field is set to use device fonts, fallback to using our embedded Noto Sans.
+        // Note that the SWF can still contain a DefineFont tag with no glyphs/layout info in this case (see #451).
+        // In an ideal world, device fonts would search for a matching font on the system and render it in some way.
         if let Some(font) = library
             .get_font_by_name(&span.font, span.bold, span.italic)
-            .filter(|f| f.has_glyphs())
+            .filter(|f| !is_device_font && f.has_glyphs())
             .or_else(|| library.device_font())
         {
             self.font = Some(font);
@@ -747,11 +751,12 @@ impl<'gc> LayoutBox<'gc> {
         movie: Arc<SwfMovie>,
         bounds: Twips,
         is_word_wrap: bool,
+        is_device_font: bool,
     ) -> (Option<GcCell<'gc, LayoutBox<'gc>>>, BoxBounds<Twips>) {
         let mut layout_context = LayoutContext::new(movie, bounds, fs.text());
 
         for (span_start, _end, span_text, span) in fs.iter_spans() {
-            if let Some(font) = layout_context.resolve_font(context, &span) {
+            if let Some(font) = layout_context.resolve_font(context, &span, is_device_font) {
                 layout_context.newspan(span);
 
                 let params = EvalParameters::from_span(span);

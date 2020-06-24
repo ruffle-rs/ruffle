@@ -132,6 +132,7 @@ impl<'gc> EditText<'gc> {
             swf_movie.clone(),
             bounds.width(),
             swf_tag.is_word_wrap,
+            swf_tag.is_device_font,
         );
 
         let has_border = swf_tag.has_border;
@@ -441,6 +442,7 @@ impl<'gc> EditText<'gc> {
             movie,
             width,
             is_word_wrap,
+            edit_text.static_data.text.is_device_font,
         );
 
         edit_text.layout = new_layout;
