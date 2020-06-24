@@ -1,0 +1,30 @@
+//!true
+Inverse is false
+//!false
+Inverse is true
+//!null
+Inverse is true
+//!undefined
+Inverse is true
+//!""
+Inverse is true
+//!"str"
+Inverse is false
+//!"true"
+Inverse is false
+//!"false"
+Inverse is false
+//!0.0
+Inverse is true
+//!NaN
+Inverse is true
+//!-0.0
+Inverse is true
+//!Infinity
+Inverse is false
+//!1.0
+Inverse is false
+//!-1.0
+Inverse is false
+//!new Object()
+Inverse is false

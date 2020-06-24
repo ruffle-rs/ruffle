@@ -480,6 +480,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::IfStrictEq { offset } => self.op_if_strict_eq(offset, reader),
                 Op::IfStrictNe { offset } => self.op_if_strict_ne(offset, reader),
                 Op::StrictEquals => self.op_strict_equals(),
+                Op::Not => self.op_not(),
                 Op::HasNext => self.op_has_next(),
                 Op::HasNext2 {
                     object_register,
@@ -1379,6 +1380,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let value1 = self.context.avm2.pop();
 
         self.context.avm2.push(value1 == value2);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_not(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value = self.avm2.pop().coerce_to_boolean();
+
+        self.avm2.push(!value);
 
         Ok(FrameControl::Continue)
     }
