@@ -138,7 +138,8 @@ pub fn get_local<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .to_owned()
-        .coerce_to_string(avm, action_context)?;
+        .coerce_to_string(avm, action_context)?
+        .to_string();
 
     //Check if this is referencing an existing shared object
     if let Some(so) = action_context.shared_objects.get(&name) {
@@ -156,7 +157,7 @@ pub fn get_local<'gc>(
 
     // Set the internal name
     let obj_so = this.as_shared_object().unwrap();
-    obj_so.set_name(action_context.gc_context, name.clone());
+    obj_so.set_name(action_context.gc_context, name.to_string());
 
     // Create the data object
     let data_proto = avm.prototypes.object;
@@ -300,7 +301,9 @@ pub fn clear<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let data = this.get("data", avm, action_context)?.as_object()?;
+    let data = this
+        .get("data", avm, action_context)?
+        .coerce_to_object(avm, action_context);
 
     for k in &data.get_keys(avm) {
         data.delete(avm, action_context.gc_context, k);
@@ -340,7 +343,9 @@ pub fn flush<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error> {
-    let data = this.get("data", avm, action_context)?.as_object()?;
+    let data = this
+        .get("data", avm, action_context)?
+        .coerce_to_object(avm, action_context);
 
     let mut data_json = JsonValue::new_object();
     recursive_serialize(avm, action_context, data, &mut data_json);
