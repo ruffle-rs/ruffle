@@ -1,13 +1,29 @@
 //! AVM2 values
 
+use crate::avm2::activation::Activation;
 use crate::avm2::names::Namespace;
-use crate::avm2::object::Object;
+use crate::avm2::names::QName;
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
 use crate::avm2::Error;
+use crate::context::UpdateContext;
 use gc_arena::{Collect, MutationContext};
 use std::f64::NAN;
 use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
+
+/// Indicate what kind of primitive coercion would be preferred when coercing
+/// objects.
+#[derive(Eq, PartialEq)]
+pub enum Hint {
+    /// Prefer string coercion (e.g. call `toString` preferentially over
+    /// `valueOf`)
+    String,
+
+    /// Prefer numerical coercion (e.g. call `valueOf` preferentially over
+    /// `toString`)
+    Number,
+}
 
 /// An AVM2 value.
 ///
@@ -235,6 +251,18 @@ impl<'gc> Value<'gc> {
         }
     }
 
+    /// Yields `true` if the given value is a primitive value.
+    ///
+    /// Note: Boxed primitive values are not considered primitive - it is
+    /// expected that their `toString`/`valueOf` handlers have already had a
+    /// chance to unbox the primitive contained within.
+    pub fn is_primitive(&self) -> bool {
+        match self {
+            Value::Object(_) | Value::Namespace(_) => false,
+            _ => true,
+        }
+    }
+
     /// Coerce the value to a boolean.
     ///
     /// Boolean coercion happens according to the rules specified in the ES4
@@ -248,5 +276,164 @@ impl<'gc> Value<'gc> {
             Value::Namespace(_) => true,
             Value::Object(_) => true,
         }
+    }
+
+    /// Coerce the value to a primitive.
+    ///
+    /// This function is guaranteed to return either a primitive value, or a
+    /// `TypeError`.
+    ///
+    /// The `Hint` parameter selects if the coercion prefers `toString` or
+    /// `valueOf`. If the preferred function is not available, it's opposite
+    /// will be called. If neither function successfully generates a primitive,
+    /// a `TypeError` will be raised.
+    ///
+    /// Primitive conversions occur according to ECMA-262 3rd Edition's
+    /// ToPrimitive algorithm which appears to match AVM2.
+    pub fn coerce_to_primitive(
+        &self,
+        hint: Hint,
+        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        match self {
+            Value::Object(o) if hint == Hint::String => {
+                let mut prim = self.clone();
+                let mut object = *o;
+
+                if let Value::Object(f) = object.get_property(
+                    *o,
+                    &QName::dynamic_name("toString"),
+                    activation,
+                    context,
+                )? {
+                    prim = f.call(Some(*o), &[], activation, context, None)?;
+                }
+
+                if prim.is_primitive() {
+                    return Ok(prim);
+                }
+
+                if let Value::Object(f) =
+                    object.get_property(*o, &QName::dynamic_name("valueOf"), activation, context)?
+                {
+                    prim = f.call(Some(*o), &[], activation, context, None)?;
+                }
+
+                if prim.is_primitive() {
+                    return Ok(prim);
+                }
+
+                Err("TypeError: cannot convert object to string".into())
+            }
+            Value::Object(o) if hint == Hint::Number => {
+                let mut prim = self.clone();
+                let mut object = *o;
+
+                if let Value::Object(f) =
+                    object.get_property(*o, &QName::dynamic_name("valueOf"), activation, context)?
+                {
+                    prim = f.call(Some(*o), &[], activation, context, None)?;
+                }
+
+                if prim.is_primitive() {
+                    return Ok(prim);
+                }
+
+                if let Value::Object(f) = object.get_property(
+                    *o,
+                    &QName::dynamic_name("toString"),
+                    activation,
+                    context,
+                )? {
+                    prim = f.call(Some(*o), &[], activation, context, None)?;
+                }
+
+                if prim.is_primitive() {
+                    return Ok(prim);
+                }
+
+                Err("TypeError: cannot convert object to number".into())
+            }
+            _ => Ok(self.clone()),
+        }
+    }
+
+    /// Coerce the value to a floating-point number.
+    ///
+    /// This function returns the resulting floating-point directly; or a
+    /// TypeError if the value is an `Object` that cannot be converted to a
+    /// primitive value.
+    ///
+    /// Numerical conversions occur according to ECMA-262 3rd Edition's
+    /// ToNumber algorithm which appears to match AVM2.
+    pub fn coerce_to_number(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<f64, Error> {
+        Ok(match self {
+            Value::Undefined => f64::NAN,
+            Value::Null => 0.0,
+            Value::Bool(true) => 1.0,
+            Value::Bool(false) => 0.0,
+            Value::Number(n) => *n,
+            Value::String(s) => {
+                let strim = s.trim();
+                if strim.is_empty() {
+                    0.0
+                } else if strim.starts_with("0x") || strim.starts_with("0X") {
+                    let mut n: f64 = 0.0;
+                    for c in strim[2..].chars() {
+                        n *= 16.0;
+                        n += match c {
+                            '0' => 0.0,
+                            '1' => 1.0,
+                            '2' => 2.0,
+                            '3' => 3.0,
+                            '4' => 4.0,
+                            '5' => 5.0,
+                            '6' => 6.0,
+                            '7' => 7.0,
+                            '8' => 8.0,
+                            '9' => 9.0,
+                            'a' | 'A' => 10.0,
+                            'b' | 'B' => 11.0,
+                            'c' | 'C' => 12.0,
+                            'd' | 'D' => 13.0,
+                            'e' | 'E' => 14.0,
+                            'f' | 'F' => 15.0,
+                            _ => return Ok(f64::NAN),
+                        };
+                    }
+
+                    n
+                } else {
+                    let (sign, digits) = if strim.starts_with('+') {
+                        (1.0, &strim[1..])
+                    } else if strim.starts_with('-') {
+                        (-1.0, &strim[1..])
+                    } else {
+                        (1.0, strim)
+                    };
+
+                    if digits == "Infinity" {
+                        return Ok(sign * f64::INFINITY);
+                    }
+
+                    //TODO: This is slightly more permissive than ES3 spec, as
+                    //Rust documentation claims it will accept "inf" as f64
+                    //infinity.
+                    sign * digits.parse().unwrap_or(f64::NAN)
+                }
+            }
+            Value::Namespace(ns) => {
+                Value::String(AvmString::new(context.gc_context, ns.as_uri().to_string()))
+                    .coerce_to_number(activation, context)?
+            }
+            Value::Object(_) => self
+                .coerce_to_primitive(Hint::Number, activation, context)?
+                .coerce_to_number(activation, context)?,
+        })
     }
 }

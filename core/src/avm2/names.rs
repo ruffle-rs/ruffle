@@ -80,6 +80,22 @@ impl<'gc> Namespace<'gc> {
     pub fn is_private(&self) -> bool {
         matches!(self, Self::Private(_))
     }
+
+    /// Get the string value of this namespace, ignoring it's type.
+    ///
+    /// TODO: Is this *actually* the namespace URI?
+    pub fn as_uri(&self) -> &str {
+        match self {
+            Self::Namespace(s) => s,
+            Self::Package(s) => s,
+            Self::PackageInternal(s) => s,
+            Self::Protected(s) => s,
+            Self::Explicit(s) => s,
+            Self::StaticProtected(s) => s,
+            Self::Private(s) => s,
+            Self::Any => "",
+        }
+    }
 }
 
 /// A `QName`, likely "qualified name", consists of a namespace and name string.
