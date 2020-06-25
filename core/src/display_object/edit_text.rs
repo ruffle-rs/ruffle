@@ -423,6 +423,10 @@ impl<'gc> EditText<'gc> {
         }
     }
 
+    /// Internal padding between the bounds of the EditText and the maximum
+    /// width of text inside the layout.
+    const INTERNAL_PADDING: f64 = 7.0;
+
     /// Relayout the `EditText`.
     ///
     /// This function operats exclusively with the text-span representation of
@@ -434,7 +438,7 @@ impl<'gc> EditText<'gc> {
         let autosize = edit_text.autosize;
         let is_word_wrap = edit_text.is_word_wrap;
         let movie = edit_text.static_data.swf.clone();
-        let width = edit_text.bounds.width() - Twips::from_pixels(7.0);
+        let width = edit_text.bounds.width() - Twips::from_pixels(Self::INTERNAL_PADDING);
 
         let (new_layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
             &edit_text.text_spans,
