@@ -45,14 +45,14 @@ impl<T> Position<T> {
 
 impl<T> Position<T>
 where
-    T: Clone,
+    T: Copy,
 {
     pub fn x(&self) -> T {
-        self.x.clone()
+        self.x
     }
 
     pub fn y(&self) -> T {
-        self.y.clone()
+        self.y
     }
 }
 
@@ -112,14 +112,14 @@ impl<T> From<(T, T)> for Size<T> {
 #[allow(dead_code)]
 impl<T> Size<T>
 where
-    T: Clone,
+    T: Copy,
 {
     pub fn width(&self) -> T {
-        self.width.clone()
+        self.width
     }
 
     pub fn height(&self) -> T {
-        self.height.clone()
+        self.height
     }
 }
 
@@ -187,20 +187,20 @@ where
 #[allow(dead_code)]
 impl<T> BoxBounds<T>
 where
-    T: Add<T, Output = T> + Sub<T, Output = T> + Clone,
+    T: Add<T, Output = T> + Sub<T, Output = T> + Copy,
 {
     pub fn from_position_and_size(pos: Position<T>, size: Size<T>) -> Self {
         Self {
-            offset_x: pos.x.clone(),
+            offset_x: pos.x,
             extent_x: pos.x + size.width,
-            offset_y: pos.y.clone(),
+            offset_y: pos.y,
             extent_y: pos.y + size.height,
         }
     }
 
     pub fn into_position_and_size(self) -> (Position<T>, Size<T>) {
-        let width = self.extent_x - self.offset_x.clone();
-        let height = self.extent_y - self.offset_y.clone();
+        let width = self.extent_x - self.offset_x;
+        let height = self.extent_y - self.offset_y;
 
         (
             Position::from((self.offset_x, self.offset_y)),
@@ -212,22 +212,22 @@ where
 #[allow(dead_code)]
 impl<T> BoxBounds<T>
 where
-    T: Clone,
+    T: Copy,
 {
     pub fn offset_x(&self) -> T {
-        self.offset_x.clone()
+        self.offset_x
     }
 
     pub fn offset_y(&self) -> T {
-        self.offset_y.clone()
+        self.offset_y
     }
 
     pub fn extent_x(&self) -> T {
-        self.extent_x.clone()
+        self.extent_x
     }
 
     pub fn extent_y(&self) -> T {
-        self.extent_y.clone()
+        self.extent_y
     }
 
     pub fn origin(&self) -> Position<T> {
@@ -241,7 +241,7 @@ where
 
 impl<T> BoxBounds<T>
 where
-    T: Sub<T, Output = T> + Clone,
+    T: Sub<T, Output = T> + Copy,
 {
     pub fn width(&self) -> T {
         self.extent_x() - self.offset_x()
@@ -255,13 +255,13 @@ where
 #[allow(dead_code)]
 impl<T> BoxBounds<T>
 where
-    T: Add<T, Output = T> + Clone,
+    T: Add<T, Output = T> + Copy,
 {
     pub fn with_size(self, new_size: Size<T>) -> Self {
         Self {
-            offset_x: self.offset_x.clone(),
+            offset_x: self.offset_x,
             extent_x: self.offset_x + new_size.width,
-            offset_y: self.offset_y.clone(),
+            offset_y: self.offset_y,
             extent_y: self.offset_y + new_size.height,
         }
     }
@@ -269,7 +269,7 @@ where
 
 impl<T> Add for BoxBounds<T>
 where
-    T: Add<T> + Ord + Clone,
+    T: Add<T> + Ord + Copy,
 {
     type Output = Self;
 
@@ -285,27 +285,27 @@ where
 
 impl<T> AddAssign for BoxBounds<T>
 where
-    T: AddAssign<T> + Ord + Clone,
+    T: AddAssign<T> + Ord + Copy,
 {
     fn add_assign(&mut self, rhs: Self) {
-        self.offset_x = min(self.offset_x.clone(), rhs.offset_x);
-        self.extent_x = max(self.extent_x.clone(), rhs.extent_x);
-        self.offset_y = min(self.offset_y.clone(), rhs.offset_y);
-        self.extent_y = max(self.extent_y.clone(), rhs.extent_y);
+        self.offset_x = min(self.offset_x, rhs.offset_x);
+        self.extent_x = max(self.extent_x, rhs.extent_x);
+        self.offset_y = min(self.offset_y, rhs.offset_y);
+        self.extent_y = max(self.extent_y, rhs.extent_y);
     }
 }
 
 impl<T> Add<Position<T>> for BoxBounds<T>
 where
-    T: Add<T, Output = T> + Clone,
+    T: Add<T, Output = T> + Copy,
 {
     type Output = Self;
 
     fn add(self, rhs: Position<T>) -> Self::Output {
         Self {
-            offset_x: self.offset_x + rhs.x.clone(),
+            offset_x: self.offset_x + rhs.x,
             extent_x: self.extent_x + rhs.x,
-            offset_y: self.offset_y + rhs.y.clone(),
+            offset_y: self.offset_y + rhs.y,
             extent_y: self.extent_y + rhs.y,
         }
     }
@@ -313,19 +313,19 @@ where
 
 impl<T> AddAssign<Position<T>> for BoxBounds<T>
 where
-    T: AddAssign<T> + Clone,
+    T: AddAssign<T> + Copy,
 {
     fn add_assign(&mut self, rhs: Position<T>) {
-        self.offset_x += rhs.x.clone();
+        self.offset_x += rhs.x;
         self.extent_x += rhs.x;
-        self.offset_y += rhs.y.clone();
+        self.offset_y += rhs.y;
         self.extent_y += rhs.y;
     }
 }
 
 impl<T> Add<Size<T>> for BoxBounds<T>
 where
-    T: Add<T, Output = T> + Clone,
+    T: Add<T, Output = T> + Copy,
 {
     type Output = Self;
 
@@ -341,7 +341,7 @@ where
 
 impl<T> AddAssign<Size<T>> for BoxBounds<T>
 where
-    T: AddAssign<T> + Clone,
+    T: AddAssign<T> + Copy,
 {
     fn add_assign(&mut self, rhs: Size<T>) {
         self.extent_x += rhs.width;
