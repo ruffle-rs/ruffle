@@ -5,7 +5,8 @@ use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::f64_to_wrapping_u32;
 use crate::avm1::{
-    fscommand, globals, skip_actions, start_drag, value_object, Avm1, ScriptObject, Value,
+    fscommand, globals, skip_actions, start_drag, value_object, Activation, Avm1, ScriptObject,
+    Value,
 };
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
@@ -28,11 +29,12 @@ macro_rules! avm_debug {
 #[collect(no_drop)]
 pub struct StackFrame<'a, 'gc: 'a> {
     avm: &'a mut Avm1<'gc>,
+    activation: GcCell<'gc, Activation<'gc>>,
 }
 
 impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
-    pub fn new(avm: &'a mut Avm1<'gc>) -> Self {
-        Self { avm }
+    pub fn new(avm: &'a mut Avm1<'gc>, activation: GcCell<'gc, Activation<'gc>>) -> Self {
+        Self { avm, activation }
     }
 
     /// Run a single action from a given action reader.
@@ -41,7 +43,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut Reader<'_>,
     ) -> Result<(), Error<'gc>> {
-        let data = self.avm.current_stack_frame().unwrap().read().data();
+        let data = self.activation.read().data();
 
         if reader.pos() >= (data.end - data.start) {
             //Executing beyond the end of a function constitutes an implicit return.
@@ -490,9 +492,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             context.gc_context,
             constant_pool.iter().map(|s| (*s).to_string()).collect(),
         );
-        self.avm
-            .current_stack_frame()
-            .unwrap()
+        self.activation
             .write(context.gc_context)
             .set_constant_pool(self.avm.constant_pool);
 
@@ -515,25 +515,11 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         params: &[&str],
         actions: &[u8],
     ) -> Result<(), Error<'gc>> {
-        let swf_version = self.avm.current_stack_frame().unwrap().read().swf_version();
-        let func_data = self
-            .avm
-            .current_stack_frame()
-            .unwrap()
-            .read()
-            .data()
-            .to_subslice(actions)
-            .unwrap();
-        let scope = Scope::new_closure_scope(
-            self.avm.current_stack_frame().unwrap().read().scope_cell(),
-            context.gc_context,
-        );
-        let constant_pool = self
-            .avm
-            .current_stack_frame()
-            .unwrap()
-            .read()
-            .constant_pool();
+        let swf_version = self.activation.read().swf_version();
+        let func_data = self.activation.read().data().to_subslice(actions).unwrap();
+        let scope =
+            Scope::new_closure_scope(self.activation.read().scope_cell(), context.gc_context);
+        let constant_pool = self.activation.read().constant_pool();
         let func = Avm1Function::from_df1(
             swf_version,
             func_data,
@@ -554,11 +540,9 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         if name == "" {
             self.avm.push(func_obj);
         } else {
-            self.avm.current_stack_frame().unwrap().read().define(
-                name,
-                func_obj,
-                context.gc_context,
-            );
+            self.activation
+                .read()
+                .define(name, func_obj, context.gc_context);
         }
 
         Ok(())
@@ -569,25 +553,16 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         action_func: &Function,
     ) -> Result<(), Error<'gc>> {
-        let swf_version = self.avm.current_stack_frame().unwrap().read().swf_version();
+        let swf_version = self.activation.read().swf_version();
         let func_data = self
-            .avm
-            .current_stack_frame()
-            .unwrap()
+            .activation
             .read()
             .data()
             .to_subslice(action_func.actions)
             .unwrap();
-        let scope = Scope::new_closure_scope(
-            self.avm.current_stack_frame().unwrap().read().scope_cell(),
-            context.gc_context,
-        );
-        let constant_pool = self
-            .avm
-            .current_stack_frame()
-            .unwrap()
-            .read()
-            .constant_pool();
+        let scope =
+            Scope::new_closure_scope(self.activation.read().scope_cell(), context.gc_context);
+        let constant_pool = self.activation.read().constant_pool();
         let func = Avm1Function::from_df2(
             swf_version,
             func_data,
@@ -607,11 +582,9 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         if action_func.name == "" {
             self.avm.push(func_obj);
         } else {
-            self.avm.current_stack_frame().unwrap().read().define(
-                action_func.name,
-                func_obj,
-                context.gc_context,
-            );
+            self.activation
+                .read()
+                .define(action_func.name, func_obj, context.gc_context);
         }
 
         Ok(())
@@ -626,8 +599,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let value = self.avm.pop();
         let name_val = self.avm.pop();
         let name = name_val.coerce_to_string(self.avm, context)?;
-        let stack_frame = self.avm.current_stack_frame().unwrap();
-        let stack_frame = stack_frame.read();
+        let stack_frame = self.activation.read();
         let scope = stack_frame.scope();
         scope.locals().set(&name, value, self.avm, context)
     }
@@ -640,8 +612,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         // Otherwise, the property is unchanged.
         let name_val = self.avm.pop();
         let name = name_val.coerce_to_string(self.avm, context)?;
-        let stack_frame = self.avm.current_stack_frame().unwrap();
-        let stack_frame = stack_frame.read();
+        let stack_frame = self.activation.read();
         let scope = stack_frame.scope();
         if !scope.locals().has_property(self.avm, context, &name) {
             scope
@@ -679,16 +650,9 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
 
         //Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
         //a boolean based on if the delete actually deleted something.
-        let did_exist = self
-            .avm
-            .current_stack_frame()
-            .unwrap()
-            .read()
-            .is_defined(self.avm, context, &name);
+        let did_exist = self.activation.read().is_defined(self.avm, context, &name);
 
-        self.avm
-            .current_stack_frame()
-            .unwrap()
+        self.activation
             .read()
             .scope()
             .delete(self.avm, context, &name, context.gc_context);
@@ -726,9 +690,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let name = name_value.coerce_to_string(self.avm, context)?;
         self.avm.push(Value::Null); // Sentinel that indicates end of enumeration
         let object = self
-            .avm
-            .current_stack_frame()
-            .unwrap()
+            .activation
             .read()
             .resolve(&name, self.avm, context)?
             .resolve(self.avm, context)?;
@@ -1495,9 +1457,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                 SwfValue::Register(v) => self.avm.current_register(*v),
                 SwfValue::ConstantPool(i) => {
                     if let Some(value) = self
-                        .avm
-                        .current_stack_frame()
-                        .unwrap()
+                        .activation
                         .read()
                         .constant_pool()
                         .read()
@@ -1508,13 +1468,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                         log::warn!(
                             "ActionPush: Constant pool index {} out of range (len = {})",
                             i,
-                            self.avm
-                                .current_stack_frame()
-                                .unwrap()
-                                .read()
-                                .constant_pool()
-                                .read()
-                                .len()
+                            self.activation.read().constant_pool().read().len()
                         );
                         Value::Undefined
                     }
@@ -1662,8 +1616,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             new_target_clip = None;
         }
 
-        let stack_frame = self.avm.current_stack_frame().unwrap();
-        let mut sf = stack_frame.write(context.gc_context);
+        let mut sf = self.activation.write(context.gc_context);
         sf.set_target_clip(new_target_clip);
 
         let scope = sf.scope_cell();
@@ -1688,15 +1641,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             }
             Value::Undefined => {
                 // Reset
-                let stack_frame = self.avm.current_stack_frame().unwrap();
-                let mut sf = stack_frame.write(context.gc_context);
+                let mut sf = self.activation.write(context.gc_context);
                 let base_clip = sf.base_clip();
                 sf.set_target_clip(Some(base_clip));
             }
             Value::Object(o) => {
                 if let Some(clip) = o.as_display_object() {
-                    let stack_frame = self.avm.current_stack_frame().unwrap();
-                    let mut sf = stack_frame.write(context.gc_context);
+                    let mut sf = self.activation.write(context.gc_context);
                     // Movieclips can be targetted directly
                     sf.set_target_clip(Some(clip));
                 } else {
@@ -1711,8 +1662,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             }
         };
 
-        let stack_frame = self.avm.current_stack_frame().unwrap();
-        let mut sf = stack_frame.write(context.gc_context);
+        let mut sf = self.activation.write(context.gc_context);
         let scope = sf.scope_cell();
         let clip_obj = sf
             .target_clip()
@@ -2019,25 +1969,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         actions: &[u8],
     ) -> Result<(), Error<'gc>> {
         let object = self.avm.pop().coerce_to_object(self.avm, context);
-        let block = self
-            .avm
-            .current_stack_frame()
-            .unwrap()
-            .read()
-            .data()
-            .to_subslice(actions)
-            .unwrap();
+        let block = self.activation.read().data().to_subslice(actions).unwrap();
         let with_scope = Scope::new_with_scope(
-            self.avm.current_stack_frame().unwrap().read().scope_cell(),
+            self.activation.read().scope_cell(),
             object,
             context.gc_context,
         );
-        let new_activation = self
-            .avm
-            .current_stack_frame()
-            .unwrap()
-            .read()
-            .to_rescope(block, with_scope);
+        let new_activation = self.activation.read().to_rescope(block, with_scope);
         self.avm
             .stack_frames
             .push(GcCell::allocate(context.gc_context, new_activation));

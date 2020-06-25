@@ -539,7 +539,8 @@ impl<'gc> Avm1<'gc> {
         while !self.stack_frames.is_empty() {
             if let Err(e) = self.with_current_reader_mut(context, |this, r, context| {
                 if !this.halted {
-                    StackFrame::new(this).do_next_action(context, r)
+                    let activation = this.current_stack_frame().unwrap();
+                    StackFrame::new(this, activation).do_next_action(context, r)
                 } else {
                     Ok(())
                 }
@@ -592,7 +593,8 @@ impl<'gc> Avm1<'gc> {
             {
                 self.with_current_reader_mut(context, |this, r, context| {
                     if !this.halted {
-                        StackFrame::new(this).do_next_action(context, r)
+                        let activation = this.current_stack_frame().unwrap();
+                        StackFrame::new(this, activation).do_next_action(context, r)
                     } else {
                         Ok(())
                     }
