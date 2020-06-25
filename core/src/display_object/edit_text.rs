@@ -704,6 +704,11 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
+        if !self.world_bounds().intersects(&context.view_bounds) {
+            // Off-screen; culled
+            return;
+        }
+
         let transform = self.transform().clone();
         context.transform_stack.push(&transform);
 
