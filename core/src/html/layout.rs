@@ -600,7 +600,7 @@ pub struct LayoutBox<'gc> {
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
-pub struct Collec<T>(T);
+pub struct CollectWrapper<T>(T);
 
 /// Represents different content modes of a given `LayoutBox`.
 ///
@@ -630,7 +630,7 @@ pub enum LayoutContent<'gc> {
         params: EvalParameters,
 
         /// The color to render the font with.
-        color: Collec<swf::Color>,
+        color: CollectWrapper<swf::Color>,
     },
 
     /// A layout box containing a bullet.
@@ -649,7 +649,7 @@ pub enum LayoutContent<'gc> {
         params: EvalParameters,
 
         /// The color to render the font with.
-        color: Collec<swf::Color>,
+        color: CollectWrapper<swf::Color>,
     },
 
     /// A layout box containing a drawing.
@@ -682,7 +682,7 @@ impl<'gc> LayoutBox<'gc> {
                     text_format: span.get_text_format(),
                     font,
                     params,
-                    color: Collec(span.color.clone()),
+                    color: CollectWrapper(span.color.clone()),
                 },
             },
         )
@@ -705,7 +705,7 @@ impl<'gc> LayoutBox<'gc> {
                     text_format: span.get_text_format(),
                     font,
                     params,
-                    color: Collec(span.color.clone()),
+                    color: CollectWrapper(span.color.clone()),
                 },
             },
         )
