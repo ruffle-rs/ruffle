@@ -132,17 +132,7 @@ impl<T> From<Position<T>> for Size<T> {
     }
 }
 
-/// A type which represents the offset and size of text-orientation-relative
-/// boxes.
-///
-/// For the purposes of internationalization, the two axes are called "primary"
-/// and "secondary", and the directions are "leading" for the direction of text
-/// flow and "trailing" for the opposite direction. The meaning of these axis
-/// and directions are determined by the `WritingMode` of a given `LayoutBox`.
-///
-/// To obtain concretely-oriented dimensions, use `into_screen_space` to
-/// transform the coordinates into a pair of top, left, right, and bottom
-/// coordinates.
+/// A type which represents the offset and size of a text box.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Collect)]
 #[collect(require_static)]
 pub struct BoxBounds<T> {
