@@ -77,6 +77,9 @@ pub struct EditTextData<'gc> {
     /// If the text field should have a border.
     has_border: bool,
 
+    /// If the text field is required to use device fonts only.
+    is_device_font: bool,
+
     /// The current border drawing.
     drawing: Drawing,
 
@@ -136,6 +139,7 @@ impl<'gc> EditText<'gc> {
         );
 
         let has_border = swf_tag.has_border;
+        let is_device_font = swf_tag.is_device_font;
 
         let mut base = DisplayObjectBase::default();
 
@@ -158,6 +162,7 @@ impl<'gc> EditText<'gc> {
                 is_multiline,
                 is_word_wrap,
                 has_border,
+                is_device_font,
                 drawing: Drawing::new(),
                 object: None,
                 layout,
@@ -343,6 +348,19 @@ impl<'gc> EditText<'gc> {
         self.redraw_border(context);
     }
 
+    pub fn is_device_font(self) -> bool {
+        self.0.read().is_device_font
+    }
+
+    pub fn set_is_device_font(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        is_device_font: bool,
+    ) {
+        self.0.write(context.gc_context).is_device_font = is_device_font;
+        self.relayout(context);
+    }
+
     pub fn replace_text(
         self,
         from: usize,
@@ -446,7 +464,7 @@ impl<'gc> EditText<'gc> {
             movie,
             width,
             is_word_wrap,
-            edit_text.static_data.text.is_device_font,
+            edit_text.is_device_font,
         );
 
         edit_text.layout = new_layout;

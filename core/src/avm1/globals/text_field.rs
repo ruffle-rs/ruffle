@@ -170,6 +170,38 @@ pub fn set_border<'gc>(
     Ok(Value::Undefined.into())
 }
 
+pub fn get_embed_fonts<'gc>(
+    _avm: &mut Avm1<'gc>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(display_object) = this.as_display_object() {
+        if let Some(text_field) = display_object.as_edit_text() {
+            return Ok((!text_field.is_device_font()).into());
+        }
+    }
+
+    Ok(Value::Undefined.into())
+}
+
+pub fn set_embed_fonts<'gc>(
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<ReturnValue<'gc>, Error> {
+    if let Some(display_object) = this.as_display_object() {
+        if let Some(text_field) = display_object.as_edit_text() {
+            if let Some(value) = args.get(0) {
+                let embed_fonts = value.as_bool(avm.current_swf_version());
+                text_field.set_is_device_font(context, embed_fonts);
+            }
+        }
+    }
+    Ok(Value::Undefined.into())
+}
+
 pub fn get_length<'gc>(
     _avm: &mut Avm1<'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
@@ -455,6 +487,13 @@ pub fn attach_virtual_properties<'gc>(gc_context: MutationContext<'gc, '_>, obje
         "border",
         Executable::Native(get_border),
         Some(Executable::Native(set_border)),
+        ReadOnly.into(),
+    );
+    object.add_property(
+        gc_context,
+        "embedFonts",
+        Executable::Native(get_embed_fonts),
+        Some(Executable::Native(set_embed_fonts)),
         ReadOnly.into(),
     );
 }
