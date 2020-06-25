@@ -195,7 +195,7 @@ pub fn set_embed_fonts<'gc>(
         if let Some(text_field) = display_object.as_edit_text() {
             if let Some(value) = args.get(0) {
                 let embed_fonts = value.as_bool(avm.current_swf_version());
-                text_field.set_is_device_font(context, embed_fonts);
+                text_field.set_is_device_font(context, !embed_fonts);
             }
         }
     }
