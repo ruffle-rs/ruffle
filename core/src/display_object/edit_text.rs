@@ -89,7 +89,7 @@ pub struct EditTextData<'gc> {
     autosize: AutoSizeMode,
 
     /// The calculated layout box.
-    layout: Option<GcCell<'gc, LayoutBox<'gc>>>,
+    layout: Vec<LayoutBox<'gc>>,
 
     /// The intrinsic bounds of the laid-out text.
     intrinsic_bounds: BoxBounds<Twips>,
@@ -523,12 +523,8 @@ impl<'gc> EditText<'gc> {
     }
 
     /// Render a layout box, plus it's children.
-    fn render_layout_box(
-        self,
-        context: &mut RenderContext<'_, 'gc>,
-        lbox: GcCell<'gc, LayoutBox<'gc>>,
-    ) {
-        let box_transform: Transform = lbox.read().bounds().origin().into();
+    fn render_layout_box(self, context: &mut RenderContext<'_, 'gc>, lbox: &LayoutBox<'gc>) {
+        let box_transform: Transform = lbox.bounds().origin().into();
         context.transform_stack.push(&box_transform);
 
         let edit_text = self.0.read();
@@ -538,7 +534,7 @@ impl<'gc> EditText<'gc> {
         // Instead, we embed an SWF version of Noto Sans to use as the "device font", and render
         // it the same as any other SWF outline text.
         if let Some((text, _tf, font, params, color)) =
-            lbox.read().as_renderable_text(edit_text.text_spans.text())
+            lbox.as_renderable_text(edit_text.text_spans.text())
         {
             font.evaluate(
                 text,
@@ -555,7 +551,7 @@ impl<'gc> EditText<'gc> {
             );
         }
 
-        if let Some(drawing) = lbox.read().as_renderable_drawing() {
+        if let Some(drawing) = lbox.as_renderable_drawing() {
             drawing.render(context);
         }
 
@@ -612,7 +608,10 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             .duplicate(context.gc_context, true)
             .document();
 
-        text.layout = text.layout.map(|l| l.read().duplicate(context.gc_context));
+        let mut new_layout = Vec::new();
+        for layout_box in text.layout.iter() {
+            new_layout.push(layout_box.duplicate(context.gc_context));
+        }
     }
 
     fn object(&self) -> Value<'gc> {
@@ -710,12 +709,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         self.0.read().drawing.render(context);
 
-        let mut ptr = self.0.read().layout;
-
-        while let Some(lbox) = ptr {
-            self.render_layout_box(context, lbox);
-
-            ptr = lbox.read().next_sibling();
+        for layout_box in self.0.read().layout.iter() {
+            self.render_layout_box(context, layout_box);
         }
 
         context.transform_stack.pop();

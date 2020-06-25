@@ -53,11 +53,8 @@ pub struct LayoutContext<'a, 'gc> {
     /// The highest font size observed within the current line.
     max_font_size: Twips,
 
-    /// The start of the current chain of layout boxes.
-    first_box: Option<GcCell<'gc, LayoutBox<'gc>>>,
-
-    /// The end of the current chain of layout boxes.
-    last_box: Option<GcCell<'gc, LayoutBox<'gc>>>,
+    /// The growing list of layout boxes to return when layout has finished.
+    boxes: Vec<LayoutBox<'gc>>,
 
     /// The exterior bounds of all laid-out text, including left and right
     /// margins.
@@ -78,8 +75,11 @@ pub struct LayoutContext<'a, 'gc> {
     /// the singular line if we have yet to process a newline.
     has_line_break: bool,
 
-    /// All layout boxes in the current line being laid out.
-    current_line: Option<GcCell<'gc, LayoutBox<'gc>>>,
+    /// The first box within the current line.
+    ///
+    /// If equal to the length of the array, then no layout boxes currenly
+    /// exist for this line.
+    current_line: usize,
 
     /// The right margin of the first span in the current line.
     current_line_span: TextSpan,
@@ -96,12 +96,11 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             font: None,
             text,
             max_font_size: Default::default(),
-            first_box: None,
-            last_box: None,
+            boxes: Vec::new(),
             exterior_bounds: None,
             is_first_line: true,
             has_line_break: false,
-            current_line: None,
+            current_line: 0,
             current_line_span: Default::default(),
             max_bounds,
         }
@@ -139,11 +138,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
     /// Construct an underline drawing for the current line of text and add it
     /// to the line.
-    fn append_underlines(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn append_underlines(&mut self) {
         let mut starting_pos: Option<Position<Twips>> = None;
         let mut current_width: Option<Twips> = None;
         let mut line_drawing = Drawing::new();
-        let mut line = self.current_line;
         let mut has_underline: bool = false;
 
         line_drawing.set_line_style(Some(swf::LineStyle::new_v1(
@@ -151,49 +149,51 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             swf::Color::from_rgb(0, 255),
         )));
 
-        while let Some(linebox) = line {
-            let read = linebox.read();
+        if let Some(linelist) = self.boxes.get(self.current_line..) {
+            for linebox in linelist {
+                if linebox.is_text_box() {
+                    if let Some((_t, tf, font, params, _color)) =
+                        linebox.as_renderable_text(self.text)
+                    {
+                        let underline_baseline =
+                            font.get_baseline_for_height(params.height()) + Twips::from_pixels(2.0);
+                        let mut line_extended = false;
 
-            if read.is_text_box() {
-                if let Some((_t, tf, font, params, _color)) = read.as_renderable_text(self.text) {
-                    let underline_baseline =
-                        font.get_baseline_for_height(params.height()) + Twips::from_pixels(2.0);
-                    let mut line_extended = false;
+                        if let Some(starting_pos) = starting_pos {
+                            if tf.underline.unwrap_or(false)
+                                && underline_baseline + linebox.bounds().origin().y()
+                                    == starting_pos.y()
+                            {
+                                //Underline is at the same baseline, extend it
+                                current_width =
+                                    Some(linebox.bounds().extent_x() - starting_pos.x());
 
-                    if let Some(starting_pos) = starting_pos {
-                        if tf.underline.unwrap_or(false)
-                            && underline_baseline + read.bounds().origin().y() == starting_pos.y()
-                        {
-                            //Underline is at the same baseline, extend it
-                            current_width = Some(read.bounds().extent_x() - starting_pos.x());
-
-                            line_extended = true;
-                        }
-                    }
-
-                    if !line_extended {
-                        //For whatever reason, we cannot extend the current underline.
-                        //This can happen if we don't have an underline to extend, the
-                        //underlines don't match, or this span doesn't call for one.
-                        if let (Some(pos), Some(width)) = (starting_pos, current_width) {
-                            draw_underline(&mut line_drawing, pos, width);
-                            has_underline = true;
-                            starting_pos = None;
-                            current_width = None;
+                                line_extended = true;
+                            }
                         }
 
-                        if tf.underline.unwrap_or(false) {
-                            starting_pos = Some(
-                                read.bounds().origin()
-                                    + Position::from((Twips::zero(), underline_baseline)),
-                            );
-                            current_width = Some(read.bounds().width());
+                        if !line_extended {
+                            //For whatever reason, we cannot extend the current underline.
+                            //This can happen if we don't have an underline to extend, the
+                            //underlines don't match, or this span doesn't call for one.
+                            if let (Some(pos), Some(width)) = (starting_pos, current_width) {
+                                draw_underline(&mut line_drawing, pos, width);
+                                has_underline = true;
+                                starting_pos = None;
+                                current_width = None;
+                            }
+
+                            if tf.underline.unwrap_or(false) {
+                                starting_pos = Some(
+                                    linebox.bounds().origin()
+                                        + Position::from((Twips::zero(), underline_baseline)),
+                                );
+                                current_width = Some(linebox.bounds().width());
+                            }
                         }
                     }
                 }
             }
-
-            line = read.next_sibling();
         }
 
         if let (Some(starting_pos), Some(current_width)) = (starting_pos, current_width) {
@@ -202,10 +202,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         }
 
         if has_underline {
-            self.append_box(
-                context.gc_context,
-                LayoutBox::from_drawing(context.gc_context, line_drawing),
-            );
+            self.append_box(LayoutBox::from_drawing(line_drawing));
         }
     }
 
@@ -224,22 +221,19 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         only_line: bool,
         final_line_of_para: bool,
     ) {
-        if self.current_line.is_none() {
+        if self.boxes.get_mut(self.current_line..).is_none() {
             return;
         }
 
-        let mut line = self.current_line;
         let mut line_bounds = None;
         let mut box_count: i32 = 0;
-        while let Some(linebox) = line {
-            let mut write = linebox.write(context.gc_context);
-            line = write.next_sibling();
+        for linebox in self.boxes.get_mut(self.current_line..).unwrap() {
             let (text, _tf, font, params, _color) =
-                write.as_renderable_text(self.text).expect("text");
+                linebox.as_renderable_text(self.text).expect("text");
 
             //Flash ignores trailing spaces when aligning lines, so should we
             if self.current_line_span.align != swf::TextAlign::Left {
-                write.bounds = write.bounds.with_size(Size::from(font.measure(
+                linebox.bounds = linebox.bounds.with_size(Size::from(font.measure(
                     text.trim_end(),
                     params,
                     false,
@@ -247,9 +241,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             }
 
             if let Some(line_bounds) = &mut line_bounds {
-                *line_bounds += write.bounds;
+                *line_bounds += linebox.bounds;
             } else {
-                line_bounds = Some(write.bounds);
+                line_bounds = Some(linebox.bounds);
             }
 
             box_count += 1;
@@ -290,36 +284,32 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             self.append_bullet(context, &self.current_line_span.clone());
         }
 
-        line = self.current_line;
         box_count = 0;
-        while let Some(linebox) = line {
-            let mut write = linebox.write(context.gc_context);
-
+        for linebox in self.boxes.get_mut(self.current_line..).unwrap() {
             // TODO: This attempts to keep text of multiple font sizes vertically
             // aligned correctly. It does not consider the baseline of the font,
             // which is information we don't have yet.
-            let font_size_adjustment = self.max_font_size - write.bounds.height();
+            let font_size_adjustment = self.max_font_size - linebox.bounds.height();
 
-            if write.is_text_box() {
-                write.bounds += Position::from((
+            if linebox.is_text_box() {
+                linebox.bounds += Position::from((
                     left_adjustment + align_adjustment + (interim_adjustment * box_count),
                     font_size_adjustment,
                 ));
-            } else if write.is_bullet() {
-                write.bounds += Position::from((Default::default(), font_size_adjustment));
+            } else if linebox.is_bullet() {
+                linebox.bounds += Position::from((Default::default(), font_size_adjustment));
             }
 
-            line = write.next_sibling();
             box_count += 1;
         }
 
-        self.append_underlines(context);
+        self.append_underlines();
 
         line_bounds +=
             Position::from((left_adjustment + align_adjustment, Twips::from_pixels(0.0)));
         line_bounds += Size::from((Twips::from_pixels(0.0), font_leading_adjustment));
 
-        self.current_line = None;
+        self.current_line = self.boxes.len();
 
         if let Some(eb) = &mut self.exterior_bounds {
             *eb += line_bounds;
@@ -392,7 +382,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
     /// Enter a new span.
     fn newspan(&mut self, first_span: &TextSpan) {
-        if self.current_line.is_none() {
+        if self.is_start_of_line() {
             self.current_line_span = first_span.clone();
         }
 
@@ -426,21 +416,13 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     ///
     /// The text given may or may not be separated into fragments, depending on
     /// what the layout calls for.
-    fn append_text(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        text: &'a str,
-        start: usize,
-        end: usize,
-        span: &TextSpan,
-    ) {
+    fn append_text(&mut self, text: &'a str, start: usize, end: usize, span: &TextSpan) {
         if self.effective_alignment() == swf::TextAlign::Justify {
             for word in text.split(' ') {
                 let word_start = word.as_ptr() as usize - text.as_ptr() as usize;
                 let word_end = min(word_start + word.len() + 1, text.len());
 
                 self.append_text_fragment(
-                    mc,
                     text.get(word_start..word_end).unwrap(),
                     start + word_start,
                     start + word_end,
@@ -448,7 +430,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                 );
             }
         } else {
-            self.append_text_fragment(mc, text, start, end, span);
+            self.append_text_fragment(text, start, end, span);
         }
     }
 
@@ -456,24 +438,16 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     ///
     /// This function bypasses the text fragmentation necessary for justify to
     /// work and it should only be called internally.
-    fn append_text_fragment(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        text: &'a str,
-        start: usize,
-        end: usize,
-        span: &TextSpan,
-    ) {
+    fn append_text_fragment(&mut self, text: &'a str, start: usize, end: usize, span: &TextSpan) {
         let params = EvalParameters::from_span(span);
         let text_size = Size::from(self.font.unwrap().measure(text, params, false));
         let text_bounds = BoxBounds::from_position_and_size(self.cursor, text_size);
-        let new_text = LayoutBox::from_text(mc, start, end, self.font.unwrap(), span);
-        let mut write = new_text.write(mc);
+        let mut new_text = LayoutBox::from_text(start, end, self.font.unwrap(), span);
 
-        write.bounds = text_bounds;
+        new_text.bounds = text_bounds;
 
         self.cursor += Position::from((text_size.width(), Twips::default()));
-        self.append_box(mc, new_text);
+        self.append_box(new_text);
     }
 
     /// Append a bullet to the start of the current line.
@@ -497,12 +471,11 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             let params = EvalParameters::from_span(span);
             let text_size = Size::from(bullet_font.measure("\u{2022}", params, false));
             let text_bounds = BoxBounds::from_position_and_size(bullet_cursor, text_size);
-            let new_bullet = LayoutBox::from_bullet(context.gc_context, bullet_font, span);
-            let mut write = new_bullet.write(context.gc_context);
+            let mut new_bullet = LayoutBox::from_bullet(bullet_font, span);
 
-            write.bounds = text_bounds;
+            new_bullet.bounds = text_bounds;
 
-            self.append_box(context.gc_context, new_bullet);
+            self.append_box(new_bullet);
         }
     }
 
@@ -511,24 +484,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// The box should have been positioned according to the current cursor
     /// position. It will be adjusted some time later to properly position it
     /// within the current layout box.
-    fn append_box(
-        &mut self,
-        gc_context: MutationContext<'gc, '_>,
-        to_append: GcCell<'gc, LayoutBox<'gc>>,
-    ) {
-        if self.first_box.is_none() {
-            self.first_box = Some(to_append);
-        }
-
-        if self.current_line.is_none() {
-            self.current_line = Some(to_append);
-        }
-
-        if let Some(last) = self.last_box {
-            last.write(gc_context).next_sibling = Some(to_append);
-        }
-
-        self.last_box = Some(to_append);
+    fn append_box(&mut self, to_append: LayoutBox<'gc>) {
+        self.boxes.push(to_append);
     }
 
     /// Calculate the left-align offset of a given line of text given the span
@@ -567,17 +524,17 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn end_layout(
         mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> (Option<GcCell<'gc, LayoutBox<'gc>>>, BoxBounds<Twips>) {
+    ) -> (Vec<LayoutBox<'gc>>, BoxBounds<Twips>) {
         self.fixup_line(context, !self.has_line_break, true);
 
         (
-            self.first_box,
+            self.boxes,
             self.exterior_bounds.unwrap_or_else(Default::default),
         )
     }
 
     fn is_start_of_line(&self) -> bool {
-        self.current_line.is_none()
+        self.current_line >= self.boxes.len()
     }
 }
 
@@ -590,9 +547,6 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 pub struct LayoutBox<'gc> {
     /// The rectangle corresponding to the outer boundaries of the
     bounds: BoxBounds<Twips>,
-
-    /// The layout box to be placed after this one.
-    next_sibling: Option<GcCell<'gc, LayoutBox<'gc>>>,
 
     /// What content is contained by the content box.
     content: LayoutContent<'gc>,
@@ -662,70 +616,43 @@ pub enum LayoutContent<'gc> {
 
 impl<'gc> LayoutBox<'gc> {
     /// Construct a text box for a text node.
-    pub fn from_text(
-        mc: MutationContext<'gc, '_>,
-        start: usize,
-        end: usize,
-        font: Font<'gc>,
-        span: &TextSpan,
-    ) -> GcCell<'gc, Self> {
+    pub fn from_text(start: usize, end: usize, font: Font<'gc>, span: &TextSpan) -> Self {
         let params = EvalParameters::from_span(span);
 
-        GcCell::allocate(
-            mc,
-            Self {
-                bounds: Default::default(),
-                next_sibling: None,
-                content: LayoutContent::Text {
-                    start,
-                    end,
-                    text_format: span.get_text_format(),
-                    font,
-                    params,
-                    color: CollectWrapper(span.color.clone()),
-                },
+        Self {
+            bounds: Default::default(),
+            content: LayoutContent::Text {
+                start,
+                end,
+                text_format: span.get_text_format(),
+                font,
+                params,
+                color: CollectWrapper(span.color.clone()),
             },
-        )
+        }
     }
 
     /// Construct a bullet.
-    pub fn from_bullet(
-        mc: MutationContext<'gc, '_>,
-        font: Font<'gc>,
-        span: &TextSpan,
-    ) -> GcCell<'gc, Self> {
+    pub fn from_bullet(font: Font<'gc>, span: &TextSpan) -> Self {
         let params = EvalParameters::from_span(span);
 
-        GcCell::allocate(
-            mc,
-            Self {
-                bounds: Default::default(),
-                next_sibling: None,
-                content: LayoutContent::Bullet {
-                    text_format: span.get_text_format(),
-                    font,
-                    params,
-                    color: CollectWrapper(span.color.clone()),
-                },
+        Self {
+            bounds: Default::default(),
+            content: LayoutContent::Bullet {
+                text_format: span.get_text_format(),
+                font,
+                params,
+                color: CollectWrapper(span.color.clone()),
             },
-        )
+        }
     }
 
     /// Construct a drawing.
-    pub fn from_drawing(mc: MutationContext<'gc, '_>, drawing: Drawing) -> GcCell<'gc, Self> {
-        GcCell::allocate(
-            mc,
-            Self {
-                bounds: Default::default(),
-                next_sibling: None,
-                content: LayoutContent::Drawing(drawing),
-            },
-        )
-    }
-
-    /// Returns the next sibling box.
-    pub fn next_sibling(&self) -> Option<GcCell<'gc, LayoutBox<'gc>>> {
-        self.next_sibling
+    pub fn from_drawing(drawing: Drawing) -> Self {
+        Self {
+            bounds: Default::default(),
+            content: LayoutContent::Drawing(drawing),
+        }
     }
 
     /// Construct a new layout hierarchy from text spans.
@@ -739,7 +666,7 @@ impl<'gc> LayoutBox<'gc> {
         bounds: Twips,
         is_word_wrap: bool,
         is_device_font: bool,
-    ) -> (Option<GcCell<'gc, LayoutBox<'gc>>>, BoxBounds<Twips>) {
+    ) -> (Vec<LayoutBox<'gc>>, BoxBounds<Twips>) {
         let mut layout_context = LayoutContext::new(movie, bounds, fs.text());
 
         for (span_start, _end, span_text, span) in fs.iter_spans() {
@@ -798,7 +725,6 @@ impl<'gc> LayoutBox<'gc> {
                             let next_breakpoint = min(last_breakpoint + breakpoint + 1, text.len());
 
                             layout_context.append_text(
-                                context.gc_context,
                                 &text[last_breakpoint..next_breakpoint],
                                 start + last_breakpoint,
                                 start + next_breakpoint,
@@ -822,7 +748,6 @@ impl<'gc> LayoutBox<'gc> {
 
                     if last_breakpoint < span_end {
                         layout_context.append_text(
-                            context.gc_context,
                             &text[last_breakpoint..span_end],
                             start + last_breakpoint,
                             start + span_end,
@@ -902,7 +827,6 @@ impl<'gc> LayoutBox<'gc> {
             context,
             Self {
                 bounds: self.bounds,
-                next_sibling: self.next_sibling.map(|ns| ns.read().duplicate(context)),
                 content: self.content.clone(),
             },
         )
