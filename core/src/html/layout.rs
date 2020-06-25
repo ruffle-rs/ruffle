@@ -303,13 +303,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             if write.is_text_box() {
                 write.bounds += Position::from((
                     left_adjustment + align_adjustment + (interim_adjustment * box_count),
-                    font_size_adjustment + font_leading_adjustment,
+                    font_size_adjustment,
                 ));
             } else if write.is_bullet() {
-                write.bounds += Position::from((
-                    Default::default(),
-                    font_size_adjustment + font_leading_adjustment,
-                ));
+                write.bounds += Position::from((Default::default(), font_size_adjustment));
             }
 
             line = write.next_sibling();
