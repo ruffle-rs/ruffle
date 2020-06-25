@@ -5,7 +5,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::drawing::Drawing;
 use crate::font::{round_down_to_pixel, Glyph};
-use crate::html::{BoxBounds, FormatSpans, LayoutBox, Position, TextFormat};
+use crate::html::{BoxBounds, FormatSpans, LayoutBox, TextFormat};
 use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
 use crate::tag_utils::SwfMovie;
@@ -688,12 +688,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         self.0.read().drawing.render(context);
 
-        let text_transform = Transform::from(Position::from((
-            Twips::from_pixels(3.0),
-            Twips::from_pixels(0.0),
-        )));
-        context.transform_stack.push(&text_transform);
-
         let mut ptr = self.0.read().layout;
 
         while let Some(lbox) = ptr {
@@ -702,7 +696,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             ptr = lbox.read().next_sibling();
         }
 
-        context.transform_stack.pop();
         context.transform_stack.pop();
     }
 
