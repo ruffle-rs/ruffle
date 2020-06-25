@@ -581,26 +581,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     }
 }
 
-/// A `LayoutBox` represents a series of nested content boxes, each of which
-/// may contain a single line of text with a given text format applied to it.
+/// A `LayoutBox` represents a single content box within a fully laid-out
+/// `EditText`.
 ///
-/// Layout boxes are nested and can optionally be associated with an HTML
-/// element. The relationship between elements and boxes are nullably
-/// one-to-many: an HTML element may be represented by multiple layout boxes,
-/// while a layout may have zero or one HTML elements attached to it. This
-/// allows inline content
-///
-/// They also have margins, padding, and borders which are calculated and
-/// rendered according to CSS spec.
-///
-/// For example, an HTML tree that looks like this:
-///
-/// ```<p>I'm a <i>layout element</i> node!</p>```
-///
-/// produces a top-level `LayoutBox` for the `<p>` tag, which contains one or
-/// more generated boxes for each run of text. The `<i>` tag is cut at it's
-/// whitespace if necessary and the cut pieces are added to their respective
-/// generated boxes.
+/// The content of each box is determined by `LayoutContent`.
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct LayoutBox<'gc> {
@@ -618,7 +602,9 @@ pub struct LayoutBox<'gc> {
 #[collect(require_static)]
 pub struct Collec<T>(T);
 
-/// Represents different content modes of a given layout box.
+/// Represents different content modes of a given `LayoutBox`.
+///
+/// Currently, a `LayoutBox` can contain `Text`, `Bullet`s, or a `Drawing`.
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub enum LayoutContent<'gc> {
