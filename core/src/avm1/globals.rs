@@ -39,6 +39,7 @@ pub(crate) mod system_security;
 pub(crate) mod text_field;
 mod text_format;
 mod xml;
+pub(crate) mod context_menu;
 
 #[allow(non_snake_case, unused_must_use)] //can't use errors yet
 pub fn getURL<'a, 'gc>(
@@ -314,6 +315,8 @@ pub fn create_globals<'gc>(
     //TODO: These need to be constructors and should also set `.prototype` on each one
     let object = object::create_object_object(gc_context, object_proto, function_proto);
 
+    let context_menu_proto = context_menu::create_proto(gc_context, object_proto, function_proto);
+
     let button = FunctionObject::function(
         gc_context,
         Executable::Native(button::constructor),
@@ -454,6 +457,14 @@ pub fn create_globals<'gc>(
         "SharedObject",
         shared_obj.into(),
         EnumSet::empty(),
+    );
+
+    let context_menu = context_menu::create_context_menu_object(gc_context, Some(context_menu_proto), Some(function_proto));
+    globals.define_value(
+        gc_context,
+        "ContextMenu",
+        context_menu.into(),
+        EnumSet::empty()
     );
 
     let system_security =
