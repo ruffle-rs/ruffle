@@ -198,6 +198,12 @@ swf_tests! {
     (as1_constructor_v6, "avm1/as1_constructor_v6", 1),
     (as1_constructor_v7, "avm1/as1_constructor_v7", 1),
     (issue_710, "avm1/issue_710", 1),
+    (edittext_font_size, "avm1/edittext_font_size", 1),
+    (edittext_default_format, "avm1/edittext_default_format", 1),
+    (edittext_leading, "avm1/edittext_leading", 1),
+    #[ignore] (edittext_newlines, "avm1/edittext_newlines", 1),
+    (edittext_html_entity, "avm1/edittext_html_entity", 1),
+    #[ignore] (edittext_html_roundtrip, "avm1/edittext_html_roundtrip", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
@@ -208,6 +214,12 @@ swf_tests_approx! {
     (stage_object_properties, "avm1/stage_object_properties", 4, 0.051),
     (stage_object_properties_swf6, "avm1/stage_object_properties_swf6", 4, 0.051),
     (movieclip_getbounds, "avm1/movieclip_getbounds", 1, 0.051),
+    (edittext_letter_spacing, "avm1/edittext_letter_spacing", 1, 1.0),
+    (edittext_align, "avm1/edittext_align", 1, 3.0),
+    (edittext_margins, "avm1/edittext_margins", 1, 3.0),
+    (edittext_tab_stops, "avm1/edittext_tab_stops", 1, 5.0),
+    (edittext_bullet, "avm1/edittext_bullet", 1, 3.0),
+    (edittext_underline, "avm1/edittext_underline", 1, 4.0),
 }
 
 /// Wrapper around string slice that makes debug output `{:?}` to print string same way as `{}`.

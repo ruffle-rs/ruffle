@@ -2,10 +2,12 @@ use crate::backend::render::ShapeHandle;
 use crate::bounding_box::BoundingBox;
 use crate::context::RenderContext;
 use crate::shape_utils::{DistilledShape, DrawCommand, DrawPath};
+use gc_arena::Collect;
 use std::cell::Cell;
 use swf::{FillStyle, LineStyle, Twips};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(require_static)]
 pub struct Drawing {
     render_handle: Cell<Option<ShapeHandle>>,
     shape_bounds: BoundingBox,

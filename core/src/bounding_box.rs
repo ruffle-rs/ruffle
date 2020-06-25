@@ -1,7 +1,9 @@
+use gc_arena::Collect;
 use swf::Matrix;
 use swf::Twips;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Collect)]
+#[collect(require_static)]
 pub struct BoundingBox {
     pub x_min: Twips,
     pub y_min: Twips,
@@ -96,6 +98,62 @@ impl BoundingBox {
 
     pub fn contains(&self, (x, y): (Twips, Twips)) -> bool {
         self.valid && x >= self.x_min && x <= self.x_max && y >= self.y_min && y <= self.y_max
+    }
+
+    /// Set the X coordinate to a particular value, maintaining the width of
+    /// this box (if possible).
+    pub fn set_x(&mut self, x: Twips) {
+        let width = self.width();
+        self.x_min = x;
+        self.x_max = x + width;
+
+        if self.y_max >= self.y_min {
+            self.valid = true;
+        }
+    }
+
+    /// Set the Y coordinate to a particular value, maintaining the width of
+    /// this box (if possible).
+    pub fn set_y(&mut self, y: Twips) {
+        let height = self.height();
+        self.y_min = y;
+        self.y_max = y + height;
+
+        if self.x_max >= self.x_min {
+            self.valid = true;
+        }
+    }
+
+    /// Determine the width of the bounding box.
+    pub fn width(&self) -> Twips {
+        if self.valid {
+            self.x_max - self.x_min
+        } else {
+            Default::default()
+        }
+    }
+
+    /// Adjust the width of the bounding box.
+    pub fn set_width(&mut self, width: Twips) {
+        self.x_max = self.x_min + width;
+
+        self.valid = self.x_max >= self.x_min && self.y_max >= self.y_min;
+    }
+
+    /// Determine the height of the bounding box.
+    pub fn height(&self) -> Twips {
+        if self.valid {
+            self.y_max - self.y_min
+        } else {
+            Default::default()
+        }
+    }
+
+    /// Adjust the height of the bounding box.
+    pub fn set_height(&mut self, height: Twips) {
+        self.y_max = self.y_min + height;
+
+        self.valid = self.x_max >= self.x_min && self.y_max >= self.y_min;
     }
 }
 

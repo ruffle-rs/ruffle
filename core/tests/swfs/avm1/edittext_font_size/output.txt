@@ -1,0 +1,45 @@
+//Creating left aligned text @ 10px
+W: 7
+H: 15
+//Creating left aligned text @ 12px
+W: 9
+H: 18
+//Creating left aligned text @ 20px
+W: 15
+H: 29
+//Creating left aligned text @ 30px
+W: 23
+H: 42
+//Creating left aligned text @ 100px
+W: 78
+H: 138
+//Creating left aligned text 'Qe' @ 10px
+W: 13
+H: 15
+//Creating left aligned text 'Qe' @ 12px
+W: 16
+H: 18
+//Creating left aligned text 'Qe' @ 20px
+W: 26
+H: 29
+//Creating left aligned text 'Qe' @ 30px
+W: 40
+H: 42
+//Creating left aligned text 'Qe' @ 100px
+W: 134
+H: 138
+//Creating left aligned text 'Q e' @ 10px
+W: 15
+H: 15
+//Creating left aligned text 'Q e' @ 12px
+W: 19
+H: 18
+//Creating left aligned text 'Q e' @ 20px
+W: 32
+H: 29
+//Creating left aligned text 'Q e' @ 30px
+W: 48
+H: 42
+//Creating left aligned text 'Q e' @ 100px
+W: 160
+H: 138

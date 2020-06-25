@@ -4,7 +4,7 @@ use crate::avm1::xml_attributes_object::XMLAttributesObject;
 use crate::avm1::xml_object::XMLObject;
 use crate::avm1::{Object, TObject};
 use crate::xml;
-use crate::xml::{Error, XMLDocument, XMLName};
+use crate::xml::{Error, Step, XMLDocument, XMLName};
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::events::attributes::Attribute;
 use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
@@ -217,10 +217,15 @@ impl<'gc> XMLNode<'gc> {
     /// may work but will be incorrect.
     ///
     /// Also, this method does not yet actually remove existing node contents.
+    ///
+    /// If `process_entity` is `true`, then entities will be processed by this
+    /// function. Invalid or unrecognized entities will cause parsing to fail
+    /// with an `Err`.
     pub fn replace_with_str(
         &mut self,
         mc: MutationContext<'gc, '_>,
         data: &str,
+        process_entity: bool,
     ) -> Result<(), Error> {
         let mut parser = Reader::from_str(data);
         let mut buf = Vec::new();
@@ -250,7 +255,7 @@ impl<'gc> XMLNode<'gc> {
                     open_tags.pop();
                 }
                 Event::Text(bt) => {
-                    let child = XMLNode::text_from_text_event(mc, bt, document)?;
+                    let child = XMLNode::text_from_text_event(mc, bt, document, process_entity)?;
                     if child.node_value().as_deref() != Some("") {
                         self.add_child_to_tree(mc, &mut open_tags, child)?;
                     }
@@ -321,7 +326,14 @@ impl<'gc> XMLNode<'gc> {
         mc: MutationContext<'gc, '_>,
         bt: BytesText<'a>,
         document: XMLDocument<'gc>,
+        process_entity: bool,
     ) -> Result<Self, Error> {
+        let contents = if process_entity {
+            String::from_utf8(bt.unescaped()?.into_owned())?
+        } else {
+            String::from_utf8(bt.escaped().to_vec())?
+        };
+
         Ok(XMLNode(GcCell::allocate(
             mc,
             XMLNodeData::Text {
@@ -331,7 +343,7 @@ impl<'gc> XMLNode<'gc> {
                 parent: None,
                 prev_sibling: None,
                 next_sibling: None,
-                contents: String::from_utf8(bt.unescaped()?.into_owned())?,
+                contents,
             },
         )))
     }
@@ -763,78 +775,70 @@ impl<'gc> XMLNode<'gc> {
         None
     }
 
+    /// Retrieve a given child by index (e.g. position in the document).
+    pub fn get_child_by_index(self, index: usize) -> Option<XMLNode<'gc>> {
+        match &*self.0.read() {
+            XMLNodeData::Element { children, .. } | XMLNodeData::DocumentRoot { children, .. } => {
+                Some(children)
+            }
+            _ => None,
+        }
+        .and_then(|children| children.get(index))
+        .cloned()
+    }
+
+    /// Returns if the node can yield children.
+    ///
+    /// Document roots and elements can yield children, while all other
+    /// elements are structurally prohibited from adopting child `XMLNode`s.
+    pub fn has_children(self) -> bool {
+        match &*self.0.read() {
+            XMLNodeData::Element { .. } | XMLNodeData::DocumentRoot { .. } => true,
+            _ => false,
+        }
+    }
+
     /// Returns an iterator that yields child nodes.
     ///
     /// Yields None if this node cannot accept children.
     pub fn children(self) -> Option<impl DoubleEndedIterator<Item = XMLNode<'gc>>> {
-        struct ChildIter<'gc> {
-            base: XMLNode<'gc>,
-            index: usize,
-            back_index: usize,
-        };
-
-        impl<'gc> ChildIter<'gc> {
-            fn for_node(base: XMLNode<'gc>) -> Self {
-                Self {
-                    base,
-                    index: 0,
-                    back_index: base.children_len(),
-                }
-            }
-        }
-
-        impl<'gc> Iterator for ChildIter<'gc> {
-            type Item = XMLNode<'gc>;
-
-            fn next(&mut self) -> Option<Self::Item> {
-                let read = self.base.0.read();
-                let children = match &*read {
-                    XMLNodeData::Element { children, .. }
-                    | XMLNodeData::DocumentRoot { children, .. } => Some(children),
-                    _ => None,
-                };
-
-                if let Some(children) = children {
-                    if self.index < self.back_index {
-                        let item = children.get(self.index).cloned();
-                        self.index += 1;
-
-                        return item;
-                    }
-                }
-
-                None
-            }
-        }
-
-        impl<'gc> DoubleEndedIterator for ChildIter<'gc> {
-            fn next_back(&mut self) -> Option<Self::Item> {
-                let read = self.base.0.read();
-                let children = match &*read {
-                    XMLNodeData::Element { children, .. }
-                    | XMLNodeData::DocumentRoot { children, .. } => Some(children),
-                    _ => None,
-                };
-
-                if let Some(children) = children {
-                    if self.index < self.back_index {
-                        self.back_index -= 1;
-                        let item = children.get(self.back_index).cloned();
-
-                        return item;
-                    }
-                }
-
-                None
-            }
-        }
-
         match &*self.0.read() {
             XMLNodeData::Element { .. } | XMLNodeData::DocumentRoot { .. } => {
-                Some(ChildIter::for_node(self))
+                Some(xml::iterators::ChildIter::for_node(self))
             }
             _ => None,
         }
+    }
+
+    /// Returns an iterator that walks the XML tree.
+    ///
+    /// Walking is similar to using `descendents`, but the ends of parent nodes
+    /// are explicitly marked with `Step::Out`, while nodes that may have
+    /// children are marked with `Step::In`.
+    ///
+    /// Yields None if this node cannot accept children.
+    pub fn walk(self) -> Option<impl Iterator<Item = Step<'gc>>> {
+        match &*self.0.read() {
+            XMLNodeData::Element { .. } | XMLNodeData::DocumentRoot { .. } => {
+                Some(xml::iterators::WalkIter::for_node(self))
+            }
+            _ => None,
+        }
+    }
+
+    /// Returns an iterator that yields ancestor nodes.
+    ///
+    /// Yields None if this node does not have a parent.
+    pub fn ancestors(self) -> Option<impl Iterator<Item = XMLNode<'gc>>> {
+        let parent = match *self.0.read() {
+            XMLNodeData::DocumentRoot { .. } => return None,
+            XMLNodeData::Element { parent, .. } => parent,
+            XMLNodeData::Text { parent, .. } => parent,
+            XMLNodeData::Comment { parent, .. } => parent,
+            XMLNodeData::DocType { parent, .. } => parent,
+        };
+
+        Some(xml::iterators::AnscIter::for_node(parent))
     }
 
     /// Get the already-instantiated script object from the current node.

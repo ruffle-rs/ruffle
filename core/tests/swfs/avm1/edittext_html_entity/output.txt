@@ -1,0 +1,4 @@
+//Creating HTML entity text
+&<p>       "'
+//Creating regular text with HTML entities erroneously shoved into it
+&amp;&lt;p&gt;&nbsp;&nbsp;&nbsp;&nbsp;   &quot;&apos;

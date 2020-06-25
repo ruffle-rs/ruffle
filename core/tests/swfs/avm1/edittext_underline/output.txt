@@ -1,0 +1,40 @@
+//Creating left aligned text w/ wordwrap, multiline
+//field.textWidth
+241
+//field.textHeight
+52
+//Creating center aligned text w/ wordwrap, multiline
+//field.textWidth
+237
+//field.textHeight
+52
+//Creating right aligned text w/ wordwrap, multiline
+//field.textWidth
+237
+//field.textHeight
+52
+//Creating justified text w/ wordwrap, multiline
+//field.textWidth
+237
+//field.textHeight
+52
+//Creating left aligned text w/ wordwrap, multiline & long text
+//field.textWidth
+245
+//field.textHeight
+144
+//Creating center aligned text w/ wordwrap, multiline & long text
+//field.textWidth
+241
+//field.textHeight
+144
+//Creating right aligned text w/ wordwrap, multiline & long text
+//field.textWidth
+241
+//field.textHeight
+144
+//Creating justified text w/ wordwrap, multiline & long text
+//field.textWidth
+241
+//field.textHeight
+144

@@ -1,21 +1,24 @@
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
-use crate::font::Font;
+use crate::font::{Font, FontDescriptor};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
-use gc_arena::MutationContext;
+use gc_arena::{Collect, MutationContext};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 use swf::CharacterId;
 use weak_table::PtrWeakKeyHashMap;
 
 /// Symbol library for a single given SWF.
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct MovieLibrary<'gc> {
     characters: HashMap<CharacterId, Character<'gc>>,
     export_characters: HashMap<String, Character<'gc>>,
     jpeg_tables: Option<Vec<u8>>,
     device_font: Option<Font<'gc>>,
+    fonts: HashMap<FontDescriptor, Font<'gc>>,
 }
 
 impl<'gc> MovieLibrary<'gc> {
@@ -25,12 +28,17 @@ impl<'gc> MovieLibrary<'gc> {
             export_characters: HashMap::new(),
             jpeg_tables: None,
             device_font: None,
+            fonts: HashMap::new(),
         }
     }
 
     pub fn register_character(&mut self, id: CharacterId, character: Character<'gc>) {
         // TODO(Herschel): What is the behavior if id already exists?
         if !self.contains_character(id) {
+            if let Character::Font(font) = character.clone() {
+                self.fonts.insert(font.descriptor(), font);
+            }
+
             self.characters.insert(id, character);
         } else {
             log::error!("Character ID collision: Tried to register ID {} twice", id);
@@ -136,6 +144,18 @@ impl<'gc> MovieLibrary<'gc> {
         }
     }
 
+    /// Find a font by it's name and parameters.
+    pub fn get_font_by_name(
+        &self,
+        name: &str,
+        is_bold: bool,
+        is_italic: bool,
+    ) -> Option<Font<'gc>> {
+        let descriptor = FontDescriptor::from_parts(name, is_bold, is_italic);
+
+        self.fonts.get(&descriptor).copied()
+    }
+
     pub fn get_sound(&self, id: CharacterId) -> Option<SoundHandle> {
         if let Some(Character::Sound(sound)) = self.characters.get(&id) {
             Some(*sound)
@@ -172,16 +192,6 @@ impl<'gc> MovieLibrary<'gc> {
     /// Sets the device font.
     pub fn set_device_font(&mut self, font: Option<Font<'gc>>) {
         self.device_font = font;
-    }
-}
-
-unsafe impl<'gc> gc_arena::Collect for MovieLibrary<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        for character in self.characters.values() {
-            character.trace(cc);
-        }
-        self.device_font.trace(cc);
     }
 }
 

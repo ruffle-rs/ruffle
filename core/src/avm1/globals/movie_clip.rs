@@ -539,7 +539,11 @@ fn create_text_field<'gc>(
         context.gc_context,
         &instance_name.coerce_to_string(avm, context)?,
     );
-    movie_clip.add_child_from_avm(context, text_field, depth as Depth);
+    movie_clip.add_child_from_avm(
+        context,
+        text_field,
+        (depth as Depth).wrapping_add(AVM_DEPTH_BIAS),
+    );
     text_field.post_instantiation(avm, context, text_field, None, true);
 
     if avm.current_swf_version() >= 8 {

@@ -25,7 +25,7 @@ use std::convert::TryFrom;
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex, Weak};
 
-static DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
+pub static DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
 
 /// The newest known Flash Player version, serves as a default to
 /// `player_version`.
@@ -927,7 +927,7 @@ impl Player {
     /// Loads font data from the given buffer.
     /// The buffer should be the `DefineFont3` info for the tag.
     /// The tag header should not be included.
-    fn load_device_font<'gc>(
+    pub fn load_device_font<'gc>(
         gc_context: gc_arena::MutationContext<'gc, '_>,
         data: &[u8],
         renderer: &mut Renderer,

@@ -699,7 +699,7 @@ pub fn xml_constructor<'gc>(
             xmlnode.introduce_script_object(ac.gc_context, this);
             this_node.swap(ac.gc_context, xmlnode);
 
-            if let Err(e) = this_node.replace_with_str(ac.gc_context, string) {
+            if let Err(e) = this_node.replace_with_str(ac.gc_context, string, true) {
                 log::warn!("Couldn't replace_with_str inside of XML constructor: {}", e);
             }
         }
@@ -788,7 +788,7 @@ pub fn xml_parse_xml<'gc>(
             }
         }
 
-        let result = node.replace_with_str(ac.gc_context, &xmlstring);
+        let result = node.replace_with_str(ac.gc_context, &xmlstring, true);
         if let Err(e) = result {
             log::warn!("XML parsing error: {}", e);
         }
