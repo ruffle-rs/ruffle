@@ -15,6 +15,7 @@ use enumset::EnumSet;
 use gc_arena::{Collect, GcCell};
 use rand::Rng;
 use std::borrow::Cow;
+use std::convert::TryInto;
 use swf::avm1::read::Reader;
 use swf::avm1::types::{Action, Function};
 
@@ -23,6 +24,11 @@ macro_rules! avm_debug {
         #[cfg(feature = "avm_debug")]
         log::debug!($($arg)*)
     )
+}
+
+enum FrameControl {
+    Continue,
+    Return,
 }
 
 #[derive(Collect)]
@@ -37,17 +43,49 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         Self { avm, activation }
     }
 
+    pub fn run(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error<'gc>> {
+        let mut activation = self.activation.write(context.gc_context);
+        activation.lock()?;
+        let data = activation.data();
+        let mut read = Reader::new(data.as_ref(), activation.swf_version());
+        read.seek(activation.pc().try_into().unwrap());
+        drop(activation);
+
+        let result = loop {
+            let result = self.do_action(context, &mut read);
+            match result {
+                Ok(FrameControl::Return) => break Ok(()),
+                Ok(FrameControl::Continue) => {}
+                Err(e) => break Err(e),
+            }
+        };
+
+        let mut activation = self.activation.write(context.gc_context);
+        activation.unlock_execution();
+        activation.set_pc(read.pos());
+        drop(activation);
+
+        if let Err(error) = &result {
+            if error.is_halting() {
+                self.avm.halt();
+            }
+        }
+
+        result
+    }
+
     /// Run a single action from a given action reader.
-    pub fn do_next_action(
+    fn do_action(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut Reader<'_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let data = self.activation.read().data();
 
         if reader.pos() >= (data.end - data.start) {
             //Executing beyond the end of a function constitutes an implicit return.
             self.avm.retire_stack_frame(context, Value::Undefined);
+            return Ok(FrameControl::Return);
         } else if let Some(action) = reader.read_action()? {
             avm_debug!("Action: {:?}", action);
 
@@ -135,7 +173,10 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                 Action::PushDuplicate => self.action_push_duplicate(context),
                 Action::RandomNumber => self.action_random_number(context),
                 Action::RemoveSprite => self.action_remove_sprite(context),
-                Action::Return => self.action_return(context),
+                Action::Return => {
+                    self.action_return(context)?;
+                    return Ok(FrameControl::Return);
+                }
                 Action::SetMember => self.action_set_member(context),
                 Action::SetProperty => self.action_set_property(context),
                 Action::SetTarget(target) => self.action_set_target(context, &target),
@@ -185,9 +226,10 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         } else {
             //The explicit end opcode was encountered so return here
             self.avm.retire_stack_frame(context, Value::Undefined);
+            return Ok(FrameControl::Return);
         }
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn unknown_op(
@@ -372,15 +414,15 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             };
 
             if let Some(frame) = frame {
-                // We must run the actions in the order that the tags appear,
-                // so we want to push the stack frames in reverse order.
-                for action in clip.actions_on_frame(context, frame).rev() {
+                for action in clip.actions_on_frame(context, frame) {
                     self.avm.insert_stack_frame_for_action(
                         self.avm.target_clip_or_root(),
                         self.avm.current_swf_version(),
                         action,
                         context,
                     );
+                    let frame = self.avm.current_stack_frame().unwrap();
+                    self.avm.run_current_frame(context, frame)?;
                 }
             } else {
                 log::warn!("Call: Invalid frame {:?}", frame);
@@ -1975,10 +2017,12 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             object,
             context.gc_context,
         );
-        let new_activation = self.activation.read().to_rescope(block, with_scope);
-        self.avm
-            .stack_frames
-            .push(GcCell::allocate(context.gc_context, new_activation));
+        let new_activation = GcCell::allocate(
+            context.gc_context,
+            self.activation.read().to_rescope(block, with_scope),
+        );
+        self.avm.stack_frames.push(new_activation);
+        self.avm.run_current_frame(context, new_activation)?;
         Ok(())
     }
 }

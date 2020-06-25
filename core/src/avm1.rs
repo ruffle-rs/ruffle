@@ -6,7 +6,6 @@ use crate::context::UpdateContext;
 use crate::prelude::*;
 use gc_arena::{GcCell, MutationContext};
 use std::collections::HashMap;
-use std::convert::TryInto;
 use url::form_urlencoded;
 
 use swf::avm1::read::Reader;
@@ -441,64 +440,6 @@ impl<'gc> Avm1<'gc> {
         }
     }
 
-    /// Perform some action with the current stack frame's reader.
-    ///
-    /// This function constructs a reader based off the current stack frame's
-    /// reader. You are permitted to mutate the stack frame as you wish. If the
-    /// stack frame we started with still exists in the same location on the
-    /// stack, it's PC will be updated to the Reader's current PC.
-    ///
-    /// Stack frame identity (for the purpose of the above paragraph) is
-    /// determined by the data pointed to by the `SwfSlice` of a given frame.
-    ///
-    /// # Warnings
-    ///
-    /// It is incorrect to call this function multiple times in the same stack.
-    /// Doing so will result in any changes in duplicate readers being ignored.
-    /// Always pass the borrowed reader into functions that need it.
-    fn with_current_reader_mut<F, R>(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        func: F,
-    ) -> Result<R, Error<'gc>>
-    where
-        F: FnOnce(
-            &mut Self,
-            &mut Reader<'_>,
-            &mut UpdateContext<'_, 'gc, '_>,
-        ) -> Result<R, Error<'gc>>,
-    {
-        let (frame_cell, swf_version, data, pc) = {
-            let frame = self.stack_frames.last().ok_or(Error::NoStackFrame)?;
-            let mut frame_ref = frame.write(context.gc_context);
-            frame_ref.lock()?;
-
-            (
-                *frame,
-                frame_ref.swf_version(),
-                frame_ref.data(),
-                frame_ref.pc(),
-            )
-        };
-
-        let mut read = Reader::new(data.as_ref(), swf_version);
-        read.seek(pc.try_into().unwrap());
-
-        let r = func(self, &mut read, context);
-
-        let mut frame_ref = frame_cell.write(context.gc_context);
-        frame_ref.unlock_execution();
-        frame_ref.set_pc(read.pos());
-
-        if let Err(error) = &r {
-            if error.is_halting() {
-                self.halt();
-            }
-        }
-
-        r
-    }
-
     /// Destroy the current stack frame (if there is one).
     ///
     /// The given return value will be pushed on the stack if there is a
@@ -537,14 +478,8 @@ impl<'gc> Avm1<'gc> {
             return Ok(());
         }
         while !self.stack_frames.is_empty() {
-            if let Err(e) = self.with_current_reader_mut(context, |this, r, context| {
-                if !this.halted {
-                    let activation = this.current_stack_frame().unwrap();
-                    StackFrame::new(this, activation).do_next_action(context, r)
-                } else {
-                    Ok(())
-                }
-            }) {
+            let activation = self.current_stack_frame().ok_or(Error::FrameNotOnStack)?;
+            if let Err(e) = StackFrame::new(self, activation).run(context) {
                 if let Error::ThrownValue(error) = &e {
                     let string = error
                         .coerce_to_string(self, context)
@@ -591,14 +526,8 @@ impl<'gc> Avm1<'gc> {
                 .map(|fr| GcCell::ptr_eq(stop_frame, *fr))
                 .unwrap_or(false)
             {
-                self.with_current_reader_mut(context, |this, r, context| {
-                    if !this.halted {
-                        let activation = this.current_stack_frame().unwrap();
-                        StackFrame::new(this, activation).do_next_action(context, r)
-                    } else {
-                        Ok(())
-                    }
-                })?;
+                let activation = self.current_stack_frame().ok_or(Error::FrameNotOnStack)?;
+                StackFrame::new(self, activation).run(context)?
             }
 
             Ok(())
