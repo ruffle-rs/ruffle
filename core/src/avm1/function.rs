@@ -357,7 +357,6 @@ impl<'gc> Executable<'gc> {
                         _ => {}
                     }
                 }
-                avm.insert_stack_frame(frame_cell);
 
                 Ok(frame_cell.into())
             }

@@ -440,75 +440,6 @@ impl<'gc> Avm1<'gc> {
         }
     }
 
-    /// Execute the AVM stack until it is exhausted.
-    pub fn run_stack_till_empty(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
-        if self.halted {
-            // We've been told to ignore all future execution.
-            return Ok(());
-        }
-        while !self.stack_frames.is_empty() {
-            let activation = self.current_stack_frame().ok_or(Error::FrameNotOnStack)?;
-            if let Err(e) = self.run_activation(context, activation) {
-                if let Error::ThrownValue(error) = &e {
-                    let string = error
-                        .coerce_to_string(self, context)
-                        .unwrap_or_else(|_| Cow::Borrowed("undefined"));
-                    log::info!(target: "avm_trace", "{}", string);
-                }
-                return Err(e);
-            }
-        }
-
-        // Operand stack should be empty at this point.
-        // This is probably a bug on our part,
-        // although bytecode could in theory leave data on the stack.
-        if !self.stack.is_empty() {
-            log::warn!("Operand stack is not empty after execution");
-            self.stack.clear();
-        }
-
-        Ok(())
-    }
-
-    /// Execute the AVM stack until a given activation returns.
-    pub fn run_current_frame(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        stop_frame: GcCell<'gc, Activation<'gc>>,
-    ) -> Result<(), Error<'gc>> {
-        if self.halted {
-            // We've been told to ignore all future execution.
-            return Ok(());
-        }
-
-        let mut stop_frame_id = None;
-        for (index, frame) in self.stack_frames.iter().enumerate() {
-            if GcCell::ptr_eq(stop_frame, *frame) {
-                stop_frame_id = Some(index);
-            }
-        }
-
-        if let Some(stop_frame_id) = stop_frame_id {
-            while self
-                .stack_frames
-                .get(stop_frame_id)
-                .map(|fr| GcCell::ptr_eq(stop_frame, *fr))
-                .unwrap_or(false)
-            {
-                let activation = self.current_stack_frame().ok_or(Error::FrameNotOnStack)?;
-                self.run_activation(context, activation)?;
-            }
-
-            Ok(())
-        } else {
-            self.halt();
-            Err(Error::FrameNotOnStack)
-        }
-    }
-
     /// Execute the AVM stack until a given activation returns.
     pub fn run_activation(
         &mut self,
@@ -532,6 +463,14 @@ impl<'gc> Avm1<'gc> {
             }
             Err(error) => {
                 self.stack_frames.pop();
+                if self.stack_frames.is_empty() {
+                    if let Error::ThrownValue(error) = &error {
+                        let string = error
+                            .coerce_to_string(self, context)
+                            .unwrap_or_else(|_| Cow::Borrowed("undefined"));
+                        log::info!(target: "avm_trace", "{}", string);
+                    }
+                }
                 if error.is_halting() {
                     self.halt();
                 }

@@ -441,7 +441,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                         context,
                     );
                     let frame = self.avm.current_stack_frame().unwrap();
-                    self.avm.run_current_frame(context, frame)?;
+                    self.avm.run_activation(context, frame)?;
                 }
             } else {
                 log::warn!("Call: Invalid frame {:?}", frame);
@@ -2091,7 +2091,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             self.activation.read().to_rescope(block, with_scope),
         );
         self.avm.stack_frames.push(new_activation);
-        self.avm.run_current_frame(context, new_activation)?;
+        self.avm.run_activation(context, new_activation)?;
         Ok(FrameControl::Continue)
     }
 }

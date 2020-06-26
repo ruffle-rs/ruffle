@@ -2,7 +2,7 @@ use crate::avm1::debug::VariableDumper;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::listeners::SystemListener;
 use crate::avm1::object::Object;
-use crate::avm1::{Activation, Avm1, TObject, Value};
+use crate::avm1::{Avm1, TObject, Value};
 use crate::backend::input::{InputBackend, MouseCursor};
 use crate::backend::storage::StorageBackend;
 use crate::backend::{
@@ -725,21 +725,14 @@ impl Player {
                         bytecode,
                         context,
                     );
+                    let frame = avm.current_stack_frame().unwrap();
+                    let _ = avm.run_activation(context, frame);
                 }
                 // Change the prototype of a movieclip & run constructor events
                 ActionType::Construct {
                     constructor: Some(constructor),
                     events,
                 } => {
-                    avm.insert_stack_frame(GcCell::allocate(
-                        context.gc_context,
-                        Activation::from_nothing(
-                            context.swf.header().version,
-                            avm.global_object_cell(),
-                            context.gc_context,
-                            actions.clip,
-                        ),
-                    ));
                     if let Ok(prototype) = constructor
                         .get("prototype", avm, context)
                         .map(|v| v.coerce_to_object(avm, context))
@@ -753,18 +746,10 @@ impl Player {
                                     event,
                                     context,
                                 );
+                                let frame = avm.current_stack_frame().unwrap();
+                                let _ = avm.run_activation(context, frame);
                             }
-                            let _ = avm.run_stack_till_empty(context);
 
-                            avm.insert_stack_frame(GcCell::allocate(
-                                context.gc_context,
-                                Activation::from_nothing(
-                                    context.swf.header().version,
-                                    avm.global_object_cell(),
-                                    context.gc_context,
-                                    actions.clip,
-                                ),
-                            ));
                             let _ = constructor.call(avm, context, object, None, &[]);
                         }
                     }
@@ -781,6 +766,8 @@ impl Player {
                             event,
                             context,
                         );
+                        let frame = avm.current_stack_frame().unwrap();
+                        let _ = avm.run_activation(context, frame);
                     }
                 }
                 // Event handler method call (e.g. onEnterFrame)
@@ -813,8 +800,6 @@ impl Player {
                     );
                 }
             }
-            // Execute the stack frame (if any).
-            let _ = avm.run_stack_till_empty(context);
         }
     }
 

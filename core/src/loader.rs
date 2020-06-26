@@ -322,7 +322,6 @@ impl<'gc> Loader<'gc> {
                             "broadcastMessage",
                             &["onLoadStart".into(), Value::Object(broadcaster)],
                         );
-                        avm.run_stack_till_empty(uc)?;
                     }
 
                     Ok(())
@@ -361,7 +360,6 @@ impl<'gc> Loader<'gc> {
                                     length.into(),
                                 ],
                             );
-                            avm.run_stack_till_empty(uc)?;
                         }
 
                         let mut mc = clip
@@ -394,7 +392,6 @@ impl<'gc> Loader<'gc> {
                                 "broadcastMessage",
                                 &["onLoadComplete".into(), Value::Object(broadcaster)],
                             );
-                            avm.run_stack_till_empty(uc)?;
                         }
 
                         if let Some(Loader::Movie { load_complete, .. }) =
@@ -436,7 +433,6 @@ impl<'gc> Loader<'gc> {
                                     "LoadNeverCompleted".into(),
                                 ],
                             );
-                            avm.run_stack_till_empty(uc)?;
                         }
 
                         if let Some(Loader::Movie { load_complete, .. }) =
@@ -570,7 +566,6 @@ impl<'gc> Loader<'gc> {
                             "onHTTPStatus",
                             &[200.into()],
                         );
-                        avm.run_stack_till_empty(uc)?;
 
                         avm.insert_stack_frame_for_method(
                             active_clip,
@@ -580,7 +575,6 @@ impl<'gc> Loader<'gc> {
                             "onData",
                             &[xmlstring.into()],
                         );
-                        avm.run_stack_till_empty(uc)?;
 
                         Ok(())
                     },
@@ -608,7 +602,6 @@ impl<'gc> Loader<'gc> {
                             "onHTTPStatus",
                             &[404.into()],
                         );
-                        avm.run_stack_till_empty(uc)?;
 
                         avm.insert_stack_frame_for_method(
                             active_clip,
@@ -618,7 +611,6 @@ impl<'gc> Loader<'gc> {
                             "onData",
                             &[],
                         );
-                        avm.run_stack_till_empty(uc)?;
 
                         Ok(())
                     },

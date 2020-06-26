@@ -380,7 +380,7 @@ impl<'gc> MovieClip<'gc> {
             context,
         );
         let frame = avm.current_stack_frame().unwrap();
-        let _ = avm.run_current_frame(context, frame);
+        let _ = avm.run_activation(context, frame);
 
         Ok(())
     }

@@ -749,7 +749,7 @@ impl<'gc> EditText<'gc> {
             }
 
             let frame = avm.current_stack_frame().unwrap();
-            let _ = avm.run_current_frame(context, frame);
+            let _ = avm.run_activation(context, frame);
         }
 
         bound
@@ -800,7 +800,7 @@ impl<'gc> EditText<'gc> {
                     let _ = object.set(property, text.into(), avm, context);
 
                     let frame = avm.current_stack_frame().unwrap();
-                    let _ = avm.run_current_frame(context, frame);
+                    let _ = avm.run_activation(context, frame);
                 }
             }
             self.0.write(context.gc_context).firing_variable_binding = false;
