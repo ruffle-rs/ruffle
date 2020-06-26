@@ -85,7 +85,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         if reader.pos() >= (data.end - data.start) {
             //Executing beyond the end of a function constitutes an implicit return.
             self.avm.retire_stack_frame(context, Value::Undefined);
-            return Ok(FrameControl::Return);
+            Ok(FrameControl::Return)
         } else if let Some(action) = reader.read_action()? {
             avm_debug!("Action: {:?}", action);
 
@@ -173,10 +173,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                 Action::PushDuplicate => self.action_push_duplicate(context),
                 Action::RandomNumber => self.action_random_number(context),
                 Action::RemoveSprite => self.action_remove_sprite(context),
-                Action::Return => {
-                    self.action_return(context)?;
-                    return Ok(FrameControl::Return);
-                }
+                Action::Return => self.action_return(context),
                 Action::SetMember => self.action_set_member(context),
                 Action::SetProperty => self.action_set_property(context),
                 Action::SetTarget(target) => self.action_set_target(context, &target),
@@ -223,32 +220,34 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                 }
                 return Err(e);
             }
+            result
         } else {
             //The explicit end opcode was encountered so return here
             self.avm.retire_stack_frame(context, Value::Undefined);
-            return Ok(FrameControl::Return);
+            Ok(FrameControl::Return)
         }
-
-        Ok(FrameControl::Continue)
     }
 
     fn unknown_op(
         &mut self,
         _context: &mut UpdateContext,
         action: swf::avm1::types::Action,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         log::error!("Unknown AVM1 opcode: {:?}", action);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
-    fn action_add(&mut self, _context: &mut UpdateContext) -> Result<(), Error<'gc>> {
+    fn action_add(&mut self, _context: &mut UpdateContext) -> Result<FrameControl, Error<'gc>> {
         let a = self.avm.pop();
         let b = self.avm.pop();
         self.avm.push(b.into_number_v1() + a.into_number_v1());
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
-    fn action_add_2(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error<'gc>> {
+    fn action_add_2(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<FrameControl, Error<'gc>> {
         // ECMA-262 s. 11.6.1
         let a = self.avm.pop();
         let b = self.avm.pop();
@@ -266,10 +265,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                 b.coerce_to_f64(self.avm, context)? + a.coerce_to_f64(self.avm, context)?;
             self.avm.push(result);
         }
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
-    fn action_and(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error<'gc>> {
+    fn action_and(
+        &mut self,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<FrameControl, Error<'gc>> {
         // AS1 logical and
         let a = self.avm.pop();
         let b = self.avm.pop();
@@ -277,35 +279,35 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let result = b.as_bool(version) && a.as_bool(version);
         self.avm
             .push(Value::from_bool(result, self.avm.current_swf_version()));
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_ascii_to_char(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // TODO(Herschel): Results on incorrect operands?
         let val = (self.avm.pop().coerce_to_f64(self.avm, context)? as u8) as char;
         self.avm.push(val.to_string());
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_char_to_ascii(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // TODO(Herschel): Results on incorrect operands?
         let val = self.avm.pop();
         let string = val.coerce_to_string(self.avm, context)?;
         let result = string.bytes().next().unwrap_or(0);
         self.avm.push(result);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_clone_sprite(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let depth = self.avm.pop();
         let target = self.avm.pop();
         let source = self.avm.pop();
@@ -326,76 +328,79 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             log::warn!("CloneSprite: Source is not a movie clip");
         }
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_bit_and(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let a = self.avm.pop().coerce_to_u32(self.avm, context)?;
         let b = self.avm.pop().coerce_to_u32(self.avm, context)?;
         let result = a & b;
         self.avm.push(result);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_bit_lshift(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let a = self.avm.pop().coerce_to_i32(self.avm, context)? & 0b11111; // Only 5 bits used for shift count
         let b = self.avm.pop().coerce_to_i32(self.avm, context)?;
         let result = b << a;
         self.avm.push(result);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_bit_or(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let a = self.avm.pop().coerce_to_u32(self.avm, context)?;
         let b = self.avm.pop().coerce_to_u32(self.avm, context)?;
         let result = a | b;
         self.avm.push(result);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_bit_rshift(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let a = self.avm.pop().coerce_to_i32(self.avm, context)? & 0b11111; // Only 5 bits used for shift count
         let b = self.avm.pop().coerce_to_i32(self.avm, context)?;
         let result = b >> a;
         self.avm.push(result);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_bit_urshift(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let a = self.avm.pop().coerce_to_u32(self.avm, context)? & 0b11111; // Only 5 bits used for shift count
         let b = self.avm.pop().coerce_to_u32(self.avm, context)?;
         let result = b >> a;
         self.avm.push(result);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_bit_xor(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let a = self.avm.pop().coerce_to_u32(self.avm, context)?;
         let b = self.avm.pop().coerce_to_u32(self.avm, context)?;
         let result = b ^ a;
         self.avm.push(result);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
-    fn action_call(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error<'gc>> {
+    fn action_call(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<FrameControl, Error<'gc>> {
         // Runs any actions on the given frame.
         let frame = self.avm.pop();
         let clip = self.avm.target_clip_or_root();
@@ -430,13 +435,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         } else {
             log::warn!("Call: Expected MovieClip");
         }
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_call_function(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let fn_name_value = self.avm.pop();
         let fn_name = fn_name_value.coerce_to_string(self.avm, context)?;
         let mut args = Vec::new();
@@ -458,13 +463,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let result = target_fn.call(self.avm, context, this, None, &args)?;
         self.avm.push(result);
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_call_method(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let method_name = self.avm.pop();
         let object_val = self.avm.pop();
         let object = value_object::ValueObject::boxed(self.avm, context, object_val);
@@ -502,13 +507,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             }
         }
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_cast_op(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let obj = self.avm.pop().coerce_to_object(self.avm, context);
         let constr = self.avm.pop().coerce_to_object(self.avm, context);
 
@@ -522,14 +527,14 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             self.avm.push(Value::Null);
         }
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_constant_pool(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         constant_pool: &[&str],
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         self.avm.constant_pool = GcCell::allocate(
             context.gc_context,
             constant_pool.iter().map(|s| (*s).to_string()).collect(),
@@ -538,16 +543,16 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             .write(context.gc_context)
             .set_constant_pool(self.avm.constant_pool);
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_decrement(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let a = self.avm.pop().coerce_to_f64(self.avm, context)?;
         self.avm.push(a - 1.0);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_define_function(
@@ -556,7 +561,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         name: &str,
         params: &[&str],
         actions: &[u8],
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let swf_version = self.activation.read().swf_version();
         let func_data = self.activation.read().data().to_subslice(actions).unwrap();
         let scope =
@@ -587,14 +592,14 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                 .define(name, func_obj, context.gc_context);
         }
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_define_function_2(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         action_func: &Function,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let swf_version = self.activation.read().swf_version();
         let func_data = self
             .activation
@@ -629,13 +634,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                 .define(action_func.name, func_obj, context.gc_context);
         }
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_define_local(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // If the property does not exist on the local object's prototype chain, it is created on the local object.
         // Otherwise, the property is set (including calling virtual setters).
         let value = self.avm.pop();
@@ -643,13 +648,14 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let name = name_val.coerce_to_string(self.avm, context)?;
         let stack_frame = self.activation.read();
         let scope = stack_frame.scope();
-        scope.locals().set(&name, value, self.avm, context)
+        scope.locals().set(&name, value, self.avm, context)?;
+        Ok(FrameControl::Continue)
     }
 
     fn action_define_local_2(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // If the property does not exist on the local object's prototype chain, it is created on the local object.
         // Otherwise, the property is unchanged.
         let name_val = self.avm.pop();
@@ -661,13 +667,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                 .locals()
                 .set(&name, Value::Undefined, self.avm, context)?;
         }
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_delete(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let name_val = self.avm.pop();
         let name = name_val.coerce_to_string(self.avm, context)?;
         let object = self.avm.pop();
@@ -680,13 +686,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             self.avm.push(false);
         }
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_delete_2(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let name_val = self.avm.pop();
         let name = name_val.coerce_to_string(self.avm, context)?;
 
@@ -700,13 +706,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             .delete(self.avm, context, &name, context.gc_context);
         self.avm.push(did_exist);
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_divide(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // AS1 divide
         let a = self.avm.pop().coerce_to_f64(self.avm, context)?;
         let b = self.avm.pop().coerce_to_f64(self.avm, context)?;
@@ -716,18 +722,18 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         // Seems to be untrue for SWF v4, I get 1.#INF.
 
         self.avm.push(b / a);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
-    fn action_end_drag(&mut self, context: &mut UpdateContext) -> Result<(), Error<'gc>> {
+    fn action_end_drag(&mut self, context: &mut UpdateContext) -> Result<FrameControl, Error<'gc>> {
         *context.drag_object = None;
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_enumerate(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let name_value = self.avm.pop();
         let name = name_value.coerce_to_string(self.avm, context)?;
         self.avm.push(Value::Null); // Sentinel that indicates end of enumeration
@@ -746,13 +752,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             _ => log::error!("Cannot enumerate properties of {}", name),
         };
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_enumerate_2(
         &mut self,
         _context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let value = self.avm.pop();
 
         self.avm.push(Value::Null); // Sentinel that indicates end of enumeration
@@ -765,40 +771,40 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             log::warn!("Cannot enumerate {:?}", value);
         }
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     #[allow(clippy::float_cmp)]
     fn action_equals(
         &mut self,
         _context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // AS1 equality
         let a = self.avm.pop();
         let b = self.avm.pop();
         let result = b.into_number_v1() == a.into_number_v1();
         self.avm
             .push(Value::from_bool(result, self.avm.current_swf_version()));
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     #[allow(clippy::float_cmp)]
     fn action_equals_2(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // Version >=5 equality
         let a = self.avm.pop();
         let b = self.avm.pop();
         let result = b.abstract_eq(a, self.avm, context, false)?;
         self.avm.push(result);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_extends(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let superclass = self.avm.pop().coerce_to_object(self.avm, context);
         let subclass = self.avm.pop().coerce_to_object(self.avm, context);
 
@@ -829,13 +835,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
 
         subclass.set("prototype", sub_prototype.into(), self.avm, context)?;
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_get_member(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let name_val = self.avm.pop();
         let name = name_val.coerce_to_string(self.avm, context)?;
         let object_val = self.avm.pop();
@@ -844,13 +850,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let result = object.get(&name, self.avm, context)?;
         self.avm.push(result);
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_get_property(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let prop_index = self.avm.pop().into_number_v1() as usize;
         let path = self.avm.pop();
         let ret = if let Some(target) = self.avm.target_clip() {
@@ -875,25 +881,25 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             Value::Undefined
         };
         self.avm.push(ret);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
-    fn action_get_time(&mut self, context: &mut UpdateContext) -> Result<(), Error<'gc>> {
+    fn action_get_time(&mut self, context: &mut UpdateContext) -> Result<FrameControl, Error<'gc>> {
         let time = context.navigator.time_since_launch().as_millis() as u32;
         self.avm.push(time);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_get_variable(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let var_path = self.avm.pop();
         let path = var_path.coerce_to_string(self.avm, context)?;
 
         self.avm.get_variable(context, &path)?.push(self.avm);
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_get_url(
@@ -901,7 +907,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         url: &str,
         target: &str,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         if target.starts_with("_level") && target.len() > 6 {
             let url = url.to_string();
             match target[6..].parse::<u32>() {
@@ -924,18 +930,18 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                 ),
             }
 
-            return Ok(());
+            return Ok(FrameControl::Continue);
         }
 
         if let Some(fscommand) = fscommand::parse(url) {
-            return fscommand::handle(fscommand, self.avm, context);
+            fscommand::handle(fscommand, self.avm, context)?;
+        } else {
+            context
+                .navigator
+                .navigate_to_url(url.to_owned(), Some(target.to_owned()), None);
         }
 
-        context
-            .navigator
-            .navigate_to_url(url.to_owned(), Some(target.to_owned()), None);
-
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_get_url_2(
@@ -944,7 +950,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         swf_method: swf::avm1::types::SendVarsMethod,
         is_target_sprite: bool,
         is_load_vars: bool,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // TODO: Support `LoadVariablesFlag`, `LoadTargetFlag`
         // TODO: What happens if there's only one string?
         let target = self.avm.pop();
@@ -952,7 +958,8 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let url = url_val.coerce_to_string(self.avm, context)?;
 
         if let Some(fscommand) = fscommand::parse(&url) {
-            return fscommand::handle(fscommand, self.avm, context);
+            fscommand::handle(fscommand, self.avm, context)?;
+            return Ok(FrameControl::Continue);
         }
 
         let window_target = target.coerce_to_string(self.avm, context)?;
@@ -990,7 +997,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                 context.navigator.spawn_future(process);
             }
 
-            return Ok(());
+            return Ok(FrameControl::Continue);
         } else if is_target_sprite {
             if let Some(clip_target) = clip_target {
                 let (url, opts) = self.avm.locals_into_request_options(
@@ -1008,7 +1015,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                 context.navigator.spawn_future(process);
             }
 
-            return Ok(());
+            return Ok(FrameControl::Continue);
         } else {
             let vars = match NavigationMethod::from_send_vars_method(swf_method) {
                 Some(method) => Some((method, self.avm.locals_into_form_values(context))),
@@ -1022,14 +1029,14 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             );
         }
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_goto_frame(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         frame: u16,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         if let Some(clip) = self.avm.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 // The frame on the stack is 0-based, not 1-based.
@@ -1040,7 +1047,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         } else {
             log::error!("GotoFrame failed: Invalid target");
         }
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_goto_frame_2(
@@ -1048,7 +1055,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         set_playing: bool,
         scene_offset: u16,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // Version 4+ gotoAndPlay/gotoAndStop
         // Param can either be a frame number or a frame label.
         if let Some(clip) = self.avm.target_clip() {
@@ -1068,14 +1075,14 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         } else {
             log::warn!("GotoFrame2: Invalid target");
         }
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_goto_label(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         label: &str,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         if let Some(clip) = self.avm.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 if let Some(frame) = clip.frame_label_to_number(label) {
@@ -1089,7 +1096,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         } else {
             log::warn!("GoToLabel: Invalid target");
         }
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_if(
@@ -1097,27 +1104,27 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         _context: &mut UpdateContext,
         jump_offset: i16,
         reader: &mut Reader<'_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let val = self.avm.pop();
         if val.as_bool(self.avm.current_swf_version()) {
             reader.seek(jump_offset.into());
         }
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_increment(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let a = self.avm.pop().coerce_to_f64(self.avm, context)?;
         self.avm.push(a + 1.0);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_init_array(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let num_elements = self.avm.pop().coerce_to_f64(self.avm, context)? as i64;
         let array = ScriptObject::array(context.gc_context, Some(self.avm.prototypes.array));
 
@@ -1126,13 +1133,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         }
 
         self.avm.push(Value::Object(array.into()));
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_init_object(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let num_props = self.avm.pop().coerce_to_f64(self.avm, context)? as i64;
         let object = ScriptObject::object(context.gc_context, Some(self.avm.prototypes.object));
         for _ in 0..num_props {
@@ -1144,13 +1151,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
 
         self.avm.push(Value::Object(object.into()));
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_implements_op(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let constr = self.avm.pop().coerce_to_object(self.avm, context);
         let count = self.avm.pop().coerce_to_f64(self.avm, context)? as i64; //TODO: Is this coercion actually performed by Flash?
         let mut interfaces = vec![];
@@ -1167,13 +1174,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
 
         prototype.set_interfaces(context.gc_context, interfaces);
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_instance_of(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let constr = self.avm.pop().coerce_to_object(self.avm, context);
         let obj = self.avm.pop().coerce_to_object(self.avm, context);
 
@@ -1183,7 +1190,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let is_instance_of = obj.is_instance_of(self.avm, context, constr, prototype)?;
 
         self.avm.push(is_instance_of);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_jump(
@@ -1191,26 +1198,29 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         _context: &mut UpdateContext,
         jump_offset: i16,
         reader: &mut Reader<'_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // TODO(Herschel): Handle out-of-bounds.
         reader.seek(jump_offset.into());
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
-    fn action_less(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error<'gc>> {
+    fn action_less(
+        &mut self,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<FrameControl, Error<'gc>> {
         // AS1 less than
         let a = self.avm.pop();
         let b = self.avm.pop();
         let result = b.into_number_v1() < a.into_number_v1();
         self.avm
             .push(Value::from_bool(result, self.avm.current_swf_version()));
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_less_2(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // ECMA-262 s. 11.8.1
         let a = self.avm.pop();
         let b = self.avm.pop();
@@ -1218,13 +1228,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let result = b.abstract_lt(a, self.avm, context)?;
 
         self.avm.push(result);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_greater(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // ECMA-262 s. 11.8.2
         let a = self.avm.pop();
         let b = self.avm.pop();
@@ -1232,13 +1242,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let result = a.abstract_lt(b, self.avm, context)?;
 
         self.avm.push(result);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_mb_ascii_to_char(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // TODO(Herschel): Results on incorrect operands?
         use std::convert::TryFrom;
         let result = char::try_from(self.avm.pop().coerce_to_f64(self.avm, context)? as u32);
@@ -1246,25 +1256,25 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             Ok(val) => self.avm.push(val.to_string()),
             Err(e) => log::warn!("Couldn't parse char for action_mb_ascii_to_char: {}", e),
         }
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_mb_char_to_ascii(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // TODO(Herschel): Results on incorrect operands?
         let val = self.avm.pop();
         let s = val.coerce_to_string(self.avm, context)?;
         let result = s.chars().next().unwrap_or('\0') as u32;
         self.avm.push(result);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_mb_string_extract(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // TODO(Herschel): Result with incorrect operands?
         let len = self.avm.pop().coerce_to_f64(self.avm, context)? as usize;
         let start = self.avm.pop().coerce_to_f64(self.avm, context)? as usize;
@@ -1272,52 +1282,55 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let s = val.coerce_to_string(self.avm, context)?;
         let result = s[len..len + start].to_string(); // TODO(Herschel): Flash uses UTF-16 internally.
         self.avm.push(result);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_mb_string_length(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // TODO(Herschel): Result with non-string operands?
         let val = self.avm.pop();
         let len = val.coerce_to_string(self.avm, context)?.len();
         self.avm.push(len as f64);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_multiply(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let a = self.avm.pop().coerce_to_f64(self.avm, context)?;
         let b = self.avm.pop().coerce_to_f64(self.avm, context)?;
         self.avm.push(a * b);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_modulo(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // TODO: Wrong operands?
         let a = self.avm.pop().coerce_to_f64(self.avm, context)?;
         let b = self.avm.pop().coerce_to_f64(self.avm, context)?;
         self.avm.push(b % a);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
-    fn action_not(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error<'gc>> {
+    fn action_not(
+        &mut self,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<FrameControl, Error<'gc>> {
         let version = self.avm.current_swf_version();
         let val = !self.avm.pop().as_bool(version);
         self.avm.push(Value::from_bool(val, version));
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_next_frame(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         if let Some(clip) = self.avm.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 clip.next_frame(self.avm, context);
@@ -1327,13 +1340,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         } else {
             log::warn!("NextFrame: Invalid target");
         }
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_new_method(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let method_name = self.avm.pop();
         let object_val = self.avm.pop();
         let num_args = self.avm.pop().coerce_to_f64(self.avm, context)? as i64;
@@ -1383,13 +1396,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             self.avm.push(Value::Undefined);
         }
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_new_object(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let fn_name_val = self.avm.pop();
         let fn_name = fn_name_val.coerce_to_string(self.avm, context)?;
         let num_args = self.avm.pop().coerce_to_f64(self.avm, context)? as i64;
@@ -1434,20 +1447,26 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
 
         self.avm.push(this);
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
-    fn action_or(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error<'gc>> {
+    fn action_or(
+        &mut self,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<FrameControl, Error<'gc>> {
         // AS1 logical or
         let a = self.avm.pop();
         let b = self.avm.pop();
         let version = self.avm.current_swf_version();
         let result = b.as_bool(version) || a.as_bool(version);
         self.avm.push(Value::from_bool(result, version));
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
-    fn action_play(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error<'gc>> {
+    fn action_play(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<FrameControl, Error<'gc>> {
         if let Some(clip) = self.avm.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 clip.play(context)
@@ -1457,13 +1476,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         } else {
             log::warn!("Play: Invalid target");
         }
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_prev_frame(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         if let Some(clip) = self.avm.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 clip.prev_frame(self.avm, context);
@@ -1473,19 +1492,19 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         } else {
             log::warn!("PrevFrame: Invalid target");
         }
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
-    fn action_pop(&mut self, _context: &mut UpdateContext) -> Result<(), Error<'gc>> {
+    fn action_pop(&mut self, _context: &mut UpdateContext) -> Result<FrameControl, Error<'gc>> {
         self.avm.pop();
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_push(
         &mut self,
         _context: &mut UpdateContext,
         values: &[swf::avm1::types::Value],
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         for value in values {
             use swf::avm1::types::Value as SwfValue;
             let value = match value {
@@ -1518,17 +1537,23 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             };
             self.avm.push(value);
         }
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
-    fn action_push_duplicate(&mut self, _context: &mut UpdateContext) -> Result<(), Error<'gc>> {
+    fn action_push_duplicate(
+        &mut self,
+        _context: &mut UpdateContext,
+    ) -> Result<FrameControl, Error<'gc>> {
         let val = self.avm.pop();
         self.avm.push(val.clone());
         self.avm.push(val);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
-    fn action_random_number(&mut self, context: &mut UpdateContext) -> Result<(), Error<'gc>> {
+    fn action_random_number(
+        &mut self,
+        context: &mut UpdateContext,
+    ) -> Result<FrameControl, Error<'gc>> {
         // A max value < 0 will always return 0,
         // and the max value gets converted into an i32, so any number > 2^31 - 1 will return 0.
         let max = self.avm.pop().into_number_v1() as i32;
@@ -1538,13 +1563,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             0
         };
         self.avm.push(val);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_remove_sprite(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let target = self.avm.pop();
         let start_clip = self.avm.target_clip_or_root();
         let target_clip = self
@@ -1556,23 +1581,23 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         } else {
             log::warn!("RemoveSprite: Source is not a movie clip");
         }
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_return(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let return_value = self.avm.pop();
         self.avm.retire_stack_frame(context, return_value);
 
-        Ok(())
+        Ok(FrameControl::Return)
     }
 
     fn action_set_member(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let value = self.avm.pop();
         let name_val = self.avm.pop();
         let name = name_val.coerce_to_string(self.avm, context)?;
@@ -1580,13 +1605,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let object = self.avm.pop().coerce_to_object(self.avm, context);
         object.set(&name, value, self.avm, context)?;
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_set_property(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let value = self.avm.pop();
         let prop_index = self.avm.pop().coerce_to_u32(self.avm, context)? as usize;
         let path = self.avm.pop();
@@ -1606,35 +1631,39 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         } else {
             log::warn!("SetProperty: Invalid base clip");
         }
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_set_variable(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // Flash 4-style variable
         let value = self.avm.pop();
         let var_path_val = self.avm.pop();
         let var_path = var_path_val.coerce_to_string(self.avm, context)?;
-        self.avm.set_variable(context, &var_path, value)
+        self.avm.set_variable(context, &var_path, value)?;
+        Ok(FrameControl::Continue)
     }
 
     #[allow(clippy::float_cmp)]
-    fn action_strict_equals(&mut self, _context: &mut UpdateContext) -> Result<(), Error<'gc>> {
+    fn action_strict_equals(
+        &mut self,
+        _context: &mut UpdateContext,
+    ) -> Result<FrameControl, Error<'gc>> {
         // The same as normal equality but types must match
         let a = self.avm.pop();
         let b = self.avm.pop();
         let result = a == b;
         self.avm.push(result);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_set_target(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         target: &str,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let base_clip = self.avm.base_clip();
         let new_target_clip;
         let root = base_clip.root();
@@ -1669,13 +1698,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             .coerce_to_object(self.avm, context);
 
         sf.set_scope(Scope::new_target_scope(scope, clip_obj, context.gc_context));
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_set_target2(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let target = self.avm.pop();
         match target {
             Value::String(target) => {
@@ -1712,21 +1741,24 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             .object()
             .coerce_to_object(self.avm, context);
         sf.set_scope(Scope::new_target_scope(scope, clip_obj, context.gc_context));
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
-    fn action_stack_swap(&mut self, _context: &mut UpdateContext) -> Result<(), Error<'gc>> {
+    fn action_stack_swap(
+        &mut self,
+        _context: &mut UpdateContext,
+    ) -> Result<FrameControl, Error<'gc>> {
         let a = self.avm.pop();
         let b = self.avm.pop();
         self.avm.push(a);
         self.avm.push(b);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_start_drag(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let target = self.avm.pop();
         let start_clip = self.avm.target_clip_or_root();
         let display_object = self
@@ -1752,10 +1784,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         } else {
             log::warn!("StartDrag: Invalid target");
         }
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
-    fn action_stop(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error<'gc>> {
+    fn action_stop(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<FrameControl, Error<'gc>> {
         if let Some(clip) = self.avm.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 clip.stop(context);
@@ -1765,31 +1800,34 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         } else {
             log::warn!("Stop: Invalid target");
         }
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
-    fn action_stop_sounds(&mut self, context: &mut UpdateContext) -> Result<(), Error<'gc>> {
+    fn action_stop_sounds(
+        &mut self,
+        context: &mut UpdateContext,
+    ) -> Result<FrameControl, Error<'gc>> {
         context.audio.stop_all_sounds();
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_store_register(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         register: u8,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // The value must remain on the stack.
         let val = self.avm.pop();
         self.avm.push(val.clone());
         self.avm.set_current_register(register, val, context);
 
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_string_add(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // SWFv4 string concatenation
         // TODO(Herschel): Result with non-string operands?
         let a = self.avm.pop();
@@ -1800,13 +1838,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             .to_string();
         b.push_str(&a.coerce_to_string(self.avm, context)?);
         self.avm.push(b);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_string_equals(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // AS1 strcmp
         let a = self.avm.pop();
         let b = self.avm.pop();
@@ -1814,13 +1852,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             b.coerce_to_string(self.avm, context)? == a.coerce_to_string(self.avm, context)?;
         self.avm
             .push(Value::from_bool(result, self.avm.current_swf_version()));
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_string_extract(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // SWFv4 substring
         // TODO(Herschel): Result with incorrect operands?
         let len = self.avm.pop().coerce_to_f64(self.avm, context)? as usize;
@@ -1836,13 +1874,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             .map(|c| c as char)
             .collect::<String>();
         self.avm.push(result);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_string_greater(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // AS1 strcmp
         let a = self.avm.pop();
         let b = self.avm.pop();
@@ -1853,26 +1891,26 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             .gt(a.coerce_to_string(self.avm, context)?.bytes());
         self.avm
             .push(Value::from_bool(result, self.avm.current_swf_version()));
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_string_length(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // AS1 strlen
         // Only returns byte length.
         // TODO(Herschel): Result with non-string operands?
         let val = self.avm.pop();
         let len = val.coerce_to_string(self.avm, context)?.bytes().len() as f64;
         self.avm.push(len);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_string_less(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // AS1 strcmp
         let a = self.avm.pop();
         let b = self.avm.pop();
@@ -1883,64 +1921,67 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             .lt(a.coerce_to_string(self.avm, context)?.bytes());
         self.avm
             .push(Value::from_bool(result, self.avm.current_swf_version()));
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_subtract(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let a = self.avm.pop().coerce_to_f64(self.avm, context)?;
         let b = self.avm.pop().coerce_to_f64(self.avm, context)?;
         self.avm.push(b - a);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_target_path(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // TODO(Herschel)
         let _clip = self.avm.pop().coerce_to_object(self.avm, context);
         self.avm.push(Value::Undefined);
         log::warn!("Unimplemented action: TargetPath");
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
-    fn toggle_quality(&mut self, _context: &mut UpdateContext) -> Result<(), Error<'gc>> {
+    fn toggle_quality(&mut self, _context: &mut UpdateContext) -> Result<FrameControl, Error<'gc>> {
         // TODO(Herschel): Noop for now? Could chang anti-aliasing on render backend.
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_to_integer(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let val = self.avm.pop().coerce_to_f64(self.avm, context)?;
         self.avm.push(val.trunc());
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_to_number(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let val = self.avm.pop().coerce_to_f64(self.avm, context)?;
         self.avm.push(val);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_to_string(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let val = self.avm.pop();
         let string = val.coerce_to_string(self.avm, context)?;
         self.avm.push(string);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
-    fn action_trace(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error<'gc>> {
+    fn action_trace(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<FrameControl, Error<'gc>> {
         let val = self.avm.pop();
         // trace always prints "undefined" even though SWF6 and below normally
         // coerce undefined to "".
@@ -1950,13 +1991,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             val.coerce_to_string(self.avm, context)?
         };
         log::info!(target: "avm_trace", "{}", out);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
-    fn action_type_of(&mut self, _context: &mut UpdateContext) -> Result<(), Error<'gc>> {
+    fn action_type_of(&mut self, _context: &mut UpdateContext) -> Result<FrameControl, Error<'gc>> {
         let type_of = self.avm.pop().type_of();
         self.avm.push(type_of);
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_wait_for_frame(
@@ -1965,7 +2006,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         _frame: u16,
         num_actions_to_skip: u8,
         r: &mut Reader<'_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // TODO(Herschel): Always true for now.
         let loaded = true;
         if !loaded {
@@ -1973,7 +2014,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             // Read the actions and toss them away.
             skip_actions(r, num_actions_to_skip);
         }
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
     fn action_wait_for_frame_2(
@@ -1981,7 +2022,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         num_actions_to_skip: u8,
         r: &mut Reader<'_>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         // TODO(Herschel): Always true for now.
         let _frame_num = self.avm.pop().coerce_to_f64(self.avm, context)? as u16;
         let loaded = true;
@@ -1990,10 +2031,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             // Read the actions and toss them away.
             skip_actions(r, num_actions_to_skip);
         }
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 
-    fn action_throw(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error<'gc>> {
+    fn action_throw(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<FrameControl, Error<'gc>> {
         let value = self.avm.pop();
         avm_debug!(
             "Thrown exception: {}",
@@ -2009,7 +2053,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         actions: &[u8],
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<FrameControl, Error<'gc>> {
         let object = self.avm.pop().coerce_to_object(self.avm, context);
         let block = self.activation.read().data().to_subslice(actions).unwrap();
         let with_scope = Scope::new_with_scope(
@@ -2023,6 +2067,6 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         );
         self.avm.stack_frames.push(new_activation);
         self.avm.run_current_frame(context, new_activation)?;
-        Ok(())
+        Ok(FrameControl::Continue)
     }
 }
