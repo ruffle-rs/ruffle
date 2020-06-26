@@ -440,34 +440,6 @@ impl<'gc> Avm1<'gc> {
         }
     }
 
-    /// Destroy the current stack frame (if there is one).
-    ///
-    /// The given return value will be pushed on the stack if there is a
-    /// function to return it to. Otherwise, it will be discarded.
-    ///
-    /// NOTE: This means that if you are starting a brand new AVM stack just to
-    /// get it's return value, you won't get that value. Instead, retain a cell
-    /// referencing the oldest activation frame and use that to retrieve the
-    /// return value.
-    pub fn retire_stack_frame(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        return_value: Value<'gc>,
-    ) {
-        if let Some(frame) = self.current_stack_frame() {
-            self.stack_frames.pop();
-
-            let can_return = frame.read().can_return() && !self.stack_frames.is_empty();
-            if can_return {
-                frame
-                    .write(context.gc_context)
-                    .set_return_value(return_value.clone());
-
-                self.push(return_value);
-            }
-        }
-    }
-
     /// Execute the AVM stack until it is exhausted.
     pub fn run_stack_till_empty(
         &mut self,
@@ -479,7 +451,7 @@ impl<'gc> Avm1<'gc> {
         }
         while !self.stack_frames.is_empty() {
             let activation = self.current_stack_frame().ok_or(Error::FrameNotOnStack)?;
-            if let Err(e) = StackFrame::new(self, activation).run(context) {
+            if let Err(e) = self.run_activation(context, activation) {
                 if let Error::ThrownValue(error) = &e {
                     let string = error
                         .coerce_to_string(self, context)
@@ -527,13 +499,44 @@ impl<'gc> Avm1<'gc> {
                 .unwrap_or(false)
             {
                 let activation = self.current_stack_frame().ok_or(Error::FrameNotOnStack)?;
-                StackFrame::new(self, activation).run(context)?
+                self.run_activation(context, activation)?;
             }
 
             Ok(())
         } else {
             self.halt();
             Err(Error::FrameNotOnStack)
+        }
+    }
+
+    /// Execute the AVM stack until a given activation returns.
+    pub fn run_activation(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: GcCell<'gc, Activation<'gc>>,
+    ) -> Result<(), Error<'gc>> {
+        match StackFrame::new(self, activation).run(context) {
+            Ok(return_type) => {
+                self.stack_frames.pop();
+
+                let can_return = activation.read().can_return() && !self.stack_frames.is_empty();
+                if can_return {
+                    let return_value = return_type.value();
+                    activation
+                        .write(context.gc_context)
+                        .set_return_value(return_value.clone());
+
+                    self.push(return_value);
+                }
+                Ok(())
+            }
+            Err(error) => {
+                self.stack_frames.pop();
+                if error.is_halting() {
+                    self.halt();
+                }
+                Err(error)
+            }
         }
     }
 

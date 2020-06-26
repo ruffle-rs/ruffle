@@ -28,9 +28,18 @@ macro_rules! avm_debug {
 }
 
 #[derive(Debug, Clone)]
-enum ReturnType<'gc> {
+pub enum ReturnType<'gc> {
     Implicit,
     Explicit(Value<'gc>),
+}
+
+impl<'gc> ReturnType<'gc> {
+    pub fn value(self) -> Value<'gc> {
+        match self {
+            ReturnType::Implicit => Value::Undefined,
+            ReturnType::Explicit(value) => value,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -51,7 +60,10 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         Self { avm, activation }
     }
 
-    pub fn run(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error<'gc>> {
+    pub fn run(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<ReturnType<'gc>, Error<'gc>> {
         let mut activation = self.activation.write(context.gc_context);
         activation.lock()?;
         let data = activation.data();
@@ -73,23 +85,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         activation.set_pc(read.pos());
         drop(activation);
 
-        match result {
-            Ok(ReturnType::Explicit(value)) => {
-                self.avm.retire_stack_frame(context, value);
-                Ok(())
-            }
-            Ok(ReturnType::Implicit) => {
-                self.avm.retire_stack_frame(context, Value::Undefined);
-                Ok(())
-            }
-            Err(error) => {
-                if error.is_halting() {
-                    self.avm.halt();
-                }
-                self.avm.retire_stack_frame(context, Value::Undefined);
-                Err(error)
-            }
-        }
+        result
     }
 
     /// Run a single action from a given action reader.
