@@ -11,6 +11,7 @@ use crate::avm1::{
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
+use crate::tag_utils::SwfSlice;
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell};
 use rand::Rng;
@@ -52,7 +53,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         drop(activation);
 
         let result = loop {
-            let result = self.do_action(context, &mut read);
+            let result = self.do_action(&data, context, &mut read);
             match result {
                 Ok(FrameControl::Return) => break Ok(()),
                 Ok(FrameControl::Continue) => {}
@@ -77,11 +78,10 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     /// Run a single action from a given action reader.
     fn do_action(
         &mut self,
+        data: &SwfSlice,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut Reader<'_>,
     ) -> Result<FrameControl, Error<'gc>> {
-        let data = self.activation.read().data();
-
         if reader.pos() >= (data.end - data.start) {
             //Executing beyond the end of a function constitutes an implicit return.
             self.avm.retire_stack_frame(context, Value::Undefined);
