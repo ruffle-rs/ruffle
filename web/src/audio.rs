@@ -775,10 +775,14 @@ impl AudioBackend for WebAudioBackend {
             let mut instances = instances.borrow_mut();
             let handle = Some(handle);
             instances.retain(|_, instance| {
-                if let SoundInstanceType::AudioBuffer(ref node) = instance.instance_type {
-                    let _ = node.disconnect();
+                if instance.handle == handle {
+                    if let SoundInstanceType::AudioBuffer(ref node) = instance.instance_type {
+                        let _ = node.disconnect();
+                    }
+                    false
+                } else {
+                    true
                 }
-                instance.handle != handle
             });
         })
     }
