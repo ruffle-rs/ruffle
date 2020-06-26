@@ -112,9 +112,13 @@ impl<R: Read> Reader<R> {
             let byte: i32 = self.read_u8()?.into();
             n |= (byte & 0b0111_1111) << i;
             i += 7;
+
             if byte & 0b1000_0000 == 0 {
-                n <<= 32 - i;
-                n >>= 32 - i;
+                if i < 32 {
+                    n <<= 32 - i;
+                    n >>= 32 - i;
+                }
+
                 break;
             }
         }
