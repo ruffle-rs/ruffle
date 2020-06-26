@@ -6,7 +6,6 @@ use crate::avm1::return_value::ReturnValue;
 use crate::avm1::{Avm1, Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
 use crate::html::TextFormat;
-use crate::xml::XMLDocument;
 use gc_arena::MutationContext;
 
 /// Implements `TextField`
@@ -61,23 +60,23 @@ pub fn get_html<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(display_object) = this.as_display_object() {
-        if let Some(_text_field) = display_object.as_edit_text() {
-            return Ok(true.into());
+        if let Some(text_field) = display_object.as_edit_text() {
+            return Ok(text_field.is_html().into());
         }
     }
     Ok(Value::Undefined.into())
 }
 
 pub fn set_html<'gc>(
-    _avm: &mut Avm1<'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    avm: &mut Avm1<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(display_object) = this.as_display_object() {
-        if let Some(_text_field) = display_object.as_edit_text() {
-            if let Some(_value) = args.get(0) {
-                //TODO: Do something with this bool value
+        if let Some(text_field) = display_object.as_edit_text() {
+            if let Some(value) = args.get(0) {
+                text_field.set_is_html(context, value.as_bool(avm.current_swf_version()));
             }
         }
     }
@@ -92,17 +91,9 @@ pub fn get_html_text<'gc>(
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
-            let html_tree = text_field.html_tree(context).as_node();
-            let html_string_result = html_tree.into_string(&mut |_node| true);
-
-            if let Err(err) = &html_string_result {
-                log::warn!(
-                    "Serialization error when reading TextField.htmlText: {}",
-                    err
-                );
+            if let Ok(text) = text_field.html_text(context) {
+                return Ok(text.into());
             }
-
-            return Ok(html_string_result.unwrap_or_else(|_| "".to_string()).into());
         }
     }
     Ok(Value::Undefined.into())
@@ -115,26 +106,13 @@ pub fn set_html_text<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(display_object) = this.as_display_object() {
-        if let Some(mut text_field) = display_object.as_edit_text() {
-            if let Some(value) = args.get(0) {
-                let html_string = value
-                    .clone()
-                    .coerce_to_string(avm, context)?
-                    .into_owned()
-                    .replace("<sbr>", "\n")
-                    .replace("<br>", "\n");
-                let document = XMLDocument::new(context.gc_context);
-
-                if let Err(err) =
-                    document
-                        .as_node()
-                        .replace_with_str(context.gc_context, &html_string, false)
-                {
-                    log::warn!("Parsing error when setting TextField.htmlText: {}", err);
-                }
-
-                text_field.set_html_tree(document, context);
-            }
+        if let Some(text_field) = display_object.as_edit_text() {
+            let text = args
+                .get(0)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_string(avm, context)?;
+            let _ = text_field.set_html_text(text.into_owned(), context);
+            // Changing the htmlText does NOT update variable bindings (does not call EditText::propagate_text_binding).
         }
     }
     Ok(Value::Undefined.into())

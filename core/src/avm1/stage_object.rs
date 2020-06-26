@@ -187,7 +187,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         {
             let _ = binding
                 .text_field
-                .set_text(value.coerce_to_string(avm, context)?.into_owned(), context);
+                .set_html_text(value.coerce_to_string(avm, context)?.into_owned(), context);
         }
 
         let result = if obj.base.has_own_property(avm, context, name) {
