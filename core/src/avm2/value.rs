@@ -425,4 +425,27 @@ impl<'gc> Value<'gc> {
                 .coerce_to_number(activation)?,
         })
     }
+
+    /// Coerce the value to a 32-bit signed integer.
+    ///
+    /// This function returns the resulting i32 directly; or a TypeError if the
+    /// value is an `Object` that cannot be converted to a primitive value.
+    ///
+    /// Numerical conversions occur according to ECMA-262 3rd Edition's
+    /// ToInt32 algorithm which appears to match AVM2.
+    pub fn coerce_to_i32(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<i32, Error> {
+        let number = self.coerce_to_number(activation)?;
+
+        Ok(
+            if number == f64::INFINITY
+                || number == f64::NEG_INFINITY
+                || number.is_nan()
+                || number.abs() == 0.0
+            {
+                0
+            } else {
+                (number.abs().floor() * number.signum()) as u32 as i32
+            },
+        )
+    }
 }
