@@ -1534,7 +1534,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                 SwfValue::Float(v) => f64::from(*v).into(),
                 SwfValue::Double(v) => (*v).into(),
                 SwfValue::Str(v) => (*v).to_string().into(),
-                SwfValue::Register(v) => self.avm.current_register(*v),
+                SwfValue::Register(v) => self.current_register(*v),
                 SwfValue::ConstantPool(i) => {
                     if let Some(value) = self
                         .activation
@@ -1834,7 +1834,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         // The value must remain on the stack.
         let val = self.avm.pop();
         self.avm.push(val.clone());
-        self.avm.set_current_register(register, val, context);
+        self.set_current_register(register, val, context);
 
         Ok(FrameControl::Continue)
     }
@@ -2089,5 +2089,42 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         self.avm.stack_frames.push(new_activation);
         self.avm.run_activation(context, new_activation)?;
         Ok(FrameControl::Continue)
+    }
+
+    /// Retrieve a given register value.
+    ///
+    /// If a given register does not exist, this function yields
+    /// Value::Undefined, which is also a valid register value.
+    pub fn current_register(&self, id: u8) -> Value<'gc> {
+        if self.activation.read().has_local_register(id) {
+            self.activation
+                .read()
+                .local_register(id)
+                .unwrap_or(Value::Undefined)
+        } else {
+            self.avm
+                .registers
+                .get(id as usize)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+        }
+    }
+
+    /// Set a register to a given value.
+    ///
+    /// If a given register does not exist, this function does nothing.
+    pub fn set_current_register(
+        &mut self,
+        id: u8,
+        value: Value<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) {
+        if self.activation.read().has_local_register(id) {
+            self.activation
+                .write(context.gc_context)
+                .set_local_register(id, value, context.gc_context);
+        } else if let Some(v) = self.avm.registers.get_mut(id as usize) {
+            *v = value;
+        }
     }
 }

@@ -894,52 +894,6 @@ impl<'gc> Avm1<'gc> {
         value
     }
 
-    /// Retrieve a given register value.
-    ///
-    /// If a given register does not exist, this function yields
-    /// Value::Undefined, which is also a valid register value.
-    pub fn current_register(&self, id: u8) -> Value<'gc> {
-        if self
-            .current_stack_frame()
-            .map(|sf| sf.read().has_local_register(id))
-            .unwrap_or(false)
-        {
-            self.current_stack_frame()
-                .unwrap()
-                .read()
-                .local_register(id)
-                .unwrap_or(Value::Undefined)
-        } else {
-            self.registers
-                .get(id as usize)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-        }
-    }
-
-    /// Set a register to a given value.
-    ///
-    /// If a given register does not exist, this function does nothing.
-    pub fn set_current_register(
-        &mut self,
-        id: u8,
-        value: Value<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) {
-        if self
-            .current_stack_frame()
-            .map(|sf| sf.read().has_local_register(id))
-            .unwrap_or(false)
-        {
-            self.current_stack_frame()
-                .unwrap()
-                .write(context.gc_context)
-                .set_local_register(id, value, context.gc_context);
-        } else if let Some(v) = self.registers.get_mut(id as usize) {
-            *v = value;
-        }
-    }
-
     /// Obtain the value of `_root`.
     pub fn root_object(&self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Value<'gc> {
         self.base_clip().root().object()
