@@ -1432,11 +1432,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         }
 
         let constructor = self
-            .avm
-            .stack_frames
-            .last()
-            .unwrap()
-            .clone()
+            .activation
             .read()
             .resolve(&fn_name, self.avm, context)?
             .resolve(self.avm, context)?
