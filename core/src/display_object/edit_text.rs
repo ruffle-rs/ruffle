@@ -80,6 +80,9 @@ pub struct EditTextData<'gc> {
     /// If the text field is required to use device fonts only.
     is_device_font: bool,
 
+    /// If the text field renders as HTML.
+    is_html: bool,
+
     /// The current border drawing.
     drawing: Drawing,
 
@@ -119,6 +122,7 @@ impl<'gc> EditText<'gc> {
     ) -> Self {
         let is_multiline = swf_tag.is_multiline;
         let is_word_wrap = swf_tag.is_word_wrap;
+        let is_html = swf_tag.is_html;
         let document = XMLDocument::new(context.gc_context);
         let text = swf_tag.initial_text.clone().unwrap_or_default();
         let default_format = TextFormat::from_swf_tag(swf_tag.clone(), swf_movie.clone(), context);
@@ -126,7 +130,7 @@ impl<'gc> EditText<'gc> {
         let mut text_spans = FormatSpans::new();
         text_spans.set_default_format(default_format.clone());
 
-        if swf_tag.is_html {
+        if is_html {
             document
                 .as_node()
                 .replace_with_str(context.gc_context, &text, false)
@@ -178,6 +182,7 @@ impl<'gc> EditText<'gc> {
                 is_word_wrap,
                 has_border,
                 is_device_font,
+                is_html,
                 drawing: Drawing::new(),
                 object: None,
                 layout,
@@ -268,6 +273,51 @@ impl<'gc> EditText<'gc> {
         Ok(())
     }
 
+    pub fn html_text(self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<String, Error> {
+        if self.is_html() {
+            let html_tree = self.html_tree(context).as_node();
+            let html_string_result = html_tree.into_string(&mut |_node| true);
+
+            if let Err(err) = &html_string_result {
+                log::warn!(
+                    "Serialization error when reading TextField.htmlText: {}",
+                    err
+                );
+            }
+
+            return Ok(html_string_result.unwrap_or_else(|_| "".to_string()).into());
+        } else {
+            // Non-HTML text fields always return plain text.
+            return Ok(self.text());
+        }
+    }
+
+    pub fn set_html_text(
+        self,
+        text: String,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        if self.is_html() {
+            let html_string = text.replace("<sbr>", "\n").replace("<br>", "\n");
+            let document = XMLDocument::new(context.gc_context);
+
+            if let Err(err) =
+                document
+                    .as_node()
+                    .replace_with_str(context.gc_context, &html_string, false)
+            {
+                log::warn!("Parsing error when setting TextField.htmlText: {}", err);
+            }
+
+            self.set_html_tree(document, context);
+        } else {
+            if let Err(err) = self.set_text(text, context) {
+                log::error!("Error when setting TextField.htmlText: {}", err);
+            }
+        }
+        Ok(())
+    }
+
     pub fn html_tree(self, context: &mut UpdateContext<'_, 'gc, '_>) -> XMLDocument<'gc> {
         self.0.read().text_spans.raise_to_html(context.gc_context)
     }
@@ -282,11 +332,7 @@ impl<'gc> EditText<'gc> {
     /// In stylesheet mode, the opposite is true: text spans are an
     /// intermediate, user-facing text span APIs don't work, and the document
     /// is retained.
-    pub fn set_html_tree(
-        &mut self,
-        doc: XMLDocument<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) {
+    pub fn set_html_tree(self, doc: XMLDocument<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) {
         let mut write = self.0.write(context.gc_context);
 
         write.document = doc;
@@ -377,6 +423,14 @@ impl<'gc> EditText<'gc> {
     ) {
         self.0.write(context.gc_context).is_device_font = is_device_font;
         self.relayout(context);
+    }
+
+    pub fn is_html(self) -> bool {
+        self.0.read().is_html
+    }
+
+    pub fn set_is_html(self, context: &mut UpdateContext<'_, 'gc, '_>, is_html: bool) {
+        self.0.write(context.gc_context).is_html = is_html;
     }
 
     pub fn replace_text(
@@ -713,7 +767,7 @@ impl<'gc> EditText<'gc> {
                     self.parent().unwrap(),
                     &variable_path,
                 ) {
-                    let text = if avm.current_swf_version() >= 6 {
+                    let text = if self.0.read().is_html {
                         let html_tree = self.html_tree(context).as_node();
                         let html_string_result = html_tree.into_string(&mut |_node| true);
                         html_string_result.unwrap_or_default()
