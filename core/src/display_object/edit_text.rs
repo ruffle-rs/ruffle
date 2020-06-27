@@ -146,7 +146,7 @@ impl<'gc> EditText<'gc> {
             &text_spans,
             context,
             swf_movie.clone(),
-            bounds.width(),
+            bounds.width() - Twips::from_pixels(Self::INTERNAL_PADDING * 2.0),
             swf_tag.is_word_wrap,
             swf_tag.is_device_font,
         );
@@ -452,12 +452,18 @@ impl<'gc> EditText<'gc> {
     /// This `text_transform` is separate from and relative to the base
     /// transform that this `EditText` automatically gets by virtue of being a
     /// `DisplayObject`.
-    pub fn text_transform(self, color: swf::Color) -> Transform {
+    pub fn text_transform(self, color: swf::Color, baseline_adjustment: Twips) -> Transform {
         let mut transform: Transform = Default::default();
         transform.color_transform.r_mult = f32::from(color.r) / 255.0;
         transform.color_transform.g_mult = f32::from(color.g) / 255.0;
         transform.color_transform.b_mult = f32::from(color.b) / 255.0;
         transform.color_transform.a_mult = f32::from(color.a) / 255.0;
+
+        // TODO MIKE: This feels incorrect here but is necessary for correct vertical position;
+        // the glyphs are rendered relative to the baseline. This should be taken into account either
+        // by the layout code earlier (cursor should start at the baseline, not 0,0) and/or by
+        // font.evaluate (should return transforms relative to the baseline).
+        transform.matrix.ty = baseline_adjustment;
 
         transform
     }
@@ -559,9 +565,9 @@ impl<'gc> EditText<'gc> {
         }
     }
 
-    /// Internal padding between the bounds of the EditText and the maximum
-    /// width of text inside the layout.
-    const INTERNAL_PADDING: f64 = 7.0;
+    /// Internal padding between the bounds of the EditText and the text.
+    /// Applies to each side.
+    const INTERNAL_PADDING: f64 = 2.0;
 
     /// Relayout the `EditText`.
     ///
@@ -574,7 +580,7 @@ impl<'gc> EditText<'gc> {
         let autosize = edit_text.autosize;
         let is_word_wrap = edit_text.is_word_wrap;
         let movie = edit_text.static_data.swf.clone();
-        let width = edit_text.bounds.width() - Twips::from_pixels(Self::INTERNAL_PADDING);
+        let width = edit_text.bounds.width() - Twips::from_pixels(Self::INTERNAL_PADDING * 2.0);
 
         let (new_layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
             &edit_text.text_spans,
@@ -654,9 +660,11 @@ impl<'gc> EditText<'gc> {
         if let Some((text, _tf, font, params, color)) =
             lbox.as_renderable_text(edit_text.text_spans.text())
         {
+            let baseline_adjustmnet =
+                font.get_baseline_for_height(params.height()) - params.height();
             font.evaluate(
                 text,
-                self.text_transform(color),
+                self.text_transform(color, baseline_adjustmnet),
                 params,
                 |transform, glyph: &Glyph, _advance| {
                     // Render glyph.
@@ -867,31 +875,34 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.0.read().bounds.clone()
     }
 
+    // The returned position x and y of a text field is offset by the text bounds.
     fn x(&self) -> f64 {
-        self.0.read().bounds.x_min.to_pixels()
+        let edit_text = self.0.read();
+        let offset = edit_text.bounds.x_min;
+        (edit_text.base.transform.matrix.tx + offset).to_pixels()
     }
 
     fn set_x(&mut self, gc_context: MutationContext<'gc, '_>, value: f64) {
-        let mut write = self.0.write(gc_context);
-
-        write.bounds.set_x(Twips::from_pixels(value));
-        write.base.set_x(value);
-
-        drop(write);
+        let mut edit_text = self.0.write(gc_context);
+        let offset = edit_text.bounds.x_min;
+        edit_text.base.transform.matrix.tx = Twips::from_pixels(value) - offset;
+        edit_text.base.set_transformed_by_script(true);
+        drop(edit_text);
         self.redraw_border(gc_context);
     }
 
     fn y(&self) -> f64 {
-        self.0.read().bounds.y_min.to_pixels()
+        let edit_text = self.0.read();
+        let offset = edit_text.bounds.y_min;
+        (edit_text.base.transform.matrix.ty + offset).to_pixels()
     }
 
     fn set_y(&mut self, gc_context: MutationContext<'gc, '_>, value: f64) {
-        let mut write = self.0.write(gc_context);
-
-        write.bounds.set_y(Twips::from_pixels(value));
-        write.base.set_y(value);
-
-        drop(write);
+        let mut edit_text = self.0.write(gc_context);
+        let offset = edit_text.bounds.y_min;
+        edit_text.base.transform.matrix.ty = Twips::from_pixels(value) - offset;
+        edit_text.base.set_transformed_by_script(true);
+        drop(edit_text);
         self.redraw_border(gc_context);
     }
 
@@ -924,23 +935,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn set_matrix(&mut self, context: MutationContext<'gc, '_>, matrix: &Matrix) {
-        let mut write = self.0.write(context);
-
-        let new_width = write.bounds.width().to_pixels() * matrix.a as f64;
-        let new_height = write.bounds.height().to_pixels() * matrix.d as f64;
-
-        write.bounds.set_width(Twips::from_pixels(new_width));
-        write.bounds.set_height(Twips::from_pixels(new_height));
-
-        let new_x = write.bounds.x_min + matrix.tx;
-        let new_y = write.bounds.y_min + matrix.ty;
-
-        write.bounds.set_x(new_x);
-        write.bounds.set_y(new_y);
-
-        write.base.set_matrix(context, matrix);
-
-        drop(write);
+        self.0.write(context).base.set_matrix(context, matrix);
         self.redraw_border(context);
     }
 
@@ -953,12 +948,34 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         let transform = self.transform().clone();
         context.transform_stack.push(&transform);
 
+        context.transform_stack.push(&Transform {
+            matrix: Matrix {
+                tx: self.0.read().bounds.x_min,
+                ty: self.0.read().bounds.y_min,
+                ..Default::default()
+            },
+            ..Default::default()
+        });
+
         self.0.read().drawing.render(context);
+
+        // TODO: Where does this come from? How is this different than INTERNAL_PADDING? Does this apply to y as well?
+        // If this is actually right, offset the border in `redraw_border` instead of doing an extra push.
+        context.transform_stack.push(&Transform {
+            matrix: Matrix {
+                tx: Twips::from_pixels(Self::INTERNAL_PADDING),
+                ty: Twips::from_pixels(Self::INTERNAL_PADDING),
+                ..Default::default()
+            },
+            ..Default::default()
+        });
 
         for layout_box in self.0.read().layout.iter() {
             self.render_layout_box(context, layout_box);
         }
 
+        context.transform_stack.pop();
+        context.transform_stack.pop();
         context.transform_stack.pop();
     }
 
