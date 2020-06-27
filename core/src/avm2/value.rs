@@ -426,14 +426,14 @@ impl<'gc> Value<'gc> {
         })
     }
 
-    /// Coerce the value to a 32-bit signed integer.
+    /// Coerce the value to a 32-bit unsigned integer.
     ///
-    /// This function returns the resulting i32 directly; or a TypeError if the
+    /// This function returns the resulting u32 directly; or a TypeError if the
     /// value is an `Object` that cannot be converted to a primitive value.
     ///
     /// Numerical conversions occur according to ECMA-262 3rd Edition's
-    /// ToInt32 algorithm which appears to match AVM2.
-    pub fn coerce_to_i32(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<i32, Error> {
+    /// ToUint32 algorithm which appears to match AVM2.
+    pub fn coerce_to_u32(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<u32, Error> {
         let number = self.coerce_to_number(activation)?;
 
         Ok(
@@ -444,8 +444,19 @@ impl<'gc> Value<'gc> {
             {
                 0
             } else {
-                (number.abs().floor() * number.signum()) as u32 as i32
+                (number.abs().floor() * number.signum()) as u32
             },
         )
+    }
+
+    /// Coerce the value to a 32-bit signed integer.
+    ///
+    /// This function returns the resulting i32 directly; or a TypeError if the
+    /// value is an `Object` that cannot be converted to a primitive value.
+    ///
+    /// Numerical conversions occur according to ECMA-262 3rd Edition's
+    /// ToInt32 algorithm which appears to match AVM2.
+    pub fn coerce_to_i32(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<i32, Error> {
+        Ok(self.coerce_to_u32(activation)? as i32)
     }
 }
