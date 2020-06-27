@@ -280,6 +280,7 @@ swf_tests! {
     (as3_convert_number, "avm2/convert_number", 1),
     (as3_convert_integer, "avm2/convert_integer", 1),
     (as3_convert_uinteger, "avm2/convert_uinteger", 1),
+    (as3_coerce_string, "avm2/coerce_string", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
@@ -296,6 +297,7 @@ swf_tests_approx! {
     (edittext_tab_stops, "avm1/edittext_tab_stops", 1, 5.0),
     (edittext_bullet, "avm1/edittext_bullet", 1, 3.0),
     (edittext_underline, "avm1/edittext_underline", 1, 4.0),
+    (as3_coerce_string_precision, "avm2/coerce_string_precision", 1, 10_000_000.0),
 }
 
 /// Wrapper around string slice that makes debug output `{:?}` to print string same way as `{}`.
