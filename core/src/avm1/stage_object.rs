@@ -190,7 +190,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
                 .set_html_text(value.coerce_to_string(avm, context)?.into_owned(), context);
         }
 
-        let result = if obj.base.has_own_property(avm, context, name) {
+        if obj.base.has_own_property(avm, context, name) {
             // 1) Actual proeprties on the underlying object
             obj.base.internal_set(
                 name,
@@ -214,9 +214,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
                 (*self).into(),
                 Some((*self).into()),
             )
-        };
-
-        result
+        }
     }
 
     fn call(

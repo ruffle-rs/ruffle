@@ -285,10 +285,10 @@ impl<'gc> EditText<'gc> {
                 );
             }
 
-            return Ok(html_string_result.unwrap_or_else(|_| "".to_string()).into());
+            Ok(html_string_result.unwrap_or_else(|_| "".to_string()))
         } else {
             // Non-HTML text fields always return plain text.
-            return Ok(self.text());
+            Ok(self.text())
         }
     }
 
@@ -310,10 +310,8 @@ impl<'gc> EditText<'gc> {
             }
 
             self.set_html_tree(document, context);
-        } else {
-            if let Err(err) = self.set_text(text, context) {
-                log::error!("Error when setting TextField.htmlText: {}", err);
-            }
+        } else if let Err(err) = self.set_text(text, context) {
+            log::error!("Error when setting TextField.htmlText: {}", err);
         }
         Ok(())
     }
@@ -731,7 +729,7 @@ impl<'gc> EditText<'gc> {
                         );
                     } else {
                         // Otherwise, we initialize the proprty with the text field's text.
-                        let _ = object.set(property, self.text().clone().into(), avm, context);
+                        let _ = object.set(property, self.text().into(), avm, context);
                     }
                 }
 
