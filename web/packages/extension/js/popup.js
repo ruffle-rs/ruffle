@@ -18,10 +18,6 @@ let settings_dict = {},
 function on_settings_change_intent() {
     let is_different = !dict_equality(settings_dict, tab_settings);
 
-    console.log(settings_dict);
-    console.log(tab_settings);
-    console.log(is_different);
-
     if (reload_button !== undefined) {
         reload_button.disabled = !is_different;
     }
@@ -118,7 +114,6 @@ async function query_current_tab() {
         let resp = await tab_sendmessage(active_tab.id, {
             action: "get_page_options",
         });
-        console.log(resp);
 
         tab_settings = resp.tab_settings;
         on_settings_change_intent();

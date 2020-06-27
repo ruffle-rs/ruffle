@@ -106,7 +106,6 @@ get_sync_storage(["ruffle_enable", "ignore_optout"], function (data) {
         document.dispatchEvent(req_event);
 
         let resp_event = await resp_event_handler;
-        console.log(resp_event.detail);
         return JSON.parse(resp_event.detail);
     }
 
