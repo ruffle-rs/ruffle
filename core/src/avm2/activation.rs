@@ -474,10 +474,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::NewFunction { index } => self.op_new_function(method, index),
                 Op::NewClass { index } => self.op_new_class(method, index),
                 Op::CoerceA => self.op_coerce_a(),
+                Op::CoerceS => self.op_coerce_s(),
                 Op::ConvertB => self.op_convert_b(),
                 Op::ConvertI => self.op_convert_i(),
                 Op::ConvertU => self.op_convert_u(),
                 Op::ConvertD => self.op_convert_d(),
+                Op::ConvertS => self.op_convert_s(),
                 Op::Jump { offset } => self.op_jump(offset, reader),
                 Op::IfTrue { offset } => self.op_if_true(offset, reader),
                 Op::IfFalse { offset } => self.op_if_false(offset, reader),
@@ -1313,6 +1315,19 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
+    fn op_coerce_s(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value = self.context.avm2.pop();
+
+        let coerced = match value {
+            Value::Undefined | Value::Null => Value::Null,
+            _ => value.coerce_to_string(self)?.into(),
+        };
+
+        self.context.avm2.push(coerced);
+
+        Ok(FrameControl::Continue)
+    }
+
     fn op_convert_b(&mut self) -> Result<FrameControl<'gc>, Error> {
         let value = self.context.avm2.pop().coerce_to_boolean();
 
@@ -1333,6 +1348,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let value = self.context.avm2.pop().coerce_to_number(self)?;
 
         self.context.avm2.push(Value::Number(value));
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_convert_s(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value = self.context.avm2.pop().coerce_to_string(self)?;
+
+        self.context.avm2.push(value);
 
         Ok(FrameControl::Continue)
     }
