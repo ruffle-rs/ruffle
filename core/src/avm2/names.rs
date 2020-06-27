@@ -84,16 +84,16 @@ impl<'gc> Namespace<'gc> {
     /// Get the string value of this namespace, ignoring it's type.
     ///
     /// TODO: Is this *actually* the namespace URI?
-    pub fn as_uri(&self) -> &str {
+    pub fn as_uri(&self) -> AvmString<'gc> {
         match self {
-            Self::Namespace(s) => s,
-            Self::Package(s) => s,
-            Self::PackageInternal(s) => s,
-            Self::Protected(s) => s,
-            Self::Explicit(s) => s,
-            Self::StaticProtected(s) => s,
-            Self::Private(s) => s,
-            Self::Any => "",
+            Self::Namespace(s) => *s,
+            Self::Package(s) => *s,
+            Self::PackageInternal(s) => *s,
+            Self::Protected(s) => *s,
+            Self::Explicit(s) => *s,
+            Self::StaticProtected(s) => *s,
+            Self::Private(s) => *s,
+            Self::Any => "".into(),
         }
     }
 }
