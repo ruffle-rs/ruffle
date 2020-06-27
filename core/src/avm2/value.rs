@@ -223,19 +223,6 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    /// Coerce a value into a string.
-    pub fn coerce_string(self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
-        match self {
-            Value::String(s) => s,
-            Value::Number(n) if n == (f64::INFINITY) => "Infinity".into(),
-            Value::Number(n) if n == (f64::INFINITY * -1.0) => "-Infinity".into(),
-            Value::Number(n) => AvmString::new(mc, format!("{}", n)),
-            Value::Bool(true) => "true".into(),
-            Value::Bool(false) => "false".into(),
-            _ => "".into(),
-        }
-    }
-
     pub fn as_number(&self) -> Result<f64, Error> {
         match self {
             Value::Number(f) => Ok(*f),
@@ -458,5 +445,80 @@ impl<'gc> Value<'gc> {
     /// ToInt32 algorithm which appears to match AVM2.
     pub fn coerce_to_i32(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<i32, Error> {
         Ok(self.coerce_to_u32(activation)? as i32)
+    }
+
+    /// Mininum number of digits after which numbers are formatted as
+    /// exponential strings.
+    const MIN_DIGITS: f64 = -6.0;
+
+    /// Maximum number of digits before numbers are formatted as exponential
+    /// strings.
+    const MAX_DIGITS: f64 = 21.0;
+
+    /// Maximum number of significant digits renderable within coerced numbers.
+    ///
+    /// Any precision beyond this point will be discarded and replaced with
+    /// zeroes (for whole parts) or not rendered (for decimal parts).
+    const MAX_PRECISION: f64 = 15.0;
+
+    /// Coerce the value to a String.
+    ///
+    /// This function returns the resulting String directly; or a TypeError if
+    /// the value is an `Object` that cannot be converted to a primitive value.
+    ///
+    /// String conversions generally occur according to ECMA-262 3rd Edition's
+    /// ToString algorithm. The conversion of numbers to strings appears to be
+    /// somewhat underspecified; there are several formatting modes which
+    /// change at specific digit count cutoffs, but the spec allows
+    /// implementations to limit how much precision is displayed on coerced
+    /// numbers, even if that precision would result in rounding the whole part
+    /// of the number. (This is confusingly expressed in ECMA-262.)
+    ///
+    /// TODO: The cutoffs change based on SWF/ABC version. Targeting FP10.3 in
+    /// Animate CC 2020 significantly reduces them (towards zero).
+    pub fn coerce_to_string<'a>(
+        &'a self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<AvmString<'gc>, Error> {
+        Ok(match self {
+            Value::Undefined => "undefined".into(),
+            Value::Null => "null".into(),
+            Value::Bool(true) => "true".into(),
+            Value::Bool(false) => "false".into(),
+            Value::Number(n) if n.is_nan() => "NaN".into(),
+            Value::Number(n) if n.abs() == 0.0 => "0".into(),
+            Value::Number(n) if *n < 0.0 => AvmString::new(
+                activation.context.gc_context,
+                format!("-{}", Value::Number(-n).coerce_to_string(activation)?),
+            ),
+            Value::Number(n) if !n.is_finite() => "Infinity".into(),
+            Value::Number(n) => {
+                let digits = n.log10().floor();
+
+                // TODO: This needs to limit precision in the resulting decimal
+                // output, not in binary.
+                let precision = (n * (10.0 as f64).powf(Self::MAX_PRECISION - digits)).floor()
+                    / (10.0 as f64).powf(Self::MAX_PRECISION - digits);
+
+                if digits < Self::MIN_DIGITS || digits >= Self::MAX_DIGITS {
+                    AvmString::new(
+                        activation.context.gc_context,
+                        format!(
+                            "{}e{}{}",
+                            precision / (10.0 as f64).powf(digits),
+                            if digits < 0.0 { "-" } else { "+" },
+                            digits.abs()
+                        ),
+                    )
+                } else {
+                    AvmString::new(activation.context.gc_context, format!("{}", n))
+                }
+            }
+            Value::String(s) => *s,
+            Value::Namespace(ns) => ns.as_uri(),
+            Value::Object(_) => self
+                .coerce_to_primitive(Hint::String, activation)?
+                .coerce_to_string(activation)?,
+        })
     }
 }
