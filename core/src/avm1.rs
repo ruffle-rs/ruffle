@@ -391,8 +391,8 @@ impl<'gc> Avm1<'gc> {
     /// Retrieve the current AVM execution frame.
     ///
     /// Yields None if there is no stack frame.
-    pub fn current_stack_frame(&self) -> Option<GcCell<'gc, Activation<'gc>>> {
-        self.stack_frames.last().copied()
+    pub fn current_stack_frame(&self) -> Result<GcCell<'gc, Activation<'gc>>, Error<'gc>> {
+        self.stack_frames.last().copied().ok_or(Error::NoStackFrame)
     }
 
     /// Checks if there is currently a stack frame.
@@ -683,7 +683,7 @@ impl<'gc> Avm1<'gc> {
             let path = unsafe { std::str::from_utf8_unchecked(path) };
             let var_name = unsafe { std::str::from_utf8_unchecked(var_name) };
 
-            let mut current_scope = Some(self.current_stack_frame().unwrap().read().scope_cell());
+            let mut current_scope = Some(self.current_stack_frame()?.read().scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) =
                     self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
@@ -701,7 +701,7 @@ impl<'gc> Avm1<'gc> {
         // If it doesn't have a trailing variable, it can still be a slash path.
         // We can skip this step if we didn't find a slash above.
         if has_slash {
-            let mut current_scope = Some(self.current_stack_frame().unwrap().read().scope_cell());
+            let mut current_scope = Some(self.current_stack_frame()?.read().scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) =
                     self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
@@ -714,8 +714,7 @@ impl<'gc> Avm1<'gc> {
 
         // Finally! It's a plain old variable name.
         // Resolve using scope chain, as normal.
-        self.current_stack_frame()
-            .unwrap()
+        self.current_stack_frame()?
             .read()
             .resolve(&path, self, context)
     }
@@ -768,7 +767,7 @@ impl<'gc> Avm1<'gc> {
             let path = unsafe { std::str::from_utf8_unchecked(path) };
             let var_name = unsafe { std::str::from_utf8_unchecked(var_name) };
 
-            let mut current_scope = Some(self.current_stack_frame().unwrap().read().scope_cell());
+            let mut current_scope = Some(self.current_stack_frame()?.read().scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) =
                     self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
@@ -786,7 +785,7 @@ impl<'gc> Avm1<'gc> {
         // Set using scope chain, as normal.
         // This will overwrite the value if the property exists somewhere
         // in the scope chain, otherwise it is created on the top-level object.
-        let sf = self.current_stack_frame().unwrap();
+        let sf = self.current_stack_frame()?;
         let stack_frame = sf.read();
         let this = stack_frame.this_cell();
         let scope = stack_frame.scope_cell();

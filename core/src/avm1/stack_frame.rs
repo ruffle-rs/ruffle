@@ -440,7 +440,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                         action,
                         context,
                     );
-                    let frame = self.avm.current_stack_frame().unwrap();
+                    let frame = self.avm.current_stack_frame()?;
                     self.avm.run_activation(context, frame)?;
                 }
             } else {
