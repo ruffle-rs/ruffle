@@ -316,7 +316,7 @@ impl<'gc> Font<'gc> {
             let measure = self.measure(
                 text.get(word_start..word_end + 1).unwrap_or(word),
                 params,
-                true,
+                false,
             );
 
             if is_start_of_line && measure.0 > remaining_width {
@@ -326,7 +326,7 @@ impl<'gc> Font<'gc> {
                 while last_passing_breakpoint.0 < remaining_width {
                     frag_end += 1;
                     last_passing_breakpoint =
-                        self.measure(&text[word_start..frag_end], params, true);
+                        self.measure(&text[word_start..frag_end], params, false);
                 }
 
                 return Some(frag_end - 1);
