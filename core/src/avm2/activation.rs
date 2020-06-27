@@ -476,6 +476,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::CoerceA => self.op_coerce_a(),
                 Op::ConvertB => self.op_convert_b(),
                 Op::ConvertI => self.op_convert_i(),
+                Op::ConvertU => self.op_convert_u(),
                 Op::ConvertD => self.op_convert_d(),
                 Op::Jump { offset } => self.op_jump(offset, reader),
                 Op::IfTrue { offset } => self.op_if_true(offset, reader),
@@ -1320,6 +1321,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
+    fn op_convert_i(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        self.context.avm2.push(Value::Number(value.into()));
+
+        Ok(FrameControl::Continue)
+    }
+
     fn op_convert_d(&mut self) -> Result<FrameControl<'gc>, Error> {
         let value = self.context.avm2.pop().coerce_to_number(self)?;
 
@@ -1328,8 +1337,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_convert_i(&mut self) -> Result<FrameControl<'gc>, Error> {
-        let value = self.context.avm2.pop().coerce_to_i32(self)?;
+    fn op_convert_u(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value = self.context.avm2.pop().coerce_to_u32(self)?;
 
         self.context.avm2.push(Value::Number(value.into()));
 

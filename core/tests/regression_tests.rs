@@ -279,6 +279,7 @@ swf_tests! {
     (as3_convert_boolean, "avm2/convert_boolean", 1),
     (as3_convert_number, "avm2/convert_number", 1),
     (as3_convert_integer, "avm2/convert_integer", 1),
+    (as3_convert_uinteger, "avm2/convert_uinteger", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
