@@ -128,7 +128,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Call a setter defined in this object.
     ///
-    /// This function returns the `ReturnValue` of the called function; it
+    /// This function may return a `Executable` of the function to call; it
     /// should be resolved and discarded. Attempts to call a non-virtual setter
     /// or non-existent setter fail silently.
     ///
@@ -141,8 +141,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error<'gc>>;
+    ) -> Option<Executable<'gc>>;
 
     /// Construct a host object of some kind and return it's cell.
     ///

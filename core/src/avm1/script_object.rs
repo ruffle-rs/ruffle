@@ -1,7 +1,6 @@
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject, NativeFunction};
 use crate::avm1::property::{Attribute, Property};
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ObjectPtr, TObject, UpdateContext, Value};
 use crate::property_map::{Entry, PropertyMap};
@@ -229,7 +228,7 @@ impl<'gc> ScriptObject<'gc> {
                 .read()
                 .values
                 .contains_key(name, activation.is_case_sensitive());
-            let mut rval = None;
+            let mut worked = false;
 
             if is_vacant {
                 let mut proto: Option<Object<'gc>> = Some((*self).into());
@@ -244,44 +243,49 @@ impl<'gc> ScriptObject<'gc> {
                 }
 
                 if let Some(this_proto) = proto {
-                    rval = Some(this_proto.call_setter(
-                        name,
-                        value.clone(),
-                        activation,
-                        context,
-                        (*self).into(),
-                    )?);
+                    if let Some(rval) =
+                        this_proto.call_setter(name, value.clone(), activation, context)
+                    {
+                        let _ = rval
+                            .exec(
+                                activation,
+                                context,
+                                this,
+                                Some(this_proto),
+                                &[value.clone()],
+                            )?
+                            .resolve(activation, context)?;
+                        worked = true;
+                    }
                 }
             }
 
-            //No `rval` signals we didn't call a virtual setter above. Normally,
+            //This signals we didn't call a virtual setter above. Normally,
             //we'd resolve and return up there, but we have borrows that need
             //to end before we can do so.
-            if rval.is_none() {
-                rval = match self
+            if !worked {
+                let rval = match self
                     .0
                     .write(context.gc_context)
                     .values
                     .entry(name.to_owned(), activation.is_case_sensitive())
                 {
-                    Entry::Occupied(mut entry) => Some(
-                        entry
-                            .get_mut()
-                            .set(activation, context, this, base_proto, value)?,
-                    ),
+                    Entry::Occupied(mut entry) => entry.get_mut().set(value.clone()),
                     Entry::Vacant(entry) => {
                         entry.insert(Property::Stored {
-                            value,
+                            value: value.clone(),
                             attributes: Default::default(),
                         });
 
                         None
                     }
                 };
-            }
 
-            if let Some(rval) = rval {
-                rval.resolve(activation, context)?;
+                if let Some(rval) = rval {
+                    let _ = rval
+                        .exec(activation, context, this, base_proto, &[value])?
+                        .resolve(activation, context)?;
+                }
             }
         }
 
@@ -367,18 +371,15 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         value: Value<'gc>,
         activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
+    ) -> Option<Executable<'gc>> {
         match self
             .0
             .write(context.gc_context)
             .values
             .get_mut(name, activation.is_case_sensitive())
         {
-            Some(propref) if propref.is_virtual() => {
-                propref.set(activation, context, this, Some((*self).into()), value)
-            }
-            _ => Ok(Value::Undefined.into()),
+            Some(propref) if propref.is_virtual() => propref.set(value),
+            _ => None,
         }
     }
 
@@ -734,6 +735,7 @@ mod tests {
     use crate::avm1::activation::Activation;
     use crate::avm1::globals::system::SystemProperties;
     use crate::avm1::property::Attribute::*;
+    use crate::avm1::return_value::ReturnValue;
     use crate::avm1::Avm1;
     use crate::backend::audio::NullAudioBackend;
     use crate::backend::input::NullInputBackend;

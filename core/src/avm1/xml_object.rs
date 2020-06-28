@@ -4,7 +4,6 @@ use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::object::{ObjectPtr, TObject};
 use crate::avm1::property::Attribute;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, UpdateContext, Value};
 use crate::xml::{XMLDocument, XMLNode};
@@ -97,10 +96,8 @@ impl<'gc> TObject<'gc> for XMLObject<'gc> {
         value: Value<'gc>,
         activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-        self.base()
-            .call_setter(name, value, activation, context, this)
+    ) -> Option<Executable<'gc>> {
+        self.base().call_setter(name, value, activation, context)
     }
 
     #[allow(clippy::new_ret_no_self)]

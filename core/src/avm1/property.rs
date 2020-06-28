@@ -52,23 +52,16 @@ impl<'gc> Property<'gc> {
 
     /// Set a property slot.
     ///
-    /// This function returns the `ReturnValue` of the property's virtual
+    /// This function may return an `Executable` of the property's virtual
     /// function, if any happen to exist. It should be resolved, and it's value
     /// discarded.
-    pub fn set(
-        &mut self,
-        activation: &mut StackFrame<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
-        new_value: impl Into<Value<'gc>>,
-    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
+    pub fn set(&mut self, new_value: impl Into<Value<'gc>>) -> Option<Executable<'gc>> {
         match self {
             Property::Virtual { set, .. } => {
                 if let Some(function) = set {
-                    function.exec(activation, context, this, base_proto, &[new_value.into()])
+                    Some(function.to_owned())
                 } else {
-                    Ok(Value::Undefined.into())
+                    None
                 }
             }
             Property::Stored {
@@ -78,7 +71,7 @@ impl<'gc> Property<'gc> {
                     *value = new_value.into();
                 }
 
-                Ok(Value::Undefined.into())
+                None
             }
         }
     }
