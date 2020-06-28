@@ -1,6 +1,21 @@
 // base.hasOwnProperty("name")
 true
 
+// base.hasOwnProperty()
+false
+
+// base.hasOwnProperty("")
+false
+
+// base.hasOwnProperty(undefined)
+true
+
+// base.hasOwnProperty(true)
+true
+
+// base.hasOwnProperty(NaN)
+true
+
 // child.hasOwnProperty("name")
 false
 
