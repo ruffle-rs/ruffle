@@ -4,7 +4,8 @@ use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::stack_frame::StackFrame;
+use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
@@ -24,9 +25,9 @@ macro_rules! with_display_object {
         $(
             $object.force_set_function(
                 $name,
-                |avm, context: &mut UpdateContext<'_, 'gc, '_>, this, args| -> Result<ReturnValue<'gc>, Error<'gc>> {
+                |activation, context: &mut UpdateContext<'_, 'gc, '_>, this, args| -> Result<ReturnValue<'gc>, Error<'gc>> {
                     if let Some(display_object) = this.as_display_object() {
-                        return $fn(display_object, avm, context, args);
+                        return $fn(display_object, activation, context, args);
                     }
                     Ok(Value::Undefined.into())
                 } as crate::avm1::function::NativeFunction<'gc>,
@@ -54,7 +55,9 @@ pub fn define_display_object_proto<'gc>(
     object.add_property(
         gc_context,
         "_global",
-        Executable::Native(|avm, context, _this, _args| Ok(avm.global_object(context).into())),
+        Executable::Native(|activation, context, _this, _args| {
+            Ok(activation.avm().global_object(context).into())
+        }),
         Some(Executable::Native(overwrite_global)),
         DontDelete | ReadOnly | DontEnum,
     );
@@ -62,7 +65,9 @@ pub fn define_display_object_proto<'gc>(
     object.add_property(
         gc_context,
         "_root",
-        Executable::Native(|avm, context, _this, _args| Ok(avm.root_object(context).into())),
+        Executable::Native(|activation, context, _this, _args| {
+            Ok(activation.avm().root_object(context).into())
+        }),
         Some(Executable::Native(overwrite_root)),
         DontDelete | ReadOnly | DontEnum,
     );
@@ -77,7 +82,7 @@ pub fn define_display_object_proto<'gc>(
 }
 
 pub fn get_parent<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -85,7 +90,7 @@ pub fn get_parent<'gc>(
     Ok(this
         .as_display_object()
         .and_then(|mc| mc.parent())
-        .map(|dn| dn.object().coerce_to_object(avm, context))
+        .map(|dn| dn.object().coerce_to_object(activation, context))
         .map(Value::Object)
         .unwrap_or(Value::Undefined)
         .into())
@@ -93,11 +98,11 @@ pub fn get_parent<'gc>(
 
 pub fn get_depth<'gc>(
     display_object: DisplayObject<'gc>,
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    if avm.current_swf_version() >= 6 {
+    if activation.avm().current_swf_version() >= 6 {
         let depth = display_object.depth().wrapping_sub(AVM_DEPTH_BIAS);
         Ok(depth.into())
     } else {
@@ -106,7 +111,7 @@ pub fn get_depth<'gc>(
 }
 
 pub fn overwrite_root<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -121,7 +126,7 @@ pub fn overwrite_root<'gc>(
 }
 
 pub fn overwrite_global<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],

@@ -3,14 +3,15 @@ use crate::avm1::function::Executable;
 use crate::avm1::globals::display_object;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::stack_frame::StackFrame;
+use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
 use crate::html::TextFormat;
 use gc_arena::MutationContext;
 
 /// Implements `TextField`
 pub fn constructor<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -19,7 +20,7 @@ pub fn constructor<'gc>(
 }
 
 pub fn get_text<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -33,7 +34,7 @@ pub fn get_text<'gc>(
 }
 
 pub fn set_text<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -41,12 +42,13 @@ pub fn set_text<'gc>(
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             if let Some(value) = args.get(0) {
-                if let Err(err) =
-                    text_field.set_text(value.coerce_to_string(avm, context)?.to_string(), context)
-                {
+                if let Err(err) = text_field.set_text(
+                    value.coerce_to_string(activation, context)?.to_string(),
+                    context,
+                ) {
                     log::error!("Error when setting TextField.text: {}", err);
                 }
-                text_field.propagate_text_binding(avm, context);
+                text_field.propagate_text_binding(activation, context);
             }
         }
     }
@@ -54,7 +56,7 @@ pub fn set_text<'gc>(
 }
 
 pub fn get_html<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -68,7 +70,7 @@ pub fn get_html<'gc>(
 }
 
 pub fn set_html<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -76,7 +78,10 @@ pub fn set_html<'gc>(
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             if let Some(value) = args.get(0) {
-                text_field.set_is_html(context, value.as_bool(avm.current_swf_version()));
+                text_field.set_is_html(
+                    context,
+                    value.as_bool(activation.avm().current_swf_version()),
+                );
             }
         }
     }
@@ -84,7 +89,7 @@ pub fn set_html<'gc>(
 }
 
 pub fn get_html_text<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -100,7 +105,7 @@ pub fn get_html_text<'gc>(
 }
 
 pub fn set_html_text<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -110,7 +115,7 @@ pub fn set_html_text<'gc>(
             let text = args
                 .get(0)
                 .unwrap_or(&Value::Undefined)
-                .coerce_to_string(avm, context)?;
+                .coerce_to_string(activation, context)?;
             let _ = text_field.set_html_text(text.into_owned(), context);
             // Changing the htmlText does NOT update variable bindings (does not call EditText::propagate_text_binding).
         }
@@ -119,7 +124,7 @@ pub fn set_html_text<'gc>(
 }
 
 pub fn get_border<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -134,7 +139,7 @@ pub fn get_border<'gc>(
 }
 
 pub fn set_border<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -142,7 +147,7 @@ pub fn set_border<'gc>(
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             if let Some(value) = args.get(0) {
-                let has_border = value.as_bool(avm.current_swf_version());
+                let has_border = value.as_bool(activation.avm().current_swf_version());
                 text_field.set_has_border(context.gc_context, has_border);
             }
         }
@@ -151,7 +156,7 @@ pub fn set_border<'gc>(
 }
 
 pub fn get_embed_fonts<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -166,7 +171,7 @@ pub fn get_embed_fonts<'gc>(
 }
 
 pub fn set_embed_fonts<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -174,7 +179,7 @@ pub fn set_embed_fonts<'gc>(
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             if let Some(value) = args.get(0) {
-                let embed_fonts = value.as_bool(avm.current_swf_version());
+                let embed_fonts = value.as_bool(activation.avm().current_swf_version());
                 text_field.set_is_device_font(context, !embed_fonts);
             }
         }
@@ -183,7 +188,7 @@ pub fn set_embed_fonts<'gc>(
 }
 
 pub fn get_length<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -201,10 +206,10 @@ macro_rules! with_text_field {
         $(
             $object.force_set_function(
                 $name,
-                |avm, context: &mut UpdateContext<'_, 'gc, '_>, this, args| -> Result<ReturnValue<'gc>, Error<'gc>> {
+                |activation, context: &mut UpdateContext<'_, 'gc, '_>, this, args| -> Result<ReturnValue<'gc>, Error<'gc>> {
                     if let Some(display_object) = this.as_display_object() {
                         if let Some(text_field) = display_object.as_edit_text() {
-                            return $fn(text_field, avm, context, args);
+                            return $fn(text_field, activation, context, args);
                         }
                     }
                     Ok(Value::Undefined.into())
@@ -218,7 +223,7 @@ macro_rules! with_text_field {
 }
 
 pub fn text_width<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -236,7 +241,7 @@ pub fn text_width<'gc>(
 }
 
 pub fn text_height<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -254,7 +259,7 @@ pub fn text_height<'gc>(
 }
 
 pub fn multiline<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -270,7 +275,7 @@ pub fn multiline<'gc>(
 }
 
 pub fn set_multiline<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -279,7 +284,7 @@ pub fn set_multiline<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_bool(avm.current_swf_version());
+        .as_bool(activation.avm().current_swf_version());
 
     if let Some(etext) = this
         .as_display_object()
@@ -292,7 +297,7 @@ pub fn set_multiline<'gc>(
 }
 
 fn variable<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -311,28 +316,28 @@ fn variable<'gc>(
 }
 
 fn set_variable<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let variable = match args.get(0) {
         None | Some(Value::Undefined) | Some(Value::Null) => None,
-        Some(v) => Some(v.coerce_to_string(avm, context)?),
+        Some(v) => Some(v.coerce_to_string(activation, context)?),
     };
 
     if let Some(etext) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_edit_text())
     {
-        etext.set_variable(variable.map(|v| v.into_owned()), avm, context);
+        etext.set_variable(variable.map(|v| v.into_owned()), activation, context);
     }
 
     Ok(Value::Undefined.into())
 }
 
 pub fn word_wrap<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -348,7 +353,7 @@ pub fn word_wrap<'gc>(
 }
 
 pub fn set_word_wrap<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -357,7 +362,7 @@ pub fn set_word_wrap<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_bool(avm.current_swf_version());
+        .as_bool(activation.avm().current_swf_version());
 
     if let Some(etext) = this
         .as_display_object()
@@ -370,7 +375,7 @@ pub fn set_word_wrap<'gc>(
 }
 
 pub fn auto_size<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -391,7 +396,7 @@ pub fn auto_size<'gc>(
 }
 
 pub fn set_auto_size<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -527,25 +532,25 @@ pub fn attach_virtual_properties<'gc>(gc_context: MutationContext<'gc, '_>, obje
 
 fn get_new_text_format<'gc>(
     text_field: EditText<'gc>,
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let tf = text_field.new_text_format();
 
-    Ok(tf.as_avm1_object(avm, context)?.into())
+    Ok(tf.as_avm1_object(activation, context)?.into())
 }
 
 fn set_new_text_format<'gc>(
     text_field: EditText<'gc>,
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let tf = args.get(0).cloned().unwrap_or(Value::Undefined);
 
     if let Value::Object(tf) = tf {
-        let tf_parsed = TextFormat::from_avm1_object(tf, avm, context)?;
+        let tf_parsed = TextFormat::from_avm1_object(tf, activation, context)?;
         text_field.set_new_text_format(tf_parsed, context);
     }
 
@@ -554,17 +559,17 @@ fn set_new_text_format<'gc>(
 
 fn get_text_format<'gc>(
     text_field: EditText<'gc>,
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let (from, to) = match (args.get(0), args.get(1)) {
         (Some(f), Some(t)) => (
-            f.coerce_to_f64(avm, context)? as usize,
-            t.coerce_to_f64(avm, context)? as usize,
+            f.coerce_to_f64(activation, context)? as usize,
+            t.coerce_to_f64(activation, context)? as usize,
         ),
         (Some(f), None) => {
-            let v = f.coerce_to_f64(avm, context)? as usize;
+            let v = f.coerce_to_f64(activation, context)? as usize;
             (v, v.saturating_add(1))
         }
         _ => (0, text_field.text_length()),
@@ -572,28 +577,28 @@ fn get_text_format<'gc>(
 
     Ok(text_field
         .text_format(from, to)
-        .as_avm1_object(avm, context)?
+        .as_avm1_object(activation, context)?
         .into())
 }
 
 fn set_text_format<'gc>(
     text_field: EditText<'gc>,
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let tf = args.last().cloned().unwrap_or(Value::Undefined);
 
     if let Value::Object(tf) = tf {
-        let tf_parsed = TextFormat::from_avm1_object(tf, avm, context)?;
+        let tf_parsed = TextFormat::from_avm1_object(tf, activation, context)?;
 
         let (from, to) = match (args.get(0), args.get(1)) {
             (Some(f), Some(t)) if args.len() > 2 => (
-                f.coerce_to_f64(avm, context)? as usize,
-                t.coerce_to_f64(avm, context)? as usize,
+                f.coerce_to_f64(activation, context)? as usize,
+                t.coerce_to_f64(activation, context)? as usize,
             ),
             (Some(f), _) if args.len() > 1 => {
-                let v = f.coerce_to_f64(avm, context)? as usize;
+                let v = f.coerce_to_f64(activation, context)? as usize;
                 (v, v.saturating_add(1))
             }
             _ => (0, text_field.text_length()),
@@ -607,7 +612,7 @@ fn set_text_format<'gc>(
 
 fn replace_text<'gc>(
     text_field: EditText<'gc>,
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
@@ -615,17 +620,17 @@ fn replace_text<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
     let to = args
         .get(1)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
     let text = args
         .get(2)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .coerce_to_string(avm, context)?
+        .coerce_to_string(activation, context)?
         .into_owned();
 
     text_field.replace_text(from as usize, to as usize, &text, context);

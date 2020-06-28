@@ -2,6 +2,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Avm1Function, FunctionObject};
 use crate::avm1::object::{Object, TObject};
 use crate::avm1::property::Attribute;
+use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::f64_to_wrapping_u32;
 use crate::avm1::{
@@ -10,15 +11,17 @@ use crate::avm1::{
 };
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
-use crate::display_object::{DisplayObject, TDisplayObject};
+use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
 use crate::tag_utils::SwfSlice;
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell};
 use rand::Rng;
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::convert::TryInto;
 use swf::avm1::read::Reader;
 use swf::avm1::types::{Action, Function};
+use url::form_urlencoded;
 
 macro_rules! avm_debug {
     ($($arg:tt)*) => (
@@ -268,15 +271,14 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
 
         // TODO(Herschel):
         if let Value::String(a) = a {
-            let mut s = b.coerce_to_string(self.avm, context)?.to_string();
+            let mut s = b.coerce_to_string(self, context)?.to_string();
             s.push_str(&a);
             self.avm.push(s);
         } else if let Value::String(mut b) = b {
-            b.push_str(&a.coerce_to_string(self.avm, context)?);
+            b.push_str(&a.coerce_to_string(self, context)?);
             self.avm.push(b);
         } else {
-            let result =
-                b.coerce_to_f64(self.avm, context)? + a.coerce_to_f64(self.avm, context)?;
+            let result = b.coerce_to_f64(self, context)? + a.coerce_to_f64(self, context)?;
             self.avm.push(result);
         }
         Ok(FrameControl::Continue)
@@ -301,7 +303,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // TODO(Herschel): Results on incorrect operands?
-        let val = (self.avm.pop().coerce_to_f64(self.avm, context)? as u8) as char;
+        let val = (self.avm.pop().coerce_to_f64(self, context)? as u8) as char;
         self.avm.push(val.to_string());
         Ok(FrameControl::Continue)
     }
@@ -312,7 +314,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // TODO(Herschel): Results on incorrect operands?
         let val = self.avm.pop();
-        let string = val.coerce_to_string(self.avm, context)?;
+        let string = val.coerce_to_string(self, context)?;
         let result = string.bytes().next().unwrap_or(0);
         self.avm.push(result);
         Ok(FrameControl::Continue)
@@ -326,14 +328,12 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let target = self.avm.pop();
         let source = self.avm.pop();
         let start_clip = self.avm.target_clip_or_root();
-        let source_clip = self
-            .avm
-            .resolve_target_display_object(context, start_clip, source)?;
+        let source_clip = self.resolve_target_display_object(context, start_clip, source)?;
 
         if let Some(movie_clip) = source_clip.and_then(|o| o.as_movie_clip()) {
             let _ = globals::movie_clip::duplicate_movie_clip_with_bias(
                 movie_clip,
-                self.avm,
+                self,
                 context,
                 &[target, depth],
                 0,
@@ -349,8 +349,8 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop().coerce_to_u32(self.avm, context)?;
-        let b = self.avm.pop().coerce_to_u32(self.avm, context)?;
+        let a = self.avm.pop().coerce_to_u32(self, context)?;
+        let b = self.avm.pop().coerce_to_u32(self, context)?;
         let result = a & b;
         self.avm.push(result);
         Ok(FrameControl::Continue)
@@ -360,8 +360,8 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop().coerce_to_i32(self.avm, context)? & 0b11111; // Only 5 bits used for shift count
-        let b = self.avm.pop().coerce_to_i32(self.avm, context)?;
+        let a = self.avm.pop().coerce_to_i32(self, context)? & 0b11111; // Only 5 bits used for shift count
+        let b = self.avm.pop().coerce_to_i32(self, context)?;
         let result = b << a;
         self.avm.push(result);
         Ok(FrameControl::Continue)
@@ -371,8 +371,8 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop().coerce_to_u32(self.avm, context)?;
-        let b = self.avm.pop().coerce_to_u32(self.avm, context)?;
+        let a = self.avm.pop().coerce_to_u32(self, context)?;
+        let b = self.avm.pop().coerce_to_u32(self, context)?;
         let result = a | b;
         self.avm.push(result);
         Ok(FrameControl::Continue)
@@ -382,8 +382,8 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop().coerce_to_i32(self.avm, context)? & 0b11111; // Only 5 bits used for shift count
-        let b = self.avm.pop().coerce_to_i32(self.avm, context)?;
+        let a = self.avm.pop().coerce_to_i32(self, context)? & 0b11111; // Only 5 bits used for shift count
+        let b = self.avm.pop().coerce_to_i32(self, context)?;
         let result = b >> a;
         self.avm.push(result);
         Ok(FrameControl::Continue)
@@ -393,8 +393,8 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop().coerce_to_u32(self.avm, context)? & 0b11111; // Only 5 bits used for shift count
-        let b = self.avm.pop().coerce_to_u32(self.avm, context)?;
+        let a = self.avm.pop().coerce_to_u32(self, context)? & 0b11111; // Only 5 bits used for shift count
+        let b = self.avm.pop().coerce_to_u32(self, context)?;
         let result = b >> a;
         self.avm.push(result);
         Ok(FrameControl::Continue)
@@ -404,8 +404,8 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop().coerce_to_u32(self.avm, context)?;
-        let b = self.avm.pop().coerce_to_u32(self.avm, context)?;
+        let a = self.avm.pop().coerce_to_u32(self, context)?;
+        let b = self.avm.pop().coerce_to_u32(self, context)?;
         let result = b ^ a;
         self.avm.push(result);
         Ok(FrameControl::Continue)
@@ -428,20 +428,18 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                     None
                 }
             } else {
-                let frame_label = frame.coerce_to_string(self.avm, context)?;
+                let frame_label = frame.coerce_to_string(self, context)?;
                 clip.frame_label_to_number(&frame_label)
             };
 
             if let Some(frame) = frame {
                 for action in clip.actions_on_frame(context, frame) {
-                    self.avm.insert_stack_frame_for_action(
+                    self.avm.run_stack_frame_for_action(
                         self.avm.target_clip_or_root(),
                         self.avm.current_swf_version(),
                         action,
                         context,
                     );
-                    let frame = self.avm.current_stack_frame()?;
-                    self.avm.run_activation(context, frame)?;
                 }
             } else {
                 log::warn!("Call: Invalid frame {:?}", frame);
@@ -457,24 +455,23 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let fn_name_value = self.avm.pop();
-        let fn_name = fn_name_value.coerce_to_string(self.avm, context)?;
+        let fn_name = fn_name_value.coerce_to_string(self, context)?;
         let mut args = Vec::new();
-        let num_args = self.avm.pop().coerce_to_f64(self.avm, context)? as i64; // TODO(Herschel): max arg count?
+        let num_args = self.avm.pop().coerce_to_f64(self, context)? as i64; // TODO(Herschel): max arg count?
         for _ in 0..num_args {
             args.push(self.avm.pop());
         }
 
         let target_fn = self
-            .avm
             .get_variable(context, &fn_name)?
-            .resolve(self.avm, context)?;
+            .resolve(self, context)?;
 
         let this = self
             .avm
             .target_clip_or_root()
             .object()
-            .coerce_to_object(self.avm, context);
-        let result = target_fn.call(self.avm, context, this, None, &args)?;
+            .coerce_to_object(self, context);
+        let result = target_fn.call(self, context, this, None, &args)?;
         self.avm.push(result);
 
         Ok(FrameControl::Continue)
@@ -486,8 +483,8 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let method_name = self.avm.pop();
         let object_val = self.avm.pop();
-        let object = value_object::ValueObject::boxed(self.avm, context, object_val);
-        let num_args = self.avm.pop().coerce_to_f64(self.avm, context)? as i64; // TODO(Herschel): max arg count?
+        let object = value_object::ValueObject::boxed(self, context, object_val);
+        let num_args = self.avm.pop().coerce_to_f64(self, context)? as i64; // TODO(Herschel): max arg count?
         let mut args = Vec::new();
         for _ in 0..num_args {
             args.push(self.avm.pop());
@@ -499,16 +496,16 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                     .avm
                     .target_clip_or_root()
                     .object()
-                    .coerce_to_object(self.avm, context);
-                let result = object.call(self.avm, context, this, None, &args)?;
+                    .coerce_to_object(self, context);
+                let result = object.call(self, context, this, None, &args)?;
                 self.avm.push(result);
             }
             Value::String(name) => {
                 if name.is_empty() {
-                    let result = object.call(self.avm, context, object, None, &args)?;
+                    let result = object.call(self, context, object, None, &args)?;
                     self.avm.push(result);
                 } else {
-                    let result = object.call_method(&name, &args, self.avm, context)?;
+                    let result = object.call_method(&name, &args, self, context)?;
                     self.avm.push(result);
                 }
             }
@@ -528,14 +525,14 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let obj = self.avm.pop().coerce_to_object(self.avm, context);
-        let constr = self.avm.pop().coerce_to_object(self.avm, context);
+        let obj = self.avm.pop().coerce_to_object(self, context);
+        let constr = self.avm.pop().coerce_to_object(self, context);
 
         let prototype = constr
-            .get("prototype", self.avm, context)?
-            .coerce_to_object(self.avm, context);
+            .get("prototype", self, context)?
+            .coerce_to_object(self, context);
 
-        if obj.is_instance_of(self.avm, context, constr, prototype)? {
+        if obj.is_instance_of(self, context, constr, prototype)? {
             self.avm.push(obj);
         } else {
             self.avm.push(Value::Null);
@@ -564,7 +561,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop().coerce_to_f64(self.avm, context)?;
+        let a = self.avm.pop().coerce_to_f64(self, context)?;
         self.avm.push(a - 1.0);
         Ok(FrameControl::Continue)
     }
@@ -659,10 +656,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         // Otherwise, the property is set (including calling virtual setters).
         let value = self.avm.pop();
         let name_val = self.avm.pop();
-        let name = name_val.coerce_to_string(self.avm, context)?;
-        let stack_frame = self.activation.read();
-        let scope = stack_frame.scope();
-        scope.locals().set(&name, value, self.avm, context)?;
+        let name = name_val.coerce_to_string(self, context)?;
+        let stack_frame = self.activation();
+        let scope = stack_frame.read().scope_cell();
+        scope
+            .write(context.gc_context)
+            .locals()
+            .set(&name, value, self, context)?;
         Ok(FrameControl::Continue)
     }
 
@@ -673,13 +673,14 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         // If the property does not exist on the local object's prototype chain, it is created on the local object.
         // Otherwise, the property is unchanged.
         let name_val = self.avm.pop();
-        let name = name_val.coerce_to_string(self.avm, context)?;
-        let stack_frame = self.activation.read();
-        let scope = stack_frame.scope();
-        if !scope.locals().has_property(self.avm, context, &name) {
+        let name = name_val.coerce_to_string(self, context)?;
+        let stack_frame = self.activation();
+        let scope = stack_frame.read().scope_cell();
+        if !scope.read().locals().has_property(self, context, &name) {
             scope
+                .write(context.gc_context)
                 .locals()
-                .set(&name, Value::Undefined, self.avm, context)?;
+                .set(&name, Value::Undefined, self, context)?;
         }
         Ok(FrameControl::Continue)
     }
@@ -689,11 +690,11 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let name_val = self.avm.pop();
-        let name = name_val.coerce_to_string(self.avm, context)?;
+        let name = name_val.coerce_to_string(self, context)?;
         let object = self.avm.pop();
 
         if let Value::Object(object) = object {
-            let success = object.delete(self.avm, context.gc_context, &name);
+            let success = object.delete(self, context.gc_context, &name);
             self.avm.push(success);
         } else {
             log::warn!("Cannot delete property {} from {:?}", name, object);
@@ -708,16 +709,16 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let name_val = self.avm.pop();
-        let name = name_val.coerce_to_string(self.avm, context)?;
+        let name = name_val.coerce_to_string(self, context)?;
 
         //Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
         //a boolean based on if the delete actually deleted something.
-        let did_exist = self.activation.read().is_defined(self.avm, context, &name);
+        let did_exist = self.activation().read().is_defined(self, context, &name);
 
-        self.activation
+        self.activation()
             .read()
             .scope()
-            .delete(self.avm, context, &name, context.gc_context);
+            .delete(self, context, &name, context.gc_context);
         self.avm.push(did_exist);
 
         Ok(FrameControl::Continue)
@@ -728,8 +729,8 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // AS1 divide
-        let a = self.avm.pop().coerce_to_f64(self.avm, context)?;
-        let b = self.avm.pop().coerce_to_f64(self.avm, context)?;
+        let a = self.avm.pop().coerce_to_f64(self, context)?;
+        let b = self.avm.pop().coerce_to_f64(self, context)?;
 
         // TODO(Herschel): SWF19: "If A is zero, the result NaN, Infinity, or -Infinity is pushed to the in SWF 5 and later.
         // In SWF 4, the result is the string #ERROR#.""
@@ -752,17 +753,17 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let name_value = self.avm.pop();
-        let name = name_value.coerce_to_string(self.avm, context)?;
+        let name = name_value.coerce_to_string(self, context)?;
         self.avm.push(Value::Null); // Sentinel that indicates end of enumeration
         let object = self
-            .activation
+            .activation()
             .read()
-            .resolve(&name, self.avm, context)?
-            .resolve(self.avm, context)?;
+            .resolve(&name, self, context)?
+            .resolve(self, context)?;
 
         match object {
             Value::Object(ob) => {
-                for k in ob.get_keys(self.avm).into_iter().rev() {
+                for k in ob.get_keys(self).into_iter().rev() {
                     self.avm.push(k);
                 }
             }
@@ -781,7 +782,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         self.avm.push(Value::Null); // Sentinel that indicates end of enumeration
 
         if let Value::Object(object) = value {
-            for k in object.get_keys(self.avm).into_iter().rev() {
+            for k in object.get_keys(self).into_iter().rev() {
                 self.avm.push(k);
             }
         } else {
@@ -813,7 +814,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         // Version >=5 equality
         let a = self.avm.pop();
         let b = self.avm.pop();
-        let result = b.abstract_eq(a, self.avm, context, false)?;
+        let result = b.abstract_eq(a, self, context, false)?;
         self.avm.push(result);
         Ok(FrameControl::Continue)
     }
@@ -822,19 +823,19 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let superclass = self.avm.pop().coerce_to_object(self.avm, context);
-        let subclass = self.avm.pop().coerce_to_object(self.avm, context);
+        let superclass = self.avm.pop().coerce_to_object(self, context);
+        let subclass = self.avm.pop().coerce_to_object(self, context);
 
         //TODO: What happens if we try to extend an object which has no `prototype`?
         //e.g. `class Whatever extends Object.prototype` or `class Whatever extends 5`
         let super_proto = superclass
-            .get("prototype", self.avm, context)?
-            .coerce_to_object(self.avm, context);
+            .get("prototype", self, context)?
+            .coerce_to_object(self, context);
 
         let mut sub_prototype: Object<'gc> =
             ScriptObject::object(context.gc_context, Some(super_proto)).into();
 
-        sub_prototype.set("constructor", superclass.into(), self.avm, context)?;
+        sub_prototype.set("constructor", superclass.into(), self, context)?;
         sub_prototype.set_attributes(
             context.gc_context,
             Some("constructor"),
@@ -842,7 +843,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             EnumSet::empty(),
         );
 
-        sub_prototype.set("__constructor__", superclass.into(), self.avm, context)?;
+        sub_prototype.set("__constructor__", superclass.into(), self, context)?;
         sub_prototype.set_attributes(
             context.gc_context,
             Some("__constructor__"),
@@ -850,7 +851,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             EnumSet::empty(),
         );
 
-        subclass.set("prototype", sub_prototype.into(), self.avm, context)?;
+        subclass.set("prototype", sub_prototype.into(), self, context)?;
 
         Ok(FrameControl::Continue)
     }
@@ -860,11 +861,11 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let name_val = self.avm.pop();
-        let name = name_val.coerce_to_string(self.avm, context)?;
+        let name = name_val.coerce_to_string(self, context)?;
         let object_val = self.avm.pop();
-        let object = value_object::ValueObject::boxed(self.avm, context, object_val);
+        let object = value_object::ValueObject::boxed(self, context, object_val);
 
-        let result = object.get(&name, self.avm, context)?;
+        let result = object.get(&name, self, context)?;
         self.avm.push(result);
 
         Ok(FrameControl::Continue)
@@ -877,14 +878,11 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let prop_index = self.avm.pop().into_number_v1() as usize;
         let path = self.avm.pop();
         let ret = if let Some(target) = self.avm.target_clip() {
-            if let Some(clip) = self
-                .avm
-                .resolve_target_display_object(context, target, path)?
-            {
+            if let Some(clip) = self.resolve_target_display_object(context, target, path)? {
                 let display_properties = self.avm.display_properties;
                 let props = display_properties.write(context.gc_context);
                 if let Some(property) = props.get_by_index(prop_index) {
-                    property.get(self.avm, context, clip)?
+                    property.get(self, context, clip)?
                 } else {
                     log::warn!("GetProperty: Invalid property index {}", prop_index);
                     Value::Undefined
@@ -915,9 +913,9 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let var_path = self.avm.pop();
-        let path = var_path.coerce_to_string(self.avm, context)?;
+        let path = var_path.coerce_to_string(self, context)?;
 
-        self.avm.get_variable(context, &path)?.push(self.avm);
+        self.get_variable(context, &path)?.push(self);
 
         Ok(FrameControl::Continue)
     }
@@ -933,7 +931,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             match target[6..].parse::<u32>() {
                 Ok(level_id) => {
                     let fetch = context.navigator.fetch(&url, RequestOptions::get());
-                    let level = self.avm.resolve_level(level_id, context);
+                    let level = self.resolve_level(level_id, context);
 
                     let process = context.load_manager.load_movie_into_clip(
                         context.player.clone().unwrap(),
@@ -954,7 +952,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         }
 
         if let Some(fscommand) = fscommand::parse(url) {
-            fscommand::handle(fscommand, self.avm, context)?;
+            fscommand::handle(fscommand, self, context)?;
         } else {
             context
                 .navigator
@@ -975,21 +973,20 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         // TODO: What happens if there's only one string?
         let target = self.avm.pop();
         let url_val = self.avm.pop();
-        let url = url_val.coerce_to_string(self.avm, context)?;
+        let url = url_val.coerce_to_string(self, context)?;
 
         if let Some(fscommand) = fscommand::parse(&url) {
-            fscommand::handle(fscommand, self.avm, context)?;
+            fscommand::handle(fscommand, self, context)?;
             return Ok(FrameControl::Continue);
         }
 
-        let window_target = target.coerce_to_string(self.avm, context)?;
+        let window_target = target.coerce_to_string(self, context)?;
         let clip_target: Option<DisplayObject<'gc>> = if is_target_sprite {
             if let Value::Object(target) = target {
                 target.as_display_object()
             } else {
                 let start = self.avm.target_clip_or_root();
-                self.avm
-                    .resolve_target_display_object(context, start, target.clone())?
+                self.resolve_target_display_object(context, start, target.clone())?
             }
         } else {
             Some(self.avm.target_clip_or_root())
@@ -1001,8 +998,8 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                     .as_movie_clip()
                     .unwrap()
                     .object()
-                    .coerce_to_object(self.avm, context);
-                let (url, opts) = self.avm.locals_into_request_options(
+                    .coerce_to_object(self, context);
+                let (url, opts) = self.locals_into_request_options(
                     context,
                     url,
                     NavigationMethod::from_send_vars_method(swf_method),
@@ -1020,7 +1017,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             return Ok(FrameControl::Continue);
         } else if is_target_sprite {
             if let Some(clip_target) = clip_target {
-                let (url, opts) = self.avm.locals_into_request_options(
+                let (url, opts) = self.locals_into_request_options(
                     context,
                     url,
                     NavigationMethod::from_send_vars_method(swf_method),
@@ -1038,7 +1035,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             return Ok(FrameControl::Continue);
         } else {
             let vars = match NavigationMethod::from_send_vars_method(swf_method) {
-                Some(method) => Some((method, self.avm.locals_into_form_values(context))),
+                Some(method) => Some((method, self.locals_into_form_values(context))),
                 None => None,
             };
 
@@ -1083,7 +1080,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                 let frame = self.avm.pop();
                 let _ = globals::movie_clip::goto_frame(
                     clip,
-                    self.avm,
+                    self,
                     context,
                     &[frame],
                     !set_playing,
@@ -1136,7 +1133,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop().coerce_to_f64(self.avm, context)?;
+        let a = self.avm.pop().coerce_to_f64(self, context)?;
         self.avm.push(a + 1.0);
         Ok(FrameControl::Continue)
     }
@@ -1145,7 +1142,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let num_elements = self.avm.pop().coerce_to_f64(self.avm, context)? as i64;
+        let num_elements = self.avm.pop().coerce_to_f64(self, context)? as i64;
         let array = ScriptObject::array(context.gc_context, Some(self.avm.prototypes.array));
 
         for i in 0..num_elements {
@@ -1160,13 +1157,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let num_props = self.avm.pop().coerce_to_f64(self.avm, context)? as i64;
+        let num_props = self.avm.pop().coerce_to_f64(self, context)? as i64;
         let object = ScriptObject::object(context.gc_context, Some(self.avm.prototypes.object));
         for _ in 0..num_props {
             let value = self.avm.pop();
             let name_val = self.avm.pop();
-            let name = name_val.coerce_to_string(self.avm, context)?;
-            object.set(&name, value, self.avm, context)?;
+            let name = name_val.coerce_to_string(self, context)?;
+            object.set(&name, value, self, context)?;
         }
 
         self.avm.push(Value::Object(object.into()));
@@ -1178,19 +1175,19 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let constr = self.avm.pop().coerce_to_object(self.avm, context);
-        let count = self.avm.pop().coerce_to_f64(self.avm, context)? as i64; //TODO: Is this coercion actually performed by Flash?
+        let constr = self.avm.pop().coerce_to_object(self, context);
+        let count = self.avm.pop().coerce_to_f64(self, context)? as i64; //TODO: Is this coercion actually performed by Flash?
         let mut interfaces = vec![];
 
         //TODO: If one of the interfaces is not an object, do we leave the
         //whole stack dirty, or...?
         for _ in 0..count {
-            interfaces.push(self.avm.pop().coerce_to_object(self.avm, context));
+            interfaces.push(self.avm.pop().coerce_to_object(self, context));
         }
 
         let mut prototype = constr
-            .get("prototype", self.avm, context)?
-            .coerce_to_object(self.avm, context);
+            .get("prototype", self, context)?
+            .coerce_to_object(self, context);
 
         prototype.set_interfaces(context.gc_context, interfaces);
 
@@ -1201,13 +1198,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let constr = self.avm.pop().coerce_to_object(self.avm, context);
-        let obj = self.avm.pop().coerce_to_object(self.avm, context);
+        let constr = self.avm.pop().coerce_to_object(self, context);
+        let obj = self.avm.pop().coerce_to_object(self, context);
 
         let prototype = constr
-            .get("prototype", self.avm, context)?
-            .coerce_to_object(self.avm, context);
-        let is_instance_of = obj.is_instance_of(self.avm, context, constr, prototype)?;
+            .get("prototype", self, context)?
+            .coerce_to_object(self, context);
+        let is_instance_of = obj.is_instance_of(self, context, constr, prototype)?;
 
         self.avm.push(is_instance_of);
         Ok(FrameControl::Continue)
@@ -1245,7 +1242,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let a = self.avm.pop();
         let b = self.avm.pop();
 
-        let result = b.abstract_lt(a, self.avm, context)?;
+        let result = b.abstract_lt(a, self, context)?;
 
         self.avm.push(result);
         Ok(FrameControl::Continue)
@@ -1259,7 +1256,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let a = self.avm.pop();
         let b = self.avm.pop();
 
-        let result = a.abstract_lt(b, self.avm, context)?;
+        let result = a.abstract_lt(b, self, context)?;
 
         self.avm.push(result);
         Ok(FrameControl::Continue)
@@ -1271,7 +1268,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // TODO(Herschel): Results on incorrect operands?
         use std::convert::TryFrom;
-        let result = char::try_from(self.avm.pop().coerce_to_f64(self.avm, context)? as u32);
+        let result = char::try_from(self.avm.pop().coerce_to_f64(self, context)? as u32);
         match result {
             Ok(val) => self.avm.push(val.to_string()),
             Err(e) => log::warn!("Couldn't parse char for action_mb_ascii_to_char: {}", e),
@@ -1285,7 +1282,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // TODO(Herschel): Results on incorrect operands?
         let val = self.avm.pop();
-        let s = val.coerce_to_string(self.avm, context)?;
+        let s = val.coerce_to_string(self, context)?;
         let result = s.chars().next().unwrap_or('\0') as u32;
         self.avm.push(result);
         Ok(FrameControl::Continue)
@@ -1296,10 +1293,10 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // TODO(Herschel): Result with incorrect operands?
-        let len = self.avm.pop().coerce_to_f64(self.avm, context)? as usize;
-        let start = self.avm.pop().coerce_to_f64(self.avm, context)? as usize;
+        let len = self.avm.pop().coerce_to_f64(self, context)? as usize;
+        let start = self.avm.pop().coerce_to_f64(self, context)? as usize;
         let val = self.avm.pop();
-        let s = val.coerce_to_string(self.avm, context)?;
+        let s = val.coerce_to_string(self, context)?;
         let result = s[len..len + start].to_string(); // TODO(Herschel): Flash uses UTF-16 internally.
         self.avm.push(result);
         Ok(FrameControl::Continue)
@@ -1311,7 +1308,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // TODO(Herschel): Result with non-string operands?
         let val = self.avm.pop();
-        let len = val.coerce_to_string(self.avm, context)?.len();
+        let len = val.coerce_to_string(self, context)?.len();
         self.avm.push(len as f64);
         Ok(FrameControl::Continue)
     }
@@ -1320,8 +1317,8 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop().coerce_to_f64(self.avm, context)?;
-        let b = self.avm.pop().coerce_to_f64(self.avm, context)?;
+        let a = self.avm.pop().coerce_to_f64(self, context)?;
+        let b = self.avm.pop().coerce_to_f64(self, context)?;
         self.avm.push(a * b);
         Ok(FrameControl::Continue)
     }
@@ -1331,8 +1328,8 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // TODO: Wrong operands?
-        let a = self.avm.pop().coerce_to_f64(self.avm, context)?;
-        let b = self.avm.pop().coerce_to_f64(self.avm, context)?;
+        let a = self.avm.pop().coerce_to_f64(self, context)?;
+        let b = self.avm.pop().coerce_to_f64(self, context)?;
         self.avm.push(b % a);
         Ok(FrameControl::Continue)
     }
@@ -1369,25 +1366,22 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let method_name = self.avm.pop();
         let object_val = self.avm.pop();
-        let num_args = self.avm.pop().coerce_to_f64(self.avm, context)? as i64;
+        let num_args = self.avm.pop().coerce_to_f64(self, context)? as i64;
         let mut args = Vec::new();
         for _ in 0..num_args {
             args.push(self.avm.pop());
         }
 
-        let object = value_object::ValueObject::boxed(self.avm, context, object_val);
-        let constructor = object.get(
-            &method_name.coerce_to_string(self.avm, context)?,
-            self.avm,
-            context,
-        )?;
+        let object = value_object::ValueObject::boxed(self, context, object_val);
+        let constructor =
+            object.get(&method_name.coerce_to_string(self, context)?, self, context)?;
         if let Value::Object(constructor) = constructor {
             let prototype = constructor
-                .get("prototype", self.avm, context)?
-                .coerce_to_object(self.avm, context);
+                .get("prototype", self, context)?
+                .coerce_to_object(self, context);
 
-            let mut this = prototype.new(self.avm, context, prototype, &args)?;
-            this.set("__constructor__", constructor.into(), self.avm, context)?;
+            let mut this = prototype.new(self, context, prototype, &args)?;
+            this.set("__constructor__", constructor.into(), self, context)?;
             this.set_attributes(
                 context.gc_context,
                 Some("__constructor__"),
@@ -1395,7 +1389,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                 EnumSet::empty(),
             );
             if self.avm.current_swf_version() < 7 {
-                this.set("constructor", constructor.into(), self.avm, context)?;
+                this.set("constructor", constructor.into(), self, context)?;
                 this.set_attributes(
                     context.gc_context,
                     Some("constructor"),
@@ -1405,7 +1399,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             }
 
             //TODO: What happens if you `ActionNewMethod` without a method name?
-            constructor.call(self.avm, context, this, None, &args)?;
+            constructor.call(self, context, this, None, &args)?;
 
             self.avm.push(this);
         } else {
@@ -1424,25 +1418,25 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let fn_name_val = self.avm.pop();
-        let fn_name = fn_name_val.coerce_to_string(self.avm, context)?;
-        let num_args = self.avm.pop().coerce_to_f64(self.avm, context)? as i64;
+        let fn_name = fn_name_val.coerce_to_string(self, context)?;
+        let num_args = self.avm.pop().coerce_to_f64(self, context)? as i64;
         let mut args = Vec::new();
         for _ in 0..num_args {
             args.push(self.avm.pop());
         }
 
         let constructor = self
-            .activation
+            .activation()
             .read()
-            .resolve(&fn_name, self.avm, context)?
-            .resolve(self.avm, context)?
-            .coerce_to_object(self.avm, context);
+            .resolve(&fn_name, self, context)?
+            .resolve(self, context)?
+            .coerce_to_object(self, context);
         let prototype = constructor
-            .get("prototype", self.avm, context)?
-            .coerce_to_object(self.avm, context);
+            .get("prototype", self, context)?
+            .coerce_to_object(self, context);
 
-        let mut this = prototype.new(self.avm, context, prototype, &args)?;
-        this.set("__constructor__", constructor.into(), self.avm, context)?;
+        let mut this = prototype.new(self, context, prototype, &args)?;
+        this.set("__constructor__", constructor.into(), self, context)?;
         this.set_attributes(
             context.gc_context,
             Some("__constructor__"),
@@ -1450,7 +1444,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             EnumSet::empty(),
         );
         if self.avm.current_swf_version() < 7 {
-            this.set("constructor", constructor.into(), self.avm, context)?;
+            this.set("constructor", constructor.into(), self, context)?;
             this.set_attributes(
                 context.gc_context,
                 Some("constructor"),
@@ -1459,7 +1453,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             );
         }
 
-        constructor.call(self.avm, context, this, None, &args)?;
+        constructor.call(self, context, this, None, &args)?;
 
         self.avm.push(this);
 
@@ -1591,9 +1585,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let target = self.avm.pop();
         let start_clip = self.avm.target_clip_or_root();
-        let target_clip = self
-            .avm
-            .resolve_target_display_object(context, start_clip, target)?;
+        let target_clip = self.resolve_target_display_object(context, start_clip, target)?;
 
         if let Some(target_clip) = target_clip.and_then(|o| o.as_movie_clip()) {
             let _ = globals::movie_clip::remove_movie_clip_with_bias(target_clip, context, 0);
@@ -1615,10 +1607,10 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.avm.pop();
         let name_val = self.avm.pop();
-        let name = name_val.coerce_to_string(self.avm, context)?;
+        let name = name_val.coerce_to_string(self, context)?;
 
-        let object = self.avm.pop().coerce_to_object(self.avm, context);
-        object.set(&name, value, self.avm, context)?;
+        let object = self.avm.pop().coerce_to_object(self, context);
+        object.set(&name, value, self, context)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1628,17 +1620,14 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.avm.pop();
-        let prop_index = self.avm.pop().coerce_to_u32(self.avm, context)? as usize;
+        let prop_index = self.avm.pop().coerce_to_u32(self, context)? as usize;
         let path = self.avm.pop();
         if let Some(target) = self.avm.target_clip() {
-            if let Some(clip) = self
-                .avm
-                .resolve_target_display_object(context, target, path)?
-            {
+            if let Some(clip) = self.resolve_target_display_object(context, target, path)? {
                 let display_properties = self.avm.display_properties;
                 let props = display_properties.read();
                 if let Some(property) = props.get_by_index(prop_index) {
-                    property.set(self.avm, context, clip, value)?;
+                    property.set(self, context, clip, value)?;
                 }
             } else {
                 log::warn!("SetProperty: Invalid target");
@@ -1656,8 +1645,8 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         // Flash 4-style variable
         let value = self.avm.pop();
         let var_path_val = self.avm.pop();
-        let var_path = var_path_val.coerce_to_string(self.avm, context)?;
-        self.avm.set_variable(context, &var_path, value)?;
+        let var_path = var_path_val.coerce_to_string(self, context)?;
+        self.set_variable(context, &var_path, value)?;
         Ok(FrameControl::Continue)
     }
 
@@ -1682,11 +1671,10 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let base_clip = self.avm.base_clip();
         let new_target_clip;
         let root = base_clip.root();
-        let start = base_clip.object().coerce_to_object(self.avm, context);
+        let start = base_clip.object().coerce_to_object(self, context);
         if target.is_empty() {
             new_target_clip = Some(base_clip);
         } else if let Some(clip) = self
-            .avm
             .resolve_target_path(context, root, start, target)?
             .and_then(|o| o.as_display_object())
         {
@@ -1702,7 +1690,8 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             new_target_clip = None;
         }
 
-        let mut sf = self.activation.write(context.gc_context);
+        let activation = self.activation();
+        let mut sf = activation.write(context.gc_context);
         sf.set_target_clip(new_target_clip);
 
         let scope = sf.scope_cell();
@@ -1710,7 +1699,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             .target_clip()
             .unwrap_or_else(|| sf.base_clip().root())
             .object()
-            .coerce_to_object(self.avm, context);
+            .coerce_to_object(self, context);
 
         sf.set_scope(Scope::new_target_scope(scope, clip_obj, context.gc_context));
         Ok(FrameControl::Continue)
@@ -1738,23 +1727,24 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                     sf.set_target_clip(Some(clip));
                 } else {
                     // Other objects get coerced to string
-                    let target = target.coerce_to_string(self.avm, context)?;
+                    let target = target.coerce_to_string(self, context)?;
                     return self.action_set_target(context, &target);
                 }
             }
             _ => {
-                let target = target.coerce_to_string(self.avm, context)?;
+                let target = target.coerce_to_string(self, context)?;
                 return self.action_set_target(context, &target);
             }
         };
 
-        let mut sf = self.activation.write(context.gc_context);
+        let cell = self.activation;
+        let mut sf = cell.write(context.gc_context);
         let scope = sf.scope_cell();
         let clip_obj = sf
             .target_clip()
             .unwrap_or_else(|| sf.base_clip().root())
             .object()
-            .coerce_to_object(self.avm, context);
+            .coerce_to_object(self, context);
         sf.set_scope(Scope::new_target_scope(scope, clip_obj, context.gc_context));
         Ok(FrameControl::Continue)
     }
@@ -1776,9 +1766,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let target = self.avm.pop();
         let start_clip = self.avm.target_clip_or_root();
-        let display_object = self
-            .avm
-            .resolve_target_display_object(context, start_clip, target)?;
+        let display_object = self.resolve_target_display_object(context, start_clip, target)?;
         if let Some(display_object) = display_object {
             let lock_center = self.avm.pop();
             let constrain = self.avm.pop().as_bool(self.avm.current_swf_version());
@@ -1789,12 +1777,12 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                 let x1 = self.avm.pop();
                 start_drag(
                     display_object,
-                    self.avm,
+                    self,
                     context,
                     &[lock_center, x1, y1, x2, y2],
                 );
             } else {
-                start_drag(display_object, self.avm, context, &[lock_center]);
+                start_drag(display_object, self, context, &[lock_center]);
             };
         } else {
             log::warn!("StartDrag: Invalid target");
@@ -1846,12 +1834,8 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         // SWFv4 string concatenation
         // TODO(Herschel): Result with non-string operands?
         let a = self.avm.pop();
-        let mut b = self
-            .avm
-            .pop()
-            .coerce_to_string(self.avm, context)?
-            .to_string();
-        b.push_str(&a.coerce_to_string(self.avm, context)?);
+        let mut b = self.avm.pop().coerce_to_string(self, context)?.to_string();
+        b.push_str(&a.coerce_to_string(self, context)?);
         self.avm.push(b);
         Ok(FrameControl::Continue)
     }
@@ -1863,8 +1847,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         // AS1 strcmp
         let a = self.avm.pop();
         let b = self.avm.pop();
-        let result =
-            b.coerce_to_string(self.avm, context)? == a.coerce_to_string(self.avm, context)?;
+        let result = b.coerce_to_string(self, context)? == a.coerce_to_string(self, context)?;
         self.avm
             .push(Value::from_bool(result, self.avm.current_swf_version()));
         Ok(FrameControl::Continue)
@@ -1876,10 +1859,10 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // SWFv4 substring
         // TODO(Herschel): Result with incorrect operands?
-        let len = self.avm.pop().coerce_to_f64(self.avm, context)? as usize;
-        let start = self.avm.pop().coerce_to_f64(self.avm, context)? as usize;
+        let len = self.avm.pop().coerce_to_f64(self, context)? as usize;
+        let start = self.avm.pop().coerce_to_f64(self, context)? as usize;
         let val = self.avm.pop();
-        let s = val.coerce_to_string(self.avm, context)?;
+        let s = val.coerce_to_string(self, context)?;
         // This is specifically a non-UTF8 aware substring.
         // SWFv4 only used ANSI strings.
         let result = s
@@ -1901,9 +1884,9 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let b = self.avm.pop();
         // This is specifically a non-UTF8 aware comparison.
         let result = b
-            .coerce_to_string(self.avm, context)?
+            .coerce_to_string(self, context)?
             .bytes()
-            .gt(a.coerce_to_string(self.avm, context)?.bytes());
+            .gt(a.coerce_to_string(self, context)?.bytes());
         self.avm
             .push(Value::from_bool(result, self.avm.current_swf_version()));
         Ok(FrameControl::Continue)
@@ -1917,7 +1900,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         // Only returns byte length.
         // TODO(Herschel): Result with non-string operands?
         let val = self.avm.pop();
-        let len = val.coerce_to_string(self.avm, context)?.bytes().len() as f64;
+        let len = val.coerce_to_string(self, context)?.bytes().len() as f64;
         self.avm.push(len);
         Ok(FrameControl::Continue)
     }
@@ -1931,9 +1914,9 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let b = self.avm.pop();
         // This is specifically a non-UTF8 aware comparison.
         let result = b
-            .coerce_to_string(self.avm, context)?
+            .coerce_to_string(self, context)?
             .bytes()
-            .lt(a.coerce_to_string(self.avm, context)?.bytes());
+            .lt(a.coerce_to_string(self, context)?.bytes());
         self.avm
             .push(Value::from_bool(result, self.avm.current_swf_version()));
         Ok(FrameControl::Continue)
@@ -1943,8 +1926,8 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop().coerce_to_f64(self.avm, context)?;
-        let b = self.avm.pop().coerce_to_f64(self.avm, context)?;
+        let a = self.avm.pop().coerce_to_f64(self, context)?;
+        let b = self.avm.pop().coerce_to_f64(self, context)?;
         self.avm.push(b - a);
         Ok(FrameControl::Continue)
     }
@@ -1954,7 +1937,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // TODO(Herschel)
-        let _clip = self.avm.pop().coerce_to_object(self.avm, context);
+        let _clip = self.avm.pop().coerce_to_object(self, context);
         self.avm.push(Value::Undefined);
         log::warn!("Unimplemented action: TargetPath");
         Ok(FrameControl::Continue)
@@ -1972,7 +1955,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let val = self.avm.pop().coerce_to_f64(self.avm, context)?;
+        let val = self.avm.pop().coerce_to_f64(self, context)?;
         self.avm.push(val.trunc());
         Ok(FrameControl::Continue)
     }
@@ -1981,7 +1964,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let val = self.avm.pop().coerce_to_f64(self.avm, context)?;
+        let val = self.avm.pop().coerce_to_f64(self, context)?;
         self.avm.push(val);
         Ok(FrameControl::Continue)
     }
@@ -1991,7 +1974,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.avm.pop();
-        let string = val.coerce_to_string(self.avm, context)?;
+        let string = val.coerce_to_string(self, context)?;
         self.avm.push(string);
         Ok(FrameControl::Continue)
     }
@@ -2006,7 +1989,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let out = if val == Value::Undefined {
             Cow::Borrowed("undefined")
         } else {
-            val.coerce_to_string(self.avm, context)?
+            val.coerce_to_string(self, context)?
         };
         log::info!(target: "avm_trace", "{}", out);
         Ok(FrameControl::Continue)
@@ -2045,7 +2028,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         r: &mut Reader<'_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // TODO(Herschel): Always true for now.
-        let _frame_num = self.avm.pop().coerce_to_f64(self.avm, context)? as u16;
+        let _frame_num = self.avm.pop().coerce_to_f64(self, context)? as u16;
         let loaded = true;
         if !loaded {
             // Note that the offset is given in # of actions, NOT in bytes.
@@ -2064,7 +2047,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         avm_debug!(
             "Thrown exception: {}",
             value
-                .coerce_to_string(self.avm, context)
+                .coerce_to_string(self, context)
                 .unwrap_or_else(|_| Cow::Borrowed("undefined"))
         );
         Err(Error::ThrownValue(value))
@@ -2075,7 +2058,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         actions: &[u8],
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let object = self.avm.pop().coerce_to_object(self.avm, context);
+        let object = self.avm.pop().coerce_to_object(self, context);
         let block = self.activation.read().data().to_subslice(actions).unwrap();
         let with_scope = Scope::new_with_scope(
             self.activation.read().scope_cell(),
@@ -2086,7 +2069,6 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             context.gc_context,
             self.activation.read().to_rescope(block, with_scope),
         );
-        self.avm.stack_frames.push(new_activation);
         self.avm.run_activation(context, new_activation)?;
         Ok(FrameControl::Continue)
     }
@@ -2126,5 +2108,463 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         } else if let Some(v) = self.avm.registers.get_mut(id as usize) {
             *v = value;
         }
+    }
+
+    pub fn avm(&mut self) -> &mut Avm1<'gc> {
+        self.avm
+    }
+
+    /// Convert the current locals pool into a set of form values.
+    ///
+    /// This is necessary to support form submission from Flash via a couple of
+    /// legacy methods, such as the `ActionGetURL2` opcode or `getURL` function.
+    ///
+    /// WARNING: This does not support user defined virtual properties!
+    pub fn locals_into_form_values(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> HashMap<String, String> {
+        let mut form_values = HashMap::new();
+        let scope = self.activation.read().scope_cell();
+        let locals = scope.read().locals_cell();
+        let keys = locals.get_keys(self);
+
+        for k in keys {
+            let v = locals.get(&k, self, context);
+
+            //TODO: What happens if an error occurs inside a virtual property?
+            form_values.insert(
+                k,
+                v.ok()
+                    .unwrap_or_else(|| Value::Undefined)
+                    .coerce_to_string(self, context)
+                    .unwrap_or_else(|_| Cow::Borrowed("undefined"))
+                    .to_string(),
+            );
+        }
+
+        form_values
+    }
+
+    /// Construct request options for a fetch operation that may send locals as
+    /// form data in the request body or URL.
+    pub fn locals_into_request_options<'b>(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        url: Cow<'b, str>,
+        method: Option<NavigationMethod>,
+    ) -> (Cow<'b, str>, RequestOptions) {
+        match method {
+            Some(method) => {
+                let vars = self.locals_into_form_values(context);
+                let qstring = form_urlencoded::Serializer::new(String::new())
+                    .extend_pairs(vars.iter())
+                    .finish();
+
+                match method {
+                    NavigationMethod::GET if url.find('?').is_none() => (
+                        Cow::Owned(format!("{}?{}", url, qstring)),
+                        RequestOptions::get(),
+                    ),
+                    NavigationMethod::GET => (
+                        Cow::Owned(format!("{}&{}", url, qstring)),
+                        RequestOptions::get(),
+                    ),
+                    NavigationMethod::POST => (
+                        url,
+                        RequestOptions::post(Some((
+                            qstring.as_bytes().to_owned(),
+                            "application/x-www-form-urlencoded".to_string(),
+                        ))),
+                    ),
+                }
+            }
+            None => (url, RequestOptions::get()),
+        }
+    }
+
+    /// Resolves a target value to a display object, relative to a starting display object.
+    ///
+    /// This is used by any action/function with a parameter that can be either
+    /// a display object or a string path referencing the display object.
+    /// For example, `removeMovieClip(mc)` takes either a string or a display object.
+    ///
+    /// This can be an object, dot path, slash path, or weird combination thereof:
+    /// `_root/movieClip`, `movieClip.child._parent`, `movieClip:child`, etc.
+    /// See the `target_path` test for many examples.
+    ///
+    /// A target path always resolves via the display list. It can look
+    /// at the prototype chain, but not the scope chain.
+    pub fn resolve_target_display_object(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        start: DisplayObject<'gc>,
+        target: Value<'gc>,
+    ) -> Result<Option<DisplayObject<'gc>>, Error<'gc>> {
+        // If the value you got was a display object, we can just toss it straight back.
+        if let Value::Object(o) = target {
+            if let Some(o) = o.as_display_object() {
+                return Ok(Some(o));
+            }
+        }
+
+        // Otherwise, we coerce it into a string and try to resolve it as a path.
+        // This means that values like `undefined` will resolve to clips with an instance name of
+        // `"undefined"`, for example.
+        let path = target.coerce_to_string(self, context)?;
+        let root = start.root();
+        let start = start.object().coerce_to_object(self, context);
+        Ok(self
+            .resolve_target_path(context, root, start, &path)?
+            .and_then(|o| o.as_display_object()))
+    }
+
+    /// Resolves a target path string to an object.
+    /// This only returns `Object`; other values will bail out with `None`.
+    ///
+    /// This can be a dot path, slash path, or weird combination thereof:
+    /// `_root/movieClip`, `movieClip.child._parent`, `movieClip:child`, etc.
+    /// See the `target_path` test for many examples.
+    ///
+    /// A target path always resolves via the display list. It can look
+    /// at the prototype chain, but not the scope chain.
+    pub fn resolve_target_path(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        root: DisplayObject<'gc>,
+        start: Object<'gc>,
+        path: &str,
+    ) -> Result<Option<Object<'gc>>, Error<'gc>> {
+        // Empty path resolves immediately to start clip.
+        if path.is_empty() {
+            return Ok(Some(start));
+        }
+
+        // Starting / means an absolute path starting from root.
+        // (`/bar` means `_root.bar`)
+        let mut path = path.as_bytes();
+        let (mut object, mut is_slash_path) = if path[0] == b'/' {
+            path = &path[1..];
+            (root.object().coerce_to_object(self, context), true)
+        } else {
+            (start, false)
+        };
+
+        let case_sensitive = self.avm().is_case_sensitive();
+
+        // Iterate through each token in the path.
+        while !path.is_empty() {
+            // Skip any number of leading :
+            // `foo`, `:foo`, and `:::foo` are all the same
+            while path.get(0) == Some(&b':') {
+                path = &path[1..];
+            }
+
+            let val = if let b".." | b"../" | b"..:" = &path[..std::cmp::min(path.len(), 3)] {
+                // Check for ..
+                // SWF-4 style _parent
+                if path.get(2) == Some(&b'/') {
+                    is_slash_path = true;
+                }
+                path = path.get(3..).unwrap_or(&[]);
+                if let Some(parent) = object.as_display_object().and_then(|o| o.parent()) {
+                    parent.object()
+                } else {
+                    // Tried to get parent of root, bail out.
+                    return Ok(None);
+                }
+            } else {
+                // Step until the next delimiter.
+                // : . / all act as path delimiters.
+                // The only restriction is that after a / appears,
+                // . is no longer considered a delimiter.
+                // TODO: SWF4 is probably more restrictive.
+                let mut pos = 0;
+                while pos < path.len() {
+                    match path[pos] {
+                        b':' => break,
+                        b'.' if !is_slash_path => break,
+                        b'/' => {
+                            is_slash_path = true;
+                            break;
+                        }
+                        _ => (),
+                    }
+                    pos += 1;
+                }
+
+                // Slice out the identifier and step the cursor past the delimiter.
+                let ident = &path[..pos];
+                path = path.get(pos + 1..).unwrap_or(&[]);
+
+                // Guaranteed to be valid UTF-8.
+                let name = unsafe { std::str::from_utf8_unchecked(ident) };
+
+                // Get the value from the object.
+                // Resolves display object instances first, then local variables.
+                // This is the opposite of general GetMember property access!
+                if let Some(child) = object
+                    .as_display_object()
+                    .and_then(|o| o.get_child_by_name(name, case_sensitive))
+                {
+                    child.object()
+                } else {
+                    object.get(&name, self, context).unwrap()
+                }
+            };
+
+            // Resolve the value to an object while traversing the path.
+            object = if let Value::Object(o) = val {
+                o
+            } else {
+                return Ok(None);
+            };
+        }
+
+        Ok(Some(object))
+    }
+
+    /// Resolves a path for text field variable binding.
+    /// Returns the parent object that owns the variable, and the variable name.
+    /// Returns `None` if the path does not yet point to a valid object.
+    /// TODO: This can probably be merged with some of the above `resolve_target_path` methods.
+    pub fn resolve_text_field_variable_path<'s>(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        text_field_parent: DisplayObject<'gc>,
+        path: &'s str,
+    ) -> Result<Option<(Object<'gc>, &'s str)>, Error<'gc>> {
+        // Resolve a variable path for a GetVariable action.
+        let start = text_field_parent;
+
+        // Find the right-most : or . in the path.
+        // If we have one, we must resolve as a target path.
+        // We also check for a / to skip some unnecessary work later.
+        let mut has_slash = false;
+        let mut var_iter = path.as_bytes().rsplitn(2, |c| match c {
+            b':' | b'.' => true,
+            b'/' => {
+                has_slash = true;
+                false
+            }
+            _ => false,
+        });
+
+        let b = var_iter.next();
+        let a = var_iter.next();
+        if let (Some(path), Some(var_name)) = (a, b) {
+            // We have a . or :, so this is a path to an object plus a variable name.
+            // We resolve it directly on the targeted object.
+            let path = unsafe { std::str::from_utf8_unchecked(path) };
+            let var_name = unsafe { std::str::from_utf8_unchecked(var_name) };
+
+            let mut current_scope = Some(self.activation.read().scope_cell());
+            while let Some(scope) = current_scope {
+                if let Some(object) =
+                    self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
+                {
+                    return Ok(Some((object, var_name)));
+                }
+                current_scope = scope.read().parent_cell();
+            }
+
+            return Ok(None);
+        }
+
+        // Finally! It's a plain old variable name.
+        // Resolve using scope chain, as normal.
+        if let Value::Object(object) = start.object() {
+            Ok(Some((object, path)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Gets the value referenced by a target path string.
+    ///
+    /// This can be a raw variable name, a slash path, a dot path, or weird combination thereof.
+    /// For example:
+    /// `_root/movieClip.foo`, `movieClip:child:_parent`, `blah`
+    /// See the `target_path` test for many examples.
+    ///
+    /// The string first tries to resolve as target path with a variable name, such as
+    /// "a/b/c:foo". The right-most : or . delimits the variable name, with the left side
+    /// identifying the target object path. Note that the variable name on the right can
+    /// contain a slash in this case. This path is resolved on the scope chain; if
+    /// the path does not resolve to an existing property on a scope, the parent scope is
+    /// searched. Undefined is returned if no path resolves successfully.
+    ///
+    /// If there is no variable name, but the path contains slashes, the path will still try
+    /// to resolve on the scope chain as above. If this fails to resolve, we consider
+    /// it a simple variable name and fall through to the variable case
+    /// (i.e. "a/b/c" would be a variable named "a/b/c", not a path).
+    ///
+    /// Finally, if none of the above applies, it is a normal variable name resovled via the
+    /// scope chain.
+    pub fn get_variable<'s>(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        path: &'s str,
+    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
+        // Resolve a variable path for a GetVariable action.
+        let start = self.avm().target_clip_or_root();
+
+        // Find the right-most : or . in the path.
+        // If we have one, we must resolve as a target path.
+        // We also check for a / to skip some unnecessary work later.
+        let mut has_slash = false;
+        let mut var_iter = path.as_bytes().rsplitn(2, |c| match c {
+            b':' | b'.' => true,
+            b'/' => {
+                has_slash = true;
+                false
+            }
+            _ => false,
+        });
+
+        let b = var_iter.next();
+        let a = var_iter.next();
+        if let (Some(path), Some(var_name)) = (a, b) {
+            // We have a . or :, so this is a path to an object plus a variable name.
+            // We resolve it directly on the targeted object.
+            let path = unsafe { std::str::from_utf8_unchecked(path) };
+            let var_name = unsafe { std::str::from_utf8_unchecked(var_name) };
+
+            let mut current_scope = Some(self.activation.read().scope_cell());
+            while let Some(scope) = current_scope {
+                if let Some(object) =
+                    self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
+                {
+                    if object.has_property(self, context, var_name) {
+                        return Ok(object.get(var_name, self, context)?.into());
+                    }
+                }
+                current_scope = scope.read().parent_cell();
+            }
+
+            return Ok(Value::Undefined.into());
+        }
+
+        // If it doesn't have a trailing variable, it can still be a slash path.
+        // We can skip this step if we didn't find a slash above.
+        if has_slash {
+            let mut current_scope = Some(self.activation.read().scope_cell());
+            while let Some(scope) = current_scope {
+                if let Some(object) =
+                    self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
+                {
+                    return Ok(object.into());
+                }
+                current_scope = scope.read().parent_cell();
+            }
+        }
+
+        // Finally! It's a plain old variable name.
+        // Resolve using scope chain, as normal.
+        self.activation().read().resolve(&path, self, context)
+    }
+
+    /// Sets the value referenced by a target path string.
+    ///
+    /// This can be a raw variable name, a slash path, a dot path, or weird combination thereof.
+    /// For example:
+    /// `_root/movieClip.foo`, `movieClip:child:_parent`, `blah`
+    /// See the `target_path` test for many examples.
+    ///
+    /// The string first tries to resolve as target path with a variable name, such as
+    /// "a/b/c:foo". The right-most : or . delimits the variable name, with the left side
+    /// identifying the target object path. Note that the variable name on the right can
+    /// contain a slash in this case. This target path (sans variable) is resolved on the
+    /// scope chain; if the path does not resolve to an existing property on a scope, the
+    /// parent scope is searched. If the path does not resolve on any scope, the set fails
+    /// and returns immediately. If the path does resolve, the variable name is created
+    /// or overwritten on the target scope.
+    ///
+    /// This differs from `get_variable` because slash paths with no variable segment are invalid;
+    /// For example, `foo/bar` sets a property named `foo/bar` on the current stack frame instead
+    /// of drilling into the display list.
+    ///
+    /// If the string does not resolve as a path, the path is considered a normal variable
+    /// name and is set on the scope chain as usual.
+    pub fn set_variable<'s>(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        path: &'s str,
+        value: Value<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        // Resolve a variable path for a GetVariable action.
+        let start = self.avm().target_clip_or_root();
+
+        // If the target clip is invalid, we default to root for the variable path.
+        if path.is_empty() {
+            return Ok(());
+        }
+
+        // Find the right-most : or . in the path.
+        // If we have one, we must resolve as a target path.
+        let mut var_iter = path.as_bytes().rsplitn(2, |&c| c == b':' || c == b'.');
+        let b = var_iter.next();
+        let a = var_iter.next();
+
+        if let (Some(path), Some(var_name)) = (a, b) {
+            // We have a . or :, so this is a path to an object plus a variable name.
+            // We resolve it directly on the targeted object.
+            let path = unsafe { std::str::from_utf8_unchecked(path) };
+            let var_name = unsafe { std::str::from_utf8_unchecked(var_name) };
+
+            let mut current_scope = Some(self.activation.read().scope_cell());
+            while let Some(scope) = current_scope {
+                if let Some(object) =
+                    self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
+                {
+                    object.set(var_name, value, self, context)?;
+                    return Ok(());
+                }
+                current_scope = scope.read().parent_cell();
+            }
+
+            return Ok(());
+        }
+
+        // Finally! It's a plain old variable name.
+        // Set using scope chain, as normal.
+        // This will overwrite the value if the property exists somewhere
+        // in the scope chain, otherwise it is created on the top-level object.
+        let cell = self.activation;
+        let stack_frame = cell.read();
+        let this = stack_frame.this_cell();
+        let scope = stack_frame.scope_cell();
+        scope.read().set(path, value, self, context, this)?;
+        Ok(())
+    }
+
+    /// Resolve a level by ID.
+    ///
+    /// If the level does not exist, then it will be created and instantiated
+    /// with a script object.
+    pub fn resolve_level(
+        &mut self,
+        level_id: u32,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> DisplayObject<'gc> {
+        if let Some(level) = context.levels.get(&level_id) {
+            *level
+        } else {
+            let mut level: DisplayObject<'_> = MovieClip::new(
+                SwfSlice::empty(self.avm().base_clip().movie().unwrap()),
+                context.gc_context,
+            )
+            .into();
+
+            level.set_depth(context.gc_context, level_id as i32);
+            context.levels.insert(level_id, level);
+            level.post_instantiation(self.avm, context, level, None, false);
+
+            level
+        }
+    }
+
+    pub fn activation(&self) -> GcCell<'gc, Activation<'gc>> {
+        self.activation
     }
 }

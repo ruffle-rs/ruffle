@@ -2,7 +2,8 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::{Avm1, Object, Value};
+use crate::avm1::stack_frame::StackFrame;
+use crate::avm1::{Object, Value};
 use crate::context::UpdateContext;
 use gc_arena::{Collect, GcCell};
 use std::borrow::Cow;
@@ -73,11 +74,11 @@ impl<'gc> ReturnValue<'gc> {
     ///
     /// The natural result of a stack frame retiring is to be pushed, so this
     /// only ensures that Immediate values are pushed.
-    pub fn push(self, avm: &mut Avm1<'gc>) {
+    pub fn push(self, activation: &mut StackFrame<'_, 'gc>) {
         use ReturnValue::*;
 
         match self {
-            Immediate(val) => avm.push(val),
+            Immediate(val) => activation.avm().push(val),
             ResultOf(_frame) => {}
         };
     }
@@ -86,20 +87,17 @@ impl<'gc> ReturnValue<'gc> {
     /// into the AVM.
     pub fn resolve(
         self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         use ReturnValue::*;
 
         match self {
             Immediate(val) => Ok(val),
-            ResultOf(frame) => {
-                avm.insert_stack_frame(frame);
-                match avm.run_activation(context, frame) {
-                    Ok(_) => Ok(avm.pop()),
-                    Err(e) => Err(e),
-                }
-            }
+            ResultOf(frame) => match activation.avm().run_activation(context, frame) {
+                Ok(_) => Ok(activation.avm().pop()),
+                Err(e) => Err(e),
+            },
         }
     }
 

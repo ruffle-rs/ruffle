@@ -1,5 +1,6 @@
 //! Classes that store formatting options
-use crate::avm1::{Avm1, Object, ScriptObject, TObject, Value};
+use crate::avm1::stack_frame::StackFrame;
+use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
 use crate::tag_utils::SwfMovie;
@@ -85,57 +86,57 @@ pub struct TextFormat {
 fn getstr_from_avm1_object<'gc>(
     object: Object<'gc>,
     name: &str,
-    avm1: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     uc: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Option<String>, crate::avm1::error::Error<'gc>> {
-    Ok(match object.get(name, avm1, uc)? {
+    Ok(match object.get(name, activation, uc)? {
         Value::Undefined => None,
         Value::Null => None,
-        v => Some(v.coerce_to_string(avm1, uc)?.to_string()),
+        v => Some(v.coerce_to_string(activation, uc)?.to_string()),
     })
 }
 
 fn getfloat_from_avm1_object<'gc>(
     object: Object<'gc>,
     name: &str,
-    avm1: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     uc: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Option<f64>, crate::avm1::error::Error<'gc>> {
-    Ok(match object.get(name, avm1, uc)? {
+    Ok(match object.get(name, activation, uc)? {
         Value::Undefined => None,
         Value::Null => None,
-        v => Some(v.coerce_to_f64(avm1, uc)?),
+        v => Some(v.coerce_to_f64(activation, uc)?),
     })
 }
 
 fn getbool_from_avm1_object<'gc>(
     object: Object<'gc>,
     name: &str,
-    avm1: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     uc: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Option<bool>, crate::avm1::error::Error<'gc>> {
-    Ok(match object.get(name, avm1, uc)? {
+    Ok(match object.get(name, activation, uc)? {
         Value::Undefined => None,
         Value::Null => None,
-        v => Some(v.as_bool(avm1.current_swf_version())),
+        v => Some(v.as_bool(activation.avm().current_swf_version())),
     })
 }
 
 fn getfloatarray_from_avm1_object<'gc>(
     object: Object<'gc>,
     name: &str,
-    avm1: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     uc: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Option<Vec<f64>>, crate::avm1::error::Error<'gc>> {
-    Ok(match object.get(name, avm1, uc)? {
+    Ok(match object.get(name, activation, uc)? {
         Value::Undefined => None,
         Value::Null => None,
         v => {
             let mut output = Vec::new();
-            let v = v.coerce_to_object(avm1, uc);
+            let v = v.coerce_to_object(activation, uc);
 
             for i in 0..v.length() {
-                output.push(v.array_element(i).coerce_to_f64(avm1, uc)?);
+                output.push(v.array_element(i).coerce_to_f64(activation, uc)?);
             }
 
             Some(output)
@@ -197,37 +198,38 @@ impl TextFormat {
     /// Construct a `TextFormat` from an object that is
     pub fn from_avm1_object<'gc>(
         object1: Object<'gc>,
-        avm1: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         uc: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Self, crate::avm1::error::Error<'gc>> {
         Ok(Self {
-            font: getstr_from_avm1_object(object1, "font", avm1, uc)?,
-            size: getfloat_from_avm1_object(object1, "size", avm1, uc)?,
-            color: getfloat_from_avm1_object(object1, "color", avm1, uc)?
+            font: getstr_from_avm1_object(object1, "font", activation, uc)?,
+            size: getfloat_from_avm1_object(object1, "size", activation, uc)?,
+            color: getfloat_from_avm1_object(object1, "color", activation, uc)?
                 .map(|v| swf::Color::from_rgb(v as u32, 0xFF)),
-            align: getstr_from_avm1_object(object1, "align", avm1, uc)?.and_then(|v| {
-                match v.to_lowercase().as_str() {
-                    "left" => Some(swf::TextAlign::Left),
-                    "center" => Some(swf::TextAlign::Center),
-                    "right" => Some(swf::TextAlign::Right),
-                    "justify" => Some(swf::TextAlign::Justify),
-                    _ => None,
-                }
+            align: getstr_from_avm1_object(object1, "align", activation, uc)?.and_then(|v| match v
+                .to_lowercase()
+                .as_str()
+            {
+                "left" => Some(swf::TextAlign::Left),
+                "center" => Some(swf::TextAlign::Center),
+                "right" => Some(swf::TextAlign::Right),
+                "justify" => Some(swf::TextAlign::Justify),
+                _ => None,
             }),
-            bold: getbool_from_avm1_object(object1, "bold", avm1, uc)?,
-            italic: getbool_from_avm1_object(object1, "italic", avm1, uc)?,
-            underline: getbool_from_avm1_object(object1, "underline", avm1, uc)?,
-            left_margin: getfloat_from_avm1_object(object1, "leftMargin", avm1, uc)?,
-            right_margin: getfloat_from_avm1_object(object1, "rightMargin", avm1, uc)?,
-            indent: getfloat_from_avm1_object(object1, "indent", avm1, uc)?,
-            block_indent: getfloat_from_avm1_object(object1, "blockIndent", avm1, uc)?,
-            kerning: getbool_from_avm1_object(object1, "kerning", avm1, uc)?,
-            leading: getfloat_from_avm1_object(object1, "leading", avm1, uc)?,
-            letter_spacing: getfloat_from_avm1_object(object1, "letterSpacing", avm1, uc)?,
-            tab_stops: getfloatarray_from_avm1_object(object1, "tabStops", avm1, uc)?,
-            bullet: getbool_from_avm1_object(object1, "bullet", avm1, uc)?,
-            url: getstr_from_avm1_object(object1, "url", avm1, uc)?,
-            target: getstr_from_avm1_object(object1, "target", avm1, uc)?,
+            bold: getbool_from_avm1_object(object1, "bold", activation, uc)?,
+            italic: getbool_from_avm1_object(object1, "italic", activation, uc)?,
+            underline: getbool_from_avm1_object(object1, "underline", activation, uc)?,
+            left_margin: getfloat_from_avm1_object(object1, "leftMargin", activation, uc)?,
+            right_margin: getfloat_from_avm1_object(object1, "rightMargin", activation, uc)?,
+            indent: getfloat_from_avm1_object(object1, "indent", activation, uc)?,
+            block_indent: getfloat_from_avm1_object(object1, "blockIndent", activation, uc)?,
+            kerning: getbool_from_avm1_object(object1, "kerning", activation, uc)?,
+            leading: getfloat_from_avm1_object(object1, "leading", activation, uc)?,
+            letter_spacing: getfloat_from_avm1_object(object1, "letterSpacing", activation, uc)?,
+            tab_stops: getfloatarray_from_avm1_object(object1, "tabStops", activation, uc)?,
+            bullet: getbool_from_avm1_object(object1, "bullet", activation, uc)?,
+            url: getstr_from_avm1_object(object1, "url", activation, uc)?,
+            target: getstr_from_avm1_object(object1, "target", activation, uc)?,
         })
     }
 
@@ -350,21 +352,24 @@ impl TextFormat {
     /// Construct a `TextFormat` AVM1 object from this text format object.
     pub fn as_avm1_object<'gc>(
         &self,
-        avm1: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         uc: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Object<'gc>, crate::avm1::error::Error<'gc>> {
-        let object = ScriptObject::object(uc.gc_context, Some(avm1.prototypes().text_format));
+        let object = ScriptObject::object(
+            uc.gc_context,
+            Some(activation.avm().prototypes().text_format),
+        );
 
         object.set(
             "font",
             self.font.clone().map(|v| v.into()).unwrap_or(Value::Null),
-            avm1,
+            activation,
             uc,
         )?;
         object.set(
             "size",
             self.size.map(|v| v.into()).unwrap_or(Value::Null),
-            avm1,
+            activation,
             uc,
         )?;
         object.set(
@@ -373,7 +378,7 @@ impl TextFormat {
                 .clone()
                 .map(|v| (((v.r as u32) << 16) + ((v.g as u32) << 8) + v.b as u32).into())
                 .unwrap_or(Value::Null),
-            avm1,
+            activation,
             uc,
         )?;
         object.set(
@@ -389,90 +394,91 @@ impl TextFormat {
                     .into()
                 })
                 .unwrap_or(Value::Null),
-            avm1,
+            activation,
             uc,
         )?;
         object.set(
             "bold",
             self.bold.map(|v| v.into()).unwrap_or(Value::Null),
-            avm1,
+            activation,
             uc,
         )?;
         object.set(
             "italic",
             self.italic.map(|v| v.into()).unwrap_or(Value::Null),
-            avm1,
+            activation,
             uc,
         )?;
         object.set(
             "underline",
             self.underline.map(|v| v.into()).unwrap_or(Value::Null),
-            avm1,
+            activation,
             uc,
         )?;
         object.set(
             "leftMargin",
             self.left_margin.map(|v| v.into()).unwrap_or(Value::Null),
-            avm1,
+            activation,
             uc,
         )?;
         object.set(
             "rightMargin",
             self.right_margin.map(|v| v.into()).unwrap_or(Value::Null),
-            avm1,
+            activation,
             uc,
         )?;
         object.set(
             "indent",
             self.indent.map(|v| v.into()).unwrap_or(Value::Null),
-            avm1,
+            activation,
             uc,
         )?;
         object.set(
             "blockIndent",
             self.block_indent.map(|v| v.into()).unwrap_or(Value::Null),
-            avm1,
+            activation,
             uc,
         )?;
         object.set(
             "kerning",
             self.kerning.map(|v| v.into()).unwrap_or(Value::Null),
-            avm1,
+            activation,
             uc,
         )?;
         object.set(
             "leading",
             self.leading.map(|v| v.into()).unwrap_or(Value::Null),
-            avm1,
+            activation,
             uc,
         )?;
         object.set(
             "letterSpacing",
             self.letter_spacing.map(|v| v.into()).unwrap_or(Value::Null),
-            avm1,
+            activation,
             uc,
         )?;
         object.set(
             "bullet",
             self.bullet.map(|v| v.into()).unwrap_or(Value::Null),
-            avm1,
+            activation,
             uc,
         )?;
         object.set(
             "url",
             self.url.clone().map(|v| v.into()).unwrap_or(Value::Null),
-            avm1,
+            activation,
             uc,
         )?;
         object.set(
             "target",
             self.target.clone().map(|v| v.into()).unwrap_or(Value::Null),
-            avm1,
+            activation,
             uc,
         )?;
 
         if let Some(ts) = &self.tab_stops {
-            let tab_stops = ScriptObject::array(uc.gc_context, Some(avm1.prototypes().array));
+            let tab_stops =
+                ScriptObject::array(uc.gc_context, Some(activation.avm().prototypes().array));
 
             tab_stops.set_length(uc.gc_context, ts.len());
 
@@ -480,9 +486,9 @@ impl TextFormat {
                 tab_stops.set_array_element(index, (*tab).into(), uc.gc_context);
             }
 
-            object.set("tabStops", tab_stops.into(), avm1, uc)?;
+            object.set("tabStops", tab_stops.into(), activation, uc)?;
         } else {
-            object.set("tabStops", Value::Null, avm1, uc)?;
+            object.set("tabStops", Value::Null, activation, uc)?;
         }
 
         Ok(object.into())

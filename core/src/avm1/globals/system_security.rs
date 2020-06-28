@@ -2,14 +2,15 @@ use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::object::Object;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, ScriptObject, TObject, Value};
+use crate::avm1::stack_frame::StackFrame;
+use crate::avm1::{ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 use std::convert::Into;
 
 fn allow_domain<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -19,7 +20,7 @@ fn allow_domain<'gc>(
 }
 
 fn allow_insecure_domain<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -29,7 +30,7 @@ fn allow_insecure_domain<'gc>(
 }
 
 fn load_policy_file<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -39,7 +40,7 @@ fn load_policy_file<'gc>(
 }
 
 fn escape_domain<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -49,7 +50,7 @@ fn escape_domain<'gc>(
 }
 
 fn get_sandbox_type<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -58,7 +59,7 @@ fn get_sandbox_type<'gc>(
 }
 
 fn get_choose_local_swf_path<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -68,7 +69,7 @@ fn get_choose_local_swf_path<'gc>(
 }
 
 fn policy_file_resolver<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],

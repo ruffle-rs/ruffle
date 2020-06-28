@@ -4,21 +4,22 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
+use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::value_object::ValueObject;
-use crate::avm1::{Avm1, Object, TObject, Value};
+use crate::avm1::{Object, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 /// `Number` constructor/function
 pub fn number<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let value = if let Some(val) = args.get(0) {
-        val.coerce_to_f64(avm, context)?
+        val.coerce_to_f64(activation, context)?
     } else {
         0.0
     };
@@ -113,7 +114,7 @@ pub fn create_proto<'gc>(
 }
 
 fn to_string<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -133,7 +134,7 @@ fn to_string<'gc>(
         let radix = args
             .get(0)
             .unwrap_or(&Value::Undefined)
-            .coerce_to_f64(avm, context)?;
+            .coerce_to_f64(activation, context)?;
         if radix >= 2.0 && radix <= 36.0 {
             radix as u32
         } else {
@@ -143,7 +144,9 @@ fn to_string<'gc>(
 
     if radix == 10 {
         // Output number as floating-point decimal.
-        Ok(Value::from(this).coerce_to_string(avm, context)?.into())
+        Ok(Value::from(this)
+            .coerce_to_string(activation, context)?
+            .into())
     } else if this > -2_147_483_648.0 && this < 2_147_483_648.0 {
         // Output truncated integer in specified base.
         let n = this as i32;
@@ -184,7 +187,7 @@ fn to_string<'gc>(
 }
 
 fn value_of<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],

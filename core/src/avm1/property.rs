@@ -4,7 +4,8 @@ use self::Attribute::*;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Object, UpdateContext, Value};
+use crate::avm1::stack_frame::StackFrame;
+use crate::avm1::{Object, UpdateContext, Value};
 use core::fmt;
 use enumset::{EnumSet, EnumSetType};
 
@@ -38,13 +39,13 @@ impl<'gc> Property<'gc> {
     /// user-defined.
     pub fn get(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
     ) -> Result<ReturnValue<'gc>, Error<'gc>> {
         match self {
-            Property::Virtual { get, .. } => get.exec(avm, context, this, base_proto, &[]),
+            Property::Virtual { get, .. } => get.exec(activation, context, this, base_proto, &[]),
             Property::Stored { value, .. } => Ok(value.to_owned().into()),
         }
     }
@@ -56,7 +57,7 @@ impl<'gc> Property<'gc> {
     /// discarded.
     pub fn set(
         &mut self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
@@ -65,7 +66,7 @@ impl<'gc> Property<'gc> {
         match self {
             Property::Virtual { set, .. } => {
                 if let Some(function) = set {
-                    function.exec(avm, context, this, base_proto, &[new_value.into()])
+                    function.exec(activation, context, this, base_proto, &[new_value.into()])
                 } else {
                     Ok(Value::Undefined.into())
                 }

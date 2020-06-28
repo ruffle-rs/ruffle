@@ -1,7 +1,8 @@
 //! `MovieClip` display object and support code.
-use crate::avm1::{Avm1, Object, StageObject, TObject, Value};
+use crate::avm1::{Activation, Avm1, Object, StageObject, TObject, Value};
 use crate::backend::audio::AudioStreamHandle;
 
+use crate::avm1::stack_frame::StackFrame;
 use crate::character::Character;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{
@@ -373,14 +374,12 @@ impl<'gc> MovieClip<'gc> {
                 )
             })?;
 
-        avm.insert_stack_frame_for_init_action(
+        avm.run_stack_frame_for_init_action(
             *context.levels.get(&0).unwrap(),
             context.swf.header().version,
             slice,
             context,
         );
-        let frame = avm.current_stack_frame().unwrap();
-        let _ = avm.run_activation(context, frame);
 
         Ok(())
     }
@@ -976,12 +975,37 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     return Some(self_node);
                 }
 
-                let object = self.object().coerce_to_object(avm, context);
-                if ClipEvent::BUTTON_EVENT_METHODS
-                    .iter()
-                    .any(|handler| object.has_property(avm, context, handler))
-                {
-                    return Some(self_node);
+                let activation = GcCell::allocate(
+                    context.gc_context,
+                    Activation::from_nothing(
+                        context.swf.version(),
+                        avm.global_object_cell(),
+                        context.gc_context,
+                        *context.levels.get(&0).unwrap(),
+                    ),
+                );
+                fn finder<'gc>(
+                    activation: &mut StackFrame<'_, 'gc>,
+                    context: &mut UpdateContext<'_, 'gc, '_>,
+                    self_node: DisplayObject<'gc>,
+                    this: Value<'gc>,
+                ) -> Option<DisplayObject<'gc>> {
+                    let object = this.coerce_to_object(activation, context);
+
+                    if ClipEvent::BUTTON_EVENT_METHODS
+                        .iter()
+                        .any(|handler| object.has_property(activation, context, handler))
+                    {
+                        return Some(self_node);
+                    }
+                    None
+                };
+                let result: Option<DisplayObject<'gc>> =
+                    avm.run_with_stack_frame(activation, context, |activation, context| {
+                        finder(activation, context, self_node, self.object())
+                    });
+                if result.is_some() {
+                    return result;
                 }
             }
 
@@ -1033,29 +1057,47 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             // If we are running within the AVM, this must be an immediate action.
             // If we are not, then this must be queued to be ran first-thing
             if instantiated_from_avm && self.0.read().avm1_constructor.is_some() {
-                let constructor = self.0.read().avm1_constructor.unwrap();
-
-                if let Ok(prototype) = constructor
-                    .get("prototype", avm, context)
-                    .map(|v| v.coerce_to_object(avm, context))
-                {
-                    let object: Object<'gc> = StageObject::for_display_object(
+                let activation = GcCell::allocate(
+                    context.gc_context,
+                    Activation::from_nothing(
+                        context.swf.version(),
+                        avm.global_object_cell(),
                         context.gc_context,
-                        (*self).into(),
-                        Some(prototype),
-                    )
-                    .into();
-                    if let Some(init_object) = init_object {
-                        for key in init_object.get_keys(avm) {
-                            if let Ok(value) = init_object.get(&key, avm, context) {
-                                let _ = object.set(&key, value, avm, context);
+                        *context.levels.get(&0).unwrap(),
+                    ),
+                );
+                fn initializer<'gc>(
+                    activation: &mut StackFrame<'_, 'gc>,
+                    context: &mut UpdateContext<'_, 'gc, '_>,
+                    this: &mut MovieClip<'gc>,
+                    init_object: Option<Object<'gc>>,
+                ) {
+                    let constructor = this.0.read().avm1_constructor.unwrap();
+                    if let Ok(prototype) = constructor
+                        .get("prototype", activation, context)
+                        .map(|v| v.coerce_to_object(activation, context))
+                    {
+                        let object: Object<'gc> = StageObject::for_display_object(
+                            context.gc_context,
+                            (*this).into(),
+                            Some(prototype),
+                        )
+                        .into();
+                        if let Some(init_object) = init_object {
+                            for key in init_object.get_keys(activation) {
+                                if let Ok(value) = init_object.get(&key, activation, context) {
+                                    let _ = object.set(&key, value, activation, context);
+                                }
                             }
                         }
+                        this.0.write(context.gc_context).object = Some(object);
+                        let _ = constructor.call(activation, context, object, None, &[]);
                     }
-                    self.0.write(context.gc_context).object = Some(object);
-                    let _ = constructor.call(avm, context, object, None, &[]);
-                    return;
                 }
+                avm.run_with_stack_frame(activation, context, |activation, context| {
+                    initializer(activation, context, self, init_object)
+                });
+                return;
             }
 
             let object = StageObject::for_display_object(
@@ -1064,11 +1106,22 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 Some(context.system_prototypes.movie_clip),
             );
             if let Some(init_object) = init_object {
-                for key in init_object.get_keys(avm) {
-                    if let Ok(value) = init_object.get(&key, avm, context) {
-                        let _ = object.set(&key, value, avm, context);
+                let activation = GcCell::allocate(
+                    context.gc_context,
+                    Activation::from_nothing(
+                        context.swf.version(),
+                        avm.global_object_cell(),
+                        context.gc_context,
+                        *context.levels.get(&0).unwrap(),
+                    ),
+                );
+                avm.run_with_stack_frame(activation, context, |activation, context| {
+                    for key in init_object.get_keys(activation) {
+                        if let Ok(value) = init_object.get(&key, activation, context) {
+                            let _ = object.set(&key, value, activation, context);
+                        }
                     }
-                }
+                });
             }
             let mut mc = self.0.write(context.gc_context);
             mc.object = Some(object.into());
@@ -1093,7 +1146,15 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             );
         }
 
-        self.bind_text_field_variables(avm, context);
+        // If this text field has a variable set, initialize text field binding.
+        avm.run_with_stack_frame_for_display_object(
+            (*self).into(),
+            context.swf.version(),
+            context,
+            |activation, context| {
+                self.bind_text_field_variables(activation, context);
+            },
+        );
     }
 
     fn object(&self) -> Value<'gc> {

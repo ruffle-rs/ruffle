@@ -4,7 +4,8 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::stack_frame::StackFrame;
+use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 use smallvec::alloc::borrow::Cow;
@@ -25,7 +26,12 @@ const DEFAULT_ORDERING: Ordering = Ordering::Equal;
 // Compare function used by sort and sortOn.
 type CompareFn<'a, 'gc> = Box<
     dyn 'a
-        + FnMut(&mut Avm1<'gc>, &mut UpdateContext<'_, 'gc, '_>, &Value<'gc>, &Value<'gc>) -> Ordering,
+        + FnMut(
+            &mut StackFrame<'_, 'gc>,
+            &mut UpdateContext<'_, 'gc, '_>,
+            &Value<'gc>,
+            &Value<'gc>,
+        ) -> Ordering,
 >;
 
 pub fn create_array_object<'gc>(
@@ -84,7 +90,7 @@ pub fn create_array_object<'gc>(
 
 /// Implements `Array`
 pub fn constructor<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -93,7 +99,7 @@ pub fn constructor<'gc>(
 
     if args.len() == 1 {
         let arg = args.get(0).unwrap();
-        if let Ok(length) = arg.coerce_to_f64(avm, context) {
+        if let Ok(length) = arg.coerce_to_f64(activation, context) {
             if length >= 0.0 {
                 this.set_length(context.gc_context, length as usize);
                 consumed = true;
@@ -119,7 +125,7 @@ pub fn constructor<'gc>(
 }
 
 pub fn push<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -140,7 +146,7 @@ pub fn push<'gc>(
 }
 
 pub fn unshift<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -165,7 +171,7 @@ pub fn unshift<'gc>(
 }
 
 pub fn shift<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -184,7 +190,7 @@ pub fn shift<'gc>(
     }
 
     this.delete_array_element(new_length, context.gc_context);
-    this.delete(avm, context.gc_context, &new_length.to_string());
+    this.delete(activation, context.gc_context, &new_length.to_string());
 
     this.set_length(context.gc_context, new_length);
 
@@ -192,7 +198,7 @@ pub fn shift<'gc>(
 }
 
 pub fn pop<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -206,7 +212,7 @@ pub fn pop<'gc>(
 
     let removed = this.array_element(new_length);
     this.delete_array_element(new_length, context.gc_context);
-    this.delete(avm, context.gc_context, &new_length.to_string());
+    this.delete(activation, context.gc_context, &new_length.to_string());
 
     this.set_length(context.gc_context, new_length);
 
@@ -214,7 +220,7 @@ pub fn pop<'gc>(
 }
 
 pub fn reverse<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -230,21 +236,21 @@ pub fn reverse<'gc>(
 }
 
 pub fn join<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let separator = args
         .get(0)
-        .and_then(|v| v.coerce_to_string(avm, context).ok())
+        .and_then(|v| v.coerce_to_string(activation, context).ok())
         .unwrap_or_else(|| Cow::Borrowed(","));
     let values: Vec<Value<'gc>> = this.array();
 
     Ok(values
         .iter()
         .map(|v| {
-            v.coerce_to_string(avm, context)
+            v.coerce_to_string(activation, context)
                 .unwrap_or_else(|_| Cow::Borrowed("undefined"))
         })
         .collect::<Vec<Cow<str>>>()
@@ -264,23 +270,23 @@ fn make_index_absolute(mut index: i32, length: usize) -> usize {
 }
 
 pub fn slice<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let start = args
         .get(0)
-        .and_then(|v| v.coerce_to_f64(avm, context).ok())
+        .and_then(|v| v.coerce_to_f64(activation, context).ok())
         .map(|v| make_index_absolute(v as i32, this.length()))
         .unwrap_or(0);
     let end = args
         .get(1)
-        .and_then(|v| v.coerce_to_f64(avm, context).ok())
+        .and_then(|v| v.coerce_to_f64(activation, context).ok())
         .map(|v| make_index_absolute(v as i32, this.length()))
         .unwrap_or_else(|| this.length());
 
-    let array = ScriptObject::array(context.gc_context, Some(avm.prototypes.array));
+    let array = ScriptObject::array(context.gc_context, Some(activation.avm().prototypes.array));
 
     if start < end {
         let length = end - start;
@@ -295,7 +301,7 @@ pub fn slice<'gc>(
 }
 
 pub fn splice<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -307,19 +313,19 @@ pub fn splice<'gc>(
     let old_length = this.length();
     let start = args
         .get(0)
-        .and_then(|v| v.coerce_to_f64(avm, context).ok())
+        .and_then(|v| v.coerce_to_f64(activation, context).ok())
         .map(|v| make_index_absolute(v as i32, old_length))
         .unwrap_or(0);
     let count = args
         .get(1)
-        .and_then(|v| v.coerce_to_f64(avm, context).ok())
+        .and_then(|v| v.coerce_to_f64(activation, context).ok())
         .map(|v| v as i32)
         .unwrap_or(old_length as i32);
     if count < 0 {
         return Ok(Value::Undefined.into());
     }
 
-    let removed = ScriptObject::array(context.gc_context, Some(avm.prototypes.array));
+    let removed = ScriptObject::array(context.gc_context, Some(activation.avm().prototypes.array));
     let to_remove = count.min(old_length as i32 - start as i32).max(0) as usize;
     let to_add = if args.len() > 2 { &args[2..] } else { &[] };
     let offset = to_remove as i32 - to_add.len() as i32;
@@ -358,7 +364,7 @@ pub fn splice<'gc>(
 
     for i in new_length..old_length {
         this.delete_array_element(i, context.gc_context);
-        this.delete(avm, context.gc_context, &i.to_string());
+        this.delete(activation, context.gc_context, &i.to_string());
     }
 
     this.set_length(context.gc_context, new_length);
@@ -367,17 +373,17 @@ pub fn splice<'gc>(
 }
 
 pub fn concat<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    let array = ScriptObject::array(context.gc_context, Some(avm.prototypes.array));
+    let array = ScriptObject::array(context.gc_context, Some(activation.avm().prototypes.array));
     let mut length = 0;
 
     for i in 0..this.length() {
         let old = this
-            .get(&i.to_string(), avm, context)
+            .get(&i.to_string(), activation, context)
             .unwrap_or(Value::Undefined);
         array.define_value(
             context.gc_context,
@@ -393,11 +399,11 @@ pub fn concat<'gc>(
 
         if let Value::Object(object) = arg {
             let object = *object;
-            if avm.prototypes.array.is_prototype_of(object) {
+            if activation.avm().prototypes.array.is_prototype_of(object) {
                 added = true;
                 for i in 0..object.length() {
                     let old = object
-                        .get(&i.to_string(), avm, context)
+                        .get(&i.to_string(), activation, context)
                         .unwrap_or(Value::Undefined);
                     array.define_value(
                         context.gc_context,
@@ -427,16 +433,16 @@ pub fn concat<'gc>(
 }
 
 pub fn to_string<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    join(avm, context, this, &[])
+    join(activation, context, this, &[])
 }
 
 fn sort<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -466,10 +472,11 @@ fn sort<'gc>(
     };
 
     let compare_fn: CompareFn<'_, 'gc> = if let Some(f) = compare_fn {
-        let this = crate::avm1::value_object::ValueObject::boxed(avm, context, Value::Undefined);
+        let this =
+            crate::avm1::value_object::ValueObject::boxed(activation, context, Value::Undefined);
         // this is undefined in the compare function
-        Box::new(move |avm, context, a: &Value<'gc>, b: &Value<'gc>| {
-            sort_compare_custom(avm, context, this, a, b, &f)
+        Box::new(move |activation, context, a: &Value<'gc>, b: &Value<'gc>| {
+            sort_compare_custom(activation, context, this, a, b, &f)
         })
     } else if numeric {
         Box::new(sort_compare_numeric(string_compare_fn))
@@ -477,11 +484,11 @@ fn sort<'gc>(
         Box::new(string_compare_fn)
     };
 
-    sort_with_function(avm, context, this, compare_fn, flags)
+    sort_with_function(activation, context, this, compare_fn, flags)
 }
 
 fn sort_on<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -494,13 +501,15 @@ fn sort_on<'gc>(
             // Array of field names.
             let mut field_names = vec![];
             for name in array.array() {
-                field_names.push(name.coerce_to_string(avm, context)?.to_string());
+                field_names.push(name.coerce_to_string(activation, context)?.to_string());
             }
             field_names
         }
         Some(field_name) => {
             // Single field.
-            vec![field_name.coerce_to_string(avm, context)?.to_string()]
+            vec![field_name
+                .coerce_to_string(activation, context)?
+                .to_string()]
         }
         None => return Ok(Value::Undefined.into()),
     };
@@ -516,7 +525,7 @@ fn sort_on<'gc>(
             if array.length() == fields.len() {
                 let mut flags = vec![];
                 for flag in array.array() {
-                    flags.push(flag.coerce_to_i32(avm, context)?);
+                    flags.push(flag.coerce_to_i32(activation, context)?);
                 }
                 flags
             } else {
@@ -526,7 +535,7 @@ fn sort_on<'gc>(
         }
         Some(flags) => {
             // Single field.
-            let flags = flags.coerce_to_i32(avm, context)?;
+            let flags = flags.coerce_to_i32(activation, context)?;
             std::iter::repeat(flags).take(fields.len()).collect()
         }
         None => std::iter::repeat(0).take(fields.len()).collect(),
@@ -558,15 +567,15 @@ fn sort_on<'gc>(
 
     let compare_fn = sort_compare_fields(fields, field_compare_fns);
 
-    sort_with_function(avm, context, this, compare_fn, main_flags)
+    sort_with_function(activation, context, this, compare_fn, main_flags)
 }
 
 fn sort_with_function<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     mut compare_fn: impl FnMut(
-        &mut Avm1<'gc>,
+        &mut StackFrame<'_, 'gc>,
         &mut UpdateContext<'_, 'gc, '_>,
         &Value<'gc>,
         &Value<'gc>,
@@ -575,7 +584,7 @@ fn sort_with_function<'gc>(
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let length = this.length();
     let mut values: Vec<(usize, Value<'gc>)> = this.array().into_iter().enumerate().collect();
-    let array_proto = avm.prototypes.array;
+    let array_proto = activation.avm().prototypes.array;
 
     let descending = (flags & DESCENDING) != 0;
     let unique_sort = (flags & UNIQUE_SORT) != 0;
@@ -583,7 +592,7 @@ fn sort_with_function<'gc>(
 
     let mut is_unique = true;
     values.sort_unstable_by(|a, b| {
-        let mut ret = compare_fn(avm, context, &a.1, &b.1);
+        let mut ret = compare_fn(activation, context, &a.1, &b.1);
         if descending {
             ret = ret.reverse();
         }
@@ -710,13 +719,13 @@ pub fn create_proto<'gc>(
 }
 
 fn sort_compare_string<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     a: &Value<'gc>,
     b: &Value<'gc>,
 ) -> Ordering {
-    let a_str = a.coerce_to_string(avm, context);
-    let b_str = b.coerce_to_string(avm, context);
+    let a_str = a.coerce_to_string(activation, context);
+    let b_str = b.coerce_to_string(activation, context);
     // TODO: Handle errors.
     if let (Ok(a_str), Ok(b_str)) = (a_str, b_str) {
         a_str.cmp(&b_str)
@@ -726,13 +735,13 @@ fn sort_compare_string<'gc>(
 }
 
 fn sort_compare_string_ignore_case<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     a: &Value<'gc>,
     b: &Value<'gc>,
 ) -> Ordering {
-    let a_str = a.coerce_to_string(avm, context);
-    let b_str = b.coerce_to_string(avm, context);
+    let a_str = a.coerce_to_string(activation, context);
+    let b_str = b.coerce_to_string(activation, context);
     // TODO: Handle errors.
     if let (Ok(a_str), Ok(b_str)) = (a_str, b_str) {
         crate::string_utils::swf_string_cmp_ignore_case(&a_str, &b_str)
@@ -743,18 +752,22 @@ fn sort_compare_string_ignore_case<'gc>(
 
 fn sort_compare_numeric<'gc>(
     mut string_compare_fn: impl FnMut(
-        &mut Avm1<'gc>,
+        &mut StackFrame<'_, 'gc>,
         &mut UpdateContext<'_, 'gc, '_>,
         &Value<'gc>,
         &Value<'gc>,
     ) -> Ordering,
-) -> impl FnMut(&mut Avm1<'gc>, &mut UpdateContext<'_, 'gc, '_>, &Value<'gc>, &Value<'gc>) -> Ordering
-{
-    move |avm, context, a, b| {
+) -> impl FnMut(
+    &mut StackFrame<'_, 'gc>,
+    &mut UpdateContext<'_, 'gc, '_>,
+    &Value<'gc>,
+    &Value<'gc>,
+) -> Ordering {
+    move |activation, context, a, b| {
         if let (Value::Number(a), Value::Number(b)) = (a, b) {
             a.partial_cmp(b).unwrap_or(DEFAULT_ORDERING)
         } else {
-            string_compare_fn(avm, context, a, b)
+            string_compare_fn(activation, context, a, b)
         }
     }
 }
@@ -762,17 +775,22 @@ fn sort_compare_numeric<'gc>(
 fn sort_compare_fields<'a, 'gc: 'a>(
     field_names: Vec<String>,
     mut compare_fns: Vec<CompareFn<'a, 'gc>>,
-) -> impl 'a + FnMut(&mut Avm1<'gc>, &mut UpdateContext<'_, 'gc, '_>, &Value<'gc>, &Value<'gc>) -> Ordering
-{
+) -> impl 'a
+       + FnMut(
+    &mut StackFrame<'_, 'gc>,
+    &mut UpdateContext<'_, 'gc, '_>,
+    &Value<'gc>,
+    &Value<'gc>,
+) -> Ordering {
     use crate::avm1::value_object::ValueObject;
-    move |avm, context, a, b| {
+    move |activation, context, a, b| {
         for (field_name, compare_fn) in field_names.iter().zip(compare_fns.iter_mut()) {
-            let a_object = ValueObject::boxed(avm, context, a.clone());
-            let b_object = ValueObject::boxed(avm, context, b.clone());
-            let a_prop = a_object.get(field_name, avm, context).unwrap();
-            let b_prop = b_object.get(field_name, avm, context).unwrap();
+            let a_object = ValueObject::boxed(activation, context, a.clone());
+            let b_object = ValueObject::boxed(activation, context, b.clone());
+            let a_prop = a_object.get(field_name, activation, context).unwrap();
+            let b_prop = b_object.get(field_name, activation, context).unwrap();
 
-            let result = compare_fn(avm, context, &a_prop, &b_prop);
+            let result = compare_fn(activation, context, &a_prop, &b_prop);
             if result != Ordering::Equal {
                 return result;
             }
@@ -784,7 +802,7 @@ fn sort_compare_fields<'a, 'gc: 'a>(
 
 // Returning an impl Trait here doesn't work yet because of https://github.com/rust-lang/rust/issues/65805 (?)
 fn sort_compare_custom<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     a: &Value<'gc>,
@@ -794,7 +812,7 @@ fn sort_compare_custom<'gc>(
     // TODO: Handle errors.
     let args = [a.clone(), b.clone()];
     let ret = compare_fn
-        .call(avm, context, this, None, &args)
+        .call(activation, context, this, None, &args)
         .unwrap_or(Value::Undefined);
     match ret {
         Value::Number(n) if n > 0.0 => Ordering::Greater,

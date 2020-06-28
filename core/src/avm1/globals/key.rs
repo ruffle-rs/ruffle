@@ -1,21 +1,21 @@
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Object, ScriptObject, TObject, UpdateContext, Value};
-
+use crate::avm1::stack_frame::StackFrame;
+use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::events::KeyCode;
 use gc_arena::MutationContext;
 use std::convert::TryFrom;
 
 pub fn is_down<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if let Some(key) = args
         .get(0)
-        .and_then(|v| v.coerce_to_f64(avm, context).ok())
+        .and_then(|v| v.coerce_to_f64(activation, context).ok())
         .and_then(|k| KeyCode::try_from(k as u8).ok())
     {
         Ok(context.input.is_key_down(key).into())
@@ -25,7 +25,7 @@ pub fn is_down<'gc>(
 }
 
 pub fn get_code<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],

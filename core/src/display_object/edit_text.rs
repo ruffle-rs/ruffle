@@ -1,5 +1,6 @@
 //! `EditText` display object and support code.
 use crate::avm1::globals::text_field::attach_virtual_properties;
+use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Avm1, Object, StageObject, TObject, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
@@ -502,7 +503,7 @@ impl<'gc> EditText<'gc> {
     pub fn set_variable(
         self,
         variable: Option<String>,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         // Clear previous binding.
@@ -526,7 +527,7 @@ impl<'gc> EditText<'gc> {
         let _ = self.set_text(text, context);
 
         self.0.write(context.gc_context).variable = variable;
-        self.try_bind_text_field_variable(avm, context, true);
+        self.try_bind_text_field_variable(activation, context, true);
     }
 
     /// Construct a base text transform for this `EditText`, to be used for
@@ -698,7 +699,7 @@ impl<'gc> EditText<'gc> {
     /// This is called when the text field is created, and, if the text field is in the unbound list, anytime a display object is created.
     pub fn try_bind_text_field_variable(
         self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         set_initial_value: bool,
     ) -> bool {
@@ -714,42 +715,46 @@ impl<'gc> EditText<'gc> {
 
             let parent = self.parent().unwrap();
 
-            avm.insert_stack_frame_for_display_object(
+            activation.avm().run_with_stack_frame_for_display_object(
                 parent,
                 context.swf.header().version,
                 context,
-            );
+                |activation, context| {
+                    if let Ok(Some((object, property))) =
+                        activation.resolve_text_field_variable_path(context, parent, &variable)
+                    {
+                        // If this text field was just created, we immediately propagate the text to the variable (or vice versa).
+                        if set_initial_value {
+                            // If the property exists on the object, we overwrite the text with the property's value.
+                            if object.has_property(activation, context, property) {
+                                let value = object.get(property, activation, context).unwrap();
+                                let _ = self.set_text(
+                                    value
+                                        .coerce_to_string(activation, context)
+                                        .unwrap_or_default()
+                                        .into_owned(),
+                                    context,
+                                );
+                            } else {
+                                // Otherwise, we initialize the proprty with the text field's text.
+                                let _ =
+                                    object.set(property, self.text().into(), activation, context);
+                            }
+                        }
 
-            if let Ok(Some((object, property))) =
-                avm.resolve_text_field_variable_path(context, parent, &variable)
-            {
-                // If this text field was just created, we immediately propagate the text to the variable (or vice versa).
-                if set_initial_value {
-                    // If the property exists on the object, we overwrite the text with the property's value.
-                    if object.has_property(avm, context, property) {
-                        let value = object.get(property, avm, context).unwrap();
-                        let _ = self.set_text(
-                            value
-                                .coerce_to_string(avm, context)
-                                .unwrap_or_default()
-                                .into_owned(),
-                            context,
-                        );
-                    } else {
-                        // Otherwise, we initialize the proprty with the text field's text.
-                        let _ = object.set(property, self.text().into(), avm, context);
+                        if let Some(stage_object) = object.as_stage_object() {
+                            self.0.write(context.gc_context).bound_stage_object =
+                                Some(stage_object);
+                            stage_object.register_text_field_binding(
+                                context.gc_context,
+                                self,
+                                property,
+                            );
+                            bound = true;
+                        }
                     }
-                }
-
-                if let Some(stage_object) = object.as_stage_object() {
-                    self.0.write(context.gc_context).bound_stage_object = Some(stage_object);
-                    stage_object.register_text_field_binding(context.gc_context, self, property);
-                    bound = true;
-                }
-            }
-
-            let frame = avm.current_stack_frame().unwrap();
-            let _ = avm.run_activation(context, frame);
+                },
+            );
         }
 
         bound
@@ -766,7 +771,7 @@ impl<'gc> EditText<'gc> {
     ///
     pub fn propagate_text_binding(
         self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         if !self.0.read().firing_variable_binding {
@@ -777,7 +782,7 @@ impl<'gc> EditText<'gc> {
                 let variable_path = variable.to_string();
                 drop(variable);
 
-                if let Ok(Some((object, property))) = avm.resolve_text_field_variable_path(
+                if let Ok(Some((object, property))) = activation.resolve_text_field_variable_path(
                     context,
                     self.parent().unwrap(),
                     &variable_path,
@@ -792,15 +797,14 @@ impl<'gc> EditText<'gc> {
 
                     // Note that this can call virtual setters, even though the opposite direction won't work
                     // (virtual property changes do not affect the text field)
-                    avm.insert_stack_frame_for_display_object(
+                    activation.avm().run_with_stack_frame_for_display_object(
                         self.parent().unwrap(),
                         context.swf.header().version,
                         context,
+                        |activation, context| {
+                            let _ = object.set(property, text.into(), activation, context);
+                        },
                     );
-                    let _ = object.set(property, text.into(), avm, context);
-
-                    let frame = avm.current_stack_frame().unwrap();
-                    let _ = avm.run_activation(context, frame);
                 }
             }
             self.0.write(context.gc_context).firing_variable_binding = false;
@@ -864,12 +868,18 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         drop(text);
 
         // If this text field has a variable set, initialize text field binding.
-        if !self.try_bind_text_field_variable(avm, context, true) {
-            context.unbound_text_fields.push(*self);
-        }
-
-        // People can bind to properties of TextFields the same as other display objects.
-        self.bind_text_field_variables(avm, context);
+        avm.run_with_stack_frame_for_display_object(
+            (*self).into(),
+            context.swf.version(),
+            context,
+            |activation, context| {
+                if !self.try_bind_text_field_variable(activation, context, true) {
+                    context.unbound_text_fields.push(*self);
+                }
+                // People can bind to properties of TextFields the same as other display objects.
+                self.bind_text_field_variables(activation, context);
+            },
+        );
     }
 
     fn object(&self) -> Value<'gc> {

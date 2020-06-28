@@ -5,7 +5,8 @@ use crate::avm1::function::Executable;
 use crate::avm1::object::{ObjectPtr, TObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Object, ScriptObject, UpdateContext, Value};
+use crate::avm1::stack_frame::StackFrame;
+use crate::avm1::{Object, ScriptObject, UpdateContext, Value};
 use crate::xml::{XMLName, XMLNode};
 use enumset::EnumSet;
 use gc_arena::{Collect, MutationContext};
@@ -60,7 +61,7 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
     fn get_local(
         &self,
         name: &str,
-        _avm: &mut Avm1<'gc>,
+        _activation: &mut StackFrame<'_, 'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -75,61 +76,63 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         self.node().set_attribute_value(
             context.gc_context,
             &XMLName::from_str(name),
-            &value.coerce_to_string(avm, context)?,
+            &value.coerce_to_string(activation, context)?,
         );
-        self.base().set(name, value, avm, context)
+        self.base().set(name, value, activation, context)
     }
 
     fn call(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.base().call(avm, context, this, base_proto, args)
+        self.base()
+            .call(activation, context, this, base_proto, args)
     }
 
     fn call_setter(
         &self,
         name: &str,
         value: Value<'gc>,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-        self.base().call_setter(name, value, avm, context, this)
+        self.base()
+            .call_setter(name, value, activation, context, this)
     }
 
     #[allow(clippy::new_ret_no_self)]
     fn new(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         //TODO: `new xmlnode.attributes()` returns undefined, not an object
         log::warn!("Cannot create new XML Attributes object");
-        Ok(Value::Undefined.coerce_to_object(avm, context))
+        Ok(Value::Undefined.coerce_to_object(activation, context))
     }
 
     fn delete(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
     ) -> bool {
         self.node()
             .delete_attribute(gc_context, &XMLName::from_str(name));
-        self.base().delete(avm, gc_context, name)
+        self.base().delete(activation, gc_context, name)
     }
 
     fn add_property(
@@ -146,7 +149,7 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
 
     fn add_property_with_case(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
         get: Executable<'gc>,
@@ -154,7 +157,7 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
         attributes: EnumSet<Attribute>,
     ) {
         self.base()
-            .add_property_with_case(avm, gc_context, name, get, set, attributes)
+            .add_property_with_case(activation, gc_context, name, get, set, attributes)
     }
 
     fn define_value(
@@ -189,16 +192,16 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
 
     fn has_property(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
-        self.base().has_property(avm, context, name)
+        self.base().has_property(activation, context, name)
     }
 
     fn has_own_property(
         &self,
-        _avm: &mut Avm1<'gc>,
+        _activation: &mut StackFrame<'_, 'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
@@ -209,23 +212,23 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
 
     fn has_own_virtual(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
-        self.base().has_own_virtual(avm, context, name)
+        self.base().has_own_virtual(activation, context, name)
     }
 
-    fn is_property_overwritable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
-        self.base().is_property_overwritable(avm, name)
+    fn is_property_overwritable(&self, activation: &mut StackFrame<'_, 'gc>, name: &str) -> bool {
+        self.base().is_property_overwritable(activation, name)
     }
 
-    fn is_property_enumerable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
-        self.base().is_property_enumerable(avm, name)
+    fn is_property_enumerable(&self, activation: &mut StackFrame<'_, 'gc>, name: &str) -> bool {
+        self.base().is_property_enumerable(activation, name)
     }
 
-    fn get_keys(&self, avm: &mut Avm1<'gc>) -> Vec<String> {
-        self.base().get_keys(avm)
+    fn get_keys(&self, activation: &mut StackFrame<'_, 'gc>) -> Vec<String> {
+        self.base().get_keys(activation)
     }
 
     fn as_string(&self) -> Cow<str> {

@@ -1,4 +1,5 @@
-use crate::avm1::{Avm1, Object, ObjectPtr, TObject, Value};
+use crate::avm1::stack_frame::StackFrame;
+use crate::avm1::{Object, ObjectPtr, TObject, Value};
 use crate::context::UpdateContext;
 
 #[allow(dead_code)]
@@ -23,11 +24,11 @@ impl<'a> VariableDumper<'a> {
     pub fn dump<'gc>(
         value: &Value<'gc>,
         indent: &str,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> String {
         let mut dumper = VariableDumper::new(indent);
-        dumper.print_value(value, avm, context);
+        dumper.print_value(value, activation, context);
         dumper.output
     }
 
@@ -84,7 +85,7 @@ impl<'a> VariableDumper<'a> {
     pub fn print_object<'gc>(
         &mut self,
         object: &Object<'gc>,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         let (id, new) = self.object_id(object);
@@ -93,7 +94,7 @@ impl<'a> VariableDumper<'a> {
         self.output.push_str("]");
 
         if new {
-            self.print_properties(object, avm, context);
+            self.print_properties(object, activation, context);
         }
     }
 
@@ -101,12 +102,12 @@ impl<'a> VariableDumper<'a> {
         &mut self,
         object: &Object<'gc>,
         key: &str,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
-        match object.get(&key, avm, context) {
+        match object.get(&key, activation, context) {
             Ok(value) => {
-                self.print_value(&value, avm, context);
+                self.print_value(&value, activation, context);
             }
             Err(e) => {
                 self.output.push_str("Error: \"");
@@ -119,10 +120,10 @@ impl<'a> VariableDumper<'a> {
     pub fn print_properties<'gc>(
         &mut self,
         object: &Object<'gc>,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
-        let keys = object.get_keys(avm);
+        let keys = object.get_keys(activation);
         if keys.is_empty() {
             self.output.push_str(" {}");
         } else {
@@ -133,7 +134,7 @@ impl<'a> VariableDumper<'a> {
                 self.indent();
                 self.output.push_str(&key);
                 self.output.push_str(": ");
-                self.print_property(object, &key, avm, context);
+                self.print_property(object, &key, activation, context);
                 self.output.push_str("\n");
             }
 
@@ -146,7 +147,7 @@ impl<'a> VariableDumper<'a> {
     pub fn print_value<'gc>(
         &mut self,
         value: &Value<'gc>,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         match value {
@@ -158,7 +159,7 @@ impl<'a> VariableDumper<'a> {
                 self.print_string(value);
             }
             Value::Object(object) => {
-                self.print_object(object, avm, context);
+                self.print_object(object, activation, context);
             }
         }
     }
@@ -168,10 +169,10 @@ impl<'a> VariableDumper<'a> {
         header: &str,
         name: &str,
         object: &Object<'gc>,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
-        let keys = object.get_keys(avm);
+        let keys = object.get_keys(activation);
         if keys.is_empty() {
             return;
         }
@@ -183,7 +184,7 @@ impl<'a> VariableDumper<'a> {
         for key in keys.into_iter() {
             self.output.push_str(&format!("{}.{}", name, key));
             self.output.push_str(" = ");
-            self.print_property(object, &key, avm, context);
+            self.print_property(object, &key, activation, context);
             self.output.push_str("\n");
         }
 
@@ -203,7 +204,7 @@ mod tests {
     use enumset::EnumSet;
 
     fn throw_error<'gc>(
-        _avm: &mut Avm1<'gc>,
+        _activation: &mut StackFrame<'_, 'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
         _args: &[Value<'gc>],
@@ -213,9 +214,9 @@ mod tests {
 
     #[test]
     fn dump_undefined() {
-        with_avm(19, |avm, context, _root| -> Result<(), Error> {
+        with_avm(19, |activation, context, _root| -> Result<(), Error> {
             assert_eq!(
-                VariableDumper::dump(&Value::Undefined, " ", avm, context),
+                VariableDumper::dump(&Value::Undefined, " ", activation, context),
                 "undefined"
             );
             Ok(())
@@ -224,9 +225,9 @@ mod tests {
 
     #[test]
     fn dump_null() {
-        with_avm(19, |avm, context, _root| -> Result<(), Error> {
+        with_avm(19, |activation, context, _root| -> Result<(), Error> {
             assert_eq!(
-                VariableDumper::dump(&Value::Null, " ", avm, context),
+                VariableDumper::dump(&Value::Null, " ", activation, context),
                 "null"
             );
             Ok(())
@@ -235,13 +236,13 @@ mod tests {
 
     #[test]
     fn dump_bool() {
-        with_avm(19, |avm, context, _root| -> Result<(), Error> {
+        with_avm(19, |activation, context, _root| -> Result<(), Error> {
             assert_eq!(
-                VariableDumper::dump(&Value::Bool(true), " ", avm, context),
+                VariableDumper::dump(&Value::Bool(true), " ", activation, context),
                 "true"
             );
             assert_eq!(
-                VariableDumper::dump(&Value::Bool(false), " ", avm, context),
+                VariableDumper::dump(&Value::Bool(false), " ", activation, context),
                 "false"
             );
             Ok(())
@@ -250,13 +251,13 @@ mod tests {
 
     #[test]
     fn dump_number() {
-        with_avm(19, |avm, context, _root| -> Result<(), Error> {
+        with_avm(19, |activation, context, _root| -> Result<(), Error> {
             assert_eq!(
-                VariableDumper::dump(&Value::Number(1000.0), " ", avm, context),
+                VariableDumper::dump(&Value::Number(1000.0), " ", activation, context),
                 "1000"
             );
             assert_eq!(
-                VariableDumper::dump(&Value::Number(-0.05), " ", avm, context),
+                VariableDumper::dump(&Value::Number(-0.05), " ", activation, context),
                 "-0.05"
             );
             Ok(())
@@ -265,13 +266,18 @@ mod tests {
 
     #[test]
     fn dump_string() {
-        with_avm(19, |avm, context, _root| -> Result<(), Error> {
+        with_avm(19, |activation, context, _root| -> Result<(), Error> {
             assert_eq!(
-                VariableDumper::dump(&Value::String("".to_string()), " ", avm, context),
+                VariableDumper::dump(&Value::String("".to_string()), " ", activation, context),
                 "\"\""
             );
             assert_eq!(
-                VariableDumper::dump(&Value::String("HELLO WORLD".to_string()), " ", avm, context),
+                VariableDumper::dump(
+                    &Value::String("HELLO WORLD".to_string()),
+                    " ",
+                    activation,
+                    context
+                ),
                 "\"HELLO WORLD\""
             );
             assert_eq!(
@@ -280,7 +286,7 @@ mod tests {
                         "Escape \"this\" string\nplease! \u{0008}\u{000C}\n\r\t\"\\".to_string()
                     ),
                     " ",
-                    avm,
+                    activation,
                     context
                 ),
                 "\"Escape \\\"this\\\" string\\nplease! \\b\\f\\n\\r\\t\\\"\\\\\""
@@ -291,10 +297,10 @@ mod tests {
 
     #[test]
     fn dump_empty_object() {
-        with_avm(19, |avm, context, _root| -> Result<(), Error> {
+        with_avm(19, |activation, context, _root| -> Result<(), Error> {
             let object = ScriptObject::object(context.gc_context, None);
             assert_eq!(
-                VariableDumper::dump(&object.into(), " ", avm, context),
+                VariableDumper::dump(&object.into(), " ", activation, context),
                 "[object #0] {}"
             );
             Ok(())
@@ -303,16 +309,21 @@ mod tests {
 
     #[test]
     fn dump_object() {
-        with_avm(19, |avm, context, _root| -> Result<(), Error> {
+        with_avm(19, |activation, context, _root| -> Result<(), Error> {
             let object = ScriptObject::object(context.gc_context, None);
             let child = ScriptObject::object(context.gc_context, None);
-            object.set("self", object.into(), avm, context)?;
-            object.set("test", Value::String("value".to_string()), avm, context)?;
-            object.set("child", child.into(), avm, context)?;
-            child.set("parent", object.into(), avm, context)?;
-            child.set("age", Value::Number(6.0), avm, context)?;
+            object.set("self", object.into(), activation, context)?;
+            object.set(
+                "test",
+                Value::String("value".to_string()),
+                activation,
+                context,
+            )?;
+            object.set("child", child.into(), activation, context)?;
+            child.set("parent", object.into(), activation, context)?;
+            child.set("age", Value::Number(6.0), activation, context)?;
             assert_eq!(
-                VariableDumper::dump(&object.into(), " ", avm, context),
+                VariableDumper::dump(&object.into(), " ", activation, context),
                 "[object #0] {\n child: [object #1] {\n  age: 6\n  parent: [object #0]\n }\n test: \"value\"\n self: [object #0]\n}",
             );
             Ok(())
@@ -321,7 +332,7 @@ mod tests {
 
     #[test]
     fn dump_object_with_error() {
-        with_avm(19, |avm, context, _root| -> Result<(), Error> {
+        with_avm(19, |activation, context, _root| -> Result<(), Error> {
             let object = ScriptObject::object(context.gc_context, None);
             object.add_property(
                 context.gc_context,
@@ -331,7 +342,7 @@ mod tests {
                 EnumSet::empty(),
             );
             assert_eq!(
-                VariableDumper::dump(&object.into(), " ", avm, context),
+                VariableDumper::dump(&object.into(), " ", activation, context),
                 "[object #0] {\n broken_value: Error: \"Prototype recursion limit has been exceeded\"\n}"
             );
             Ok(())
@@ -340,16 +351,21 @@ mod tests {
 
     #[test]
     fn dump_variables() {
-        with_avm(19, |avm, context, _root| -> Result<(), Error> {
+        with_avm(19, |activation, context, _root| -> Result<(), Error> {
             let object = ScriptObject::object(context.gc_context, None);
             let child = ScriptObject::object(context.gc_context, None);
-            object.set("self", object.into(), avm, context)?;
-            object.set("test", Value::String("value".to_string()), avm, context)?;
-            object.set("child", child.into(), avm, context)?;
-            child.set("parent", object.into(), avm, context)?;
-            child.set("age", Value::Number(6.0), avm, context)?;
+            object.set("self", object.into(), activation, context)?;
+            object.set(
+                "test",
+                Value::String("value".to_string()),
+                activation,
+                context,
+            )?;
+            object.set("child", child.into(), activation, context)?;
+            child.set("parent", object.into(), activation, context)?;
+            child.set("age", Value::Number(6.0), activation, context)?;
             let mut dumper = VariableDumper::new(" ");
-            dumper.print_variables("Variables:", "object", &object.into(), avm, context);
+            dumper.print_variables("Variables:", "object", &object.into(), activation, context);
             assert_eq!(
                 dumper.output,
                 "Variables:\nobject.child = [object #0] {\n  age: 6\n  parent: [object #1] {\n   child: [object #0]\n   test: \"value\"\n   self: [object #1]\n  }\n }\nobject.test = \"value\"\nobject.self = [object #1]\n\n"

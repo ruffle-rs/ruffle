@@ -3,7 +3,8 @@
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Object, ScriptObject, TObject, Value};
+use crate::avm1::stack_frame::StackFrame;
+use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
@@ -11,36 +12,36 @@ use swf::{Matrix, Twips};
 
 pub fn value_to_matrix<'gc>(
     value: Value<'gc>,
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Matrix, Error<'gc>> {
     let a = value
-        .coerce_to_object(avm, context)
-        .get("a", avm, context)?
-        .coerce_to_f64(avm, context)? as f32;
+        .coerce_to_object(activation, context)
+        .get("a", activation, context)?
+        .coerce_to_f64(activation, context)? as f32;
     let b = value
-        .coerce_to_object(avm, context)
-        .get("b", avm, context)?
-        .coerce_to_f64(avm, context)? as f32;
+        .coerce_to_object(activation, context)
+        .get("b", activation, context)?
+        .coerce_to_f64(activation, context)? as f32;
     let c = value
-        .coerce_to_object(avm, context)
-        .get("c", avm, context)?
-        .coerce_to_f64(avm, context)? as f32;
+        .coerce_to_object(activation, context)
+        .get("c", activation, context)?
+        .coerce_to_f64(activation, context)? as f32;
     let d = value
-        .coerce_to_object(avm, context)
-        .get("d", avm, context)?
-        .coerce_to_f64(avm, context)? as f32;
+        .coerce_to_object(activation, context)
+        .get("d", activation, context)?
+        .coerce_to_f64(activation, context)? as f32;
     let tx = Twips::from_pixels(
         value
-            .coerce_to_object(avm, context)
-            .get("tx", avm, context)?
-            .coerce_to_f64(avm, context)?,
+            .coerce_to_object(activation, context)
+            .get("tx", activation, context)?
+            .coerce_to_f64(activation, context)?,
     );
     let ty = Twips::from_pixels(
         value
-            .coerce_to_object(avm, context)
-            .get("ty", avm, context)?
-            .coerce_to_f64(avm, context)?,
+            .coerce_to_object(activation, context)
+            .get("ty", activation, context)?
+            .coerce_to_f64(activation, context)?,
     );
 
     Ok(Matrix { a, b, c, d, tx, ty })
@@ -48,19 +49,29 @@ pub fn value_to_matrix<'gc>(
 
 pub fn gradient_object_to_matrix<'gc>(
     object: Object<'gc>,
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Matrix, Error<'gc>> {
     if object
-        .get("matrixType", avm, context)?
-        .coerce_to_string(avm, context)?
+        .get("matrixType", activation, context)?
+        .coerce_to_string(activation, context)?
         == "box"
     {
-        let width = object.get("w", avm, context)?.coerce_to_f64(avm, context)?;
-        let height = object.get("h", avm, context)?.coerce_to_f64(avm, context)?;
-        let rotation = object.get("r", avm, context)?.coerce_to_f64(avm, context)?;
-        let tx = object.get("x", avm, context)?.coerce_to_f64(avm, context)?;
-        let ty = object.get("y", avm, context)?.coerce_to_f64(avm, context)?;
+        let width = object
+            .get("w", activation, context)?
+            .coerce_to_f64(activation, context)?;
+        let height = object
+            .get("h", activation, context)?
+            .coerce_to_f64(activation, context)?;
+        let rotation = object
+            .get("r", activation, context)?
+            .coerce_to_f64(activation, context)?;
+        let tx = object
+            .get("x", activation, context)?
+            .coerce_to_f64(activation, context)?;
+        let ty = object
+            .get("y", activation, context)?
+            .coerce_to_f64(activation, context)?;
         Ok(Matrix::create_gradient_box(
             width as f32,
             height as f32,
@@ -70,28 +81,36 @@ pub fn gradient_object_to_matrix<'gc>(
         ))
     } else {
         // TODO: You can apparently pass a 3x3 matrix here. Did anybody actually? How does it work?
-        object_to_matrix(object, avm, context)
+        object_to_matrix(object, activation, context)
     }
 }
 
 pub fn object_to_matrix<'gc>(
     object: Object<'gc>,
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Matrix, Error<'gc>> {
-    let a = object.get("a", avm, context)?.coerce_to_f64(avm, context)? as f32;
-    let b = object.get("b", avm, context)?.coerce_to_f64(avm, context)? as f32;
-    let c = object.get("c", avm, context)?.coerce_to_f64(avm, context)? as f32;
-    let d = object.get("d", avm, context)?.coerce_to_f64(avm, context)? as f32;
+    let a = object
+        .get("a", activation, context)?
+        .coerce_to_f64(activation, context)? as f32;
+    let b = object
+        .get("b", activation, context)?
+        .coerce_to_f64(activation, context)? as f32;
+    let c = object
+        .get("c", activation, context)?
+        .coerce_to_f64(activation, context)? as f32;
+    let d = object
+        .get("d", activation, context)?
+        .coerce_to_f64(activation, context)? as f32;
     let tx = Twips::from_pixels(
         object
-            .get("tx", avm, context)?
-            .coerce_to_f64(avm, context)?,
+            .get("tx", activation, context)?
+            .coerce_to_f64(activation, context)?,
     );
     let ty = Twips::from_pixels(
         object
-            .get("ty", avm, context)?
-            .coerce_to_f64(avm, context)?,
+            .get("ty", activation, context)?
+            .coerce_to_f64(activation, context)?,
     );
 
     Ok(Matrix { a, b, c, d, tx, ty })
@@ -101,7 +120,7 @@ pub fn object_to_matrix<'gc>(
 #[allow(dead_code)]
 pub fn matrix_to_object<'gc>(
     matrix: Matrix,
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let proto = context.system_prototypes.matrix;
@@ -113,52 +132,52 @@ pub fn matrix_to_object<'gc>(
         matrix.tx.to_pixels().into(),
         matrix.ty.to_pixels().into(),
     ];
-    let object = proto.new(avm, context, proto, &args)?;
-    let _ = constructor(avm, context, object, &args)?;
+    let object = proto.new(activation, context, proto, &args)?;
+    let _ = constructor(activation, context, object, &args)?;
     Ok(object)
 }
 
 pub fn apply_matrix_to_object<'gc>(
     matrix: Matrix,
     object: Object<'gc>,
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<(), Error<'gc>> {
-    object.set("a", matrix.a.into(), avm, context)?;
-    object.set("b", matrix.b.into(), avm, context)?;
-    object.set("c", matrix.c.into(), avm, context)?;
-    object.set("d", matrix.d.into(), avm, context)?;
-    object.set("tx", matrix.tx.to_pixels().into(), avm, context)?;
-    object.set("ty", matrix.ty.to_pixels().into(), avm, context)?;
+    object.set("a", matrix.a.into(), activation, context)?;
+    object.set("b", matrix.b.into(), activation, context)?;
+    object.set("c", matrix.c.into(), activation, context)?;
+    object.set("d", matrix.d.into(), activation, context)?;
+    object.set("tx", matrix.tx.to_pixels().into(), activation, context)?;
+    object.set("ty", matrix.ty.to_pixels().into(), activation, context)?;
     Ok(())
 }
 
 fn constructor<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
     if args.is_empty() {
-        apply_matrix_to_object(Matrix::identity(), this, avm, context)?;
+        apply_matrix_to_object(Matrix::identity(), this, activation, context)?;
     } else {
         if let Some(a) = args.get(0) {
-            this.set("a", a.clone(), avm, context)?;
+            this.set("a", a.clone(), activation, context)?;
         }
         if let Some(b) = args.get(1) {
-            this.set("b", b.clone(), avm, context)?;
+            this.set("b", b.clone(), activation, context)?;
         }
         if let Some(c) = args.get(2) {
-            this.set("c", c.clone(), avm, context)?;
+            this.set("c", c.clone(), activation, context)?;
         }
         if let Some(d) = args.get(3) {
-            this.set("d", d.clone(), avm, context)?;
+            this.set("d", d.clone(), activation, context)?;
         }
         if let Some(tx) = args.get(4) {
-            this.set("tx", tx.clone(), avm, context)?;
+            this.set("tx", tx.clone(), activation, context)?;
         }
         if let Some(ty) = args.get(5) {
-            this.set("ty", ty.clone(), avm, context)?;
+            this.set("ty", ty.clone(), activation, context)?;
         }
     }
 
@@ -166,37 +185,37 @@ fn constructor<'gc>(
 }
 
 fn identity<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    apply_matrix_to_object(Matrix::identity(), this, avm, context)?;
+    apply_matrix_to_object(Matrix::identity(), this, activation, context)?;
     Ok(Value::Undefined.into())
 }
 
 fn clone<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let proto = context.system_prototypes.matrix;
     let args = [
-        this.get("a", avm, context)?,
-        this.get("b", avm, context)?,
-        this.get("c", avm, context)?,
-        this.get("d", avm, context)?,
-        this.get("tx", avm, context)?,
-        this.get("ty", avm, context)?,
+        this.get("a", activation, context)?,
+        this.get("b", activation, context)?,
+        this.get("c", activation, context)?,
+        this.get("d", activation, context)?,
+        this.get("tx", activation, context)?,
+        this.get("ty", activation, context)?,
     ];
-    let cloned = proto.new(avm, context, proto, &args)?;
-    let _ = constructor(avm, context, cloned, &args)?;
+    let cloned = proto.new(activation, context, proto, &args)?;
+    let _ = constructor(activation, context, cloned, &args)?;
     Ok(cloned.into())
 }
 
 fn scale<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -204,20 +223,20 @@ fn scale<'gc>(
     let scale_x = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
     let scale_y = args
         .get(1)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
     let mut matrix = Matrix::scale(scale_x as f32, scale_y as f32);
-    matrix *= object_to_matrix(this, avm, context)?;
-    apply_matrix_to_object(matrix, this, avm, context)?;
+    matrix *= object_to_matrix(this, activation, context)?;
+    apply_matrix_to_object(matrix, this, activation, context)?;
 
     Ok(Value::Undefined.into())
 }
 
 fn rotate<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -225,16 +244,16 @@ fn rotate<'gc>(
     let angle = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
     let mut matrix = Matrix::rotate(angle as f32);
-    matrix *= object_to_matrix(this, avm, context)?;
-    apply_matrix_to_object(matrix, this, avm, context)?;
+    matrix *= object_to_matrix(this, activation, context)?;
+    apply_matrix_to_object(matrix, this, activation, context)?;
 
     Ok(Value::Undefined.into())
 }
 
 fn translate<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -242,54 +261,54 @@ fn translate<'gc>(
     let translate_x = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
     let translate_y = args
         .get(1)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
     let mut matrix = Matrix::translate(
         Twips::from_pixels(translate_x),
         Twips::from_pixels(translate_y),
     );
-    matrix *= object_to_matrix(this, avm, context)?;
-    apply_matrix_to_object(matrix, this, avm, context)?;
+    matrix *= object_to_matrix(this, activation, context)?;
+    apply_matrix_to_object(matrix, this, activation, context)?;
 
     Ok(Value::Undefined.into())
 }
 
 fn concat<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    let mut matrix = object_to_matrix(this, avm, context)?;
+    let mut matrix = object_to_matrix(this, activation, context)?;
     let other = value_to_matrix(
         args.get(0).unwrap_or(&Value::Undefined).clone(),
-        avm,
+        activation,
         context,
     )?;
     matrix = other * matrix;
-    apply_matrix_to_object(matrix, this, avm, context)?;
+    apply_matrix_to_object(matrix, this, activation, context)?;
 
     Ok(Value::Undefined.into())
 }
 
 fn invert<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    let mut matrix = object_to_matrix(this, avm, context)?;
+    let mut matrix = object_to_matrix(this, activation, context)?;
     matrix.invert();
-    apply_matrix_to_object(matrix, this, avm, context)?;
+    apply_matrix_to_object(matrix, this, activation, context)?;
 
     Ok(Value::Undefined.into())
 }
 
 fn create_box<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -297,23 +316,23 @@ fn create_box<'gc>(
     let scale_x = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
     let scale_y = args
         .get(1)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
     // [NA] Docs say rotation is optional and defaults to 0, but that's wrong?
     let rotation = args
         .get(2)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
     let translate_x = if let Some(value) = args.get(3) {
-        value.coerce_to_f64(avm, context)?
+        value.coerce_to_f64(activation, context)?
     } else {
         0.0
     };
     let translate_y = if let Some(value) = args.get(4) {
-        value.coerce_to_f64(avm, context)?
+        value.coerce_to_f64(activation, context)?
     } else {
         0.0
     };
@@ -325,13 +344,13 @@ fn create_box<'gc>(
         Twips::from_pixels(translate_x),
         Twips::from_pixels(translate_y),
     );
-    apply_matrix_to_object(matrix, this, avm, context)?;
+    apply_matrix_to_object(matrix, this, activation, context)?;
 
     Ok(Value::Undefined.into())
 }
 
 fn create_gradient_box<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -339,23 +358,23 @@ fn create_gradient_box<'gc>(
     let width = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
     let height = args
         .get(1)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
     let rotation = if let Some(value) = args.get(2) {
-        value.coerce_to_f64(avm, context)?
+        value.coerce_to_f64(activation, context)?
     } else {
         0.0
     };
     let translate_x = if let Some(value) = args.get(3) {
-        value.coerce_to_f64(avm, context)?
+        value.coerce_to_f64(activation, context)?
     } else {
         0.0
     };
     let translate_y = if let Some(value) = args.get(4) {
-        value.coerce_to_f64(avm, context)?
+        value.coerce_to_f64(activation, context)?
     } else {
         0.0
     };
@@ -367,32 +386,32 @@ fn create_gradient_box<'gc>(
         Twips::from_pixels(translate_x),
         Twips::from_pixels(translate_y),
     );
-    apply_matrix_to_object(matrix, this, avm, context)?;
+    apply_matrix_to_object(matrix, this, activation, context)?;
 
     Ok(Value::Undefined.into())
 }
 
 fn to_string<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    let a = this.get("a", avm, context)?;
-    let b = this.get("b", avm, context)?;
-    let c = this.get("c", avm, context)?;
-    let d = this.get("d", avm, context)?;
-    let tx = this.get("tx", avm, context)?;
-    let ty = this.get("ty", avm, context)?;
+    let a = this.get("a", activation, context)?;
+    let b = this.get("b", activation, context)?;
+    let c = this.get("c", activation, context)?;
+    let d = this.get("d", activation, context)?;
+    let tx = this.get("tx", activation, context)?;
+    let ty = this.get("ty", activation, context)?;
 
     Ok(format!(
         "(a={}, b={}, c={}, d={}, tx={}, ty={})",
-        a.coerce_to_string(avm, context)?,
-        b.coerce_to_string(avm, context)?,
-        c.coerce_to_string(avm, context)?,
-        d.coerce_to_string(avm, context)?,
-        tx.coerce_to_string(avm, context)?,
-        ty.coerce_to_string(avm, context)?
+        a.coerce_to_string(activation, context)?,
+        b.coerce_to_string(activation, context)?,
+        c.coerce_to_string(activation, context)?,
+        d.coerce_to_string(activation, context)?,
+        tx.coerce_to_string(activation, context)?,
+        ty.coerce_to_string(activation, context)?
     )
     .into())
 }

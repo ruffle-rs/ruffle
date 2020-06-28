@@ -5,14 +5,15 @@ use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Object, SoundObject, TObject, UpdateContext, Value};
+use crate::avm1::stack_frame::StackFrame;
+use crate::avm1::{Object, SoundObject, TObject, UpdateContext, Value};
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
 use gc_arena::MutationContext;
 
 /// Implements `Sound`
 pub fn constructor<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -21,7 +22,7 @@ pub fn constructor<'gc>(
     // `Sound.setTransform`, `Sound.stop`, etc. will affect all sounds owned by this clip.
     let owner = args
         .get(0)
-        .map(|o| o.coerce_to_object(avm, context))
+        .map(|o| o.coerce_to_object(activation, context))
         .and_then(|o| o.as_display_object());
 
     let sound = this.as_sound_object().unwrap();
@@ -161,14 +162,14 @@ pub fn create_proto<'gc>(
 }
 
 fn attach_sound<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let name = args.get(0).unwrap_or(&Value::Undefined);
     if let Some(sound_object) = this.as_sound_object() {
-        let name = name.coerce_to_string(avm, context)?;
+        let name = name.coerce_to_string(activation, context)?;
         let movie = sound_object
             .owner()
             .or_else(|| context.levels.get(&0).copied())
@@ -201,12 +202,12 @@ fn attach_sound<'gc>(
 }
 
 fn duration<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    if avm.current_swf_version() >= 6 {
+    if activation.avm().current_swf_version() >= 6 {
         if let Some(sound_object) = this.as_sound_object() {
             return Ok(sound_object.duration().into());
         } else {
@@ -218,12 +219,12 @@ fn duration<'gc>(
 }
 
 fn get_bytes_loaded<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    if avm.current_swf_version() >= 6 {
+    if activation.avm().current_swf_version() >= 6 {
         log::warn!("Sound.getBytesLoaded: Unimplemented");
         Ok(1.into())
     } else {
@@ -232,12 +233,12 @@ fn get_bytes_loaded<'gc>(
 }
 
 fn get_bytes_total<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    if avm.current_swf_version() >= 6 {
+    if activation.avm().current_swf_version() >= 6 {
         log::warn!("Sound.getBytesTotal: Unimplemented");
         Ok(1.into())
     } else {
@@ -246,7 +247,7 @@ fn get_bytes_total<'gc>(
 }
 
 fn get_pan<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -256,7 +257,7 @@ fn get_pan<'gc>(
 }
 
 fn get_transform<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -266,7 +267,7 @@ fn get_transform<'gc>(
 }
 
 fn get_volume<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -276,36 +277,36 @@ fn get_volume<'gc>(
 }
 
 fn id3<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    if avm.current_swf_version() >= 6 {
+    if activation.avm().current_swf_version() >= 6 {
         log::warn!("Sound.id3: Unimplemented");
     }
     Ok(Value::Undefined.into())
 }
 
 fn load_sound<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    if avm.current_swf_version() >= 6 {
+    if activation.avm().current_swf_version() >= 6 {
         log::warn!("Sound.loadSound: Unimplemented");
     }
     Ok(Value::Undefined.into())
 }
 
 fn position<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    if avm.current_swf_version() >= 6 {
+    if activation.avm().current_swf_version() >= 6 {
         if let Some(sound_object) = this.as_sound_object() {
             // TODO: The position is "sticky"; even if the sound is no longer playing, it should return
             // the previous valid position.
@@ -324,7 +325,7 @@ fn position<'gc>(
 }
 
 fn set_pan<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -334,7 +335,7 @@ fn set_pan<'gc>(
 }
 
 fn set_transform<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -344,7 +345,7 @@ fn set_transform<'gc>(
 }
 
 fn set_volume<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -354,7 +355,7 @@ fn set_volume<'gc>(
 }
 
 fn start<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -362,11 +363,11 @@ fn start<'gc>(
     let start_offset = args
         .get(0)
         .unwrap_or(&Value::Number(0.0))
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
     let loops = args
         .get(1)
         .unwrap_or(&Value::Number(1.0))
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
 
     let loops = if loops >= 1.0 && loops <= f64::from(std::i16::MAX) {
         loops as u16
@@ -405,7 +406,7 @@ fn start<'gc>(
 }
 
 fn stop<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -413,7 +414,7 @@ fn stop<'gc>(
     if let Some(sound) = this.as_sound_object() {
         if let Some(name) = args.get(0) {
             // Usage 1: Stop all instances of a particular sound, using the name parameter.
-            let name = name.coerce_to_string(avm, context)?;
+            let name = name.coerce_to_string(activation, context)?;
             let movie = sound
                 .owner()
                 .or_else(|| context.levels.get(&0).copied())

@@ -3,7 +3,8 @@
 use crate::avm1::error::Error;
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
-use crate::avm1::{Avm1, Object, Value};
+use crate::avm1::stack_frame::StackFrame;
+use crate::avm1::{Object, Value};
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::tag_utils::SwfSlice;
@@ -317,7 +318,7 @@ impl<'gc> Activation<'gc> {
     pub fn resolve(
         &self,
         name: &str,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error<'gc>> {
         if name == "this" {
@@ -328,13 +329,13 @@ impl<'gc> Activation<'gc> {
             return Ok(Value::Object(self.arguments.unwrap()).into());
         }
 
-        self.scope().resolve(name, avm, context, self.this)
+        self.scope().resolve(name, activation, context, self.this)
     }
 
     /// Check if a particular property in the scope chain is defined.
     pub fn is_defined(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
@@ -346,7 +347,7 @@ impl<'gc> Activation<'gc> {
             return true;
         }
 
-        self.scope().is_defined(avm, context, name)
+        self.scope().is_defined(activation, context, name)
     }
 
     /// Define a named local variable within this activation.

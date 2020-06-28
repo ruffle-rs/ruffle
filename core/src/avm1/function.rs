@@ -5,9 +5,10 @@ use crate::avm1::error::Error;
 use crate::avm1::property::{Attribute, Attribute::*};
 use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
+use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::super_object::SuperObject;
 use crate::avm1::value::Value;
-use crate::avm1::{Avm1, Object, ObjectPtr, ScriptObject, TObject, UpdateContext};
+use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, UpdateContext};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::tag_utils::SwfSlice;
 use enumset::EnumSet;
@@ -31,7 +32,7 @@ use swf::avm1::types::FunctionParam;
 /// your function yields `None`, you must ensure that the top-most activation
 /// in the AVM1 runtime will return with the value of this function.
 pub type NativeFunction<'gc> = fn(
-    &mut Avm1<'gc>,
+    &mut StackFrame<'_, 'gc>,
     &mut UpdateContext<'_, 'gc, '_>,
     Object<'gc>,
     &[Value<'gc>],
@@ -223,20 +224,21 @@ impl<'gc> Executable<'gc> {
     /// create a new stack frame and execute the action data yourself.
     pub fn exec(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         ac: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error<'gc>> {
         match self {
-            Executable::Native(nf) => nf(avm, ac, this, args),
+            Executable::Native(nf) => nf(activation, ac, this, args),
             Executable::Action(af) => {
                 let child_scope = GcCell::allocate(
                     ac.gc_context,
                     Scope::new_local_scope(af.scope(), ac.gc_context),
                 );
-                let arguments = ScriptObject::object(ac.gc_context, Some(avm.prototypes().object));
+                let arguments =
+                    ScriptObject::object(ac.gc_context, Some(activation.avm().prototypes().object));
                 if !af.suppress_arguments {
                     for i in 0..args.len() {
                         arguments.define_value(
@@ -261,7 +263,7 @@ impl<'gc> Executable<'gc> {
                         SuperObject::from_this_and_base_proto(
                             this,
                             base_proto.unwrap_or(this),
-                            avm,
+                            activation,
                             ac,
                         )?
                         .into(),
@@ -270,7 +272,7 @@ impl<'gc> Executable<'gc> {
                     None
                 };
 
-                let effective_ver = if avm.current_swf_version() > 5 {
+                let effective_ver = if activation.avm().current_swf_version() > 5 {
                     af.swf_version()
                 } else {
                     this.as_display_object()
@@ -341,7 +343,11 @@ impl<'gc> Executable<'gc> {
                 }
 
                 if af.preload_global {
-                    frame.set_local_register(preload_r, avm.global_object(ac), ac.gc_context);
+                    frame.set_local_register(
+                        preload_r,
+                        activation.avm().global_object(ac),
+                        ac.gc_context,
+                    );
                 }
 
                 //TODO: What happens if the argument registers clash with the
@@ -455,34 +461,34 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn get_local(
         &self,
         name: &str,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.base.get_local(name, avm, context, this)
+        self.base.get_local(name, activation, context, this)
     }
 
     fn set(
         &self,
         name: &str,
         value: Value<'gc>,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
-        self.base.set(name, value, avm, context)
+        self.base.set(name, value, activation, context)
     }
 
     fn call(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(exec) = self.as_executable() {
-            exec.exec(avm, context, this, base_proto, args)?
-                .resolve(avm, context)
+            exec.exec(activation, context, this, base_proto, args)?
+                .resolve(activation, context)
         } else {
             Ok(Value::Undefined)
         }
@@ -492,17 +498,18 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-        self.base.call_setter(name, value, avm, context, this)
+        self.base
+            .call_setter(name, value, activation, context, this)
     }
 
     #[allow(clippy::new_ret_no_self)]
     fn new(
         &self,
-        _avm: &mut Avm1<'gc>,
+        _activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         prototype: Object<'gc>,
         _args: &[Value<'gc>],
@@ -524,11 +531,11 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn delete(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
     ) -> bool {
-        self.base.delete(avm, gc_context, name)
+        self.base.delete(activation, gc_context, name)
     }
 
     fn proto(&self) -> Option<Object<'gc>> {
@@ -574,7 +581,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn add_property_with_case(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
         get: Executable<'gc>,
@@ -582,46 +589,46 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         attributes: EnumSet<Attribute>,
     ) {
         self.base
-            .add_property_with_case(avm, gc_context, name, get, set, attributes)
+            .add_property_with_case(activation, gc_context, name, get, set, attributes)
     }
 
     fn has_property(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
-        self.base.has_property(avm, context, name)
+        self.base.has_property(activation, context, name)
     }
 
     fn has_own_property(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
-        self.base.has_own_property(avm, context, name)
+        self.base.has_own_property(activation, context, name)
     }
 
     fn has_own_virtual(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
-        self.base.has_own_virtual(avm, context, name)
+        self.base.has_own_virtual(activation, context, name)
     }
 
-    fn is_property_overwritable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
-        self.base.is_property_overwritable(avm, name)
+    fn is_property_overwritable(&self, activation: &mut StackFrame<'_, 'gc>, name: &str) -> bool {
+        self.base.is_property_overwritable(activation, name)
     }
 
-    fn is_property_enumerable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
-        self.base.is_property_enumerable(avm, name)
+    fn is_property_enumerable(&self, activation: &mut StackFrame<'_, 'gc>, name: &str) -> bool {
+        self.base.is_property_enumerable(activation, name)
     }
 
-    fn get_keys(&self, avm: &mut Avm1<'gc>) -> Vec<String> {
-        self.base.get_keys(avm)
+    fn get_keys(&self, activation: &mut StackFrame<'_, 'gc>) -> Vec<String> {
+        self.base.get_keys(activation)
     }
 
     fn as_string(&self) -> Cow<str> {

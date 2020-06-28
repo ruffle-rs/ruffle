@@ -1,13 +1,13 @@
 //! Management of async loaders
 
-use crate::avm1::{Object, TObject, Value};
+use crate::avm1::{Activation, Object, TObject, Value};
 use crate::backend::navigator::OwnedFuture;
 use crate::context::{ActionQueue, ActionType};
 use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
 use crate::player::{Player, NEWEST_PLAYER_VERSION};
 use crate::tag_utils::SwfMovie;
 use crate::xml::XMLNode;
-use gc_arena::{Collect, CollectionContext};
+use gc_arena::{Collect, CollectionContext, GcCell};
 use generational_arena::{Arena, Index};
 use std::string::FromUtf8Error;
 use std::sync::{Arc, Mutex, Weak};
@@ -314,7 +314,7 @@ impl<'gc> Loader<'gc> {
                         .replace_with_movie(uc.gc_context, None);
 
                     if let Some(broadcaster) = broadcaster {
-                        avm.insert_stack_frame_for_method(
+                        avm.run_stack_frame_for_method(
                             clip,
                             broadcaster,
                             NEWEST_PLAYER_VERSION,
@@ -347,7 +347,7 @@ impl<'gc> Loader<'gc> {
                         };
 
                         if let Some(broadcaster) = broadcaster {
-                            avm.insert_stack_frame_for_method(
+                            avm.run_stack_frame_for_method(
                                 clip,
                                 broadcaster,
                                 NEWEST_PLAYER_VERSION,
@@ -384,7 +384,7 @@ impl<'gc> Loader<'gc> {
                         }
 
                         if let Some(broadcaster) = broadcaster {
-                            avm.insert_stack_frame_for_method(
+                            avm.run_stack_frame_for_method(
                                 clip,
                                 broadcaster,
                                 NEWEST_PLAYER_VERSION,
@@ -421,7 +421,7 @@ impl<'gc> Loader<'gc> {
                         };
 
                         if let Some(broadcaster) = broadcaster {
-                            avm.insert_stack_frame_for_method(
+                            avm.run_stack_frame_for_method(
                                 clip,
                                 broadcaster,
                                 NEWEST_PLAYER_VERSION,
@@ -473,9 +473,25 @@ impl<'gc> Loader<'gc> {
                     _ => return Err(Error::NotMovieLoader),
                 };
 
-                for (k, v) in form_urlencoded::parse(&data) {
-                    that.set(&k, v.into_owned().into(), avm, uc)?;
-                }
+                let activation = GcCell::allocate(
+                    uc.gc_context,
+                    Activation::from_nothing(
+                        uc.swf.version(),
+                        avm.global_object_cell(),
+                        uc.gc_context,
+                        *uc.levels.get(&0).unwrap(),
+                    ),
+                );
+                avm.run_with_stack_frame::<_, Result<(), crate::avm1::error::Error>>(
+                    activation,
+                    uc,
+                    |activation, context| {
+                        for (k, v) in form_urlencoded::parse(&data) {
+                            that.set(&k, v.into_owned().into(), activation, context)?;
+                        }
+                        Ok(())
+                    },
+                )?;
 
                 Ok(())
             })
@@ -558,7 +574,7 @@ impl<'gc> Loader<'gc> {
 
                         let object =
                             node.script_object(uc.gc_context, Some(avm.prototypes().xml_node));
-                        avm.insert_stack_frame_for_method(
+                        avm.run_stack_frame_for_method(
                             active_clip,
                             object,
                             NEWEST_PLAYER_VERSION,
@@ -567,7 +583,7 @@ impl<'gc> Loader<'gc> {
                             &[200.into()],
                         );
 
-                        avm.insert_stack_frame_for_method(
+                        avm.run_stack_frame_for_method(
                             active_clip,
                             object,
                             NEWEST_PLAYER_VERSION,
@@ -594,7 +610,7 @@ impl<'gc> Loader<'gc> {
 
                         let object =
                             node.script_object(uc.gc_context, Some(avm.prototypes().xml_node));
-                        avm.insert_stack_frame_for_method(
+                        avm.run_stack_frame_for_method(
                             active_clip,
                             object,
                             NEWEST_PLAYER_VERSION,
@@ -603,7 +619,7 @@ impl<'gc> Loader<'gc> {
                             &[404.into()],
                         );
 
-                        avm.insert_stack_frame_for_method(
+                        avm.run_stack_frame_for_method(
                             active_clip,
                             object,
                             NEWEST_PLAYER_VERSION,

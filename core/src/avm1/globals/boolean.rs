@@ -3,21 +3,22 @@
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::return_value::ReturnValue;
+use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::value_object::ValueObject;
-use crate::avm1::{Avm1, Object, TObject, Value};
+use crate::avm1::{Object, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 /// `Boolean` constructor/function
 pub fn boolean<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let (ret_value, cons_value) = if let Some(val) = args.get(0) {
-        let b = Value::Bool(val.as_bool(avm.current_swf_version()));
+        let b = Value::Bool(val.as_bool(activation.avm().current_swf_version()));
         (b.clone(), b)
     } else {
         (Value::Undefined, Value::Bool(false))
@@ -74,7 +75,7 @@ pub fn create_proto<'gc>(
 }
 
 pub fn to_string<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -91,7 +92,7 @@ pub fn to_string<'gc>(
 }
 
 pub fn value_of<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],

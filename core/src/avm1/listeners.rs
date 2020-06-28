@@ -1,7 +1,7 @@
 use crate::avm1::error::Error;
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Object, ScriptObject, TObject, UpdateContext, Value};
-
+use crate::avm1::stack_frame::StackFrame;
+use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use gc_arena::{Collect, MutationContext};
 
 #[derive(Clone, Collect, Debug, Copy)]
@@ -11,24 +11,26 @@ pub struct Listeners<'gc>(Object<'gc>);
 macro_rules! register_listener {
     ( $gc_context: ident, $object:ident, $listener: ident, $fn_proto: ident, $system_listeners_key: ident ) => {{
         pub fn add_listener<'gc>(
-            avm: &mut Avm1<'gc>,
+            activation: &mut StackFrame<'_, 'gc>,
             context: &mut UpdateContext<'_, 'gc, '_>,
             _this: Object<'gc>,
             args: &[Value<'gc>],
         ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-            avm.system_listeners
+            activation
+                .avm()
+                .system_listeners
                 .$system_listeners_key
                 .add_listener(context, args)
         }
 
         pub fn remove_listener<'gc>(
-            avm: &mut Avm1<'gc>,
+            activation: &mut StackFrame<'_, 'gc>,
             context: &mut UpdateContext<'_, 'gc, '_>,
             _this: Object<'gc>,
             args: &[Value<'gc>],
         ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-            let listener = avm.system_listeners.$system_listeners_key;
-            listener.remove_listener(avm, context, args)
+            let listener = activation.avm().system_listeners.$system_listeners_key;
+            listener.remove_listener(activation, context, args)
         }
 
         $object.define_value(
@@ -80,7 +82,7 @@ impl<'gc> Listeners<'gc> {
 
     pub fn remove_listener(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         args: &[Value<'gc>],
     ) -> Result<ReturnValue<'gc>, Error<'gc>> {
@@ -99,7 +101,7 @@ impl<'gc> Listeners<'gc> {
                 }
 
                 listeners.delete_array_element(new_length, context.gc_context);
-                listeners.delete(avm, context.gc_context, &new_length.to_string());
+                listeners.delete(activation, context.gc_context, &new_length.to_string());
                 listeners.set_length(context.gc_context, new_length);
 
                 return Ok(true.into());
@@ -111,7 +113,7 @@ impl<'gc> Listeners<'gc> {
 
     pub fn prepare_handlers(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         method: &str,
     ) -> Vec<(Object<'gc>, Value<'gc>)> {
@@ -119,8 +121,10 @@ impl<'gc> Listeners<'gc> {
         let mut handlers = Vec::with_capacity(listeners.length());
 
         for i in 0..listeners.length() {
-            let listener = listeners.array_element(i).coerce_to_object(avm, context);
-            if let Ok(handler) = listener.get(method, avm, context) {
+            let listener = listeners
+                .array_element(i)
+                .coerce_to_object(activation, context);
+            if let Ok(handler) = listener.get(method, activation, context) {
                 handlers.push((listener, handler));
             }
         }

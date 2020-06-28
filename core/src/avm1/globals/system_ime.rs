@@ -4,13 +4,14 @@ use crate::avm1::object::Object;
 use crate::avm1::property::Attribute;
 use crate::avm1::property::Attribute::{DontDelete, DontEnum, ReadOnly};
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, ScriptObject, TObject, Value};
+use crate::avm1::stack_frame::StackFrame;
+use crate::avm1::{ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use gc_arena::MutationContext;
 use std::convert::Into;
 
 fn on_ime_composition<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -19,7 +20,7 @@ fn on_ime_composition<'gc>(
 }
 
 fn do_conversion<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -28,7 +29,7 @@ fn do_conversion<'gc>(
 }
 
 fn get_conversion_mode<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -37,7 +38,7 @@ fn get_conversion_mode<'gc>(
 }
 
 fn get_enabled<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -46,7 +47,7 @@ fn get_enabled<'gc>(
 }
 
 fn set_composition_string<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -55,7 +56,7 @@ fn set_composition_string<'gc>(
 }
 
 fn set_conversion_mode<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -64,7 +65,7 @@ fn set_conversion_mode<'gc>(
 }
 
 fn set_enabled<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut StackFrame<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],

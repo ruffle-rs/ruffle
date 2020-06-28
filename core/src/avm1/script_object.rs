@@ -2,7 +2,8 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject, NativeFunction};
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Object, ObjectPtr, TObject, UpdateContext, Value};
+use crate::avm1::stack_frame::StackFrame;
+use crate::avm1::{Object, ObjectPtr, TObject, UpdateContext, Value};
 use crate::property_map::{Entry, PropertyMap};
 use core::fmt;
 use enumset::EnumSet;
@@ -197,19 +198,20 @@ impl<'gc> ScriptObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if name == "__proto__" {
-            self.0.write(context.gc_context).prototype = Some(value.coerce_to_object(avm, context));
+            self.0.write(context.gc_context).prototype =
+                Some(value.coerce_to_object(activation, context));
         } else if let Ok(index) = name.parse::<usize>() {
             self.set_array_element(index, value.to_owned(), context.gc_context);
         } else if !name.is_empty() {
             if name == "length" {
                 let length = value
-                    .coerce_to_f64(avm, context)
+                    .coerce_to_f64(activation, context)
                     .map(|v| v.abs() as i32)
                     .unwrap_or(0);
                 if length > 0 {
@@ -226,14 +228,14 @@ impl<'gc> ScriptObject<'gc> {
                 .0
                 .read()
                 .values
-                .contains_key(name, avm.is_case_sensitive());
+                .contains_key(name, activation.avm().is_case_sensitive());
             let mut rval = None;
 
             if is_vacant {
                 let mut proto: Option<Object<'gc>> = Some((*self).into());
                 while let Some(this_proto) = proto {
-                    if this_proto.has_own_virtual(avm, context, name)
-                        && this_proto.is_property_overwritable(avm, name)
+                    if this_proto.has_own_virtual(activation, context, name)
+                        && this_proto.is_property_overwritable(activation, name)
                     {
                         break;
                     }
@@ -245,7 +247,7 @@ impl<'gc> ScriptObject<'gc> {
                     rval = Some(this_proto.call_setter(
                         name,
                         value.clone(),
-                        avm,
+                        activation,
                         context,
                         (*self).into(),
                     )?);
@@ -260,11 +262,13 @@ impl<'gc> ScriptObject<'gc> {
                     .0
                     .write(context.gc_context)
                     .values
-                    .entry(name.to_owned(), avm.is_case_sensitive())
+                    .entry(name.to_owned(), activation.avm().is_case_sensitive())
                 {
-                    Entry::Occupied(mut entry) => {
-                        Some(entry.get_mut().set(avm, context, this, base_proto, value)?)
-                    }
+                    Entry::Occupied(mut entry) => Some(
+                        entry
+                            .get_mut()
+                            .set(activation, context, this, base_proto, value)?,
+                    ),
                     Entry::Vacant(entry) => {
                         entry.insert(Property::Stored {
                             value,
@@ -277,7 +281,7 @@ impl<'gc> ScriptObject<'gc> {
             }
 
             if let Some(rval) = rval {
-                rval.resolve(avm, context)?;
+                rval.resolve(activation, context)?;
             }
         }
 
@@ -297,7 +301,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn get_local(
         &self,
         name: &str,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -305,10 +309,15 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             return Ok(self.proto().map_or(Value::Undefined, Value::Object));
         }
 
-        if let Some(value) = self.0.read().values.get(name, avm.is_case_sensitive()) {
+        if let Some(value) = self
+            .0
+            .read()
+            .values
+            .get(name, activation.avm().is_case_sensitive())
+        {
             return value
-                .get(avm, context, this, Some((*self).into()))?
-                .resolve(avm, context);
+                .get(activation, context, this, Some((*self).into()))?
+                .resolve(activation, context);
         }
 
         Ok(Value::Undefined)
@@ -323,13 +332,13 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         self.internal_set(
             name,
             value,
-            avm,
+            activation,
             context,
             (*self).into(),
             Some((*self).into()),
@@ -343,7 +352,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     /// overrides that may need to interact with the underlying object.
     fn call(
         &self,
-        _avm: &mut Avm1<'gc>,
+        _activation: &mut StackFrame<'_, 'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
         _base_proto: Option<Object<'gc>>,
@@ -356,7 +365,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<ReturnValue<'gc>, Error<'gc>> {
@@ -364,10 +373,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .0
             .write(context.gc_context)
             .values
-            .get_mut(name, avm.is_case_sensitive())
+            .get_mut(name, activation.avm().is_case_sensitive())
         {
             Some(propref) if propref.is_virtual() => {
-                propref.set(avm, context, this, Some((*self).into()), value)
+                propref.set(activation, context, this, Some((*self).into()), value)
             }
             _ => Ok(Value::Undefined.into()),
         }
@@ -376,7 +385,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     #[allow(clippy::new_ret_no_self)]
     fn new(
         &self,
-        _avm: &mut Avm1<'gc>,
+        _activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         _args: &[Value<'gc>],
@@ -396,14 +405,19 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     /// Returns false if the property cannot be deleted.
     fn delete(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
     ) -> bool {
         let mut object = self.0.write(gc_context);
-        if let Some(prop) = object.values.get(name, avm.is_case_sensitive()) {
+        if let Some(prop) = object
+            .values
+            .get(name, activation.avm().is_case_sensitive())
+        {
             if prop.can_delete() {
-                object.values.remove(name, avm.is_case_sensitive());
+                object
+                    .values
+                    .remove(name, activation.avm().is_case_sensitive());
                 return true;
             }
         }
@@ -432,7 +446,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn add_property_with_case(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
         get: Executable<'gc>,
@@ -446,7 +460,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
                 set,
                 attributes,
             },
-            avm.is_case_sensitive(),
+            activation.avm().is_case_sensitive(),
         );
     }
 
@@ -499,22 +513,22 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     /// Checks if the object has a given named property.
     fn has_property(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
-        self.has_own_property(avm, context, name)
+        self.has_own_property(activation, context, name)
             || self
                 .proto()
                 .as_ref()
-                .map_or(false, |p| p.has_property(avm, context, name))
+                .map_or(false, |p| p.has_property(activation, context, name))
     }
 
     /// Checks if the object has a given named property on itself (and not,
     /// say, the object's prototype or superclass)
     fn has_own_property(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
@@ -524,34 +538,44 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0
             .read()
             .values
-            .contains_key(name, avm.is_case_sensitive())
+            .contains_key(name, activation.avm().is_case_sensitive())
     }
 
     fn has_own_virtual(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut StackFrame<'_, 'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
-        if let Some(slot) = self.0.read().values.get(name, avm.is_case_sensitive()) {
+        if let Some(slot) = self
+            .0
+            .read()
+            .values
+            .get(name, activation.avm().is_case_sensitive())
+        {
             slot.is_virtual()
         } else {
             false
         }
     }
 
-    fn is_property_overwritable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
+    fn is_property_overwritable(&self, activation: &mut StackFrame<'_, 'gc>, name: &str) -> bool {
         self.0
             .read()
             .values
-            .get(name, avm.is_case_sensitive())
+            .get(name, activation.avm().is_case_sensitive())
             .map(|p| p.is_overwritable())
             .unwrap_or(false)
     }
 
     /// Checks if a named property appears when enumerating the object.
-    fn is_property_enumerable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
-        if let Some(prop) = self.0.read().values.get(name, avm.is_case_sensitive()) {
+    fn is_property_enumerable(&self, activation: &mut StackFrame<'_, 'gc>, name: &str) -> bool {
+        if let Some(prop) = self
+            .0
+            .read()
+            .values
+            .get(name, activation.avm().is_case_sensitive())
+        {
             prop.is_enumerable()
         } else {
             false
@@ -559,17 +583,19 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     /// Enumerate the object.
-    fn get_keys(&self, avm: &mut Avm1<'gc>) -> Vec<String> {
-        let proto_keys = self.proto().map_or_else(Vec::new, |p| p.get_keys(avm));
+    fn get_keys(&self, activation: &mut StackFrame<'_, 'gc>) -> Vec<String> {
+        let proto_keys = self
+            .proto()
+            .map_or_else(Vec::new, |p| p.get_keys(activation));
         let mut out_keys = vec![];
         let object = self.0.read();
 
         // Prototype keys come first.
-        out_keys.extend(
-            proto_keys
-                .into_iter()
-                .filter(|k| !object.values.contains_key(k, avm.is_case_sensitive())),
-        );
+        out_keys.extend(proto_keys.into_iter().filter(|k| {
+            !object
+                .values
+                .contains_key(k, activation.avm().is_case_sensitive())
+        }));
 
         // Then our own keys.
         out_keys.extend(self.0.read().values.iter().filter_map(move |(k, p)| {
@@ -713,6 +739,7 @@ mod tests {
     use crate::avm1::activation::Activation;
     use crate::avm1::globals::system::SystemProperties;
     use crate::avm1::property::Attribute::*;
+    use crate::avm1::Avm1;
     use crate::backend::audio::NullAudioBackend;
     use crate::backend::input::NullInputBackend;
     use crate::backend::navigator::NullNavigatorBackend;
@@ -730,7 +757,11 @@ mod tests {
 
     fn with_object<F, R>(swf_version: u8, test: F) -> R
     where
-        F: for<'a, 'gc> FnOnce(&mut Avm1<'gc>, &mut UpdateContext<'a, 'gc, '_>, Object<'gc>) -> R,
+        F: for<'a, 'gc> FnOnce(
+            &mut StackFrame<'_, 'gc>,
+            &mut UpdateContext<'a, 'gc, '_>,
+            Object<'gc>,
+        ) -> R,
     {
         rootless_arena(|gc_context| {
             let mut avm = Avm1::new(gc_context, swf_version);
@@ -780,20 +811,22 @@ mod tests {
             let object = ScriptObject::object(gc_context, Some(avm.prototypes().object)).into();
 
             let globals = avm.global_object_cell();
-            avm.insert_stack_frame(GcCell::allocate(
-                gc_context,
-                Activation::from_nothing(swf_version, globals, gc_context, root),
-            ));
-
-            test(&mut avm, &mut context, object)
+            avm.run_with_stack_frame(
+                GcCell::allocate(
+                    gc_context,
+                    Activation::from_nothing(swf_version, globals, gc_context, root),
+                ),
+                &mut context,
+                |activation, context| test(activation, context, object),
+            )
         })
     }
 
     #[test]
     fn test_get_undefined() {
-        with_object(0, |avm, context, object| {
+        with_object(0, |activation, context, object| {
             assert_eq!(
-                object.get("not_defined", avm, context).unwrap(),
+                object.get("not_defined", activation, context).unwrap(),
                 Value::Undefined
             );
         })
@@ -801,7 +834,7 @@ mod tests {
 
     #[test]
     fn test_set_get() {
-        with_object(0, |avm, context, object| {
+        with_object(0, |activation, context, object| {
             object.as_script_object().unwrap().define_value(
                 context.gc_context,
                 "forced",
@@ -809,12 +842,15 @@ mod tests {
                 EnumSet::empty(),
             );
             object
-                .set("natural", "natural".into(), avm, context)
+                .set("natural", "natural".into(), activation, context)
                 .unwrap();
 
-            assert_eq!(object.get("forced", avm, context).unwrap(), "forced".into());
             assert_eq!(
-                object.get("natural", avm, context).unwrap(),
+                object.get("forced", activation, context).unwrap(),
+                "forced".into()
+            );
+            assert_eq!(
+                object.get("natural", activation, context).unwrap(),
                 "natural".into()
             );
         })
@@ -822,7 +858,7 @@ mod tests {
 
     #[test]
     fn test_set_readonly() {
-        with_object(0, |avm, context, object| {
+        with_object(0, |activation, context, object| {
             object.as_script_object().unwrap().define_value(
                 context.gc_context,
                 "normal",
@@ -837,18 +873,18 @@ mod tests {
             );
 
             object
-                .set("normal", "replaced".into(), avm, context)
+                .set("normal", "replaced".into(), activation, context)
                 .unwrap();
             object
-                .set("readonly", "replaced".into(), avm, context)
+                .set("readonly", "replaced".into(), activation, context)
                 .unwrap();
 
             assert_eq!(
-                object.get("normal", avm, context).unwrap(),
+                object.get("normal", activation, context).unwrap(),
                 "replaced".into()
             );
             assert_eq!(
-                object.get("readonly", avm, context).unwrap(),
+                object.get("readonly", activation, context).unwrap(),
                 "initial".into()
             );
         })
@@ -856,7 +892,7 @@ mod tests {
 
     #[test]
     fn test_deletable_not_readonly() {
-        with_object(0, |avm, context, object| {
+        with_object(0, |activation, context, object| {
             object.as_script_object().unwrap().define_value(
                 context.gc_context,
                 "test",
@@ -864,23 +900,29 @@ mod tests {
                 DontDelete.into(),
             );
 
-            assert_eq!(object.delete(avm, context.gc_context, "test"), false);
-            assert_eq!(object.get("test", avm, context).unwrap(), "initial".into());
+            assert_eq!(object.delete(activation, context.gc_context, "test"), false);
+            assert_eq!(
+                object.get("test", activation, context).unwrap(),
+                "initial".into()
+            );
 
             object
                 .as_script_object()
                 .unwrap()
-                .set("test", "replaced".into(), avm, context)
+                .set("test", "replaced".into(), activation, context)
                 .unwrap();
 
-            assert_eq!(object.delete(avm, context.gc_context, "test"), false);
-            assert_eq!(object.get("test", avm, context).unwrap(), "replaced".into());
+            assert_eq!(object.delete(activation, context.gc_context, "test"), false);
+            assert_eq!(
+                object.get("test", activation, context).unwrap(),
+                "replaced".into()
+            );
         })
     }
 
     #[test]
     fn test_virtual_get() {
-        with_object(0, |avm, context, object| {
+        with_object(0, |activation, context, object| {
             let getter = Executable::Native(|_avm, _context, _this, _args| {
                 Ok(ReturnValue::Immediate("Virtual!".into()))
             });
@@ -893,17 +935,25 @@ mod tests {
                 EnumSet::empty(),
             );
 
-            assert_eq!(object.get("test", avm, context).unwrap(), "Virtual!".into());
+            assert_eq!(
+                object.get("test", activation, context).unwrap(),
+                "Virtual!".into()
+            );
 
             // This set should do nothing
-            object.set("test", "Ignored!".into(), avm, context).unwrap();
-            assert_eq!(object.get("test", avm, context).unwrap(), "Virtual!".into());
+            object
+                .set("test", "Ignored!".into(), activation, context)
+                .unwrap();
+            assert_eq!(
+                object.get("test", activation, context).unwrap(),
+                "Virtual!".into()
+            );
         })
     }
 
     #[test]
     fn test_delete() {
-        with_object(0, |avm, context, object| {
+        with_object(0, |activation, context, object| {
             let getter = Executable::Native(|_avm, _context, _this, _args| {
                 Ok(ReturnValue::Immediate("Virtual!".into()))
             });
@@ -935,29 +985,41 @@ mod tests {
                 DontDelete.into(),
             );
 
-            assert_eq!(object.delete(avm, context.gc_context, "virtual"), true);
-            assert_eq!(object.delete(avm, context.gc_context, "virtual_un"), false);
-            assert_eq!(object.delete(avm, context.gc_context, "stored"), true);
-            assert_eq!(object.delete(avm, context.gc_context, "stored_un"), false);
             assert_eq!(
-                object.delete(avm, context.gc_context, "non_existent"),
+                object.delete(activation, context.gc_context, "virtual"),
+                true
+            );
+            assert_eq!(
+                object.delete(activation, context.gc_context, "virtual_un"),
+                false
+            );
+            assert_eq!(
+                object.delete(activation, context.gc_context, "stored"),
+                true
+            );
+            assert_eq!(
+                object.delete(activation, context.gc_context, "stored_un"),
+                false
+            );
+            assert_eq!(
+                object.delete(activation, context.gc_context, "non_existent"),
                 false
             );
 
             assert_eq!(
-                object.get("virtual", avm, context).unwrap(),
+                object.get("virtual", activation, context).unwrap(),
                 Value::Undefined
             );
             assert_eq!(
-                object.get("virtual_un", avm, context).unwrap(),
+                object.get("virtual_un", activation, context).unwrap(),
                 "Virtual!".into()
             );
             assert_eq!(
-                object.get("stored", avm, context).unwrap(),
+                object.get("stored", activation, context).unwrap(),
                 Value::Undefined
             );
             assert_eq!(
-                object.get("stored_un", avm, context).unwrap(),
+                object.get("stored_un", activation, context).unwrap(),
                 "Stored!".into()
             );
         })
@@ -965,7 +1027,7 @@ mod tests {
 
     #[test]
     fn test_iter_values() {
-        with_object(0, |avm, context, object| {
+        with_object(0, |activation, context, object| {
             let getter = Executable::Native(|_avm, _context, _this, _args| {
                 Ok(ReturnValue::Immediate(Value::Null))
             });
@@ -997,7 +1059,7 @@ mod tests {
                 DontEnum.into(),
             );
 
-            let keys: Vec<_> = object.get_keys(avm);
+            let keys: Vec<_> = object.get_keys(activation);
             assert_eq!(keys.len(), 2);
             assert_eq!(keys.contains(&"stored".to_string()), true);
             assert_eq!(keys.contains(&"stored_hidden".to_string()), false);
