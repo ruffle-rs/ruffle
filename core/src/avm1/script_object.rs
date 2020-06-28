@@ -80,7 +80,7 @@ impl<'gc> ScriptObject<'gc> {
                 interfaces: vec![],
             },
         ));
-        object.sync_native_property("length", gc_context, Some(0.into()));
+        object.sync_native_property("length", gc_context, Some(0.into()), false);
         object
     }
 
@@ -157,6 +157,7 @@ impl<'gc> ScriptObject<'gc> {
         name: &str,
         gc_context: MutationContext<'gc, '_>,
         native_value: Option<Value<'gc>>,
+        is_enumerable: bool,
     ) {
         match self
             .0
@@ -180,7 +181,11 @@ impl<'gc> ScriptObject<'gc> {
                 if let Some(native_value) = native_value {
                     entry.insert(Property::Stored {
                         value: native_value,
-                        attributes: Attribute::DontEnum.into(),
+                        attributes: if is_enumerable {
+                            EnumSet::empty()
+                        } else {
+                            Attribute::DontEnum.into()
+                        },
                     });
                 }
             }
@@ -626,10 +631,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         }
         if let Some(to_remove) = to_remove {
             for i in to_remove {
-                self.sync_native_property(&i.to_string(), gc_context, None);
+                self.sync_native_property(&i.to_string(), gc_context, None, true);
             }
         }
-        self.sync_native_property("length", gc_context, Some(new_length.into()));
+        self.sync_native_property("length", gc_context, Some(new_length.into()), false);
     }
 
     fn array(&self) -> Vec<Value<'gc>> {
@@ -673,7 +678,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         value: Value<'gc>,
         gc_context: MutationContext<'gc, '_>,
     ) -> usize {
-        self.sync_native_property(&index.to_string(), gc_context, Some(value.clone()));
+        self.sync_native_property(&index.to_string(), gc_context, Some(value.clone()), true);
         let mut adjust_length = false;
         let length = match &mut self.0.write(gc_context).array {
             ArrayStorage::Vector(vector) => {
@@ -687,7 +692,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             ArrayStorage::Properties { length } => *length,
         };
         if adjust_length {
-            self.sync_native_property("length", gc_context, Some(length.into()));
+            self.sync_native_property("length", gc_context, Some(length.into()), false);
         }
         length
     }
