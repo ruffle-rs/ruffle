@@ -42,7 +42,7 @@ mod tests;
 
 use crate::avm1::error::Error;
 use crate::avm1::listeners::SystemListener;
-use crate::avm1::stack_frame::{ReturnType, StackFrame};
+use crate::avm1::stack_frame::StackFrame;
 pub use activation::Activation;
 pub use globals::SystemPrototypes;
 pub use object::{Object, ObjectPtr, TObject};
@@ -174,7 +174,7 @@ impl<'gc> Avm1<'gc> {
                     None,
                 ),
             );
-            if let Err(e) = activation.avm().run_activation(context, child_activation) {
+            if let Err(e) = activation.run_child_activation(child_activation, context) {
                 root_error_handler(activation, context, e);
             }
         });
@@ -270,7 +270,7 @@ impl<'gc> Avm1<'gc> {
                     None,
                 ),
             );
-            if let Err(e) = activation.avm().run_activation(context, child_activation) {
+            if let Err(e) = activation.run_child_activation(child_activation, context) {
                 root_error_handler(activation, context, e);
             }
         });
@@ -325,8 +325,7 @@ impl<'gc> Avm1<'gc> {
     where
         for<'b> F: FnOnce(&mut StackFrame<'b, 'gc>, &mut UpdateContext<'a, 'gc, '_>) -> R,
     {
-        let mut stack_frame = StackFrame::new(self, activation);
-        // TODO: Handle
+        let mut stack_frame = StackFrame::new(self, None, activation);
         function(&mut stack_frame, context)
     }
 
@@ -351,22 +350,6 @@ impl<'gc> Avm1<'gc> {
                 let _ = handler.call(activation, context, listener, None, &args);
             }
         });
-    }
-
-    /// Execute the AVM stack until a given activation returns.
-    pub fn run_activation(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        activation: GcCell<'gc, Activation<'gc>>,
-    ) -> Result<ReturnType<'gc>, Error<'gc>> {
-        let mut stack_frame = StackFrame::new(self, activation);
-        let result = stack_frame.run(context);
-        if let Err(error) = &result {
-            if error.is_halting() {
-                stack_frame.avm().halt();
-            }
-        }
-        result
     }
 
     /// Halts the AVM, preventing execution of any further actions.

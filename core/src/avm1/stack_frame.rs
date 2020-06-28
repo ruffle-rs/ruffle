@@ -54,12 +54,30 @@ enum FrameControl<'gc> {
 #[collect(no_drop)]
 pub struct StackFrame<'a, 'gc: 'a> {
     avm: &'a mut Avm1<'gc>,
+    parent: Option<GcCell<'gc, Activation<'gc>>>,
     activation: GcCell<'gc, Activation<'gc>>,
 }
 
 impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
-    pub fn new(avm: &'a mut Avm1<'gc>, activation: GcCell<'gc, Activation<'gc>>) -> Self {
-        Self { avm, activation }
+    pub fn new(
+        avm: &'a mut Avm1<'gc>,
+        parent: Option<GcCell<'gc, Activation<'gc>>>,
+        activation: GcCell<'gc, Activation<'gc>>,
+    ) -> Self {
+        Self {
+            avm,
+            parent,
+            activation,
+        }
+    }
+
+    pub fn run_child_activation(
+        &mut self,
+        activation: GcCell<'gc, Activation<'gc>>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<ReturnType<'gc>, Error<'gc>> {
+        let mut child = StackFrame::new(self.avm, Some(self.activation), activation);
+        child.run(context)
     }
 
     pub fn run(
@@ -2060,7 +2078,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             context.gc_context,
             self.activation.read().to_rescope(block, with_scope),
         );
-        let _ = self.avm.run_activation(context, new_activation)?;
+        let _ = self.run_child_activation(new_activation, context)?;
         Ok(FrameControl::Continue)
     }
 

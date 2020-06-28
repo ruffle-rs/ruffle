@@ -364,7 +364,7 @@ impl<'gc> Executable<'gc> {
                 }
 
                 drop(frame);
-                Ok(activation.avm().run_activation(ac, frame_cell)?.value())
+                Ok(activation.run_child_activation(frame_cell, ac)?.value())
             }
         }
     }
