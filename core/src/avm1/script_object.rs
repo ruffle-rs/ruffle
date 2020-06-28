@@ -201,7 +201,7 @@ impl<'gc> ScriptObject<'gc> {
             self.0.write(context.gc_context).prototype = Some(value.coerce_to_object(avm, context));
         } else if let Ok(index) = name.parse::<usize>() {
             self.set_array_element(index, value.to_owned(), context.gc_context);
-        } else {
+        } else if !name.is_empty() {
             if name == "length" {
                 let length = value
                     .coerce_to_f64(avm, context)
