@@ -428,12 +428,7 @@ impl<'gc> Avm1<'gc> {
 
                 let can_return = activation.read().can_return() && !self.stack_frames.is_empty();
                 if can_return {
-                    let return_value = return_type.value();
-                    activation
-                        .write(context.gc_context)
-                        .set_return_value(return_value.clone());
-
-                    self.push(return_value);
+                    self.push(return_type.value());
                 }
                 Ok(())
             }

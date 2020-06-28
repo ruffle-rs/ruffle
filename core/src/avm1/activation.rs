@@ -78,9 +78,6 @@ pub struct Activation<'gc> {
     /// The arguments this function was called by.
     arguments: Option<Object<'gc>>,
 
-    /// The return value of the activation.
-    return_value: Option<Value<'gc>>,
-
     /// Indicates if this activation object represents a function or embedded
     /// block (e.g. ActionWith).
     is_function: bool,
@@ -119,7 +116,6 @@ unsafe impl<'gc> gc_arena::Collect for Activation<'gc> {
         self.constant_pool.trace(cc);
         self.this.trace(cc);
         self.arguments.trace(cc);
-        self.return_value.trace(cc);
         self.local_registers.trace(cc);
         self.base_clip.trace(cc);
         self.target_clip.trace(cc);
@@ -146,7 +142,6 @@ impl<'gc> Activation<'gc> {
             target_clip: Some(base_clip),
             this,
             arguments,
-            return_value: None,
             is_function: false,
             local_registers: None,
             is_executing: false,
@@ -172,7 +167,6 @@ impl<'gc> Activation<'gc> {
             target_clip: Some(base_clip),
             this,
             arguments,
-            return_value: None,
             is_function: true,
             local_registers: None,
             is_executing: false,
@@ -209,7 +203,6 @@ impl<'gc> Activation<'gc> {
             target_clip: Some(base_clip),
             this: globals,
             arguments: None,
-            return_value: None,
             is_function: false,
             local_registers: None,
             is_executing: false,
@@ -228,7 +221,6 @@ impl<'gc> Activation<'gc> {
             target_clip: self.target_clip,
             this: self.this,
             arguments: self.arguments,
-            return_value: None,
             is_function: false,
             local_registers: self.local_registers,
             is_executing: false,
@@ -422,17 +414,5 @@ impl<'gc> Activation<'gc> {
     /// again.
     pub fn unlock_execution(&mut self) {
         self.is_executing = false;
-    }
-
-    /// Retrieve the return value from a completed activation, if the function
-    /// has already returned.
-    #[allow(dead_code)]
-    pub fn return_value(&self) -> Option<Value<'gc>> {
-        self.return_value.clone()
-    }
-
-    /// Set the return value.
-    pub fn set_return_value(&mut self, value: Value<'gc>) {
-        self.return_value = Some(value);
     }
 }
