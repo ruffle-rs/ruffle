@@ -81,9 +81,6 @@ pub struct Avm1<'gc> {
     /// DisplayObject property map.
     display_properties: GcCell<'gc, stage_object::DisplayPropertyMap<'gc>>,
 
-    /// All activation records for the current execution context.
-    stack_frames: Vec<GcCell<'gc, Activation<'gc>>>,
-
     /// The operand stack (shared across functions).
     stack: Vec<Value<'gc>>,
 
@@ -104,7 +101,6 @@ unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
         self.system_listeners.trace(cc);
         self.prototypes.trace(cc);
         self.display_properties.trace(cc);
-        self.stack_frames.trace(cc);
         self.stack.trace(cc);
 
         for register in &self.registers {
@@ -124,7 +120,6 @@ impl<'gc> Avm1<'gc> {
             prototypes,
             system_listeners,
             display_properties: stage_object::DisplayPropertyMap::new(gc_context),
-            stack_frames: vec![],
             stack: vec![],
             registers: [
                 Value::Undefined,
@@ -331,27 +326,9 @@ impl<'gc> Avm1<'gc> {
     where
         for<'b> F: FnOnce(&mut StackFrame<'b, 'gc>, &mut UpdateContext<'a, 'gc, '_>) -> R,
     {
-        self.stack_frames.push(activation);
         let mut stack_frame = StackFrame::new(self, activation);
         // TODO: Handle
-        let result = function(&mut stack_frame, context);
-        self.stack_frames.pop();
-        result
-    }
-
-    /// Retrieve the current AVM execution frame.
-    ///
-    /// Yields None if there is no stack frame.
-    pub fn current_stack_frame(&self) -> Result<GcCell<'gc, Activation<'gc>>, Error<'gc>> {
-        self.stack_frames.last().copied().ok_or(Error::NoStackFrame)
-    }
-
-    /// Checks if there is currently a stack frame.
-    ///
-    /// This is an indicator if you are currently running from inside or outside the AVM.
-    /// This method is cheaper than `current_stack_frame` as it doesn't need to perform a copy.
-    pub fn has_stack_frame(&self) -> bool {
-        !self.stack_frames.is_empty()
+        function(&mut stack_frame, context)
     }
 
     pub fn notify_system_listeners(
@@ -383,20 +360,16 @@ impl<'gc> Avm1<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         activation: GcCell<'gc, Activation<'gc>>,
     ) -> Result<(), Error<'gc>> {
-        self.stack_frames.push(activation);
         let mut stack_frame = StackFrame::new(self, activation);
         match stack_frame.run(context) {
             Ok(return_type) => {
-                self.stack_frames.pop();
-
-                let can_return = activation.read().can_return() && !self.stack_frames.is_empty();
+                let can_return = activation.read().can_return();
                 if can_return {
                     self.push(return_type.value());
                 }
                 Ok(())
             }
             Err(error) => {
-                stack_frame.avm().stack_frames.pop();
                 if error.is_halting() {
                     stack_frame.avm().halt();
                 }
