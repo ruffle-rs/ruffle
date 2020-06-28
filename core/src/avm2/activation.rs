@@ -480,6 +480,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::ConvertU => self.op_convert_u(),
                 Op::ConvertS => self.op_convert_s(),
                 Op::Add => self.op_add(),
+                Op::AddI => self.op_add_i(),
                 Op::Jump { offset } => self.op_jump(offset, reader),
                 Op::IfTrue { offset } => self.op_if_true(offset, reader),
                 Op::IfFalse { offset } => self.op_if_false(offset, reader),
@@ -1449,6 +1450,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         };
 
         self.context.avm2.push(sum_value);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_add_i(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop().coerce_to_i32(self)?;
+        let value1 = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        self.context.avm2.push(value1 + value2);
 
         Ok(FrameControl::Continue)
     }
