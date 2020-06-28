@@ -66,7 +66,7 @@ pub fn define_display_object_proto<'gc>(
         gc_context,
         "_root",
         Executable::Native(|activation, context, _this, _args| {
-            Ok(activation.avm().root_object(context).into())
+            Ok(activation.root_object(context).into())
         }),
         Some(Executable::Native(overwrite_root)),
         DontDelete | ReadOnly | DontEnum,

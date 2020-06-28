@@ -327,7 +327,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let depth = self.avm.pop();
         let target = self.avm.pop();
         let source = self.avm.pop();
-        let start_clip = self.avm.target_clip_or_root();
+        let start_clip = self.target_clip_or_root();
         let source_clip = self.resolve_target_display_object(context, start_clip, source)?;
 
         if let Some(movie_clip) = source_clip.and_then(|o| o.as_movie_clip()) {
@@ -417,7 +417,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // Runs any actions on the given frame.
         let frame = self.avm.pop();
-        let clip = self.avm.target_clip_or_root();
+        let clip = self.target_clip_or_root();
         if let Some(clip) = clip.as_movie_clip() {
             // Use frame # if parameter is a number, otherwise cast to string and check for frame labels.
             let frame = if let Value::Number(frame) = frame {
@@ -435,7 +435,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             if let Some(frame) = frame {
                 for action in clip.actions_on_frame(context, frame) {
                     self.avm.run_stack_frame_for_action(
-                        self.avm.target_clip_or_root(),
+                        self.target_clip_or_root(),
                         self.avm.current_swf_version(),
                         action,
                         context,
@@ -467,7 +467,6 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             .resolve(self, context)?;
 
         let this = self
-            .avm
             .target_clip_or_root()
             .object()
             .coerce_to_object(self, context);
@@ -493,7 +492,6 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         match method_name {
             Value::Undefined | Value::Null => {
                 let this = self
-                    .avm
                     .target_clip_or_root()
                     .object()
                     .coerce_to_object(self, context);
@@ -585,7 +583,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             params,
             scope,
             constant_pool,
-            self.avm.target_clip_or_root(),
+            self.target_clip_or_root(),
         );
         let prototype =
             ScriptObject::object(context.gc_context, Some(self.avm.prototypes.object)).into();
@@ -627,7 +625,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             action_func,
             scope,
             constant_pool,
-            self.avm.base_clip(),
+            self.base_clip(),
         );
         let prototype =
             ScriptObject::object(context.gc_context, Some(self.avm.prototypes.object)).into();
@@ -877,7 +875,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let prop_index = self.avm.pop().into_number_v1() as usize;
         let path = self.avm.pop();
-        let ret = if let Some(target) = self.avm.target_clip() {
+        let ret = if let Some(target) = self.target_clip() {
             if let Some(clip) = self.resolve_target_display_object(context, target, path)? {
                 let display_properties = self.avm.display_properties;
                 let props = display_properties.write(context.gc_context);
@@ -985,11 +983,11 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             if let Value::Object(target) = target {
                 target.as_display_object()
             } else {
-                let start = self.avm.target_clip_or_root();
+                let start = self.target_clip_or_root();
                 self.resolve_target_display_object(context, start, target.clone())?
             }
         } else {
-            Some(self.avm.target_clip_or_root())
+            Some(self.target_clip_or_root())
         };
 
         if is_load_vars {
@@ -1054,7 +1052,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         frame: u16,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        if let Some(clip) = self.avm.target_clip() {
+        if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 // The frame on the stack is 0-based, not 1-based.
                 clip.goto_frame(self.avm, context, frame + 1, true);
@@ -1075,7 +1073,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // Version 4+ gotoAndPlay/gotoAndStop
         // Param can either be a frame number or a frame label.
-        if let Some(clip) = self.avm.target_clip() {
+        if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 let frame = self.avm.pop();
                 let _ = globals::movie_clip::goto_frame(
@@ -1100,7 +1098,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         label: &str,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        if let Some(clip) = self.avm.target_clip() {
+        if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 if let Some(frame) = clip.frame_label_to_number(label) {
                     clip.goto_frame(self.avm, context, frame, true);
@@ -1348,7 +1346,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        if let Some(clip) = self.avm.target_clip() {
+        if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 clip.next_frame(self.avm, context);
             } else {
@@ -1477,7 +1475,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        if let Some(clip) = self.avm.target_clip() {
+        if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 clip.play(context)
             } else {
@@ -1493,7 +1491,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        if let Some(clip) = self.avm.target_clip() {
+        if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 clip.prev_frame(self.avm, context);
             } else {
@@ -1584,7 +1582,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let target = self.avm.pop();
-        let start_clip = self.avm.target_clip_or_root();
+        let start_clip = self.target_clip_or_root();
         let target_clip = self.resolve_target_display_object(context, start_clip, target)?;
 
         if let Some(target_clip) = target_clip.and_then(|o| o.as_movie_clip()) {
@@ -1622,7 +1620,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let value = self.avm.pop();
         let prop_index = self.avm.pop().coerce_to_u32(self, context)? as usize;
         let path = self.avm.pop();
-        if let Some(target) = self.avm.target_clip() {
+        if let Some(target) = self.target_clip() {
             if let Some(clip) = self.resolve_target_display_object(context, target, path)? {
                 let display_properties = self.avm.display_properties;
                 let props = display_properties.read();
@@ -1668,7 +1666,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         target: &str,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let base_clip = self.avm.base_clip();
+        let base_clip = self.base_clip();
         let new_target_clip;
         let root = base_clip.root();
         let start = base_clip.object().coerce_to_object(self, context);
@@ -1765,7 +1763,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let target = self.avm.pop();
-        let start_clip = self.avm.target_clip_or_root();
+        let start_clip = self.target_clip_or_root();
         let display_object = self.resolve_target_display_object(context, start_clip, target)?;
         if let Some(display_object) = display_object {
             let lock_center = self.avm.pop();
@@ -1794,7 +1792,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        if let Some(clip) = self.avm.target_clip() {
+        if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 clip.stop(context);
             } else {
@@ -2407,7 +2405,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         path: &'s str,
     ) -> Result<ReturnValue<'gc>, Error<'gc>> {
         // Resolve a variable path for a GetVariable action.
-        let start = self.avm().target_clip_or_root();
+        let start = self.target_clip_or_root();
 
         // Find the right-most : or . in the path.
         // If we have one, we must resolve as a target path.
@@ -2493,7 +2491,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         value: Value<'gc>,
     ) -> Result<(), Error<'gc>> {
         // Resolve a variable path for a GetVariable action.
-        let start = self.avm().target_clip_or_root();
+        let start = self.target_clip_or_root();
 
         // If the target clip is invalid, we default to root for the variable path.
         if path.is_empty() {
@@ -2551,7 +2549,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             *level
         } else {
             let mut level: DisplayObject<'_> = MovieClip::new(
-                SwfSlice::empty(self.avm().base_clip().movie().unwrap()),
+                SwfSlice::empty(self.base_clip().movie().unwrap()),
                 context.gc_context,
             )
             .into();
@@ -2566,5 +2564,34 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
 
     pub fn activation(&self) -> GcCell<'gc, Activation<'gc>> {
         self.activation
+    }
+
+    #[allow(dead_code)]
+    pub fn base_clip(&self) -> DisplayObject<'gc> {
+        self.activation.read().base_clip()
+    }
+
+    /// The current target clip for the executing code.
+    /// This is the movie clip that contains the bytecode.
+    /// Timeline actions like `GotoFrame` use this because
+    /// a goto after an invalid tellTarget has no effect.
+    pub fn target_clip(&self) -> Option<DisplayObject<'gc>> {
+        self.activation.read().target_clip()
+    }
+
+    /// The current target clip of the executing code.
+    /// Actions that affect `root` after an invalid `tellTarget` will use this.
+    ///
+    /// The `root` is determined relative to the base clip that defined the
+    pub fn target_clip_or_root(&self) -> DisplayObject<'gc> {
+        self.activation
+            .read()
+            .target_clip()
+            .unwrap_or_else(|| self.base_clip().root())
+    }
+
+    /// Obtain the value of `_root`.
+    pub fn root_object(&self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Value<'gc> {
+        self.base_clip().root().object()
     }
 }

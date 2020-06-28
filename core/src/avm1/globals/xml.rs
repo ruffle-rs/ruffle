@@ -824,7 +824,7 @@ pub fn xml_load<'gc>(
         this.set("loaded", false.into(), activation, ac)?;
 
         let fetch = ac.navigator.fetch(&url, RequestOptions::get());
-        let target_clip = activation.avm().target_clip_or_root();
+        let target_clip = activation.target_clip_or_root();
         let process = ac.load_manager.load_xml_into_node(
             ac.player.clone().unwrap(),
             node,

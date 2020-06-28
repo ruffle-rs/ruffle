@@ -86,7 +86,7 @@ fn target<'gc>(
     let target = this.get("target", activation, context)?;
     // Undefined or empty target is no-op.
     if target != Value::Undefined && !matches!(&target, &Value::String(ref s) if s.is_empty()) {
-        let start_clip = activation.avm().target_clip_or_root();
+        let start_clip = activation.target_clip_or_root();
         activation.resolve_target_display_object(context, start_clip, target)
     } else {
         Ok(None)

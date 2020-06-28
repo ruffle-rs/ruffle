@@ -136,31 +136,6 @@ impl<'gc> Avm1<'gc> {
         }
     }
 
-    #[allow(dead_code)]
-    pub fn base_clip(&self) -> DisplayObject<'gc> {
-        self.current_stack_frame().unwrap().read().base_clip()
-    }
-
-    /// The current target clip for the executing code.
-    /// This is the movie clip that contains the bytecode.
-    /// Timeline actions like `GotoFrame` use this because
-    /// a goto after an invalid tellTarget has no effect.
-    pub fn target_clip(&self) -> Option<DisplayObject<'gc>> {
-        self.current_stack_frame().unwrap().read().target_clip()
-    }
-
-    /// The current target clip of the executing code, or `root` if there is none.
-    /// Actions that affect `root` after an invalid `tellTarget` will use this.
-    ///
-    /// The `root` is determined relative to the base clip that defined the
-    pub fn target_clip_or_root(&self) -> DisplayObject<'gc> {
-        self.current_stack_frame()
-            .unwrap()
-            .read()
-            .target_clip()
-            .unwrap_or_else(|| self.base_clip().root())
-    }
-
     /// Add a stack frame that executes code in timeline scope
     pub fn run_stack_frame_for_action(
         &mut self,
@@ -471,11 +446,6 @@ impl<'gc> Avm1<'gc> {
         avm_debug!("Stack pop {}: {:?}", self.stack.len(), value);
 
         value
-    }
-
-    /// Obtain the value of `_root`.
-    pub fn root_object(&self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Value<'gc> {
-        self.base_clip().root().object()
     }
 
     /// Obtain the value of `_global`.

@@ -514,7 +514,7 @@ fn create_empty_movie_clip<'gc>(
     // Create empty movie clip.
     let swf_movie = movie_clip
         .movie()
-        .or_else(|| activation.avm().base_clip().movie())
+        .or_else(|| activation.base_clip().movie())
         .unwrap();
     let mut new_clip = MovieClip::new(SwfSlice::empty(swf_movie), context.gc_context);
 
@@ -533,7 +533,7 @@ fn create_text_field<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    let movie = activation.avm().base_clip().movie().unwrap();
+    let movie = activation.base_clip().movie().unwrap();
     let instance_name = args.get(0).cloned().unwrap_or(Value::Undefined);
     let depth = args
         .get(1)
