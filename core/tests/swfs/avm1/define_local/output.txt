@@ -1,0 +1,27 @@
+DefineLocal runs virtual setter: 
+set prop1
+get prop1
+prop1: prop1
+
+DefineLocal overwrites prototype non-virtual property: 
+prop2: 10
+
+DefineLocal runs prototype virtual setter: 
+set prop3
+get prop3
+prop3: prop3
+
+DefineLocal2 already defined:
+prop4: prop4
+
+DefineLocal2 already defined on prototype:
+prop5: prop5
+
+DefineLocal2 not already defined:
+prop6: undefined
+hasOwnProperty('prop6'): true
+
+Inside function
+
+prop1: func1
+prop3: undefined
