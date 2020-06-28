@@ -481,23 +481,29 @@ impl Player {
         let mut is_mouse_down = self.is_mouse_down;
         self.mutate_with_update_context(|avm, context| {
             if let Some(node) = context.mouse_hovered_object {
-                if !node.removed() {
-                    match event {
-                        PlayerEvent::MouseDown { .. } => {
-                            is_mouse_down = true;
-                            needs_render = true;
-                            node.handle_clip_event(avm, context, ClipEvent::Press);
-                        }
+                if node.removed() {
+                    context.mouse_hovered_object = None;
+                }
+            }
 
-                        PlayerEvent::MouseUp { .. } => {
-                            is_mouse_down = false;
-                            needs_render = true;
-                            node.handle_clip_event(avm, context, ClipEvent::Release);
-                        }
-
-                        _ => (),
+            match event {
+                PlayerEvent::MouseDown { .. } => {
+                    is_mouse_down = true;
+                    needs_render = true;
+                    if let Some(node) = context.mouse_hovered_object {
+                        node.handle_clip_event(avm, context, ClipEvent::Press);
                     }
                 }
+
+                PlayerEvent::MouseUp { .. } => {
+                    is_mouse_down = false;
+                    needs_render = true;
+                    if let Some(node) = context.mouse_hovered_object {
+                        node.handle_clip_event(avm, context, ClipEvent::Release);
+                    }
+                }
+
+                _ => (),
             }
 
             Self::run_actions(avm, context);
