@@ -143,41 +143,37 @@ impl<'gc> Avm1<'gc> {
             return;
         }
 
-        let activation = GcCell::allocate(
-            action_context.gc_context,
-            Activation::from_nothing(
-                swf_version,
-                self.global_object_cell(),
-                action_context.gc_context,
-                active_clip,
-            ),
+        self.run_in_avm(
+            action_context,
+            swf_version,
+            active_clip,
+            |activation, context| {
+                let clip_obj = active_clip.object().coerce_to_object(activation, context);
+                let child_scope = GcCell::allocate(
+                    context.gc_context,
+                    Scope::new(
+                        activation.activation().read().scope_cell(),
+                        scope::ScopeClass::Target,
+                        clip_obj,
+                    ),
+                );
+                let child_activation = GcCell::allocate(
+                    context.gc_context,
+                    Activation::from_action(
+                        swf_version,
+                        code,
+                        child_scope,
+                        activation.avm().constant_pool,
+                        active_clip,
+                        clip_obj,
+                        None,
+                    ),
+                );
+                if let Err(e) = activation.run_child_activation(child_activation, context) {
+                    root_error_handler(activation, context, e);
+                }
+            },
         );
-        self.run_with_stack_frame(activation, action_context, |activation, context| {
-            let clip_obj = active_clip.object().coerce_to_object(activation, context);
-            let child_scope = GcCell::allocate(
-                context.gc_context,
-                Scope::new(
-                    activation.activation().read().scope_cell(),
-                    scope::ScopeClass::Target,
-                    clip_obj,
-                ),
-            );
-            let child_activation = GcCell::allocate(
-                context.gc_context,
-                Activation::from_action(
-                    swf_version,
-                    code,
-                    child_scope,
-                    activation.avm().constant_pool,
-                    active_clip,
-                    clip_obj,
-                    None,
-                ),
-            );
-            if let Err(e) = activation.run_child_activation(child_activation, context) {
-                root_error_handler(activation, context, e);
-            }
-        });
     }
 
     /// Add a stack frame that executes code in timeline scope
@@ -222,7 +218,8 @@ impl<'gc> Avm1<'gc> {
                 None,
             ),
         );
-        self.run_with_stack_frame(activation, action_context, function)
+        let mut stack_frame = StackFrame::new(self, None, activation);
+        function(&mut stack_frame, action_context)
     }
 
     /// Add a stack frame that executes code in initializer scope
@@ -238,42 +235,38 @@ impl<'gc> Avm1<'gc> {
             return;
         }
 
-        let activation = GcCell::allocate(
-            action_context.gc_context,
-            Activation::from_nothing(
-                swf_version,
-                self.globals,
-                action_context.gc_context,
-                active_clip,
-            ),
+        self.run_in_avm(
+            action_context,
+            swf_version,
+            active_clip,
+            |activation, context| {
+                let clip_obj = active_clip.object().coerce_to_object(activation, context);
+                let child_scope = GcCell::allocate(
+                    context.gc_context,
+                    Scope::new(
+                        activation.activation().read().scope_cell(),
+                        scope::ScopeClass::Target,
+                        clip_obj,
+                    ),
+                );
+                activation.avm().push(Value::Undefined);
+                let child_activation = GcCell::allocate(
+                    context.gc_context,
+                    Activation::from_action(
+                        swf_version,
+                        code,
+                        child_scope,
+                        activation.avm().constant_pool,
+                        active_clip,
+                        clip_obj,
+                        None,
+                    ),
+                );
+                if let Err(e) = activation.run_child_activation(child_activation, context) {
+                    root_error_handler(activation, context, e);
+                }
+            },
         );
-        self.run_with_stack_frame(activation, action_context, |activation, context| {
-            let clip_obj = active_clip.object().coerce_to_object(activation, context);
-            let child_scope = GcCell::allocate(
-                context.gc_context,
-                Scope::new(
-                    activation.activation().read().scope_cell(),
-                    scope::ScopeClass::Target,
-                    clip_obj,
-                ),
-            );
-            activation.avm().push(Value::Undefined);
-            let child_activation = GcCell::allocate(
-                context.gc_context,
-                Activation::from_action(
-                    swf_version,
-                    code,
-                    child_scope,
-                    activation.avm().constant_pool,
-                    active_clip,
-                    clip_obj,
-                    None,
-                ),
-            );
-            if let Err(e) = activation.run_child_activation(child_activation, context) {
-                root_error_handler(activation, context, e);
-            }
-        });
     }
 
     /// Add a stack frame that executes code in timeline scope for an object
@@ -292,10 +285,6 @@ impl<'gc> Avm1<'gc> {
             return;
         }
 
-        let activation = GcCell::allocate(
-            context.gc_context,
-            Activation::from_nothing(swf_version, self.globals, context.gc_context, active_clip),
-        );
         fn caller<'gc>(
             activation: &mut StackFrame<'_, 'gc>,
             context: &mut UpdateContext<'_, 'gc, '_>,
@@ -310,21 +299,33 @@ impl<'gc> Avm1<'gc> {
                 let _ = callback.call(activation, context, obj, base_proto, args);
             }
         }
-        self.run_with_stack_frame(activation, context, |activation, context| {
+        self.run_in_avm(context, swf_version, active_clip, |activation, context| {
             caller(activation, context, obj, name, args)
         });
     }
 
     /// Run a function within the scope of an activation.
-    pub fn run_with_stack_frame<'a, F, R>(
+    ///
+    /// This is intended to be used to create a new frame stack from nothing.
+    pub fn run_in_avm<'a, F, R>(
         &mut self,
-        activation: GcCell<'gc, Activation<'gc>>,
         context: &mut UpdateContext<'a, 'gc, '_>,
+        swf_version: u8,
+        base_clip: DisplayObject<'gc>,
         function: F,
     ) -> R
     where
         for<'b> F: FnOnce(&mut StackFrame<'b, 'gc>, &mut UpdateContext<'a, 'gc, '_>) -> R,
     {
+        let activation = GcCell::allocate(
+            context.gc_context,
+            Activation::from_nothing(
+                swf_version,
+                self.global_object_cell(),
+                context.gc_context,
+                base_clip,
+            ),
+        );
         let mut stack_frame = StackFrame::new(self, None, activation);
         function(&mut stack_frame, context)
     }
@@ -338,11 +339,7 @@ impl<'gc> Avm1<'gc> {
         method: &str,
         args: &[Value<'gc>],
     ) {
-        let activation = GcCell::allocate(
-            context.gc_context,
-            Activation::from_nothing(swf_version, self.globals, context.gc_context, active_clip),
-        );
-        self.run_with_stack_frame(activation, context, |activation, context| {
+        self.run_in_avm(context, swf_version, active_clip, |activation, context| {
             let listeners = activation.avm().system_listeners.get(listener);
             let mut handlers = listeners.prepare_handlers(activation, context, method);
 

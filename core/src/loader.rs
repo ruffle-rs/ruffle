@@ -1,13 +1,13 @@
 //! Management of async loaders
 
-use crate::avm1::{Activation, Object, TObject, Value};
+use crate::avm1::{Object, TObject, Value};
 use crate::backend::navigator::OwnedFuture;
 use crate::context::{ActionQueue, ActionType};
 use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
 use crate::player::{Player, NEWEST_PLAYER_VERSION};
 use crate::tag_utils::SwfMovie;
 use crate::xml::XMLNode;
-use gc_arena::{Collect, CollectionContext, GcCell};
+use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
 use std::string::FromUtf8Error;
 use std::sync::{Arc, Mutex, Weak};
@@ -473,18 +473,10 @@ impl<'gc> Loader<'gc> {
                     _ => return Err(Error::NotMovieLoader),
                 };
 
-                let activation = GcCell::allocate(
-                    uc.gc_context,
-                    Activation::from_nothing(
-                        uc.swf.version(),
-                        avm.global_object_cell(),
-                        uc.gc_context,
-                        *uc.levels.get(&0).unwrap(),
-                    ),
-                );
-                avm.run_with_stack_frame::<_, Result<(), crate::avm1::error::Error>>(
-                    activation,
+                avm.run_in_avm::<_, Result<(), crate::avm1::error::Error>>(
                     uc,
+                    uc.swf.version(),
+                    *uc.levels.get(&0).unwrap(),
                     |activation, context| {
                         for (k, v) in form_urlencoded::parse(&data) {
                             that.set(&k, v.into_owned().into(), activation, context)?;

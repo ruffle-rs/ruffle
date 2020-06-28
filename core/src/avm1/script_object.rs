@@ -726,7 +726,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 mod tests {
     use super::*;
 
-    use crate::avm1::activation::Activation;
     use crate::avm1::globals::system::SystemProperties;
     use crate::avm1::property::Attribute::*;
     use crate::avm1::Avm1;
@@ -800,15 +799,9 @@ mod tests {
 
             let object = ScriptObject::object(gc_context, Some(avm.prototypes().object)).into();
 
-            let globals = avm.global_object_cell();
-            avm.run_with_stack_frame(
-                GcCell::allocate(
-                    gc_context,
-                    Activation::from_nothing(swf_version, globals, gc_context, root),
-                ),
-                &mut context,
-                |activation, context| test(activation, context, object),
-            )
+            avm.run_in_avm(&mut context, swf_version, root, |activation, context| {
+                test(activation, context, object)
+            })
         })
     }
 

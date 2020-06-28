@@ -1,4 +1,3 @@
-use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::stack_frame::StackFrame;
@@ -14,7 +13,7 @@ use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
-use gc_arena::{rootless_arena, GcCell, MutationContext};
+use gc_arena::{rootless_arena, MutationContext};
 use rand::{rngs::SmallRng, SeedableRng};
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
@@ -78,8 +77,6 @@ where
         root.post_instantiation(&mut avm, &mut context, root, None, false);
         root.set_name(context.gc_context, "");
 
-        let globals = avm.global_object_cell();
-
         fn run_test<'a, 'gc: 'a, F>(
             activation: &mut StackFrame<'_, 'gc>,
             context: &mut UpdateContext<'_, 'gc, '_>,
@@ -99,14 +96,9 @@ where
             }
         }
 
-        avm.run_with_stack_frame(
-            GcCell::allocate(
-                gc_context,
-                Activation::from_nothing(swf_version, globals, gc_context, root),
-            ),
-            &mut context,
-            |activation, context| run_test(activation, context, root, test),
-        );
+        avm.run_in_avm(&mut context, swf_version, root, |activation, context| {
+            run_test(activation, context, root, test)
+        });
     }
 
     rootless_arena(|gc_context| in_the_arena(swf_version, test, gc_context))

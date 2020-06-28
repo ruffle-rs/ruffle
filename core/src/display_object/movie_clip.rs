@@ -1,5 +1,5 @@
 //! `MovieClip` display object and support code.
-use crate::avm1::{Activation, Avm1, Object, StageObject, TObject, Value};
+use crate::avm1::{Avm1, Object, StageObject, TObject, Value};
 use crate::backend::audio::AudioStreamHandle;
 
 use crate::avm1::stack_frame::StackFrame;
@@ -975,15 +975,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     return Some(self_node);
                 }
 
-                let activation = GcCell::allocate(
-                    context.gc_context,
-                    Activation::from_nothing(
-                        context.swf.version(),
-                        avm.global_object_cell(),
-                        context.gc_context,
-                        *context.levels.get(&0).unwrap(),
-                    ),
-                );
                 fn finder<'gc>(
                     activation: &mut StackFrame<'_, 'gc>,
                     context: &mut UpdateContext<'_, 'gc, '_>,
@@ -1000,10 +991,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     }
                     None
                 };
-                let result: Option<DisplayObject<'gc>> =
-                    avm.run_with_stack_frame(activation, context, |activation, context| {
-                        finder(activation, context, self_node, self.object())
-                    });
+                let result: Option<DisplayObject<'gc>> = avm.run_in_avm(
+                    context,
+                    context.swf.version(),
+                    *context.levels.get(&0).unwrap(),
+                    |activation, context| finder(activation, context, self_node, self.object()),
+                );
                 if result.is_some() {
                     return result;
                 }
@@ -1057,15 +1050,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             // If we are running within the AVM, this must be an immediate action.
             // If we are not, then this must be queued to be ran first-thing
             if instantiated_from_avm && self.0.read().avm1_constructor.is_some() {
-                let activation = GcCell::allocate(
-                    context.gc_context,
-                    Activation::from_nothing(
-                        context.swf.version(),
-                        avm.global_object_cell(),
-                        context.gc_context,
-                        *context.levels.get(&0).unwrap(),
-                    ),
-                );
                 fn initializer<'gc>(
                     activation: &mut StackFrame<'_, 'gc>,
                     context: &mut UpdateContext<'_, 'gc, '_>,
@@ -1094,9 +1078,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                         let _ = constructor.call(activation, context, object, None, &[]);
                     }
                 }
-                avm.run_with_stack_frame(activation, context, |activation, context| {
-                    initializer(activation, context, self, init_object)
-                });
+                avm.run_in_avm(
+                    context,
+                    context.swf.version(),
+                    *context.levels.get(&0).unwrap(),
+                    |activation, context| initializer(activation, context, self, init_object),
+                );
                 return;
             }
 
@@ -1106,22 +1093,18 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 Some(context.system_prototypes.movie_clip),
             );
             if let Some(init_object) = init_object {
-                let activation = GcCell::allocate(
-                    context.gc_context,
-                    Activation::from_nothing(
-                        context.swf.version(),
-                        avm.global_object_cell(),
-                        context.gc_context,
-                        *context.levels.get(&0).unwrap(),
-                    ),
-                );
-                avm.run_with_stack_frame(activation, context, |activation, context| {
-                    for key in init_object.get_keys(activation) {
-                        if let Ok(value) = init_object.get(&key, activation, context) {
-                            let _ = object.set(&key, value, activation, context);
+                avm.run_in_avm(
+                    context,
+                    context.swf.version(),
+                    *context.levels.get(&0).unwrap(),
+                    |activation, context| {
+                        for key in init_object.get_keys(activation) {
+                            if let Ok(value) = init_object.get(&key, activation, context) {
+                                let _ = object.set(&key, value, activation, context);
+                            }
                         }
-                    }
-                });
+                    },
+                );
             }
             let mut mc = self.0.write(context.gc_context);
             mc.object = Some(object.into());

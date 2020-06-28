@@ -3,7 +3,7 @@ use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::listeners::SystemListener;
 use crate::avm1::object::Object;
 use crate::avm1::stack_frame::StackFrame;
-use crate::avm1::{Activation, Avm1, TObject, Value};
+use crate::avm1::{Avm1, TObject, Value};
 use crate::backend::input::{InputBackend, MouseCursor};
 use crate::backend::storage::StorageBackend;
 use crate::backend::{
@@ -272,24 +272,20 @@ impl Player {
             root.set_name(context.gc_context, "");
             context.levels.insert(0, root);
 
-            let activation = GcCell::allocate(
-                context.gc_context,
-                Activation::from_nothing(
-                    context.swf.version(),
-                    avm.global_object_cell(),
-                    context.gc_context,
-                    *context.levels.get(&0).unwrap(),
-                ),
+            avm.run_in_avm(
+                context,
+                context.swf.version(),
+                *context.levels.get(&0).unwrap(),
+                |activation, context| {
+                    let object = root.object().coerce_to_object(activation, context);
+                    object.define_value(
+                        context.gc_context,
+                        "$version",
+                        context.system.get_version_string(activation).into(),
+                        EnumSet::empty(),
+                    );
+                },
             );
-            avm.run_with_stack_frame(activation, context, |activation, context| {
-                let object = root.object().coerce_to_object(activation, context);
-                object.define_value(
-                    context.gc_context,
-                    "$version",
-                    context.system.get_version_string(activation).into(),
-                    EnumSet::empty(),
-                );
-            });
         });
 
         player.build_matrices();
@@ -391,37 +387,33 @@ impl Player {
             if self.input.is_key_down(KeyCode::Control) && self.input.is_key_down(KeyCode::Alt) {
                 self.mutate_with_update_context(|avm, context| {
                     let mut dumper = VariableDumper::new("  ");
-                    let activation = GcCell::allocate(
-                        context.gc_context,
-                        Activation::from_nothing(
-                            context.swf.version(),
-                            avm.global_object_cell(),
-                            context.gc_context,
-                            *context.levels.get(&0).unwrap(),
-                        ),
-                    );
-                    avm.run_with_stack_frame(activation, context, |activation, context| {
-                        dumper.print_variables(
-                            "Global Variables:",
-                            "_global",
-                            &activation.avm().global_object_cell(),
-                            activation,
-                            context,
-                        );
-                        let levels = context.levels.clone();
-                        for (level, display_object) in levels {
-                            let object = display_object
-                                .object()
-                                .coerce_to_object(activation, context);
+                    avm.run_in_avm(
+                        context,
+                        context.swf.version(),
+                        *context.levels.get(&0).unwrap(),
+                        |activation, context| {
                             dumper.print_variables(
-                                &format!("Level #{}:", level),
-                                &format!("_level{}", level),
-                                &object,
+                                "Global Variables:",
+                                "_global",
+                                &activation.avm().global_object_cell(),
                                 activation,
                                 context,
                             );
-                        }
-                    });
+                            let levels = context.levels.clone();
+                            for (level, display_object) in levels {
+                                let object = display_object
+                                    .object()
+                                    .coerce_to_object(activation, context);
+                                dumper.print_variables(
+                                    &format!("Level #{}:", level),
+                                    &format!("_level{}", level),
+                                    &object,
+                                    activation,
+                                    context,
+                                );
+                            }
+                        },
+                    );
                     log::info!("Variable dump:\n{}", dumper.output());
                 });
             }
@@ -756,15 +748,6 @@ impl Player {
                     constructor: Some(constructor),
                     events,
                 } => {
-                    let activation = GcCell::allocate(
-                        context.gc_context,
-                        Activation::from_nothing(
-                            context.swf.version(),
-                            avm.global_object_cell(),
-                            context.gc_context,
-                            actions.clip,
-                        ),
-                    );
                     fn initializer<'gc>(
                         activation: &mut StackFrame<'_, 'gc>,
                         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -792,9 +775,14 @@ impl Player {
                         }
                     }
                     let clip = actions.clip;
-                    avm.run_with_stack_frame(activation, context, |activation, context| {
-                        initializer(activation, context, clip, constructor, events)
-                    });
+                    avm.run_in_avm(
+                        context,
+                        context.swf.version(),
+                        actions.clip,
+                        |activation, context| {
+                            initializer(activation, context, clip, constructor, events)
+                        },
+                    );
                 }
                 // Run constructor events without changing the prototype
                 ActionType::Construct {
@@ -1023,22 +1011,22 @@ impl Player {
 
     pub fn flush_shared_objects(&mut self) {
         self.update(|avm, update_context| {
-            let activation = GcCell::allocate(
-                update_context.gc_context,
-                Activation::from_nothing(
-                    update_context.swf.version(),
-                    avm.global_object_cell(),
-                    update_context.gc_context,
-                    *update_context.levels.get(&0).unwrap(),
-                ),
+            avm.run_in_avm(
+                update_context,
+                update_context.swf.version(),
+                *update_context.levels.get(&0).unwrap(),
+                |activation, context| {
+                    let shared_objects = context.shared_objects.clone();
+                    for so in shared_objects.values() {
+                        let _ = crate::avm1::globals::shared_object::flush(
+                            activation,
+                            context,
+                            *so,
+                            &[],
+                        );
+                    }
+                },
             );
-            avm.run_with_stack_frame(activation, update_context, |activation, context| {
-                let shared_objects = context.shared_objects.clone();
-                for so in shared_objects.values() {
-                    let _ =
-                        crate::avm1::globals::shared_object::flush(activation, context, *so, &[]);
-                }
-            });
         });
     }
 }
