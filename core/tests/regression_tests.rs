@@ -194,6 +194,7 @@ swf_tests! {
     (swf7_case_sensitive, "avm1/swf7_case_sensitive", 1),
     (prototype_enumerate, "avm1/prototype_enumerate", 1),
     (stage_object_enumerate, "avm1/stage_object_enumerate", 1),
+    (new_object_enumerate, "avm1/new_object_enumerate", 1),
     (as2_super_and_this_v6, "avm1/as2_super_and_this_v6", 1),
     (as2_super_and_this_v8, "avm1/as2_super_and_this_v8", 1),
     (as2_super_via_manual_prototype, "avm1/as2_super_via_manual_prototype", 1),
