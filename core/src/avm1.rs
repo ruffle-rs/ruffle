@@ -1536,27 +1536,31 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
+        // If the property does not exist on the local object's prototype chain, it is created on the local object.
+        // Otherwise, the property is set (including calling virtual setters).
         let value = self.pop();
         let name_val = self.pop();
         let name = name_val.coerce_to_string(self, context)?;
-        self.current_stack_frame()
-            .unwrap()
-            .read()
-            .define(&name, value, context.gc_context);
-        Ok(())
+        let stack_frame = self.current_stack_frame().unwrap();
+        let stack_frame = stack_frame.read();
+        let scope = stack_frame.scope();
+        scope.locals().set(&name, value, self, context)
     }
 
     fn action_define_local_2(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
+        // If the property does not exist on the local object's prototype chain, it is created on the local object.
+        // Otherwise, the property is unchanged.
         let name_val = self.pop();
         let name = name_val.coerce_to_string(self, context)?;
-        self.current_stack_frame().unwrap().read().define(
-            &name,
-            Value::Undefined,
-            context.gc_context,
-        );
+        let stack_frame = self.current_stack_frame().unwrap();
+        let stack_frame = stack_frame.read();
+        let scope = stack_frame.scope();
+        if !scope.locals().has_property(self, context, &name) {
+            scope.locals().set(&name, Value::Undefined, self, context)?;
+        }
         Ok(())
     }
 
