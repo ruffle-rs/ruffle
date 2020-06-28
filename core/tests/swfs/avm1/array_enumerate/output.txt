@@ -1,0 +1,5 @@
+array[5]: elem 5
+array[foo]: foo
+array[0]: elem 0
+array[1]: undefined
+
