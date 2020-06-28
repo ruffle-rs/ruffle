@@ -18,7 +18,20 @@ a,b
 a,b
 2
 
+// array[1] = "b"
+a,b,undefined,undefined,undefined
+5
+
 // array[5] = "c"
 a,b,undefined,undefined,undefined,c
 6
+
+// array.hasOwnProperty(0)
+true
+
+// array.hasOwnProperty(3)
+false
+
+// array.hasOwnProperty(4)
+true
 
