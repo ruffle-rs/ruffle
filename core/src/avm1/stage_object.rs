@@ -133,7 +133,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         let obj = self.0.read();
         let props = activation.avm().display_properties;
-        let case_sensitive = activation.avm().is_case_sensitive();
+        let case_sensitive = activation.is_case_sensitive();
         // Property search order for DisplayObjects:
         if self.has_own_property(activation, context, name) {
             // 1) Actual properties on the underlying object
@@ -347,7 +347,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             return true;
         }
 
-        let case_sensitive = activation.avm().is_case_sensitive();
+        let case_sensitive = activation.is_case_sensitive();
         if obj
             .display_object
             .get_child_by_name(name, case_sensitive)

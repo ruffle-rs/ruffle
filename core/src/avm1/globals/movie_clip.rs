@@ -61,7 +61,7 @@ pub fn hit_test<'gc>(
         let y = args.get(1).unwrap().coerce_to_f64(activation, context)?;
         let shape = args
             .get(2)
-            .map(|v| v.as_bool(activation.avm().current_swf_version()))
+            .map(|v| v.as_bool(activation.current_swf_version()))
             .unwrap_or(false);
         if shape {
             log::warn!("Ignoring shape hittest and using bounding box instead. Shape based hit detection is not yet implemented. See https://github.com/ruffle-rs/ruffle/issues/177");
@@ -174,7 +174,7 @@ fn line_style<'gc>(
         };
         let is_pixel_hinted = args
             .get(3)
-            .map_or(false, |v| v.as_bool(activation.avm().current_swf_version()));
+            .map_or(false, |v| v.as_bool(activation.current_swf_version()));
         let (allow_scale_x, allow_scale_y) = match args
             .get(4)
             .and_then(|v| v.coerce_to_string(activation, context).ok())
@@ -574,7 +574,7 @@ fn create_text_field<'gc>(
     );
     text_field.post_instantiation(activation.avm(), context, text_field, None, true);
 
-    if activation.avm().current_swf_version() >= 8 {
+    if activation.current_swf_version() >= 8 {
         //SWF8+ returns the `TextField` instance here
         Ok(text_field.object().into())
     } else {
@@ -682,7 +682,7 @@ fn get_next_highest_depth<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    if activation.avm().current_swf_version() >= 7 {
+    if activation.current_swf_version() >= 7 {
         let depth = std::cmp::max(
             movie_clip
                 .highest_depth()

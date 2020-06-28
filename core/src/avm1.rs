@@ -354,18 +354,6 @@ impl<'gc> Avm1<'gc> {
         !self.stack_frames.is_empty()
     }
 
-    /// Get the currently executing SWF version.
-    pub fn current_swf_version(&self) -> u8 {
-        self.current_stack_frame()
-            .map(|sf| sf.read().swf_version())
-            .unwrap_or(self.player_version)
-    }
-
-    /// Returns whether property keys should be case sensitive based on the current SWF version.
-    pub fn is_case_sensitive(&self) -> bool {
-        is_swf_case_sensitive(self.current_swf_version())
-    }
-
     pub fn notify_system_listeners(
         &mut self,
         active_clip: DisplayObject<'gc>,
@@ -462,12 +450,6 @@ impl<'gc> Avm1<'gc> {
     pub fn prototypes(&self) -> &globals::SystemPrototypes<'gc> {
         &self.prototypes
     }
-}
-
-/// Returns whether the given SWF version is case-sensitive.
-/// SWFv7 and above is case-sensitive.
-pub fn is_swf_case_sensitive(swf_version: u8) -> bool {
-    swf_version > 6
 }
 
 pub fn root_error_handler<'gc>(

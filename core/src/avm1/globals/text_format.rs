@@ -55,7 +55,7 @@ fn map_defined_to_bool<'gc>(
         Some(Value::Undefined) => Value::Null,
         Some(Value::Null) => Value::Null,
         None => Value::Null,
-        Some(v) => v.as_bool(activation.avm().current_swf_version()).into(),
+        Some(v) => v.as_bool(activation.current_swf_version()).into(),
     };
 
     this.set(name, val, activation, ac)?;

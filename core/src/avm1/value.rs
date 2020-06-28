@@ -162,15 +162,15 @@ impl<'gc> Value<'gc> {
         _context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> f64 {
         match self {
-            Value::Undefined if activation.avm().current_swf_version() < 7 => 0.0,
-            Value::Null if activation.avm().current_swf_version() < 7 => 0.0,
+            Value::Undefined if activation.current_swf_version() < 7 => 0.0,
+            Value::Null if activation.current_swf_version() < 7 => 0.0,
             Value::Undefined => NAN,
             Value::Null => NAN,
             Value::Bool(false) => 0.0,
             Value::Bool(true) => 1.0,
             Value::Number(v) => *v,
             Value::String(v) => match v.as_str() {
-                v if activation.avm().current_swf_version() >= 6 && v.starts_with("0x") => {
+                v if activation.current_swf_version() >= 6 && v.starts_with("0x") => {
                     let mut n: u32 = 0;
                     for c in v[2..].bytes() {
                         n = n.wrapping_shl(4);
@@ -196,7 +196,7 @@ impl<'gc> Value<'gc> {
                     }
                     f64::from(n as i32)
                 }
-                v if activation.avm().current_swf_version() >= 6
+                v if activation.current_swf_version() >= 6
                     && (v.starts_with('0') || v.starts_with("+0") || v.starts_with("-0"))
                     && v[1..].bytes().all(|c| c >= b'0' && c <= b'7') =>
                 {
@@ -470,7 +470,7 @@ impl<'gc> Value<'gc> {
                 }
             }
             Value::Undefined => {
-                if activation.avm().current_swf_version() >= 7 {
+                if activation.current_swf_version() >= 7 {
                     Cow::Borrowed("undefined")
                 } else {
                     Cow::Borrowed("")

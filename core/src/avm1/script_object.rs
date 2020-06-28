@@ -228,7 +228,7 @@ impl<'gc> ScriptObject<'gc> {
                 .0
                 .read()
                 .values
-                .contains_key(name, activation.avm().is_case_sensitive());
+                .contains_key(name, activation.is_case_sensitive());
             let mut rval = None;
 
             if is_vacant {
@@ -262,7 +262,7 @@ impl<'gc> ScriptObject<'gc> {
                     .0
                     .write(context.gc_context)
                     .values
-                    .entry(name.to_owned(), activation.avm().is_case_sensitive())
+                    .entry(name.to_owned(), activation.is_case_sensitive())
                 {
                     Entry::Occupied(mut entry) => Some(
                         entry
@@ -313,7 +313,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .0
             .read()
             .values
-            .get(name, activation.avm().is_case_sensitive())
+            .get(name, activation.is_case_sensitive())
         {
             return value
                 .get(activation, context, this, Some((*self).into()))?
@@ -373,7 +373,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .0
             .write(context.gc_context)
             .values
-            .get_mut(name, activation.avm().is_case_sensitive())
+            .get_mut(name, activation.is_case_sensitive())
         {
             Some(propref) if propref.is_virtual() => {
                 propref.set(activation, context, this, Some((*self).into()), value)
@@ -410,14 +410,9 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         name: &str,
     ) -> bool {
         let mut object = self.0.write(gc_context);
-        if let Some(prop) = object
-            .values
-            .get(name, activation.avm().is_case_sensitive())
-        {
+        if let Some(prop) = object.values.get(name, activation.is_case_sensitive()) {
             if prop.can_delete() {
-                object
-                    .values
-                    .remove(name, activation.avm().is_case_sensitive());
+                object.values.remove(name, activation.is_case_sensitive());
                 return true;
             }
         }
@@ -460,7 +455,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
                 set,
                 attributes,
             },
-            activation.avm().is_case_sensitive(),
+            activation.is_case_sensitive(),
         );
     }
 
@@ -538,7 +533,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0
             .read()
             .values
-            .contains_key(name, activation.avm().is_case_sensitive())
+            .contains_key(name, activation.is_case_sensitive())
     }
 
     fn has_own_virtual(
@@ -551,7 +546,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .0
             .read()
             .values
-            .get(name, activation.avm().is_case_sensitive())
+            .get(name, activation.is_case_sensitive())
         {
             slot.is_virtual()
         } else {
@@ -563,7 +558,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0
             .read()
             .values
-            .get(name, activation.avm().is_case_sensitive())
+            .get(name, activation.is_case_sensitive())
             .map(|p| p.is_overwritable())
             .unwrap_or(false)
     }
@@ -574,7 +569,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .0
             .read()
             .values
-            .get(name, activation.avm().is_case_sensitive())
+            .get(name, activation.is_case_sensitive())
         {
             prop.is_enumerable()
         } else {
@@ -594,7 +589,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         out_keys.extend(proto_keys.into_iter().filter(|k| {
             !object
                 .values
-                .contains_key(k, activation.avm().is_case_sensitive())
+                .contains_key(k, activation.is_case_sensitive())
         }));
 
         // Then our own keys.

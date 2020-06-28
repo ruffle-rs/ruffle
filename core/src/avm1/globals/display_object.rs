@@ -102,7 +102,7 @@ pub fn get_depth<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    if activation.avm().current_swf_version() >= 6 {
+    if activation.current_swf_version() >= 6 {
         let depth = display_object.depth().wrapping_sub(AVM_DEPTH_BIAS);
         Ok(depth.into())
     } else {

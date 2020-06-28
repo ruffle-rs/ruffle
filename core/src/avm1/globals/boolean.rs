@@ -18,7 +18,7 @@ pub fn boolean<'gc>(
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
     let (ret_value, cons_value) = if let Some(val) = args.get(0) {
-        let b = Value::Bool(val.as_bool(activation.avm().current_swf_version()));
+        let b = Value::Bool(val.as_bool(activation.current_swf_version()));
         (b.clone(), b)
     } else {
         (Value::Undefined, Value::Bool(false))

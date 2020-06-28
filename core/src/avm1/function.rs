@@ -272,7 +272,7 @@ impl<'gc> Executable<'gc> {
                     None
                 };
 
-                let effective_ver = if activation.avm().current_swf_version() > 5 {
+                let effective_ver = if activation.current_swf_version() > 5 {
                     af.swf_version()
                 } else {
                     this.as_display_object()

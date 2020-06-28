@@ -78,10 +78,7 @@ pub fn set_html<'gc>(
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             if let Some(value) = args.get(0) {
-                text_field.set_is_html(
-                    context,
-                    value.as_bool(activation.avm().current_swf_version()),
-                );
+                text_field.set_is_html(context, value.as_bool(activation.current_swf_version()));
             }
         }
     }
@@ -147,7 +144,7 @@ pub fn set_border<'gc>(
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             if let Some(value) = args.get(0) {
-                let has_border = value.as_bool(activation.avm().current_swf_version());
+                let has_border = value.as_bool(activation.current_swf_version());
                 text_field.set_has_border(context.gc_context, has_border);
             }
         }
@@ -179,7 +176,7 @@ pub fn set_embed_fonts<'gc>(
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             if let Some(value) = args.get(0) {
-                let embed_fonts = value.as_bool(activation.avm().current_swf_version());
+                let embed_fonts = value.as_bool(activation.current_swf_version());
                 text_field.set_is_device_font(context, !embed_fonts);
             }
         }
@@ -284,7 +281,7 @@ pub fn set_multiline<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_bool(activation.avm().current_swf_version());
+        .as_bool(activation.current_swf_version());
 
     if let Some(etext) = this
         .as_display_object()
@@ -362,7 +359,7 @@ pub fn set_word_wrap<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .as_bool(activation.avm().current_swf_version());
+        .as_bool(activation.current_swf_version());
 
     if let Some(etext) = this
         .as_display_object()

@@ -207,7 +207,7 @@ fn duration<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    if activation.avm().current_swf_version() >= 6 {
+    if activation.current_swf_version() >= 6 {
         if let Some(sound_object) = this.as_sound_object() {
             return Ok(sound_object.duration().into());
         } else {
@@ -224,7 +224,7 @@ fn get_bytes_loaded<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    if activation.avm().current_swf_version() >= 6 {
+    if activation.current_swf_version() >= 6 {
         log::warn!("Sound.getBytesLoaded: Unimplemented");
         Ok(1.into())
     } else {
@@ -238,7 +238,7 @@ fn get_bytes_total<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    if activation.avm().current_swf_version() >= 6 {
+    if activation.current_swf_version() >= 6 {
         log::warn!("Sound.getBytesTotal: Unimplemented");
         Ok(1.into())
     } else {
@@ -282,7 +282,7 @@ fn id3<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    if activation.avm().current_swf_version() >= 6 {
+    if activation.current_swf_version() >= 6 {
         log::warn!("Sound.id3: Unimplemented");
     }
     Ok(Value::Undefined.into())
@@ -294,7 +294,7 @@ fn load_sound<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    if activation.avm().current_swf_version() >= 6 {
+    if activation.current_swf_version() >= 6 {
         log::warn!("Sound.loadSound: Unimplemented");
     }
     Ok(Value::Undefined.into())
@@ -306,7 +306,7 @@ fn position<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    if activation.avm().current_swf_version() >= 6 {
+    if activation.current_swf_version() >= 6 {
         if let Some(sound_object) = this.as_sound_object() {
             // TODO: The position is "sticky"; even if the sound is no longer playing, it should return
             // the previous valid position.
