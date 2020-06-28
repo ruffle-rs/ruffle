@@ -3,7 +3,6 @@
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
@@ -66,7 +65,7 @@ fn constructor<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
         this.set("x", 0.into(), activation, context)?;
         this.set("y", 0.into(), activation, context)?;
@@ -85,7 +84,7 @@ fn constructor<'gc>(
         )?;
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn clone<'gc>(
@@ -93,7 +92,7 @@ fn clone<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let proto = context.system_prototypes.point;
     let args = [
         this.get("x", activation, context)?,
@@ -110,7 +109,7 @@ fn equals<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(other) = args.get(0) {
         let this_x = this.get("x", activation, context)?;
         let this_y = this.get("y", activation, context)?;
@@ -128,7 +127,7 @@ fn add<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this_x = this
         .get("x", activation, context)?
         .coerce_to_f64(activation, context)?;
@@ -149,7 +148,7 @@ fn subtract<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this_x = this
         .get("x", activation, context)?
         .coerce_to_f64(activation, context)?;
@@ -170,7 +169,7 @@ fn distance<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() < 2 {
         return Ok(NAN.into());
     }
@@ -183,8 +182,7 @@ fn distance<'gc>(
     let delta = a.call_method("subtract", &[b.to_owned()], activation, context)?;
     Ok(delta
         .coerce_to_object(activation, context)
-        .get("length", activation, context)?
-        .into())
+        .get("length", activation, context)?)
 }
 
 fn polar<'gc>(
@@ -192,7 +190,7 @@ fn polar<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let length = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -214,7 +212,7 @@ fn interpolate<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() < 3 {
         return Ok(point_to_object((NAN, NAN), activation, context)?.into());
     }
@@ -231,7 +229,7 @@ fn to_string<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let x = this.get("x", activation, context)?;
     let y = this.get("y", activation, context)?;
 
@@ -248,7 +246,7 @@ fn length<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let point = value_to_point(this.into(), activation, context)?;
     let length = (point.0 * point.0 + point.1 * point.1).sqrt();
     Ok(length.into())
@@ -259,7 +257,7 @@ fn normalize<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let current_length = this
         .get("length", activation, context)?
         .coerce_to_f64(activation, context)?;
@@ -282,7 +280,7 @@ fn normalize<'gc>(
         this.set("y", y.into(), activation, context)?;
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn offset<'gc>(
@@ -290,7 +288,7 @@ fn offset<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let point = value_to_point(this.into(), activation, context)?;
     let dx = args
         .get(0)
@@ -304,7 +302,7 @@ fn offset<'gc>(
     this.set("x", (point.0 + dx).into(), activation, context)?;
     this.set("y", (point.1 + dy).into(), activation, context)?;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn create_point_object<'gc>(

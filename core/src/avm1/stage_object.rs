@@ -152,9 +152,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             Ok(level.object())
         } else {
             // 5) Prototype
-            search_prototype(self.proto(), name, activation, context, (*self).into())?
-                .0
-                .resolve(activation, context)
+            Ok(search_prototype(self.proto(), name, activation, context, (*self).into())?.0)
         }
         // 6) TODO: __resolve?
     }

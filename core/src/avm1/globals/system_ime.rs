@@ -3,7 +3,6 @@ use crate::avm1::listeners::Listeners;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute;
 use crate::avm1::property::Attribute::{DontDelete, DontEnum, ReadOnly};
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
@@ -15,7 +14,7 @@ fn on_ime_composition<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(false.into())
 }
 
@@ -24,7 +23,7 @@ fn do_conversion<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(true.into())
 }
 
@@ -33,7 +32,7 @@ fn get_conversion_mode<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok("KOREAN".into())
 }
 
@@ -42,7 +41,7 @@ fn get_enabled<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(false.into())
 }
 
@@ -51,7 +50,7 @@ fn set_composition_string<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(false.into())
 }
 
@@ -60,7 +59,7 @@ fn set_conversion_mode<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(false.into())
 }
 
@@ -69,7 +68,7 @@ fn set_enabled<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(false.into())
 }
 

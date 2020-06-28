@@ -2,7 +2,6 @@
 
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
@@ -157,7 +156,7 @@ fn constructor<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
         apply_matrix_to_object(Matrix::identity(), this, activation, context)?;
     } else {
@@ -181,7 +180,7 @@ fn constructor<'gc>(
         }
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn identity<'gc>(
@@ -189,9 +188,9 @@ fn identity<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     apply_matrix_to_object(Matrix::identity(), this, activation, context)?;
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn clone<'gc>(
@@ -199,7 +198,7 @@ fn clone<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let proto = context.system_prototypes.matrix;
     let args = [
         this.get("a", activation, context)?,
@@ -219,7 +218,7 @@ fn scale<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let scale_x = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -232,7 +231,7 @@ fn scale<'gc>(
     matrix *= object_to_matrix(this, activation, context)?;
     apply_matrix_to_object(matrix, this, activation, context)?;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn rotate<'gc>(
@@ -240,7 +239,7 @@ fn rotate<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let angle = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -249,7 +248,7 @@ fn rotate<'gc>(
     matrix *= object_to_matrix(this, activation, context)?;
     apply_matrix_to_object(matrix, this, activation, context)?;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn translate<'gc>(
@@ -257,7 +256,7 @@ fn translate<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let translate_x = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -273,7 +272,7 @@ fn translate<'gc>(
     matrix *= object_to_matrix(this, activation, context)?;
     apply_matrix_to_object(matrix, this, activation, context)?;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn concat<'gc>(
@@ -281,7 +280,7 @@ fn concat<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let mut matrix = object_to_matrix(this, activation, context)?;
     let other = value_to_matrix(
         args.get(0).unwrap_or(&Value::Undefined).clone(),
@@ -291,7 +290,7 @@ fn concat<'gc>(
     matrix = other * matrix;
     apply_matrix_to_object(matrix, this, activation, context)?;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn invert<'gc>(
@@ -299,12 +298,12 @@ fn invert<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let mut matrix = object_to_matrix(this, activation, context)?;
     matrix.invert();
     apply_matrix_to_object(matrix, this, activation, context)?;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn create_box<'gc>(
@@ -312,7 +311,7 @@ fn create_box<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let scale_x = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -346,7 +345,7 @@ fn create_box<'gc>(
     );
     apply_matrix_to_object(matrix, this, activation, context)?;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn create_gradient_box<'gc>(
@@ -354,7 +353,7 @@ fn create_gradient_box<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let width = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -388,7 +387,7 @@ fn create_gradient_box<'gc>(
     );
     apply_matrix_to_object(matrix, this, activation, context)?;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn to_string<'gc>(
@@ -396,7 +395,7 @@ fn to_string<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let a = this.get("a", activation, context)?;
     let b = this.get("b", activation, context)?;
     let c = this.get("c", activation, context)?;

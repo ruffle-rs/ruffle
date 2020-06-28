@@ -2,7 +2,6 @@
 
 use crate::avm1::error::Error;
 use crate::avm1::globals::display_object;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, UpdateContext, Value};
 use gc_arena::MutationContext;
@@ -25,6 +24,6 @@ pub fn constructor<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    Ok(Value::Undefined.into())
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Undefined)
 }

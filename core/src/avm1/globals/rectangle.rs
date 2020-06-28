@@ -4,7 +4,6 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::point::{construct_new_point, point_to_object, value_to_point};
 use crate::avm1::property::Attribute;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
@@ -17,7 +16,7 @@ fn constructor<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
         this.set("x", 0.into(), activation, context)?;
         this.set("y", 0.into(), activation, context)?;
@@ -50,7 +49,7 @@ fn constructor<'gc>(
         )?;
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn to_string<'gc>(
@@ -58,7 +57,7 @@ fn to_string<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let x = this.get("x", activation, context)?;
     let y = this.get("y", activation, context)?;
     let width = this.get("width", activation, context)?;
@@ -92,7 +91,7 @@ fn is_empty<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let width = this
         .get("width", activation, context)?
         .coerce_to_f64(activation, context)?;
@@ -107,12 +106,12 @@ fn set_empty<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     this.set("x", 0.into(), activation, context)?;
     this.set("y", 0.into(), activation, context)?;
     this.set("width", 0.into(), activation, context)?;
     this.set("height", 0.into(), activation, context)?;
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn clone<'gc>(
@@ -120,7 +119,7 @@ fn clone<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let proto = context.system_prototypes.rectangle;
     let args = [
         this.get("x", activation, context)?,
@@ -138,7 +137,7 @@ fn contains<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     // TODO: This arbitrarily should return `false` or `undefined` for different invalid-values.
     // I can't find any rhyme or reason for it.
     let x = args
@@ -152,7 +151,7 @@ fn contains<'gc>(
         .to_owned()
         .coerce_to_f64(activation, context)?;
     if x.is_nan() || y.is_nan() {
-        return Ok(Value::Undefined.into());
+        return Ok(Value::Undefined);
     }
 
     let left = this
@@ -178,14 +177,14 @@ fn contains_point<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let (x, y) = value_to_point(
         args.get(0).unwrap_or(&Value::Undefined).to_owned(),
         activation,
         context,
     )?;
     if x.is_nan() || y.is_nan() {
-        return Ok(Value::Undefined.into());
+        return Ok(Value::Undefined);
     }
 
     let left = this
@@ -211,11 +210,11 @@ fn contains_rectangle<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let other = if let Some(Value::Object(other)) = args.get(0) {
         other
     } else {
-        return Ok(Value::Undefined.into());
+        return Ok(Value::Undefined);
     };
 
     let this_left = this
@@ -249,7 +248,7 @@ fn contains_rectangle<'gc>(
             .coerce_to_f64(activation, context)?;
 
     if other_left.is_nan() || other_top.is_nan() || other_right.is_nan() || other_bottom.is_nan() {
-        return Ok(Value::Undefined.into());
+        return Ok(Value::Undefined);
     }
 
     Ok((other_left >= this_left
@@ -264,7 +263,7 @@ fn intersects<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let other = if let Some(Value::Object(other)) = args.get(0) {
         other
     } else {
@@ -313,7 +312,7 @@ fn union<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this_left = this
         .get("x", activation, context)?
         .coerce_to_f64(activation, context)?;
@@ -397,7 +396,7 @@ fn inflate<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let x = this
         .get("x", activation, context)?
         .coerce_to_f64(activation, context)?;
@@ -436,7 +435,7 @@ fn inflate<'gc>(
         context,
     )?;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn inflate_point<'gc>(
@@ -444,7 +443,7 @@ fn inflate_point<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let x = this
         .get("x", activation, context)?
         .coerce_to_f64(activation, context)?;
@@ -478,7 +477,7 @@ fn inflate_point<'gc>(
         context,
     )?;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn offset<'gc>(
@@ -486,7 +485,7 @@ fn offset<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let x = this
         .get("x", activation, context)?
         .coerce_to_f64(activation, context)?;
@@ -507,7 +506,7 @@ fn offset<'gc>(
     this.set("x", Value::Number(x + horizontal), activation, context)?;
     this.set("y", Value::Number(y + vertical), activation, context)?;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn offset_point<'gc>(
@@ -515,7 +514,7 @@ fn offset_point<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let x = this
         .get("x", activation, context)?
         .coerce_to_f64(activation, context)?;
@@ -531,7 +530,7 @@ fn offset_point<'gc>(
     this.set("x", Value::Number(x + horizontal), activation, context)?;
     this.set("y", Value::Number(y + vertical), activation, context)?;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn intersection<'gc>(
@@ -539,7 +538,7 @@ fn intersection<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this_left = this
         .get("x", activation, context)?
         .coerce_to_f64(activation, context)?;
@@ -620,7 +619,7 @@ fn equals<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(Value::Object(other)) = args.get(0) {
         let this_x = this.get("x", activation, context)?;
         let this_y = this.get("y", activation, context)?;
@@ -648,8 +647,8 @@ fn get_left<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    Ok(this.get("x", activation, context)?.into())
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.get("x", activation, context)?)
 }
 
 fn set_left<'gc>(
@@ -657,7 +656,7 @@ fn set_left<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let new_left = args.get(0).unwrap_or(&Value::Undefined).to_owned();
     let old_left = this
         .get("x", activation, context)?
@@ -672,7 +671,7 @@ fn set_left<'gc>(
         activation,
         context,
     )?;
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn get_top<'gc>(
@@ -680,8 +679,8 @@ fn get_top<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    Ok(this.get("y", activation, context)?.into())
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.get("y", activation, context)?)
 }
 
 fn set_top<'gc>(
@@ -689,7 +688,7 @@ fn set_top<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let new_top = args.get(0).unwrap_or(&Value::Undefined).to_owned();
     let old_top = this
         .get("y", activation, context)?
@@ -704,7 +703,7 @@ fn set_top<'gc>(
         activation,
         context,
     )?;
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn get_right<'gc>(
@@ -712,7 +711,7 @@ fn get_right<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let x = this
         .get("x", activation, context)?
         .coerce_to_f64(activation, context)?;
@@ -727,7 +726,7 @@ fn set_right<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let right = if let Some(arg) = args.get(0) {
         arg.coerce_to_f64(activation, context)?
     } else {
@@ -739,7 +738,7 @@ fn set_right<'gc>(
 
     this.set("width", Value::Number(right - x), activation, context)?;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn get_bottom<'gc>(
@@ -747,7 +746,7 @@ fn get_bottom<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let y = this
         .get("y", activation, context)?
         .coerce_to_f64(activation, context)?;
@@ -762,7 +761,7 @@ fn set_bottom<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let bottom = if let Some(arg) = args.get(0) {
         arg.coerce_to_f64(activation, context)?
     } else {
@@ -774,7 +773,7 @@ fn set_bottom<'gc>(
 
     this.set("height", Value::Number(bottom - y), activation, context)?;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn get_size<'gc>(
@@ -782,7 +781,7 @@ fn get_size<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let width = this.get("width", activation, context)?;
     let height = this.get("height", activation, context)?;
     let point = construct_new_point(&[width, height], activation, context)?;
@@ -794,7 +793,7 @@ fn set_size<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let (width, height) = if let Some(Value::Object(object)) = args.get(0) {
         (
             object.get("x", activation, context)?,
@@ -807,7 +806,7 @@ fn set_size<'gc>(
     this.set("width", width, activation, context)?;
     this.set("height", height, activation, context)?;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn get_top_left<'gc>(
@@ -815,7 +814,7 @@ fn get_top_left<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let x = this.get("x", activation, context)?;
     let y = this.get("y", activation, context)?;
     let point = construct_new_point(&[x, y], activation, context)?;
@@ -827,7 +826,7 @@ fn set_top_left<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let (new_left, new_top) = if let Some(Value::Object(object)) = args.get(0) {
         (
             object.get("x", activation, context)?,
@@ -864,7 +863,7 @@ fn set_top_left<'gc>(
         context,
     )?;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn get_bottom_right<'gc>(
@@ -872,7 +871,7 @@ fn get_bottom_right<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let x = this
         .get("x", activation, context)?
         .coerce_to_f64(activation, context)?;
@@ -894,7 +893,7 @@ fn set_bottom_right<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let (bottom, right) = value_to_point(
         args.get(0).unwrap_or(&Value::Undefined).to_owned(),
         activation,
@@ -910,7 +909,7 @@ fn set_bottom_right<'gc>(
     this.set("width", Value::Number(bottom - top), activation, context)?;
     this.set("height", Value::Number(right - left), activation, context)?;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn create_proto<'gc>(

@@ -3,7 +3,6 @@
 use crate::avm1::error::Error;
 use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::script_object::ScriptObject;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, UpdateContext, Value};
@@ -17,7 +16,7 @@ pub fn constructor<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let listeners = ScriptObject::array(
         context.gc_context,
         Some(activation.avm().prototypes().array),
@@ -30,7 +29,7 @@ pub fn constructor<'gc>(
     );
     listeners.set("0", Value::Object(this), activation, context)?;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn add_listener<'gc>(
@@ -38,7 +37,7 @@ pub fn add_listener<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let new_listener = args.get(0).cloned().unwrap_or(Value::Undefined);
     let listeners = this.get("_listeners", activation, context)?;
 
@@ -56,7 +55,7 @@ pub fn remove_listener<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let old_listener = args.get(0).cloned().unwrap_or(Value::Undefined);
     let listeners = this.get("_listeners", activation, context)?;
 
@@ -99,7 +98,7 @@ pub fn broadcast_message<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let event_name_val = args.get(0).cloned().unwrap_or(Value::Undefined);
     let event_name = event_name_val.coerce_to_string(activation, context)?;
     let call_args = &args[0..];
@@ -115,7 +114,7 @@ pub fn broadcast_message<'gc>(
         }
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn load_clip<'gc>(
@@ -123,7 +122,7 @@ pub fn load_clip<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let url_val = args.get(0).cloned().unwrap_or(Value::Undefined);
     let url = url_val.coerce_to_string(activation, context)?;
     let target = args.get(1).cloned().unwrap_or(Value::Undefined);
@@ -155,7 +154,7 @@ pub fn unload_clip<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let target = args.get(0).cloned().unwrap_or(Value::Undefined);
 
     if let Value::Object(target) = target {
@@ -178,7 +177,7 @@ pub fn get_progress<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let target = args.get(0).cloned().unwrap_or(Value::Undefined);
 
     if let Value::Object(target) = target {
@@ -210,7 +209,7 @@ pub fn get_progress<'gc>(
         }
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn create_proto<'gc>(

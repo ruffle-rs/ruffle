@@ -2,7 +2,6 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Avm1Function, FunctionObject};
 use crate::avm1::object::{Object, TObject};
 use crate::avm1::property::Attribute;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::f64_to_wrapping_u32;
 use crate::avm1::{
@@ -462,9 +461,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             args.push(self.avm.pop());
         }
 
-        let target_fn = self
-            .get_variable(context, &fn_name)?
-            .resolve(self, context)?;
+        let target_fn = self.get_variable(context, &fn_name)?;
 
         let this = self
             .target_clip_or_root()
@@ -753,11 +750,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let name_value = self.avm.pop();
         let name = name_value.coerce_to_string(self, context)?;
         self.avm.push(Value::Null); // Sentinel that indicates end of enumeration
-        let object = self
-            .activation()
-            .read()
-            .resolve(&name, self, context)?
-            .resolve(self, context)?;
+        let object = self.activation().read().resolve(&name, self, context)?;
 
         match object {
             Value::Object(ob) => {
@@ -913,7 +906,8 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let var_path = self.avm.pop();
         let path = var_path.coerce_to_string(self, context)?;
 
-        self.get_variable(context, &path)?.push(self);
+        let value = self.get_variable(context, &path)?;
+        self.avm.push(value);
 
         Ok(FrameControl::Continue)
     }
@@ -1427,7 +1421,6 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             .activation()
             .read()
             .resolve(&fn_name, self, context)?
-            .resolve(self, context)?
             .coerce_to_object(self, context);
         let prototype = constructor
             .get("prototype", self, context)?
@@ -2067,7 +2060,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             context.gc_context,
             self.activation.read().to_rescope(block, with_scope),
         );
-        self.avm.run_activation(context, new_activation)?;
+        let _ = self.avm.run_activation(context, new_activation)?;
         Ok(FrameControl::Continue)
     }
 
@@ -2403,7 +2396,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         path: &'s str,
-    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         // Resolve a variable path for a GetVariable action.
         let start = self.target_clip_or_root();
 
@@ -2434,13 +2427,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                     self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
                 {
                     if object.has_property(self, context, var_name) {
-                        return Ok(object.get(var_name, self, context)?.into());
+                        return Ok(object.get(var_name, self, context)?);
                     }
                 }
                 current_scope = scope.read().parent_cell();
             }
 
-            return Ok(Value::Undefined.into());
+            return Ok(Value::Undefined);
         }
 
         // If it doesn't have a trailing variable, it can still be a slash path.

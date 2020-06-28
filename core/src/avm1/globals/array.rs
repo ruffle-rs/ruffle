@@ -3,7 +3,6 @@
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
@@ -94,7 +93,7 @@ pub fn constructor<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let mut consumed = false;
 
     if args.len() == 1 {
@@ -121,7 +120,7 @@ pub fn constructor<'gc>(
         this.set_length(context.gc_context, length);
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn push<'gc>(
@@ -129,7 +128,7 @@ pub fn push<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let old_length = this.length();
     let new_length = old_length + args.len();
     this.set_length(context.gc_context, new_length);
@@ -150,7 +149,7 @@ pub fn unshift<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let old_length = this.length();
     let new_length = old_length + args.len();
     let offset = new_length - old_length;
@@ -175,10 +174,10 @@ pub fn shift<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let old_length = this.length();
     if old_length == 0 {
-        return Ok(Value::Undefined.into());
+        return Ok(Value::Undefined);
     }
 
     let new_length = old_length - 1;
@@ -194,7 +193,7 @@ pub fn shift<'gc>(
 
     this.set_length(context.gc_context, new_length);
 
-    Ok(removed.into())
+    Ok(removed)
 }
 
 pub fn pop<'gc>(
@@ -202,10 +201,10 @@ pub fn pop<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let old_length = this.length();
     if old_length == 0 {
-        return Ok(Value::Undefined.into());
+        return Ok(Value::Undefined);
     }
 
     let new_length = old_length - 1;
@@ -216,7 +215,7 @@ pub fn pop<'gc>(
 
     this.set_length(context.gc_context, new_length);
 
-    Ok(removed.into())
+    Ok(removed)
 }
 
 pub fn reverse<'gc>(
@@ -224,7 +223,7 @@ pub fn reverse<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let length = this.length();
     let mut values = this.array().to_vec();
 
@@ -232,7 +231,7 @@ pub fn reverse<'gc>(
         this.set_array_element(i, values.pop().unwrap(), context.gc_context);
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn join<'gc>(
@@ -240,7 +239,7 @@ pub fn join<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let separator = args
         .get(0)
         .and_then(|v| v.coerce_to_string(activation, context).ok())
@@ -274,7 +273,7 @@ pub fn slice<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let start = args
         .get(0)
         .and_then(|v| v.coerce_to_f64(activation, context).ok())
@@ -305,9 +304,9 @@ pub fn splice<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
-        return Ok(Value::Undefined.into());
+        return Ok(Value::Undefined);
     }
 
     let old_length = this.length();
@@ -322,7 +321,7 @@ pub fn splice<'gc>(
         .map(|v| v as i32)
         .unwrap_or(old_length as i32);
     if count < 0 {
-        return Ok(Value::Undefined.into());
+        return Ok(Value::Undefined);
     }
 
     let removed = ScriptObject::array(context.gc_context, Some(activation.avm().prototypes.array));
@@ -377,7 +376,7 @@ pub fn concat<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let array = ScriptObject::array(context.gc_context, Some(activation.avm().prototypes.array));
     let mut length = 0;
 
@@ -437,7 +436,7 @@ pub fn to_string<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     join(activation, context, this, &[])
 }
 
@@ -446,7 +445,7 @@ fn sort<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     // Overloads:
     // 1) a.sort(flags: Number = 0): Sorts with the given flags.
     // 2) a.sort(compare_fn: Object, flags: Number = 0): Sorts using the given compare function and flags.
@@ -459,7 +458,7 @@ fn sort<'gc>(
         }
         [compare_fn @ Value::Object(_), ..] => (Some(compare_fn), 0),
         [] => (None, 0),
-        _ => return Ok(Value::Undefined.into()),
+        _ => return Ok(Value::Undefined),
     };
 
     let numeric = (flags & NUMERIC) != 0;
@@ -492,7 +491,7 @@ fn sort_on<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     // a.sortOn(field_name, flags: Number = 0): Sorts with the given flags.
     // a.sortOn(field_names: Array, flags: Number = 0): Sorts with fields in order of precedence with the given flags.
     // a.sortOn(field_names: Array, flags: Array: Sorts with fields in order of precedence with the given flags respectively.
@@ -511,7 +510,7 @@ fn sort_on<'gc>(
                 .coerce_to_string(activation, context)?
                 .to_string()]
         }
-        None => return Ok(Value::Undefined.into()),
+        None => return Ok(Value::Undefined),
     };
 
     // Bail out if we don't have any fields.
@@ -581,7 +580,7 @@ fn sort_with_function<'gc>(
         &Value<'gc>,
     ) -> Ordering,
     flags: i32,
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let length = this.length();
     let mut values: Vec<(usize, Value<'gc>)> = this.array().into_iter().enumerate().collect();
     let array_proto = activation.avm().prototypes.array;

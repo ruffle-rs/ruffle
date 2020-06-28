@@ -1,7 +1,6 @@
 //! Function prototype
 
 use crate::avm1::error::Error;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
@@ -13,8 +12,8 @@ pub fn constructor<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    Ok(Value::Undefined.into())
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Undefined)
 }
 
 /// Implements `Function.prototype.call`
@@ -23,7 +22,7 @@ pub fn call<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     func: Object<'gc>,
     myargs: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this = match myargs.get(0) {
         Some(Value::Object(this)) => *this,
         _ => activation.avm().globals,
@@ -37,7 +36,7 @@ pub fn call<'gc>(
 
     match func.as_executable() {
         Some(exec) => exec.exec(activation, action_context, this, None, args),
-        _ => Ok(Value::Undefined.into()),
+        _ => Ok(Value::Undefined),
     }
 }
 
@@ -47,7 +46,7 @@ pub fn apply<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     func: Object<'gc>,
     myargs: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this = match myargs.get(0) {
         Some(Value::Object(this)) => *this,
         _ => activation.avm().globals,
@@ -70,7 +69,7 @@ pub fn apply<'gc>(
 
     match func.as_executable() {
         Some(exec) => exec.exec(activation, action_context, this, None, &child_args),
-        _ => Ok(Value::Undefined.into()),
+        _ => Ok(Value::Undefined),
     }
 }
 
@@ -80,8 +79,8 @@ fn to_string<'gc>(
     _: &mut UpdateContext<'_, 'gc, '_>,
     _: Object<'gc>,
     _: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    Ok(ReturnValue::Immediate("[type Function]".into()))
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok("[type Function]".into())
 }
 
 /// Partially construct `Function.prototype`.

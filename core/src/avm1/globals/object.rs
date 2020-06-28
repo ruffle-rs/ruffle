@@ -2,7 +2,6 @@
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::{self, *};
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, TObject, UpdateContext, Value};
 use crate::character::Character;
@@ -16,8 +15,8 @@ pub fn constructor<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    Ok(Value::Undefined.into())
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Undefined)
 }
 
 /// Implements `Object.prototype.addProperty`
@@ -26,7 +25,7 @@ pub fn add_property<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let name = args
         .get(0)
         .and_then(|v| v.coerce_to_string(activation, context).ok())
@@ -76,10 +75,12 @@ pub fn has_own_property<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(value) = args.get(0) {
         let name = value.coerce_to_string(activation, context)?;
-        Ok(Value::Bool(this.has_own_property(activation, context, &name)).into())
+        Ok(Value::Bool(
+            this.has_own_property(activation, context, &name),
+        ))
     } else {
         Ok(false.into())
     }
@@ -91,8 +92,8 @@ fn to_string<'gc>(
     _: &mut UpdateContext<'_, 'gc, '_>,
     _: Object<'gc>,
     _: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    Ok(ReturnValue::Immediate("[object Object]".into()))
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok("[object Object]".into())
 }
 
 /// Implements `Object.prototype.isPropertyEnumerable`
@@ -101,12 +102,10 @@ fn is_property_enumerable<'gc>(
     _: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     match args.get(0) {
-        Some(Value::String(name)) => {
-            Ok(Value::Bool(this.is_property_enumerable(activation, name)).into())
-        }
-        _ => Ok(Value::Bool(false).into()),
+        Some(Value::String(name)) => Ok(Value::Bool(this.is_property_enumerable(activation, name))),
+        _ => Ok(Value::Bool(false)),
     }
 }
 
@@ -116,13 +115,13 @@ fn is_prototype_of<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     match args.get(0) {
         Some(val) => {
             let ob = val.coerce_to_object(activation, context);
-            Ok(Value::Bool(this.is_prototype_of(ob)).into())
+            Ok(Value::Bool(this.is_prototype_of(ob)))
         }
-        _ => Ok(Value::Bool(false).into()),
+        _ => Ok(Value::Bool(false)),
     }
 }
 
@@ -132,8 +131,8 @@ fn value_of<'gc>(
     _: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    Ok(ReturnValue::Immediate(this.into()))
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.into())
 }
 
 /// Implements `Object.registerClass`
@@ -142,7 +141,7 @@ pub fn register_class<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(class_name) = args.get(0).cloned() {
         let class_name = class_name.coerce_to_string(activation, context)?;
         if let Some(Character::MovieClip(movie_clip)) = context
@@ -160,7 +159,7 @@ pub fn register_class<'gc>(
             }
         }
     }
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 /// Partially construct `Object.prototype`.
@@ -231,12 +230,12 @@ pub fn as_set_prop_flags<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     _: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let mut object = if let Some(object) = args.get(0).map(|v| v.coerce_to_object(activation, ac)) {
         object
     } else {
         log::warn!("ASSetPropFlags called without object to apply to!");
-        return Ok(Value::Undefined.into());
+        return Ok(Value::Undefined);
     };
 
     let properties = match args.get(1) {
@@ -261,7 +260,7 @@ pub fn as_set_prop_flags<'gc>(
         Some(_) => None,
         None => {
             log::warn!("ASSetPropFlags called without object list!");
-            return Ok(Value::Undefined.into());
+            return Ok(Value::Undefined);
         }
     };
 
@@ -291,7 +290,7 @@ pub fn as_set_prop_flags<'gc>(
         None => object.set_attributes(ac.gc_context, None, set_attributes, clear_attributes),
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn create_object_object<'gc>(

@@ -1,7 +1,6 @@
 use crate::avm1::error::Error;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{ScriptObject, TObject, UpdateContext, Value};
 use gc_arena::MutationContext;
@@ -13,7 +12,7 @@ macro_rules! wrap_std {
         $(
             $object.force_set_function(
                 $name,
-                |activation, context, _this, args| -> Result<ReturnValue<'gc>, Error<'gc>> {
+                |activation, context, _this, args| -> Result<Value<'gc>, Error<'gc>> {
                     if let Some(input) = args.get(0) {
                         Ok($std(input.coerce_to_f64(activation, context)?).into())
                     } else {
@@ -33,7 +32,7 @@ fn atan2<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(y) = args.get(0) {
         if let Some(x) = args.get(1) {
             return Ok(y
@@ -52,7 +51,7 @@ fn pow<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(y) = args.get(0) {
         if let Some(x) = args.get(1) {
             let x = x.coerce_to_f64(activation, context)?;
@@ -70,7 +69,7 @@ fn round<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(x) = args.get(0) {
         let x = x.coerce_to_f64(activation, context)?;
         // Note that Flash Math.round always rounds toward infinity,
@@ -86,7 +85,7 @@ fn max<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(a) = args.get(0) {
         return if let Some(b) = args.get(1) {
             match a.abstract_lt(b.to_owned(), activation, context)? {
@@ -111,7 +110,7 @@ fn min<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(a) = args.get(0) {
         return if let Some(b) = args.get(1) {
             match a.abstract_lt(b.to_owned(), activation, context)? {
@@ -136,7 +135,7 @@ pub fn random<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(action_context.rng.gen_range(0.0f64, 1.0f64).into())
 }
 

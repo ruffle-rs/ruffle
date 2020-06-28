@@ -3,7 +3,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::{Attribute, Attribute::*};
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::super_object::SuperObject;
@@ -36,7 +35,7 @@ pub type NativeFunction<'gc> = fn(
     &mut UpdateContext<'_, 'gc, '_>,
     Object<'gc>,
     &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>>;
+) -> Result<Value<'gc>, Error<'gc>>;
 
 /// Represents a function defined in the AVM1 runtime, either through
 /// `DefineFunction` or `DefineFunction2`.
@@ -229,7 +228,7 @@ impl<'gc> Executable<'gc> {
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
-    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         match self {
             Executable::Native(nf) => nf(activation, ac, this, args),
             Executable::Action(af) => {
@@ -364,7 +363,8 @@ impl<'gc> Executable<'gc> {
                     }
                 }
 
-                Ok(frame_cell.into())
+                drop(frame);
+                Ok(activation.avm().run_activation(ac, frame_cell)?.value())
             }
         }
     }
@@ -487,8 +487,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(exec) = self.as_executable() {
-            exec.exec(activation, context, this, base_proto, args)?
-                .resolve(activation, context)
+            exec.exec(activation, context, this, base_proto, args)
         } else {
             Ok(Value::Undefined)
         }

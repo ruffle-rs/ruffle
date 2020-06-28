@@ -1,5 +1,4 @@
 use crate::avm1::error::Error;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use gc_arena::{Collect, MutationContext};
@@ -15,7 +14,7 @@ macro_rules! register_listener {
             context: &mut UpdateContext<'_, 'gc, '_>,
             _this: Object<'gc>,
             args: &[Value<'gc>],
-        ) -> Result<ReturnValue<'gc>, Error<'gc>> {
+        ) -> Result<Value<'gc>, Error<'gc>> {
             activation
                 .avm()
                 .system_listeners
@@ -28,7 +27,7 @@ macro_rules! register_listener {
             context: &mut UpdateContext<'_, 'gc, '_>,
             _this: Object<'gc>,
             args: &[Value<'gc>],
-        ) -> Result<ReturnValue<'gc>, Error<'gc>> {
+        ) -> Result<Value<'gc>, Error<'gc>> {
             let listener = activation.avm().system_listeners.$system_listeners_key;
             listener.remove_listener(activation, context, args)
         }
@@ -67,7 +66,7 @@ impl<'gc> Listeners<'gc> {
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         args: &[Value<'gc>],
-    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let listeners = self.0;
         let listener = args.get(0).unwrap_or(&Value::Undefined).to_owned();
         for i in 0..listeners.length() {
@@ -85,7 +84,7 @@ impl<'gc> Listeners<'gc> {
         activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         args: &[Value<'gc>],
-    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let listeners = self.0;
         let listener = args.get(0).unwrap_or(&Value::Undefined).to_owned();
         for index in 0..listeners.length() {

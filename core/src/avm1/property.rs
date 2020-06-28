@@ -3,7 +3,6 @@
 use self::Attribute::*;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, UpdateContext, Value};
 use core::fmt;
@@ -43,10 +42,10 @@ impl<'gc> Property<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
-    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         match self {
             Property::Virtual { get, .. } => get.exec(activation, context, this, base_proto, &[]),
-            Property::Stored { value, .. } => Ok(value.to_owned().into()),
+            Property::Stored { value, .. } => Ok(value.to_owned()),
         }
     }
 

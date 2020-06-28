@@ -3,7 +3,6 @@
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::*;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::value_object::ValueObject;
 use crate::avm1::{Object, TObject, Value};
@@ -17,7 +16,7 @@ pub fn number<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let value = if let Some(val) = args.get(0) {
         val.coerce_to_f64(activation, context)?
     } else {
@@ -118,16 +117,16 @@ fn to_string<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     // Boxed value must be a number. No coercion.
     let this = if let Some(vbox) = this.as_value_object() {
         if let Value::Number(n) = vbox.unbox() {
             n
         } else {
-            return Ok(Value::Undefined.into());
+            return Ok(Value::Undefined);
         }
     } else {
-        return Ok(Value::Undefined.into());
+        return Ok(Value::Undefined);
     };
 
     let radix = {
@@ -191,14 +190,14 @@ fn value_of<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(vbox) = this.as_value_object() {
         if let Value::Number(n) = vbox.unbox() {
             return Ok(n.into());
         }
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 // The values returned by `NaN.toString(radix)` in Flash Player v7+

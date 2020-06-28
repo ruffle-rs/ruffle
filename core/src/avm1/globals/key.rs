@@ -1,6 +1,5 @@
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::events::KeyCode;
@@ -12,7 +11,7 @@ pub fn is_down<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(key) = args
         .get(0)
         .and_then(|v| v.coerce_to_f64(activation, context).ok())
@@ -29,7 +28,7 @@ pub fn get_code<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let code: u8 = context.input.get_last_key_code().into();
     Ok(code.into())
 }

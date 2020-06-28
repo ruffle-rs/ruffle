@@ -3,7 +3,6 @@
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::shared_object::SharedObject;
 use crate::avm1::super_object::SuperObject;
 use crate::avm1::value_object::ValueObject;
@@ -66,9 +65,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         if self.has_own_property(activation, context, name) {
             self.get_local(name, activation, context, (*self).into())
         } else {
-            search_prototype(self.proto(), name, activation, context, (*self).into())?
-                .0
-                .resolve(activation, context)
+            Ok(search_prototype(self.proto(), name, activation, context, (*self).into())?.0)
         }
     }
 
@@ -116,7 +113,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             context,
             (*self).into(),
         )?;
-        let method = method.resolve(activation, context)?;
+        let method = method;
 
         if let Value::Object(_) = method {
         } else {
@@ -476,7 +473,7 @@ pub fn search_prototype<'gc>(
     activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
-) -> Result<(ReturnValue<'gc>, Option<Object<'gc>>), Error<'gc>> {
+) -> Result<(Value<'gc>, Option<Object<'gc>>), Error<'gc>> {
     let mut depth = 0;
 
     while proto.is_some() {
@@ -486,10 +483,7 @@ pub fn search_prototype<'gc>(
 
         if proto.unwrap().has_own_property(activation, context, name) {
             return Ok((
-                proto
-                    .unwrap()
-                    .get_local(name, activation, context, this)?
-                    .into(),
+                proto.unwrap().get_local(name, activation, context, this)?,
                 proto,
             ));
         }
@@ -498,5 +492,5 @@ pub fn search_prototype<'gc>(
         depth += 1;
     }
 
-    Ok((Value::Undefined.into(), None))
+    Ok((Value::Undefined, None))
 }

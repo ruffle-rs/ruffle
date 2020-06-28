@@ -133,7 +133,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         let child = self.0.read().child;
         let super_proto = self.super_proto();
         let (method, base_proto) = search_prototype(super_proto, name, activation, context, child)?;
-        let method = method.resolve(activation, context)?;
+        let method = method;
 
         if let Value::Object(_) = method {
         } else {

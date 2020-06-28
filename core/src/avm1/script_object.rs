@@ -246,15 +246,13 @@ impl<'gc> ScriptObject<'gc> {
                     if let Some(rval) =
                         this_proto.call_setter(name, value.clone(), activation, context)
                     {
-                        let _ = rval
-                            .exec(
-                                activation,
-                                context,
-                                this,
-                                Some(this_proto),
-                                &[value.clone()],
-                            )?
-                            .resolve(activation, context)?;
+                        let _ = rval.exec(
+                            activation,
+                            context,
+                            this,
+                            Some(this_proto),
+                            &[value.clone()],
+                        )?;
                         worked = true;
                     }
                 }
@@ -282,9 +280,7 @@ impl<'gc> ScriptObject<'gc> {
                 };
 
                 if let Some(rval) = rval {
-                    let _ = rval
-                        .exec(activation, context, this, base_proto, &[value])?
-                        .resolve(activation, context)?;
+                    let _ = rval.exec(activation, context, this, base_proto, &[value])?;
                 }
             }
         }
@@ -319,9 +315,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .values
             .get(name, activation.is_case_sensitive())
         {
-            return value
-                .get(activation, context, this, Some((*self).into()))?
-                .resolve(activation, context);
+            return value.get(activation, context, this, Some((*self).into()));
         }
 
         Ok(Value::Undefined)
@@ -735,7 +729,6 @@ mod tests {
     use crate::avm1::activation::Activation;
     use crate::avm1::globals::system::SystemProperties;
     use crate::avm1::property::Attribute::*;
-    use crate::avm1::return_value::ReturnValue;
     use crate::avm1::Avm1;
     use crate::backend::audio::NullAudioBackend;
     use crate::backend::input::NullInputBackend;
@@ -920,9 +913,7 @@ mod tests {
     #[test]
     fn test_virtual_get() {
         with_object(0, |activation, context, object| {
-            let getter = Executable::Native(|_avm, _context, _this, _args| {
-                Ok(ReturnValue::Immediate("Virtual!".into()))
-            });
+            let getter = Executable::Native(|_avm, _context, _this, _args| Ok("Virtual!".into()));
 
             object.as_script_object().unwrap().add_property(
                 context.gc_context,
@@ -951,9 +942,7 @@ mod tests {
     #[test]
     fn test_delete() {
         with_object(0, |activation, context, object| {
-            let getter = Executable::Native(|_avm, _context, _this, _args| {
-                Ok(ReturnValue::Immediate("Virtual!".into()))
-            });
+            let getter = Executable::Native(|_avm, _context, _this, _args| Ok("Virtual!".into()));
 
             object.as_script_object().unwrap().add_property(
                 context.gc_context,
@@ -1025,9 +1014,7 @@ mod tests {
     #[test]
     fn test_iter_values() {
         with_object(0, |activation, context, object| {
-            let getter = Executable::Native(|_avm, _context, _this, _args| {
-                Ok(ReturnValue::Immediate(Value::Null))
-            });
+            let getter = Executable::Native(|_avm, _context, _this, _args| Ok(Value::Null));
 
             object.as_script_object().unwrap().define_value(
                 context.gc_context,

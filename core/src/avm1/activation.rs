@@ -1,7 +1,6 @@
 //! Activation records
 
 use crate::avm1::error::Error;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::scope::Scope;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, Value};
@@ -312,13 +311,13 @@ impl<'gc> Activation<'gc> {
         name: &str,
         activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         if name == "this" {
-            return Ok(Value::Object(self.this).into());
+            return Ok(Value::Object(self.this));
         }
 
         if name == "arguments" && self.arguments.is_some() {
-            return Ok(Value::Object(self.arguments.unwrap()).into());
+            return Ok(Value::Object(self.arguments.unwrap()));
         }
 
         self.scope().resolve(name, activation, context, self.this)

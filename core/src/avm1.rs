@@ -24,7 +24,6 @@ pub mod function;
 pub mod globals;
 pub mod object;
 mod property;
-mod return_value;
 mod scope;
 pub mod script_object;
 pub mod shared_object;
@@ -43,7 +42,7 @@ mod tests;
 
 use crate::avm1::error::Error;
 use crate::avm1::listeners::SystemListener;
-use crate::avm1::stack_frame::StackFrame;
+use crate::avm1::stack_frame::{ReturnType, StackFrame};
 pub use activation::Activation;
 pub use globals::SystemPrototypes;
 pub use object::{Object, ObjectPtr, TObject};
@@ -304,8 +303,8 @@ impl<'gc> Avm1<'gc> {
             name: &str,
             args: &[Value<'gc>],
         ) {
-            let search_result = search_prototype(Some(obj), name, activation, context, obj)
-                .and_then(|r| Ok((r.0.resolve(activation, context)?, r.1)));
+            let search_result =
+                search_prototype(Some(obj), name, activation, context, obj).map(|r| (r.0, r.1));
 
             if let Ok((callback, base_proto)) = search_result {
                 let _ = callback.call(activation, context, obj, base_proto, args);
@@ -359,23 +358,15 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         activation: GcCell<'gc, Activation<'gc>>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<ReturnType<'gc>, Error<'gc>> {
         let mut stack_frame = StackFrame::new(self, activation);
-        match stack_frame.run(context) {
-            Ok(return_type) => {
-                let can_return = activation.read().can_return();
-                if can_return {
-                    self.push(return_type.value());
-                }
-                Ok(())
-            }
-            Err(error) => {
-                if error.is_halting() {
-                    stack_frame.avm().halt();
-                }
-                Err(error)
+        let result = stack_frame.run(context);
+        if let Err(error) = &result {
+            if error.is_halting() {
+                stack_frame.avm().halt();
             }
         }
+        result
     }
 
     /// Halts the AVM, preventing execution of any further actions.

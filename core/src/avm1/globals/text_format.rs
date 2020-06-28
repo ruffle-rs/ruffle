@@ -1,7 +1,6 @@
 //! `TextFormat` impl
 
 use crate::avm1::error::Error;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use gc_arena::MutationContext;
@@ -69,7 +68,7 @@ pub fn constructor<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     map_defined_to_string("font", this, activation, ac, args.get(0).cloned())?;
     map_defined_to_number("size", this, activation, ac, args.get(1).cloned())?;
     map_defined_to_number("color", this, activation, ac, args.get(2).cloned())?;
@@ -84,7 +83,7 @@ pub fn constructor<'gc>(
     map_defined_to_number("indent", this, activation, ac, args.get(11).cloned())?;
     map_defined_to_number("leading", this, activation, ac, args.get(12).cloned())?;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 /// `TextFormat.prototype` constructor

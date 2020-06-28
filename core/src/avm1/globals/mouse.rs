@@ -1,7 +1,6 @@
 use crate::avm1::error::Error;
 use crate::avm1::listeners::Listeners;
 use crate::avm1::property::Attribute;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use gc_arena::MutationContext;
@@ -11,7 +10,7 @@ pub fn show_mouse<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let was_visible = context.input.mouse_visible();
     context.input.show_mouse();
     if was_visible {
@@ -26,7 +25,7 @@ pub fn hide_mouse<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let was_visible = context.input.mouse_visible();
     context.input.hide_mouse();
     if was_visible {

@@ -2,7 +2,6 @@ use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::globals::system::SystemCapabilities;
 use crate::avm1::object::Object;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
@@ -16,7 +15,7 @@ macro_rules! capabilities_func {
             context: &mut UpdateContext<'_, 'gc, '_>,
             _this: Object<'gc>,
             _args: &[Value<'gc>],
-        ) -> Result<ReturnValue<'gc>, Error<'gc>> {
+        ) -> Result<Value<'gc>, Error<'gc>> {
             Ok(context.system.has_capability($capability).into())
         }
     };
@@ -29,7 +28,7 @@ macro_rules! inverse_capabilities_func {
             context: &mut UpdateContext<'_, 'gc, '_>,
             _this: Object<'gc>,
             _args: &[Value<'gc>],
-        ) -> Result<ReturnValue<'gc>, Error<'gc>> {
+        ) -> Result<Value<'gc>, Error<'gc>> {
             Ok((!context.system.has_capability($capability)).into())
         }
     };
@@ -82,7 +81,7 @@ pub fn get_player_type<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(context.system.player_type.to_string().into())
 }
 
@@ -91,7 +90,7 @@ pub fn get_screen_color<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(context.system.screen_color.to_string().into())
 }
 
@@ -100,7 +99,7 @@ pub fn get_language<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(context
         .system
         .language
@@ -113,7 +112,7 @@ pub fn get_screen_resolution_x<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(context.system.screen_resolution.0.into())
 }
 
@@ -122,7 +121,7 @@ pub fn get_screen_resolution_y<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(context.system.screen_resolution.1.into())
 }
 
@@ -131,7 +130,7 @@ pub fn get_pixel_aspect_ratio<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(context.system.aspect_ratio.into())
 }
 
@@ -140,7 +139,7 @@ pub fn get_screen_dpi<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(context.system.dpi.into())
 }
 
@@ -149,7 +148,7 @@ pub fn get_manufacturer<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(context
         .system
         .manufacturer
@@ -162,7 +161,7 @@ pub fn get_os_name<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(context.system.os.to_string().into())
 }
 
@@ -171,7 +170,7 @@ pub fn get_version<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(context.system.get_version_string(activation).into())
 }
 
@@ -180,7 +179,7 @@ pub fn get_server_string<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(context.system.get_server_string(activation).into())
 }
 
@@ -189,7 +188,7 @@ pub fn get_cpu_architecture<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(context.system.cpu_architecture.to_string().into())
 }
 
@@ -198,7 +197,7 @@ pub fn get_max_idc_level<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(context.system.idc_level.clone().into())
 }
 

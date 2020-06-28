@@ -198,7 +198,6 @@ mod tests {
     use super::*;
     use crate::avm1::error::Error;
     use crate::avm1::function::Executable;
-    use crate::avm1::return_value::ReturnValue;
     use crate::avm1::test_utils::with_avm;
     use crate::avm1::ScriptObject;
     use enumset::EnumSet;
@@ -208,7 +207,7 @@ mod tests {
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
         _args: &[Value<'gc>],
-    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         Err(Error::PrototypeRecursionLimit)
     }
 

@@ -2,7 +2,6 @@ use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::globals::display_object;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
@@ -15,8 +14,8 @@ pub fn constructor<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    Ok(Value::Undefined.into())
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Undefined)
 }
 
 pub fn get_text<'gc>(
@@ -24,13 +23,13 @@ pub fn get_text<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             return Ok(text_field.text().into());
         }
     }
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn set_text<'gc>(
@@ -38,7 +37,7 @@ pub fn set_text<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             if let Some(value) = args.get(0) {
@@ -52,7 +51,7 @@ pub fn set_text<'gc>(
             }
         }
     }
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn get_html<'gc>(
@@ -60,13 +59,13 @@ pub fn get_html<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             return Ok(text_field.is_html().into());
         }
     }
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn set_html<'gc>(
@@ -74,7 +73,7 @@ pub fn set_html<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             if let Some(value) = args.get(0) {
@@ -82,7 +81,7 @@ pub fn set_html<'gc>(
             }
         }
     }
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn get_html_text<'gc>(
@@ -90,7 +89,7 @@ pub fn get_html_text<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             if let Ok(text) = text_field.html_text(context) {
@@ -98,7 +97,7 @@ pub fn get_html_text<'gc>(
             }
         }
     }
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn set_html_text<'gc>(
@@ -106,7 +105,7 @@ pub fn set_html_text<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             let text = args
@@ -117,7 +116,7 @@ pub fn set_html_text<'gc>(
             // Changing the htmlText does NOT update variable bindings (does not call EditText::propagate_text_binding).
         }
     }
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn get_border<'gc>(
@@ -125,14 +124,14 @@ pub fn get_border<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             return Ok(text_field.has_border().into());
         }
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn set_border<'gc>(
@@ -140,7 +139,7 @@ pub fn set_border<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             if let Some(value) = args.get(0) {
@@ -149,7 +148,7 @@ pub fn set_border<'gc>(
             }
         }
     }
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn get_embed_fonts<'gc>(
@@ -157,14 +156,14 @@ pub fn get_embed_fonts<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             return Ok((!text_field.is_device_font()).into());
         }
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn set_embed_fonts<'gc>(
@@ -172,7 +171,7 @@ pub fn set_embed_fonts<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             if let Some(value) = args.get(0) {
@@ -181,7 +180,7 @@ pub fn set_embed_fonts<'gc>(
             }
         }
     }
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn get_length<'gc>(
@@ -189,13 +188,13 @@ pub fn get_length<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             return Ok((text_field.text_length() as f64).into());
         }
     }
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 macro_rules! with_text_field {
@@ -203,13 +202,13 @@ macro_rules! with_text_field {
         $(
             $object.force_set_function(
                 $name,
-                |activation, context: &mut UpdateContext<'_, 'gc, '_>, this, args| -> Result<ReturnValue<'gc>, Error<'gc>> {
+                |activation, context: &mut UpdateContext<'_, 'gc, '_>, this, args| -> Result<Value<'gc>, Error<'gc>> {
                     if let Some(display_object) = this.as_display_object() {
                         if let Some(text_field) = display_object.as_edit_text() {
                             return $fn(text_field, activation, context, args);
                         }
                     }
-                    Ok(Value::Undefined.into())
+                    Ok(Value::Undefined)
                 } as crate::avm1::function::NativeFunction<'gc>,
                 $gc_context,
                 DontDelete | ReadOnly | DontEnum,
@@ -224,7 +223,7 @@ pub fn text_width<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(etext) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_edit_text())
@@ -234,7 +233,7 @@ pub fn text_width<'gc>(
         return Ok(metrics.0.to_pixels().into());
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn text_height<'gc>(
@@ -242,7 +241,7 @@ pub fn text_height<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(etext) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_edit_text())
@@ -252,7 +251,7 @@ pub fn text_height<'gc>(
         return Ok(metrics.1.to_pixels().into());
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn multiline<'gc>(
@@ -260,7 +259,7 @@ pub fn multiline<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(etext) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_edit_text())
@@ -268,7 +267,7 @@ pub fn multiline<'gc>(
         return Ok(etext.is_multiline().into());
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn set_multiline<'gc>(
@@ -276,7 +275,7 @@ pub fn set_multiline<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let is_multiline = args
         .get(0)
         .cloned()
@@ -290,7 +289,7 @@ pub fn set_multiline<'gc>(
         etext.set_multiline(is_multiline, context);
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn variable<'gc>(
@@ -298,7 +297,7 @@ fn variable<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(etext) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_edit_text())
@@ -309,7 +308,7 @@ fn variable<'gc>(
     }
 
     // Unset `variable` retuns null, not undefined
-    Ok(Value::Null.into())
+    Ok(Value::Null)
 }
 
 fn set_variable<'gc>(
@@ -317,7 +316,7 @@ fn set_variable<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let variable = match args.get(0) {
         None | Some(Value::Undefined) | Some(Value::Null) => None,
         Some(v) => Some(v.coerce_to_string(activation, context)?),
@@ -330,7 +329,7 @@ fn set_variable<'gc>(
         etext.set_variable(variable.map(|v| v.into_owned()), activation, context);
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn word_wrap<'gc>(
@@ -338,7 +337,7 @@ pub fn word_wrap<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(etext) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_edit_text())
@@ -346,7 +345,7 @@ pub fn word_wrap<'gc>(
         return Ok(etext.is_word_wrap().into());
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn set_word_wrap<'gc>(
@@ -354,7 +353,7 @@ pub fn set_word_wrap<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let is_word_wrap = args
         .get(0)
         .cloned()
@@ -368,7 +367,7 @@ pub fn set_word_wrap<'gc>(
         etext.set_word_wrap(is_word_wrap, context);
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn auto_size<'gc>(
@@ -376,7 +375,7 @@ pub fn auto_size<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(etext) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_edit_text())
@@ -389,7 +388,7 @@ pub fn auto_size<'gc>(
         });
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn set_auto_size<'gc>(
@@ -397,7 +396,7 @@ pub fn set_auto_size<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(etext) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_edit_text())
@@ -414,7 +413,7 @@ pub fn set_auto_size<'gc>(
         );
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn create_proto<'gc>(
@@ -532,7 +531,7 @@ fn get_new_text_format<'gc>(
     activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let tf = text_field.new_text_format();
 
     Ok(tf.as_avm1_object(activation, context)?.into())
@@ -543,7 +542,7 @@ fn set_new_text_format<'gc>(
     activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let tf = args.get(0).cloned().unwrap_or(Value::Undefined);
 
     if let Value::Object(tf) = tf {
@@ -551,7 +550,7 @@ fn set_new_text_format<'gc>(
         text_field.set_new_text_format(tf_parsed, context);
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn get_text_format<'gc>(
@@ -559,7 +558,7 @@ fn get_text_format<'gc>(
     activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let (from, to) = match (args.get(0), args.get(1)) {
         (Some(f), Some(t)) => (
             f.coerce_to_f64(activation, context)? as usize,
@@ -583,7 +582,7 @@ fn set_text_format<'gc>(
     activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let tf = args.last().cloned().unwrap_or(Value::Undefined);
 
     if let Value::Object(tf) = tf {
@@ -604,7 +603,7 @@ fn set_text_format<'gc>(
         text_field.set_text_format(from, to, tf_parsed, context);
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn replace_text<'gc>(
@@ -612,7 +611,7 @@ fn replace_text<'gc>(
     activation: &mut StackFrame<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let from = args
         .get(0)
         .cloned()
@@ -632,5 +631,5 @@ fn replace_text<'gc>(
 
     text_field.replace_text(from as usize, to as usize, &text, context);
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }

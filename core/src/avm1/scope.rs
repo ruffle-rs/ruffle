@@ -1,7 +1,6 @@
 //! Represents AVM1 scope chain resolution.
 
 use crate::avm1::error::Error;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
@@ -243,16 +242,16 @@ impl<'gc> Scope<'gc> {
         activation: &mut StackFrame<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         if self.locals().has_property(activation, context, name) {
-            return Ok(self.locals().get(name, activation, context)?.into());
+            return Ok(self.locals().get(name, activation, context)?);
         }
         if let Some(scope) = self.parent() {
             return scope.resolve(name, activation, context, this);
         }
 
         //TODO: Should undefined variables halt execution?
-        Ok(Value::Undefined.into())
+        Ok(Value::Undefined)
     }
 
     /// Check if a particular property in the scope chain is defined.

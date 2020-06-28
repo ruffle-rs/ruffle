@@ -3,7 +3,6 @@
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::*;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::value_object::ValueObject;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
@@ -18,7 +17,7 @@ pub fn string<'gc>(
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let value = match args.get(0).cloned() {
         Some(Value::String(s)) => s,
         Some(v) => v.coerce_to_string(activation, ac)?.to_string(),
@@ -176,7 +175,7 @@ fn char_at<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     // TODO: Will return REPLACEMENT_CHAR if this indexes a character outside the BMP, losing info about the surrogate.
     // When we improve our string representation, the unpaired surrogate should be returned.
     let this_val = Value::from(this);
@@ -202,7 +201,7 @@ fn char_code_at<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this_val = Value::from(this);
     let this = this_val.coerce_to_string(activation, context)?;
     let i = args
@@ -225,7 +224,7 @@ fn concat<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let mut ret = Value::from(this)
         .coerce_to_string(activation, context)?
         .to_string();
@@ -241,7 +240,7 @@ fn from_char_code<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     // TODO: Unpaired surrogates will be replace with Unicode replacement char.
     let mut out = String::with_capacity(args.len());
     for arg in args {
@@ -260,13 +259,13 @@ fn index_of<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this = Value::from(this)
         .coerce_to_string(activation, context)?
         .encode_utf16()
         .collect::<Vec<u16>>();
     let pattern = match args.get(0) {
-        None | Some(Value::Undefined) => return Ok(Value::Undefined.into()),
+        None | Some(Value::Undefined) => return Ok(Value::Undefined),
         Some(s) => s
             .clone()
             .coerce_to_string(activation, context)?
@@ -308,13 +307,13 @@ fn last_index_of<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this = Value::from(this)
         .coerce_to_string(activation, context)?
         .encode_utf16()
         .collect::<Vec<u16>>();
     let pattern = match args.get(0) {
-        None | Some(Value::Undefined) => return Ok(Value::Undefined.into()),
+        None | Some(Value::Undefined) => return Ok(Value::Undefined),
         Some(s) => s
             .clone()
             .coerce_to_string(activation, context)?
@@ -360,10 +359,10 @@ fn slice<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
         // No args returns undefined immediately.
-        return Ok(Value::Undefined.into());
+        return Ok(Value::Undefined);
     }
 
     let this_val = Value::from(this);
@@ -396,7 +395,7 @@ fn split<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this_val = Value::from(this);
     let this = this_val.coerce_to_string(activation, context)?;
     let delimiter_val = args.get(0).unwrap_or(&Value::Undefined);
@@ -426,9 +425,9 @@ fn substr<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
-        return Ok(Value::Undefined.into());
+        return Ok(Value::Undefined);
     }
 
     let this_val = Value::from(this);
@@ -453,9 +452,9 @@ fn substring<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
-        return Ok(Value::Undefined.into());
+        return Ok(Value::Undefined);
     }
 
     let this_val = Value::from(this);
@@ -488,7 +487,7 @@ fn to_lower_case<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this_val = Value::from(this);
     let this = this_val.coerce_to_string(activation, context)?;
     Ok(this
@@ -504,7 +503,7 @@ pub fn to_string_value_of<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(vbox) = this.as_value_object() {
         if let Value::String(s) = vbox.unbox() {
             return Ok(s.into());
@@ -514,7 +513,7 @@ pub fn to_string_value_of<'gc>(
     //TODO: This normally falls back to `[object Object]` or `[type Function]`,
     //implying that `toString` and `valueOf` are inherent object properties and
     //not just methods.
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn to_upper_case<'gc>(
@@ -522,7 +521,7 @@ fn to_upper_case<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this_val = Value::from(this);
     let this = this_val.coerce_to_string(activation, context)?;
     Ok(this

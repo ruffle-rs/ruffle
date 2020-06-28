@@ -604,7 +604,6 @@ mod test {
     use crate::avm1::function::{Executable, FunctionObject};
     use crate::avm1::globals::create_globals;
     use crate::avm1::object::{Object, TObject};
-    use crate::avm1::return_value::ReturnValue;
     use crate::avm1::script_object::ScriptObject;
     use crate::avm1::stack_frame::StackFrame;
     use crate::avm1::test_utils::with_avm;
@@ -648,7 +647,7 @@ mod test {
                 _: &mut UpdateContext<'_, 'gc, '_>,
                 _: Object<'gc>,
                 _: &[Value<'gc>],
-            ) -> Result<ReturnValue<'gc>, Error<'gc>> {
+            ) -> Result<Value<'gc>, Error<'gc>> {
                 Ok(5.0.into())
             }
 

@@ -1,7 +1,6 @@
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::object::Object;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
@@ -14,9 +13,9 @@ fn allow_domain<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("System.security.allowDomain() not implemented");
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn allow_insecure_domain<'gc>(
@@ -24,9 +23,9 @@ fn allow_insecure_domain<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("System.security.allowInsecureDomain() not implemented");
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn load_policy_file<'gc>(
@@ -34,9 +33,9 @@ fn load_policy_file<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("System.security.allowInsecureDomain() not implemented");
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn escape_domain<'gc>(
@@ -44,9 +43,9 @@ fn escape_domain<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("System.security.escapeDomain() not implemented");
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn get_sandbox_type<'gc>(
@@ -54,7 +53,7 @@ fn get_sandbox_type<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(context.system.sandbox_type.to_string().into())
 }
 
@@ -63,9 +62,9 @@ fn get_choose_local_swf_path<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("System.security.chooseLocalSwfPath() not implemented");
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn policy_file_resolver<'gc>(
@@ -73,9 +72,9 @@ fn policy_file_resolver<'gc>(
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("System.security.chooseLocalSwfPath() not implemented");
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn create<'gc>(

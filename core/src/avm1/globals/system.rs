@@ -1,7 +1,6 @@
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::object::Object;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
@@ -408,7 +407,7 @@ pub fn set_clipboard<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let new_content = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -417,7 +416,7 @@ pub fn set_clipboard<'gc>(
 
     action_context.input.set_clipboard_content(new_content);
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn show_settings<'gc>(
@@ -425,7 +424,7 @@ pub fn show_settings<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     //TODO: should default to the last panel displayed
     let last_panel_pos = 0;
 
@@ -437,7 +436,7 @@ pub fn show_settings<'gc>(
     let panel = SettingsPanel::try_from(panel_pos as u8).unwrap_or(SettingsPanel::Privacy);
 
     log::warn!("System.showSettings({:?}) not not implemented", panel);
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn set_use_code_page<'gc>(
@@ -445,7 +444,7 @@ pub fn set_use_code_page<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let value = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -454,7 +453,7 @@ pub fn set_use_code_page<'gc>(
 
     action_context.system.use_codepage = value;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn get_use_code_page<'gc>(
@@ -462,7 +461,7 @@ pub fn get_use_code_page<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(action_context.system.use_codepage.into())
 }
 
@@ -471,7 +470,7 @@ pub fn set_exact_settings<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let value = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -480,7 +479,7 @@ pub fn set_exact_settings<'gc>(
 
     action_context.system.exact_settings = value;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn get_exact_settings<'gc>(
@@ -488,7 +487,7 @@ pub fn get_exact_settings<'gc>(
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(action_context.system.exact_settings.into())
 }
 
@@ -497,9 +496,9 @@ pub fn on_status<'gc>(
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("System.onStatus() not implemented");
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn create<'gc>(
