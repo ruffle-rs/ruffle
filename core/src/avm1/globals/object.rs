@@ -76,11 +76,11 @@ pub fn has_own_property<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    match args.get(0) {
-        Some(Value::String(name)) => {
-            Ok(Value::Bool(this.has_own_property(avm, context, name)).into())
-        }
-        _ => Ok(Value::Bool(false).into()),
+    if let Some(value) = args.get(0) {
+        let name = value.coerce_to_string(avm, context)?;
+        Ok(Value::Bool(this.has_own_property(avm, context, &name)).into())
+    } else {
+        Ok(false.into())
     }
 }
 
