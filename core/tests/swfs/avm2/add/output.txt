@@ -1,0 +1,1058 @@
+//true + true
+2
+//false + true
+1
+//null + true
+1
+//undefined + true
+NaN
+//"" + true
+true
+//"str" + true
+strtrue
+//"true" + true
+truetrue
+//"false" + true
+falsetrue
+//0.0 + true
+1
+//NaN + true
+NaN
+//-0.0 + true
+1
+//Infinity + true
+Infinity
+//1.0 + true
+2
+//-1.0 + true
+0
+//0xFF1306 + true
+16716551
+//new Object() + true
+[object Object]true
+//"0.0" + true
+0.0true
+//"NaN" + true
+NaNtrue
+//"-0.0" + true
+-0.0true
+//"Infinity" + true
+Infinitytrue
+//"1.0" + true
+1.0true
+//"-1.0" + true
+-1.0true
+//"0xFF1306" + true
+0xFF1306true
+//true + false
+1
+//false + false
+0
+//null + false
+0
+//undefined + false
+NaN
+//"" + false
+false
+//"str" + false
+strfalse
+//"true" + false
+truefalse
+//"false" + false
+falsefalse
+//0.0 + false
+0
+//NaN + false
+NaN
+//-0.0 + false
+0
+//Infinity + false
+Infinity
+//1.0 + false
+1
+//-1.0 + false
+-1
+//0xFF1306 + false
+16716550
+//new Object() + false
+[object Object]false
+//"0.0" + false
+0.0false
+//"NaN" + false
+NaNfalse
+//"-0.0" + false
+-0.0false
+//"Infinity" + false
+Infinityfalse
+//"1.0" + false
+1.0false
+//"-1.0" + false
+-1.0false
+//"0xFF1306" + false
+0xFF1306false
+//true + null
+1
+//false + null
+0
+//null + null
+0
+//undefined + null
+NaN
+//"" + null
+null
+//"str" + null
+strnull
+//"true" + null
+truenull
+//"false" + null
+falsenull
+//0.0 + null
+0
+//NaN + null
+NaN
+//-0.0 + null
+0
+//Infinity + null
+Infinity
+//1.0 + null
+1
+//-1.0 + null
+-1
+//0xFF1306 + null
+16716550
+//new Object() + null
+[object Object]null
+//"0.0" + null
+0.0null
+//"NaN" + null
+NaNnull
+//"-0.0" + null
+-0.0null
+//"Infinity" + null
+Infinitynull
+//"1.0" + null
+1.0null
+//"-1.0" + null
+-1.0null
+//"0xFF1306" + null
+0xFF1306null
+//true + undefined
+NaN
+//false + undefined
+NaN
+//null + undefined
+NaN
+//undefined + undefined
+NaN
+//"" + undefined
+undefined
+//"str" + undefined
+strundefined
+//"true" + undefined
+trueundefined
+//"false" + undefined
+falseundefined
+//0.0 + undefined
+NaN
+//NaN + undefined
+NaN
+//-0.0 + undefined
+NaN
+//Infinity + undefined
+NaN
+//1.0 + undefined
+NaN
+//-1.0 + undefined
+NaN
+//0xFF1306 + undefined
+NaN
+//new Object() + undefined
+[object Object]undefined
+//"0.0" + undefined
+0.0undefined
+//"NaN" + undefined
+NaNundefined
+//"-0.0" + undefined
+-0.0undefined
+//"Infinity" + undefined
+Infinityundefined
+//"1.0" + undefined
+1.0undefined
+//"-1.0" + undefined
+-1.0undefined
+//"0xFF1306" + undefined
+0xFF1306undefined
+//true + ""
+true
+//false + ""
+false
+//null + ""
+null
+//undefined + ""
+undefined
+//"" + ""
+
+//"str" + ""
+str
+//"true" + ""
+true
+//"false" + ""
+false
+//0.0 + ""
+0
+//NaN + ""
+NaN
+//-0.0 + ""
+0
+//Infinity + ""
+Infinity
+//1.0 + ""
+1
+//-1.0 + ""
+-1
+//0xFF1306 + ""
+16716550
+//new Object() + ""
+[object Object]
+//"0.0" + ""
+0.0
+//"NaN" + ""
+NaN
+//"-0.0" + ""
+-0.0
+//"Infinity" + ""
+Infinity
+//"1.0" + ""
+1.0
+//"-1.0" + ""
+-1.0
+//"0xFF1306" + ""
+0xFF1306
+//true + "str"
+truestr
+//false + "str"
+falsestr
+//null + "str"
+nullstr
+//undefined + "str"
+undefinedstr
+//"" + "str"
+str
+//"str" + "str"
+strstr
+//"true" + "str"
+truestr
+//"false" + "str"
+falsestr
+//0.0 + "str"
+0str
+//NaN + "str"
+NaNstr
+//-0.0 + "str"
+0str
+//Infinity + "str"
+Infinitystr
+//1.0 + "str"
+1str
+//-1.0 + "str"
+-1str
+//0xFF1306 + "str"
+16716550str
+//new Object() + "str"
+[object Object]str
+//"0.0" + "str"
+0.0str
+//"NaN" + "str"
+NaNstr
+//"-0.0" + "str"
+-0.0str
+//"Infinity" + "str"
+Infinitystr
+//"1.0" + "str"
+1.0str
+//"-1.0" + "str"
+-1.0str
+//"0xFF1306" + "str"
+0xFF1306str
+//true + "true"
+truetrue
+//false + "true"
+falsetrue
+//null + "true"
+nulltrue
+//undefined + "true"
+undefinedtrue
+//"" + "true"
+true
+//"str" + "true"
+strtrue
+//"true" + "true"
+truetrue
+//"false" + "true"
+falsetrue
+//0.0 + "true"
+0true
+//NaN + "true"
+NaNtrue
+//-0.0 + "true"
+0true
+//Infinity + "true"
+Infinitytrue
+//1.0 + "true"
+1true
+//-1.0 + "true"
+-1true
+//0xFF1306 + "true"
+16716550true
+//new Object() + "true"
+[object Object]true
+//"0.0" + "true"
+0.0true
+//"NaN" + "true"
+NaNtrue
+//"-0.0" + "true"
+-0.0true
+//"Infinity" + "true"
+Infinitytrue
+//"1.0" + "true"
+1.0true
+//"-1.0" + "true"
+-1.0true
+//"0xFF1306" + "true"
+0xFF1306true
+//true + "false"
+truefalse
+//false + "false"
+falsefalse
+//null + "false"
+nullfalse
+//undefined + "false"
+undefinedfalse
+//"" + "false"
+false
+//"str" + "false"
+strfalse
+//"true" + "false"
+truefalse
+//"false" + "false"
+falsefalse
+//0.0 + "false"
+0false
+//NaN + "false"
+NaNfalse
+//-0.0 + "false"
+0false
+//Infinity + "false"
+Infinityfalse
+//1.0 + "false"
+1false
+//-1.0 + "false"
+-1false
+//0xFF1306 + "false"
+16716550false
+//new Object() + "false"
+[object Object]false
+//"0.0" + "false"
+0.0false
+//"NaN" + "false"
+NaNfalse
+//"-0.0" + "false"
+-0.0false
+//"Infinity" + "false"
+Infinityfalse
+//"1.0" + "false"
+1.0false
+//"-1.0" + "false"
+-1.0false
+//"0xFF1306" + "false"
+0xFF1306false
+//true + 0.0
+1
+//false + 0.0
+0
+//null + 0.0
+0
+//undefined + 0.0
+NaN
+//"" + 0.0
+0
+//"str" + 0.0
+str0
+//"true" + 0.0
+true0
+//"false" + 0.0
+false0
+//0.0 + 0.0
+0
+//NaN + 0.0
+NaN
+//-0.0 + 0.0
+0
+//Infinity + 0.0
+Infinity
+//1.0 + 0.0
+1
+//-1.0 + 0.0
+-1
+//0xFF1306 + 0.0
+16716550
+//new Object() + 0.0
+[object Object]0
+//"0.0" + 0.0
+0.00
+//"NaN" + 0.0
+NaN0
+//"-0.0" + 0.0
+-0.00
+//"Infinity" + 0.0
+Infinity0
+//"1.0" + 0.0
+1.00
+//"-1.0" + 0.0
+-1.00
+//"0xFF1306" + 0.0
+0xFF13060
+//true + NaN
+NaN
+//false + NaN
+NaN
+//null + NaN
+NaN
+//undefined + NaN
+NaN
+//"" + NaN
+NaN
+//"str" + NaN
+strNaN
+//"true" + NaN
+trueNaN
+//"false" + NaN
+falseNaN
+//0.0 + NaN
+NaN
+//NaN + NaN
+NaN
+//-0.0 + NaN
+NaN
+//Infinity + NaN
+NaN
+//1.0 + NaN
+NaN
+//-1.0 + NaN
+NaN
+//0xFF1306 + NaN
+NaN
+//new Object() + NaN
+[object Object]NaN
+//"0.0" + NaN
+0.0NaN
+//"NaN" + NaN
+NaNNaN
+//"-0.0" + NaN
+-0.0NaN
+//"Infinity" + NaN
+InfinityNaN
+//"1.0" + NaN
+1.0NaN
+//"-1.0" + NaN
+-1.0NaN
+//"0xFF1306" + NaN
+0xFF1306NaN
+//true + -0.0
+1
+//false + -0.0
+0
+//null + -0.0
+0
+//undefined + -0.0
+NaN
+//"" + -0.0
+0
+//"str" + -0.0
+str0
+//"true" + -0.0
+true0
+//"false" + -0.0
+false0
+//0.0 + -0.0
+0
+//NaN + -0.0
+NaN
+//-0.0 + -0.0
+0
+//Infinity + -0.0
+Infinity
+//1.0 + -0.0
+1
+//-1.0 + -0.0
+-1
+//0xFF1306 + -0.0
+16716550
+//new Object() + -0.0
+[object Object]0
+//"0.0" + -0.0
+0.00
+//"NaN" + -0.0
+NaN0
+//"-0.0" + -0.0
+-0.00
+//"Infinity" + -0.0
+Infinity0
+//"1.0" + -0.0
+1.00
+//"-1.0" + -0.0
+-1.00
+//"0xFF1306" + -0.0
+0xFF13060
+//true + Infinity
+Infinity
+//false + Infinity
+Infinity
+//null + Infinity
+Infinity
+//undefined + Infinity
+NaN
+//"" + Infinity
+Infinity
+//"str" + Infinity
+strInfinity
+//"true" + Infinity
+trueInfinity
+//"false" + Infinity
+falseInfinity
+//0.0 + Infinity
+Infinity
+//NaN + Infinity
+NaN
+//-0.0 + Infinity
+Infinity
+//Infinity + Infinity
+Infinity
+//1.0 + Infinity
+Infinity
+//-1.0 + Infinity
+Infinity
+//0xFF1306 + Infinity
+Infinity
+//new Object() + Infinity
+[object Object]Infinity
+//"0.0" + Infinity
+0.0Infinity
+//"NaN" + Infinity
+NaNInfinity
+//"-0.0" + Infinity
+-0.0Infinity
+//"Infinity" + Infinity
+InfinityInfinity
+//"1.0" + Infinity
+1.0Infinity
+//"-1.0" + Infinity
+-1.0Infinity
+//"0xFF1306" + Infinity
+0xFF1306Infinity
+//true + 1.0
+2
+//false + 1.0
+1
+//null + 1.0
+1
+//undefined + 1.0
+NaN
+//"" + 1.0
+1
+//"str" + 1.0
+str1
+//"true" + 1.0
+true1
+//"false" + 1.0
+false1
+//0.0 + 1.0
+1
+//NaN + 1.0
+NaN
+//-0.0 + 1.0
+1
+//Infinity + 1.0
+Infinity
+//1.0 + 1.0
+2
+//-1.0 + 1.0
+0
+//0xFF1306 + 1.0
+16716551
+//new Object() + 1.0
+[object Object]1
+//"0.0" + 1.0
+0.01
+//"NaN" + 1.0
+NaN1
+//"-0.0" + 1.0
+-0.01
+//"Infinity" + 1.0
+Infinity1
+//"1.0" + 1.0
+1.01
+//"-1.0" + 1.0
+-1.01
+//"0xFF1306" + 1.0
+0xFF13061
+//true + -1.0
+0
+//false + -1.0
+-1
+//null + -1.0
+-1
+//undefined + -1.0
+NaN
+//"" + -1.0
+-1
+//"str" + -1.0
+str-1
+//"true" + -1.0
+true-1
+//"false" + -1.0
+false-1
+//0.0 + -1.0
+-1
+//NaN + -1.0
+NaN
+//-0.0 + -1.0
+-1
+//Infinity + -1.0
+Infinity
+//1.0 + -1.0
+0
+//-1.0 + -1.0
+-2
+//0xFF1306 + -1.0
+16716549
+//new Object() + -1.0
+[object Object]-1
+//"0.0" + -1.0
+0.0-1
+//"NaN" + -1.0
+NaN-1
+//"-0.0" + -1.0
+-0.0-1
+//"Infinity" + -1.0
+Infinity-1
+//"1.0" + -1.0
+1.0-1
+//"-1.0" + -1.0
+-1.0-1
+//"0xFF1306" + -1.0
+0xFF1306-1
+//true + 0xFF1306
+16716551
+//false + 0xFF1306
+16716550
+//null + 0xFF1306
+16716550
+//undefined + 0xFF1306
+NaN
+//"" + 0xFF1306
+16716550
+//"str" + 0xFF1306
+str16716550
+//"true" + 0xFF1306
+true16716550
+//"false" + 0xFF1306
+false16716550
+//0.0 + 0xFF1306
+16716550
+//NaN + 0xFF1306
+NaN
+//-0.0 + 0xFF1306
+16716550
+//Infinity + 0xFF1306
+Infinity
+//1.0 + 0xFF1306
+16716551
+//-1.0 + 0xFF1306
+16716549
+//0xFF1306 + 0xFF1306
+33433100
+//new Object() + 0xFF1306
+[object Object]16716550
+//"0.0" + 0xFF1306
+0.016716550
+//"NaN" + 0xFF1306
+NaN16716550
+//"-0.0" + 0xFF1306
+-0.016716550
+//"Infinity" + 0xFF1306
+Infinity16716550
+//"1.0" + 0xFF1306
+1.016716550
+//"-1.0" + 0xFF1306
+-1.016716550
+//"0xFF1306" + 0xFF1306
+0xFF130616716550
+//true + new Object()
+true[object Object]
+//false + new Object()
+false[object Object]
+//null + new Object()
+null[object Object]
+//undefined + new Object()
+undefined[object Object]
+//"" + new Object()
+[object Object]
+//"str" + new Object()
+str[object Object]
+//"true" + new Object()
+true[object Object]
+//"false" + new Object()
+false[object Object]
+//0.0 + new Object()
+0[object Object]
+//NaN + new Object()
+NaN[object Object]
+//-0.0 + new Object()
+0[object Object]
+//Infinity + new Object()
+Infinity[object Object]
+//1.0 + new Object()
+1[object Object]
+//-1.0 + new Object()
+-1[object Object]
+//0xFF1306 + new Object()
+16716550[object Object]
+//new Object() + new Object()
+[object Object][object Object]
+//"0.0" + new Object()
+0.0[object Object]
+//"NaN" + new Object()
+NaN[object Object]
+//"-0.0" + new Object()
+-0.0[object Object]
+//"Infinity" + new Object()
+Infinity[object Object]
+//"1.0" + new Object()
+1.0[object Object]
+//"-1.0" + new Object()
+-1.0[object Object]
+//"0xFF1306" + new Object()
+0xFF1306[object Object]
+//true + "0.0"
+true0.0
+//false + "0.0"
+false0.0
+//null + "0.0"
+null0.0
+//undefined + "0.0"
+undefined0.0
+//"" + "0.0"
+0.0
+//"str" + "0.0"
+str0.0
+//"true" + "0.0"
+true0.0
+//"false" + "0.0"
+false0.0
+//0.0 + "0.0"
+00.0
+//NaN + "0.0"
+NaN0.0
+//-0.0 + "0.0"
+00.0
+//Infinity + "0.0"
+Infinity0.0
+//1.0 + "0.0"
+10.0
+//-1.0 + "0.0"
+-10.0
+//0xFF1306 + "0.0"
+167165500.0
+//new Object() + "0.0"
+[object Object]0.0
+//"0.0" + "0.0"
+0.00.0
+//"NaN" + "0.0"
+NaN0.0
+//"-0.0" + "0.0"
+-0.00.0
+//"Infinity" + "0.0"
+Infinity0.0
+//"1.0" + "0.0"
+1.00.0
+//"-1.0" + "0.0"
+-1.00.0
+//"0xFF1306" + "0.0"
+0xFF13060.0
+//true + "NaN"
+trueNaN
+//false + "NaN"
+falseNaN
+//null + "NaN"
+nullNaN
+//undefined + "NaN"
+undefinedNaN
+//"" + "NaN"
+NaN
+//"str" + "NaN"
+strNaN
+//"true" + "NaN"
+trueNaN
+//"false" + "NaN"
+falseNaN
+//0.0 + "NaN"
+0NaN
+//NaN + "NaN"
+NaNNaN
+//-0.0 + "NaN"
+0NaN
+//Infinity + "NaN"
+InfinityNaN
+//1.0 + "NaN"
+1NaN
+//-1.0 + "NaN"
+-1NaN
+//0xFF1306 + "NaN"
+16716550NaN
+//new Object() + "NaN"
+[object Object]NaN
+//"0.0" + "NaN"
+0.0NaN
+//"NaN" + "NaN"
+NaNNaN
+//"-0.0" + "NaN"
+-0.0NaN
+//"Infinity" + "NaN"
+InfinityNaN
+//"1.0" + "NaN"
+1.0NaN
+//"-1.0" + "NaN"
+-1.0NaN
+//"0xFF1306" + "NaN"
+0xFF1306NaN
+//true + "-0.0"
+true-0.0
+//false + "-0.0"
+false-0.0
+//null + "-0.0"
+null-0.0
+//undefined + "-0.0"
+undefined-0.0
+//"" + "-0.0"
+-0.0
+//"str" + "-0.0"
+str-0.0
+//"true" + "-0.0"
+true-0.0
+//"false" + "-0.0"
+false-0.0
+//0.0 + "-0.0"
+0-0.0
+//NaN + "-0.0"
+NaN-0.0
+//-0.0 + "-0.0"
+0-0.0
+//Infinity + "-0.0"
+Infinity-0.0
+//1.0 + "-0.0"
+1-0.0
+//-1.0 + "-0.0"
+-1-0.0
+//0xFF1306 + "-0.0"
+16716550-0.0
+//new Object() + "-0.0"
+[object Object]-0.0
+//"0.0" + "-0.0"
+0.0-0.0
+//"NaN" + "-0.0"
+NaN-0.0
+//"-0.0" + "-0.0"
+-0.0-0.0
+//"Infinity" + "-0.0"
+Infinity-0.0
+//"1.0" + "-0.0"
+1.0-0.0
+//"-1.0" + "-0.0"
+-1.0-0.0
+//"0xFF1306" + "-0.0"
+0xFF1306-0.0
+//true + "Infinity"
+trueInfinity
+//false + "Infinity"
+falseInfinity
+//null + "Infinity"
+nullInfinity
+//undefined + "Infinity"
+undefinedInfinity
+//"" + "Infinity"
+Infinity
+//"str" + "Infinity"
+strInfinity
+//"true" + "Infinity"
+trueInfinity
+//"false" + "Infinity"
+falseInfinity
+//0.0 + "Infinity"
+0Infinity
+//NaN + "Infinity"
+NaNInfinity
+//-0.0 + "Infinity"
+0Infinity
+//Infinity + "Infinity"
+InfinityInfinity
+//1.0 + "Infinity"
+1Infinity
+//-1.0 + "Infinity"
+-1Infinity
+//0xFF1306 + "Infinity"
+16716550Infinity
+//new Object() + "Infinity"
+[object Object]Infinity
+//"0.0" + "Infinity"
+0.0Infinity
+//"NaN" + "Infinity"
+NaNInfinity
+//"-0.0" + "Infinity"
+-0.0Infinity
+//"Infinity" + "Infinity"
+InfinityInfinity
+//"1.0" + "Infinity"
+1.0Infinity
+//"-1.0" + "Infinity"
+-1.0Infinity
+//"0xFF1306" + "Infinity"
+0xFF1306Infinity
+//true + "1.0"
+true1.0
+//false + "1.0"
+false1.0
+//null + "1.0"
+null1.0
+//undefined + "1.0"
+undefined1.0
+//"" + "1.0"
+1.0
+//"str" + "1.0"
+str1.0
+//"true" + "1.0"
+true1.0
+//"false" + "1.0"
+false1.0
+//0.0 + "1.0"
+01.0
+//NaN + "1.0"
+NaN1.0
+//-0.0 + "1.0"
+01.0
+//Infinity + "1.0"
+Infinity1.0
+//1.0 + "1.0"
+11.0
+//-1.0 + "1.0"
+-11.0
+//0xFF1306 + "1.0"
+167165501.0
+//new Object() + "1.0"
+[object Object]1.0
+//"0.0" + "1.0"
+0.01.0
+//"NaN" + "1.0"
+NaN1.0
+//"-0.0" + "1.0"
+-0.01.0
+//"Infinity" + "1.0"
+Infinity1.0
+//"1.0" + "1.0"
+1.01.0
+//"-1.0" + "1.0"
+-1.01.0
+//"0xFF1306" + "1.0"
+0xFF13061.0
+//true + "-1.0"
+true-1.0
+//false + "-1.0"
+false-1.0
+//null + "-1.0"
+null-1.0
+//undefined + "-1.0"
+undefined-1.0
+//"" + "-1.0"
+-1.0
+//"str" + "-1.0"
+str-1.0
+//"true" + "-1.0"
+true-1.0
+//"false" + "-1.0"
+false-1.0
+//0.0 + "-1.0"
+0-1.0
+//NaN + "-1.0"
+NaN-1.0
+//-0.0 + "-1.0"
+0-1.0
+//Infinity + "-1.0"
+Infinity-1.0
+//1.0 + "-1.0"
+1-1.0
+//-1.0 + "-1.0"
+-1-1.0
+//0xFF1306 + "-1.0"
+16716550-1.0
+//new Object() + "-1.0"
+[object Object]-1.0
+//"0.0" + "-1.0"
+0.0-1.0
+//"NaN" + "-1.0"
+NaN-1.0
+//"-0.0" + "-1.0"
+-0.0-1.0
+//"Infinity" + "-1.0"
+Infinity-1.0
+//"1.0" + "-1.0"
+1.0-1.0
+//"-1.0" + "-1.0"
+-1.0-1.0
+//"0xFF1306" + "-1.0"
+0xFF1306-1.0
+//true + "0xFF1306"
+true0xFF1306
+//false + "0xFF1306"
+false0xFF1306
+//null + "0xFF1306"
+null0xFF1306
+//undefined + "0xFF1306"
+undefined0xFF1306
+//"" + "0xFF1306"
+0xFF1306
+//"str" + "0xFF1306"
+str0xFF1306
+//"true" + "0xFF1306"
+true0xFF1306
+//"false" + "0xFF1306"
+false0xFF1306
+//0.0 + "0xFF1306"
+00xFF1306
+//NaN + "0xFF1306"
+NaN0xFF1306
+//-0.0 + "0xFF1306"
+00xFF1306
+//Infinity + "0xFF1306"
+Infinity0xFF1306
+//1.0 + "0xFF1306"
+10xFF1306
+//-1.0 + "0xFF1306"
+-10xFF1306
+//0xFF1306 + "0xFF1306"
+167165500xFF1306
+//new Object() + "0xFF1306"
+[object Object]0xFF1306
+//"0.0" + "0xFF1306"
+0.00xFF1306
+//"NaN" + "0xFF1306"
+NaN0xFF1306
+//"-0.0" + "0xFF1306"
+-0.00xFF1306
+//"Infinity" + "0xFF1306"
+Infinity0xFF1306
+//"1.0" + "0xFF1306"
+1.00xFF1306
+//"-1.0" + "0xFF1306"
+-1.00xFF1306
+//"0xFF1306" + "0xFF1306"
+0xFF13060xFF1306

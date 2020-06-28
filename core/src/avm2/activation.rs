@@ -479,6 +479,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::ConvertO => self.op_convert_o(),
                 Op::ConvertU => self.op_convert_u(),
                 Op::ConvertS => self.op_convert_s(),
+                Op::Add => self.op_add(),
                 Op::Jump { offset } => self.op_jump(offset, reader),
                 Op::IfTrue { offset } => self.op_if_true(offset, reader),
                 Op::IfFalse { offset } => self.op_if_false(offset, reader),
@@ -1400,6 +1401,54 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let value = self.context.avm2.pop().coerce_to_string(self)?;
 
         self.context.avm2.push(value);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_add(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop();
+        let value1 = self.context.avm2.pop();
+
+        // TODO: Special handling required for `Date` and ECMA-357/E4X `XML`
+        let sum_value = match (value1, value2) {
+            (Value::Number(n1), Value::Number(n2)) => Value::Number(n1 + n2),
+            (Value::String(s), value2) => {
+                let mut out_s = s.to_string();
+                out_s.push_str(&value2.coerce_to_string(self)?);
+
+                Value::String(AvmString::new(self.context.gc_context, out_s))
+            }
+            (value1, Value::String(s)) => {
+                let mut out_s = value1.coerce_to_string(self)?.to_string();
+                out_s.push_str(&s);
+
+                Value::String(AvmString::new(self.context.gc_context, out_s))
+            }
+            (value1, value2) => {
+                let prim_value1 = value1.coerce_to_primitive(None, self)?;
+                let prim_value2 = value2.coerce_to_primitive(None, self)?;
+
+                match (prim_value1, prim_value2) {
+                    (Value::String(s), value2) => {
+                        let mut out_s = s.to_string();
+                        out_s.push_str(&value2.coerce_to_string(self)?);
+
+                        Value::String(AvmString::new(self.context.gc_context, out_s))
+                    }
+                    (value1, Value::String(s)) => {
+                        let mut out_s = value1.coerce_to_string(self)?.to_string();
+                        out_s.push_str(&s);
+
+                        Value::String(AvmString::new(self.context.gc_context, out_s))
+                    }
+                    (value1, value2) => Value::Number(
+                        value1.coerce_to_number(self)? + value2.coerce_to_number(self)?,
+                    ),
+                }
+            }
+        };
+
+        self.context.avm2.push(sum_value);
 
         Ok(FrameControl::Continue)
     }

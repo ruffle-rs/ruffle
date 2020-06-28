@@ -299,6 +299,7 @@ swf_tests! {
     (transform, "avm1/transform", 1),
     (target_path, "avm1/target_path", 1),
     (remove_movie_clip, "avm1/remove_movie_clip", 1),
+    (as3_add, "avm2/add", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
