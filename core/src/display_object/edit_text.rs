@@ -715,7 +715,7 @@ impl<'gc> EditText<'gc> {
 
             let parent = self.parent().unwrap();
 
-            activation.avm().run_with_stack_frame_for_display_object(
+            activation.run_with_child_frame_for_display_object(
                 parent,
                 context.swf.header().version,
                 context,
@@ -797,7 +797,7 @@ impl<'gc> EditText<'gc> {
 
                     // Note that this can call virtual setters, even though the opposite direction won't work
                     // (virtual property changes do not affect the text field)
-                    activation.avm().run_with_stack_frame_for_display_object(
+                    activation.run_with_child_frame_for_display_object(
                         self.parent().unwrap(),
                         context.swf.header().version,
                         context,

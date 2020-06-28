@@ -131,6 +131,8 @@ impl<'gc> Avm1<'gc> {
     }
 
     /// Add a stack frame that executes code in timeline scope
+    ///
+    /// This creates a new frame stack.
     pub fn run_stack_frame_for_action(
         &mut self,
         active_clip: DisplayObject<'gc>,
@@ -176,7 +178,9 @@ impl<'gc> Avm1<'gc> {
         );
     }
 
-    /// Add a stack frame that executes code in timeline scope
+    /// Add a stack frame that executes code in initializer scope.
+    ///
+    /// This creates a new frame stack.
     pub fn run_with_stack_frame_for_display_object<'a, F, R>(
         &mut self,
         active_clip: DisplayObject<'gc>,
@@ -222,7 +226,9 @@ impl<'gc> Avm1<'gc> {
         function(&mut stack_frame, action_context)
     }
 
-    /// Add a stack frame that executes code in initializer scope
+    /// Add a stack frame that executes code in initializer scope.
+    ///
+    /// This creates a new frame stack.
     pub fn run_stack_frame_for_init_action(
         &mut self,
         active_clip: DisplayObject<'gc>,
@@ -271,6 +277,8 @@ impl<'gc> Avm1<'gc> {
 
     /// Add a stack frame that executes code in timeline scope for an object
     /// method, such as an event handler.
+    ///
+    /// This creates a new frame stack.
     pub fn run_stack_frame_for_method(
         &mut self,
         active_clip: DisplayObject<'gc>,

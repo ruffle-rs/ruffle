@@ -5,8 +5,8 @@ use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::f64_to_wrapping_u32;
 use crate::avm1::{
-    fscommand, globals, skip_actions, start_drag, value_object, Activation, Avm1, ScriptObject,
-    Value,
+    fscommand, globals, scope, skip_actions, start_drag, value_object, Activation, Avm1,
+    ScriptObject, Value,
 };
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
@@ -78,6 +78,110 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     ) -> Result<ReturnType<'gc>, Error<'gc>> {
         let mut child = StackFrame::new(self.avm, Some(self.activation), activation);
         child.run(context)
+    }
+
+    /// Run a function within the scope of a new activation.
+    pub fn run_in_child_frame<'c, F, R>(
+        &mut self,
+        context: &mut UpdateContext<'c, 'gc, '_>,
+        swf_version: u8,
+        base_clip: DisplayObject<'gc>,
+        function: F,
+    ) -> R
+    where
+        for<'b> F: FnOnce(&mut StackFrame<'b, 'gc>, &mut UpdateContext<'c, 'gc, '_>) -> R,
+    {
+        let activation = GcCell::allocate(
+            context.gc_context,
+            Activation::from_nothing(swf_version, self.avm.globals, context.gc_context, base_clip),
+        );
+        let mut stack_frame = StackFrame::new(self.avm, Some(self.activation), activation);
+        function(&mut stack_frame, context)
+    }
+
+    /// Add a stack frame that executes code in timeline scope
+    pub fn run_child_frame_for_action(
+        &mut self,
+        active_clip: DisplayObject<'gc>,
+        swf_version: u8,
+        code: SwfSlice,
+        action_context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<ReturnType<'gc>, Error<'gc>> {
+        self.run_in_child_frame(
+            action_context,
+            swf_version,
+            active_clip,
+            |activation, context| {
+                let clip_obj = active_clip.object().coerce_to_object(activation, context);
+                let child_scope = GcCell::allocate(
+                    context.gc_context,
+                    Scope::new(
+                        activation.activation().read().scope_cell(),
+                        scope::ScopeClass::Target,
+                        clip_obj,
+                    ),
+                );
+                let child_activation = GcCell::allocate(
+                    context.gc_context,
+                    Activation::from_action(
+                        swf_version,
+                        code,
+                        child_scope,
+                        activation.avm().constant_pool,
+                        active_clip,
+                        clip_obj,
+                        None,
+                    ),
+                );
+                activation.run_child_activation(child_activation, context)
+            },
+        )
+    }
+
+    /// Add a stack frame that executes code in initializer scope.
+    pub fn run_with_child_frame_for_display_object<'c, F, R>(
+        &mut self,
+        active_clip: DisplayObject<'gc>,
+        swf_version: u8,
+        action_context: &mut UpdateContext<'c, 'gc, '_>,
+        function: F,
+    ) -> R
+    where
+        for<'b> F: FnOnce(&mut StackFrame<'b, 'gc>, &mut UpdateContext<'c, 'gc, '_>) -> R,
+    {
+        use crate::tag_utils::SwfMovie;
+        use std::sync::Arc;
+
+        let clip_obj = match active_clip.object() {
+            Value::Object(o) => o,
+            _ => panic!("No script object for display object"),
+        };
+        let global_scope = GcCell::allocate(
+            action_context.gc_context,
+            Scope::from_global_object(self.avm.globals),
+        );
+        let child_scope = GcCell::allocate(
+            action_context.gc_context,
+            Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
+        );
+        let activation = GcCell::allocate(
+            action_context.gc_context,
+            Activation::from_action(
+                swf_version,
+                SwfSlice {
+                    movie: Arc::new(SwfMovie::empty(swf_version)),
+                    start: 0,
+                    end: 0,
+                },
+                child_scope,
+                self.avm.constant_pool,
+                active_clip,
+                clip_obj,
+                None,
+            ),
+        );
+        let mut stack_frame = StackFrame::new(self.avm, Some(self.activation), activation);
+        function(&mut stack_frame, action_context)
     }
 
     pub fn run(
@@ -451,12 +555,12 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
 
             if let Some(frame) = frame {
                 for action in clip.actions_on_frame(context, frame) {
-                    self.avm.run_stack_frame_for_action(
+                    let _ = self.run_child_frame_for_action(
                         self.target_clip_or_root(),
                         self.current_swf_version(),
                         action,
                         context,
-                    );
+                    )?;
                 }
             } else {
                 log::warn!("Call: Invalid frame {:?}", frame);

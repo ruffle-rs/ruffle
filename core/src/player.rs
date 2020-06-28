@@ -762,7 +762,7 @@ impl Player {
                             if let Value::Object(object) = clip.object() {
                                 object.set_proto(context.gc_context, Some(prototype));
                                 for event in events {
-                                    activation.avm().run_stack_frame_for_action(
+                                    let _ = activation.run_child_frame_for_action(
                                         clip,
                                         context.swf.header().version,
                                         event,
