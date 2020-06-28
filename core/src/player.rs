@@ -481,20 +481,22 @@ impl Player {
         let mut is_mouse_down = self.is_mouse_down;
         self.mutate_with_update_context(|avm, context| {
             if let Some(node) = context.mouse_hovered_object {
-                match event {
-                    PlayerEvent::MouseDown { .. } => {
-                        is_mouse_down = true;
-                        needs_render = true;
-                        node.handle_clip_event(avm, context, ClipEvent::Press);
-                    }
+                if !node.removed() {
+                    match event {
+                        PlayerEvent::MouseDown { .. } => {
+                            is_mouse_down = true;
+                            needs_render = true;
+                            node.handle_clip_event(avm, context, ClipEvent::Press);
+                        }
 
-                    PlayerEvent::MouseUp { .. } => {
-                        is_mouse_down = false;
-                        needs_render = true;
-                        node.handle_clip_event(avm, context, ClipEvent::Release);
-                    }
+                        PlayerEvent::MouseUp { .. } => {
+                            is_mouse_down = false;
+                            needs_render = true;
+                            node.handle_clip_event(avm, context, ClipEvent::Release);
+                        }
 
-                    _ => (),
+                        _ => (),
+                    }
                 }
             }
 
@@ -559,7 +561,9 @@ impl Player {
             if cur_hovered.map(|d| d.as_ptr()) != new_hovered.map(|d| d.as_ptr()) {
                 // RollOut of previous node.
                 if let Some(node) = cur_hovered {
-                    node.handle_clip_event(avm, context, ClipEvent::RollOut);
+                    if !node.removed() {
+                        node.handle_clip_event(avm, context, ClipEvent::RollOut);
+                    }
                 }
 
                 // RollOver on new node.
