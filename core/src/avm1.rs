@@ -1,10 +1,12 @@
 use crate::avm1::function::{Avm1Function, FunctionObject};
 use crate::avm1::globals::create_globals;
 use crate::avm1::object::search_prototype;
+use crate::avm1::property::Attribute;
 use crate::avm1::return_value::ReturnValue;
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
 use crate::prelude::*;
+use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
 use rand::Rng;
 use std::collections::HashMap;
@@ -1708,11 +1710,25 @@ impl<'gc> Avm1<'gc> {
             .get("prototype", self, context)?
             .coerce_to_object(self, context);
 
-        let sub_prototype: Object<'gc> =
+        let mut sub_prototype: Object<'gc> =
             ScriptObject::object(context.gc_context, Some(super_proto)).into();
 
         sub_prototype.set("constructor", superclass.into(), self, context)?;
+        sub_prototype.set_attributes(
+            context.gc_context,
+            Some("constructor"),
+            Attribute::DontEnum.into(),
+            EnumSet::empty(),
+        );
+
         sub_prototype.set("__constructor__", superclass.into(), self, context)?;
+        sub_prototype.set_attributes(
+            context.gc_context,
+            Some("__constructor__"),
+            Attribute::DontEnum.into(),
+            EnumSet::empty(),
+        );
+
         subclass.set("prototype", sub_prototype.into(), self, context)?;
 
         Ok(())
@@ -2242,7 +2258,7 @@ impl<'gc> Avm1<'gc> {
         for _ in 0..num_args {
             args.push(self.pop());
         }
-
+        log::info!("ASDASDASD");
         let object = value_object::ValueObject::boxed(self, context, object_val);
         let constructor =
             object.get(&method_name.coerce_to_string(self, context)?, self, context)?;
@@ -2250,12 +2266,22 @@ impl<'gc> Avm1<'gc> {
             let prototype = constructor
                 .get("prototype", self, context)?
                 .coerce_to_object(self, context);
-
-            let this = prototype.new(self, context, prototype, &args)?;
-
+            let mut this = prototype.new(self, context, prototype, &args)?;
             this.set("__constructor__", constructor.into(), self, context)?;
+            this.set_attributes(
+                context.gc_context,
+                Some("__constructor__"),
+                Attribute::DontEnum.into(),
+                EnumSet::empty(),
+            );
             if self.current_swf_version() < 7 {
                 this.set("constructor", constructor.into(), self, context)?;
+                this.set_attributes(
+                    context.gc_context,
+                    Some("constructor"),
+                    Attribute::DontEnum.into(),
+                    EnumSet::empty(),
+                );
             }
 
             //TODO: What happens if you `ActionNewMethod` without a method name?
@@ -2297,11 +2323,23 @@ impl<'gc> Avm1<'gc> {
         let prototype = constructor
             .get("prototype", self, context)?
             .coerce_to_object(self, context);
-        let this = prototype.new(self, context, prototype, &args)?;
+        let mut this = prototype.new(self, context, prototype, &args)?;
 
         this.set("__constructor__", constructor.into(), self, context)?;
+        this.set_attributes(
+            context.gc_context,
+            Some("__constructor__"),
+            Attribute::DontEnum.into(),
+            EnumSet::empty(),
+        );
         if self.current_swf_version() < 7 {
             this.set("constructor", constructor.into(), self, context)?;
+            this.set_attributes(
+                context.gc_context,
+                Some("constructor"),
+                Attribute::DontEnum.into(),
+                EnumSet::empty(),
+            );
         }
 
         constructor.call(self, context, this, None, &args)?;
