@@ -212,10 +212,10 @@ impl<'gc> EditText<'gc> {
         let swf_tag = swf::EditText {
             id: 0, //TODO: Dynamic text fields don't have a character ID?
             bounds: swf::Rectangle {
-                x_min: Twips::from_pixels(x),
-                x_max: Twips::from_pixels(x + width),
-                y_min: Twips::from_pixels(y),
-                y_max: Twips::from_pixels(y + height),
+                x_min: Twips::from_pixels(0.0),
+                x_max: Twips::from_pixels(width),
+                y_min: Twips::from_pixels(0.0),
+                y_max: Twips::from_pixels(height),
             },
             font_id: None,
             font_class_name: None,
@@ -248,7 +248,15 @@ impl<'gc> EditText<'gc> {
             is_device_font: false,
         };
 
-        Self::from_swf_tag(context, swf_movie, swf_tag)
+        let mut text_field = Self::from_swf_tag(context, swf_movie, swf_tag);
+
+        // Set position.
+        let mut matrix = text_field.matrix_mut(context.gc_context);
+        matrix.tx = Twips::from_pixels(x);
+        matrix.ty = Twips::from_pixels(y);
+        drop(matrix);
+
+        text_field
     }
 
     pub fn text(self) -> String {
