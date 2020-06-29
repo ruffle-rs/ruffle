@@ -87,7 +87,7 @@ impl<'gc> StageObject<'gc> {
         self.0
             .write(gc_context)
             .text_field_bindings
-            .retain(|binding| DisplayObject::ptr_eq(text_field.into(), binding.text_field.into()));
+            .retain(|binding| !DisplayObject::ptr_eq(text_field.into(), binding.text_field.into()));
     }
 
     /// Clears all text field bindings from this stage object, and places the textfields on the unbound list.
