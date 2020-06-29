@@ -748,7 +748,7 @@ impl<'gc> EditText<'gc> {
                 }
             }
 
-            avm.pop_stack_frame();
+            avm.retire_stack_frame(context, Value::Undefined);
         }
 
         bound
@@ -797,7 +797,7 @@ impl<'gc> EditText<'gc> {
                         context,
                     );
                     let _ = object.set(property, text.into(), avm, context);
-                    avm.pop_stack_frame();
+                    avm.retire_stack_frame(context, Value::Undefined);
                 }
             }
             self.0.write(context.gc_context).firing_variable_binding = false;

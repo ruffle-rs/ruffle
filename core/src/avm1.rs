@@ -408,11 +408,6 @@ impl<'gc> Avm1<'gc> {
         !self.stack_frames.is_empty()
     }
 
-    /// Remove the current stack frame.
-    pub fn pop_stack_frame(&mut self) {
-        self.stack_frames.pop();
-    }
-
     /// Get the currently executing SWF version.
     pub fn current_swf_version(&self) -> u8 {
         self.current_stack_frame()
@@ -517,7 +512,7 @@ impl<'gc> Avm1<'gc> {
     /// get it's return value, you won't get that value. Instead, retain a cell
     /// referencing the oldest activation frame and use that to retrieve the
     /// return value.
-    fn retire_stack_frame(
+    pub fn retire_stack_frame(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         return_value: Value<'gc>,
