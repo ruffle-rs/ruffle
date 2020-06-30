@@ -96,9 +96,16 @@ where
             }
         }
 
-        avm.run_in_avm(&mut context, swf_version, root, |activation, context| {
-            run_test(activation, context, root, test)
-        });
+        let globals = avm.global_object_cell();
+        let mut activation = StackFrame::from_nothing(
+            &mut avm,
+            context.swf.version(),
+            globals,
+            context.gc_context,
+            *context.levels.get(&0).unwrap(),
+        );
+
+        run_test(&mut activation, &mut context, root, test)
     }
 
     rootless_arena(|gc_context| in_the_arena(swf_version, test, gc_context))

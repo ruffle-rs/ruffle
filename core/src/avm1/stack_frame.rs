@@ -208,58 +208,43 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         }
     }
 
-    /// Run a function within the scope of a new activation.
-    pub fn run_in_child_frame<'c, F, R>(
-        &mut self,
-        context: &mut UpdateContext<'c, 'gc, '_>,
-        swf_version: u8,
-        base_clip: DisplayObject<'gc>,
-        function: F,
-    ) -> R
-    where
-        for<'b> F: FnOnce(&mut StackFrame<'b, 'gc>, &mut UpdateContext<'c, 'gc, '_>) -> R,
-    {
-        let mut activation = StackFrame::from_nothing(
-            self.avm,
-            swf_version,
-            self.avm.globals,
-            context.gc_context,
-            base_clip,
-        );
-        function(&mut activation, context)
-    }
-
     /// Add a stack frame that executes code in timeline scope
     pub fn run_child_frame_for_action(
         &mut self,
         active_clip: DisplayObject<'gc>,
         swf_version: u8,
         code: SwfSlice,
-        action_context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnType<'gc>, Error<'gc>> {
-        self.run_in_child_frame(
-            action_context,
+        let mut parent_activation = StackFrame::from_nothing(
+            self.avm,
             swf_version,
+            self.avm.globals,
+            context.gc_context,
             active_clip,
-            |activation, context| {
-                let clip_obj = active_clip.object().coerce_to_object(activation, context);
-                let child_scope = GcCell::allocate(
-                    context.gc_context,
-                    Scope::new(activation.scope_cell(), scope::ScopeClass::Target, clip_obj),
-                );
-                let constant_pool = activation.avm().constant_pool;
-                let mut child_activation = StackFrame::from_action(
-                    activation.avm(),
-                    swf_version,
-                    child_scope,
-                    constant_pool,
-                    active_clip,
-                    clip_obj,
-                    None,
-                );
-                child_activation.run_actions(context, code)
-            },
-        )
+        );
+        let clip_obj = active_clip
+            .object()
+            .coerce_to_object(&mut parent_activation, context);
+        let child_scope = GcCell::allocate(
+            context.gc_context,
+            Scope::new(
+                parent_activation.scope_cell(),
+                scope::ScopeClass::Target,
+                clip_obj,
+            ),
+        );
+        let constant_pool = parent_activation.avm().constant_pool;
+        let mut child_activation = StackFrame::from_action(
+            parent_activation.avm(),
+            swf_version,
+            child_scope,
+            constant_pool,
+            active_clip,
+            clip_obj,
+            None,
+        );
+        child_activation.run_actions(context, code)
     }
 
     /// Add a stack frame that executes code in initializer scope.

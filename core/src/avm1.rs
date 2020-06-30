@@ -136,38 +136,45 @@ impl<'gc> Avm1<'gc> {
         active_clip: DisplayObject<'gc>,
         swf_version: u8,
         code: SwfSlice,
-        action_context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         if self.halted {
             // We've been told to ignore all future execution.
             return;
         }
 
-        self.run_in_avm(
-            action_context,
+        let mut parent_activation = StackFrame::from_nothing(
+            self,
             swf_version,
+            self.global_object_cell(),
+            context.gc_context,
             active_clip,
-            |activation, context| {
-                let clip_obj = active_clip.object().coerce_to_object(activation, context);
-                let child_scope = GcCell::allocate(
-                    context.gc_context,
-                    Scope::new(activation.scope_cell(), scope::ScopeClass::Target, clip_obj),
-                );
-                let constant_pool = activation.avm().constant_pool;
-                let mut child_activation = StackFrame::from_action(
-                    activation.avm(),
-                    swf_version,
-                    child_scope,
-                    constant_pool,
-                    active_clip,
-                    clip_obj,
-                    None,
-                );
-                if let Err(e) = child_activation.run_actions(context, code) {
-                    root_error_handler(activation, context, e);
-                }
-            },
         );
+
+        let clip_obj = active_clip
+            .object()
+            .coerce_to_object(&mut parent_activation, context);
+        let child_scope = GcCell::allocate(
+            context.gc_context,
+            Scope::new(
+                parent_activation.scope_cell(),
+                scope::ScopeClass::Target,
+                clip_obj,
+            ),
+        );
+        let constant_pool = parent_activation.avm().constant_pool;
+        let mut child_activation = StackFrame::from_action(
+            parent_activation.avm(),
+            swf_version,
+            child_scope,
+            constant_pool,
+            active_clip,
+            clip_obj,
+            None,
+        );
+        if let Err(e) = child_activation.run_actions(context, code) {
+            root_error_handler(&mut child_activation, context, e);
+        }
     }
 
     /// Add a stack frame that executes code in initializer scope.
@@ -215,39 +222,46 @@ impl<'gc> Avm1<'gc> {
         active_clip: DisplayObject<'gc>,
         swf_version: u8,
         code: SwfSlice,
-        action_context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         if self.halted {
             // We've been told to ignore all future execution.
             return;
         }
 
-        self.run_in_avm(
-            action_context,
+        let mut parent_activation = StackFrame::from_nothing(
+            self,
             swf_version,
+            self.global_object_cell(),
+            context.gc_context,
             active_clip,
-            |activation, context| {
-                let clip_obj = active_clip.object().coerce_to_object(activation, context);
-                let child_scope = GcCell::allocate(
-                    context.gc_context,
-                    Scope::new(activation.scope_cell(), scope::ScopeClass::Target, clip_obj),
-                );
-                activation.avm().push(Value::Undefined);
-                let constant_pool = activation.avm().constant_pool;
-                let mut child_activation = StackFrame::from_action(
-                    activation.avm(),
-                    swf_version,
-                    child_scope,
-                    constant_pool,
-                    active_clip,
-                    clip_obj,
-                    None,
-                );
-                if let Err(e) = child_activation.run_actions(context, code) {
-                    root_error_handler(activation, context, e);
-                }
-            },
         );
+
+        let clip_obj = active_clip
+            .object()
+            .coerce_to_object(&mut parent_activation, context);
+        let child_scope = GcCell::allocate(
+            context.gc_context,
+            Scope::new(
+                parent_activation.scope_cell(),
+                scope::ScopeClass::Target,
+                clip_obj,
+            ),
+        );
+        parent_activation.avm().push(Value::Undefined);
+        let constant_pool = parent_activation.avm().constant_pool;
+        let mut child_activation = StackFrame::from_action(
+            parent_activation.avm(),
+            swf_version,
+            child_scope,
+            constant_pool,
+            active_clip,
+            clip_obj,
+            None,
+        );
+        if let Err(e) = child_activation.run_actions(context, code) {
+            root_error_handler(&mut child_activation, context, e);
+        }
     }
 
     /// Add a stack frame that executes code in timeline scope for an object
@@ -268,46 +282,20 @@ impl<'gc> Avm1<'gc> {
             return;
         }
 
-        fn caller<'gc>(
-            activation: &mut StackFrame<'_, 'gc>,
-            context: &mut UpdateContext<'_, 'gc, '_>,
-            obj: Object<'gc>,
-            name: &str,
-            args: &[Value<'gc>],
-        ) {
-            let search_result =
-                search_prototype(Some(obj), name, activation, context, obj).map(|r| (r.0, r.1));
-
-            if let Ok((callback, base_proto)) = search_result {
-                let _ = callback.call(activation, context, obj, base_proto, args);
-            }
-        }
-        self.run_in_avm(context, swf_version, active_clip, |activation, context| {
-            caller(activation, context, obj, name, args)
-        });
-    }
-
-    /// Run a function within the scope of an activation.
-    ///
-    /// This is intended to be used to create a new frame stack from nothing.
-    pub fn run_in_avm<'a, F, R>(
-        &mut self,
-        context: &mut UpdateContext<'a, 'gc, '_>,
-        swf_version: u8,
-        base_clip: DisplayObject<'gc>,
-        function: F,
-    ) -> R
-    where
-        for<'b> F: FnOnce(&mut StackFrame<'b, 'gc>, &mut UpdateContext<'a, 'gc, '_>) -> R,
-    {
         let mut activation = StackFrame::from_nothing(
             self,
             swf_version,
             self.global_object_cell(),
             context.gc_context,
-            base_clip,
+            active_clip,
         );
-        function(&mut activation, context)
+
+        let search_result =
+            search_prototype(Some(obj), name, &mut activation, context, obj).map(|r| (r.0, r.1));
+
+        if let Ok((callback, base_proto)) = search_result {
+            let _ = callback.call(&mut activation, context, obj, base_proto, args);
+        }
     }
 
     pub fn notify_system_listeners(
@@ -319,14 +307,20 @@ impl<'gc> Avm1<'gc> {
         method: &str,
         args: &[Value<'gc>],
     ) {
-        self.run_in_avm(context, swf_version, active_clip, |activation, context| {
-            let listeners = activation.avm().system_listeners.get(listener);
-            let mut handlers = listeners.prepare_handlers(activation, context, method);
+        let mut activation = StackFrame::from_nothing(
+            self,
+            swf_version,
+            self.global_object_cell(),
+            context.gc_context,
+            active_clip,
+        );
 
-            for (listener, handler) in handlers.drain(..) {
-                let _ = handler.call(activation, context, listener, None, &args);
-            }
-        });
+        let listeners = activation.avm().system_listeners.get(listener);
+        let mut handlers = listeners.prepare_handlers(&mut activation, context, method);
+
+        for (listener, handler) in handlers.drain(..) {
+            let _ = handler.call(&mut activation, context, listener, None, &args);
+        }
     }
 
     /// Halts the AVM, preventing execution of any further actions.

@@ -1,5 +1,6 @@
 //! Management of async loaders
 
+use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, TObject, Value};
 use crate::backend::navigator::OwnedFuture;
 use crate::context::{ActionQueue, ActionType};
@@ -473,17 +474,16 @@ impl<'gc> Loader<'gc> {
                     _ => return Err(Error::NotMovieLoader),
                 };
 
-                avm.run_in_avm::<_, Result<(), crate::avm1::error::Error>>(
-                    uc,
+                let mut activation = StackFrame::from_nothing(
+                    avm,
                     uc.swf.version(),
+                    avm.global_object_cell(),
+                    uc.gc_context,
                     *uc.levels.get(&0).unwrap(),
-                    |activation, context| {
-                        for (k, v) in form_urlencoded::parse(&data) {
-                            that.set(&k, v.into_owned().into(), activation, context)?;
-                        }
-                        Ok(())
-                    },
-                )?;
+                );
+                for (k, v) in form_urlencoded::parse(&data) {
+                    that.set(&k, v.into_owned().into(), &mut activation, uc)?;
+                }
 
                 Ok(())
             })

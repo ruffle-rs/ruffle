@@ -15,7 +15,7 @@ use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEv
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::prelude::*;
-use crate::tag_utils::{SwfMovie, SwfSlice};
+use crate::tag_utils::SwfMovie;
 use crate::transform::TransformStack;
 use enumset::EnumSet;
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
@@ -272,19 +272,19 @@ impl Player {
             root.set_name(context.gc_context, "");
             context.levels.insert(0, root);
 
-            avm.run_in_avm(
-                context,
+            let mut activation = StackFrame::from_nothing(
+                avm,
                 context.swf.version(),
+                avm.global_object_cell(),
+                context.gc_context,
                 *context.levels.get(&0).unwrap(),
-                |activation, context| {
-                    let object = root.object().coerce_to_object(activation, context);
-                    object.define_value(
-                        context.gc_context,
-                        "$version",
-                        context.system.get_version_string(activation).into(),
-                        EnumSet::empty(),
-                    );
-                },
+            );
+            let object = root.object().coerce_to_object(&mut activation, context);
+            object.define_value(
+                context.gc_context,
+                "$version",
+                context.system.get_version_string(&mut activation).into(),
+                EnumSet::empty(),
             );
         });
 
@@ -387,33 +387,35 @@ impl Player {
             if self.input.is_key_down(KeyCode::Control) && self.input.is_key_down(KeyCode::Alt) {
                 self.mutate_with_update_context(|avm, context| {
                     let mut dumper = VariableDumper::new("  ");
-                    avm.run_in_avm(
-                        context,
+
+                    let mut activation = StackFrame::from_nothing(
+                        avm,
                         context.swf.version(),
+                        avm.global_object_cell(),
+                        context.gc_context,
                         *context.levels.get(&0).unwrap(),
-                        |activation, context| {
-                            dumper.print_variables(
-                                "Global Variables:",
-                                "_global",
-                                &activation.avm().global_object_cell(),
-                                activation,
-                                context,
-                            );
-                            let levels = context.levels.clone();
-                            for (level, display_object) in levels {
-                                let object = display_object
-                                    .object()
-                                    .coerce_to_object(activation, context);
-                                dumper.print_variables(
-                                    &format!("Level #{}:", level),
-                                    &format!("_level{}", level),
-                                    &object,
-                                    activation,
-                                    context,
-                                );
-                            }
-                        },
                     );
+
+                    dumper.print_variables(
+                        "Global Variables:",
+                        "_global",
+                        &activation.avm().global_object_cell(),
+                        &mut activation,
+                        context,
+                    );
+                    let levels = context.levels.clone();
+                    for (level, display_object) in levels {
+                        let object = display_object
+                            .object()
+                            .coerce_to_object(&mut activation, context);
+                        dumper.print_variables(
+                            &format!("Level #{}:", level),
+                            &format!("_level{}", level),
+                            &object,
+                            &mut activation,
+                            context,
+                        );
+                    }
                     log::info!("Variable dump:\n{}", dumper.output());
                 });
             }
@@ -748,41 +750,31 @@ impl Player {
                     constructor: Some(constructor),
                     events,
                 } => {
-                    fn initializer<'gc>(
-                        activation: &mut StackFrame<'_, 'gc>,
-                        context: &mut UpdateContext<'_, 'gc, '_>,
-                        clip: DisplayObject<'gc>,
-                        constructor: Object<'gc>,
-                        events: Vec<SwfSlice>,
-                    ) {
-                        if let Ok(prototype) = constructor
-                            .get("prototype", activation, context)
-                            .map(|v| v.coerce_to_object(activation, context))
-                        {
-                            if let Value::Object(object) = clip.object() {
-                                object.set_proto(context.gc_context, Some(prototype));
-                                for event in events {
-                                    let _ = activation.run_child_frame_for_action(
-                                        clip,
-                                        context.swf.header().version,
-                                        event,
-                                        context,
-                                    );
-                                }
-
-                                let _ = constructor.call(activation, context, object, None, &[]);
+                    let mut activation = StackFrame::from_nothing(
+                        avm,
+                        context.swf.version(),
+                        avm.global_object_cell(),
+                        context.gc_context,
+                        *context.levels.get(&0).unwrap(),
+                    );
+                    if let Ok(prototype) = constructor
+                        .get("prototype", &mut activation, context)
+                        .map(|v| v.coerce_to_object(&mut activation, context))
+                    {
+                        if let Value::Object(object) = actions.clip.object() {
+                            object.set_proto(context.gc_context, Some(prototype));
+                            for event in events {
+                                let _ = activation.run_child_frame_for_action(
+                                    actions.clip,
+                                    context.swf.header().version,
+                                    event,
+                                    context,
+                                );
                             }
+
+                            let _ = constructor.call(&mut activation, context, object, None, &[]);
                         }
                     }
-                    let clip = actions.clip;
-                    avm.run_in_avm(
-                        context,
-                        context.swf.version(),
-                        actions.clip,
-                        |activation, context| {
-                            initializer(activation, context, clip, constructor, events)
-                        },
-                    );
                 }
                 // Run constructor events without changing the prototype
                 ActionType::Construct {
@@ -1010,23 +1002,19 @@ impl Player {
     }
 
     pub fn flush_shared_objects(&mut self) {
-        self.update(|avm, update_context| {
-            avm.run_in_avm(
-                update_context,
-                update_context.swf.version(),
-                *update_context.levels.get(&0).unwrap(),
-                |activation, context| {
-                    let shared_objects = context.shared_objects.clone();
-                    for so in shared_objects.values() {
-                        let _ = crate::avm1::globals::shared_object::flush(
-                            activation,
-                            context,
-                            *so,
-                            &[],
-                        );
-                    }
-                },
+        self.update(|avm, context| {
+            let mut activation = StackFrame::from_nothing(
+                avm,
+                context.swf.version(),
+                avm.global_object_cell(),
+                context.gc_context,
+                *context.levels.get(&0).unwrap(),
             );
+            let shared_objects = context.shared_objects.clone();
+            for so in shared_objects.values() {
+                let _ =
+                    crate::avm1::globals::shared_object::flush(&mut activation, context, *so, &[]);
+            }
         });
     }
 }

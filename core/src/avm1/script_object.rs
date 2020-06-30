@@ -799,9 +799,16 @@ mod tests {
 
             let object = ScriptObject::object(gc_context, Some(avm.prototypes().object)).into();
 
-            avm.run_in_avm(&mut context, swf_version, root, |activation, context| {
-                test(activation, context, object)
-            })
+            let globals = avm.global_object_cell();
+            let mut activation = StackFrame::from_nothing(
+                &mut avm,
+                context.swf.version(),
+                globals,
+                context.gc_context,
+                *context.levels.get(&0).unwrap(),
+            );
+
+            test(&mut activation, &mut context, object)
         })
     }
 
