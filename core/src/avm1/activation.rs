@@ -136,29 +136,6 @@ impl<'gc> Activation<'gc> {
         }
     }
 
-    pub fn from_function(
-        swf_version: u8,
-        code: SwfSlice,
-        scope: GcCell<'gc, Scope<'gc>>,
-        constant_pool: GcCell<'gc, Vec<String>>,
-        base_clip: DisplayObject<'gc>,
-        this: Object<'gc>,
-        arguments: Option<Object<'gc>>,
-    ) -> Activation<'gc> {
-        Activation {
-            swf_version,
-            data: code,
-            scope,
-            constant_pool,
-            base_clip,
-            target_clip: Some(base_clip),
-            this,
-            arguments,
-            local_registers: None,
-            is_executing: false,
-        }
-    }
-
     /// Construct an empty stack frame with no code.
     ///
     /// This is used by tests and by callback methods (`onEnterFrame`) to create a base

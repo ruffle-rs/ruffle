@@ -279,7 +279,7 @@ impl<'gc> Executable<'gc> {
                         .unwrap_or(ac.player_version)
                 };
 
-                let mut frame = Activation::from_function(
+                let mut frame = Activation::from_action(
                     effective_ver,
                     af.data(),
                     child_scope,
