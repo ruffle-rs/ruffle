@@ -1,6 +1,5 @@
 //! Code relating to executable functions + calling conventions.
 
-use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::{Attribute, Attribute::*};
 use crate::avm1::scope::Scope;
@@ -279,7 +278,8 @@ impl<'gc> Executable<'gc> {
                         .unwrap_or(ac.player_version)
                 };
 
-                let mut frame = Activation::from_action(
+                let mut frame = StackFrame::from_action(
+                    activation.avm(),
                     effective_ver,
                     af.data(),
                     child_scope,
@@ -338,11 +338,8 @@ impl<'gc> Executable<'gc> {
                 }
 
                 if af.preload_global {
-                    frame.set_local_register(
-                        preload_r,
-                        activation.avm().global_object(ac),
-                        ac.gc_context,
-                    );
+                    let global = frame.avm().global_object(ac);
+                    frame.set_local_register(preload_r, global, ac.gc_context);
                 }
 
                 //TODO: What happens if the argument registers clash with the
@@ -359,7 +356,7 @@ impl<'gc> Executable<'gc> {
                     }
                 }
 
-                Ok(activation.run_child_activation(frame, ac)?.value())
+                Ok(frame.run(ac)?.value())
             }
         }
     }

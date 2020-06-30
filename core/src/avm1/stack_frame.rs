@@ -5,18 +5,20 @@ use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::f64_to_wrapping_u32;
 use crate::avm1::{
-    fscommand, globals, scope, skip_actions, start_drag, value_object, Activation, Avm1,
-    ScriptObject, Value,
+    fscommand, globals, scope, skip_actions, start_drag, value_object, Avm1, ScriptObject, Value,
 };
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
 use crate::tag_utils::SwfSlice;
 use enumset::EnumSet;
-use gc_arena::{Collect, GcCell};
+use gc_arena::{Collect, GcCell, MutationContext};
 use rand::Rng;
+use smallvec::SmallVec;
 use std::borrow::Cow;
+use std::cell::{Ref, RefMut};
 use std::collections::HashMap;
+use std::sync::Arc;
 use swf::avm1::read::Reader;
 use swf::avm1::types::{Action, Function};
 use url::form_urlencoded;
@@ -26,6 +28,44 @@ macro_rules! avm_debug {
         #[cfg(feature = "avm_debug")]
         log::debug!($($arg)*)
     )
+}
+
+/// Represents a particular register set.
+///
+/// This type exists primarily because SmallVec isn't garbage-collectable.
+#[derive(Clone)]
+pub struct RegisterSet<'gc>(SmallVec<[Value<'gc>; 8]>);
+
+unsafe impl<'gc> gc_arena::Collect for RegisterSet<'gc> {
+    #[inline]
+    fn trace(&self, cc: gc_arena::CollectionContext) {
+        for register in &self.0 {
+            register.trace(cc);
+        }
+    }
+}
+
+impl<'gc> RegisterSet<'gc> {
+    /// Create a new register set with a given number of specified registers.
+    ///
+    /// The given registers will be set to `undefined`.
+    pub fn new(num: u8) -> Self {
+        Self(smallvec![Value::Undefined; num as usize])
+    }
+
+    /// Return a reference to a given register, if it exists.
+    pub fn get(&self, num: u8) -> Option<&Value<'gc>> {
+        self.0.get(num as usize)
+    }
+
+    /// Return a mutable reference to a given register, if it exists.
+    pub fn get_mut(&mut self, num: u8) -> Option<&mut Value<'gc>> {
+        self.0.get_mut(num as usize)
+    }
+
+    pub fn len(&self) -> u8 {
+        self.0.len() as u8
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -53,30 +93,138 @@ enum FrameControl<'gc> {
 #[collect(no_drop)]
 pub struct StackFrame<'a, 'gc: 'a> {
     avm: &'a mut Avm1<'gc>,
-    parent: Option<&'a Activation<'gc>>,
-    activation: Activation<'gc>,
+
+    /// Represents the SWF version of a given function.
+    ///
+    /// Certain AVM1 operations change behavior based on the version of the SWF
+    /// file they were defined in. For example, case sensitivity changes based
+    /// on the SWF version.
+    swf_version: u8,
+
+    /// Action data being executed by the reader below.
+    data: SwfSlice,
+
+    /// All defined local variables in this stack frame.
+    scope: GcCell<'gc, Scope<'gc>>,
+
+    /// The currently in use constant pool.
+    constant_pool: GcCell<'gc, Vec<String>>,
+
+    /// The immutable value of `this`.
+    this: Object<'gc>,
+
+    /// The arguments this function was called by.
+    pub arguments: Option<Object<'gc>>,
+
+    /// Local registers, if any.
+    ///
+    /// None indicates a function executing out of the global register set.
+    /// Some indicates the existence of local registers, even if none exist.
+    /// i.e. None(Vec::new()) means no registers should exist at all.
+    ///
+    /// Registers are numbered from 1; r0 does not exist. Therefore this vec,
+    /// while nominally starting from zero, actually starts from r1.
+    ///
+    /// Registers are stored in a `GcCell` so that rescopes (e.g. with) use the
+    /// same register set.
+    local_registers: Option<GcCell<'gc, RegisterSet<'gc>>>,
+
+    /// Flags that the current activation frame is being executed and has a
+    /// reader object copied from it. Taking out two readers on the same
+    /// activation frame is a programming error.
+    is_executing: bool,
+
+    /// The base clip of this stack frame.
+    /// This will be the movieclip that contains the bytecode.
+    base_clip: DisplayObject<'gc>,
+
+    /// The current target display object of this stack frame.
+    /// This can be changed with `tellTarget` (via `ActionSetTarget` and `ActionSetTarget2`).
+    target_clip: Option<DisplayObject<'gc>>,
 }
 
 impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
-    pub fn new(
+    #[allow(clippy::too_many_arguments)]
+    pub fn from_action(
         avm: &'a mut Avm1<'gc>,
-        parent: Option<&'a Activation<'gc>>,
-        activation: Activation<'gc>,
+        swf_version: u8,
+        code: SwfSlice,
+        scope: GcCell<'gc, Scope<'gc>>,
+        constant_pool: GcCell<'gc, Vec<String>>,
+        base_clip: DisplayObject<'gc>,
+        this: Object<'gc>,
+        arguments: Option<Object<'gc>>,
     ) -> Self {
         Self {
             avm,
-            parent,
-            activation,
+            swf_version,
+            data: code,
+            scope,
+            constant_pool,
+            base_clip,
+            target_clip: Some(base_clip),
+            this,
+            arguments,
+            local_registers: None,
+            is_executing: false,
         }
     }
 
-    pub fn run_child_activation(
-        &mut self,
-        activation: Activation<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<ReturnType<'gc>, Error<'gc>> {
-        let mut child = StackFrame::new(self.avm, Some(&self.activation), activation);
-        child.run(context)
+    /// Create a new activation to run a block of code with a given scope.
+    pub fn with_new_scope<'b>(
+        &'b mut self,
+        code: SwfSlice,
+        scope: GcCell<'gc, Scope<'gc>>,
+    ) -> StackFrame<'b, 'gc> {
+        StackFrame {
+            avm: self.avm,
+            swf_version: self.swf_version,
+            data: code,
+            scope,
+            constant_pool: self.constant_pool,
+            base_clip: self.base_clip,
+            target_clip: self.target_clip,
+            this: self.this,
+            arguments: self.arguments,
+            local_registers: self.local_registers,
+            is_executing: false,
+        }
+    }
+
+    /// Construct an empty stack frame with no code.
+    ///
+    /// This is used by tests and by callback methods (`onEnterFrame`) to create a base
+    /// activation frame with access to the global context.
+    pub fn from_nothing(
+        avm: &'a mut Avm1<'gc>,
+        swf_version: u8,
+        globals: Object<'gc>,
+        mc: MutationContext<'gc, '_>,
+        base_clip: DisplayObject<'gc>,
+    ) -> Self {
+        use crate::tag_utils::SwfMovie;
+
+        let global_scope = GcCell::allocate(mc, Scope::from_global_object(globals));
+        let child_scope = GcCell::allocate(mc, Scope::new_local_scope(global_scope, mc));
+        let empty_constant_pool = GcCell::allocate(mc, Vec::new());
+
+        Self {
+            avm,
+            swf_version,
+            data: SwfSlice {
+                movie: Arc::new(SwfMovie::empty(swf_version)),
+                start: 0,
+                end: 0,
+            },
+            scope: child_scope,
+            constant_pool: empty_constant_pool,
+            base_clip,
+            target_clip: Some(base_clip),
+            this: globals,
+            arguments: None,
+            local_registers: None,
+            is_executing: false,
+        }
     }
 
     /// Run a function within the scope of a new activation.
@@ -90,10 +238,14 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     where
         for<'b> F: FnOnce(&mut StackFrame<'b, 'gc>, &mut UpdateContext<'c, 'gc, '_>) -> R,
     {
-        let activation =
-            Activation::from_nothing(swf_version, self.avm.globals, context.gc_context, base_clip);
-        let mut stack_frame = StackFrame::new(self.avm, Some(&self.activation), activation);
-        function(&mut stack_frame, context)
+        let mut activation = StackFrame::from_nothing(
+            self.avm,
+            swf_version,
+            self.avm.globals,
+            context.gc_context,
+            base_clip,
+        );
+        function(&mut activation, context)
     }
 
     /// Add a stack frame that executes code in timeline scope
@@ -112,22 +264,20 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                 let clip_obj = active_clip.object().coerce_to_object(activation, context);
                 let child_scope = GcCell::allocate(
                     context.gc_context,
-                    Scope::new(
-                        activation.activation().scope_cell(),
-                        scope::ScopeClass::Target,
-                        clip_obj,
-                    ),
+                    Scope::new(activation.scope_cell(), scope::ScopeClass::Target, clip_obj),
                 );
-                let child_activation = Activation::from_action(
+                let constant_pool = activation.avm().constant_pool;
+                let mut child_activation = StackFrame::from_action(
+                    activation.avm(),
                     swf_version,
                     code,
                     child_scope,
-                    activation.avm().constant_pool,
+                    constant_pool,
                     active_clip,
                     clip_obj,
                     None,
                 );
-                activation.run_child_activation(child_activation, context)
+                child_activation.run(context)
             },
         )
     }
@@ -144,7 +294,6 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         for<'b> F: FnOnce(&mut StackFrame<'b, 'gc>, &mut UpdateContext<'c, 'gc, '_>) -> R,
     {
         use crate::tag_utils::SwfMovie;
-        use std::sync::Arc;
 
         let clip_obj = match active_clip.object() {
             Value::Object(o) => o,
@@ -158,7 +307,9 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             action_context.gc_context,
             Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
         );
-        let activation = Activation::from_action(
+        let constant_pool = self.avm.constant_pool;
+        let mut activation = StackFrame::from_action(
+            self.avm(),
             swf_version,
             SwfSlice {
                 movie: Arc::new(SwfMovie::empty(swf_version)),
@@ -166,22 +317,21 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                 end: 0,
             },
             child_scope,
-            self.avm.constant_pool,
+            constant_pool,
             active_clip,
             clip_obj,
             None,
         );
-        let mut stack_frame = StackFrame::new(self.avm, Some(&self.activation), activation);
-        function(&mut stack_frame, action_context)
+        function(&mut activation, action_context)
     }
 
     pub fn run(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnType<'gc>, Error<'gc>> {
-        self.activation.lock()?;
-        let data = self.activation.data();
-        let mut read = Reader::new(data.as_ref(), self.activation.swf_version());
+        self.lock()?;
+        let data = self.data();
+        let mut read = Reader::new(data.as_ref(), self.swf_version());
 
         let result = loop {
             let result = self.do_action(&data, context, &mut read);
@@ -192,7 +342,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             }
         };
 
-        self.activation.unlock_execution();
+        self.unlock_execution();
 
         result
     }
@@ -652,7 +802,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             context.gc_context,
             constant_pool.iter().map(|s| (*s).to_string()).collect(),
         );
-        self.activation.set_constant_pool(self.avm.constant_pool);
+        self.set_constant_pool(self.avm.constant_pool);
 
         Ok(FrameControl::Continue)
     }
@@ -673,10 +823,10 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         params: &[&str],
         actions: &[u8],
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let swf_version = self.activation.swf_version();
-        let func_data = self.activation.data().to_subslice(actions).unwrap();
-        let scope = Scope::new_closure_scope(self.activation.scope_cell(), context.gc_context);
-        let constant_pool = self.activation.constant_pool();
+        let swf_version = self.swf_version();
+        let func_data = self.data().to_subslice(actions).unwrap();
+        let scope = Scope::new_closure_scope(self.scope_cell(), context.gc_context);
+        let constant_pool = self.constant_pool();
         let func = Avm1Function::from_df1(
             swf_version,
             func_data,
@@ -697,7 +847,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         if name == "" {
             self.avm.push(func_obj);
         } else {
-            self.activation.define(name, func_obj, context.gc_context);
+            self.define(name, func_obj, context.gc_context);
         }
 
         Ok(FrameControl::Continue)
@@ -708,14 +858,10 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         action_func: &Function,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let swf_version = self.activation.swf_version();
-        let func_data = self
-            .activation
-            .data()
-            .to_subslice(action_func.actions)
-            .unwrap();
-        let scope = Scope::new_closure_scope(self.activation.scope_cell(), context.gc_context);
-        let constant_pool = self.activation.constant_pool();
+        let swf_version = self.swf_version();
+        let func_data = self.data().to_subslice(action_func.actions).unwrap();
+        let scope = Scope::new_closure_scope(self.scope_cell(), context.gc_context);
+        let constant_pool = self.constant_pool();
         let func = Avm1Function::from_df2(
             swf_version,
             func_data,
@@ -735,8 +881,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         if action_func.name == "" {
             self.avm.push(func_obj);
         } else {
-            self.activation
-                .define(action_func.name, func_obj, context.gc_context);
+            self.define(action_func.name, func_obj, context.gc_context);
         }
 
         Ok(FrameControl::Continue)
@@ -751,7 +896,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let value = self.avm.pop();
         let name_val = self.avm.pop();
         let name = name_val.coerce_to_string(self, context)?;
-        let scope = self.activation.scope_cell();
+        let scope = self.scope_cell();
         scope
             .write(context.gc_context)
             .locals()
@@ -767,7 +912,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         // Otherwise, the property is unchanged.
         let name_val = self.avm.pop();
         let name = name_val.coerce_to_string(self, context)?;
-        let scope = self.activation.scope_cell();
+        let scope = self.scope_cell();
         if !scope.read().locals().has_property(self, context, &name) {
             scope
                 .write(context.gc_context)
@@ -807,8 +952,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         //a boolean based on if the delete actually deleted something.
         let did_exist = self.is_defined(context, &name);
 
-        self.activation
-            .scope_cell()
+        self.scope_cell()
             .read()
             .delete(self, context, &name, context.gc_context);
         self.avm.push(did_exist);
@@ -1616,13 +1760,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                 SwfValue::Str(v) => (*v).to_string().into(),
                 SwfValue::Register(v) => self.current_register(*v),
                 SwfValue::ConstantPool(i) => {
-                    if let Some(value) = self.activation.constant_pool().read().get(*i as usize) {
+                    if let Some(value) = self.constant_pool().read().get(*i as usize) {
                         value.to_string().into()
                     } else {
                         log::warn!(
                             "ActionPush: Constant pool index {} out of range (len = {})",
                             i,
-                            self.activation.constant_pool().read().len()
+                            self.constant_pool().read().len()
                         );
                         Value::Undefined
                     }
@@ -1770,18 +1914,16 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             new_target_clip = None;
         }
 
-        self.activation.set_target_clip(new_target_clip);
+        self.set_target_clip(new_target_clip);
 
-        let scope = self.activation.scope_cell();
+        let scope = self.scope_cell();
         let clip_obj = self
-            .activation
             .target_clip()
-            .unwrap_or_else(|| self.activation.base_clip().root())
+            .unwrap_or_else(|| self.base_clip().root())
             .object()
             .coerce_to_object(self, context);
 
-        self.activation
-            .set_scope(Scope::new_target_scope(scope, clip_obj, context.gc_context));
+        self.set_scope(Scope::new_target_scope(scope, clip_obj, context.gc_context));
         Ok(FrameControl::Continue)
     }
 
@@ -1796,13 +1938,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             }
             Value::Undefined => {
                 // Reset
-                let base_clip = self.activation.base_clip();
-                self.activation.set_target_clip(Some(base_clip));
+                let base_clip = self.base_clip();
+                self.set_target_clip(Some(base_clip));
             }
             Value::Object(o) => {
                 if let Some(clip) = o.as_display_object() {
                     // Movieclips can be targetted directly
-                    self.activation.set_target_clip(Some(clip));
+                    self.set_target_clip(Some(clip));
                 } else {
                     // Other objects get coerced to string
                     let target = target.coerce_to_string(self, context)?;
@@ -1815,15 +1957,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             }
         };
 
-        let scope = self.activation.scope_cell();
+        let scope = self.scope_cell();
         let clip_obj = self
-            .activation
             .target_clip()
-            .unwrap_or_else(|| self.activation.base_clip().root())
+            .unwrap_or_else(|| self.base_clip().root())
             .object()
             .coerce_to_object(self, context);
-        self.activation
-            .set_scope(Scope::new_target_scope(scope, clip_obj, context.gc_context));
+        self.set_scope(Scope::new_target_scope(scope, clip_obj, context.gc_context));
         Ok(FrameControl::Continue)
     }
 
@@ -2137,11 +2277,10 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         actions: &[u8],
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let object = self.avm.pop().coerce_to_object(self, context);
-        let block = self.activation.data().to_subslice(actions).unwrap();
-        let with_scope =
-            Scope::new_with_scope(self.activation.scope_cell(), object, context.gc_context);
-        let new_activation = self.activation.to_rescope(block, with_scope);
-        let _ = self.run_child_activation(new_activation, context)?;
+        let block = self.data().to_subslice(actions).unwrap();
+        let with_scope = Scope::new_with_scope(self.scope_cell(), object, context.gc_context);
+        let mut new_activation = self.with_new_scope(block, with_scope);
+        let _ = new_activation.run(context)?;
         Ok(FrameControl::Continue)
     }
 
@@ -2150,10 +2289,8 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     /// If a given register does not exist, this function yields
     /// Value::Undefined, which is also a valid register value.
     pub fn current_register(&self, id: u8) -> Value<'gc> {
-        if self.activation.has_local_register(id) {
-            self.activation
-                .local_register(id)
-                .unwrap_or(Value::Undefined)
+        if self.has_local_register(id) {
+            self.local_register(id).unwrap_or(Value::Undefined)
         } else {
             self.avm
                 .registers
@@ -2172,9 +2309,8 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         value: Value<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
-        if self.activation.has_local_register(id) {
-            self.activation
-                .set_local_register(id, value, context.gc_context);
+        if self.has_local_register(id) {
+            self.set_local_register(id, value, context.gc_context);
         } else if let Some(v) = self.avm.registers.get_mut(id as usize) {
             *v = value;
         }
@@ -2195,7 +2331,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> HashMap<String, String> {
         let mut form_values = HashMap::new();
-        let scope = self.activation.scope_cell();
+        let scope = self.scope_cell();
         let locals = scope.read().locals_cell();
         let keys = locals.get_keys(self);
 
@@ -2428,7 +2564,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             let path = unsafe { std::str::from_utf8_unchecked(path) };
             let var_name = unsafe { std::str::from_utf8_unchecked(var_name) };
 
-            let mut current_scope = Some(self.activation.scope_cell());
+            let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) =
                     self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
@@ -2500,7 +2636,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             let path = unsafe { std::str::from_utf8_unchecked(path) };
             let var_name = unsafe { std::str::from_utf8_unchecked(var_name) };
 
-            let mut current_scope = Some(self.activation.scope_cell());
+            let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) =
                     self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
@@ -2518,7 +2654,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         // If it doesn't have a trailing variable, it can still be a slash path.
         // We can skip this step if we didn't find a slash above.
         if has_slash {
-            let mut current_scope = Some(self.activation.scope_cell());
+            let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) =
                     self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
@@ -2582,7 +2718,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             let path = unsafe { std::str::from_utf8_unchecked(path) };
             let var_name = unsafe { std::str::from_utf8_unchecked(var_name) };
 
-            let mut current_scope = Some(self.activation.scope_cell());
+            let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) =
                     self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
@@ -2600,8 +2736,8 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         // Set using scope chain, as normal.
         // This will overwrite the value if the property exists somewhere
         // in the scope chain, otherwise it is created on the top-level object.
-        let this = self.activation.this_cell();
-        let scope = self.activation.scope_cell();
+        let this = self.this_cell();
+        let scope = self.scope_cell();
         scope.read().set(path, value, self, context, this)?;
         Ok(())
     }
@@ -2632,30 +2768,12 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         }
     }
 
-    pub fn activation(&self) -> &Activation<'gc> {
-        &self.activation
-    }
-
-    #[allow(dead_code)]
-    pub fn base_clip(&self) -> DisplayObject<'gc> {
-        self.activation.base_clip()
-    }
-
-    /// The current target clip for the executing code.
-    /// This is the movie clip that contains the bytecode.
-    /// Timeline actions like `GotoFrame` use this because
-    /// a goto after an invalid tellTarget has no effect.
-    pub fn target_clip(&self) -> Option<DisplayObject<'gc>> {
-        self.activation.target_clip()
-    }
-
     /// The current target clip of the executing code.
     /// Actions that affect `root` after an invalid `tellTarget` will use this.
     ///
     /// The `root` is determined relative to the base clip that defined the
     pub fn target_clip_or_root(&self) -> DisplayObject<'gc> {
-        self.activation
-            .target_clip()
+        self.target_clip()
             .unwrap_or_else(|| self.base_clip().root())
     }
 
@@ -2666,7 +2784,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
 
     /// Get the currently executing SWF version.
     pub fn current_swf_version(&self) -> u8 {
-        self.activation.swf_version()
+        self.swf_version()
     }
 
     /// Returns whether property keys should be case sensitive based on the current SWF version.
@@ -2684,19 +2802,16 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if name == "this" {
-            return Ok(Value::Object(self.activation.this_cell()));
+            return Ok(Value::Object(self.this_cell()));
         }
 
-        if name == "arguments" && self.activation.arguments.is_some() {
-            return Ok(Value::Object(self.activation.arguments.unwrap()));
+        if name == "arguments" && self.arguments.is_some() {
+            return Ok(Value::Object(self.arguments.unwrap()));
         }
 
-        self.activation.scope_cell().read().resolve(
-            name,
-            self,
-            context,
-            self.activation.this_cell(),
-        )
+        self.scope_cell()
+            .read()
+            .resolve(name, self, context, self.this_cell())
     }
 
     /// Check if a particular property in the scope chain is defined.
@@ -2705,13 +2820,140 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             return true;
         }
 
-        if name == "arguments" && self.activation.arguments.is_some() {
+        if name == "arguments" && self.arguments.is_some() {
             return true;
         }
 
-        self.activation
-            .scope_cell()
-            .read()
-            .is_defined(self, context, name)
+        self.scope_cell().read().is_defined(self, context, name)
+    }
+
+    /// Returns the SWF version of the action or function being executed.
+    pub fn swf_version(&self) -> u8 {
+        self.swf_version
+    }
+
+    /// Returns the data this stack frame executes from.
+    pub fn data(&self) -> SwfSlice {
+        self.data.clone()
+    }
+
+    /// Determines if a stack frame references the same function as a given
+    /// SwfSlice.
+    #[allow(dead_code)]
+    pub fn is_identical_fn(&self, other: &SwfSlice) -> bool {
+        Arc::ptr_eq(&self.data.movie, &other.movie)
+    }
+
+    /// Returns AVM local variable scope.
+    pub fn scope(&self) -> Ref<Scope<'gc>> {
+        self.scope.read()
+    }
+
+    /// Returns AVM local variable scope for mutation.
+    #[allow(dead_code)]
+    pub fn scope_mut(&mut self, mc: MutationContext<'gc, '_>) -> RefMut<Scope<'gc>> {
+        self.scope.write(mc)
+    }
+
+    /// Returns AVM local variable scope for reference.
+    pub fn scope_cell(&self) -> GcCell<'gc, Scope<'gc>> {
+        self.scope
+    }
+
+    /// Completely replace the current scope with a new one.
+    pub fn set_scope(&mut self, scope: GcCell<'gc, Scope<'gc>>) {
+        self.scope = scope;
+    }
+
+    /// Gets the base clip of this stack frame.
+    /// This is the movie clip that contains the executing bytecode.
+    pub fn base_clip(&self) -> DisplayObject<'gc> {
+        self.base_clip
+    }
+
+    /// Gets the current target clip of this stack frame.
+    /// This is the movie clip to which `GotoFrame` and other actions apply.
+    /// Changed via `ActionSetTarget`/`ActionSetTarget2`.
+    pub fn target_clip(&self) -> Option<DisplayObject<'gc>> {
+        self.target_clip
+    }
+
+    /// Changes the target clip.
+    pub fn set_target_clip(&mut self, value: Option<DisplayObject<'gc>>) {
+        self.target_clip = value;
+    }
+
+    /// Define a named local variable within this activation.
+    pub fn define(&self, name: &str, value: impl Into<Value<'gc>>, mc: MutationContext<'gc, '_>) {
+        self.scope().define(name, value, mc)
+    }
+
+    /// Returns value of `this` as a reference.
+    pub fn this_cell(&self) -> Object<'gc> {
+        self.this
+    }
+
+    /// Returns true if this activation has a given local register ID.
+    pub fn has_local_register(&self, id: u8) -> bool {
+        self.local_registers
+            .map(|rs| id < rs.read().len())
+            .unwrap_or(false)
+    }
+
+    pub fn allocate_local_registers(&mut self, num: u8, mc: MutationContext<'gc, '_>) {
+        self.local_registers = match num {
+            0 => None,
+            num => Some(GcCell::allocate(mc, RegisterSet::new(num))),
+        };
+    }
+
+    /// Retrieve a local register.
+    pub fn local_register(&self, id: u8) -> Option<Value<'gc>> {
+        if let Some(local_registers) = self.local_registers {
+            local_registers.read().get(id).cloned()
+        } else {
+            None
+        }
+    }
+
+    /// Set a local register.
+    pub fn set_local_register(
+        &mut self,
+        id: u8,
+        value: impl Into<Value<'gc>>,
+        mc: MutationContext<'gc, '_>,
+    ) {
+        if let Some(ref mut local_registers) = self.local_registers {
+            if let Some(r) = local_registers.write(mc).get_mut(id) {
+                *r = value.into();
+            }
+        }
+    }
+
+    pub fn constant_pool(&self) -> GcCell<'gc, Vec<String>> {
+        self.constant_pool
+    }
+
+    pub fn set_constant_pool(&mut self, constant_pool: GcCell<'gc, Vec<String>>) {
+        self.constant_pool = constant_pool;
+    }
+
+    /// Attempts to lock the activation frame for execution.
+    ///
+    /// If this frame is already executing, that is an error condition.
+    pub fn lock(&mut self) -> Result<(), Error<'gc>> {
+        if self.is_executing {
+            return Err(Error::AlreadyExecutingFrame);
+        }
+
+        self.is_executing = true;
+
+        Ok(())
+    }
+
+    /// Unlock the activation object. This allows future execution to run on it
+    /// again.
+    pub fn unlock_execution(&mut self) {
+        self.is_executing = false;
     }
 }

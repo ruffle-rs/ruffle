@@ -16,7 +16,6 @@ mod test_utils;
 #[macro_use]
 pub mod listeners;
 
-mod activation;
 pub mod debug;
 pub mod error;
 mod fscommand;
@@ -43,7 +42,6 @@ mod tests;
 use crate::avm1::error::Error;
 use crate::avm1::listeners::SystemListener;
 use crate::avm1::stack_frame::StackFrame;
-pub use activation::Activation;
 pub use globals::SystemPrototypes;
 pub use object::{Object, ObjectPtr, TObject};
 use scope::Scope;
@@ -153,22 +151,20 @@ impl<'gc> Avm1<'gc> {
                 let clip_obj = active_clip.object().coerce_to_object(activation, context);
                 let child_scope = GcCell::allocate(
                     context.gc_context,
-                    Scope::new(
-                        activation.activation().scope_cell(),
-                        scope::ScopeClass::Target,
-                        clip_obj,
-                    ),
+                    Scope::new(activation.scope_cell(), scope::ScopeClass::Target, clip_obj),
                 );
-                let child_activation = Activation::from_action(
+                let constant_pool = activation.avm().constant_pool;
+                let mut child_activation = StackFrame::from_action(
+                    activation.avm(),
                     swf_version,
                     code,
                     child_scope,
-                    activation.avm().constant_pool,
+                    constant_pool,
                     active_clip,
                     clip_obj,
                     None,
                 );
-                if let Err(e) = activation.run_child_activation(child_activation, context) {
+                if let Err(e) = child_activation.run(context) {
                     root_error_handler(activation, context, e);
                 }
             },
@@ -203,7 +199,8 @@ impl<'gc> Avm1<'gc> {
             action_context.gc_context,
             Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
         );
-        let activation = Activation::from_action(
+        let mut activation = StackFrame::from_action(
+            self,
             swf_version,
             SwfSlice {
                 movie: Arc::new(SwfMovie::empty(swf_version)),
@@ -216,8 +213,7 @@ impl<'gc> Avm1<'gc> {
             clip_obj,
             None,
         );
-        let mut stack_frame = StackFrame::new(self, None, activation);
-        function(&mut stack_frame, action_context)
+        function(&mut activation, action_context)
     }
 
     /// Add a stack frame that executes code in initializer scope.
@@ -243,23 +239,21 @@ impl<'gc> Avm1<'gc> {
                 let clip_obj = active_clip.object().coerce_to_object(activation, context);
                 let child_scope = GcCell::allocate(
                     context.gc_context,
-                    Scope::new(
-                        activation.activation().scope_cell(),
-                        scope::ScopeClass::Target,
-                        clip_obj,
-                    ),
+                    Scope::new(activation.scope_cell(), scope::ScopeClass::Target, clip_obj),
                 );
                 activation.avm().push(Value::Undefined);
-                let child_activation = Activation::from_action(
+                let constant_pool = activation.avm().constant_pool;
+                let mut child_activation = StackFrame::from_action(
+                    activation.avm(),
                     swf_version,
                     code,
                     child_scope,
-                    activation.avm().constant_pool,
+                    constant_pool,
                     active_clip,
                     clip_obj,
                     None,
                 );
-                if let Err(e) = activation.run_child_activation(child_activation, context) {
+                if let Err(e) = child_activation.run(context) {
                     root_error_handler(activation, context, e);
                 }
             },
@@ -316,14 +310,14 @@ impl<'gc> Avm1<'gc> {
     where
         for<'b> F: FnOnce(&mut StackFrame<'b, 'gc>, &mut UpdateContext<'a, 'gc, '_>) -> R,
     {
-        let activation = Activation::from_nothing(
+        let mut activation = StackFrame::from_nothing(
+            self,
             swf_version,
             self.global_object_cell(),
             context.gc_context,
             base_clip,
         );
-        let mut stack_frame = StackFrame::new(self, None, activation);
-        function(&mut stack_frame, context)
+        function(&mut activation, context)
     }
 
     pub fn notify_system_listeners(

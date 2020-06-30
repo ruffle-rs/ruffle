@@ -5,7 +5,7 @@ use crate::avm1::TObject;
 #[test]
 fn locals_into_form_values() {
     with_avm(19, |activation, context, _this| -> Result<(), Error> {
-        let my_locals = activation.activation().scope().locals().to_owned();
+        let my_locals = activation.scope().locals().to_owned();
         my_locals
             .set("value1", "string".into(), activation, context)
             .unwrap();
