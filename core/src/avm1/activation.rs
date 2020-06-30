@@ -77,10 +77,6 @@ pub struct Activation<'gc> {
     /// The arguments this function was called by.
     arguments: Option<Object<'gc>>,
 
-    /// Indicates if this activation object represents a function or embedded
-    /// block (e.g. ActionWith).
-    is_function: bool,
-
     /// Local registers, if any.
     ///
     /// None indicates a function executing out of the global register set.
@@ -141,7 +137,6 @@ impl<'gc> Activation<'gc> {
             target_clip: Some(base_clip),
             this,
             arguments,
-            is_function: false,
             local_registers: None,
             is_executing: false,
         }
@@ -166,7 +161,6 @@ impl<'gc> Activation<'gc> {
             target_clip: Some(base_clip),
             this,
             arguments,
-            is_function: true,
             local_registers: None,
             is_executing: false,
         }
@@ -202,7 +196,6 @@ impl<'gc> Activation<'gc> {
             target_clip: Some(base_clip),
             this: globals,
             arguments: None,
-            is_function: false,
             local_registers: None,
             is_executing: false,
         }
@@ -220,7 +213,6 @@ impl<'gc> Activation<'gc> {
             target_clip: self.target_clip,
             this: self.this,
             arguments: self.arguments,
-            is_function: false,
             local_registers: self.local_registers,
             is_executing: false,
         }
@@ -295,11 +287,6 @@ impl<'gc> Activation<'gc> {
     /// Changes the target clip.
     pub fn set_target_clip(&mut self, value: Option<DisplayObject<'gc>>) {
         self.target_clip = value;
-    }
-
-    /// Indicates whether or not the end of this scope should return a value.
-    pub fn can_return(&self) -> bool {
-        self.is_function
     }
 
     /// Resolve a particular named local variable within this activation.
