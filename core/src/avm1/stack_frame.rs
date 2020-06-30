@@ -303,21 +303,16 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         code: SwfSlice,
     ) -> Result<ReturnType<'gc>, Error<'gc>> {
-        self.lock()?;
         let mut read = Reader::new(code.as_ref(), self.swf_version());
 
-        let result = loop {
+        loop {
             let result = self.do_action(&code, context, &mut read);
             match result {
                 Ok(FrameControl::Return(return_type)) => break Ok(return_type),
                 Ok(FrameControl::Continue) => {}
                 Err(e) => break Err(e),
             }
-        };
-
-        self.unlock_execution();
-
-        result
+        }
     }
 
     /// Run a single action from a given action reader.
@@ -2905,24 +2900,5 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
 
     pub fn set_constant_pool(&mut self, constant_pool: GcCell<'gc, Vec<String>>) {
         self.constant_pool = constant_pool;
-    }
-
-    /// Attempts to lock the activation frame for execution.
-    ///
-    /// If this frame is already executing, that is an error condition.
-    pub fn lock(&mut self) -> Result<(), Error<'gc>> {
-        if self.is_executing {
-            return Err(Error::AlreadyExecutingFrame);
-        }
-
-        self.is_executing = true;
-
-        Ok(())
-    }
-
-    /// Unlock the activation object. This allows future execution to run on it
-    /// again.
-    pub fn unlock_execution(&mut self) {
-        self.is_executing = false;
     }
 }
