@@ -301,7 +301,6 @@ fn concat<'gc>(
             return Ok(Value::Undefined.into());
         }
 
-
         apply_color_transform_to_object(new_ct, this, avm, context)?;
     }
 
