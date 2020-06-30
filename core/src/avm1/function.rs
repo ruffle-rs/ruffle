@@ -279,19 +279,15 @@ impl<'gc> Executable<'gc> {
                         .unwrap_or(ac.player_version)
                 };
 
-                let frame_cell = GcCell::allocate(
-                    ac.gc_context,
-                    Activation::from_function(
-                        effective_ver,
-                        af.data(),
-                        child_scope,
-                        af.constant_pool,
-                        af.base_clip,
-                        this,
-                        Some(argcell),
-                    ),
+                let mut frame = Activation::from_function(
+                    effective_ver,
+                    af.data(),
+                    child_scope,
+                    af.constant_pool,
+                    af.base_clip,
+                    this,
+                    Some(argcell),
                 );
-                let mut frame = frame_cell.write(ac.gc_context);
 
                 frame.allocate_local_registers(af.register_count(), ac.gc_context);
 
@@ -363,8 +359,7 @@ impl<'gc> Executable<'gc> {
                     }
                 }
 
-                drop(frame);
-                Ok(activation.run_child_activation(frame_cell, ac)?.value())
+                Ok(activation.run_child_activation(frame, ac)?.value())
             }
         }
     }

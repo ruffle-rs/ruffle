@@ -154,22 +154,19 @@ impl<'gc> Avm1<'gc> {
                 let child_scope = GcCell::allocate(
                     context.gc_context,
                     Scope::new(
-                        activation.activation().read().scope_cell(),
+                        activation.activation().scope_cell(),
                         scope::ScopeClass::Target,
                         clip_obj,
                     ),
                 );
-                let child_activation = GcCell::allocate(
-                    context.gc_context,
-                    Activation::from_action(
-                        swf_version,
-                        code,
-                        child_scope,
-                        activation.avm().constant_pool,
-                        active_clip,
-                        clip_obj,
-                        None,
-                    ),
+                let child_activation = Activation::from_action(
+                    swf_version,
+                    code,
+                    child_scope,
+                    activation.avm().constant_pool,
+                    active_clip,
+                    clip_obj,
+                    None,
                 );
                 if let Err(e) = activation.run_child_activation(child_activation, context) {
                     root_error_handler(activation, context, e);
@@ -206,21 +203,18 @@ impl<'gc> Avm1<'gc> {
             action_context.gc_context,
             Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
         );
-        let activation = GcCell::allocate(
-            action_context.gc_context,
-            Activation::from_action(
-                swf_version,
-                SwfSlice {
-                    movie: Arc::new(SwfMovie::empty(swf_version)),
-                    start: 0,
-                    end: 0,
-                },
-                child_scope,
-                self.constant_pool,
-                active_clip,
-                clip_obj,
-                None,
-            ),
+        let activation = Activation::from_action(
+            swf_version,
+            SwfSlice {
+                movie: Arc::new(SwfMovie::empty(swf_version)),
+                start: 0,
+                end: 0,
+            },
+            child_scope,
+            self.constant_pool,
+            active_clip,
+            clip_obj,
+            None,
         );
         let mut stack_frame = StackFrame::new(self, None, activation);
         function(&mut stack_frame, action_context)
@@ -250,23 +244,20 @@ impl<'gc> Avm1<'gc> {
                 let child_scope = GcCell::allocate(
                     context.gc_context,
                     Scope::new(
-                        activation.activation().read().scope_cell(),
+                        activation.activation().scope_cell(),
                         scope::ScopeClass::Target,
                         clip_obj,
                     ),
                 );
                 activation.avm().push(Value::Undefined);
-                let child_activation = GcCell::allocate(
-                    context.gc_context,
-                    Activation::from_action(
-                        swf_version,
-                        code,
-                        child_scope,
-                        activation.avm().constant_pool,
-                        active_clip,
-                        clip_obj,
-                        None,
-                    ),
+                let child_activation = Activation::from_action(
+                    swf_version,
+                    code,
+                    child_scope,
+                    activation.avm().constant_pool,
+                    active_clip,
+                    clip_obj,
+                    None,
                 );
                 if let Err(e) = activation.run_child_activation(child_activation, context) {
                     root_error_handler(activation, context, e);
@@ -325,14 +316,11 @@ impl<'gc> Avm1<'gc> {
     where
         for<'b> F: FnOnce(&mut StackFrame<'b, 'gc>, &mut UpdateContext<'a, 'gc, '_>) -> R,
     {
-        let activation = GcCell::allocate(
+        let activation = Activation::from_nothing(
+            swf_version,
+            self.global_object_cell(),
             context.gc_context,
-            Activation::from_nothing(
-                swf_version,
-                self.global_object_cell(),
-                context.gc_context,
-                base_clip,
-            ),
+            base_clip,
         );
         let mut stack_frame = StackFrame::new(self, None, activation);
         function(&mut stack_frame, context)

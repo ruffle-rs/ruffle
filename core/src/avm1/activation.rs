@@ -2,9 +2,7 @@
 
 use crate::avm1::error::Error;
 use crate::avm1::scope::Scope;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, Value};
-use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::tag_utils::SwfSlice;
 use gc_arena::{GcCell, MutationContext};
@@ -72,7 +70,7 @@ pub struct Activation<'gc> {
     this: Object<'gc>,
 
     /// The arguments this function was called by.
-    arguments: Option<Object<'gc>>,
+    pub arguments: Option<Object<'gc>>,
 
     /// Local registers, if any.
     ///
@@ -271,45 +269,6 @@ impl<'gc> Activation<'gc> {
     /// Changes the target clip.
     pub fn set_target_clip(&mut self, value: Option<DisplayObject<'gc>>) {
         self.target_clip = value;
-    }
-
-    /// Resolve a particular named local variable within this activation.
-    ///
-    /// Because scopes are object chains, the same rules for `Object::get`
-    /// still apply here.
-    pub fn resolve(
-        &self,
-        name: &str,
-        activation: &mut StackFrame<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        if name == "this" {
-            return Ok(Value::Object(self.this));
-        }
-
-        if name == "arguments" && self.arguments.is_some() {
-            return Ok(Value::Object(self.arguments.unwrap()));
-        }
-
-        self.scope().resolve(name, activation, context, self.this)
-    }
-
-    /// Check if a particular property in the scope chain is defined.
-    pub fn is_defined(
-        &self,
-        activation: &mut StackFrame<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        name: &str,
-    ) -> bool {
-        if name == "this" {
-            return true;
-        }
-
-        if name == "arguments" && self.arguments.is_some() {
-            return true;
-        }
-
-        self.scope().is_defined(activation, context, name)
     }
 
     /// Define a named local variable within this activation.
