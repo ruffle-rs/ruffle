@@ -62,9 +62,6 @@ pub struct Activation<'gc> {
     /// Action data being executed by the reader below.
     data: SwfSlice,
 
-    /// The current location of the instruction stream being executed.
-    pc: usize,
-
     /// All defined local variables in this stack frame.
     scope: GcCell<'gc, Scope<'gc>>,
 
@@ -130,7 +127,6 @@ impl<'gc> Activation<'gc> {
         Activation {
             swf_version,
             data: code,
-            pc: 0,
             scope,
             constant_pool,
             base_clip,
@@ -154,7 +150,6 @@ impl<'gc> Activation<'gc> {
         Activation {
             swf_version,
             data: code,
-            pc: 0,
             scope,
             constant_pool,
             base_clip,
@@ -189,7 +184,6 @@ impl<'gc> Activation<'gc> {
                 start: 0,
                 end: 0,
             },
-            pc: 0,
             scope: child_scope,
             constant_pool: empty_constant_pool,
             base_clip,
@@ -206,7 +200,6 @@ impl<'gc> Activation<'gc> {
         Activation {
             swf_version: self.swf_version,
             data: code,
-            pc: 0,
             scope,
             constant_pool: self.constant_pool,
             base_clip: self.base_clip,
@@ -239,15 +232,6 @@ impl<'gc> Activation<'gc> {
     #[allow(dead_code)]
     pub fn is_identical_fn(&self, other: &SwfSlice) -> bool {
         Arc::ptr_eq(&self.data.movie, &other.movie)
-    }
-
-    /// Returns a mutable reference to the current data offset.
-    pub fn pc(&self) -> usize {
-        self.pc
-    }
-    /// Change the current PC.
-    pub fn set_pc(&mut self, new_pc: usize) {
-        self.pc = new_pc;
     }
 
     /// Returns AVM local variable scope.

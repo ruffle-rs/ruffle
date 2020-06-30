@@ -17,7 +17,6 @@ use gc_arena::{Collect, GcCell};
 use rand::Rng;
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::convert::TryInto;
 use swf::avm1::read::Reader;
 use swf::avm1::types::{Action, Function};
 use url::form_urlencoded;
@@ -192,7 +191,6 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         activation.lock()?;
         let data = activation.data();
         let mut read = Reader::new(data.as_ref(), activation.swf_version());
-        read.seek(activation.pc().try_into().unwrap());
         drop(activation);
 
         let result = loop {
@@ -206,7 +204,6 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
 
         let mut activation = self.activation.write(context.gc_context);
         activation.unlock_execution();
-        activation.set_pc(read.pos());
         drop(activation);
 
         result
