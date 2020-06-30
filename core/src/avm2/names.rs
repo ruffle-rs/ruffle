@@ -153,7 +153,8 @@ impl QName {
 /// process consists of searching each name space for a given name.
 ///
 /// The existence of a `name` of `None` indicates the `Any` name.
-#[derive(Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
 pub struct Multiname {
     ns: Vec<Namespace>,
     name: Option<String>,

@@ -1,7 +1,8 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
 use crate::avm2::activation::{Activation, Avm2ScriptEntry};
-use crate::avm2::function::{Avm2ClassEntry, Avm2MethodEntry, FunctionObject};
+use crate::avm2::class::Avm2ClassEntry;
+use crate::avm2::function::{Avm2MethodEntry, FunctionObject};
 use crate::avm2::globals::SystemPrototypes;
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{Object, TObject};
@@ -30,6 +31,7 @@ macro_rules! avm_debug {
 }
 
 mod activation;
+mod class;
 mod function;
 mod globals;
 mod names;
@@ -39,6 +41,7 @@ mod return_value;
 mod scope;
 mod script_object;
 mod slot;
+mod r#trait;
 mod value;
 
 /// Boxed error alias.

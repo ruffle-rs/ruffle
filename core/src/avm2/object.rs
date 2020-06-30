@@ -1,6 +1,7 @@
 //! AVM2 objects.
 
-use crate::avm2::function::{Avm2ClassEntry, Avm2MethodEntry, Executable, FunctionObject};
+use crate::avm2::class::Avm2ClassEntry;
+use crate::avm2::function::{Avm2MethodEntry, Executable, FunctionObject};
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::scope::Scope;
 use crate::avm2::script_object::ScriptObject;

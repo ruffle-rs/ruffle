@@ -1,6 +1,7 @@
 //! AVM2 executables.
 
 use crate::avm2::activation::Activation;
+use crate::avm2::class::Avm2ClassEntry;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::return_value::ReturnValue;
@@ -13,8 +14,7 @@ use gc_arena::{Collect, CollectionContext, GcCell, MutationContext};
 use std::fmt;
 use std::rc::Rc;
 use swf::avm2::types::{
-    AbcFile, Class as AbcClass, Index, Instance as AbcInstance, Method as AbcMethod,
-    MethodBody as AbcMethodBody, Trait as AbcTrait,
+    AbcFile, Index, Method as AbcMethod, MethodBody as AbcMethodBody, Trait as AbcTrait,
 };
 
 /// Represents a function defined in Ruffle's code.
@@ -90,6 +90,38 @@ impl Avm2MethodEntry {
             .method_bodies
             .get(self.abc_method_body as usize)
             .unwrap()
+    }
+}
+
+/// An uninstantiated method that can either be natively implemented or sourced
+/// from an ABC file.
+#[derive(Clone)]
+pub enum Method<'gc> {
+    /// A native method.
+    Native(NativeFunction<'gc>),
+
+    /// An ABC-provided method entry.
+    Entry(Avm2MethodEntry),
+}
+
+unsafe impl<'gc> Collect for Method<'gc> {
+    fn trace(&self, cc: CollectionContext) {
+        match self {
+            Method::Native(_nf) => {}
+            Method::Entry(a2me) => a2me.trace(cc),
+        }
+    }
+}
+
+impl<'gc> fmt::Debug for Method<'gc> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Method::Native(_nf) => f
+                .debug_tuple("Method::Native")
+                .field(&"<native code>".to_string())
+                .finish(),
+            Method::Entry(a2me) => f.debug_tuple("Method::Entry").field(a2me).finish(),
+        }
     }
 }
 
@@ -193,59 +225,6 @@ impl<'gc> From<NativeFunction<'gc>> for Executable<'gc> {
 impl<'gc> From<Avm2Function<'gc>> for Executable<'gc> {
     fn from(a2f: Avm2Function<'gc>) -> Self {
         Self::Action(a2f)
-    }
-}
-
-/// Represents a reference to an AVM2 class.
-///
-/// For some reason, this comes in two parts, one for static properties (called
-/// the "class") and one for dynamic properties (called the "instance", even
-/// though it really defines what ES3/AS2 would call a prototype)
-#[derive(Collect, Clone, Debug)]
-#[collect(require_static)]
-pub struct Avm2ClassEntry {
-    /// The ABC file this function was defined in.
-    pub abc: Rc<AbcFile>,
-
-    /// The ABC class (used to define static properties).
-    ///
-    /// This is also the index of the ABC instance, which holds instance
-    /// properties.
-    pub abc_class: u32,
-}
-
-impl Avm2ClassEntry {
-    /// Construct an `Avm2MethodEntry` from an `AbcFile` and method index.
-    ///
-    /// This function returns `None` if the given class index does not resolve
-    /// to a valid ABC class, or a valid ABC instance. As mentioned in the type
-    /// documentation, ABC classes and instances are intended to be paired.
-    pub fn from_class_index(abc: Rc<AbcFile>, abc_class: Index<AbcClass>) -> Option<Self> {
-        if abc.classes.get(abc_class.0 as usize).is_some()
-            && abc.instances.get(abc_class.0 as usize).is_some()
-        {
-            return Some(Self {
-                abc,
-                abc_class: abc_class.0,
-            });
-        }
-
-        None
-    }
-
-    /// Get the underlying ABC file.
-    pub fn abc(&self) -> Rc<AbcFile> {
-        self.abc.clone()
-    }
-
-    /// Get a reference to the ABC class entry this refers to.
-    pub fn class(&self) -> &AbcClass {
-        self.abc.classes.get(self.abc_class as usize).unwrap()
-    }
-
-    /// Get a reference to the ABC class instance entry this refers to.
-    pub fn instance(&self) -> &AbcInstance {
-        self.abc.instances.get(self.abc_class as usize).unwrap()
     }
 }
 

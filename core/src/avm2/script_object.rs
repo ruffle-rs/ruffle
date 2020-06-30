@@ -1,6 +1,7 @@
 //! Default AVM2 object impl
 
-use crate::avm2::function::{Avm2ClassEntry, Executable};
+use crate::avm2::class::Avm2ClassEntry;
+use crate::avm2::function::Executable;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::property::Property;
