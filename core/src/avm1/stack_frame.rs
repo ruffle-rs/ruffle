@@ -18,7 +18,6 @@ use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::cell::{Ref, RefMut};
 use std::collections::HashMap;
-use std::sync::Arc;
 use swf::avm1::read::Reader;
 use swf::avm1::types::{Action, Function};
 use url::form_urlencoded;
@@ -101,9 +100,6 @@ pub struct StackFrame<'a, 'gc: 'a> {
     /// on the SWF version.
     swf_version: u8,
 
-    /// Action data being executed by the reader below.
-    data: SwfSlice,
-
     /// All defined local variables in this stack frame.
     scope: GcCell<'gc, Scope<'gc>>,
 
@@ -144,11 +140,9 @@ pub struct StackFrame<'a, 'gc: 'a> {
 }
 
 impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
-    #[allow(clippy::too_many_arguments)]
     pub fn from_action(
         avm: &'a mut Avm1<'gc>,
         swf_version: u8,
-        code: SwfSlice,
         scope: GcCell<'gc, Scope<'gc>>,
         constant_pool: GcCell<'gc, Vec<String>>,
         base_clip: DisplayObject<'gc>,
@@ -158,7 +152,6 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         Self {
             avm,
             swf_version,
-            data: code,
             scope,
             constant_pool,
             base_clip,
@@ -171,15 +164,10 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     }
 
     /// Create a new activation to run a block of code with a given scope.
-    pub fn with_new_scope<'b>(
-        &'b mut self,
-        code: SwfSlice,
-        scope: GcCell<'gc, Scope<'gc>>,
-    ) -> StackFrame<'b, 'gc> {
+    pub fn with_new_scope<'b>(&'b mut self, scope: GcCell<'gc, Scope<'gc>>) -> StackFrame<'b, 'gc> {
         StackFrame {
             avm: self.avm,
             swf_version: self.swf_version,
-            data: code,
             scope,
             constant_pool: self.constant_pool,
             base_clip: self.base_clip,
@@ -202,8 +190,6 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         mc: MutationContext<'gc, '_>,
         base_clip: DisplayObject<'gc>,
     ) -> Self {
-        use crate::tag_utils::SwfMovie;
-
         let global_scope = GcCell::allocate(mc, Scope::from_global_object(globals));
         let child_scope = GcCell::allocate(mc, Scope::new_local_scope(global_scope, mc));
         let empty_constant_pool = GcCell::allocate(mc, Vec::new());
@@ -211,11 +197,6 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         Self {
             avm,
             swf_version,
-            data: SwfSlice {
-                movie: Arc::new(SwfMovie::empty(swf_version)),
-                start: 0,
-                end: 0,
-            },
             scope: child_scope,
             constant_pool: empty_constant_pool,
             base_clip,
@@ -270,14 +251,13 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                 let mut child_activation = StackFrame::from_action(
                     activation.avm(),
                     swf_version,
-                    code,
                     child_scope,
                     constant_pool,
                     active_clip,
                     clip_obj,
                     None,
                 );
-                child_activation.run(context)
+                child_activation.run_actions(context, code)
             },
         )
     }
@@ -293,8 +273,6 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     where
         for<'b> F: FnOnce(&mut StackFrame<'b, 'gc>, &mut UpdateContext<'c, 'gc, '_>) -> R,
     {
-        use crate::tag_utils::SwfMovie;
-
         let clip_obj = match active_clip.object() {
             Value::Object(o) => o,
             _ => panic!("No script object for display object"),
@@ -311,11 +289,6 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         let mut activation = StackFrame::from_action(
             self.avm(),
             swf_version,
-            SwfSlice {
-                movie: Arc::new(SwfMovie::empty(swf_version)),
-                start: 0,
-                end: 0,
-            },
             child_scope,
             constant_pool,
             active_clip,
@@ -325,16 +298,16 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         function(&mut activation, action_context)
     }
 
-    pub fn run(
+    pub fn run_actions(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
+        code: SwfSlice,
     ) -> Result<ReturnType<'gc>, Error<'gc>> {
         self.lock()?;
-        let data = self.data();
-        let mut read = Reader::new(data.as_ref(), self.swf_version());
+        let mut read = Reader::new(code.as_ref(), self.swf_version());
 
         let result = loop {
-            let result = self.do_action(&data, context, &mut read);
+            let result = self.do_action(&code, context, &mut read);
             match result {
                 Ok(FrameControl::Return(return_type)) => break Ok(return_type),
                 Ok(FrameControl::Continue) => {}
@@ -385,8 +358,15 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                     name,
                     params,
                     actions,
-                } => self.action_define_function(context, &name, &params[..], actions),
-                Action::DefineFunction2(func) => self.action_define_function_2(context, &func),
+                } => self.action_define_function(
+                    context,
+                    &name,
+                    &params[..],
+                    data.to_subslice(actions).unwrap(),
+                ),
+                Action::DefineFunction2(func) => {
+                    self.action_define_function_2(context, &func, &data)
+                }
                 Action::DefineLocal => self.action_define_local(context),
                 Action::DefineLocal2 => self.action_define_local_2(context),
                 Action::Delete => self.action_delete(context),
@@ -477,7 +457,9 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
                 Action::WaitForFrame2 {
                     num_actions_to_skip,
                 } => self.action_wait_for_frame_2(context, num_actions_to_skip, reader),
-                Action::With { actions } => self.action_with(context, actions),
+                Action::With { actions } => {
+                    self.action_with(context, data.to_subslice(actions).unwrap())
+                }
                 Action::Throw => self.action_throw(context),
                 _ => self.unknown_op(context, action),
             };
@@ -821,15 +803,14 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
         params: &[&str],
-        actions: &[u8],
+        actions: SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let swf_version = self.swf_version();
-        let func_data = self.data().to_subslice(actions).unwrap();
         let scope = Scope::new_closure_scope(self.scope_cell(), context.gc_context);
         let constant_pool = self.constant_pool();
         let func = Avm1Function::from_df1(
             swf_version,
-            func_data,
+            actions,
             name,
             params,
             scope,
@@ -857,9 +838,10 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         action_func: &Function,
+        parent_data: &SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let swf_version = self.swf_version();
-        let func_data = self.data().to_subslice(action_func.actions).unwrap();
+        let func_data = parent_data.to_subslice(action_func.actions).unwrap();
         let scope = Scope::new_closure_scope(self.scope_cell(), context.gc_context);
         let constant_pool = self.constant_pool();
         let func = Avm1Function::from_df2(
@@ -2274,13 +2256,12 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     fn action_with(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        actions: &[u8],
+        code: SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let object = self.avm.pop().coerce_to_object(self, context);
-        let block = self.data().to_subslice(actions).unwrap();
         let with_scope = Scope::new_with_scope(self.scope_cell(), object, context.gc_context);
-        let mut new_activation = self.with_new_scope(block, with_scope);
-        let _ = new_activation.run(context)?;
+        let mut new_activation = self.with_new_scope(with_scope);
+        let _ = new_activation.run_actions(context, code)?;
         Ok(FrameControl::Continue)
     }
 
@@ -2830,18 +2811,6 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     /// Returns the SWF version of the action or function being executed.
     pub fn swf_version(&self) -> u8 {
         self.swf_version
-    }
-
-    /// Returns the data this stack frame executes from.
-    pub fn data(&self) -> SwfSlice {
-        self.data.clone()
-    }
-
-    /// Determines if a stack frame references the same function as a given
-    /// SwfSlice.
-    #[allow(dead_code)]
-    pub fn is_identical_fn(&self, other: &SwfSlice) -> bool {
-        Arc::ptr_eq(&self.data.movie, &other.movie)
     }
 
     /// Returns AVM local variable scope.

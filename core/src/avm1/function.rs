@@ -281,7 +281,6 @@ impl<'gc> Executable<'gc> {
                 let mut frame = StackFrame::from_action(
                     activation.avm(),
                     effective_ver,
-                    af.data(),
                     child_scope,
                     af.constant_pool,
                     af.base_clip,
@@ -356,7 +355,7 @@ impl<'gc> Executable<'gc> {
                     }
                 }
 
-                Ok(frame.run(ac)?.value())
+                Ok(frame.run_actions(ac, af.data.clone())?.value())
             }
         }
     }

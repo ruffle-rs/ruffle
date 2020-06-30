@@ -157,14 +157,13 @@ impl<'gc> Avm1<'gc> {
                 let mut child_activation = StackFrame::from_action(
                     activation.avm(),
                     swf_version,
-                    code,
                     child_scope,
                     constant_pool,
                     active_clip,
                     clip_obj,
                     None,
                 );
-                if let Err(e) = child_activation.run(context) {
+                if let Err(e) = child_activation.run_actions(context, code) {
                     root_error_handler(activation, context, e);
                 }
             },
@@ -184,9 +183,6 @@ impl<'gc> Avm1<'gc> {
     where
         for<'b> F: FnOnce(&mut StackFrame<'b, 'gc>, &mut UpdateContext<'a, 'gc, '_>) -> R,
     {
-        use crate::tag_utils::SwfMovie;
-        use std::sync::Arc;
-
         let clip_obj = match active_clip.object() {
             Value::Object(o) => o,
             _ => panic!("No script object for display object"),
@@ -202,11 +198,6 @@ impl<'gc> Avm1<'gc> {
         let mut activation = StackFrame::from_action(
             self,
             swf_version,
-            SwfSlice {
-                movie: Arc::new(SwfMovie::empty(swf_version)),
-                start: 0,
-                end: 0,
-            },
             child_scope,
             self.constant_pool,
             active_clip,
@@ -246,14 +237,13 @@ impl<'gc> Avm1<'gc> {
                 let mut child_activation = StackFrame::from_action(
                     activation.avm(),
                     swf_version,
-                    code,
                     child_scope,
                     constant_pool,
                     active_clip,
                     clip_obj,
                     None,
                 );
-                if let Err(e) = child_activation.run(context) {
+                if let Err(e) = child_activation.run_actions(context, code) {
                     root_error_handler(activation, context, e);
                 }
             },
