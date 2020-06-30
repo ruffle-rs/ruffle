@@ -7,7 +7,6 @@ use crate::avm1::{Avm1, Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::color_transform::ColorTransform;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
-use std::borrow::ToOwned;
 use std::convert::Into;
 
 pub fn constructor<'gc>(
@@ -19,42 +18,34 @@ pub fn constructor<'gc>(
     let red_multiplier = args
         .get(0)
         .unwrap_or(&Value::Number(1.into()))
-        .to_owned()
         .coerce_to_f64(avm, context)?;
     let green_multiplier = args
         .get(1)
         .unwrap_or(&Value::Number(1.into()))
-        .to_owned()
         .coerce_to_f64(avm, context)?;
     let blue_multiplier = args
         .get(2)
         .unwrap_or(&Value::Number(1.into()))
-        .to_owned()
         .coerce_to_f64(avm, context)?;
     let alpha_multiplier = args
         .get(3)
         .unwrap_or(&Value::Number(1.into()))
-        .to_owned()
         .coerce_to_f64(avm, context)?;
     let red_offset = args
         .get(4)
         .unwrap_or(&Value::Number(0.into()))
-        .to_owned()
         .coerce_to_f64(avm, context)?;
     let green_offset = args
         .get(5)
         .unwrap_or(&Value::Number(0.into()))
-        .to_owned()
         .coerce_to_f64(avm, context)?;
     let blue_offset = args
         .get(6)
         .unwrap_or(&Value::Number(0.into()))
-        .to_owned()
         .coerce_to_f64(avm, context)?;
     let alpha_offset = args
         .get(7)
         .unwrap_or(&Value::Number(0.into()))
-        .to_owned()
         .coerce_to_f64(avm, context)?;
 
     let ct = ColorTransform {
