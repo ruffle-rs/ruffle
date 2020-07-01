@@ -1394,12 +1394,16 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let constr = self.avm.pop().coerce_to_object(self, context);
-        let obj = self.avm.pop().coerce_to_object(self, context);
+        let obj = self.avm.pop();
 
-        let prototype = constr
-            .get("prototype", self, context)?
-            .coerce_to_object(self, context);
-        let is_instance_of = obj.is_instance_of(self, context, constr, prototype)?;
+        let is_instance_of = if let Value::Object(obj) = obj {
+            let prototype = constr
+                .get("prototype", self, context)?
+                .coerce_to_object(self, context);
+            obj.is_instance_of(self, context, constr, prototype)?
+        } else {
+            false
+        };
 
         self.avm.push(is_instance_of);
         Ok(FrameControl::Continue)

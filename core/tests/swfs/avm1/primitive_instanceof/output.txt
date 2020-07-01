@@ -1,0 +1,38 @@
+// "Hello" instanceof String
+false
+
+// "Hello" instanceof Object
+false
+
+// String("Hello") instanceof String
+false
+
+// new String("Hello") instanceof String
+true
+
+
+// 3 instanceof Number
+false
+
+// 3 instanceof Object
+false
+
+// Number(3) instanceof Number
+false
+
+// new Number(3) instanceof Number
+true
+
+
+// true instanceof Boolean
+false
+
+// true instanceof Object
+false
+
+// Boolean(true) instanceof Boolean
+false
+
+// new Boolean(true) instanceof Boolean
+true
+
