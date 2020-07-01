@@ -2241,8 +2241,11 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         let object = self.avm.pop().coerce_to_object(self, context);
         let with_scope = Scope::new_with_scope(self.scope_cell(), object, context.gc_context);
         let mut new_activation = self.with_new_scope(with_scope);
-        let _ = new_activation.run_actions(context, code)?;
-        Ok(FrameControl::Continue)
+        if let ReturnType::Explicit(value) = new_activation.run_actions(context, code)? {
+            Ok(FrameControl::Return(ReturnType::Explicit(value)))
+        } else {
+            Ok(FrameControl::Continue)
+        }
     }
 
     /// Retrieve a given register value.
