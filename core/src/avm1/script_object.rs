@@ -309,16 +309,25 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             return Ok(self.proto().map_or(Value::Undefined, Value::Object));
         }
 
+        let mut exec = None;
+
         if let Some(value) = self
             .0
             .read()
             .values
             .get(name, activation.is_case_sensitive())
         {
-            return value.get(activation, context, this, Some((*self).into()));
+            match value {
+                Property::Virtual { get, .. } => exec = Some(get.to_owned()),
+                Property::Stored { value, .. } => return Ok(value.to_owned()),
+            }
         }
 
-        Ok(Value::Undefined)
+        if let Some(get) = exec {
+            get.exec(activation, context, this, Some((*self).into()), &[])
+        } else {
+            Ok(Value::Undefined)
+        }
     }
 
     /// Set a named property on the object.

@@ -1,10 +1,8 @@
 //! User-defined properties
 
 use self::Attribute::*;
-use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
-use crate::avm1::stack_frame::StackFrame;
-use crate::avm1::{Object, UpdateContext, Value};
+use crate::avm1::Value;
 use core::fmt;
 use enumset::{EnumSet, EnumSetType};
 
@@ -32,23 +30,6 @@ pub enum Property<'gc> {
 }
 
 impl<'gc> Property<'gc> {
-    /// Get the value of a property slot.
-    ///
-    /// This function yields `ReturnValue` because some properties may be
-    /// user-defined.
-    pub fn get(
-        &self,
-        activation: &mut StackFrame<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        match self {
-            Property::Virtual { get, .. } => get.exec(activation, context, this, base_proto, &[]),
-            Property::Stored { value, .. } => Ok(value.to_owned()),
-        }
-    }
-
     /// Set a property slot.
     ///
     /// This function may return an `Executable` of the property's virtual
