@@ -3,6 +3,9 @@
 /// Maps a char to its lowercase variant according to the Flash Player.
 /// Note that this mapping is different that Rust's `to_lowercase`.
 pub fn swf_char_to_lowercase(c: char) -> char {
+    if c.is_ascii() {
+        return c.to_ascii_lowercase();
+    }
     let code_pt = u32::from(c);
     if code_pt < 65536 {
         let code_pt = code_pt as u16;
@@ -18,6 +21,9 @@ pub fn swf_char_to_lowercase(c: char) -> char {
 /// Maps a char to its uppercase variant according to the Flash Player.
 /// Note that this mapping is different that Rust's `to_uppercase`.
 pub fn swf_char_to_uppercase(c: char) -> char {
+    if c.is_ascii() {
+        return c.to_ascii_uppercase();
+    }
     let code_pt = u32::from(c);
     if code_pt < 65536 {
         let code_pt = code_pt as u16;
