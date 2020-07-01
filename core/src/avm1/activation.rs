@@ -19,7 +19,7 @@ use std::borrow::Cow;
 use std::cell::{Ref, RefMut};
 use std::collections::HashMap;
 use swf::avm1::read::Reader;
-use swf::avm1::types::{Action, Function};
+use swf::avm1::types::{Action, CatchVar, Function, TryBlock};
 use url::form_urlencoded;
 
 macro_rules! avm_debug {
@@ -441,6 +441,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                     self.action_with(context, data.to_subslice(actions).unwrap())
                 }
                 Action::Throw => self.action_throw(context),
+                Action::Try(try_block) => self.action_try(context, &try_block, &data),
                 _ => self.unknown_op(context, action),
             };
             if let Err(e) = result {
@@ -2249,6 +2250,56 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             Ok(FrameControl::Return(ReturnType::Explicit(value)))
         } else {
             Ok(FrameControl::Continue)
+        }
+    }
+
+    fn action_try(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        try_block: &TryBlock,
+        parent_data: &SwfSlice,
+    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let mut result = self.run_actions(
+            context,
+            parent_data.to_subslice(try_block.try_actions).unwrap(),
+        );
+
+        if let Some((catch_vars, actions)) = &try_block.catch {
+            if let Err(Error::ThrownValue(value)) = &result {
+                let mut activation = Activation::from_action(
+                    self.avm,
+                    self.swf_version,
+                    self.scope,
+                    self.constant_pool,
+                    self.base_clip,
+                    self.this,
+                    self.arguments,
+                );
+
+                match catch_vars {
+                    CatchVar::Var(name) => {
+                        activation.set_variable(context, name, value.to_owned())?
+                    }
+                    CatchVar::Register(id) => {
+                        activation.set_current_register(*id, value.to_owned(), context)
+                    }
+                }
+
+                result = activation.run_actions(context, parent_data.to_subslice(actions).unwrap());
+            }
+        }
+
+        if let Some(actions) = try_block.finally {
+            if let ReturnType::Explicit(value) =
+                self.run_actions(context, parent_data.to_subslice(actions).unwrap())?
+            {
+                return Ok(FrameControl::Return(ReturnType::Explicit(value)));
+            }
+        }
+
+        match result? {
+            ReturnType::Implicit => Ok(FrameControl::Continue),
+            ReturnType::Explicit(value) => Ok(FrameControl::Return(ReturnType::Explicit(value))),
         }
     }
 

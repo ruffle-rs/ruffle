@@ -177,6 +177,8 @@ swf_tests! {
     (mcl_as_broadcaster, "avm1/mcl_as_broadcaster", 1),
     (uncaught_exception, "avm1/uncaught_exception", 1),
     (uncaught_exception_bubbled, "avm1/uncaught_exception_bubbled", 1),
+    (try_catch_finally, "avm1/try_catch_finally", 1),
+    (try_finally_simple, "avm1/try_finally_simple", 1),
     (loadmovie, "avm1/loadmovie", 2),
     (loadmovienum, "avm1/loadmovienum", 2),
     (loadmovie_method, "avm1/loadmovie_method", 2),

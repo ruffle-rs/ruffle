@@ -1,0 +1,119 @@
+// try_catch_finally()
+Start of try_catch_finally()
+Start of try_catch_finally() try block
+// trace(throws_error())
+Start of throws_error()
+// throw "an error!"
+Start of try_catch_finally() catch block
+// trace(error)
+an error!
+End of try_catch_finally() catch block
+Start of try_catch_finally() finally block
+End of try_catch_finally() finally block
+
+// try_catch_catch_finally("String")
+Start of try_catch_catch_finally()
+Start of try_catch_catch_finally() try block
+// throw input
+Start of try_catch_catch_finally() catch block other
+// trace(error)
+String
+End of try_catch_catch_finally() catch block other
+Start of try_catch_catch_finally() finally block
+End of try_catch_catch_finally() finally block
+
+// try_catch_catch_finally(new String())
+Start of try_catch_catch_finally()
+Start of try_catch_catch_finally() try block
+// throw input
+Start of try_catch_catch_finally() catch block String
+// trace(error)
+
+End of try_catch_catch_finally() catch block String
+Start of try_catch_catch_finally() finally block
+End of try_catch_catch_finally() finally block
+
+// try_catch_catch_finally({})
+Start of try_catch_catch_finally()
+Start of try_catch_catch_finally() try block
+// throw input
+Start of try_catch_catch_finally() catch block Object
+// trace(error)
+[object Object]
+End of try_catch_catch_finally() catch block Object
+Start of try_catch_catch_finally() finally block
+End of try_catch_catch_finally() finally block
+
+// try_catch_finally_rethrow()
+Start of try_catch_finally_rethrow()
+Start of try_catch_finally_rethrow() try block
+// trace(throws_error())
+Start of throws_error()
+// throw "an error!"
+Start of try_catch_finally_rethrow() catch block
+// trace(error)
+an error!
+// throw error
+Start of try_catch_finally_rethrow() finally block
+End of try_catch_finally_rethrow() finally block
+Error bubbled up
+an error!
+
+// trace(try_catch_finally_return())
+Start of try_catch_finally_return()
+Start of try_catch_finally_return() try block
+// trace(throws_error())
+Start of throws_error()
+// throw "an error!"
+Start of try_catch_finally_return() catch block
+// trace(error)
+an error!
+// return error
+Start of try_catch_finally_return() finally block
+End of try_catch_finally_return() finally block
+an error!
+
+// try_catch_finally()
+Start of try_catch_finally()
+Start of try_catch_finally() try block
+// trace(throws_error())
+Start of throws_error()
+// throw "an error!"
+Start of try_catch_finally() catch block
+// trace(error)
+an error!
+End of try_catch_finally() catch block
+Start of try_catch_finally() finally block
+End of try_catch_finally() finally block
+
+// try_catch()
+Start of try_catch()
+Start of try_catch() try block
+// trace(throws_error())
+Start of throws_error()
+// throw "an error!"
+Start of try_catch() catch block
+// trace(error)
+an error!
+End of try_catch() catch block
+End of try_catch()
+
+// try_finally()
+Start of try_finally()
+Start of try_finally() try block
+// trace(throws_error())
+Start of throws_error()
+// throw "an error!"
+Start of try_finally() finally block
+End of try_finally() finally block
+Error bubbled up
+an error!
+
+// trace(try_finally_return())
+Start of try_finally_return()
+Start of try_finally_return() try block
+// return 5;
+Start of try_finally_return() finally block
+End of try_finally_return() finally block
+5
+
