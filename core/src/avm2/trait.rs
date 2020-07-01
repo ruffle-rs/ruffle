@@ -76,3 +76,21 @@ pub enum TraitKind<'gc> {
         default_value: Option<Value<'gc>>,
     },
 }
+
+impl<'gc> Trait<'gc> {
+    pub fn name(&self) -> &QName {
+        &self.name
+    }
+
+    pub fn kind(&self) -> &TraitKind<'gc> {
+        &self.kind
+    }
+
+    pub fn is_final(&self) -> bool {
+        self.is_final
+    }
+
+    pub fn is_override(&self) -> bool {
+        self.is_override
+    }
+}

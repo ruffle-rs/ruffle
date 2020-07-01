@@ -1,18 +1,17 @@
 //! AVM2 objects.
 
-use crate::avm2::class::Avm2ClassEntry;
-use crate::avm2::function::{Avm2MethodEntry, Executable, FunctionObject};
+use crate::avm2::class::Class;
+use crate::avm2::function::{Executable, FunctionObject};
 use crate::avm2::names::{Multiname, Namespace, QName};
+use crate::avm2::r#trait::{Trait, TraitKind};
 use crate::avm2::scope::Scope;
 use crate::avm2::script_object::ScriptObject;
-use crate::avm2::value::{abc_default_value, Value};
+use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::fmt::Debug;
-use std::rc::Rc;
-use swf::avm2::types::{AbcFile, Trait as AbcTrait, TraitKind as AbcTraitKind};
 
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
@@ -45,7 +44,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<Value<'gc>, Error> {
         if !self.has_instantiated_property(name) {
             for abc_trait in self.get_trait(name)? {
-                self.install_trait(avm, context, &abc_trait, reciever)?;
+                self.install_trait(avm, context, abc_trait, reciever)?;
             }
         }
 
@@ -99,7 +98,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<(), Error> {
         if !self.has_instantiated_property(name) {
             for abc_trait in self.get_trait(name)? {
-                self.install_trait(avm, context, &abc_trait, reciever)?;
+                self.install_trait(avm, context, abc_trait, reciever)?;
             }
         }
 
@@ -143,7 +142,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<(), Error> {
         if !self.has_instantiated_property(name) {
             for abc_trait in self.get_trait(name)? {
-                self.install_trait(avm, context, &abc_trait, reciever)?;
+                self.install_trait(avm, context, abc_trait, reciever)?;
             }
         }
 
@@ -193,7 +192,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This function returns `None` if no such trait exists, or the object
     /// does not have traits. It returns `Err` if *any* trait in the object is
     /// malformed in some way.
-    fn get_trait(self, name: &QName) -> Result<Vec<AbcTrait>, Error>;
+    fn get_trait(self, name: &QName) -> Result<Vec<Gc<'gc, Trait<'gc>>>, Error>;
 
     /// Populate a list of traits that this object provides.
     ///
@@ -204,7 +203,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_provided_trait(
         &self,
         name: &QName,
-        known_traits: &mut Vec<AbcTrait>,
+        known_traits: &mut Vec<Gc<'gc, Trait<'gc>>>,
     ) -> Result<(), Error>;
 
     /// Retrieves the scope chain of the object at time of it's creation.
@@ -214,14 +213,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Non-method functions and prototype functions (ES3 methods) do not use
     /// this scope chain.
     fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>>;
-
-    /// Retrieves the ABC file that this object, or it's class, was defined in.
-    ///
-    /// Objects that were not defined in an ABC file or created from a class
-    /// defined in an ABC file will return `None`. This can happen for things
-    /// such as object or array literals. If this object does not have an ABC
-    /// file, then it must also not have traits.
-    fn get_abc(self) -> Option<Rc<AbcFile>>;
 
     /// Resolve a multiname into a single QName, if any of the namespaces
     /// match.
@@ -415,16 +406,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &mut self,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        trait_entry: &AbcTrait,
+        trait_entry: Gc<'gc, Trait<'gc>>,
         reciever: Object<'gc>,
     ) -> Result<(), Error> {
-        let scope = self.get_scope();
-        let abc: Result<Rc<AbcFile>, Error> = self.get_abc().ok_or_else(|| {
-            "Object with traits must have an ABC file!"
-                .to_string()
-                .into()
-        });
-        self.install_foreign_trait(avm, context, abc?, trait_entry, scope, reciever)
+        self.install_foreign_trait(avm, context, trait_entry, self.get_scope(), reciever)
     }
 
     /// Install a trait from anywyere.
@@ -432,73 +417,78 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &mut self,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        abc: Rc<AbcFile>,
-        trait_entry: &AbcTrait,
+        trait_entry: Gc<'gc, Trait<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         reciever: Object<'gc>,
     ) -> Result<(), Error> {
         let fn_proto = avm.prototypes().function;
-        let trait_name = QName::from_abc_multiname(&abc, trait_entry.name.clone())?;
+        let trait_name = trait_entry.name().clone();
         avm_debug!(
             "Installing trait {:?} of kind {:?}",
             trait_name,
             trait_entry.kind
         );
 
-        match &trait_entry.kind {
-            AbcTraitKind::Slot { slot_id, value, .. } => {
-                let value = if let Some(value) = value {
-                    abc_default_value(&abc, value)?
-                } else {
-                    Value::Undefined
-                };
-                self.install_slot(context.gc_context, trait_name, *slot_id, value);
+        match trait_entry.kind() {
+            TraitKind::Slot {
+                slot_id,
+                default_value,
+                ..
+            } => {
+                self.install_slot(
+                    context.gc_context,
+                    trait_name,
+                    *slot_id,
+                    default_value.unwrap_or(Value::Undefined),
+                );
             }
-            AbcTraitKind::Method {
+            TraitKind::Method {
                 disp_id, method, ..
             } => {
-                let method = Avm2MethodEntry::from_method_index(abc, method.clone()).unwrap();
-                let function = FunctionObject::from_abc_method(
+                let function = FunctionObject::from_method(
                     context.gc_context,
-                    method,
+                    method.clone(),
                     scope,
                     fn_proto,
                     Some(reciever),
                 );
                 self.install_method(context.gc_context, trait_name, *disp_id, function);
             }
-            AbcTraitKind::Getter {
+            TraitKind::Getter {
                 disp_id, method, ..
             } => {
-                let method = Avm2MethodEntry::from_method_index(abc, method.clone()).unwrap();
-                let function = FunctionObject::from_abc_method(
+                let function = FunctionObject::from_method(
                     context.gc_context,
-                    method,
+                    method.clone(),
                     scope,
                     fn_proto,
                     Some(reciever),
                 );
                 self.install_getter(context.gc_context, trait_name, *disp_id, function)?;
             }
-            AbcTraitKind::Setter {
+            TraitKind::Setter {
                 disp_id, method, ..
             } => {
-                let method = Avm2MethodEntry::from_method_index(abc, method.clone()).unwrap();
-                let function = FunctionObject::from_abc_method(
+                let function = FunctionObject::from_method(
                     context.gc_context,
-                    method,
+                    method.clone(),
                     scope,
                     fn_proto,
                     Some(reciever),
                 );
                 self.install_setter(context.gc_context, trait_name, *disp_id, function)?;
             }
-            AbcTraitKind::Class { slot_id, class } => {
-                let type_entry = Avm2ClassEntry::from_class_index(abc, class.clone()).unwrap();
-                let super_name = QName::from_abc_multiname(
-                    &type_entry.abc(),
-                    type_entry.instance().super_name.clone(),
-                )?;
+            TraitKind::Class { slot_id, class } => {
+                //TODO: what happens if this happens on a class defined as a
+                //class trait, without a superclass? How do we get `Object`
+                //then?
+                let super_name = if let Some(sc_name) = class.super_class_name() {
+                    self.resolve_multiname(sc_name)?
+                        .unwrap_or(QName::dynamic_name("Object"))
+                } else {
+                    QName::dynamic_name("Object")
+                };
+
                 let super_class: Result<Object<'gc>, Error> = self
                     .get_property(reciever, &super_name, avm, context)?
                     .as_object()
@@ -506,47 +496,46 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                         format!("Could not resolve superclass {:?}", super_name.local_name()).into()
                     });
 
-                let (class, _cinit) = FunctionObject::from_abc_class(
-                    avm,
-                    context,
-                    type_entry.clone(),
-                    super_class?,
-                    scope,
-                )?;
-                let class_name = QName::from_abc_multiname(
-                    &type_entry.abc(),
-                    type_entry.instance().name.clone(),
-                )?;
-                self.install_const(context.gc_context, class_name, *slot_id, class.into());
+                let (class_object, _cinit) =
+                    FunctionObject::from_class(avm, context, *class, super_class?, scope)?;
+                self.install_const(
+                    context.gc_context,
+                    class.name().clone(),
+                    *slot_id,
+                    class_object.into(),
+                );
             }
-            AbcTraitKind::Function {
+            TraitKind::Function {
                 slot_id, function, ..
             } => {
-                let method = Avm2MethodEntry::from_method_index(abc, function.clone()).unwrap();
-                let mut function = FunctionObject::from_abc_method(
+                let mut fobject = FunctionObject::from_method(
                     context.gc_context,
-                    method,
+                    function.clone(),
                     scope,
                     fn_proto,
                     None,
                 );
                 let es3_proto = ScriptObject::object(context.gc_context, avm.prototypes().object);
 
-                function.install_slot(
+                fobject.install_slot(
                     context.gc_context,
                     QName::new(Namespace::public_namespace(), "prototype"),
                     0,
                     es3_proto.into(),
                 );
-                self.install_const(context.gc_context, trait_name, *slot_id, function.into());
+                self.install_const(context.gc_context, trait_name, *slot_id, fobject.into());
             }
-            AbcTraitKind::Const { slot_id, value, .. } => {
-                let value = if let Some(value) = value {
-                    abc_default_value(&abc, value)?
-                } else {
-                    Value::Undefined
-                };
-                self.install_const(context.gc_context, trait_name, *slot_id, value);
+            TraitKind::Const {
+                slot_id,
+                default_value,
+                ..
+            } => {
+                self.install_const(
+                    context.gc_context,
+                    trait_name,
+                    *slot_id,
+                    default_value.unwrap_or(Value::Undefined),
+                );
             }
         }
 
@@ -602,7 +591,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &self,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        class: Avm2ClassEntry,
+        class: Gc<'gc, Class<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error>;
 

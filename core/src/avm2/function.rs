@@ -1,21 +1,20 @@
 //! AVM2 executables.
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Avm2ClassEntry;
+use crate::avm2::class::Class;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
+use crate::avm2::r#trait::Trait;
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::scope::Scope;
 use crate::avm2::script_object::{ScriptObjectClass, ScriptObjectData};
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
-use gc_arena::{Collect, CollectionContext, GcCell, MutationContext};
+use gc_arena::{Collect, CollectionContext, Gc, GcCell, MutationContext};
 use std::fmt;
 use std::rc::Rc;
-use swf::avm2::types::{
-    AbcFile, Index, Method as AbcMethod, MethodBody as AbcMethodBody, Trait as AbcTrait,
-};
+use swf::avm2::types::{AbcFile, Index, Method as AbcMethod, MethodBody as AbcMethodBody};
 
 /// Represents a function defined in Ruffle's code.
 ///
@@ -125,6 +124,18 @@ impl<'gc> fmt::Debug for Method<'gc> {
     }
 }
 
+impl<'gc> From<NativeFunction<'gc>> for Method<'gc> {
+    fn from(nf: NativeFunction<'gc>) -> Self {
+        Self::Native(nf)
+    }
+}
+
+impl<'gc> From<Avm2MethodEntry> for Method<'gc> {
+    fn from(a2me: Avm2MethodEntry) -> Self {
+        Self::Entry(a2me)
+    }
+}
+
 /// Represents an AVM2 function.
 #[derive(Collect, Clone, Debug)]
 #[collect(no_drop)]
@@ -142,37 +153,64 @@ pub struct Avm2Function<'gc> {
     pub reciever: Option<Object<'gc>>,
 }
 
-impl<'gc> Avm2Function<'gc> {
-    pub fn from_method(
-        method: Avm2MethodEntry,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-        reciever: Option<Object<'gc>>,
-    ) -> Self {
-        Self {
-            method,
-            scope,
-            reciever,
-        }
-    }
-}
-
 /// Represents code that can be executed by some means.
 #[derive(Clone)]
 pub enum Executable<'gc> {
-    Native(NativeFunction<'gc>),
-    Action(Avm2Function<'gc>),
+    /// Code defined in Ruffle's binary.
+    ///
+    /// The second parameter stores the bound reciever for this function.
+    Native(NativeFunction<'gc>, Option<Object<'gc>>),
+
+    /// Code defined in a loaded ABC file.
+    Action {
+        /// The method code to execute from a given ABC file.
+        method: Avm2MethodEntry,
+
+        /// The scope stack to pull variables from.
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
+
+        /// The reciever that this function is always called with.
+        ///
+        /// If `None`, then the reciever provided by the caller is used. A
+        /// `Some` value indicates a bound executable.
+        reciever: Option<Object<'gc>>,
+    },
 }
 
 unsafe impl<'gc> Collect for Executable<'gc> {
     fn trace(&self, cc: CollectionContext) {
         match self {
-            Self::Action(a2f) => a2f.trace(cc),
-            Self::Native(_nf) => {}
+            Self::Action {
+                method,
+                scope,
+                reciever,
+            } => {
+                method.trace(cc);
+                scope.trace(cc);
+                reciever.trace(cc);
+            }
+            Self::Native(_nf, reciever) => reciever.trace(cc),
         }
     }
 }
 
 impl<'gc> Executable<'gc> {
+    /// Convert a method into an executable.
+    pub fn from_method(
+        method: Method<'gc>,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
+        reciever: Option<Object<'gc>>,
+    ) -> Self {
+        match method {
+            Method::Native(nf) => Self::Native(nf, reciever),
+            Method::Entry(a2me) => Self::Action {
+                method: a2me,
+                scope,
+                reciever,
+            },
+        }
+    }
+
     /// Execute a method.
     ///
     /// The function will either be called directly if it is a Rust builtin, or
@@ -189,12 +227,25 @@ impl<'gc> Executable<'gc> {
         base_proto: Option<Object<'gc>>,
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
-            Executable::Native(nf) => nf(avm, context, unbound_reciever, arguments),
-            Executable::Action(a2f) => {
-                let reciever = a2f.reciever.or(unbound_reciever);
+            Executable::Native(nf, reciever) => {
+                nf(avm, context, reciever.or(unbound_reciever), arguments)
+            }
+            Executable::Action {
+                method,
+                scope,
+                reciever,
+            } => {
+                let reciever = reciever.or(unbound_reciever);
                 let activation = GcCell::allocate(
                     context.gc_context,
-                    Activation::from_action(context, &a2f, reciever, arguments, base_proto)?,
+                    Activation::from_action(
+                        context,
+                        method.clone(),
+                        scope.clone(),
+                        reciever,
+                        arguments,
+                        base_proto,
+                    )?,
                 );
 
                 avm.insert_stack_frame(activation);
@@ -207,24 +258,22 @@ impl<'gc> Executable<'gc> {
 impl<'gc> fmt::Debug for Executable<'gc> {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Action(a2f) => fmt.debug_tuple("Executable::Action").field(a2f).finish(),
-            Self::Native(nf) => fmt
+            Self::Action {
+                method,
+                scope,
+                reciever,
+            } => fmt
+                .debug_struct("Executable::Action")
+                .field("method", method)
+                .field("scope", scope)
+                .field("reciever", reciever)
+                .finish(),
+            Self::Native(nf, reciever) => fmt
                 .debug_tuple("Executable::Native")
                 .field(&format!("{:p}", nf))
+                .field(reciever)
                 .finish(),
         }
-    }
-}
-
-impl<'gc> From<NativeFunction<'gc>> for Executable<'gc> {
-    fn from(nf: NativeFunction<'gc>) -> Self {
-        Self::Native(nf)
-    }
-}
-
-impl<'gc> From<Avm2Function<'gc>> for Executable<'gc> {
-    fn from(a2f: Avm2Function<'gc>) -> Self {
-        Self::Action(a2f)
     }
 }
 
@@ -244,15 +293,15 @@ pub struct FunctionObjectData<'gc> {
 }
 
 impl<'gc> FunctionObject<'gc> {
-    /// Construct a class from an ABC class/instance pair.
+    /// Construct a class.
     ///
     /// This function returns both the class itself, and the static class
     /// initializer method that you should call before interacting with the
     /// class. The latter should be called using the former as a reciever.
-    pub fn from_abc_class(
+    pub fn from_class(
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        class: Avm2ClassEntry,
+        class: Gc<'gc, Class<'gc>>,
         mut base_class: Object<'gc>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<(Object<'gc>, Object<'gc>), Error> {
@@ -265,40 +314,20 @@ impl<'gc> FunctionObject<'gc> {
             )?
             .as_object()
             .map_err(|_| {
-                let super_name = QName::from_abc_multiname(
-                    &class.abc(),
-                    class.instance().super_name.clone(),
-                );
-
-                if let Ok(super_name) = super_name {
-                    format!(
-                        "Could not resolve superclass prototype {:?}",
-                        super_name.local_name()
-                    )
-                    .into()
-                } else {
-                    format!(
-                        "Could not resolve superclass prototype, and got this error when getting it's name: {:?}",
-                        super_name.unwrap_err()
-                    )
-                    .into()
-                }
+                format!(
+                    "Could not resolve superclass prototype {:?}",
+                    class
+                        .super_class_name()
+                        .map(|p| p.local_name())
+                        .unwrap_or(Some("Object"))
+                )
+                .into()
             });
-        let mut class_proto = super_proto?.derive(avm, context, class.clone(), scope)?;
+        let mut class_proto = super_proto?.derive(avm, context, class, scope)?;
         let fn_proto = avm.prototypes().function;
         let class_constr_proto = avm.prototypes().class;
 
-        let initializer_index = class.instance().init_method.clone();
-        let initializer: Result<Avm2MethodEntry, Error> =
-            Avm2MethodEntry::from_method_index(class.abc(), initializer_index.clone()).ok_or_else(
-                || {
-                    format!(
-                        "Instance initializer method index {} does not exist",
-                        initializer_index.0
-                    )
-                    .into()
-                },
-            );
+        let initializer = class.instance_init();
 
         let mut constr: Object<'gc> = FunctionObject(GcCell::allocate(
             context.gc_context,
@@ -307,7 +336,7 @@ impl<'gc> FunctionObject<'gc> {
                     Some(fn_proto),
                     ScriptObjectClass::ClassConstructor(class.clone(), scope),
                 ),
-                exec: Some(Avm2Function::from_method(initializer?, scope, None).into()),
+                exec: Some(Executable::from_method(initializer, scope, None).into()),
             },
         ))
         .into();
@@ -323,19 +352,10 @@ impl<'gc> FunctionObject<'gc> {
             constr.into(),
         )?;
 
-        let class_initializer_index = class.class().init_method.clone();
-        let class_initializer: Result<Avm2MethodEntry, Error> =
-            Avm2MethodEntry::from_method_index(class.abc(), class_initializer_index.clone())
-                .ok_or_else(|| {
-                    format!(
-                        "Class initializer method index {} does not exist",
-                        class_initializer_index.0
-                    )
-                    .into()
-                });
-        let class_constr = FunctionObject::from_abc_method(
+        let class_initializer = class.class_init();
+        let class_constr = FunctionObject::from_method(
             context.gc_context,
-            class_initializer?,
+            class_initializer,
             scope,
             class_constr_proto,
             None,
@@ -348,14 +368,14 @@ impl<'gc> FunctionObject<'gc> {
     ///
     /// The given `reciever`, if supplied, will override any user-specified
     /// `this` parameter.
-    pub fn from_abc_method(
+    pub fn from_method(
         mc: MutationContext<'gc, '_>,
-        method: Avm2MethodEntry,
+        method: Method<'gc>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         fn_proto: Object<'gc>,
         reciever: Option<Object<'gc>>,
     ) -> Object<'gc> {
-        let exec = Some(Avm2Function::from_method(method, scope, reciever).into());
+        let exec = Some(Executable::from_method(method, scope, reciever));
 
         FunctionObject(GcCell::allocate(
             mc,
@@ -377,7 +397,7 @@ impl<'gc> FunctionObject<'gc> {
             mc,
             FunctionObjectData {
                 base: ScriptObjectData::base_new(Some(fn_proto), ScriptObjectClass::NoClass),
-                exec: Some(nf.into()),
+                exec: Some(Executable::from_method(nf.into(), None, None)),
             },
         ))
         .into()
@@ -394,7 +414,7 @@ impl<'gc> FunctionObject<'gc> {
             mc,
             FunctionObjectData {
                 base: ScriptObjectData::base_new(Some(fn_proto), ScriptObjectClass::NoClass),
-                exec: Some(constr.into()),
+                exec: Some(Executable::from_method(constr.into(), None, None)),
             },
         ))
         .into();
@@ -500,24 +520,20 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0.read().base.get_method(id)
     }
 
-    fn get_trait(self, name: &QName) -> Result<Vec<AbcTrait>, Error> {
+    fn get_trait(self, name: &QName) -> Result<Vec<Gc<'gc, Trait<'gc>>>, Error> {
         self.0.read().base.get_trait(name)
     }
 
     fn get_provided_trait(
         &self,
         name: &QName,
-        known_traits: &mut Vec<AbcTrait>,
+        known_traits: &mut Vec<Gc<'gc, Trait<'gc>>>,
     ) -> Result<(), Error> {
         self.0.read().base.get_provided_trait(name, known_traits)
     }
 
     fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
         self.0.read().base.get_scope()
-    }
-
-    fn get_abc(self) -> Option<Rc<AbcFile>> {
-        self.0.read().base.get_abc()
     }
 
     fn resolve_any(self, local_name: &str) -> Result<Option<Namespace>, Error> {
@@ -620,7 +636,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         &self,
         _avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        class: Avm2ClassEntry,
+        class: Gc<'gc, Class<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::FunctionObject(*self);
@@ -638,8 +654,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn to_string(&self) -> Result<Value<'gc>, Error> {
         if let ScriptObjectClass::ClassConstructor(class, ..) = self.0.read().base.class() {
-            let name = QName::from_abc_multiname(&class.abc(), class.instance().name.clone())?;
-            Ok(format!("[class {}]", name.local_name()).into())
+            Ok(format!("[class {}]", class.name().local_name()).into())
         } else {
             Ok("function Function() {}".into())
         }

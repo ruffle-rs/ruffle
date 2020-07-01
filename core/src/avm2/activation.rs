@@ -1,6 +1,6 @@
 //! Activation frames
 
-use crate::avm2::function::{Avm2Function, Avm2MethodEntry};
+use crate::avm2::function::Avm2MethodEntry;
 use crate::avm2::object::Object;
 use crate::avm2::scope::Scope;
 use crate::avm2::script_object::ScriptObject;
@@ -169,13 +169,12 @@ impl<'gc> Activation<'gc> {
 
     pub fn from_action(
         context: &mut UpdateContext<'_, 'gc, '_>,
-        action: &Avm2Function<'gc>,
+        method: Avm2MethodEntry,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
         this: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         base_proto: Option<Object<'gc>>,
     ) -> Result<Self, Error> {
-        let method = action.method.clone();
-        let scope = action.scope;
         let num_locals = method.body().num_locals;
         let num_declared_arguments = method.method().params.len() as u32;
         let local_registers = GcCell::allocate(

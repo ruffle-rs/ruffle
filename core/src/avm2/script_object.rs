@@ -1,21 +1,20 @@
 //! Default AVM2 object impl
 
-use crate::avm2::class::Avm2ClassEntry;
+use crate::avm2::class::Class;
 use crate::avm2::function::Executable;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::property::Property;
+use crate::avm2::r#trait::Trait;
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::scope::Scope;
 use crate::avm2::slot::Slot;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::rc::Rc;
-use swf::avm2::types::{AbcFile, Trait as AbcTrait, TraitKind as AbcTraitKind};
 
 /// Default implementation of `avm2::Object`.
 #[derive(Clone, Collect, Debug, Copy)]
@@ -34,10 +33,10 @@ pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
 #[collect(no_drop)]
 pub enum ScriptObjectClass<'gc> {
     /// Instantiate instance traits, for prototypes.
-    InstancePrototype(Avm2ClassEntry, Option<GcCell<'gc, Scope<'gc>>>),
+    InstancePrototype(Gc<'gc, Class<'gc>>, Option<GcCell<'gc, Scope<'gc>>>),
 
     /// Instantiate class traits, for class constructors.
-    ClassConstructor(Avm2ClassEntry, Option<GcCell<'gc, Scope<'gc>>>),
+    ClassConstructor(Gc<'gc, Class<'gc>>, Option<GcCell<'gc, Scope<'gc>>>),
 
     /// Do not instantiate any class or instance traits.
     NoClass,
@@ -153,24 +152,20 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().get_method(id)
     }
 
-    fn get_trait(self, name: &QName) -> Result<Vec<AbcTrait>, Error> {
+    fn get_trait(self, name: &QName) -> Result<Vec<Gc<'gc, Trait<'gc>>>, Error> {
         self.0.read().get_trait(name)
     }
 
     fn get_provided_trait(
         &self,
         name: &QName,
-        known_traits: &mut Vec<AbcTrait>,
+        known_traits: &mut Vec<Gc<'gc, Trait<'gc>>>,
     ) -> Result<(), Error> {
         self.0.read().get_provided_trait(name, known_traits)
     }
 
     fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
         self.0.read().get_scope()
-    }
-
-    fn get_abc(self) -> Option<Rc<AbcFile>> {
-        self.0.read().get_abc()
     }
 
     fn resolve_any(self, local_name: &str) -> Result<Option<Namespace>, Error> {
@@ -246,7 +241,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         &self,
         _avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        class: Avm2ClassEntry,
+        class: Gc<'gc, Class<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::ScriptObject(*self);
@@ -352,7 +347,7 @@ impl<'gc> ScriptObject<'gc> {
     pub fn prototype(
         mc: MutationContext<'gc, '_>,
         proto: Object<'gc>,
-        class: Avm2ClassEntry,
+        class: Gc<'gc, Class<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Object<'gc> {
         let script_class = ScriptObjectClass::InstancePrototype(class, scope);
@@ -363,51 +358,6 @@ impl<'gc> ScriptObject<'gc> {
         ))
         .into()
     }
-}
-
-/// Given a list of traits from an ABC file, find the one that matches this
-/// name.
-///
-/// This function adds it's result onto the list of known traits, with the
-/// caveat that duplicate entries will be replaced (if allowed). As such, this
-/// function should be run on the class hierarchy from top to bottom.
-///
-/// If a given trait has an invalid name, attempts to override a final trait,
-/// or overlaps an existing trait without being an override, then this function
-/// returns an error.
-///
-/// TODO: This is an O(n^2) algorithm, it sucks.
-fn do_trait_lookup(
-    name: &QName,
-    known_traits: &mut Vec<AbcTrait>,
-    abc: Rc<AbcFile>,
-    traits: &[AbcTrait],
-) -> Result<(), Error> {
-    for trait_entry in traits.iter() {
-        let trait_name = QName::from_abc_multiname(&abc, trait_entry.name.clone())?;
-
-        if name == &trait_name {
-            for known_trait in known_traits.iter() {
-                match (&trait_entry.kind, &known_trait.kind) {
-                    (AbcTraitKind::Getter { .. }, AbcTraitKind::Setter { .. }) => continue,
-                    (AbcTraitKind::Setter { .. }, AbcTraitKind::Getter { .. }) => continue,
-                    _ => {}
-                };
-
-                if known_trait.is_final {
-                    return Err("Attempting to override a final definition".into());
-                }
-
-                if !trait_entry.is_override {
-                    return Err("Definition override is not marked as override".into());
-                }
-            }
-
-            known_traits.push(trait_entry.clone());
-        }
-    }
-
-    Ok(())
 }
 
 impl<'gc> ScriptObjectData<'gc> {
@@ -576,7 +526,7 @@ impl<'gc> ScriptObjectData<'gc> {
         self.methods.get(id as usize).and_then(|v| *v)
     }
 
-    pub fn get_trait(&self, name: &QName) -> Result<Vec<AbcTrait>, Error> {
+    pub fn get_trait(&self, name: &QName) -> Result<Vec<Gc<'gc, Trait<'gc>>>, Error> {
         match &self.class {
             //Class constructors have local traits only.
             ScriptObjectClass::ClassConstructor(..) => {
@@ -614,14 +564,14 @@ impl<'gc> ScriptObjectData<'gc> {
     pub fn get_provided_trait(
         &self,
         name: &QName,
-        known_traits: &mut Vec<AbcTrait>,
+        known_traits: &mut Vec<Gc<'gc, Trait<'gc>>>,
     ) -> Result<(), Error> {
         match &self.class {
             ScriptObjectClass::ClassConstructor(class, ..) => {
-                do_trait_lookup(name, known_traits, class.abc(), &class.class().traits)
+                class.lookup_class_traits(name, known_traits)
             }
             ScriptObjectClass::InstancePrototype(class, ..) => {
-                do_trait_lookup(name, known_traits, class.abc(), &class.instance().traits)
+                class.lookup_instance_traits(name, known_traits)
             }
             ScriptObjectClass::NoClass => Ok(()),
         }
@@ -656,30 +606,10 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn provides_trait(&self, name: &QName) -> Result<bool, Error> {
         match &self.class {
-            ScriptObjectClass::ClassConstructor(class, ..) => {
-                for trait_entry in class.class().traits.iter() {
-                    let trait_name =
-                        QName::from_abc_multiname(&class.abc(), trait_entry.name.clone())?;
-
-                    if name == &trait_name {
-                        return Ok(true);
-                    }
-                }
-            }
-            ScriptObjectClass::InstancePrototype(class, ..) => {
-                for trait_entry in class.instance().traits.iter() {
-                    let trait_name =
-                        QName::from_abc_multiname(&class.abc(), trait_entry.name.clone())?;
-
-                    if name == &trait_name {
-                        return Ok(true);
-                    }
-                }
-            }
-            ScriptObjectClass::NoClass => {}
-        };
-
-        Ok(false)
+            ScriptObjectClass::ClassConstructor(class, ..) => Ok(class.has_class_trait(name)),
+            ScriptObjectClass::InstancePrototype(class, ..) => Ok(class.has_instance_trait(name)),
+            ScriptObjectClass::NoClass => Ok(false),
+        }
     }
 
     pub fn get_scope(&self) -> Option<GcCell<'gc, Scope<'gc>>> {
@@ -687,14 +617,6 @@ impl<'gc> ScriptObjectData<'gc> {
             ScriptObjectClass::ClassConstructor(_class, scope) => *scope,
             ScriptObjectClass::InstancePrototype(_class, scope) => *scope,
             ScriptObjectClass::NoClass => self.proto().and_then(|proto| proto.get_scope()),
-        }
-    }
-
-    pub fn get_abc(&self) -> Option<Rc<AbcFile>> {
-        match &self.class {
-            ScriptObjectClass::ClassConstructor(class, ..) => Some(class.abc()),
-            ScriptObjectClass::InstancePrototype(class, ..) => Some(class.abc()),
-            ScriptObjectClass::NoClass => self.proto().and_then(|proto| proto.get_abc()),
         }
     }
 
@@ -722,29 +644,13 @@ impl<'gc> ScriptObjectData<'gc> {
 
         match &self.class {
             ScriptObjectClass::ClassConstructor(class, ..) => {
-                for trait_entry in class.class().traits.iter() {
-                    let trait_name =
-                        QName::from_abc_multiname(&class.abc(), trait_entry.name.clone())?;
-
-                    if local_name == trait_name.local_name() {
-                        return Ok(Some(trait_name.namespace().clone()));
-                    }
-                }
+                Ok(class.resolve_any_class_trait(local_name))
             }
             ScriptObjectClass::InstancePrototype(class, ..) => {
-                for trait_entry in class.instance().traits.iter() {
-                    let trait_name =
-                        QName::from_abc_multiname(&class.abc(), trait_entry.name.clone())?;
-
-                    if local_name == trait_name.local_name() {
-                        return Ok(Some(trait_name.namespace().clone()));
-                    }
-                }
+                Ok(class.resolve_any_instance_trait(local_name))
             }
-            ScriptObjectClass::NoClass => {}
-        };
-
-        Ok(None)
+            ScriptObjectClass::NoClass => Ok(None),
+        }
     }
 
     pub fn has_own_property(&self, name: &QName) -> Result<bool, Error> {
