@@ -6,10 +6,10 @@ edition = "2018"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-js-sys = "0.3.25"
+js-sys = "0.3.41"
 log = "0.4"
-wasm-bindgen = "0.2.57"
+wasm-bindgen = "0.2.64"
 
 [dependencies.web-sys]
-version = "0.3.34"
+version = "0.3.41"
 features = ["Window"]
