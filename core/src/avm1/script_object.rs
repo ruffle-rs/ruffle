@@ -1,7 +1,7 @@
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject, NativeFunction};
 use crate::avm1::property::{Attribute, Property};
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ObjectPtr, TObject, UpdateContext, Value};
 use crate::property_map::{Entry, PropertyMap};
 use core::fmt;
@@ -197,7 +197,7 @@ impl<'gc> ScriptObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
@@ -301,7 +301,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn get_local(
         &self,
         name: &str,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -339,7 +339,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         self.internal_set(
@@ -359,7 +359,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     /// overrides that may need to interact with the underlying object.
     fn call(
         &self,
-        _activation: &mut StackFrame<'_, 'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
         _base_proto: Option<Object<'gc>>,
@@ -372,7 +372,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Option<Executable<'gc>> {
         match self
@@ -389,7 +389,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     #[allow(clippy::new_ret_no_self)]
     fn new(
         &self,
-        _activation: &mut StackFrame<'_, 'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         _args: &[Value<'gc>],
@@ -409,7 +409,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     /// Returns false if the property cannot be deleted.
     fn delete(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
     ) -> bool {
@@ -445,7 +445,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn add_property_with_case(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
         get: Executable<'gc>,
@@ -512,7 +512,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     /// Checks if the object has a given named property.
     fn has_property(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
@@ -527,7 +527,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     /// say, the object's prototype or superclass)
     fn has_own_property(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
@@ -542,7 +542,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn has_own_virtual(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
@@ -558,7 +558,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         }
     }
 
-    fn is_property_overwritable(&self, activation: &mut StackFrame<'_, 'gc>, name: &str) -> bool {
+    fn is_property_overwritable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
         self.0
             .read()
             .values
@@ -568,7 +568,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     /// Checks if a named property appears when enumerating the object.
-    fn is_property_enumerable(&self, activation: &mut StackFrame<'_, 'gc>, name: &str) -> bool {
+    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
         if let Some(prop) = self
             .0
             .read()
@@ -582,7 +582,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     /// Enumerate the object.
-    fn get_keys(&self, activation: &mut StackFrame<'_, 'gc>) -> Vec<String> {
+    fn get_keys(&self, activation: &mut Activation<'_, 'gc>) -> Vec<String> {
         let proto_keys = self
             .proto()
             .map_or_else(Vec::new, |p| p.get_keys(activation));
@@ -756,7 +756,7 @@ mod tests {
     fn with_object<F, R>(swf_version: u8, test: F) -> R
     where
         F: for<'a, 'gc> FnOnce(
-            &mut StackFrame<'_, 'gc>,
+            &mut Activation<'_, 'gc>,
             &mut UpdateContext<'a, 'gc, '_>,
             Object<'gc>,
         ) -> R,
@@ -809,7 +809,7 @@ mod tests {
             let object = ScriptObject::object(gc_context, Some(avm.prototypes().object)).into();
 
             let globals = avm.global_object_cell();
-            let mut activation = StackFrame::from_nothing(
+            let mut activation = Activation::from_nothing(
                 &mut avm,
                 context.swf.version(),
                 globals,

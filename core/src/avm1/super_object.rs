@@ -1,11 +1,11 @@
 //! Special object that implements `super`
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::object::search_prototype;
 use crate::avm1::property::Attribute;
 use crate::avm1::script_object::TYPE_OF_OBJECT;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
@@ -45,7 +45,7 @@ impl<'gc> SuperObject<'gc> {
     pub fn from_this_and_base_proto(
         this: Object<'gc>,
         base_proto: Object<'gc>,
-        _activation: &mut StackFrame<'_, 'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Self, Error<'gc>> {
         Ok(Self(GcCell::allocate(
@@ -65,7 +65,7 @@ impl<'gc> SuperObject<'gc> {
     /// Retrieve the constructor associated with the super proto.
     fn super_constr(
         self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         if let Some(super_proto) = self.super_proto() {
@@ -84,7 +84,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     fn get_local(
         &self,
         _name: &str,
-        _activation: &mut StackFrame<'_, 'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -95,7 +95,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         &self,
         _name: &str,
         _value: Value<'gc>,
-        _activation: &mut StackFrame<'_, 'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         //TODO: What happens if you set `super.__proto__`?
@@ -104,7 +104,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn call(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
         _base_proto: Option<Object<'gc>>,
@@ -127,7 +127,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         &self,
         name: &str,
         args: &[Value<'gc>],
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let child = self.0.read().child;
@@ -147,7 +147,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Option<Executable<'gc>> {
         self.0
@@ -159,7 +159,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     #[allow(clippy::new_ret_no_self)]
     fn new(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         args: &[Value<'gc>],
@@ -175,7 +175,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn delete(
         &self,
-        _activation: &mut StackFrame<'_, 'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         _gc_context: MutationContext<'gc, '_>,
         _name: &str,
     ) -> bool {
@@ -226,7 +226,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn add_property_with_case(
         &self,
-        _activation: &mut StackFrame<'_, 'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         _gc_context: MutationContext<'gc, '_>,
         _name: &str,
         _get: Executable<'gc>,
@@ -238,7 +238,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn has_property(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
@@ -247,7 +247,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn has_own_property(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
@@ -259,7 +259,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn has_own_virtual(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
@@ -269,18 +269,18 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
             .has_own_virtual(activation, context, name)
     }
 
-    fn is_property_enumerable(&self, activation: &mut StackFrame<'_, 'gc>, name: &str) -> bool {
+    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
         self.0.read().child.is_property_enumerable(activation, name)
     }
 
-    fn is_property_overwritable(&self, activation: &mut StackFrame<'_, 'gc>, name: &str) -> bool {
+    fn is_property_overwritable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
         self.0
             .read()
             .child
             .is_property_overwritable(activation, name)
     }
 
-    fn get_keys(&self, _activation: &mut StackFrame<'_, 'gc>) -> Vec<String> {
+    fn get_keys(&self, _activation: &mut Activation<'_, 'gc>) -> Vec<String> {
         vec![]
     }
 

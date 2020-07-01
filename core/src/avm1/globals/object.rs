@@ -1,8 +1,8 @@
 //! Object prototype
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::{self, *};
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, TObject, UpdateContext, Value};
 use crate::character::Character;
 use enumset::EnumSet;
@@ -11,7 +11,7 @@ use std::borrow::Cow;
 
 /// Implements `Object`
 pub fn constructor<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -21,7 +21,7 @@ pub fn constructor<'gc>(
 
 /// Implements `Object.prototype.addProperty`
 pub fn add_property<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -71,7 +71,7 @@ pub fn add_property<'gc>(
 
 /// Implements `Object.prototype.hasOwnProperty`
 pub fn has_own_property<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -88,7 +88,7 @@ pub fn has_own_property<'gc>(
 
 /// Implements `Object.prototype.toString`
 fn to_string<'gc>(
-    _: &mut StackFrame<'_, 'gc>,
+    _: &mut Activation<'_, 'gc>,
     _: &mut UpdateContext<'_, 'gc, '_>,
     _: Object<'gc>,
     _: &[Value<'gc>],
@@ -98,7 +98,7 @@ fn to_string<'gc>(
 
 /// Implements `Object.prototype.isPropertyEnumerable`
 fn is_property_enumerable<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -111,7 +111,7 @@ fn is_property_enumerable<'gc>(
 
 /// Implements `Object.prototype.isPrototypeOf`
 fn is_prototype_of<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -127,7 +127,7 @@ fn is_prototype_of<'gc>(
 
 /// Implements `Object.prototype.valueOf`
 fn value_of<'gc>(
-    _: &mut StackFrame<'_, 'gc>,
+    _: &mut Activation<'_, 'gc>,
     _: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _: &[Value<'gc>],
@@ -137,7 +137,7 @@ fn value_of<'gc>(
 
 /// Implements `Object.registerClass`
 pub fn register_class<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
@@ -226,7 +226,7 @@ pub fn fill_proto<'gc>(
 /// declare the property flags of a given property. It's not part of
 /// `Object.prototype`, and I suspect that's a deliberate omission.
 pub fn as_set_prop_flags<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     _: Object<'gc>,
     args: &[Value<'gc>],

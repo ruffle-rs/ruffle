@@ -1,7 +1,7 @@
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::object::Object;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use core::fmt;
@@ -273,7 +273,7 @@ pub struct SystemProperties {
 }
 
 impl SystemProperties {
-    pub fn get_version_string(&self, activation: &mut StackFrame) -> String {
+    pub fn get_version_string(&self, activation: &mut Activation) -> String {
         format!(
             "{} {},0,0,0",
             self.manufacturer.get_platform_name(),
@@ -305,7 +305,7 @@ impl SystemProperties {
         percent_encoding::utf8_percent_encode(s, percent_encoding::NON_ALPHANUMERIC).to_string()
     }
 
-    pub fn get_server_string(&self, activation: &mut StackFrame) -> String {
+    pub fn get_server_string(&self, activation: &mut Activation) -> String {
         url::form_urlencoded::Serializer::new(String::new())
             .append_pair("A", self.encode_capability(SystemCapabilities::Audio))
             .append_pair(
@@ -403,7 +403,7 @@ impl Default for SystemProperties {
 }
 
 pub fn set_clipboard<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
@@ -420,7 +420,7 @@ pub fn set_clipboard<'gc>(
 }
 
 pub fn show_settings<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
@@ -440,7 +440,7 @@ pub fn show_settings<'gc>(
 }
 
 pub fn set_use_code_page<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
@@ -457,7 +457,7 @@ pub fn set_use_code_page<'gc>(
 }
 
 pub fn get_use_code_page<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -466,7 +466,7 @@ pub fn get_use_code_page<'gc>(
 }
 
 pub fn set_exact_settings<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
@@ -483,7 +483,7 @@ pub fn set_exact_settings<'gc>(
 }
 
 pub fn get_exact_settings<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -492,7 +492,7 @@ pub fn get_exact_settings<'gc>(
 }
 
 pub fn on_status<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],

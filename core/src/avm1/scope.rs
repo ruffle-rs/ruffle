@@ -1,7 +1,7 @@
 //! Represents AVM1 scope chain resolution.
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
@@ -239,7 +239,7 @@ impl<'gc> Scope<'gc> {
     pub fn resolve(
         &self,
         name: &str,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -257,7 +257,7 @@ impl<'gc> Scope<'gc> {
     /// Check if a particular property in the scope chain is defined.
     pub fn is_defined(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
@@ -282,7 +282,7 @@ impl<'gc> Scope<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
@@ -319,7 +319,7 @@ impl<'gc> Scope<'gc> {
     /// Delete a value from scope
     pub fn delete(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
         mc: MutationContext<'gc, '_>,

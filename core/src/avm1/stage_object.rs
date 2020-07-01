@@ -1,10 +1,10 @@
 //! AVM1 object type to represent objects on the stage.
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::object::search_prototype;
 use crate::avm1::property::Attribute;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Value};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, EditText, MovieClip};
@@ -127,7 +127,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     fn get(
         &self,
         name: &str,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let obj = self.0.read();
@@ -160,7 +160,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     fn get_local(
         &self,
         name: &str,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -174,7 +174,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         let obj = self.0.read();
@@ -221,7 +221,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
     fn call(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
@@ -237,7 +237,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Option<Executable<'gc>> {
         self.0
@@ -249,7 +249,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     #[allow(clippy::new_ret_no_self)]
     fn new(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         args: &[Value<'gc>],
@@ -260,7 +260,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
     fn delete(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
     ) -> bool {
@@ -319,7 +319,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
     fn add_property_with_case(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
         get: Executable<'gc>,
@@ -334,7 +334,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
     fn has_property(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
@@ -365,7 +365,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
     fn has_own_property(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
@@ -378,7 +378,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
     fn has_own_virtual(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
@@ -388,18 +388,18 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .has_own_virtual(activation, context, name)
     }
 
-    fn is_property_enumerable(&self, activation: &mut StackFrame<'_, 'gc>, name: &str) -> bool {
+    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
         self.0.read().base.is_property_enumerable(activation, name)
     }
 
-    fn is_property_overwritable(&self, activation: &mut StackFrame<'_, 'gc>, name: &str) -> bool {
+    fn is_property_overwritable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
         self.0
             .read()
             .base
             .is_property_overwritable(activation, name)
     }
 
-    fn get_keys(&self, activation: &mut StackFrame<'_, 'gc>) -> Vec<String> {
+    fn get_keys(&self, activation: &mut Activation<'_, 'gc>) -> Vec<String> {
         // Keys from the underlying object are listed first, followed by
         // child display objects in order from highest depth to lowest depth.
         let obj = self.0.read();
@@ -496,13 +496,13 @@ pub struct DisplayProperty<'gc> {
 }
 
 pub type DisplayGetter<'gc> = fn(
-    &mut StackFrame<'_, 'gc>,
+    &mut Activation<'_, 'gc>,
     &mut UpdateContext<'_, 'gc, '_>,
     DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>>;
 
 pub type DisplaySetter<'gc> = fn(
-    &mut StackFrame<'_, 'gc>,
+    &mut Activation<'_, 'gc>,
     &mut UpdateContext<'_, 'gc, '_>,
     DisplayObject<'gc>,
     Value<'gc>,
@@ -511,7 +511,7 @@ pub type DisplaySetter<'gc> = fn(
 impl<'gc> DisplayProperty<'gc> {
     pub fn get(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: DisplayObject<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -520,7 +520,7 @@ impl<'gc> DisplayProperty<'gc> {
 
     pub fn set(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: DisplayObject<'gc>,
         value: Value<'gc>,
@@ -603,7 +603,7 @@ impl<'gc> DisplayPropertyMap<'gc> {
 }
 
 fn x<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -611,7 +611,7 @@ fn x<'gc>(
 }
 
 fn set_x<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
@@ -623,7 +623,7 @@ fn set_x<'gc>(
 }
 
 fn y<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -631,7 +631,7 @@ fn y<'gc>(
 }
 
 fn set_y<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
@@ -643,7 +643,7 @@ fn set_y<'gc>(
 }
 
 fn x_scale<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -652,7 +652,7 @@ fn x_scale<'gc>(
 }
 
 fn set_x_scale<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
@@ -664,7 +664,7 @@ fn set_x_scale<'gc>(
 }
 
 fn y_scale<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -673,7 +673,7 @@ fn y_scale<'gc>(
 }
 
 fn set_y_scale<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
@@ -685,7 +685,7 @@ fn set_y_scale<'gc>(
 }
 
 fn current_frame<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -697,7 +697,7 @@ fn current_frame<'gc>(
 }
 
 fn total_frames<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -709,7 +709,7 @@ fn total_frames<'gc>(
 }
 
 fn alpha<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -718,7 +718,7 @@ fn alpha<'gc>(
 }
 
 fn set_alpha<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
     val: Value<'gc>,
@@ -730,7 +730,7 @@ fn set_alpha<'gc>(
 }
 
 fn visible<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -739,7 +739,7 @@ fn visible<'gc>(
 }
 
 fn set_visible<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
@@ -753,7 +753,7 @@ fn set_visible<'gc>(
 }
 
 fn width<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -761,7 +761,7 @@ fn width<'gc>(
 }
 
 fn set_width<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
@@ -773,7 +773,7 @@ fn set_width<'gc>(
 }
 
 fn height<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -781,7 +781,7 @@ fn height<'gc>(
 }
 
 fn set_height<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
@@ -793,7 +793,7 @@ fn set_height<'gc>(
 }
 
 fn rotation<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -801,7 +801,7 @@ fn rotation<'gc>(
 }
 
 fn set_rotation<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
     degrees: Value<'gc>,
@@ -820,7 +820,7 @@ fn set_rotation<'gc>(
 }
 
 fn target<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -828,7 +828,7 @@ fn target<'gc>(
 }
 
 fn frames_loaded<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -840,7 +840,7 @@ fn frames_loaded<'gc>(
 }
 
 fn name<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -848,7 +848,7 @@ fn name<'gc>(
 }
 
 fn set_name<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: DisplayObject<'gc>,
     val: Value<'gc>,
@@ -859,7 +859,7 @@ fn set_name<'gc>(
 }
 
 fn drop_target<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -868,7 +868,7 @@ fn drop_target<'gc>(
 }
 
 fn url<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -877,7 +877,7 @@ fn url<'gc>(
 }
 
 fn high_quality<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -886,7 +886,7 @@ fn high_quality<'gc>(
 }
 
 fn set_high_quality<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
     _val: Value<'gc>,
@@ -896,7 +896,7 @@ fn set_high_quality<'gc>(
 }
 
 fn focus_rect<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -905,7 +905,7 @@ fn focus_rect<'gc>(
 }
 
 fn set_focus_rect<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
     _val: Value<'gc>,
@@ -915,7 +915,7 @@ fn set_focus_rect<'gc>(
 }
 
 fn sound_buf_time<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -924,7 +924,7 @@ fn sound_buf_time<'gc>(
 }
 
 fn set_sound_buf_time<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
     _val: Value<'gc>,
@@ -934,7 +934,7 @@ fn set_sound_buf_time<'gc>(
 }
 
 fn quality<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -943,7 +943,7 @@ fn quality<'gc>(
 }
 
 fn set_quality<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
     _val: Value<'gc>,
@@ -953,7 +953,7 @@ fn set_quality<'gc>(
 }
 
 fn x_mouse<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -962,7 +962,7 @@ fn x_mouse<'gc>(
 }
 
 fn y_mouse<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -971,7 +971,7 @@ fn y_mouse<'gc>(
 }
 
 fn property_coerce_to_number<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<Option<f64>, Error<'gc>> {

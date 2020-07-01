@@ -1,9 +1,9 @@
 //! Array class
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
@@ -26,7 +26,7 @@ const DEFAULT_ORDERING: Ordering = Ordering::Equal;
 type CompareFn<'a, 'gc> = Box<
     dyn 'a
         + FnMut(
-            &mut StackFrame<'_, 'gc>,
+            &mut Activation<'_, 'gc>,
             &mut UpdateContext<'_, 'gc, '_>,
             &Value<'gc>,
             &Value<'gc>,
@@ -89,7 +89,7 @@ pub fn create_array_object<'gc>(
 
 /// Implements `Array`
 pub fn constructor<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -124,7 +124,7 @@ pub fn constructor<'gc>(
 }
 
 pub fn push<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -145,7 +145,7 @@ pub fn push<'gc>(
 }
 
 pub fn unshift<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -170,7 +170,7 @@ pub fn unshift<'gc>(
 }
 
 pub fn shift<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -197,7 +197,7 @@ pub fn shift<'gc>(
 }
 
 pub fn pop<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -219,7 +219,7 @@ pub fn pop<'gc>(
 }
 
 pub fn reverse<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -235,7 +235,7 @@ pub fn reverse<'gc>(
 }
 
 pub fn join<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -269,7 +269,7 @@ fn make_index_absolute(mut index: i32, length: usize) -> usize {
 }
 
 pub fn slice<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -300,7 +300,7 @@ pub fn slice<'gc>(
 }
 
 pub fn splice<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -372,7 +372,7 @@ pub fn splice<'gc>(
 }
 
 pub fn concat<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -432,7 +432,7 @@ pub fn concat<'gc>(
 }
 
 pub fn to_string<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -441,7 +441,7 @@ pub fn to_string<'gc>(
 }
 
 fn sort<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -487,7 +487,7 @@ fn sort<'gc>(
 }
 
 fn sort_on<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -570,11 +570,11 @@ fn sort_on<'gc>(
 }
 
 fn sort_with_function<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     mut compare_fn: impl FnMut(
-        &mut StackFrame<'_, 'gc>,
+        &mut Activation<'_, 'gc>,
         &mut UpdateContext<'_, 'gc, '_>,
         &Value<'gc>,
         &Value<'gc>,
@@ -718,7 +718,7 @@ pub fn create_proto<'gc>(
 }
 
 fn sort_compare_string<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     a: &Value<'gc>,
     b: &Value<'gc>,
@@ -734,7 +734,7 @@ fn sort_compare_string<'gc>(
 }
 
 fn sort_compare_string_ignore_case<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     a: &Value<'gc>,
     b: &Value<'gc>,
@@ -751,13 +751,13 @@ fn sort_compare_string_ignore_case<'gc>(
 
 fn sort_compare_numeric<'gc>(
     mut string_compare_fn: impl FnMut(
-        &mut StackFrame<'_, 'gc>,
+        &mut Activation<'_, 'gc>,
         &mut UpdateContext<'_, 'gc, '_>,
         &Value<'gc>,
         &Value<'gc>,
     ) -> Ordering,
 ) -> impl FnMut(
-    &mut StackFrame<'_, 'gc>,
+    &mut Activation<'_, 'gc>,
     &mut UpdateContext<'_, 'gc, '_>,
     &Value<'gc>,
     &Value<'gc>,
@@ -776,7 +776,7 @@ fn sort_compare_fields<'a, 'gc: 'a>(
     mut compare_fns: Vec<CompareFn<'a, 'gc>>,
 ) -> impl 'a
        + FnMut(
-    &mut StackFrame<'_, 'gc>,
+    &mut Activation<'_, 'gc>,
     &mut UpdateContext<'_, 'gc, '_>,
     &Value<'gc>,
     &Value<'gc>,
@@ -801,7 +801,7 @@ fn sort_compare_fields<'a, 'gc: 'a>(
 
 // Returning an impl Trait here doesn't work yet because of https://github.com/rust-lang/rust/issues/65805 (?)
 fn sort_compare_custom<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     a: &Value<'gc>,

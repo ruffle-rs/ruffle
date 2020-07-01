@@ -2,7 +2,7 @@
 use crate::avm1::{Avm1, Object, StageObject, TObject, Value};
 use crate::backend::audio::AudioStreamHandle;
 
-use crate::avm1::stack_frame::StackFrame;
+use crate::avm1::activation::Activation;
 use crate::character::Character;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{
@@ -975,7 +975,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     return Some(self_node);
                 }
 
-                let mut activation = StackFrame::from_nothing(
+                let mut activation = Activation::from_nothing(
                     avm,
                     context.swf.version(),
                     avm.global_object_cell(),
@@ -1040,7 +1040,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             // If we are running within the AVM, this must be an immediate action.
             // If we are not, then this must be queued to be ran first-thing
             if instantiated_from_avm && self.0.read().avm1_constructor.is_some() {
-                let mut activation = StackFrame::from_nothing(
+                let mut activation = Activation::from_nothing(
                     avm,
                     context.swf.version(),
                     avm.global_object_cell(),
@@ -1079,7 +1079,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 Some(context.system_prototypes.movie_clip),
             );
             if let Some(init_object) = init_object {
-                let mut activation = StackFrame::from_nothing(
+                let mut activation = Activation::from_nothing(
                     avm,
                     context.swf.version(),
                     avm.global_object_cell(),

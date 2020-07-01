@@ -1,9 +1,9 @@
 //! flash.geom.Point
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
@@ -12,7 +12,7 @@ use std::f64::NAN;
 
 pub fn point_to_object<'gc>(
     point: (f64, f64),
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let args = [point.0.into(), point.1.into()];
@@ -21,7 +21,7 @@ pub fn point_to_object<'gc>(
 
 pub fn construct_new_point<'gc>(
     args: &[Value<'gc>],
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let proto = context.system_prototypes.point;
@@ -32,7 +32,7 @@ pub fn construct_new_point<'gc>(
 
 pub fn value_to_point<'gc>(
     value: Value<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<(f64, f64), Error<'gc>> {
     let x = value
@@ -48,7 +48,7 @@ pub fn value_to_point<'gc>(
 
 pub fn object_to_point<'gc>(
     object: Object<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<(f64, f64), Error<'gc>> {
     let x = object
@@ -61,7 +61,7 @@ pub fn object_to_point<'gc>(
 }
 
 fn constructor<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -88,7 +88,7 @@ fn constructor<'gc>(
 }
 
 fn clone<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -105,7 +105,7 @@ fn clone<'gc>(
 }
 
 fn equals<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -123,7 +123,7 @@ fn equals<'gc>(
 }
 
 fn add<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -144,7 +144,7 @@ fn add<'gc>(
 }
 
 fn subtract<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -165,7 +165,7 @@ fn subtract<'gc>(
 }
 
 fn distance<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
@@ -186,7 +186,7 @@ fn distance<'gc>(
 }
 
 fn polar<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
@@ -208,7 +208,7 @@ fn polar<'gc>(
 }
 
 fn interpolate<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
@@ -225,7 +225,7 @@ fn interpolate<'gc>(
 }
 
 fn to_string<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -242,7 +242,7 @@ fn to_string<'gc>(
 }
 
 fn length<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -253,7 +253,7 @@ fn length<'gc>(
 }
 
 fn normalize<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -284,7 +284,7 @@ fn normalize<'gc>(
 }
 
 fn offset<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],

@@ -1,14 +1,14 @@
 //! `TextFormat` impl
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use gc_arena::MutationContext;
 
 fn map_defined_to_string<'gc>(
     name: &str,
     this: Object<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     val: Option<Value<'gc>>,
 ) -> Result<(), Error<'gc>> {
@@ -27,7 +27,7 @@ fn map_defined_to_string<'gc>(
 fn map_defined_to_number<'gc>(
     name: &str,
     this: Object<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     val: Option<Value<'gc>>,
 ) -> Result<(), Error<'gc>> {
@@ -46,7 +46,7 @@ fn map_defined_to_number<'gc>(
 fn map_defined_to_bool<'gc>(
     name: &str,
     this: Object<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     val: Option<Value<'gc>>,
 ) -> Result<(), Error<'gc>> {
@@ -64,7 +64,7 @@ fn map_defined_to_bool<'gc>(
 
 /// `TextFormat` constructor
 pub fn constructor<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],

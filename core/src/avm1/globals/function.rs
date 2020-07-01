@@ -1,14 +1,14 @@
 //! Function prototype
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 /// Implements `Function`
 pub fn constructor<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -18,7 +18,7 @@ pub fn constructor<'gc>(
 
 /// Implements `Function.prototype.call`
 pub fn call<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     func: Object<'gc>,
     myargs: &[Value<'gc>],
@@ -42,7 +42,7 @@ pub fn call<'gc>(
 
 /// Implements `Function.prototype.apply`
 pub fn apply<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     func: Object<'gc>,
     myargs: &[Value<'gc>],
@@ -75,7 +75,7 @@ pub fn apply<'gc>(
 
 /// Implements `Function.prototype.toString`
 fn to_string<'gc>(
-    _: &mut StackFrame<'_, 'gc>,
+    _: &mut Activation<'_, 'gc>,
     _: &mut UpdateContext<'_, 'gc, '_>,
     _: Object<'gc>,
     _: &[Value<'gc>],

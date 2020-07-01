@@ -1,10 +1,10 @@
 //! XML/XMLNode global classes
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::script_object::ScriptObject;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::xml_object::XMLObject;
 use crate::avm1::{Object, TObject, UpdateContext, Value};
 use crate::backend::navigator::RequestOptions;
@@ -42,7 +42,7 @@ fn is_as2_compatible(node: XMLNode<'_>) -> bool {
 
 /// XMLNode constructor
 pub fn xmlnode_constructor<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -73,7 +73,7 @@ pub fn xmlnode_constructor<'gc>(
 }
 
 pub fn xmlnode_append_child<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -95,7 +95,7 @@ pub fn xmlnode_append_child<'gc>(
 }
 
 pub fn xmlnode_insert_before<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -123,7 +123,7 @@ pub fn xmlnode_insert_before<'gc>(
 }
 
 pub fn xmlnode_clone_node<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -146,7 +146,7 @@ pub fn xmlnode_clone_node<'gc>(
 }
 
 pub fn xmlnode_get_namespace_for_prefix<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -166,7 +166,7 @@ pub fn xmlnode_get_namespace_for_prefix<'gc>(
 }
 
 pub fn xmlnode_get_prefix_for_namespace<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -186,7 +186,7 @@ pub fn xmlnode_get_prefix_for_namespace<'gc>(
 }
 
 pub fn xmlnode_has_child_nodes<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -199,7 +199,7 @@ pub fn xmlnode_has_child_nodes<'gc>(
 }
 
 pub fn xmlnode_remove_node<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -216,7 +216,7 @@ pub fn xmlnode_remove_node<'gc>(
 }
 
 pub fn xmlnode_to_string<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -236,7 +236,7 @@ pub fn xmlnode_to_string<'gc>(
 }
 
 pub fn xmlnode_local_name<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -249,7 +249,7 @@ pub fn xmlnode_local_name<'gc>(
 }
 
 pub fn xmlnode_node_name<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -262,7 +262,7 @@ pub fn xmlnode_node_name<'gc>(
 }
 
 pub fn xmlnode_node_type<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -282,7 +282,7 @@ pub fn xmlnode_node_type<'gc>(
 }
 
 pub fn xmlnode_node_value<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -295,7 +295,7 @@ pub fn xmlnode_node_value<'gc>(
 }
 
 pub fn xmlnode_prefix<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -312,7 +312,7 @@ pub fn xmlnode_prefix<'gc>(
 }
 
 pub fn xmlnode_child_nodes<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -345,7 +345,7 @@ pub fn xmlnode_child_nodes<'gc>(
 }
 
 pub fn xmlnode_first_child<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -367,7 +367,7 @@ pub fn xmlnode_first_child<'gc>(
 }
 
 pub fn xmlnode_last_child<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -389,7 +389,7 @@ pub fn xmlnode_last_child<'gc>(
 }
 
 pub fn xmlnode_parent_node<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -410,7 +410,7 @@ pub fn xmlnode_parent_node<'gc>(
 }
 
 pub fn xmlnode_previous_sibling<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -437,7 +437,7 @@ pub fn xmlnode_previous_sibling<'gc>(
 }
 
 pub fn xmlnode_next_sibling<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -464,7 +464,7 @@ pub fn xmlnode_next_sibling<'gc>(
 }
 
 pub fn xmlnode_attributes<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -480,7 +480,7 @@ pub fn xmlnode_attributes<'gc>(
 }
 
 pub fn xmlnode_namespace_uri<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -684,7 +684,7 @@ pub fn create_xmlnode_proto<'gc>(
 
 /// XML (document) constructor
 pub fn xml_constructor<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -717,7 +717,7 @@ pub fn xml_constructor<'gc>(
 }
 
 pub fn xml_create_element<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -745,7 +745,7 @@ pub fn xml_create_element<'gc>(
 }
 
 pub fn xml_create_text_node<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -773,7 +773,7 @@ pub fn xml_create_text_node<'gc>(
 }
 
 pub fn xml_parse_xml<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -806,7 +806,7 @@ pub fn xml_parse_xml<'gc>(
 }
 
 pub fn xml_load<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -840,7 +840,7 @@ pub fn xml_load<'gc>(
 }
 
 pub fn xml_on_data<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -862,7 +862,7 @@ pub fn xml_on_data<'gc>(
 }
 
 pub fn xml_doc_type_decl<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -884,7 +884,7 @@ pub fn xml_doc_type_decl<'gc>(
 }
 
 pub fn xml_xml_decl<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -903,7 +903,7 @@ pub fn xml_xml_decl<'gc>(
 }
 
 pub fn xml_id_map<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -916,7 +916,7 @@ pub fn xml_id_map<'gc>(
 }
 
 pub fn xml_status<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],

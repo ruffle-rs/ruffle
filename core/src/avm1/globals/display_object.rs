@@ -1,9 +1,9 @@
 //! DisplayObject common methods
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use enumset::EnumSet;
@@ -79,7 +79,7 @@ pub fn define_display_object_proto<'gc>(
 }
 
 pub fn get_parent<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -94,7 +94,7 @@ pub fn get_parent<'gc>(
 
 pub fn get_depth<'gc>(
     display_object: DisplayObject<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -107,7 +107,7 @@ pub fn get_depth<'gc>(
 }
 
 pub fn overwrite_root<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -122,7 +122,7 @@ pub fn overwrite_root<'gc>(
 }
 
 pub fn overwrite_global<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],

@@ -3,16 +3,16 @@
 //! TODO: This should change when `ColorTransform` changes to match Flash's representation
 //! (See GitHub #193)
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 pub fn constructor<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     mut this: Object<'gc>,
     args: &[Value<'gc>],
@@ -75,7 +75,7 @@ pub fn create_proto<'gc>(
 
 /// Gets the target display object of this color transform.
 fn target<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
 ) -> Result<Option<DisplayObject<'gc>>, Error<'gc>> {
@@ -93,7 +93,7 @@ fn target<'gc>(
 }
 
 fn get_rgb<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -110,7 +110,7 @@ fn get_rgb<'gc>(
 }
 
 fn get_transform<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -174,7 +174,7 @@ fn get_transform<'gc>(
 }
 
 fn set_rgb<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -200,7 +200,7 @@ fn set_rgb<'gc>(
 }
 
 fn set_transform<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -209,7 +209,7 @@ fn set_transform<'gc>(
     // to the 16-bit range used by the internal representations of the Flash Player.
     // This will get slightly simpler when we change ColorTransform to the proper representation (see #193).
     fn set_color_mult<'gc>(
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         transform: Object<'gc>,
         property: &str,
@@ -226,7 +226,7 @@ fn set_transform<'gc>(
     }
 
     fn set_color_add<'gc>(
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         transform: Object<'gc>,
         property: &str,

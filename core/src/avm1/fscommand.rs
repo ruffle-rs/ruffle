@@ -1,7 +1,7 @@
 //! FSCommand handling
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::UpdateContext;
 /// Parse an FSCommand URL.
 pub fn parse(url: &str) -> Option<&str> {
@@ -16,7 +16,7 @@ pub fn parse(url: &str) -> Option<&str> {
 /// TODO: FSCommand URL handling
 pub fn handle<'gc>(
     fscommand: &str,
-    _activation: &mut StackFrame,
+    _activation: &mut Activation,
     _ac: &mut UpdateContext,
 ) -> Result<(), Error<'gc>> {
     log::warn!("Unhandled FSCommand: {}", fscommand);

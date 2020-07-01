@@ -1,5 +1,5 @@
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use gc_arena::{Collect, MutationContext};
 
@@ -10,7 +10,7 @@ pub struct Listeners<'gc>(Object<'gc>);
 macro_rules! register_listener {
     ( $gc_context: ident, $object:ident, $listener: ident, $fn_proto: ident, $system_listeners_key: ident ) => {{
         pub fn add_listener<'gc>(
-            activation: &mut StackFrame<'_, 'gc>,
+            activation: &mut Activation<'_, 'gc>,
             context: &mut UpdateContext<'_, 'gc, '_>,
             _this: Object<'gc>,
             args: &[Value<'gc>],
@@ -23,7 +23,7 @@ macro_rules! register_listener {
         }
 
         pub fn remove_listener<'gc>(
-            activation: &mut StackFrame<'_, 'gc>,
+            activation: &mut Activation<'_, 'gc>,
             context: &mut UpdateContext<'_, 'gc, '_>,
             _this: Object<'gc>,
             args: &[Value<'gc>],
@@ -81,7 +81,7 @@ impl<'gc> Listeners<'gc> {
 
     pub fn remove_listener(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -112,7 +112,7 @@ impl<'gc> Listeners<'gc> {
 
     pub fn prepare_handlers(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         method: &str,
     ) -> Vec<(Object<'gc>, Value<'gc>)> {

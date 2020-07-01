@@ -1,8 +1,8 @@
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::fscommand;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::listeners::SystemListeners;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::backend::navigator::NavigationMethod;
 use enumset::EnumSet;
@@ -40,7 +40,7 @@ mod xml;
 
 #[allow(non_snake_case, unused_must_use)] //can't use errors yet
 pub fn getURL<'a, 'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'a, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
@@ -74,7 +74,7 @@ pub fn getURL<'a, 'gc>(
 }
 
 pub fn random<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
@@ -86,7 +86,7 @@ pub fn random<'gc>(
 }
 
 pub fn is_nan<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
@@ -102,7 +102,7 @@ pub fn is_nan<'gc>(
 }
 
 pub fn get_infinity<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -115,7 +115,7 @@ pub fn get_infinity<'gc>(
 }
 
 pub fn get_nan<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -477,7 +477,7 @@ mod tests {
     use super::*;
 
     fn setup<'gc>(
-        _activation: &mut StackFrame<'_, 'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Object<'gc> {
         create_globals(context.gc_context).1

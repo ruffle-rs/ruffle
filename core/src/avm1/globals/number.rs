@@ -1,9 +1,9 @@
 //! `Number` class impl
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::*;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::value_object::ValueObject;
 use crate::avm1::{Object, TObject, Value};
 use crate::context::UpdateContext;
@@ -12,7 +12,7 @@ use gc_arena::MutationContext;
 
 /// `Number` constructor/function
 pub fn number<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -113,7 +113,7 @@ pub fn create_proto<'gc>(
 }
 
 fn to_string<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -186,7 +186,7 @@ fn to_string<'gc>(
 }
 
 fn value_of<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],

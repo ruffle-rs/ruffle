@@ -1,6 +1,6 @@
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
@@ -11,7 +11,7 @@ use crate::avm1::shared_object::SharedObject;
 use json::JsonValue;
 
 pub fn delete_all<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -21,7 +21,7 @@ pub fn delete_all<'gc>(
 }
 
 pub fn get_disk_usage<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -34,7 +34,7 @@ pub fn get_disk_usage<'gc>(
 /// It would be best if this was implemented via serde but due to avm and context it can't
 /// Undefined fields aren't serialized
 fn recursive_serialize<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     obj: Object<'gc>,
     json_obj: &mut JsonValue,
@@ -69,7 +69,7 @@ fn recursive_serialize<'gc>(
 /// Undefined fields aren't deserialized
 fn recursive_deserialize<'gc>(
     json_obj: JsonValue,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     object: Object<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) {
@@ -132,7 +132,7 @@ fn recursive_deserialize<'gc>(
 }
 
 pub fn get_local<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
@@ -187,7 +187,7 @@ pub fn get_local<'gc>(
 }
 
 pub fn get_remote<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -197,7 +197,7 @@ pub fn get_remote<'gc>(
 }
 
 pub fn get_max_size<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -207,7 +207,7 @@ pub fn get_max_size<'gc>(
 }
 
 pub fn add_listener<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -217,7 +217,7 @@ pub fn add_listener<'gc>(
 }
 
 pub fn remove_listener<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -299,7 +299,7 @@ pub fn create_shared_object_object<'gc>(
 }
 
 pub fn clear<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -321,7 +321,7 @@ pub fn clear<'gc>(
 }
 
 pub fn close<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -331,7 +331,7 @@ pub fn close<'gc>(
 }
 
 pub fn connect<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -341,7 +341,7 @@ pub fn connect<'gc>(
 }
 
 pub fn flush<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -363,7 +363,7 @@ pub fn flush<'gc>(
 }
 
 pub fn get_size<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -373,7 +373,7 @@ pub fn get_size<'gc>(
 }
 
 pub fn send<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -383,7 +383,7 @@ pub fn send<'gc>(
 }
 
 pub fn set_fps<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -393,7 +393,7 @@ pub fn set_fps<'gc>(
 }
 
 pub fn on_status<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -403,7 +403,7 @@ pub fn on_status<'gc>(
 }
 
 pub fn on_sync<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -472,7 +472,7 @@ pub fn create_proto<'gc>(
 }
 
 pub fn constructor<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],

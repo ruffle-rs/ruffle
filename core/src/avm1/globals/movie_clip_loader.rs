@@ -1,10 +1,10 @@
 //! `MovieClipLoader` impl
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::script_object::ScriptObject;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, UpdateContext, Value};
 use crate::backend::navigator::RequestOptions;
 use crate::display_object::{DisplayObject, TDisplayObject};
@@ -12,7 +12,7 @@ use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 pub fn constructor<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -33,7 +33,7 @@ pub fn constructor<'gc>(
 }
 
 pub fn add_listener<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -51,7 +51,7 @@ pub fn add_listener<'gc>(
 }
 
 pub fn remove_listener<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -94,7 +94,7 @@ pub fn remove_listener<'gc>(
 }
 
 pub fn broadcast_message<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -118,7 +118,7 @@ pub fn broadcast_message<'gc>(
 }
 
 pub fn load_clip<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -150,7 +150,7 @@ pub fn load_clip<'gc>(
 }
 
 pub fn unload_clip<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
@@ -173,7 +173,7 @@ pub fn unload_clip<'gc>(
 }
 
 pub fn get_progress<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],

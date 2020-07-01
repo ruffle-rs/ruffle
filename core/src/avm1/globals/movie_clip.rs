@@ -1,10 +1,10 @@
 //! MovieClip prototype
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::display_object::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::backend::navigator::NavigationMethod;
 use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObject};
@@ -19,7 +19,7 @@ use swf::{
 
 /// Implements `MovieClip`
 pub fn constructor<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -51,7 +51,7 @@ macro_rules! with_movie_clip {
 #[allow(clippy::comparison_chain)]
 pub fn hit_test<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -144,7 +144,7 @@ pub fn create_proto<'gc>(
 
 fn line_style<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -236,7 +236,7 @@ fn line_style<'gc>(
 
 fn begin_fill<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -264,7 +264,7 @@ fn begin_fill<'gc>(
 
 fn begin_gradient_fill<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -353,7 +353,7 @@ fn begin_gradient_fill<'gc>(
 
 fn move_to<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -373,7 +373,7 @@ fn move_to<'gc>(
 
 fn line_to<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -393,7 +393,7 @@ fn line_to<'gc>(
 
 fn curve_to<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -419,7 +419,7 @@ fn curve_to<'gc>(
 
 fn end_fill<'gc>(
     movie_clip: MovieClip<'gc>,
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -429,7 +429,7 @@ fn end_fill<'gc>(
 
 fn clear<'gc>(
     movie_clip: MovieClip<'gc>,
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -439,7 +439,7 @@ fn clear<'gc>(
 
 fn attach_movie<'gc>(
     mut movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -493,7 +493,7 @@ fn attach_movie<'gc>(
 
 fn create_empty_movie_clip<'gc>(
     mut movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -528,7 +528,7 @@ fn create_empty_movie_clip<'gc>(
 
 fn create_text_field<'gc>(
     mut movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -583,7 +583,7 @@ fn create_text_field<'gc>(
 
 fn duplicate_movie_clip<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -593,7 +593,7 @@ fn duplicate_movie_clip<'gc>(
 
 pub fn duplicate_movie_clip_with_bias<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
     depth_bias: i32,
@@ -657,7 +657,7 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
 
 fn get_bytes_loaded<'gc>(
     _movie_clip: MovieClip<'gc>,
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -667,7 +667,7 @@ fn get_bytes_loaded<'gc>(
 
 fn get_bytes_total<'gc>(
     _movie_clip: MovieClip<'gc>,
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -677,7 +677,7 @@ fn get_bytes_total<'gc>(
 
 fn get_next_highest_depth<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -697,7 +697,7 @@ fn get_next_highest_depth<'gc>(
 
 fn goto_and_play<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -706,7 +706,7 @@ fn goto_and_play<'gc>(
 
 fn goto_and_stop<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -715,7 +715,7 @@ fn goto_and_stop<'gc>(
 
 pub fn goto_frame<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
     stop: bool,
@@ -757,7 +757,7 @@ pub fn goto_frame<'gc>(
 
 fn next_frame<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -767,7 +767,7 @@ fn next_frame<'gc>(
 
 fn play<'gc>(
     movie_clip: MovieClip<'gc>,
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -777,7 +777,7 @@ fn play<'gc>(
 
 fn prev_frame<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -787,7 +787,7 @@ fn prev_frame<'gc>(
 
 fn remove_movie_clip<'gc>(
     movie_clip: MovieClip<'gc>,
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -820,7 +820,7 @@ pub fn remove_movie_clip_with_bias<'gc>(
 
 fn start_drag<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -830,7 +830,7 @@ fn start_drag<'gc>(
 
 fn stop<'gc>(
     movie_clip: MovieClip<'gc>,
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -840,7 +840,7 @@ fn stop<'gc>(
 
 fn stop_drag<'gc>(
     _movie_clip: MovieClip<'gc>,
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -851,7 +851,7 @@ fn stop_drag<'gc>(
 
 fn swap_depths<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -896,7 +896,7 @@ fn swap_depths<'gc>(
 
 fn to_string<'gc>(
     movie_clip: MovieClip<'gc>,
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -905,7 +905,7 @@ fn to_string<'gc>(
 
 fn local_to_global<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -933,7 +933,7 @@ fn local_to_global<'gc>(
 
 fn get_bounds<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -997,7 +997,7 @@ fn get_bounds<'gc>(
 
 fn get_rect<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1008,7 +1008,7 @@ fn get_rect<'gc>(
 
 fn global_to_local<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1036,7 +1036,7 @@ fn global_to_local<'gc>(
 
 fn load_movie<'gc>(
     target: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1060,7 +1060,7 @@ fn load_movie<'gc>(
 
 fn load_variables<'gc>(
     target: MovieClip<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1083,7 +1083,7 @@ fn load_variables<'gc>(
 
 fn unload_movie<'gc>(
     mut target: MovieClip<'gc>,
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

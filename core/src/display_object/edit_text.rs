@@ -1,6 +1,6 @@
 //! `EditText` display object and support code.
+use crate::avm1::activation::Activation;
 use crate::avm1::globals::text_field::attach_virtual_properties;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Avm1, Object, StageObject, TObject, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
@@ -503,7 +503,7 @@ impl<'gc> EditText<'gc> {
     pub fn set_variable(
         self,
         variable: Option<String>,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         // Clear previous binding.
@@ -699,7 +699,7 @@ impl<'gc> EditText<'gc> {
     /// This is called when the text field is created, and, if the text field is in the unbound list, anytime a display object is created.
     pub fn try_bind_text_field_variable(
         self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         set_initial_value: bool,
     ) -> bool {
@@ -771,7 +771,7 @@ impl<'gc> EditText<'gc> {
     ///
     pub fn propagate_text_binding(
         self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         if !self.0.read().firing_variable_binding {

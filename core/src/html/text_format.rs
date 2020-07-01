@@ -1,5 +1,5 @@
 //! Classes that store formatting options
-use crate::avm1::stack_frame::StackFrame;
+use crate::avm1::activation::Activation;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
@@ -86,7 +86,7 @@ pub struct TextFormat {
 fn getstr_from_avm1_object<'gc>(
     object: Object<'gc>,
     name: &str,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     uc: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Option<String>, crate::avm1::error::Error<'gc>> {
     Ok(match object.get(name, activation, uc)? {
@@ -99,7 +99,7 @@ fn getstr_from_avm1_object<'gc>(
 fn getfloat_from_avm1_object<'gc>(
     object: Object<'gc>,
     name: &str,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     uc: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Option<f64>, crate::avm1::error::Error<'gc>> {
     Ok(match object.get(name, activation, uc)? {
@@ -112,7 +112,7 @@ fn getfloat_from_avm1_object<'gc>(
 fn getbool_from_avm1_object<'gc>(
     object: Object<'gc>,
     name: &str,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     uc: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Option<bool>, crate::avm1::error::Error<'gc>> {
     Ok(match object.get(name, activation, uc)? {
@@ -125,7 +125,7 @@ fn getbool_from_avm1_object<'gc>(
 fn getfloatarray_from_avm1_object<'gc>(
     object: Object<'gc>,
     name: &str,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     uc: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Option<Vec<f64>>, crate::avm1::error::Error<'gc>> {
     Ok(match object.get(name, activation, uc)? {
@@ -198,7 +198,7 @@ impl TextFormat {
     /// Construct a `TextFormat` from an object that is
     pub fn from_avm1_object<'gc>(
         object1: Object<'gc>,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         uc: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Self, crate::avm1::error::Error<'gc>> {
         Ok(Self {
@@ -352,7 +352,7 @@ impl TextFormat {
     /// Construct a `TextFormat` AVM1 object from this text format object.
     pub fn as_avm1_object<'gc>(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         uc: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Object<'gc>, crate::avm1::error::Error<'gc>> {
         let object = ScriptObject::object(

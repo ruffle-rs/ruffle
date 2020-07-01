@@ -1,6 +1,6 @@
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::system::SystemProperties;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Avm1, Object, UpdateContext};
 use crate::backend::audio::NullAudioBackend;
 use crate::backend::input::NullInputBackend;
@@ -21,7 +21,7 @@ use std::sync::Arc;
 pub fn with_avm<F>(swf_version: u8, test: F)
 where
     F: for<'a, 'gc> FnOnce(
-        &mut StackFrame<'_, 'gc>,
+        &mut Activation<'_, 'gc>,
         &mut UpdateContext<'a, 'gc, '_>,
         Object<'gc>,
     ) -> Result<(), Error<'gc>>,
@@ -29,7 +29,7 @@ where
     fn in_the_arena<'a, 'gc: 'a, F>(swf_version: u8, test: F, gc_context: MutationContext<'gc, '_>)
     where
         F: FnOnce(
-            &mut StackFrame<'_, 'gc>,
+            &mut Activation<'_, 'gc>,
             &mut UpdateContext<'_, 'gc, '_>,
             Object<'gc>,
         ) -> Result<(), Error<'gc>>,
@@ -78,13 +78,13 @@ where
         root.set_name(context.gc_context, "");
 
         fn run_test<'a, 'gc: 'a, F>(
-            activation: &mut StackFrame<'_, 'gc>,
+            activation: &mut Activation<'_, 'gc>,
             context: &mut UpdateContext<'_, 'gc, '_>,
             root: DisplayObject<'gc>,
             test: F,
         ) where
             F: FnOnce(
-                &mut StackFrame<'_, 'gc>,
+                &mut Activation<'_, 'gc>,
                 &mut UpdateContext<'_, 'gc, '_>,
                 Object<'gc>,
             ) -> Result<(), Error<'gc>>,
@@ -97,7 +97,7 @@ where
         }
 
         let globals = avm.global_object_cell();
-        let mut activation = StackFrame::from_nothing(
+        let mut activation = Activation::from_nothing(
             &mut avm,
             context.swf.version(),
             globals,

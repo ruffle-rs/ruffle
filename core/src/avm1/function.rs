@@ -1,9 +1,9 @@
 //! Code relating to executable functions + calling conventions.
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::{Attribute, Attribute::*};
 use crate::avm1::scope::Scope;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::super_object::SuperObject;
 use crate::avm1::value::Value;
 use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, UpdateContext};
@@ -30,7 +30,7 @@ use swf::avm1::types::FunctionParam;
 /// your function yields `None`, you must ensure that the top-most activation
 /// in the AVM1 runtime will return with the value of this function.
 pub type NativeFunction<'gc> = fn(
-    &mut StackFrame<'_, 'gc>,
+    &mut Activation<'_, 'gc>,
     &mut UpdateContext<'_, 'gc, '_>,
     Object<'gc>,
     &[Value<'gc>],
@@ -222,7 +222,7 @@ impl<'gc> Executable<'gc> {
     /// create a new stack frame and execute the action data yourself.
     pub fn exec(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         ac: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
@@ -278,7 +278,7 @@ impl<'gc> Executable<'gc> {
                         .unwrap_or(ac.player_version)
                 };
 
-                let mut frame = StackFrame::from_action(
+                let mut frame = Activation::from_action(
                     activation.avm(),
                     effective_ver,
                     child_scope,
@@ -452,7 +452,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn get_local(
         &self,
         name: &str,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -463,7 +463,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         self.base.set(name, value, activation, context)
@@ -471,7 +471,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn call(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
@@ -488,7 +488,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Option<Executable<'gc>> {
         self.base.call_setter(name, value, activation, context)
@@ -497,7 +497,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     #[allow(clippy::new_ret_no_self)]
     fn new(
         &self,
-        _activation: &mut StackFrame<'_, 'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         prototype: Object<'gc>,
         _args: &[Value<'gc>],
@@ -519,7 +519,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn delete(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
     ) -> bool {
@@ -569,7 +569,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn add_property_with_case(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
         get: Executable<'gc>,
@@ -582,7 +582,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn has_property(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
@@ -591,7 +591,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn has_own_property(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
@@ -600,22 +600,22 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn has_own_virtual(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
         self.base.has_own_virtual(activation, context, name)
     }
 
-    fn is_property_overwritable(&self, activation: &mut StackFrame<'_, 'gc>, name: &str) -> bool {
+    fn is_property_overwritable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
         self.base.is_property_overwritable(activation, name)
     }
 
-    fn is_property_enumerable(&self, activation: &mut StackFrame<'_, 'gc>, name: &str) -> bool {
+    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
         self.base.is_property_enumerable(activation, name)
     }
 
-    fn get_keys(&self, activation: &mut StackFrame<'_, 'gc>) -> Vec<String> {
+    fn get_keys(&self, activation: &mut Activation<'_, 'gc>) -> Vec<String> {
         self.base.get_keys(activation)
     }
 

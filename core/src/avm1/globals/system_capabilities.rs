@@ -1,8 +1,8 @@
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::globals::system::SystemCapabilities;
 use crate::avm1::object::Object;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
@@ -11,7 +11,7 @@ use gc_arena::MutationContext;
 macro_rules! capabilities_func {
     ($func_name: ident, $capability: expr) => {
         pub fn $func_name<'gc>(
-            _activation: &mut StackFrame<'_, 'gc>,
+            _activation: &mut Activation<'_, 'gc>,
             context: &mut UpdateContext<'_, 'gc, '_>,
             _this: Object<'gc>,
             _args: &[Value<'gc>],
@@ -24,7 +24,7 @@ macro_rules! capabilities_func {
 macro_rules! inverse_capabilities_func {
     ($func_name: ident, $capability: expr) => {
         pub fn $func_name<'gc>(
-            _activation: &mut StackFrame<'_, 'gc>,
+            _activation: &mut Activation<'_, 'gc>,
             context: &mut UpdateContext<'_, 'gc, '_>,
             _this: Object<'gc>,
             _args: &[Value<'gc>],
@@ -77,7 +77,7 @@ inverse_capabilities_func!(get_is_av_hardware_disabled, SystemCapabilities::AvHa
 inverse_capabilities_func!(get_is_windowless_disabled, SystemCapabilities::WindowLess);
 
 pub fn get_player_type<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -86,7 +86,7 @@ pub fn get_player_type<'gc>(
 }
 
 pub fn get_screen_color<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -95,7 +95,7 @@ pub fn get_screen_color<'gc>(
 }
 
 pub fn get_language<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -108,7 +108,7 @@ pub fn get_language<'gc>(
 }
 
 pub fn get_screen_resolution_x<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -117,7 +117,7 @@ pub fn get_screen_resolution_x<'gc>(
 }
 
 pub fn get_screen_resolution_y<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -126,7 +126,7 @@ pub fn get_screen_resolution_y<'gc>(
 }
 
 pub fn get_pixel_aspect_ratio<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -135,7 +135,7 @@ pub fn get_pixel_aspect_ratio<'gc>(
 }
 
 pub fn get_screen_dpi<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -144,7 +144,7 @@ pub fn get_screen_dpi<'gc>(
 }
 
 pub fn get_manufacturer<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -157,7 +157,7 @@ pub fn get_manufacturer<'gc>(
 }
 
 pub fn get_os_name<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -166,7 +166,7 @@ pub fn get_os_name<'gc>(
 }
 
 pub fn get_version<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -175,7 +175,7 @@ pub fn get_version<'gc>(
 }
 
 pub fn get_server_string<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -184,7 +184,7 @@ pub fn get_server_string<'gc>(
 }
 
 pub fn get_cpu_architecture<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -193,7 +193,7 @@ pub fn get_cpu_architecture<'gc>(
 }
 
 pub fn get_max_idc_level<'gc>(
-    _activation: &mut StackFrame<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],

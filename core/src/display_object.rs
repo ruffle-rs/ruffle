@@ -20,7 +20,7 @@ mod morph_shape;
 mod movie_clip;
 mod text;
 
-use crate::avm1::stack_frame::StackFrame;
+use crate::avm1::activation::Activation;
 use crate::events::{ClipEvent, ClipEventResult};
 pub use bitmap::Bitmap;
 pub use button::Button;
@@ -914,7 +914,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
 
     fn bind_text_field_variables(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         // Check all unbound text fields to see if they apply to this object.

@@ -16,6 +16,7 @@ mod test_utils;
 #[macro_use]
 pub mod listeners;
 
+pub mod activation;
 pub mod debug;
 pub mod error;
 mod fscommand;
@@ -27,7 +28,6 @@ mod scope;
 pub mod script_object;
 pub mod shared_object;
 mod sound_object;
-pub mod stack_frame;
 mod stage_object;
 mod super_object;
 mod value;
@@ -39,9 +39,9 @@ pub mod xml_object;
 #[cfg(test)]
 mod tests;
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::listeners::SystemListener;
-use crate::avm1::stack_frame::StackFrame;
 pub use globals::SystemPrototypes;
 pub use object::{Object, ObjectPtr, TObject};
 use scope::Scope;
@@ -143,7 +143,7 @@ impl<'gc> Avm1<'gc> {
             return;
         }
 
-        let mut parent_activation = StackFrame::from_nothing(
+        let mut parent_activation = Activation::from_nothing(
             self,
             swf_version,
             self.global_object_cell(),
@@ -163,7 +163,7 @@ impl<'gc> Avm1<'gc> {
             ),
         );
         let constant_pool = parent_activation.avm().constant_pool;
-        let mut child_activation = StackFrame::from_action(
+        let mut child_activation = Activation::from_action(
             parent_activation.avm(),
             swf_version,
             child_scope,
@@ -188,7 +188,7 @@ impl<'gc> Avm1<'gc> {
         function: F,
     ) -> R
     where
-        for<'b> F: FnOnce(&mut StackFrame<'b, 'gc>, &mut UpdateContext<'a, 'gc, '_>) -> R,
+        for<'b> F: FnOnce(&mut Activation<'b, 'gc>, &mut UpdateContext<'a, 'gc, '_>) -> R,
     {
         let clip_obj = match active_clip.object() {
             Value::Object(o) => o,
@@ -202,7 +202,7 @@ impl<'gc> Avm1<'gc> {
             action_context.gc_context,
             Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
         );
-        let mut activation = StackFrame::from_action(
+        let mut activation = Activation::from_action(
             self,
             swf_version,
             child_scope,
@@ -229,7 +229,7 @@ impl<'gc> Avm1<'gc> {
             return;
         }
 
-        let mut parent_activation = StackFrame::from_nothing(
+        let mut parent_activation = Activation::from_nothing(
             self,
             swf_version,
             self.global_object_cell(),
@@ -250,7 +250,7 @@ impl<'gc> Avm1<'gc> {
         );
         parent_activation.avm().push(Value::Undefined);
         let constant_pool = parent_activation.avm().constant_pool;
-        let mut child_activation = StackFrame::from_action(
+        let mut child_activation = Activation::from_action(
             parent_activation.avm(),
             swf_version,
             child_scope,
@@ -282,7 +282,7 @@ impl<'gc> Avm1<'gc> {
             return;
         }
 
-        let mut activation = StackFrame::from_nothing(
+        let mut activation = Activation::from_nothing(
             self,
             swf_version,
             self.global_object_cell(),
@@ -307,7 +307,7 @@ impl<'gc> Avm1<'gc> {
         method: &str,
         args: &[Value<'gc>],
     ) {
-        let mut activation = StackFrame::from_nothing(
+        let mut activation = Activation::from_nothing(
             self,
             swf_version,
             self.global_object_cell(),
@@ -371,7 +371,7 @@ impl<'gc> Avm1<'gc> {
 }
 
 pub fn root_error_handler<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     error: Error<'gc>,
 ) {
@@ -399,7 +399,7 @@ fn skip_actions(reader: &mut Reader<'_>, num_actions_to_skip: u8) {
 /// Runs via the `startDrag` method or `StartDrag` AVM1 action.
 pub fn start_drag<'gc>(
     display_object: DisplayObject<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) {

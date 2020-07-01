@@ -1,10 +1,10 @@
 //! AVM1 object type to represent the attributes of XML nodes
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::object::{ObjectPtr, TObject};
 use crate::avm1::property::Attribute;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, UpdateContext, Value};
 use crate::xml::{XMLDocument, XMLNode};
 use enumset::EnumSet;
@@ -60,7 +60,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
     fn get_local(
         &self,
         name: &str,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -80,7 +80,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         self.base().set(name, value, activation, context)
@@ -88,7 +88,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
 
     fn call(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
@@ -102,7 +102,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Option<Executable<'gc>> {
         self.base().call_setter(name, value, activation, context)
@@ -111,7 +111,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
     #[allow(clippy::new_ret_no_self)]
     fn new(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
         _args: &[Value<'gc>],
@@ -123,7 +123,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
 
     fn delete(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
     ) -> bool {
@@ -144,7 +144,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
 
     fn add_property_with_case(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
         get: Executable<'gc>,
@@ -187,7 +187,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
 
     fn has_property(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
@@ -196,7 +196,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
 
     fn has_own_property(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
@@ -206,22 +206,22 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
 
     fn has_own_virtual(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
         self.base().has_own_virtual(activation, context, name)
     }
 
-    fn is_property_overwritable(&self, activation: &mut StackFrame<'_, 'gc>, name: &str) -> bool {
+    fn is_property_overwritable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
         self.base().is_property_overwritable(activation, name)
     }
 
-    fn is_property_enumerable(&self, activation: &mut StackFrame<'_, 'gc>, name: &str) -> bool {
+    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
         self.base().is_property_enumerable(activation, name)
     }
 
-    fn get_keys(&self, activation: &mut StackFrame<'_, 'gc>) -> Vec<String> {
+    fn get_keys(&self, activation: &mut Activation<'_, 'gc>) -> Vec<String> {
         let mut keys = self.base().get_keys(activation);
         keys.extend(self.document().get_node_ids().into_iter());
         keys

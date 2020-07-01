@@ -1,10 +1,10 @@
 //! Object impl for boxed values
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::object::{ObjectPtr, TObject};
 use crate::avm1::property::Attribute;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, UpdateContext, Value};
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -40,7 +40,7 @@ impl<'gc> ValueObject<'gc> {
     /// If a class exists for a given value type, this function automatically
     /// selects the correct prototype for it from the system prototypes list.
     pub fn boxed(
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         value: Value<'gc>,
     ) -> Object<'gc> {
@@ -135,7 +135,7 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
     fn get_local(
         &self,
         name: &str,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -149,7 +149,7 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         self.0.read().base.set(name, value, activation, context)
@@ -157,7 +157,7 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
 
     fn call(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
@@ -173,7 +173,7 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Option<Executable<'gc>> {
         self.0
@@ -185,7 +185,7 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
     #[allow(clippy::new_ret_no_self)]
     fn new(
         &self,
-        _activation: &mut StackFrame<'_, 'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         _args: &[Value<'gc>],
@@ -195,7 +195,7 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
 
     fn delete(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
     ) -> bool {
@@ -218,7 +218,7 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
 
     fn add_property_with_case(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
         get: Executable<'gc>,
@@ -272,7 +272,7 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
 
     fn has_property(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
@@ -281,7 +281,7 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
 
     fn has_own_property(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
@@ -293,7 +293,7 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
 
     fn has_own_virtual(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
@@ -303,18 +303,18 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
             .has_own_virtual(activation, context, name)
     }
 
-    fn is_property_overwritable(&self, activation: &mut StackFrame<'_, 'gc>, name: &str) -> bool {
+    fn is_property_overwritable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
         self.0
             .read()
             .base
             .is_property_overwritable(activation, name)
     }
 
-    fn is_property_enumerable(&self, activation: &mut StackFrame<'_, 'gc>, name: &str) -> bool {
+    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
         self.0.read().base.is_property_enumerable(activation, name)
     }
 
-    fn get_keys(&self, activation: &mut StackFrame<'_, 'gc>) -> Vec<String> {
+    fn get_keys(&self, activation: &mut Activation<'_, 'gc>) -> Vec<String> {
         self.0.read().base.get_keys(activation)
     }
 

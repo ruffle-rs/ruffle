@@ -1,8 +1,8 @@
 //! flash.geom.Matrix
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
@@ -11,7 +11,7 @@ use swf::{Matrix, Twips};
 
 pub fn value_to_matrix<'gc>(
     value: Value<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Matrix, Error<'gc>> {
     let a = value
@@ -48,7 +48,7 @@ pub fn value_to_matrix<'gc>(
 
 pub fn gradient_object_to_matrix<'gc>(
     object: Object<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Matrix, Error<'gc>> {
     if object
@@ -86,7 +86,7 @@ pub fn gradient_object_to_matrix<'gc>(
 
 pub fn object_to_matrix<'gc>(
     object: Object<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Matrix, Error<'gc>> {
     let a = object
@@ -119,7 +119,7 @@ pub fn object_to_matrix<'gc>(
 #[allow(dead_code)]
 pub fn matrix_to_object<'gc>(
     matrix: Matrix,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let proto = context.system_prototypes.matrix;
@@ -139,7 +139,7 @@ pub fn matrix_to_object<'gc>(
 pub fn apply_matrix_to_object<'gc>(
     matrix: Matrix,
     object: Object<'gc>,
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<(), Error<'gc>> {
     object.set("a", matrix.a.into(), activation, context)?;
@@ -152,7 +152,7 @@ pub fn apply_matrix_to_object<'gc>(
 }
 
 fn constructor<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -184,7 +184,7 @@ fn constructor<'gc>(
 }
 
 fn identity<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -194,7 +194,7 @@ fn identity<'gc>(
 }
 
 fn clone<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -214,7 +214,7 @@ fn clone<'gc>(
 }
 
 fn scale<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -235,7 +235,7 @@ fn scale<'gc>(
 }
 
 fn rotate<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -252,7 +252,7 @@ fn rotate<'gc>(
 }
 
 fn translate<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -276,7 +276,7 @@ fn translate<'gc>(
 }
 
 fn concat<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -294,7 +294,7 @@ fn concat<'gc>(
 }
 
 fn invert<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -307,7 +307,7 @@ fn invert<'gc>(
 }
 
 fn create_box<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -349,7 +349,7 @@ fn create_box<'gc>(
 }
 
 fn create_gradient_box<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -391,7 +391,7 @@ fn create_gradient_box<'gc>(
 }
 
 fn to_string<'gc>(
-    activation: &mut StackFrame<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],

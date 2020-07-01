@@ -1,4 +1,4 @@
-use crate::avm1::stack_frame::StackFrame;
+use crate::avm1::activation::Activation;
 use crate::avm1::{Object, ObjectPtr, TObject, Value};
 use crate::context::UpdateContext;
 
@@ -24,7 +24,7 @@ impl<'a> VariableDumper<'a> {
     pub fn dump<'gc>(
         value: &Value<'gc>,
         indent: &str,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> String {
         let mut dumper = VariableDumper::new(indent);
@@ -85,7 +85,7 @@ impl<'a> VariableDumper<'a> {
     pub fn print_object<'gc>(
         &mut self,
         object: &Object<'gc>,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         let (id, new) = self.object_id(object);
@@ -102,7 +102,7 @@ impl<'a> VariableDumper<'a> {
         &mut self,
         object: &Object<'gc>,
         key: &str,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         match object.get(&key, activation, context) {
@@ -120,7 +120,7 @@ impl<'a> VariableDumper<'a> {
     pub fn print_properties<'gc>(
         &mut self,
         object: &Object<'gc>,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         let keys = object.get_keys(activation);
@@ -147,7 +147,7 @@ impl<'a> VariableDumper<'a> {
     pub fn print_value<'gc>(
         &mut self,
         value: &Value<'gc>,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         match value {
@@ -169,7 +169,7 @@ impl<'a> VariableDumper<'a> {
         header: &str,
         name: &str,
         object: &Object<'gc>,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         let keys = object.get_keys(activation);
@@ -203,7 +203,7 @@ mod tests {
     use enumset::EnumSet;
 
     fn throw_error<'gc>(
-        _activation: &mut StackFrame<'_, 'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
         _args: &[Value<'gc>],

@@ -1,8 +1,8 @@
+use crate::avm1::activation::Activation;
 use crate::avm1::debug::VariableDumper;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::listeners::SystemListener;
 use crate::avm1::object::Object;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::{Avm1, TObject, Value};
 use crate::backend::input::{InputBackend, MouseCursor};
 use crate::backend::storage::StorageBackend;
@@ -272,7 +272,7 @@ impl Player {
             root.set_name(context.gc_context, "");
             context.levels.insert(0, root);
 
-            let mut activation = StackFrame::from_nothing(
+            let mut activation = Activation::from_nothing(
                 avm,
                 context.swf.version(),
                 avm.global_object_cell(),
@@ -388,7 +388,7 @@ impl Player {
                 self.mutate_with_update_context(|avm, context| {
                     let mut dumper = VariableDumper::new("  ");
 
-                    let mut activation = StackFrame::from_nothing(
+                    let mut activation = Activation::from_nothing(
                         avm,
                         context.swf.version(),
                         avm.global_object_cell(),
@@ -750,7 +750,7 @@ impl Player {
                     constructor: Some(constructor),
                     events,
                 } => {
-                    let mut activation = StackFrame::from_nothing(
+                    let mut activation = Activation::from_nothing(
                         avm,
                         context.swf.version(),
                         avm.global_object_cell(),
@@ -1003,7 +1003,7 @@ impl Player {
 
     pub fn flush_shared_objects(&mut self) {
         self.update(|avm, context| {
-            let mut activation = StackFrame::from_nothing(
+            let mut activation = Activation::from_nothing(
                 avm,
                 context.swf.version(),
                 avm.global_object_cell(),

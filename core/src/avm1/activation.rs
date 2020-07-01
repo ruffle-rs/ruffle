@@ -90,7 +90,7 @@ enum FrameControl<'gc> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
-pub struct StackFrame<'a, 'gc: 'a> {
+pub struct Activation<'a, 'gc: 'a> {
     avm: &'a mut Avm1<'gc>,
 
     /// Represents the SWF version of a given function.
@@ -139,7 +139,7 @@ pub struct StackFrame<'a, 'gc: 'a> {
     target_clip: Option<DisplayObject<'gc>>,
 }
 
-impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
+impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     pub fn from_action(
         avm: &'a mut Avm1<'gc>,
         swf_version: u8,
@@ -164,8 +164,8 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
     }
 
     /// Create a new activation to run a block of code with a given scope.
-    pub fn with_new_scope<'b>(&'b mut self, scope: GcCell<'gc, Scope<'gc>>) -> StackFrame<'b, 'gc> {
-        StackFrame {
+    pub fn with_new_scope<'b>(&'b mut self, scope: GcCell<'gc, Scope<'gc>>) -> Activation<'b, 'gc> {
+        Activation {
             avm: self.avm,
             swf_version: self.swf_version,
             scope,
@@ -216,7 +216,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         code: SwfSlice,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnType<'gc>, Error<'gc>> {
-        let mut parent_activation = StackFrame::from_nothing(
+        let mut parent_activation = Activation::from_nothing(
             self.avm,
             swf_version,
             self.avm.globals,
@@ -235,7 +235,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             ),
         );
         let constant_pool = parent_activation.avm().constant_pool;
-        let mut child_activation = StackFrame::from_action(
+        let mut child_activation = Activation::from_action(
             parent_activation.avm(),
             swf_version,
             child_scope,
@@ -256,7 +256,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
         function: F,
     ) -> R
     where
-        for<'b> F: FnOnce(&mut StackFrame<'b, 'gc>, &mut UpdateContext<'c, 'gc, '_>) -> R,
+        for<'b> F: FnOnce(&mut Activation<'b, 'gc>, &mut UpdateContext<'c, 'gc, '_>) -> R,
     {
         let clip_obj = match active_clip.object() {
             Value::Object(o) => o,
@@ -271,7 +271,7 @@ impl<'a, 'gc: 'a> StackFrame<'a, 'gc> {
             Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
         );
         let constant_pool = self.avm.constant_pool;
-        let mut activation = StackFrame::from_action(
+        let mut activation = Activation::from_action(
             self.avm(),
             swf_version,
             child_scope,

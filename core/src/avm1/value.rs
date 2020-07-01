@@ -1,5 +1,5 @@
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::stack_frame::StackFrame;
 use crate::avm1::value_object::ValueObject;
 use crate::avm1::{Object, TObject, UpdateContext};
 use std::borrow::Cow;
@@ -158,7 +158,7 @@ impl<'gc> Value<'gc> {
     /// * In SWF5 and lower, hexadecimal is unsupported.
     fn primitive_as_number(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> f64 {
         match self {
@@ -224,7 +224,7 @@ impl<'gc> Value<'gc> {
     /// ECMA-262 2nd edition s. 9.3 ToNumber
     pub fn coerce_to_f64(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<f64, Error<'gc>> {
         Ok(match self {
@@ -248,7 +248,7 @@ impl<'gc> Value<'gc> {
     ///   return `undefined` rather than yielding a runtime error.
     pub fn to_primitive_num(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(match self {
@@ -262,7 +262,7 @@ impl<'gc> Value<'gc> {
     pub fn abstract_lt(
         &self,
         other: Value<'gc>,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let prim_self = self.to_primitive_num(activation, context)?;
@@ -302,7 +302,7 @@ impl<'gc> Value<'gc> {
     pub fn abstract_eq(
         &self,
         other: Value<'gc>,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         coerced: bool,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -409,7 +409,7 @@ impl<'gc> Value<'gc> {
     #[allow(dead_code)]
     pub fn coerce_to_u16(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<u16, Error<'gc>> {
         self.coerce_to_f64(activation, context)
@@ -422,7 +422,7 @@ impl<'gc> Value<'gc> {
     #[allow(dead_code)]
     pub fn coerce_to_i16(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<i16, Error<'gc>> {
         self.coerce_to_f64(activation, context)
@@ -436,7 +436,7 @@ impl<'gc> Value<'gc> {
     #[allow(dead_code)]
     pub fn coerce_to_i32(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<i32, Error<'gc>> {
         self.coerce_to_f64(activation, context)
@@ -449,7 +449,7 @@ impl<'gc> Value<'gc> {
     #[allow(dead_code)]
     pub fn coerce_to_u32(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<u32, Error<'gc>> {
         self.coerce_to_f64(activation, context)
@@ -459,7 +459,7 @@ impl<'gc> Value<'gc> {
     /// Coerce a value to a string.
     pub fn coerce_to_string<'a>(
         &'a self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Cow<'a, str>, Error<'gc>> {
         Ok(match self {
@@ -517,7 +517,7 @@ impl<'gc> Value<'gc> {
 
     pub fn coerce_to_object(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Object<'gc> {
         ValueObject::boxed(activation, context, self.to_owned())
@@ -525,7 +525,7 @@ impl<'gc> Value<'gc> {
 
     pub fn call(
         &self,
-        activation: &mut StackFrame<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
@@ -600,12 +600,12 @@ pub fn f64_to_wrapping_i32(n: f64) -> i32 {
 
 #[cfg(test)]
 mod test {
+    use crate::avm1::activation::Activation;
     use crate::avm1::error::Error;
     use crate::avm1::function::{Executable, FunctionObject};
     use crate::avm1::globals::create_globals;
     use crate::avm1::object::{Object, TObject};
     use crate::avm1::script_object::ScriptObject;
-    use crate::avm1::stack_frame::StackFrame;
     use crate::avm1::test_utils::with_avm;
     use crate::avm1::Value;
     use crate::context::UpdateContext;
@@ -643,7 +643,7 @@ mod test {
             );
 
             fn value_of_impl<'gc>(
-                _: &mut StackFrame<'_, 'gc>,
+                _: &mut Activation<'_, 'gc>,
                 _: &mut UpdateContext<'_, 'gc, '_>,
                 _: Object<'gc>,
                 _: &[Value<'gc>],
