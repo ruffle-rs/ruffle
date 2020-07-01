@@ -1,11 +1,11 @@
 //! Object impl for boxed values
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::object::{ObjectPtr, TObject};
 use crate::avm1::property::Attribute;
-use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Object, ScriptObject, UpdateContext, Value};
+use crate::avm1::{Object, ScriptObject, UpdateContext, Value};
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::borrow::Cow;
@@ -40,7 +40,7 @@ impl<'gc> ValueObject<'gc> {
     /// If a class exists for a given value type, this function automatically
     /// selects the correct prototype for it from the system prototypes list.
     pub fn boxed(
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         value: Value<'gc>,
     ) -> Object<'gc> {
@@ -48,9 +48,9 @@ impl<'gc> ValueObject<'gc> {
             ob
         } else {
             let proto = match &value {
-                Value::Bool(_) => Some(avm.prototypes.boolean),
-                Value::Number(_) => Some(avm.prototypes.number),
-                Value::String(_) => Some(avm.prototypes.string),
+                Value::Bool(_) => Some(activation.avm().prototypes.boolean),
+                Value::Number(_) => Some(activation.avm().prototypes.number),
+                Value::String(_) => Some(activation.avm().prototypes.string),
                 _ => None,
             };
 
@@ -65,16 +65,28 @@ impl<'gc> ValueObject<'gc> {
             // Constructor populates the boxed object with the value.
             match &value {
                 Value::Bool(_) => {
-                    let _ =
-                        crate::avm1::globals::boolean::boolean(avm, context, obj.into(), &[value]);
+                    let _ = crate::avm1::globals::boolean::boolean(
+                        activation,
+                        context,
+                        obj.into(),
+                        &[value],
+                    );
                 }
                 Value::Number(_) => {
-                    let _ =
-                        crate::avm1::globals::number::number(avm, context, obj.into(), &[value]);
+                    let _ = crate::avm1::globals::number::number(
+                        activation,
+                        context,
+                        obj.into(),
+                        &[value],
+                    );
                 }
                 Value::String(_) => {
-                    let _ =
-                        crate::avm1::globals::string::string(avm, context, obj.into(), &[value]);
+                    let _ = crate::avm1::globals::string::string(
+                        activation,
+                        context,
+                        obj.into(),
+                        &[value],
+                    );
                 }
                 _ => (),
             }
@@ -123,26 +135,29 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
     fn get_local(
         &self,
         name: &str,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.0.read().base.get_local(name, avm, context, this)
+        self.0
+            .read()
+            .base
+            .get_local(name, activation, context, this)
     }
 
     fn set(
         &self,
         name: &str,
         value: Value<'gc>,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
-        self.0.read().base.set(name, value, avm, context)
+        self.0.read().base.set(name, value, activation, context)
     }
 
     fn call(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
@@ -151,27 +166,26 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
         self.0
             .read()
             .base
-            .call(avm, context, this, base_proto, args)
+            .call(activation, context, this, base_proto, args)
     }
 
     fn call_setter(
         &self,
         name: &str,
         value: Value<'gc>,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
+    ) -> Option<Executable<'gc>> {
         self.0
             .read()
             .base
-            .call_setter(name, value, avm, context, this)
+            .call_setter(name, value, activation, context)
     }
 
     #[allow(clippy::new_ret_no_self)]
     fn new(
         &self,
-        _avm: &mut Avm1<'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         _args: &[Value<'gc>],
@@ -181,11 +195,11 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
 
     fn delete(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
     ) -> bool {
-        self.0.read().base.delete(avm, gc_context, name)
+        self.0.read().base.delete(activation, gc_context, name)
     }
 
     fn add_property(
@@ -204,7 +218,7 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
 
     fn add_property_with_case(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
         get: Executable<'gc>,
@@ -214,7 +228,7 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
         self.0
             .read()
             .base
-            .add_property_with_case(avm, gc_context, name, get, set, attributes)
+            .add_property_with_case(activation, gc_context, name, get, set, attributes)
     }
 
     fn define_value(
@@ -258,41 +272,50 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
 
     fn has_property(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
-        self.0.read().base.has_property(avm, context, name)
+        self.0.read().base.has_property(activation, context, name)
     }
 
     fn has_own_property(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
-        self.0.read().base.has_own_property(avm, context, name)
+        self.0
+            .read()
+            .base
+            .has_own_property(activation, context, name)
     }
 
     fn has_own_virtual(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
-        self.0.read().base.has_own_virtual(avm, context, name)
+        self.0
+            .read()
+            .base
+            .has_own_virtual(activation, context, name)
     }
 
-    fn is_property_overwritable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
-        self.0.read().base.is_property_overwritable(avm, name)
+    fn is_property_overwritable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
+        self.0
+            .read()
+            .base
+            .is_property_overwritable(activation, name)
     }
 
-    fn is_property_enumerable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
-        self.0.read().base.is_property_enumerable(avm, name)
+    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
+        self.0.read().base.is_property_enumerable(activation, name)
     }
 
-    fn get_keys(&self, avm: &mut Avm1<'gc>) -> Vec<String> {
-        self.0.read().base.get_keys(avm)
+    fn get_keys(&self, activation: &mut Activation<'_, 'gc>) -> Vec<String> {
+        self.0.read().base.get_keys(activation)
     }
 
     fn as_string(&self) -> Cow<str> {

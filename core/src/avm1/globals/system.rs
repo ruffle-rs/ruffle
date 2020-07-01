@@ -1,8 +1,8 @@
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::object::Object;
-use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, ScriptObject, TObject, Value};
+use crate::avm1::{ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use core::fmt;
 use enumset::{EnumSet, EnumSetType};
@@ -273,11 +273,11 @@ pub struct SystemProperties {
 }
 
 impl SystemProperties {
-    pub fn get_version_string(&self, avm: &Avm1) -> String {
+    pub fn get_version_string(&self, activation: &mut Activation) -> String {
         format!(
             "{} {},0,0,0",
             self.manufacturer.get_platform_name(),
-            avm.player_version
+            activation.avm().player_version
         )
     }
 
@@ -305,7 +305,7 @@ impl SystemProperties {
         percent_encoding::utf8_percent_encode(s, percent_encoding::NON_ALPHANUMERIC).to_string()
     }
 
-    pub fn get_server_string(&self, avm: &Avm1) -> String {
+    pub fn get_server_string(&self, activation: &mut Activation) -> String {
         url::form_urlencoded::Serializer::new(String::new())
             .append_pair("A", self.encode_capability(SystemCapabilities::Audio))
             .append_pair(
@@ -347,7 +347,7 @@ impl SystemProperties {
                 "M",
                 &self.encode_string(
                     self.manufacturer
-                        .get_manufacturer_string(avm.player_version)
+                        .get_manufacturer_string(activation.avm().player_version)
                         .as_str(),
                 ),
             )
@@ -358,7 +358,11 @@ impl SystemProperties {
             .append_pair("COL", &self.screen_color.to_string())
             .append_pair("AR", &self.aspect_ratio.to_string())
             .append_pair("OS", &self.encode_string(&self.os.to_string()))
-            .append_pair("L", self.language.get_language_code(avm.player_version))
+            .append_pair(
+                "L",
+                self.language
+                    .get_language_code(activation.avm().player_version),
+            )
             .append_pair("IME", self.encode_capability(SystemCapabilities::IME))
             .append_pair("PT", &self.player_type.to_string())
             .append_pair(
@@ -399,102 +403,102 @@ impl Default for SystemProperties {
 }
 
 pub fn set_clipboard<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let new_content = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_string(avm, action_context)?
+        .coerce_to_string(activation, action_context)?
         .to_string();
 
     action_context.input.set_clipboard_content(new_content);
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn show_settings<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     //TODO: should default to the last panel displayed
     let last_panel_pos = 0;
 
     let panel_pos = args
         .get(0)
         .unwrap_or(&Value::Number(last_panel_pos as f64))
-        .coerce_to_i32(avm, action_context)?;
+        .coerce_to_i32(activation, action_context)?;
 
     let panel = SettingsPanel::try_from(panel_pos as u8).unwrap_or(SettingsPanel::Privacy);
 
     log::warn!("System.showSettings({:?}) not not implemented", panel);
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn set_use_code_page<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let value = args
         .get(0)
         .unwrap_or(&Value::Undefined)
         .to_owned()
-        .as_bool(avm.current_swf_version());
+        .as_bool(activation.current_swf_version());
 
     action_context.system.use_codepage = value;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn get_use_code_page<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(action_context.system.use_codepage.into())
 }
 
 pub fn set_exact_settings<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let value = args
         .get(0)
         .unwrap_or(&Value::Undefined)
         .to_owned()
-        .as_bool(avm.current_swf_version());
+        .as_bool(activation.current_swf_version());
 
     action_context.system.exact_settings = value;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn get_exact_settings<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(action_context.system.exact_settings.into())
 }
 
 pub fn on_status<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("System.onStatus() not implemented");
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn create<'gc>(

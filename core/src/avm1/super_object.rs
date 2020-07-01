@@ -1,12 +1,12 @@
 //! Special object that implements `super`
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::object::search_prototype;
 use crate::avm1::property::Attribute;
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::script_object::TYPE_OF_OBJECT;
-use crate::avm1::{Avm1, Object, ObjectPtr, ScriptObject, TObject, Value};
+use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use enumset::EnumSet;
@@ -45,7 +45,7 @@ impl<'gc> SuperObject<'gc> {
     pub fn from_this_and_base_proto(
         this: Object<'gc>,
         base_proto: Object<'gc>,
-        _avm: &mut Avm1<'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Self, Error<'gc>> {
         Ok(Self(GcCell::allocate(
@@ -65,14 +65,14 @@ impl<'gc> SuperObject<'gc> {
     /// Retrieve the constructor associated with the super proto.
     fn super_constr(
         self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         if let Some(super_proto) = self.super_proto() {
             Ok(Some(
                 super_proto
-                    .get("__constructor__", avm, context)?
-                    .coerce_to_object(avm, context),
+                    .get("__constructor__", activation, context)?
+                    .coerce_to_object(activation, context),
             ))
         } else {
             Ok(None)
@@ -84,7 +84,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     fn get_local(
         &self,
         _name: &str,
-        _avm: &mut Avm1<'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -95,7 +95,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         &self,
         _name: &str,
         _value: Value<'gc>,
-        _avm: &mut Avm1<'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         //TODO: What happens if you set `super.__proto__`?
@@ -104,14 +104,20 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn call(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
         _base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if let Some(constr) = self.super_constr(avm, context)? {
-            constr.call(avm, context, self.0.read().child, self.super_proto(), args)
+        if let Some(constr) = self.super_constr(activation, context)? {
+            constr.call(
+                activation,
+                context,
+                self.0.read().child,
+                self.super_proto(),
+                args,
+            )
         } else {
             Ok(Value::Undefined)
         }
@@ -121,56 +127,55 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         &self,
         name: &str,
         args: &[Value<'gc>],
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let child = self.0.read().child;
         let super_proto = self.super_proto();
-        let (method, base_proto) = search_prototype(super_proto, name, avm, context, child)?;
-        let method = method.resolve(avm, context)?;
+        let (method, base_proto) = search_prototype(super_proto, name, activation, context, child)?;
+        let method = method;
 
         if let Value::Object(_) = method {
         } else {
             log::warn!("Super method {} is not callable", name);
         }
 
-        method.call(avm, context, child, base_proto, args)
+        method.call(activation, context, child, base_proto, args)
     }
 
     fn call_setter(
         &self,
         name: &str,
         value: Value<'gc>,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
+    ) -> Option<Executable<'gc>> {
         self.0
             .read()
             .child
-            .call_setter(name, value, avm, context, this)
+            .call_setter(name, value, activation, context)
     }
 
     #[allow(clippy::new_ret_no_self)]
     fn new(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         if let Some(proto) = self.proto() {
-            proto.new(avm, context, this, args)
+            proto.new(activation, context, this, args)
         } else {
             // TODO: What happens when you `new super` but there's no
             // super? Is this code even reachable?!
-            self.0.read().child.new(avm, context, this, args)
+            self.0.read().child.new(activation, context, this, args)
         }
     }
 
     fn delete(
         &self,
-        _avm: &mut Avm1<'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         _gc_context: MutationContext<'gc, '_>,
         _name: &str,
     ) -> bool {
@@ -221,7 +226,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn add_property_with_case(
         &self,
-        _avm: &mut Avm1<'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         _gc_context: MutationContext<'gc, '_>,
         _name: &str,
         _get: Executable<'gc>,
@@ -233,40 +238,49 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn has_property(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
-        self.0.read().child.has_property(avm, context, name)
+        self.0.read().child.has_property(activation, context, name)
     }
 
     fn has_own_property(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
-        self.0.read().child.has_own_property(avm, context, name)
+        self.0
+            .read()
+            .child
+            .has_own_property(activation, context, name)
     }
 
     fn has_own_virtual(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
-        self.0.read().child.has_own_virtual(avm, context, name)
+        self.0
+            .read()
+            .child
+            .has_own_virtual(activation, context, name)
     }
 
-    fn is_property_enumerable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
-        self.0.read().child.is_property_enumerable(avm, name)
+    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
+        self.0.read().child.is_property_enumerable(activation, name)
     }
 
-    fn is_property_overwritable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
-        self.0.read().child.is_property_overwritable(avm, name)
+    fn is_property_overwritable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
+        self.0
+            .read()
+            .child
+            .is_property_overwritable(activation, name)
     }
 
-    fn get_keys(&self, _avm: &mut Avm1<'gc>) -> Vec<String> {
+    fn get_keys(&self, _activation: &mut Activation<'_, 'gc>) -> Vec<String> {
         vec![]
     }
 

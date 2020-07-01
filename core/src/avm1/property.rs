@@ -1,10 +1,8 @@
 //! User-defined properties
 
 use self::Attribute::*;
-use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
-use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Object, UpdateContext, Value};
+use crate::avm1::Value;
 use core::fmt;
 use enumset::{EnumSet, EnumSetType};
 
@@ -32,42 +30,18 @@ pub enum Property<'gc> {
 }
 
 impl<'gc> Property<'gc> {
-    /// Get the value of a property slot.
-    ///
-    /// This function yields `ReturnValue` because some properties may be
-    /// user-defined.
-    pub fn get(
-        &self,
-        avm: &mut Avm1<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
-    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-        match self {
-            Property::Virtual { get, .. } => get.exec(avm, context, this, base_proto, &[]),
-            Property::Stored { value, .. } => Ok(value.to_owned().into()),
-        }
-    }
-
     /// Set a property slot.
     ///
-    /// This function returns the `ReturnValue` of the property's virtual
+    /// This function may return an `Executable` of the property's virtual
     /// function, if any happen to exist. It should be resolved, and it's value
     /// discarded.
-    pub fn set(
-        &mut self,
-        avm: &mut Avm1<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
-        new_value: impl Into<Value<'gc>>,
-    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
+    pub fn set(&mut self, new_value: impl Into<Value<'gc>>) -> Option<Executable<'gc>> {
         match self {
             Property::Virtual { set, .. } => {
                 if let Some(function) = set {
-                    function.exec(avm, context, this, base_proto, &[new_value.into()])
+                    Some(function.to_owned())
                 } else {
-                    Ok(Value::Undefined.into())
+                    None
                 }
             }
             Property::Stored {
@@ -77,7 +51,7 @@ impl<'gc> Property<'gc> {
                     *value = new_value.into();
                 }
 
-                Ok(Value::Undefined.into())
+                None
             }
         }
     }

@@ -1,8 +1,8 @@
 //! Represents AVM1 scope chain resolution.
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
 use std::cell::Ref;
@@ -207,6 +207,11 @@ impl<'gc> Scope<'gc> {
         &self.values
     }
 
+    /// Returns a reference to the current local scope object.
+    pub fn locals_cell(&self) -> Object<'gc> {
+        self.values
+    }
+
     /// Returns a reference to the current local scope object for mutation.
     #[allow(dead_code)]
     pub fn locals_mut(&mut self) -> &mut Object<'gc> {
@@ -234,34 +239,34 @@ impl<'gc> Scope<'gc> {
     pub fn resolve(
         &self,
         name: &str,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-        if self.locals().has_property(avm, context, name) {
-            return Ok(self.locals().get(name, avm, context)?.into());
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        if self.locals().has_property(activation, context, name) {
+            return Ok(self.locals().get(name, activation, context)?);
         }
         if let Some(scope) = self.parent() {
-            return scope.resolve(name, avm, context, this);
+            return scope.resolve(name, activation, context, this);
         }
 
         //TODO: Should undefined variables halt execution?
-        Ok(Value::Undefined.into())
+        Ok(Value::Undefined)
     }
 
     /// Check if a particular property in the scope chain is defined.
     pub fn is_defined(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
-        if self.locals().has_property(avm, context, name) {
+        if self.locals().has_property(activation, context, name) {
             return true;
         }
 
         if let Some(scope) = self.parent() {
-            return scope.is_defined(avm, context, name);
+            return scope.is_defined(activation, context, name);
         }
 
         false
@@ -277,26 +282,26 @@ impl<'gc> Scope<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
         if self.class == ScopeClass::Target
-            || (self.locals().has_property(avm, context, name)
-                && self.locals().is_property_overwritable(avm, name))
+            || (self.locals().has_property(activation, context, name)
+                && self.locals().is_property_overwritable(activation, name))
         {
             // Value found on this object, so overwrite it.
             // Or we've hit the executing movie clip, so create it here.
-            self.locals().set(name, value, avm, context)
+            self.locals().set(name, value, activation, context)
         } else if let Some(scope) = self.parent() {
             // Traverse the scope chain in search of the value.
-            scope.set(name, value, avm, context, this)
+            scope.set(name, value, activation, context, this)
         } else {
             // This probably shouldn't happen -- all AVM1 code runs in reference to some movieclip,
             // so we should always have a movieclip scope.
             // Define on the top-level scope.
             debug_assert!(false, "Scope::set: No top-level movie clip scope");
-            self.locals().set(name, value, avm, context)
+            self.locals().set(name, value, activation, context)
         }
     }
 
@@ -314,17 +319,17 @@ impl<'gc> Scope<'gc> {
     /// Delete a value from scope
     pub fn delete(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
         mc: MutationContext<'gc, '_>,
     ) -> bool {
-        if self.locals().has_property(avm, context, name) {
-            return self.locals().delete(avm, mc, name);
+        if self.locals().has_property(activation, context, name) {
+            return self.locals().delete(activation, mc, name);
         }
 
         if let Some(scope) = self.parent() {
-            return scope.delete(avm, context, name, mc);
+            return scope.delete(activation, context, name, mc);
         }
 
         false

@@ -1,11 +1,11 @@
 //! AVM1 object type to represent the attributes of XML nodes
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::object::{ObjectPtr, TObject};
 use crate::avm1::property::Attribute;
-use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Object, ScriptObject, UpdateContext, Value};
+use crate::avm1::{Object, ScriptObject, UpdateContext, Value};
 use crate::xml::{XMLDocument, XMLNode};
 use enumset::EnumSet;
 use gc_arena::{Collect, MutationContext};
@@ -60,16 +60,19 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
     fn get_local(
         &self,
         name: &str,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(mut node) = self.document().get_node_by_id(name) {
             Ok(node
-                .script_object(context.gc_context, Some(avm.prototypes().xml_node))
+                .script_object(
+                    context.gc_context,
+                    Some(activation.avm().prototypes().xml_node),
+                )
                 .into())
         } else {
-            self.base().get_local(name, avm, context, this)
+            self.base().get_local(name, activation, context, this)
         }
     }
 
@@ -77,54 +80,54 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
-        self.base().set(name, value, avm, context)
+        self.base().set(name, value, activation, context)
     }
 
     fn call(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.base().call(avm, context, this, base_proto, args)
+        self.base()
+            .call(activation, context, this, base_proto, args)
     }
 
     fn call_setter(
         &self,
         name: &str,
         value: Value<'gc>,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
-    ) -> Result<ReturnValue<'gc>, Error<'gc>> {
-        self.base().call_setter(name, value, avm, context, this)
+    ) -> Option<Executable<'gc>> {
+        self.base().call_setter(name, value, activation, context)
     }
 
     #[allow(clippy::new_ret_no_self)]
     fn new(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         //TODO: `new xmlnode.attributes()` returns undefined, not an object
         log::warn!("Cannot create new XML Attributes object");
-        Ok(Value::Undefined.coerce_to_object(avm, context))
+        Ok(Value::Undefined.coerce_to_object(activation, context))
     }
 
     fn delete(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
     ) -> bool {
-        self.base().delete(avm, gc_context, name)
+        self.base().delete(activation, gc_context, name)
     }
 
     fn add_property(
@@ -141,7 +144,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
 
     fn add_property_with_case(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
         get: Executable<'gc>,
@@ -149,7 +152,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         attributes: EnumSet<Attribute>,
     ) {
         self.base()
-            .add_property_with_case(avm, gc_context, name, get, set, attributes)
+            .add_property_with_case(activation, gc_context, name, get, set, attributes)
     }
 
     fn define_value(
@@ -184,42 +187,42 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
 
     fn has_property(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
-        self.base().has_property(avm, context, name)
+        self.base().has_property(activation, context, name)
     }
 
     fn has_own_property(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
         self.document().get_node_by_id(name).is_some()
-            || self.base().has_own_property(avm, context, name)
+            || self.base().has_own_property(activation, context, name)
     }
 
     fn has_own_virtual(
         &self,
-        avm: &mut Avm1<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
     ) -> bool {
-        self.base().has_own_virtual(avm, context, name)
+        self.base().has_own_virtual(activation, context, name)
     }
 
-    fn is_property_overwritable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
-        self.base().is_property_overwritable(avm, name)
+    fn is_property_overwritable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
+        self.base().is_property_overwritable(activation, name)
     }
 
-    fn is_property_enumerable(&self, avm: &mut Avm1<'gc>, name: &str) -> bool {
-        self.base().is_property_enumerable(avm, name)
+    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
+        self.base().is_property_enumerable(activation, name)
     }
 
-    fn get_keys(&self, avm: &mut Avm1<'gc>) -> Vec<String> {
-        let mut keys = self.base().get_keys(avm);
+    fn get_keys(&self, activation: &mut Activation<'_, 'gc>) -> Vec<String> {
+        let mut keys = self.base().get_keys(activation);
         keys.extend(self.document().get_node_ids().into_iter());
         keys
     }

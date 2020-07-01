@@ -1,8 +1,9 @@
+use crate::avm1::activation::Activation;
 use crate::avm1::debug::VariableDumper;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::listeners::SystemListener;
 use crate::avm1::object::Object;
-use crate::avm1::{Activation, Avm1, TObject, Value};
+use crate::avm1::{Avm1, TObject, Value};
 use crate::backend::input::{InputBackend, MouseCursor};
 use crate::backend::storage::StorageBackend;
 use crate::backend::{
@@ -271,11 +272,18 @@ impl Player {
             root.set_name(context.gc_context, "");
             context.levels.insert(0, root);
 
-            let object = root.object().coerce_to_object(avm, context);
+            let mut activation = Activation::from_nothing(
+                avm,
+                context.swf.version(),
+                avm.global_object_cell(),
+                context.gc_context,
+                *context.levels.get(&0).unwrap(),
+            );
+            let object = root.object().coerce_to_object(&mut activation, context);
             object.define_value(
                 context.gc_context,
                 "$version",
-                context.system.get_version_string(avm).into(),
+                context.system.get_version_string(&mut activation).into(),
                 EnumSet::empty(),
             );
         });
@@ -379,21 +387,32 @@ impl Player {
             if self.input.is_key_down(KeyCode::Control) && self.input.is_key_down(KeyCode::Alt) {
                 self.mutate_with_update_context(|avm, context| {
                     let mut dumper = VariableDumper::new("  ");
+
+                    let mut activation = Activation::from_nothing(
+                        avm,
+                        context.swf.version(),
+                        avm.global_object_cell(),
+                        context.gc_context,
+                        *context.levels.get(&0).unwrap(),
+                    );
+
                     dumper.print_variables(
                         "Global Variables:",
                         "_global",
-                        &avm.global_object_cell(),
-                        avm,
+                        &activation.avm().global_object_cell(),
+                        &mut activation,
                         context,
                     );
                     let levels = context.levels.clone();
                     for (level, display_object) in levels {
-                        let object = display_object.object().coerce_to_object(avm, context);
+                        let object = display_object
+                            .object()
+                            .coerce_to_object(&mut activation, context);
                         dumper.print_variables(
                             &format!("Level #{}:", level),
                             &format!("_level{}", level),
                             &object,
-                            avm,
+                            &mut activation,
                             context,
                         );
                     }
@@ -521,7 +540,7 @@ impl Player {
     /// Update dragged object, if any.
     fn update_drag(&mut self) {
         let mouse_pos = self.mouse_pos;
-        self.mutate_with_update_context(|_avm, context| {
+        self.mutate_with_update_context(|_activation, context| {
             if let Some(drag_object) = &mut context.drag_object {
                 if drag_object.display_object.removed() {
                     // Be sure to clear the drag if the object was removed.
@@ -608,12 +627,12 @@ impl Player {
     /// This should only be called once. Further movie loads should preload the
     /// specific `MovieClip` referenced.
     fn preload(&mut self) {
-        self.mutate_with_update_context(|avm, context| {
+        self.mutate_with_update_context(|activation, context| {
             let mut morph_shapes = fnv::FnvHashMap::default();
             let root = *context.levels.get(&0).expect("root level");
             root.as_movie_clip()
                 .unwrap()
-                .preload(avm, context, &mut morph_shapes);
+                .preload(activation, context, &mut morph_shapes);
 
             // Finalize morph shapes.
             for (id, static_data) in morph_shapes {
@@ -719,7 +738,7 @@ impl Player {
             match actions.action_type {
                 // DoAction/clip event code
                 ActionType::Normal { bytecode } => {
-                    avm.insert_stack_frame_for_action(
+                    avm.run_stack_frame_for_action(
                         actions.clip,
                         context.swf.header().version,
                         bytecode,
@@ -731,41 +750,29 @@ impl Player {
                     constructor: Some(constructor),
                     events,
                 } => {
-                    avm.insert_stack_frame(GcCell::allocate(
+                    let mut activation = Activation::from_nothing(
+                        avm,
+                        context.swf.version(),
+                        avm.global_object_cell(),
                         context.gc_context,
-                        Activation::from_nothing(
-                            context.swf.header().version,
-                            avm.global_object_cell(),
-                            context.gc_context,
-                            actions.clip,
-                        ),
-                    ));
+                        *context.levels.get(&0).unwrap(),
+                    );
                     if let Ok(prototype) = constructor
-                        .get("prototype", avm, context)
-                        .map(|v| v.coerce_to_object(avm, context))
+                        .get("prototype", &mut activation, context)
+                        .map(|v| v.coerce_to_object(&mut activation, context))
                     {
                         if let Value::Object(object) = actions.clip.object() {
                             object.set_proto(context.gc_context, Some(prototype));
                             for event in events {
-                                avm.insert_stack_frame_for_action(
+                                let _ = activation.run_child_frame_for_action(
                                     actions.clip,
                                     context.swf.header().version,
                                     event,
                                     context,
                                 );
                             }
-                            let _ = avm.run_stack_till_empty(context);
 
-                            avm.insert_stack_frame(GcCell::allocate(
-                                context.gc_context,
-                                Activation::from_nothing(
-                                    context.swf.header().version,
-                                    avm.global_object_cell(),
-                                    context.gc_context,
-                                    actions.clip,
-                                ),
-                            ));
-                            let _ = constructor.call(avm, context, object, None, &[]);
+                            let _ = constructor.call(&mut activation, context, object, None, &[]);
                         }
                     }
                 }
@@ -775,7 +782,7 @@ impl Player {
                     events,
                 } => {
                     for event in events {
-                        avm.insert_stack_frame_for_action(
+                        avm.run_stack_frame_for_action(
                             actions.clip,
                             context.swf.header().version,
                             event,
@@ -785,7 +792,7 @@ impl Player {
                 }
                 // Event handler method call (e.g. onEnterFrame)
                 ActionType::Method { object, name, args } => {
-                    avm.insert_stack_frame_for_method(
+                    avm.run_stack_frame_for_method(
                         actions.clip,
                         object,
                         context.swf.header().version,
@@ -813,8 +820,6 @@ impl Player {
                     );
                 }
             }
-            // Execute the stack frame (if any).
-            let _ = avm.run_stack_till_empty(context);
         }
     }
 
@@ -997,10 +1002,18 @@ impl Player {
     }
 
     pub fn flush_shared_objects(&mut self) {
-        self.update(|avm, update_context| {
-            let shared_objects = update_context.shared_objects.clone();
+        self.update(|avm, context| {
+            let mut activation = Activation::from_nothing(
+                avm,
+                context.swf.version(),
+                avm.global_object_cell(),
+                context.gc_context,
+                *context.levels.get(&0).unwrap(),
+            );
+            let shared_objects = context.shared_objects.clone();
             for so in shared_objects.values() {
-                let _ = crate::avm1::globals::shared_object::flush(avm, update_context, *so, &[]);
+                let _ =
+                    crate::avm1::globals::shared_object::flush(&mut activation, context, *so, &[]);
             }
         });
     }

@@ -13,7 +13,7 @@ use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
-use gc_arena::{rootless_arena, GcCell, MutationContext};
+use gc_arena::{rootless_arena, MutationContext};
 use rand::{rngs::SmallRng, SeedableRng};
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
@@ -21,22 +21,22 @@ use std::sync::Arc;
 pub fn with_avm<F>(swf_version: u8, test: F)
 where
     F: for<'a, 'gc> FnOnce(
-        &mut Avm1<'gc>,
+        &mut Activation<'_, 'gc>,
         &mut UpdateContext<'a, 'gc, '_>,
         Object<'gc>,
     ) -> Result<(), Error<'gc>>,
 {
-    fn in_the_arena<'gc, F>(swf_version: u8, test: F, gc_context: MutationContext<'gc, '_>)
+    fn in_the_arena<'a, 'gc: 'a, F>(swf_version: u8, test: F, gc_context: MutationContext<'gc, '_>)
     where
-        F: for<'a> FnOnce(
-            &mut Avm1<'gc>,
-            &mut UpdateContext<'a, 'gc, '_>,
+        F: FnOnce(
+            &mut Activation<'_, 'gc>,
+            &mut UpdateContext<'_, 'gc, '_>,
             Object<'gc>,
         ) -> Result<(), Error<'gc>>,
     {
         let mut avm = Avm1::new(gc_context, swf_version);
         let swf = Arc::new(SwfMovie::empty(swf_version));
-        let mut root: DisplayObject<'_> =
+        let mut root: DisplayObject<'gc> =
             MovieClip::new(SwfSlice::empty(swf.clone()), gc_context).into();
         root.set_depth(gc_context, 0);
         let mut levels = BTreeMap::new();
@@ -77,17 +77,35 @@ where
         root.post_instantiation(&mut avm, &mut context, root, None, false);
         root.set_name(context.gc_context, "");
 
-        let globals = avm.global_object_cell();
-        avm.insert_stack_frame(GcCell::allocate(
-            gc_context,
-            Activation::from_nothing(swf_version, globals, gc_context, root),
-        ));
-
-        let this = root.object().coerce_to_object(&mut avm, &mut context);
-
-        if let Err(e) = test(&mut avm, &mut context, this) {
-            panic!("Encountered exception during test: {}", e);
+        fn run_test<'a, 'gc: 'a, F>(
+            activation: &mut Activation<'_, 'gc>,
+            context: &mut UpdateContext<'_, 'gc, '_>,
+            root: DisplayObject<'gc>,
+            test: F,
+        ) where
+            F: FnOnce(
+                &mut Activation<'_, 'gc>,
+                &mut UpdateContext<'_, 'gc, '_>,
+                Object<'gc>,
+            ) -> Result<(), Error<'gc>>,
+        {
+            let this = root.object().coerce_to_object(activation, context);
+            let result = test(activation, context, this);
+            if let Err(e) = result {
+                panic!("Encountered exception during test: {}", e);
+            }
         }
+
+        let globals = avm.global_object_cell();
+        let mut activation = Activation::from_nothing(
+            &mut avm,
+            context.swf.version(),
+            globals,
+            context.gc_context,
+            *context.levels.get(&0).unwrap(),
+        );
+
+        run_test(&mut activation, &mut context, root, test)
     }
 
     rootless_arena(|gc_context| in_the_arena(swf_version, test, gc_context))
@@ -100,9 +118,9 @@ macro_rules! test_method {
             use $crate::avm1::test_utils::*;
             $(
                 for version in &$versions {
-                    with_avm(*version, |avm, context, _root| -> Result<(), Error> {
-                        let object = $object(avm, context);
-                        let function = object.get($name, avm, context)?;
+                    with_avm(*version, |activation, context, _root| -> Result<(), Error> {
+                        let object = $object(activation, context);
+                        let function = object.get($name, activation, context)?;
 
                         $(
                             #[allow(unused_mut)]
@@ -110,7 +128,7 @@ macro_rules! test_method {
                             $(
                                 args.push($arg.into());
                             )*
-                            assert_eq!(function.call(avm, context, object, None, &args)?, $out.into(), "{:?} => {:?} in swf {}", args, $out, version);
+                            assert_eq!(function.call(activation, context, object, None, &args)?, $out.into(), "{:?} => {:?} in swf {}", args, $out, version);
                         )*
 
                         Ok(())

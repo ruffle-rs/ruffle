@@ -1,12 +1,11 @@
 //! Stage object
 //!
 //! TODO: This is a very rough stub with not much implementation.
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute;
-use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Object, ScriptObject, TObject, UpdateContext, Value};
-
+use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use gc_arena::MutationContext;
 
 pub fn create_stage_object<'gc>(
@@ -77,99 +76,99 @@ pub fn create_stage_object<'gc>(
 }
 
 fn add_listener<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Stage.addListener: unimplemented");
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn align<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Stage.align: unimplemented");
     Ok("".into())
 }
 
 fn set_align<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Stage.align: unimplemented");
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn height<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(context.stage_size.1.to_pixels().into())
 }
 
 fn remove_listener<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Stage.removeListener: unimplemented");
     Ok("".into())
 }
 
 fn scale_mode<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Stage.scaleMode: unimplemented");
     Ok("noScale".into())
 }
 
 fn set_scale_mode<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Stage.scaleMode: unimplemented");
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn show_menu<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Stage.showMenu: unimplemented");
     Ok(true.into())
 }
 
 fn set_show_menu<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Stage.showMenu: unimplemented");
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn width<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(context.stage_size.0.to_pixels().into())
 }

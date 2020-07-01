@@ -1,9 +1,9 @@
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::fscommand;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::listeners::SystemListeners;
-use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::backend::navigator::NavigationMethod;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
@@ -40,21 +40,21 @@ mod xml;
 
 #[allow(non_snake_case, unused_must_use)] //can't use errors yet
 pub fn getURL<'a, 'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'a, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     //TODO: Error behavior if no arguments are present
     if let Some(url_val) = args.get(0) {
-        let url = url_val.coerce_to_string(avm, context)?;
+        let url = url_val.coerce_to_string(activation, context)?;
         if let Some(fscommand) = fscommand::parse(&url) {
-            fscommand::handle(fscommand, avm, context);
-            return Ok(Value::Undefined.into());
+            fscommand::handle(fscommand, activation, context);
+            return Ok(Value::Undefined);
         }
 
         let window = if let Some(window) = args.get(1) {
-            Some(window.coerce_to_string(avm, context)?.to_string())
+            Some(window.coerce_to_string(activation, context)?.to_string())
         } else {
             None
         };
@@ -63,64 +63,67 @@ pub fn getURL<'a, 'gc>(
             Some(Value::String(s)) if s == "POST" => Some(NavigationMethod::POST),
             _ => None,
         };
-        let vars_method = method.map(|m| (m, avm.locals_into_form_values(context)));
+        let vars_method = method.map(|m| (m, activation.locals_into_form_values(context)));
 
         context
             .navigator
             .navigate_to_url(url.to_string(), window, vars_method);
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn random<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     match args.get(0) {
         Some(Value::Number(max)) => Ok(action_context.rng.gen_range(0.0f64, max).floor().into()),
-        _ => Ok(Value::Undefined.into()), //TODO: Shouldn't this be an error condition?
+        _ => Ok(Value::Undefined), //TODO: Shouldn't this be an error condition?
     }
 }
 
 pub fn is_nan<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut Activation<'_, 'gc>,
     action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(val) = args.get(0) {
-        Ok(val.coerce_to_f64(avm, action_context)?.is_nan().into())
+        Ok(val
+            .coerce_to_f64(activation, action_context)?
+            .is_nan()
+            .into())
     } else {
         Ok(true.into())
     }
 }
 
 pub fn get_infinity<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    if avm.current_swf_version() > 4 {
+) -> Result<Value<'gc>, Error<'gc>> {
+    if activation.current_swf_version() > 4 {
         Ok(f64::INFINITY.into())
     } else {
-        Ok(Value::Undefined.into())
+        Ok(Value::Undefined)
     }
 }
 
 pub fn get_nan<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    if avm.current_swf_version() > 4 {
+) -> Result<Value<'gc>, Error<'gc>> {
+    if activation.current_swf_version() > 4 {
         Ok(f64::NAN.into())
     } else {
-        Ok(Value::Undefined.into())
+        Ok(Value::Undefined)
     }
 }
 
@@ -473,7 +476,10 @@ pub fn create_globals<'gc>(
 mod tests {
     use super::*;
 
-    fn setup<'gc>(_avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) -> Object<'gc> {
+    fn setup<'gc>(
+        _activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Object<'gc> {
         create_globals(context.gc_context).1
     }
 

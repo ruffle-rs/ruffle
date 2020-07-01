@@ -2,6 +2,7 @@
 use crate::avm1::{Avm1, Object, StageObject, TObject, Value};
 use crate::backend::audio::AudioStreamHandle;
 
+use crate::avm1::activation::Activation;
 use crate::character::Character;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{
@@ -373,14 +374,12 @@ impl<'gc> MovieClip<'gc> {
                 )
             })?;
 
-        avm.insert_stack_frame_for_init_action(
+        avm.run_stack_frame_for_init_action(
             *context.levels.get(&0).unwrap(),
             context.swf.header().version,
             slice,
             context,
         );
-        let frame = avm.current_stack_frame().unwrap();
-        let _ = avm.run_current_frame(context, frame);
 
         Ok(())
     }
@@ -976,10 +975,18 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     return Some(self_node);
                 }
 
-                let object = self.object().coerce_to_object(avm, context);
+                let mut activation = Activation::from_nothing(
+                    avm,
+                    context.swf.version(),
+                    avm.global_object_cell(),
+                    context.gc_context,
+                    *context.levels.get(&0).unwrap(),
+                );
+                let object = self.object().coerce_to_object(&mut activation, context);
+
                 if ClipEvent::BUTTON_EVENT_METHODS
                     .iter()
-                    .any(|handler| object.has_property(avm, context, handler))
+                    .any(|handler| object.has_property(&mut activation, context, handler))
                 {
                     return Some(self_node);
                 }
@@ -1033,11 +1040,18 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             // If we are running within the AVM, this must be an immediate action.
             // If we are not, then this must be queued to be ran first-thing
             if instantiated_from_avm && self.0.read().avm1_constructor.is_some() {
-                let constructor = self.0.read().avm1_constructor.unwrap();
+                let mut activation = Activation::from_nothing(
+                    avm,
+                    context.swf.version(),
+                    avm.global_object_cell(),
+                    context.gc_context,
+                    *context.levels.get(&0).unwrap(),
+                );
 
+                let constructor = self.0.read().avm1_constructor.unwrap();
                 if let Ok(prototype) = constructor
-                    .get("prototype", avm, context)
-                    .map(|v| v.coerce_to_object(avm, context))
+                    .get("prototype", &mut activation, context)
+                    .map(|v| v.coerce_to_object(&mut activation, context))
                 {
                     let object: Object<'gc> = StageObject::for_display_object(
                         context.gc_context,
@@ -1046,16 +1060,17 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     )
                     .into();
                     if let Some(init_object) = init_object {
-                        for key in init_object.get_keys(avm) {
-                            if let Ok(value) = init_object.get(&key, avm, context) {
-                                let _ = object.set(&key, value, avm, context);
+                        for key in init_object.get_keys(&mut activation) {
+                            if let Ok(value) = init_object.get(&key, &mut activation, context) {
+                                let _ = object.set(&key, value, &mut activation, context);
                             }
                         }
                     }
                     self.0.write(context.gc_context).object = Some(object);
-                    let _ = constructor.call(avm, context, object, None, &[]);
-                    return;
+                    let _ = constructor.call(&mut activation, context, object, None, &[]);
                 }
+
+                return;
             }
 
             let object = StageObject::for_display_object(
@@ -1064,9 +1079,17 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 Some(context.system_prototypes.movie_clip),
             );
             if let Some(init_object) = init_object {
-                for key in init_object.get_keys(avm) {
-                    if let Ok(value) = init_object.get(&key, avm, context) {
-                        let _ = object.set(&key, value, avm, context);
+                let mut activation = Activation::from_nothing(
+                    avm,
+                    context.swf.version(),
+                    avm.global_object_cell(),
+                    context.gc_context,
+                    *context.levels.get(&0).unwrap(),
+                );
+
+                for key in init_object.get_keys(&mut activation) {
+                    if let Ok(value) = init_object.get(&key, &mut activation, context) {
+                        let _ = object.set(&key, value, &mut activation, context);
                     }
                 }
             }
@@ -1093,7 +1116,15 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             );
         }
 
-        self.bind_text_field_variables(avm, context);
+        // If this text field has a variable set, initialize text field binding.
+        avm.run_with_stack_frame_for_display_object(
+            (*self).into(),
+            context.swf.version(),
+            context,
+            |activation, context| {
+                self.bind_text_field_variables(activation, context);
+            },
+        );
     }
 
     fn object(&self) -> Value<'gc> {

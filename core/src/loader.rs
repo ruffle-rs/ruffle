@@ -1,5 +1,6 @@
 //! Management of async loaders
 
+use crate::avm1::activation::Activation;
 use crate::avm1::{Object, TObject, Value};
 use crate::backend::navigator::OwnedFuture;
 use crate::context::{ActionQueue, ActionType};
@@ -314,7 +315,7 @@ impl<'gc> Loader<'gc> {
                         .replace_with_movie(uc.gc_context, None);
 
                     if let Some(broadcaster) = broadcaster {
-                        avm.insert_stack_frame_for_method(
+                        avm.run_stack_frame_for_method(
                             clip,
                             broadcaster,
                             NEWEST_PLAYER_VERSION,
@@ -322,7 +323,6 @@ impl<'gc> Loader<'gc> {
                             "broadcastMessage",
                             &["onLoadStart".into(), Value::Object(broadcaster)],
                         );
-                        avm.run_stack_till_empty(uc)?;
                     }
 
                     Ok(())
@@ -348,7 +348,7 @@ impl<'gc> Loader<'gc> {
                         };
 
                         if let Some(broadcaster) = broadcaster {
-                            avm.insert_stack_frame_for_method(
+                            avm.run_stack_frame_for_method(
                                 clip,
                                 broadcaster,
                                 NEWEST_PLAYER_VERSION,
@@ -361,7 +361,6 @@ impl<'gc> Loader<'gc> {
                                     length.into(),
                                 ],
                             );
-                            avm.run_stack_till_empty(uc)?;
                         }
 
                         let mut mc = clip
@@ -386,7 +385,7 @@ impl<'gc> Loader<'gc> {
                         }
 
                         if let Some(broadcaster) = broadcaster {
-                            avm.insert_stack_frame_for_method(
+                            avm.run_stack_frame_for_method(
                                 clip,
                                 broadcaster,
                                 NEWEST_PLAYER_VERSION,
@@ -394,7 +393,6 @@ impl<'gc> Loader<'gc> {
                                 "broadcastMessage",
                                 &["onLoadComplete".into(), Value::Object(broadcaster)],
                             );
-                            avm.run_stack_till_empty(uc)?;
                         }
 
                         if let Some(Loader::Movie { load_complete, .. }) =
@@ -424,7 +422,7 @@ impl<'gc> Loader<'gc> {
                         };
 
                         if let Some(broadcaster) = broadcaster {
-                            avm.insert_stack_frame_for_method(
+                            avm.run_stack_frame_for_method(
                                 clip,
                                 broadcaster,
                                 NEWEST_PLAYER_VERSION,
@@ -436,7 +434,6 @@ impl<'gc> Loader<'gc> {
                                     "LoadNeverCompleted".into(),
                                 ],
                             );
-                            avm.run_stack_till_empty(uc)?;
                         }
 
                         if let Some(Loader::Movie { load_complete, .. }) =
@@ -477,8 +474,15 @@ impl<'gc> Loader<'gc> {
                     _ => return Err(Error::NotMovieLoader),
                 };
 
+                let mut activation = Activation::from_nothing(
+                    avm,
+                    uc.swf.version(),
+                    avm.global_object_cell(),
+                    uc.gc_context,
+                    *uc.levels.get(&0).unwrap(),
+                );
                 for (k, v) in form_urlencoded::parse(&data) {
-                    that.set(&k, v.into_owned().into(), avm, uc)?;
+                    that.set(&k, v.into_owned().into(), &mut activation, uc)?;
                 }
 
                 Ok(())
@@ -562,7 +566,7 @@ impl<'gc> Loader<'gc> {
 
                         let object =
                             node.script_object(uc.gc_context, Some(avm.prototypes().xml_node));
-                        avm.insert_stack_frame_for_method(
+                        avm.run_stack_frame_for_method(
                             active_clip,
                             object,
                             NEWEST_PLAYER_VERSION,
@@ -570,9 +574,8 @@ impl<'gc> Loader<'gc> {
                             "onHTTPStatus",
                             &[200.into()],
                         );
-                        avm.run_stack_till_empty(uc)?;
 
-                        avm.insert_stack_frame_for_method(
+                        avm.run_stack_frame_for_method(
                             active_clip,
                             object,
                             NEWEST_PLAYER_VERSION,
@@ -580,7 +583,6 @@ impl<'gc> Loader<'gc> {
                             "onData",
                             &[xmlstring.into()],
                         );
-                        avm.run_stack_till_empty(uc)?;
 
                         Ok(())
                     },
@@ -600,7 +602,7 @@ impl<'gc> Loader<'gc> {
 
                         let object =
                             node.script_object(uc.gc_context, Some(avm.prototypes().xml_node));
-                        avm.insert_stack_frame_for_method(
+                        avm.run_stack_frame_for_method(
                             active_clip,
                             object,
                             NEWEST_PLAYER_VERSION,
@@ -608,9 +610,8 @@ impl<'gc> Loader<'gc> {
                             "onHTTPStatus",
                             &[404.into()],
                         );
-                        avm.run_stack_till_empty(uc)?;
 
-                        avm.insert_stack_frame_for_method(
+                        avm.run_stack_frame_for_method(
                             active_clip,
                             object,
                             NEWEST_PLAYER_VERSION,
@@ -618,7 +619,6 @@ impl<'gc> Loader<'gc> {
                             "onData",
                             &[],
                         );
-                        avm.run_stack_till_empty(uc)?;
 
                         Ok(())
                     },

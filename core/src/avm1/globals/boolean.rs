@@ -1,23 +1,23 @@
 //! `Boolean` class impl
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::return_value::ReturnValue;
 use crate::avm1::value_object::ValueObject;
-use crate::avm1::{Avm1, Object, TObject, Value};
+use crate::avm1::{Object, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 /// `Boolean` constructor/function
 pub fn boolean<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let (ret_value, cons_value) = if let Some(val) = args.get(0) {
-        let b = Value::Bool(val.as_bool(avm.current_swf_version()));
+        let b = Value::Bool(val.as_bool(activation.current_swf_version()));
         (b.clone(), b)
     } else {
         (Value::Undefined, Value::Bool(false))
@@ -30,7 +30,7 @@ pub fn boolean<'gc>(
 
     // If called as a function, return the value.
     // Boolean() with no argument returns undefined.
-    Ok(ret_value.into())
+    Ok(ret_value)
 }
 
 pub fn create_boolean_object<'gc>(
@@ -74,11 +74,11 @@ pub fn create_proto<'gc>(
 }
 
 pub fn to_string<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(vbox) = this.as_value_object() {
         // Must be a bool.
         // Boolean.prototype.toString.call(x) returns undefined for non-bools.
@@ -87,15 +87,15 @@ pub fn to_string<'gc>(
         }
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn value_of<'gc>(
-    _avm: &mut Avm1<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(vbox) = this.as_value_object() {
         // Must be a bool.
         // Boolean.prototype.valueOf.call(x) returns undefined for non-bools.
@@ -104,5 +104,5 @@ pub fn value_of<'gc>(
         }
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
