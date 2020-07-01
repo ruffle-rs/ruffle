@@ -1,0 +1,16 @@
+// var outer_variable = "test";
+
+// try {
+// trace(outer_variable);
+test
+// var try_variable = "set from try block";
+// } finally {
+// trace(outer_variable);
+test
+// var finally_variable = "set from finally block";
+}
+// try_variable
+set from try block
+// finally_variable
+set from finally block
+// eof
