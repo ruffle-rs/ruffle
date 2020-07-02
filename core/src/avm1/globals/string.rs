@@ -404,7 +404,7 @@ fn split<'gc>(
         None | Some(Value::Undefined) => std::usize::MAX,
         Some(n) => std::cmp::max(0, n.coerce_to_i32(activation, context)?) as usize,
     };
-    let array = ScriptObject::array(context.gc_context, Some(activation.avm().prototypes.array));
+    let array = ScriptObject::array(context.gc_context, Some(activation.avm.prototypes.array));
     if !delimiter.is_empty() {
         for (i, token) in this.split(delimiter.as_ref()).take(limit).enumerate() {
             array.set_array_element(i, token.to_string().into(), context.gc_context);

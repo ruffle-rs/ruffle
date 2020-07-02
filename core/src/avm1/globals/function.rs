@@ -25,7 +25,7 @@ pub fn call<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = match myargs.get(0) {
         Some(Value::Object(this)) => *this,
-        _ => activation.avm().globals,
+        _ => activation.avm.globals,
     };
     let empty = [];
     let args = match myargs.len() {
@@ -49,7 +49,7 @@ pub fn apply<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = match myargs.get(0) {
         Some(Value::Object(this)) => *this,
-        _ => activation.avm().globals,
+        _ => activation.avm.globals,
     };
     let mut child_args = Vec::new();
     let args_object = myargs.get(1).cloned().unwrap_or(Value::Undefined);

@@ -117,8 +117,7 @@ fn get_transform<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(target) = target(activation, context, this)? {
         let color_transform = target.color_transform();
-        let out =
-            ScriptObject::object(context.gc_context, Some(activation.avm().prototypes.object));
+        let out = ScriptObject::object(context.gc_context, Some(activation.avm.prototypes.object));
         out.set(
             "ra",
             (color_transform.r_mult * 100.0).into(),

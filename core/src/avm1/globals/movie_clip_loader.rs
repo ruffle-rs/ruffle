@@ -17,10 +17,8 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let listeners = ScriptObject::array(
-        context.gc_context,
-        Some(activation.avm().prototypes().array),
-    );
+    let listeners =
+        ScriptObject::array(context.gc_context, Some(activation.avm.prototypes().array));
     this.define_value(
         context.gc_context,
         "_listeners",

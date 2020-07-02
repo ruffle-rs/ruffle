@@ -162,9 +162,9 @@ impl<'gc> Avm1<'gc> {
                 clip_obj,
             ),
         );
-        let constant_pool = parent_activation.avm().constant_pool;
+        let constant_pool = parent_activation.avm.constant_pool;
         let mut child_activation = Activation::from_action(
-            parent_activation.avm(),
+            parent_activation.avm,
             swf_version,
             child_scope,
             constant_pool,
@@ -248,10 +248,10 @@ impl<'gc> Avm1<'gc> {
                 clip_obj,
             ),
         );
-        parent_activation.avm().push(Value::Undefined);
-        let constant_pool = parent_activation.avm().constant_pool;
+        parent_activation.avm.push(Value::Undefined);
+        let constant_pool = parent_activation.avm.constant_pool;
         let mut child_activation = Activation::from_action(
-            parent_activation.avm(),
+            parent_activation.avm,
             swf_version,
             child_scope,
             constant_pool,
@@ -315,7 +315,7 @@ impl<'gc> Avm1<'gc> {
             active_clip,
         );
 
-        let listeners = activation.avm().system_listeners.get(listener);
+        let listeners = activation.avm.system_listeners.get(listener);
         let mut handlers = listeners.prepare_handlers(&mut activation, context, method);
 
         for (listener, handler) in handlers.drain(..) {

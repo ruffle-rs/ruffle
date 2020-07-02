@@ -399,7 +399,7 @@ impl Player {
                     dumper.print_variables(
                         "Global Variables:",
                         "_global",
-                        &activation.avm().global_object_cell(),
+                        &activation.avm.global_object_cell(),
                         &mut activation,
                         context,
                     );

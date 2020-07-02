@@ -131,7 +131,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let obj = self.0.read();
-        let props = activation.avm().display_properties;
+        let props = activation.avm.display_properties;
         let case_sensitive = activation.is_case_sensitive();
         // Property search order for DisplayObjects:
         if self.has_own_property(activation, context, name) {
@@ -178,7 +178,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         let obj = self.0.read();
-        let props = activation.avm().display_properties;
+        let props = activation.avm.display_properties;
 
         // Check if a text field is bound to this property and update the text if so.
         for binding in obj

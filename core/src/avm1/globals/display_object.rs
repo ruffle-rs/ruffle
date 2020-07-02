@@ -55,7 +55,7 @@ pub fn define_display_object_proto<'gc>(
         gc_context,
         "_global",
         Executable::Native(|activation, context, _this, _args| {
-            Ok(activation.avm().global_object(context))
+            Ok(activation.avm.global_object(context))
         }),
         Some(Executable::Native(overwrite_global)),
         DontDelete | ReadOnly | DontEnum,

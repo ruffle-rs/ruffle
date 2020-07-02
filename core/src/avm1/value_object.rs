@@ -48,9 +48,9 @@ impl<'gc> ValueObject<'gc> {
             ob
         } else {
             let proto = match &value {
-                Value::Bool(_) => Some(activation.avm().prototypes.boolean),
-                Value::Number(_) => Some(activation.avm().prototypes.number),
-                Value::String(_) => Some(activation.avm().prototypes.string),
+                Value::Bool(_) => Some(activation.avm.prototypes.boolean),
+                Value::Number(_) => Some(activation.avm.prototypes.number),
+                Value::String(_) => Some(activation.avm.prototypes.string),
                 _ => None,
             };
 

@@ -355,10 +355,8 @@ impl TextFormat {
         activation: &mut Activation<'_, 'gc>,
         uc: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Object<'gc>, crate::avm1::error::Error<'gc>> {
-        let object = ScriptObject::object(
-            uc.gc_context,
-            Some(activation.avm().prototypes().text_format),
-        );
+        let object =
+            ScriptObject::object(uc.gc_context, Some(activation.avm.prototypes().text_format));
 
         object.set(
             "font",
@@ -478,7 +476,7 @@ impl TextFormat {
 
         if let Some(ts) = &self.tab_stops {
             let tab_stops =
-                ScriptObject::array(uc.gc_context, Some(activation.avm().prototypes().array));
+                ScriptObject::array(uc.gc_context, Some(activation.avm.prototypes().array));
 
             tab_stops.set_length(uc.gc_context, ts.len());
 

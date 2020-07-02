@@ -236,7 +236,7 @@ impl<'gc> Executable<'gc> {
                     Scope::new_local_scope(af.scope(), ac.gc_context),
                 );
                 let arguments =
-                    ScriptObject::object(ac.gc_context, Some(activation.avm().prototypes().object));
+                    ScriptObject::object(ac.gc_context, Some(activation.avm.prototypes().object));
                 if !af.suppress_arguments {
                     for i in 0..args.len() {
                         arguments.define_value(
@@ -279,7 +279,7 @@ impl<'gc> Executable<'gc> {
                 };
 
                 let mut frame = Activation::from_action(
-                    activation.avm(),
+                    activation.avm,
                     effective_ver,
                     child_scope,
                     af.constant_pool,
@@ -337,7 +337,7 @@ impl<'gc> Executable<'gc> {
                 }
 
                 if af.preload_global {
-                    let global = frame.avm().global_object(ac);
+                    let global = frame.avm.global_object(ac);
                     frame.set_local_register(preload_r, global, ac.gc_context);
                 }
 
