@@ -1,53 +1,55 @@
 //! ColorTransform object
 
-use crate::avm1::color_transform_object::ColorTransformObject;
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::return_value::ReturnValue;
-use crate::avm1::{Avm1, Object, ScriptObject, TObject, UpdateContext, Value};
-use crate::color_transform::ColorTransform;
+use crate::avm1::{Object, TObject, Value};
+use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
+
+use crate::color_transform::ColorTransform;
 use std::convert::Into;
+use crate::avm1::color_transform_object::ColorTransformObject;
 
 pub fn constructor<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let red_multiplier = args
         .get(0)
         .unwrap_or(&Value::Number(1.into()))
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
     let green_multiplier = args
         .get(1)
         .unwrap_or(&Value::Number(1.into()))
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
     let blue_multiplier = args
         .get(2)
         .unwrap_or(&Value::Number(1.into()))
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
     let alpha_multiplier = args
         .get(3)
         .unwrap_or(&Value::Number(1.into()))
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
     let red_offset = args
         .get(4)
         .unwrap_or(&Value::Number(0.into()))
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
     let green_offset = args
         .get(5)
         .unwrap_or(&Value::Number(0.into()))
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
     let blue_offset = args
         .get(6)
         .unwrap_or(&Value::Number(0.into()))
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
     let alpha_offset = args
         .get(7)
         .unwrap_or(&Value::Number(0.into()))
-        .coerce_to_f64(avm, context)?;
+        .coerce_to_f64(activation, context)?;
 
     let ct = this.as_color_transform_object().unwrap();
     ct.set_red_multiplier(context.gc_context, red_multiplier);
@@ -64,33 +66,33 @@ pub fn constructor<'gc>(
 
 pub fn object_to_color_transform<'gc>(
     object: Object<'gc>,
-    avm: &mut Avm1<'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<ColorTransform, Error<'gc>> {
     let red_multiplier = 0.0; /*object
-                              .get("redMultiplier", avm, context)?
-                              .coerce_to_f64(avm, context)? as f32;*/
+                              .get("redMultiplier", activation, context)?
+                              .coerce_to_f64(activation, context)? as f32;*/
     let green_multiplier = object
-        .get("greenMultiplier", avm, context)?
-        .coerce_to_f64(avm, context)? as f32;
+        .get("greenMultiplier", activation, context)?
+        .coerce_to_f64(activation, context)? as f32;
     let blue_multiplier = object
-        .get("blueMultiplier", avm, context)?
-        .coerce_to_f64(avm, context)? as f32;
+        .get("blueMultiplier", activation, context)?
+        .coerce_to_f64(activation, context)? as f32;
     let alpha_multiplier = object
-        .get("alphaMultiplier", avm, context)?
-        .coerce_to_f64(avm, context)? as f32;
+        .get("alphaMultiplier", activation, context)?
+        .coerce_to_f64(activation, context)? as f32;
     let red_offset = object
-        .get("redOffset", avm, context)?
-        .coerce_to_f64(avm, context)? as f32;
+        .get("redOffset", activation, context)?
+        .coerce_to_f64(activation, context)? as f32;
     let green_offset = object
-        .get("greenOffset", avm, context)?
-        .coerce_to_f64(avm, context)? as f32;
+        .get("greenOffset", activation, context)?
+        .coerce_to_f64(activation, context)? as f32;
     let blue_offset = object
-        .get("blueOffset", avm, context)?
-        .coerce_to_f64(avm, context)? as f32;
+        .get("blueOffset", activation, context)?
+        .coerce_to_f64(activation, context)? as f32;
     let alpha_offset = object
-        .get("alphaOffset", avm, context)?
-        .coerce_to_f64(avm, context)? as f32;
+        .get("alphaOffset", activation, context)?
+        .coerce_to_f64(activation, context)? as f32;
 
     Ok(ColorTransform {
         r_mult: red_multiplier,
@@ -105,26 +107,26 @@ pub fn object_to_color_transform<'gc>(
 }
 
 pub fn get_rgb<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    let ct = object_to_color_transform(this, avm, context)?;
+) -> Result<Value<'gc>, Error<'gc>> {
+    let ct = object_to_color_transform(this, activation, context)?;
     let rgb = ((ct.r_add as u32) << 16) | ((ct.g_add as u32) << 8) | (ct.b_add as u32);
     Ok(Value::Number(rgb.into()).into())
 }
 
 pub fn set_rgb<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let new_rgb = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_f64(avm, context)? as u64;
+        .coerce_to_f64(activation, context)? as u64;
 
     let red = ((new_rgb >> 16) & 0xFF) as f64;
     let green = ((new_rgb >> 8) & 0xFF) as f64;
@@ -162,16 +164,16 @@ macro_rules! color_transform_value_accessor {
     ($([$get_ident: ident, $set_ident: ident],)*) => {
         $(
             pub fn $set_ident<'gc>(
-                avm: &mut Avm1<'gc>,
+                activation: &mut Activation<'_, 'gc>,
                 context: &mut UpdateContext<'_, 'gc, '_>,
                 this: Object<'gc>,
                 args: &[Value<'gc>],
-            ) -> Result<ReturnValue<'gc>, Error<'gc>> {
+            ) -> Result<Value<'gc>, Error<'gc>> {
                 //TODO: update as comment
                 let new_val = args
                     .get(0)
                     .unwrap_or(&Value::Undefined)
-                    .coerce_to_f64(avm, context)?;
+                    .coerce_to_f64(activation, context)?;
 
                 let ct = this.as_color_transform_object().unwrap();
                 ct.$set_ident(context.gc_context, new_val);
@@ -179,11 +181,11 @@ macro_rules! color_transform_value_accessor {
             }
 
             pub fn $get_ident<'gc>(
-                _avm: &mut Avm1<'gc>,
+                _activation: &mut Activation<'_, 'gc>,
                 _context: &mut UpdateContext<'_, 'gc, '_>,
                 this: Object<'gc>,
                 _args: &[Value<'gc>],
-            ) -> Result<ReturnValue<'gc>, Error<'gc>> {
+            ) -> Result<Value<'gc>, Error<'gc>> {
                 let ct = this.as_color_transform_object().unwrap();
                 Ok(Value::Number(ct.$get_ident()).into())
             }
@@ -257,40 +259,40 @@ pub fn create_proto<'gc>(
 }
 
 fn to_string<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
-    let ct = object_to_color_transform(this, avm, context)?;
+) -> Result<Value<'gc>, Error<'gc>> {
+    let ct = object_to_color_transform(this, activation, context)?;
 
     let formatted = format!("(redMultiplier={}, greenMultiplier={}, blueMultiplier={}, alphaMultiplier={}, redOffset={}, greenOffset={}, blueOffset={}, alphaOffset={})",
-            this.get("redMultiplier", avm, context)?.coerce_to_string(avm, context)?,
-            this.get("greenMultiplier", avm, context)?.coerce_to_string(avm, context)?,
-            this.get("blueMultiplier", avm, context)?.coerce_to_string(avm, context)?,
-            this.get("alphaMultiplier", avm, context)?.coerce_to_string(avm, context)?,
-            this.get("redOffset", avm, context)?.coerce_to_string(avm, context)?,
-            this.get("greenOffset", avm, context)?.coerce_to_string(avm, context)?,
-            this.get("blueOffset", avm, context)?.coerce_to_string(avm, context)?,
-            this.get("alphaOffset", avm, context)?.coerce_to_string(avm, context)?
+            this.get("redMultiplier", activation, context)?.coerce_to_string(activation, context)?,
+            this.get("greenMultiplier", activation, context)?.coerce_to_string(activation, context)?,
+            this.get("blueMultiplier", activation, context)?.coerce_to_string(activation, context)?,
+            this.get("alphaMultiplier", activation, context)?.coerce_to_string(activation, context)?,
+            this.get("redOffset", activation, context)?.coerce_to_string(activation, context)?,
+            this.get("greenOffset", activation, context)?.coerce_to_string(activation, context)?,
+            this.get("blueOffset", activation, context)?.coerce_to_string(activation, context)?,
+            this.get("alphaOffset", activation, context)?.coerce_to_string(activation, context)?
     );
 
     Ok(Value::String(formatted).into())
 }
 
 fn concat<'gc>(
-    avm: &mut Avm1<'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     // Without an arg, does nothing
     if let Some(arg) = _args.get(0) {
         // If given an invalid var, return undefined
         if arg == &Value::Undefined {
             return Ok(Value::Undefined.into());
         }
-        let other = arg.coerce_to_object(avm, context);
+        let other = arg.coerce_to_object(activation, context);
 
         let other_ct = other.as_color_transform_object().unwrap();
         let this_ct = this.as_color_transform_object().unwrap();
