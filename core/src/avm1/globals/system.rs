@@ -277,7 +277,7 @@ impl SystemProperties {
         format!(
             "{} {},0,0,0",
             self.manufacturer.get_platform_name(),
-            activation.avm().player_version
+            activation.avm.player_version
         )
     }
 
@@ -347,7 +347,7 @@ impl SystemProperties {
                 "M",
                 &self.encode_string(
                     self.manufacturer
-                        .get_manufacturer_string(activation.avm().player_version)
+                        .get_manufacturer_string(activation.avm.player_version)
                         .as_str(),
                 ),
             )
@@ -361,7 +361,7 @@ impl SystemProperties {
             .append_pair(
                 "L",
                 self.language
-                    .get_language_code(activation.avm().player_version),
+                    .get_language_code(activation.avm.player_version),
             )
             .append_pair("IME", self.encode_capability(SystemCapabilities::IME))
             .append_pair("PT", &self.player_type.to_string())

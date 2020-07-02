@@ -16,7 +16,7 @@ macro_rules! register_listener {
             args: &[Value<'gc>],
         ) -> Result<Value<'gc>, Error<'gc>> {
             activation
-                .avm()
+                .avm
                 .system_listeners
                 .$system_listeners_key
                 .add_listener(context, args)
@@ -28,7 +28,7 @@ macro_rules! register_listener {
             _this: Object<'gc>,
             args: &[Value<'gc>],
         ) -> Result<Value<'gc>, Error<'gc>> {
-            let listener = activation.avm().system_listeners.$system_listeners_key;
+            let listener = activation.avm.system_listeners.$system_listeners_key;
             listener.remove_listener(activation, context, args)
         }
 

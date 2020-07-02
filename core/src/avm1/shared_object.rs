@@ -122,7 +122,7 @@ impl<'gc> TObject<'gc> for SharedObject<'gc> {
     ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(SharedObject::empty_shared_obj(
             context.gc_context,
-            Some(activation.avm().prototypes.shared_object),
+            Some(activation.avm.prototypes.shared_object),
         )
         .into())
     }

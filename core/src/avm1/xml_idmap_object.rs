@@ -68,7 +68,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
             Ok(node
                 .script_object(
                     context.gc_context,
-                    Some(activation.avm().prototypes().xml_node),
+                    Some(activation.avm.prototypes().xml_node),
                 )
                 .into())
         } else {

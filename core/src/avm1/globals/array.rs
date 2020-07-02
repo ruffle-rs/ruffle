@@ -285,7 +285,7 @@ pub fn slice<'gc>(
         .map(|v| make_index_absolute(v as i32, this.length()))
         .unwrap_or_else(|| this.length());
 
-    let array = ScriptObject::array(context.gc_context, Some(activation.avm().prototypes.array));
+    let array = ScriptObject::array(context.gc_context, Some(activation.avm.prototypes.array));
 
     if start < end {
         let length = end - start;
@@ -324,7 +324,7 @@ pub fn splice<'gc>(
         return Ok(Value::Undefined);
     }
 
-    let removed = ScriptObject::array(context.gc_context, Some(activation.avm().prototypes.array));
+    let removed = ScriptObject::array(context.gc_context, Some(activation.avm.prototypes.array));
     let to_remove = count.min(old_length as i32 - start as i32).max(0) as usize;
     let to_add = if args.len() > 2 { &args[2..] } else { &[] };
     let offset = to_remove as i32 - to_add.len() as i32;
@@ -377,7 +377,7 @@ pub fn concat<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let array = ScriptObject::array(context.gc_context, Some(activation.avm().prototypes.array));
+    let array = ScriptObject::array(context.gc_context, Some(activation.avm.prototypes.array));
     let mut length = 0;
 
     for i in 0..this.length() {
@@ -398,7 +398,7 @@ pub fn concat<'gc>(
 
         if let Value::Object(object) = arg {
             let object = *object;
-            if activation.avm().prototypes.array.is_prototype_of(object) {
+            if activation.avm.prototypes.array.is_prototype_of(object) {
                 added = true;
                 for i in 0..object.length() {
                     let old = object
@@ -583,7 +583,7 @@ fn sort_with_function<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let length = this.length();
     let mut values: Vec<(usize, Value<'gc>)> = this.array().into_iter().enumerate().collect();
-    let array_proto = activation.avm().prototypes.array;
+    let array_proto = activation.avm.prototypes.array;
 
     let descending = (flags & DESCENDING) != 0;
     let unique_sort = (flags & UNIQUE_SORT) != 0;

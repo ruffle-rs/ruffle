@@ -91,7 +91,7 @@ enum FrameControl<'gc> {
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct Activation<'a, 'gc: 'a> {
-    avm: &'a mut Avm1<'gc>,
+    pub avm: &'a mut Avm1<'gc>,
 
     /// Represents the SWF version of a given function.
     ///
@@ -234,9 +234,9 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                 clip_obj,
             ),
         );
-        let constant_pool = parent_activation.avm().constant_pool;
+        let constant_pool = parent_activation.avm.constant_pool;
         let mut child_activation = Activation::from_action(
-            parent_activation.avm(),
+            parent_activation.avm,
             swf_version,
             child_scope,
             constant_pool,
@@ -272,7 +272,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         );
         let constant_pool = self.avm.constant_pool;
         let mut activation = Activation::from_action(
-            self.avm(),
+            self.avm,
             swf_version,
             child_scope,
             constant_pool,
@@ -2335,10 +2335,6 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         } else if let Some(v) = self.avm.registers.get_mut(id as usize) {
             *v = value;
         }
-    }
-
-    pub fn avm(&mut self) -> &mut Avm1<'gc> {
-        self.avm
     }
 
     /// Convert the current locals pool into a set of form values.

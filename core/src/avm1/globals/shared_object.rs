@@ -49,7 +49,7 @@ fn recursive_serialize<'gc>(
                 Value::String(s) => json_obj[k] = s.into(),
                 Value::Object(o) => {
                     // Don't attempt to serialize functions
-                    let function = activation.avm().prototypes.function;
+                    let function = activation.avm.prototypes.function;
                     if !o
                         .is_instance_of(activation, action_context, o, function)
                         .unwrap_or_default()
@@ -113,7 +113,7 @@ fn recursive_deserialize<'gc>(
                 );
             }
             JsonValue::Object(o) => {
-                let so = activation.avm().prototypes.object;
+                let so = activation.avm.prototypes.object;
                 let obj = so.new(activation, context, so, &[]).unwrap();
                 let _ = crate::avm1::globals::object::constructor(activation, context, obj, &[])
                     .unwrap();
@@ -154,7 +154,7 @@ pub fn get_local<'gc>(
     }
 
     // Data property only should exist when created with getLocal/Remote
-    let so = activation.avm().prototypes.shared_object;
+    let so = activation.avm.prototypes.shared_object;
     let this = so.new(activation, action_context, so, &[])?;
     let _ = constructor(activation, action_context, this, &[])?;
 
@@ -163,7 +163,7 @@ pub fn get_local<'gc>(
     obj_so.set_name(action_context.gc_context, name.to_string());
 
     // Create the data object
-    let data_proto = activation.avm().prototypes.object;
+    let data_proto = activation.avm.prototypes.object;
     let data = data_proto.new(activation, action_context, so, &[])?;
     let _ = crate::avm1::globals::object::constructor(activation, action_context, data, &[])?;
 

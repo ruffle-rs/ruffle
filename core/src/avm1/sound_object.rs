@@ -182,7 +182,7 @@ impl<'gc> TObject<'gc> for SoundObject<'gc> {
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(
-            SoundObject::empty_sound(context.gc_context, Some(activation.avm().prototypes.sound))
+            SoundObject::empty_sound(context.gc_context, Some(activation.avm.prototypes.sound))
                 .into(),
         )
     }

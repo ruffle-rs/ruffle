@@ -267,8 +267,8 @@ mod tests {
     ) -> Object<'gc> {
         create(
             context.gc_context,
-            Some(activation.avm().prototypes().object),
-            Some(activation.avm().prototypes().function),
+            Some(activation.avm.prototypes().object),
+            Some(activation.avm.prototypes().function),
         )
     }
 
@@ -485,8 +485,8 @@ mod tests {
         with_avm(19, |activation, context, _root| -> Result<(), Error> {
             let math = create(
                 context.gc_context,
-                Some(activation.avm().prototypes().object),
-                Some(activation.avm().prototypes().function),
+                Some(activation.avm.prototypes().object),
+                Some(activation.avm.prototypes().function),
             );
 
             assert_eq!(atan2(activation, context, math, &[]).unwrap(), NAN.into());
@@ -511,8 +511,8 @@ mod tests {
         with_avm(19, |activation, context, _root| -> Result<(), Error> {
             let math = create(
                 context.gc_context,
-                Some(activation.avm().prototypes().object),
-                Some(activation.avm().prototypes().function),
+                Some(activation.avm.prototypes().object),
+                Some(activation.avm.prototypes().function),
             );
 
             assert_eq!(
