@@ -20,6 +20,12 @@ foo: Hello
 text1.text: Hello
 text2.text: Test2
 
+Empty text field does not set variable value:
+someOtherVar:
+undefined
+text3.text:
+
+
 Initial text set by variable:
 mc.theVar: mc theVar
 text1.text: mc theVar
