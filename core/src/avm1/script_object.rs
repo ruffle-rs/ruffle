@@ -247,6 +247,7 @@ impl<'gc> ScriptObject<'gc> {
                         this_proto.call_setter(name, value.clone(), activation, context)
                     {
                         let _ = rval.exec(
+                            "[Setter]",
                             activation,
                             context,
                             this,
@@ -280,7 +281,8 @@ impl<'gc> ScriptObject<'gc> {
                 };
 
                 if let Some(rval) = rval {
-                    let _ = rval.exec(activation, context, this, base_proto, &[value])?;
+                    let _ =
+                        rval.exec("[Setter]", activation, context, this, base_proto, &[value])?;
                 }
             }
         }
@@ -324,7 +326,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         }
 
         if let Some(get) = exec {
-            get.exec(activation, context, this, Some((*self).into()), &[])
+            get.exec(
+                "[Getter]",
+                activation,
+                context,
+                this,
+                Some((*self).into()),
+                &[],
+            )
         } else {
             Ok(Value::Undefined)
         }
@@ -359,6 +368,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     /// overrides that may need to interact with the underlying object.
     fn call(
         &self,
+        _name: &str,
         _activation: &mut Activation<'_, 'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
@@ -735,6 +745,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 mod tests {
     use super::*;
 
+    use crate::avm1::activation::ActivationIdentifier;
     use crate::avm1::globals::system::SystemProperties;
     use crate::avm1::property::Attribute::*;
     use crate::avm1::Avm1;
@@ -811,6 +822,7 @@ mod tests {
             let globals = avm.global_object_cell();
             let mut activation = Activation::from_nothing(
                 &mut avm,
+                ActivationIdentifier::root("[Test]"),
                 context.swf.version(),
                 globals,
                 context.gc_context,

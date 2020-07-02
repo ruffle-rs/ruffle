@@ -1,6 +1,6 @@
 //! Management of async loaders
 
-use crate::avm1::activation::Activation;
+use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::{Object, TObject, Value};
 use crate::backend::navigator::OwnedFuture;
 use crate::context::{ActionQueue, ActionType};
@@ -476,6 +476,7 @@ impl<'gc> Loader<'gc> {
 
                 let mut activation = Activation::from_nothing(
                     avm,
+                    ActivationIdentifier::root("[Form Loader]"),
                     uc.swf.version(),
                     avm.global_object_cell(),
                     uc.gc_context,

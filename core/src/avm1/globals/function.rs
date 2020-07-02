@@ -35,7 +35,7 @@ pub fn call<'gc>(
     };
 
     match func.as_executable() {
-        Some(exec) => exec.exec(activation, action_context, this, None, args),
+        Some(exec) => exec.exec("[Anonymous]", activation, action_context, this, None, args),
         _ => Ok(Value::Undefined),
     }
 }
@@ -68,7 +68,14 @@ pub fn apply<'gc>(
     }
 
     match func.as_executable() {
-        Some(exec) => exec.exec(activation, action_context, this, None, &child_args),
+        Some(exec) => exec.exec(
+            "[Anonymous]",
+            activation,
+            action_context,
+            this,
+            None,
+            &child_args,
+        ),
         _ => Ok(Value::Undefined),
     }
 }

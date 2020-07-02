@@ -150,9 +150,9 @@ impl<'gc> TObject<'gc> for SoundObject<'gc> {
     ) -> Result<(), Error<'gc>> {
         self.base().set(name, value, activation, context)
     }
-
     fn call(
         &self,
+        name: &str,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
@@ -160,7 +160,7 @@ impl<'gc> TObject<'gc> for SoundObject<'gc> {
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.base()
-            .call(activation, context, this, base_proto, args)
+            .call(name, activation, context, this, base_proto, args)
     }
 
     fn call_setter(

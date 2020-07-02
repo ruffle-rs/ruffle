@@ -18,6 +18,7 @@ use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::cell::{Ref, RefMut};
 use std::collections::HashMap;
+use std::fmt;
 use swf::avm1::read::Reader;
 use swf::avm1::types::{Action, CatchVar, Function, TryBlock};
 use url::form_urlencoded;
@@ -88,8 +89,58 @@ enum FrameControl<'gc> {
     Return(ReturnType<'gc>),
 }
 
+#[derive(Debug, Clone)]
+pub struct ActivationIdentifier<'a> {
+    parent: Option<&'a ActivationIdentifier<'a>>,
+    name: Cow<'static, str>,
+    depth: usize,
+}
+
+impl fmt::Display for ActivationIdentifier<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if let Some(parent) = self.parent {
+            write!(f, "{} / ", parent)?;
+        }
+
+        f.write_str(&self.name)?;
+
+        Ok(())
+    }
+}
+
+impl<'a> ActivationIdentifier<'a> {
+    pub fn root<S: Into<Cow<'static, str>>>(name: S) -> Self {
+        Self {
+            parent: None,
+            name: name.into(),
+            depth: 0,
+        }
+    }
+
+    pub fn child<S: Into<Cow<'static, str>>>(&'a self, name: S) -> Self {
+        Self {
+            parent: Some(self),
+            name: name.into(),
+            depth: self.depth + 1,
+        }
+    }
+
+    pub fn depth(&self) -> usize {
+        self.depth
+    }
+}
+
+unsafe impl<'gc> gc_arena::Collect for ActivationIdentifier<'gc> {
+    fn needs_trace() -> bool {
+        false
+    }
+
+    #[inline]
+    fn trace(&self, _cc: gc_arena::CollectionContext) {}
+}
+
 #[derive(Collect)]
-#[collect(no_drop)]
+#[collect(unsafe_drop)]
 pub struct Activation<'a, 'gc: 'a> {
     pub avm: &'a mut Avm1<'gc>,
 
@@ -137,11 +188,24 @@ pub struct Activation<'a, 'gc: 'a> {
     /// The current target display object of this stack frame.
     /// This can be changed with `tellTarget` (via `ActionSetTarget` and `ActionSetTarget2`).
     target_clip: Option<DisplayObject<'gc>>,
+
+    /// An identifier to refer to this activation by, when debugging.
+    /// This is often the name of a function (if known), or some static name to indicate where
+    /// in the code it is (for example, a with{} block).
+    pub id: ActivationIdentifier<'a>,
+}
+
+impl Drop for Activation<'_, '_> {
+    fn drop(&mut self) {
+        avm_debug!("END {}", self.id);
+    }
 }
 
 impl<'a, 'gc: 'a> Activation<'a, 'gc> {
+    #[allow(clippy::too_many_arguments)]
     pub fn from_action(
         avm: &'a mut Avm1<'gc>,
+        id: ActivationIdentifier<'a>,
         swf_version: u8,
         scope: GcCell<'gc, Scope<'gc>>,
         constant_pool: GcCell<'gc, Vec<String>>,
@@ -149,8 +213,10 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         this: Object<'gc>,
         arguments: Option<Object<'gc>>,
     ) -> Self {
+        avm_debug!("START {}", id);
         Self {
             avm,
+            id,
             swf_version,
             scope,
             constant_pool,
@@ -164,9 +230,16 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     }
 
     /// Create a new activation to run a block of code with a given scope.
-    pub fn with_new_scope<'b>(&'b mut self, scope: GcCell<'gc, Scope<'gc>>) -> Activation<'b, 'gc> {
+    pub fn with_new_scope<'b, S: Into<Cow<'static, str>>>(
+        &'b mut self,
+        name: S,
+        scope: GcCell<'gc, Scope<'gc>>,
+    ) -> Activation<'b, 'gc> {
+        let id = self.id.child(name);
+        avm_debug!("START {}", id);
         Activation {
             avm: self.avm,
+            id,
             swf_version: self.swf_version,
             scope,
             constant_pool: self.constant_pool,
@@ -185,6 +258,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     /// activation frame with access to the global context.
     pub fn from_nothing(
         avm: &'a mut Avm1<'gc>,
+        id: ActivationIdentifier<'a>,
         swf_version: u8,
         globals: Object<'gc>,
         mc: MutationContext<'gc, '_>,
@@ -193,9 +267,11 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         let global_scope = GcCell::allocate(mc, Scope::from_global_object(globals));
         let child_scope = GcCell::allocate(mc, Scope::new_local_scope(global_scope, mc));
         let empty_constant_pool = GcCell::allocate(mc, Vec::new());
+        avm_debug!("START {}", id);
 
         Self {
             avm,
+            id,
             swf_version,
             scope: child_scope,
             constant_pool: empty_constant_pool,
@@ -209,8 +285,9 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     }
 
     /// Add a stack frame that executes code in timeline scope
-    pub fn run_child_frame_for_action(
+    pub fn run_child_frame_for_action<S: Into<Cow<'static, str>>>(
         &mut self,
+        name: S,
         active_clip: DisplayObject<'gc>,
         swf_version: u8,
         code: SwfSlice,
@@ -218,6 +295,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     ) -> Result<ReturnType<'gc>, Error<'gc>> {
         let mut parent_activation = Activation::from_nothing(
             self.avm,
+            self.id.child("[Actions Parent]"),
             swf_version,
             self.avm.globals,
             context.gc_context,
@@ -237,6 +315,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         let constant_pool = parent_activation.avm.constant_pool;
         let mut child_activation = Activation::from_action(
             parent_activation.avm,
+            parent_activation.id.child(name),
             swf_version,
             child_scope,
             constant_pool,
@@ -248,8 +327,9 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     }
 
     /// Add a stack frame that executes code in initializer scope.
-    pub fn run_with_child_frame_for_display_object<'c, F, R>(
+    pub fn run_with_child_frame_for_display_object<'c, F, R, S: Into<Cow<'static, str>>>(
         &mut self,
+        name: S,
         active_clip: DisplayObject<'gc>,
         swf_version: u8,
         action_context: &mut UpdateContext<'c, 'gc, '_>,
@@ -273,6 +353,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         let constant_pool = self.avm.constant_pool;
         let mut activation = Activation::from_action(
             self.avm,
+            self.id.child(name),
             swf_version,
             child_scope,
             constant_pool,
@@ -311,7 +392,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             //Executing beyond the end of a function constitutes an implicit return.
             Ok(FrameControl::Return(ReturnType::Implicit))
         } else if let Some(action) = reader.read_action()? {
-            avm_debug!("Action: {:?}", action);
+            avm_debug!("({}) Action: {:?}", self.id.depth(), action);
 
             let result = match action {
                 Action::Add => self.action_add(context),
@@ -654,6 +735,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             if let Some(frame) = frame {
                 for action in clip.actions_on_frame(context, frame) {
                     let _ = self.run_child_frame_for_action(
+                        "[Frame Call]",
                         self.target_clip_or_root(),
                         self.current_swf_version(),
                         action,
@@ -687,7 +769,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             .target_clip_or_root()
             .object()
             .coerce_to_object(self, context);
-        let result = target_fn.call(self, context, this, None, &args)?;
+        let result = target_fn.call(&fn_name, self, context, this, None, &args)?;
         self.avm.push(result);
 
         Ok(FrameControl::Continue)
@@ -712,12 +794,12 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                     .target_clip_or_root()
                     .object()
                     .coerce_to_object(self, context);
-                let result = object.call(self, context, this, None, &args)?;
+                let result = object.call("[Anonymous]", self, context, this, None, &args)?;
                 self.avm.push(result);
             }
             Value::String(name) => {
                 if name.is_empty() {
-                    let result = object.call(self, context, object, None, &args)?;
+                    let result = object.call("[Anonymous]", self, context, object, None, &args)?;
                     self.avm.push(result);
                 } else {
                     let result = object.call_method(&name, &args, self, context)?;
@@ -1601,7 +1683,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             }
 
             //TODO: What happens if you `ActionNewMethod` without a method name?
-            constructor.call(self, context, this, None, &args)?;
+            constructor.call("[ctor]", self, context, this, None, &args)?;
 
             self.avm.push(this);
         } else {
@@ -1652,7 +1734,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             );
         }
 
-        constructor.call(self, context, this, None, &args)?;
+        constructor.call("[ctor]", self, context, this, None, &args)?;
 
         self.avm.push(this);
 
@@ -2247,7 +2329,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let object = self.avm.pop().coerce_to_object(self, context);
         let with_scope = Scope::new_with_scope(self.scope_cell(), object, context.gc_context);
-        let mut new_activation = self.with_new_scope(with_scope);
+        let mut new_activation = self.with_new_scope("[With]", with_scope);
         if let ReturnType::Explicit(value) = new_activation.run_actions(context, code)? {
             Ok(FrameControl::Return(ReturnType::Explicit(value)))
         } else {
@@ -2270,6 +2352,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             if let Err(Error::ThrownValue(value)) = &result {
                 let mut activation = Activation::from_action(
                     self.avm,
+                    self.id.child("[Catch]"),
                     self.swf_version,
                     self.scope,
                     self.constant_pool,

@@ -716,6 +716,7 @@ impl<'gc> EditText<'gc> {
             let parent = self.parent().unwrap();
 
             activation.run_with_child_frame_for_display_object(
+                "[Text Field Binding]",
                 parent,
                 context.swf.header().version,
                 context,
@@ -806,6 +807,7 @@ impl<'gc> EditText<'gc> {
                     // Note that this can call virtual setters, even though the opposite direction won't work
                     // (virtual property changes do not affect the text field)
                     activation.run_with_child_frame_for_display_object(
+                        "[Propagate Text Binding]",
                         self.parent().unwrap(),
                         context.swf.header().version,
                         context,

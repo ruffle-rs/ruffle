@@ -85,6 +85,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// it can be changed by `Function.apply`/`Function.call`.
     fn call(
         &self,
+        name: &str,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
@@ -120,7 +121,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             log::warn!("Object method {} is not callable", name);
         }
 
-        method.call(activation, context, (*self).into(), base_proto, args)
+        method.call(name, activation, context, (*self).into(), base_proto, args)
     }
 
     /// Call a setter defined in this object.

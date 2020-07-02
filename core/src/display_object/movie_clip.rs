@@ -2,7 +2,7 @@
 use crate::avm1::{Avm1, Object, StageObject, TObject, Value};
 use crate::backend::audio::AudioStreamHandle;
 
-use crate::avm1::activation::Activation;
+use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::character::Character;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{
@@ -977,6 +977,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
                 let mut activation = Activation::from_nothing(
                     avm,
+                    ActivationIdentifier::root("[Mouse Pick]"),
                     context.swf.version(),
                     avm.global_object_cell(),
                     context.gc_context,
@@ -1042,6 +1043,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             if instantiated_from_avm && self.0.read().avm1_constructor.is_some() {
                 let mut activation = Activation::from_nothing(
                     avm,
+                    ActivationIdentifier::root("[Construct]"),
                     context.swf.version(),
                     avm.global_object_cell(),
                     context.gc_context,
@@ -1067,7 +1069,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                         }
                     }
                     self.0.write(context.gc_context).object = Some(object);
-                    let _ = constructor.call(&mut activation, context, object, None, &[]);
+                    let _ = constructor.call("[ctor]", &mut activation, context, object, None, &[]);
                 }
 
                 return;
@@ -1081,6 +1083,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             if let Some(init_object) = init_object {
                 let mut activation = Activation::from_nothing(
                     avm,
+                    ActivationIdentifier::root("[Init]"),
                     context.swf.version(),
                     avm.global_object_cell(),
                     context.gc_context,

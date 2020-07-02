@@ -1,4 +1,4 @@
-use crate::avm1::activation::Activation;
+use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::error::Error;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::{Avm1, Object, UpdateContext};
@@ -99,6 +99,7 @@ where
         let globals = avm.global_object_cell();
         let mut activation = Activation::from_nothing(
             &mut avm,
+            ActivationIdentifier::root("[Test]"),
             context.swf.version(),
             globals,
             context.gc_context,
@@ -128,7 +129,7 @@ macro_rules! test_method {
                             $(
                                 args.push($arg.into());
                             )*
-                            assert_eq!(function.call(activation, context, object, None, &args)?, $out.into(), "{:?} => {:?} in swf {}", args, $out, version);
+                            assert_eq!(function.call($name, activation, context, object, None, &args)?, $out.into(), "{:?} => {:?} in swf {}", args, $out, version);
                         )*
 
                         Ok(())

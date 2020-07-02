@@ -501,18 +501,15 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn type_of(&self) -> Value<'gc> {
-        Value::String(
-            match self {
-                Value::Undefined => "undefined",
-                Value::Null => "null",
-                Value::Number(_) => "number",
-                Value::Bool(_) => "boolean",
-                Value::String(_) => "string",
-                Value::Object(object) => object.type_of(),
-            }
-            .to_string(),
-        )
+    pub fn type_of(&self) -> &'static str {
+        match self {
+            Value::Undefined => "undefined",
+            Value::Null => "null",
+            Value::Number(_) => "number",
+            Value::Bool(_) => "boolean",
+            Value::String(_) => "string",
+            Value::Object(object) => object.type_of(),
+        }
     }
 
     pub fn coerce_to_object(
@@ -525,6 +522,7 @@ impl<'gc> Value<'gc> {
 
     pub fn call(
         &self,
+        name: &str,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
@@ -532,7 +530,7 @@ impl<'gc> Value<'gc> {
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Value::Object(object) = self {
-            object.call(activation, context, this, base_proto, args)
+            object.call(name, activation, context, this, base_proto, args)
         } else {
             Ok(Value::Undefined)
         }
