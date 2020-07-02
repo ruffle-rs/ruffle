@@ -217,6 +217,7 @@ swf_tests! {
     (error, "avm1/error", 1),
     (color_transform, "avm1/color_transform", 1),
     (with, "avm1/with", 1),
+    (prototype_properties, "avm1/prototype_properties", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

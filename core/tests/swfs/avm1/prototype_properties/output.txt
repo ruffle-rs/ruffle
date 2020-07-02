@@ -1,0 +1,17 @@
+// Foo.prototype.hasOwnProperty('prop')
+true
+// Foo.prototype.hasOwnProperty('readOnlyProp')
+true
+
+// foo = new Foo()
+// foo.prop = 10
+// foo.prop
+10
+// foo.hasOwnProperty('prop')
+false
+
+// foo.readOnlyProp = 10
+// foo.readOnlyProp 
+5
+// foo.hasOwnProperty('readOnlyProp')
+false
