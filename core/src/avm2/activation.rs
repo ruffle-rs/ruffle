@@ -3,6 +3,7 @@
 use crate::avm2::function::Avm2MethodEntry;
 use crate::avm2::object::Object;
 use crate::avm2::scope::Scope;
+use crate::avm2::script::Script;
 use crate::avm2::script_object::ScriptObject;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -134,15 +135,10 @@ pub struct Activation<'gc> {
 impl<'gc> Activation<'gc> {
     pub fn from_script(
         context: &mut UpdateContext<'_, 'gc, '_>,
-        script: Avm2ScriptEntry,
+        script: GcCell<'gc, Script<'gc>>,
         global: Object<'gc>,
     ) -> Result<Self, Error> {
-        let method: Result<Avm2MethodEntry, Error> =
-            Avm2MethodEntry::from_method_index(script.abc(), script.script().init_method.clone())
-                .ok_or_else(|| {
-                    format!("Script index {} is not a valid script", script.abc_script).into()
-                });
-        let method = method?;
+        let method = script.read().init().as_entry()?;
         let scope = Some(Scope::push_scope(None, global, context.gc_context));
         let num_locals = method.body().num_locals;
         let local_registers =

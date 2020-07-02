@@ -1,13 +1,13 @@
 //! Whole script representation
 
-use crate::avm2::activation::Avm2ScriptEntry;
 use crate::avm2::class::Class;
 use crate::avm2::function::{Avm2MethodEntry, Method};
+use crate::avm2::r#trait::Trait;
 use crate::avm2::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::HashMap;
 use std::rc::Rc;
-use swf::avm2::types::{AbcFile, Index};
+use swf::avm2::types::{AbcFile, Index, Script as AbcScript};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
@@ -38,7 +38,7 @@ pub struct TranslationUnit<'gc> {
     methods: HashMap<u32, Method<'gc>>,
 
     /// All scripts loaded from the ABC's scripts list.
-    scripts: HashMap<u32, GcCell<'gc, Avm2ScriptEntry>>,
+    scripts: HashMap<u32, GcCell<'gc, Script<'gc>>>,
 }
 
 impl<'gc> TranslationUnit<'gc> {
@@ -88,5 +88,119 @@ impl<'gc> TranslationUnit<'gc> {
         class.write(mc).load_traits(&mut self, class_index, mc)?;
 
         return Ok(class);
+    }
+
+    /// Load a script from the ABC file and return it's script definition.
+    pub fn load_script(
+        &mut self,
+        script_index: u32,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<GcCell<'gc, Script<'gc>>, Error> {
+        if let Some(scripts) = self.scripts.get(&script_index) {
+            return Ok(scripts.clone());
+        }
+
+        let script = Script::from_abc_index(&mut self, script_index, mc)?;
+        self.scripts.insert(script_index, script);
+
+        script.write(mc).load_traits(&mut self, script_index, mc)?;
+
+        return Ok(script);
+    }
+}
+
+/// A loaded Script from an ABC file.
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
+pub struct Script<'gc> {
+    /// The initializer method to run for the script.
+    init: Method<'gc>,
+
+    /// Traits that this script uses.
+    traits: Vec<Trait<'gc>>,
+
+    /// Whether or not we loaded our traits.
+    traits_loaded: bool,
+}
+
+impl<'gc> Script<'gc> {
+    /// Construct a script from a `TranslationUnit` and it's script index.
+    ///
+    /// The returned script will be allocated, but no traits will be loaded.
+    /// The caller is responsible for storing the class in the
+    /// `TranslationUnit` and calling `load_traits` to complete the
+    /// trait-loading process.
+    pub fn from_abc_index(
+        unit: &mut TranslationUnit<'gc>,
+        script_index: u32,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<GcCell<'gc, Self>, Error> {
+        let script: Result<&AbcScript, Error> = unit
+            .abc()
+            .scripts
+            .get(script_index as usize)
+            .ok_or_else(|| "LoadError: Script index not valid".into());
+        let script = script?;
+
+        let init = unit.load_method(script.init_method.0)?;
+
+        Ok(GcCell::allocate(
+            mc,
+            Self {
+                init,
+                traits: Vec::new(),
+                traits_loaded: false,
+            },
+        ))
+    }
+
+    /// Finish the class-loading process by loading traits.
+    ///
+    /// This process must be done after the `Script` has been stored in the
+    /// `TranslationUnit`. Failing to do so runs the risk of runaway recursion
+    /// or double-borrows. It should be done before the script is actually
+    /// executed.
+    pub fn load_traits(
+        &mut self,
+        unit: &mut TranslationUnit<'gc>,
+        script_index: u32,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<(), Error> {
+        if self.traits_loaded {
+            return Ok(());
+        }
+
+        self.traits_loaded = true;
+
+        let script: Result<&AbcScript, Error> = unit
+            .abc()
+            .scripts
+            .get(script_index as usize)
+            .ok_or_else(|| "LoadError: Script index not valid".into());
+        let script = script?;
+
+        for abc_trait in script.traits {
+            self.traits
+                .push(Trait::from_abc_trait(unit, &abc_trait, mc)?);
+        }
+
+        Ok(())
+    }
+
+    /// Return the entrypoint for the script.
+    pub fn init(&self) -> Method<'gc> {
+        self.init
+    }
+
+    /// Return traits for this script.
+    ///
+    /// This function will return an error if it is incorrectly called before
+    /// traits are loaded.
+    pub fn traits(&self) -> Result<&[Trait<'gc>], Error> {
+        if !self.traits_loaded {
+            return Err("LoadError: Script traits accessed before they were loaded!".into());
+        }
+
+        Ok(&self.traits)
     }
 }

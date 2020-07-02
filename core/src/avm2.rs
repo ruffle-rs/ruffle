@@ -1,6 +1,6 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
-use crate::avm2::activation::{Activation, Avm2ScriptEntry};
+use crate::avm2::activation::Activation;
 use crate::avm2::class::Avm2ClassEntry;
 use crate::avm2::function::{Avm2MethodEntry, FunctionObject};
 use crate::avm2::globals::SystemPrototypes;
@@ -8,6 +8,7 @@ use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::scope::Scope;
+use crate::avm2::script::{Script, TranslationUnit};
 use crate::avm2::script_object::ScriptObject;
 use crate::avm2::value::Value;
 use crate::context::UpdateContext;
@@ -18,7 +19,7 @@ use std::rc::Rc;
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
     AbcFile, Class as AbcClass, Index, Method as AbcMethod, MethodBody, Multiname as AbcMultiname,
-    Namespace as AbcNamespace, Op, Script as AbcScript,
+    Namespace as AbcNamespace, Op,
 };
 use swf::read::SwfRead;
 
@@ -99,29 +100,25 @@ impl<'gc> Avm2<'gc> {
         let mut read = Reader::new(abc.as_ref());
 
         let abc_file = Rc::new(read.read()?);
+        let tunit = TranslationUnit::from_abc(abc_file);
 
         for i in (0..abc_file.scripts.len()).rev() {
-            let entrypoint_script: Index<AbcScript> = Index::new(i as u32);
-            let entrypoint: Result<Avm2ScriptEntry, Error> =
-                Avm2ScriptEntry::from_script_index(abc_file.clone(), entrypoint_script.clone())
-                    .ok_or_else(|| {
-                        format!("Script method {} does not exist", entrypoint_script.0).into()
-                    });
-            let entrypoint = entrypoint?;
+            let script = tunit.load_script(i as u32, context.gc_context)?;
             let scope = Scope::push_scope(None, self.globals(), context.gc_context);
 
-            for trait_entry in entrypoint.script().traits.iter() {
+            // TODO: Lazyinit means we shouldn't do this until traits are
+            // actually mentioned...
+            for trait_entry in script.read().traits()?.iter() {
                 self.globals().install_foreign_trait(
                     self,
                     context,
-                    abc_file.clone(),
-                    trait_entry,
+                    trait_entry.clone(),
                     Some(scope),
                     self.globals(),
                 )?;
             }
 
-            self.insert_stack_frame_for_script(context, entrypoint)?;
+            self.insert_stack_frame_for_script(context, script)?;
         }
 
         Ok(())
@@ -146,7 +143,7 @@ impl<'gc> Avm2<'gc> {
     pub fn insert_stack_frame_for_script(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        script: Avm2ScriptEntry,
+        script: GcCell<'gc, Script<'gc>>,
     ) -> Result<(), Error> {
         self.stack_frames.push(GcCell::allocate(
             context.gc_context,

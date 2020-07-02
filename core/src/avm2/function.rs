@@ -136,6 +136,17 @@ impl<'gc> From<Avm2MethodEntry> for Method<'gc> {
     }
 }
 
+impl<'gc> Method<'gc> {
+    pub fn as_entry(self) -> Result<Avm2MethodEntry, Error> {
+        match self {
+            Method::Native(_) => {
+                Err("Attempted to unwrap a native method as a user-defined one".into())
+            }
+            Method::Entry(a2me) => Ok(a2me),
+        }
+    }
+}
+
 /// Represents an AVM2 function.
 #[derive(Collect, Clone, Debug)]
 #[collect(no_drop)]
