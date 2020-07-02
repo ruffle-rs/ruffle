@@ -151,6 +151,7 @@ pub struct SystemPrototypes<'gc> {
     pub rectangle: Object<'gc>,
     pub rectangle_constructor: Object<'gc>,
     pub shared_object: Object<'gc>,
+    pub color_transform: Object<'gc>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
@@ -309,6 +310,7 @@ pub fn create_globals<'gc>(
         Some(color_transform_proto),
         Some(function_proto),
     );
+    eprintln!("CT: {:?}\n{:?}", color_transform_proto, color_transform);
 
     flash.define_value(gc_context, "geom", geom.into(), EnumSet::empty());
     geom.define_value(gc_context, "Matrix", matrix.into(), EnumSet::empty());
@@ -490,6 +492,7 @@ pub fn create_globals<'gc>(
             rectangle: rectangle_proto,
             rectangle_constructor: rectangle,
             shared_object: shared_object_proto,
+            color_transform: color_transform_proto,
         },
         globals.into(),
         listeners,

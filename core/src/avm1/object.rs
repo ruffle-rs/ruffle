@@ -8,6 +8,7 @@ use crate::avm1::super_object::SuperObject;
 use crate::avm1::value_object::ValueObject;
 
 use crate::avm1::activation::Activation;
+use crate::avm1::color_transform_object::ColorTransformObject;
 use crate::avm1::xml_attributes_object::XMLAttributesObject;
 use crate::avm1::xml_idmap_object::XMLIDMapObject;
 use crate::avm1::xml_object::XMLObject;
@@ -35,7 +36,8 @@ use std::fmt::Debug;
         XMLIDMapObject(XMLIDMapObject<'gc>),
         ValueObject(ValueObject<'gc>),
         FunctionObject(FunctionObject<'gc>),
-        SharedObject(SharedObject<'gc>)
+        SharedObject(SharedObject<'gc>),
+        ColorTransformObject(ColorTransformObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -396,6 +398,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying `SharedObject`, if it exists
     fn as_shared_object(&self) -> Option<SharedObject<'gc>> {
+        None
+    }
+
+    /// Get the underlying `ColorTransformObject`, if it exists
+    fn as_color_transform_object(&self) -> Option<ColorTransformObject<'gc>> {
         None
     }
 
