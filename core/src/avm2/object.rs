@@ -439,7 +439,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     context.gc_context,
                     trait_name,
                     *slot_id,
-                    default_value.unwrap_or(Value::Undefined),
+                    default_value.clone().unwrap_or(Value::Undefined),
                 );
             }
             TraitKind::Method {
@@ -535,7 +535,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     context.gc_context,
                     trait_name,
                     *slot_id,
-                    default_value.unwrap_or(Value::Undefined),
+                    default_value.clone().unwrap_or(Value::Undefined),
                 );
             }
         }

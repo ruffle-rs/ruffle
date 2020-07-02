@@ -100,7 +100,7 @@ impl<'gc> Avm2<'gc> {
         let mut read = Reader::new(abc.as_ref());
 
         let abc_file = Rc::new(read.read()?);
-        let tunit = TranslationUnit::from_abc(abc_file, context.gc_context);
+        let tunit = TranslationUnit::from_abc(abc_file.clone(), context.gc_context);
 
         for i in (0..abc_file.scripts.len()).rev() {
             let script = tunit.load_script(i as u32, context.gc_context)?;

@@ -17,6 +17,10 @@ use std::fmt;
 use std::rc::Rc;
 use swf::avm2::types::{AbcFile, Index, Method as AbcMethod, MethodBody as AbcMethodBody};
 
+#[derive(Clone, Debug, Collect)]
+#[collect(require_static)]
+pub struct CollectWrapper<T>(T);
+
 /// Represents a function defined in Ruffle's code.
 ///
 /// Parameters are as follows:
@@ -42,8 +46,11 @@ pub type NativeFunction<'gc> = fn(
 #[derive(Collect, Clone, Debug)]
 #[collect(no_drop)]
 pub struct Avm2MethodEntry<'gc> {
-    /// The ABC file this function was defined in.
+    /// The translation unit this function was defined in.
     pub txunit: TranslationUnit<'gc>,
+
+    /// The underlying ABC file of the above translation unit.
+    pub abc: CollectWrapper<Rc<AbcFile>>,
 
     /// The ABC method this function uses.
     pub abc_method: u32,
@@ -68,6 +75,7 @@ impl<'gc> Avm2MethodEntry<'gc> {
                 if method_body.method.0 == abc_method.0 {
                     return Some(Self {
                         txunit,
+                        abc: CollectWrapper(txunit.abc()),
                         abc_method: abc_method.0,
                         abc_method_body: index as u32,
                     });
@@ -91,17 +99,14 @@ impl<'gc> Avm2MethodEntry<'gc> {
 
     /// Get a reference to the ABC method entry this refers to.
     pub fn method(&self) -> &AbcMethod {
-        self.txunit
-            .abc()
-            .methods
-            .get(self.abc_method as usize)
-            .unwrap()
+        &self.abc.0.methods.get(self.abc_method as usize).unwrap()
     }
 
     /// Get a reference to the ABC method body entry this refers to.
     pub fn body(&self) -> &AbcMethodBody {
-        self.txunit
-            .abc()
+        &self
+            .abc
+            .0
             .method_bodies
             .get(self.abc_method_body as usize)
             .unwrap()
@@ -346,6 +351,7 @@ impl<'gc> FunctionObject<'gc> {
                     "Could not resolve superclass prototype {:?}",
                     class_read
                         .super_class_name()
+                        .as_ref()
                         .map(|p| p.local_name())
                         .unwrap_or(Some("Object"))
                 )

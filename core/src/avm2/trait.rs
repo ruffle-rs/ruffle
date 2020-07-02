@@ -87,9 +87,9 @@ impl<'gc> Trait<'gc> {
         abc_trait: &AbcTrait,
         mc: MutationContext<'gc, '_>,
     ) -> Result<Self, Error> {
-        let name = QName::from_abc_multiname(&unit.abc(), abc_trait.name)?;
+        let name = QName::from_abc_multiname(&unit.abc(), abc_trait.name.clone())?;
 
-        Ok(match abc_trait.kind {
+        Ok(match &abc_trait.kind {
             AbcTraitKind::Slot {
                 slot_id,
                 type_name,
@@ -99,8 +99,11 @@ impl<'gc> Trait<'gc> {
                 is_final: abc_trait.is_final,
                 is_override: abc_trait.is_override,
                 kind: TraitKind::Slot {
-                    slot_id,
-                    type_name: Multiname::from_abc_multiname_static(&unit.abc(), type_name)?,
+                    slot_id: *slot_id,
+                    type_name: Multiname::from_abc_multiname_static(
+                        &unit.abc(),
+                        type_name.clone(),
+                    )?,
                     default_value: if let Some(dv) = value {
                         Some(abc_default_value(&unit.abc(), &dv)?)
                     } else {
@@ -113,7 +116,7 @@ impl<'gc> Trait<'gc> {
                 is_final: abc_trait.is_final,
                 is_override: abc_trait.is_override,
                 kind: TraitKind::Method {
-                    disp_id,
+                    disp_id: *disp_id,
                     method: unit.load_method(method.0, mc)?,
                 },
             },
@@ -122,7 +125,7 @@ impl<'gc> Trait<'gc> {
                 is_final: abc_trait.is_final,
                 is_override: abc_trait.is_override,
                 kind: TraitKind::Getter {
-                    disp_id,
+                    disp_id: *disp_id,
                     method: unit.load_method(method.0, mc)?,
                 },
             },
@@ -131,7 +134,7 @@ impl<'gc> Trait<'gc> {
                 is_final: abc_trait.is_final,
                 is_override: abc_trait.is_override,
                 kind: TraitKind::Setter {
-                    disp_id,
+                    disp_id: *disp_id,
                     method: unit.load_method(method.0, mc)?,
                 },
             },
@@ -140,7 +143,7 @@ impl<'gc> Trait<'gc> {
                 is_final: abc_trait.is_final,
                 is_override: abc_trait.is_override,
                 kind: TraitKind::Class {
-                    slot_id,
+                    slot_id: *slot_id,
                     class: unit.load_class(class.0, mc)?,
                 },
             },
@@ -149,7 +152,7 @@ impl<'gc> Trait<'gc> {
                 is_final: abc_trait.is_final,
                 is_override: abc_trait.is_override,
                 kind: TraitKind::Function {
-                    slot_id,
+                    slot_id: *slot_id,
                     function: unit.load_method(function.0, mc)?,
                 },
             },
@@ -162,8 +165,11 @@ impl<'gc> Trait<'gc> {
                 is_final: abc_trait.is_final,
                 is_override: abc_trait.is_override,
                 kind: TraitKind::Const {
-                    slot_id,
-                    type_name: Multiname::from_abc_multiname_static(&unit.abc(), type_name)?,
+                    slot_id: *slot_id,
+                    type_name: Multiname::from_abc_multiname_static(
+                        &unit.abc(),
+                        type_name.clone(),
+                    )?,
                     default_value: if let Some(dv) = value {
                         Some(abc_default_value(&unit.abc(), &dv)?)
                     } else {

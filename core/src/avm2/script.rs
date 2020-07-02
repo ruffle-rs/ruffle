@@ -14,7 +14,7 @@ use swf::avm2::types::{AbcFile, Index, Script as AbcScript};
 #[collect(require_static)]
 pub struct CollectWrapper<T>(T);
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct TranslationUnit<'gc>(GcCell<'gc, TranslationUnitData<'gc>>);
 
@@ -61,7 +61,7 @@ impl<'gc> TranslationUnit<'gc> {
 
     /// Retrieve the underlying `AbcFile` for this translation unit.
     pub fn abc(self) -> Rc<AbcFile> {
-        self.0.read().abc.0
+        self.0.read().abc.0.clone()
     }
 
     /// Load a method from the ABC file and return it's method definition.
@@ -75,16 +75,17 @@ impl<'gc> TranslationUnit<'gc> {
             return Ok(method.clone());
         }
 
-        let abc = write.abc.0;
-
         drop(write);
 
-        let method: Result<Avm2MethodEntry, Error> =
+        let method: Result<Avm2MethodEntry<'gc>, Error> =
             Avm2MethodEntry::from_method_index(self, Index::new(method_index))
                 .ok_or_else(|| "Method index does not exist".into());
-        let method = method?.into();
+        let method: Method<'gc> = method?.into();
 
-        self.0.write(mc).methods.insert(method_index, method);
+        self.0
+            .write(mc)
+            .methods
+            .insert(method_index, method.clone());
 
         return Ok(method);
     }
@@ -158,8 +159,8 @@ impl<'gc> Script<'gc> {
         script_index: u32,
         mc: MutationContext<'gc, '_>,
     ) -> Result<GcCell<'gc, Self>, Error> {
-        let script: Result<&AbcScript, Error> = unit
-            .abc()
+        let abc = unit.abc();
+        let script: Result<&AbcScript, Error> = abc
             .scripts
             .get(script_index as usize)
             .ok_or_else(|| "LoadError: Script index not valid".into());
@@ -195,14 +196,14 @@ impl<'gc> Script<'gc> {
 
         self.traits_loaded = true;
 
-        let script: Result<&AbcScript, Error> = unit
-            .abc()
+        let abc = unit.abc();
+        let script: Result<&AbcScript, Error> = abc
             .scripts
             .get(script_index as usize)
             .ok_or_else(|| "LoadError: Script index not valid".into());
         let script = script?;
 
-        for abc_trait in script.traits {
+        for abc_trait in script.traits.iter() {
             self.traits
                 .push(Trait::from_abc_trait(unit, &abc_trait, mc)?);
         }
@@ -212,7 +213,7 @@ impl<'gc> Script<'gc> {
 
     /// Return the entrypoint for the script.
     pub fn init(&self) -> Method<'gc> {
-        self.init
+        self.init.clone()
     }
 
     /// Return traits for this script.

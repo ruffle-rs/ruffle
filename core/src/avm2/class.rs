@@ -160,41 +160,40 @@ impl<'gc> Class<'gc> {
         class_index: u32,
         mc: MutationContext<'gc, '_>,
     ) -> Result<GcCell<'gc, Self>, Error> {
-        let abc_class: Result<&AbcClass, Error> = unit
-            .abc()
+        let abc = unit.abc();
+        let abc_class: Result<&AbcClass, Error> = abc
             .classes
             .get(class_index as usize)
             .ok_or("LoadError: Class index not valid".into());
         let abc_class = abc_class?;
 
-        let abc_instance: Result<&AbcInstance, Error> = unit
-            .abc()
+        let abc_instance: Result<&AbcInstance, Error> = abc
             .instances
             .get(class_index as usize)
             .ok_or("LoadError: Instance index not valid".into());
         let abc_instance = abc_instance?;
 
-        let name = QName::from_abc_multiname(&unit.abc(), abc_instance.name)?;
+        let name = QName::from_abc_multiname(&unit.abc(), abc_instance.name.clone())?;
         let super_class = if abc_instance.super_name.0 == 0 {
             None
         } else {
             Some(Multiname::from_abc_multiname_static(
                 &unit.abc(),
-                abc_instance.super_name,
+                abc_instance.super_name.clone(),
             )?)
         };
 
-        let protected_namespace = if let Some(ns) = abc_instance.protected_namespace {
-            Some(Namespace::from_abc_namespace(&unit.abc(), ns)?)
+        let protected_namespace = if let Some(ns) = &abc_instance.protected_namespace {
+            Some(Namespace::from_abc_namespace(&unit.abc(), ns.clone())?)
         } else {
             None
         };
 
         let mut interfaces = Vec::new();
-        for interface_name in abc_instance.interfaces {
+        for interface_name in abc_instance.interfaces.iter() {
             interfaces.push(Multiname::from_abc_multiname_static(
                 &unit.abc(),
-                interface_name,
+                interface_name.clone(),
             )?);
         }
 
@@ -238,26 +237,25 @@ impl<'gc> Class<'gc> {
 
         self.traits_loaded = true;
 
-        let abc_class: Result<&AbcClass, Error> = unit
-            .abc()
+        let abc = unit.abc();
+        let abc_class: Result<&AbcClass, Error> = abc
             .classes
             .get(class_index as usize)
             .ok_or_else(|| "LoadError: Class index not valid".into());
         let abc_class = abc_class?;
 
-        let abc_instance: Result<&AbcInstance, Error> = unit
-            .abc()
+        let abc_instance: Result<&AbcInstance, Error> = abc
             .instances
             .get(class_index as usize)
             .ok_or_else(|| "LoadError: Instance index not valid".into());
         let abc_instance = abc_instance?;
 
-        for abc_trait in abc_instance.traits {
+        for abc_trait in abc_instance.traits.iter() {
             self.instance_traits
                 .push(Trait::from_abc_trait(unit, &abc_trait, mc)?);
         }
 
-        for abc_trait in abc_class.traits {
+        for abc_trait in abc_class.traits.iter() {
             self.class_traits
                 .push(Trait::from_abc_trait(unit, &abc_trait, mc)?);
         }
@@ -363,11 +361,11 @@ impl<'gc> Class<'gc> {
 
     /// Get this class's instance initializer.
     pub fn instance_init(&self) -> Method<'gc> {
-        self.instance_init
+        self.instance_init.clone()
     }
 
     /// Get this class's class initializer.
     pub fn class_init(&self) -> Method<'gc> {
-        self.class_init
+        self.class_init.clone()
     }
 }
