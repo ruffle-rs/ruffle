@@ -53,11 +53,8 @@ get_sync_storage(["ruffle_enable", "ignore_optout"], function (data) {
 
     if (data) {
         should_load_untrusted_world =
-            data.ruffle_enable == "on" &&
-            !(
-                (page_optout && data.ignore_optout != "on") ||
-                window.RufflePlayer
-            );
+            data.ruffle_enable &&
+            !((page_optout && !data.ignore_optout) || window.RufflePlayer);
     } else {
         console.log("Couldn't read settings.");
     }

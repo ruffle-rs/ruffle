@@ -25,24 +25,19 @@ function on_settings_change_intent() {
 
 function bind_boolean_setting(checkbox_elem) {
     let name = checkbox_elem.name,
-        default_val = checkbox_elem.checked,
-        get_obj = {},
         label = checkbox_elem.nextSibling;
 
     label.textContent = get_i18n_string("settings_" + name);
 
-    get_obj[name] = default_val;
-
-    get_sync_storage(get_obj, function (items) {
-        checkbox_elem.checked = items[name] === checkbox_elem.value;
+    get_sync_storage(name, function (items) {
+        checkbox_elem.checked = items[name];
         settings_dict[name] = items[name];
         on_settings_change_intent();
     });
 
     add_storage_change_listener(function (changes) {
         if (Object.prototype.hasOwnProperty.call(changes, name)) {
-            checkbox_elem.checked =
-                changes[name].newValue === checkbox_elem.value;
+            checkbox_elem.checked = changes[name].newValue;
             settings_dict[name] = changes[name].newValue;
             on_settings_change_intent();
         }
@@ -50,7 +45,7 @@ function bind_boolean_setting(checkbox_elem) {
 
     checkbox_elem.addEventListener("click", function () {
         let setting = {};
-        setting[name] = checkbox_elem.checked ? "on" : "";
+        setting[name] = checkbox_elem.checked;
         settings_dict[name] = setting[name];
         on_settings_change_intent();
 
@@ -123,7 +118,7 @@ async function query_current_tab() {
                 "status_result_running"
             );
         } else if (resp !== undefined && !resp.loaded) {
-            if (tab_settings.ruffle_enable === "on") {
+            if (tab_settings.ruffle_enable) {
                 ruffle_status.textContent = get_i18n_string(
                     "status_result_optout"
                 );

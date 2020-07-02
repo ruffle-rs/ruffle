@@ -20,18 +20,12 @@ get_sync_storage(["ruffle_enable", "ignore_optout"], function (data) {
     play_flash_label.innerHTML = play_flash_message + "<br />";
     ignore_optout_label.innerHTML = ignore_optout_message + "<br />";
     save_button.value = save_text;
-    if (data.ruffle_enable == "on") {
-        play_flash_checkbox.checked = true;
-    }
-    if (data.ignore_optout == "on") {
-        ignore_optout_checkbox.checked = true;
-    }
+    play_flash_checkbox.checked = data.ruffle_enable;
+    ignore_optout_checkbox.checked = data.ignore_optout;
     save_button.onclick = function () {
         set_sync_storage({
-            ruffle_enable: play_flash_checkbox.checked ? "on" : "",
-        });
-        set_sync_storage({
-            ignore_optout: ignore_optout_checkbox.checked ? "on" : "",
+            ruffle_enable: play_flash_checkbox.checked,
+            ignore_optout: ignore_optout_checkbox.checked,
         });
         alert("Settings Saved");
     };

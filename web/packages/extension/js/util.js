@@ -12,6 +12,12 @@ module.exports = {
     get_extension_url,
 };
 
+// List of defaults for all settings.
+const DEFAULT_SETTINGS = {
+    ruffle_enable: true,
+    ignore_output: false,
+};
+
 function get_i18n_string(key) {
     if (chrome && chrome.i18n && chrome.i18n.getMessage) {
         return chrome.i18n.getMessage(key);
@@ -43,20 +49,41 @@ function set_sync_storage(key) {
 }
 
 function get_sync_storage(key, callback) {
+    // Create array of keys so that we can grab the defaults, if necessary.
+    let data_type = typeof key;
+    let keys;
+    if (data_type == "string") {
+        keys = [key];
+    } else if (Array.isArray(key)) {
+        keys = key;
+    } else {
+        keys = Object.keys(key);
+    }
+
+    // Copy over default settings if they don't exist yet.
+    let callback_with_default = (data) => {
+        for (const k of keys) {
+            if (data[k] === undefined) {
+                data[k] = DEFAULT_SETTINGS[k];
+            }
+        }
+        return callback(data);
+    };
+
     if (
         chrome &&
         chrome.storage &&
         chrome.storage.sync &&
         chrome.storage.sync.get
     ) {
-        chrome.storage.sync.get(key, callback);
+        chrome.storage.sync.get(key, callback_with_default);
     } else if (
         browser &&
         browser.storage &&
         browser.storage.sync &&
         browser.storage.sync.get
     ) {
-        browser.storage.sync.get(key, callback);
+        browser.storage.sync.get(key, callback_with_default);
     } else {
         console.error("Couldn't read setting: " + key);
     }
