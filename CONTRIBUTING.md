@@ -13,6 +13,7 @@ This document serves as a general guide for contributing to Ruffle. Follow your 
    * [Fix interesting issues](#fix-interesting-issues)
    * [Implement missing Flash functionality](#implement-missing-flash-functionality)
  * [Reporting Bugs](#reporting-bugs)
+ * [Debugging ActionScript Content](#debugging-actionscript-content)
  * [Code Guidelines](#code-guidelines)
  * [Commit Message Guidelines](#commit-guidelines)
  * [Pull Requests](#pull-requests)
@@ -48,6 +49,21 @@ You can also ask for mentoring on our [Discord server](https://discord.gg/J8hgCQ
 ### Implement missing Flash functionality
 
 Ruffle is a young project, and there is still much Flash functionality that is unimplemented. Check for the ["unimplemented"](https://github.com/ruffle-rs/ruffle/issues?q=is%3Aissue+is%3Aopen+label%3Aunimplemented) in issues.
+
+## Debugging ActionScript Content
+
+If you build Ruffle with `--features avm_debug` and enable debug logging (`RUST_LOG=warn,ruffle_core=debug`) then you will
+be able to follow the flow of ActionScript inside of a SWF movie. Please note that this will likely slow down Ruffle,
+and it may spam quite a lot of output.
+
+When paired with a tool such as [JPEXS](https://github.com/jindrapetrik/jpexs-decompiler), you can compare the ActionScript
+you see being executed in Ruffle with the actual ActionScript inside of the game, and attempt to find whatever problem
+it is that you're looking for.
+
+In addition to this, the hotkey `CTRL + ALT + V` will dump every variable inside the AVM at the moment you press it.
+This can be very useful to inspect the internal state of games and see, for example, if a coordinate is NaN, your lives
+are negative, or maybe an important object just didn't get initialized.
+
 
 ## Reporting bugs
 
