@@ -344,7 +344,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         }
 
         if activation
-            .avm()
+            .avm
             .display_properties
             .read()
             .get_by_name(&name)
@@ -400,13 +400,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
     fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
         self.0.read().base.is_property_enumerable(activation, name)
-    }
-
-    fn is_property_overwritable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
-        self.0
-            .read()
-            .base
-            .is_property_overwritable(activation, name)
     }
 
     fn get_keys(&self, activation: &mut Activation<'_, 'gc>) -> Vec<String> {

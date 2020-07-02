@@ -228,9 +228,7 @@ impl<'gc> ScriptObject<'gc> {
             if is_vacant {
                 let mut proto: Option<Object<'gc>> = Some((*self).into());
                 while let Some(this_proto) = proto {
-                    if this_proto.has_own_virtual(activation, context, name)
-                        && this_proto.is_property_overwritable(activation, name)
-                    {
+                    if this_proto.has_own_virtual(activation, context, name) {
                         break;
                     }
 
@@ -238,6 +236,7 @@ impl<'gc> ScriptObject<'gc> {
                 }
 
                 if let Some(this_proto) = proto {
+                    worked = true;
                     if let Some(rval) =
                         this_proto.call_setter(name, value.clone(), activation, context)
                     {
@@ -249,7 +248,6 @@ impl<'gc> ScriptObject<'gc> {
                             Some(this_proto),
                             &[value.clone()],
                         )?;
-                        worked = true;
                     }
                 }
             }
@@ -560,15 +558,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         } else {
             false
         }
-    }
-
-    fn is_property_overwritable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
-        self.0
-            .read()
-            .values
-            .get(name, activation.is_case_sensitive())
-            .map(|p| p.is_overwritable())
-            .unwrap_or(false)
     }
 
     /// Checks if a named property appears when enumerating the object.

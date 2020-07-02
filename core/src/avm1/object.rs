@@ -285,9 +285,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: &str,
     ) -> bool;
 
-    /// Checks if a named property can be overwritten.
-    fn is_property_overwritable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool;
-
     /// Checks if a named property appears when enumerating the object.
     fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool;
 
