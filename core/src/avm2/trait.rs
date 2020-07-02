@@ -3,8 +3,11 @@
 use crate::avm2::class::Class;
 use crate::avm2::function::Method;
 use crate::avm2::names::{Multiname, QName};
-use crate::avm2::value::Value;
-use gc_arena::{Collect, Gc};
+use crate::avm2::script::TranslationUnit;
+use crate::avm2::value::{abc_default_value, Value};
+use crate::avm2::Error;
+use gc_arena::{Collect, GcCell, MutationContext};
+use swf::avm2::types::{Trait as AbcTrait, TraitKind as AbcTraitKind};
 
 /// Represents a trait as loaded into the VM.
 ///
@@ -62,7 +65,7 @@ pub enum TraitKind<'gc> {
     /// objects.
     Class {
         slot_id: u32,
-        class: Gc<'gc, Class<'gc>>,
+        class: GcCell<'gc, Class<'gc>>,
     },
 
     /// A free function (not an instance method) that can be called.
@@ -78,6 +81,99 @@ pub enum TraitKind<'gc> {
 }
 
 impl<'gc> Trait<'gc> {
+    /// Convert an ABC trait into a loaded trait.
+    pub fn from_abc_trait(
+        unit: &mut TranslationUnit<'gc>,
+        abc_trait: &AbcTrait,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<Self, Error> {
+        let name = QName::from_abc_multiname(&unit.abc(), abc_trait.name)?;
+
+        Ok(match abc_trait.kind {
+            AbcTraitKind::Slot {
+                slot_id,
+                type_name,
+                value,
+            } => Trait {
+                name,
+                is_final: abc_trait.is_final,
+                is_override: abc_trait.is_override,
+                kind: TraitKind::Slot {
+                    slot_id,
+                    type_name: Multiname::from_abc_multiname_static(&unit.abc(), type_name)?,
+                    default_value: if let Some(dv) = value {
+                        Some(abc_default_value(&unit.abc(), &dv)?)
+                    } else {
+                        None
+                    },
+                },
+            },
+            AbcTraitKind::Method { disp_id, method } => Trait {
+                name,
+                is_final: abc_trait.is_final,
+                is_override: abc_trait.is_override,
+                kind: TraitKind::Method {
+                    disp_id,
+                    method: unit.load_method(method.0)?,
+                },
+            },
+            AbcTraitKind::Getter { disp_id, method } => Trait {
+                name,
+                is_final: abc_trait.is_final,
+                is_override: abc_trait.is_override,
+                kind: TraitKind::Getter {
+                    disp_id,
+                    method: unit.load_method(method.0)?,
+                },
+            },
+            AbcTraitKind::Setter { disp_id, method } => Trait {
+                name,
+                is_final: abc_trait.is_final,
+                is_override: abc_trait.is_override,
+                kind: TraitKind::Setter {
+                    disp_id,
+                    method: unit.load_method(method.0)?,
+                },
+            },
+            AbcTraitKind::Class { slot_id, class } => Trait {
+                name,
+                is_final: abc_trait.is_final,
+                is_override: abc_trait.is_override,
+                kind: TraitKind::Class {
+                    slot_id,
+                    class: unit.load_class(class.0, mc)?,
+                },
+            },
+            AbcTraitKind::Function { slot_id, function } => Trait {
+                name,
+                is_final: abc_trait.is_final,
+                is_override: abc_trait.is_override,
+                kind: TraitKind::Function {
+                    slot_id,
+                    function: unit.load_method(function.0)?,
+                },
+            },
+            AbcTraitKind::Const {
+                slot_id,
+                type_name,
+                value,
+            } => Trait {
+                name,
+                is_final: abc_trait.is_final,
+                is_override: abc_trait.is_override,
+                kind: TraitKind::Const {
+                    slot_id,
+                    type_name: Multiname::from_abc_multiname_static(&unit.abc(), type_name)?,
+                    default_value: if let Some(dv) = value {
+                        Some(abc_default_value(&unit.abc(), &dv)?)
+                    } else {
+                        None
+                    },
+                },
+            },
+        })
+    }
+
     pub fn name(&self) -> &QName {
         &self.name
     }

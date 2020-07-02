@@ -3,8 +3,9 @@
 use crate::avm2::function::Method;
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::r#trait::{Trait, TraitKind};
+use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
-use gc_arena::{Collect, Gc};
+use gc_arena::{Collect, GcCell, MutationContext};
 use std::rc::Rc;
 use swf::avm2::types::{AbcFile, Class as AbcClass, Index, Instance as AbcInstance};
 
@@ -96,7 +97,7 @@ pub struct Class<'gc> {
     /// These are accessed as normal instance properties; they should not be
     /// present on prototypes, but instead should shadow any prototype
     /// properties that would match.
-    instance_traits: Vec<Gc<'gc, Trait<'gc>>>,
+    instance_traits: Vec<Trait<'gc>>,
 
     /// The class initializer for this class.
     ///
@@ -106,7 +107,10 @@ pub struct Class<'gc> {
     /// Static traits for a given class.
     ///
     /// These are accessed as constructor properties.
-    class_traits: Vec<Gc<'gc, Trait<'gc>>>,
+    class_traits: Vec<Trait<'gc>>,
+
+    /// Whether or not this `Class` has loaded it's traits or not.
+    traits_loaded: bool,
 }
 
 /// Find traits in a list of traits matching a name.
@@ -117,8 +121,8 @@ pub struct Class<'gc> {
 /// TODO: This is an O(n^2) algorithm, it sucks.
 fn do_trait_lookup<'gc>(
     name: &QName,
-    known_traits: &mut Vec<Gc<'gc, Trait<'gc>>>,
-    all_traits: &[Gc<'gc, Trait<'gc>>],
+    known_traits: &mut Vec<Trait<'gc>>,
+    all_traits: &[Trait<'gc>],
 ) -> Result<(), Error> {
     for trait_entry in all_traits {
         if name == trait_entry.name() {
@@ -146,6 +150,121 @@ fn do_trait_lookup<'gc>(
 }
 
 impl<'gc> Class<'gc> {
+    /// Construct a class from a `TranslationUnit` and it's class index.
+    ///
+    /// The returned class will be allocated, but no traits will be loaded. The
+    /// caller is responsible for storing the class in the `TranslationUnit`
+    /// and calling `load_traits` to complete the trait-loading process.
+    pub fn from_abc_index(
+        unit: &mut TranslationUnit<'gc>,
+        class_index: u32,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<GcCell<'gc, Self>, Error> {
+        let abc_class: Result<&AbcClass, Error> = unit
+            .abc()
+            .classes
+            .get(class_index as usize)
+            .ok_or("LoadError: Class index not valid".into());
+        let abc_class = abc_class?;
+
+        let abc_instance: Result<&AbcInstance, Error> = unit
+            .abc()
+            .instances
+            .get(class_index as usize)
+            .ok_or("LoadError: Instance index not valid".into());
+        let abc_instance = abc_instance?;
+
+        let name = QName::from_abc_multiname(&unit.abc(), abc_instance.name)?;
+        let super_class = if abc_instance.super_name.0 == 0 {
+            None
+        } else {
+            Some(Multiname::from_abc_multiname_static(
+                &unit.abc(),
+                abc_instance.super_name,
+            )?)
+        };
+
+        let protected_namespace = if let Some(ns) = abc_instance.protected_namespace {
+            Some(Namespace::from_abc_namespace(&unit.abc(), ns)?)
+        } else {
+            None
+        };
+
+        let mut interfaces = Vec::new();
+        for interface_name in abc_instance.interfaces {
+            interfaces.push(Multiname::from_abc_multiname_static(
+                &unit.abc(),
+                interface_name,
+            )?);
+        }
+
+        let instance_init = unit.load_method(abc_instance.init_method.0)?;
+        let class_init = unit.load_method(abc_class.init_method.0)?;
+
+        Ok(GcCell::allocate(
+            mc,
+            Self {
+                name,
+                super_class,
+                is_sealed: abc_instance.is_sealed,
+                is_final: abc_instance.is_final,
+                is_interface: abc_instance.is_interface,
+                protected_namespace,
+                interfaces,
+                instance_init,
+                instance_traits: Vec::new(),
+                class_init,
+                class_traits: Vec::new(),
+                traits_loaded: false,
+            },
+        ))
+    }
+
+    /// Finish the class-loading process by loading traits.
+    ///
+    /// This process must be done after the `Class` has been stored in the
+    /// `TranslationUnit`. Failing to do so runs the risk of runaway recursion
+    /// or double-borrows. It should be done before the class is actually
+    /// instantiated into an `Object`.
+    pub fn load_traits(
+        &mut self,
+        unit: &mut TranslationUnit<'gc>,
+        class_index: u32,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<(), Error> {
+        if self.traits_loaded {
+            return Ok(());
+        }
+
+        self.traits_loaded = true;
+
+        let abc_class: Result<&AbcClass, Error> = unit
+            .abc()
+            .classes
+            .get(class_index as usize)
+            .ok_or_else(|| "LoadError: Class index not valid".into());
+        let abc_class = abc_class?;
+
+        let abc_instance: Result<&AbcInstance, Error> = unit
+            .abc()
+            .instances
+            .get(class_index as usize)
+            .ok_or_else(|| "LoadError: Instance index not valid".into());
+        let abc_instance = abc_instance?;
+
+        for abc_trait in abc_instance.traits {
+            self.instance_traits
+                .push(Trait::from_abc_trait(unit, &abc_trait, mc)?);
+        }
+
+        for abc_trait in abc_class.traits {
+            self.class_traits
+                .push(Trait::from_abc_trait(unit, &abc_trait, mc)?);
+        }
+
+        Ok(())
+    }
+
     pub fn name(&self) -> &QName {
         &self.name
     }
@@ -167,7 +286,7 @@ impl<'gc> Class<'gc> {
     pub fn lookup_class_traits(
         &self,
         name: &QName,
-        known_traits: &mut Vec<Gc<'gc, Trait<'gc>>>,
+        known_traits: &mut Vec<Trait<'gc>>,
     ) -> Result<(), Error> {
         do_trait_lookup(name, known_traits, &self.class_traits)
     }
@@ -211,7 +330,7 @@ impl<'gc> Class<'gc> {
     pub fn lookup_instance_traits(
         &self,
         name: &QName,
-        known_traits: &mut Vec<Gc<'gc, Trait<'gc>>>,
+        known_traits: &mut Vec<Trait<'gc>>,
     ) -> Result<(), Error> {
         do_trait_lookup(name, known_traits, &self.instance_traits)
     }

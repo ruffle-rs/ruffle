@@ -39,6 +39,7 @@ mod object;
 mod property;
 mod return_value;
 mod scope;
+mod script;
 mod script_object;
 mod slot;
 mod r#trait;
@@ -1291,7 +1292,7 @@ impl<'gc> Avm2<'gc> {
         let method_entry = self.table_method(index)?;
         let scope = self.current_stack_frame().unwrap().read().scope();
 
-        let mut new_fn = FunctionObject::from_abc_method(
+        let mut new_fn = FunctionObject::from_method(
             context.gc_context,
             method_entry,
             scope,

@@ -11,7 +11,7 @@ use crate::avm2::script_object::{ScriptObjectClass, ScriptObjectData};
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
-use gc_arena::{Collect, CollectionContext, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, CollectionContext, GcCell, MutationContext};
 use std::fmt;
 use std::rc::Rc;
 use swf::avm2::types::{AbcFile, Index, Method as AbcMethod, MethodBody as AbcMethodBody};
@@ -301,10 +301,11 @@ impl<'gc> FunctionObject<'gc> {
     pub fn from_class(
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        class: Gc<'gc, Class<'gc>>,
+        class: GcCell<'gc, Class<'gc>>,
         mut base_class: Object<'gc>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<(Object<'gc>, Object<'gc>), Error> {
+        let class_read = class.read();
         let super_proto: Result<Object<'gc>, Error> = base_class
             .get_property(
                 base_class,
@@ -316,7 +317,7 @@ impl<'gc> FunctionObject<'gc> {
             .map_err(|_| {
                 format!(
                     "Could not resolve superclass prototype {:?}",
-                    class
+                    class_read
                         .super_class_name()
                         .map(|p| p.local_name())
                         .unwrap_or(Some("Object"))
@@ -327,7 +328,7 @@ impl<'gc> FunctionObject<'gc> {
         let fn_proto = avm.prototypes().function;
         let class_constr_proto = avm.prototypes().class;
 
-        let initializer = class.instance_init();
+        let initializer = class_read.instance_init();
 
         let mut constr: Object<'gc> = FunctionObject(GcCell::allocate(
             context.gc_context,
@@ -352,7 +353,7 @@ impl<'gc> FunctionObject<'gc> {
             constr.into(),
         )?;
 
-        let class_initializer = class.class_init();
+        let class_initializer = class_read.class_init();
         let class_constr = FunctionObject::from_method(
             context.gc_context,
             class_initializer,
@@ -520,14 +521,14 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0.read().base.get_method(id)
     }
 
-    fn get_trait(self, name: &QName) -> Result<Vec<Gc<'gc, Trait<'gc>>>, Error> {
+    fn get_trait(self, name: &QName) -> Result<Vec<Trait<'gc>>, Error> {
         self.0.read().base.get_trait(name)
     }
 
     fn get_provided_trait(
         &self,
         name: &QName,
-        known_traits: &mut Vec<Gc<'gc, Trait<'gc>>>,
+        known_traits: &mut Vec<Trait<'gc>>,
     ) -> Result<(), Error> {
         self.0.read().base.get_provided_trait(name, known_traits)
     }
@@ -636,7 +637,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         &self,
         _avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        class: Gc<'gc, Class<'gc>>,
+        class: GcCell<'gc, Class<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::FunctionObject(*self);
@@ -654,7 +655,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn to_string(&self) -> Result<Value<'gc>, Error> {
         if let ScriptObjectClass::ClassConstructor(class, ..) = self.0.read().base.class() {
-            Ok(format!("[class {}]", class.name().local_name()).into())
+            Ok(format!("[class {}]", class.read().name().local_name()).into())
         } else {
             Ok("function Function() {}".into())
         }

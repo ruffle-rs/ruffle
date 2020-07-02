@@ -12,7 +12,7 @@ use crate::avm2::slot::Slot;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::HashMap;
 use std::fmt::Debug;
 
@@ -33,10 +33,10 @@ pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
 #[collect(no_drop)]
 pub enum ScriptObjectClass<'gc> {
     /// Instantiate instance traits, for prototypes.
-    InstancePrototype(Gc<'gc, Class<'gc>>, Option<GcCell<'gc, Scope<'gc>>>),
+    InstancePrototype(GcCell<'gc, Class<'gc>>, Option<GcCell<'gc, Scope<'gc>>>),
 
     /// Instantiate class traits, for class constructors.
-    ClassConstructor(Gc<'gc, Class<'gc>>, Option<GcCell<'gc, Scope<'gc>>>),
+    ClassConstructor(GcCell<'gc, Class<'gc>>, Option<GcCell<'gc, Scope<'gc>>>),
 
     /// Do not instantiate any class or instance traits.
     NoClass,
@@ -152,14 +152,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().get_method(id)
     }
 
-    fn get_trait(self, name: &QName) -> Result<Vec<Gc<'gc, Trait<'gc>>>, Error> {
+    fn get_trait(self, name: &QName) -> Result<Vec<Trait<'gc>>, Error> {
         self.0.read().get_trait(name)
     }
 
     fn get_provided_trait(
         &self,
         name: &QName,
-        known_traits: &mut Vec<Gc<'gc, Trait<'gc>>>,
+        known_traits: &mut Vec<Trait<'gc>>,
     ) -> Result<(), Error> {
         self.0.read().get_provided_trait(name, known_traits)
     }
@@ -241,7 +241,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         &self,
         _avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        class: Gc<'gc, Class<'gc>>,
+        class: GcCell<'gc, Class<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::ScriptObject(*self);
@@ -347,7 +347,7 @@ impl<'gc> ScriptObject<'gc> {
     pub fn prototype(
         mc: MutationContext<'gc, '_>,
         proto: Object<'gc>,
-        class: Gc<'gc, Class<'gc>>,
+        class: GcCell<'gc, Class<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Object<'gc> {
         let script_class = ScriptObjectClass::InstancePrototype(class, scope);
@@ -526,7 +526,7 @@ impl<'gc> ScriptObjectData<'gc> {
         self.methods.get(id as usize).and_then(|v| *v)
     }
 
-    pub fn get_trait(&self, name: &QName) -> Result<Vec<Gc<'gc, Trait<'gc>>>, Error> {
+    pub fn get_trait(&self, name: &QName) -> Result<Vec<Trait<'gc>>, Error> {
         match &self.class {
             //Class constructors have local traits only.
             ScriptObjectClass::ClassConstructor(..) => {
@@ -564,14 +564,14 @@ impl<'gc> ScriptObjectData<'gc> {
     pub fn get_provided_trait(
         &self,
         name: &QName,
-        known_traits: &mut Vec<Gc<'gc, Trait<'gc>>>,
+        known_traits: &mut Vec<Trait<'gc>>,
     ) -> Result<(), Error> {
         match &self.class {
             ScriptObjectClass::ClassConstructor(class, ..) => {
-                class.lookup_class_traits(name, known_traits)
+                class.read().lookup_class_traits(name, known_traits)
             }
             ScriptObjectClass::InstancePrototype(class, ..) => {
-                class.lookup_instance_traits(name, known_traits)
+                class.read().lookup_instance_traits(name, known_traits)
             }
             ScriptObjectClass::NoClass => Ok(()),
         }
@@ -606,8 +606,12 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn provides_trait(&self, name: &QName) -> Result<bool, Error> {
         match &self.class {
-            ScriptObjectClass::ClassConstructor(class, ..) => Ok(class.has_class_trait(name)),
-            ScriptObjectClass::InstancePrototype(class, ..) => Ok(class.has_instance_trait(name)),
+            ScriptObjectClass::ClassConstructor(class, ..) => {
+                Ok(class.read().has_class_trait(name))
+            }
+            ScriptObjectClass::InstancePrototype(class, ..) => {
+                Ok(class.read().has_instance_trait(name))
+            }
             ScriptObjectClass::NoClass => Ok(false),
         }
     }
@@ -644,10 +648,10 @@ impl<'gc> ScriptObjectData<'gc> {
 
         match &self.class {
             ScriptObjectClass::ClassConstructor(class, ..) => {
-                Ok(class.resolve_any_class_trait(local_name))
+                Ok(class.read().resolve_any_class_trait(local_name))
             }
             ScriptObjectClass::InstancePrototype(class, ..) => {
-                Ok(class.resolve_any_instance_trait(local_name))
+                Ok(class.read().resolve_any_instance_trait(local_name))
             }
             ScriptObjectClass::NoClass => Ok(None),
         }

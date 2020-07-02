@@ -9,7 +9,7 @@ use crate::avm2::script_object::ScriptObject;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::fmt::Debug;
 
@@ -192,7 +192,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This function returns `None` if no such trait exists, or the object
     /// does not have traits. It returns `Err` if *any* trait in the object is
     /// malformed in some way.
-    fn get_trait(self, name: &QName) -> Result<Vec<Gc<'gc, Trait<'gc>>>, Error>;
+    fn get_trait(self, name: &QName) -> Result<Vec<Trait<'gc>>, Error>;
 
     /// Populate a list of traits that this object provides.
     ///
@@ -203,7 +203,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_provided_trait(
         &self,
         name: &QName,
-        known_traits: &mut Vec<Gc<'gc, Trait<'gc>>>,
+        known_traits: &mut Vec<Trait<'gc>>,
     ) -> Result<(), Error>;
 
     /// Retrieves the scope chain of the object at time of it's creation.
@@ -406,7 +406,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &mut self,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        trait_entry: Gc<'gc, Trait<'gc>>,
+        trait_entry: Trait<'gc>,
         reciever: Object<'gc>,
     ) -> Result<(), Error> {
         self.install_foreign_trait(avm, context, trait_entry, self.get_scope(), reciever)
@@ -417,7 +417,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &mut self,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        trait_entry: Gc<'gc, Trait<'gc>>,
+        trait_entry: Trait<'gc>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         reciever: Object<'gc>,
     ) -> Result<(), Error> {
@@ -479,10 +479,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 self.install_setter(context.gc_context, trait_name, *disp_id, function)?;
             }
             TraitKind::Class { slot_id, class } => {
+                let class_read = class.read();
                 //TODO: what happens if this happens on a class defined as a
                 //class trait, without a superclass? How do we get `Object`
                 //then?
-                let super_name = if let Some(sc_name) = class.super_class_name() {
+                let super_name = if let Some(sc_name) = class_read.super_class_name() {
                     self.resolve_multiname(sc_name)?
                         .unwrap_or(QName::dynamic_name("Object"))
                 } else {
@@ -500,7 +501,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     FunctionObject::from_class(avm, context, *class, super_class?, scope)?;
                 self.install_const(
                     context.gc_context,
-                    class.name().clone(),
+                    class_read.name().clone(),
                     *slot_id,
                     class_object.into(),
                 );
@@ -591,7 +592,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &self,
         avm: &mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        class: Gc<'gc, Class<'gc>>,
+        class: GcCell<'gc, Class<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error>;
 
