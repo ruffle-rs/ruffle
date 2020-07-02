@@ -2327,13 +2327,27 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         code: SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let object = self.avm.pop().coerce_to_object(self, context);
-        let with_scope = Scope::new_with_scope(self.scope_cell(), object, context.gc_context);
-        let mut new_activation = self.with_new_scope("[With]", with_scope);
-        if let ReturnType::Explicit(value) = new_activation.run_actions(context, code)? {
-            Ok(FrameControl::Return(ReturnType::Explicit(value)))
-        } else {
-            Ok(FrameControl::Continue)
+        let value = self.avm.pop();
+        match value {
+            // Undefined/null with is ignored.
+            Value::Undefined | Value::Null => {
+                // Mimic Flash's error output.
+                log::info!(target: "avm_trace", "Error: A 'with' action failed because the specified object did not exist.\n");
+                Ok(FrameControl::Continue)
+            }
+
+            value => {
+                // Note that primitives get boxed at this point.
+                let object = value.coerce_to_object(self, context);
+                let with_scope =
+                    Scope::new_with_scope(self.scope_cell(), object, context.gc_context);
+                let mut new_activation = self.with_new_scope("[With]", with_scope);
+                if let ReturnType::Explicit(value) = new_activation.run_actions(context, code)? {
+                    Ok(FrameControl::Return(ReturnType::Explicit(value)))
+                } else {
+                    Ok(FrameControl::Continue)
+                }
+            }
         }
     }
 
