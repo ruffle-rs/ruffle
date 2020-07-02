@@ -1,4 +1,4 @@
-use crate::avm1::activation::Activation;
+use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::debug::VariableDumper;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::listeners::SystemListener;
@@ -274,6 +274,7 @@ impl Player {
 
             let mut activation = Activation::from_nothing(
                 avm,
+                ActivationIdentifier::root("[Version Setter]"),
                 context.swf.version(),
                 avm.global_object_cell(),
                 context.gc_context,
@@ -390,6 +391,7 @@ impl Player {
 
                     let mut activation = Activation::from_nothing(
                         avm,
+                        ActivationIdentifier::root("[Variable Dumper]"),
                         context.swf.version(),
                         avm.global_object_cell(),
                         context.gc_context,
@@ -740,6 +742,7 @@ impl Player {
                 ActionType::Normal { bytecode } => {
                     avm.run_stack_frame_for_action(
                         actions.clip,
+                        "[Frame]",
                         context.swf.header().version,
                         bytecode,
                         context,
@@ -752,6 +755,7 @@ impl Player {
                 } => {
                     let mut activation = Activation::from_nothing(
                         avm,
+                        ActivationIdentifier::root("[Construct]"),
                         context.swf.version(),
                         avm.global_object_cell(),
                         context.gc_context,
@@ -765,6 +769,7 @@ impl Player {
                             object.set_proto(context.gc_context, Some(prototype));
                             for event in events {
                                 let _ = activation.run_child_frame_for_action(
+                                    "[Actions]",
                                     actions.clip,
                                     context.swf.header().version,
                                     event,
@@ -772,7 +777,14 @@ impl Player {
                                 );
                             }
 
-                            let _ = constructor.call(&mut activation, context, object, None, &[]);
+                            let _ = constructor.call(
+                                "[ctor]",
+                                &mut activation,
+                                context,
+                                object,
+                                None,
+                                &[],
+                            );
                         }
                     }
                 }
@@ -784,6 +796,7 @@ impl Player {
                     for event in events {
                         avm.run_stack_frame_for_action(
                             actions.clip,
+                            "[Construct]",
                             context.swf.header().version,
                             event,
                             context,
@@ -1005,6 +1018,7 @@ impl Player {
         self.update(|avm, context| {
             let mut activation = Activation::from_nothing(
                 avm,
+                ActivationIdentifier::root("[Flush]"),
                 context.swf.version(),
                 avm.global_object_cell(),
                 context.gc_context,

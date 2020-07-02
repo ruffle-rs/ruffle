@@ -811,7 +811,7 @@ fn sort_compare_custom<'gc>(
     // TODO: Handle errors.
     let args = [a.clone(), b.clone()];
     let ret = compare_fn
-        .call(activation, context, this, None, &args)
+        .call("[Compare]", activation, context, this, None, &args)
         .unwrap_or(Value::Undefined);
     match ret {
         Value::Number(n) if n > 0.0 => Ordering::Greater,

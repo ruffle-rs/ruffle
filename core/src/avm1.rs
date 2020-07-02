@@ -39,7 +39,7 @@ pub mod xml_object;
 #[cfg(test)]
 mod tests;
 
-use crate::avm1::activation::Activation;
+use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::error::Error;
 use crate::avm1::listeners::SystemListener;
 pub use globals::SystemPrototypes;
@@ -131,9 +131,10 @@ impl<'gc> Avm1<'gc> {
     /// Add a stack frame that executes code in timeline scope
     ///
     /// This creates a new frame stack.
-    pub fn run_stack_frame_for_action(
+    pub fn run_stack_frame_for_action<S: Into<Cow<'static, str>>>(
         &mut self,
         active_clip: DisplayObject<'gc>,
+        name: S,
         swf_version: u8,
         code: SwfSlice,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -145,6 +146,7 @@ impl<'gc> Avm1<'gc> {
 
         let mut parent_activation = Activation::from_nothing(
             self,
+            ActivationIdentifier::root("[Actions Parent]"),
             swf_version,
             self.global_object_cell(),
             context.gc_context,
@@ -165,6 +167,7 @@ impl<'gc> Avm1<'gc> {
         let constant_pool = parent_activation.avm.constant_pool;
         let mut child_activation = Activation::from_action(
             parent_activation.avm,
+            parent_activation.id.child(name),
             swf_version,
             child_scope,
             constant_pool,
@@ -204,6 +207,7 @@ impl<'gc> Avm1<'gc> {
         );
         let mut activation = Activation::from_action(
             self,
+            ActivationIdentifier::root("[Display Object]"),
             swf_version,
             child_scope,
             self.constant_pool,
@@ -231,6 +235,7 @@ impl<'gc> Avm1<'gc> {
 
         let mut parent_activation = Activation::from_nothing(
             self,
+            ActivationIdentifier::root("[Init Parent]"),
             swf_version,
             self.global_object_cell(),
             context.gc_context,
@@ -252,6 +257,7 @@ impl<'gc> Avm1<'gc> {
         let constant_pool = parent_activation.avm.constant_pool;
         let mut child_activation = Activation::from_action(
             parent_activation.avm,
+            parent_activation.id.child("[Init]"),
             swf_version,
             child_scope,
             constant_pool,
@@ -284,6 +290,7 @@ impl<'gc> Avm1<'gc> {
 
         let mut activation = Activation::from_nothing(
             self,
+            ActivationIdentifier::root(name.to_owned()),
             swf_version,
             self.global_object_cell(),
             context.gc_context,
@@ -294,7 +301,7 @@ impl<'gc> Avm1<'gc> {
             search_prototype(Some(obj), name, &mut activation, context, obj).map(|r| (r.0, r.1));
 
         if let Ok((callback, base_proto)) = search_result {
-            let _ = callback.call(&mut activation, context, obj, base_proto, args);
+            let _ = callback.call(name, &mut activation, context, obj, base_proto, args);
         }
     }
 
@@ -309,6 +316,7 @@ impl<'gc> Avm1<'gc> {
     ) {
         let mut activation = Activation::from_nothing(
             self,
+            ActivationIdentifier::root("[System Listeners]"),
             swf_version,
             self.global_object_cell(),
             context.gc_context,
@@ -319,7 +327,7 @@ impl<'gc> Avm1<'gc> {
         let mut handlers = listeners.prepare_handlers(&mut activation, context, method);
 
         for (listener, handler) in handlers.drain(..) {
-            let _ = handler.call(&mut activation, context, listener, None, &args);
+            let _ = handler.call(method, &mut activation, context, listener, None, &args);
         }
     }
 

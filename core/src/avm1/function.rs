@@ -222,6 +222,7 @@ impl<'gc> Executable<'gc> {
     /// create a new stack frame and execute the action data yourself.
     pub fn exec(
         &self,
+        name: &str,
         activation: &mut Activation<'_, 'gc>,
         ac: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
@@ -278,8 +279,29 @@ impl<'gc> Executable<'gc> {
                         .unwrap_or(ac.player_version)
                 };
 
+                let name = if cfg!(feature = "avm_debug") {
+                    let mut result = match &af.name {
+                        None => name.to_string(),
+                        Some(name) => name.to_string(),
+                    };
+
+                    result.push('(');
+                    for i in 0..args.len() {
+                        result.push_str(args.get(i).unwrap().type_of());
+                        if i < args.len() - 1 {
+                            result.push_str(", ");
+                        }
+                    }
+                    result.push(')');
+
+                    result
+                } else {
+                    af.name.clone().unwrap_or_else(|| name.to_string())
+                };
+
                 let mut frame = Activation::from_action(
                     activation.avm,
+                    activation.id.child(name),
                     effective_ver,
                     child_scope,
                     af.constant_pool,
@@ -468,9 +490,9 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     ) -> Result<(), Error<'gc>> {
         self.base.set(name, value, activation, context)
     }
-
     fn call(
         &self,
+        name: &str,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
@@ -478,7 +500,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(exec) = self.as_executable() {
-            exec.exec(activation, context, this, base_proto, args)
+            exec.exec(name, activation, context, this, base_proto, args)
         } else {
             Ok(Value::Undefined)
         }

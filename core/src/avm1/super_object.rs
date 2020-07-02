@@ -101,9 +101,9 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         //TODO: What happens if you set `super.__proto__`?
         Ok(())
     }
-
     fn call(
         &self,
+        name: &str,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
@@ -112,6 +112,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(constr) = self.super_constr(activation, context)? {
             constr.call(
+                name,
                 activation,
                 context,
                 self.0.read().child,
@@ -140,7 +141,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
             log::warn!("Super method {} is not callable", name);
         }
 
-        method.call(activation, context, child, base_proto, args)
+        method.call(name, activation, context, child, base_proto, args)
     }
 
     fn call_setter(

@@ -218,9 +218,9 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             )
         }
     }
-
     fn call(
         &self,
+        name: &str,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
@@ -230,7 +230,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0
             .read()
             .base
-            .call(activation, context, this, base_proto, args)
+            .call(name, activation, context, this, base_proto, args)
     }
 
     fn call_setter(
