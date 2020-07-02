@@ -1,0 +1,118 @@
+// watch()
+false
+
+// watch("variable")
+false
+
+// watch("variable", true)
+false
+
+// watch("variable", clamper, {min: 5, max: 10})
+true
+
+// variable = 5
+Clamper: variable changed from undefined to 5 with userdata { min=5 max=10 }
+// variable
+5
+
+// variable = 10
+Clamper: variable changed from 5 to 10 with userdata { min=5 max=10 }
+// variable
+10
+
+// variable = 4
+Clamper: variable changed from 10 to 4 with userdata { min=5 max=10 }
+// variable
+5
+
+// variable = 11
+Clamper: variable changed from 5 to 11 with userdata { min=5 max=10 }
+// variable
+10
+
+// variable = 6
+Clamper: variable changed from 10 to 6 with userdata { min=5 max=10 }
+// variable
+6
+
+// delete(variable)
+
+// variable = 3
+Clamper: variable changed from undefined to 3 with userdata { min=5 max=10 }
+// variable
+5
+
+// watch("variable", clamper, {min: 15, max: 20})
+true
+
+// variable = 14
+Clamper: variable changed from 5 to 14 with userdata { min=15 max=20 }
+// variable
+15
+
+// variable = 21
+Clamper: variable changed from 15 to 21 with userdata { min=15 max=20 }
+// variable
+20
+
+// variable = 18
+Clamper: variable changed from 20 to 18 with userdata { min=15 max=20 }
+// variable
+18
+
+// watch("variable", exceptionalClamper, {min: 15, max: 20})
+true
+
+// variable = 14
+exceptionalClamper: variable changed from 18 to 14 with userdata { min=15 max=20 }
+ERROR: too low!
+// variable
+undefined
+
+// variable = 21
+exceptionalClamper: variable changed from undefined to 21 with userdata { min=15 max=20 }
+ERROR: too high!
+// variable
+undefined
+
+// variable = 18
+exceptionalClamper: variable changed from undefined to 18 with userdata { min=15 max=20 }
+// variable
+18
+
+// unwatch("variable")
+true
+
+// variable = 4
+// variable
+4
+
+// variable = 11
+// variable
+11
+
+// unwatch("variable")
+false
+
+// unwatch()
+false
+
+// variable = 6
+// variable
+6
+
+// delete(variable)
+
+
+// var loggingWatcher = new LoggingWatcher()
+// this.watch("value", this.log)
+
+// loggingWatcher.value = true
+LoggingWatcher count 1: value changed from true to true with userdata undefined
+
+// loggingWatcher.value = false
+LoggingWatcher count 2: value changed from true to false with userdata undefined
+
+// loggingWatcher.count
+2
+

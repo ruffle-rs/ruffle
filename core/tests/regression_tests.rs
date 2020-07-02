@@ -193,6 +193,8 @@ swf_tests! {
     (loadvariables_method, "avm1/loadvariables_method", 3),
     (xml_load, "avm1/xml_load", 1),
     (with_return, "avm1/with_return", 1),
+    (watch, "avm1/watch", 1),
+    #[ignore] (watch_virtual_property, "avm1/watch_virtual_property", 1),
     (cross_movie_root, "avm1/cross_movie_root", 5),
     (roots_and_levels, "avm1/roots_and_levels", 1),
     (swf6_case_insensitive, "avm1/swf6_case_insensitive", 1),
