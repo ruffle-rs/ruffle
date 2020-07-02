@@ -259,6 +259,23 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         attributes: EnumSet<Attribute>,
     );
 
+    /// Set the 'watcher' of a given property.
+    ///
+    /// The property does not need to exist at the time of this being called.
+    fn set_watcher(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        name: Cow<str>,
+        callback: Executable<'gc>,
+        user_data: Value<'gc>,
+    );
+
+    /// Removed any assigned 'watcher' from the given property.
+    ///
+    /// The return value will indicate if there was a watcher present before this method was
+    /// called.
+    fn remove_watcher(&self, gc_context: MutationContext<'gc, '_>, name: Cow<str>) -> bool;
+
     /// Checks if the object has a given named property.
     fn has_property(
         &self,

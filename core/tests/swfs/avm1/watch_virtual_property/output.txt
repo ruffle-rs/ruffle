@@ -1,0 +1,61 @@
+// watch("variable", plusOne)
+true
+
+// addProperty("variable", getter, setter)
+plusOne: variable changed from undefined to undefined with userdata undefined
+true
+
+// variable = 10
+plusOne: variable changed from NaN to 10 with userdata undefined
+setter: ignoring new value of 11
+// variable
+getter: returning 5
+5
+
+// variable = 4
+plusOne: variable changed from 11 to 4 with userdata undefined
+setter: ignoring new value of 5
+// variable
+getter: returning 5
+5
+
+// unwatch("variable")
+false
+
+// variable = 10
+plusOne: variable changed from 5 to 10 with userdata undefined
+setter: ignoring new value of 11
+// variable
+getter: returning 5
+5
+
+// variable = 4
+plusOne: variable changed from 11 to 4 with userdata undefined
+setter: ignoring new value of 5
+// variable
+getter: returning 5
+5
+
+// watch("variable", plusOne)
+true
+
+// variable = 10
+plusOne: variable changed from 5 to 10 with userdata undefined
+setter: ignoring new value of 11
+// variable
+getter: returning 5
+5
+
+// variable = 4
+plusOne: variable changed from 11 to 4 with userdata undefined
+setter: ignoring new value of 5
+// variable
+getter: returning 5
+5
+
+// delete(variable)
+
+// addProperty("variable", getter, null)
+plusOne: variable changed from undefined to undefined with userdata undefined
+true
+

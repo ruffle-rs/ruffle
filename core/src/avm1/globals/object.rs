@@ -162,6 +162,55 @@ pub fn register_class<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Object.prototype.watch`
+fn watch<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let name = if let Some(name) = args.get(0) {
+        name.coerce_to_string(activation, context)?
+    } else {
+        return Ok(false.into());
+    };
+    let callback = if let Some(callback) = args.get(1) {
+        if let Some(callback) = callback
+            .coerce_to_object(activation, context)
+            .as_executable()
+        {
+            callback
+        } else {
+            return Ok(false.into());
+        }
+    } else {
+        return Ok(false.into());
+    };
+    let user_data = args.get(2).cloned().unwrap_or(Value::Undefined);
+
+    this.set_watcher(context.gc_context, name, callback, user_data);
+
+    Ok(true.into())
+}
+
+/// Implements `Object.prototype.unmwatch`
+fn unwatch<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let name = if let Some(name) = args.get(0) {
+        name.coerce_to_string(activation, context)?
+    } else {
+        return Ok(false.into());
+    };
+
+    let result = this.remove_watcher(context.gc_context, name);
+
+    Ok(result.into())
+}
+
 /// Partially construct `Object.prototype`.
 ///
 /// `__proto__` and other cross-linked properties of this object will *not*
@@ -214,6 +263,20 @@ pub fn fill_proto<'gc>(
     object_proto.as_script_object().unwrap().force_set_function(
         "valueOf",
         value_of,
+        gc_context,
+        DontDelete | DontEnum,
+        Some(fn_proto),
+    );
+    object_proto.as_script_object().unwrap().force_set_function(
+        "watch",
+        watch,
+        gc_context,
+        DontDelete | DontEnum,
+        Some(fn_proto),
+    );
+    object_proto.as_script_object().unwrap().force_set_function(
+        "unwatch",
+        unwatch,
         gc_context,
         DontDelete | DontEnum,
         Some(fn_proto),

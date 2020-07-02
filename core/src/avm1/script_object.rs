@@ -8,6 +8,7 @@ use core::fmt;
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::borrow::Cow;
+use std::collections::HashMap;
 
 pub const TYPE_OF_OBJECT: &str = "object";
 
@@ -16,6 +17,50 @@ pub const TYPE_OF_OBJECT: &str = "object";
 pub enum ArrayStorage<'gc> {
     Vector(Vec<Value<'gc>>),
     Properties { length: usize },
+}
+
+#[derive(Debug, Clone, Collect)]
+#[collect(no_drop)]
+pub struct Watcher<'gc> {
+    callback: Executable<'gc>,
+    user_data: Value<'gc>,
+}
+
+impl<'gc> Watcher<'gc> {
+    pub fn new(callback: Executable<'gc>, user_data: Value<'gc>) -> Self {
+        Self {
+            callback,
+            user_data,
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn call(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        name: &str,
+        old_value: Value<'gc>,
+        new_value: Value<'gc>,
+        this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
+    ) -> Result<Value<'gc>, crate::avm1::error::Error<'gc>> {
+        let args = [
+            Value::String(name.to_string()),
+            old_value,
+            new_value,
+            self.user_data.clone(),
+        ];
+        self.callback.exec(
+            name,
+            activation,
+            context,
+            this,
+            base_proto,
+            &args,
+            ExecutionReason::Special,
+        )
+    }
 }
 
 #[derive(Debug, Copy, Clone, Collect)]
@@ -28,6 +73,7 @@ pub struct ScriptObjectData<'gc> {
     interfaces: Vec<Object<'gc>>,
     type_of: &'static str,
     array: ArrayStorage<'gc>,
+    watchers: HashMap<String, Watcher<'gc>>,
 }
 
 unsafe impl<'gc> Collect for ScriptObjectData<'gc> {
@@ -36,6 +82,7 @@ unsafe impl<'gc> Collect for ScriptObjectData<'gc> {
         self.values.trace(cc);
         self.array.trace(cc);
         self.interfaces.trace(cc);
+        self.watchers.trace(cc);
     }
 }
 
@@ -45,6 +92,7 @@ impl fmt::Debug for ScriptObjectData<'_> {
             .field("prototype", &self.prototype)
             .field("values", &self.values)
             .field("array", &self.array)
+            .field("watchers", &self.watchers)
             .finish()
     }
 }
@@ -62,6 +110,7 @@ impl<'gc> ScriptObject<'gc> {
                 values: PropertyMap::new(),
                 array: ArrayStorage::Properties { length: 0 },
                 interfaces: vec![],
+                watchers: HashMap::new(),
             },
         ))
     }
@@ -78,6 +127,7 @@ impl<'gc> ScriptObject<'gc> {
                 values: PropertyMap::new(),
                 array: ArrayStorage::Vector(Vec::new()),
                 interfaces: vec![],
+                watchers: HashMap::new(),
             },
         ));
         object.sync_native_property("length", gc_context, Some(0.into()), false);
@@ -97,6 +147,7 @@ impl<'gc> ScriptObject<'gc> {
                 values: PropertyMap::new(),
                 array: ArrayStorage::Properties { length: 0 },
                 interfaces: vec![],
+                watchers: HashMap::new(),
             },
         ))
         .into()
@@ -116,6 +167,7 @@ impl<'gc> ScriptObject<'gc> {
                 values: PropertyMap::new(),
                 array: ArrayStorage::Properties { length: 0 },
                 interfaces: vec![],
+                watchers: HashMap::new(),
             },
         ))
     }
@@ -191,7 +243,7 @@ impl<'gc> ScriptObject<'gc> {
     pub(crate) fn internal_set(
         &self,
         name: &str,
-        value: Value<'gc>,
+        mut value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
@@ -257,6 +309,28 @@ impl<'gc> ScriptObject<'gc> {
             //we'd resolve and return up there, but we have borrows that need
             //to end before we can do so.
             if !worked {
+                let watcher = self.0.read().watchers.get(name).cloned();
+                let mut return_value = Ok(());
+                if let Some(watcher) = watcher {
+                    let old_value = self.get(name, activation, context)?;
+                    value = match watcher.call(
+                        activation,
+                        context,
+                        name,
+                        old_value,
+                        value.clone(),
+                        this,
+                        base_proto,
+                    ) {
+                        Ok(value) => value,
+                        Err(Error::ThrownValue(error)) => {
+                            return_value = Err(Error::ThrownValue(error));
+                            Value::Undefined
+                        }
+                        Err(_) => Value::Undefined,
+                    };
+                }
+
                 let rval = match self
                     .0
                     .write(context.gc_context)
@@ -285,6 +359,8 @@ impl<'gc> ScriptObject<'gc> {
                         ExecutionReason::Special,
                     );
                 }
+
+                return return_value;
             }
         }
 
@@ -477,6 +553,24 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             },
             activation.is_case_sensitive(),
         );
+    }
+
+    fn set_watcher(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        name: Cow<str>,
+        callback: Executable<'gc>,
+        user_data: Value<'gc>,
+    ) {
+        self.0
+            .write(gc_context)
+            .watchers
+            .insert(name.to_string(), Watcher::new(callback, user_data));
+    }
+
+    fn remove_watcher(&self, gc_context: MutationContext<'gc, '_>, name: Cow<str>) -> bool {
+        let old = self.0.write(gc_context).watchers.remove(name.as_ref());
+        old.is_some()
     }
 
     fn define_value(
