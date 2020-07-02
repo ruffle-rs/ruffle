@@ -256,10 +256,6 @@ impl<'gc> TObject<'gc> for ColorTransformObject<'gc> {
         self.base().has_own_virtual(activation, context, name)
     }
 
-    fn is_property_overwritable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
-        self.base().is_property_overwritable(activation, name)
-    }
-
     fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
         self.base().is_property_enumerable(activation, name)
     }

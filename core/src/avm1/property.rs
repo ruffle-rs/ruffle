@@ -90,6 +90,7 @@ impl<'gc> Property<'gc> {
         }
     }
 
+    #[allow(dead_code)]
     pub fn is_overwritable(&self) -> bool {
         match self {
             Property::Virtual {

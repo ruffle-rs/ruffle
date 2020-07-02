@@ -274,13 +274,6 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         self.0.read().child.is_property_enumerable(activation, name)
     }
 
-    fn is_property_overwritable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
-        self.0
-            .read()
-            .child
-            .is_property_overwritable(activation, name)
-    }
-
     fn get_keys(&self, _activation: &mut Activation<'_, 'gc>) -> Vec<String> {
         vec![]
     }

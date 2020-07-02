@@ -286,9 +286,7 @@ impl<'gc> Scope<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
-        if self.class == ScopeClass::Target
-            || (self.locals().has_property(activation, context, name)
-                && self.locals().is_property_overwritable(activation, name))
+        if self.class == ScopeClass::Target || self.locals().has_property(activation, context, name)
         {
             // Value found on this object, so overwrite it.
             // Or we've hit the executing movie clip, so create it here.

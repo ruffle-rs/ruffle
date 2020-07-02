@@ -303,13 +303,6 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
             .has_own_virtual(activation, context, name)
     }
 
-    fn is_property_overwritable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
-        self.0
-            .read()
-            .base
-            .is_property_overwritable(activation, name)
-    }
-
     fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
         self.0.read().base.is_property_enumerable(activation, name)
     }
