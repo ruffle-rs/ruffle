@@ -15,6 +15,7 @@ pub(crate) mod boolean;
 pub(crate) mod button;
 mod color;
 pub(crate) mod display_object;
+pub(crate) mod error;
 mod function;
 mod key;
 mod math;
@@ -201,6 +202,9 @@ pub fn create_globals<'gc>(
     let array_proto: Object<'gc> = array::create_proto(gc_context, object_proto, function_proto);
 
     let color_proto: Object<'gc> = color::create_proto(gc_context, object_proto, function_proto);
+
+    let error_proto: Object<'gc> = error::create_proto(gc_context, object_proto, function_proto);
+
     let xmlnode_proto: Object<'gc> =
         xml::create_xmlnode_proto(gc_context, object_proto, function_proto);
 
@@ -229,6 +233,12 @@ pub fn create_globals<'gc>(
         Executable::Native(color::constructor),
         Some(function_proto),
         Some(color_proto),
+    );
+    let error = FunctionObject::function(
+        gc_context,
+        Executable::Native(error::constructor),
+        Some(function_proto),
+        Some(error_proto),
     );
     let function = FunctionObject::function(
         gc_context,
@@ -304,6 +314,7 @@ pub fn create_globals<'gc>(
     globals.define_value(gc_context, "Array", array.into(), EnumSet::empty());
     globals.define_value(gc_context, "Button", button.into(), EnumSet::empty());
     globals.define_value(gc_context, "Color", color.into(), EnumSet::empty());
+    globals.define_value(gc_context, "Error", error.into(), EnumSet::empty());
     globals.define_value(gc_context, "Object", object.into(), EnumSet::empty());
     globals.define_value(gc_context, "Function", function.into(), EnumSet::empty());
     globals.define_value(gc_context, "MovieClip", movie_clip.into(), EnumSet::empty());
