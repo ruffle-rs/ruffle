@@ -305,12 +305,6 @@ pub fn create_globals<'gc>(
     let point = point::create_point_object(gc_context, Some(point_proto), Some(function_proto));
     let rectangle =
         rectangle::create_rectangle_object(gc_context, Some(rectangle_proto), Some(function_proto));
-    let color_transform = color_transform::create_color_transform_object(
-        gc_context,
-        Some(color_transform_proto),
-        Some(function_proto),
-    );
-    eprintln!("CT: {:?}\n{:?}", color_transform_proto, color_transform);
 
     flash.define_value(gc_context, "geom", geom.into(), EnumSet::empty());
     geom.define_value(gc_context, "Matrix", matrix.into(), EnumSet::empty());
@@ -319,7 +313,13 @@ pub fn create_globals<'gc>(
     geom.define_value(
         gc_context,
         "ColorTransform",
-        color_transform.into(),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(color_transform::constructor),
+            Some(function_proto),
+            Some(color_transform_proto),
+        )
+        .into(),
         EnumSet::empty(),
     );
 

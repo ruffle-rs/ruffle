@@ -1,16 +1,14 @@
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute;
-use crate::avm1::sound_object::SoundObject;
-use crate::avm1::{Avm1, Object, ObjectPtr, ScriptObject, TObject, Value};
+use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
-use crate::display_object::DisplayObject;
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
 
+use crate::avm1::activation::Activation;
 use std::borrow::Cow;
 use std::fmt;
-use crate::avm1::activation::Activation;
 
 /// A ColorTransform
 #[derive(Clone, Copy, Collect)]
@@ -69,6 +67,7 @@ impl<'gc> ColorTransformObject<'gc> {
         gc_context: MutationContext<'gc, '_>,
         proto: Option<Object<'gc>>,
     ) -> Self {
+        println!("Create new ct o");
         ColorTransformObject(GcCell::allocate(
             gc_context,
             ColorTransformData {
@@ -130,7 +129,8 @@ impl<'gc> TObject<'gc> for ColorTransformObject<'gc> {
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.base().call(activation, context, this, base_proto, args)
+        self.base()
+            .call(activation, context, this, base_proto, args)
     }
 
     fn call_setter(
