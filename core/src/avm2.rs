@@ -371,7 +371,8 @@ impl<'gc> Avm2<'gc> {
     }
 
     fn current_translation_unit(&self) -> Option<TranslationUnit<'gc>> {
-        self.current_stack_frame().map(|sf| sf.read().method().translation_unit())
+        self.current_stack_frame()
+            .map(|sf| sf.read().method().translation_unit())
     }
 
     /// Retrieve a int from the current constant pool.
@@ -751,9 +752,9 @@ impl<'gc> Avm2<'gc> {
         let receiver = self.pop().as_object()?;
         let method = self.table_method(index)?;
         let scope = self.current_stack_frame().unwrap().read().scope(); //TODO: Is this correct?
-        let function = FunctionObject::from_abc_method(
+        let function = FunctionObject::from_method(
             context.gc_context,
-            method,
+            method.into(),
             scope,
             self.system_prototypes.function,
             None,
@@ -1295,7 +1296,7 @@ impl<'gc> Avm2<'gc> {
 
         let mut new_fn = FunctionObject::from_method(
             context.gc_context,
-            method_entry,
+            method_entry.into(),
             scope,
             self.system_prototypes.function,
             None,
