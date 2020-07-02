@@ -736,9 +736,17 @@ impl<'gc> EditText<'gc> {
                                     context,
                                 );
                             } else {
-                                // Otherwise, we initialize the proprty with the text field's text.
-                                let _ =
-                                    object.set(property, self.text().into(), activation, context);
+                                // Otherwise, we initialize the proprty with the text field's text, if it's non-empty.
+                                // Note that HTML text fields are often initialized with an empty <p> tag, which is not considered empty.
+                                let text = self.text();
+                                if !text.is_empty() {
+                                    let _ = object.set(
+                                        property,
+                                        self.text().into(),
+                                        activation,
+                                        context,
+                                    );
+                                }
                             }
                         }
 
