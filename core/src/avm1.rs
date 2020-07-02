@@ -17,6 +17,7 @@ mod test_utils;
 pub mod listeners;
 
 pub mod activation;
+pub mod color_transform_object;
 pub mod debug;
 pub mod error;
 mod fscommand;
