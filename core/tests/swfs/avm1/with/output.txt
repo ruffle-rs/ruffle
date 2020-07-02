@@ -1,0 +1,47 @@
+// with(clip) {
+ // _x
+25
+ // _x = 50
+ // _x
+50
+// }
+// _x
+0
+
+// with('STRING') {
+  // length
+6
+ // _x
+0
+// }
+
+// with(o) {
+ // prop
+undefined
+ // prop = 2
+ // prop
+2
+// }
+// o.x
+2
+// prop
+1
+
+// with(o) {
+ // prop
+getter
+ // prop = 2
+ // prop
+getter
+// }
+// prop
+1
+
+// with(undefined)
+Error: A 'with' action failed because the specified object did not exist.
+
+
+// with(null)
+Error: A 'with' action failed because the specified object did not exist.
+
+
