@@ -50,7 +50,7 @@ impl<'gc> RegisterSet<'gc> {
 #[collect(no_drop)]
 pub struct Activation<'gc> {
     /// The AVM method entry we're executing code out of.
-    method: Avm2MethodEntry,
+    method: Avm2MethodEntry<'gc>,
 
     /// The current location of the instruction stream being executed.
     pc: usize,
@@ -125,7 +125,7 @@ impl<'gc> Activation<'gc> {
 
     pub fn from_action(
         context: &mut UpdateContext<'_, 'gc, '_>,
-        method: Avm2MethodEntry,
+        method: Avm2MethodEntry<'gc>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         this: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
@@ -184,7 +184,7 @@ impl<'gc> Activation<'gc> {
     }
 
     /// Obtain a reference to the method being executed.
-    pub fn method(&self) -> &Avm2MethodEntry {
+    pub fn method(&self) -> &Avm2MethodEntry<'gc> {
         &self.method
     }
 

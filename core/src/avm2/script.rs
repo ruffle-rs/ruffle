@@ -80,7 +80,7 @@ impl<'gc> TranslationUnit<'gc> {
         drop(write);
 
         let method: Result<Avm2MethodEntry, Error> =
-            Avm2MethodEntry::from_method_index(abc, Index::new(method_index))
+            Avm2MethodEntry::from_method_index(self, Index::new(method_index))
                 .ok_or_else(|| "Method index does not exist".into());
         let method = method?.into();
 

@@ -233,7 +233,7 @@ impl<'gc> Avm2<'gc> {
             frame_ref.lock()?;
 
             let method = frame_ref.method();
-            let abc = method.abc.as_ref().clone();
+            let abc = method.abc();
             let _method_index = method.abc_method;
             let method_body_index = method.abc_method_body as usize;
 
@@ -367,7 +367,11 @@ impl<'gc> Avm2<'gc> {
     /// Retrieve the current constant pool for the currently executing function.
     fn current_abc(&self) -> Option<Rc<AbcFile>> {
         self.current_stack_frame()
-            .map(|sf| sf.read().method().abc.clone())
+            .map(|sf| sf.read().method().abc())
+    }
+
+    fn current_translation_unit(&self) -> Option<TranslationUnit<'gc>> {
+        self.current_stack_frame().map(|sf| sf.read().method().translation_unit())
     }
 
     /// Retrieve a int from the current constant pool.
@@ -407,8 +411,8 @@ impl<'gc> Avm2<'gc> {
     }
 
     /// Retrieve a method entry from the current ABC file's method table.
-    fn table_method(&mut self, index: Index<AbcMethod>) -> Result<Avm2MethodEntry, Error> {
-        Avm2MethodEntry::from_method_index(self.current_abc().unwrap(), index.clone())
+    fn table_method(&mut self, index: Index<AbcMethod>) -> Result<Avm2MethodEntry<'gc>, Error> {
+        Avm2MethodEntry::from_method_index(self.current_translation_unit().unwrap(), index.clone())
             .ok_or_else(|| format!("Method index {} does not exist", index.0).into())
     }
 
