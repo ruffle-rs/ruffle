@@ -343,6 +343,16 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             return true;
         }
 
+        if activation
+            .avm()
+            .display_properties
+            .read()
+            .get_by_name(&name)
+            .is_some()
+        {
+            return true;
+        }
+
         let case_sensitive = activation.is_case_sensitive();
         if obj
             .display_object
