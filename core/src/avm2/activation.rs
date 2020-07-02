@@ -10,46 +10,6 @@ use crate::avm2::Error;
 use crate::context::UpdateContext;
 use gc_arena::{Collect, GcCell, MutationContext};
 use smallvec::SmallVec;
-use std::rc::Rc;
-use swf::avm2::types::{AbcFile, Index, Script as AbcScript};
-
-/// Represents a reference to an AVM2 script.
-#[derive(Collect, Clone, Debug)]
-#[collect(require_static)]
-pub struct Avm2ScriptEntry {
-    /// The ABC file this function was defined in.
-    pub abc: Rc<AbcFile>,
-
-    /// The ABC method this function uses.
-    pub abc_script: u32,
-}
-
-impl Avm2ScriptEntry {
-    /// Take a script index and ABC file, and produce an `Avm2ScriptEntry`.
-    ///
-    /// This function returns `None` if the given script does not exist within
-    /// the given ABC file.
-    pub fn from_script_index(abc: Rc<AbcFile>, script_index: Index<AbcScript>) -> Option<Self> {
-        if abc.scripts.get(script_index.0 as usize).is_some() {
-            return Some(Self {
-                abc,
-                abc_script: script_index.0,
-            });
-        }
-
-        None
-    }
-
-    /// Get the underlying ABC file.
-    pub fn abc(&self) -> Rc<AbcFile> {
-        self.abc.clone()
-    }
-
-    /// Get a reference to the ABC script entry this refers to.
-    pub fn script(&self) -> &AbcScript {
-        self.abc.scripts.get(self.abc_script as usize).unwrap()
-    }
-}
 
 /// Represents a particular register set.
 ///
