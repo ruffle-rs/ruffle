@@ -1,7 +1,7 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Avm2ClassEntry;
+use crate::avm2::class::Class;
 use crate::avm2::function::{Avm2MethodEntry, FunctionObject};
 use crate::avm2::globals::SystemPrototypes;
 use crate::avm2::names::{Multiname, Namespace, QName};
@@ -418,9 +418,14 @@ impl<'gc> Avm2<'gc> {
     }
 
     /// Retrieve a class entry from the current ABC file's method table.
-    fn table_class(&mut self, index: Index<AbcClass>) -> Result<Avm2ClassEntry, Error> {
-        Avm2ClassEntry::from_class_index(self.current_abc().unwrap(), index.clone())
-            .ok_or_else(|| format!("Class index {} does not exist", index.0).into())
+    fn table_class(
+        &mut self,
+        index: Index<AbcClass>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<GcCell<'gc, Class<'gc>>, Error> {
+        self.current_translation_unit()
+            .unwrap()
+            .load_class(index.0, context.gc_context)
     }
 
     /// Run a single action from a given action reader.
@@ -1321,11 +1326,11 @@ impl<'gc> Avm2<'gc> {
         index: Index<AbcClass>,
     ) -> Result<(), Error> {
         let base_class = self.pop().as_object()?;
-        let class_entry = self.table_class(index)?;
+        let class_entry = self.table_class(index, context)?;
         let scope = self.current_stack_frame().unwrap().read().scope();
 
         let (new_class, class_init) =
-            FunctionObject::from_abc_class(self, context, class_entry, base_class, scope)?;
+            FunctionObject::from_class(self, context, class_entry, base_class, scope)?;
 
         class_init.call(Some(new_class), &[], self, context, None)?;
 
