@@ -83,7 +83,7 @@ pub enum TraitKind<'gc> {
 impl<'gc> Trait<'gc> {
     /// Convert an ABC trait into a loaded trait.
     pub fn from_abc_trait(
-        unit: &mut TranslationUnit<'gc>,
+        unit: TranslationUnit<'gc>,
         abc_trait: &AbcTrait,
         mc: MutationContext<'gc, '_>,
     ) -> Result<Self, Error> {
@@ -114,7 +114,7 @@ impl<'gc> Trait<'gc> {
                 is_override: abc_trait.is_override,
                 kind: TraitKind::Method {
                     disp_id,
-                    method: unit.load_method(method.0)?,
+                    method: unit.load_method(method.0, mc)?,
                 },
             },
             AbcTraitKind::Getter { disp_id, method } => Trait {
@@ -123,7 +123,7 @@ impl<'gc> Trait<'gc> {
                 is_override: abc_trait.is_override,
                 kind: TraitKind::Getter {
                     disp_id,
-                    method: unit.load_method(method.0)?,
+                    method: unit.load_method(method.0, mc)?,
                 },
             },
             AbcTraitKind::Setter { disp_id, method } => Trait {
@@ -132,7 +132,7 @@ impl<'gc> Trait<'gc> {
                 is_override: abc_trait.is_override,
                 kind: TraitKind::Setter {
                     disp_id,
-                    method: unit.load_method(method.0)?,
+                    method: unit.load_method(method.0, mc)?,
                 },
             },
             AbcTraitKind::Class { slot_id, class } => Trait {
@@ -150,7 +150,7 @@ impl<'gc> Trait<'gc> {
                 is_override: abc_trait.is_override,
                 kind: TraitKind::Function {
                     slot_id,
-                    function: unit.load_method(function.0)?,
+                    function: unit.load_method(function.0, mc)?,
                 },
             },
             AbcTraitKind::Const {

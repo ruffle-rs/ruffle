@@ -156,7 +156,7 @@ impl<'gc> Class<'gc> {
     /// caller is responsible for storing the class in the `TranslationUnit`
     /// and calling `load_traits` to complete the trait-loading process.
     pub fn from_abc_index(
-        unit: &mut TranslationUnit<'gc>,
+        unit: TranslationUnit<'gc>,
         class_index: u32,
         mc: MutationContext<'gc, '_>,
     ) -> Result<GcCell<'gc, Self>, Error> {
@@ -198,8 +198,8 @@ impl<'gc> Class<'gc> {
             )?);
         }
 
-        let instance_init = unit.load_method(abc_instance.init_method.0)?;
-        let class_init = unit.load_method(abc_class.init_method.0)?;
+        let instance_init = unit.load_method(abc_instance.init_method.0, mc)?;
+        let class_init = unit.load_method(abc_class.init_method.0, mc)?;
 
         Ok(GcCell::allocate(
             mc,
@@ -228,7 +228,7 @@ impl<'gc> Class<'gc> {
     /// instantiated into an `Object`.
     pub fn load_traits(
         &mut self,
-        unit: &mut TranslationUnit<'gc>,
+        unit: TranslationUnit<'gc>,
         class_index: u32,
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {

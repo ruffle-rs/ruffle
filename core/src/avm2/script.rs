@@ -6,12 +6,17 @@ use crate::avm2::r#trait::Trait;
 use crate::avm2::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::HashMap;
+use std::mem::drop;
 use std::rc::Rc;
 use swf::avm2::types::{AbcFile, Index, Script as AbcScript};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 pub struct CollectWrapper<T>(T);
+
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
+pub struct TranslationUnit<'gc>(GcCell<'gc, TranslationUnitData<'gc>>);
 
 /// A loaded ABC file, with any loaded ABC items alongside it.
 ///
@@ -27,7 +32,7 @@ pub struct CollectWrapper<T>(T);
 /// constructing the appropriate runtime object for that item.
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
-pub struct TranslationUnit<'gc> {
+pub struct TranslationUnitData<'gc> {
     /// The ABC file that all of the following loaded data comes from.
     abc: CollectWrapper<Rc<AbcFile>>,
 
@@ -42,68 +47,86 @@ pub struct TranslationUnit<'gc> {
 }
 
 impl<'gc> TranslationUnit<'gc> {
-    pub fn from_abc(abc: Rc<AbcFile>) -> Self {
-        Self {
-            abc: CollectWrapper(abc),
-            classes: HashMap::new(),
-            methods: HashMap::new(),
-            scripts: HashMap::new(),
-        }
+    pub fn from_abc(abc: Rc<AbcFile>, mc: MutationContext<'gc, '_>) -> Self {
+        Self(GcCell::allocate(
+            mc,
+            TranslationUnitData {
+                abc: CollectWrapper(abc),
+                classes: HashMap::new(),
+                methods: HashMap::new(),
+                scripts: HashMap::new(),
+            },
+        ))
     }
 
     /// Retrieve the underlying `AbcFile` for this translation unit.
-    pub fn abc(&self) -> Rc<AbcFile> {
-        self.abc.0
+    pub fn abc(self) -> Rc<AbcFile> {
+        self.0.read().abc.0
     }
 
     /// Load a method from the ABC file and return it's method definition.
-    pub fn load_method(&mut self, method_index: u32) -> Result<Method<'gc>, Error> {
-        if let Some(method) = self.methods.get(&method_index) {
+    pub fn load_method(
+        self,
+        method_index: u32,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<Method<'gc>, Error> {
+        let write = self.0.write(mc);
+        if let Some(method) = write.methods.get(&method_index) {
             return Ok(method.clone());
         }
 
+        let abc = write.abc.0;
+
+        drop(write);
+
         let method: Result<Avm2MethodEntry, Error> =
-            Avm2MethodEntry::from_method_index(self.abc.0, Index::new(method_index))
+            Avm2MethodEntry::from_method_index(abc, Index::new(method_index))
                 .ok_or_else(|| "Method index does not exist".into());
         let method = method?.into();
 
-        self.methods.insert(method_index, method);
+        self.0.write(mc).methods.insert(method_index, method);
 
         return Ok(method);
     }
 
     /// Load a class from the ABC file and return it's class definition.
     pub fn load_class(
-        &mut self,
+        self,
         class_index: u32,
         mc: MutationContext<'gc, '_>,
     ) -> Result<GcCell<'gc, Class<'gc>>, Error> {
-        if let Some(class) = self.classes.get(&class_index) {
+        let write = self.0.write(mc);
+        if let Some(class) = write.classes.get(&class_index) {
             return Ok(class.clone());
         }
 
-        let class = Class::from_abc_index(&mut self, class_index, mc)?;
-        self.classes.insert(class_index, class);
+        drop(write);
 
-        class.write(mc).load_traits(&mut self, class_index, mc)?;
+        let class = Class::from_abc_index(self, class_index, mc)?;
+        self.0.write(mc).classes.insert(class_index, class);
+
+        class.write(mc).load_traits(self, class_index, mc)?;
 
         return Ok(class);
     }
 
     /// Load a script from the ABC file and return it's script definition.
     pub fn load_script(
-        &mut self,
+        self,
         script_index: u32,
         mc: MutationContext<'gc, '_>,
     ) -> Result<GcCell<'gc, Script<'gc>>, Error> {
-        if let Some(scripts) = self.scripts.get(&script_index) {
+        let write = self.0.write(mc);
+        if let Some(scripts) = write.scripts.get(&script_index) {
             return Ok(scripts.clone());
         }
 
-        let script = Script::from_abc_index(&mut self, script_index, mc)?;
-        self.scripts.insert(script_index, script);
+        drop(write);
 
-        script.write(mc).load_traits(&mut self, script_index, mc)?;
+        let script = Script::from_abc_index(self, script_index, mc)?;
+        self.0.write(mc).scripts.insert(script_index, script);
+
+        script.write(mc).load_traits(self, script_index, mc)?;
 
         return Ok(script);
     }
@@ -131,7 +154,7 @@ impl<'gc> Script<'gc> {
     /// `TranslationUnit` and calling `load_traits` to complete the
     /// trait-loading process.
     pub fn from_abc_index(
-        unit: &mut TranslationUnit<'gc>,
+        unit: TranslationUnit<'gc>,
         script_index: u32,
         mc: MutationContext<'gc, '_>,
     ) -> Result<GcCell<'gc, Self>, Error> {
@@ -142,7 +165,7 @@ impl<'gc> Script<'gc> {
             .ok_or_else(|| "LoadError: Script index not valid".into());
         let script = script?;
 
-        let init = unit.load_method(script.init_method.0)?;
+        let init = unit.load_method(script.init_method.0, mc)?;
 
         Ok(GcCell::allocate(
             mc,
@@ -162,7 +185,7 @@ impl<'gc> Script<'gc> {
     /// executed.
     pub fn load_traits(
         &mut self,
-        unit: &mut TranslationUnit<'gc>,
+        unit: TranslationUnit<'gc>,
         script_index: u32,
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
