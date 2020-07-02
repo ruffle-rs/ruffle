@@ -73,7 +73,7 @@ pub fn define_display_object_proto<'gc>(
         gc_context,
         "_parent",
         Executable::Native(get_parent),
-        None,
+        Some(Executable::Native(overwrite_parent)),
         DontDelete | ReadOnly | DontEnum,
     );
 }
@@ -132,6 +132,21 @@ pub fn overwrite_global<'gc>(
         .map(|v| v.to_owned())
         .unwrap_or(Value::Undefined);
     this.define_value(ac.gc_context, "_global", new_val, EnumSet::new());
+
+    Ok(Value::Undefined)
+}
+
+pub fn overwrite_parent<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let new_val = args
+        .get(0)
+        .map(|v| v.to_owned())
+        .unwrap_or(Value::Undefined);
+    this.define_value(ac.gc_context, "_parent", new_val, EnumSet::new());
 
     Ok(Value::Undefined)
 }
