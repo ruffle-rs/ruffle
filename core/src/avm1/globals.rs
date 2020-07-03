@@ -40,6 +40,7 @@ pub(crate) mod text_field;
 mod text_format;
 mod xml;
 pub(crate) mod context_menu;
+pub(crate) mod context_menu_item;
 
 #[allow(non_snake_case, unused_must_use)] //can't use errors yet
 pub fn getURL<'a, 'gc>(
@@ -316,6 +317,8 @@ pub fn create_globals<'gc>(
     let object = object::create_object_object(gc_context, object_proto, function_proto);
 
     let context_menu_proto = context_menu::create_proto(gc_context, object_proto, function_proto);
+    let context_menu_item_proto = context_menu_item::create_proto(gc_context, object_proto, function_proto);
+
 
     let button = FunctionObject::function(
         gc_context,
@@ -459,11 +462,27 @@ pub fn create_globals<'gc>(
         EnumSet::empty(),
     );
 
-    let context_menu = context_menu::create_context_menu_object(gc_context, Some(context_menu_proto), Some(function_proto));
     globals.define_value(
         gc_context,
         "ContextMenu",
-        context_menu.into(),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(context_menu::constructor),
+            Some(function_proto),
+            Some(context_menu_proto),
+        ).into(),
+        EnumSet::empty()
+    );
+
+    globals.define_value(
+        gc_context,
+        "ContextMenuItem",
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(context_menu_item::constructor),
+            Some(function_proto),
+            Some(context_menu_item_proto),
+        ).into(),
         EnumSet::empty()
     );
 
