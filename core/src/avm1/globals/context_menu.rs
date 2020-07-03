@@ -8,7 +8,6 @@ use crate::avm1::activation::Activation;
 use crate::avm1::object::TObject;
 
 //TODO: note: callback should be called when menu is opened but before it is displayed
-//TODO: check for hidden props
 //TODO: there shuold be a menu prop somewhere (as2:444)
 
 pub fn constructor<'gc>(
@@ -18,11 +17,28 @@ pub fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
 
+    let mut so = this.as_script_object().unwrap();
+
     if let Some(callback) = args.get(0) {
         let callback_obj = callback.coerce_to_object(activation, context);
-        let so = this.as_script_object().unwrap();
         so.set("onSelect", callback_obj.into(), activation, context)?;
     }
+
+    so.force_set_function(
+        "copy",
+        copy,
+        context.gc_context,
+        EnumSet::empty(),
+        Some(context.system_prototypes.function)
+    );
+
+    so.force_set_function(
+        "hideBuiltInItems",
+        hide_builtin_items,
+        context.gc_context,
+        EnumSet::empty(),
+        Some(context.system_prototypes.function)
+    );
 
     let obj_proto = activation.avm().prototypes.object;
     let built_in_items = obj_proto.new(activation, context, obj_proto, &[])?;
@@ -110,47 +126,10 @@ pub fn hide_builtin_items<'gc>(
     Ok(Value::Undefined.into())
 }
 
-pub fn on_select<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    // By default does nothing
-    Ok(Value::Undefined.into())
-}
-
 pub fn create_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Object<'gc>,
-    fn_proto: Object<'gc>,
+    _fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let mut object = ScriptObject::object(gc_context, Some(proto));
-
-    //TODO: check the proto, these should only be on instances apparently
-    object.force_set_function(
-        "copy",
-        copy,
-        gc_context,
-        EnumSet::empty(),
-        Some(fn_proto)
-    );
-
-    object.force_set_function(
-        "hideBuiltInItems",
-        hide_builtin_items,
-        gc_context,
-        EnumSet::empty(),
-        Some(fn_proto)
-    );
-
-    object.force_set_function(
-        "onSelect",
-        on_select,
-        gc_context,
-        EnumSet::empty(),
-        Some(fn_proto)
-    );
-
-    object.into()
+    ScriptObject::object(gc_context, Some(proto)).into()
 }
