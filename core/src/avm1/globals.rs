@@ -242,6 +242,8 @@ pub struct SystemPrototypes<'gc> {
     pub rectangle_constructor: Object<'gc>,
     pub shared_object: Object<'gc>,
     pub color_transform: Object<'gc>,
+    pub context_menu: Object<'gc>,
+    pub context_menu_item: Object<'gc>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
@@ -640,6 +642,8 @@ pub fn create_globals<'gc>(
             rectangle_constructor: rectangle,
             shared_object: shared_object_proto,
             color_transform: color_transform_proto,
+            context_menu: context_menu_proto,
+            context_menu_item: context_menu_item_proto,
         },
         globals.into(),
         listeners,
