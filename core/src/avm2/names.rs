@@ -198,7 +198,7 @@ impl Multiname {
     ) -> Result<Self, Error> {
         let actual_index: Result<usize, Error> = (multiname_index.0 as usize)
             .checked_sub(1)
-            .ok_or("Attempted to resolve a multiname at index zero. This is a bug.".into());
+            .ok_or_else(|| "Attempted to resolve a multiname at index zero. This is a bug.".into());
         let actual_index = actual_index?;
         let abc_multiname: Result<&AbcMultiname, Error> = file
             .constant_pool
@@ -258,9 +258,10 @@ impl Multiname {
         file: &AbcFile,
         multiname_index: Index<AbcMultiname>,
     ) -> Result<Self, Error> {
-        let actual_index: Result<usize, Error> = (multiname_index.0 as usize).checked_sub(1).ok_or(
-            "Attempted to resolve a (static) multiname at index zero. This is a bug.".into(),
-        );
+        let actual_index: Result<usize, Error> =
+            (multiname_index.0 as usize).checked_sub(1).ok_or_else(|| {
+                "Attempted to resolve a (static) multiname at index zero. This is a bug.".into()
+            });
         let actual_index = actual_index?;
         let abc_multiname: Result<&AbcMultiname, Error> = file
             .constant_pool

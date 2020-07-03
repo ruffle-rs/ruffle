@@ -98,7 +98,7 @@ impl<'gc> Activation<'gc> {
         script: GcCell<'gc, Script<'gc>>,
         global: Object<'gc>,
     ) -> Result<Self, Error> {
-        let method = script.read().init().as_entry()?;
+        let method = script.read().init().into_entry()?;
         let scope = Some(Scope::push_scope(None, global, context.gc_context));
         let num_locals = method.body().num_locals;
         let local_registers =

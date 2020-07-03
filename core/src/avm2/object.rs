@@ -485,7 +485,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 //then?
                 let super_name = if let Some(sc_name) = class_read.super_class_name() {
                     self.resolve_multiname(sc_name)?
-                        .unwrap_or(QName::dynamic_name("Object"))
+                        .unwrap_or_else(|| QName::dynamic_name("Object"))
                 } else {
                     QName::dynamic_name("Object")
                 };

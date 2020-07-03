@@ -164,13 +164,13 @@ impl<'gc> Class<'gc> {
         let abc_class: Result<&AbcClass, Error> = abc
             .classes
             .get(class_index as usize)
-            .ok_or("LoadError: Class index not valid".into());
+            .ok_or_else(|| "LoadError: Class index not valid".into());
         let abc_class = abc_class?;
 
         let abc_instance: Result<&AbcInstance, Error> = abc
             .instances
             .get(class_index as usize)
-            .ok_or("LoadError: Instance index not valid".into());
+            .ok_or_else(|| "LoadError: Instance index not valid".into());
         let abc_instance = abc_instance?;
 
         let name = QName::from_abc_multiname(&unit.abc(), abc_instance.name.clone())?;

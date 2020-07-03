@@ -87,7 +87,7 @@ impl<'gc> TranslationUnit<'gc> {
             .methods
             .insert(method_index, method.clone());
 
-        return Ok(method);
+        Ok(method)
     }
 
     /// Load a class from the ABC file and return it's class definition.
@@ -98,7 +98,7 @@ impl<'gc> TranslationUnit<'gc> {
     ) -> Result<GcCell<'gc, Class<'gc>>, Error> {
         let write = self.0.write(mc);
         if let Some(class) = write.classes.get(&class_index) {
-            return Ok(class.clone());
+            return Ok(*class);
         }
 
         drop(write);
@@ -108,7 +108,7 @@ impl<'gc> TranslationUnit<'gc> {
 
         class.write(mc).load_traits(self, class_index, mc)?;
 
-        return Ok(class);
+        Ok(class)
     }
 
     /// Load a script from the ABC file and return it's script definition.
@@ -119,7 +119,7 @@ impl<'gc> TranslationUnit<'gc> {
     ) -> Result<GcCell<'gc, Script<'gc>>, Error> {
         let write = self.0.write(mc);
         if let Some(scripts) = write.scripts.get(&script_index) {
-            return Ok(scripts.clone());
+            return Ok(*scripts);
         }
 
         drop(write);
@@ -129,7 +129,7 @@ impl<'gc> TranslationUnit<'gc> {
 
         script.write(mc).load_traits(self, script_index, mc)?;
 
-        return Ok(script);
+        Ok(script)
     }
 }
 

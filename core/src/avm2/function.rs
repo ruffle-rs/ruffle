@@ -89,7 +89,7 @@ impl<'gc> Avm2MethodEntry<'gc> {
     /// Get the underlying ABC file.
     #[allow(dead_code)]
     pub fn abc(&self) -> Rc<AbcFile> {
-        self.txunit.abc().clone()
+        self.txunit.abc()
     }
 
     /// Get the underlying translation unit this method was defined in.
@@ -158,7 +158,7 @@ impl<'gc> From<Avm2MethodEntry<'gc>> for Method<'gc> {
 }
 
 impl<'gc> Method<'gc> {
-    pub fn as_entry(self) -> Result<Avm2MethodEntry<'gc>, Error> {
+    pub fn into_entry(self) -> Result<Avm2MethodEntry<'gc>, Error> {
         match self {
             Method::Native(_) => {
                 Err("Attempted to unwrap a native method as a user-defined one".into())
@@ -273,7 +273,7 @@ impl<'gc> Executable<'gc> {
                     Activation::from_action(
                         context,
                         method.clone(),
-                        scope.clone(),
+                        *scope,
                         reciever,
                         arguments,
                         base_proto,
@@ -368,9 +368,9 @@ impl<'gc> FunctionObject<'gc> {
             FunctionObjectData {
                 base: ScriptObjectData::base_new(
                     Some(fn_proto),
-                    ScriptObjectClass::ClassConstructor(class.clone(), scope),
+                    ScriptObjectClass::ClassConstructor(class, scope),
                 ),
-                exec: Some(Executable::from_method(initializer, scope, None).into()),
+                exec: Some(Executable::from_method(initializer, scope, None)),
             },
         ))
         .into();
