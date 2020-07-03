@@ -1191,14 +1191,14 @@ impl FormatSpans {
         for step in tree.as_node().walk().unwrap() {
             match step {
                 Step::In(node)
-                    if node.tag_name().unwrap().node_name().as_str() == "sbr"
-                        || node.tag_name().unwrap().node_name().as_str() == "br" =>
+                    if node.tag_name().unwrap().node_name() == "sbr"
+                        || node.tag_name().unwrap().node_name() == "br" =>
                 {
                     self.replace_text(self.text.len(), self.text.len(), "\n", format_stack.last());
                 }
                 Step::Out(node)
-                    if node.tag_name().unwrap().node_name().as_str() == "sbr"
-                        || node.tag_name().unwrap().node_name().as_str() == "br" => {}
+                    if node.tag_name().unwrap().node_name() == "sbr"
+                        || node.tag_name().unwrap().node_name() == "br" => {}
                 Step::In(node) => format_stack.push(TextFormat::from_presentational_markup(
                     node,
                     format_stack
@@ -1216,8 +1216,8 @@ impl FormatSpans {
                     last_successful_format = format_stack.last().cloned();
                 }
                 Step::Out(node)
-                    if node.tag_name().unwrap().node_name().as_str() == "p"
-                        || node.tag_name().unwrap().node_name().as_str() == "li" =>
+                    if node.tag_name().unwrap().node_name() == "p"
+                        || node.tag_name().unwrap().node_name() == "li" =>
                 {
                     self.replace_text(
                         self.text.len(),
