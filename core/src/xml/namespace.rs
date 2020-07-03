@@ -78,11 +78,11 @@ impl XMLName {
     /// Return the fully qualified part of the name.
     ///
     /// This consists of the namespace, if present, plus a colon and local name.
-    pub fn node_name(&self) -> String {
+    pub fn node_name(&self) -> Cow<str> {
         if let Some(ref ns) = self.namespace {
-            format!("{}:{}", ns, self.name)
+            Cow::Owned(format!("{}:{}", ns, self.name))
         } else {
-            self.name.to_string()
+            Cow::Borrowed(&self.name)
         }
     }
 }

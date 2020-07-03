@@ -9,6 +9,7 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::events::attributes::Attribute;
 use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
 use quick_xml::{Reader, Writer};
+use smallvec::alloc::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::io::{Cursor, Write};
@@ -1202,12 +1203,15 @@ impl<'gc> XMLNode<'gc> {
                 attributes,
                 ..
             } => {
-                let mut bs = BytesStart::owned_name(if children_len > 0 {
-                    tag_name.node_name()
+                let mut bs = if children_len > 0 {
+                    match tag_name.node_name() {
+                        Cow::Borrowed(name) => BytesStart::borrowed_name(name.as_bytes()),
+                        Cow::Owned(name) => BytesStart::owned_name(name),
+                    }
                 } else {
-                    format!("{} ", tag_name.node_name())
-                });
-                let key_values: Vec<(String, &str)> = attributes
+                    BytesStart::owned_name(format!("{} ", tag_name.node_name()))
+                };
+                let key_values: Vec<(Cow<str>, &str)> = attributes
                     .iter()
                     .map(|(name, value)| (name.node_name(), value.as_str()))
                     .collect();
@@ -1215,7 +1219,7 @@ impl<'gc> XMLNode<'gc> {
                 bs.extend_attributes(
                     key_values
                         .iter()
-                        .map(|(name, value)| Attribute::from((name.as_str(), *value))),
+                        .map(|(name, value)| Attribute::from((name.as_ref(), *value))),
                 );
 
                 if children_len > 0 {
@@ -1243,7 +1247,10 @@ impl<'gc> XMLNode<'gc> {
             XMLNodeData::DocumentRoot { .. } => Ok(0),
             XMLNodeData::Element { tag_name, .. } => {
                 if children_len > 0 {
-                    let bs = BytesEnd::owned(tag_name.node_name().into());
+                    let bs = match tag_name.node_name() {
+                        Cow::Borrowed(name) => BytesEnd::borrowed(name.as_bytes()),
+                        Cow::Owned(name) => BytesEnd::owned(name.into()),
+                    };
                     writer.write_event(&Event::End(bs))
                 } else {
                     Ok(0)
