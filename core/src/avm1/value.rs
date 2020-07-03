@@ -479,7 +479,7 @@ impl<'gc> Value<'gc> {
             Value::Null => Cow::Borrowed("null"),
             Value::Bool(true) => Cow::Borrowed("true"),
             Value::Bool(false) => Cow::Borrowed("false"),
-            Value::Number(v) => Cow::Owned(f64_to_string(*v)),
+            Value::Number(v) => f64_to_string(*v),
             Value::String(v) => Cow::Borrowed(v),
         })
     }
@@ -539,13 +539,13 @@ impl<'gc> Value<'gc> {
 
 /// Converts an `f64` to a String with (hopefully) the same output as Flash.
 /// For example, NAN returns `"NaN"`, and infinity returns `"Infinity"`.
-pub fn f64_to_string(n: f64) -> String {
+pub fn f64_to_string(n: f64) -> Cow<'static, str> {
     if n.is_nan() {
-        "NaN".to_string()
+        Cow::Borrowed("NaN")
     } else if n == std::f64::INFINITY {
-        "Infinity".to_string()
+        Cow::Borrowed("Infinity")
     } else if n == std::f64::NEG_INFINITY {
-        "-Infinity".to_string()
+        Cow::Borrowed("-Infinity")
     } else if n != 0.0 && (n.abs() >= 1e15 || n.abs() < 1e-5) {
         // Exponential notation.
         // Cheating a bit here; Flash always put a sign in front of the exponent, e.g. 1e+15.
@@ -556,10 +556,10 @@ pub fn f64_to_string(n: f64) -> String {
                 s.insert(i + 1, '+');
             }
         }
-        s
+        Cow::Owned(s)
     } else {
         // Normal number.
-        n.to_string()
+        Cow::Owned(n.to_string())
     }
 }
 
