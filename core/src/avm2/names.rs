@@ -196,7 +196,10 @@ impl Multiname {
         multiname_index: Index<AbcMultiname>,
         avm: &mut Avm2<'_>,
     ) -> Result<Self, Error> {
-        let actual_index = multiname_index.0 as usize - 1;
+        let actual_index: Result<usize, Error> = (multiname_index.0 as usize)
+            .checked_sub(1)
+            .ok_or("Attempted to resolve a multiname at index zero. This is a bug.".into());
+        let actual_index = actual_index?;
         let abc_multiname: Result<&AbcMultiname, Error> = file
             .constant_pool
             .multinames
@@ -255,7 +258,10 @@ impl Multiname {
         file: &AbcFile,
         multiname_index: Index<AbcMultiname>,
     ) -> Result<Self, Error> {
-        let actual_index = multiname_index.0 as usize - 1;
+        let actual_index: Result<usize, Error> = (multiname_index.0 as usize).checked_sub(1).ok_or(
+            "Attempted to resolve a (static) multiname at index zero. This is a bug.".into(),
+        );
+        let actual_index = actual_index?;
         let abc_multiname: Result<&AbcMultiname, Error> = file
             .constant_pool
             .multinames
@@ -282,6 +288,14 @@ impl Multiname {
             },
             _ => return Err(format!("Multiname {} is not static", multiname_index.0).into()),
         })
+    }
+
+    /// Indicates the any type (any name in any namespace).
+    pub fn any() -> Self {
+        Self {
+            ns: vec![Namespace::Any],
+            name: None,
+        }
     }
 
     pub fn namespace_set(&self) -> impl Iterator<Item = &Namespace> {

@@ -100,10 +100,11 @@ impl<'gc> Trait<'gc> {
                 is_override: abc_trait.is_override,
                 kind: TraitKind::Slot {
                     slot_id: *slot_id,
-                    type_name: Multiname::from_abc_multiname_static(
-                        &unit.abc(),
-                        type_name.clone(),
-                    )?,
+                    type_name: if type_name.0 == 0 {
+                        Multiname::any()
+                    } else {
+                        Multiname::from_abc_multiname_static(&unit.abc(), type_name.clone())?
+                    },
                     default_value: if let Some(dv) = value {
                         Some(abc_default_value(&unit.abc(), &dv)?)
                     } else {
@@ -166,10 +167,11 @@ impl<'gc> Trait<'gc> {
                 is_override: abc_trait.is_override,
                 kind: TraitKind::Const {
                     slot_id: *slot_id,
-                    type_name: Multiname::from_abc_multiname_static(
-                        &unit.abc(),
-                        type_name.clone(),
-                    )?,
+                    type_name: if type_name.0 == 0 {
+                        Multiname::any()
+                    } else {
+                        Multiname::from_abc_multiname_static(&unit.abc(), type_name.clone())?
+                    },
                     default_value: if let Some(dv) = value {
                         Some(abc_default_value(&unit.abc(), &dv)?)
                     } else {
