@@ -294,9 +294,9 @@ impl<'gc> Executable<'gc> {
                     }
                     result.push(')');
 
-                    result
+                    Cow::Owned(result)
                 } else {
-                    af.name.clone().unwrap_or_else(|| name.to_string())
+                    Cow::Borrowed("[Anonymous]")
                 };
 
                 let mut frame = Activation::from_action(
