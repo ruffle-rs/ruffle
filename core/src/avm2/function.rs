@@ -15,23 +15,6 @@ use crate::context::UpdateContext;
 use gc_arena::{Collect, CollectionContext, GcCell, MutationContext};
 use std::fmt;
 
-/// Represents an AVM2 function.
-#[derive(Collect, Clone, Debug)]
-#[collect(no_drop)]
-pub struct Avm2Function<'gc> {
-    /// The AVM method entry used to create this function.
-    pub method: BytecodeMethod<'gc>,
-
-    /// Closure scope stack at time of creation
-    pub scope: Option<GcCell<'gc, Scope<'gc>>>,
-
-    /// The reciever this method is attached to.
-    ///
-    /// Objects without a reciever are free functions that can be invoked with
-    /// any desired parameter for `this`.
-    pub reciever: Option<Object<'gc>>,
-}
-
 /// Represents code that can be executed by some means.
 #[derive(Clone)]
 pub enum Executable<'gc> {
