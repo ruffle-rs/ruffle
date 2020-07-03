@@ -1,6 +1,6 @@
 //! Activation frames
 
-use crate::avm2::function::Avm2MethodEntry;
+use crate::avm2::method::BytecodeMethod;
 use crate::avm2::object::Object;
 use crate::avm2::scope::Scope;
 use crate::avm2::script::Script;
@@ -50,7 +50,7 @@ impl<'gc> RegisterSet<'gc> {
 #[collect(no_drop)]
 pub struct Activation<'gc> {
     /// The AVM method entry we're executing code out of.
-    method: Avm2MethodEntry<'gc>,
+    method: BytecodeMethod<'gc>,
 
     /// The current location of the instruction stream being executed.
     pc: usize,
@@ -125,7 +125,7 @@ impl<'gc> Activation<'gc> {
 
     pub fn from_action(
         context: &mut UpdateContext<'_, 'gc, '_>,
-        method: Avm2MethodEntry<'gc>,
+        method: BytecodeMethod<'gc>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         this: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
@@ -184,7 +184,7 @@ impl<'gc> Activation<'gc> {
     }
 
     /// Obtain a reference to the method being executed.
-    pub fn method(&self) -> &Avm2MethodEntry<'gc> {
+    pub fn method(&self) -> &BytecodeMethod<'gc> {
         &self.method
     }
 

@@ -1,6 +1,7 @@
 //! Global scope built-ins
 
-use crate::avm2::function::{FunctionObject, NativeFunction};
+use crate::avm2::function::FunctionObject;
+use crate::avm2::method::NativeMethod;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::return_value::ReturnValue;
@@ -44,7 +45,7 @@ fn function<'gc>(
     mut global_scope: Object<'gc>,
     package: &str,
     name: &str,
-    nf: NativeFunction<'gc>,
+    nf: NativeMethod<'gc>,
     fn_proto: Object<'gc>,
 ) {
     global_scope
@@ -62,7 +63,7 @@ fn class<'gc>(
     mut global_scope: Object<'gc>,
     package: &str,
     name: &str,
-    constr: NativeFunction<'gc>,
+    constr: NativeMethod<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) {

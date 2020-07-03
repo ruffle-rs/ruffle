@@ -1,7 +1,7 @@
 //! Active trait definitions
 
 use crate::avm2::class::Class;
-use crate::avm2::function::Method;
+use crate::avm2::method::Method;
 use crate::avm2::names::{Multiname, QName};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{abc_default_value, Value};

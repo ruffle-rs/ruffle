@@ -2,8 +2,9 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::function::{Avm2MethodEntry, FunctionObject};
+use crate::avm2::function::FunctionObject;
 use crate::avm2::globals::SystemPrototypes;
+use crate::avm2::method::BytecodeMethod;
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::return_value::ReturnValue;
@@ -35,6 +36,7 @@ mod activation;
 mod class;
 mod function;
 mod globals;
+mod method;
 mod names;
 mod object;
 mod property;
@@ -412,8 +414,8 @@ impl<'gc> Avm2<'gc> {
     }
 
     /// Retrieve a method entry from the current ABC file's method table.
-    fn table_method(&mut self, index: Index<AbcMethod>) -> Result<Avm2MethodEntry<'gc>, Error> {
-        Avm2MethodEntry::from_method_index(self.current_translation_unit().unwrap(), index.clone())
+    fn table_method(&mut self, index: Index<AbcMethod>) -> Result<BytecodeMethod<'gc>, Error> {
+        BytecodeMethod::from_method_index(self.current_translation_unit().unwrap(), index.clone())
             .ok_or_else(|| format!("Method index {} does not exist", index.0).into())
     }
 
