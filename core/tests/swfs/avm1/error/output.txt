@@ -1,0 +1,59 @@
+// Error.prototype.hasOwnProperty('name')
+true
+// Error.prototype.hasOwnProperty('message')
+true
+
+// error = new Error()
+// error.toString()
+Error
+// error.name
+Error
+// error.message
+Error
+// error.hasOwnProperty('name')
+false
+// error.hasOwnProperty('message')
+false
+// error.name = 'TestError'
+// error.message = 'TestErrorMessage'
+// error.name
+TestError
+// error.message
+TestErrorMessage
+// error.hasOwnProperty('name')
+true
+// error.hasOwnProperty('message')
+true
+
+// error = new Error('TestError')
+// error.toString()
+TestError
+// error.name
+Error
+// error.message
+TestError
+// error.name = {}
+// error.message = null
+// error.name
+[object Object]
+// error.message
+TestError
+// error.toString()
+TestError
+
+// error = new Error(undefined)
+// error.toString()
+Error
+// error.name
+Error
+// error.message
+Error
+
+// error = new Error(null)
+// error.toString()
+null
+// error.name
+Error
+// error.message
+null
+

@@ -214,6 +214,7 @@ swf_tests! {
     #[ignore] (edittext_html_roundtrip, "avm1/edittext_html_roundtrip", 1),
     (define_local, "avm1/define_local", 1),
     (textfield_variable, "avm1/textfield_variable", 8),
+    (error, "avm1/error", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
