@@ -159,12 +159,7 @@ impl<'gc> ScriptObject<'gc> {
         native_value: Option<Value<'gc>>,
         is_enumerable: bool,
     ) {
-        match self
-            .0
-            .write(gc_context)
-            .values
-            .entry(name.to_string(), false)
-        {
+        match self.0.write(gc_context).values.entry(name, false) {
             Entry::Occupied(mut entry) => {
                 if let Property::Stored { value, .. } = entry.get_mut() {
                     match native_value {
@@ -267,7 +262,7 @@ impl<'gc> ScriptObject<'gc> {
                     .0
                     .write(context.gc_context)
                     .values
-                    .entry(name.to_owned(), activation.is_case_sensitive())
+                    .entry(name, activation.is_case_sensitive())
                 {
                     Entry::Occupied(mut entry) => entry.get_mut().set(value.clone()),
                     Entry::Vacant(entry) => {
