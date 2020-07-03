@@ -438,7 +438,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         attributes: EnumSet<Attribute>,
     ) {
         self.0.write(gc_context).values.insert(
-            name.to_owned(),
+            name,
             Property::Virtual {
                 get,
                 set,
@@ -458,7 +458,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         attributes: EnumSet<Attribute>,
     ) {
         self.0.write(gc_context).values.insert(
-            name.to_owned(),
+            name,
             Property::Virtual {
                 get,
                 set,
@@ -475,11 +475,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         value: Value<'gc>,
         attributes: EnumSet<Attribute>,
     ) {
-        self.0.write(gc_context).values.insert(
-            name.to_string(),
-            Property::Stored { value, attributes },
-            false,
-        );
+        self.0
+            .write(gc_context)
+            .values
+            .insert(name, Property::Stored { value, attributes }, false);
     }
 
     fn set_attributes(
