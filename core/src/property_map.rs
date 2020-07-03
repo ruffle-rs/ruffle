@@ -26,7 +26,7 @@ impl<V> PropertyMap<V> {
         }
     }
 
-    pub fn entry(&mut self, key: String, case_sensitive: bool) -> Entry<V> {
+    pub fn entry(&mut self, key: &str, case_sensitive: bool) -> Entry<V> {
         if case_sensitive {
             match self.0.get_full_mut(&CaseSensitiveStr(&key)) {
                 Some((index, _, _)) => Entry::Occupied(OccupiedEntry {
@@ -35,7 +35,7 @@ impl<V> PropertyMap<V> {
                 }),
                 None => Entry::Vacant(VacantEntry {
                     map: &mut self.0,
-                    key,
+                    key: key.to_string(),
                 }),
             }
         } else {
@@ -46,7 +46,7 @@ impl<V> PropertyMap<V> {
                 }),
                 None => Entry::Vacant(VacantEntry {
                     map: &mut self.0,
-                    key,
+                    key: key.to_string(),
                 }),
             }
         }
@@ -77,7 +77,7 @@ impl<V> PropertyMap<V> {
     }
 
     pub fn insert(&mut self, key: String, value: V, case_sensitive: bool) -> Option<V> {
-        match self.entry(key, case_sensitive) {
+        match self.entry(&key, case_sensitive) {
             Entry::Occupied(entry) => Some(entry.insert(value)),
             Entry::Vacant(entry) => {
                 entry.insert(value);
