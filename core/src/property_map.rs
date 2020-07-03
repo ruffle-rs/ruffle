@@ -76,8 +76,8 @@ impl<V> PropertyMap<V> {
         self.0.get_index(index).map(|(_, v)| v)
     }
 
-    pub fn insert(&mut self, key: String, value: V, case_sensitive: bool) -> Option<V> {
-        match self.entry(&key, case_sensitive) {
+    pub fn insert(&mut self, key: &str, value: V, case_sensitive: bool) -> Option<V> {
+        match self.entry(key, case_sensitive) {
             Entry::Occupied(entry) => Some(entry.insert(value)),
             Entry::Vacant(entry) => {
                 entry.insert(value);
