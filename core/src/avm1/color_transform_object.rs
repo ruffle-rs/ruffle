@@ -118,11 +118,12 @@ impl<'gc> TObject<'gc> for ColorTransformObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
-        self.base().set(name, value, activation, context)
+        self.base().internal_set(name, value, activation, context, (*self).into(), Some(activation.avm.prototypes.color_transform))
     }
 
     fn call(
         &self,
+        name: &str,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
@@ -130,7 +131,7 @@ impl<'gc> TObject<'gc> for ColorTransformObject<'gc> {
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.base()
-            .call(activation, context, this, base_proto, args)
+            .call(name, activation, context, this, base_proto, args)
     }
 
     fn call_setter(
@@ -153,7 +154,7 @@ impl<'gc> TObject<'gc> for ColorTransformObject<'gc> {
     ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(ColorTransformObject::empty_color_transform_object(
             context.gc_context,
-            Some(activation.avm().prototypes.color_transform),
+            Some(activation.avm.prototypes.color_transform),
         )
         .into())
     }
