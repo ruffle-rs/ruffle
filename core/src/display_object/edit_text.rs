@@ -743,7 +743,7 @@ impl<'gc> EditText<'gc> {
                                 if !text.is_empty() {
                                     let _ = object.set(
                                         property,
-                                        self.text().into(),
+                                        Gc::allocate(context.gc_context, self.text()).into(),
                                         activation,
                                         context,
                                     );
@@ -812,7 +812,12 @@ impl<'gc> EditText<'gc> {
                         context.swf.header().version,
                         context,
                         |activation, context| {
-                            let _ = object.set(property, text.into(), activation, context);
+                            let _ = object.set(
+                                property,
+                                Gc::allocate(context.gc_context, text).into(),
+                                activation,
+                                context,
+                            );
                         },
                     );
                 }

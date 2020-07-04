@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
-use gc_arena::MutationContext;
+use gc_arena::{Gc, MutationContext};
 
 /// Implements `Function`
 pub fn constructor<'gc>(
@@ -93,11 +93,11 @@ pub fn apply<'gc>(
 /// Implements `Function.prototype.toString`
 fn to_string<'gc>(
     _: &mut Activation<'_, 'gc>,
-    _: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
     _: Object<'gc>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok("[type Function]".into())
+    Ok(Gc::allocate(context.gc_context, "[type Function]".to_string()).into())
 }
 
 /// Partially construct `Function.prototype`.

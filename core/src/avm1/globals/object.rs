@@ -6,7 +6,7 @@ use crate::avm1::property::Attribute::{self, *};
 use crate::avm1::{Object, TObject, UpdateContext, Value};
 use crate::character::Character;
 use enumset::EnumSet;
-use gc_arena::MutationContext;
+use gc_arena::{Gc, MutationContext};
 use std::borrow::Cow;
 
 /// Implements `Object`
@@ -89,11 +89,11 @@ pub fn has_own_property<'gc>(
 /// Implements `Object.prototype.toString`
 fn to_string<'gc>(
     _: &mut Activation<'_, 'gc>,
-    _: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
     _: Object<'gc>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok("[object Object]".into())
+    Ok(Gc::allocate(context.gc_context, "[object Object]".to_string()).into())
 }
 
 /// Implements `Object.prototype.isPropertyEnumerable`

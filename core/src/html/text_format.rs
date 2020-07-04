@@ -5,7 +5,7 @@ use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
 use crate::tag_utils::SwfMovie;
 use crate::xml::{Step, XMLDocument, XMLName, XMLNode};
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, Gc, MutationContext};
 use std::borrow::Cow;
 use std::cmp::{min, Ordering};
 use std::sync::Arc;
@@ -360,7 +360,10 @@ impl TextFormat {
 
         object.set(
             "font",
-            self.font.clone().map(|v| v.into()).unwrap_or(Value::Null),
+            self.font
+                .clone()
+                .map(|v| Gc::allocate(uc.gc_context, v).into())
+                .unwrap_or(Value::Null),
             activation,
             uc,
         )?;
@@ -383,12 +386,16 @@ impl TextFormat {
             "align",
             self.align
                 .map(|v| {
-                    match v {
-                        swf::TextAlign::Left => "left",
-                        swf::TextAlign::Center => "center",
-                        swf::TextAlign::Right => "right",
-                        swf::TextAlign::Justify => "justify",
-                    }
+                    Gc::allocate(
+                        uc.gc_context,
+                        match v {
+                            swf::TextAlign::Left => "left",
+                            swf::TextAlign::Center => "center",
+                            swf::TextAlign::Right => "right",
+                            swf::TextAlign::Justify => "justify",
+                        }
+                        .to_string(),
+                    )
                     .into()
                 })
                 .unwrap_or(Value::Null),
@@ -463,13 +470,19 @@ impl TextFormat {
         )?;
         object.set(
             "url",
-            self.url.clone().map(|v| v.into()).unwrap_or(Value::Null),
+            self.url
+                .clone()
+                .map(|v| Gc::allocate(uc.gc_context, v).into())
+                .unwrap_or(Value::Null),
             activation,
             uc,
         )?;
         object.set(
             "target",
-            self.target.clone().map(|v| v.into()).unwrap_or(Value::Null),
+            self.target
+                .clone()
+                .map(|v| Gc::allocate(uc.gc_context, v).into())
+                .unwrap_or(Value::Null),
             activation,
             uc,
         )?;

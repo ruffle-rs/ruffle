@@ -11,7 +11,7 @@ use crate::backend::navigator::RequestOptions;
 use crate::xml;
 use crate::xml::{XMLDocument, XMLNode};
 use enumset::EnumSet;
-use gc_arena::MutationContext;
+use gc_arena::{Gc, MutationContext};
 use quick_xml::Error as ParseError;
 use std::borrow::Cow;
 
@@ -156,7 +156,7 @@ pub fn xmlnode_get_namespace_for_prefix<'gc>(
         args.get(0).map(|v| v.coerce_to_string(activation, ac)),
     ) {
         if let Some(uri) = xmlnode.lookup_uri_for_namespace(&prefix_string?) {
-            Ok(uri.into())
+            Ok(Gc::allocate(ac.gc_context, uri).into())
         } else {
             Ok(Value::Null)
         }
@@ -176,7 +176,7 @@ pub fn xmlnode_get_prefix_for_namespace<'gc>(
         args.get(0).map(|v| v.coerce_to_string(activation, ac)),
     ) {
         if let Some(prefix) = xmlnode.lookup_namespace_for_uri(&uri_string?) {
-            Ok(prefix.into())
+            Ok(Gc::allocate(ac.gc_context, prefix).into())
         } else {
             Ok(Value::Null)
         }
@@ -217,47 +217,49 @@ pub fn xmlnode_remove_node<'gc>(
 
 pub fn xmlnode_to_string<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _ac: &mut UpdateContext<'_, 'gc, '_>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         let result = node.into_string(&mut is_as2_compatible);
 
-        return Ok(result
-            .unwrap_or_else(|e| {
+        return Ok(Gc::allocate(
+            ac.gc_context,
+            result.unwrap_or_else(|e| {
                 log::warn!("XMLNode toString failed: {}", e);
                 "".to_string()
-            })
-            .into());
+            }),
+        )
+        .into());
     }
 
-    Ok("".to_string().into())
+    Ok(Gc::allocate(ac.gc_context, "".to_string()).into())
 }
 
 pub fn xmlnode_local_name<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _ac: &mut UpdateContext<'_, 'gc, '_>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this
         .as_xml_node()
         .and_then(|n| n.tag_name())
-        .map(|n| n.local_name().to_string().into())
+        .map(|n| Gc::allocate(ac.gc_context, n.local_name().to_string()).into())
         .unwrap_or_else(|| Value::Null))
 }
 
 pub fn xmlnode_node_name<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _ac: &mut UpdateContext<'_, 'gc, '_>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this
         .as_xml_node()
         .and_then(|n| n.tag_name())
-        .map(|n| n.node_name().into())
+        .map(|n| Gc::allocate(ac.gc_context, n.node_name().to_string()).into())
         .unwrap_or_else(|| Value::Null))
 }
 
@@ -283,20 +285,20 @@ pub fn xmlnode_node_type<'gc>(
 
 pub fn xmlnode_node_value<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _ac: &mut UpdateContext<'_, 'gc, '_>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this
         .as_xml_node()
         .and_then(|n| n.node_value())
-        .map(|n| n.into())
+        .map(|n| Gc::allocate(ac.gc_context, n).into())
         .unwrap_or_else(|| Value::Null))
 }
 
 pub fn xmlnode_prefix<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _ac: &mut UpdateContext<'_, 'gc, '_>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -304,9 +306,13 @@ pub fn xmlnode_prefix<'gc>(
         .as_xml_node()
         .and_then(|n| n.tag_name())
         .map(|n| {
-            n.prefix()
-                .map(|n| n.to_string().into())
-                .unwrap_or_else(|| "".to_string().into())
+            Gc::allocate(
+                ac.gc_context,
+                n.prefix()
+                    .map(|n| n.to_string())
+                    .unwrap_or_else(|| "".to_string()),
+            )
+            .into()
         })
         .unwrap_or_else(|| Value::Null))
 }
@@ -481,16 +487,18 @@ pub fn xmlnode_attributes<'gc>(
 
 pub fn xmlnode_namespace_uri<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _ac: &mut UpdateContext<'_, 'gc, '_>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         if let Some(name) = node.tag_name() {
-            return Ok(node
-                .lookup_uri_for_namespace(name.prefix().unwrap_or(""))
-                .map(|s| s.into())
-                .unwrap_or_else(|| "".into()));
+            return Ok(Gc::allocate(
+                ac.gc_context,
+                node.lookup_uri_for_namespace(name.prefix().unwrap_or(""))
+                    .unwrap_or_else(|| "".to_string()),
+            )
+            .into());
         }
 
         return Ok(Value::Null);
@@ -851,7 +859,12 @@ pub fn xml_on_data<'gc>(
         this.call_method("onLoad", &[false.into()], activation, ac)?;
     } else {
         let src = src.coerce_to_string(activation, ac)?;
-        this.call_method("parseXML", &[src.into()], activation, ac)?;
+        this.call_method(
+            "parseXML",
+            &[Gc::allocate(ac.gc_context, src.to_string()).into()],
+            activation,
+            ac,
+        )?;
 
         this.set("loaded", true.into(), activation, ac)?;
 
@@ -863,7 +876,7 @@ pub fn xml_on_data<'gc>(
 
 pub fn xml_doc_type_decl<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _ac: &mut UpdateContext<'_, 'gc, '_>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -871,12 +884,14 @@ pub fn xml_doc_type_decl<'gc>(
         if let Some(doctype) = node.document().doctype() {
             let result = doctype.into_string(&mut |_| true);
 
-            return Ok(result
-                .unwrap_or_else(|e| {
+            return Ok(Gc::allocate(
+                ac.gc_context,
+                result.unwrap_or_else(|e| {
                     log::warn!("Error occured when serializing DOCTYPE: {}", e);
                     "".to_string()
-                })
-                .into());
+                }),
+            )
+            .into());
         }
     }
 
@@ -885,7 +900,7 @@ pub fn xml_doc_type_decl<'gc>(
 
 pub fn xml_xml_decl<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _ac: &mut UpdateContext<'_, 'gc, '_>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -895,7 +910,7 @@ pub fn xml_xml_decl<'gc>(
         if let Err(e) = result {
             log::warn!("Could not generate XML declaration for document: {}", e);
         } else if let Ok(Some(result_str)) = result {
-            return Ok(result_str.into());
+            return Ok(Gc::allocate(ac.gc_context, result_str).into());
         }
     }
 

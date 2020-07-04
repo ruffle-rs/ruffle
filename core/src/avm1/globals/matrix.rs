@@ -6,7 +6,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
-use gc_arena::MutationContext;
+use gc_arena::{Gc, MutationContext};
 use swf::{Matrix, Twips};
 
 pub fn value_to_matrix<'gc>(
@@ -403,14 +403,17 @@ fn to_string<'gc>(
     let tx = this.get("tx", activation, context)?;
     let ty = this.get("ty", activation, context)?;
 
-    Ok(format!(
-        "(a={}, b={}, c={}, d={}, tx={}, ty={})",
-        a.coerce_to_string(activation, context)?,
-        b.coerce_to_string(activation, context)?,
-        c.coerce_to_string(activation, context)?,
-        d.coerce_to_string(activation, context)?,
-        tx.coerce_to_string(activation, context)?,
-        ty.coerce_to_string(activation, context)?
+    Ok(Gc::allocate(
+        context.gc_context,
+        format!(
+            "(a={}, b={}, c={}, d={}, tx={}, ty={})",
+            a.coerce_to_string(activation, context)?,
+            b.coerce_to_string(activation, context)?,
+            c.coerce_to_string(activation, context)?,
+            d.coerce_to_string(activation, context)?,
+            tx.coerce_to_string(activation, context)?,
+            ty.coerce_to_string(activation, context)?
+        ),
     )
     .into())
 }

@@ -18,7 +18,7 @@ use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::transform::TransformStack;
 use enumset::EnumSet;
-use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
+use gc_arena::{make_arena, ArenaParameters, Collect, Gc, GcCell};
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
 use std::collections::{BTreeMap, HashMap};
@@ -292,7 +292,11 @@ impl Player {
             object.define_value(
                 context.gc_context,
                 "$version",
-                context.system.get_version_string(&mut activation).into(),
+                Gc::allocate(
+                    context.gc_context,
+                    context.system.get_version_string(&mut activation),
+                )
+                .into(),
                 EnumSet::empty(),
             );
         });

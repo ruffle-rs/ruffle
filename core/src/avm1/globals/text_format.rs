@@ -3,7 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
-use gc_arena::MutationContext;
+use gc_arena::{Gc, MutationContext};
 
 fn map_defined_to_string<'gc>(
     name: &str,
@@ -16,7 +16,11 @@ fn map_defined_to_string<'gc>(
         Some(Value::Undefined) => Value::Null,
         Some(Value::Null) => Value::Null,
         None => Value::Null,
-        Some(v) => v.coerce_to_string(activation, ac)?.into(),
+        Some(v) => Gc::allocate(
+            ac.gc_context,
+            v.coerce_to_string(activation, ac)?.to_string(),
+        )
+        .into(),
     };
 
     this.set(name, val, activation, ac)?;

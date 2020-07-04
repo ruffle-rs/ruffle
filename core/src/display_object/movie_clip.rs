@@ -1491,6 +1491,7 @@ impl<'gc> MovieClipData<'gc> {
                 self_display_object,
                 self.object,
                 context.action_queue,
+                context.gc_context,
             );
         }
     }

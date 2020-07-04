@@ -6,7 +6,7 @@ use crate::avm1::property::Attribute::*;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
 use crate::html::TextFormat;
-use gc_arena::MutationContext;
+use gc_arena::{Gc, MutationContext};
 
 /// Implements `TextField`
 pub fn constructor<'gc>(
@@ -20,13 +20,13 @@ pub fn constructor<'gc>(
 
 pub fn get_text<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
-            return Ok(text_field.text().into());
+            return Ok(Gc::allocate(context.gc_context, text_field.text()).into());
         }
     }
     Ok(Value::Undefined)
@@ -93,7 +93,7 @@ pub fn get_html_text<'gc>(
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             if let Ok(text) = text_field.html_text(context) {
-                return Ok(text.into());
+                return Ok(Gc::allocate(context.gc_context, text).into());
             }
         }
     }
@@ -294,7 +294,7 @@ pub fn set_multiline<'gc>(
 
 fn variable<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -303,7 +303,7 @@ fn variable<'gc>(
         .and_then(|dobj| dobj.as_edit_text())
     {
         if let Some(variable) = etext.variable() {
-            return Ok(variable.to_string().into());
+            return Ok(Gc::allocate(context.gc_context, variable.to_string()).into());
         }
     }
 
@@ -372,7 +372,7 @@ pub fn set_word_wrap<'gc>(
 
 pub fn auto_size<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -381,10 +381,10 @@ pub fn auto_size<'gc>(
         .and_then(|dobj| dobj.as_edit_text())
     {
         return Ok(match etext.autosize() {
-            AutoSizeMode::None => "none".to_string().into(),
-            AutoSizeMode::Left => "left".to_string().into(),
-            AutoSizeMode::Center => "center".to_string().into(),
-            AutoSizeMode::Right => "right".to_string().into(),
+            AutoSizeMode::None => Gc::allocate(context.gc_context, "none".to_string()).into(),
+            AutoSizeMode::Left => Gc::allocate(context.gc_context, "left".to_string()).into(),
+            AutoSizeMode::Center => Gc::allocate(context.gc_context, "center".to_string()).into(),
+            AutoSizeMode::Right => Gc::allocate(context.gc_context, "right".to_string()).into(),
         });
     }
 
@@ -403,9 +403,9 @@ pub fn set_auto_size<'gc>(
     {
         etext.set_autosize(
             match args.get(0).cloned().unwrap_or(Value::Undefined) {
-                Value::String(s) if s == "left" => AutoSizeMode::Left,
-                Value::String(s) if s == "center" => AutoSizeMode::Center,
-                Value::String(s) if s == "right" => AutoSizeMode::Right,
+                Value::String(s) if *s == "left" => AutoSizeMode::Left,
+                Value::String(s) if *s == "center" => AutoSizeMode::Center,
+                Value::String(s) if *s == "right" => AutoSizeMode::Right,
                 Value::Bool(true) => AutoSizeMode::Left,
                 _ => AutoSizeMode::None,
             },

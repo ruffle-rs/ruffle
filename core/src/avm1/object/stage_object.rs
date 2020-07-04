@@ -10,7 +10,7 @@ use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, EditText, MovieClip};
 use crate::property_map::PropertyMap;
 use enumset::EnumSet;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::borrow::Cow;
 use std::fmt;
 
@@ -850,10 +850,10 @@ fn set_rotation<'gc>(
 
 fn target<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.slash_path().into())
+    Ok(Gc::allocate(context.gc_context, this.slash_path()).into())
 }
 
 fn frames_loaded<'gc>(
@@ -870,10 +870,10 @@ fn frames_loaded<'gc>(
 
 fn name<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok((*this.name()).into())
+    Ok(Gc::allocate(context.gc_context, this.name().to_string()).into())
 }
 
 fn set_name<'gc>(
@@ -889,20 +889,20 @@ fn set_name<'gc>(
 
 fn drop_target<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Unimplemented property _droptarget");
-    Ok("".into())
+    Ok(Gc::allocate(context.gc_context, "".to_string()).into())
 }
 
 fn url<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Unimplemented property _url");
-    Ok("".into())
+    Ok(Gc::allocate(context.gc_context, "".to_string()).into())
 }
 
 fn high_quality<'gc>(
@@ -964,11 +964,11 @@ fn set_sound_buf_time<'gc>(
 
 fn quality<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Unimplemented property _quality");
-    Ok("HIGH".into())
+    Ok(Gc::allocate(context.gc_context, "HIGH".to_string()).into())
 }
 
 fn set_quality<'gc>(
