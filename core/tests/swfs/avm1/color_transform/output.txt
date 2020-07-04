@@ -1,0 +1,48 @@
+ct
+16718080
+(redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=255, greenOffset=25, blueOffset=0, alphaOffset=0)
+(redMultiplier=0, greenMultiplier=0, blueMultiplier=0, alphaMultiplier=1, redOffset=255, greenOffset=0, blueOffset=0, alphaOffset=0)
+ct2
+(redMultiplier=0.5, greenMultiplier=0.5, blueMultiplier=0.5, alphaMultiplier=0.5, redOffset=0, greenOffset=255, blueOffset=0, alphaOffset=50)
+combine
+(redMultiplier=0.25, greenMultiplier=0.25, blueMultiplier=0.25, alphaMultiplier=0.25, redOffset=35, greenOffset=50, blueOffset=65, alphaOffset=80)
+oob constructor mult
+(redMultiplier=1000, greenMultiplier=1000, blueMultiplier=1000, alphaMultiplier=1000, redOffset=1000.1, greenOffset=1000.1, blueOffset=1000.1, alphaOffset=1000.1)
+(redMultiplier=250, greenMultiplier=250, blueMultiplier=250, alphaMultiplier=250, redOffset=36000.1, greenOffset=51000.1, blueOffset=66000.1, alphaOffset=81000.1)
+36000.1
+51000.1
+66000.1
+250
+250
+250
+RGB
+16777215
+2031615
+1984255
+1984080
+1984080
+RGB set
+32
+48
+64
+0
+0
+123
+Bad concat
+(redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=255, greenOffset=255, blueOffset=255, alphaOffset=255)
+toString
+concat
+rgb
+blueOffset
+greenOffset
+redOffset
+alphaOffset
+blueMultiplier
+greenMultiplier
+redMultiplier
+alphaMultiplier
+Large values
+(redMultiplier=8589934592, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=0, blueOffset=0, alphaOffset=0)
+Strange values
+(redMultiplier=NaN, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=1000, blueOffset=0, alphaOffset=0)
+(redMultiplier=0, greenMultiplier=0, blueMultiplier=0, alphaMultiplier=1, redOffset=0, greenOffset=0, blueOffset=0, alphaOffset=0)

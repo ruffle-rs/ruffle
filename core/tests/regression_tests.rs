@@ -215,6 +215,7 @@ swf_tests! {
     (define_local, "avm1/define_local", 1),
     (textfield_variable, "avm1/textfield_variable", 8),
     (error, "avm1/error", 1),
+    (color_transform, "avm1/color_transform", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

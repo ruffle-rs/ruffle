@@ -67,7 +67,6 @@ impl<'gc> ColorTransformObject<'gc> {
         gc_context: MutationContext<'gc, '_>,
         proto: Option<Object<'gc>>,
     ) -> Self {
-        println!("Create new ct o");
         ColorTransformObject(GcCell::allocate(
             gc_context,
             ColorTransformData {

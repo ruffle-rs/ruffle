@@ -140,8 +140,6 @@ pub fn set_rgb<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("ColorTransform.set_rgb");
-
     let new_rgb = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -173,7 +171,6 @@ macro_rules! color_transform_value_accessor {
                 this: Object<'gc>,
                 args: &[Value<'gc>],
             ) -> Result<Value<'gc>, Error<'gc>> {
-                //TODO: add validation
                 let new_val = args
                     .get(0)
                     .unwrap_or(&Value::Undefined)
@@ -190,7 +187,6 @@ macro_rules! color_transform_value_accessor {
                 this: Object<'gc>,
                 _args: &[Value<'gc>],
             ) -> Result<Value<'gc>, Error<'gc>> {
-                println!("This: {}, {:?}", stringify!($get_ident), this);
                 let ct = this.as_color_transform_object().unwrap();
                 Ok(Value::Number(ct.$get_ident()).into())
             }
@@ -219,15 +215,15 @@ pub fn create_proto<'gc>(
     let mut object = color_transform_object.as_script_object().unwrap();
 
     with_color_transform!(object, gc_context,
-        "rgb" => [get_rgb, set_rgb],
+        "alphaMultiplier" => [get_alpha_multiplier, set_alpha_multiplier],
         "redMultiplier" => [get_red_multiplier, set_red_multiplier],
         "greenMultiplier" => [get_green_multiplier, set_green_multiplier],
         "blueMultiplier" => [get_blue_multiplier, set_blue_multiplier],
-        "alphaMultiplier" => [get_alpha_multiplier, set_alpha_multiplier],
+        "alphaOffset" => [get_alpha_offset, set_alpha_offset],
         "redOffset" => [get_red_offset, set_red_offset],
         "greenOffset" => [get_green_offset, set_green_offset],
         "blueOffset" => [get_blue_offset, set_blue_offset],
-        "alphaOffset" => [get_alpha_offset, set_alpha_offset],
+        "rgb" => [get_rgb, set_rgb],
     );
 
     object.force_set_function(
@@ -298,27 +294,6 @@ fn concat<'gc>(
             + this_ct.get_blue_offset();
         let alpha_offset = (other_ct.get_alpha_offset() * this_ct.get_alpha_multiplier())
             + this_ct.get_alpha_offset();
-
-        // This appears to do nothing if values are out of range
-        if 0.0 > red_multiplier
-            || red_multiplier > 1.0
-            || 0.0 > green_multiplier
-            || green_multiplier > 1.0
-            || 0.0 > blue_multiplier
-            || blue_multiplier > 1.0
-            || 0.0 > alpha_multiplier
-            || alpha_multiplier > 1.0
-            || -255.0 > red_offset
-            || red_offset > 255.0
-            || -255.0 > green_offset
-            || green_offset > 255.0
-            || -255.0 > blue_offset
-            || blue_offset > 255.0
-            || -255.0 > alpha_offset
-            || alpha_offset > 255.0
-        {
-            return Ok(Value::Undefined);
-        }
 
         this_ct.set_red_multiplier(context.gc_context, red_multiplier);
         this_ct.set_green_multiplier(context.gc_context, green_multiplier);
