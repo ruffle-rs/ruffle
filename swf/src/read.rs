@@ -342,6 +342,10 @@ impl<R: Read> Reader<R> {
         }
     }
 
+    pub fn version(&self) -> u8 {
+        self.version
+    }
+
     /// Returns a reference to the underlying `Reader`.
     pub fn get_ref(&self) -> &R {
         &self.input
