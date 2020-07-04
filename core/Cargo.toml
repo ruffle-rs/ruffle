@@ -32,7 +32,7 @@ thiserror = "1.0"
 json = "0.12.4"
 
 [dependencies.jpeg-decoder]
-version = "0.1.19"
+version = "0.1.20"
 default-features = false # can't use rayon on web
 
 [dependencies.rand]
