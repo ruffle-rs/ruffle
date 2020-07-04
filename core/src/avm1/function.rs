@@ -10,7 +10,7 @@ use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, UpdateContext};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::tag_utils::SwfSlice;
 use enumset::EnumSet;
-use gc_arena::{Collect, CollectionContext, GcCell, MutationContext};
+use gc_arena::{Collect, CollectionContext, Gc, GcCell, MutationContext};
 use std::borrow::Cow;
 use std::fmt;
 use swf::avm1::types::FunctionParam;
@@ -189,7 +189,7 @@ pub enum Executable<'gc> {
 
     /// ActionScript data defined by a previous `DefineFunction` or
     /// `DefineFunction2` action.
-    Action(Avm1Function<'gc>),
+    Action(Gc<'gc, Avm1Function<'gc>>),
 }
 
 unsafe impl<'gc> Collect for Executable<'gc> {
@@ -389,8 +389,8 @@ impl<'gc> From<NativeFunction<'gc>> for Executable<'gc> {
     }
 }
 
-impl<'gc> From<Avm1Function<'gc>> for Executable<'gc> {
-    fn from(af: Avm1Function<'gc>) -> Self {
+impl<'gc> From<Gc<'gc, Avm1Function<'gc>>> for Executable<'gc> {
+    fn from(af: Gc<'gc, Avm1Function<'gc>>) -> Self {
         Executable::Action(af)
     }
 }

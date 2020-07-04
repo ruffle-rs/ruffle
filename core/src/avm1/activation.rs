@@ -12,7 +12,7 @@ use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
 use crate::tag_utils::SwfSlice;
 use enumset::EnumSet;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use rand::Rng;
 use smallvec::SmallVec;
 use std::borrow::Cow;
@@ -886,7 +886,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             ScriptObject::object(context.gc_context, Some(self.avm.prototypes.object)).into();
         let func_obj = FunctionObject::function(
             context.gc_context,
-            func,
+            Gc::allocate(context.gc_context, func),
             Some(self.avm.prototypes.function),
             Some(prototype),
         );
@@ -921,7 +921,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             ScriptObject::object(context.gc_context, Some(self.avm.prototypes.object)).into();
         let func_obj = FunctionObject::function(
             context.gc_context,
-            func,
+            Gc::allocate(context.gc_context, func),
             Some(self.avm.prototypes.function),
             Some(prototype),
         );
