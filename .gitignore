@@ -2,7 +2,12 @@ target/
 **/*.rs.bk
 bin/
 dist/
-node_modules/
 pkg/
 wasm-pack.log
 *.swd
+
+# NPM
+_cacache/
+_logs/
+anonymous-cli-metrics.json
+node_modules/
