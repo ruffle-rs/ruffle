@@ -9,8 +9,8 @@ use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 use crate::avm1::color_transform_object::ColorTransformObject;
-use std::convert::Into;
 use crate::color_transform::ColorTransform;
+use std::convert::Into;
 
 macro_rules! with_color_transform {
     ($obj: ident, $gc: ident, $($name: expr => [$get: ident, $set: ident],)*) => {
