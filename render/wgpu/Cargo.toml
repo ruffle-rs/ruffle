@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 wgpu = "0.5"
 wgpu-native = "0.5"
 image = "0.23.6"
-jpeg-decoder = "0.1.18"
+jpeg-decoder = "0.1.20"
 log = "0.4"
 lyon = "0.15.6"
 ruffle_core = { path = "../../core" }
