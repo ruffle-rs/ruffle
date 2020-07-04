@@ -248,7 +248,7 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::DefineSound => self
                     .0
                     .write(context.gc_context)
-                    .define_sound(context, reader, tag_len),
+                    .define_sound(context, reader),
                 TagCode::DefineSprite => self.0.write(context.gc_context).define_sprite(
                     avm,
                     context,
@@ -1681,10 +1681,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let id = reader.read_u16()?;
         let data_len = tag_len - 2;
         let mut jpeg_data = Vec::with_capacity(data_len);
-        reader
-            .get_mut()
-            .take(data_len as u64)
-            .read_to_end(&mut jpeg_data)?;
+        reader.get_mut().read_to_end(&mut jpeg_data)?;
         let bitmap_info = context.renderer.register_bitmap_jpeg(
             id,
             &jpeg_data,
@@ -1718,10 +1715,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let id = reader.read_u16()?;
         let data_len = tag_len - 2;
         let mut jpeg_data = Vec::with_capacity(data_len);
-        reader
-            .get_mut()
-            .take(data_len as u64)
-            .read_to_end(&mut jpeg_data)?;
+        reader.get_mut().read_to_end(&mut jpeg_data)?;
         let bitmap_info = context.renderer.register_bitmap_jpeg_2(id, &jpeg_data)?;
         let bitmap = crate::display_object::Bitmap::new(
             context,
@@ -2004,14 +1998,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<&'a [u8]>,
-        tag_len: usize,
     ) -> DecodeResult {
-        // TODO(Herschel): Can we use a slice of the sound data instead of copying the data?
-        use std::io::Read;
-        let mut reader = swf::read::Reader::new(
-            reader.get_mut().take(tag_len as u64),
-            self.static_data.swf.version(),
-        );
         let sound = reader.read_define_sound()?;
         if let Ok(handle) = context.audio.register_sound(&sound) {
             context
@@ -2126,10 +2113,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         use std::io::Read;
         // TODO(Herschel): Can we use a slice instead of copying?
         let mut jpeg_data = Vec::with_capacity(tag_len);
-        reader
-            .get_mut()
-            .take(tag_len as u64)
-            .read_to_end(&mut jpeg_data)?;
+        reader.get_mut().read_to_end(&mut jpeg_data)?;
         context
             .library
             .library_for_movie_mut(self.movie())
