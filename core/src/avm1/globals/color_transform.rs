@@ -10,6 +10,7 @@ use gc_arena::MutationContext;
 
 use crate::avm1::color_transform_object::ColorTransformObject;
 use std::convert::Into;
+use crate::color_transform::ColorTransform;
 
 macro_rules! with_color_transform {
     ($obj: ident, $gc: ident, $($name: expr => [$get: ident, $set: ident],)*) => {
@@ -77,15 +78,16 @@ pub fn constructor<'gc>(
     Ok(Value::Undefined)
 }
 
-/*pub fn object_to_color_transform<'gc>(
+// We'll need this soon!
+#[allow(dead_code)]
+pub fn object_to_color_transform<'gc>(
     object: Object<'gc>,
     activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<ColorTransform, Error<'gc>> {
-    //TODO:
     let red_multiplier = object
-      .get("redMultiplier", activation, context)?
-      .coerce_to_f64(activation, context)? as f32;
+        .get("redMultiplier", activation, context)?
+        .coerce_to_f64(activation, context)? as f32;
     let green_multiplier = object
         .get("greenMultiplier", activation, context)?
         .coerce_to_f64(activation, context)? as f32;
@@ -118,7 +120,7 @@ pub fn constructor<'gc>(
         b_add: blue_offset,
         a_add: alpha_offset,
     })
-}*/
+}
 
 pub fn get_rgb<'gc>(
     _activation: &mut Activation<'_, 'gc>,
