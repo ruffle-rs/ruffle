@@ -11,7 +11,7 @@ use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObject};
 use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
 use crate::tag_utils::SwfSlice;
-use gc_arena::MutationContext;
+use gc_arena::{Gc, MutationContext};
 use swf::{
     FillStyle, Gradient, GradientInterpolation, GradientRecord, GradientSpread, LineCapStyle,
     LineJoinStyle, LineStyle, Twips,
@@ -897,10 +897,10 @@ fn swap_depths<'gc>(
 fn to_string<'gc>(
     movie_clip: MovieClip<'gc>,
     _activation: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(movie_clip.path().into())
+    Ok(Gc::allocate(context.gc_context, movie_clip.path()).into())
 }
 
 fn local_to_global<'gc>(
@@ -942,7 +942,11 @@ fn get_bounds<'gc>(
         Some(Value::Object(o)) if o.as_display_object().is_some() => o.as_display_object(),
         Some(val) => {
             let path = val.coerce_to_string(activation, context)?;
-            activation.resolve_target_display_object(context, movie_clip.into(), path.into())?
+            activation.resolve_target_display_object(
+                context,
+                movie_clip.into(),
+                Gc::allocate(context.gc_context, path.to_string()).into(),
+            )?
         }
         None => Some(movie_clip.into()),
     };

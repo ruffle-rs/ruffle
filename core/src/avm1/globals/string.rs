@@ -9,7 +9,7 @@ use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use crate::string_utils;
 use enumset::EnumSet;
-use gc_arena::MutationContext;
+use gc_arena::{Gc, MutationContext};
 
 /// `String` constructor
 pub fn string<'gc>(
@@ -20,14 +20,17 @@ pub fn string<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let value = match args.get(0).cloned() {
         Some(Value::String(s)) => s,
-        Some(v) => v.coerce_to_string(activation, ac)?.to_string(),
-        _ => String::new(),
+        Some(v) => Gc::allocate(
+            ac.gc_context,
+            v.coerce_to_string(activation, ac)?.to_string(),
+        ),
+        _ => Gc::allocate(ac.gc_context, String::new()),
     };
 
     if let Some(mut vbox) = this.as_value_object() {
         let len = value.encode_utf16().count();
         vbox.set_length(ac.gc_context, len);
-        vbox.replace_value(ac.gc_context, value.clone().into());
+        vbox.replace_value(ac.gc_context, value.into());
     }
 
     Ok(value.into())
@@ -179,7 +182,13 @@ fn char_at<'gc>(
     // TODO: Will return REPLACEMENT_CHAR if this indexes a character outside the BMP, losing info about the surrogate.
     // When we improve our string representation, the unpaired surrogate should be returned.
     let this_val = Value::from(this);
-    let string = this_val.coerce_to_string(activation, context)?;
+    let string = match this_val {
+        Value::String(string) => string,
+        other => Gc::allocate(
+            context.gc_context,
+            other.coerce_to_string(activation, context)?.to_string(),
+        ),
+    };
     let i = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -193,7 +202,7 @@ fn char_at<'gc>(
     } else {
         "".into()
     };
-    Ok(ret.into())
+    Ok(Gc::allocate(context.gc_context, ret).into())
 }
 
 fn char_code_at<'gc>(
@@ -232,7 +241,7 @@ fn concat<'gc>(
         let s = arg.coerce_to_string(activation, context)?;
         ret.push_str(&s)
     }
-    Ok(ret.into())
+    Ok(Gc::allocate(context.gc_context, ret).into())
 }
 
 fn from_char_code<'gc>(
@@ -251,7 +260,7 @@ fn from_char_code<'gc>(
         }
         out.push(utf16_code_unit_to_char(i));
     }
-    Ok(out.into())
+    Ok(Gc::allocate(context.gc_context, out).into())
 }
 
 fn index_of<'gc>(
@@ -384,9 +393,9 @@ fn slice<'gc>(
                 .skip(start_index)
                 .take(end_index - start_index),
         );
-        Ok(ret.into())
+        Ok(Gc::allocate(context.gc_context, ret).into())
     } else {
-        Ok("".into())
+        Ok(Gc::allocate(context.gc_context, "".to_string()).into())
     }
 }
 
@@ -397,7 +406,13 @@ fn split<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_val = Value::from(this);
-    let this = this_val.coerce_to_string(activation, context)?;
+    let this = match this_val {
+        Value::String(string) => string,
+        other => Gc::allocate(
+            context.gc_context,
+            other.coerce_to_string(activation, context)?.to_string(),
+        ),
+    };
     let delimiter_val = args.get(0).unwrap_or(&Value::Undefined);
     let delimiter = delimiter_val.coerce_to_string(activation, context)?;
     let limit = match args.get(1) {
@@ -407,14 +422,22 @@ fn split<'gc>(
     let array = ScriptObject::array(context.gc_context, Some(activation.avm.prototypes.array));
     if !delimiter.is_empty() {
         for (i, token) in this.split(delimiter.as_ref()).take(limit).enumerate() {
-            array.set_array_element(i, token.to_string().into(), context.gc_context);
+            array.set_array_element(
+                i,
+                Gc::allocate(context.gc_context, token.to_string()).into(),
+                context.gc_context,
+            );
         }
     } else {
         // When using an empty "" delimiter, Rust's str::split adds an extra beginning and trailing item, but Flash does not.
         // e.g., split("foo", "") returns ["", "f", "o", "o", ""] in Rust but ["f, "o", "o"] in Flash.
         // Special case this to match Flash's behavior.
         for (i, token) in this.chars().take(limit).enumerate() {
-            array.set_array_element(i, token.to_string().into(), context.gc_context);
+            array.set_array_element(
+                i,
+                Gc::allocate(context.gc_context, token.to_string()).into(),
+                context.gc_context,
+            );
         }
     }
     Ok(array.into())
@@ -431,7 +454,13 @@ fn substr<'gc>(
     }
 
     let this_val = Value::from(this);
-    let this = this_val.coerce_to_string(activation, context)?;
+    let this = match this_val {
+        Value::String(string) => string,
+        other => Gc::allocate(
+            context.gc_context,
+            other.coerce_to_string(activation, context)?.to_string(),
+        ),
+    };
     let this_len = this.encode_utf16().count();
     let start_index = string_wrapping_index(
         args.get(0).unwrap().coerce_to_i32(activation, context)?,
@@ -444,7 +473,7 @@ fn substr<'gc>(
     };
 
     let ret = utf16_iter_to_string(this.encode_utf16().skip(start_index).take(len));
-    Ok(ret.into())
+    Ok(Gc::allocate(context.gc_context, ret).into())
 }
 
 fn substring<'gc>(
@@ -458,7 +487,13 @@ fn substring<'gc>(
     }
 
     let this_val = Value::from(this);
-    let this = this_val.coerce_to_string(activation, context)?;
+    let this = match this_val {
+        Value::String(string) => string,
+        other => Gc::allocate(
+            context.gc_context,
+            other.coerce_to_string(activation, context)?.to_string(),
+        ),
+    };
     let this_len = this.encode_utf16().count();
     let mut start_index = string_index(
         args.get(0).unwrap().coerce_to_i32(activation, context)?,
@@ -479,7 +514,7 @@ fn substring<'gc>(
             .skip(start_index)
             .take(end_index - start_index),
     );
-    Ok(ret.into())
+    Ok(Gc::allocate(context.gc_context, ret).into())
 }
 
 fn to_lower_case<'gc>(
@@ -490,11 +525,13 @@ fn to_lower_case<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_val = Value::from(this);
     let this = this_val.coerce_to_string(activation, context)?;
-    Ok(this
-        .chars()
-        .map(string_utils::swf_char_to_lowercase)
-        .collect::<String>()
-        .into())
+    Ok(Gc::allocate(
+        context.gc_context,
+        this.chars()
+            .map(string_utils::swf_char_to_lowercase)
+            .collect::<String>(),
+    )
+    .into())
 }
 
 /// `String.toString` / `String.valueOf` impl
@@ -524,11 +561,13 @@ fn to_upper_case<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_val = Value::from(this);
     let this = this_val.coerce_to_string(activation, context)?;
-    Ok(this
-        .chars()
-        .map(string_utils::swf_char_to_uppercase)
-        .collect::<String>()
-        .into())
+    Ok(Gc::allocate(
+        context.gc_context,
+        this.chars()
+            .map(string_utils::swf_char_to_uppercase)
+            .collect::<String>(),
+    )
+    .into())
 }
 
 /// Normalizes an  index paramter used in `String` functions such as `substring`.

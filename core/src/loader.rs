@@ -8,7 +8,7 @@ use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
 use crate::player::{Player, NEWEST_PLAYER_VERSION};
 use crate::tag_utils::SwfMovie;
 use crate::xml::XMLNode;
-use gc_arena::{Collect, CollectionContext};
+use gc_arena::{Collect, CollectionContext, Gc, MutationContext};
 use generational_arena::{Arena, Index};
 use std::string::FromUtf8Error;
 use std::sync::{Arc, Mutex, Weak};
@@ -127,11 +127,12 @@ impl<'gc> LoadManager<'gc> {
         loaded_clip: DisplayObject<'gc>,
         clip_object: Option<Object<'gc>>,
         queue: &mut ActionQueue<'gc>,
+        gc_context: MutationContext<'gc, '_>,
     ) {
         let mut invalidated_loaders = vec![];
 
         for (index, loader) in self.0.iter_mut() {
-            if loader.movie_clip_loaded(loaded_clip, clip_object, queue) {
+            if loader.movie_clip_loaded(loaded_clip, clip_object, queue, gc_context) {
                 invalidated_loaders.push(index);
             }
         }
@@ -321,7 +322,10 @@ impl<'gc> Loader<'gc> {
                             NEWEST_PLAYER_VERSION,
                             uc,
                             "broadcastMessage",
-                            &["onLoadStart".into(), Value::Object(broadcaster)],
+                            &[
+                                Gc::allocate(uc.gc_context, "onLoadStart".to_string()).into(),
+                                Value::Object(broadcaster),
+                            ],
                         );
                     }
 
@@ -355,7 +359,8 @@ impl<'gc> Loader<'gc> {
                                 uc,
                                 "broadcastMessage",
                                 &[
-                                    "onLoadProgress".into(),
+                                    Gc::allocate(uc.gc_context, "onLoadProgress".to_string())
+                                        .into(),
                                     Value::Object(broadcaster),
                                     length.into(),
                                     length.into(),
@@ -391,7 +396,11 @@ impl<'gc> Loader<'gc> {
                                 NEWEST_PLAYER_VERSION,
                                 uc,
                                 "broadcastMessage",
-                                &["onLoadComplete".into(), Value::Object(broadcaster)],
+                                &[
+                                    Gc::allocate(uc.gc_context, "onLoadComplete".to_string())
+                                        .into(),
+                                    Value::Object(broadcaster),
+                                ],
                             );
                         }
 
@@ -429,9 +438,10 @@ impl<'gc> Loader<'gc> {
                                 uc,
                                 "broadcastMessage",
                                 &[
-                                    "onLoadError".into(),
+                                    Gc::allocate(uc.gc_context, "onLoadError".to_string()).into(),
                                     Value::Object(broadcaster),
-                                    "LoadNeverCompleted".into(),
+                                    Gc::allocate(uc.gc_context, "LoadNeverCompleted".to_string())
+                                        .into(),
                                 ],
                             );
                         }
@@ -483,7 +493,12 @@ impl<'gc> Loader<'gc> {
                     *uc.levels.get(&0).unwrap(),
                 );
                 for (k, v) in form_urlencoded::parse(&data) {
-                    that.set(&k, v.into_owned().into(), &mut activation, uc)?;
+                    that.set(
+                        &k,
+                        Gc::allocate(uc.gc_context, v.into_owned()).into(),
+                        &mut activation,
+                        uc,
+                    )?;
                 }
 
                 Ok(())
@@ -501,6 +516,7 @@ impl<'gc> Loader<'gc> {
         loaded_clip: DisplayObject<'gc>,
         clip_object: Option<Object<'gc>>,
         queue: &mut ActionQueue<'gc>,
+        gc_context: MutationContext<'gc, '_>,
     ) -> bool {
         let (clip, broadcaster, load_complete) = match self {
             Loader::Movie {
@@ -520,7 +536,7 @@ impl<'gc> Loader<'gc> {
                         object: broadcaster,
                         name: "broadcastMessage",
                         args: vec![
-                            "onLoadInit".into(),
+                            Gc::allocate(gc_context, "onLoadInit".to_string()).into(),
                             clip_object.map(|co| co.into()).unwrap_or(Value::Undefined),
                         ],
                     },
@@ -582,7 +598,7 @@ impl<'gc> Loader<'gc> {
                             NEWEST_PLAYER_VERSION,
                             uc,
                             "onData",
-                            &[xmlstring.into()],
+                            &[Gc::allocate(uc.gc_context, xmlstring).into()],
                         );
 
                         Ok(())

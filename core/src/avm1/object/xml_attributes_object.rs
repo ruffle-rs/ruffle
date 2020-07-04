@@ -8,7 +8,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, UpdateContext, Value};
 use crate::xml::{XMLName, XMLNode};
 use enumset::EnumSet;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, Gc, MutationContext};
 use std::borrow::Cow;
 use std::fmt;
 
@@ -61,13 +61,13 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
         &self,
         name: &str,
         _activation: &mut Activation<'_, 'gc>,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(self
             .node()
             .attribute_value(&XMLName::from_str(name))
-            .map(|s| s.into())
+            .map(|s| Gc::allocate(context.gc_context, s).into())
             .unwrap_or_else(|| Value::Undefined))
     }
 

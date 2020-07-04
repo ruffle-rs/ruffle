@@ -7,7 +7,7 @@ use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::{Object, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
-use gc_arena::MutationContext;
+use gc_arena::{Gc, MutationContext};
 
 /// `Boolean` constructor/function
 pub fn boolean<'gc>(
@@ -75,7 +75,7 @@ pub fn create_proto<'gc>(
 
 pub fn to_string<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -83,7 +83,7 @@ pub fn to_string<'gc>(
         // Must be a bool.
         // Boolean.prototype.toString.call(x) returns undefined for non-bools.
         if let Value::Bool(b) = vbox.unbox() {
-            return Ok(b.to_string().into());
+            return Ok(Gc::allocate(context.gc_context, b.to_string()).into());
         }
     }
 

@@ -6,7 +6,7 @@ use crate::avm1::function::Executable;
 use crate::avm1::{Object, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
-use gc_arena::MutationContext;
+use gc_arena::{Gc, MutationContext};
 
 use crate::avm1::object::color_transform_object::ColorTransformObject;
 use crate::color_transform::ColorTransform;
@@ -264,7 +264,7 @@ fn to_string<'gc>(
             this.get("alphaOffset", activation, context)?.coerce_to_string(activation, context)?
     );
 
-    Ok(Value::String(formatted))
+    Ok(Value::String(Gc::allocate(context.gc_context, formatted)))
 }
 
 fn concat<'gc>(

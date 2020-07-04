@@ -4,7 +4,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::{Object, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
-use gc_arena::MutationContext;
+use gc_arena::{Gc, MutationContext};
 
 use crate::avm1::object::shared_object::SharedObject;
 
@@ -46,7 +46,7 @@ fn recursive_serialize<'gc>(
                 Value::Null => json_obj[k] = JsonValue::Null,
                 Value::Bool(b) => json_obj[k] = b.into(),
                 Value::Number(f) => json_obj[k] = f.into(),
-                Value::String(s) => json_obj[k] = s.into(),
+                Value::String(s) => json_obj[k] = s.to_string().into(),
                 Value::Object(o) => {
                     // Don't attempt to serialize functions
                     let function = activation.avm.prototypes.function;
@@ -83,7 +83,7 @@ fn recursive_deserialize<'gc>(
                 object.define_value(
                     context.gc_context,
                     entry.0,
-                    Value::String(val),
+                    Value::String(Gc::allocate(context.gc_context, val)),
                     EnumSet::empty(),
                 );
             }
@@ -91,7 +91,7 @@ fn recursive_deserialize<'gc>(
                 object.define_value(
                     context.gc_context,
                     entry.0,
-                    Value::String(s.clone()),
+                    Value::String(Gc::allocate(context.gc_context, s.clone())),
                     EnumSet::empty(),
                 );
             }

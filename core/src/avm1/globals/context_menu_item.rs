@@ -5,7 +5,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::Object;
 use crate::avm1::{ScriptObject, Value};
 use crate::context::UpdateContext;
-use gc_arena::MutationContext;
+use gc_arena::{Gc, MutationContext};
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -38,7 +38,12 @@ pub fn constructor<'gc>(
         .to_owned()
         .as_bool(activation.swf_version());
 
-    this.set("caption", caption.into(), activation, context)?;
+    this.set(
+        "caption",
+        Gc::allocate(context.gc_context, caption).into(),
+        activation,
+        context,
+    )?;
 
     if let Some(callback) = callback {
         this.set("onSelect", callback.into(), activation, context)?;
@@ -87,7 +92,7 @@ pub fn copy<'gc>(
         context,
         copy,
         &[
-            caption.into(),
+            Gc::allocate(context.gc_context, caption).into(),
             callback.into(),
             separator_before.into(),
             enabled.into(),

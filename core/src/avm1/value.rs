@@ -2,6 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::{Object, TObject, UpdateContext};
+use gc_arena::Gc;
 use std::borrow::Cow;
 use std::f64::NAN;
 
@@ -12,25 +13,13 @@ pub enum Value<'gc> {
     Null,
     Bool(bool),
     Number(f64),
-    String(String),
+    String(Gc<'gc, String>),
     Object(Object<'gc>),
 }
 
-impl<'gc> From<String> for Value<'gc> {
-    fn from(string: String) -> Self {
+impl<'gc> From<Gc<'gc, String>> for Value<'gc> {
+    fn from(string: Gc<'gc, String>) -> Self {
         Value::String(string)
-    }
-}
-
-impl<'gc> From<&str> for Value<'gc> {
-    fn from(string: &str) -> Self {
-        Value::String(string.to_owned())
-    }
-}
-
-impl<'gc> From<Cow<'_, str>> for Value<'gc> {
-    fn from(string: Cow<str>) -> Self {
-        Value::String(string.to_string())
     }
 }
 
@@ -99,8 +88,10 @@ impl<'gc> From<usize> for Value<'gc> {
 
 unsafe impl<'gc> gc_arena::Collect for Value<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
-        if let Value::Object(object) = self {
-            object.trace(cc);
+        match self {
+            Value::String(string) => string.trace(cc),
+            Value::Object(object) => object.trace(cc),
+            _ => {}
         }
     }
 }
@@ -127,7 +118,7 @@ impl PartialEq for Value<'_> {
                 _ => false,
             },
             Value::String(value) => match other {
-                Value::String(other_value) => value == other_value,
+                Value::String(other_value) => **value == **other_value,
                 _ => false,
             },
             Value::Object(value) => match other {
@@ -324,7 +315,7 @@ impl<'gc> Value<'gc> {
 
                 Ok(false.into())
             }
-            (Value::String(a), Value::String(b)) => Ok((a == b).into()),
+            (Value::String(a), Value::String(b)) => Ok((**a == **b).into()),
             (Value::Bool(a), Value::Bool(b)) => Ok((a == b).into()),
             (Value::Object(a), Value::Object(b)) => Ok(Object::ptr_eq(*a, *b).into()),
             (Value::Object(a), Value::Null) | (Value::Object(a), Value::Undefined) => {
@@ -465,7 +456,7 @@ impl<'gc> Value<'gc> {
         Ok(match self {
             Value::Object(object) => {
                 match object.call_method("toString", &[], activation, context)? {
-                    Value::String(s) => Cow::Owned(s),
+                    Value::String(s) => Cow::Owned(s.to_string()),
                     _ => Cow::Borrowed("[type Object]"),
                 }
             }
@@ -608,6 +599,7 @@ mod test {
     use crate::avm1::Value;
     use crate::context::UpdateContext;
     use enumset::EnumSet;
+    use gc_arena::Gc;
     use std::f64::{INFINITY, NAN, NEG_INFINITY};
 
     #[test]
@@ -800,8 +792,8 @@ mod test {
     #[test]
     fn abstract_lt_str() {
         with_avm(8, |activation, context, _this| -> Result<(), Error> {
-            let a = Value::String("a".to_owned());
-            let b = Value::String("b".to_owned());
+            let a = Value::String(Gc::allocate(context.gc_context, "a".to_owned()));
+            let b = Value::String(Gc::allocate(context.gc_context, "b".to_owned()));
 
             assert_eq!(
                 a.abstract_lt(b, activation, context).unwrap(),
@@ -815,8 +807,8 @@ mod test {
     #[test]
     fn abstract_gt_str() {
         with_avm(8, |activation, context, _this| -> Result<(), Error> {
-            let a = Value::String("a".to_owned());
-            let b = Value::String("b".to_owned());
+            let a = Value::String(Gc::allocate(context.gc_context, "a".to_owned()));
+            let b = Value::String(Gc::allocate(context.gc_context, "b".to_owned()));
 
             assert_eq!(
                 b.abstract_lt(a, activation, context).unwrap(),

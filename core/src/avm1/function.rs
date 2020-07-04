@@ -448,7 +448,7 @@ impl<'gc> FunctionObject<'gc> {
                 gc_context,
                 FunctionObjectData {
                     function: Some(function.into()),
-                    primitive: "[type Function]".into(),
+                    primitive: Gc::allocate(gc_context, "[type Function]".to_string()).into(),
                 },
             ),
         }
@@ -553,7 +553,8 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 context.gc_context,
                 FunctionObjectData {
                     function: None,
-                    primitive: "[type Function]".into(),
+                    primitive: Gc::allocate(context.gc_context, "[type Function]".to_string())
+                        .into(),
                 },
             ),
         };

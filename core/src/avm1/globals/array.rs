@@ -7,7 +7,7 @@ use crate::avm1::object::value_object;
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
-use gc_arena::MutationContext;
+use gc_arena::{Gc, MutationContext};
 use smallvec::alloc::borrow::Cow;
 use std::cmp::Ordering;
 
@@ -247,15 +247,18 @@ pub fn join<'gc>(
         .unwrap_or_else(|| Cow::Borrowed(","));
     let values: Vec<Value<'gc>> = this.array();
 
-    Ok(values
-        .iter()
-        .map(|v| {
-            v.coerce_to_string(activation, context)
-                .unwrap_or_else(|_| Cow::Borrowed("undefined"))
-        })
-        .collect::<Vec<Cow<str>>>()
-        .join(&separator)
-        .into())
+    Ok(Gc::allocate(
+        context.gc_context,
+        values
+            .iter()
+            .map(|v| {
+                v.coerce_to_string(activation, context)
+                    .unwrap_or_else(|_| Cow::Borrowed("undefined"))
+            })
+            .collect::<Vec<Cow<str>>>()
+            .join(&separator),
+    )
+    .into())
 }
 
 fn make_index_absolute(mut index: i32, length: usize) -> usize {

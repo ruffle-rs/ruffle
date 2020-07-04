@@ -6,7 +6,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::property::Attribute::{DontDelete, DontEnum, ReadOnly};
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
-use gc_arena::MutationContext;
+use gc_arena::{Gc, MutationContext};
 use std::convert::Into;
 
 fn on_ime_composition<'gc>(
@@ -29,11 +29,11 @@ fn do_conversion<'gc>(
 
 fn get_conversion_mode<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok("KOREAN".into())
+    Ok(Gc::allocate(context.gc_context, "KOREAN".to_string()).into())
 }
 
 fn get_enabled<'gc>(
@@ -85,49 +85,49 @@ pub fn create<'gc>(
     ime.define_value(
         gc_context,
         "ALPHANUMERIC_FULL",
-        "ALPHANUMERIC_FULL".into(),
+        Gc::allocate(gc_context, "ALPHANUMERIC_FULL".to_string()).into(),
         Attribute::DontDelete | ReadOnly | DontEnum,
     );
 
     ime.define_value(
         gc_context,
         "ALPHANUMERIC_HALF",
-        "ALPHANUMERIC_HALF".into(),
+        Gc::allocate(gc_context, "ALPHANUMERIC_HALF".to_string()).into(),
         DontDelete | ReadOnly | DontEnum,
     );
 
     ime.define_value(
         gc_context,
         "CHINESE",
-        "CHINESE".into(),
+        Gc::allocate(gc_context, "CHINESE".to_string()).into(),
         DontDelete | ReadOnly | DontEnum,
     );
 
     ime.define_value(
         gc_context,
         "JAPANESE_HIRAGANA",
-        "JAPANESE_HIRAGANA".into(),
+        Gc::allocate(gc_context, "JAPANESE_HIRAGANA".to_string()).into(),
         DontDelete | ReadOnly | DontEnum,
     );
 
     ime.define_value(
         gc_context,
         "JAPANESE_KATAKANA_FULL",
-        "JAPANESE_KATAKANA_FULL".into(),
+        Gc::allocate(gc_context, "JAPANESE_KATAKANA_FULL".to_string()).into(),
         DontDelete | ReadOnly | DontEnum,
     );
 
     ime.define_value(
         gc_context,
         "KOREAN",
-        "KOREAN".into(),
+        Gc::allocate(gc_context, "KOREAN".to_string()).into(),
         DontDelete | ReadOnly | DontEnum,
     );
 
     ime.define_value(
         gc_context,
         "UNKNOWN",
-        "UNKNOWN".into(),
+        Gc::allocate(gc_context, "UNKNOWN".to_string()).into(),
         DontDelete | ReadOnly | DontEnum,
     );
 

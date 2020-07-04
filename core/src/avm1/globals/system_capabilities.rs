@@ -6,7 +6,7 @@ use crate::avm1::object::Object;
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
-use gc_arena::MutationContext;
+use gc_arena::{Gc, MutationContext};
 
 macro_rules! capabilities_func {
     ($func_name: ident, $capability: expr) => {
@@ -82,7 +82,7 @@ pub fn get_player_type<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(context.system.player_type.to_string().into())
+    Ok(Gc::allocate(context.gc_context, context.system.player_type.to_string()).into())
 }
 
 pub fn get_screen_color<'gc>(
@@ -91,7 +91,7 @@ pub fn get_screen_color<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(context.system.screen_color.to_string().into())
+    Ok(Gc::allocate(context.gc_context, context.system.screen_color.to_string()).into())
 }
 
 pub fn get_language<'gc>(
@@ -100,11 +100,15 @@ pub fn get_language<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(context
-        .system
-        .language
-        .get_language_code(activation.avm.player_version)
-        .into())
+    Ok(Gc::allocate(
+        context.gc_context,
+        context
+            .system
+            .language
+            .get_language_code(activation.avm.player_version)
+            .to_string(),
+    )
+    .into())
 }
 
 pub fn get_screen_resolution_x<'gc>(
@@ -149,11 +153,14 @@ pub fn get_manufacturer<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(context
-        .system
-        .manufacturer
-        .get_manufacturer_string(activation.avm.player_version)
-        .into())
+    Ok(Gc::allocate(
+        context.gc_context,
+        context
+            .system
+            .manufacturer
+            .get_manufacturer_string(activation.avm.player_version),
+    )
+    .into())
 }
 
 pub fn get_os_name<'gc>(
@@ -162,7 +169,7 @@ pub fn get_os_name<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(context.system.os.to_string().into())
+    Ok(Gc::allocate(context.gc_context, context.system.os.to_string()).into())
 }
 
 pub fn get_version<'gc>(
@@ -171,7 +178,11 @@ pub fn get_version<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(context.system.get_version_string(activation).into())
+    Ok(Gc::allocate(
+        context.gc_context,
+        context.system.get_version_string(activation),
+    )
+    .into())
 }
 
 pub fn get_server_string<'gc>(
@@ -180,7 +191,11 @@ pub fn get_server_string<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(context.system.get_server_string(activation).into())
+    Ok(Gc::allocate(
+        context.gc_context,
+        context.system.get_server_string(activation),
+    )
+    .into())
 }
 
 pub fn get_cpu_architecture<'gc>(
@@ -189,7 +204,11 @@ pub fn get_cpu_architecture<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(context.system.cpu_architecture.to_string().into())
+    Ok(Gc::allocate(
+        context.gc_context,
+        context.system.cpu_architecture.to_string(),
+    )
+    .into())
 }
 
 pub fn get_max_idc_level<'gc>(
@@ -198,7 +217,7 @@ pub fn get_max_idc_level<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(context.system.idc_level.clone().into())
+    Ok(Gc::allocate(context.gc_context, context.system.idc_level.clone()).into())
 }
 
 pub fn create<'gc>(

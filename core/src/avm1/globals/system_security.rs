@@ -5,7 +5,7 @@ use crate::avm1::object::Object;
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
-use gc_arena::MutationContext;
+use gc_arena::{Gc, MutationContext};
 use std::convert::Into;
 
 fn allow_domain<'gc>(
@@ -54,7 +54,7 @@ fn get_sandbox_type<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(context.system.sandbox_type.to_string().into())
+    Ok(Gc::allocate(context.gc_context, context.system.sandbox_type.to_string()).into())
 }
 
 fn get_choose_local_swf_path<'gc>(

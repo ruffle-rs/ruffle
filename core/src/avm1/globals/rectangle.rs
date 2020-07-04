@@ -8,7 +8,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
-use gc_arena::MutationContext;
+use gc_arena::{Gc, MutationContext};
 use std::f64::NAN;
 
 fn constructor<'gc>(
@@ -63,12 +63,15 @@ fn to_string<'gc>(
     let width = this.get("width", activation, context)?;
     let height = this.get("height", activation, context)?;
 
-    Ok(format!(
-        "(x={}, y={}, w={}, h={})",
-        x.coerce_to_string(activation, context)?,
-        y.coerce_to_string(activation, context)?,
-        width.coerce_to_string(activation, context)?,
-        height.coerce_to_string(activation, context)?
+    Ok(Gc::allocate(
+        context.gc_context,
+        format!(
+            "(x={}, y={}, w={}, h={})",
+            x.coerce_to_string(activation, context)?,
+            y.coerce_to_string(activation, context)?,
+            width.coerce_to_string(activation, context)?,
+            height.coerce_to_string(activation, context)?
+        ),
     )
     .into())
 }

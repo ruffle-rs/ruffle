@@ -199,6 +199,7 @@ mod tests {
     use crate::avm1::error::Error;
     use crate::avm1::test_utils::with_avm;
     use crate::avm1::ScriptObject;
+    use gc_arena::Gc;
 
     #[test]
     fn dump_undefined() {
@@ -256,12 +257,17 @@ mod tests {
     fn dump_string() {
         with_avm(19, |activation, context, _root| -> Result<(), Error> {
             assert_eq!(
-                VariableDumper::dump(&Value::String("".to_string()), " ", activation, context),
+                VariableDumper::dump(
+                    &Value::String(Gc::allocate(context.gc_context, "".to_string())),
+                    " ",
+                    activation,
+                    context
+                ),
                 "\"\""
             );
             assert_eq!(
                 VariableDumper::dump(
-                    &Value::String("HELLO WORLD".to_string()),
+                    &Value::String(Gc::allocate(context.gc_context, "HELLO WORLD".to_string())),
                     " ",
                     activation,
                     context
@@ -270,9 +276,10 @@ mod tests {
             );
             assert_eq!(
                 VariableDumper::dump(
-                    &Value::String(
+                    &Value::String(Gc::allocate(
+                        context.gc_context,
                         "Escape \"this\" string\nplease! \u{0008}\u{000C}\n\r\t\"\\".to_string()
-                    ),
+                    )),
                     " ",
                     activation,
                     context
@@ -303,7 +310,7 @@ mod tests {
             object.set("self", object.into(), activation, context)?;
             object.set(
                 "test",
-                Value::String("value".to_string()),
+                Value::String(Gc::allocate(context.gc_context, "value".to_string())),
                 activation,
                 context,
             )?;
@@ -326,7 +333,7 @@ mod tests {
             object.set("self", object.into(), activation, context)?;
             object.set(
                 "test",
-                Value::String("value".to_string()),
+                Value::String(Gc::allocate(context.gc_context, "value".to_string())),
                 activation,
                 context,
             )?;
