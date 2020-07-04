@@ -11,7 +11,7 @@ use crate::avm2::script_object::ScriptObject;
 use crate::avm2::value::Value;
 use crate::avm2::{value, Avm2, Error};
 use crate::context::UpdateContext;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
 use std::io::Cursor;
 use swf::avm2::read::Reader;
@@ -137,7 +137,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         script: GcCell<'gc, Script<'gc>>,
         global: Object<'gc>,
     ) -> Result<Self, Error> {
-        let method = script.read().init().into_entry()?;
+        let method = script.read().init().into_bytecode()?;
         let scope = Some(Scope::push_scope(None, global, context.gc_context));
         let num_locals = method.body().num_locals;
         let local_registers =
@@ -166,7 +166,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     pub fn from_method(
         avm2: &'a mut Avm2<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         this: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
@@ -210,7 +210,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         script: GcCell<'gc, Script<'gc>>,
     ) -> Result<(), Error> {
-        let init = script.read().init().into_entry()?;
+        let init = script.read().init().into_bytecode()?;
 
         self.run_actions(init, context)?;
 
@@ -289,24 +289,36 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     }
 
     /// Retrieve a int from the current constant pool.
-    fn pool_int(&self, method: BytecodeMethod<'gc>, index: Index<i32>) -> Result<i32, Error> {
+    fn pool_int(
+        &self,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
+        index: Index<i32>,
+    ) -> Result<i32, Error> {
         value::abc_int(&method.abc(), index)
     }
 
     /// Retrieve a int from the current constant pool.
-    fn pool_uint(&self, method: BytecodeMethod<'gc>, index: Index<u32>) -> Result<u32, Error> {
+    fn pool_uint(
+        &self,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
+        index: Index<u32>,
+    ) -> Result<u32, Error> {
         value::abc_uint(&method.abc(), index)
     }
 
     /// Retrieve a double from the current constant pool.
-    fn pool_double(&self, method: BytecodeMethod<'gc>, index: Index<f64>) -> Result<f64, Error> {
+    fn pool_double(
+        &self,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
+        index: Index<f64>,
+    ) -> Result<f64, Error> {
         value::abc_double(&method.abc(), index)
     }
 
     /// Retrieve a string from the current constant pool.
     fn pool_string(
         &self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<String>,
     ) -> Result<String, Error> {
         value::abc_string(&method.abc(), index)
@@ -315,7 +327,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     /// Retrieve a namespace from the current constant pool.
     fn pool_namespace(
         &self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcNamespace>,
     ) -> Result<Namespace, Error> {
         Namespace::from_abc_namespace(&method.abc(), index)
@@ -324,7 +336,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     /// Retrieve a multiname from the current constant pool.
     fn pool_multiname(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMultiname>,
     ) -> Result<Multiname, Error> {
         Multiname::from_abc_multiname(&method.abc(), index, self.avm2)
@@ -334,7 +346,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     /// pool.
     fn pool_multiname_static(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMultiname>,
     ) -> Result<Multiname, Error> {
         Multiname::from_abc_multiname_static(&method.abc(), index)
@@ -343,17 +355,18 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     /// Retrieve a method entry from the current ABC file's method table.
     fn table_method(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMethod>,
-    ) -> Result<BytecodeMethod<'gc>, Error> {
-        BytecodeMethod::from_method_index(method.translation_unit(), index.clone())
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<Gc<'gc, BytecodeMethod<'gc>>, Error> {
+        BytecodeMethod::from_method_index(method.translation_unit(), index.clone(), mc)
             .ok_or_else(|| format!("Method index {} does not exist", index.0).into())
     }
 
     /// Retrieve a class entry from the current ABC file's method table.
     fn table_class(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcClass>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<GcCell<'gc, Class<'gc>>, Error> {
@@ -364,14 +377,13 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     pub fn run_actions(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        let clone_method = method.clone();
-        let mut read = Reader::new(Cursor::new(clone_method.body().code.as_ref()));
+        let mut read = Reader::new(Cursor::new(method.body().code.as_ref()));
 
         loop {
-            let result = self.do_next_opcode(method.clone(), context, &mut read);
+            let result = self.do_next_opcode(method, context, &mut read);
             match result {
                 Ok(FrameControl::Return(value)) => break Ok(value),
                 Ok(FrameControl::Continue) => {}
@@ -383,7 +395,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     /// Run a single action from a given action reader.
     fn do_next_opcode(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut Reader<Cursor<&[u8]>>,
     ) -> Result<FrameControl<'gc>, Error> {
@@ -511,7 +523,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_push_double(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         value: Index<f64>,
     ) -> Result<FrameControl<'gc>, Error> {
         self.avm2.push(self.pool_double(method, value)?);
@@ -525,7 +537,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_push_int(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         value: Index<i32>,
     ) -> Result<FrameControl<'gc>, Error> {
         self.avm2.push(self.pool_int(method, value)?);
@@ -534,7 +546,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_push_namespace(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         value: Index<AbcNamespace>,
     ) -> Result<FrameControl<'gc>, Error> {
         self.avm2.push(self.pool_namespace(method, value)?);
@@ -558,7 +570,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_push_string(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         value: Index<String>,
     ) -> Result<FrameControl<'gc>, Error> {
         self.avm2.push(self.pool_string(method, value)?);
@@ -572,7 +584,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_push_uint(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         value: Index<u32>,
     ) -> Result<FrameControl<'gc>, Error> {
         self.avm2.push(self.pool_uint(method, value)?);
@@ -661,7 +673,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_call_property(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
         arg_count: u32,
@@ -686,7 +698,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_call_prop_lex(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
         arg_count: u32,
@@ -709,7 +721,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_call_prop_void(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
         arg_count: u32,
@@ -733,14 +745,14 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_call_static(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMethod>,
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error> {
         let args = self.avm2.pop_args(arg_count);
         let receiver = self.avm2.pop().as_object()?;
-        let method = self.table_method(method, index)?;
+        let method = self.table_method(method, index, context.gc_context)?;
         let scope = self.scope(); //TODO: Is this correct?
         let function = FunctionObject::from_method(
             context.gc_context,
@@ -758,7 +770,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_call_super(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
         arg_count: u32,
@@ -791,7 +803,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_call_super_void(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
         arg_count: u32,
@@ -832,7 +844,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_get_property(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
@@ -851,7 +863,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_set_property(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
@@ -876,7 +888,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_init_property(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
@@ -901,7 +913,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_delete_property(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
@@ -920,7 +932,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_get_super(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
@@ -950,7 +962,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_set_super(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
@@ -1055,7 +1067,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_find_property(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
@@ -1075,7 +1087,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_find_prop_strict(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
@@ -1096,7 +1108,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_get_lex(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
@@ -1188,7 +1200,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_construct_prop(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
         arg_count: u32,
@@ -1283,11 +1295,11 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_new_function(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMethod>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let method_entry = self.table_method(method, index)?;
+        let method_entry = self.table_method(method, index, context.gc_context)?;
         let scope = self.scope();
 
         let mut new_fn = FunctionObject::from_method(
@@ -1313,7 +1325,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_new_class(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcClass>,
     ) -> Result<FrameControl<'gc>, Error> {
@@ -1501,7 +1513,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     #[allow(unused_variables)]
     fn op_debug(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         is_local_register: bool,
         register_name: Index<String>,
         register: u8,
@@ -1521,7 +1533,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     #[allow(unused_variables)]
     fn op_debug_file(
         &mut self,
-        method: BytecodeMethod<'gc>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
         file_name: Index<String>,
     ) -> Result<FrameControl<'gc>, Error> {
         let file_name = self.pool_string(method, file_name)?;

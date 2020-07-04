@@ -140,7 +140,7 @@ impl<'gc> Property<'gc> {
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
             Property::Virtual { get: Some(get), .. } => Ok(ReturnValue::defer_execution(
-                get.clone(),
+                *get,
                 Some(this),
                 vec![],
                 base_proto,
@@ -168,7 +168,7 @@ impl<'gc> Property<'gc> {
             Property::Virtual { set, .. } => {
                 if let Some(function) = set {
                     return Ok(ReturnValue::defer_execution(
-                        function.clone(),
+                        *function,
                         Some(this),
                         vec![new_value.into()],
                         base_proto,
@@ -212,7 +212,7 @@ impl<'gc> Property<'gc> {
             Property::Virtual { set, .. } => {
                 if let Some(function) = set {
                     return Ok(ReturnValue::defer_execution(
-                        function.clone(),
+                        *function,
                         Some(this),
                         vec![new_value.into()],
                         base_proto,

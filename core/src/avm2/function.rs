@@ -11,11 +11,29 @@ use crate::avm2::script_object::{ScriptObjectClass, ScriptObjectData};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::context::UpdateContext;
-use gc_arena::{Collect, CollectionContext, GcCell, MutationContext};
+use gc_arena::{Collect, CollectionContext, Gc, GcCell, MutationContext};
 use std::fmt;
 
+/// Represents code written in AVM2 bytecode that can be executed by some
+/// means.
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
+pub struct BytecodeExecutable<'gc> {
+    /// The method code to execute from a given ABC file.
+    method: Gc<'gc, BytecodeMethod<'gc>>,
+
+    /// The scope stack to pull variables from.
+    scope: Option<GcCell<'gc, Scope<'gc>>>,
+
+    /// The reciever that this function is always called with.
+    ///
+    /// If `None`, then the reciever provided by the caller is used. A
+    /// `Some` value indicates a bound executable.
+    reciever: Option<Object<'gc>>,
+}
+
 /// Represents code that can be executed by some means.
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub enum Executable<'gc> {
     /// Code defined in Ruffle's binary.
     ///
@@ -23,33 +41,13 @@ pub enum Executable<'gc> {
     Native(NativeMethod<'gc>, Option<Object<'gc>>),
 
     /// Code defined in a loaded ABC file.
-    Action {
-        /// The method code to execute from a given ABC file.
-        method: BytecodeMethod<'gc>,
-
-        /// The scope stack to pull variables from.
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-
-        /// The reciever that this function is always called with.
-        ///
-        /// If `None`, then the reciever provided by the caller is used. A
-        /// `Some` value indicates a bound executable.
-        reciever: Option<Object<'gc>>,
-    },
+    Action(Gc<'gc, BytecodeExecutable<'gc>>),
 }
 
 unsafe impl<'gc> Collect for Executable<'gc> {
     fn trace(&self, cc: CollectionContext) {
         match self {
-            Self::Action {
-                method,
-                scope,
-                reciever,
-            } => {
-                method.trace(cc);
-                scope.trace(cc);
-                reciever.trace(cc);
-            }
+            Self::Action(be) => be.trace(cc),
             Self::Native(_nf, reciever) => reciever.trace(cc),
         }
     }
@@ -61,14 +59,18 @@ impl<'gc> Executable<'gc> {
         method: Method<'gc>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         reciever: Option<Object<'gc>>,
+        mc: MutationContext<'gc, '_>,
     ) -> Self {
         match method {
             Method::Native(nf) => Self::Native(nf, reciever),
-            Method::Entry(a2me) => Self::Action {
-                method: a2me,
-                scope,
-                reciever,
-            },
+            Method::Entry(a2me) => Self::Action(Gc::allocate(
+                mc,
+                BytecodeExecutable {
+                    method: a2me,
+                    scope,
+                    reciever,
+                },
+            )),
         }
     }
 
@@ -95,23 +97,19 @@ impl<'gc> Executable<'gc> {
                 reciever.or(unbound_reciever),
                 arguments,
             ),
-            Executable::Action {
-                method,
-                scope,
-                reciever,
-            } => {
-                let reciever = reciever.or(unbound_reciever);
+            Executable::Action(bm) => {
+                let reciever = bm.reciever.or(unbound_reciever);
                 let mut activation = Activation::from_method(
                     activation.avm2(),
                     context,
-                    method.clone(),
-                    *scope,
+                    bm.method,
+                    bm.scope,
                     reciever,
                     arguments,
                     base_proto,
                 );
 
-                activation.run_actions(method.clone(), context)
+                activation.run_actions(bm.method, context)
             }
         }
     }
@@ -120,15 +118,11 @@ impl<'gc> Executable<'gc> {
 impl<'gc> fmt::Debug for Executable<'gc> {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Action {
-                method,
-                scope,
-                reciever,
-            } => fmt
+            Self::Action(be) => fmt
                 .debug_struct("Executable::Action")
-                .field("method", method)
-                .field("scope", scope)
-                .field("reciever", reciever)
+                .field("method", &be.method)
+                .field("scope", &be.scope)
+                .field("reciever", &be.reciever)
                 .finish(),
             Self::Native(nf, reciever) => fmt
                 .debug_tuple("Executable::Native")
@@ -200,7 +194,12 @@ impl<'gc> FunctionObject<'gc> {
                     Some(fn_proto),
                     ScriptObjectClass::ClassConstructor(class, scope),
                 ),
-                exec: Some(Executable::from_method(initializer, scope, None)),
+                exec: Some(Executable::from_method(
+                    initializer,
+                    scope,
+                    None,
+                    context.gc_context,
+                )),
             },
         ))
         .into();
@@ -239,7 +238,7 @@ impl<'gc> FunctionObject<'gc> {
         fn_proto: Object<'gc>,
         reciever: Option<Object<'gc>>,
     ) -> Object<'gc> {
-        let exec = Some(Executable::from_method(method, scope, reciever));
+        let exec = Some(Executable::from_method(method, scope, reciever, mc));
 
         FunctionObject(GcCell::allocate(
             mc,
@@ -261,7 +260,7 @@ impl<'gc> FunctionObject<'gc> {
             mc,
             FunctionObjectData {
                 base: ScriptObjectData::base_new(Some(fn_proto), ScriptObjectClass::NoClass),
-                exec: Some(Executable::from_method(nf.into(), None, None)),
+                exec: Some(Executable::from_method(nf.into(), None, None, mc)),
             },
         ))
         .into()
@@ -278,7 +277,7 @@ impl<'gc> FunctionObject<'gc> {
             mc,
             FunctionObjectData {
                 base: ScriptObjectData::base_new(Some(fn_proto), ScriptObjectClass::NoClass),
-                exec: Some(Executable::from_method(constr.into(), None, None)),
+                exec: Some(Executable::from_method(constr.into(), None, None, mc)),
             },
         ))
         .into();
@@ -465,7 +464,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     }
 
     fn as_executable(&self) -> Option<Executable<'gc>> {
-        self.0.read().exec.clone()
+        self.0.read().exec
     }
 
     fn call(

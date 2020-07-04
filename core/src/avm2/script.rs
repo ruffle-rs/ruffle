@@ -4,7 +4,7 @@ use crate::avm2::class::Class;
 use crate::avm2::method::{BytecodeMethod, Method};
 use crate::avm2::r#trait::Trait;
 use crate::avm2::Error;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::collections::HashMap;
 use std::mem::drop;
 use std::rc::Rc;
@@ -77,8 +77,8 @@ impl<'gc> TranslationUnit<'gc> {
 
         drop(write);
 
-        let method: Result<BytecodeMethod<'gc>, Error> =
-            BytecodeMethod::from_method_index(self, Index::new(method_index))
+        let method: Result<Gc<'gc, BytecodeMethod<'gc>>, Error> =
+            BytecodeMethod::from_method_index(self, Index::new(method_index), mc)
                 .ok_or_else(|| "Method index does not exist".into());
         let method: Method<'gc> = method?.into();
 

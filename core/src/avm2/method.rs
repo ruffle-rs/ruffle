@@ -6,7 +6,7 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::context::UpdateContext;
-use gc_arena::{Collect, CollectionContext};
+use gc_arena::{Collect, CollectionContext, Gc, MutationContext};
 use std::fmt;
 use std::rc::Rc;
 use swf::avm2::types::{AbcFile, Index, Method as AbcMethod, MethodBody as AbcMethodBody};
@@ -61,18 +61,22 @@ impl<'gc> BytecodeMethod<'gc> {
     pub fn from_method_index(
         txunit: TranslationUnit<'gc>,
         abc_method: Index<AbcMethod>,
-    ) -> Option<Self> {
+        mc: MutationContext<'gc, '_>,
+    ) -> Option<Gc<'gc, Self>> {
         let abc = txunit.abc();
 
         if abc.methods.get(abc_method.0 as usize).is_some() {
             for (index, method_body) in abc.method_bodies.iter().enumerate() {
                 if method_body.method.0 == abc_method.0 {
-                    return Some(Self {
-                        txunit,
-                        abc: CollectWrapper(txunit.abc()),
-                        abc_method: abc_method.0,
-                        abc_method_body: index as u32,
-                    });
+                    return Some(Gc::allocate(
+                        mc,
+                        Self {
+                            txunit,
+                            abc: CollectWrapper(txunit.abc()),
+                            abc_method: abc_method.0,
+                            abc_method_body: index as u32,
+                        },
+                    ));
                 }
             }
         }
@@ -115,7 +119,7 @@ pub enum Method<'gc> {
     Native(NativeMethod<'gc>),
 
     /// An ABC-provided method entry.
-    Entry(BytecodeMethod<'gc>),
+    Entry(Gc<'gc, BytecodeMethod<'gc>>),
 }
 
 unsafe impl<'gc> Collect for Method<'gc> {
@@ -145,19 +149,22 @@ impl<'gc> From<NativeMethod<'gc>> for Method<'gc> {
     }
 }
 
-impl<'gc> From<BytecodeMethod<'gc>> for Method<'gc> {
-    fn from(a2me: BytecodeMethod<'gc>) -> Self {
-        Self::Entry(a2me)
+impl<'gc> From<Gc<'gc, BytecodeMethod<'gc>>> for Method<'gc> {
+    fn from(bm: Gc<'gc, BytecodeMethod<'gc>>) -> Self {
+        Self::Entry(bm)
     }
 }
 
 impl<'gc> Method<'gc> {
-    pub fn into_entry(self) -> Result<BytecodeMethod<'gc>, Error> {
+    /// Access the bytecode of this method.
+    ///
+    /// This function returns `Err` if there is no bytecode for this method.
+    pub fn into_bytecode(self) -> Result<Gc<'gc, BytecodeMethod<'gc>>, Error> {
         match self {
             Method::Native(_) => {
                 Err("Attempted to unwrap a native method as a user-defined one".into())
             }
-            Method::Entry(a2me) => Ok(a2me),
+            Method::Entry(bm) => Ok(bm),
         }
     }
 }
