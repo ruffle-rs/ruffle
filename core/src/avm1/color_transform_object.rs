@@ -118,7 +118,14 @@ impl<'gc> TObject<'gc> for ColorTransformObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
-        self.base().internal_set(name, value, activation, context, (*self).into(), Some(activation.avm.prototypes.color_transform))
+        self.base().internal_set(
+            name,
+            value,
+            activation,
+            context,
+            (*self).into(),
+            Some(activation.avm.prototypes.color_transform),
+        )
     }
 
     fn call(
