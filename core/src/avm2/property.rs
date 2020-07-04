@@ -5,8 +5,7 @@ use crate::avm2::function::Executable;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::value::Value;
-use crate::avm2::{Avm2, Error};
-use crate::context::UpdateContext;
+use crate::avm2::Error;
 use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, CollectionContext};
 
@@ -136,15 +135,16 @@ impl<'gc> Property<'gc> {
     /// user-defined.
     pub fn get(
         &self,
-        avm: &mut Avm2<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
-            Property::Virtual { get: Some(get), .. } => {
-                get.exec(Some(this), &[], avm, context, base_proto)
-            }
+            Property::Virtual { get: Some(get), .. } => Ok(ReturnValue::defer_execution(
+                get.clone(),
+                Some(this),
+                vec![],
+                base_proto,
+            )),
             Property::Virtual { get: None, .. } => Ok(Value::Undefined.into()),
             Property::Stored { value, .. } => Ok(value.to_owned().into()),
             Property::Slot { slot_id, .. } => this.get_slot(*slot_id).map(|v| v.into()),
@@ -160,8 +160,6 @@ impl<'gc> Property<'gc> {
     /// is encountered.
     pub fn set(
         &mut self,
-        avm: &mut Avm2<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         new_value: impl Into<Value<'gc>>,
@@ -169,13 +167,12 @@ impl<'gc> Property<'gc> {
         match self {
             Property::Virtual { set, .. } => {
                 if let Some(function) = set {
-                    return function.exec(
+                    return Ok(ReturnValue::defer_execution(
+                        function.clone(),
                         Some(this),
-                        &[new_value.into()],
-                        avm,
-                        context,
+                        vec![new_value.into()],
                         base_proto,
-                    );
+                    ));
                 }
 
                 Ok(Value::Undefined.into())
@@ -207,8 +204,6 @@ impl<'gc> Property<'gc> {
     /// is encountered.
     pub fn init(
         &mut self,
-        avm: &mut Avm2<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         new_value: impl Into<Value<'gc>>,
@@ -216,13 +211,12 @@ impl<'gc> Property<'gc> {
         match self {
             Property::Virtual { set, .. } => {
                 if let Some(function) = set {
-                    return function.exec(
+                    return Ok(ReturnValue::defer_execution(
+                        function.clone(),
                         Some(this),
-                        &[new_value.into()],
-                        avm,
-                        context,
+                        vec![new_value.into()],
                         base_proto,
-                    );
+                    ));
                 }
 
                 Ok(Value::Undefined.into())

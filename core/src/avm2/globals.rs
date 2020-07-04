@@ -1,13 +1,13 @@
 //! Global scope built-ins
 
+use crate::avm2::activation::Activation;
 use crate::avm2::function::FunctionObject;
 use crate::avm2::method::NativeMethod;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
-use crate::avm2::return_value::ReturnValue;
 use crate::avm2::script_object::ScriptObject;
 use crate::avm2::value::Value;
-use crate::avm2::{Avm2, Error};
+use crate::avm2::Error;
 use crate::context::UpdateContext;
 use gc_arena::{Collect, MutationContext};
 use std::f64::NAN;
@@ -18,16 +18,16 @@ mod function;
 mod object;
 
 fn trace<'gc>(
-    _avm: &mut Avm2<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<Value<'gc>, Error> {
     if let Some(s) = args.get(0) {
         log::info!(target: "avm_trace", "{}", s.clone().coerce_string());
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 /// This structure represents all system builtins' prototypes.

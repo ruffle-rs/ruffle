@@ -1,42 +1,40 @@
 //! Function builtin and prototype
 
+use crate::avm2::activation::Activation;
 use crate::avm2::function::FunctionObject;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
-use crate::avm2::return_value::ReturnValue;
 use crate::avm2::script_object::ScriptObject;
 use crate::avm2::value::Value;
-use crate::avm2::{Avm2, Error};
+use crate::avm2::Error;
 use crate::context::UpdateContext;
 use gc_arena::MutationContext;
 
 /// Implements `Function`
 pub fn constructor<'gc>(
-    _avm: &mut Avm2<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
-    Ok(Value::Undefined.into())
+) -> Result<Value<'gc>, Error> {
+    Ok(Value::Undefined)
 }
 
 /// Implements `Function.prototype.call`
 fn call<'gc>(
-    avm: &mut Avm2<'gc>,
+    activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     func: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<Value<'gc>, Error> {
     let this = args.get(0).and_then(|v| v.as_object().ok());
     let base_proto = this.and_then(|that| that.proto());
 
     if let Some(func) = func {
         if args.len() > 1 {
-            Ok(func
-                .call(this, &args[1..], avm, context, base_proto)?
-                .into())
+            Ok(func.call(this, &args[1..], activation, context, base_proto)?)
         } else {
-            Ok(func.call(this, &[], avm, context, base_proto)?.into())
+            Ok(func.call(this, &[], activation, context, base_proto)?)
         }
     } else {
         Err("Not a callable function".into())

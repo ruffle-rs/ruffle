@@ -1,5 +1,6 @@
 //! Default AVM2 object impl
 
+use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::function::Executable;
 use crate::avm2::names::{Namespace, QName};
@@ -10,7 +11,7 @@ use crate::avm2::return_value::ReturnValue;
 use crate::avm2::scope::Scope;
 use crate::avm2::slot::Slot;
 use crate::avm2::value::Value;
-use crate::avm2::{Avm2, Error};
+use crate::avm2::Error;
 use crate::context::UpdateContext;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::HashMap;
@@ -74,12 +75,15 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self,
         reciever: Object<'gc>,
         name: &QName,
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        self.0
+        let rv = self
+            .0
             .read()
-            .get_property_local(reciever, name, avm, context)
+            .get_property_local(reciever, name, activation)?;
+
+        rv.resolve(activation, context)
     }
 
     fn set_property_local(
@@ -87,15 +91,15 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         reciever: Object<'gc>,
         name: &QName,
         value: Value<'gc>,
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let rv = self
             .0
             .write(context.gc_context)
-            .set_property_local(reciever, name, value, avm, context)?;
+            .set_property_local(reciever, name, value, activation, context)?;
 
-        rv.resolve(avm, context)?;
+        rv.resolve(activation, context)?;
 
         Ok(())
     }
@@ -105,15 +109,15 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         reciever: Object<'gc>,
         name: &QName,
         value: Value<'gc>,
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let rv = self
             .0
             .write(context.gc_context)
-            .init_property_local(reciever, name, value, avm, context)?;
+            .init_property_local(reciever, name, value, activation, context)?;
 
-        rv.resolve(avm, context)?;
+        rv.resolve(activation, context)?;
 
         Ok(())
     }
@@ -229,7 +233,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn construct(
         &self,
-        _avm: &mut Avm2<'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
@@ -239,7 +243,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn derive(
         &self,
-        _avm: &mut Avm2<'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
@@ -376,23 +380,14 @@ impl<'gc> ScriptObjectData<'gc> {
         &self,
         reciever: Object<'gc>,
         name: &QName,
-        avm: &mut Avm2<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<ReturnValue<'gc>, Error> {
         let prop = self.values.get(name);
 
         if let Some(prop) = prop {
-            prop.get(
-                avm,
-                context,
-                reciever,
-                avm.current_stack_frame()
-                    .and_then(|sf| sf.read().base_proto())
-                    .or(self.proto),
-            )?
-            .resolve(avm, context)
+            prop.get(reciever, activation.base_proto().or(self.proto))
         } else {
-            Ok(Value::Undefined)
+            Ok(Value::Undefined.into())
         }
     }
 
@@ -401,25 +396,26 @@ impl<'gc> ScriptObjectData<'gc> {
         reciever: Object<'gc>,
         name: &QName,
         value: Value<'gc>,
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
-        if let Some(prop) = self.values.get_mut(name) {
+        let slot_id = if let Some(prop) = self.values.get(name) {
             if let Some(slot_id) = prop.slot_id() {
-                self.set_slot(slot_id, value, context.gc_context)?;
-                Ok(Value::Undefined.into())
+                Some(slot_id)
             } else {
-                let proto = self.proto;
-                prop.set(
-                    avm,
-                    context,
-                    reciever,
-                    avm.current_stack_frame()
-                        .and_then(|sf| sf.read().base_proto())
-                        .or(proto),
-                    value,
-                )
+                None
             }
+        } else {
+            None
+        };
+
+        if let Some(slot_id) = slot_id {
+            self.set_slot(slot_id, value, context.gc_context)?;
+            Ok(Value::Undefined.into())
+        } else if self.values.contains_key(name) {
+            let prop = self.values.get_mut(name).unwrap();
+            let proto = self.proto;
+            prop.set(reciever, activation.base_proto().or(proto), value)
         } else {
             //TODO: Not all classes are dynamic like this
             self.enumerants.push(name.clone());
@@ -435,7 +431,7 @@ impl<'gc> ScriptObjectData<'gc> {
         reciever: Object<'gc>,
         name: &QName,
         value: Value<'gc>,
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
         if let Some(prop) = self.values.get_mut(name) {
@@ -444,15 +440,7 @@ impl<'gc> ScriptObjectData<'gc> {
                 Ok(Value::Undefined.into())
             } else {
                 let proto = self.proto;
-                prop.init(
-                    avm,
-                    context,
-                    reciever,
-                    avm.current_stack_frame()
-                        .and_then(|sf| sf.read().base_proto())
-                        .or(proto),
-                    value,
-                )
+                prop.init(reciever, activation.base_proto().or(proto), value)
             }
         } else {
             //TODO: Not all classes are dynamic like this

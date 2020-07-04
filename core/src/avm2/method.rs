@@ -1,10 +1,10 @@
 //! AVM2 methods
 
+use crate::avm2::activation::Activation;
 use crate::avm2::object::Object;
-use crate::avm2::return_value::ReturnValue;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::Value;
-use crate::avm2::{Avm2, Error};
+use crate::avm2::Error;
 use crate::context::UpdateContext;
 use gc_arena::{Collect, CollectionContext};
 use std::fmt;
@@ -30,11 +30,11 @@ pub struct CollectWrapper<T>(T);
 /// your function yields `None`, you must ensure that the top-most activation
 /// in the AVM1 runtime will return with the value of this function.
 pub type NativeMethod<'gc> = fn(
-    &mut Avm2<'gc>,
+    &mut Activation<'_, 'gc>,
     &mut UpdateContext<'_, 'gc, '_>,
     Option<Object<'gc>>,
     &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error>;
+) -> Result<Value<'gc>, Error>;
 
 /// Represents a reference to an AVM2 method and body.
 #[derive(Collect, Clone, Debug)]

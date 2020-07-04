@@ -1,21 +1,21 @@
 //! `flash.display.InteractiveObject` builtin/prototype
 
+use crate::avm2::activation::Activation;
 use crate::avm2::object::Object;
-use crate::avm2::return_value::ReturnValue;
 use crate::avm2::script_object::ScriptObject;
 use crate::avm2::value::Value;
-use crate::avm2::{Avm2, Error};
+use crate::avm2::Error;
 use crate::context::UpdateContext;
 use gc_arena::MutationContext;
 
 /// Implements `flash.display.InteractiveObject`'s constructor.
 pub fn constructor<'gc>(
-    _avm: &mut Avm2<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
-    Ok(Value::Undefined.into())
+) -> Result<Value<'gc>, Error> {
+    Ok(Value::Undefined)
 }
 
 /// Construct `InteractiveObject.prototype`.

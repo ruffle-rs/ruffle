@@ -1,70 +1,65 @@
 //! Object builtin and prototype
 
+use crate::avm2::activation::Activation;
 use crate::avm2::function::FunctionObject;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
-use crate::avm2::return_value::ReturnValue;
 use crate::avm2::value::Value;
-use crate::avm2::{Avm2, Error};
+use crate::avm2::Error;
 use crate::context::UpdateContext;
 use gc_arena::MutationContext;
 
 /// Implements `Object`
 pub fn constructor<'gc>(
-    _avm: &mut Avm2<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
-    Ok(Value::Undefined.into())
+) -> Result<Value<'gc>, Error> {
+    Ok(Value::Undefined)
 }
 
 /// Implements `Object.prototype.toString`
 fn to_string<'gc>(
-    _: &mut Avm2<'gc>,
+    _: &mut Activation<'_, 'gc>,
     _: &mut UpdateContext<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<Value<'gc>, Error> {
     Ok(this
         .map(|t| t.to_string())
-        .unwrap_or(Ok(Value::Undefined))?
-        .into())
+        .unwrap_or(Ok(Value::Undefined))?)
 }
 
 /// Implements `Object.prototype.toLocaleString`
 fn to_locale_string<'gc>(
-    _: &mut Avm2<'gc>,
+    _: &mut Activation<'_, 'gc>,
     _: &mut UpdateContext<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<Value<'gc>, Error> {
     Ok(this
         .map(|t| t.to_string())
-        .unwrap_or(Ok(Value::Undefined))?
-        .into())
+        .unwrap_or(Ok(Value::Undefined))?)
 }
 
 /// Implements `Object.prototype.valueOf`
 fn value_of<'gc>(
-    _: &mut Avm2<'gc>,
+    _: &mut Activation<'_, 'gc>,
     _: &mut UpdateContext<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
-    Ok(this
-        .map(|t| t.value_of())
-        .unwrap_or(Ok(Value::Undefined))?
-        .into())
+) -> Result<Value<'gc>, Error> {
+    Ok(this.map(|t| t.value_of()).unwrap_or(Ok(Value::Undefined))?)
 }
 
 /// `Object.prototype.hasOwnProperty`
 pub fn has_own_property<'gc>(
-    _avm: &mut Avm2<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<Value<'gc>, Error> {
     let this: Result<Object<'gc>, Error> = this.ok_or_else(|| "No valid this parameter".into());
     let this = this?;
     let name: Result<&Value<'gc>, Error> = args.get(0).ok_or_else(|| "No name specified".into());
@@ -82,11 +77,11 @@ pub fn has_own_property<'gc>(
 
 /// `Object.prototype.isPrototypeOf`
 pub fn is_prototype_of<'gc>(
-    _avm: &mut Avm2<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<Value<'gc>, Error> {
     let search_proto: Result<Object<'gc>, Error> =
         this.ok_or_else(|| "No valid this parameter".into());
     let search_proto = search_proto?;
@@ -105,11 +100,11 @@ pub fn is_prototype_of<'gc>(
 
 /// `Object.prototype.propertyIsEnumerable`
 pub fn property_is_enumerable<'gc>(
-    _avm: &mut Avm2<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<Value<'gc>, Error> {
     let this: Result<Object<'gc>, Error> = this.ok_or_else(|| "No valid this parameter".into());
     let this = this?;
     let name: Result<&Value<'gc>, Error> = args.get(0).ok_or_else(|| "No name specified".into());
@@ -127,11 +122,11 @@ pub fn property_is_enumerable<'gc>(
 
 /// `Object.prototype.setPropertyIsEnumerable`
 pub fn set_property_is_enumerable<'gc>(
-    _avm: &mut Avm2<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<ReturnValue<'gc>, Error> {
+) -> Result<Value<'gc>, Error> {
     let this: Result<Object<'gc>, Error> = this.ok_or_else(|| "No valid this parameter".into());
     let this = this?;
     let name: Result<&Value<'gc>, Error> = args.get(0).ok_or_else(|| "No name specified".into());
@@ -149,7 +144,7 @@ pub fn set_property_is_enumerable<'gc>(
         }
     }
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 /// Partially construct `Object.prototype`.

@@ -1,190 +1,113 @@
 //! Return value enum
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::Namespace;
+use crate::avm2::function::Executable;
 use crate::avm2::object::Object;
-use crate::avm2::{Avm2, Error, Value};
+use crate::avm2::{Error, Value};
 use crate::context::UpdateContext;
-use gc_arena::{Collect, GcCell};
 use std::fmt;
 
-/// Represents the return value of a function call.
+/// Represents the return value of a function call that has not yet executed.
 ///
-/// Since function calls can result in invoking native code or adding a new
-/// activation onto the AVM stack, you need another type to represent how the
-/// return value will be delivered to you.
+/// It is a panicking logic error to attempt to run AVM2 code while any
+/// reachable object is in a locked state. Ergo, it is sometimes necessary to
+/// be able to return what *should* be called rather than actually running the
+/// code on the current Rust stack. This type exists to force deferred
+/// execution of some child AVM2 frame.
 ///
-/// This function contains a handful of utility methods for deciding what to do
-/// with a given value regardless of how it is delivered to the calling
-/// function.
+/// It is also possible to stuff a regular `Value` in here - this is provided
+/// for the convenience of functions that may be able to resolve a value
+/// without needing a free stack. `ReturnValue` should not be used as a generic
+/// wrapper for `Value`, as it can also defer actual execution, and it should
+/// be resolved at the earliest safe opportunity.
 ///
-/// It is `must_use` - failing to use a return value is a compiler warning. We
-/// provide a helper function specifically to indicate that you aren't
-/// interested in the result of a call.
+/// It is `must_use` - failing to resolve a return value is a compiler warning.
 #[must_use = "Return values must be used"]
-#[derive(Clone, Collect)]
-#[collect(no_drop)]
 pub enum ReturnValue<'gc> {
-    /// Indicates that the return value is available immediately.
+    /// ReturnValue has already been computed.
+    ///
+    /// This exists primarily for functions that don't necessarily need to
+    /// always defer code execution - say, if they already have the result and
+    /// do not need a free stack frame to run an activation on.
     Immediate(Value<'gc>),
 
-    /// Indicates that the return value is the result of a given user-defined
-    /// function call. The activation record returned is the frame that needs
-    /// to return to get your value.
-    ResultOf(GcCell<'gc, Activation<'gc>>),
-}
-
-impl PartialEq for ReturnValue<'_> {
-    fn eq(&self, other: &Self) -> bool {
-        use ReturnValue::*;
-
-        match (self, other) {
-            (Immediate(val1), Immediate(val2)) => val1 == val2,
-            (ResultOf(frame1), ResultOf(frame2)) => GcCell::ptr_eq(*frame1, *frame2),
-            _ => false,
-        }
-    }
+    /// ReturnValue has not yet been computed.
+    ///
+    /// This exists for functions that do need to reference the result of user
+    /// code in order to produce their result.
+    ResultOf {
+        executable: Executable<'gc>,
+        unbound_reciever: Option<Object<'gc>>,
+        arguments: Vec<Value<'gc>>,
+        base_proto: Option<Object<'gc>>,
+    },
 }
 
 impl fmt::Debug for ReturnValue<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use ReturnValue::*;
-
         match self {
-            Immediate(val) => write!(f, "Immediate({:?})", val),
-            ResultOf(_frame) => write!(f, "ResultOf(<activation frame>)"),
+            Self::Immediate(v) => f.debug_tuple("ReturnValue::Immediate").field(v).finish(),
+            Self::ResultOf {
+                executable: _executable,
+                unbound_reciever,
+                arguments,
+                base_proto,
+            } => f
+                .debug_struct("ReturnValue")
+                .field("executable", &"<Executable code>")
+                .field("unbound_reciever", unbound_reciever)
+                .field("arguments", arguments)
+                .field("base_proto", base_proto)
+                .finish(),
         }
     }
 }
 
 impl<'gc> ReturnValue<'gc> {
-    /// Mark a given return value as intended to be pushed onto the stack.
-    ///
-    /// The natural result of a stack frame retiring is to be pushed, so this
-    /// only ensures that Immediate values are pushed.
-    pub fn push(self, avm: &mut Avm2<'gc>) {
-        use ReturnValue::*;
-
-        match self {
-            Immediate(val) => avm.push(val),
-            ResultOf(_frame) => {}
-        };
+    /// Construct a new return value.
+    pub fn defer_execution(
+        executable: Executable<'gc>,
+        unbound_reciever: Option<Object<'gc>>,
+        arguments: Vec<Value<'gc>>,
+        base_proto: Option<Object<'gc>>,
+    ) -> Self {
+        Self::ResultOf {
+            executable,
+            unbound_reciever,
+            arguments,
+            base_proto,
+        }
     }
 
-    /// Force a return value to resolve on the Rust stack by recursing back
-    /// into the AVM.
+    /// Resolve the underlying deferred execution.
+    ///
+    /// All return values must eventually resolved - it is a compile error to
+    /// fail to do so.
     pub fn resolve(
         self,
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        use ReturnValue::*;
-
         match self {
-            Immediate(val) => Ok(val),
-            ResultOf(frame) => {
-                avm.run_current_frame(context, frame)?;
-
-                Ok(avm.pop())
-            }
-        }
-    }
-
-    pub fn is_immediate(&self) -> bool {
-        use ReturnValue::*;
-
-        if let Immediate(_v) = self {
-            true
-        } else {
-            false
-        }
-    }
-
-    /// Panic if a value is not immediate.
-    ///
-    /// This should only be used in test assertions.
-    #[cfg(test)]
-    pub fn unwrap_immediate(self) -> Value<'gc> {
-        use ReturnValue::*;
-
-        match self {
-            Immediate(val) => val,
-            _ => panic!("Unwrapped a non-immediate return value"),
+            Self::Immediate(v) => Ok(v),
+            Self::ResultOf {
+                executable,
+                unbound_reciever,
+                arguments,
+                base_proto,
+            } => executable.exec(
+                unbound_reciever,
+                &arguments,
+                activation,
+                context,
+                base_proto,
+            ),
         }
     }
 }
 
 impl<'gc> From<Value<'gc>> for ReturnValue<'gc> {
-    fn from(val: Value<'gc>) -> Self {
-        ReturnValue::Immediate(val)
-    }
-}
-
-impl<'gc> From<String> for ReturnValue<'gc> {
-    fn from(string: String) -> Self {
-        ReturnValue::Immediate(Value::String(string))
-    }
-}
-
-impl<'gc> From<&str> for ReturnValue<'gc> {
-    fn from(string: &str) -> Self {
-        ReturnValue::Immediate(Value::String(string.to_owned()))
-    }
-}
-
-impl<'gc> From<bool> for ReturnValue<'gc> {
-    fn from(value: bool) -> Self {
-        ReturnValue::Immediate(Value::Bool(value))
-    }
-}
-
-impl<'gc, T> From<T> for ReturnValue<'gc>
-where
-    Object<'gc>: From<T>,
-{
-    fn from(value: T) -> Self {
-        ReturnValue::Immediate(Value::Object(Object::from(value)))
-    }
-}
-
-impl<'gc> From<f64> for ReturnValue<'gc> {
-    fn from(value: f64) -> Self {
-        ReturnValue::Immediate(Value::Number(value))
-    }
-}
-
-impl<'gc> From<f32> for ReturnValue<'gc> {
-    fn from(value: f32) -> Self {
-        ReturnValue::Immediate(Value::Number(f64::from(value)))
-    }
-}
-
-impl<'gc> From<u8> for ReturnValue<'gc> {
-    fn from(value: u8) -> Self {
-        ReturnValue::Immediate(Value::Number(f64::from(value)))
-    }
-}
-
-impl<'gc> From<i32> for ReturnValue<'gc> {
-    fn from(value: i32) -> Self {
-        ReturnValue::Immediate(Value::Number(f64::from(value)))
-    }
-}
-
-impl<'gc> From<u32> for ReturnValue<'gc> {
-    fn from(value: u32) -> Self {
-        ReturnValue::Immediate(Value::Number(f64::from(value)))
-    }
-}
-
-impl<'gc> From<Namespace> for ReturnValue<'gc> {
-    fn from(value: Namespace) -> Self {
-        ReturnValue::Immediate(Value::Namespace(value))
-    }
-}
-
-impl<'gc> From<GcCell<'gc, Activation<'gc>>> for ReturnValue<'gc> {
-    fn from(frame: GcCell<'gc, Activation<'gc>>) -> Self {
-        ReturnValue::ResultOf(frame)
+    fn from(v: Value<'gc>) -> Self {
+        Self::Immediate(v)
     }
 }

@@ -1,5 +1,6 @@
 //! AVM2 objects.
 
+use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::function::{Executable, FunctionObject};
 use crate::avm2::names::{Multiname, Namespace, QName};
@@ -7,7 +8,7 @@ use crate::avm2::r#trait::{Trait, TraitKind};
 use crate::avm2::scope::Scope;
 use crate::avm2::script_object::ScriptObject;
 use crate::avm2::value::Value;
-use crate::avm2::{Avm2, Error};
+use crate::avm2::Error;
 use crate::context::UpdateContext;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
@@ -30,7 +31,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self,
         reciever: Object<'gc>,
         name: &QName,
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error>;
 
@@ -39,23 +40,23 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &mut self,
         reciever: Object<'gc>,
         name: &QName,
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         if !self.has_instantiated_property(name) {
             for abc_trait in self.get_trait(name)? {
-                self.install_trait(avm, context, abc_trait, reciever)?;
+                self.install_trait(activation, context, abc_trait, reciever)?;
             }
         }
 
         let has_no_getter = self.has_own_virtual_setter(name) && !self.has_own_virtual_getter(name);
 
         if self.has_own_property(name)? && !has_no_getter {
-            return self.get_property_local(reciever, name, avm, context);
+            return self.get_property_local(reciever, name, activation, context);
         }
 
         if let Some(mut proto) = self.proto() {
-            return proto.get_property(reciever, name, avm, context);
+            return proto.get_property(reciever, name, activation, context);
         }
 
         Ok(Value::Undefined)
@@ -83,7 +84,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         reciever: Object<'gc>,
         name: &QName,
         value: Value<'gc>,
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error>;
 
@@ -93,17 +94,17 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         reciever: Object<'gc>,
         name: &QName,
         value: Value<'gc>,
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         if !self.has_instantiated_property(name) {
             for abc_trait in self.get_trait(name)? {
-                self.install_trait(avm, context, abc_trait, reciever)?;
+                self.install_trait(activation, context, abc_trait, reciever)?;
             }
         }
 
         if self.has_own_virtual_setter(name) {
-            return self.set_property_local(reciever, name, value, avm, context);
+            return self.set_property_local(reciever, name, value, activation, context);
         }
 
         let mut proto = self.proto();
@@ -112,13 +113,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             //we're calling a virtual setter. If you call `set_property` on
             //a non-virtual you will actually alter the prototype.
             if my_proto.has_own_virtual_setter(name) {
-                return my_proto.set_property(reciever, name, value, avm, context);
+                return my_proto.set_property(reciever, name, value, activation, context);
             }
 
             proto = my_proto.proto();
         }
 
-        reciever.set_property_local(reciever, name, value, avm, context)
+        reciever.set_property_local(reciever, name, value, activation, context)
     }
 
     /// Init a property on this specific object.
@@ -127,7 +128,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         reciever: Object<'gc>,
         name: &QName,
         value: Value<'gc>,
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error>;
 
@@ -137,17 +138,17 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         reciever: Object<'gc>,
         name: &QName,
         value: Value<'gc>,
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         if !self.has_instantiated_property(name) {
             for abc_trait in self.get_trait(name)? {
-                self.install_trait(avm, context, abc_trait, reciever)?;
+                self.install_trait(activation, context, abc_trait, reciever)?;
             }
         }
 
         if self.has_own_virtual_setter(name) {
-            return self.init_property_local(reciever, name, value, avm, context);
+            return self.init_property_local(reciever, name, value, activation, context);
         }
 
         let mut proto = self.proto();
@@ -156,13 +157,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             //we're calling a virtual setter. If you call `set_property` on
             //a non-virtual you will actually alter the prototype.
             if my_proto.has_own_virtual_setter(name) {
-                return my_proto.init_property(reciever, name, value, avm, context);
+                return my_proto.init_property(reciever, name, value, activation, context);
             }
 
             proto = my_proto.proto();
         }
 
-        reciever.init_property_local(reciever, name, value, avm, context)
+        reciever.init_property_local(reciever, name, value, activation, context)
     }
 
     /// Retrieve a slot by it's index.
@@ -404,24 +405,24 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// object.
     fn install_trait(
         &mut self,
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         trait_entry: Trait<'gc>,
         reciever: Object<'gc>,
     ) -> Result<(), Error> {
-        self.install_foreign_trait(avm, context, trait_entry, self.get_scope(), reciever)
+        self.install_foreign_trait(activation, context, trait_entry, self.get_scope(), reciever)
     }
 
     /// Install a trait from anywyere.
     fn install_foreign_trait(
         &mut self,
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         trait_entry: Trait<'gc>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         reciever: Object<'gc>,
     ) -> Result<(), Error> {
-        let fn_proto = avm.prototypes().function;
+        let fn_proto = activation.avm2().prototypes().function;
         let trait_name = trait_entry.name().clone();
         avm_debug!(
             "Installing trait {:?} of kind {:?}",
@@ -491,14 +492,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 };
 
                 let super_class: Result<Object<'gc>, Error> = self
-                    .get_property(reciever, &super_name, avm, context)?
+                    .get_property(reciever, &super_name, activation, context)?
                     .as_object()
                     .map_err(|_e| {
                         format!("Could not resolve superclass {:?}", super_name.local_name()).into()
                     });
 
                 let (class_object, _cinit) =
-                    FunctionObject::from_class(avm, context, *class, super_class?, scope)?;
+                    FunctionObject::from_class(activation, context, *class, super_class?, scope)?;
                 self.install_const(
                     context.gc_context,
                     class_read.name().clone(),
@@ -516,7 +517,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     fn_proto,
                     None,
                 );
-                let es3_proto = ScriptObject::object(context.gc_context, avm.prototypes().object);
+                let es3_proto =
+                    ScriptObject::object(context.gc_context, activation.avm2().prototypes().object);
 
                 fobject.install_slot(
                     context.gc_context,
@@ -548,7 +550,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self,
         _reciever: Option<Object<'gc>>,
         _arguments: &[Value<'gc>],
-        _avm: &mut Avm2<'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _base_proto: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
@@ -574,7 +576,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// purely so that host objects can be constructed by the VM.
     fn construct(
         &self,
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error>;
@@ -590,7 +592,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// traits.
     fn derive(
         &self,
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,

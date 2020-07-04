@@ -6,11 +6,10 @@ use crate::avm2::method::{BytecodeMethod, Method, NativeMethod};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::r#trait::Trait;
-use crate::avm2::return_value::ReturnValue;
 use crate::avm2::scope::Scope;
 use crate::avm2::script_object::{ScriptObjectClass, ScriptObjectData};
 use crate::avm2::value::Value;
-use crate::avm2::{Avm2, Error};
+use crate::avm2::Error;
 use crate::context::UpdateContext;
 use gc_arena::{Collect, CollectionContext, GcCell, MutationContext};
 use std::fmt;
@@ -76,42 +75,43 @@ impl<'gc> Executable<'gc> {
     /// Execute a method.
     ///
     /// The function will either be called directly if it is a Rust builtin, or
-    /// placed on the stack of the passed-in AVM2 otherwise. As a result, we
-    /// return a `ReturnValue` which can be used to force execution of the
-    /// given stack frame and obtain it's return value or to push said value
-    /// onto the AVM operand stack.
+    /// executed on the same AVM2 instance as the activation passed in here.
+    /// The value returned in either case will be provided here.
+    ///
+    /// It is a panicing logic error to attempt to execute user code while any
+    /// reachable object is currently under a GcCell write lock.
     pub fn exec(
         &self,
         unbound_reciever: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         base_proto: Option<Object<'gc>>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error> {
         match self {
-            Executable::Native(nf, reciever) => {
-                nf(avm, context, reciever.or(unbound_reciever), arguments)
-            }
+            Executable::Native(nf, reciever) => nf(
+                activation,
+                context,
+                reciever.or(unbound_reciever),
+                arguments,
+            ),
             Executable::Action {
                 method,
                 scope,
                 reciever,
             } => {
                 let reciever = reciever.or(unbound_reciever);
-                let activation = GcCell::allocate(
-                    context.gc_context,
-                    Activation::from_action(
-                        context,
-                        method.clone(),
-                        *scope,
-                        reciever,
-                        arguments,
-                        base_proto,
-                    )?,
+                let mut activation = Activation::from_method(
+                    activation.avm2(),
+                    context,
+                    method.clone(),
+                    *scope,
+                    reciever,
+                    arguments,
+                    base_proto,
                 );
 
-                avm.insert_stack_frame(activation);
-                Ok(activation.into())
+                activation.run_actions(method.clone(), context)
             }
         }
     }
@@ -161,7 +161,7 @@ impl<'gc> FunctionObject<'gc> {
     /// initializer method that you should call before interacting with the
     /// class. The latter should be called using the former as a reciever.
     pub fn from_class(
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
         mut base_class: Object<'gc>,
@@ -172,7 +172,7 @@ impl<'gc> FunctionObject<'gc> {
             .get_property(
                 base_class,
                 &QName::new(Namespace::public_namespace(), "prototype"),
-                avm,
+                activation,
                 context,
             )?
             .as_object()
@@ -187,9 +187,9 @@ impl<'gc> FunctionObject<'gc> {
                 )
                 .into()
             });
-        let mut class_proto = super_proto?.derive(avm, context, class, scope)?;
-        let fn_proto = avm.prototypes().function;
-        let class_constr_proto = avm.prototypes().class;
+        let mut class_proto = super_proto?.derive(activation, context, class, scope)?;
+        let fn_proto = activation.avm2().prototypes().function;
+        let class_constr_proto = activation.avm2().prototypes().class;
 
         let initializer = class_read.instance_init();
 
@@ -303,13 +303,15 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self,
         reciever: Object<'gc>,
         name: &QName,
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        self.0
-            .read()
-            .base
-            .get_property_local(reciever, name, avm, context)
+        let read = self.0.read();
+        let rv = read.base.get_property_local(reciever, name, activation)?;
+
+        drop(read);
+
+        rv.resolve(activation, context)
     }
 
     fn set_property_local(
@@ -317,16 +319,17 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         reciever: Object<'gc>,
         name: &QName,
         value: Value<'gc>,
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let rv = self
-            .0
-            .write(context.gc_context)
+        let mut write = self.0.write(context.gc_context);
+        let rv = write
             .base
-            .set_property_local(reciever, name, value, avm, context)?;
+            .set_property_local(reciever, name, value, activation, context)?;
 
-        rv.resolve(avm, context)?;
+        drop(write);
+
+        rv.resolve(activation, context)?;
 
         Ok(())
     }
@@ -336,16 +339,17 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         reciever: Object<'gc>,
         name: &QName,
         value: Value<'gc>,
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let rv = self
-            .0
-            .write(context.gc_context)
+        let mut write = self.0.write(context.gc_context);
+        let rv = write
             .base
-            .init_property_local(reciever, name, value, avm, context)?;
+            .init_property_local(reciever, name, value, activation, context)?;
 
-        rv.resolve(avm, context)?;
+        drop(write);
+
+        rv.resolve(activation, context)?;
 
         Ok(())
     }
@@ -468,13 +472,12 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self,
         reciever: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         base_proto: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         if let Some(exec) = &self.0.read().exec {
-            exec.exec(reciever, arguments, avm, context, base_proto)?
-                .resolve(avm, context)
+            exec.exec(reciever, arguments, activation, context, base_proto)
         } else {
             Err("Not a callable function!".into())
         }
@@ -482,7 +485,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn construct(
         &self,
-        _avm: &mut Avm2<'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
@@ -498,7 +501,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn derive(
         &self,
-        _avm: &mut Avm2<'gc>,
+        _activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,

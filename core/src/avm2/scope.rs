@@ -1,9 +1,10 @@
 //! Represents AVM2 scope chain resolution.
 
+use crate::avm2::activation::Activation;
 use crate::avm2::names::Multiname;
 use crate::avm2::object::{Object, TObject};
-use crate::avm2::return_value::ReturnValue;
-use crate::avm2::{Avm2, Error};
+use crate::avm2::value::Value;
+use crate::avm2::Error;
 use crate::context::UpdateContext;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::Ref;
@@ -99,7 +100,7 @@ impl<'gc> Scope<'gc> {
     pub fn find(
         &self,
         name: &Multiname,
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Option<Object<'gc>>, Error> {
         if let Some(qname) = self.locals().resolve_multiname(name)? {
@@ -109,7 +110,7 @@ impl<'gc> Scope<'gc> {
         }
 
         if let Some(scope) = self.parent() {
-            return scope.find(name, avm, context);
+            return scope.find(name, activation, context);
         }
 
         Ok(None)
@@ -122,21 +123,24 @@ impl<'gc> Scope<'gc> {
     pub fn resolve(
         &mut self,
         name: &Multiname,
-        avm: &mut Avm2<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Option<ReturnValue<'gc>>, Error> {
+    ) -> Result<Option<Value<'gc>>, Error> {
         if let Some(qname) = self.locals().resolve_multiname(name)? {
             if self.locals().has_property(&qname)? {
-                return Ok(Some(
-                    self.values
-                        .get_property(self.values, &qname, avm, context)?
-                        .into(),
-                ));
+                return Ok(Some(self.values.get_property(
+                    self.values,
+                    &qname,
+                    activation,
+                    context,
+                )?));
             }
         }
 
         if let Some(parent) = self.parent {
-            return parent.write(context.gc_context).resolve(name, avm, context);
+            return parent
+                .write(context.gc_context)
+                .resolve(name, activation, context);
         }
 
         //TODO: Should undefined variables halt execution?
