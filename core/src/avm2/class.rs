@@ -97,6 +97,39 @@ fn do_trait_lookup<'gc>(
 }
 
 impl<'gc> Class<'gc> {
+    /// Create a new class.
+    ///
+    /// This function is primarily intended for use by native code to define
+    /// builtin classes. The absolute minimum necessary to define a class is
+    /// required here; further methods allow further changes to the class.
+    ///
+    /// Classes created in this way cannot have traits loaded from an ABC file
+    /// using `load_traits`.
+    pub fn new(
+        name: QName,
+        instance_init: Method<'gc>,
+        class_init: Method<'gc>,
+        mc: MutationContext<'gc, '_>,
+    ) -> GcCell<'gc, Self> {
+        GcCell::allocate(
+            mc,
+            Self {
+                name,
+                super_class: None,
+                is_sealed: false,
+                is_final: false,
+                is_interface: false,
+                protected_namespace: None,
+                interfaces: Vec::new(),
+                instance_init,
+                instance_traits: Vec::new(),
+                class_init,
+                class_traits: Vec::new(),
+                traits_loaded: true,
+            },
+        )
+    }
+
     /// Construct a class from a `TranslationUnit` and it's class index.
     ///
     /// The returned class will be allocated, but no traits will be loaded. The
@@ -221,6 +254,14 @@ impl<'gc> Class<'gc> {
         &self.super_class
     }
 
+    /// Define a trait on the class.
+    ///
+    /// Class traits will be accessible as properties on the class constructor
+    /// function.
+    pub fn define_class_trait(&mut self, my_trait: Trait<'gc>) {
+        self.class_traits.push(my_trait);
+    }
+
     /// Given a name, append class traits matching the name to a list of known
     /// traits.
     ///
@@ -263,6 +304,15 @@ impl<'gc> Class<'gc> {
         }
 
         None
+    }
+
+    /// Define a trait on instances of the class.
+    ///
+    /// Instance traits will be accessible as properties on instances of the
+    /// class. They will not be accessible on the class prototype, and any
+    /// properties defined on the prototype will be shadowed by these traits.
+    pub fn define_instance_trait(&mut self, my_trait: Trait<'gc>) {
+        self.class_traits.push(my_trait);
     }
 
     /// Given a name, append instance traits matching the name to a list of
