@@ -142,6 +142,11 @@ impl<'gc> Class<'gc> {
         )
     }
 
+    /// Set the attributes of the class (sealed/final/interface status).
+    pub fn set_attributes(&mut self, attributes: EnumSet<ClassAttributes>) {
+        self.attributes = CollectWrapper(attributes);
+    }
+
     /// Construct a class from a `TranslationUnit` and it's class index.
     ///
     /// The returned class will be allocated, but no traits will be loaded. The
