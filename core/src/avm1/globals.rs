@@ -15,6 +15,8 @@ pub(crate) mod boolean;
 pub(crate) mod button;
 mod color;
 mod color_transform;
+pub(crate) mod context_menu;
+pub(crate) mod context_menu_item;
 pub(crate) mod display_object;
 pub(crate) mod error;
 mod function;
@@ -39,8 +41,6 @@ pub(crate) mod system_security;
 pub(crate) mod text_field;
 mod text_format;
 mod xml;
-pub(crate) mod context_menu;
-pub(crate) mod context_menu_item;
 
 #[allow(non_snake_case, unused_must_use)] //can't use errors yet
 pub fn getURL<'a, 'gc>(
@@ -318,9 +318,8 @@ pub fn create_globals<'gc>(
     //TODO: These need to be constructors and should also set `.prototype` on each one
     let object = object::create_object_object(gc_context, object_proto, function_proto);
 
-    let context_menu_proto = context_menu::create_proto(gc_context, object_proto, function_proto);
-    let context_menu_item_proto = context_menu_item::create_proto(gc_context, object_proto, function_proto);
-
+    let context_menu_proto = context_menu::create_proto(gc_context, object_proto);
+    let context_menu_item_proto = context_menu_item::create_proto(gc_context, object_proto);
 
     let button = FunctionObject::function(
         gc_context,
@@ -472,8 +471,9 @@ pub fn create_globals<'gc>(
             Executable::Native(context_menu::constructor),
             Some(function_proto),
             Some(context_menu_proto),
-        ).into(),
-        EnumSet::empty()
+        )
+        .into(),
+        EnumSet::empty(),
     );
 
     globals.define_value(
@@ -484,8 +484,9 @@ pub fn create_globals<'gc>(
             Executable::Native(context_menu_item::constructor),
             Some(function_proto),
             Some(context_menu_item_proto),
-        ).into(),
-        EnumSet::empty()
+        )
+        .into(),
+        EnumSet::empty(),
     );
 
     let system_security =
