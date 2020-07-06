@@ -197,19 +197,8 @@ impl<'a> VariableDumper<'a> {
 mod tests {
     use super::*;
     use crate::avm1::error::Error;
-    use crate::avm1::function::Executable;
     use crate::avm1::test_utils::with_avm;
     use crate::avm1::ScriptObject;
-    use enumset::EnumSet;
-
-    fn throw_error<'gc>(
-        _activation: &mut Activation<'_, 'gc>,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
-        _this: Object<'gc>,
-        _args: &[Value<'gc>],
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        Err(Error::PrototypeRecursionLimit)
-    }
 
     #[test]
     fn dump_undefined() {
@@ -324,25 +313,6 @@ mod tests {
             assert_eq!(
                 VariableDumper::dump(&object.into(), " ", activation, context),
                 "[object #0] {\n child: [object #1] {\n  age: 6\n  parent: [object #0]\n }\n test: \"value\"\n self: [object #0]\n}",
-            );
-            Ok(())
-        })
-    }
-
-    #[test]
-    fn dump_object_with_error() {
-        with_avm(19, |activation, context, _root| -> Result<(), Error> {
-            let object = ScriptObject::object(context.gc_context, None);
-            object.add_property(
-                context.gc_context,
-                "broken_value",
-                Executable::Native(throw_error),
-                None,
-                EnumSet::empty(),
-            );
-            assert_eq!(
-                VariableDumper::dump(&object.into(), " ", activation, context),
-                "[object #0] {\n broken_value: Error: \"Prototype recursion limit has been exceeded\"\n}"
             );
             Ok(())
         })

@@ -247,7 +247,7 @@ impl<'gc> ScriptObject<'gc> {
                             this,
                             Some(this_proto),
                             &[value.clone()],
-                        )?;
+                        );
                     }
                 }
             }
@@ -274,8 +274,7 @@ impl<'gc> ScriptObject<'gc> {
                 };
 
                 if let Some(rval) = rval {
-                    let _ =
-                        rval.exec("[Setter]", activation, context, this, base_proto, &[value])?;
+                    let _ = rval.exec("[Setter]", activation, context, this, base_proto, &[value]);
                 }
             }
         }
@@ -319,14 +318,18 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         }
 
         if let Some(get) = exec {
-            get.exec(
+            // Errors, even fatal ones, are completely and silently ignored here.
+            match get.exec(
                 "[Getter]",
                 activation,
                 context,
                 this,
                 Some((*self).into()),
                 &[],
-            )
+            ) {
+                Ok(value) => Ok(value),
+                Err(_) => Ok(Value::Undefined),
+            }
         } else {
             Ok(Value::Undefined)
         }
