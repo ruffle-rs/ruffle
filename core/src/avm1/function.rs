@@ -239,7 +239,7 @@ impl<'gc> Executable<'gc> {
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
-        _reason: ExecutionReason,
+        reason: ExecutionReason,
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self {
             Executable::Native(nf) => nf(activation, ac, this, args),
@@ -313,7 +313,7 @@ impl<'gc> Executable<'gc> {
 
                 let mut frame = Activation::from_action(
                     activation.avm,
-                    activation.id.child(name),
+                    activation.id.function(name, reason)?,
                     effective_ver,
                     child_scope,
                     af.constant_pool,
