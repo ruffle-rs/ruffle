@@ -1,5 +1,5 @@
 use crate::avm1::error::Error;
-use crate::avm1::function::{Avm1Function, FunctionObject};
+use crate::avm1::function::{Avm1Function, ExecutionReason, FunctionObject};
 use crate::avm1::object::{Object, TObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
@@ -93,7 +93,9 @@ enum FrameControl<'gc> {
 pub struct ActivationIdentifier<'a> {
     parent: Option<&'a ActivationIdentifier<'a>>,
     name: Cow<'static, str>,
-    depth: usize,
+    depth: u8,
+    function_count: u8,
+    special_count: u8,
 }
 
 impl fmt::Display for ActivationIdentifier<'_> {
@@ -114,6 +116,8 @@ impl<'a> ActivationIdentifier<'a> {
             parent: None,
             name: name.into(),
             depth: 0,
+            function_count: 0,
+            special_count: 0,
         }
     }
 
@@ -122,10 +126,40 @@ impl<'a> ActivationIdentifier<'a> {
             parent: Some(self),
             name: name.into(),
             depth: self.depth + 1,
+            function_count: self.function_count,
+            special_count: self.function_count,
         }
     }
 
-    pub fn depth(&self) -> usize {
+    pub fn function<'gc, S: Into<Cow<'static, str>>>(
+        &'a self,
+        name: S,
+        reason: ExecutionReason,
+    ) -> Result<Self, Error<'gc>> {
+        let (function_count, special_count) = match reason {
+            ExecutionReason::FunctionCall => {
+                if self.function_count == 255 {
+                    return Err(Error::FunctionRecursionLimit);
+                }
+                (self.function_count + 1, self.special_count)
+            }
+            ExecutionReason::Special => {
+                if self.special_count == 65 {
+                    return Err(Error::SpecialRecursionLimit);
+                }
+                (self.function_count, self.special_count + 1)
+            }
+        };
+        Ok(Self {
+            parent: Some(self),
+            name: name.into(),
+            depth: self.depth + 1,
+            function_count,
+            special_count,
+        })
+    }
+
+    pub fn depth(&self) -> u8 {
         self.depth
     }
 }
