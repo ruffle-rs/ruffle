@@ -386,7 +386,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         } else if let Some(action) = reader.read_action()? {
             avm_debug!("({}) Action: {:?}", self.id.depth(), action);
 
-            let result = match action {
+            match action {
                 Action::Add => self.action_add(context),
                 Action::Add2 => self.action_add_2(context),
                 Action::And => self.action_and(context),
@@ -516,18 +516,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                 Action::Throw => self.action_throw(context),
                 Action::Try(try_block) => self.action_try(context, &try_block, &data),
                 _ => self.unknown_op(context, action),
-            };
-            if let Err(e) = result {
-                match &e {
-                    Error::ThrownValue(_) => {}
-                    e => log::error!("AVM1 error: {}", e),
-                }
-                if e.is_halting() {
-                    self.avm.halt();
-                }
-                return Err(e);
             }
-            result
         } else {
             //The explicit end opcode was encountered so return here
             Ok(FrameControl::Return(ReturnType::Implicit))

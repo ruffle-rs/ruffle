@@ -384,13 +384,16 @@ pub fn root_error_handler<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     error: Error<'gc>,
 ) {
-    if let Error::ThrownValue(error) = error {
+    if let Error::ThrownValue(error) = &error {
         let string = error
             .coerce_to_string(activation, context)
             .unwrap_or_else(|_| Cow::Borrowed("undefined"));
         log::info!(target: "avm_trace", "{}", string);
     } else {
-        log::error!("Uncaught error: {:?}", error);
+        log::error!("{}", error);
+    }
+    if error.is_halting() {
+        activation.avm.halt();
     }
 }
 
