@@ -176,11 +176,6 @@ pub struct Activation<'a, 'gc: 'a> {
     /// same register set.
     local_registers: Option<GcCell<'gc, RegisterSet<'gc>>>,
 
-    /// Flags that the current activation frame is being executed and has a
-    /// reader object copied from it. Taking out two readers on the same
-    /// activation frame is a programming error.
-    is_executing: bool,
-
     /// The base clip of this stack frame.
     /// This will be the movieclip that contains the bytecode.
     base_clip: DisplayObject<'gc>,
@@ -225,7 +220,6 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             this,
             arguments,
             local_registers: None,
-            is_executing: false,
         }
     }
 
@@ -248,7 +242,6 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             this: self.this,
             arguments: self.arguments,
             local_registers: self.local_registers,
-            is_executing: false,
         }
     }
 
@@ -280,7 +273,6 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             this: globals,
             arguments: None,
             local_registers: None,
-            is_executing: false,
         }
     }
 
