@@ -36,6 +36,16 @@ pub type NativeFunction<'gc> = fn(
     &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>>;
 
+/// Indicates the reason for an execution
+#[derive(Debug, Clone)]
+pub enum ExecutionReason {
+    /// This execution is a "normal" function call, from either user-code or builtins.
+    FunctionCall,
+
+    /// This execution is a "special" function call, such as a getter or setter.
+    Special,
+}
+
 /// Represents a function defined in the AVM1 runtime, either through
 /// `DefineFunction` or `DefineFunction2`.
 #[derive(Debug, Clone, Collect)]
@@ -220,6 +230,7 @@ impl<'gc> Executable<'gc> {
     /// returns. If on-stack execution is possible, then this function returns
     /// a return value you must push onto the stack. Otherwise, you must
     /// create a new stack frame and execute the action data yourself.
+    #[allow(clippy::too_many_arguments)]
     pub fn exec(
         &self,
         name: &str,
@@ -228,6 +239,7 @@ impl<'gc> Executable<'gc> {
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
+        _reason: ExecutionReason,
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self {
             Executable::Native(nf) => nf(activation, ac, this, args),
@@ -500,7 +512,15 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(exec) = self.as_executable() {
-            exec.exec(name, activation, context, this, base_proto, args)
+            exec.exec(
+                name,
+                activation,
+                context,
+                this,
+                base_proto,
+                args,
+                ExecutionReason::FunctionCall,
+            )
         } else {
             Ok(Value::Undefined)
         }

@@ -1,6 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject, NativeFunction};
+use crate::avm1::function::{Executable, ExecutionReason, FunctionObject, NativeFunction};
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::{Object, ObjectPtr, TObject, UpdateContext, Value};
 use crate::property_map::{Entry, PropertyMap};
@@ -247,6 +247,7 @@ impl<'gc> ScriptObject<'gc> {
                             this,
                             Some(this_proto),
                             &[value.clone()],
+                            ExecutionReason::Special,
                         );
                     }
                 }
@@ -274,7 +275,15 @@ impl<'gc> ScriptObject<'gc> {
                 };
 
                 if let Some(rval) = rval {
-                    let _ = rval.exec("[Setter]", activation, context, this, base_proto, &[value]);
+                    let _ = rval.exec(
+                        "[Setter]",
+                        activation,
+                        context,
+                        this,
+                        base_proto,
+                        &[value],
+                        ExecutionReason::Special,
+                    );
                 }
             }
         }
@@ -326,6 +335,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
                 this,
                 Some((*self).into()),
                 &[],
+                ExecutionReason::Special,
             ) {
                 Ok(value) => Ok(value),
                 Err(_) => Ok(Value::Undefined),

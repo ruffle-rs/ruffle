@@ -2,6 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::function::ExecutionReason;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
@@ -35,7 +36,15 @@ pub fn call<'gc>(
     };
 
     match func.as_executable() {
-        Some(exec) => exec.exec("[Anonymous]", activation, action_context, this, None, args),
+        Some(exec) => exec.exec(
+            "[Anonymous]",
+            activation,
+            action_context,
+            this,
+            None,
+            args,
+            ExecutionReason::FunctionCall,
+        ),
         _ => Ok(Value::Undefined),
     }
 }
@@ -75,6 +84,7 @@ pub fn apply<'gc>(
             this,
             None,
             &child_args,
+            ExecutionReason::FunctionCall,
         ),
         _ => Ok(Value::Undefined),
     }
