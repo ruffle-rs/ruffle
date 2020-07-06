@@ -854,7 +854,7 @@ dependencies = [
  "parking_lot 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "range-alloc 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "raw-window-handle 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "smallvec 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "smallvec 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "spirv_cross 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "wio 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -872,7 +872,7 @@ dependencies = [
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "range-alloc 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "raw-window-handle 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "smallvec 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "smallvec 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "spirv_cross 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -907,7 +907,7 @@ dependencies = [
  "parking_lot 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "range-alloc 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "raw-window-handle 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "smallvec 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "smallvec 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "spirv_cross 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "storage-map 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -926,7 +926,7 @@ dependencies = [
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "objc 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "raw-window-handle 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "smallvec 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "smallvec 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "x11 2.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -1607,7 +1607,7 @@ dependencies = [
  "cloudabi 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.69 (registry+https://github.com/rust-lang/crates.io-index)",
  "redox_syscall 0.1.56 (registry+https://github.com/rust-lang/crates.io-index)",
- "smallvec 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "smallvec 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -1949,7 +1949,7 @@ dependencies = [
  "quick-xml 0.18.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "ruffle_macros 0.1.0",
- "smallvec 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "smallvec 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "swf 0.1.2",
  "thiserror 1.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 2.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2209,7 +2209,7 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.4.0"
+version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -2431,7 +2431,7 @@ name = "unicode-normalization"
 version = "0.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "smallvec 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "smallvec 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -2680,7 +2680,7 @@ dependencies = [
  "arrayvec 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "raw-window-handle 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "smallvec 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "smallvec 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "wgpu-core 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "wgpu-native 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "wgpu-types 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2706,7 +2706,7 @@ dependencies = [
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "peek-poke 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "smallvec 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "smallvec 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "vec_map 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "wgpu-types 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -3124,7 +3124,7 @@ dependencies = [
 "checksum sid 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)" = "bd5ac56c121948b4879bba9e519852c211bcdd8f014efff766441deff0b91bdb"
 "checksum slab 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
 "checksum slice-deque 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "31ef6ee280cdefba6d2d0b4b78a84a1c1a3f3a4cec98c2d4231c8bc225de0f25"
-"checksum smallvec 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c7cb5678e1615754284ec264d9bb5b4c27d2018577fd90ac0ceb578591ed5ee4"
+"checksum smallvec 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "3757cb9d89161a2f24e1cf78efa0c1fcff485d18e3f55e0aa3480824ddaa0f3f"
 "checksum smithay-client-toolkit 0.6.6 (registry+https://github.com/rust-lang/crates.io-index)" = "421c8dc7acf5cb205b88160f8b4cc2c5cfabe210e43b2f80f009f4c1ef910f1d"
 "checksum spirv_cross 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)" = "946216f8793f7199e3ea5b995ee8dc20a0ace1fcf46293a0ef4c17e1d046dbde"
 "checksum stb_truetype 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "f77b6b07e862c66a9f3e62a07588fee67cd90a9135a2b942409f195507b4fb51"
