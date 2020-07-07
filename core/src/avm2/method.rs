@@ -162,6 +162,12 @@ impl<'gc> From<Gc<'gc, BytecodeMethod<'gc>>> for Method<'gc> {
 }
 
 impl<'gc> Method<'gc> {
+    /// Builtin method constructor, because for some reason `nf.into()` just
+    /// causes odd lifetime mismatches.
+    pub fn from_builtin(nf: NativeMethod<'gc>) -> Self {
+        Self::Native(nf)
+    }
+
     /// Access the bytecode of this method.
     ///
     /// This function returns `Err` if there is no bytecode for this method.
