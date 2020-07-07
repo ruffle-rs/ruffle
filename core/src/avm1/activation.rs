@@ -93,7 +93,7 @@ enum FrameControl<'gc> {
 pub struct ActivationIdentifier<'a> {
     parent: Option<&'a ActivationIdentifier<'a>>,
     name: Cow<'static, str>,
-    depth: u8,
+    depth: u16,
     function_count: u8,
     special_count: u8,
 }
@@ -159,7 +159,7 @@ impl<'a> ActivationIdentifier<'a> {
         })
     }
 
-    pub fn depth(&self) -> u8 {
+    pub fn depth(&self) -> u16 {
         self.depth
     }
 }
