@@ -121,6 +121,7 @@ impl<'gc> Class<'gc> {
     /// using `load_traits`.
     pub fn new(
         name: QName<'gc>,
+        super_class: Option<Multiname<'gc>>,
         instance_init: Method<'gc>,
         class_init: Method<'gc>,
         mc: MutationContext<'gc, '_>,
@@ -129,7 +130,7 @@ impl<'gc> Class<'gc> {
             mc,
             Self {
                 name,
-                super_class: None,
+                super_class,
                 attributes: CollectWrapper(EnumSet::empty()),
                 protected_namespace: None,
                 interfaces: Vec::new(),
