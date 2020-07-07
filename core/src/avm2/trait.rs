@@ -81,6 +81,17 @@ pub enum TraitKind<'gc> {
 }
 
 impl<'gc> Trait<'gc> {
+    pub fn from_class(class: GcCell<'gc, Class<'gc>>) -> Self {
+        let name = class.read().name().clone();
+
+        Trait {
+            name,
+            is_final: false,
+            is_override: false,
+            kind: TraitKind::Class { slot_id: 0, class },
+        }
+    }
+
     /// Convert an ABC trait into a loaded trait.
     pub fn from_abc_trait(
         unit: TranslationUnit<'gc>,
