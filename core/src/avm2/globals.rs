@@ -1,14 +1,15 @@
 //! Global scope built-ins
 
 use crate::avm2::activation::Activation;
+use crate::avm2::class::Class;
 use crate::avm2::method::NativeMethod;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{FunctionObject, ScriptObject};
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{FunctionObject, Object, ScriptObject, TObject};
+use crate::avm2::r#trait::Trait;
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, GcCell, MutationContext};
 use std::f64::NAN;
 
 mod boolean;
@@ -67,8 +68,8 @@ fn function<'gc>(
         .unwrap()
 }
 
-/// Add a class builtin to the global scope.
-fn class<'gc>(
+/// Add an ES3-style builtin to the global scope.
+fn oldstyle_class<'gc>(
     mc: MutationContext<'gc, '_>,
     mut global_scope: Object<'gc>,
     package: impl Into<AvmString<'gc>>,
@@ -88,6 +89,17 @@ fn class<'gc>(
         .unwrap();
 }
 
+/// Add a class builtin to the global scope.
+fn class<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    mut global_scope: Object<'gc>,
+    class_def: GcCell<'gc, Class<'gc>>,
+) -> Result<(), Error> {
+    let class_trait = Trait::from_class(class_def);
+
+    global_scope.install_trait(activation, class_trait, global_scope)
+}
+
 /// Add a builtin constant to the global scope.
 fn constant<'gc>(
     mc: MutationContext<'gc, '_>,
@@ -103,6 +115,14 @@ fn constant<'gc>(
 ///
 /// This function returns both the global scope object, as well as all builtin
 /// prototypes that other parts of the VM will need to use.
+///
+/// Due to a limitation of our type system and our garbage collector, the
+/// player needs a valid `Avm2` but cannot provide us an `UpdateContext` yet.
+/// As a result, global scope initialization is split into an "oldstyle phase"
+/// and a "player-globals phase". This is the former phase, where we initialize
+/// as much as we can without an `UpdateContext`. Note that not all
+/// `SystemPrototypes` will be necessarily valid at this point in time, and
+/// using them right away will result in objects of the wrong type.
 pub fn construct_global_scope<'gc>(
     mc: MutationContext<'gc, '_>,
 ) -> (Object<'gc>, SystemPrototypes<'gc>) {
@@ -121,7 +141,7 @@ pub fn construct_global_scope<'gc>(
 
     object::fill_proto(mc, object_proto, fn_proto);
 
-    class(
+    oldstyle_class(
         mc,
         gs,
         "",
@@ -130,7 +150,7 @@ pub fn construct_global_scope<'gc>(
         object_proto,
         fn_proto,
     );
-    class(
+    oldstyle_class(
         mc,
         gs,
         "",
@@ -139,7 +159,7 @@ pub fn construct_global_scope<'gc>(
         fn_proto,
         fn_proto,
     );
-    class(
+    oldstyle_class(
         mc,
         gs,
         "",
@@ -148,7 +168,7 @@ pub fn construct_global_scope<'gc>(
         class_proto,
         fn_proto,
     );
-    class(
+    oldstyle_class(
         mc,
         gs,
         "",
@@ -157,7 +177,7 @@ pub fn construct_global_scope<'gc>(
         string_proto,
         fn_proto,
     );
-    class(
+    oldstyle_class(
         mc,
         gs,
         "",
@@ -166,7 +186,7 @@ pub fn construct_global_scope<'gc>(
         boolean_proto,
         fn_proto,
     );
-    class(
+    oldstyle_class(
         mc,
         gs,
         "",
@@ -175,9 +195,9 @@ pub fn construct_global_scope<'gc>(
         number_proto,
         fn_proto,
     );
-    class(mc, gs, "", "int", int::constructor, int_proto, fn_proto);
-    class(mc, gs, "", "uint", uint::constructor, uint_proto, fn_proto);
-    class(
+    oldstyle_class(mc, gs, "", "int", int::constructor, int_proto, fn_proto);
+    oldstyle_class(mc, gs, "", "uint", uint::constructor, uint_proto, fn_proto);
+    oldstyle_class(
         mc,
         gs,
         "",
@@ -192,77 +212,6 @@ pub fn construct_global_scope<'gc>(
     constant(mc, gs, "", "NaN", NAN.into());
     constant(mc, gs, "", "Infinity", f64::INFINITY.into());
 
-    // package `flash.events`
-    let eventdispatcher_proto =
-        flash::events::eventdispatcher::create_proto(mc, object_proto, fn_proto);
-
-    class(
-        mc,
-        gs,
-        "flash.events",
-        "EventDispatcher",
-        flash::events::eventdispatcher::constructor,
-        eventdispatcher_proto,
-        fn_proto,
-    );
-
-    // package `flash.display`
-    let displayobject_proto =
-        flash::display::displayobject::create_proto(mc, eventdispatcher_proto, fn_proto);
-    let interactiveobject_proto =
-        flash::display::interactiveobject::create_proto(mc, displayobject_proto, fn_proto);
-    let displayobjectcontainer_proto =
-        flash::display::displayobjectcontainer::create_proto(mc, interactiveobject_proto, fn_proto);
-    let sprite_proto =
-        flash::display::sprite::create_proto(mc, displayobjectcontainer_proto, fn_proto);
-    let movieclip_proto = flash::display::movieclip::create_proto(mc, sprite_proto, fn_proto);
-
-    class(
-        mc,
-        gs,
-        "flash.display",
-        "DisplayObject",
-        flash::display::displayobject::constructor,
-        displayobject_proto,
-        fn_proto,
-    );
-    class(
-        mc,
-        gs,
-        "flash.display",
-        "InteractiveObject",
-        flash::display::interactiveobject::constructor,
-        interactiveobject_proto,
-        fn_proto,
-    );
-    class(
-        mc,
-        gs,
-        "flash.display",
-        "DisplayObjectContainer",
-        flash::display::displayobjectcontainer::constructor,
-        sprite_proto,
-        fn_proto,
-    );
-    class(
-        mc,
-        gs,
-        "flash.display",
-        "Sprite",
-        flash::display::sprite::constructor,
-        sprite_proto,
-        fn_proto,
-    );
-    class(
-        mc,
-        gs,
-        "flash.display",
-        "MovieClip",
-        flash::display::movieclip::constructor,
-        movieclip_proto,
-        fn_proto,
-    );
-
     let system_prototypes = SystemPrototypes {
         object: object_proto,
         function: fn_proto,
@@ -276,4 +225,50 @@ pub fn construct_global_scope<'gc>(
     };
 
     (gs, system_prototypes)
+}
+
+/// Initialize all remaining builtin classes.
+///
+/// Due to a limitation of our type system and our garbage collector, the
+/// player needs a valid `Avm2` but cannot provide us an `UpdateContext` yet.
+/// As a result, global scope initialization is split into an "oldstyle phase"
+/// and a "player-globals phase". This is the latter phase.
+pub fn load_player_globals<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Result<(), Error> {
+    let gs = activation.avm2().globals();
+
+    // package `flash.events`
+    class(
+        activation,
+        gs,
+        flash::events::eventdispatcher::create_class(activation.context.gc_context),
+    )?;
+
+    // package `flash.display`
+    class(
+        activation,
+        gs,
+        flash::display::displayobject::create_class(activation.context.gc_context),
+    )?;
+    class(
+        activation,
+        gs,
+        flash::display::interactiveobject::create_class(activation.context.gc_context),
+    )?;
+    class(
+        activation,
+        gs,
+        flash::display::displayobjectcontainer::create_class(activation.context.gc_context),
+    )?;
+    class(
+        activation,
+        gs,
+        flash::display::sprite::create_class(activation.context.gc_context),
+    )?;
+    class(
+        activation,
+        gs,
+        flash::display::movieclip::create_class(activation.context.gc_context),
+    )?;
+
+    Ok(())
 }

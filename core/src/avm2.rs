@@ -77,6 +77,11 @@ impl<'gc> Avm2<'gc> {
         }
     }
 
+    pub fn load_player_globals(context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let mut activation = Activation::from_nothing(context.reborrow());
+        globals::load_player_globals(&mut activation)
+    }
+
     /// Return the current set of system prototypes.
     pub fn prototypes(&self) -> &SystemPrototypes<'gc> {
         &self.system_prototypes

@@ -345,6 +345,10 @@ impl Player {
                 AvmString::new(activation.context.gc_context, version_string).into(),
                 EnumSet::empty(),
             );
+
+            drop(activation);
+
+            Avm2::load_player_globals(context).unwrap();
         });
 
         self.build_matrices();
