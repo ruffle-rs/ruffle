@@ -357,3 +357,12 @@ impl<'gc> Multiname<'gc> {
         self.name
     }
 }
+
+impl<'gc> From<QName<'gc>> for Multiname<'gc> {
+    fn from(q: QName<'gc>) -> Self {
+        Self {
+            ns: vec![q.ns],
+            name: Some(q.name),
+        }
+    }
+}
