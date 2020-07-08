@@ -1,0 +1,27 @@
+// setInterval(tick, 200): 1
+// setInterval(tick, 150, 'A' 'test'): 2
+// setTimeout(tick, 200): 3
+// setInterval(tick, valueOfObject, 'B'): 4
+// setTimeout(tick, 200, 'C'): 5
+// setTimeout(tick, 200, 'D'): 6
+// setTimeout(tick, null): 7
+// setInterval(obj, 'tick', 300): 8
+// setInterval(obj, 'tickFAKE', 350): 9
+// setTimeout(obj, name, 200): 10
+// setInterval(obj, null, 2000): 11
+// setInterval(tick, undefined): undefined
+// setInterval(undefined, 10): undefined
+// setInterval(): undefined
+// setInterval('', 100): undefined
+// setInterval(obj, 'tick', undefined): undefined
+// setTimeout: 13
+TICK
+TICK: C test
+TICK: D test
+TICK: A test
+TICK
+OBJECT TICK: G (method)
+TICK: B
+OBJECT TICK: E (method)
+TICK: A test
+// END: Clearing intervals
