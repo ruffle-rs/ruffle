@@ -917,6 +917,7 @@ mod tests {
                 shared_objects: &mut HashMap::new(),
                 unbound_text_fields: &mut Vec::new(),
                 timers: &mut Timers::new(),
+                needs_render: &mut false,
             };
 
             root.post_instantiation(&mut avm, &mut context, root, None, false);

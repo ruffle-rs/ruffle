@@ -46,6 +46,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// variables.
     pub player_version: u8,
 
+    /// Requests a that the player re-renders after this execution (e.g. due to `updateAfterEvent`).
+    pub needs_render: &'a mut bool,
+
     /// The root SWF file.
     pub swf: &'a Arc<SwfMovie>,
 

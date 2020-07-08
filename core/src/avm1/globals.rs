@@ -206,6 +206,17 @@ pub fn clear_interval<'a, 'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn update_after_event<'a, 'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    context: &mut UpdateContext<'a, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    *context.needs_render = true;
+
+    Ok(Value::Undefined)
+}
+
 /// This structure represents all system builtins that are used regardless of
 /// whatever the hell happens to `_global`. These are, of course,
 /// user-modifiable.
@@ -552,6 +563,13 @@ pub fn create_globals<'gc>(
     globals.force_set_function(
         "setTimeout",
         set_timeout,
+        gc_context,
+        EnumSet::empty(),
+        Some(function_proto),
+    );
+    globals.force_set_function(
+        "updateAfterEvent",
+        update_after_event,
         gc_context,
         EnumSet::empty(),
         Some(function_proto),
