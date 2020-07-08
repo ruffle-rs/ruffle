@@ -3,7 +3,7 @@ use crate::avm1;
 
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::listeners::SystemListener;
-use crate::avm1::{Object, Value};
+use crate::avm1::{Object, Timers, Value};
 use crate::backend::input::InputBackend;
 use crate::backend::storage::StorageBackend;
 use crate::backend::{audio::AudioBackend, navigator::NavigatorBackend, render::RenderBackend};
@@ -17,8 +17,7 @@ use crate::transform::TransformStack;
 use core::fmt;
 use gc_arena::{Collect, MutationContext};
 use rand::rngs::SmallRng;
-use std::collections::VecDeque;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::sync::{Arc, Mutex, Weak};
 
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
@@ -35,10 +34,6 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The mutation context to allocate and mutate `GcCell` types.
     pub gc_context: MutationContext<'gc, 'gc_context>,
-
-    /// The time elapsed since this SWF started executing.
-    /// Used by AVM1 `GetTime` action and `getTimer` function.
-    pub global_time: u64,
 
     /// The library containing character definitions for this SWF.
     /// Used to instantiate a `DisplayObject` of a given ID.
@@ -114,6 +109,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// Text fields with unbound variable bindings.
     pub unbound_text_fields: &'a mut Vec<EditText<'gc>>,
+
+    /// Timed callbacks created with `setInterval`/`setTimeout`.
+    pub timers: &'a mut Timers<'gc>,
 }
 
 /// A queued ActionScript call.

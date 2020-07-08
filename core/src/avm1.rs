@@ -31,6 +31,7 @@ pub mod shared_object;
 mod sound_object;
 mod stage_object;
 mod super_object;
+mod timer;
 mod value;
 mod value_object;
 pub mod xml_attributes_object;
@@ -50,6 +51,7 @@ pub use script_object::ScriptObject;
 use smallvec::alloc::borrow::Cow;
 pub use sound_object::SoundObject;
 pub use stage_object::StageObject;
+pub use timer::Timers;
 pub use value::Value;
 
 macro_rules! avm_debug {
