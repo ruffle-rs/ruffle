@@ -139,7 +139,10 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     ) -> Result<Self, Error> {
         let method = script.read().init().into_bytecode()?;
         let scope = Some(Scope::push_scope(None, global, context.gc_context));
-        let num_locals = method.body().num_locals;
+        let body: Result<_, Error> = method
+            .body()
+            .ok_or_else(|| "Cannot execute non-native method (for script) without body".into());
+        let num_locals = body?.num_locals;
         let local_registers =
             GcCell::allocate(context.gc_context, RegisterSet::new(num_locals + 1));
 
@@ -171,8 +174,11 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         this: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         base_proto: Option<Object<'gc>>,
-    ) -> Self {
-        let num_locals = method.body().num_locals;
+    ) -> Result<Self, Error> {
+        let body: Result<_, Error> = method
+            .body()
+            .ok_or_else(|| "Cannot execute non-native method without body".into());
+        let num_locals = body?.num_locals;
         let num_declared_arguments = method.method().params.len() as u32;
         let local_registers = GcCell::allocate(
             context.gc_context,
@@ -191,7 +197,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             }
         }
 
-        Self {
+        Ok(Self {
             avm2,
             this,
             arguments: None,
@@ -201,7 +207,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             local_scope: ScriptObject::bare_object(context.gc_context),
             scope,
             base_proto,
-        }
+        })
     }
 
     /// Execute a script initializer.
@@ -380,7 +386,10 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        let mut read = Reader::new(Cursor::new(method.body().code.as_ref()));
+        let body: Result<_, Error> = method
+            .body()
+            .ok_or_else(|| "Cannot execute non-native method without body".into());
+        let mut read = Reader::new(Cursor::new(body?.code.as_ref()));
 
         loop {
             let result = self.do_next_opcode(method, context, &mut read);

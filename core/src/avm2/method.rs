@@ -50,7 +50,7 @@ pub struct BytecodeMethod<'gc> {
     pub abc_method: u32,
 
     /// The ABC method body this function uses.
-    pub abc_method_body: u32,
+    pub abc_method_body: Option<u32>,
 }
 
 impl<'gc> BytecodeMethod<'gc> {
@@ -74,14 +74,22 @@ impl<'gc> BytecodeMethod<'gc> {
                             txunit,
                             abc: CollectWrapper(txunit.abc()),
                             abc_method: abc_method.0,
-                            abc_method_body: index as u32,
+                            abc_method_body: Some(index as u32),
                         },
                     ));
                 }
             }
         }
 
-        None
+        Some(Gc::allocate(
+            mc,
+            Self {
+                txunit,
+                abc: CollectWrapper(txunit.abc()),
+                abc_method: abc_method.0,
+                abc_method_body: None,
+            },
+        ))
     }
 
     /// Get the underlying ABC file.
@@ -101,13 +109,14 @@ impl<'gc> BytecodeMethod<'gc> {
     }
 
     /// Get a reference to the ABC method body entry this refers to.
-    pub fn body(&self) -> &AbcMethodBody {
-        &self
-            .abc
-            .0
-            .method_bodies
-            .get(self.abc_method_body as usize)
-            .unwrap()
+    ///
+    /// Some methods do not have bodies; this returns `None` in that case.
+    pub fn body(&self) -> Option<&AbcMethodBody> {
+        if let Some(abc_method_body) = self.abc_method_body {
+            self.abc.0.method_bodies.get(abc_method_body as usize)
+        } else {
+            None
+        }
     }
 }
 

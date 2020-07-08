@@ -427,7 +427,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         avm_debug!(
             "Installing trait {:?} of kind {:?}",
             trait_name,
-            trait_entry.kind
+            trait_entry.kind()
         );
 
         match trait_entry.kind() {

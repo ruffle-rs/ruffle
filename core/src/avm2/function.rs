@@ -107,7 +107,7 @@ impl<'gc> Executable<'gc> {
                     reciever,
                     arguments,
                     base_proto,
-                );
+                )?;
 
                 activation.run_actions(bm.method, context)
             }
