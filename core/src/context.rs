@@ -5,6 +5,7 @@ use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::{Avm1, Object, Timers, Value};
 use crate::avm2::Avm2;
 use crate::backend::input::InputBackend;
+use crate::backend::locale::LocaleBackend;
 use crate::backend::storage::StorageBackend;
 use crate::backend::{audio::AudioBackend, navigator::NavigatorBackend, render::RenderBackend};
 use crate::display_object::EditText;
@@ -66,6 +67,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The storage backend, used for storing persistent state
     pub storage: &'a mut dyn StorageBackend,
+
+    /// The locale backend, used for localisation and personalisation
+    pub locale: &'a mut dyn LocaleBackend,
 
     /// The RNG, used by the AVM `RandomNumber` opcode,  `Math.random(),` and `random()`.
     pub rng: &'a mut SmallRng,
@@ -176,6 +180,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             audio: self.audio,
             navigator: self.navigator,
             renderer: self.renderer,
+            locale: self.locale,
             input: self.input,
             storage: self.storage,
             rng: self.rng,

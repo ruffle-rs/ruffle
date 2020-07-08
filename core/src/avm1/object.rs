@@ -10,6 +10,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::activation::Activation;
 use crate::avm1::object::blur_filter::BlurFilterObject;
 use crate::avm1::object::color_transform_object::ColorTransformObject;
+use crate::avm1::object::date_object::DateObject;
 use crate::avm1::object::transform_object::TransformObject;
 use crate::avm1::object::xml_attributes_object::XMLAttributesObject;
 use crate::avm1::object::xml_idmap_object::XMLIDMapObject;
@@ -27,6 +28,7 @@ use std::fmt::Debug;
 pub mod blur_filter;
 pub mod color_transform_object;
 mod custom_object;
+pub mod date_object;
 pub mod script_object;
 pub mod shared_object;
 pub mod sound_object;
@@ -57,6 +59,7 @@ pub mod xml_object;
         ColorTransformObject(ColorTransformObject<'gc>),
         TransformObject(TransformObject<'gc>),
         BlurFilterObject(BlurFilterObject<'gc>),
+        DateObject(DateObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -415,6 +418,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying `SharedObject`, if it exists
     fn as_shared_object(&self) -> Option<SharedObject<'gc>> {
+        None
+    }
+
+    /// Get the underlying `DateObject`, if it exists
+    fn as_date_object(&self) -> Option<DateObject<'gc>> {
         None
     }
 

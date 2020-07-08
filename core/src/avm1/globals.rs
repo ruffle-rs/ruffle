@@ -19,6 +19,7 @@ mod color;
 mod color_transform;
 pub(crate) mod context_menu;
 pub(crate) mod context_menu_item;
+mod date;
 pub(crate) mod display_object;
 pub(crate) mod error;
 mod function;
@@ -339,6 +340,7 @@ pub struct SystemPrototypes<'gc> {
     pub bitmap_filter_constructor: Object<'gc>,
     pub blur_filter: Object<'gc>,
     pub blur_filter_constructor: Object<'gc>,
+    pub date: Object<'gc>,
 }
 
 /// Initialize default global scope and builtins for an AVM1 instance.
@@ -409,6 +411,7 @@ pub fn create_globals<'gc>(
         Some(function_proto),
         movie_clip_loader_proto,
     );
+    let date_proto: Object<'gc> = date::create_proto(gc_context, object_proto, function_proto);
 
     //TODO: These need to be constructors and should also set `.prototype` on each one
     let object = object::create_object_object(gc_context, object_proto, function_proto);
@@ -488,6 +491,7 @@ pub fn create_globals<'gc>(
     let string = string::create_string_object(gc_context, string_proto, Some(function_proto));
     let number = number::create_number_object(gc_context, number_proto, Some(function_proto));
     let boolean = boolean::create_boolean_object(gc_context, boolean_proto, Some(function_proto));
+    let date = date::create_date_object(gc_context, date_proto, Some(function_proto));
 
     let flash = ScriptObject::object(gc_context, Some(object_proto));
     let geom = ScriptObject::object(gc_context, Some(object_proto));
@@ -589,6 +593,7 @@ pub fn create_globals<'gc>(
     globals.define_value(gc_context, "String", string.into(), DontEnum.into());
     globals.define_value(gc_context, "Number", number.into(), DontEnum.into());
     globals.define_value(gc_context, "Boolean", boolean.into(), DontEnum.into());
+    globals.define_value(gc_context, "Date", date.into(), DontEnum.into());
 
     let shared_object_proto = shared_object::create_proto(gc_context, object_proto, function_proto);
 
@@ -810,6 +815,7 @@ pub fn create_globals<'gc>(
             bitmap_filter_constructor: bitmap_filter,
             blur_filter: blur_filter_proto,
             blur_filter_constructor: blur_filter,
+            date: date_proto,
         },
         globals.into(),
         broadcaster_functions,

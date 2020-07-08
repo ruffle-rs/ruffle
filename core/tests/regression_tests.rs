@@ -4,6 +4,7 @@
 
 use approx::assert_abs_diff_eq;
 use log::{Metadata, Record};
+use ruffle_core::backend::locale::NullLocaleBackend;
 use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
 use ruffle_core::backend::storage::MemoryStorageBackend;
 use ruffle_core::backend::{
@@ -79,6 +80,7 @@ swf_tests! {
     (matrix, "avm1/matrix", 1),
     (point, "avm1/point", 1),
     (rectangle, "avm1/rectangle", 1),
+    (date_is_special, "avm1/date_is_special", 1),
     (goto_advance1, "avm1/goto_advance1", 2),
     (goto_advance2, "avm1/goto_advance2", 2),
     (goto_both_ways1, "avm1/goto_both_ways1", 2),
@@ -243,6 +245,23 @@ swf_tests! {
     (parse_int, "avm1/parse_int", 1),
     (bitmap_filter, "avm1/bitmap_filter", 1),
     (blur_filter, "avm1/blur_filter", 1),
+    (date_constructor, "avm1/date/constructor", 1),
+    (date_set_date, "avm1/date/setDate", 1),
+    (date_set_full_year, "avm1/date/setFullYear", 1),
+    (date_set_hours, "avm1/date/setHours", 1),
+    (date_set_milliseconds, "avm1/date/setMilliseconds", 1),
+    (date_set_minutes, "avm1/date/setMinutes", 1),
+    (date_set_month, "avm1/date/setMonth", 1),
+    (date_set_seconds, "avm1/date/setSeconds", 1),
+    (date_set_time, "avm1/date/setTime", 1),
+    (date_set_utc_date, "avm1/date/setUTCDate", 1),
+    (date_set_utc_full_year, "avm1/date/setUTCFullYear", 1),
+    (date_set_utc_hours, "avm1/date/setUTCHours", 1),
+    (date_set_utc_milliseconds, "avm1/date/setUTCMilliseconds", 1),
+    (date_set_utc_minutes, "avm1/date/setUTCMinutes", 1),
+    (date_set_utc_month, "avm1/date/setUTCMonth", 1),
+    (date_set_utc_seconds, "avm1/date/setUTCSeconds", 1),
+    (date_set_year, "avm1/date/setYear", 1),
     (as3_hello_world, "avm2/hello_world", 1),
     (as3_function_call, "avm2/function_call", 1),
     (as3_function_call_via_call, "avm2/function_call_via_call", 1),
@@ -431,6 +450,7 @@ fn run_swf(swf_path: &str, num_frames: u32) -> Result<String, Error> {
         Box::new(NullNavigatorBackend::with_base_path(base_path, channel)),
         Box::new(NullInputBackend::new()),
         Box::new(MemoryStorageBackend::default()),
+        Box::new(NullLocaleBackend::new()),
     )?;
     player.lock().unwrap().set_root_movie(Arc::new(movie));
 

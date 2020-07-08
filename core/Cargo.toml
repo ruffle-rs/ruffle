@@ -30,6 +30,8 @@ weak-table = "0.3.0"
 percent-encoding = "2.1.0"
 thiserror = "1.0"
 json = "0.12.4"
+chrono = "0.4"
+num-traits = "0.2"
 
 [dependencies.jpeg-decoder]
 version = "0.1.20"
