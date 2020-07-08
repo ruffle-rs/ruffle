@@ -616,6 +616,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// primitive value. Typically, this would be a number of some kind.
     fn value_of(&self) -> Result<Value<'gc>, Error>;
 
+    /// Enumerate all interfaces implemented by this object.
+    fn interfaces(&self) -> Vec<Object<'gc>>;
+
+    /// Set the interface list for this object.
+    fn set_interfaces(&self, context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>);
+
     /// Get a raw pointer value for this object.
     fn as_ptr(&self) -> *const ObjectPtr;
 

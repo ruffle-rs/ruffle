@@ -608,4 +608,12 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     ) {
         self.0.write(mc).base.install_const(name, id, value)
     }
+
+    fn interfaces(&self) -> Vec<Object<'gc>> {
+        self.0.read().base.interfaces()
+    }
+
+    fn set_interfaces(&self, context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
+        self.0.write(context).base.set_interfaces(iface_list)
+    }
 }

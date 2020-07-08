@@ -68,6 +68,9 @@ pub struct ScriptObjectData<'gc> {
 
     /// Enumeratable property names.
     enumerants: Vec<QName>,
+
+    /// Interfaces implemented by this object. (prototypes only)
+    interfaces: Vec<Object<'gc>>,
 }
 
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
@@ -323,6 +326,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     ) {
         self.0.write(mc).install_const(name, id, value)
     }
+
+    fn interfaces(&self) -> Vec<Object<'gc>> {
+        self.0.read().interfaces()
+    }
+
+    fn set_interfaces(&self, context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
+        self.0.write(context).set_interfaces(iface_list)
+    }
 }
 
 impl<'gc> ScriptObject<'gc> {
@@ -391,6 +402,7 @@ impl<'gc> ScriptObjectData<'gc> {
             proto,
             class: trait_source,
             enumerants: Vec::new(),
+            interfaces: Vec::new(),
         }
     }
 
@@ -870,5 +882,15 @@ impl<'gc> ScriptObjectData<'gc> {
                 *slot = Slot::new_const(value);
             }
         }
+    }
+
+    /// Enumerate all interfaces implemented by this object.
+    pub fn interfaces(&self) -> Vec<Object<'gc>> {
+        self.interfaces.clone()
+    }
+
+    /// Set the interface list for this object.
+    pub fn set_interfaces(&mut self, iface_list: Vec<Object<'gc>>) {
+        self.interfaces = iface_list;
     }
 }
