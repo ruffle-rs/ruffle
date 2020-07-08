@@ -853,7 +853,7 @@ mod tests {
     use crate::avm1::activation::ActivationIdentifier;
     use crate::avm1::globals::system::SystemProperties;
     use crate::avm1::property::Attribute::*;
-    use crate::avm1::Avm1;
+    use crate::avm1::{Avm1, Timers};
     use crate::backend::audio::NullAudioBackend;
     use crate::backend::input::NullInputBackend;
     use crate::backend::navigator::NullNavigatorBackend;
@@ -888,7 +888,6 @@ mod tests {
 
             let mut context = UpdateContext {
                 gc_context,
-                global_time: 0,
                 player_version: 32,
                 swf: &swf,
                 levels: &mut levels,
@@ -917,6 +916,7 @@ mod tests {
                 storage: &mut MemoryStorageBackend::default(),
                 shared_objects: &mut HashMap::new(),
                 unbound_text_fields: &mut Vec::new(),
+                timers: &mut Timers::new(),
             };
 
             root.post_instantiation(&mut avm, &mut context, root, None, false);

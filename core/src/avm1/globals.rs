@@ -129,6 +129,83 @@ pub fn get_nan<'gc>(
     }
 }
 
+pub fn set_interval<'a, 'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    context: &mut UpdateContext<'a, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    create_timer(activation, context, this, args, false)
+}
+
+pub fn set_timeout<'a, 'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    context: &mut UpdateContext<'a, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    create_timer(activation, context, this, args, true)
+}
+
+pub fn create_timer<'a, 'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    context: &mut UpdateContext<'a, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+    is_timeout: bool,
+) -> Result<Value<'gc>, Error<'gc>> {
+    // `setInterval` was added in Flash Player 6 but is not version-gated.
+    use crate::avm1::timer::TimerCallback;
+    let (callback, i) = match args.get(0) {
+        Some(Value::Object(o)) if o.as_executable().is_some() => (TimerCallback::Function(*o), 1),
+        Some(Value::Object(o)) => (
+            TimerCallback::Method {
+                this: *o,
+                method_name: args
+                    .get(1)
+                    .unwrap_or(&Value::Undefined)
+                    .coerce_to_string(activation, context)?
+                    .into_owned(),
+            },
+            2,
+        ),
+        _ => return Ok(Value::Undefined),
+    };
+
+    let interval = match args.get(i) {
+        Some(Value::Undefined) | None => return Ok(Value::Undefined),
+        Some(value) => value.coerce_to_i32(activation, context)?,
+    };
+    let params = if let Some(params) = args.get(i + 1..) {
+        params.to_vec()
+    } else {
+        vec![]
+    };
+
+    let id = context
+        .timers
+        .add_timer(callback, interval, params, is_timeout);
+
+    Ok(id.into())
+}
+
+pub fn clear_interval<'a, 'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    context: &mut UpdateContext<'a, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let id = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_i32(activation, context)?;
+    if !context.timers.remove(id) {
+        log::info!("clearInterval: Timer {} does not exist", id);
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// This structure represents all system builtins that are used regardless of
 /// whatever the hell happens to `_global`. These are, of course,
 /// user-modifiable.
@@ -458,6 +535,28 @@ pub fn create_globals<'gc>(
         EnumSet::empty(),
         Some(function_proto),
     );
+    globals.force_set_function(
+        "clearInterval",
+        clear_interval,
+        gc_context,
+        EnumSet::empty(),
+        Some(function_proto),
+    );
+    globals.force_set_function(
+        "setInterval",
+        set_interval,
+        gc_context,
+        EnumSet::empty(),
+        Some(function_proto),
+    );
+    globals.force_set_function(
+        "setTimeout",
+        set_timeout,
+        gc_context,
+        EnumSet::empty(),
+        Some(function_proto),
+    );
+
     globals.add_property(
         gc_context,
         "NaN",

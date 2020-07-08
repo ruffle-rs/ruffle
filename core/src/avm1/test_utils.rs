@@ -1,7 +1,7 @@
 use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::error::Error;
 use crate::avm1::globals::system::SystemProperties;
-use crate::avm1::{Avm1, Object, UpdateContext};
+use crate::avm1::{Avm1, Object, Timers, UpdateContext};
 use crate::backend::audio::NullAudioBackend;
 use crate::backend::input::NullInputBackend;
 use crate::backend::navigator::NullNavigatorBackend;
@@ -44,7 +44,6 @@ where
 
         let mut context = UpdateContext {
             gc_context,
-            global_time: 0,
             player_version: 32,
             swf: &swf,
             levels: &mut levels,
@@ -73,6 +72,7 @@ where
             storage: &mut MemoryStorageBackend::default(),
             shared_objects: &mut HashMap::new(),
             unbound_text_fields: &mut Vec::new(),
+            timers: &mut Timers::new(),
         };
         root.post_instantiation(&mut avm, &mut context, root, None, false);
         root.set_name(context.gc_context, "");

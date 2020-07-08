@@ -3,7 +3,7 @@ use crate::avm1::debug::VariableDumper;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::listeners::SystemListener;
 use crate::avm1::object::Object;
-use crate::avm1::{Avm1, TObject, Value};
+use crate::avm1::{Avm1, TObject, Timers, Value};
 use crate::backend::input::{InputBackend, MouseCursor};
 use crate::backend::storage::StorageBackend;
 use crate::backend::{
@@ -64,6 +64,9 @@ struct GcRootData<'gc> {
 
     /// Text fields with unbound variable bindings.
     unbound_text_fields: Vec<EditText<'gc>>,
+
+    /// Timed callbacks created with `setInterval`/`setTimeout`.
+    timers: Timers<'gc>,
 }
 
 impl<'gc> GcRootData<'gc> {
@@ -81,6 +84,7 @@ impl<'gc> GcRootData<'gc> {
         &mut LoadManager<'gc>,
         &mut HashMap<String, Object<'gc>>,
         &mut Vec<EditText<'gc>>,
+        &mut Timers<'gc>,
     ) {
         (
             &mut self.levels,
@@ -91,6 +95,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.load_manager,
             &mut self.shared_objects,
             &mut self.unbound_text_fields,
+            &mut self.timers,
         )
     }
 }
@@ -139,7 +144,6 @@ pub struct Player {
 
     frame_rate: f64,
     frame_accumulator: f64,
-    global_time: u64,
 
     viewport_width: u32,
     viewport_height: u32,
@@ -157,6 +161,9 @@ pub struct Player {
 
     /// The current instance ID. Used to generate default `instanceN` names.
     instance_counter: i32,
+
+    /// Time remaining until the next timer will fire.
+    time_til_next_timer: Option<f64>,
 
     /// Self-reference to ourselves.
     ///
@@ -236,13 +243,13 @@ impl Player {
                         load_manager: LoadManager::new(),
                         shared_objects: HashMap::new(),
                         unbound_text_fields: Vec::new(),
+                        timers: Timers::new(),
                     },
                 ))
             }),
 
             frame_rate: movie.header().frame_rate.into(),
             frame_accumulator: 0.0,
-            global_time: 0,
 
             movie_width,
             movie_height,
@@ -261,6 +268,7 @@ impl Player {
             self_reference: None,
             system: SystemProperties::default(),
             instance_counter: 0,
+            time_til_next_timer: None,
             storage,
         };
 
@@ -309,7 +317,6 @@ impl Player {
 
         if self.is_playing() {
             self.frame_accumulator += dt;
-            self.global_time += dt as u64;
             let frame_time = 1000.0 / self.frame_rate;
 
             const MAX_FRAMES_PER_TICK: u32 = 5; // Sanity cap on frame tick.
@@ -326,6 +333,7 @@ impl Player {
                 self.frame_accumulator = 0.0;
             }
 
+            self.update_timers(dt);
             self.audio.tick();
         }
     }
@@ -334,13 +342,20 @@ impl Player {
     /// This is only an approximation to be used for sleep durations.
     pub fn time_til_next_frame(&self) -> std::time::Duration {
         let frame_time = 1000.0 / self.frame_rate;
-        let dt = if self.frame_accumulator <= 0.0 {
+        let mut dt = if self.frame_accumulator <= 0.0 {
             frame_time
         } else if self.frame_accumulator >= frame_time {
             0.0
         } else {
             frame_time - self.frame_accumulator
         };
+
+        if let Some(time_til_next_timer) = self.time_til_next_timer {
+            dt = dt.min(time_til_next_timer)
+        }
+
+        dt = dt.max(0.0);
+
         std::time::Duration::from_micros(dt as u64 * 1000)
     }
 
@@ -883,7 +898,6 @@ impl Player {
         // completely borrowing `self`.
         let (
             player_version,
-            global_time,
             swf,
             background_color,
             renderer,
@@ -900,7 +914,6 @@ impl Player {
             storage,
         ) = (
             self.player_version,
-            self.global_time,
             &self.swf,
             &mut self.background_color,
             self.renderer.deref_mut(),
@@ -929,11 +942,11 @@ impl Player {
                 load_manager,
                 shared_objects,
                 unbound_text_fields,
+                timers,
             ) = root_data.update_context_params();
 
             let mut update_context = UpdateContext {
                 player_version,
-                global_time,
                 swf,
                 library,
                 background_color,
@@ -957,6 +970,7 @@ impl Player {
                 storage,
                 shared_objects,
                 unbound_text_fields,
+                timers,
             };
 
             let ret = f(avm, &mut update_context);
@@ -1030,6 +1044,13 @@ impl Player {
                     crate::avm1::globals::shared_object::flush(&mut activation, context, *so, &[]);
             }
         });
+    }
+
+    /// Update all AVM-based timers (such as created via setInterval).
+    /// Returns the approximate amount of time until the next timer tick.
+    pub fn update_timers(&mut self, dt: f64) {
+        self.time_til_next_timer =
+            self.mutate_with_update_context(|avm, context| Timers::update_timers(avm, context, dt));
     }
 }
 
