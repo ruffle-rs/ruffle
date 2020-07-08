@@ -7,7 +7,7 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::r#trait::Trait;
 use crate::avm2::scope::Scope;
-use crate::avm2::script_object::{ScriptObjectClass, ScriptObjectData};
+use crate::avm2::script_object::{ScriptObject, ScriptObjectClass, ScriptObjectData};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::context::UpdateContext;
@@ -154,34 +154,45 @@ impl<'gc> FunctionObject<'gc> {
     /// This function returns both the class itself, and the static class
     /// initializer method that you should call before interacting with the
     /// class. The latter should be called using the former as a reciever.
+    ///
+    /// `base_class` is allowed to be `None`, corresponding to a `null` value
+    /// in the VM. This corresponds to no base class, and in practice appears
+    /// to be limited to interfaces (at least by the AS3 compiler in Animate
+    /// CC 2020.)
     pub fn from_class(
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
-        mut base_class: Object<'gc>,
+        base_class: Option<Object<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<(Object<'gc>, Object<'gc>), Error> {
         let class_read = class.read();
-        let super_proto: Result<Object<'gc>, Error> = base_class
-            .get_property(
-                base_class,
-                &QName::new(Namespace::public_namespace(), "prototype"),
-                activation,
-                context,
-            )?
-            .as_object()
-            .map_err(|_| {
-                format!(
-                    "Could not resolve superclass prototype {:?}",
-                    class_read
-                        .super_class_name()
-                        .as_ref()
-                        .map(|p| p.local_name())
-                        .unwrap_or(Some("Object"))
-                )
-                .into()
-            });
-        let mut class_proto = super_proto?.derive(activation, context, class, scope)?;
+        let mut class_proto = if let Some(mut base_class) = base_class {
+            let super_proto: Result<_, Error> = base_class
+                .get_property(
+                    base_class,
+                    &QName::new(Namespace::public_namespace(), "prototype"),
+                    activation,
+                    context,
+                )?
+                .as_object()
+                .map_err(|_| {
+                    format!(
+                        "Could not resolve superclass prototype {:?}",
+                        class_read
+                            .super_class_name()
+                            .as_ref()
+                            .map(|p| p.local_name())
+                            .unwrap_or(Some("Object"))
+                    )
+                    .into()
+                });
+
+            super_proto?.derive(activation, context, class, scope)?
+        } else {
+            ScriptObject::bare_object(context.gc_context)
+        };
+
         let fn_proto = activation.avm2().prototypes().function;
         let class_constr_proto = activation.avm2().prototypes().class;
 

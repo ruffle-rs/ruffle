@@ -338,6 +338,24 @@ impl<'gc> ScriptObject<'gc> {
         .into()
     }
 
+    /// Construct a bare class prototype with no base class.
+    ///
+    /// This appears to be used specifically for interfaces, which have no base
+    /// class.
+    pub fn bare_prototype(
+        mc: MutationContext<'gc, '_>,
+        class: GcCell<'gc, Class<'gc>>,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
+    ) -> Object<'gc> {
+        let script_class = ScriptObjectClass::InstancePrototype(class, scope);
+
+        ScriptObject(GcCell::allocate(
+            mc,
+            ScriptObjectData::base_new(None, script_class),
+        ))
+        .into()
+    }
+
     /// Construct an object with a prototype.
     pub fn object(mc: MutationContext<'gc, '_>, proto: Object<'gc>) -> Object<'gc> {
         ScriptObject(GcCell::allocate(

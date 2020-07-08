@@ -481,25 +481,26 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             }
             TraitKind::Class { slot_id, class } => {
                 let class_read = class.read();
-                //TODO: what happens if this happens on a class defined as a
-                //class trait, without a superclass? How do we get `Object`
-                //then?
-                let super_name = if let Some(sc_name) = class_read.super_class_name() {
-                    self.resolve_multiname(sc_name)?
-                        .unwrap_or_else(|| QName::dynamic_name("Object"))
+                let super_class = if let Some(sc_name) = class_read.super_class_name() {
+                    let super_name = self
+                        .resolve_multiname(sc_name)?
+                        .unwrap_or_else(|| QName::dynamic_name("Object"));
+
+                    let super_class: Result<Object<'gc>, Error> = self
+                        .get_property(reciever, &super_name, activation, context)?
+                        .as_object()
+                        .map_err(|_e| {
+                            format!("Could not resolve superclass {:?}", super_name.local_name())
+                                .into()
+                        });
+
+                    Some(super_class?)
                 } else {
-                    QName::dynamic_name("Object")
+                    None
                 };
 
-                let super_class: Result<Object<'gc>, Error> = self
-                    .get_property(reciever, &super_name, activation, context)?
-                    .as_object()
-                    .map_err(|_e| {
-                        format!("Could not resolve superclass {:?}", super_name.local_name()).into()
-                    });
-
                 let (class_object, _cinit) =
-                    FunctionObject::from_class(activation, context, *class, super_class?, scope)?;
+                    FunctionObject::from_class(activation, context, *class, super_class, scope)?;
                 self.install_const(
                     context.gc_context,
                     class_read.name().clone(),

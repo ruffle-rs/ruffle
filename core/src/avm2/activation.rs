@@ -1338,7 +1338,13 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcClass>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let base_class = self.avm2.pop().as_object()?;
+        let base_value = self.avm2.pop();
+        let base_class = match base_value {
+            Value::Object(o) => Some(o),
+            Value::Null => None,
+            _ => return Err("Base class for new class is not Object or null.".into()),
+        };
+
         let class_entry = self.table_class(method, index, context)?;
         let scope = self.scope();
 
