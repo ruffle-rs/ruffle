@@ -258,6 +258,7 @@ swf_tests! {
     (as3_if_stricteq, "avm2/if_stricteq", 1),
     (as3_if_strictne, "avm2/if_strictne", 1),
     (as3_strict_equality, "avm2/strict_equality", 1),
+    (as3_es4_interfaces, "avm2/es4_interfaces", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
