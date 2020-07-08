@@ -313,7 +313,9 @@ impl<'gc> Executable<'gc> {
 
                 let mut frame = Activation::from_action(
                     activation.avm,
-                    activation.id.function(name, reason)?,
+                    activation
+                        .id
+                        .function(name, reason, activation.avm.max_recursion_depth())?,
                     effective_ver,
                     child_scope,
                     af.constant_pool,

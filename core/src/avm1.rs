@@ -89,6 +89,10 @@ pub struct Avm1<'gc> {
     /// If a serious error has occured, or a user has requested it, the AVM may be halted.
     /// This will completely prevent any further actions from being executed.
     halted: bool,
+
+    /// The maximum amount of functions that can be called before a `Error::FunctionRecursionLimit`
+    /// is raised. This defaults to 256 but can be changed per movie.
+    max_recursion_depth: u16,
 }
 
 unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
@@ -126,6 +130,7 @@ impl<'gc> Avm1<'gc> {
                 Value::Undefined,
             ],
             halted: false,
+            max_recursion_depth: 255,
         }
     }
 
@@ -376,6 +381,14 @@ impl<'gc> Avm1<'gc> {
     /// Obtain system built-in prototypes for this instance.
     pub fn prototypes(&self) -> &globals::SystemPrototypes<'gc> {
         &self.prototypes
+    }
+
+    pub fn max_recursion_depth(&self) -> u16 {
+        self.max_recursion_depth
+    }
+
+    pub fn set_max_recursion_depth(&mut self, max_recursion_depth: u16) {
+        self.max_recursion_depth = max_recursion_depth
     }
 }
 

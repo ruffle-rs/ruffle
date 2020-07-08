@@ -325,6 +325,9 @@ impl<'gc> MovieClip<'gc> {
                     reader,
                     &mut cur_frame,
                 ),
+                TagCode::ScriptLimits => {
+                    self.0.write(context.gc_context).script_limits(reader, avm)
+                }
                 TagCode::SoundStreamHead => self
                     .0
                     .write(context.gc_context)
@@ -2062,6 +2065,20 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .library
             .library_for_movie_mut(self.movie())
             .register_character(text.id, Character::Text(text_object));
+        Ok(())
+    }
+
+    #[inline]
+    fn script_limits(
+        &mut self,
+        reader: &mut SwfStream<&'a [u8]>,
+        avm: &mut Avm1<'gc>,
+    ) -> DecodeResult {
+        let max_recursion_depth = reader.read_u16()?;
+        let _timeout_in_seconds = reader.read_u16()?;
+
+        avm.set_max_recursion_depth(max_recursion_depth);
+
         Ok(())
     }
 

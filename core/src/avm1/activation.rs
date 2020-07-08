@@ -94,7 +94,7 @@ pub struct ActivationIdentifier<'a> {
     parent: Option<&'a ActivationIdentifier<'a>>,
     name: Cow<'static, str>,
     depth: u16,
-    function_count: u8,
+    function_count: u16,
     special_count: u8,
 }
 
@@ -127,7 +127,7 @@ impl<'a> ActivationIdentifier<'a> {
             name: name.into(),
             depth: self.depth + 1,
             function_count: self.function_count,
-            special_count: self.function_count,
+            special_count: self.special_count,
         }
     }
 
@@ -135,11 +135,12 @@ impl<'a> ActivationIdentifier<'a> {
         &'a self,
         name: S,
         reason: ExecutionReason,
+        max_recursion_depth: u16,
     ) -> Result<Self, Error<'gc>> {
         let (function_count, special_count) = match reason {
             ExecutionReason::FunctionCall => {
-                if self.function_count == 255 {
-                    return Err(Error::FunctionRecursionLimit);
+                if self.function_count >= max_recursion_depth - 1 {
+                    return Err(Error::FunctionRecursionLimit(max_recursion_depth));
                 }
                 (self.function_count + 1, self.special_count)
             }

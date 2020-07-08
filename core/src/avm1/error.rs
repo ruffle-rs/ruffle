@@ -6,8 +6,8 @@ pub enum Error<'gc> {
     #[error("Prototype recursion limit has been exceeded")]
     PrototypeRecursionLimit,
 
-    #[error("256 levels of function recursion were exceeded in one action list. This is probably an infinite loop.")]
-    FunctionRecursionLimit,
+    #[error("{0} levels of function recursion were exceeded in one action list. This is probably an infinite loop.")]
+    FunctionRecursionLimit(u16),
 
     #[error("66 levels of special recursion were exceeded in one action list. This is probably an infinite loop.")]
     SpecialRecursionLimit,
@@ -23,7 +23,7 @@ impl Error<'_> {
     pub fn is_halting(&self) -> bool {
         match self {
             Error::PrototypeRecursionLimit => true,
-            Error::FunctionRecursionLimit => true,
+            Error::FunctionRecursionLimit(_) => true,
             Error::SpecialRecursionLimit => true,
             Error::InvalidSwf(_) => true,
             Error::ThrownValue(_) => false,
