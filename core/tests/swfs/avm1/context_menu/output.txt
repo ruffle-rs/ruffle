@@ -1,0 +1,39 @@
+ContextMenu proto
+CM obj
+customItems
+builtInItems
+onSelect
+Builtin
+save = true
+zoom = true
+quality = true
+play = true
+loop = true
+rewind = true
+forward_back = true
+print = true
+customItems
+copy builtin
+save = true
+zoom = true
+quality = true
+play = false
+loop = true
+rewind = true
+forward_back = true
+print = true
+   ->
+save = true
+zoom = true
+quality = true
+play = false
+loop = true
+rewind = true
+forward_back = true
+print = true
+copy custom
+0 = [object Object]
+   ->
+Shared vars
+true
+true

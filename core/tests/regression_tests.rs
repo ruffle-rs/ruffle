@@ -225,6 +225,8 @@ swf_tests! {
     (prototype_properties, "avm1/prototype_properties", 1),
     (stage_object_properties_get_var, "avm1/stage_object_properties_get_var", 1),
     (set_interval, "avm1/set_interval", 20),
+    (context_menu, "avm1/context_menu", 1),
+    (context_menu_item, "avm1/context_menu_item", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
