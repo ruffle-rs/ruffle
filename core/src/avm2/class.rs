@@ -314,4 +314,8 @@ impl<'gc> Class<'gc> {
     pub fn class_init(&self) -> Method<'gc> {
         self.class_init.clone()
     }
+
+    pub fn interfaces(&self) -> &[Multiname] {
+        &self.interfaces
+    }
 }

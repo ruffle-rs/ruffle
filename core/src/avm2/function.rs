@@ -193,6 +193,28 @@ impl<'gc> FunctionObject<'gc> {
             ScriptObject::bare_object(context.gc_context)
         };
 
+        let mut interfaces = Vec::new();
+        let interface_names = class.read().interfaces().to_vec();
+        for interface_name in interface_names {
+            let interface = if let Some(scope) = scope {
+                scope
+                    .write(context.gc_context)
+                    .resolve(&interface_name, activation, context)?
+            } else {
+                None
+            };
+
+            if interface.is_none() {
+                return Err(format!("Could not resolve interface {:?}", interface_name).into());
+            }
+
+            interfaces.push(interface.unwrap().as_object()?);
+        }
+
+        if !interfaces.is_empty() {
+            class_proto.set_interfaces(context.gc_context, interfaces);
+        }
+
         let fn_proto = activation.avm2().prototypes().function;
         let class_constr_proto = activation.avm2().prototypes().class;
 
