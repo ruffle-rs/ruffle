@@ -224,6 +224,7 @@ swf_tests! {
     (with, "avm1/with", 1),
     (prototype_properties, "avm1/prototype_properties", 1),
     (stage_object_properties_get_var, "avm1/stage_object_properties_get_var", 1),
+    (set_interval, "avm1/set_interval", 20),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
@@ -321,6 +322,7 @@ fn run_swf(swf_path: &str, num_frames: u32) -> Result<String, Error> {
     let base_path = Path::new(swf_path).parent().unwrap();
     let (mut executor, channel) = NullExecutor::new();
     let movie = SwfMovie::from_path(swf_path)?;
+    let frame_time = 1000.0 / movie.header().frame_rate as f64;
     let player = Player::new(
         Box::new(NullRenderer),
         Box::new(NullAudioBackend::new()),
@@ -332,6 +334,7 @@ fn run_swf(swf_path: &str, num_frames: u32) -> Result<String, Error> {
 
     for _ in 0..num_frames {
         player.lock().unwrap().run_frame();
+        player.lock().unwrap().update_timers(frame_time);
         executor.poll_all().unwrap();
     }
 
