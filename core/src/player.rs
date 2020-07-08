@@ -551,7 +551,9 @@ impl Player {
             Self::run_actions(avm, context);
         });
         self.is_mouse_down = is_mouse_down;
-        self.needs_render = needs_render;
+        if needs_render {
+            self.needs_render = true;
+        }
     }
 
     /// Update dragged object, if any.
@@ -912,6 +914,7 @@ impl Player {
             system_properties,
             instance_counter,
             storage,
+            needs_render,
         ) = (
             self.player_version,
             &self.swf,
@@ -928,6 +931,7 @@ impl Player {
             &mut self.system,
             &mut self.instance_counter,
             self.storage.deref_mut(),
+            &mut self.needs_render,
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -971,6 +975,7 @@ impl Player {
                 shared_objects,
                 unbound_text_fields,
                 timers,
+                needs_render,
             };
 
             let ret = f(avm, &mut update_context);
