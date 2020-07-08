@@ -10,6 +10,7 @@ use crate::storage::LocalStorageBackend;
 use crate::{audio::WebAudioBackend, input::WebInputBackend, navigator::WebNavigatorBackend};
 use generational_arena::{Arena, Index};
 use js_sys::Uint8Array;
+use ruffle_core::backend::locale::NullLocaleBackend;
 use ruffle_core::backend::render::RenderBackend;
 use ruffle_core::backend::storage::MemoryStorageBackend;
 use ruffle_core::backend::storage::StorageBackend;
@@ -157,6 +158,7 @@ impl Ruffle {
         let audio = Box::new(WebAudioBackend::new()?);
         let navigator = Box::new(WebNavigatorBackend::new());
         let input = Box::new(WebInputBackend::new(&canvas));
+        let locale = Box::new(NullLocaleBackend::new());
 
         let current_domain = window.location().href().unwrap();
 
@@ -168,7 +170,8 @@ impl Ruffle {
             })
             .unwrap_or_else(|| Box::new(MemoryStorageBackend::default()));
 
-        let core = ruffle_core::Player::new(renderer, audio, navigator, input, local_storage)?;
+        let core =
+            ruffle_core::Player::new(renderer, audio, navigator, input, local_storage, locale)?;
 
         // Create instance.
         let instance = RuffleInstance {

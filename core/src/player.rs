@@ -5,6 +5,7 @@ use crate::avm1::object::Object;
 use crate::avm1::{Avm1, AvmString, TObject, Timers, Value};
 use crate::avm2::Avm2;
 use crate::backend::input::{InputBackend, MouseCursor};
+use crate::backend::locale::LocaleBackend;
 use crate::backend::navigator::{NavigatorBackend, RequestOptions};
 use crate::backend::storage::StorageBackend;
 use crate::backend::{audio::AudioBackend, render::Letterbox, render::RenderBackend};
@@ -114,6 +115,7 @@ type Navigator = Box<dyn NavigatorBackend>;
 type Renderer = Box<dyn RenderBackend>;
 type Input = Box<dyn InputBackend>;
 type Storage = Box<dyn StorageBackend>;
+type Locale = Box<dyn LocaleBackend>;
 
 pub struct Player {
     /// The version of the player we're emulating.
@@ -137,6 +139,7 @@ pub struct Player {
     renderer: Renderer,
     pub navigator: Navigator,
     input: Input,
+    locale: Locale,
     transform_stack: TransformStack,
     view_matrix: Matrix,
     inverse_view_matrix: Matrix,
@@ -186,6 +189,7 @@ impl Player {
         navigator: Navigator,
         input: Input,
         storage: Storage,
+        locale: Locale,
     ) -> Result<Arc<Mutex<Self>>, Error> {
         let fake_movie = Arc::new(SwfMovie::empty(NEWEST_PLAYER_VERSION));
         let movie_width = 550;
@@ -252,6 +256,7 @@ impl Player {
             audio,
             navigator,
             input,
+            locale,
             self_reference: None,
             system: SystemProperties::default(),
             instance_counter: 0,
@@ -826,6 +831,10 @@ impl Player {
         self.input.deref_mut()
     }
 
+    pub fn locale(&self) -> &Locale {
+        &self.locale
+    }
+
     fn run_actions<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
         // Note that actions can queue further actions, so a while loop is necessary here.
         while let Some(actions) = context.action_queue.pop_action() {
@@ -999,6 +1008,7 @@ impl Player {
             system_properties,
             instance_counter,
             storage,
+            locale,
             needs_render,
         ) = (
             self.player_version,
@@ -1016,6 +1026,7 @@ impl Player {
             &mut self.system,
             &mut self.instance_counter,
             self.storage.deref_mut(),
+            self.locale.deref_mut(),
             &mut self.needs_render,
         );
 
@@ -1058,6 +1069,7 @@ impl Player {
                 system: system_properties,
                 instance_counter,
                 storage,
+                locale,
                 shared_objects,
                 unbound_text_fields,
                 timers,
