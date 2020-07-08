@@ -4,16 +4,8 @@ use crate::avm1::object::TObject;
 use crate::avm1::Object;
 use crate::avm1::{ScriptObject, Value};
 use crate::context::UpdateContext;
-use enumset::EnumSet;
 use gc_arena::MutationContext;
-
-// TODO: should appear at the top of the context menu with a seperator between it and built ins
-//TODO: items must have a visible name (at leat one char, not punc,whitespace/newline/control)
-
-//TODO: can't be the same as an existing item (custom or otherwise) (filtered out) (TODO: does this consider punc,etc)
-//TODO: two items are the same if they have the same caption[..100], ignoing case, punctuation and whitespace
-
-//TODO: filter out any bad/duplicates then take first 15
+use crate::avm1::property::Attribute;
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -29,9 +21,7 @@ pub fn constructor<'gc>(
         .to_string();
     let callback = args
         .get(1)
-        .unwrap_or(&Value::Undefined)
-        .to_owned()
-        .coerce_to_object(activation, context);
+        .map(|v| v.to_owned().coerce_to_object(activation, context));
     let separator_before = args
         .get(2)
         .unwrap_or(&Value::Bool(false))
@@ -49,13 +39,18 @@ pub fn constructor<'gc>(
         .as_bool(activation.swf_version());
 
     this.set("caption", caption.into(), activation, context)?;
-    this.set("enabled", enabled.into(), activation, context)?;
+
+    if let Some(callback) = callback {
+        this.set("onSelect", callback.into(), activation, context)?;
+    }
+
     this.set(
         "separatorBefore",
         separator_before.into(),
         activation,
         context,
     )?;
+    this.set("enabled", enabled.into(), activation, context)?;
     this.set("visible", visible.into(), activation, context)?;
 
     let mut so = this.as_script_object().unwrap();
@@ -64,11 +59,9 @@ pub fn constructor<'gc>(
         "copy",
         copy,
         context.gc_context,
-        EnumSet::empty(),
+        Attribute::DontEnum,
         Some(context.system_prototypes.function),
     );
-
-    this.set("onSelect", callback.into(), activation, context)?;
 
     Ok(Value::Undefined.into())
 }
