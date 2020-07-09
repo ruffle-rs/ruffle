@@ -208,7 +208,17 @@ impl<'gc> FunctionObject<'gc> {
                 return Err(format!("Could not resolve interface {:?}", interface_name).into());
             }
 
-            interfaces.push(interface.unwrap().as_object()?);
+            let mut interface = interface.unwrap().as_object()?;
+            let iface_proto = interface
+                .get_property(
+                    interface,
+                    &QName::new(Namespace::public_namespace(), "prototype"),
+                    activation,
+                    context,
+                )?
+                .as_object()?;
+
+            interfaces.push(iface_proto);
         }
 
         if !interfaces.is_empty() {
