@@ -1,11 +1,11 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::TObject;
+use crate::avm1::property::Attribute;
 use crate::avm1::Object;
 use crate::avm1::{ScriptObject, Value};
 use crate::context::UpdateContext;
 use gc_arena::MutationContext;
-use crate::avm1::property::Attribute;
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -63,7 +63,7 @@ pub fn constructor<'gc>(
         Some(context.system_prototypes.function),
     );
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn copy<'gc>(
@@ -90,7 +90,7 @@ pub fn copy<'gc>(
         .get("visible", activation, context)?
         .as_bool(activation.swf_version());
 
-    let context_menu_item_proto = activation.avm().prototypes.context_menu_item;
+    let context_menu_item_proto = activation.avm.prototypes.context_menu_item;
     let copy = context_menu_item_proto.new(activation, context, context_menu_item_proto, &[])?;
     let _ = constructor(
         activation,
