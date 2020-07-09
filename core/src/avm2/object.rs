@@ -622,6 +622,50 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Set the interface list for this object.
     fn set_interfaces(&self, context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>);
 
+    /// Determine if this object is an instance of a given type.
+    ///
+    /// The given object should be the constructor for the given type we are
+    /// checking against this object. It's prototype will be searched in the
+    /// prototype chain of this object. If `check_interfaces` is enabled, then
+    /// the interfaces listed on each prototype will also be checked.
+    #[allow(unused_mut)] //it's not unused
+    fn is_instance_of(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        mut constructor: Object<'gc>,
+        check_interfaces: bool,
+    ) -> Result<bool, Error> {
+        let type_proto = constructor
+            .get_property(
+                constructor,
+                &QName::dynamic_name("prototype"),
+                activation,
+                context,
+            )?
+            .as_object()?;
+        let mut my_proto = self.proto();
+
+        //TODO: Is it a verification error to do `obj instanceof bare_object`?
+        while let Some(proto) = my_proto {
+            if Object::ptr_eq(proto, type_proto) {
+                return Ok(true);
+            }
+
+            if check_interfaces {
+                for interface in proto.interfaces() {
+                    if Object::ptr_eq(interface, type_proto) {
+                        return Ok(true);
+                    }
+                }
+            }
+
+            my_proto = proto.proto()
+        }
+
+        Ok(false)
+    }
+
     /// Get a raw pointer value for this object.
     fn as_ptr(&self) -> *const ObjectPtr;
 
