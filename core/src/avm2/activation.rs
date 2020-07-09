@@ -493,6 +493,9 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                 } => self.op_has_next_2(context, object_register, index_register),
                 Op::NextName => self.op_next_name(),
                 Op::NextValue => self.op_next_value(context),
+                Op::IsType { index } => self.op_is_type(method, context, index),
+                Op::IsTypeLate => self.op_is_type_late(context),
+                Op::InstanceOf => self.op_instance_of(context),
                 Op::Label => Ok(FrameControl::Continue),
                 Op::Debug {
                     is_local_register,
@@ -1521,6 +1524,63 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         };
 
         self.avm2.push(value);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_is_type(
+        &mut self,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        type_name_index: Index<AbcMultiname>,
+    ) -> Result<FrameControl<'gc>, Error> {
+        let value = self.avm2.pop().as_object()?;
+
+        let type_name = self.pool_multiname_static(method, type_name_index)?;
+        let type_object = if let Some(scope) = self.scope() {
+            scope.read().find(&type_name, self, context)?
+        } else {
+            None
+        };
+
+        if let Some(type_object) = type_object {
+            let is_instance_of = value.is_instance_of(self, context, type_object, true)?;
+            self.avm2.push(is_instance_of);
+        } else {
+            return Err(format!(
+                "Attempted to check against nonexistent type {:?}",
+                type_name
+            )
+            .into());
+        }
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_is_type_late(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<FrameControl<'gc>, Error> {
+        let type_object = self.avm2.pop().as_object()?;
+        let value = self.avm2.pop().as_object()?;
+
+        let is_instance_of = value.is_instance_of(self, context, type_object, true)?;
+
+        self.avm2.push(is_instance_of);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_instance_of(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<FrameControl<'gc>, Error> {
+        let type_object = self.avm2.pop().as_object()?;
+        let value = self.avm2.pop().as_object()?;
+
+        let is_instance_of = value.is_instance_of(self, context, type_object, false)?;
+
+        self.avm2.push(is_instance_of);
 
         Ok(FrameControl::Continue)
     }
