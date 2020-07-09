@@ -1,0 +1,24 @@
+//x instanceof Object
+true
+//x instanceof Test2
+true
+//x instanceof ITest2
+false
+//x instanceof Test3
+true
+//x instanceof ITest3
+false
+//x instanceof Test4
+false
+//y instanceof Object
+true
+//y instanceof Test2
+true
+//y instanceof ITest2
+false
+//y instanceof Test3
+true
+//y instanceof ITest3
+false
+//y instanceof Test4
+true
