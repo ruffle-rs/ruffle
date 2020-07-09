@@ -1,11 +1,11 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::TObject;
+use crate::avm1::property::Attribute;
 use crate::avm1::Object;
 use crate::avm1::{ScriptObject, Value};
 use crate::context::UpdateContext;
 use gc_arena::MutationContext;
-use crate::avm1::property::Attribute;
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -15,7 +15,10 @@ pub fn constructor<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mut so = this.as_script_object().unwrap();
 
-    let callback = args.get(0).unwrap_or(&Value::Undefined).coerce_to_object(activation, context);
+    let callback = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_object(activation, context);
 
     so.set("onSelect", callback.into(), activation, context)?;
 
@@ -35,7 +38,7 @@ pub fn constructor<'gc>(
         Some(context.system_prototypes.function),
     );
 
-    let obj_proto = activation.avm().prototypes.object;
+    let obj_proto = activation.avm.prototypes.object;
     let built_in_items = obj_proto.new(activation, context, obj_proto, &[])?;
     let _ = crate::avm1::globals::object::constructor(activation, context, built_in_items, &[]);
     built_in_items.set("print", true.into(), activation, context)?;
@@ -49,13 +52,13 @@ pub fn constructor<'gc>(
 
     this.set("builtInItems", built_in_items.into(), activation, context)?;
 
-    let array_proto = activation.avm().prototypes.array;
+    let array_proto = activation.avm.prototypes.array;
     let custom_items = array_proto.new(activation, context, array_proto, &[])?;
     let _ = crate::avm1::globals::array::constructor(activation, context, custom_items, &[]);
 
     this.set("customItems", custom_items.into(), activation, context)?;
 
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn copy<'gc>(
@@ -68,7 +71,7 @@ pub fn copy<'gc>(
         .get("onSelect", activation, context)?
         .coerce_to_object(activation, context);
 
-    let context_menu_proto = activation.avm().prototypes.context_menu;
+    let context_menu_proto = activation.avm.prototypes.context_menu;
     let copy = context_menu_proto.new(activation, context, context_menu_proto, &[])?;
     let _ = constructor(activation, context, copy, &[callback.into()]);
 
@@ -121,11 +124,7 @@ pub fn copy<'gc>(
         .coerce_to_object(activation, context);
 
     for i in 0..custom_items.length() {
-        custom_items_copy.set_array_element(
-            i,
-            custom_items.array_element(i).into(),
-            context.gc_context,
-        );
+        custom_items_copy.set_array_element(i, custom_items.array_element(i), context.gc_context);
     }
 
     Ok(copy.into())
@@ -147,7 +146,7 @@ pub fn hide_builtin_items<'gc>(
     built_in_items.set("rewind", false.into(), activation, context)?;
     built_in_items.set("forward_back", false.into(), activation, context)?;
     built_in_items.set("print", false.into(), activation, context)?;
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 pub fn create_proto<'gc>(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Object<'gc> {
