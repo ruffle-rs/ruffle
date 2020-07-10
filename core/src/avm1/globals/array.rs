@@ -3,6 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::object::value_object;
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
@@ -471,8 +472,7 @@ fn sort<'gc>(
     };
 
     let compare_fn: CompareFn<'_, 'gc> = if let Some(f) = compare_fn {
-        let this =
-            crate::avm1::value_object::ValueObject::boxed(activation, context, Value::Undefined);
+        let this = value_object::ValueObject::boxed(activation, context, Value::Undefined);
         // this is undefined in the compare function
         Box::new(move |activation, context, a: &Value<'gc>, b: &Value<'gc>| {
             sort_compare_custom(activation, context, this, a, b, &f)
@@ -781,7 +781,7 @@ fn sort_compare_fields<'a, 'gc: 'a>(
     &Value<'gc>,
     &Value<'gc>,
 ) -> Ordering {
-    use crate::avm1::value_object::ValueObject;
+    use crate::avm1::object::value_object::ValueObject;
     move |activation, context, a, b| {
         for (field_name, compare_fn) in field_names.iter().zip(compare_fns.iter_mut()) {
             let a_object = ValueObject::boxed(activation, context, a.clone());

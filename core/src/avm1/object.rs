@@ -2,16 +2,16 @@
 
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::object::shared_object::SharedObject;
+use crate::avm1::object::super_object::SuperObject;
+use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property::Attribute;
-use crate::avm1::shared_object::SharedObject;
-use crate::avm1::super_object::SuperObject;
-use crate::avm1::value_object::ValueObject;
 
 use crate::avm1::activation::Activation;
-use crate::avm1::color_transform_object::ColorTransformObject;
-use crate::avm1::xml_attributes_object::XMLAttributesObject;
-use crate::avm1::xml_idmap_object::XMLIDMapObject;
-use crate::avm1::xml_object::XMLObject;
+use crate::avm1::object::color_transform_object::ColorTransformObject;
+use crate::avm1::object::xml_attributes_object::XMLAttributesObject;
+use crate::avm1::object::xml_idmap_object::XMLIDMapObject;
+use crate::avm1::object::xml_object::XMLObject;
 use crate::avm1::{ScriptObject, SoundObject, StageObject, UpdateContext, Value};
 use crate::display_object::DisplayObject;
 use crate::xml::XMLNode;
@@ -20,6 +20,17 @@ use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::borrow::Cow;
 use std::fmt::Debug;
+
+pub mod color_transform_object;
+pub mod script_object;
+pub mod shared_object;
+pub mod sound_object;
+pub mod stage_object;
+pub mod super_object;
+pub mod value_object;
+pub mod xml_attributes_object;
+pub mod xml_idmap_object;
+pub mod xml_object;
 
 /// Represents an object that can be directly interacted with by the AVM
 /// runtime.

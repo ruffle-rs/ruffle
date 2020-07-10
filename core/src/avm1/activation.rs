@@ -1,12 +1,10 @@
 use crate::avm1::error::Error;
 use crate::avm1::function::{Avm1Function, ExecutionReason, FunctionObject};
-use crate::avm1::object::{Object, TObject};
+use crate::avm1::object::{value_object, Object, TObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::f64_to_wrapping_u32;
-use crate::avm1::{
-    fscommand, globals, scope, skip_actions, start_drag, value_object, Avm1, ScriptObject, Value,
-};
+use crate::avm1::{fscommand, globals, scope, skip_actions, start_drag, Avm1, ScriptObject, Value};
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};

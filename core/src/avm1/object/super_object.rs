@@ -3,9 +3,9 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
+use crate::avm1::object::script_object::TYPE_OF_OBJECT;
 use crate::avm1::object::search_prototype;
 use crate::avm1::property::Attribute;
-use crate::avm1::script_object::TYPE_OF_OBJECT;
 use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;

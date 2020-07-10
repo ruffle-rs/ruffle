@@ -1,5 +1,5 @@
 use crate::avm1::globals::create_globals;
-use crate::avm1::object::search_prototype;
+use crate::avm1::object::{search_prototype, stage_object};
 use crate::context::UpdateContext;
 use crate::prelude::*;
 use gc_arena::{GcCell, MutationContext};
@@ -17,7 +17,6 @@ mod test_utils;
 pub mod listeners;
 
 pub mod activation;
-pub mod color_transform_object;
 pub mod debug;
 pub mod error;
 mod fscommand;
@@ -26,17 +25,8 @@ pub mod globals;
 pub mod object;
 mod property;
 mod scope;
-pub mod script_object;
-pub mod shared_object;
-mod sound_object;
-mod stage_object;
-mod super_object;
 mod timer;
 mod value;
-mod value_object;
-pub mod xml_attributes_object;
-pub mod xml_idmap_object;
-pub mod xml_object;
 
 #[cfg(test)]
 mod tests;
@@ -45,12 +35,12 @@ use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::error::Error;
 use crate::avm1::listeners::SystemListener;
 pub use globals::SystemPrototypes;
+pub use object::script_object::ScriptObject;
+pub use object::sound_object::SoundObject;
+pub use object::stage_object::StageObject;
 pub use object::{Object, ObjectPtr, TObject};
 use scope::Scope;
-pub use script_object::ScriptObject;
 use smallvec::alloc::borrow::Cow;
-pub use sound_object::SoundObject;
-pub use stage_object::StageObject;
 pub use timer::Timers;
 pub use value::Value;
 

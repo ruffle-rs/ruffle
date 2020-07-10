@@ -3,8 +3,8 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::value_object::ValueObject;
 use crate::avm1::{Object, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;

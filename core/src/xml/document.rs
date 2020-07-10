@@ -1,6 +1,6 @@
 //! XML Document
 
-use crate::avm1::xml_idmap_object::XMLIDMapObject;
+use crate::avm1::object::xml_idmap_object::XMLIDMapObject;
 use crate::avm1::Object;
 use crate::xml::{Error, ParseError, XMLName, XMLNode};
 use gc_arena::{Collect, GcCell, MutationContext};

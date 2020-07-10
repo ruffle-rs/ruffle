@@ -6,7 +6,7 @@ use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
-use crate::avm1::shared_object::SharedObject;
+use crate::avm1::object::shared_object::SharedObject;
 
 use json::JsonValue;
 
