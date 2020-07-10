@@ -334,6 +334,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
     fn set_watcher(
         &self,
+        activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: Cow<str>,
         callback: Executable<'gc>,
@@ -342,11 +343,19 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0
             .read()
             .base
-            .set_watcher(gc_context, name, callback, user_data);
+            .set_watcher(activation, gc_context, name, callback, user_data);
     }
 
-    fn remove_watcher(&self, gc_context: MutationContext<'gc, '_>, name: Cow<str>) -> bool {
-        self.0.read().base.remove_watcher(gc_context, name)
+    fn remove_watcher(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        gc_context: MutationContext<'gc, '_>,
+        name: Cow<str>,
+    ) -> bool {
+        self.0
+            .read()
+            .base
+            .remove_watcher(activation, gc_context, name)
     }
 
     fn has_property(

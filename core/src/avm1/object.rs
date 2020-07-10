@@ -264,6 +264,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The property does not need to exist at the time of this being called.
     fn set_watcher(
         &self,
+        activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: Cow<str>,
         callback: Executable<'gc>,
@@ -274,7 +275,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// The return value will indicate if there was a watcher present before this method was
     /// called.
-    fn remove_watcher(&self, gc_context: MutationContext<'gc, '_>, name: Cow<str>) -> bool;
+    fn remove_watcher(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        gc_context: MutationContext<'gc, '_>,
+        name: Cow<str>,
+    ) -> bool;
 
     /// Checks if the object has a given named property.
     fn has_property(
