@@ -1,0 +1,512 @@
+//undefined == undefined
+true
+//undefined == null
+true
+//undefined == (-5)
+false
+//undefined == (-1)
+false
+//undefined == (-0)
+false
+//undefined == 0
+false
+//undefined == 1
+false
+//undefined == 2
+false
+//undefined == 5
+false
+//undefined == "abc"
+false
+//undefined == "2"
+false
+//undefined == "true"
+false
+//undefined == "false"
+false
+//undefined == true
+false
+//undefined == false
+false
+//undefined == NaN
+false
+//null == undefined
+true
+//null == null
+true
+//null == (-5)
+false
+//null == (-1)
+false
+//null == (-0)
+false
+//null == 0
+false
+//null == 1
+false
+//null == 2
+false
+//null == 5
+false
+//null == "abc"
+false
+//null == "2"
+false
+//null == "true"
+false
+//null == "false"
+false
+//null == true
+false
+//null == false
+false
+//null == NaN
+false
+//(-5) == undefined
+false
+//(-5) == null
+false
+//(-5) == (-5)
+true
+//(-5) == (-1)
+false
+//(-5) == (-0)
+false
+//(-5) == 0
+false
+//(-5) == 1
+false
+//(-5) == 2
+false
+//(-5) == 5
+false
+//(-5) == "abc"
+false
+//(-5) == "2"
+false
+//(-5) == "true"
+false
+//(-5) == "false"
+false
+//(-5) == true
+false
+//(-5) == false
+false
+//(-5) == NaN
+false
+//(-1) == undefined
+false
+//(-1) == null
+false
+//(-1) == (-5)
+false
+//(-1) == (-1)
+true
+//(-1) == (-0)
+false
+//(-1) == 0
+false
+//(-1) == 1
+false
+//(-1) == 2
+false
+//(-1) == 5
+false
+//(-1) == "abc"
+false
+//(-1) == "2"
+false
+//(-1) == "true"
+false
+//(-1) == "false"
+false
+//(-1) == true
+false
+//(-1) == false
+false
+//(-1) == NaN
+false
+//(-0) == undefined
+false
+//(-0) == null
+false
+//(-0) == (-5)
+false
+//(-0) == (-1)
+false
+//(-0) == (-0)
+true
+//(-0) == 0
+true
+//(-0) == 1
+false
+//(-0) == 2
+false
+//(-0) == 5
+false
+//(-0) == "abc"
+false
+//(-0) == "2"
+false
+//(-0) == "true"
+false
+//(-0) == "false"
+false
+//(-0) == true
+false
+//(-0) == false
+true
+//(-0) == NaN
+false
+//0 == undefined
+false
+//0 == null
+false
+//0 == (-5)
+false
+//0 == (-1)
+false
+//0 == (-0)
+true
+//0 == 0
+true
+//0 == 1
+false
+//0 == 2
+false
+//0 == 5
+false
+//0 == "abc"
+false
+//0 == "2"
+false
+//0 == "true"
+false
+//0 == "false"
+false
+//0 == true
+false
+//0 == false
+true
+//0 == NaN
+false
+//1 == undefined
+false
+//1 == null
+false
+//1 == (-5)
+false
+//1 == (-1)
+false
+//1 == (-0)
+false
+//1 == 0
+false
+//1 == 1
+true
+//1 == 2
+false
+//1 == 5
+false
+//1 == "abc"
+false
+//1 == "2"
+false
+//1 == "true"
+false
+//1 == "false"
+false
+//1 == true
+true
+//1 == false
+false
+//1 == NaN
+false
+//2 == undefined
+false
+//2 == null
+false
+//2 == (-5)
+false
+//2 == (-1)
+false
+//2 == (-0)
+false
+//2 == 0
+false
+//2 == 1
+false
+//2 == 2
+true
+//2 == 5
+false
+//2 == "abc"
+false
+//2 == "2"
+true
+//2 == "true"
+false
+//2 == "false"
+false
+//2 == true
+false
+//2 == false
+false
+//2 == NaN
+false
+//5 == undefined
+false
+//5 == null
+false
+//5 == (-5)
+false
+//5 == (-1)
+false
+//5 == (-0)
+false
+//5 == 0
+false
+//5 == 1
+false
+//5 == 2
+false
+//5 == 5
+true
+//5 == "abc"
+false
+//5 == "2"
+false
+//5 == "true"
+false
+//5 == "false"
+false
+//5 == true
+false
+//5 == false
+false
+//5 == NaN
+false
+//"abc" == undefined
+false
+//"abc" == null
+false
+//"abc" == (-5)
+false
+//"abc" == (-1)
+false
+//"abc" == (-0)
+false
+//"abc" == 0
+false
+//"abc" == 1
+false
+//"abc" == 2
+false
+//"abc" == 5
+false
+//"abc" == "abc"
+true
+//"abc" == "2"
+false
+//"abc" == "true"
+false
+//"abc" == "false"
+false
+//"abc" == true
+false
+//"abc" == false
+false
+//"abc" == NaN
+false
+//"2" == undefined
+false
+//"2" == null
+false
+//"2" == (-5)
+false
+//"2" == (-1)
+false
+//"2" == (-0)
+false
+//"2" == 0
+false
+//"2" == 1
+false
+//"2" == 2
+true
+//"2" == 5
+false
+//"2" == "abc"
+false
+//"2" == "2"
+true
+//"2" == "true"
+false
+//"2" == "false"
+false
+//"2" == true
+false
+//"2" == false
+false
+//"2" == NaN
+false
+//"true" == undefined
+false
+//"true" == null
+false
+//"true" == (-5)
+false
+//"true" == (-1)
+false
+//"true" == (-0)
+false
+//"true" == 0
+false
+//"true" == 1
+false
+//"true" == 2
+false
+//"true" == 5
+false
+//"true" == "abc"
+false
+//"true" == "2"
+false
+//"true" == "true"
+true
+//"true" == "false"
+false
+//"true" == true
+false
+//"true" == false
+false
+//"true" == NaN
+false
+//"false" == undefined
+false
+//"false" == null
+false
+//"false" == (-5)
+false
+//"false" == (-1)
+false
+//"false" == (-0)
+false
+//"false" == 0
+false
+//"false" == 1
+false
+//"false" == 2
+false
+//"false" == 5
+false
+//"false" == "abc"
+false
+//"false" == "2"
+false
+//"false" == "true"
+false
+//"false" == "false"
+true
+//"false" == true
+false
+//"false" == false
+false
+//"false" == NaN
+false
+//true == undefined
+false
+//true == null
+false
+//true == (-5)
+false
+//true == (-1)
+false
+//true == (-0)
+false
+//true == 0
+false
+//true == 1
+true
+//true == 2
+false
+//true == 5
+false
+//true == "abc"
+false
+//true == "2"
+false
+//true == "true"
+false
+//true == "false"
+false
+//true == true
+true
+//true == false
+false
+//true == NaN
+false
+//false == undefined
+false
+//false == null
+false
+//false == (-5)
+false
+//false == (-1)
+false
+//false == (-0)
+true
+//false == 0
+true
+//false == 1
+false
+//false == 2
+false
+//false == 5
+false
+//false == "abc"
+false
+//false == "2"
+false
+//false == "true"
+false
+//false == "false"
+false
+//false == true
+false
+//false == false
+true
+//false == NaN
+false
+//NaN == undefined
+false
+//NaN == null
+false
+//NaN == (-5)
+false
+//NaN == (-1)
+false
+//NaN == (-0)
+false
+//NaN == 0
+false
+//NaN == 1
+false
+//NaN == 2
+false
+//NaN == 5
+false
+//NaN == "abc"
+false
+//NaN == "2"
+false
+//NaN == "true"
+false
+//NaN == "false"
+false
+//NaN == true
+false
+//NaN == false
+false
+//NaN == NaN
+false

@@ -489,6 +489,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::IfEq { offset } => self.op_if_eq(context, offset, reader),
                 Op::IfNe { offset } => self.op_if_ne(context, offset, reader),
                 Op::StrictEquals => self.op_strict_equals(),
+                Op::Equals => self.op_equals(context),
                 Op::Not => self.op_not(),
                 Op::HasNext => self.op_has_next(),
                 Op::HasNext2 {
@@ -1484,6 +1485,20 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let value1 = self.context.avm2.pop();
 
         self.context.avm2.push(value1 == value2);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_equals(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.avm2.pop();
+        let value1 = self.avm2.pop();
+
+        let result = value1.abstract_eq(&value2, self, context)?;
+
+        self.avm2.push(result);
 
         Ok(FrameControl::Continue)
     }
