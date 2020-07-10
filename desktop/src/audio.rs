@@ -1,4 +1,4 @@
-use cpal::traits::{DeviceTrait, EventLoopTrait, HostTrait};
+use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use generational_arena::Arena;
 use ruffle_core::backend::audio::decoders::{
     self, AdpcmDecoder, Mp3Decoder, PcmDecoder, SeekableDecoder,
@@ -14,12 +14,18 @@ use swf::AudioCompression;
 #[allow(dead_code)]
 pub struct CpalAudioBackend {
     device: cpal::Device,
-    output_format: cpal::Format,
-    audio_thread_handle: std::thread::JoinHandle<()>,
-
+    output_config: cpal::StreamConfig,
+    stream: Stream,
     sounds: Arena<Sound>,
     sound_instances: Arc<Mutex<Arena<SoundInstance>>>,
 }
+
+// Because of https://github.com/RustAudio/cpal/pull/348, we have to initialize cpal on a
+// separate thread (see `new` below). Unfortunately `cpal::Stream` is marked `!Send`, but
+// we know this should be safe (since we aren't accessing the stream at all after creation;
+// we just want to keep it alive)
+struct Stream(cpal::Stream);
+unsafe impl Send for CpalAudioBackend {}
 
 type Signal = Box<dyn Send + sample::signal::Signal<Frame = [i16; 2]>>;
 
@@ -81,73 +87,64 @@ impl CpalAudioBackend {
     fn init() -> Result<Self, Error> {
         // Create CPAL audio device.
         let host = cpal::default_host();
-        let event_loop = host.event_loop();
         let device = host
             .default_output_device()
             .ok_or("No audio devices available")?;
 
         // Create audio stream for device.
-        let mut supported_formats = device
-            .supported_output_formats()
+        let mut supported_configs = device
+            .supported_output_configs()
             .map_err(|_| "No supported audio format")?;
-        let format = supported_formats
+        let config = supported_configs
             .next()
             .ok_or("No supported audio formats")?
             .with_max_sample_rate();
-        let stream_id = event_loop
-            .build_output_stream(&device, &format)
-            .map_err(|_| "Unable to create audio stream")?;
-
-        let output_format = format.clone();
-        // Start the stream.
-        event_loop
-            .play_stream(stream_id)
-            .map_err(|_| "Unable to start audio stream")?;
+        let sample_format = config.sample_format();
+        let config = cpal::StreamConfig::from(config);
 
         let sound_instances: Arc<Mutex<Arena<SoundInstance>>> = Arc::new(Mutex::new(Arena::new()));
 
-        // Start the audio thread.
-        let audio_thread_handle = {
+        // Start the audio stream.
+        let stream = {
             let sound_instances = Arc::clone(&sound_instances);
-            std::thread::spawn(move || {
-                event_loop.run(move |stream_id, stream_result| {
-                    use cpal::{StreamData, UnknownTypeOutputBuffer};
+            let error_handler = move |err| log::error!("Audio stream error: {}", err);
+            let output_config = config.clone();
 
-                    let stream_data = match stream_result {
-                        Ok(data) => data,
-                        Err(err) => {
-                            eprintln!("an error occurred on stream {:?}: {}", stream_id, err);
-                            return;
-                        }
-                    };
-
-                    let mut sound_instances = sound_instances.lock().unwrap();
-                    match stream_data {
-                        StreamData::Output {
-                            buffer: UnknownTypeOutputBuffer::U16(buffer),
-                        } => {
-                            Self::mix_audio(&mut sound_instances, &output_format, buffer);
-                        }
-                        StreamData::Output {
-                            buffer: UnknownTypeOutputBuffer::I16(buffer),
-                        } => {
-                            Self::mix_audio(&mut sound_instances, &output_format, buffer);
-                        }
-                        StreamData::Output {
-                            buffer: UnknownTypeOutputBuffer::F32(buffer),
-                        } => {
-                            Self::mix_audio(&mut sound_instances, &output_format, buffer);
-                        }
-                        _ => (),
-                    }
-                });
-            })
+            use cpal::SampleFormat;
+            match sample_format {
+                SampleFormat::F32 => device.build_output_stream(
+                    &config,
+                    move |buffer, _| {
+                        let mut sound_instances = sound_instances.lock().unwrap();
+                        Self::mix_audio::<f32>(&mut sound_instances, &output_config, buffer)
+                    },
+                    error_handler,
+                ),
+                SampleFormat::I16 => device.build_output_stream(
+                    &config,
+                    move |buffer, _| {
+                        let mut sound_instances = sound_instances.lock().unwrap();
+                        Self::mix_audio::<i16>(&mut sound_instances, &output_config, buffer)
+                    },
+                    error_handler,
+                ),
+                SampleFormat::U16 => device.build_output_stream(
+                    &config,
+                    move |buffer, _| {
+                        let mut sound_instances = sound_instances.lock().unwrap();
+                        Self::mix_audio::<u16>(&mut sound_instances, &output_config, buffer)
+                    },
+                    error_handler,
+                ),
+            }?
         };
+
+        stream.play()?;
 
         Ok(Self {
             device,
-            output_format: format,
-            audio_thread_handle,
+            output_config: config,
+            stream: Stream(stream),
             sounds: Arena::new(),
             sound_instances,
         })
@@ -200,7 +197,7 @@ impl CpalAudioBackend {
             signal,
             interpolator,
             format.sample_rate.into(),
-            self.output_format.sample_rate.0.into(),
+            self.output_config.sample_rate.0.into(),
         )
     }
 
@@ -266,8 +263,8 @@ impl CpalAudioBackend {
     /// and mixing in their output.
     fn mix_audio<'a, T>(
         sound_instances: &mut Arena<SoundInstance>,
-        output_format: &cpal::Format,
-        mut output_buffer: cpal::OutputBuffer<'a, T>,
+        output_format: &cpal::StreamConfig,
+        mut output_buffer: &mut [T],
     ) where
         T: 'a + cpal::Sample + Default + sample::Sample,
         T::Signed: sample::conv::FromSample<i16>,
